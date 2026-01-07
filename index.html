@@ -1,792 +1,539 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Amado Libros — Librería en línea</title>
-  <meta name="description" content="Amado Libros: libros importados, pedidos especiales, ediciones agotadas y piezas para coleccionistas. Comprá en Mercado Libre o pedí por WhatsApp." />
-  <meta name="theme-color" content="#0f172a" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Amado Libros</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
     :root{
       --bg: #f6f7fb;
       --card: #ffffff;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: rgba(15, 23, 42, .10);
-      --shadow: 0 12px 30px rgba(15,23,42,.08);
-      --shadow2: 0 8px 18px rgba(15,23,42,.06);
-      --radius: 18px;
+      --text: #111111;
+      --muted: #5b5b5b;
+      --border: #e8e8ee;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
 
-      /* Acentos (cálidos, cercanos al logo) */
-      --accent: #e56b6f;      /* coral */
-      --accent2: #2cb06f;     /* verde WhatsApp-like */
-      --accent3: #2563eb;     /* azul link */
+      /* Mercado Libre */
+      --ml-yellow: #FFE600;
+      --ml-blue: #2D3277;
+
+      /* WhatsApp (más oscuro) */
+      --wa: #128C7E;
+      --wa-hover: #0f756a;
+
+      /* Neutral */
+      --neutral: #f3f4f6;
+      --neutral-border: #d8dbe2;
+      --neutral-text: #111;
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    *{ box-sizing: border-box; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(1100px 700px at 20% -10%, rgba(229,107,111,.18), transparent 55%),
-        radial-gradient(900px 600px at 95% 10%, rgba(37,99,235,.12), transparent 55%),
-        var(--bg);
-      line-height:1.45;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
 
-    a{ color:inherit; text-decoration:none; }
-    .wrap{ max-width:1100px; margin:0 auto; padding:22px; }
+    .wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+    }
 
-    /* Header */
     header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      padding:14px 14px;
+      padding: 18px 16px;
+      background: #fff;
       border: 1px solid var(--border);
-      background: rgba(255,255,255,.76);
-      backdrop-filter: blur(10px);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow2);
-      position: sticky;
-      top: 14px;
-      z-index: 50;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
     }
 
     .brand{
       display:flex;
-      align-items:center;
-      gap:12px;
-      min-width: 220px;
-    }
-
-    .logo{
-      width:44px;
-      height:44px;
-      border-radius: 12px;
-      background:#fff;
-      border: 1px solid var(--border);
-      display:grid;
-      place-items:center;
-      overflow:hidden;
-    }
-    .logo img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .brand h1{
-      font-size: 16px;
-      margin:0;
-      line-height:1.1;
-      letter-spacing:.2px;
-    }
-    .brand p{
-      margin:3px 0 0 0;
-      color:var(--muted);
-      font-size: 12.5px;
-    }
-
-    .actions{
-      display:flex;
-      align-items:center;
-      gap:10px;
+      gap: 14px;
+      align-items: center;
+      justify-content: flex-start;
       flex-wrap: wrap;
-      justify-content:flex-end;
+    }
+
+    .brand img{
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 6px;
+    }
+
+    h1{
+      font-family: "Playfair Display", serif;
+      font-size: 38px;
+      margin:0;
+      line-height: 1.05;
+    }
+
+    .subtitle{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .desc{
+      margin: 10px 0 0;
+      color: #2a2a2a;
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 880px;
+    }
+
+    .top-actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: center;
+      margin-top: 14px;
     }
 
     .btn{
       display:inline-flex;
       align-items:center;
-      gap:10px;
-      padding:11px 14px;
-      border-radius: 999px;
+      justify-content:center;
+      gap:8px;
+      padding: 12px 14px;
+      border-radius: 12px;
       border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      box-shadow: 0 6px 14px rgba(15,23,42,.06);
-      font-weight: 700;
+      text-decoration:none;
+      font-weight: 600;
       font-size: 14px;
       cursor:pointer;
-      transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
-      user-select:none;
-      white-space:nowrap;
+      transition: transform .08s ease, opacity .15s ease, background .15s ease, border-color .15s ease;
+      user-select: none;
+      white-space: nowrap;
     }
-    .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 22px rgba(15,23,42,.10); }
-    .btn:active{ transform: translateY(0); }
+    .btn:active{ transform: translateY(1px); }
 
-    .btn-primary{
-      border-color: rgba(229,107,111,.28);
-      background: linear-gradient(180deg, rgba(229,107,111,.12), rgba(229,107,111,.06));
+    .btn-ml{
+      background: var(--ml-yellow);
+      border-color: var(--ml-yellow);
+      color: var(--ml-blue);
     }
-    .btn-whatsapp{
-      border-color: rgba(44,176,111,.35);
-      background: linear-gradient(180deg, rgba(44,176,111,.14), rgba(44,176,111,.06));
-    }
+    .btn-ml:hover{ opacity: .92; }
 
-    .icon{
-      width:18px; height:18px; display:inline-block;
+    .btn-wa{
+      background: var(--wa);
+      border-color: var(--wa);
+      color: #fff;
     }
+    .btn-wa:hover{ background: var(--wa-hover); border-color: var(--wa-hover); }
 
-    /* Hero */
-    .hero{
-      margin-top: 18px;
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 18px;
-      align-items: stretch;
+    .btn-neutral{
+      background: var(--neutral);
+      border-color: var(--neutral-border);
+      color: var(--neutral-text);
     }
-
-    .card{
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.86);
-      backdrop-filter: blur(10px);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .hero-main{
-      padding: 26px 24px;
-    }
-    .kicker{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      font-size: 12px;
-      font-weight: 800;
-      color: rgba(15,23,42,.72);
-      letter-spacing: .3px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.75);
-    }
-    .kdot{
-      width:8px;height:8px;border-radius:999px;background: var(--accent);
-      box-shadow: 0 0 0 6px rgba(229,107,111,.12);
-    }
-
-    .hero-title{
-      margin: 14px 0 10px 0;
-      font-size: 34px;
-      line-height:1.12;
-      letter-spacing: -.5px;
-    }
-    .hero-sub{
-      margin: 0 0 18px 0;
-      color: var(--muted);
-      font-size: 16px;
-      max-width: 60ch;
-    }
-    .chips{
-      display:flex;
-      flex-wrap: wrap;
-      gap:10px;
-      margin: 10px 0 0 0;
-    }
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      border:1px solid var(--border);
-      border-radius: 999px;
-      padding: 8px 12px;
-      background:#fff;
-      color: rgba(15,23,42,.80);
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .chip .mini{
-      width:7px;height:7px;border-radius:999px;background: rgba(37,99,235,.85);
-      box-shadow: 0 0 0 6px rgba(37,99,235,.10);
-    }
-
-    .hero-side{
-      padding: 20px 20px;
-      display:flex;
-      flex-direction: column;
-      gap:12px;
-      justify-content:center;
-    }
-
-    .welcome{
-      font-size: 18px;
-      font-weight: 900;
-      margin: 0;
-      letter-spacing: -.2px;
-    }
-    .welcome-text{
-      margin: 6px 0 0 0;
-      color: var(--muted);
-      font-size: 14.5px;
-    }
-    .side-ctas{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top: 12px;
-    }
-    .note{
-      margin-top: 10px;
-      font-size: 12.5px;
-      color: rgba(71,85,105,.95);
-      border-left: 3px solid rgba(229,107,111,.55);
-      padding: 8px 10px;
-      background: rgba(229,107,111,.06);
-      border-radius: 10px;
-    }
-
-    /* Search */
-    .search{
-      margin-top: 16px;
-      padding: 18px 18px;
-    }
+    .btn-neutral:hover{ opacity: .92; }
 
     .searchbar{
       display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap: wrap;
-    }
-    .searchbar .inputWrap{
-      flex: 1 1 420px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      border:1px solid var(--border);
-      background:#fff;
-      border-radius: 14px;
-      padding: 10px 12px;
-      box-shadow: 0 6px 14px rgba(15,23,42,.05);
-    }
-    .searchbar input{
-      border:0;
-      outline:0;
-      width:100%;
-      font-size: 15px;
-      background:transparent;
-    }
-    .searchbar .btn{
-      border-radius: 14px;
-      padding: 11px 14px;
-    }
-    .hint{
-      margin:10px 2px 0 2px;
-      color: var(--muted);
-      font-size: 12.5px;
-    }
-
-    /* Catalog */
-    .section{
-      margin-top: 18px;
-    }
-    .section h2{
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: -.2px;
-    }
-    .section p{
-      margin: 6px 0 0 0;
-      color: var(--muted);
-      font-size: 13.5px;
-    }
-
-    .grid{
-      margin-top: 14px;
-      display:grid;
-      grid-template-columns: repeat(4, minmax(0,1fr));
-      gap: 14px;
-    }
-
-    .item{
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.92);
-      border-radius: 16px;
-      overflow:hidden;
-      box-shadow: 0 8px 16px rgba(15,23,42,.06);
-      transition: transform .10s ease, box-shadow .10s ease;
-      display:flex;
-      flex-direction: column;
-      min-height: 100%;
-    }
-    .item:hover{ transform: translateY(-2px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
-
-    .cover{
-      height: 210px;
-      background: #fff;
-      display:grid;
-      place-items:center;
-      border-bottom: 1px solid var(--border);
-    }
-    .cover img{
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      padding: 10px;
-      display:block;
-    }
-    .cover .noimg{
-      color: rgba(71,85,105,.85);
-      font-weight: 800;
-      font-size: 12px;
-      text-align:center;
-      padding: 16px;
-    }
-
-    .body{
-      padding: 12px 12px 12px 12px;
-      display:flex;
-      flex-direction: column;
       gap: 10px;
-      flex: 1 1 auto;
-    }
-    .title{
-      font-size: 13.5px;
-      font-weight: 900;
-      letter-spacing: -.1px;
-      margin:0;
-      display:-webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow:hidden;
-      min-height: 38px;
-    }
-    .meta{
-      display:flex;
-      gap:8px;
+      align-items:center;
       flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 12.5px;
-      margin-top: -6px;
+      margin-top: 12px;
     }
 
-    .ctaRow{
-      margin-top:auto;
-      display:flex;
-      gap:8px;
-      flex-wrap: wrap;
-    }
-    .ctaRow a{
-      flex: 1 1 auto;
-      justify-content:center;
-      font-size: 13px;
-      padding: 10px 12px;
+    .searchbar input{
+      width: min(520px, 100%);
+      padding: 12px 14px;
       border-radius: 12px;
       border: 1px solid var(--border);
-      background:#fff;
-      font-weight: 900;
-      box-shadow: 0 6px 14px rgba(15,23,42,.05);
-    }
-    .ctaRow a.primary{
-      border-color: rgba(229,107,111,.28);
-      background: linear-gradient(180deg, rgba(229,107,111,.12), rgba(229,107,111,.06));
-    }
-    .ctaRow a.whats{
-      border-color: rgba(44,176,111,.35);
-      background: linear-gradient(180deg, rgba(44,176,111,.14), rgba(44,176,111,.06));
+      background: #fff;
+      font-size: 14px;
+      outline: none;
     }
 
-    .statusRow{
+    .meta{
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    /* Promo bar (urgente, minimalista) */
+    .promo-bar{
       margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid var(--border);
       display:flex;
       align-items:center;
       justify-content: space-between;
       gap: 10px;
-      color: var(--muted);
-      font-size: 12.5px;
+      flex-wrap: wrap;
     }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.75);
+    .promo-bar strong{ font-weight: 800; }
+    .promo-link{
+      color: var(--ml-blue);
+      text-decoration: none;
       font-weight: 800;
+      white-space: nowrap;
+    }
+    .promo-link:hover{ text-decoration: underline; }
+    .promo-foot{
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    /* Footer */
-    footer{
-      margin: 22px 0 10px 0;
-      color: rgba(71,85,105,.9);
-      text-align:center;
+    main{ margin-top: 18px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 1100px){ .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 820px){ .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    /* Imagen pro: no recorta */
+    .thumb{
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 10px;
+    }
+    .thumb img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 10px;
+    }
+
+    .content{
+      padding: 12px 12px 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .title{
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.25;
+      margin: 0;
+      color: var(--text);
+
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: calc(15px * 1.25 * 2.6);
+    }
+
+    .price{
+      font-weight: 800;
+      font-size: 14px;
+      margin: 0;
+      color: #111;
+    }
+
+    .actions{
+      margin-top: auto;
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions .btn{
+      flex: 1 1 160px;
+      border-radius: 12px;
+      padding: 10px 12px;
       font-size: 13px;
     }
 
-    /* Responsive */
-    @media (max-width: 980px){
-      .hero{ grid-template-columns: 1fr; }
-      header{ position: static; }
-      .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .hero-title{ font-size: 30px; }
+    .loadmore{
+      margin: 18px auto 0;
+      display:flex;
+      justify-content:center;
     }
-    @media (max-width: 520px){
-      .wrap{ padding: 16px; }
-      .brand{ min-width: unset; }
-      .brand p{ display:none; }
-      .grid{ grid-template-columns: 1fr; }
-      .cover{ height: 230px; }
-      .hero-title{ font-size: 28px; }
-      .btn{ width: 100%; justify-content:center; }
-      .actions{ width: 100%; }
+
+    .footer-note{
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-
     <header>
       <div class="brand">
-        <div class="logo" aria-label="Logo Amado Libros">
-          <!-- IMPORTANTE: el archivo debe estar en /public y la ruta debe ser /A%20Gato.jpeg -->
-          <img src="/A%20Gato.jpeg" alt="Amado Libros" />
-        </div>
+        <img src="logo.jpeg" alt="Amado Libros"
+             onerror="this.onerror=null; this.src='logo.png';"/>
         <div>
           <h1>Amado Libros</h1>
-          <p>Librería en línea · Uruguay</p>
+          <div class="subtitle">Catálogo curado · Libros importados · Pedidos especiales</div>
         </div>
       </div>
 
-      <div class="actions">
-        <a class="btn btn-primary" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
-          <span class="icon" aria-hidden="true">
-            <!-- Icono simple "tienda" -->
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 10l1-6h16l1 6"></path>
-              <path d="M5 10v10h14V10"></path>
-              <path d="M9 20v-6h6v6"></path>
-            </svg>
-          </span>
-          Tienda Mercado Libre
+      <div class="desc">
+        Traemos libros, música, antigüedades y objetos seleccionados del exterior. Libros por encargo, ediciones agotadas y piezas para coleccionistas.
+      </div>
+
+      <div class="top-actions">
+        <a class="btn btn-ml" target="_blank" rel="noopener"
+           href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea#from=share_eshop">
+          Ver tienda en Mercado Libre
         </a>
 
-        <!-- WhatsApp: en desktop abre WhatsApp Web o la app si está instalada -->
-        <a class="btn btn-whatsapp" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20busco%20un%20libro%20y%20quiero%20consultar." target="_blank" rel="noopener">
-          <span class="icon" aria-hidden="true">
-            <!-- Icono oficial-ish WhatsApp (SVG) -->
-            <svg viewBox="0 0 32 32" width="18" height="18" fill="currentColor" aria-hidden="true">
-              <path d="M19.11 17.53c-.26-.13-1.54-.76-1.78-.85-.24-.09-.41-.13-.58.13-.17.26-.67.85-.82 1.03-.15.17-.3.2-.56.07-.26-.13-1.09-.4-2.07-1.27-.77-.69-1.29-1.54-1.44-1.8-.15-.26-.02-.4.11-.53.11-.11.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.45-.06-.13-.58-1.39-.8-1.91-.21-.5-.43-.43-.58-.44l-.5-.01c-.17 0-.45.06-.69.33-.24.26-.9.88-.9 2.14 0 1.26.93 2.47 1.06 2.65.13.17 1.83 2.79 4.44 3.91.62.27 1.1.43 1.48.55.62.2 1.18.17 1.62.1.49-.07 1.54-.63 1.76-1.23.22-.61.22-1.13.15-1.23-.06-.11-.24-.17-.5-.3z"/>
-              <path d="M16.04 3C9.41 3 4.02 8.2 4.02 14.6c0 2.25.68 4.33 1.85 6.08L4 29l8.57-1.73c1.75.94 3.76 1.48 5.91 1.48 6.63 0 12.02-5.2 12.02-11.6C30.5 8.2 25.11 3 18.48 3h-2.44zm2.44 23.03c-2.02 0-3.89-.58-5.46-1.58l-.39-.24-5.09 1.02 1.06-4.8-.26-.39c-1.08-1.61-1.65-3.49-1.65-5.44 0-5.42 4.58-9.83 10.2-9.83h2.44c5.62 0 10.2 4.41 10.2 9.83s-4.58 9.83-10.2 9.83h-2.85z"/>
-            </svg>
-          </span>
-          WhatsApp
+        <a class="btn btn-wa" target="_blank" rel="noopener"
+           href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quiero%20consultar%20por%20un%20libro.%20">
+          WhatsApp (comprar / consultar)
         </a>
       </div>
+
+      <div class="promo-bar">
+        <div>
+          <strong>Pagos hasta 12 cuotas</strong> · Envíos Montevideo <strong>menos de 2 horas</strong>
+        </div>
+        <a class="promo-link" target="_blank" rel="noopener"
+           href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea#from=share_eshop">
+          Link de pago (Mercado Libre)
+        </a>
+      </div>
+      <div class="promo-foot">
+        *Envíos rápidos sujetos a zona y horario de compra (Flex).
+      </div>
+
+      <div class="searchbar">
+        <input id="q" type="search" placeholder="Buscar por título… (ej: Biblia, Yalom, Battle Royale)" />
+      </div>
+
+      <div class="meta" id="meta">Cargando catálogo…</div>
     </header>
 
-    <section class="hero">
-      <div class="card hero-main">
-        <div class="kicker"><span class="kdot"></span>Bienvenido a Amado Libros</div>
-        <h2 class="hero-title">Una librería online para encontrar lo difícil de conseguir.</h2>
-        <p class="hero-sub">
-          Nos encanta atenderte. Traemos libros, música, antigüedades y objetos seleccionados del exterior.
-          Conseguimos libros por encargo, ediciones agotadas y piezas para coleccionistas.
-        </p>
-
-        <div class="chips" aria-label="Lo que hacemos">
-          <span class="chip"><span class="mini"></span>Libros importados</span>
-          <span class="chip"><span class="mini"></span>Pedidos especiales</span>
-          <span class="chip"><span class="mini"></span>Ediciones agotadas</span>
-          <span class="chip"><span class="mini"></span>Coleccionismo</span>
-        </div>
-      </div>
-
-      <aside class="card hero-side">
-        <p class="welcome">¿Buscás un título puntual?</p>
-        <p class="welcome-text">
-          Escribí <strong>título</strong>, <strong>autor</strong> o <strong>tema</strong> en el buscador.
-          Si no aparece, escribinos por WhatsApp y lo rastreamos por encargo.
-        </p>
-
-        <div class="side-ctas">
-          <a class="btn btn-primary" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
-            Ver tienda en Mercado Libre
-          </a>
-          <a class="btn btn-whatsapp" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20busco%20este%20t%C3%ADtulo%3A%20" target="_blank" rel="noopener">
-            Pedir por WhatsApp
-          </a>
-        </div>
-
-        <div class="note">
-          Tip: si te interesa un libro y querés confirmación rápida, mandanos el título o ISBN por WhatsApp.
-        </div>
-      </aside>
-    </section>
-
-    <section class="card search" aria-label="Buscador del catálogo">
-      <div class="searchbar">
-        <div class="inputWrap" role="search">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="7"></circle>
-              <path d="M21 21l-4.2-4.2"></path>
-            </svg>
-          </span>
-          <input id="q" type="text" inputmode="search" autocomplete="off" placeholder="Buscar por título, autor o tema..." />
-        </div>
-
-        <button class="btn" id="clearBtn" type="button" title="Limpiar búsqueda">Limpiar</button>
-      </div>
-      <div class="hint">
-        Mostramos una lista de los últimos incorporados y también podés buscar en el catálogo cargado en esta web.
-      </div>
-
-      <div class="statusRow">
-        <span class="pill" id="statusPill">Listo</span>
-        <span id="countText"></span>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Últimos libros incorporados</h2>
-      <p>Novedades recientes publicadas en Mercado Libre (según el catálogo cargado).</p>
-
+    <main>
       <div class="grid" id="grid"></div>
-    </section>
 
-    <footer>© Amado Libros — Librería en línea</footer>
+      <div class="loadmore" id="loadMoreWrap" style="display:none;">
+        <button class="btn btn-neutral" id="loadMoreBtn" type="button">Cargar más</button>
+      </div>
+
+      <div class="footer-note">
+        Por WhatsApp podés comprar, consultar y coordinar. Estamos encantados de servirte.
+      </div>
+    </main>
   </div>
 
   <script>
-    // ====== CONFIG ======
-    const JSON_URL = "/catalogo_amado_libros.json"; // está en /public
-    const MAX_SHOW = 24;   // cuántos mostramos en home (rápido y lindo)
-    const MAX_SEARCH = 80; // máximo resultados cuando buscás (para no colgar el móvil)
+    const JSON_URL = "./catalogo_amado_libros.json";
+    const WA_PHONE = "59899841325";
+    const STORE_URL = "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea#from=share_eshop";
 
-    // Links base
-    const MELI_TIENDA = "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea";
-    const WA_BASE = "https://wa.me/59899841325?text=";
+    const grid = document.getElementById("grid");
+    const meta = document.getElementById("meta");
+    const q = document.getElementById("q");
 
-    // ====== HELPERS ======
-    const $ = (id) => document.getElementById(id);
+    const loadMoreWrap = document.getElementById("loadMoreWrap");
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
 
-    function pick(obj, keys){
-      for (const k of keys){
-        if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
+    let items = [];
+    let filtered = [];
+    let shown = 0;
+    const PAGE_SIZE = 24;
+
+    function moneyUYU(value){
+      try{
+        return new Intl.NumberFormat("es-UY", { style:"currency", currency:"UYU", maximumFractionDigits:0 }).format(value || 0);
+      }catch(e){
+        return "$U " + (value || 0);
       }
-      return "";
     }
 
-    function normText(s){
-      return (s ?? "").toString().toLowerCase().trim();
+    function normalizeHttps(url){
+      return (url || "").replace(/^http:\/\//i, "https://");
     }
 
-    function normalizeImageUrl(url){
-      if (!url) return "";
-      let u = String(url).trim();
-      // Arreglo clave: http -> https (evita bloqueo en sitios https)
-      if (u.startsWith("http://")) u = u.replace("http://", "https://");
-      // URLs tipo //cdn...
-      if (u.startsWith("//")) u = "https:" + u;
+    // Mejora: ML -I -> -O (si existe). Si no existe, fallback via onerror al original
+    function upgradeMlImage(url){
+      if(!url) return url;
+      let u = normalizeHttps(url);
+      u = u.replace(/-I(\.(jpg|jpeg|png|webp))$/i, "-O$1");
       return u;
     }
 
-    function whatsappLinkFor(title, extra){
-      const msg = `Hola Amado Libros, busco: ${title}${extra ? " — " + extra : ""}. ¿Me ayudás?`;
-      return WA_BASE + encodeURIComponent(msg);
+    // DISPONIBLE = active y (si hay qty numérico) qty > 0
+    function isAvailable(item){
+      const status = String(item.status || "").toLowerCase();
+      const qty = item.available_quantity;
+      const qtyOk = (typeof qty !== "number") ? true : qty > 0;
+      return status === "active" && qtyOk;
     }
 
-    function meliLinkFor(item){
-      // Si el JSON trae link directo de la publicación, lo usamos. Si no, mandamos a la tienda.
-      const url = pick(item, ["url","link","permalink","meli_url","publicacion","Publicacion","publication_url"]);
-      if (url) return url;
-      return MELI_TIENDA;
+    function waLink(text){
+      return `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(text)}`;
     }
 
-    function guessDateValue(item){
-      // Si existe alguna fecha en tu JSON, la intentamos usar.
-      const d = pick(item, ["fecha_carga","created_at","createdAt","fecha","date","timestamp"]);
-      if (!d) return 0;
-      const t = Date.parse(d);
-      return Number.isFinite(t) ? t : 0;
+    function buildCard(item){
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+
+      const img = document.createElement("img");
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.alt = item.title || "Producto";
+
+      const originalThumb = normalizeHttps(item.thumbnail || "");
+      const upgradedThumb = upgradeMlImage(originalThumb);
+
+      img.src = upgradedThumb;
+      img.onerror = () => {
+        if(img.src !== originalThumb){
+          img.src = originalThumb;
+        }
+      };
+
+      thumb.appendChild(img);
+
+      const content = document.createElement("div");
+      content.className = "content";
+
+      const title = document.createElement("p");
+      title.className = "title";
+      title.textContent = item.title || "Sin título";
+
+      const price = document.createElement("p");
+      price.className = "price";
+      price.textContent = moneyUYU(item.price);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const aML = document.createElement("a");
+      aML.className = "btn btn-ml";
+      aML.target = "_blank";
+      aML.rel = "noopener";
+      aML.href = item.permalink || STORE_URL;
+      aML.textContent = "Comprar en Mercado Libre";
+
+      const aWA = document.createElement("a");
+      aWA.className = "btn btn-wa";
+      aWA.target = "_blank";
+      aWA.rel = "noopener";
+      aWA.href = waLink(`Hola Amado Libros, quiero comprar/consultar por: ${item.title}. Link: ${item.permalink || STORE_URL}`);
+      aWA.textContent = "Comprar por WhatsApp";
+
+      actions.appendChild(aML);
+      actions.appendChild(aWA);
+
+      content.appendChild(title);
+      content.appendChild(price);
+      content.appendChild(actions);
+
+      card.appendChild(thumb);
+      card.appendChild(content);
+
+      return card;
     }
 
-    function renderItem(item){
-      const title = (pick(item, ["titulo","title","name","nombre","Nombre","Titulo"]) || "Producto").toString().trim();
-      const author = (pick(item, ["autor","author","Autor"]) || "").toString().trim();
-      const imageRaw = pick(item, ["imagen","image","thumbnail","foto","cover","Imagen","Image","picture","img"]);
-      const image = normalizeImageUrl(imageRaw);
-      const meli = meliLinkFor(item);
-      const wa = whatsappLinkFor(title, author ? `Autor: ${author}` : "");
-
-      const el = document.createElement("article");
-      el.className = "item";
-
-      const cover = document.createElement("div");
-      cover.className = "cover";
-
-      if (image){
-        const im = new Image();
-        im.alt = title;
-        im.loading = "lazy";
-        im.decoding = "async";
-        im.referrerPolicy = "no-referrer";
-        im.src = image;
-        im.onerror = () => {
-          cover.innerHTML = `<div class="noimg">Sin imagen</div>`;
-        };
-        cover.appendChild(im);
-      } else {
-        cover.innerHTML = `<div class="noimg">Sin imagen</div>`;
+    function renderNext(){
+      const end = Math.min(shown + PAGE_SIZE, filtered.length);
+      for(let i = shown; i < end; i++){
+        grid.appendChild(buildCard(filtered[i]));
       }
+      shown = end;
 
-      const body = document.createElement("div");
-      body.className = "body";
-
-      const h = document.createElement("p");
-      h.className = "title";
-      h.textContent = title;
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      if (author) meta.textContent = author;
-
-      const row = document.createElement("div");
-      row.className = "ctaRow";
-
-      const a1 = document.createElement("a");
-      a1.className = "primary";
-      a1.href = meli;
-      a1.target = "_blank";
-      a1.rel = "noopener";
-      a1.textContent = "Comprar en Mercado Libre";
-
-      const a2 = document.createElement("a");
-      a2.className = "whats";
-      a2.href = wa;
-      a2.target = "_blank";
-      a2.rel = "noopener";
-      a2.textContent = "WhatsApp";
-
-      row.appendChild(a1);
-      row.appendChild(a2);
-
-      body.appendChild(h);
-      if (author) body.appendChild(meta);
-      body.appendChild(row);
-
-      el.appendChild(cover);
-      el.appendChild(body);
-
-      return el;
+      loadMoreWrap.style.display = (shown < filtered.length) ? "flex" : "none";
+      meta.textContent = `${filtered.length} productos disponibles. Mostrando ${shown}.`;
     }
 
-    function setStatus(text){
-      $("statusPill").textContent = text;
-    }
+    loadMoreBtn.addEventListener("click", renderNext);
 
-    function setCount(text){
-      $("countText").textContent = text || "";
-    }
+    function applySearch(){
+      const term = (q.value || "").trim().toLowerCase();
+      filtered = term
+        ? items.filter(it => (it.title || "").toLowerCase().includes(term))
+        : items;
 
-    // ====== APP ======
-    let ALL = [];
-    let DEFAULT_LIST = [];
-
-    function showList(list){
-      const grid = $("grid");
       grid.innerHTML = "";
-      list.forEach(it => grid.appendChild(renderItem(it)));
-      setCount(list.length ? `${list.length} resultados` : "Sin resultados");
-    }
+      shown = 0;
 
-    function buildDefaultList(items){
-      // Preferimos ordenar por fecha si existe; si no existe, dejamos el orden original
-      const withDate = items.map(it => ({ it, t: guessDateValue(it) }));
-      const hasAnyDate = withDate.some(x => x.t > 0);
-
-      let sorted;
-      if (hasAnyDate){
-        sorted = withDate.sort((a,b) => b.t - a.t).map(x => x.it);
-      } else {
-        sorted = items.slice(); // orden del JSON
-      }
-
-      return sorted.slice(0, MAX_SHOW);
-    }
-
-    function searchItems(q){
-      const query = normText(q);
-      if (!query){
-        showList(DEFAULT_LIST);
-        setStatus("Listo");
+      if(filtered.length === 0){
+        meta.textContent = "Sin resultados para esa búsqueda.";
+        loadMoreWrap.style.display = "none";
         return;
       }
 
-      setStatus("Buscando…");
-
-      const out = [];
-      for (const it of ALL){
-        const title = normText(pick(it, ["titulo","title","name","nombre","Nombre","Titulo"]));
-        const author = normText(pick(it, ["autor","author","Autor"]));
-        const topic  = normText(pick(it, ["tema","categoria","category","tags","keywords","Tematica","tematica"]));
-        const hay = (title + " " + author + " " + topic);
-        if (hay.includes(query)){
-          out.push(it);
-          if (out.length >= MAX_SEARCH) break;
-        }
-      }
-
-      showList(out);
-      setStatus(out.length ? "Resultados" : "Sin resultados");
+      renderNext();
     }
 
     async function init(){
-      // Siempre arrancamos limpio (evita “apareció una búsqueda sola” por autocompletes raros)
-      $("q").value = "";
-
-      setStatus("Cargando catálogo…");
-      setCount("");
-
       try{
         const res = await fetch(JSON_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("No se pudo cargar el catálogo (HTTP " + res.status + ")");
-
+        if(!res.ok) throw new Error("No se pudo cargar el JSON");
         const data = await res.json();
 
-        // Aceptamos JSON en dos formatos:
-        // - Array directo: [ ... ]
-        // - Objeto con "items": { items:[ ... ] }
-        const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+        let raw = Array.isArray(data) ? data : (data.items || []);
+        if(!Array.isArray(raw)) raw = [];
 
-        ALL = items;
-        DEFAULT_LIST = buildDefaultList(items);
+        // Normalizamos
+        raw = raw.map(x => ({
+          id: x.id,
+          title: x.title,
+          price: x.price,
+          currency: x.currency,
+          permalink: x.permalink,
+          thumbnail: x.thumbnail,
+          available_quantity: x.available_quantity,
+          status: x.status
+        }));
 
-        showList(DEFAULT_LIST);
-        setStatus("Listo");
-      } catch (e){
-        console.error(e);
-        setStatus("Error");
-        $("grid").innerHTML = `<div class="card" style="padding:16px;border-radius:16px;">
-          <strong>No pude cargar el catálogo.</strong><br/>
-          Revisá que el archivo <code>catalogo_amado_libros.json</code> exista en <code>/public</code>.
-        </div>`;
+        // FILTRO CLAVE: ocultamos pausados/cerrados/sin stock para evitar redirecciones
+        const total = raw.length;
+        items = raw.filter(isAvailable);
+        const hidden = total - items.length;
+
+        // Orden alfabético
+        items.sort((a,b)=> String(a.title||"").localeCompare(String(b.title||""), "es", { sensitivity:"base" }));
+
+        meta.textContent = `${items.length} productos disponibles. Ocultos (pausados/sin stock): ${hidden}.`;
+        applySearch();
+      }catch(err){
+        meta.textContent = "Error cargando el catálogo. Revisá que exista catalogo_amado_libros.json en la raíz del repo.";
+        console.error(err);
       }
     }
 
-    // Eventos UI
-    $("q").addEventListener("input", (e) => {
-      searchItems(e.target.value);
-    });
-
-    $("clearBtn").addEventListener("click", () => {
-      $("q").value = "";
-      showList(DEFAULT_LIST);
-      setStatus("Listo");
-    });
-
-    // Logo fallback por si hay un tema de ruta (no debería, pero suma robustez)
-    document.querySelector(".logo img").addEventListener("error", (ev) => {
-      ev.target.onerror = null;
-      ev.target.src = "A%20Gato.jpeg"; // fallback relativo
+    q.addEventListener("input", ()=>{
+      window.clearTimeout(window.__t);
+      window.__t = window.setTimeout(applySearch, 120);
     });
 
     init();
