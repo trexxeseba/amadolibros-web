@@ -2,443 +2,644 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Amado Libros — Librería en línea</title>
-  <meta name="description" content="Amado Libros: libros importados, pedidos especiales, ediciones agotadas y piezas para coleccionistas. Comprá en Mercado Libre o consultá por WhatsApp." />
+  <meta name="description" content="Amado Libros: libros importados, pedidos especiales, ediciones agotadas y piezas para coleccionistas. Comprá en Mercado Libre o pedí por WhatsApp." />
+  <meta name="theme-color" content="#0f172a" />
+
   <style>
     :root{
-      --bg:#f6f7f9;
-      --surface:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --shadow: 0 10px 30px rgba(17,24,39,.08);
-      --radius:18px;
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: rgba(15, 23, 42, .10);
+      --shadow: 0 12px 30px rgba(15,23,42,.08);
+      --shadow2: 0 8px 18px rgba(15,23,42,.06);
+      --radius: 18px;
 
-      --brand:#111827;
-      --ml:#111827;
-      --wa:#16a34a;
-      --wa-dark:#15803d;
-
-      --container: 1060px;
+      /* Acentos (cálidos, cercanos al logo) */
+      --accent: #e56b6f;      /* coral */
+      --accent2: #2cb06f;     /* verde WhatsApp-like */
+      --accent3: #2563eb;     /* azul link */
     }
 
-    *{box-sizing:border-box}
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: var(--bg);
-      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 700px at 20% -10%, rgba(229,107,111,.18), transparent 55%),
+        radial-gradient(900px 600px at 95% 10%, rgba(37,99,235,.12), transparent 55%),
+        var(--bg);
+      line-height:1.45;
     }
 
-    a{color:inherit; text-decoration:none}
-    .container{max-width:var(--container); margin:0 auto; padding:24px 18px}
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:22px; }
 
     /* Header */
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px;
-      background:transparent;
-    }
-    .brand{
-      display:flex; align-items:center; gap:12px;
-      padding:10px 0;
-    }
-    .brand img{
-      width:52px; height:52px; object-fit:contain;
-      border-radius:14px;
-      background:#fff;
-      box-shadow: 0 6px 18px rgba(17,24,39,.08);
-    }
-    .brand .name{
-      display:flex; flex-direction:column; line-height:1.1;
-    }
-    .brand .name strong{font-size:18px; letter-spacing:.2px}
-    .brand .name span{font-size:13px; color:var(--muted)}
-
-    .top-actions{display:flex; gap:10px; flex-wrap:wrap}
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      gap:10px;
-      padding:10px 14px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: var(--surface);
-      cursor:pointer;
-      font-weight:600;
-      box-shadow: 0 6px 18px rgba(17,24,39,.05);
-      transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease;
-      user-select:none;
-      white-space:nowrap;
-    }
-    .btn:hover{transform: translateY(-1px); box-shadow: 0 12px 26px rgba(17,24,39,.08)}
-    .btn:active{transform: translateY(0px)}
-    .btn-ml{border-color:#d1d5db}
-    .btn-wa{background: var(--wa); border-color: transparent; color:#fff}
-    .btn-wa:hover{background: var(--wa-dark)}
-    .icon{width:18px; height:18px; display:inline-block}
-
-    /* Hero */
-    .hero{
-      margin-top:18px;
-      background: var(--surface);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding:28px;
-    }
-    .hero h1{
-      margin:0 0 10px 0;
-      font-size:34px;
-      letter-spacing:-.6px;
-    }
-    .hero p{
-      margin:0;
-      color: var(--muted);
-      font-size:16px;
-      line-height:1.6;
-      max-width: 78ch;
-    }
-
-    /* Search */
-    .search-wrap{
-      margin-top:18px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:stretch;
-    }
-    .search{
-      flex: 1 1 420px;
-      display:flex; align-items:center; gap:10px;
-      padding:14px 14px;
-      background: var(--surface);
-      border:1px solid var(--line);
-      border-radius: 14px;
-      box-shadow: 0 10px 24px rgba(17,24,39,.06);
-    }
-    .search input{
-      width:100%;
-      border:0;
-      outline:none;
-      font-size:16px;
-      background:transparent;
-      color: var(--text);
-    }
-    .hint{
-      margin-top:10px;
-      color: var(--muted);
-      font-size:13px;
-    }
-
-    /* Sections */
-    .section{
-      margin-top:22px;
-    }
-    .section-head{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:12px;
-    }
-    .section h2{
-      margin:0;
-      font-size:18px;
-      letter-spacing:-.2px;
-    }
-    .section .sub{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    /* Cards grid */
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:12px;
-    }
-    @media (max-width: 980px){
-      .grid{grid-template-columns: repeat(3, 1fr)}
-    }
-    @media (max-width: 720px){
-      .grid{grid-template-columns: repeat(2, 1fr)}
-      .hero h1{font-size:28px}
-    }
-    @media (max-width: 420px){
-      .grid{grid-template-columns: 1fr}
-    }
-
-    .card{
-      background: var(--surface);
-      border:1px solid var(--line);
-      border-radius: 16px;
-      overflow:hidden;
-      box-shadow: 0 10px 22px rgba(17,24,39,.06);
-      display:flex;
-      flex-direction:column;
-      min-height: 100%;
-    }
-    .cover{
-      width:100%;
-      aspect-ratio: 4/5;
-      background: linear-gradient(180deg, #f3f4f6, #ffffff);
+    header{
       display:flex;
       align-items:center;
-      justify-content:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:14px 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.76);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      position: sticky;
+      top: 14px;
+      z-index: 50;
     }
-    .cover img{
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 220px;
+    }
+
+    .logo{
+      width:44px;
+      height:44px;
+      border-radius: 12px;
+      background:#fff;
+      border: 1px solid var(--border);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+    }
+    .logo img{
       width:100%;
       height:100%;
       object-fit:cover;
       display:block;
     }
-    .card-body{
-      padding:12px 12px 14px 12px;
+
+    .brand h1{
+      font-size: 16px;
+      margin:0;
+      line-height:1.1;
+      letter-spacing:.2px;
+    }
+    .brand p{
+      margin:3px 0 0 0;
+      color:var(--muted);
+      font-size: 12.5px;
+    }
+
+    .actions{
       display:flex;
-      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:11px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 6px 14px rgba(15,23,42,.06);
+      font-weight: 700;
+      font-size: 14px;
+      cursor:pointer;
+      transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 22px rgba(15,23,42,.10); }
+    .btn:active{ transform: translateY(0); }
+
+    .btn-primary{
+      border-color: rgba(229,107,111,.28);
+      background: linear-gradient(180deg, rgba(229,107,111,.12), rgba(229,107,111,.06));
+    }
+    .btn-whatsapp{
+      border-color: rgba(44,176,111,.35);
+      background: linear-gradient(180deg, rgba(44,176,111,.14), rgba(44,176,111,.06));
+    }
+
+    .icon{
+      width:18px; height:18px; display:inline-block;
+    }
+
+    /* Hero */
+    .hero{
+      margin-top: 18px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .card{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-main{
+      padding: 26px 24px;
+    }
+    .kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(15,23,42,.72);
+      letter-spacing: .3px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.75);
+    }
+    .kdot{
+      width:8px;height:8px;border-radius:999px;background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(229,107,111,.12);
+    }
+
+    .hero-title{
+      margin: 14px 0 10px 0;
+      font-size: 34px;
+      line-height:1.12;
+      letter-spacing: -.5px;
+    }
+    .hero-sub{
+      margin: 0 0 18px 0;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 60ch;
+    }
+    .chips{
+      display:flex;
+      flex-wrap: wrap;
+      gap:10px;
+      margin: 10px 0 0 0;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
       gap:8px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background:#fff;
+      color: rgba(15,23,42,.80);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .chip .mini{
+      width:7px;height:7px;border-radius:999px;background: rgba(37,99,235,.85);
+      box-shadow: 0 0 0 6px rgba(37,99,235,.10);
+    }
+
+    .hero-side{
+      padding: 20px 20px;
+      display:flex;
+      flex-direction: column;
+      gap:12px;
+      justify-content:center;
+    }
+
+    .welcome{
+      font-size: 18px;
+      font-weight: 900;
+      margin: 0;
+      letter-spacing: -.2px;
+    }
+    .welcome-text{
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 14.5px;
+    }
+    .side-ctas{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 12px;
+    }
+    .note{
+      margin-top: 10px;
+      font-size: 12.5px;
+      color: rgba(71,85,105,.95);
+      border-left: 3px solid rgba(229,107,111,.55);
+      padding: 8px 10px;
+      background: rgba(229,107,111,.06);
+      border-radius: 10px;
+    }
+
+    /* Search */
+    .search{
+      margin-top: 16px;
+      padding: 18px 18px;
+    }
+
+    .searchbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .searchbar .inputWrap{
+      flex: 1 1 420px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 6px 14px rgba(15,23,42,.05);
+    }
+    .searchbar input{
+      border:0;
+      outline:0;
+      width:100%;
+      font-size: 15px;
+      background:transparent;
+    }
+    .searchbar .btn{
+      border-radius: 14px;
+      padding: 11px 14px;
+    }
+    .hint{
+      margin:10px 2px 0 2px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    /* Catalog */
+    .section{
+      margin-top: 18px;
+    }
+    .section h2{
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -.2px;
+    }
+    .section p{
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+
+    .grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 14px;
+    }
+
+    .item{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.92);
+      border-radius: 16px;
+      overflow:hidden;
+      box-shadow: 0 8px 16px rgba(15,23,42,.06);
+      transition: transform .10s ease, box-shadow .10s ease;
+      display:flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+    .item:hover{ transform: translateY(-2px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
+
+    .cover{
+      height: 210px;
+      background: #fff;
+      display:grid;
+      place-items:center;
+      border-bottom: 1px solid var(--border);
+    }
+    .cover img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px;
+      display:block;
+    }
+    .cover .noimg{
+      color: rgba(71,85,105,.85);
+      font-weight: 800;
+      font-size: 12px;
+      text-align:center;
+      padding: 16px;
+    }
+
+    .body{
+      padding: 12px 12px 12px 12px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1 1 auto;
     }
     .title{
-      font-weight:800;
-      font-size:14px;
-      line-height:1.35;
+      font-size: 13.5px;
+      font-weight: 900;
+      letter-spacing: -.1px;
       margin:0;
       display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow:hidden;
       min-height: 38px;
     }
     .meta{
+      display:flex;
+      gap:8px;
+      flex-wrap: wrap;
       color: var(--muted);
-      font-size:12px;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
+      font-size: 12.5px;
+      margin-top: -6px;
     }
-    .card-actions{
-      display:flex;
-      gap:8px;
-      margin-top:4px;
-      flex-wrap:wrap;
-    }
-    .mini{
-      padding:9px 10px;
-      font-size:13px;
-      box-shadow:none;
-    }
-    .mini.btn-wa{flex:1}
-    .mini.btn-ml{flex:1}
 
-    /* Results */
-    .results-info{
-      color:var(--muted);
-      font-size:13px;
-      margin: 8px 0 0 0;
-    }
-    .more-wrap{
-      margin-top:14px;
+    .ctaRow{
+      margin-top:auto;
       display:flex;
+      gap:8px;
+      flex-wrap: wrap;
+    }
+    .ctaRow a{
+      flex: 1 1 auto;
       justify-content:center;
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background:#fff;
+      font-weight: 900;
+      box-shadow: 0 6px 14px rgba(15,23,42,.05);
+    }
+    .ctaRow a.primary{
+      border-color: rgba(229,107,111,.28);
+      background: linear-gradient(180deg, rgba(229,107,111,.12), rgba(229,107,111,.06));
+    }
+    .ctaRow a.whats{
+      border-color: rgba(44,176,111,.35);
+      background: linear-gradient(180deg, rgba(44,176,111,.14), rgba(44,176,111,.06));
+    }
+
+    .statusRow{
+      margin-top: 12px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.75);
+      font-weight: 800;
     }
 
     /* Footer */
     footer{
-      margin:28px 0 8px 0;
-      color: var(--muted);
-      font-size:13px;
+      margin: 22px 0 10px 0;
+      color: rgba(71,85,105,.9);
       text-align:center;
+      font-size: 13px;
     }
 
-    /* Utility */
-    .hidden{display:none !important}
-    .toast{
-      margin-top:12px;
-      padding:12px 14px;
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius: 14px;
-      color: var(--muted);
+    /* Responsive */
+    @media (max-width: 980px){
+      .hero{ grid-template-columns: 1fr; }
+      header{ position: static; }
+      .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .hero-title{ font-size: 30px; }
+    }
+    @media (max-width: 520px){
+      .wrap{ padding: 16px; }
+      .brand{ min-width: unset; }
+      .brand p{ display:none; }
+      .grid{ grid-template-columns: 1fr; }
+      .cover{ height: 230px; }
+      .hero-title{ font-size: 28px; }
+      .btn{ width: 100%; justify-content:center; }
+      .actions{ width: 100%; }
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="topbar">
+  <div class="wrap">
+
+    <header>
       <div class="brand">
-        <img src="A%20Gato.jpeg" alt="Amado Libros" />
-        <div class="name">
-          <strong>Amado Libros</strong>
-          <span>Librería en línea · Uruguay</span>
+        <div class="logo" aria-label="Logo Amado Libros">
+          <!-- IMPORTANTE: el archivo debe estar en /public y la ruta debe ser /A%20Gato.jpeg -->
+          <img src="/A%20Gato.jpeg" alt="Amado Libros" />
+        </div>
+        <div>
+          <h1>Amado Libros</h1>
+          <p>Librería en línea · Uruguay</p>
         </div>
       </div>
 
-      <div class="top-actions">
-        <a class="btn btn-ml" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
+      <div class="actions">
+        <a class="btn btn-primary" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
           <span class="icon" aria-hidden="true">
-            <!-- simple icon -->
-            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 6.1 5.1 5 6.5 5h11C19.9 5 21 6.1 21 7.5v9C21 17.9 19.9 19 18.5 19h-11C5.1 19 4 17.9 4 16.5v-9Z" stroke="#111827" stroke-width="1.6"/><path d="M7 12h10" stroke="#111827" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <!-- Icono simple "tienda" -->
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 10l1-6h16l1 6"></path>
+              <path d="M5 10v10h14V10"></path>
+              <path d="M9 20v-6h6v6"></path>
+            </svg>
           </span>
           Tienda Mercado Libre
         </a>
 
-        <a class="btn btn-wa" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20vengo%20desde%20amadolibros.com%20y%20quiero%20hacer%20una%20consulta." target="_blank" rel="noopener">
+        <!-- WhatsApp: en desktop abre WhatsApp Web o la app si está instalada -->
+        <a class="btn btn-whatsapp" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20busco%20un%20libro%20y%20quiero%20consultar." target="_blank" rel="noopener">
           <span class="icon" aria-hidden="true">
-            <!-- WhatsApp icon -->
-            <svg viewBox="0 0 32 32" fill="currentColor">
-              <path d="M19.11 17.53c-.26-.13-1.52-.75-1.75-.84-.23-.09-.4-.13-.57.13-.17.26-.66.84-.81 1.01-.15.17-.3.2-.56.07-.26-.13-1.1-.41-2.1-1.3-.78-.7-1.31-1.56-1.46-1.82-.15-.26-.02-.4.11-.53.12-.12.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.46-.06-.13-.57-1.37-.78-1.88-.2-.48-.4-.42-.57-.43l-.49-.01c-.17 0-.44.06-.67.33-.23.26-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.78.6.26 1.07.42 1.44.54.6.19 1.15.16 1.58.1.48-.07 1.52-.62 1.73-1.22.21-.6.21-1.12.15-1.22-.06-.1-.23-.16-.49-.29Z"/>
-              <path d="M26.9 15.9c0 6.05-4.92 10.98-10.98 10.98-1.93 0-3.8-.5-5.45-1.45L5 27l1.6-5.17A10.9 10.9 0 0 1 4.92 15.9C4.92 9.85 9.85 4.92 15.9 4.92S26.9 9.85 26.9 15.9Zm-10.98-9.1c-5.02 0-9.1 4.08-9.1 9.1 0 1.63.44 3.22 1.28 4.6l.18.29-.93 3.02 3.11-.91.28.17a9.05 9.05 0 0 0 5.18 1.62c5.02 0 9.1-4.08 9.1-9.1s-4.08-9.1-9.1-9.1Z"/>
+            <!-- Icono oficial-ish WhatsApp (SVG) -->
+            <svg viewBox="0 0 32 32" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M19.11 17.53c-.26-.13-1.54-.76-1.78-.85-.24-.09-.41-.13-.58.13-.17.26-.67.85-.82 1.03-.15.17-.3.2-.56.07-.26-.13-1.09-.4-2.07-1.27-.77-.69-1.29-1.54-1.44-1.8-.15-.26-.02-.4.11-.53.11-.11.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.45-.06-.13-.58-1.39-.8-1.91-.21-.5-.43-.43-.58-.44l-.5-.01c-.17 0-.45.06-.69.33-.24.26-.9.88-.9 2.14 0 1.26.93 2.47 1.06 2.65.13.17 1.83 2.79 4.44 3.91.62.27 1.1.43 1.48.55.62.2 1.18.17 1.62.1.49-.07 1.54-.63 1.76-1.23.22-.61.22-1.13.15-1.23-.06-.11-.24-.17-.5-.3z"/>
+              <path d="M16.04 3C9.41 3 4.02 8.2 4.02 14.6c0 2.25.68 4.33 1.85 6.08L4 29l8.57-1.73c1.75.94 3.76 1.48 5.91 1.48 6.63 0 12.02-5.2 12.02-11.6C30.5 8.2 25.11 3 18.48 3h-2.44zm2.44 23.03c-2.02 0-3.89-.58-5.46-1.58l-.39-.24-5.09 1.02 1.06-4.8-.26-.39c-1.08-1.61-1.65-3.49-1.65-5.44 0-5.42 4.58-9.83 10.2-9.83h2.44c5.62 0 10.2 4.41 10.2 9.83s-4.58 9.83-10.2 9.83h-2.85z"/>
             </svg>
           </span>
           WhatsApp
         </a>
       </div>
-    </div>
+    </header>
 
     <section class="hero">
-      <h1>Bienvenido a Amado Libros</h1>
-      <p>
-        Somos una librería online. Traemos libros, música, antigüedades y objetos seleccionados del exterior.
-        Conseguimos libros por encargo, ediciones agotadas y piezas para coleccionistas.
-      </p>
+      <div class="card hero-main">
+        <div class="kicker"><span class="kdot"></span>Bienvenido a Amado Libros</div>
+        <h2 class="hero-title">Una librería online para encontrar lo difícil de conseguir.</h2>
+        <p class="hero-sub">
+          Nos encanta atenderte. Traemos libros, música, antigüedades y objetos seleccionados del exterior.
+          Conseguimos libros por encargo, ediciones agotadas y piezas para coleccionistas.
+        </p>
 
-      <div class="search-wrap">
-        <div class="search" role="search" aria-label="Buscar en catálogo">
+        <div class="chips" aria-label="Lo que hacemos">
+          <span class="chip"><span class="mini"></span>Libros importados</span>
+          <span class="chip"><span class="mini"></span>Pedidos especiales</span>
+          <span class="chip"><span class="mini"></span>Ediciones agotadas</span>
+          <span class="chip"><span class="mini"></span>Coleccionismo</span>
+        </div>
+      </div>
+
+      <aside class="card hero-side">
+        <p class="welcome">¿Buscás un título puntual?</p>
+        <p class="welcome-text">
+          Escribí <strong>título</strong>, <strong>autor</strong> o <strong>tema</strong> en el buscador.
+          Si no aparece, escribinos por WhatsApp y lo rastreamos por encargo.
+        </p>
+
+        <div class="side-ctas">
+          <a class="btn btn-primary" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
+            Ver tienda en Mercado Libre
+          </a>
+          <a class="btn btn-whatsapp" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20busco%20este%20t%C3%ADtulo%3A%20" target="_blank" rel="noopener">
+            Pedir por WhatsApp
+          </a>
+        </div>
+
+        <div class="note">
+          Tip: si te interesa un libro y querés confirmación rápida, mandanos el título o ISBN por WhatsApp.
+        </div>
+      </aside>
+    </section>
+
+    <section class="card search" aria-label="Buscador del catálogo">
+      <div class="searchbar">
+        <div class="inputWrap" role="search">
           <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="#6b7280" stroke-width="1.6"/><path d="M16.5 16.5 21 21" stroke="#6b7280" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M21 21l-4.2-4.2"></path>
+            </svg>
           </span>
-          <input id="q" type="search" placeholder="Buscar por título, autor o tema…" autocomplete="off" />
+          <input id="q" type="text" inputmode="search" autocomplete="off" placeholder="Buscar por título, autor o tema..." />
         </div>
-        <button class="btn btn-ml" id="clearBtn" type="button" title="Limpiar búsqueda">
-          Limpiar
-        </button>
-      </div>
-      <div class="hint" id="hint">
-        Tip: si no encontrás lo que buscás, escribinos por WhatsApp y lo rastreamos por encargo.
-      </div>
-      <div class="toast hidden" id="status"></div>
-    </section>
 
-    <section class="section" id="latestSection">
-      <div class="section-head">
-        <div>
-          <h2>Últimos libros incorporados</h2>
-          <p class="sub">Novedades recientes publicadas en Mercado Libre.</p>
-        </div>
+        <button class="btn" id="clearBtn" type="button" title="Limpiar búsqueda">Limpiar</button>
       </div>
-      <div class="grid" id="latestGrid"></div>
-    </section>
+      <div class="hint">
+        Mostramos una lista de los últimos incorporados y también podés buscar en el catálogo cargado en esta web.
+      </div>
 
-    <section class="section hidden" id="resultsSection">
-      <div class="section-head">
-        <div>
-          <h2>Resultados de búsqueda</h2>
-          <p class="sub" id="resultsSub">—</p>
-        </div>
-      </div>
-      <div class="grid" id="resultsGrid"></div>
-      <p class="results-info" id="resultsInfo"></p>
-      <div class="more-wrap">
-        <button class="btn btn-ml hidden" id="moreBtn" type="button">Cargar más</button>
+      <div class="statusRow">
+        <span class="pill" id="statusPill">Listo</span>
+        <span id="countText"></span>
       </div>
     </section>
 
     <section class="section">
-      <div class="hero" style="box-shadow:none;">
-        <h2 style="margin:0 0 8px 0;">¿No encontraste lo que buscabas?</h2>
-        <p style="margin:0; color:var(--muted); line-height:1.6;">
-          Conseguimos libros por encargo y ediciones difíciles de encontrar. Escribinos y te ayudamos.
-        </p>
-        <div style="margin-top:14px;">
-          <a class="btn btn-wa" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20no%20encontr%C3%A9%20un%20t%C3%ADtulo%20en%20amadolibros.com%20y%20quiero%20consultar." target="_blank" rel="noopener">
-            <span class="icon" aria-hidden="true">
-              <svg viewBox="0 0 32 32" fill="currentColor">
-                <path d="M19.11 17.53c-.26-.13-1.52-.75-1.75-.84-.23-.09-.4-.13-.57.13-.17.26-.66.84-.81 1.01-.15.17-.3.2-.56.07-.26-.13-1.1-.41-2.1-1.3-.78-.7-1.31-1.56-1.46-1.82-.15-.26-.02-.4.11-.53.12-.12.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.46-.06-.13-.57-1.37-.78-1.88-.2-.48-.4-.42-.57-.43l-.49-.01c-.17 0-.44.06-.67.33-.23.26-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.78.6.26 1.07.42 1.44.54.6.19 1.15.16 1.58.1.48-.07 1.52-.62 1.73-1.22.21-.6.21-1.12.15-1.22-.06-.1-.23-.16-.49-.29Z"/>
-                <path d="M26.9 15.9c0 6.05-4.92 10.98-10.98 10.98-1.93 0-3.8-.5-5.45-1.45L5 27l1.6-5.17A10.9 10.9 0 0 1 4.92 15.9C4.92 9.85 9.85 4.92 15.9 4.92S26.9 9.85 26.9 15.9Zm-10.98-9.1c-5.02 0-9.1 4.08-9.1 9.1 0 1.63.44 3.22 1.28 4.6l.18.29-.93 3.02 3.11-.91.28.17a9.05 9.05 0 0 0 5.18 1.62c5.02 0 9.1-4.08 9.1-9.1s-4.08-9.1-9.1-9.1Z"/>
-              </svg>
-            </span>
-            Escribinos por WhatsApp
-          </a>
-        </div>
-      </div>
+      <h2>Últimos libros incorporados</h2>
+      <p>Novedades recientes publicadas en Mercado Libre (según el catálogo cargado).</p>
+
+      <div class="grid" id="grid"></div>
     </section>
 
     <footer>© Amado Libros — Librería en línea</footer>
   </div>
 
   <script>
-    // ========= CONFIG =========
-    const WHATSAPP_PHONE = "59899841325";
-    const ML_FALLBACK_STORE = "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea";
+    // ====== CONFIG ======
+    const JSON_URL = "/catalogo_amado_libros.json"; // está en /public
+    const MAX_SHOW = 24;   // cuántos mostramos en home (rápido y lindo)
+    const MAX_SEARCH = 80; // máximo resultados cuando buscás (para no colgar el móvil)
 
-    // Intentamos primero catálogo liviano (si lo creamos luego).
-    const CATALOG_URLS = [
-      "./catalogo_liviano.json",
-      "./catalogo_amado_libros.json"
-    ];
+    // Links base
+    const MELI_TIENDA = "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea";
+    const WA_BASE = "https://wa.me/59899841325?text=";
 
-    // ========= STATE =========
-    let catalog = [];
-    let loaded = false;
-
-    // Results paging
-    let currentResults = [];
-    let shown = 0;
-    const PAGE_SIZE = 24;
-
-    // ========= HELPERS =========
-    function $(id){ return document.getElementById(id); }
-
-    function normalize(s){
-      return (s || "")
-        .toString()
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-    }
+    // ====== HELPERS ======
+    const $ = (id) => document.getElementById(id);
 
     function pick(obj, keys){
-      for(const k of keys){
-        if(obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ""){
-          return obj[k];
-        }
+      for (const k of keys){
+        if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
       }
       return "";
     }
 
-    function buildWhatsappLink(title){
-      const msg = `Hola Amado Libros, vengo desde amadolibros.com y quiero consultar por: ${title}`;
-      return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
+    function normText(s){
+      return (s ?? "").toString().toLowerCase().trim();
     }
 
-    function buildCard(item){
-      const title = pick(item, ["titulo","title","name","nombre","Titulo","Title"]) || "Producto";
-      const author = pick(item, ["autor","author","Autor","Author"]);
-      const img = pick(item, ["imagen","image","thumbnail","foto","cover","Imagen","Image"]);
-      const link = pick(item, ["url","link","permalink","ml_url","meli_url","ML","ml","href"]) || ML_FALLBACK_STORE;
+    function normalizeImageUrl(url){
+      if (!url) return "";
+      let u = String(url).trim();
+      // Arreglo clave: http -> https (evita bloqueo en sitios https)
+      if (u.startsWith("http://")) u = u.replace("http://", "https://");
+      // URLs tipo //cdn...
+      if (u.startsWith("//")) u = "https:" + u;
+      return u;
+    }
 
-      const el = document.createElement("div");
-      el.className = "card";
+    function whatsappLinkFor(title, extra){
+      const msg = `Hola Amado Libros, busco: ${title}${extra ? " — " + extra : ""}. ¿Me ayudás?`;
+      return WA_BASE + encodeURIComponent(msg);
+    }
+
+    function meliLinkFor(item){
+      // Si el JSON trae link directo de la publicación, lo usamos. Si no, mandamos a la tienda.
+      const url = pick(item, ["url","link","permalink","meli_url","publicacion","Publicacion","publication_url"]);
+      if (url) return url;
+      return MELI_TIENDA;
+    }
+
+    function guessDateValue(item){
+      // Si existe alguna fecha en tu JSON, la intentamos usar.
+      const d = pick(item, ["fecha_carga","created_at","createdAt","fecha","date","timestamp"]);
+      if (!d) return 0;
+      const t = Date.parse(d);
+      return Number.isFinite(t) ? t : 0;
+    }
+
+    function renderItem(item){
+      const title = (pick(item, ["titulo","title","name","nombre","Nombre","Titulo"]) || "Producto").toString().trim();
+      const author = (pick(item, ["autor","author","Autor"]) || "").toString().trim();
+      const imageRaw = pick(item, ["imagen","image","thumbnail","foto","cover","Imagen","Image","picture","img"]);
+      const image = normalizeImageUrl(imageRaw);
+      const meli = meliLinkFor(item);
+      const wa = whatsappLinkFor(title, author ? `Autor: ${author}` : "");
+
+      const el = document.createElement("article");
+      el.className = "item";
 
       const cover = document.createElement("div");
       cover.className = "cover";
-      if(img){
-        const im = document.createElement("img");
-        im.src = img;
+
+      if (image){
+        const im = new Image();
         im.alt = title;
         im.loading = "lazy";
+        im.decoding = "async";
+        im.referrerPolicy = "no-referrer";
+        im.src = image;
+        im.onerror = () => {
+          cover.innerHTML = `<div class="noimg">Sin imagen</div>`;
+        };
         cover.appendChild(im);
       } else {
-        cover.innerHTML = `<span style="color:#9ca3af; font-weight:700; font-size:12px;">Amado Libros</span>`;
+        cover.innerHTML = `<div class="noimg">Sin imagen</div>`;
       }
 
       const body = document.createElement("div");
-      body.className = "card-body";
+      body.className = "body";
 
       const h = document.createElement("p");
       h.className = "title";
@@ -446,175 +647,149 @@
 
       const meta = document.createElement("div");
       meta.className = "meta";
-      if(author) meta.textContent = author;
+      if (author) meta.textContent = author;
 
-      const actions = document.createElement("div");
-      actions.className = "card-actions";
+      const row = document.createElement("div");
+      row.className = "ctaRow";
 
-      const aML = document.createElement("a");
-      aML.className = "btn mini btn-ml";
-      aML.href = link;
-      aML.target = "_blank";
-      aML.rel = "noopener";
-      aML.textContent = "Comprar en Mercado Libre";
+      const a1 = document.createElement("a");
+      a1.className = "primary";
+      a1.href = meli;
+      a1.target = "_blank";
+      a1.rel = "noopener";
+      a1.textContent = "Comprar en Mercado Libre";
 
-      const aWA = document.createElement("a");
-      aWA.className = "btn mini btn-wa";
-      aWA.href = buildWhatsappLink(title);
-      aWA.target = "_blank";
-      aWA.rel = "noopener";
-      aWA.textContent = "WhatsApp";
+      const a2 = document.createElement("a");
+      a2.className = "whats";
+      a2.href = wa;
+      a2.target = "_blank";
+      a2.rel = "noopener";
+      a2.textContent = "WhatsApp";
 
-      actions.appendChild(aML);
-      actions.appendChild(aWA);
+      row.appendChild(a1);
+      row.appendChild(a2);
 
       body.appendChild(h);
-      if(author) body.appendChild(meta);
-      body.appendChild(actions);
+      if (author) body.appendChild(meta);
+      body.appendChild(row);
 
       el.appendChild(cover);
       el.appendChild(body);
+
       return el;
     }
 
-    function setStatus(msg){
-      const s = $("status");
-      if(!msg){
-        s.classList.add("hidden");
-        s.textContent = "";
-        return;
-      }
-      s.textContent = msg;
-      s.classList.remove("hidden");
+    function setStatus(text){
+      $("statusPill").textContent = text;
     }
 
-    // ========= LOAD CATALOG =========
-    async function loadCatalog(){
-      if(loaded) return true;
+    function setCount(text){
+      $("countText").textContent = text || "";
+    }
 
-      setStatus("Cargando catálogo…");
-      for(const url of CATALOG_URLS){
-        try{
-          const res = await fetch(url, { cache: "no-store" });
-          if(!res.ok) continue;
-          const data = await res.json();
+    // ====== APP ======
+    let ALL = [];
+    let DEFAULT_LIST = [];
 
-          // Permitimos ambos formatos:
-          // - array directo: [ ... ]
-          // - objeto con items: { items:[...], data:[...], results:[...] }
-          const arr = Array.isArray(data) ? data : (data.items || data.data || data.results || []);
-          if(!Array.isArray(arr) || arr.length === 0) continue;
+    function showList(list){
+      const grid = $("grid");
+      grid.innerHTML = "";
+      list.forEach(it => grid.appendChild(renderItem(it)));
+      setCount(list.length ? `${list.length} resultados` : "Sin resultados");
+    }
 
-          catalog = arr;
-          loaded = true;
-          setStatus("");
-          return true;
-        }catch(e){
-          // probar siguiente url
+    function buildDefaultList(items){
+      // Preferimos ordenar por fecha si existe; si no existe, dejamos el orden original
+      const withDate = items.map(it => ({ it, t: guessDateValue(it) }));
+      const hasAnyDate = withDate.some(x => x.t > 0);
+
+      let sorted;
+      if (hasAnyDate){
+        sorted = withDate.sort((a,b) => b.t - a.t).map(x => x.it);
+      } else {
+        sorted = items.slice(); // orden del JSON
+      }
+
+      return sorted.slice(0, MAX_SHOW);
+    }
+
+    function searchItems(q){
+      const query = normText(q);
+      if (!query){
+        showList(DEFAULT_LIST);
+        setStatus("Listo");
+        return;
+      }
+
+      setStatus("Buscando…");
+
+      const out = [];
+      for (const it of ALL){
+        const title = normText(pick(it, ["titulo","title","name","nombre","Nombre","Titulo"]));
+        const author = normText(pick(it, ["autor","author","Autor"]));
+        const topic  = normText(pick(it, ["tema","categoria","category","tags","keywords","Tematica","tematica"]));
+        const hay = (title + " " + author + " " + topic);
+        if (hay.includes(query)){
+          out.push(it);
+          if (out.length >= MAX_SEARCH) break;
         }
       }
 
-      setStatus("No pude cargar el catálogo. Verificá que el archivo JSON esté en /public.");
-      return false;
+      showList(out);
+      setStatus(out.length ? "Resultados" : "Sin resultados");
     }
 
-    // ========= HOME: latest =========
-    function renderLatest(){
-      const grid = $("latestGrid");
-      grid.innerHTML = "";
+    async function init(){
+      // Siempre arrancamos limpio (evita “apareció una búsqueda sola” por autocompletes raros)
+      $("q").value = "";
 
-      // Home: mostramos 12 “últimos” sin asumir formato de fecha.
-      // Si hay un campo de fecha, después lo ordenamos. Hoy: tomamos los primeros 12.
-      const latest = catalog.slice(0, 12);
-      latest.forEach(item => grid.appendChild(buildCard(item)));
-    }
+      setStatus("Cargando catálogo…");
+      setCount("");
 
-    // ========= SEARCH =========
-    function runSearch(query){
-      const q = normalize(query);
-      const latestSection = $("latestSection");
-      const resultsSection = $("resultsSection");
+      try{
+        const res = await fetch(JSON_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("No se pudo cargar el catálogo (HTTP " + res.status + ")");
 
-      if(!q){
-        // volver a home
-        resultsSection.classList.add("hidden");
-        latestSection.classList.remove("hidden");
-        $("resultsGrid").innerHTML = "";
-        $("resultsSub").textContent = "—";
-        $("resultsInfo").textContent = "";
-        $("moreBtn").classList.add("hidden");
-        shown = 0;
-        currentResults = [];
-        return;
-      }
+        const data = await res.json();
 
-      const tokens = q.split(/\s+/).filter(Boolean);
+        // Aceptamos JSON en dos formatos:
+        // - Array directo: [ ... ]
+        // - Objeto con "items": { items:[ ... ] }
+        const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
 
-      currentResults = catalog.filter(item => {
-        const title = normalize(pick(item, ["titulo","title","name","nombre","Titulo","Title"]));
-        const author = normalize(pick(item, ["autor","author","Autor","Author"]));
-        const desc = normalize(pick(item, ["descripcion","description","desc","Descripcion","Description"]));
-        const hay = `${title} ${author} ${desc}`;
-        return tokens.every(t => hay.includes(t));
-      });
+        ALL = items;
+        DEFAULT_LIST = buildDefaultList(items);
 
-      // Mostrar resultados
-      latestSection.classList.add("hidden");
-      resultsSection.classList.remove("hidden");
-
-      shown = 0;
-      $("resultsGrid").innerHTML = "";
-      $("resultsSub").textContent = `“${query}”`;
-      paintMore();
-    }
-
-    function paintMore(){
-      const grid = $("resultsGrid");
-      const moreBtn = $("moreBtn");
-      const info = $("resultsInfo");
-
-      const total = currentResults.length;
-      const next = currentResults.slice(shown, shown + PAGE_SIZE);
-      next.forEach(item => grid.appendChild(buildCard(item)));
-      shown += next.length;
-
-      info.textContent = total === 0
-        ? "No encontramos coincidencias. Probá con menos palabras o escribinos por WhatsApp."
-        : `Mostrando ${shown} de ${total}.`;
-
-      if(shown < total){
-        moreBtn.classList.remove("hidden");
-      } else {
-        moreBtn.classList.add("hidden");
+        showList(DEFAULT_LIST);
+        setStatus("Listo");
+      } catch (e){
+        console.error(e);
+        setStatus("Error");
+        $("grid").innerHTML = `<div class="card" style="padding:16px;border-radius:16px;">
+          <strong>No pude cargar el catálogo.</strong><br/>
+          Revisá que el archivo <code>catalogo_amado_libros.json</code> exista en <code>/public</code>.
+        </div>`;
       }
     }
 
-    // ========= INIT =========
-    (async function init(){
-      const ok = await loadCatalog();
-      if(ok){
-        renderLatest();
-      }
+    // Eventos UI
+    $("q").addEventListener("input", (e) => {
+      searchItems(e.target.value);
+    });
 
-      const q = $("q");
-      const clearBtn = $("clearBtn");
-      const moreBtn = $("moreBtn");
+    $("clearBtn").addEventListener("click", () => {
+      $("q").value = "";
+      showList(DEFAULT_LIST);
+      setStatus("Listo");
+    });
 
-      let t = null;
-      q.addEventListener("input", (e) => {
-        const val = e.target.value;
-        clearTimeout(t);
-        t = setTimeout(() => runSearch(val), 180);
-      });
+    // Logo fallback por si hay un tema de ruta (no debería, pero suma robustez)
+    document.querySelector(".logo img").addEventListener("error", (ev) => {
+      ev.target.onerror = null;
+      ev.target.src = "A%20Gato.jpeg"; // fallback relativo
+    });
 
-      clearBtn.addEventListener("click", () => {
-        q.value = "";
-        runSearch("");
-        q.focus();
-      });
-
-      moreBtn.addEventListener("click", paintMore);
-    })();
+    init();
   </script>
 </body>
 </html>
