@@ -3,264 +3,397 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Amado Libros</title>
-  <meta name="description" content="Amado Libros — Libros importados, pedidos especiales y atención por WhatsApp." />
-
+  <title>Amado Libros — Librería en línea</title>
+  <meta name="description" content="Amado Libros: libros importados, pedidos especiales, ediciones agotadas y piezas para coleccionistas. Comprá en Mercado Libre o consultá por WhatsApp." />
   <style>
     :root{
-      --bg:#0b0f14;
-      --card:rgba(255,255,255,0.06);
-      --stroke:rgba(255,255,255,0.12);
-      --text:rgba(255,255,255,0.92);
-      --muted:rgba(255,255,255,0.72);
-      --soft:rgba(255,255,255,0.10);
-      --shadow:0 26px 80px rgba(0,0,0,0.55);
-      --radius:22px;
-      --max:980px;
-      --btn:rgba(255,255,255,0.10);
-      --btnHover:rgba(255,255,255,0.16);
+      --bg:#f6f7f9;
+      --surface:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --shadow: 0 10px 30px rgba(17,24,39,.08);
+      --radius:18px;
+
+      --brand:#111827;
+      --ml:#111827;
+      --wa:#16a34a;
+      --wa-dark:#15803d;
+
+      --container: 1060px;
     }
+
     *{box-sizing:border-box}
-    html,body{height:100%}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      color:var(--text);
-      background:
-        radial-gradient(900px 600px at 15% 20%, rgba(255,255,255,0.08), transparent 60%),
-        radial-gradient(700px 500px at 85% 25%, rgba(255,255,255,0.06), transparent 55%),
-        radial-gradient(900px 700px at 50% 95%, rgba(255,255,255,0.05), transparent 60%),
-        var(--bg);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:28px 16px;
-    }
-    .wrap{width:100%;max-width:var(--max)}
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
-      border:1px solid var(--stroke);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      position:relative;
-    }
-    header{
-      padding:22px 22px 0 22px;
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-    .logo{
-      width:74px;height:74px;border-radius:18px;object-fit:cover;
-      border:1px solid var(--stroke);background:rgba(255,255,255,0.05);
-      flex:0 0 auto;
-    }
-    h1{margin:0;font-size:30px;line-height:1.1;letter-spacing:0.2px}
-    .subtitle{
-      margin-top:6px;font-size:14.5px;color:var(--muted);letter-spacing:0.2px
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
     }
 
-    .content{padding:12px 22px 20px 22px}
-    .welcome{
-      margin-top:10px;
-      color:var(--text);
+    a{color:inherit; text-decoration:none}
+    .container{max-width:var(--container); margin:0 auto; padding:24px 18px}
+
+    /* Header */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      background:transparent;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      padding:10px 0;
+    }
+    .brand img{
+      width:52px; height:52px; object-fit:contain;
+      border-radius:14px;
+      background:#fff;
+      box-shadow: 0 6px 18px rgba(17,24,39,.08);
+    }
+    .brand .name{
+      display:flex; flex-direction:column; line-height:1.1;
+    }
+    .brand .name strong{font-size:18px; letter-spacing:.2px}
+    .brand .name span{font-size:13px; color:var(--muted)}
+
+    .top-actions{display:flex; gap:10px; flex-wrap:wrap}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: var(--surface);
+      cursor:pointer;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(17,24,39,.05);
+      transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{transform: translateY(-1px); box-shadow: 0 12px 26px rgba(17,24,39,.08)}
+    .btn:active{transform: translateY(0px)}
+    .btn-ml{border-color:#d1d5db}
+    .btn-wa{background: var(--wa); border-color: transparent; color:#fff}
+    .btn-wa:hover{background: var(--wa-dark)}
+    .icon{width:18px; height:18px; display:inline-block}
+
+    /* Hero */
+    .hero{
+      margin-top:18px;
+      background: var(--surface);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:28px;
+    }
+    .hero h1{
+      margin:0 0 10px 0;
+      font-size:34px;
+      letter-spacing:-.6px;
+    }
+    .hero p{
+      margin:0;
+      color: var(--muted);
       font-size:16px;
       line-height:1.6;
-      max-width:78ch;
+      max-width: 78ch;
     }
-    .welcome strong{font-weight:800}
-    .actions{
-      margin-top:16px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-    }
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid var(--stroke);
-      background:var(--btn);
-      color:var(--text);
-      text-decoration:none;
-      font-weight:700;
-      letter-spacing:0.2px;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease;
-      min-width:220px;
-    }
-    .btn:hover{background:var(--btnHover);border-color:rgba(255,255,255,0.20);transform:translateY(-1px)}
-    .btn:active{transform:translateY(0)}
-    .icon{width:18px;height:18px;display:inline-block;flex:0 0 auto}
 
-    .searchBox{
+    /* Search */
+    .search-wrap{
       margin-top:18px;
       display:flex;
       gap:10px;
       flex-wrap:wrap;
-      align-items:center;
+      align-items:stretch;
     }
-    .searchBox input{
+    .search{
+      flex: 1 1 420px;
+      display:flex; align-items:center; gap:10px;
+      padding:14px 14px;
+      background: var(--surface);
+      border:1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 10px 24px rgba(17,24,39,.06);
+    }
+    .search input{
       width:100%;
-      max-width:640px;
-      padding:14px 16px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,0.16);
-      background: rgba(0,0,0,0.25);
-      color: var(--text);
+      border:0;
       outline:none;
       font-size:16px;
+      background:transparent;
+      color: var(--text);
     }
-    .helper{
+    .hint{
       margin-top:10px;
-      color:rgba(255,255,255,0.70);
-      font-size:13.5px;
-      line-height:1.5;
+      color: var(--muted);
+      font-size:13px;
     }
 
-    .results{
-      margin-top:16px;
-      display:grid;
-      gap:12px;
+    /* Sections */
+    .section{
+      margin-top:22px;
     }
-    .item{
+    .section-head{
       display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
       gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .section h2{
+      margin:0;
+      font-size:18px;
+      letter-spacing:-.2px;
+    }
+    .section .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    /* Cards grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: repeat(3, 1fr)}
+    }
+    @media (max-width: 720px){
+      .grid{grid-template-columns: repeat(2, 1fr)}
+      .hero h1{font-size:28px}
+    }
+    @media (max-width: 420px){
+      .grid{grid-template-columns: 1fr}
+    }
+
+    .card{
+      background: var(--surface);
+      border:1px solid var(--line);
+      border-radius: 16px;
+      overflow:hidden;
+      box-shadow: 0 10px 22px rgba(17,24,39,.06);
+      display:flex;
+      flex-direction:column;
+      min-height: 100%;
+    }
+    .cover{
+      width:100%;
+      aspect-ratio: 4/5;
+      background: linear-gradient(180deg, #f3f4f6, #ffffff);
+      display:flex;
       align-items:center;
-      padding:12px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
+      justify-content:center;
     }
-    .thumb{
-      width:66px;height:66px;border-radius:14px;object-fit:cover;
-      background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.10);
-      flex:0 0 auto;
+    .cover img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
     }
-    .meta{min-width:0;flex:1}
+    .card-body{
+      padding:12px 12px 14px 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
     .title{
       font-weight:800;
-      line-height:1.25;
-      margin-bottom:10px;
-      word-break: break-word;
+      font-size:14px;
+      line-height:1.35;
+      margin:0;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      min-height: 38px;
     }
-    .itemActions{
+    .meta{
+      color: var(--muted);
+      font-size:12px;
       display:flex;
-      gap:10px;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .card-actions{
+      display:flex;
+      gap:8px;
+      margin-top:4px;
       flex-wrap:wrap;
     }
     .mini{
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.08);
-      color: var(--text);
-      text-decoration:none;
-      font-weight:750;
-      font-size:14px;
+      padding:9px 10px;
+      font-size:13px;
+      box-shadow:none;
     }
-    .mini:hover{background: rgba(255,255,255,0.12)}
-    .empty{
-      padding:14px;
-      border-radius:16px;
-      border:1px dashed rgba(255,255,255,0.22);
-      color: rgba(255,255,255,0.78);
-      line-height:1.5;
-      background: rgba(255,255,255,0.03);
-    }
+    .mini.btn-wa{flex:1}
+    .mini.btn-ml{flex:1}
 
-    footer{
-      padding:14px 22px 18px 22px;
-      border-top:1px solid var(--soft);
+    /* Results */
+    .results-info{
       color:var(--muted);
       font-size:13px;
+      margin: 8px 0 0 0;
+    }
+    .more-wrap{
+      margin-top:14px;
       display:flex;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
+      justify-content:center;
     }
 
-    @media (max-width: 520px){
-      header{padding:18px 18px 0 18px}
-      .content{padding:10px 18px 18px 18px}
-      footer{padding:12px 18px 16px 18px}
-      .logo{width:62px;height:62px;border-radius:16px}
-      h1{font-size:27px}
-      .btn{width:100%;min-width:0}
-      .searchBox input{max-width:100%}
+    /* Footer */
+    footer{
+      margin:28px 0 8px 0;
+      color: var(--muted);
+      font-size:13px;
+      text-align:center;
+    }
+
+    /* Utility */
+    .hidden{display:none !important}
+    .toast{
+      margin-top:12px;
+      padding:12px 14px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      color: var(--muted);
     }
   </style>
 </head>
 
 <body>
-  <main class="wrap">
-    <section class="card" role="region" aria-label="Amado Libros">
-
-      <header>
-        <img class="logo" src="/public/A%20Gato.jpeg" alt="Logo Amado Libros" />
-        <div>
-          <h1>Amado Libros</h1>
-          <div class="subtitle">Catálogo curado · Libros importados · Pedidos especiales</div>
-        </div>
-      </header>
-
-      <div class="content">
-        <div class="welcome">
-          <strong>Bienvenido a Amado Libros.</strong> Nos encanta atenderte. Buscá por título, autor o tema.
-          Mostramos los últimos artículos publicados y, si no aparece, consultanos por WhatsApp y lo buscamos por vos.
-        </div>
-
-        <div class="actions">
-          <a class="btn" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="currentColor" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2Zm0 2C7.582 4 4 7.582 4 12s3.582 8 8 8 8-3.582 8-8-3.582-8-8-8Z"/>
-              <path fill="currentColor" d="M8.4 10.2c.4-1.4 1.7-2.2 3.6-2.2s3.2.8 3.6 2.2c.2.8 0 1.5-.6 2-.5.4-1.2.7-2.1.9l-.6.1c-.9.2-1.3.4-1.3.9v.2h-2v-.2c0-1.6 1.2-2.2 2.8-2.5l.6-.1c.6-.1 1-.3 1-.6 0-.3-.2-.5-.6-.7-.4-.2-.9-.3-1.5-.3s-1.1.1-1.5.3c-.4.2-.6.4-.6.7H8.2c0-.2 0-.5.2-.9Z"/>
-              <path fill="currentColor" d="M10 16h4v2h-4z"/>
-            </svg>
-            Tienda Mercado Libre
-          </a>
-
-          <a class="btn" href="https://wa.me/59899841325" target="_blank" rel="noopener">
-            <svg class="icon" viewBox="0 0 32 32" aria-hidden="true">
-              <path fill="currentColor" d="M19.11 17.2c-.28-.14-1.65-.81-1.91-.9-.25-.09-.44-.14-.62.14-.18.28-.71.9-.87 1.08-.16.18-.32.21-.6.07-.28-.14-1.18-.43-2.24-1.37-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.12-.12.28-.32.42-.48.14-.16.18-.28.28-.46.09-.18.05-.35-.02-.5-.07-.14-.62-1.5-.85-2.06-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.46.07-.71.35-.25.28-.93.9-.93 2.2 0 1.3.95 2.56 1.08 2.74.14.18 1.87 2.85 4.54 4 .64.28 1.14.45 1.53.58.64.2 1.22.17 1.68.1.51-.08 1.65-.67 1.88-1.32.23-.65.23-1.2.16-1.32-.07-.12-.25-.2-.53-.34Z"/>
-              <path fill="currentColor" d="M26.67 15.33c0 5.99-4.86 10.84-10.85 10.84-1.9 0-3.69-.49-5.25-1.35L5.33 26.67l1.9-5.05a10.78 10.78 0 0 1-1.9-6.29C5.33 9.34 10.19 4.5 16.18 4.5c5.99 0 10.49 4.84 10.49 10.83Zm-2.1 0c0-4.83-3.9-8.74-8.39-8.74-4.83 0-8.75 3.91-8.75 8.74 0 2.2.7 3.85 1.82 5.45l-1.1 3.07 3.2-1.02c1.5 1 3.29 1.58 5.83 1.58 4.49 0 8.39-3.91 8.39-8.74Z"/>
-            </svg>
-            WhatsApp
-          </a>
-        </div>
-
-        <div class="searchBox">
-          <input id="q" type="search" placeholder="Buscar libros, autor, ISBN, tema..." autocomplete="off" />
-        </div>
-
-        <div class="helper" id="helper">
-          Mostrando los últimos publicados. Si buscás algo y no aparece, escribinos por WhatsApp.
-        </div>
-
-        <div id="results" class="results"></div>
-
-        <div id="fallback" class="empty" style="display:none; margin-top:14px;">
-          No pude cargar el catálogo todavía. Probá de nuevo en un minuto o consultanos por WhatsApp.
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <img src="A%20Gato.jpeg" alt="Amado Libros" />
+        <div class="name">
+          <strong>Amado Libros</strong>
+          <span>Librería en línea · Uruguay</span>
         </div>
       </div>
 
-      <footer>
-        <div>© Amado Libros — Librería en línea</div>
-      </footer>
+      <div class="top-actions">
+        <a class="btn btn-ml" href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" target="_blank" rel="noopener">
+          <span class="icon" aria-hidden="true">
+            <!-- simple icon -->
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 6.1 5.1 5 6.5 5h11C19.9 5 21 6.1 21 7.5v9C21 17.9 19.9 19 18.5 19h-11C5.1 19 4 17.9 4 16.5v-9Z" stroke="#111827" stroke-width="1.6"/><path d="M7 12h10" stroke="#111827" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+          Tienda Mercado Libre
+        </a>
+
+        <a class="btn btn-wa" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20vengo%20desde%20amadolibros.com%20y%20quiero%20hacer%20una%20consulta." target="_blank" rel="noopener">
+          <span class="icon" aria-hidden="true">
+            <!-- WhatsApp icon -->
+            <svg viewBox="0 0 32 32" fill="currentColor">
+              <path d="M19.11 17.53c-.26-.13-1.52-.75-1.75-.84-.23-.09-.4-.13-.57.13-.17.26-.66.84-.81 1.01-.15.17-.3.2-.56.07-.26-.13-1.1-.41-2.1-1.3-.78-.7-1.31-1.56-1.46-1.82-.15-.26-.02-.4.11-.53.12-.12.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.46-.06-.13-.57-1.37-.78-1.88-.2-.48-.4-.42-.57-.43l-.49-.01c-.17 0-.44.06-.67.33-.23.26-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.78.6.26 1.07.42 1.44.54.6.19 1.15.16 1.58.1.48-.07 1.52-.62 1.73-1.22.21-.6.21-1.12.15-1.22-.06-.1-.23-.16-.49-.29Z"/>
+              <path d="M26.9 15.9c0 6.05-4.92 10.98-10.98 10.98-1.93 0-3.8-.5-5.45-1.45L5 27l1.6-5.17A10.9 10.9 0 0 1 4.92 15.9C4.92 9.85 9.85 4.92 15.9 4.92S26.9 9.85 26.9 15.9Zm-10.98-9.1c-5.02 0-9.1 4.08-9.1 9.1 0 1.63.44 3.22 1.28 4.6l.18.29-.93 3.02 3.11-.91.28.17a9.05 9.05 0 0 0 5.18 1.62c5.02 0 9.1-4.08 9.1-9.1s-4.08-9.1-9.1-9.1Z"/>
+            </svg>
+          </span>
+          WhatsApp
+        </a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h1>Bienvenido a Amado Libros</h1>
+      <p>
+        Somos una librería online. Traemos libros, música, antigüedades y objetos seleccionados del exterior.
+        Conseguimos libros por encargo, ediciones agotadas y piezas para coleccionistas.
+      </p>
+
+      <div class="search-wrap">
+        <div class="search" role="search" aria-label="Buscar en catálogo">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="#6b7280" stroke-width="1.6"/><path d="M16.5 16.5 21 21" stroke="#6b7280" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </span>
+          <input id="q" type="search" placeholder="Buscar por título, autor o tema…" autocomplete="off" />
+        </div>
+        <button class="btn btn-ml" id="clearBtn" type="button" title="Limpiar búsqueda">
+          Limpiar
+        </button>
+      </div>
+      <div class="hint" id="hint">
+        Tip: si no encontrás lo que buscás, escribinos por WhatsApp y lo rastreamos por encargo.
+      </div>
+      <div class="toast hidden" id="status"></div>
     </section>
-  </main>
+
+    <section class="section" id="latestSection">
+      <div class="section-head">
+        <div>
+          <h2>Últimos libros incorporados</h2>
+          <p class="sub">Novedades recientes publicadas en Mercado Libre.</p>
+        </div>
+      </div>
+      <div class="grid" id="latestGrid"></div>
+    </section>
+
+    <section class="section hidden" id="resultsSection">
+      <div class="section-head">
+        <div>
+          <h2>Resultados de búsqueda</h2>
+          <p class="sub" id="resultsSub">—</p>
+        </div>
+      </div>
+      <div class="grid" id="resultsGrid"></div>
+      <p class="results-info" id="resultsInfo"></p>
+      <div class="more-wrap">
+        <button class="btn btn-ml hidden" id="moreBtn" type="button">Cargar más</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="hero" style="box-shadow:none;">
+        <h2 style="margin:0 0 8px 0;">¿No encontraste lo que buscabas?</h2>
+        <p style="margin:0; color:var(--muted); line-height:1.6;">
+          Conseguimos libros por encargo y ediciones difíciles de encontrar. Escribinos y te ayudamos.
+        </p>
+        <div style="margin-top:14px;">
+          <a class="btn btn-wa" href="https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20no%20encontr%C3%A9%20un%20t%C3%ADtulo%20en%20amadolibros.com%20y%20quiero%20consultar." target="_blank" rel="noopener">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32" fill="currentColor">
+                <path d="M19.11 17.53c-.26-.13-1.52-.75-1.75-.84-.23-.09-.4-.13-.57.13-.17.26-.66.84-.81 1.01-.15.17-.3.2-.56.07-.26-.13-1.1-.41-2.1-1.3-.78-.7-1.31-1.56-1.46-1.82-.15-.26-.02-.4.11-.53.12-.12.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.46-.06-.13-.57-1.37-.78-1.88-.2-.48-.4-.42-.57-.43l-.49-.01c-.17 0-.44.06-.67.33-.23.26-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.78.6.26 1.07.42 1.44.54.6.19 1.15.16 1.58.1.48-.07 1.52-.62 1.73-1.22.21-.6.21-1.12.15-1.22-.06-.1-.23-.16-.49-.29Z"/>
+                <path d="M26.9 15.9c0 6.05-4.92 10.98-10.98 10.98-1.93 0-3.8-.5-5.45-1.45L5 27l1.6-5.17A10.9 10.9 0 0 1 4.92 15.9C4.92 9.85 9.85 4.92 15.9 4.92S26.9 9.85 26.9 15.9Zm-10.98-9.1c-5.02 0-9.1 4.08-9.1 9.1 0 1.63.44 3.22 1.28 4.6l.18.29-.93 3.02 3.11-.91.28.17a9.05 9.05 0 0 0 5.18 1.62c5.02 0 9.1-4.08 9.1-9.1s-4.08-9.1-9.1-9.1Z"/>
+              </svg>
+            </span>
+            Escribinos por WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer>© Amado Libros — Librería en línea</footer>
+  </div>
 
   <script>
-    const CATALOG_URL = "./catalogo_amado_libros.json";
-    const WHATSAPP_NUMBER = "59899841325";
+    // ========= CONFIG =========
+    const WHATSAPP_PHONE = "59899841325";
+    const ML_FALLBACK_STORE = "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea";
 
-    let CATALOG = [];
+    // Intentamos primero catálogo liviano (si lo creamos luego).
+    const CATALOG_URLS = [
+      "./catalogo_liviano.json",
+      "./catalogo_amado_libros.json"
+    ];
 
-    function normalize(s) {
+    // ========= STATE =========
+    let catalog = [];
+    let loaded = false;
+
+    // Results paging
+    let currentResults = [];
+    let shown = 0;
+    const PAGE_SIZE = 24;
+
+    // ========= HELPERS =========
+    function $(id){ return document.getElementById(id); }
+
+    function normalize(s){
       return (s || "")
         .toString()
         .toLowerCase()
@@ -269,90 +402,219 @@
         .trim();
     }
 
-    function waLink(title, permalink) {
-      const msg = `Hola! Estoy en amadolibros.com y me interesa: ${title}. ¿Me confirmás disponibilidad? ${permalink || ""}`.trim();
-      return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    function pick(obj, keys){
+      for(const k of keys){
+        if(obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ""){
+          return obj[k];
+        }
+      }
+      return "";
     }
 
-    function guessPermalink(item) {
-      // Si tu JSON ya trae permalink, mejor. Si no, intentamos usar lo que haya.
-      return item.permalink || item.link || item.url || "";
+    function buildWhatsappLink(title){
+      const msg = `Hola Amado Libros, vengo desde amadolibros.com y quiero consultar por: ${title}`;
+      return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
     }
 
-    function guessThumb(item) {
-      return item.thumbnail || item.picture || item.image || item.img || "";
+    function buildCard(item){
+      const title = pick(item, ["titulo","title","name","nombre","Titulo","Title"]) || "Producto";
+      const author = pick(item, ["autor","author","Autor","Author"]);
+      const img = pick(item, ["imagen","image","thumbnail","foto","cover","Imagen","Image"]);
+      const link = pick(item, ["url","link","permalink","ml_url","meli_url","ML","ml","href"]) || ML_FALLBACK_STORE;
+
+      const el = document.createElement("div");
+      el.className = "card";
+
+      const cover = document.createElement("div");
+      cover.className = "cover";
+      if(img){
+        const im = document.createElement("img");
+        im.src = img;
+        im.alt = title;
+        im.loading = "lazy";
+        cover.appendChild(im);
+      } else {
+        cover.innerHTML = `<span style="color:#9ca3af; font-weight:700; font-size:12px;">Amado Libros</span>`;
+      }
+
+      const body = document.createElement("div");
+      body.className = "card-body";
+
+      const h = document.createElement("p");
+      h.className = "title";
+      h.textContent = title;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      if(author) meta.textContent = author;
+
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+
+      const aML = document.createElement("a");
+      aML.className = "btn mini btn-ml";
+      aML.href = link;
+      aML.target = "_blank";
+      aML.rel = "noopener";
+      aML.textContent = "Comprar en Mercado Libre";
+
+      const aWA = document.createElement("a");
+      aWA.className = "btn mini btn-wa";
+      aWA.href = buildWhatsappLink(title);
+      aWA.target = "_blank";
+      aWA.rel = "noopener";
+      aWA.textContent = "WhatsApp";
+
+      actions.appendChild(aML);
+      actions.appendChild(aWA);
+
+      body.appendChild(h);
+      if(author) body.appendChild(meta);
+      body.appendChild(actions);
+
+      el.appendChild(cover);
+      el.appendChild(body);
+      return el;
     }
 
-    function guessTitle(item) {
-      return item.title || item.nombre || item.name || "";
+    function setStatus(msg){
+      const s = $("status");
+      if(!msg){
+        s.classList.add("hidden");
+        s.textContent = "";
+        return;
+      }
+      s.textContent = msg;
+      s.classList.remove("hidden");
     }
 
-    function render(items) {
-      const box = document.getElementById("results");
-      if (!box) return;
+    // ========= LOAD CATALOG =========
+    async function loadCatalog(){
+      if(loaded) return true;
 
-      if (!items.length) {
-        box.innerHTML = `<div class="empty">No encontré resultados. Si querés, consultanos por WhatsApp y lo buscamos por vos.</div>`;
+      setStatus("Cargando catálogo…");
+      for(const url of CATALOG_URLS){
+        try{
+          const res = await fetch(url, { cache: "no-store" });
+          if(!res.ok) continue;
+          const data = await res.json();
+
+          // Permitimos ambos formatos:
+          // - array directo: [ ... ]
+          // - objeto con items: { items:[...], data:[...], results:[...] }
+          const arr = Array.isArray(data) ? data : (data.items || data.data || data.results || []);
+          if(!Array.isArray(arr) || arr.length === 0) continue;
+
+          catalog = arr;
+          loaded = true;
+          setStatus("");
+          return true;
+        }catch(e){
+          // probar siguiente url
+        }
+      }
+
+      setStatus("No pude cargar el catálogo. Verificá que el archivo JSON esté en /public.");
+      return false;
+    }
+
+    // ========= HOME: latest =========
+    function renderLatest(){
+      const grid = $("latestGrid");
+      grid.innerHTML = "";
+
+      // Home: mostramos 12 “últimos” sin asumir formato de fecha.
+      // Si hay un campo de fecha, después lo ordenamos. Hoy: tomamos los primeros 12.
+      const latest = catalog.slice(0, 12);
+      latest.forEach(item => grid.appendChild(buildCard(item)));
+    }
+
+    // ========= SEARCH =========
+    function runSearch(query){
+      const q = normalize(query);
+      const latestSection = $("latestSection");
+      const resultsSection = $("resultsSection");
+
+      if(!q){
+        // volver a home
+        resultsSection.classList.add("hidden");
+        latestSection.classList.remove("hidden");
+        $("resultsGrid").innerHTML = "";
+        $("resultsSub").textContent = "—";
+        $("resultsInfo").textContent = "";
+        $("moreBtn").classList.add("hidden");
+        shown = 0;
+        currentResults = [];
         return;
       }
 
-      box.innerHTML = items.map(item => {
-        const title = guessTitle(item);
-        const permalink = guessPermalink(item);
-        const thumb = guessThumb(item);
+      const tokens = q.split(/\s+/).filter(Boolean);
 
-        return `
-          <article class="item">
-            <img class="thumb" src="${thumb}" alt="${title}">
-            <div class="meta">
-              <div class="title">${title}</div>
-              <div class="itemActions">
-                <a class="mini" href="${permalink}" target="_blank" rel="noopener">Comprar en Mercado Libre</a>
-                <a class="mini" href="${waLink(title, permalink)}" target="_blank" rel="noopener">WhatsApp</a>
-              </div>
-            </div>
-          </article>
-        `;
-      }).join("");
+      currentResults = catalog.filter(item => {
+        const title = normalize(pick(item, ["titulo","title","name","nombre","Titulo","Title"]));
+        const author = normalize(pick(item, ["autor","author","Autor","Author"]));
+        const desc = normalize(pick(item, ["descripcion","description","desc","Descripcion","Description"]));
+        const hay = `${title} ${author} ${desc}`;
+        return tokens.every(t => hay.includes(t));
+      });
+
+      // Mostrar resultados
+      latestSection.classList.add("hidden");
+      resultsSection.classList.remove("hidden");
+
+      shown = 0;
+      $("resultsGrid").innerHTML = "";
+      $("resultsSub").textContent = `“${query}”`;
+      paintMore();
     }
 
-    async function init() {
-      try {
-        const r = await fetch(CATALOG_URL, { cache: "no-store" });
-        if (!r.ok) throw new Error("No catalog");
-        const data = await r.json();
+    function paintMore(){
+      const grid = $("resultsGrid");
+      const moreBtn = $("moreBtn");
+      const info = $("resultsInfo");
 
-        // Acepta dos formatos:
-        // 1) { items: [...] }
-        // 2) [...] (array directo)
-        const items = Array.isArray(data) ? data : (data.items || data.results || []);
-        CATALOG = items.map(x => ({
-          ...x,
-          _k: normalize(`${guessTitle(x)} ${x.id || ""} ${x.isbn || ""}`)
-        }));
+      const total = currentResults.length;
+      const next = currentResults.slice(shown, shown + PAGE_SIZE);
+      next.forEach(item => grid.appendChild(buildCard(item)));
+      shown += next.length;
 
-        // Mostrar “últimos” por defecto (primeros 12)
-        render(CATALOG.slice(0, 12));
+      info.textContent = total === 0
+        ? "No encontramos coincidencias. Probá con menos palabras o escribinos por WhatsApp."
+        : `Mostrando ${shown} de ${total}.`;
 
-        const input = document.getElementById("q");
-        input.addEventListener("input", () => {
-          const q = normalize(input.value);
-          if (!q) {
-            render(CATALOG.slice(0, 12));
-            return;
-          }
-          const out = CATALOG
-            .filter(x => x._k.includes(q))
-            .slice(0, 24);
-          render(out);
-        });
-
-      } catch (e) {
-        document.getElementById("fallback").style.display = "block";
+      if(shown < total){
+        moreBtn.classList.remove("hidden");
+      } else {
+        moreBtn.classList.add("hidden");
       }
     }
 
-    init();
+    // ========= INIT =========
+    (async function init(){
+      const ok = await loadCatalog();
+      if(ok){
+        renderLatest();
+      }
+
+      const q = $("q");
+      const clearBtn = $("clearBtn");
+      const moreBtn = $("moreBtn");
+
+      let t = null;
+      q.addEventListener("input", (e) => {
+        const val = e.target.value;
+        clearTimeout(t);
+        t = setTimeout(() => runSearch(val), 180);
+      });
+
+      clearBtn.addEventListener("click", () => {
+        q.value = "";
+        runSearch("");
+        q.focus();
+      });
+
+      moreBtn.addEventListener("click", paintMore);
+    })();
   </script>
 </body>
 </html>
