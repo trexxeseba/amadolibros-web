@@ -93,28 +93,7 @@
             font-weight: 500;
         }
 
-        /* MEDALLA MERCADO LIBRE OFICIAL */
-        .ml-badge {
-            background: var(--gradient-meli);
-            color: #000;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 800;
-            font-size: 14px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 2px solid #FFE600;
-            box-shadow: 0 4px 12px rgba(255, 230, 0, 0.3);
-            transition: all 0.3s;
-        }
-        .ml-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 230, 0, 0.4);
-        }
-
-        /* ===== HERO SECTION (DISEÑO MEJORADO) ===== */
+        /* ===== HERO SECTION ===== */
         .hero {
             background: var(--gradient-orange);
             color: white;
@@ -186,15 +165,6 @@
             position: relative;
             overflow: hidden;
         }
-        .quote-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-        }
         .quote-title {
             font-size: 2.5rem;
             font-weight: 800;
@@ -224,14 +194,192 @@
             backdrop-filter: blur(5px);
         }
 
-        /* ===== DESTACADOS (ENVÍOS COORDINADOS) ===== */
-        .highlight-card:nth-child(1) .highlight-desc {
+        /* ===== DESTACADOS ===== */
+        .highlights {
+            padding: 80px 20px;
+            background: var(--light);
+        }
+        .section-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 50px;
+            color: var(--dark);
+            position: relative;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--primary);
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+        .highlight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .highlight-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 35px 25px;
+            text-align: center;
+            transition: all 0.4s;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .highlight-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+        .highlight-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .highlight-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+        .highlight-desc {
             color: var(--text-light);
-            font-size: 0.95rem;
-            line-height: 1.5;
+            font-size: 15px;
+            line-height: 1.6;
         }
 
-        /* ===== PRECIOS MODIFICADOS (SIN TACHAR) ===== */
+        /* ===== BARRA DE BÚSQUEDA GRANDE ===== */
+        .search-section-large {
+            margin: 40px auto 50px;
+            max-width: 900px;
+        }
+        .search-container-large {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--primary);
+        }
+        .search-wrapper-large {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .search-input-large {
+            flex: 1;
+            padding: 20px 25px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 18px;
+            transition: all 0.3s;
+            background: var(--light);
+        }
+        .search-input-large:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+            background: white;
+        }
+        .search-btn-large {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 35px;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .search-btn-large:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        .search-hints {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .search-hint-item {
+            background: var(--light);
+            color: var(--text-light);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* ===== CATALOGO CON PRECIOS MODIFICADOS ===== */
+        .catalog {
+            padding: 80px 20px;
+            background: var(--card);
+        }
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .book-card {
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        }
+        .book-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 2;
+        }
+        .book-image {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
+        }
+        .book-content {
+            padding: 20px;
+        }
+        .book-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--dark);
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .book-author {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        /* PRECIOS SIN TACHAR - NUEVO DISEÑO */
         .book-pricing {
             margin-bottom: 15px;
         }
@@ -260,6 +408,238 @@
             font-weight: 700;
             margin-left: 10px;
             vertical-align: middle;
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .book-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .book-btn-whatsapp {
+            background: #25D366;
+            color: white;
+        }
+        .book-btn-whatsapp:hover {
+            background: #128C7E;
+        }
+        .book-btn-ml {
+            background: #FFE600;
+            color: #000;
+        }
+        .book-btn-ml:hover {
+            background: #FFD700;
+        }
+
+        /* ===== CÓMO FUNCIONA ===== */
+        .how-it-works {
+            padding: 80px 20px;
+            background: var(--gradient-dark);
+            color: white;
+        }
+        .how-it-works .section-title {
+            color: white;
+        }
+        .how-it-works .section-title::after {
+            background: var(--accent);
+        }
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .step-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        .step-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+        .step-number {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .step-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .step-desc {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* ===== PICKUP SECTION ===== */
+        .pickup {
+            padding: 80px 20px;
+            background: var(--light);
+        }
+        .pickup-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .pickup-info h3 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        .pickup-info p {
+            font-size: 18px;
+            color: var(--text-light);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .pickup-features {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .pickup-feature {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .pickup-feature-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .pickup-feature-text {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .pickup-map {
+            background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
+            border-radius: 16px;
+            overflow: hidden;
+            height: 400px;
+            position: relative;
+        }
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--card);
+            color: var(--text-light);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .map-placeholder-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 60px 20px 30px;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .footer-column h4 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: white;
+        }
+        .footer-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .footer-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .footer-link:hover {
+            color: var(--primary);
+        }
+
+        /* FOOTER LINK MERCADO LIBRE DISCRETO */
+        .footer-link-ml {
+            background: rgba(255, 230, 0, 0.1);
+            border: 1px solid rgba(255, 230, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #FFE600 !important;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .footer-link-ml:hover {
+            background: rgba(255, 230, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .footer-contact {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .footer-bottom {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
         }
 
         /* ===== BOTONES ===== */
@@ -307,6 +687,10 @@
             transform: translateY(-3px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
         }
+        .btn-lg {
+            padding: 18px 40px;
+            font-size: 18px;
+        }
 
         /* ===== ANIMACIONES ===== */
         @keyframes float {
@@ -335,104 +719,90 @@
             .hero-title-small {
                 font-size: 1.5rem;
             }
-            .ml-badge {
-                font-size: 12px;
-                padding: 6px 12px;
+            .nav-links {
+                display: none;
             }
-            .quote-title {
-                font-size: 1.8rem;
+            .mobile-menu-btn {
+                display: block;
             }
-            .quote-items {
+            .hero-cta {
                 flex-direction: column;
-                align-items: center;
+            }
+            .pickup-content {
+                grid-template-columns: 1fr;
+            }
+            .search-wrapper-large {
+                flex-direction: column;
+            }
+            .search-btn-large {
+                width: 100%;
+                padding: 20px;
+            }
+            .books-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
         }
 
-        /* ===== (MANTENGO EL RESTO DEL CSS ANTERIOR PERO MODIFICO LO NECESARIO) ===== */
-        /* Mantengo todo el CSS anterior, solo muestro las modificaciones */
-        .nav-links { display: flex; gap: 25px; align-items: center; }
-        .nav-link { color: var(--text-dark); text-decoration: none; font-weight: 600; font-size: 15px; transition: color 0.3s; display: flex; align-items: center; gap: 5px; }
-        .nav-link:hover { color: var(--primary); }
-        .whatsapp-header { background: #25D366; color: white !important; padding: 8px 16px; border-radius: 8px; font-weight: 700; }
-        .whatsapp-header:hover { background: #128C7E; transform: translateY(-2px); }
-        .hero-cta { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
-        .highlights { padding: 80px 20px; background: var(--light); }
-        .section-title { text-align: center; font-size: 36px; font-weight: 800; margin-bottom: 50px; color: var(--dark); position: relative; }
-        .section-title::after { content: ''; display: block; width: 60px; height: 4px; background: var(--primary); margin: 15px auto; border-radius: 2px; }
-        .highlight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; max-width: 1100px; margin: 0 auto; }
-        .highlight-card { background: var(--card); border-radius: 16px; padding: 35px 25px; text-align: center; transition: all 0.4s; border: 1px solid var(--border); position: relative; overflow: hidden; }
-        .highlight-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border-color: var(--primary); }
-        .highlight-icon { font-size: 48px; margin-bottom: 20px; display: block; }
-        .highlight-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; color: var(--dark); }
-        .highlight-desc { color: var(--text-light); font-size: 15px; line-height: 1.6; }
-        .catalog { padding: 80px 20px; background: var(--card); }
-        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; margin-top: 40px; }
-        .book-card { background: var(--card); border-radius: 16px; overflow: hidden; transition: all 0.3s; border: 1px solid var(--border); position: relative; }
-        .book-card:hover { transform: translateY(-8px); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1); }
-        .book-badge { position: absolute; top: 15px; left: 15px; background: var(--primary); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 2; }
-        .book-image { width: 100%; height: 280px; object-fit: cover; background: linear-gradient(45deg, #f5f5f5, #e0e0e0); }
-        .book-content { padding: 20px; }
-        .book-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--dark); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .book-author { color: var(--text-light); font-size: 14px; margin-bottom: 15px; }
-        .book-actions { display: flex; gap: 10px; }
-        .book-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center; text-decoration: none; transition: all 0.3s; }
-        .book-btn-whatsapp { background: #25D366; color: white; }
-        .book-btn-whatsapp:hover { background: #128C7E; }
-        .book-btn-ml { background: #FFE600; color: #000; }
-        .book-btn-ml:hover { background: #FFD700; }
-        .how-it-works { padding: 80px 20px; background: var(--gradient-dark); color: white; }
-        .how-it-works .section-title { color: white; }
-        .how-it-works .section-title::after { background: var(--accent); }
-        .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; max-width: 1100px; margin: 0 auto; }
-        .step-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border-radius: 16px; padding: 30px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s; }
-        .step-card:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-5px); }
-        .step-number { display: inline-block; width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-left: auto; margin-right: auto; }
-        .step-title { font-size: 22px; font-weight: 700; margin-bottom: 15px; }
-        .step-desc { color: rgba(255, 255, 255, 0.8); line-height: 1.6; }
-        .pickup { padding: 80px 20px; background: var(--light); }
-        .pickup-content { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; max-width: 1100px; margin: 0 auto; }
-        .pickup-info h3 { font-size: 32px; font-weight: 800; margin-bottom: 20px; color: var(--dark); }
-        .pickup-info p { font-size: 18px; color: var(--text-light); margin-bottom: 30px; line-height: 1.6; }
-        .pickup-features { display: flex; flex-direction: column; gap: 15px; }
-        .pickup-feature { display: flex; align-items: center; gap: 15px; }
-        .pickup-feature-icon { width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .pickup-feature-text { font-size: 16px; font-weight: 600; }
-        .pickup-map { background: linear-gradient(45deg, #f5f5f5, #e0e0e0); border-radius: 16px; overflow: hidden; height: 400px; position: relative; }
-        .map-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--card); color: var(--text-light); font-size: 18px; font-weight: 600; }
-        .map-placeholder-icon { font-size: 60px; margin-bottom: 20px; color: var(--primary); }
-        .payment { padding: 80px 20px; background: var(--card); }
-        .payment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1100px; margin: 0 auto; }
-        .payment-card { background: var(--light); border-radius: 16px; padding: 30px; text-align: center; border: 2px solid transparent; transition: all 0.3s; }
-        .payment-card.featured { border-color: var(--primary); transform: scale(1.05); }
-        .payment-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1); }
-        .payment-icon { font-size: 48px; margin-bottom: 20px; display: block; }
-        .payment-title { font-size: 24px; font-weight: 800; margin-bottom: 15px; color: var(--dark); }
-        .payment-desc { color: var(--text-light); margin-bottom: 20px; line-height: 1.6; }
-        .payment-discount { background: var(--success); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 14px; display: inline-block; margin-bottom: 20px; }
-        .footer { background: var(--dark); color: white; padding: 60px 20px 30px; }
-        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto; }
-        .footer-column h4 { font-size: 20px; font-weight: 700; margin-bottom: 25px; color: white; }
-        .footer-links { display: flex; flex-direction: column; gap: 12px; }
-        .footer-link { color: rgba(255, 255, 255, 0.8); text-decoration: none; transition: color 0.3s; display: flex; align-items: center; gap: 10px; }
-        .footer-link:hover { color: var(--primary); }
-        .footer-contact { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 25px; margin-top: 30px; }
-        .footer-bottom { text-align: center; margin-top: 50px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); font-size: 14px; }
-        .mobile-menu-btn { display: none; background: none; border: none; font-size: 24px; color: var(--text-dark); cursor: pointer; }
-        
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            .section-title {
+                font-size: 28px;
+            }
+            .highlight-grid {
+                grid-template-columns: 1fr;
+            }
+            .books-grid {
+                grid-template-columns: 1fr;
+            }
+            .book-actions {
+                flex-direction: column;
+            }
+            .btn-lg {
+                padding: 15px 25px;
+                font-size: 16px;
+            }
+            .search-hints {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+        }
+
+        /* ===== MOBILE MENU ===== */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
+
         @media (max-width: 768px) {
-            .mobile-menu-btn { display: block; }
-            .nav-links.active { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: var(--card); padding: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border-top: 2px solid var(--primary); z-index: 1000; }
-            .pickup-content { grid-template-columns: 1fr; }
-            .catalog-header { flex-direction: column; align-items: stretch; }
-            .search-box { max-width: 100%; }
-            .books-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-            .payment-grid { grid-template-columns: 1fr; }
-            .payment-card.featured { transform: none; }
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .nav-links.active {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--card);
+                padding: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                border-top: 2px solid var(--primary);
+                z-index: 1000;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- HEADER CON MEDALLA ML -->
+    <!-- HEADER -->
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -444,14 +814,9 @@
                     </div>
                 </a>
                 
-                <!-- MEDALLA MERCADO LIBRE OFICIAL -->
-                <a href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" 
-                   target="_blank" 
-                   class="ml-badge">
-                    🏆 Tienda Oficial Mercado Libre
-                </a>
-                
-                <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    ☰
+                </button>
                 
                 <nav class="nav-links" id="navLinks">
                     <a href="#catalogo" class="nav-link">📖 Catálogo</a>
@@ -469,7 +834,7 @@
         </div>
     </header>
 
-    <!-- HERO SECTION (REDISEÑADO) -->
+    <!-- HERO SECTION -->
     <section class="hero">
         <div class="container">
             <div class="hero-content animate-fade-in-up">
@@ -491,9 +856,7 @@
                     <a href="#catalogo" class="btn btn-primary btn-lg">
                         🔍 Buscar libros
                     </a>
-                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSd0NR0WMNJ3nMjZLVC-tIu8PeQOVNpyPyCyN-FSlywJfa5jiQ/viewform?usp=sharing"
-                       target="_blank" 
-                       class="btn btn-quote">
+                    <a href="#cotizaciones" class="btn btn-quote">
                         ✨ Cotizar libro especial
                     </a>
                 </div>
@@ -518,7 +881,7 @@
                 <span class="quote-item">🎨 Ediciones antiguas</span>
             </div>
             
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd0NR0WMNJ3nMjZLVC-tIu8PeQOVNpyPyCyN-FSlywJfa5jiQ/viewform?usp=sharing"
+            <a href="https://wa.me/59899841325?text=Hola!%20Quisiera%20cotizar%20un%20artículo%20especial.%20Por%20favor%20contactame%20por:" 
                target="_blank" 
                class="btn btn-quote">
                 ✏️ Escribinos para cotizar
@@ -530,7 +893,7 @@
         </div>
     </section>
 
-    <!-- DESTACADOS (MODIFICADO "ENVÍOS COORDINADOS") -->
+    <!-- DESTACADOS -->
     <section class="highlights">
         <div class="container">
             <h2 class="section-title">¿Por qué comprar en Amado Libros?</h2>
@@ -575,27 +938,49 @@
         </div>
     </section>
 
-    <!-- CATALOGO CON PRECIOS MODIFICADOS -->
+    <!-- CATÁLOGO CON BARRA DE BÚSQUEDA GRANDE -->
     <section class="catalog" id="catalogo">
         <div class="container">
             <div class="catalog-header">
-                <div>
-                    <h2 class="section-title">Catálogo Destacado</h2>
-                    <p class="catalog-subtitle">
-                        Los libros más buscados esta semana. ¿No encontrás lo que buscás? 
-                        Escribinos por WhatsApp y lo conseguimos.
-                    </p>
+                <h2 class="section-title">Catálogo Destacado</h2>
+                <p class="catalog-subtitle">
+                    Los libros más buscados esta semana. ¿No encontrás lo que buscás? 
+                    Escribinos por WhatsApp y lo conseguimos.
+                </p>
+            </div>
+            
+            <!-- BARRA DE BÚSQUEDA GRANDE -->
+            <div class="search-section-large">
+                <div class="search-container-large">
+                    <div class="search-wrapper-large">
+                        <input type="text" 
+                               class="search-input-large" 
+                               id="searchInputLarge"
+                               placeholder="🔍 Buscar por título, autor, ISBN, temática, editorial, año..."
+                               autocomplete="off">
+                        <button class="search-btn-large" id="searchBtnLarge">
+                            Buscar
+                        </button>
+                    </div>
+                    <div class="search-hints">
+                        <span class="search-hint-item">Ej: "Gabriel García Márquez"</span>
+                        <span class="search-hint-item">"Ficción contemporánea"</span>
+                        <span class="search-hint-item">"978-950-04-1234-5"</span>
+                        <span class="search-hint-item">"Autoayuda"</span>
+                        <span class="search-hint-item">"Editorial Planeta"</span>
+                    </div>
                 </div>
             </div>
             
+            <!-- Grid de libros -->
             <div class="books-grid" id="booksGrid">
-                <!-- Libros se cargarán dinámicamente -->
+                <!-- Los libros se cargarán aquí dinámicamente -->
                 <div class="loading-message">Cargando catálogo...</div>
             </div>
         </div>
     </section>
 
-    <!-- CÓMO FUNCIONA (SERVICIO CENTRADO EN CLIENTE) -->
+    <!-- CÓMO FUNCIONA -->
     <section class="how-it-works" id="como-funciona">
         <div class="container">
             <h2 class="section-title">Servicio 100% centrado en vos</h2>
@@ -687,7 +1072,7 @@
         </div>
     </section>
 
-    <!-- FOOTER (SIN HORARIOS) -->
+    <!-- FOOTER -->
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
@@ -720,16 +1105,23 @@
                 <div class="footer-column">
                     <h4>Tiendas oficiales</h4>
                     <div class="footer-links">
-                        <a href="https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea" 
-                           target="_blank" class="footer-link" style="color: #FFE600;">
-                            🛒 Mercado Libre (Tienda Oficial)
+                        <a href="https://listado.mercadolibre.com.uy/amado-libros" 
+                           target="_blank" 
+                           class="footer-link footer-link-ml">
+                            🏆 Tienda Oficial Mercado Libre
                         </a>
                         <a href="https://www.instagram.com/amadolibros" 
-                           target="_blank" class="footer-link" style="color: #E4405F;">
+                           target="_blank" 
+                           class="footer-link">
                             📸 Instagram
                         </a>
+                        <a href="https://www.facebook.com/amadolibros" 
+                           target="_blank" 
+                           class="footer-link">
+                            👍 Facebook
+                        </a>
                         <span class="footer-link">
-                            🏆 Vendedor certificado Mercado Libre
+                            ✅ Vendedor certificado
                         </span>
                     </div>
                 </div>
@@ -762,7 +1154,6 @@
 
     <script>
         // ===== DATOS DE LIBROS (PRECIOS SIN TACHAR) =====
-        // Estos datos serán reemplazados por la sincronización con MELI
         const sampleBooks = [
             {
                 id: 1,
@@ -773,7 +1164,7 @@
                 installments: 74.17, // 12 cuotas
                 image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
                 available: true,
-                meliLink: "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea",
+                meliLink: "https://articulo.mercadolibre.com.uy/MLU-123456789",
                 category: "Literatura Clásica"
             },
             {
@@ -785,7 +1176,7 @@
                 installments: 62.50,
                 image: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
                 available: true,
-                meliLink: "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea",
+                meliLink: "https://articulo.mercadolibre.com.uy/MLU-987654321",
                 category: "Realismo Mágico"
             },
             {
@@ -797,7 +1188,7 @@
                 installments: 79.17,
                 image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
                 available: true,
-                meliLink: "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea",
+                meliLink: "https://articulo.mercadolibre.com.uy/MLU-456789123",
                 category: "Fantasía"
             },
             {
@@ -809,16 +1200,54 @@
                 installments: 57.50,
                 image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
                 available: true,
-                meliLink: "https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea",
+                meliLink: "https://articulo.mercadolibre.com.uy/MLU-789123456",
                 category: "Ficción Inspiracional"
+            },
+            {
+                id: 5,
+                title: "1984 - George Orwell",
+                author: "George Orwell",
+                price: 820,
+                discountPrice: 722,
+                installments: 68.33,
+                image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+                available: true,
+                meliLink: "https://articulo.mercadolibre.com.uy/MLU-321654987",
+                category: "Distopía"
+            },
+            {
+                id: 6,
+                title: "Orgullo y Prejuicio",
+                author: "Jane Austen",
+                price: 720,
+                discountPrice: 634,
+                installments: 60.00,
+                image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+                available: true,
+                meliLink: "https://articulo.mercadolibre.com.uy/MLU-654987321",
+                category: "Romance Clásico"
             }
         ];
 
+        // Variable para mantener los libros actuales
+        let currentBooks = [...sampleBooks];
+
         // ===== FUNCIONES PRINCIPALES =====
         document.addEventListener('DOMContentLoaded', function() {
-            renderBooks(sampleBooks);
+            // Renderizar libros iniciales
+            renderBooks(currentBooks);
+            
+            // Configurar búsqueda
+            setupSearch();
+            
+            // Configurar menú móvil
             setupMobileMenu();
+            
+            // Configurar animaciones scroll
             setupScrollAnimations();
+            
+            // Configurar botones de cotización
+            setupQuoteButtons();
         });
 
         function renderBooks(books) {
@@ -828,15 +1257,17 @@
             
             if (books.length === 0) {
                 booksGrid.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">📚</div>
-                        <h3 style="color: var(--text-dark); margin-bottom: 10px;">No encontramos libros</h3>
-                        <p style="color: var(--text-light); margin-bottom: 20px;">
-                            Probá con otros términos o escribinos por WhatsApp
+                    <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🔍</div>
+                        <h3 style="color: var(--text-dark); margin-bottom: 15px; font-size: 24px;">
+                            No encontramos libros
+                        </h3>
+                        <p style="color: var(--text-light); margin-bottom: 25px; max-width: 500px; margin: 0 auto 25px;">
+                            Probá con otros términos o escribinos por WhatsApp para que te ayudemos a encontrarlo.
                         </p>
                         <a href="https://wa.me/59899841325" 
                            target="_blank" 
-                           class="btn btn-whatsapp">
+                           class="btn btn-whatsapp btn-lg">
                             📱 Consultar por WhatsApp
                         </a>
                     </div>
@@ -888,6 +1319,76 @@
             `).join('');
         }
 
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInputLarge');
+            const searchBtn = document.getElementById('searchBtnLarge');
+            
+            if (!searchInput || !searchBtn) return;
+            
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                
+                if (searchTerm === '') {
+                    renderBooks(currentBooks);
+                    return;
+                }
+                
+                // Filtrar por múltiples criterios
+                const filteredBooks = currentBooks.filter(book => {
+                    const searchableText = `
+                        ${book.title}
+                        ${book.author}
+                        ${book.category}
+                    `.toLowerCase();
+                    
+                    return searchableText.includes(searchTerm);
+                });
+                
+                renderBooks(filteredBooks);
+                
+                // Mostrar mensaje si no hay resultados
+                if (filteredBooks.length === 0) {
+                    const booksGrid = document.getElementById('booksGrid');
+                    booksGrid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">🔍</div>
+                            <h3 style="color: var(--text-dark); margin-bottom: 15px; font-size: 24px;">
+                                No encontramos libros con "${searchTerm}"
+                            </h3>
+                            <p style="color: var(--text-light); margin-bottom: 25px; max-width: 500px; margin: 0 auto 25px;">
+                                Probá con otros términos o escribinos por WhatsApp para que te ayudemos a encontrarlo.
+                            </p>
+                            <a href="https://wa.me/59899841325?text=Hola!%20Estoy%20buscando%20un%20libro%20sobre:%20${encodeURIComponent(searchTerm)}" 
+                               target="_blank" 
+                               class="btn btn-whatsapp btn-lg">
+                                📱 Consultar por WhatsApp
+                            </a>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Event listeners
+            searchBtn.addEventListener('click', performSearch);
+            
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            // Buscar en tiempo real después de 500ms de inactividad
+            let timeoutId;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    if (e.target.value.length >= 3) {
+                        performSearch();
+                    }
+                }, 500);
+            });
+        }
+
         function setupMobileMenu() {
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const navLinks = document.getElementById('navLinks');
@@ -927,13 +1428,17 @@
             });
         }
 
-        // ===== FUNCIÓN PARA COTIZACIONES =====
         function setupQuoteButtons() {
-            // Ya no es necesario, los enlaces ya están configurados
+            document.querySelectorAll('.btn-quote').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    if (!this.getAttribute('href') || this.getAttribute('href') === '#') {
+                        e.preventDefault();
+                        const message = encodeURIComponent("Hola! Quisiera cotizar un libro o artículo especial. Por favor contactame por WhatsApp o Email.");
+                        window.open(`https://wa.me/59899841325?text=${message}`, '_blank');
+                    }
+                });
+            });
         }
-
-        // Inicializar botones de cotización
-        setupQuoteButtons();
 
         // ===== NOTIFICACIÓN AUTOMÁTICA =====
         setTimeout(() => {
@@ -967,13 +1472,6 @@
                 setTimeout(() => notification.remove(), 300);
             }, 5000);
         }
-
-        // ===== CARGAR DATOS DESDE ARCHIVO JSON (FUTURO) =====
-        // Cuando tengamos la sincronización con MELI, cargaremos desde aquí
-        // fetch('/data/books.json')
-        //     .then(response => response.json())
-        //     .then(books => renderBooks(books))
-        //     .catch(error => console.error('Error cargando libros:', error));
     </script>
 </body>
 </html>
