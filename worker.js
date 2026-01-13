@@ -1,6 +1,5 @@
 /**
- * Cloudflare Worker: Amado Libros - Versión Premium
- * Optimizado para Performance, SEO y Geo-Personalización.
+ * Cloudflare Worker: Amado Libros - Versión Reparada y Estable
  */
 
 export default {
@@ -21,43 +20,33 @@ export default {
       let catalog = catalogRaw ? JSON.parse(catalogRaw) : [];
       
       const processedCatalog = catalog.map(book => {
-        // Calcular precios
-        const price = book.price || book.priceOriginal || 0;
-        const priceTransfer = book.priceTransfer || Math.round(price * 0.88);
-        const priceOriginal = book.priceOriginal || price;
+        // CORRECCIÓN CRÍTICA DE PRECIOS: Asegurar valores numéricos
+        const priceList = Number(book.price || book.priceOriginal || 0);
+        const priceTransfer = Math.round(priceList * 0.88);
         
-        // Determinar badge según reglas de negocio
-        let badge = book.badge || null;
-        const status = book.status || "active";
-        const availableQty = book.available_quantity || book.availableQuantity || 0;
-        
-        if (!badge && status === "paused" && availableQty === 0) {
-          badge = "Encargo disponible";
-        }
-
-        // OPTIMIZACIÓN DE IMÁGENES:
-        // Usamos Cloudflare Image Resizing si está disponible en el dominio.
-        // Si no, forzamos HTTPS y usamos el thumbnail de alta calidad de MeLi.
+        // OPTIMIZACIÓN DE IMÁGENES: Forzar alta resolución de MeLi
         let imageUrl = (book.image || "").replace("http://", "https://");
-        
-        // Si la imagen es de MeLi, podemos intentar obtener una versión de mayor resolución
-        // reemplazando el sufijo (ej: -I.jpg por -O.jpg o -F.jpg)
         if (imageUrl.includes("mlstatic.com")) {
-          imageUrl = imageUrl.replace(/-[A-Z]\.jpg$/, "-F.jpg"); // -F suele ser la resolución más alta
+          imageUrl = imageUrl.replace(/-[A-Z]\.jpg$/, "-F.jpg");
         }
         
         return {
           ...book,
-          priceTransfer,
-          priceOriginal,
+          price: priceList,
+          priceOriginal: priceList,
+          priceTransfer: priceTransfer,
           image: imageUrl,
-          shippingInfo: shippingBanner,
-          badge,
-          status
+          shippingInfo: shippingBanner
         };
       });
 
-      return new Response(JSON.stringify(processedCatalog), {
+      return new Response(JSON.stringify({
+        books: processedCatalog,
+        geo: {
+          city: city,
+          shipping_banner: shippingBanner
+        }
+      }), {
         headers: { 
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*" 
@@ -65,20 +54,7 @@ export default {
       });
     }
 
-    // 3. Inyección de datos en el HTML
-    const response = await fetch(request);
-    if (response.headers.get("Content-Type")?.includes("text/html")) {
-      let html = await response.text();
-      
-      // Corregir el error del banner que el usuario ve como {{SHIPPING_BANNER}}
-      html = html.replace(/\{\{SHIPPING_BANNER\}\}/g, shippingBanner);
-      html = html.replace(/\{\(SHIPPING_BANNER\)\}/g, shippingBanner);
-
-      return new Response(html, {
-        headers: response.headers
-      });
-    }
-
-    return response;
+    // 3. Servir el sitio
+    return fetch(request);
   }
 };

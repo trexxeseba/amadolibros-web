@@ -5,132 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amado Libros | Librería Premium Uruguay</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #FF6B35; --dark: #1A1A1A; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8F9FA; color: var(--dark); }
-        .bento-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; padding: 2rem; }
-        .bento-item { background: white; border-radius: 24px; padding: 1.5rem; transition: all 0.3s ease; border: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .bento-item:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .featured { grid-column: span 2; }
-        @media (max-width: 768px) { .featured { grid-column: span 1; } }
-        .badge-premium { background: linear-gradient(135deg, #FF6B35 0%, #FF9F1C 100%); color: white; padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.8rem; font-weight: 700; }
-        .skeleton { background: #eee; height: 300px; border-radius: 24px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1a1a1a; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2rem; padding: 1rem; }
+        .product-card { border: 1px solid #eee; border-radius: 8px; padding: 1rem; transition: transform 0.2s; display: flex; flex-direction: column; height: 100%; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .img-container { aspect-ratio: 3/4; overflow: hidden; border-radius: 4px; background: #f9f9f9; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; }
+        .img-container img { width: 100%; height: 100%; object-contain: contain; }
+        .btn-primary { background: #1a1a1a; color: white; padding: 0.75rem; border-radius: 6px; font-weight: 600; text-align: center; transition: background 0.2s; }
+        .btn-primary:hover { background: #FF6B35; }
+        .btn-whatsapp { background: #25D366; color: white; padding: 0.75rem; border-radius: 6px; font-weight: 600; text-align: center; }
+        .badge-discount { background: #FF6B35; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; position: absolute; top: 0.5rem; left: 0.5rem; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+        .modal.active { display: flex; }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 <body>
-    <!-- Top Bar -->
-    <div class="bg-dark text-white py-2 px-6 text-center text-xs font-semibold tracking-widest uppercase">
-        {{SHIPPING_BANNER}} | 12% OFF Transferencia
+    <!-- Banner Superior -->
+    <div id="topBanner" class="bg-black text-white py-2 text-center text-xs font-bold uppercase tracking-wider">
+        Cargando información de envío...
     </div>
 
     <!-- Header -->
-    <header class="py-10 px-6 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <div class="flex flex-col">
-            <h1 class="text-4xl font-extrabold tracking-tighter">📚 Amado Libros</h1>
-            <p class="text-gray-500 font-medium">Librería Premium • Pickup Ciudad Vieja</p>
+    <header class="max-w-7xl mx-auto py-8 px-4 flex flex-col md:flex-row justify-between items-center gap-6 border-b">
+        <div class="text-center md:text-left">
+            <h1 class="text-3xl font-bold tracking-tight">Amado Libros</h1>
+            <p class="text-gray-500 text-sm">Librería Premium • Pickup Ciudad Vieja</p>
         </div>
-        <div class="w-full md:w-1/2 relative">
-            <input type="text" id="searchInput" placeholder="Busca por título, autor o ISBN..." 
-                class="w-full px-8 py-4 rounded-2xl border-none bg-white shadow-lg focus:ring-2 focus:ring-orange-500 transition-all">
+        <div class="w-full md:w-1/2">
+            <input type="text" id="searchInput" placeholder="Buscar por título, autor o ISBN..." 
+                class="w-full px-6 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500">
         </div>
     </header>
 
-    <!-- Info Cards -->
-    <section class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-        <div class="bg-orange-50 p-6 rounded-3xl border border-orange-100">
-            <h3 class="font-bold text-orange-600 mb-1">📍 Pickup Ciudad Vieja</h3>
-            <p class="text-sm text-orange-800">Retira hoy mismo sin costo.</p>
+    <!-- Info Section -->
+    <section class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-50 p-4 rounded-lg text-center">
+            <span class="block font-bold">📍 Pickup Ciudad Vieja</span>
+            <span class="text-xs text-gray-500">Retira hoy mismo sin costo</span>
         </div>
-        <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100 cursor-pointer hover:shadow-lg transition-shadow" onclick="openInternationalForm()">
-            <h3 class="font-bold text-blue-600 mb-1">✈️ Pedidos Internacionales</h3>
-            <p class="text-sm text-blue-800">¿No lo ves? Te lo traemos del mundo. <span class="underline">Haz clic aquí</span></p>
+        <div class="bg-gray-50 p-4 rounded-lg text-center cursor-pointer hover:bg-blue-50 transition-colors" onclick="openInternationalModal()">
+            <span class="block font-bold">✈️ Pedidos Internacionales</span>
+            <span class="text-xs text-gray-500">Te traemos cualquier libro del mundo</span>
         </div>
-        <div class="bg-green-50 p-6 rounded-3xl border border-green-100">
-            <h3 class="font-bold text-green-600 mb-1">💰 12% OFF Extra</h3>
-            <p class="text-sm text-green-800">Pagando por transferencia bancaria.</p>
+        <div class="bg-gray-50 p-4 rounded-lg text-center">
+            <span class="block font-bold">💰 12% OFF Extra</span>
+            <span class="text-xs text-gray-500">Pagando por transferencia bancaria</span>
         </div>
     </section>
 
-    <!-- Catalog -->
-    <main class="max-w-7xl mx-auto">
-        <div id="booksGrid" class="bento-grid">
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
+    <!-- Main Catalog -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div id="booksGrid" class="product-grid">
+            <!-- Libros se cargan aquí -->
+        </div>
+        
+        <!-- Paginación -->
+        <div id="pagination" class="flex justify-center gap-4 mt-12 pb-12">
+            <button id="prevPage" class="px-6 py-2 border rounded-lg disabled:opacity-30">Anterior</button>
+            <span id="pageInfo" class="flex items-center font-bold">Página 1</span>
+            <button id="nextPage" class="px-6 py-2 border rounded-lg disabled:opacity-30">Siguiente</button>
         </div>
     </main>
 
-    <!-- Modal de Detalle del Libro -->
-    <div id="bookDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto" onclick="closeBookDetail(event)">
-        <div class="bg-white rounded-3xl p-8 max-w-5xl w-full mx-4 my-8 shadow-2xl relative" onclick="event.stopPropagation()">
-            <button onclick="closeBookDetail()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
-            
-            <div class="grid md:grid-cols-2 gap-10">
-                <!-- Columna Imagen -->
-                <div class="space-y-6">
-                    <div class="bg-gray-100 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-4">
-                        <img id="detailImage" class="max-h-[500px] w-auto rounded-lg shadow-2xl object-contain" />
-                    </div>
-                    <div id="detailShipping" class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-                        <p class="text-blue-800 font-bold flex items-center gap-2">
-                            <span>🚚</span> <span id="shippingText"></span>
-                        </p>
-                    </div>
+    <!-- Modal Detalle -->
+    <div id="detailModal" class="modal" onclick="closeModal(event)">
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-10 relative" onclick="event.stopPropagation()">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-2xl font-bold">&times;</button>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="img-container bg-white border">
+                    <img id="modalImg" src="" alt="">
                 </div>
-
-                <!-- Columna Información -->
                 <div class="flex flex-col">
-                    <div class="mb-6">
-                        <h2 id="detailTitle" class="text-3xl font-black text-dark leading-tight mb-2"></h2>
-                        <p id="detailAuthor" class="text-xl font-semibold text-orange-600"></p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mb-8">
-                        <div class="bg-gray-50 p-4 rounded-2xl">
-                            <p class="text-xs text-gray-400 uppercase font-bold mb-1">Transferencia</p>
-                            <p id="detailPrice" class="text-3xl font-black text-dark"></p>
-                            <p class="text-xs text-green-600 font-bold">12% OFF APLICADO</p>
+                    <h2 id="modalTitle" class="text-2xl font-bold mb-2"></h2>
+                    <p id="modalAuthor" class="text-orange-600 font-semibold mb-6"></p>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="bg-orange-50 p-4 rounded-lg">
+                            <p class="text-xs uppercase font-bold text-orange-400 mb-1">Precio Transferencia</p>
+                            <p id="modalPriceTransfer" class="text-3xl font-black text-orange-600"></p>
+                            <p class="text-xs text-green-600 font-bold">12% OFF YA APLICADO</p>
                         </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl">
-                            <p class="text-xs text-gray-400 uppercase font-bold mb-1">Hasta 12 cuotas</p>
-                            <p id="detailOriginalPrice" class="text-2xl font-bold text-gray-400"></p>
-                            <p class="text-xs text-gray-400">Precio de lista</p>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-xs uppercase font-bold text-gray-400 mb-1">Precio Lista (Hasta 12 cuotas)</p>
+                            <p id="modalPriceList" class="text-xl font-bold text-gray-600"></p>
                         </div>
                     </div>
 
-                    <!-- Ficha Técnica -->
-                    <div class="bg-gray-50 rounded-2xl p-6 mb-8">
-                        <h3 class="font-bold text-dark mb-4 border-b pb-2">Ficha Técnica</h3>
-                        <div class="grid grid-cols-2 gap-y-3 text-sm">
-                            <div class="text-gray-500">Editorial:</div>
-                            <div id="detailPublisher" class="font-semibold text-dark">-</div>
-                            
-                            <div class="text-gray-500">ISBN:</div>
-                            <div id="detailIsbn" class="font-semibold text-dark">-</div>
-                            
-                            <div class="text-gray-500">Páginas:</div>
-                            <div id="detailPages" class="font-semibold text-dark">-</div>
-                            
-                            <div class="text-gray-500">Año:</div>
-                            <div id="detailYear" class="font-semibold text-dark">-</div>
-                            
-                            <div class="text-gray-500">Idioma:</div>
-                            <div id="detailLanguage" class="font-semibold text-dark">-</div>
-                            
-                            <div class="text-gray-500">Temática:</div>
-                            <div id="detailGenre" class="font-semibold text-dark">-</div>
+                    <div class="border-t pt-6 mb-8">
+                        <h3 class="font-bold mb-4">Ficha Técnica</h3>
+                        <div class="grid grid-cols-2 gap-y-2 text-sm">
+                            <span class="text-gray-500">Editorial:</span> <span id="modalPublisher" class="font-semibold"></span>
+                            <span class="text-gray-500">ISBN:</span> <span id="modalIsbn" class="font-semibold"></span>
+                            <span class="text-gray-500">Páginas:</span> <span id="modalPages" class="font-semibold"></span>
+                            <span class="text-gray-500">Idioma:</span> <span id="modalLang" class="font-semibold"></span>
                         </div>
                     </div>
 
-                    <!-- Botones -->
-                    <div class="mt-auto flex flex-col sm:flex-row gap-4">
-                        <a id="detailMeliLink" href="#" target="_blank" class="flex-1 bg-dark text-white text-center py-4 rounded-2xl font-bold hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-200">Comprar en MercadoLibre</a>
-                        <button onclick="contactWhatsApp()" class="flex-1 bg-green-500 text-white py-4 rounded-2xl font-bold hover:bg-green-600 transition-all shadow-lg hover:shadow-green-200 flex items-center justify-center gap-2">
+                    <div class="mt-auto flex flex-col gap-3">
+                        <a id="modalMeliBtn" href="#" target="_blank" class="btn-primary">Comprar en Mercado Libre</a>
+                        <button onclick="contactWhatsApp()" class="btn-whatsapp flex items-center justify-center gap-2">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217s.231.006.332.013c.101.007.237-.038.37.281.144.345.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.101-.177.211-.077.383.1.173.444.733.953 1.186.656.584 1.21.765 1.383.852.173.087.275.072.376-.043.101-.116.433-.506.548-.68.116-.173.231-.144.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z"/></svg>
-                            Consultar WhatsApp
+                            Consultar por WhatsApp
                         </button>
                     </div>
                 </div>
@@ -138,152 +116,147 @@
         </div>
     </div>
 
-    <!-- Modal de Pedidos Internacionales -->
-    <div id="internationalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" onclick="closeInternationalForm(event)">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-dark">✈️ Pedido Internacional</h2>
-                <button onclick="closeInternationalForm()" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
-            </div>
-            <p class="text-gray-600 mb-6">Completa el formulario y te contactaremos para cotizar tu libro del mundo.</p>
-            <form id="internationalForm" class="space-y-4">
-                <input type="text" id="bookTitle" placeholder="Título del libro" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none">
-                <input type="text" id="bookAuthor" placeholder="Autor (opcional)" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none">
-                <input type="text" id="userName" placeholder="Tu nombre" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none">
-                <input type="tel" id="userPhone" placeholder="Tu teléfono" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none">
-                <button type="submit" class="w-full bg-orange-600 text-white py-4 rounded-xl font-bold hover:bg-orange-700 transition-colors">Enviar Pedido</button>
+    <!-- Modal Internacional -->
+    <div id="intlModal" class="modal" onclick="closeIntlModal(event)">
+        <div class="bg-white rounded-xl max-w-md w-full p-8 relative" onclick="event.stopPropagation()">
+            <button onclick="closeIntlModal()" class="absolute top-4 right-4 text-2xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold mb-4">✈️ Pedido Internacional</h2>
+            <p class="text-gray-600 mb-6 text-sm">¿No encontrás el libro? Lo buscamos por vos en cualquier parte del mundo.</p>
+            <form id="intlForm" class="space-y-4">
+                <input type="text" id="intlTitle" placeholder="Título del libro" required class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="text" id="intlAuthor" placeholder="Autor" class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="text" id="intlName" placeholder="Tu nombre" required class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-orange-500">
+                <button type="submit" class="w-full btn-primary">Enviar solicitud</button>
             </form>
         </div>
     </div>
 
-    <!-- WhatsApp Sticky -->
-    <a href="https://wa.me/598099841325" target="_blank" class="fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform z-50">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217s.231.006.332.013c.101.007.237-.038.37.281.144.345.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.101-.177.211-.077.383.1.173.444.733.953 1.186.656.584 1.21.765 1.383.852.173.087.275.072.376-.043.101-.116.433-.506.548-.68.116-.173.231-.144.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z"/></svg>
-    </a>
-
     <script>
         let allBooks = [];
-        const grid = document.getElementById('booksGrid');
+        let filteredBooks = [];
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let currentBook = null;
 
-        async function loadBooks() {
+        async function init() {
             try {
                 const response = await fetch('https://amado-libros-proxy.undiaes.workers.dev/api/books');
-                if (!response.ok) throw new Error('API Error');
-                allBooks = await response.json();
-                renderBooks(allBooks);
-            } catch (e) {
-                grid.innerHTML = '<div class="col-span-full text-center py-20"><p class="text-gray-400">No pudimos cargar el catálogo. Revisa tu conexión.</p></div>';
+                const data = await response.json();
+                
+                // Manejar respuesta del Worker (puede ser array o objeto con geo)
+                allBooks = Array.isArray(data) ? data : (data.books || []);
+                const geo = data.geo || {};
+                
+                document.getElementById('topBanner').textContent = geo.shipping_banner || '🚀 Envío Flash en 2 horas | 12% OFF Transferencia';
+                
+                filteredBooks = [...allBooks];
+                renderPage();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('booksGrid').innerHTML = '<p class="col-span-full text-center py-20 text-gray-400">Error al cargar el catálogo. Por favor, refresca la página.</p>';
             }
         }
 
-        function renderBooks(books) {
-            grid.innerHTML = books.map((book, i) => `
-                <div class="bento-item ${i % 5 === 0 ? 'featured' : ''}" onclick="openBookDetail('${book.id}')" style="cursor: pointer;">
-                    <div class="relative mb-6 overflow-hidden rounded-2xl aspect-[3/4] bg-gray-50">
-                        <img src="${book.image}" class="w-full h-full object-contain hover:scale-110 transition-transform duration-700 p-2">
-                        <div class="absolute top-4 left-4">
-                            ${book.badge ? `<span class="badge-premium bg-blue-600">${book.badge}</span>` : `<span class="badge-premium">12% OFF</span>`}
+        function renderPage() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageItems = filteredBooks.slice(start, end);
+            
+            const grid = document.getElementById('booksGrid');
+            grid.innerHTML = pageItems.map(book => {
+                // CORRECCIÓN DE PRECIOS: Asegurar que no sean undefined
+                const priceList = book.price || book.priceOriginal || 0;
+                const priceTransfer = book.priceTransfer || Math.round(priceList * 0.88);
+                
+                return `
+                    <div class="product-card relative" onclick="openDetail('${book.id}')" style="cursor:pointer">
+                        <div class="badge-discount">12% OFF</div>
+                        <div class="img-container">
+                            <img src="${book.image || ''}" alt="${book.title}" onerror="this.src='https://via.placeholder.com/300x400?text=Sin+Imagen'">
+                        </div>
+                        <h3 class="font-bold text-sm line-clamp-2 mb-1">${book.title}</h3>
+                        <p class="text-xs text-gray-400 mb-4">${book.author || 'Autor no especificado'}</p>
+                        <div class="mt-auto">
+                            <div class="mb-3">
+                                <p class="text-xs text-gray-400 uppercase font-bold">Transferencia</p>
+                                <p class="text-xl font-black text-orange-600">$${priceTransfer}</p>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold mt-1">Hasta 12 cuotas: $${priceList}</p>
+                            </div>
+                            <button class="w-full py-2 bg-gray-100 text-xs font-bold rounded hover:bg-black hover:text-white transition-colors">VER DETALLES</button>
                         </div>
                     </div>
-                    <h3 class="font-bold text-xl mb-1 line-clamp-2">${book.title}</h3>
-                    <p class="text-gray-500 text-sm mb-4">${book.author || 'Autor no especificado'}</p>
-                    <div class="mt-auto">
-                        <div class="mb-4">
-                            <div class="flex items-baseline gap-2 mb-1">
-                                <span class="text-xs text-gray-500 uppercase tracking-wide">Transferencia</span>
-                                <p class="text-2xl font-black text-orange-600">$${book.priceTransfer}</p>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-xs text-gray-500 uppercase tracking-wide">Hasta 12 cuotas</span>
-                                <p class="text-base font-semibold text-gray-600">$${book.priceOriginal}</p>
-                            </div>
-                        </div>
-                        ${book.badge === 'Encargo disponible' ? 
-                            `<a href="https://wa.me/598099841325?text=${encodeURIComponent(`Hola, vi este título en la web: ${book.title} (${book.id}). ¿Me confirmás disponibilidad y plazo?`)}" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-green-700 transition-colors">Pedir por encargo</a>` :
-                            `<a href="${book.permalink}" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-dark text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors">Comprar</a>`
-                        }
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+
+            // Actualizar paginación
+            document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${Math.ceil(filteredBooks.length / itemsPerPage) || 1}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = end >= filteredBooks.length;
         }
 
-        document.getElementById('searchInput').addEventListener('input', (e) => {
+        // Eventos de Paginación
+        document.getElementById('prevPage').onclick = () => { if(currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); } };
+        document.getElementById('nextPage').onclick = () => { if(currentPage * itemsPerPage < filteredBooks.length) { currentPage++; renderPage(); window.scrollTo(0,0); } };
+
+        // Buscador
+        document.getElementById('searchInput').oninput = (e) => {
             const term = e.target.value.toLowerCase();
-            const filtered = allBooks.filter(b => 
+            filteredBooks = allBooks.filter(b => 
                 (b.title || '').toLowerCase().includes(term) || 
                 (b.author || '').toLowerCase().includes(term) ||
                 (b.isbn || '').toLowerCase().includes(term)
             );
-            renderBooks(filtered);
-        });
+            currentPage = 1;
+            renderPage();
+        };
 
-        let currentBook = null;
+        // Modales
+        function openDetail(id) {
+            currentBook = allBooks.find(b => b.id === id);
+            if(!currentBook) return;
 
-        function openBookDetail(bookId) {
-            currentBook = allBooks.find(b => b.id === bookId);
-            if (!currentBook) return;
-            
-            document.getElementById('detailTitle').textContent = currentBook.title;
-            document.getElementById('detailAuthor').textContent = currentBook.author || 'Autor no especificado';
-            document.getElementById('detailImage').src = currentBook.image;
-            document.getElementById('detailPrice').textContent = `$${currentBook.priceTransfer}`;
-            document.getElementById('detailOriginalPrice').textContent = `$${currentBook.priceOriginal}`;
-            document.getElementById('detailMeliLink').href = currentBook.permalink;
-            document.getElementById('shippingText').textContent = currentBook.shippingInfo || '🚚 Consulta disponibilidad';
-            
-            // Ficha Técnica
-            document.getElementById('detailPublisher').textContent = currentBook.publisher || '-';
-            document.getElementById('detailIsbn').textContent = currentBook.isbn || '-';
-            document.getElementById('detailPages').textContent = currentBook.pages || '-';
-            document.getElementById('detailYear').textContent = currentBook.publication_year || '-';
-            document.getElementById('detailLanguage').textContent = currentBook.language || '-';
-            document.getElementById('detailGenre').textContent = currentBook.genre || '-';
-            
-            document.getElementById('bookDetailModal').classList.remove('hidden');
-            document.getElementById('bookDetailModal').classList.add('flex');
-            document.body.style.overflow = 'hidden'; // Bloquear scroll
+            const priceList = currentBook.price || currentBook.priceOriginal || 0;
+            const priceTransfer = currentBook.priceTransfer || Math.round(priceList * 0.88);
+
+            document.getElementById('modalImg').src = currentBook.image || '';
+            document.getElementById('modalTitle').textContent = currentBook.title;
+            document.getElementById('modalAuthor').textContent = currentBook.author || 'Autor no especificado';
+            document.getElementById('modalPriceTransfer').textContent = `$${priceTransfer}`;
+            document.getElementById('modalPriceList').textContent = `$${priceList}`;
+            document.getElementById('modalPublisher').textContent = currentBook.publisher || '-';
+            document.getElementById('modalIsbn').textContent = currentBook.isbn || '-';
+            document.getElementById('modalPages').textContent = currentBook.pages || '-';
+            document.getElementById('modalLang').textContent = currentBook.language || '-';
+            document.getElementById('modalMeliBtn').href = currentBook.permalink || '#';
+
+            document.getElementById('detailModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeBookDetail(event) {
-            if (!event || event.target.id === 'bookDetailModal') {
-                document.getElementById('bookDetailModal').classList.add('hidden');
-                document.getElementById('bookDetailModal').classList.remove('flex');
-                document.body.style.overflow = 'auto'; // Restaurar scroll
+        function closeModal(e) {
+            if(!e || e.target.id === 'detailModal' || e.target.tagName === 'BUTTON') {
+                document.getElementById('detailModal').classList.remove('active');
+                document.body.style.overflow = 'auto';
             }
         }
 
+        function openInternationalModal() { document.getElementById('intlModal').classList.add('active'); }
+        function closeIntlModal(e) { if(!e || e.target.id === 'intlModal' || e.target.tagName === 'BUTTON') document.getElementById('intlModal').classList.remove('active'); }
+
         function contactWhatsApp() {
-            if (!currentBook) return;
-            const msg = `Hola! Vi el libro "${currentBook.title}" en amadolibros.com y me interesa comprarlo. ¿Está disponible?`;
+            if(!currentBook) return;
+            const msg = `Hola! Me interesa el libro "${currentBook.title}". ¿Tienen stock?`;
             window.open(`https://wa.me/598099841325?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        function openInternationalForm() {
-            document.getElementById('internationalModal').classList.remove('hidden');
-            document.getElementById('internationalModal').classList.add('flex');
-        }
-
-        function closeInternationalForm(event) {
-            if (!event || event.target.id === 'internationalModal') {
-                document.getElementById('internationalModal').classList.add('hidden');
-                document.getElementById('internationalModal').classList.remove('flex');
-            }
-        }
-
-        document.getElementById('internationalForm').addEventListener('submit', (e) => {
+        document.getElementById('intlForm').onsubmit = (e) => {
             e.preventDefault();
-            const title = document.getElementById('bookTitle').value;
-            const author = document.getElementById('bookAuthor').value;
-            const name = document.getElementById('userName').value;
-            const phone = document.getElementById('userPhone').value;
-            
-            const msg = `Hola Amado Libros! Quiero solicitar un libro internacional:%0A%0ATítulo: ${encodeURIComponent(title)}%0AAutor: ${encodeURIComponent(author || 'No especificado')}%0AMi nombre: ${encodeURIComponent(name)}%0AMi teléfono: ${encodeURIComponent(phone)}`;
+            const msg = `Hola! Quiero pedir un libro internacional:%0A- Título: ${document.getElementById('intlTitle').value}%0A- Autor: ${document.getElementById('intlAuthor').value}%0A- Nombre: ${document.getElementById('intlName').value}`;
             window.open(`https://wa.me/598099841325?text=${msg}`, '_blank');
-            closeInternationalForm();
-            document.getElementById('internationalForm').reset();
-        });
+            closeIntlModal();
+        };
 
-        loadBooks();
+        init();
     </script>
 </body>
 </html>
