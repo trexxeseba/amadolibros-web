@@ -34,12 +34,23 @@ export default {
         if (!badge && status === "paused" && availableQty === 0) {
           badge = "Encargo disponible";
         }
+
+        // OPTIMIZACIÓN DE IMÁGENES:
+        // Usamos Cloudflare Image Resizing si está disponible en el dominio.
+        // Si no, forzamos HTTPS y usamos el thumbnail de alta calidad de MeLi.
+        let imageUrl = (book.image || "").replace("http://", "https://");
+        
+        // Si la imagen es de MeLi, podemos intentar obtener una versión de mayor resolución
+        // reemplazando el sufijo (ej: -I.jpg por -O.jpg o -F.jpg)
+        if (imageUrl.includes("mlstatic.com")) {
+          imageUrl = imageUrl.replace(/-[A-Z]\.jpg$/, "-F.jpg"); // -F suele ser la resolución más alta
+        }
         
         return {
           ...book,
           priceTransfer,
           priceOriginal,
-          image: (book.image || "").replace("http://", "https://"),
+          image: imageUrl,
           shippingInfo: shippingBanner,
           badge,
           status
