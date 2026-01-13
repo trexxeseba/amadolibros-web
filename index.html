@@ -34,9 +34,10 @@
             <h1 class="text-3xl font-bold tracking-tight">Amado Libros</h1>
             <p class="text-gray-500 text-sm">Librería Premium • Pickup Ciudad Vieja</p>
         </div>
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/2 relative">
             <input type="text" id="searchInput" placeholder="Buscar por título, autor o ISBN..." 
                 class="w-full px-6 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <div id="autocompleteSuggestions" class="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 hidden"></div>
         </div>
     </header>
 
@@ -84,9 +85,15 @@
                     
                     <div class="space-y-4 mb-8">
                         <div class="bg-orange-50 p-4 rounded-lg">
-                           <p id="modalPriceTransfer" class="text-3xl font-bold text-[#00a650]"></p>                        </div>
+                            <p class="text-xs uppercase font-bold text-orange-400 mb-1">Precio Transferencia</p>
+                            <p id="modalPriceTransfer" class="text-3xl font-black text-orange-600"></p>
+                            <p class="text-xs text-green-600 font-bold">12% OFF YA APLICADO</p>
+                        </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-xl text-gray-500 line-through">Precio normal: <span id="modalPriceList"></span></p>\n                            <p class="text-lg text-gray-600 mt-1">12 cuotas de <span id="modalInstallments"></span></p>                        </div>
+                            <p class="text-xs uppercase font-bold text-gray-400 mb-1">Precio Lista (Hasta 12 cuotas)</p>
+                            <p id="modalPriceList" class="text-xl font-bold text-gray-600"></p>
+                            <p id="modalInstallments" class="text-lg text-gray-600 mt-1"></p>
+                        </div>
                     </div>
 
                     <div class="border-t pt-6 mb-8">
@@ -135,20 +142,20 @@
 
         async function init() {
             try {
-                const response = await fetch('https://amado-libros-proxy.undiaes.workers.dev/api/books');
+                const response = await fetch("https://amado-libros-proxy.undiaes.workers.dev/api/books");
                 const data = await response.json();
                 
-                // Manejar respuesta del Worker (puede ser array o objeto con geo)
                 allBooks = Array.isArray(data) ? data : (data.books || []);
                 const geo = data.geo || {};
                 
-                document.getElementById('topBanner').textContent = geo.shipping_banner || '🚀 Envío Flash en 2 horas | 12% OFF Transferencia';
+                document.getElementById("topBanner").textContent = geo.shipping_banner || "🚀 Envío Flash en 2 horas | 12% OFF Transferencia";
                 
                 filteredBooks = [...allBooks];
                 renderPage();
             } catch (err) {
                 console.error(err);
-                document.getElementById('booksGrid').innerHTML = '<p class="col-span-full text-center py-20 text-gray-400">Error al cargar el catálogo. Por favor, refresca la página.</p>';
+                document.getElementById("booksGrid").innerHTML = 
+                    "<p class=\"col-span-full text-center py-20 text-gray-400\">Error al cargar el catálogo. Por favor, refresca la página.</p>";
             }
         }
 
@@ -157,50 +164,122 @@
             const end = start + itemsPerPage;
             const pageItems = filteredBooks.slice(start, end);
             
-            const grid = document.getElementById('booksGrid');
+            const grid = document.getElementById("booksGrid");
             grid.innerHTML = pageItems.map(book => {
-                // CORRECCIÓN DE PRECIOS: Asegurar que no sean undefined
                 const priceList = book.price || book.priceOriginal || 0;
                 const priceTransfer = book.priceTransfer || Math.round(priceList * 0.88);
                 
                 return `
-                    <div class="product-card relative" onclick="openDetail('${book.id}')" style="cursor:pointer">
+                    <div class="product-card relative" onclick="openDetail(\'${book.id}\')" style="cursor:pointer">
                         <div class="badge-discount">12% OFF</div>
                         <div class="img-container">
-                            <img src="${book.image || ''}" alt="${book.title}" onerror="this.src='https://via.placeholder.com/300x400?text=Sin+Imagen'">
+                            <img src="${book.image || ''}" alt="${book.title}" onerror="this.src=\'https://via.placeholder.com/300x400?text=Sin+Imagen\'\">
                         </div>
                         <h3 class="font-bold text-sm line-clamp-2 mb-1">${book.title}</h3>
                         <p class="text-xs text-gray-400 mb-4">${book.author || 'Autor no especificado'}</p>
                         <div class="mt-auto">
                             <div class="mb-3">
-                         <p class=\"text-sm text-gray-500 line-through\">Precio normal: $${priceList}</p>\n                                <p class=\"text-2xl font-bold text-[#00a650]\">TRANSFERENCIA: $${priceTransfer}</p>\n                                <p class=\"text-sm text-gray-600 mt-1\">12 cuotas de $${(priceList / 12).toFixed(0)}</p>                            </div>
+                                <p class="text-sm text-gray-500">Precio normal: $${priceList}</p>
+                                <p class="text-2xl font-bold text-[#00a650]">TRANSFERENCIA: $${priceTransfer}</p>
+                                <p class="text-sm text-gray-600 mt-1">12 cuotas de $${(priceList / 12).toFixed(0)}</p>
+                            </div>
                             <button class="w-full py-2 bg-gray-100 text-xs font-bold rounded hover:bg-black hover:text-white transition-colors">VER DETALLES</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            // Actualizar paginación
-            document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${Math.ceil(filteredBooks.length / itemsPerPage) || 1}`;
-            document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = end >= filteredBooks.length;
+            document.getElementById("pageInfo").textContent = `Página ${currentPage} de ${Math.ceil(filteredBooks.length / itemsPerPage) || 1}`;
+            document.getElementById("prevPage").disabled = currentPage === 1;
+            document.getElementById("nextPage").disabled = end >= filteredBooks.length;
         }
 
         // Eventos de Paginación
-        document.getElementById('prevPage').onclick = () => { if(currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); } };
-        document.getElementById('nextPage').onclick = () => { if(currentPage * itemsPerPage < filteredBooks.length) { currentPage++; renderPage(); window.scrollTo(0,0); } };
+        document.getElementById("prevPage").onclick = () => { if(currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); } };
+        document.getElementById("nextPage").onclick = () => { if(currentPage * itemsPerPage < filteredBooks.length) { currentPage++; renderPage(); window.scrollTo(0,0); } };
 
-        // Buscador
-        document.getElementById('searchInput').oninput = (e) => {
-            const term = e.target.value.toLowerCase();
-            filteredBooks = allBooks.filter(b => 
-                (b.title || '').toLowerCase().includes(term) || 
-                (b.author || '').toLowerCase().includes(term) ||
-                (b.isbn || '').toLowerCase().includes(term)
+        // Lógica de Autocompletado
+        const searchInput = document.getElementById("searchInput");
+        const autocompleteSuggestions = document.getElementById("autocompleteSuggestions");
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        const handleSearchInput = debounce((e) => {
+            const query = e.target.value.toLowerCase();
+            if (query.length > 0) {
+                const suggestions = allBooks.filter(book => 
+                    book.title.toLowerCase().includes(query) ||
+                    (book.author && book.author.toLowerCase().includes(query)) ||
+                    (book.isbn && book.isbn.toLowerCase().includes(query))
+                ).slice(0, 5); // Mostrar las primeras 5 sugerencias
+
+                renderSuggestions(suggestions);
+            } else {
+                autocompleteSuggestions.classList.add("hidden");
+            }
+        }, 300);
+
+        searchInput.addEventListener("input", handleSearchInput);
+
+        function renderSuggestions(suggestions) {
+            autocompleteSuggestions.innerHTML = '';
+            if (suggestions.length === 0) {
+                autocompleteSuggestions.classList.add("hidden");
+                return;
+            }
+
+            suggestions.forEach(book => {
+                const div = document.createElement("div");
+                div.classList.add("p-2", "cursor-pointer", "hover:bg-gray-100");
+                div.textContent = `${book.title} (${book.author || 'Desconocido'})`;
+                div.onclick = () => {
+                    searchInput.value = book.title;
+                    autocompleteSuggestions.classList.add("hidden");
+                    filterBooks(book.title); // Filtrar por el libro seleccionado
+                };
+                autocompleteSuggestions.appendChild(div);
+            });
+            autocompleteSuggestions.classList.remove("hidden");
+        }
+
+        // Ocultar sugerencias al hacer clic fuera
+        document.addEventListener("click", (e) => {
+            if (!searchInput.contains(e.target) && !autocompleteSuggestions.contains(e.target)) {
+                autocompleteSuggestions.classList.add("hidden");
+            }
+        });
+
+        // Función de filtrado existente, adaptada para ser llamada desde el autocompletado
+        function filterBooks(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            filteredBooks = allBooks.filter(book => 
+                book.title.toLowerCase().includes(lowerCaseQuery) ||
+                (book.author && book.author.toLowerCase().includes(lowerCaseQuery)) ||
+                (book.isbn && book.isbn.toLowerCase().includes(lowerCaseQuery))
             );
             currentPage = 1;
             renderPage();
-        };
+        }
+
+        // Modificar el evento de búsqueda original para usar filterBooks
+        searchInput.addEventListener("change", (e) => {
+            filterBooks(e.target.value);
+        });
+
+        // Asegurarse de que la función de búsqueda se active también al presionar Enter en el input
+        searchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                filterBooks(e.target.value);
+                autocompleteSuggestions.classList.add("hidden");
+            }
+        });
 
         // Modales
         function openDetail(id) {
@@ -210,40 +289,42 @@
             const priceList = currentBook.price || currentBook.priceOriginal || 0;
             const priceTransfer = currentBook.priceTransfer || Math.round(priceList * 0.88);
 
-            document.getElementById('modalImg').src = currentBook.image || '';
-            document.getElementById('modalTitle').textContent = currentBook.title;
-            document.getElementById('modalAuthor').textContent = currentBook.author || 'Autor no especificado';
-            document.getElementById(\'modalPriceTransfer\').textContent = `TRANSFERENCIA: $${priceTransfer}`;          document.getElementById(\'modalPriceList\').textContent = `$${priceList}`;
-            document.getElementById(\'modalInstallments\').textContent = `$${(priceList / 12).toFixed(0)}`;            document.getElementById('modalPublisher').textContent = currentBook.publisher || '-';
-            document.getElementById('modalIsbn').textContent = currentBook.isbn || '-';
-            document.getElementById('modalPages').textContent = currentBook.pages || '-';
-            document.getElementById('modalLang').textContent = currentBook.language || '-';
-            document.getElementById('modalMeliBtn').href = currentBook.permalink || '#';
+            document.getElementById("modalImg").src = currentBook.image || '';
+            document.getElementById("modalTitle").textContent = currentBook.title;
+            document.getElementById("modalAuthor").textContent = currentBook.author || 'Autor no especificado';
+            document.getElementById("modalPriceTransfer").textContent = `TRANSFERENCIA: $${priceTransfer}`;
+            document.getElementById("modalPriceList").textContent = `$${priceList}`;
+            document.getElementById("modalInstallments").textContent = `12 cuotas de $${(priceList / 12).toFixed(0)}`;
+            document.getElementById("modalPublisher").textContent = currentBook.publisher || '-';
+            document.getElementById("modalIsbn").textContent = currentBook.isbn || '-';
+            document.getElementById("modalPages").textContent = currentBook.pages || '-';
+            document.getElementById("modalLang").textContent = currentBook.language || '-';
+            document.getElementById("modalMeliBtn").href = currentBook.permalink || '#';
 
-            document.getElementById('detailModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
+            document.getElementById("detailModal").classList.add("active");
+            document.body.style.overflow = "hidden";
         }
 
         function closeModal(e) {
-            if(!e || e.target.id === 'detailModal' || e.target.tagName === 'BUTTON') {
-                document.getElementById('detailModal').classList.remove('active');
-                document.body.style.overflow = 'auto';
+            if(!e || e.target.id === "detailModal" || e.target.tagName === "BUTTON") {
+                document.getElementById("detailModal").classList.remove("active");
+                document.body.style.overflow = "auto";
             }
         }
 
-        function openInternationalModal() { document.getElementById('intlModal').classList.add('active'); }
-        function closeIntlModal(e) { if(!e || e.target.id === 'intlModal' || e.target.tagName === 'BUTTON') document.getElementById('intlModal').classList.remove('active'); }
+        function openInternationalModal() { document.getElementById("intlModal").classList.add("active"); }
+        function closeIntlModal(e) { if(!e || e.target.id === "intlModal" || e.target.tagName === "BUTTON") document.getElementById("intlModal").classList.remove("active"); }
 
         function contactWhatsApp() {
             if(!currentBook) return;
             const msg = `Hola! Me interesa el libro "${currentBook.title}". ¿Tienen stock?`;
-            window.open(`https://wa.me/598099841325?text=${encodeURIComponent(msg)}`, '_blank');
+            window.open(`https://wa.me/598099841325?text=${encodeURIComponent(msg)}`, "_blank");
         }
 
-        document.getElementById('intlForm').onsubmit = (e) => {
+        document.getElementById("intlForm").onsubmit = (e) => {
             e.preventDefault();
-            const msg = `Hola! Quiero pedir un libro internacional:%0A- Título: ${document.getElementById('intlTitle').value}%0A- Autor: ${document.getElementById('intlAuthor').value}%0A- Nombre: ${document.getElementById('intlName').value}`;
-            window.open(`https://wa.me/598099841325?text=${msg}`, '_blank');
+            const msg = `Hola! Quiero pedir un libro internacional:%0A- Título: ${document.getElementById("intlTitle").value}%0A- Autor: ${document.getElementById("intlAuthor").value}%0A- Nombre: ${document.getElementById("intlName").value}`;
+            window.open(`https://wa.me/598099841325?text=${msg}`, "_blank");
             closeIntlModal();
         };
 
