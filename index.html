@@ -84,14 +84,9 @@
                     
                     <div class="space-y-4 mb-8">
                         <div class="bg-orange-50 p-4 rounded-lg">
-                            <p class="text-xs uppercase font-bold text-orange-400 mb-1">Precio Transferencia</p>
-                            <p id="modalPriceTransfer" class="text-3xl font-black text-orange-600"></p>
-                            <p class="text-xs text-green-600 font-bold">12% OFF YA APLICADO</p>
-                        </div>
+                           <p id="modalPriceTransfer" class="text-3xl font-bold text-[#00a650]"></p>                        </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-xs uppercase font-bold text-gray-400 mb-1">Precio Lista (Hasta 12 cuotas)</p>
-                            <p id="modalPriceList" class="text-xl font-bold text-gray-600"></p>
-                        </div>
+                            <p class="text-xl text-gray-500 line-through">Precio normal: <span id="modalPriceList"></span></p>\n                            <p class="text-lg text-gray-600 mt-1">12 cuotas de <span id="modalInstallments"></span></p>                        </div>
                     </div>
 
                     <div class="border-t pt-6 mb-8">
@@ -178,10 +173,7 @@
                         <p class="text-xs text-gray-400 mb-4">${book.author || 'Autor no especificado'}</p>
                         <div class="mt-auto">
                             <div class="mb-3">
-                                <p class="text-xs text-gray-400 uppercase font-bold">Transferencia</p>
-                                <p class="text-xl font-black text-orange-600">$${priceTransfer}</p>
-                                <p class="text-[10px] text-gray-400 uppercase font-bold mt-1">Hasta 12 cuotas: $${priceList}</p>
-                            </div>
+                         <p class=\"text-sm text-gray-500 line-through\">Precio normal: $${priceList}</p>\n                                <p class=\"text-2xl font-bold text-[#00a650]\">TRANSFERENCIA: $${priceTransfer}</p>\n                                <p class=\"text-sm text-gray-600 mt-1\">12 cuotas de $${(priceList / 12).toFixed(0)}</p>                            </div>
                             <button class="w-full py-2 bg-gray-100 text-xs font-bold rounded hover:bg-black hover:text-white transition-colors">VER DETALLES</button>
                         </div>
                     </div>
@@ -221,9 +213,8 @@
             document.getElementById('modalImg').src = currentBook.image || '';
             document.getElementById('modalTitle').textContent = currentBook.title;
             document.getElementById('modalAuthor').textContent = currentBook.author || 'Autor no especificado';
-            document.getElementById('modalPriceTransfer').textContent = `$${priceTransfer}`;
-            document.getElementById('modalPriceList').textContent = `$${priceList}`;
-            document.getElementById('modalPublisher').textContent = currentBook.publisher || '-';
+            document.getElementById(\'modalPriceTransfer\').textContent = `TRANSFERENCIA: $${priceTransfer}`;          document.getElementById(\'modalPriceList\').textContent = `$${priceList}`;
+            document.getElementById(\'modalInstallments\').textContent = `$${(priceList / 12).toFixed(0)}`;            document.getElementById('modalPublisher').textContent = currentBook.publisher || '-';
             document.getElementById('modalIsbn').textContent = currentBook.isbn || '-';
             document.getElementById('modalPages').textContent = currentBook.pages || '-';
             document.getElementById('modalLang').textContent = currentBook.language || '-';
