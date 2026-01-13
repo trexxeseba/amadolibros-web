@@ -156,7 +156,7 @@
                     <div class="relative mb-6 overflow-hidden rounded-2xl aspect-[3/4]">
                         <img src="${book.image}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-700">
                         <div class="absolute top-4 left-4">
-                            <span class="badge-premium">12% OFF</span>
+                            ${book.badge ? `<span class="badge-premium bg-blue-600">${book.badge}</span>` : `<span class="badge-premium">12% OFF</span>`}
                         </div>
                     </div>
                     <h3 class="font-bold text-xl mb-1">${book.title}</h3>
@@ -172,7 +172,10 @@
                                 <p class="text-base font-semibold text-gray-600">$${book.priceOriginal}</p>
                             </div>
                         </div>
-                        <a href="${book.meliLink}" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-dark text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors">Comprar</a>
+                        ${book.badge === 'Encargo disponible' ? 
+                            `<a href="https://wa.me/598099841325?text=${encodeURIComponent(`Hola, vi este título en la web: ${book.title} (${book.id}). ¿Me confirmás disponibilidad y plazo? Si es por encargo, lo gestiono. Estoy en Montevideo.`)}" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-green-700 transition-colors">Pedir por encargo</a>` :
+                            `<a href="${book.meliLink}" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-dark text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors">Comprar</a>`
+                        }
                     </div>
                 </div>
             `).join('');

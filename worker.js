@@ -20,13 +20,31 @@ export default {
       const catalogRaw = await env.AMADO_KV.get("full_catalog");
       let catalog = catalogRaw ? JSON.parse(catalogRaw) : [];
       
-      const processedCatalog = catalog.map(book => ({
-        ...book,
-        priceTransfer: Math.round(book.price * 0.88),
-        priceOriginal: book.price,
-        image: book.image.replace("http://", "https://"),
-        shippingInfo: shippingBanner
-      }));
+      const processedCatalog = catalog.map(book => {
+        // Calcular precios
+        const price = book.price || book.priceOriginal || 0;
+        const priceTransfer = book.priceTransfer || Math.round(price * 0.88);
+        const priceOriginal = book.priceOriginal || price;
+        
+        // Determinar badge según reglas de negocio
+        let badge = book.badge || null;
+        const status = book.status || "active";
+        const availableQty = book.available_quantity || book.availableQuantity || 0;
+        
+        if (!badge && status === "paused" && availableQty === 0) {
+          badge = "Encargo disponible";
+        }
+        
+        return {
+          ...book,
+          priceTransfer,
+          priceOriginal,
+          image: (book.image || "").replace("http://", "https://"),
+          shippingInfo: shippingBanner,
+          badge,
+          status
+        };
+      });
 
       return new Response(JSON.stringify(processedCatalog), {
         headers: { 
