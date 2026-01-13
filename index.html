@@ -3,1475 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amado Libros • Librería Online Uruguay • Pickup Ciudad Vieja • Envíos coordinados en 2h</title>
-    <meta name="description" content="🏆 Tienda Oficial Mercado Libre. Retirá libros en Ciudad Vieja (metros Plaza Matriz). Envíos coordinados en 2 horas Montevideo. 12% descuento transferencia. 12 cuotas sin recargo.">
+    <title>Amado Libros • Librería Online Uruguay • Pickup Ciudad Vieja</title>
+    <meta name="description" content="La librería más rápida de Uruguay. Envíos en 2h, 12% de descuento por transferencia y pickup en Ciudad Vieja.">
     
-    <!-- Favicon creado con libro + corazón -->
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚❤️</text></svg>">
     
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Amado Libros • Librería Online Uruguay • Tienda Oficial Mercado Libre">
-    <meta property="og:description" content="Pickup en Ciudad Vieja (metros Plaza Matriz) • Envíos coordinados en 2h • 12% dto. transferencia">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80">
+    <!-- Preconnect para Performance -->
+    <link rel="preconnect" href="https://http2.mlstatic.com">
     
     <style>
-        /* ===== VARIABLES DE COLOR ===== */
         :root {
-            --primary: #FF6B35;        /* Naranja Amado Libros */
-            --primary-dark: #E55A2B;   /* Naranja oscuro hover */
-            --secondary: #3483FA;      /* Azul ML confianza */
-            --accent: #FFD700;         /* Dorado ofertas */
-            --success: #00A650;        /* Verde éxito */
-            --meli-yellow: #FFE600;    /* Amarillo Mercado Libre */
-            
-            /* NEUTROS PROFESIONALES */
-            --dark: #1A1A2E;           /* Fondo premium */
-            --light: #F8F9FA;          /* Fondo claro */
-            --card: #FFFFFF;           /* Tarjetas blancas */
-            --text-dark: #333333;      /* Texto principal */
-            --text-light: #666666;     /* Texto secundario */
-            --border: #E8E8E8;         /* Bordes */
-            
-            /* GRADIENTES */
-            --gradient-orange: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%);
-            --gradient-blue: linear-gradient(135deg, #3483FA 0%, #5B9CFB 100%);
-            --gradient-dark: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
-            --gradient-meli: linear-gradient(135deg, #FFE600 0%, #FFD700 100%);
+            --primary: #FF6B35;
+            --primary-dark: #E55A2B;
+            --secondary: #3483FA;
+            --light: #F8F9FA;
+            --dark: #1A1A2E;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --card: #FFFFFF;
+            --border: #E8E8E8;
         }
 
-        /* ===== RESET ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: var(--text-dark);
             background: var(--light);
-            overflow-x: hidden;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-        /* ===== HEADER ===== */
+        /* HEADER OPTIMIZADO */
         .header {
             background: var(--card);
             border-bottom: 3px solid var(--primary);
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-        }
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-        }
-        .logo {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: 70px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            text-decoration: none;
         }
-        .logo-icon {
-            font-size: 32px;
-            color: var(--primary);
-        }
-        .logo-text {
-            display: flex;
-            flex-direction: column;
-        }
-        .logo-main {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-            line-height: 1;
-        }
-        .logo-sub {
-            font-size: 12px;
-            color: var(--text-light);
-            font-weight: 500;
-        }
+        .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary); text-decoration: none; }
 
-        /* ===== HERO SECTION ===== */
+        /* HERO SECTION */
         .hero {
-            background: var(--gradient-orange);
-            color: white;
-            padding: 80px 20px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .hero-content {
-            position: relative;
-            z-index: 2;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        .hero-badge {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 50px;
-            padding: 12px 30px;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 30px;
-            font-weight: 700;
-            font-size: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            animation: float 3s ease-in-out infinite;
-        }
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            line-height: 1.1;
-        }
-        .hero-title-small {
-            font-size: 2rem;
-            display: block;
-            margin-bottom: 10px;
-            opacity: 0.9;
-        }
-        .hero-highlight {
-            background: var(--accent);
-            color: var(--dark);
-            padding: 0 15px;
-            border-radius: 10px;
-            font-weight: 900;
-            display: inline-block;
-            transform: rotate(-2deg);
-            margin: 0 5px;
-        }
-        .hero-subtitle {
-            font-size: 1.3rem;
-            margin-bottom: 40px;
-            opacity: 0.95;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.5;
-        }
-
-        /* ===== SECCIÓN COTIZACIÓN ESPECIAL ===== */
-        .quote-section {
-            background: var(--gradient-blue);
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%);
             color: white;
             padding: 60px 20px;
             text-align: center;
-            margin-top: 40px;
-            border-radius: 20px;
-            position: relative;
-            overflow: hidden;
         }
-        .quote-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-        }
-        .quote-subtitle {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            opacity: 0.9;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .quote-items {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .quote-item {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 600;
-            backdrop-filter: blur(5px);
-        }
+        .hero h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 10px; }
+        .hero p { font-size: 1.2rem; opacity: 0.9; }
 
-        /* ===== DESTACADOS ===== */
-        .highlights {
-            padding: 80px 20px;
-            background: var(--light);
-        }
-        .section-title {
-            text-align: center;
-            font-size: 36px;
-            font-weight: 800;
-            margin-bottom: 50px;
-            color: var(--dark);
-            position: relative;
-        }
-        .section-title::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 4px;
-            background: var(--primary);
-            margin: 15px auto;
-            border-radius: 2px;
-        }
-        .highlight-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .highlight-card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 35px 25px;
-            text-align: center;
-            transition: all 0.4s;
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-        .highlight-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border-color: var(--primary);
-        }
-        .highlight-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            display: block;
-        }
-        .highlight-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: var(--dark);
-        }
-        .highlight-desc {
-            color: var(--text-light);
-            font-size: 15px;
-            line-height: 1.6;
-        }
-
-        /* ===== BARRA DE BÚSQUEDA GRANDE ===== */
-        .search-section-large {
-            margin: 40px auto 50px;
-            max-width: 900px;
-        }
-        .search-container-large {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            border: 2px solid var(--primary);
-        }
-        .search-wrapper-large {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .search-input-large {
-            flex: 1;
-            padding: 20px 25px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 18px;
-            transition: all 0.3s;
-            background: var(--light);
-        }
-        .search-input-large:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+        /* BUSCADOR CON DEBOUNCE */
+        .search-section { margin-top: -35px; margin-bottom: 40px; }
+        .search-box {
             background: white;
-        }
-        .search-btn-large {
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 0 35px;
-            font-weight: 700;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        .search-btn-large:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-        .search-hints {
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
+            gap: 10px;
         }
-        .search-hint-item {
-            background: var(--light);
-            color: var(--text-light);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 18px;
+            outline: none;
+            transition: border-color 0.3s;
         }
+        .search-input:focus { border-color: var(--primary); }
 
-        /* ===== CATALOGO CON PRECIOS MODIFICADOS ===== */
-        .catalog {
-            padding: 80px 20px;
-            background: var(--card);
-        }
+        /* GRID DE LIBROS */
         .books-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
         }
         .book-card {
             background: var(--card);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
-            transition: all 0.3s;
             border: 1px solid var(--border);
-            position: relative;
-        }
-        .book-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-        }
-        .book-badge {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: var(--primary);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            z-index: 2;
-        }
-        .book-image {
-            width: 100%;
-            height: 280px;
-            object-fit: cover;
-            background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
-        }
-        .book-content {
-            padding: 20px;
-        }
-        .book-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--dark);
-            line-height: 1.3;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .book-author {
-            color: var(--text-light);
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-
-        /* PRECIOS SIN TACHAR - NUEVO DISEÑO */
-        .book-pricing {
-            margin-bottom: 15px;
-        }
-        .price-discount {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--primary);
-            margin-bottom: 5px;
-        }
-        .price-regular {
-            font-size: 1rem;
-            color: var(--text-light);
-            margin-bottom: 5px;
-        }
-        .price-installments {
-            color: var(--success);
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-        .discount-badge {
-            background: var(--success);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        .book-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .book-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            text-align: center;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        .book-btn-whatsapp {
-            background: #25D366;
-            color: white;
-        }
-        .book-btn-whatsapp:hover {
-            background: #128C7E;
-        }
-        .book-btn-ml {
-            background: #FFE600;
-            color: #000;
-        }
-        .book-btn-ml:hover {
-            background: #FFD700;
-        }
-
-        /* ===== CÓMO FUNCIONA ===== */
-        .how-it-works {
-            padding: 80px 20px;
-            background: var(--gradient-dark);
-            color: white;
-        }
-        .how-it-works .section-title {
-            color: white;
-        }
-        .how-it-works .section-title::after {
-            background: var(--accent);
-        }
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .step-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 30px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s;
-        }
-        .step-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-5px);
-        }
-        .step-number {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .step-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-        .step-desc {
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.6;
-        }
-
-        /* ===== PICKUP SECTION ===== */
-        .pickup {
-            padding: 80px 20px;
-            background: var(--light);
-        }
-        .pickup-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .pickup-info h3 {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: var(--dark);
-        }
-        .pickup-info p {
-            font-size: 18px;
-            color: var(--text-light);
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-        .pickup-features {
+            transition: transform 0.3s, box-shadow 0.3s;
             display: flex;
             flex-direction: column;
-            gap: 15px;
         }
-        .pickup-feature {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .pickup-feature-icon {
-            width: 50px;
-            height: 50px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        .pickup-feature-text {
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .pickup-map {
-            background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
-            border-radius: 16px;
-            overflow: hidden;
-            height: 400px;
-            position: relative;
-        }
-        .map-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: var(--card);
-            color: var(--text-light);
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .map-placeholder-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-            color: var(--primary);
-        }
+        .book-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .book-img-wrapper { aspect-ratio: 2/3; background: #f0f0f0; position: relative; overflow: hidden; }
+        .book-img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
+        
+        .book-content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .book-title { font-size: 17px; font-weight: 700; margin-bottom: 5px; color: var(--dark); height: 2.4em; overflow: hidden; }
+        .book-author { font-size: 14px; color: var(--text-light); margin-bottom: 15px; }
+        
+        .book-pricing { margin-top: auto; }
+        .price-main { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .discount-badge { font-size: 12px; background: #FFF3E0; color: #E65100; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+        .price-regular { font-size: 13px; color: var(--text-light); text-decoration: line-through; }
+        .price-installments { font-size: 13px; color: var(--secondary); font-weight: 600; margin-top: 4px; }
 
-        /* ===== FOOTER ===== */
-        .footer {
-            background: var(--dark);
-            color: white;
-            padding: 60px 20px 30px;
-        }
-        .footer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .footer-column h4 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 25px;
-            color: white;
-        }
-        .footer-links {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .footer-link {
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            transition: color 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .footer-link:hover {
-            color: var(--primary);
-        }
+        .book-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn { padding: 10px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; text-align: center; transition: opacity 0.2s; }
+        .btn-ml { background: var(--secondary); color: white; }
+        .btn-wpp { background: #25D366; color: white; }
+        .btn:hover { opacity: 0.9; }
 
-        /* FOOTER LINK MERCADO LIBRE DISCRETO */
-        .footer-link-ml {
-            background: rgba(255, 230, 0, 0.1);
-            border: 1px solid rgba(255, 230, 0, 0.3);
-            border-radius: 8px;
-            padding: 12px 20px;
-            color: #FFE600 !important;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .footer-link-ml:hover {
-            background: rgba(255, 230, 0, 0.2);
-            transform: translateY(-2px);
-        }
+        /* SKELETON LOADING */
+        .skeleton { background: #eee; background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%); border-radius: 5px; background-size: 200% 100%; animation: 1.5s shine linear infinite; }
+        @keyframes shine { to { background-position-x: -200%; } }
 
-        .footer-contact {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 25px;
-            margin-top: 30px;
-        }
-        .footer-bottom {
-            text-align: center;
-            margin-top: 50px;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-        }
-
-        /* ===== BOTONES ===== */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 16px 32px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            text-decoration: none;
-            transition: all 0.3s;
-            cursor: pointer;
-            border: none;
-        }
-        .btn-primary {
-            background: var(--card);
-            color: var(--primary);
-        }
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
-            background: white;
-        }
-        .btn-whatsapp {
-            background: #25D366;
-            color: white;
-        }
-        .btn-whatsapp:hover {
-            background: #128C7E;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);
-        }
-        .btn-quote {
-            background: white;
-            color: var(--secondary);
-            padding: 18px 40px;
-            font-size: 1.2rem;
-            border-radius: 15px;
-        }
-        .btn-quote:hover {
-            background: #f0f0f0;
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-        }
-        .btn-lg {
-            padding: 18px 40px;
-            font-size: 18px;
-        }
-
-        /* ===== ANIMACIONES ===== */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .animate-fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2.5rem;
-            }
-            .hero-title-small {
-                font-size: 1.5rem;
-            }
-            .nav-links {
-                display: none;
-            }
-            .mobile-menu-btn {
-                display: block;
-            }
-            .hero-cta {
-                flex-direction: column;
-            }
-            .pickup-content {
-                grid-template-columns: 1fr;
-            }
-            .search-wrapper-large {
-                flex-direction: column;
-            }
-            .search-btn-large {
-                width: 100%;
-                padding: 20px;
-            }
-            .books-grid {
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            }
-        }
-
-        @media (max-width: 480px) {
-            .hero-title {
-                font-size: 2rem;
-            }
-            .section-title {
-                font-size: 28px;
-            }
-            .highlight-grid {
-                grid-template-columns: 1fr;
-            }
-            .books-grid {
-                grid-template-columns: 1fr;
-            }
-            .book-actions {
-                flex-direction: column;
-            }
-            .btn-lg {
-                padding: 15px 25px;
-                font-size: 16px;
-            }
-            .search-hints {
-                flex-direction: column;
-                align-items: center;
-                gap: 8px;
-            }
-        }
-
-        /* ===== MOBILE MENU ===== */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: var(--text-dark);
-            cursor: pointer;
-        }
-
-        @media (max-width: 768px) {
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            .nav-links.active {
-                display: flex;
-                flex-direction: column;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--card);
-                padding: 20px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-                border-top: 2px solid var(--primary);
-                z-index: 1000;
-            }
-        }
+        /* FOOTER */
+        .footer { background: var(--dark); color: white; padding: 40px 0; text-align: center; margin-top: 60px; }
     </style>
 </head>
 <body>
-    <!-- HEADER -->
+
     <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <a href="/" class="logo">
-                    <span class="logo-icon">📚❤️</span>
-                    <div class="logo-text">
-                        <span class="logo-main">AMADO LIBROS</span>
-                        <span class="logo-sub">Librería Online Uruguay</span>
-                    </div>
-                </a>
-                
-                <button class="mobile-menu-btn" id="mobileMenuBtn">
-                    ☰
-                </button>
-                
-                <nav class="nav-links" id="navLinks">
-                    <a href="#catalogo" class="nav-link">📖 Catálogo</a>
-                    <a href="#pickup" class="nav-link">📍 Pickup & Envíos</a>
-                    <a href="#como-funciona" class="nav-link">🔄 Cómo funciona</a>
-                    <a href="#pagos" class="nav-link">💳 Pagos</a>
-                    <a href="#cotizaciones" class="nav-link">✨ Cotizaciones</a>
-                    <a href="https://wa.me/59899841325?text=Hola!%20Quisiera%20consultar%20un%20libro%20de%20Amado%20Libros" 
-                       target="_blank" 
-                       class="nav-link whatsapp-header">
-                        📱 WhatsApp
-                    </a>
-                </nav>
-            </div>
+        <div class="container header-content">
+            <a href="/" class="logo">📚 Amado Libros</a>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-light);">Uruguay • 100% Online</div>
         </div>
     </header>
 
-    <!-- HERO SECTION -->
     <section class="hero">
         <div class="container">
-            <div class="hero-content animate-fade-in-up">
-                <div class="hero-badge">
-                    🚚 Envíos coordinados en 2 horas • 📍 Pickup Ciudad Vieja (metros Plaza Matriz)
-                </div>
-                
-                <h1 class="hero-title">
-                    <span class="hero-title-small">Tu próxima lectura</span>
-                    <span class="hero-highlight">está en Amado Libros</span>
-                </h1>
-                
-                <p class="hero-subtitle">
-                    Miles de títulos disponibles • <strong>12% descuento transferencia/efectivo</strong> • 
-                    <strong>12 cuotas sin recargo</strong> • Servicio centrado en el cliente
-                </p>
-                
-                <div class="hero-cta">
-                    <a href="#catalogo" class="btn btn-primary btn-lg">
-                        🔍 Buscar libros
-                    </a>
-                    <a href="#cotizaciones" class="btn btn-quote">
-                        ✨ Cotizar libro especial
-                    </a>
-                </div>
-            </div>
+            <h1>Tu próxima lectura, hoy.</h1>
+            <p>Envíos rápidos en Montevideo y todo el país.</p>
         </div>
     </section>
 
-    <!-- SECCIÓN COTIZACIONES ESPECIALES -->
-    <section class="quote-section" id="cotizaciones">
-        <div class="container">
-            <h2 class="quote-title">¿Buscás algo especial?</h2>
-            <p class="quote-subtitle">
-                ¿Un libro del 1700? ¿Un artículo descatalogado? ¿Un coleccionable del exterior?
-                <br>¡Te cotizamos sin compromiso!
-            </p>
-            
-            <div class="quote-items">
-                <span class="quote-item">📖 Libros agotados</span>
-                <span class="quote-item">💍 Anillos de Italia</span>
-                <span class="quote-item">📿 Collares de ámbar</span>
-                <span class="quote-item">🏆 Coleccionables Europa</span>
-                <span class="quote-item">🎨 Ediciones antiguas</span>
+    <main class="container">
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="Busca por título, autor o ISBN...">
             </div>
-            
-            <a href="https://wa.me/59899841325?text=Hola!%20Quisiera%20cotizar%20un%20artículo%20especial.%20Por%20favor%20contactame%20por:" 
-               target="_blank" 
-               class="btn btn-quote">
-                ✏️ Escribinos para cotizar
-            </a>
-            
-            <p style="margin-top: 20px; opacity: 0.8; font-size: 14px;">
-                Te contactamos por WhatsApp o Email según prefieras
-            </p>
-        </div>
-    </section>
+        </section>
 
-    <!-- DESTACADOS -->
-    <section class="highlights">
-        <div class="container">
-            <h2 class="section-title">¿Por qué comprar en Amado Libros?</h2>
-            
-            <div class="highlight-grid">
-                <div class="highlight-card">
-                    <span class="highlight-icon">🚚</span>
-                    <h3 class="highlight-title">Envíos Coordinados</h3>
-                    <p class="highlight-desc">
-                        En Montevideo coordinamos entrega en <strong>2 horas</strong> según tu ubicación y disponibilidad. 
-                        Para interior, enviamos por correo.
-                    </p>
-                </div>
-                
-                <div class="highlight-card">
-                    <span class="highlight-icon">📍</span>
-                    <h3 class="highlight-title">Pickup Ciudad Vieja</h3>
-                    <p class="highlight-desc">
-                        Retirá tus libros en nuestro punto de encuentro en 
-                        <strong>Ciudad Vieja, metros Plaza Matriz</strong>. Coordinamos horario a tu conveniencia.
-                    </p>
-                </div>
-                
-                <div class="highlight-card">
-                    <span class="highlight-icon">💰</span>
-                    <h3 class="highlight-title">12% Descuento</h3>
-                    <p class="highlight-desc">
-                        Pagando con <strong>transferencia o efectivo</strong> recibís 
-                        un 12% de descuento directo. ¡Más económico!
-                    </p>
-                </div>
-                
-                <div class="highlight-card">
-                    <span class="highlight-icon">🔄</span>
-                    <h3 class="highlight-title">12 Cuotas Sin Recargo</h3>
-                    <p class="highlight-desc">
-                        Todas las tarjetas hasta <strong>12 cuotas sin interés</strong>. 
-                        ¡Llevá tu libro hoy y pagá tranquilo!
-                    </p>
-                </div>
-            </div>
+        <div id="booksGrid" class="books-grid">
+            <!-- Skeletons iniciales -->
+            <div class="book-card"><div class="book-img-wrapper skeleton"></div><div class="book-content"><div class="skeleton" style="height:20px;margin-bottom:10px"></div><div class="skeleton" style="height:15px;width:60%"></div></div></div>
+            <div class="book-card"><div class="book-img-wrapper skeleton"></div><div class="book-content"><div class="skeleton" style="height:20px;margin-bottom:10px"></div><div class="skeleton" style="height:15px;width:60%"></div></div></div>
+            <div class="book-card"><div class="book-img-wrapper skeleton"></div><div class="book-content"><div class="skeleton" style="height:20px;margin-bottom:10px"></div><div class="skeleton" style="height:15px;width:60%"></div></div></div>
+            <div class="book-card"><div class="book-img-wrapper skeleton"></div><div class="book-content"><div class="skeleton" style="height:20px;margin-bottom:10px"></div><div class="skeleton" style="height:15px;width:60%"></div></div></div>
         </div>
-    </section>
+    </main>
 
-    <!-- CATÁLOGO CON BARRA DE BÚSQUEDA GRANDE -->
-    <section class="catalog" id="catalogo">
-        <div class="container">
-            <div class="catalog-header">
-                <h2 class="section-title">Catálogo Destacado</h2>
-                <p class="catalog-subtitle">
-                    Los libros más buscados esta semana. ¿No encontrás lo que buscás? 
-                    Escribinos por WhatsApp y lo conseguimos.
-                </p>
-            </div>
-            
-            <!-- BARRA DE BÚSQUEDA GRANDE -->
-            <div class="search-section-large">
-                <div class="search-container-large">
-                    <div class="search-wrapper-large">
-                        <input type="text" 
-                               class="search-input-large" 
-                               id="searchInputLarge"
-                               placeholder="🔍 Buscar por título, autor, ISBN, temática, editorial, año..."
-                               autocomplete="off">
-                        <button class="search-btn-large" id="searchBtnLarge">
-                            Buscar
-                        </button>
-                    </div>
-                    <div class="search-hints">
-                        <span class="search-hint-item">Ej: "Gabriel García Márquez"</span>
-                        <span class="search-hint-item">"Ficción contemporánea"</span>
-                        <span class="search-hint-item">"978-950-04-1234-5"</span>
-                        <span class="search-hint-item">"Autoayuda"</span>
-                        <span class="search-hint-item">"Editorial Planeta"</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Grid de libros -->
-            <div class="books-grid" id="booksGrid">
-                <!-- Los libros se cargarán aquí dinámicamente -->
-                <div class="loading-message">Cargando catálogo...</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CÓMO FUNCIONA -->
-    <section class="how-it-works" id="como-funciona">
-        <div class="container">
-            <h2 class="section-title">Servicio 100% centrado en vos</h2>
-            
-            <div class="steps-grid">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <h3 class="step-title">Elegí con asesoramiento</h3>
-                    <p class="step-desc">
-                        Te ayudamos a encontrar exactamente lo que necesitás. 
-                        <strong>Servicio personalizado</strong> según tus intereses.
-                    </p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <h3 class="step-title">Coordina cómo recibirlo</h3>
-                    <p class="step-desc">
-                        <strong>Pickup en Ciudad Vieja</strong> o <strong>envío coordinado</strong> 
-                        en Montevideo. ¡Vos elegís lo que te resulta más cómodo!
-                    </p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <h3 class="step-title">Pagá como prefieras</h3>
-                    <p class="step-desc">
-                        <strong>12% dto. transferencia/efectivo</strong> o 
-                        <strong>12 cuotas sin recargo</strong>. También por Mercado Libre.
-                    </p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-number">4</div>
-                    <h3 class="step-title">¡Disfrutá con garantía!</h3>
-                    <p class="step-desc">
-                        Si no es lo que esperabas, <strong>cambio por 7 días</strong>. 
-                        Tu satisfacción es nuestra prioridad.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- PICKUP SECTION -->
-    <section class="pickup" id="pickup">
-        <div class="container">
-            <div class="pickup-content">
-                <div class="pickup-info">
-                    <h3>📍 Pickup en Ciudad Vieja</h3>
-                    <p>
-                        <strong>No tenemos local físico</strong> para trasladarte el ahorro. 
-                        Menos costos para nosotros = mejores precios para vos.
-                    </p>
-                    <p>
-                        Coordinamos punto de encuentro en <strong>Ciudad Vieja, metros Plaza Matriz, Montevideo</strong> 
-                        para que retires tu pedido personalmente. ¡Rápido, fácil y sin costos de envío!
-                    </p>
-                    
-                    <div class="pickup-features">
-                        <div class="pickup-feature">
-                            <div class="pickup-feature-icon">🕐</div>
-                            <div class="pickup-feature-text">Coordinamos horario a tu conveniencia</div>
-                        </div>
-                        <div class="pickup-feature">
-                            <div class="pickup-feature-icon">🚶</div>
-                            <div class="pickup-feature-text">A metros de Plaza Matriz</div>
-                        </div>
-                        <div class="pickup-feature">
-                            <div class="pickup-feature-icon">💬</div>
-                            <div class="pickup-feature-text">Confirmación por WhatsApp</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="pickup-map">
-                    <div class="map-placeholder">
-                        <div class="map-placeholder-icon">📍</div>
-                        <div>Punto de encuentro</div>
-                        <div style="font-size: 14px; margin-top: 10px; color: var(--primary); font-weight: 800;">
-                            Ciudad Vieja, metros Plaza Matriz
-                        </div>
-                        <div style="font-size: 14px; margin-top: 5px;">
-                            Coordinamos dirección exacta por WhatsApp
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-grid">
-                <div class="footer-column">
-                    <h4>Amado Libros</h4>
-                    <div class="footer-links">
-                        <a href="#catalogo" class="footer-link">📖 Catálogo</a>
-                        <a href="#pickup" class="footer-link">📍 Pickup & Envíos</a>
-                        <a href="#como-funciona" class="footer-link">🔄 Cómo funciona</a>
-                        <a href="#pagos" class="footer-link">💳 Formas de pago</a>
-                        <a href="#cotizaciones" class="footer-link">✨ Cotizaciones especiales</a>
-                    </div>
-                </div>
-                
-                <div class="footer-column">
-                    <h4>Contacto</h4>
-                    <div class="footer-links">
-                        <a href="https://wa.me/59899841325" target="_blank" class="footer-link">
-                            📱 WhatsApp: +598 99 841 325
-                        </a>
-                        <a href="mailto:adm@amadolibros.com" class="footer-link">
-                            📧 Email: adm@amadolibros.com
-                        </a>
-                        <span class="footer-link">
-                            📍 Pickup: Ciudad Vieja, metros Plaza Matriz
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="footer-column">
-                    <h4>Tiendas oficiales</h4>
-                    <div class="footer-links">
-                        <a href="https://listado.mercadolibre.com.uy/amado-libros" 
-                           target="_blank" 
-                           class="footer-link footer-link-ml">
-                            🏆 Tienda Oficial Mercado Libre
-                        </a>
-                        <a href="https://www.instagram.com/amadolibros" 
-                           target="_blank" 
-                           class="footer-link">
-                            📸 Instagram
-                        </a>
-                        <a href="https://www.facebook.com/amadolibros" 
-                           target="_blank" 
-                           class="footer-link">
-                            👍 Facebook
-                        </a>
-                        <span class="footer-link">
-                            ✅ Vendedor certificado
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="footer-contact">
-                <h4 style="color: white; margin-bottom: 20px;">📦 ¿Tenés dudas sobre envíos?</h4>
-                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px;">
-                    <strong>Montevideo:</strong> Coordinamos envío en 2 horas según tu ubicación • 
-                    <strong>Interior:</strong> Enviamos por correo (3-5 días hábiles) • 
-                    <strong>Pickup:</strong> Ciudad Vieja, coordinamos horario
-                </p>
-                <a href="https://wa.me/59899841325?text=Hola!%20Tengo%20una%20consulta%20sobre%20envíos%20de%20Amado%20Libros" 
-                   target="_blank" 
-                   class="btn btn-whatsapp" 
-                   style="display: inline-flex;">
-                    📱 Consultar por WhatsApp
-                </a>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>© 2024 Amado Libros - Librería Online Uruguay. Todos los derechos reservados.</p>
-                <p style="margin-top: 10px; font-size: 13px;">
-                    Operamos 100% online con punto de encuentro en Ciudad Vieja, Montevideo.
-                    Precios sujetos a cambio sin previo aviso.
-                </p>
-            </div>
+            <p>© 2026 Amado Libros - Librería Online Uruguay</p>
+            <p style="font-size: 13px; opacity: 0.7; margin-top: 10px;">Precios dinámicos sincronizados con Mercado Libre</p>
         </div>
     </footer>
 
     <script>
-        // ===== DATOS DE LIBROS (PRECIOS SIN TACHAR) =====
-        const sampleBooks = [
-            {
-                id: 1,
-                title: "El Principito - Edición de Lujo",
-                author: "Antoine de Saint-Exupéry",
-                price: 890,
-                discountPrice: 783, // 12% descuento
-                installments: 74.17, // 12 cuotas
-                image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                available: true,
-                meliLink: "https://articulo.mercadolibre.com.uy/MLU-123456789",
-                category: "Literatura Clásica"
-            },
-            {
-                id: 2,
-                title: "Cien Años de Soledad",
-                author: "Gabriel García Márquez",
-                price: 750,
-                discountPrice: 660,
-                installments: 62.50,
-                image: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                available: true,
-                meliLink: "https://articulo.mercadolibre.com.uy/MLU-987654321",
-                category: "Realismo Mágico"
-            },
-            {
-                id: 3,
-                title: "Harry Potter y la Piedra Filosofal",
-                author: "J.K. Rowling",
-                price: 950,
-                discountPrice: 836,
-                installments: 79.17,
-                image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                available: true,
-                meliLink: "https://articulo.mercadolibre.com.uy/MLU-456789123",
-                category: "Fantasía"
-            },
-            {
-                id: 4,
-                title: "El Alquimista",
-                author: "Paulo Coelho",
-                price: 690,
-                discountPrice: 607,
-                installments: 57.50,
-                image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                available: true,
-                meliLink: "https://articulo.mercadolibre.com.uy/MLU-789123456",
-                category: "Ficción Inspiracional"
-            },
-            {
-                id: 5,
-                title: "1984 - George Orwell",
-                author: "George Orwell",
-                price: 820,
-                discountPrice: 722,
-                installments: 68.33,
-                image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                available: true,
-                meliLink: "https://articulo.mercadolibre.com.uy/MLU-321654987",
-                category: "Distopía"
-            },
-            {
-                id: 6,
-                title: "Orgullo y Prejuicio",
-                author: "Jane Austen",
-                price: 720,
-                discountPrice: 634,
-                installments: 60.00,
-                image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                available: true,
-                meliLink: "https://articulo.mercadolibre.com.uy/MLU-654987321",
-                category: "Romance Clásico"
+        let allBooks = [];
+        const grid = document.getElementById('booksGrid');
+        const searchInput = document.getElementById('searchInput');
+
+        // Cargar libros desde el Worker Proxy
+        async function fetchBooks() {
+            try {
+                const response = await fetch('/api/books');
+                if (!response.ok) throw new Error('API no disponible');
+                allBooks = await response.json();
+                renderBooks(allBooks);
+            } catch (e) {
+                console.error("Error:", e);
+                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;">
+                    <p>No pudimos cargar el catálogo. Por favor, intenta más tarde o contáctanos por WhatsApp.</p>
+                    <a href="https://wa.me/59899841325" class="btn btn-wpp" style="display:inline-block;margin-top:20px">Consultar por WhatsApp</a>
+                </div>`;
             }
-        ];
-
-        // Variable para mantener los libros actuales
-        let currentBooks = [...sampleBooks];
-
-        // ===== FUNCIONES PRINCIPALES =====
-        document.addEventListener('DOMContentLoaded', function() {
-            // Renderizar libros iniciales
-            renderBooks(currentBooks);
-            
-            // Configurar búsqueda
-            setupSearch();
-            
-            // Configurar menú móvil
-            setupMobileMenu();
-            
-            // Configurar animaciones scroll
-            setupScrollAnimations();
-            
-            // Configurar botones de cotización
-            setupQuoteButtons();
-        });
+        }
 
         function renderBooks(books) {
-            const booksGrid = document.getElementById('booksGrid');
-            
-            if (!booksGrid) return;
-            
             if (books.length === 0) {
-                booksGrid.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">🔍</div>
-                        <h3 style="color: var(--text-dark); margin-bottom: 15px; font-size: 24px;">
-                            No encontramos libros
-                        </h3>
-                        <p style="color: var(--text-light); margin-bottom: 25px; max-width: 500px; margin: 0 auto 25px;">
-                            Probá con otros términos o escribinos por WhatsApp para que te ayudemos a encontrarlo.
-                        </p>
-                        <a href="https://wa.me/59899841325" 
-                           target="_blank" 
-                           class="btn btn-whatsapp btn-lg">
-                            📱 Consultar por WhatsApp
-                        </a>
-                    </div>
-                `;
+                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;"><h3>No encontramos resultados</h3></div>`;
                 return;
             }
-            
-            booksGrid.innerHTML = books.map(book => `
-                <div class="book-card">
-                    ${book.available ? '<div class="book-badge">Disponible</div>' : ''}
-                    
-                    <img src="${book.image}" 
-                         alt="${book.title}" 
-                         class="book-image"
-                         onerror="this.src='https://images.unsplash.com/photo-1541963463532-d68292c34b19?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'">
-                    
-                    <div class="book-content">
-                        <h3 class="book-title">${book.title}</h3>
-                        <p class="book-author">${book.author}</p>
-                        
-                        <!-- PRECIOS SIN TACHAR - NUEVO DISEÑO -->
-                        <div class="book-pricing">
-                            <div class="price-discount">
-                                $${book.discountPrice.toLocaleString('es-UY')}
-                                <span class="discount-badge">12% dto.</span>
+
+            grid.innerHTML = books.map(book => {
+                const discountPrice = Math.round(book.price * 0.88);
+                const installments = (book.price / 12).toFixed(2);
+                
+                // Optimización de imagen vía Cloudflare Image Resizing
+                const imgUrl = window.location.hostname === 'localhost' || window.location.hostname.includes('github.io') 
+                    ? book.image 
+                    : `/cdn-cgi/image/format=webp,quality=85,width=400/${book.image}`;
+
+                return `
+                    <article class="book-card">
+                        <div class="book-img-wrapper">
+                            <img src="${imgUrl}" alt="${book.title}" class="book-img" loading="lazy">
+                        </div>
+                        <div class="book-content">
+                            <h3 class="book-title">${book.title}</h3>
+                            <p class="book-author">${book.author || 'Autor desconocido'}</p>
+                            
+                            <div class="book-pricing">
+                                <div class="price-main">
+                                    $${discountPrice.toLocaleString('es-UY')}
+                                    <span class="discount-badge">12% OFF</span>
+                                </div>
+                                <div class="price-regular">Precio ML: $${book.price.toLocaleString('es-UY')}</div>
+                                <div class="price-installments">12 cuotas de $${installments}</div>
                             </div>
-                            <div class="price-regular">
-                                Precio normal: $${book.price.toLocaleString('es-UY')}
-                            </div>
-                            <div class="price-installments">
-                                12 cuotas de $${book.installments.toLocaleString('es-UY', {minimumFractionDigits: 2})} sin recargo
+
+                            <div class="book-actions">
+                                <a href="${book.meliLink}" target="_blank" class="btn btn-ml">Ver en ML</a>
+                                <a href="https://wa.me/59899841325?text=Hola! Me interesa: ${encodeURIComponent(book.title)}" target="_blank" class="btn btn-wpp">WhatsApp</a>
                             </div>
                         </div>
-                        
-                        <div class="book-actions">
-                            <a href="https://wa.me/59899841325?text=Hola!%20Me%20interesa%20el%20libro:%20${encodeURIComponent(book.title)}%20-%20${encodeURIComponent(book.author)}" 
-                               target="_blank" 
-                               class="book-btn book-btn-whatsapp">
-                                Consultar por WPP
-                            </a>
-                            <a href="${book.meliLink}" 
-                               target="_blank" 
-                               class="book-btn book-btn-ml">
-                                🛒 Ver en ML
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                    </article>
+                `;
+            }).join('');
         }
 
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInputLarge');
-            const searchBtn = document.getElementById('searchBtnLarge');
-            
-            if (!searchInput || !searchBtn) return;
-            
-            function performSearch() {
-                const searchTerm = searchInput.value.toLowerCase().trim();
-                
-                if (searchTerm === '') {
-                    renderBooks(currentBooks);
-                    return;
-                }
-                
-                // Filtrar por múltiples criterios
-                const filteredBooks = currentBooks.filter(book => {
-                    const searchableText = `
-                        ${book.title}
-                        ${book.author}
-                        ${book.category}
-                    `.toLowerCase();
-                    
-                    return searchableText.includes(searchTerm);
-                });
-                
-                renderBooks(filteredBooks);
-                
-                // Mostrar mensaje si no hay resultados
-                if (filteredBooks.length === 0) {
-                    const booksGrid = document.getElementById('booksGrid');
-                    booksGrid.innerHTML = `
-                        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
-                            <div style="font-size: 64px; margin-bottom: 20px;">🔍</div>
-                            <h3 style="color: var(--text-dark); margin-bottom: 15px; font-size: 24px;">
-                                No encontramos libros con "${searchTerm}"
-                            </h3>
-                            <p style="color: var(--text-light); margin-bottom: 25px; max-width: 500px; margin: 0 auto 25px;">
-                                Probá con otros términos o escribinos por WhatsApp para que te ayudemos a encontrarlo.
-                            </p>
-                            <a href="https://wa.me/59899841325?text=Hola!%20Estoy%20buscando%20un%20libro%20sobre:%20${encodeURIComponent(searchTerm)}" 
-                               target="_blank" 
-                               class="btn btn-whatsapp btn-lg">
-                                📱 Consultar por WhatsApp
-                            </a>
-                        </div>
-                    `;
-                }
+        // Debounce para búsqueda eficiente
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const handleSearch = debounce((e) => {
+            const term = e.target.value.toLowerCase().trim();
+            if (!term) {
+                renderBooks(allBooks);
+                return;
             }
-            
-            // Event listeners
-            searchBtn.addEventListener('click', performSearch);
-            
-            searchInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') {
-                    performSearch();
-                }
-            });
-            
-            // Buscar en tiempo real después de 500ms de inactividad
-            let timeoutId;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => {
-                    if (e.target.value.length >= 3) {
-                        performSearch();
-                    }
-                }, 500);
-            });
-        }
+            const filtered = allBooks.filter(b => 
+                b.title.toLowerCase().includes(term) || 
+                (b.author && b.author.toLowerCase().includes(term)) ||
+                (b.isbn && b.isbn.includes(term))
+            );
+            renderBooks(filtered);
+        }, 300);
 
-        function setupMobileMenu() {
-            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-            const navLinks = document.getElementById('navLinks');
-            
-            if (!mobileMenuBtn || !navLinks) return;
-            
-            mobileMenuBtn.addEventListener('click', () => {
-                navLinks.classList.toggle('active');
-                mobileMenuBtn.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
-            });
-            
-            // Cerrar menú al hacer click en un link
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', () => {
-                    navLinks.classList.remove('active');
-                    mobileMenuBtn.textContent = '☰';
-                });
-            });
-        }
+        searchInput.addEventListener('input', handleSearch);
 
-        function setupScrollAnimations() {
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    
-                    const targetId = this.getAttribute('href');
-                    if (targetId === '#') return;
-                    
-                    const targetElement = document.querySelector(targetId);
-                    if (targetElement) {
-                        window.scrollTo({
-                            top: targetElement.offsetTop - 80,
-                            behavior: 'smooth'
-                        });
-                    }
-                });
-            });
-        }
-
-        function setupQuoteButtons() {
-            document.querySelectorAll('.btn-quote').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    if (!this.getAttribute('href') || this.getAttribute('href') === '#') {
-                        e.preventDefault();
-                        const message = encodeURIComponent("Hola! Quisiera cotizar un libro o artículo especial. Por favor contactame por WhatsApp o Email.");
-                        window.open(`https://wa.me/59899841325?text=${message}`, '_blank');
-                    }
-                });
-            });
-        }
-
-        // ===== NOTIFICACIÓN AUTOMÁTICA =====
-        setTimeout(() => {
-            showNotification('📚 ¿Buscás un libro especial? ¡Te lo conseguimos!', 'success');
-        }, 3000);
-
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                left: 20px;
-                max-width: 400px;
-                margin: 0 auto;
-                padding: 15px 20px;
-                background: ${type === 'success' ? 'var(--primary)' : 'var(--error)'};
-                color: white;
-                border-radius: 12px;
-                font-weight: 600;
-                z-index: 9999;
-                animation: slideInUp 0.3s ease-out;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                text-align: center;
-            `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOutDown 0.3s ease-out';
-                setTimeout(() => notification.remove(), 300);
-            }, 5000);
-        }
+        // Inicializar
+        fetchBooks();
     </script>
 </body>
 </html>
