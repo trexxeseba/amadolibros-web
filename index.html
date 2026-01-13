@@ -79,12 +79,17 @@
                         <p id="detailAuthor" class="text-xl font-semibold"></p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500 uppercase tracking-wide mb-1">Precio</p>
-                        <div class="flex items-baseline gap-3">
-                            <p id="detailPrice" class="text-4xl font-black text-orange-600"></p>
-                            <p id="detailOriginalPrice" class="text-xl text-gray-400 line-through"></p>
+                        <p class="text-sm text-gray-500 uppercase tracking-wide mb-3">Precios</p>
+                        <div class="space-y-2">
+                            <div class="flex items-baseline gap-3">
+                                <span class="text-sm text-gray-500 uppercase tracking-wide w-32">Transferencia</span>
+                                <p id="detailPrice" class="text-4xl font-black text-orange-600"></p>
+                            </div>
+                            <div class="flex items-baseline gap-3">
+                                <span class="text-sm text-gray-500 uppercase tracking-wide w-32">Hasta 12 cuotas</span>
+                                <p id="detailOriginalPrice" class="text-2xl font-semibold text-gray-600"></p>
+                            </div>
                         </div>
-                        <p class="text-xs text-orange-500 font-bold mt-1">12% OFF POR TRANSFERENCIA</p>
                     </div>
                     <div id="detailShipping" class="bg-blue-50 p-4 rounded-xl">
                         <p class="text-blue-800 font-semibold"></p>
@@ -119,7 +124,7 @@
     </div>
 
     <!-- WhatsApp Sticky -->
-    <a href="https://wa.me/59899000000" target="_blank" class="fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform z-50">
+    <a href="https://wa.me/598099841325" target="_blank" class="fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform z-50">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217s.231.006.332.013c.101.007.237-.038.37.281.144.345.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.101-.177.211-.077.383.1.173.444.733.953 1.186.656.584 1.21.765 1.383.852.173.087.275.072.376-.043.101-.116.433-.506.548-.68.116-.173.231-.144.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z"/></svg>
     </a>
 
@@ -156,12 +161,18 @@
                     </div>
                     <h3 class="font-bold text-xl mb-1">${book.title}</h3>
                     <p class="text-gray-500 text-sm mb-4">${book.author}</p>
-                    <div class="mt-auto flex justify-between items-end">
-                        <div>
-                            <p class="text-xs text-gray-400 line-through">$${book.priceOriginal}</p>
-                            <p class="text-2xl font-black text-orange-600">$${book.priceTransfer}</p>
+                    <div class="mt-auto">
+                        <div class="mb-4">
+                            <div class="flex items-baseline gap-2 mb-1">
+                                <span class="text-xs text-gray-500 uppercase tracking-wide">Transferencia</span>
+                                <p class="text-2xl font-black text-orange-600">$${book.priceTransfer}</p>
+                            </div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-xs text-gray-500 uppercase tracking-wide">Hasta 12 cuotas</span>
+                                <p class="text-base font-semibold text-gray-600">$${book.priceOriginal}</p>
+                            </div>
                         </div>
-                        <a href="${book.meliLink}" target="_blank" onclick="event.stopPropagation()" class="bg-dark text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors">Comprar</a>
+                        <a href="${book.meliLink}" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-dark text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors">Comprar</a>
                     </div>
                 </div>
             `).join('');
@@ -201,7 +212,7 @@
         function contactWhatsApp() {
             if (!currentBook) return;
             const msg = `Hola! Vi el libro "${currentBook.title}" en amadolibros.com y me interesa comprarlo. ¿Está disponible?`;
-            window.open(`https://wa.me/59899000000?text=${encodeURIComponent(msg)}`, '_blank');
+            window.open(`https://wa.me/598099841325?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function openInternationalForm() {
@@ -224,7 +235,7 @@
             const phone = document.getElementById('userPhone').value;
             
             const msg = `Hola Amado Libros! Quiero solicitar un libro internacional:%0A%0ATítulo: ${encodeURIComponent(title)}%0AAutor: ${encodeURIComponent(author || 'No especificado')}%0AMi nombre: ${encodeURIComponent(name)}%0AMi teléfono: ${encodeURIComponent(phone)}`;
-            window.open(`https://wa.me/59899000000?text=${msg}`, '_blank');
+            window.open(`https://wa.me/598099841325?text=${msg}`, '_blank');
             closeInternationalForm();
             document.getElementById('internationalForm').reset();
         });
