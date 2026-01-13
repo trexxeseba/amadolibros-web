@@ -1,4 +1,4 @@
-/**
+_**
  * Cloudflare Worker: Amado Libros - Versión Reparada y Estable
  */
 
@@ -56,5 +56,21 @@ export default {
 
     // 3. Servir el sitio
     return fetch(request);
+  },
+
+  async scheduled(event, env, ctx) {
+    console.log("Cron Trigger activado: Sincronizando catálogo...");
+    try {
+      const catalogUrl = "https://raw.githubusercontent.com/trexxeseba/amadolibros-web/main/catalogo_amado_libros.json";
+      const response = await fetch(catalogUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const catalogData = await response.json();
+      await env.AMADO_KV.put("full_catalog", JSON.stringify(catalogData));
+      console.log("Catálogo sincronizado exitosamente en KV.");
+    } catch (error) {
+      console.error("Error durante la sincronización del catálogo:", error);
+    }
   }
 };
