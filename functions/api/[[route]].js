@@ -1,60 +1,102 @@
+async function getMeliAccessToken(env) {
+  const response = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: env.MELI_APP_ID,
+      client_secret: env.MELI_CLIENT_SECRET,
+      refresh_token: env.MELI_REFRESH_TOKEN
+    })
+  });
+  
+  const data = await response.json();
+  return data.access_token;
+}
+
 export async function onRequest({ request, env }) {
   const url = new URL(request.url);
   
-  // Ruta de salud (verifica conexión con KV)
+  // Salud (verifica KV y variables)
   if (url.pathname === '/api/health') {
     return new Response(JSON.stringify({ 
       status: "OK",
       kv_configurado: !!env.ENCARGOS_KV,
-      kv_namespace: "AMADO_KV",
+      meli_configurado: !!env.MELI_APP_ID,
       timestamp: new Date().toISOString()
     }), {
       headers: { "Content-Type": "application/json" }
     });
   }
 
-  // Sistema de búsqueda (usa catálogo estático)
+  // Búsqueda EN TIEMPO REAL con Mercado Libre
   if (url.pathname === '/api/buscar') {
     const query = url.searchParams.get('q') || '';
     
     try {
-      // Cargar catálogo desde la carpeta pública
-      const catalogoResponse = await fetch('/data/catalogo_amado_libros.json');
-      if (!catalogoResponse.ok) {
-        throw new Error('No se pudo cargar el catálogo');
-      }
+      // Obtener token de acceso
+      const accessToken = await getMeliAccessToken(env);
       
-      const catalogo = await catalogoResponse.json();
-      
-      // Búsqueda simple
-      const resultados = catalogo.filter(libro => 
-        (libro.titulo && libro.titulo.toLowerCase().includes(query.toLowerCase())) ||
-        (libro.autor && libro.autor.toLowerCase().includes(query.toLowerCase()))
+      // Buscar SOLO tus libros
+      const searchResponse = await fetch(
+        `https://api.mercadolibre.com/users/${env.MELI_USER_ID}/items/search?q=${encodeURIComponent(query)}&limit=20`,
+        {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        }
       );
       
-      return new Response(JSON.stringify(resultados.slice(0, 50)), {
+      const searchData = await searchResponse.json();
+      
+      // Obtener detalles de cada producto
+      const items = await Promise.all(
+        searchData.results.map(async (itemId) => {
+          const itemResponse = await fetch(
+            `https://api.mercadolibre.com/items/${itemId}`,
+            { headers: { 'Authorization': `Bearer ${accessToken}` } }
+          );
+          return await itemResponse.json();
+        })
+      );
+      
+      return new Response(JSON.stringify(items), {
         headers: { 
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=3600'
+          'Cache-Control': 'public, max-age=3600' // Caché 1 hora
         }
       });
     } catch (error) {
-      return new Response(JSON.stringify({ 
-        error: "Error al buscar libros",
-        message: error.message 
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.error('Error en búsqueda Meli:', error);
+      
+      // Fallback al catálogo estático
+      try {
+        const catalogoResponse = await fetch('/data/catalogo_amado_libros.json');
+        const catalogo = await catalogoResponse.json();
+        
+        const resultados = catalogo.filter(libro => 
+          (libro.titulo && libro.titulo.toLowerCase().includes(query.toLowerCase())) ||
+          (libro.autor && libro.autor.toLowerCase().includes(query.toLowerCase()))
+        );
+        
+        return new Response(JSON.stringify(resultados.slice(0, 50)), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (fallbackError) {
+        return new Response(JSON.stringify({ 
+          error: "Error al buscar libros",
+          message: error.message 
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
   }
 
-  // Sistema de encargos (USA EL KV VINCULADO)
+  // Sistema de encargos (sin cambios)
   if (url.pathname === '/api/encargo' && request.method === 'POST') {
     try {
       const { libroId, email, tituloLibro } = await request.json();
       
-      // Validaciones
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return new Response(JSON.stringify({ 
           success: false, 
@@ -75,7 +117,6 @@ export async function onRequest({ request, env }) {
         });
       }
       
-      // Guardar en KV (USANDO EL NOMBRE DE ENLACE CORRECTO)
       await env.ENCARGOS_KV.put(
         `encargo:${libroId}:${Date.now()}`, 
         JSON.stringify({
