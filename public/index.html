@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amado Libros</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        #search-input { width: 300px; padding: 8px; }
+        #search-results { margin-top: 20px; }
+        .book-item { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+        .book-item img { max-width: 100px; margin-right: 10px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <h1>Bienvenido a Amado Libros</h1>
+    <input type="text" id="search-input" placeholder="Buscar libros...">
+    <div id="search-results"></div>
+
+    <script>
+        const searchInput = document.getElementById("search-input");
+        const searchResults = document.getElementById("search-results");
+        let debounceTimer;
+
+        searchInput.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                const query = searchInput.value;
+                if (query.length > 2) {
+                    const response = await fetch(`/api/search?q=${query}`);
+                    const books = await response.json();
+                    displaySearchResults(books);
+                } else {
+                    searchResults.innerHTML = "";
+                }
+            }, 300);
+        });
+
+        function displaySearchResults(books) {
+            searchResults.innerHTML = "";
+            if (books && books.length > 0) {
+                books.forEach(book => {
+                    const div = document.createElement("div");
+                    div.className = "book-item";
+                    div.innerHTML = `
+                        <img src="${book.thumbnail}" alt="${book.title}">
+                        <span>${book.title} - $${book.price}</span>
+                        <a href="${book.permalink}" target="_blank">Ver en ML</a>
+                    `;
+                    searchResults.appendChild(div);
+                });
+            } else {
+                searchResults.innerHTML = "<p>No se encontraron resultados.</p>";
+            }
+        }
+    </script>
+</body>
+</html>

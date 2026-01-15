@@ -1,0 +1,19 @@
+name = "amadolibros-web"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+APP_ID = ""
+CLIENT_SECRET = ""
+REFRESH_TOKEN = ""
+SELLER_ID = ""
+
+[kv_namespaces]
+binding = "AMADO_KV"
+id = "<YOUR_KV_NAMESPACE_ID>" # Reemplazar con el ID real de tu KV Namespace
+
+[site]
+bucket = "./public"
+
+[triggers]
+crons = [ "0 0 * * *" ] # Sincronizar una vez al día a medianoche (UTC)
