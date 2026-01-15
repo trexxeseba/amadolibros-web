@@ -17,7 +17,7 @@ async function getMeliAccessToken(env) {
 export async function onRequest({ request, env }) {
   const url = new URL(request.url);
   
-  // Salud (verifica KV y variables)
+  // 1. Endpoint de salud
   if (url.pathname === '/api/health') {
     return new Response(JSON.stringify({ 
       status: "OK",
@@ -29,7 +29,7 @@ export async function onRequest({ request, env }) {
     });
   }
 
-  // Catálogo HOME (primeros 50 libros)
+  // 2. Catálogo principal (HOME)
   if (url.pathname === '/api/home') {
     try {
       const accessToken = await getMeliAccessToken(env);
@@ -60,13 +60,12 @@ export async function onRequest({ request, env }) {
         }
       });
     } catch (error) {
-      console.error('Error en home Meli:', error);
+      console.error('Error en /api/home (Meli):', error);
       
-      // ✅ FALLBACK MEJORADO: Si falla Mercado Libre, usa el JSON estático
+      // ✅ FALLBACK PRINCIPAL: Leer del KV (clave 'full_catalog')
       try {
-        // Esta ruta debe apuntar al archivo estático en tu servidor
-        const fallbackResponse = await fetch(`${new URL(request.url).origin}/data/catalogo_amado_libros.json`);
-        const fallbackData = await fallbackResponse.json();
+        const fullCatalog = await env.ENCARGOS_KV.get("full_catalog", "json");
+        const fallbackData = fullCatalog || [];
         
         return new Response(JSON.stringify(fallbackData), {
           headers: { 
@@ -74,20 +73,28 @@ export async function onRequest({ request, env }) {
             'Cache-Control': 'public, max-age=3600'
           }
         });
-      } catch (fallbackError) {
-        // Si también falla el estático, devuelve un error claro
-        return new Response(JSON.stringify({ 
-          error: "Catálogo no disponible",
-          message: "Intenta recargar la página más tarde."
-        }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        });
+      } catch (kvError) {
+        // ✅ FALLBACK SECUNDARIO: Intentar archivo estático (por si el KV falla)
+        try {
+          const staticResponse = await fetch(`${url.origin}/data/catalogo_amado_libros.json`);
+          const staticData = await staticResponse.json();
+          return new Response(JSON.stringify(staticData), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (staticError) {
+          return new Response(JSON.stringify({ 
+            error: "Catálogo no disponible",
+            message: "Intenta recargar la página más tarde."
+          }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
       }
     }
   }
 
-  // Búsqueda EN TIEMPO REAL con Mercado Libre
+  // 3. Búsqueda en tiempo real
   if (url.pathname === '/api/buscar') {
     const query = url.searchParams.get('q') || '';
     
@@ -120,12 +127,12 @@ export async function onRequest({ request, env }) {
         }
       });
     } catch (error) {
-      console.error('Error en búsqueda Meli:', error);
+      console.error('Error en /api/buscar (Meli):', error);
       
-      // ✅ FALLBACK MEJORADO: Si falla la búsqueda en vivo, filtra el catálogo estático
+      // ✅ FALLBACK PRINCIPAL: Buscar dentro del KV
       try {
-        const fallbackResponse = await fetch(`${new URL(request.url).origin}/data/catalogo_amado_libros.json`);
-        const catalogo = await fallbackResponse.json();
+        const fullCatalog = await env.ENCARGOS_KV.get("full_catalog", "json");
+        const catalogo = fullCatalog || [];
         
         const resultados = catalogo.filter(libro => 
           (libro.title && libro.title.toLowerCase().includes(query.toLowerCase())) ||
@@ -138,19 +145,34 @@ export async function onRequest({ request, env }) {
             'Cache-Control': 'public, max-age=300'
           }
         });
-      } catch (fallbackError) {
-        return new Response(JSON.stringify({ 
-          error: "Búsqueda no disponible",
-          message: "Usa el catálogo principal o intenta más tarde."
-        }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        });
+      } catch (kvError) {
+        // ✅ FALLBACK SECUNDARIO: Buscar en archivo estático
+        try {
+          const staticResponse = await fetch(`${url.origin}/data/catalogo_amado_libros.json`);
+          const staticCatalog = await staticResponse.json();
+          
+          const staticResults = staticCatalog.filter(libro => 
+            (libro.title && libro.title.toLowerCase().includes(query.toLowerCase())) ||
+            (libro.id && libro.id.toLowerCase().includes(query.toLowerCase()))
+          );
+          
+          return new Response(JSON.stringify(staticResults.slice(0, 50)), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (staticError) {
+          return new Response(JSON.stringify({ 
+            error: "Búsqueda no disponible",
+            message: "Usa el catálogo principal o intenta más tarde."
+          }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
       }
     }
   }
 
-  // Sistema de encargos (sin cambios)
+  // 4. Sistema de encargos (POST)
   if (url.pathname === '/api/encargo' && request.method === 'POST') {
     try {
       const { libroId, email, tituloLibro } = await request.json();
@@ -204,6 +226,6 @@ export async function onRequest({ request, env }) {
     }
   }
 
-  // Para cualquier otra ruta /api/* que no coincida, devuelve 404
+  // 5. Cualquier otra ruta /api/*
   return new Response('Not Found', { status: 404 });
 }
