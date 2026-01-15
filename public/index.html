@@ -3,56 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amado Libros</title>
+    <title>Amado Libros | Catálogo Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        #search-input { width: 300px; padding: 8px; }
-        #search-results { margin-top: 20px; }
-        .book-item { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-        .book-item img { max-width: 100px; margin-right: 10px; vertical-align: middle; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .skeleton { background: #e5e7eb; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body>
-    <h1>Bienvenido a Amado Libros</h1>
-    <input type="text" id="search-input" placeholder="Buscar libros...">
-    <div id="search-results"></div>
+<body class="min-h-screen flex flex-col">
 
-    <script>
-        const searchInput = document.getElementById("search-input");
-        const searchResults = document.getElementById("search-results");
-        let debounceTimer;
+    <header class="bg-black text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <h1 class="text-2xl font-bold tracking-tight text-orange-500">AMADO LIBROS</h1>
+            
+            <div class="w-full md:w-1/2 relative">
+                <input type="text" id="searchInput" placeholder="Buscar autor, título o ISBN..." 
+                    class="w-full bg-gray-900 text-white border border-gray-700 rounded-full py-2 px-5 focus:outline-none focus:border-orange-500 transition-colors placeholder-gray-500">
+                <div id="loadingIndicator" class="absolute right-4 top-2.5 hidden">
+                    <div class="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-        searchInput.addEventListener("input", () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(async () => {
-                const query = searchInput.value;
-                if (query.length > 2) {
-                    const response = await fetch(`/api/search?q=${query}`);
-                    const books = await response.json();
-                    displaySearchResults(books);
-                } else {
-                    searchResults.innerHTML = "";
-                }
-            }, 300);
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
+        <div id="grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+        </div>
+        
+        <div id="sentinel" class="h-20 flex items-center justify-center mt-8">
+            <p class="text-gray-400 text-sm animate-pulse">Cargando más libros...</p>
+        </div>
+    </main>
+
+    <div id="modal" class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col md:flex-row overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="modalContent">
+            <div class="w-full md:w-1/2 bg-gray-100 p-8 flex items-center justify-center">
+                <img id="mImg" src="" class="max-h-[50vh] shadow-lg rounded object-contain">
+            </div>
+            <div class="w-full md:w-1/2 p-8 flex flex-col relative">
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-3xl text-gray-400 hover:text-black">&times;</button>
+                <h2 id="mTitle" class="text-2xl font-bold text-gray-900 mb-2 leading-tight"></h2>
+                <p id="mPrice" class="text-4xl font-black text-orange-600 mb-6"></p>
+                
+                <div class="space-y-3 mt-auto">
+                    <a id="mLink" href="#" target="_blank" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center font-bold py-4 rounded-lg transition-transform hover:scale-[1.02] shadow-md">
+                        COMPRAR EN MERCADO LIBRE
+                    </a>
+                    <button onclick="shareWhatsapp()" class="block w-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-center font-bold py-4 rounded-lg flex items-center justify-center gap-2 shadow-md">
+                        <span>Pedir por WhatsApp</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ESTADO
+    let offset = 0;
+    let loading = false;
+    let currentQuery = '';
+    const grid = document.getElementById('grid');
+
+    // INICIALIZACIÓN
+    window.addEventListener('DOMContentLoaded', () => {
+        // Detectar si venimos de un share (?id=...)
+        const params = new URLSearchParams(window.location.search);
+        const sharedId = params.get('id');
+        if(sharedId) { openModalById(sharedId); }
+
+        // Cargar portada
+        loadBooks(); 
+    });
+
+    // CARGAR LIBROS (HOME O BÚSQUEDA)
+    async function loadBooks(isSearch = false) {
+        if (loading) return;
+        loading = true;
+        
+        if (offset === 0 && !isSearch) renderSkeletons(10);
+
+        try {
+            let url = currentQuery 
+                ? `/api/search?q=${encodeURIComponent(currentQuery)}&offset=${offset}`
+                : `/api/home`; 
+            
+            // Si es home y offset > 0, paramos (la home se carga de una vez desde KV por ahora)
+            if (!currentQuery && offset > 0) { loading = false; return; }
+
+            const res = await fetch(url);
+            const data = await res.json();
+            const books = Array.isArray(data) ? data : (data.results || []);
+
+            if (offset === 0) grid.innerHTML = ''; // Limpiar si es primera carga
+            
+            if (books.length === 0 && offset === 0) {
+                grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-10">No encontramos resultados.</p>';
+            }
+
+            books.forEach(book => {
+                const price = book.price || 0;
+                const imgUrl = book.thumbnail ? `/api/image-proxy?url=${encodeURIComponent(book.thumbnail.replace('-I.jpg', '-V.jpg'))}` : 'https://via.placeholder.com/300x400';
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-gray-100 group';
+                card.onclick = () => openModal(book);
+                card.innerHTML = `
+                    <div class="aspect-[3/4] mb-4 overflow-hidden rounded-lg bg-gray-50 relative">
+                        <img src="${imgUrl}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                    </div>
+                    <h3 class="font-bold text-gray-900 text-sm line-clamp-2 leading-snug mb-2 group-hover:text-orange-600 transition-colors">${book.title}</h3>
+                    <p class="text-xl font-black text-gray-900">$${price}</p>
+                    <p class="text-xs text-green-600 font-bold mt-1">12 cuotas sin recargo</p>
+                `;
+                grid.appendChild(card);
+            });
+
+            offset += books.length;
+        } catch (e) {
+            console.error(e);
+        } finally {
+            loading = false;
+            document.getElementById('loadingIndicator').classList.add('hidden');
+            // Remover skeletons si quedan
+            document.querySelectorAll('.skeleton').forEach(el => el.remove());
+        }
+    }
+
+    // BUSCADOR (DEBOUNCE)
+    let timeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        document.getElementById('loadingIndicator').classList.remove('hidden');
+        timeout = setTimeout(() => {
+            currentQuery = e.target.value;
+            offset = 0;
+            loadBooks(true);
+        }, 500);
+    });
+
+    // SKELETONS
+    function renderSkeletons(count) {
+        for(let i=0; i<count; i++) {
+            const skel = document.createElement('div');
+            skel.className = 'bg-white p-4 rounded-xl border border-gray-100 skeleton';
+            skel.innerHTML = '<div class="h-48 bg-gray-200 rounded mb-4"></div><div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div><div class="h-6 bg-gray-200 rounded w-1/2"></div>';
+            grid.appendChild(skel);
+        }
+    }
+
+    // MODAL
+    let currentBook = null;
+    function openModal(book) {
+        currentBook = book;
+        document.getElementById('mImg').src = book.thumbnail ? `/api/image-proxy?url=${encodeURIComponent(book.thumbnail.replace('-I.jpg', '-V.jpg'))}` : '';
+        document.getElementById('mTitle').textContent = book.title;
+        document.getElementById('mPrice').textContent = `$${book.price}`;
+        document.getElementById('mLink').href = book.permalink;
+        
+        const modal = document.getElementById('modal');
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('modalContent').classList.remove('scale-95');
         });
 
-        function displaySearchResults(books) {
-            searchResults.innerHTML = "";
-            if (books && books.length > 0) {
-                books.forEach(book => {
-                    const div = document.createElement("div");
-                    div.className = "book-item";
-                    div.innerHTML = `
-                        <img src="${book.thumbnail}" alt="${book.title}">
-                        <span>${book.title} - $${book.price}</span>
-                        <a href="${book.permalink}" target="_blank">Ver en ML</a>
-                    `;
-                    searchResults.appendChild(div);
-                });
-            } else {
-                searchResults.innerHTML = "<p>No se encontraron resultados.</p>";
-            }
+        // Cambiar URL para compartir
+        const newUrl = `${window.location.pathname}?id=${book.id}`;
+        window.history.pushState({path: newUrl}, '', newUrl);
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('modal');
+        modal.classList.add('opacity-0');
+        document.getElementById('modalContent').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            window.history.pushState({path: '/'}, '', '/');
+        }, 300);
+    }
+
+    function shareWhatsapp() {
+        if(!currentBook) return;
+        const url = window.location.href;
+        const msg = `Hola, me interesa este libro: ${currentBook.title} - ${url}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    async function openModalById(id) {
+        try {
+            const res = await fetch(`/api/home`);
+            const data = await res.json();
+            const books = Array.isArray(data) ? data : (data.results || []);
+            const book = books.find(b => b.id === id);
+            if(book) openModal(book);
+        } catch(e) {
+            console.error(e);
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
