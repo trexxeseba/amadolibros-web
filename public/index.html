@@ -83,10 +83,10 @@
         if (offset === 0 && !isSearch) renderSkeletons(10);
 
         try {
-            // ✅ LÍNEA CRÍTICA CORREGIDA: Se usa el catálogo estático que SÍ funciona
+            // ✅ LÍNEA CRÍTICA CORREGIDA: Ahora usa /api/home que tiene fallback al KV
             let url = currentQuery 
                 ? `/api/search?q=${encodeURIComponent(currentQuery)}&offset=${offset}`
-                : `/data/catalogo_amado_libros.json`;
+                : `/api/home`;
             
             if (!currentQuery && offset > 0) { loading = false; return; }
 
@@ -122,7 +122,6 @@
             offset += books.length;
         } catch (e) {
             console.error('Error cargando libros:', e);
-            // Opcional: Mostrar un mensaje de error amigable al usuario
             if (offset === 0) {
                 grid.innerHTML = '<p class="col-span-full text-center text-red-500 py-10">Ocurrió un error al cargar el catálogo. Por favor, recarga la página.</p>';
             }
@@ -196,7 +195,8 @@
 
     async function openModalById(id) {
         try {
-            const res = await fetch(`/data/catalogo_amado_libros.json`);
+            // ✅ También actualizado para usar /api/home
+            const res = await fetch(`/api/home`);
             const data = await res.json();
             const books = Array.isArray(data) ? data : (data.results || data.items || []);
             const book = books.find(b => b.id === id);
