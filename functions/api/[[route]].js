@@ -29,6 +29,51 @@ export async function onRequest({ request, env }) {
     });
   }
 
+  // Catálogo HOME (primeros 50 libros)
+  if (url.pathname === '/api/home') {
+    try {
+      // Obtener token de acceso
+      const accessToken = await getMeliAccessToken(env);
+      
+      // Obtener todos tus libros (primeros 50)
+      const searchResponse = await fetch(
+        `https://api.mercadolibre.com/users/${env.MELI_USER_ID}/items/search?limit=50`,
+        {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        }
+      );
+      
+      const searchData = await searchResponse.json();
+      
+      // Obtener detalles de cada producto
+      const items = await Promise.all(
+        searchData.results.map(async (itemId) => {
+          const itemResponse = await fetch(
+            `https://api.mercadolibre.com/items/${itemId}`,
+            { headers: { 'Authorization': `Bearer ${accessToken}` } }
+          );
+          return await itemResponse.json();
+        })
+      );
+      
+      return new Response(JSON.stringify(items), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=3600' // Caché 1 hora
+        }
+      });
+    } catch (error) {
+      console.error('Error en home Meli:', error);
+      return new Response(JSON.stringify({ 
+        error: "Error al cargar catálogo",
+        message: error.message 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
   // Búsqueda EN TIEMPO REAL con Mercado Libre
   if (url.pathname === '/api/buscar') {
     const query = url.searchParams.get('q') || '';
