@@ -69,12 +69,9 @@
 
     // INICIALIZACIÓN
     window.addEventListener('DOMContentLoaded', () => {
-        // Detectar si venimos de un share (?id=...)
         const params = new URLSearchParams(window.location.search);
         const sharedId = params.get('id');
         if(sharedId) { openModalById(sharedId); }
-
-        // Cargar portada
         loadBooks(); 
     });
 
@@ -86,18 +83,19 @@
         if (offset === 0 && !isSearch) renderSkeletons(10);
 
         try {
+            // ✅ LÍNEA CRÍTICA CORREGIDA: Se usa el catálogo estático que SÍ funciona
             let url = currentQuery 
                 ? `/api/search?q=${encodeURIComponent(currentQuery)}&offset=${offset}`
-                : `/api/home`; 
+                : `/data/catalogo_amado_libros.json`;
             
-            // Si es home y offset > 0, paramos (la home se carga de una vez desde KV por ahora)
             if (!currentQuery && offset > 0) { loading = false; return; }
 
             const res = await fetch(url);
             const data = await res.json();
-            const books = Array.isArray(data) ? data : (data.results || []);
+            // Asegura que 'books' sea un array, buscando en las propiedades comunes
+            const books = Array.isArray(data) ? data : (data.results || data.items || []);
 
-            if (offset === 0) grid.innerHTML = ''; // Limpiar si es primera carga
+            if (offset === 0) grid.innerHTML = '';
             
             if (books.length === 0 && offset === 0) {
                 grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-10">No encontramos resultados.</p>';
@@ -123,11 +121,14 @@
 
             offset += books.length;
         } catch (e) {
-            console.error(e);
+            console.error('Error cargando libros:', e);
+            // Opcional: Mostrar un mensaje de error amigable al usuario
+            if (offset === 0) {
+                grid.innerHTML = '<p class="col-span-full text-center text-red-500 py-10">Ocurrió un error al cargar el catálogo. Por favor, recarga la página.</p>';
+            }
         } finally {
             loading = false;
             document.getElementById('loadingIndicator').classList.add('hidden');
-            // Remover skeletons si quedan
             document.querySelectorAll('.skeleton').forEach(el => el.remove());
         }
     }
@@ -170,7 +171,6 @@
             document.getElementById('modalContent').classList.remove('scale-95');
         });
 
-        // Cambiar URL para compartir
         const newUrl = `${window.location.pathname}?id=${book.id}`;
         window.history.pushState({path: newUrl}, '', newUrl);
     }
@@ -185,7 +185,7 @@
         }, 300);
     }
 
-    const WHATSAPP_NUMBER = "+59899841325"; // Número real de WhatsApp (Uruguay)
+    const WHATSAPP_NUMBER = "+59899841325";
 
     function shareWhatsapp() {
         if(!currentBook) return;
@@ -196,9 +196,9 @@
 
     async function openModalById(id) {
         try {
-            const res = await fetch(`/api/home`);
+            const res = await fetch(`/data/catalogo_amado_libros.json`);
             const data = await res.json();
-            const books = Array.isArray(data) ? data : (data.results || []);
+            const books = Array.isArray(data) ? data : (data.results || data.items || []);
             const book = books.find(b => b.id === id);
             if(book) openModal(book);
         } catch(e) {
@@ -206,6 +206,5 @@
         }
     }
 </script>
-
 </body>
 </html>
