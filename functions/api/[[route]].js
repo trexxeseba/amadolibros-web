@@ -32,10 +32,8 @@ export async function onRequest({ request, env }) {
   // Catálogo HOME (primeros 50 libros)
   if (url.pathname === '/api/home') {
     try {
-      // Obtener token de acceso
       const accessToken = await getMeliAccessToken(env);
       
-      // Obtener todos tus libros (primeros 50)
       const searchResponse = await fetch(
         `https://api.mercadolibre.com/users/${env.MELI_USER_ID}/items/search?limit=50`,
         {
@@ -45,7 +43,6 @@ export async function onRequest({ request, env }) {
       
       const searchData = await searchResponse.json();
       
-      // Obtener detalles de cada producto
       const items = await Promise.all(
         searchData.results.map(async (itemId) => {
           const itemResponse = await fetch(
@@ -59,18 +56,34 @@ export async function onRequest({ request, env }) {
       return new Response(JSON.stringify(items), {
         headers: { 
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=3600' // Caché 1 hora
+          'Cache-Control': 'public, max-age=3600'
         }
       });
     } catch (error) {
       console.error('Error en home Meli:', error);
-      return new Response(JSON.stringify({ 
-        error: "Error al cargar catálogo",
-        message: error.message 
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      
+      // ✅ FALLBACK MEJORADO: Si falla Mercado Libre, usa el JSON estático
+      try {
+        // Esta ruta debe apuntar al archivo estático en tu servidor
+        const fallbackResponse = await fetch(`${new URL(request.url).origin}/data/catalogo_amado_libros.json`);
+        const fallbackData = await fallbackResponse.json();
+        
+        return new Response(JSON.stringify(fallbackData), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=3600'
+          }
+        });
+      } catch (fallbackError) {
+        // Si también falla el estático, devuelve un error claro
+        return new Response(JSON.stringify({ 
+          error: "Catálogo no disponible",
+          message: "Intenta recargar la página más tarde."
+        }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
   }
 
@@ -79,10 +92,8 @@ export async function onRequest({ request, env }) {
     const query = url.searchParams.get('q') || '';
     
     try {
-      // Obtener token de acceso
       const accessToken = await getMeliAccessToken(env);
       
-      // Buscar SOLO tus libros
       const searchResponse = await fetch(
         `https://api.mercadolibre.com/users/${env.MELI_USER_ID}/items/search?q=${encodeURIComponent(query)}&limit=20`,
         {
@@ -92,7 +103,6 @@ export async function onRequest({ request, env }) {
       
       const searchData = await searchResponse.json();
       
-      // Obtener detalles de cada producto
       const items = await Promise.all(
         searchData.results.map(async (itemId) => {
           const itemResponse = await fetch(
@@ -106,31 +116,34 @@ export async function onRequest({ request, env }) {
       return new Response(JSON.stringify(items), {
         headers: { 
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=3600' // Caché 1 hora
+          'Cache-Control': 'public, max-age=3600'
         }
       });
     } catch (error) {
       console.error('Error en búsqueda Meli:', error);
       
-      // Fallback al catálogo estático
+      // ✅ FALLBACK MEJORADO: Si falla la búsqueda en vivo, filtra el catálogo estático
       try {
-        const catalogoResponse = await fetch('/data/catalogo_amado_libros.json');
-        const catalogo = await catalogoResponse.json();
+        const fallbackResponse = await fetch(`${new URL(request.url).origin}/data/catalogo_amado_libros.json`);
+        const catalogo = await fallbackResponse.json();
         
         const resultados = catalogo.filter(libro => 
-          (libro.titulo && libro.titulo.toLowerCase().includes(query.toLowerCase())) ||
-          (libro.autor && libro.autor.toLowerCase().includes(query.toLowerCase()))
+          (libro.title && libro.title.toLowerCase().includes(query.toLowerCase())) ||
+          (libro.id && libro.id.toLowerCase().includes(query.toLowerCase()))
         );
         
         return new Response(JSON.stringify(resultados.slice(0, 50)), {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=300'
+          }
         });
       } catch (fallbackError) {
         return new Response(JSON.stringify({ 
-          error: "Error al buscar libros",
-          message: error.message 
+          error: "Búsqueda no disponible",
+          message: "Usa el catálogo principal o intenta más tarde."
         }), {
-          status: 500,
+          status: 503,
           headers: { 'Content-Type': 'application/json' }
         });
       }
@@ -191,5 +204,6 @@ export async function onRequest({ request, env }) {
     }
   }
 
+  // Para cualquier otra ruta /api/* que no coincida, devuelve 404
   return new Response('Not Found', { status: 404 });
 }
