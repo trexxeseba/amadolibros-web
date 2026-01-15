@@ -185,11 +185,13 @@
         }, 300);
     }
 
+    const WHATSAPP_NUMBER = "+59899841325"; // Número real de WhatsApp (Uruguay)
+
     function shareWhatsapp() {
         if(!currentBook) return;
         const url = window.location.href;
         const msg = `Hola, me interesa este libro: ${currentBook.title} - ${url}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
     async function openModalById(id) {
