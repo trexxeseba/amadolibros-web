@@ -43,4 +43,20 @@ export async function onRequest(context) {
       }
       await env.AMADO_KV.put('books:all', JSON.stringify({ books, active: books.filter(b => b.stock > 0), timestamp: Date.now() }), { expirationTtl: 86400 });
       return new Response(JSON.stringify({ success: true, total: books.length, active: books.filter(b => b.stock > 0).length }), { headers: { 'Content-Type': 'application/json' } });
-    } cat
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+  
+  return new Response('Not found', { status: 404 });
+}
+
+async function getToken(env) {
+  const r = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: env.MELI_APP_ID, client_secret: env.MELI_CLIENT_SECRET, refresh_token: env.MELI_REFRESH_TOKEN })
+  });
+  const d = await r.json();
+  return d.access_token;
+}
