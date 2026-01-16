@@ -127,5 +127,6 @@ async function getToken({ APP_ID, CLIENT_SECRET, REFRESH_TOKEN }) {
   });
   if (!response.ok) throw new Error(`Fallo Auth MercadoLibre: ${response.status}`);
   const data = await response.json();
-  return data.access_token;
+  return data.access_token; 
+  
 }
