@@ -75,6 +75,12 @@
     </header>
 
     <main class="flex-grow max-w-7xl mx-auto px-4 py-6 w-full relative z-10">
+        <!-- Aviso de Mocks (Solo visible si falla la conexión) -->
+        <div id="previewBadge" class="hidden mb-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow-md" role="alert">
+            <p class="font-bold">Modo Offline / Demo</p>
+            <p>No pudimos cargar el catálogo en vivo. Mostrando ejemplos.</p>
+        </div>
+
         <!-- BARRA DE FILTROS -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -203,9 +209,15 @@
 
 <script>
     const WHATSAPP_NUMBER = "+59899841325";
-    const API_BASE = window.location.hostname.includes('amadolibros-web.pages.dev') ? '' : 'https://amadolibros-web.pages.dev';
+    
+    // --- CORRECCIÓN CRÍTICA DE DOMINIO ---
+    // Si la URL contiene "amadolibros" (sea .com o .pages.dev), usamos ruta relativa ('').
+    // Solo usamos absoluta si estamos en localhost o vista previa (blob).
+    const hostname = window.location.hostname;
+    const isProduction = hostname.includes('amadolibros') || hostname.includes('pages.dev');
+    const API_BASE = isProduction ? '' : 'https://amadolibros-web.pages.dev';
 
-    let booksCache = []; // Para ordenamiento local
+    let booksCache = []; 
     let offset = 0;
     let loading = false;
     let currentQuery = '';
@@ -232,7 +244,10 @@
         if (loading) return;
         loading = true;
         if (offset === 0 && !isSearch) renderSkeletons(10);
-        if (offset > 0) document.getElementById('sentinel').classList.remove('opacity-0');
+        if (offset > 0) {
+            const s = document.getElementById('sentinel');
+            if(s) s.classList.remove('opacity-0');
+        }
 
         try {
             let url = currentQuery 
@@ -255,13 +270,16 @@
         } catch (e) {
             console.warn('Usando Mock Data:', e);
             if (offset === 0) {
+                document.getElementById('previewBadge')?.classList.remove('hidden');
                 renderBooks(getMockBooks(), true);
                 booksCache = getMockBooks();
             }
         } finally {
             loading = false;
-            document.getElementById('loadingIndicator').classList.add('hidden');
-            document.getElementById('sentinel').classList.add('opacity-0');
+            // FIX: Eliminada la línea que causaba el error con loadingIndicator
+            const sentinel = document.getElementById('sentinel');
+            if(sentinel) sentinel.classList.add('opacity-0');
+            document.getElementById('loadingIndicator')?.classList.add('hidden'); // Opcional seguro
             document.querySelectorAll('.skeleton').forEach(el => el.remove());
         }
     }
@@ -508,7 +526,7 @@
     function shareWhatsapp() {
         if(!currentBook) return;
         const url = window.location.hostname.includes('amadolibros-web.pages.dev') ? window.location.href : `https://amadolibros-web.pages.dev/?id=${currentBook.id}`;
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, consulta sobre: ${currentBook.title} - ${url}`)}`, '_blank');
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola AmadoLibros, consulta sobre: ${currentBook.title} - ${url}`)}`, '_blank');
     }
 
     function shareWhatsappOrder() {
