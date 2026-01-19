@@ -243,9 +243,16 @@ async function getAllItemIds(accessToken, logs) {
   const allIds = [];
   let offset = 0;
   const limit = 50; // Mercado Libre recomienda 50 por página
-  let totalFetched = 0;
+  const MAX_OFFSET = 1000; // Límite de Mercado Libre
 
   while (true) {
+    // Verificar límite de offset ANTES de hacer la petición
+    if (offset >= MAX_OFFSET) {
+      logs.push(`  ⚠️ Alcanzado límite de offset de Mercado Libre (${MAX_OFFSET})`);
+      logs.push(`  ℹ️ Total obtenido hasta el límite: ${allIds.length} items`);
+      break;
+    }
+
     // Usar búsqueda estándar sin search_type=scan
     const url = `${ML_API_BASE}/users/${SELLER_ID}/items/search?offset=${offset}&limit=${limit}`;
 
@@ -255,6 +262,11 @@ async function getAllItemIds(accessToken, logs) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      // Si es el error de offset inválido, salir del loop
+      if (response.status === 400) {
+        logs.push(`  ⚠️ Límite de paginación alcanzado en offset ${offset}`);
+        break;
+      }
       throw new Error(`Búsqueda falló en offset ${offset}: ${response.status} - ${errorText}`);
     }
 
@@ -263,13 +275,11 @@ async function getAllItemIds(accessToken, logs) {
     // Agregar IDs de esta página
     if (data.results && data.results.length > 0) {
       allIds.push(...data.results);
-      totalFetched += data.results.length;
       const page = Math.floor(offset / limit) + 1;
       logs.push(`  → Página ${page}: ${data.results.length} items (total acumulado: ${allIds.length})`);
     }
 
     // Verificar si hay más páginas
-    // Si obtuvimos menos items que el límite, llegamos al final
     if (!data.results || data.results.length < limit) {
       logs.push(`  → Búsqueda completada: ${allIds.length} items totales`);
       break;
@@ -293,14 +303,14 @@ async function getAllItemIds(accessToken, logs) {
     offset += limit;
 
     // Pequeña pausa para no saturar la API
-    await sleep(150);
+    await sleep(100);
   }
 
-  // Ahora obtener los items pausados por separado
+  // Ahora obtener los items pausados por separado (solo primeros 1000)
   logs.push(`  → Buscando items pausados...`);
   offset = 0;
   
-  while (true) {
+  while (offset < MAX_OFFSET) {
     const url = `${ML_API_BASE}/users/${SELLER_ID}/items/search?status=paused&offset=${offset}&limit=${limit}`;
 
     const response = await fetch(url, {
@@ -330,9 +340,10 @@ async function getAllItemIds(accessToken, logs) {
     }
 
     offset += limit;
-    await sleep(150);
+    await sleep(100);
   }
 
+  logs.push(`  ✅ Sincronización completa: ${allIds.length} items obtenidos`);
   return allIds;
 }
 
