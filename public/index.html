@@ -4,65 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- ========================================== -->
-    <!-- SEO DE VANGUARDIA (META TAGS & OG)         -->
-    <!-- ========================================== -->
+    <!-- SEO & METADATA -->
     <title>Amado Libros | Tu próxima historia comienza aquí</title>
-    <meta name="description" content="Librería online líder en Uruguay. Más de 15.000 títulos en stock y por encargo. Envíos a todo el país en 24hs. Tienda oficial en Mercado Libre. Compra segura y atención personalizada.">
+    <meta name="description" content="Librería online líder en Uruguay. Más de 15.000 títulos en stock y por encargo. Envíos en 24hs. Tienda oficial Mercado Libre.">
     <meta name="keywords" content="libros, librería uruguay, comprar libros online, best sellers, literatura, libros técnicos, mercado libre libros, amado libros">
-    <meta name="author" content="Amado Libros">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://amadolibros.uy/">
-
+    
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://amadolibros.uy/">
     <meta property="og:title" content="Amado Libros | Encontrá tu próximo libro favorito">
     <meta property="og:description" content="Más de 15.000 títulos disponibles. Envíos en el día a todo Montevideo y 24hs al interior. Tienda Oficial.">
     <meta property="og:image" content="https://images.unsplash.com/photo-1495446815901-a7297e633e8d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80">
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Amado Libros Uruguay">
-    <meta name="twitter:description" content="La librería online con el catálogo más amplio de Uruguay. Envíos rápidos y seguros.">
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1495446815901-a7297e633e8d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80">
-
-    <!-- Schema.org JSON-LD -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BookStore",
-      "name": "Amado Libros",
-      "image": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d",
-      "@id": "https://amadolibros.uy",
-      "url": "https://amadolibros.uy",
-      "telephone": "+59899841325",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Ciudad Vieja",
-        "addressLocality": "Montevideo",
-        "postalCode": "11000",
-        "addressCountry": "UY"
-      },
-      "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": -34.9064,
-        "longitude": -56.2006
-      },
-      "openingHoursSpecification": {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
-        "opens": "09:00",
-        "closes": "18:00"
-      },
-      "sameAs": [
-        "https://www.instagram.com/amadolibros",
-        "https://www.facebook.com/amadolibros"
-      ]
-    }
-    </script>
-
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS & Config -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -84,10 +37,10 @@
             }
         }
     </script>
-    <!-- Fuentes e Iconos -->
+    
+    <!-- Assets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Toastify -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
@@ -95,17 +48,31 @@
         .glass-header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.1); }
         .glass-modal { background: #ffffff; }
         .glass-search { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        
         .book-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .book-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15); }
+        
         .wishlist-btn { transition: transform 0.2s; }
         .wishlist-btn:active { transform: scale(0.8); }
-        .wishlist-active { color: #ef4444; }
-        .bottom-nav { box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        /* Animación Botón WhatsApp */
+        .whatsapp-float { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+        
+        /* Monitor de Sistema */
+        .system-monitor { font-family: 'Courier New', monospace; font-size: 10px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col text-slate-900 pb-20 md:pb-0">
@@ -139,27 +106,18 @@
 
         <div class="max-w-4xl mx-auto text-center relative z-10">
             <div class="flex flex-wrap justify-center gap-2 mb-4">
-                <span class="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-xs font-bold tracking-wider text-brand-orange">
-                    🚀 ENVÍOS A TODO EL URUGUAY
-                </span>
-                <span class="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-xs font-bold tracking-wider text-brand-orange">
-                    ⚡ ENVÍOS EN 2 HORAS
-                </span>
+                <span class="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-xs font-bold tracking-wider text-brand-orange">🚀 ENVÍOS A TODO EL URUGUAY</span>
+                <span class="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-xs font-bold tracking-wider text-brand-orange">⚡ ENVÍOS EN 2 HORAS</span>
             </div>
 
-            <h2 class="text-3xl md:text-5xl font-black mb-4 leading-tight">
-                Encontrá tu próximo <br class="hidden md:block"/> libro favorito
-            </h2>
-            <p class="text-slate-300 text-sm md:text-base mb-8 max-w-xl mx-auto">
-                Miles de títulos disponibles. Desde best-sellers hasta joyas imposibles de conseguir.
-            </p>
+            <h2 class="text-3xl md:text-5xl font-black mb-4 leading-tight">Encontrá tu próximo <br class="hidden md:block"/> libro favorito</h2>
+            <p class="text-slate-300 text-sm md:text-base mb-8 max-w-xl mx-auto">Miles de títulos disponibles. Desde best-sellers hasta joyas imposibles de conseguir.</p>
 
+            <!-- BUSCADOR -->
             <div class="glass-search rounded-full flex items-center p-2 max-w-2xl mx-auto transform transition-all focus-within:scale-105">
                 <div class="pl-4 pr-2 text-gray-400"><i class="fas fa-search text-lg"></i></div>
-                <input type="text" id="searchInput" placeholder="Título, autor, ISBN..." class="w-full bg-transparent border-none p-3 focus:ring-0 text-slate-800 placeholder-gray-400 font-medium outline-none text-base md:text-lg">
-                <button class="bg-brand-orange text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
+                <input type="text" id="searchInput" placeholder="Busca 'Freud', 'Harry Potter', ISBN..." class="w-full bg-transparent border-none p-3 focus:ring-0 text-slate-800 placeholder-gray-400 font-medium outline-none text-base md:text-lg">
+                <button class="bg-brand-orange text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg"><i class="fas fa-arrow-right"></i></button>
             </div>
 
             <div class="flex flex-wrap justify-center gap-4 mt-8 text-xs font-semibold text-gray-400">
@@ -167,34 +125,27 @@
                     <i class="fas fa-handshake text-slate-900 text-lg group-hover:rotate-12 transition-transform"></i>
                     <span>Tienda Oficial en Mercado Libre</span>
                 </a>
-                <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
-                    <i class="fas fa-star text-yellow-500"></i> +10 Años de Experiencia
-                </div>
-                <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
-                    <i class="fas fa-shield-alt text-blue-500"></i> Compra Protegida
-                </div>
+                <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700"><i class="fas fa-star text-yellow-500"></i> +10 Años de Experiencia</div>
             </div>
         </div>
     </section>
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full relative z-0">
-        
+        <!-- Loader -->
         <div id="statusContainer" class="hidden py-20 text-center animate-fade-in">
-            <div class="inline-block relative">
-                <i class="fas fa-circle-notch fa-spin text-4xl text-brand-orange mb-4"></i>
-            </div>
-            <p class="text-slate-500 font-medium">Sincronizando catálogo...</p>
+            <div class="inline-block relative"><i class="fas fa-circle-notch fa-spin text-4xl text-brand-orange mb-4"></i></div>
+            <p class="text-slate-500 font-medium">Sincronizando catálogo completo...</p>
         </div>
 
         <div id="mainContent">
-            <!-- BARRA DE CONTROL -->
+            <!-- Barra de Control -->
             <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-gray-100">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <i class="fas fa-layer-group text-brand-orange"></i> Explorar Colección
                     </h3>
-                    <p id="counter" class="text-slate-500 text-xs">Cargando...</p>
+                    <p id="counter" class="text-slate-500 text-xs">Miles de historias a tu alcance</p>
                 </div>
                 
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
@@ -210,26 +161,23 @@
                         <option value="priceDesc">💎 Mayor Precio</option>
                         <option value="alpha">🔤 Título (A-Z)</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                        <i class="fas fa-chevron-down text-xs"></i>
-                    </div>
                 </div>
             </div>
 
-            <!-- Grilla Responsiva -->
+            <!-- Grilla de Libros -->
             <div id="grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6"></div>
             
-            <!-- Botón Cargar Más -->
+            <!-- Botón Ver Más -->
             <div id="loadMoreContainer" class="text-center mt-12 hidden">
                 <button onclick="loadNextPage()" class="group bg-white border border-gray-200 text-slate-700 font-bold py-3 px-8 rounded-full shadow-sm hover:shadow-md hover:border-brand-orange transition-all flex items-center gap-2 mx-auto">
                     Mostrar más libros <i class="fas fa-arrow-down group-hover:translate-y-1 transition-transform"></i>
                 </button>
             </div>
             
-            <!-- Mensaje Sin Resultados -->
+            <!-- Sin Resultados -->
             <div id="noResults" class="hidden text-center py-20 bg-gray-50 rounded-2xl border border-gray-100 border-dashed">
                 <div class="bg-white inline-block p-6 rounded-full mb-4 shadow-sm"><i class="fas fa-search text-gray-300 text-4xl"></i></div>
-                <p class="text-gray-500 font-medium">No encontramos resultados para tu búsqueda.</p>
+                <p class="text-gray-500 font-medium">No encontramos resultados.</p>
                 <button onclick="document.getElementById('searchInput').value=''; filterBooks('')" class="text-brand-orange font-bold mt-2 hover:underline">Limpiar filtros</button>
             </div>
         </div>
@@ -238,6 +186,7 @@
     <!-- FOOTER -->
     <footer class="bg-slate-900 text-white pt-12 pb-24 md:pb-12 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-4">
+            <!-- Iconos de Valor -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 border-b border-slate-800 pb-12">
                 <div class="text-center">
                     <div class="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-orange"><i class="fas fa-truck-fast"></i></div>
@@ -260,65 +209,63 @@
                     <p class="text-xs text-slate-400 mt-1">Expertos en libros te ayudan</p>
                 </div>
             </div>
-            <div class="text-center">
-                <p class="text-slate-500 text-xs">&copy; 2024 Amado Libros. Todos los derechos reservados.</p>
+
+            <div class="flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
+                <p>&copy; 2024 Amado Libros. Todos los derechos reservados.</p>
+                <!-- MONITOR DE SISTEMA -->
+                <div class="mt-4 md:mt-0 system-monitor flex items-center gap-2 bg-black/30 px-3 py-1 rounded border border-white/10">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span>API STATUS:</span>
+                    <span id="debugCount" class="text-white font-bold">Verificando...</span>
+                </div>
             </div>
         </div>
     </footer>
 
-    <!-- BOTTOM NAV -->
+    <!-- BOTÓN FLOTANTE WHATSAPP -->
+    <a href="https://wa.me/59899841325" target="_blank" class="whatsapp-float fixed bottom-24 right-4 md:bottom-8 md:right-8 bg-[#25D366] text-white rounded-full shadow-2xl z-50 flex items-center justify-center w-14 h-14 md:w-16 md:h-16 hover:bg-[#20ba5a] transition-all duration-300" aria-label="Chat en WhatsApp">
+        <i class="fab fa-whatsapp text-3xl md:text-4xl"></i>
+    </a>
+
+    <!-- BOTTOM NAV (Móvil) -->
     <nav class="bottom-nav fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-50 md:hidden flex justify-around items-center h-16 text-xs font-medium text-gray-400">
         <button onclick="window.scrollTo(0,0)" class="flex flex-col items-center gap-1 w-full h-full justify-center text-brand-orange">
-            <i class="fas fa-home text-lg"></i>
-            <span>Inicio</span>
+            <i class="fas fa-home text-lg"></i><span>Inicio</span>
         </button>
         <button onclick="document.getElementById('searchInput').focus()" class="flex flex-col items-center gap-1 w-full h-full justify-center hover:text-slate-900">
-            <i class="fas fa-search text-lg"></i>
-            <span>Buscar</span>
+            <i class="fas fa-search text-lg"></i><span>Buscar</span>
         </button>
         <button onclick="showWishlist()" class="flex flex-col items-center gap-1 w-full h-full justify-center hover:text-slate-900 relative">
-            <i class="fas fa-heart text-lg"></i>
-            <span>Favoritos</span>
+            <i class="fas fa-heart text-lg"></i><span>Favoritos</span>
             <span id="wishlistCount" class="absolute top-2 right-6 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
         </button>
         <a href="https://wa.me/59899841325" target="_blank" class="flex flex-col items-center gap-1 w-full h-full justify-center hover:text-green-600">
-            <i class="fab fa-whatsapp text-lg"></i>
-            <span>WhatsApp</span>
+            <i class="fab fa-whatsapp text-lg"></i><span>WhatsApp</span>
         </a>
     </nav>
 
-    <!-- MODAL -->
+    <!-- MODAL DETALLES -->
     <div id="modalOverlay" class="fixed inset-0 z-[60] hidden" role="dialog" aria-modal="true">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0" id="modalBackdrop" onclick="closeModal()"></div>
         <div class="absolute inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center pointer-events-none">
             <div id="modalPanel" class="glass-modal w-full md:w-[850px] md:rounded-2xl rounded-t-2xl shadow-2xl transform transition-all translate-y-full md:translate-y-10 opacity-0 pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[90vh] md:max-h-[85vh]">
                 
-                <button onclick="closeModal()" class="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur p-2 rounded-full hover:bg-gray-100 transition-colors shadow-sm">
-                    <i class="fas fa-times text-gray-600"></i>
-                </button>
+                <button onclick="closeModal()" class="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur p-2 rounded-full hover:bg-gray-100 transition-colors shadow-sm"><i class="fas fa-times text-gray-600"></i></button>
 
-                <!-- Imagen -->
                 <div class="w-full md:w-5/12 bg-gray-50 flex items-center justify-center p-8 relative">
                     <img id="modalImg" src="" alt="Portada" class="max-h-64 md:max-h-full object-contain shadow-2xl rounded-lg transform transition-transform hover:scale-105 duration-500">
-                    <button id="modalWishlistBtn" class="absolute top-6 left-6 text-2xl text-gray-300 hover:text-red-500 transition-colors" onclick="toggleWishlistFromModal()">
-                        <i class="fas fa-heart"></i>
-                    </button>
+                    <button id="modalWishlistBtn" class="absolute top-6 left-6 text-2xl text-gray-300 hover:text-red-500 transition-colors" onclick="toggleWishlistFromModal()"><i class="fas fa-heart"></i></button>
                 </div>
 
-                <!-- Info -->
                 <div class="w-full md:w-7/12 p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar bg-white">
-                    <div class="mb-1">
-                        <span id="modalCondition" class="text-[10px] font-bold uppercase tracking-widest text-gray-400">NUEVO</span>
-                    </div>
+                    <div class="mb-1"><span id="modalCondition" class="text-[10px] font-bold uppercase tracking-widest text-gray-400">NUEVO</span></div>
                     <h3 id="modalTitle" class="text-xl md:text-2xl font-black text-slate-900 mb-4 leading-tight"></h3>
                     
                     <!-- VISTA ACTIVO -->
                     <div id="viewActive" class="hidden mb-6 space-y-6">
                         <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                             <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">PRECIO ONLINE</p>
-                            <div class="flex items-baseline gap-2">
-                                <p id="modalPrice" class="text-4xl text-slate-900 font-black tracking-tight"></p>
-                            </div>
+                            <div class="flex items-baseline gap-2"><p id="modalPrice" class="text-4xl text-slate-900 font-black tracking-tight"></p></div>
                             <p id="modalInstallments" class="text-xs text-green-600 font-semibold mt-1 flex items-center gap-1"><i class="fas fa-credit-card"></i> Hasta 12 cuotas sin recargo</p>
                         </div>
                         <div class="flex items-center justify-between px-2">
@@ -327,63 +274,41 @@
                         </div>
                     </div>
 
-                    <!-- VISTA PAUSADO -->
+                    <!-- VISTA PAUSADO (Wizard) -->
                     <div id="viewPaused" class="hidden mb-6">
                         <div class="bg-gradient-to-br from-purple-50 to-white p-5 rounded-2xl border border-purple-100 shadow-sm">
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="bg-brand-purple text-white w-10 h-10 rounded-full flex items-center justify-center text-lg"><i class="fas fa-magic"></i></div>
-                                <div>
-                                    <h4 class="font-bold text-brand-purple text-sm">Servicio de Búsqueda</h4>
-                                    <p class="text-[10px] text-gray-500">Te conseguimos este libro agotado</p>
-                                </div>
+                                <div><h4 class="font-bold text-brand-purple text-sm">Te lo conseguimos</h4><p class="text-[10px] text-gray-500">Este libro no está en stock inmediato</p></div>
                             </div>
                             <div class="space-y-3">
-                                <label class="block">
-                                    <span class="text-xs font-bold text-gray-700 ml-1">Tu Nombre</span>
-                                    <input type="text" id="clientName" class="w-full mt-1 p-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-purple outline-none transition-all" placeholder="Ej: Juan Pérez">
-                                </label>
+                                <label class="block"><span class="text-xs font-bold text-gray-700 ml-1">Tu Nombre</span><input type="text" id="clientName" class="w-full mt-1 p-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-purple outline-none" placeholder="Ej: Juan Pérez"></label>
                                 <div class="flex gap-2">
-                                    <label class="w-1/2 cursor-pointer">
-                                        <input type="radio" name="contactType" value="wpp" checked class="peer sr-only">
-                                        <div class="p-3 bg-white border border-gray-200 rounded-xl text-center peer-checked:border-brand-purple peer-checked:bg-purple-50 transition-all">
-                                            <i class="fab fa-whatsapp text-green-600 text-lg block mb-1"></i>
-                                            <span class="text-[10px] font-bold text-gray-600">WhatsApp</span>
-                                        </div>
-                                    </label>
-                                    <label class="w-1/2 cursor-pointer">
-                                        <input type="radio" name="contactType" value="email" class="peer sr-only">
-                                        <div class="p-3 bg-white border border-gray-200 rounded-xl text-center peer-checked:border-brand-purple peer-checked:bg-purple-50 transition-all">
-                                            <i class="fas fa-envelope text-blue-500 text-lg block mb-1"></i>
-                                            <span class="text-[10px] font-bold text-gray-600">Email</span>
-                                        </div>
-                                    </label>
+                                    <label class="w-1/2 cursor-pointer"><input type="radio" name="contactType" value="wpp" checked class="peer sr-only"><div class="p-3 bg-white border border-gray-200 rounded-xl text-center peer-checked:border-brand-purple peer-checked:bg-purple-50"><i class="fab fa-whatsapp text-green-600 text-lg block mb-1"></i><span class="text-[10px] font-bold text-gray-600">WhatsApp</span></div></label>
+                                    <label class="w-1/2 cursor-pointer"><input type="radio" name="contactType" value="email" class="peer sr-only"><div class="p-3 bg-white border border-gray-200 rounded-xl text-center peer-checked:border-brand-purple peer-checked:bg-purple-50"><i class="fas fa-envelope text-blue-500 text-lg block mb-1"></i><span class="text-[10px] font-bold text-gray-600">Email</span></div></label>
                                 </div>
-                                <button onclick="submitQuote()" class="w-full bg-brand-purple text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-200 hover:shadow-xl hover:bg-purple-700 transition-all flex items-center justify-center gap-2 mt-2">
-                                    INICIAR BÚSQUEDA <i class="fas fa-arrow-right"></i>
-                                </button>
+                                <button onclick="submitQuote()" class="w-full bg-brand-purple text-white font-bold py-4 rounded-xl shadow-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2 mt-2">SOLICITAR COTIZACIÓN <i class="fas fa-arrow-right"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- BOTONES ACCIÓN -->
+                    <!-- BOTONES -->
                     <div id="actionsActive" class="mt-auto pt-6 flex flex-col gap-3 hidden">
                         <a id="btnML" href="#" target="_blank" class="group w-full bg-[#ffe600] hover:bg-[#fff059] text-slate-900 font-bold py-4 rounded-xl flex items-center justify-between px-6 transition-all shadow-sm">
                             <span class="flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Comprar ahora</span>
-                            <span class="text-xs font-normal opacity-70 group-hover:translate-x-1 transition-transform">vía Mercado Libre <i class="fas fa-external-link-alt ml-1"></i></span>
+                            <span class="text-xs font-normal opacity-70">vía Mercado Libre <i class="fas fa-external-link-alt ml-1"></i></span>
                         </a>
                         <a id="btnWA" href="#" target="_blank" class="w-full bg-white border-2 border-green-100 text-green-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-green-50 transition-all">
                             <i class="fab fa-whatsapp text-lg"></i> CONSULTA O COMPRA POR WPP
                         </a>
                     </div>
-                    
-                    <p class="text-[10px] text-gray-400 text-center mt-4 flex items-center justify-center gap-1">
-                        <i class="fas fa-lock"></i> Transacción 100% Segura
-                    </p>
+                    <p class="text-[10px] text-gray-400 text-center mt-4 flex items-center justify-center gap-1"><i class="fas fa-lock"></i> Transacción 100% Segura</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- JAVASCRIPT APP -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         const API_BASE = window.location.hostname.includes('amadolibros') ? '' : 'https://amadolibros-web.pages.dev';
@@ -407,78 +332,46 @@
                 const data = await res.json();
                 allBooks = Array.isArray(data) ? data : (data.results || []);
                 
-                console.log(`📚 TOTAL DE LIBROS RECIBIDOS: ${allBooks.length}`);
-                
+                // --- DIAGNÓSTICO VISUAL ---
+                const count = allBooks.length;
+                document.getElementById('debugCount').innerText = `${count.toLocaleString()} Libros`;
+                document.getElementById('debugCount').style.color = count < 1000 ? '#ff4d4d' : '#4ade80'; 
+                // --------------------------
+
                 sortData('recent');
                 filteredBooks = allBooks;
                 resetGrid();
-                document.getElementById('counter').innerText = "Miles de historias a tu alcance";
                 document.getElementById('searchInput').addEventListener('input', (e) => filterBooks(e.target.value));
 
             } catch (error) {
                 console.error("Error:", error);
-                document.getElementById('counter').innerText = "Error de conexión.";
+                document.getElementById('debugCount').innerText = "ERROR API";
+                document.getElementById('debugCount').style.color = 'red';
             } finally {
                 status.classList.add('hidden');
                 content.classList.remove('opacity-50');
             }
         };
 
-        function normalizeText(text) {
-            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        }
+        function normalizeText(text) { return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 
-        function toggleWishlist(e, bookId) {
-            e.stopPropagation(); 
-            const index = wishlist.indexOf(bookId);
-            if (index === -1) {
-                wishlist.push(bookId);
-                showToast("Agregado a Favoritos ❤️");
+        function filterBooks(query) {
+            const rawTerm = normalizeText(query);
+            if (rawTerm.length < 1) {
+                filteredBooks = allBooks;
             } else {
-                wishlist.splice(index, 1);
-                showToast("Eliminado de Favoritos 💔");
+                const terms = rawTerm.split(' ').filter(t => t.length > 0);
+                filteredBooks = allBooks.filter(b => {
+                    const title = normalizeText(b.title);
+                    return terms.every(t => title.includes(t)); 
+                });
             }
-            localStorage.setItem('amadoWishlist', JSON.stringify(wishlist));
-            updateWishlistBadge();
-            const btn = document.getElementById(`wish-${bookId}`);
-            if(btn) {
-                btn.classList.toggle('text-red-500');
-                btn.classList.toggle('text-gray-300');
-                btn.parentElement.classList.add('scale-125');
-                setTimeout(() => btn.parentElement.classList.remove('scale-125'), 200);
-            }
-        }
-
-        function updateWishlistBadge() {
-            const badge = document.getElementById('wishlistCount');
-            if (wishlist.length > 0) {
-                badge.innerText = wishlist.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function showWishlist() {
-            const wishBooks = allBooks.filter(b => wishlist.includes(b.id));
-            filteredBooks = wishBooks;
+            const criteria = document.getElementById('sortSelect').value;
+            sortArray(filteredBooks, criteria);
             resetGrid();
-            window.scrollTo(0, document.getElementById('mainContent').offsetTop - 100);
-            if (wishBooks.length === 0) {
-                showToast("Tu lista de deseos está vacía");
-            } else {
-                showToast(`Mostrando ${wishBooks.length} favoritos`);
-            }
-        }
-
-        function showToast(msg) {
-            Toastify({
-                text: msg,
-                duration: 3000,
-                gravity: "bottom", 
-                position: "center", 
-                style: { background: "#0F172A", borderRadius: "50px", fontSize: "12px", fontWeight: "bold" },
-            }).showToast();
+            
+            const noResults = document.getElementById('noResults');
+            noResults.classList.toggle('hidden', filteredBooks.length > 0);
         }
 
         function sortBooks() {
@@ -488,60 +381,22 @@
             resetGrid();
         }
 
-        function sortData(criteria) {
-            sortArray(allBooks, criteria);
-        }
-
+        function sortData(criteria) { sortArray(allBooks, criteria); }
         function sortArray(arr, criteria) {
-            if (criteria === 'recent') {
-                arr.sort((a, b) => new Date(b.start_time || b.date_created || 0) - new Date(a.start_time || a.date_created || 0));
-            } else if (criteria === 'priceAsc') {
-                arr.sort((a, b) => a.price - b.price);
-            } else if (criteria === 'priceDesc') {
-                arr.sort((a, b) => b.price - a.price);
-            } else if (criteria === 'alpha') {
-                arr.sort((a, b) => a.title.localeCompare(b.title));
-            }
+            if (criteria === 'recent') arr.sort((a, b) => new Date(b.start_time || b.date_created || 0) - new Date(a.start_time || a.date_created || 0));
+            else if (criteria === 'priceAsc') arr.sort((a, b) => a.price - b.price);
+            else if (criteria === 'priceDesc') arr.sort((a, b) => b.price - a.price);
+            else if (criteria === 'alpha') arr.sort((a, b) => a.title.localeCompare(b.title));
         }
 
         function filterByStatus(status) {
-            if (status === 'all') {
-                filteredBooks = allBooks;
-            } else if (status === 'active') {
-                filteredBooks = allBooks.filter(b => b.status !== 'paused');
-            } else if (status === 'paused') {
-                filteredBooks = allBooks.filter(b => b.status === 'paused');
-            }
-            const criteria = document.getElementById('sortSelect').value;
-            sortArray(filteredBooks, criteria);
-            resetGrid();
-        }
-
-        // BÚSQUEDA INTELIGENTE POR TOKENS
-        function filterBooks(query) {
-            const rawTerm = normalizeText(query);
-            if (rawTerm.length < 1) {
-                filteredBooks = allBooks;
-            } else {
-                // Dividir en palabras clave
-                const terms = rawTerm.split(' ').filter(t => t.length > 0);
-                
-                filteredBooks = allBooks.filter(b => {
-                    const title = normalizeText(b.title);
-                    // El título debe contener TODOS los términos
-                    return terms.every(t => title.includes(t));
-                });
-            }
-            const criteria = document.getElementById('sortSelect').value;
-            sortArray(filteredBooks, criteria);
-            resetGrid();
+            if (status === 'all') filteredBooks = allBooks;
+            else if (status === 'active') filteredBooks = allBooks.filter(b => b.status !== 'paused');
+            else if (status === 'paused') filteredBooks = allBooks.filter(b => b.status === 'paused');
             
-            const noResults = document.getElementById('noResults');
-            if (filteredBooks.length === 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-            }
+            const criteria = document.getElementById('sortSelect').value;
+            sortArray(filteredBooks, criteria);
+            resetGrid();
         }
 
         function resetGrid() {
@@ -553,7 +408,6 @@
         function loadNextPage() {
             const grid = document.getElementById('grid');
             const loadMoreBtn = document.getElementById('loadMoreContainer');
-            
             const nextBatch = filteredBooks.slice(displayedCount, displayedCount + BATCH_SIZE);
             
             if (nextBatch.length === 0) {
@@ -565,11 +419,9 @@
                 const img = book.thumbnail ? book.thumbnail.replace('http://', 'https://').replace('I.jpg', 'O.jpg') : 'https://via.placeholder.com/300x400';
                 const isPaused = book.status === 'paused';
                 const isWishlisted = wishlist.includes(book.id);
-                
                 const priceDisplay = isPaused 
                     ? '<span class="text-xs font-bold text-brand-purple uppercase tracking-wider">A PEDIDO</span>'
                     : new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(book.price);
-                
                 const badge = isPaused 
                     ? '<div class="absolute top-2 left-2 bg-white/90 backdrop-blur text-brand-purple text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm flex items-center gap-1"><i class="fas fa-magic"></i> CONSIGUE</div>' 
                     : '';
@@ -577,121 +429,90 @@
                 return `
                 <article class="book-card group bg-white rounded-xl overflow-hidden cursor-pointer relative border border-gray-100" onclick="openModal('${book.id}')">
                     ${badge}
-                    <button onclick="toggleWishlist(event, '${book.id}')" class="absolute top-2 right-2 z-20 bg-white/80 backdrop-blur w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:bg-white wishlist-btn">
-                        <i id="wish-${book.id}" class="fas fa-heart ${isWishlisted ? 'text-red-500' : 'text-gray-300'}"></i>
-                    </button>
-                    <div class="aspect-[2/3] relative overflow-hidden bg-gray-50">
-                        <img src="${img}" alt="${book.title}" class="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500" loading="lazy">
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-slate-900 text-sm leading-tight line-clamp-2 mb-2 h-10 group-hover:text-brand-orange transition-colors">${book.title}</h3>
-                        <p class="font-extrabold text-sm text-slate-800">${priceDisplay}</p>
-                    </div>
-                </article>
-                `;
+                    <button onclick="toggleWishlist(event, '${book.id}')" class="absolute top-2 right-2 z-20 bg-white/80 backdrop-blur w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:bg-white wishlist-btn"><i id="wish-${book.id}" class="fas fa-heart ${isWishlisted ? 'text-red-500' : 'text-gray-300'}"></i></button>
+                    <div class="aspect-[2/3] relative overflow-hidden bg-gray-50"><img src="${img}" alt="${book.title}" class="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500" loading="lazy"></div>
+                    <div class="p-4"><h3 class="font-bold text-slate-900 text-sm leading-tight line-clamp-2 mb-2 h-10 group-hover:text-brand-orange transition-colors">${book.title}</h3><p class="font-extrabold text-sm text-slate-800">${priceDisplay}</p></div>
+                </article>`;
             }).join('');
 
             grid.insertAdjacentHTML('beforeend', html);
             displayedCount += nextBatch.length;
-
-            if (displayedCount < filteredBooks.length) {
-                loadMoreBtn.classList.remove('hidden');
-            } else {
-                loadMoreBtn.classList.add('hidden');
-            }
+            loadMoreBtn.classList.toggle('hidden', displayedCount >= filteredBooks.length);
         }
 
-        function openModal(bookId) {
-            const book = allBooks.find(b => b.id === bookId);
-            if (!book) return;
+        function toggleWishlist(e, id) {
+            e.stopPropagation();
+            const idx = wishlist.indexOf(id);
+            if(idx === -1) { wishlist.push(id); showToast("Agregado a Favoritos ❤️"); }
+            else { wishlist.splice(idx, 1); showToast("Eliminado de Favoritos 💔"); }
+            localStorage.setItem('amadoWishlist', JSON.stringify(wishlist));
+            updateWishlistBadge();
+            const btn = document.getElementById(`wish-${id}`);
+            if(btn) {
+                btn.classList.toggle('text-red-500'); btn.classList.toggle('text-gray-300');
+                btn.parentElement.classList.add('scale-125'); setTimeout(()=>btn.parentElement.classList.remove('scale-125'),200);
+            }
+        }
+        function updateWishlistBadge() {
+            const b = document.getElementById('wishlistCount');
+            if(wishlist.length > 0) { b.innerText = wishlist.length; b.classList.remove('hidden'); }
+            else b.classList.add('hidden');
+        }
+        function showWishlist() {
+            filteredBooks = allBooks.filter(b => wishlist.includes(b.id));
+            resetGrid(); window.scrollTo(0, document.getElementById('mainContent').offsetTop - 100);
+            showToast(filteredBooks.length ? `Mostrando ${filteredBooks.length} favoritos` : "Tu lista está vacía");
+        }
+        function showToast(msg) { Toastify({ text: msg, duration: 3000, gravity: "bottom", position: "center", style: { background: "#0F172A", borderRadius: "50px", fontSize: "12px", fontWeight: "bold" } }).showToast(); }
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); showToast("Modo oscuro próximamente"); }
+
+        function openModal(id) {
+            const b = allBooks.find(x => x.id === id); if(!b) return;
+            currentBookId = id;
+            document.getElementById('modalImg').src = b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('I.jpg', 'O.jpg') : '';
+            document.getElementById('modalTitle').innerText = b.title;
+            const wBtn = document.getElementById('modalWishlistBtn');
+            wBtn.innerHTML = wishlist.includes(id) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="fas fa-heart"></i>';
             
-            currentBookId = bookId; 
-            const overlay = document.getElementById('modalOverlay');
-            const backdrop = document.getElementById('modalBackdrop');
-            const panel = document.getElementById('modalPanel');
+            const isPaused = b.status === 'paused';
+            document.getElementById('viewActive').classList.toggle('hidden', isPaused);
+            document.getElementById('actionsActive').classList.toggle('hidden', isPaused);
+            document.getElementById('viewPaused').classList.toggle('hidden', !isPaused);
 
-            const img = book.thumbnail ? book.thumbnail.replace('http://', 'https://').replace('I.jpg', 'O.jpg') : '';
-            document.getElementById('modalImg').src = img;
-            document.getElementById('modalTitle').innerText = book.title;
-
-            const wishBtn = document.getElementById('modalWishlistBtn');
-            wishBtn.innerHTML = wishlist.includes(bookId) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="fas fa-heart"></i>';
-
-            const isPaused = book.status === 'paused';
-            const viewActive = document.getElementById('viewActive');
-            const viewPaused = document.getElementById('viewPaused');
-            const actionsActive = document.getElementById('actionsActive');
-
-            if (isPaused) {
-                viewActive.classList.add('hidden');
-                actionsActive.classList.add('hidden');
-                viewPaused.classList.remove('hidden');
+            if(!isPaused) {
+                const fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
+                document.getElementById('modalPrice').innerText = fmt.format(b.price);
+                document.getElementById('modalInstallments').innerText = `o 12 cuotas de ${fmt.format(b.price/12)}`;
+                document.getElementById('modalPriceTransfer').innerText = fmt.format(b.price*0.88);
+                document.getElementById('btnML').href = b.permalink || `https://articulo.mercadolibre.com.uy/MLU-${b.id.replace('MLU','')}`;
+                const msg = `Hola Amado Libros, me interesa comprar con descuento: ${b.title} (ID: ${b.id})`;
+                document.getElementById('btnWA').href = `https://wa.me/59899841325?text=${encodeURIComponent(msg)}`;
+            } else {
                 document.getElementById('clientName').value = '';
                 document.querySelector('input[name="contactType"][value="wpp"]').checked = true;
-            } else {
-                viewPaused.classList.add('hidden');
-                viewActive.classList.remove('hidden');
-                actionsActive.classList.remove('hidden');
-                const fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
-                const priceNormal = book.price;
-                const priceTransfer = priceNormal * 0.88; 
-                const priceInstallments = priceNormal / 12;
-                document.getElementById('modalPrice').innerText = fmt.format(priceNormal);
-                document.getElementById('modalInstallments').innerText = `o 12 cuotas de ${fmt.format(priceInstallments)}`;
-                document.getElementById('modalPriceTransfer').innerText = fmt.format(priceTransfer);
-                document.getElementById('btnML').href = book.permalink || `https://articulo.mercadolibre.com.uy/MLU-${book.id.replace('MLU','')}`;
-                const msg = `Hola Amado Libros, me interesa comprar con descuento: ${book.title} (ID: ${book.id})`;
-                document.getElementById('btnWA').href = `https://wa.me/59899841325?text=${encodeURIComponent(msg)}`;
             }
-
-            overlay.classList.remove('hidden');
-            setTimeout(() => {
-                backdrop.classList.remove('opacity-0');
-                panel.classList.remove('translate-y-full', 'opacity-0');
-                if(window.innerWidth >= 768) panel.classList.remove('md:translate-y-10');
-            }, 10);
+            const ol = document.getElementById('modalOverlay'); ol.classList.remove('hidden');
+            setTimeout(() => { document.getElementById('modalBackdrop').classList.remove('opacity-0'); document.getElementById('modalPanel').classList.remove('translate-y-full','opacity-0'); if(window.innerWidth>=768) document.getElementById('modalPanel').classList.remove('md:translate-y-10'); }, 10);
             document.body.style.overflow = 'hidden';
         }
-
-        function toggleWishlistFromModal() {
-            const btn = document.getElementById('modalWishlistBtn');
-            const isLiked = btn.innerHTML.includes('text-red-500');
-            const fakeEvent = { stopPropagation: () => {} };
-            toggleWishlist(fakeEvent, currentBookId);
-            btn.innerHTML = !isLiked ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="fas fa-heart"></i>';
+        function closeModal() {
+            document.getElementById('modalBackdrop').classList.add('opacity-0');
+            const p = document.getElementById('modalPanel'); p.classList.add('translate-y-full','opacity-0');
+            if(window.innerWidth>=768) p.classList.add('md:translate-y-10');
+            setTimeout(() => { document.getElementById('modalOverlay').classList.add('hidden'); document.body.style.overflow = ''; }, 300);
         }
-
+        function toggleWishlistFromModal() { toggleWishlist({stopPropagation:()=>{}}, currentBookId); const wBtn = document.getElementById('modalWishlistBtn'); wBtn.innerHTML = wishlist.includes(currentBookId) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="fas fa-heart"></i>'; }
+        
         function submitQuote() {
-            const book = allBooks.find(b => b.id === currentBookId);
-            if (!book) return;
+            const b = allBooks.find(x => x.id === currentBookId); if(!b) return;
             const name = document.getElementById('clientName').value.trim() || "Cliente";
-            const contactType = document.querySelector('input[name="contactType"]:checked').value;
-            if (contactType === 'wpp') {
-                const msg = `Hola Amado Libros, soy ${name}. Quiero que me consigan el libro: "${book.title}" (ID: ${book.id}). Quedo a la espera de cotización.`;
+            const type = document.querySelector('input[name="contactType"]:checked').value;
+            if (type === 'wpp') {
+                const msg = `Hola Amado Libros, soy ${name}. Quiero que me consigan el libro: "${b.title}" (ID: ${b.id}).`;
                 window.open(`https://wa.me/59899841325?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
-                const subject = `Búsqueda de Libro: ${book.title}`;
-                const body = `Hola Amado Libros,\n\nSoy ${name}. Estoy buscando este libro que figura por encargo:\n\nTítulo: ${book.title}\nID: ${book.id}\n\nPor favor contáctenme con una cotización. Gracias.`;
-                window.location.href = `mailto:contacto@amadolibros.uy?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = `mailto:contacto@amadolibros.uy?subject=Consulta libro ${b.id}&body=Hola, soy ${name}. Busco: ${b.title}`;
             }
-        }
-
-        function closeModal() {
-            const overlay = document.getElementById('modalOverlay');
-            const backdrop = document.getElementById('modalBackdrop');
-            const panel = document.getElementById('modalPanel');
-            backdrop.classList.add('opacity-0');
-            panel.classList.add('translate-y-full', 'opacity-0');
-            if(window.innerWidth >= 768) panel.classList.add('md:translate-y-10');
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                document.body.style.overflow = '';
-            }, 300);
-        }
-
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-            showToast("Modo oscuro próximamente");
         }
     </script>
 </body>
