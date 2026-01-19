@@ -2,7 +2,7 @@
 // Backend robusto para sincronización de catálogo Mercado Libre → Cloudflare KV
 // Plan: Cloudflare Workers Paid (30s CPU disponible)
 
-const SELLER_ID = '153480172'; // Tu seller ID de Mercado Libre
+const SELLER_ID = '440298103'; // Tu seller ID de Mercado Libre
 const ML_API_BASE = 'https://api.mercadolibre.com';
 const BATCH_SIZE = 20; // IDs por request de multiget
 const MAX_ITEMS = 20000; // Tope de seguridad
