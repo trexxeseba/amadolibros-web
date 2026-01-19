@@ -3,547 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <title>Amado Libros | Catálogo Premium</title>
-    <meta name="description" content="Encuentra miles de libros con envío rápido en Uruguay.">
+    <title>Amado Libros | Catálogo Premium Uruguay</title>
+    <meta name="description" content="Catálogo exclusivo de Amado Libros con más de 1000 títulos disponibles.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; -webkit-tap-highlight-color: transparent; }
-        .glass-header { background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(12px); }
-        
-        /* Animaciones para el buscador */
-        .search-expanded { width: 100% !important; z-index: 60; }
-        .backdrop-active { opacity: 1; pointer-events: auto; }
-        
-        /* Scrollbars ocultos */
+        :root { --brand-orange: #f97316; }
+        body { font-family: 'Inter', sans-serif; background-color: #fcfcfc; -webkit-tap-highlight-color: transparent; }
+        .glass-header { background: rgba(10, 10, 10, 0.96); backdrop-filter: blur(20px); }
+        .book-card { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease; }
+        .book-card:hover { transform: translateY(-6px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Animación entrada botón WA */
-        @keyframes floatIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .float-enter { animation: floatIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-spin-slow { animation: spin 3s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col text-gray-800 relative">
-
-    <!-- OSCURECER FONDO (Backdrop del buscador) -->
-    <div id="searchBackdrop" class="fixed inset-0 bg-black/60 z-40 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm"></div>
+<body class="min-h-screen flex flex-col text-slate-900">
 
     <!-- HEADER -->
-    <header class="glass-header text-white sticky top-0 z-50 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
-            
-            <!-- Logo y Link Móvil -->
-            <div class="flex items-center justify-between w-full md:w-auto">
-                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
-                    <i class="fas fa-book-open text-orange-500 text-2xl"></i>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-white">AMADO<span class="text-orange-500">LIBROS</span></h1>
+    <header class="glass-header text-white sticky top-0 z-50 border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+            <!-- Logo -->
+            <div class="flex items-center gap-2 cursor-pointer shrink-0" onclick="window.location.href='/'">
+                <div class="bg-orange-500 p-1.5 rounded-lg">
+                    <i class="fas fa-book-open text-white"></i>
                 </div>
-                <!-- Link móvil para leads -->
-                <button onclick="openRequestModal()" class="md:hidden text-orange-400 text-xs font-bold underline">
-                    ¿NO LO ENCUENTRAS?
-                </button>
+                <h1 class="text-xl font-black tracking-tighter uppercase">Amado<span class="text-orange-500">Libros</span></h1>
             </div>
             
-            <!-- BUSCADOR VIVO (Live Search) -->
-            <div class="w-full md:w-1/2 relative group transition-all duration-300" id="searchContainer">
-                <div class="relative z-50">
-                    <input type="text" id="searchInput" placeholder="Buscar título, autor o ISBN..." autocomplete="off"
-                        class="w-full bg-gray-800 text-white border border-gray-700 rounded-full py-3 px-12 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all placeholder-gray-500 shadow-inner text-base">
-                    <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
-                    <div id="searchSpinner" class="absolute right-4 top-3.5 hidden">
-                        <i class="fas fa-circle-notch fa-spin text-orange-500"></i>
-                    </div>
-                </div>
-
-                <!-- Resultados Desplegables -->
-                <div id="searchResultsDropdown" class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl overflow-hidden hidden z-50 border border-gray-100 max-h-[70vh] overflow-y-auto">
-                    <!-- Se llena con JS -->
-                </div>
+            <!-- Buscador Desktop -->
+            <div class="hidden md:flex flex-grow max-w-xl relative">
+                <input type="text" id="searchInput" onkeyup="handleSearch(event)" placeholder="Busca entre más de 1000 libros..." 
+                       class="w-full bg-white/10 border border-white/20 rounded-full py-2 px-10 focus:outline-none focus:bg-white/20 focus:border-orange-500 transition-all text-sm">
+                <i class="fas fa-search absolute left-3.5 top-2.5 text-white/40 text-sm"></i>
             </div>
 
-            <!-- Botón Desktop Lead -->
-            <button onclick="openRequestModal()" class="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors border border-gray-700 hover:border-orange-500 px-4 py-2 rounded-full">
-                <i class="far fa-question-circle text-orange-500"></i>
-                <span>¿Buscas un libro especial?</span>
-            </button>
+            <!-- Botón WhatsApp -->
+            <a href="https://wa.me/59899841325" target="_blank" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-green-600/20 flex items-center gap-2">
+                <i class="fab fa-whatsapp text-sm"></i>
+                <span class="hidden sm:inline">CONTACTO</span>
+            </a>
+        </div>
+        
+        <!-- Buscador Móvil -->
+        <div class="md:hidden px-4 pb-3">
+            <div class="relative">
+                <input type="text" id="mobileSearchInput" onkeyup="handleSearch(event)" placeholder="Buscar título o autor..." 
+                       class="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-10 text-xs focus:outline-none focus:border-orange-500">
+                <i class="fas fa-search absolute left-3.5 top-2.5 text-white/40 text-xs"></i>
+            </div>
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-6 w-full relative z-10">
-        <!-- Aviso de Mocks (Solo visible si falla la conexión) -->
-        <div id="previewBadge" class="hidden mb-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow-md" role="alert">
-            <p class="font-bold">Modo Offline / Demo</p>
-            <p>No pudimos cargar el catálogo en vivo. Mostrando ejemplos.</p>
-        </div>
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
+        <!-- ESTADO DE CARGA / ERROR / VACÍO -->
+        <div id="statusContainer" class="hidden py-20 text-center animate-fade-in"></div>
 
-        <!-- BARRA DE FILTROS -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <i class="fas fa-fire text-orange-500"></i> Catálogo Destacado
-            </h2>
-            
-            <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar w-full md:w-auto">
-                <button onclick="applySort('newest')" class="px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:border-orange-500 hover:text-orange-600 transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
-                    <i class="fas fa-certificate text-blue-500"></i> Novedades
-                </button>
-                <button onclick="applySort('price_asc')" class="px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:border-orange-500 hover:text-orange-600 transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
-                    <i class="fas fa-arrow-down text-green-500"></i> Precio: Menor
-                </button>
-                <button onclick="applySort('price_desc')" class="px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:border-orange-500 hover:text-orange-600 transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
-                    <i class="fas fa-arrow-up text-red-500"></i> Precio: Mayor
-                </button>
+        <!-- CONTENIDO PRINCIPAL -->
+        <div id="mainContent">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-2">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">Catálogo Destacado</h2>
+                    <p id="counter" class="text-slate-500 text-xs mt-1 font-medium">Cargando existencias...</p>
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                    <button class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:border-orange-500 transition-colors whitespace-nowrap">NOVEDADES</button>
+                    <button class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:border-orange-500 transition-colors whitespace-nowrap">MÁS VENDIDOS</button>
+                </div>
             </div>
-        </div>
 
-        <div id="grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
-            <!-- Grid de libros -->
-        </div>
-        
-        <div id="sentinel" class="h-24 flex items-center justify-center mt-12 opacity-0">
-            <div class="flex items-center gap-2">
-                <div class="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
-                <div class="w-2 h-2 bg-orange-500 rounded-full animate-bounce delay-100"></div>
-                <div class="w-2 h-2 bg-orange-500 rounded-full animate-bounce delay-200"></div>
+            <div id="grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <!-- Los libros se inyectan aquí -->
             </div>
         </div>
     </main>
 
-    <!-- WHATSAPP FLOTANTE -->
-    <a href="https://wa.me/59899841325?text=Hola,%20quisiera%20consultar%20por%20un%20libro" target="_blank" 
-       class="fixed bottom-6 right-6 bg-[#25D366] hover:bg-[#20bd5a] text-white p-4 rounded-full shadow-2xl z-40 transition-transform hover:scale-110 flex items-center justify-center group float-enter">
-        <i class="fab fa-whatsapp text-3xl"></i>
-        <span class="absolute right-full mr-3 bg-white text-gray-800 text-xs font-bold px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            ¡Chatea con nosotros!
-        </span>
-    </a>
-
-    <!-- MODAL DETALLE PRODUCTO -->
-    <div id="modal" class="fixed inset-0 bg-black/95 z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto flex flex-col md:flex-row overflow-hidden shadow-2xl transform scale-95 transition-all duration-300" id="modalContent">
-            
-            <!-- Columna Imagen (Con Galería) -->
-            <div class="w-full md:w-5/12 bg-gray-50 p-6 flex flex-col items-center relative select-none">
-                <div class="relative w-full h-[45vh] md:h-[50vh] flex items-center justify-center mb-4">
-                    <img id="mImg" src="" class="max-w-full max-h-full shadow-xl rounded-lg object-contain transition-all duration-300 cursor-zoom-in">
-                    <div id="mStatusBadge" class="absolute top-0 left-0 bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-full hidden shadow-lg">PAUSADO</div>
-                </div>
-                <div id="mGallery" class="flex gap-2 overflow-x-auto w-full hide-scrollbar h-20 px-2 snap-x"></div>
+    <footer class="bg-slate-100 border-t border-slate-200 py-12 mt-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-4">Envíos a todo Uruguay</p>
+            <div class="flex justify-center gap-6 text-slate-400">
+                <i class="fab fa-instagram text-xl hover:text-orange-500 cursor-pointer"></i>
+                <i class="fab fa-facebook text-xl hover:text-orange-500 cursor-pointer"></i>
+                <i class="fab fa-whatsapp text-xl hover:text-green-500 cursor-pointer"></i>
             </div>
-            
-            <!-- Columna Info -->
-            <div class="w-full md:w-7/12 p-6 md:p-10 flex flex-col relative bg-white overflow-y-auto">
-                <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors z-10">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-                
-                <h2 id="mTitle" class="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight"></h2>
-                
-                <div id="mAttributes" class="mb-4 space-y-1 text-sm text-gray-600 border-b border-gray-100 pb-4"></div>
+        </div>
+    </footer>
 
-                <div class="mb-6 flex-grow">
-                    <h3 class="font-bold text-gray-900 mb-2 text-sm uppercase tracking-wide">Sinopsis</h3>
-                    <div id="mDescription" class="text-gray-600 text-sm prose max-w-none leading-relaxed"></div>
-                </div>
+    <script>
+        const API_BASE = window.location.hostname.includes('amadolibros') ? '' : 'https://amadolibros-web.pages.dev';
+        let allBooks = [];
 
-                <div class="mt-auto bg-gray-50 -mx-6 -mb-10 md:-mx-10 md:-mb-10 p-6 border-t border-gray-100 sticky bottom-0">
-                    <div class="flex items-baseline gap-3 mb-4">
-                        <p id="mPrice" class="text-4xl font-black text-gray-900 tracking-tight"></p>
-                        <div id="mShippingBadge" class="hidden text-xs text-white font-bold bg-green-500 px-2 py-1 rounded uppercase tracking-wide flex items-center gap-1">
-                            <i class="fas fa-truck"></i> Envío Gratis
+        async function init() {
+            const grid = document.getElementById('grid');
+            renderSkeletons(10);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/home`);
+                if (!res.ok) throw new Error(`Error de servidor: ${res.status}`);
+                
+                const data = await res.json();
+
+                if (data.error === "KV_EMPTY") {
+                    showSetupState();
+                    return;
+                }
+
+                allBooks = Array.isArray(data) ? data : (data.results || []);
+                document.getElementById('counter').textContent = `${allBooks.length} LIBROS DISPONIBLES AHORA`;
+                render(allBooks);
+
+            } catch (e) {
+                console.error("Error al cargar:", e);
+                showErrorState("No pudimos conectar con el servidor de datos. Verifica tu conexión o el estado de Cloudflare.");
+            }
+        }
+
+        function render(list) {
+            const grid = document.getElementById('grid');
+            const statusContainer = document.getElementById('statusContainer');
+            const mainContent = document.getElementById('mainContent');
+
+            // Reset de visibilidad
+            statusContainer.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+
+            if (list.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-20 text-center text-slate-400 font-bold">No se encontraron resultados en el catálogo.</div>`;
+                return;
+            }
+
+            grid.innerHTML = list.map(b => {
+                const hdImage = b.thumbnail?.replace('-I.jpg', '-V.jpg').replace('-O.jpg', '-V.jpg') || 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+                return `
+                <div class="book-card bg-white p-3 rounded-3xl border border-slate-100 card-shadow flex flex-col group animate-fade-in">
+                    <div class="aspect-[3/4] mb-4 overflow-hidden rounded-2xl bg-slate-50 relative">
+                        <img src="${hdImage}" alt="${b.title}" class="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500" loading="lazy">
+                        ${b.free_shipping ? '<span class="absolute top-2 right-2 bg-green-500 text-white text-[9px] font-black px-2 py-1 rounded-lg shadow-lg">ENVÍO GRATIS</span>' : ''}
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-[13px] line-clamp-2 leading-tight mb-2 h-8 group-hover:text-orange-600 transition-colors">${b.title}</h3>
+                    <div class="mt-auto flex items-center justify-between pt-2 border-t border-slate-50">
+                        <span class="text-lg font-black text-slate-900">$${b.price}</span>
+                        <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
+                            <i class="fas fa-plus text-[10px]"></i>
                         </div>
                     </div>
-                    
-                    <div class="space-y-3">
-                        <div id="dynamicButtonContainer"></div>
-                        <button onclick="shareWhatsapp()" class="w-full bg-white border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 group">
-                            <i class="fab fa-whatsapp text-xl"></i>
-                            <span>Consultar dudas</span>
-                        </button>
+                </div>`;
+            }).join('');
+        }
+
+        function renderSkeletons(count) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = Array(count).fill(0).map(() => `
+                <div class="bg-white p-3 rounded-3xl border border-slate-50 animate-pulse">
+                    <div class="aspect-[3/4] bg-slate-100 rounded-2xl mb-4"></div>
+                    <div class="h-4 bg-slate-100 rounded w-3/4 mb-2"></div>
+                    <div class="h-4 bg-slate-100 rounded w-1/2"></div>
+                </div>
+            `).join('');
+        }
+
+        function showSetupState() {
+            document.getElementById('mainContent').classList.add('hidden');
+            const container = document.getElementById('statusContainer');
+            container.classList.remove('hidden');
+            container.innerHTML = `
+                <div class="max-w-sm mx-auto p-10 bg-white rounded-[40px] border border-slate-100 shadow-2xl">
+                    <div class="w-20 h-20 bg-orange-100 text-orange-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-sync-alt text-3xl animate-spin-slow"></i>
                     </div>
+                    <h3 class="text-xl font-black mb-3">Sincronización Requerida</h3>
+                    <p class="text-slate-500 text-sm mb-8 leading-relaxed">Conecta tu stock de Mercado Libre para empezar a vender.</p>
+                    <a href="/api/sync-all-books" class="block bg-orange-600 text-white px-6 py-4 rounded-2xl font-black hover:bg-orange-700 transition-all shadow-xl shadow-orange-600/30">
+                        SINCRONIZAR AHORA
+                    </a>
                 </div>
-            </div>
-        </div>
-    </div>
+            `;
+        }
 
-    <!-- MODAL "NO LO ENCUENTRAS" (Captura de Leads) -->
-    <div id="requestModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl transform scale-95 transition-all relative">
-            <button onclick="closeRequestModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            
-            <div class="text-center mb-6">
-                <i class="fas fa-search-location text-4xl text-orange-500 mb-3"></i>
-                <h3 class="text-2xl font-bold text-gray-900">¿Buscas un libro especial?</h3>
-                <p class="text-gray-500 text-sm mt-2">Si no está en el catálogo, nosotros lo buscamos en nuestros depósitos.</p>
-            </div>
-
-            <div class="space-y-4">
-                <a href="https://wa.me/59899841325?text=Hola,%20busco%20un%20libro%20que%20no%20encuentro%20en%20la%20web." target="_blank" 
-                   class="block w-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-center font-bold py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2">
-                    <i class="fab fa-whatsapp text-2xl"></i>
-                    Pedir por WhatsApp (Rápido)
-                </a>
-                
-                <div class="relative flex py-2 items-center">
-                    <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">O déjanos tus datos</span>
-                    <div class="flex-grow border-t border-gray-300"></div>
-                </div>
-
-                <form onsubmit="submitLead(event)" class="space-y-3">
-                    <input type="text" id="leadBook" placeholder="Título del libro o Autor" required class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 focus:border-orange-500 outline-none">
-                    <input type="text" id="leadContact" placeholder="Tu Email o Teléfono" required class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 focus:border-orange-500 outline-none">
-                    <button type="submit" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-colors">
-                        Enviar Solicitud
+        function showErrorState(msg) {
+            document.getElementById('mainContent').classList.add('hidden');
+            const container = document.getElementById('statusContainer');
+            container.classList.remove('hidden');
+            container.innerHTML = `
+                <div class="max-w-sm mx-auto p-10 bg-white rounded-[40px] border border-red-100 shadow-2xl">
+                    <div class="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-exclamation-triangle text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-black mb-3">Fallo de Conexión</h3>
+                    <p class="text-slate-500 text-sm mb-8 leading-relaxed">${msg}</p>
+                    <button onclick="window.location.reload()" class="block w-full bg-slate-900 text-white px-6 py-4 rounded-2xl font-black hover:bg-black transition-all">
+                        REINTENTAR
                     </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-<script>
-    const WHATSAPP_NUMBER = "+59899841325";
-    
-    // --- CORRECCIÓN CRÍTICA DE DOMINIO ---
-    // Si la URL contiene "amadolibros" (sea .com o .pages.dev), usamos ruta relativa ('').
-    // Solo usamos absoluta si estamos en localhost o vista previa (blob).
-    const hostname = window.location.hostname;
-    const isProduction = hostname.includes('amadolibros') || hostname.includes('pages.dev');
-    const API_BASE = isProduction ? '' : 'https://amadolibros-web.pages.dev';
-
-    let booksCache = []; 
-    let offset = 0;
-    let loading = false;
-    let currentQuery = '';
-    const grid = document.getElementById('grid');
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const params = new URLSearchParams(window.location.search);
-        const sharedId = params.get('id');
-        if(sharedId) { openModalById(sharedId); }
-        loadBooks(); 
-        setupLiveSearch();
-    });
-
-    // MOCK DATA (Para vistas previas)
-    function getMockBooks() {
-        return [
-            { id: 'MOCK1', title: 'Libro Activo Demo', price: 1500, thumbnail: 'https://http2.mlstatic.com/D_NQ_NP_963972-MLU72688960959_112023-V.jpg', permalink: '#', status: 'active', author: 'Autor Demo', free_shipping: true, date_created: '2025-01-01' },
-            { id: 'MOCK2', title: 'Libro Pausado Demo', price: 2300, thumbnail: 'https://http2.mlstatic.com/D_NQ_NP_796245-MLU74351662998_022024-V.jpg', permalink: '#', status: 'paused', author: 'Autor Demo', free_shipping: false, date_created: '2024-01-01' }
-        ];
-    }
-
-    // --- CARGA DE LIBROS ---
-    async function loadBooks(isSearch = false) {
-        if (loading) return;
-        loading = true;
-        if (offset === 0 && !isSearch) renderSkeletons(10);
-        if (offset > 0) {
-            const s = document.getElementById('sentinel');
-            if(s) s.classList.remove('opacity-0');
-        }
-
-        try {
-            let url = currentQuery 
-                ? `${API_BASE}/api/search?q=${encodeURIComponent(currentQuery)}&offset=${offset}`
-                : `${API_BASE}/api/home`;
-            
-            if (!currentQuery && offset > 0 && !isSearch) { loading = false; return; }
-
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Network error');
-            const data = await res.json();
-            const newBooks = Array.isArray(data) ? data : (data.results || []);
-            
-            if (offset === 0) booksCache = newBooks; 
-            else booksCache = [...booksCache, ...newBooks];
-
-            renderBooks(newBooks, offset === 0);
-            offset += newBooks.length;
-
-        } catch (e) {
-            console.warn('Usando Mock Data:', e);
-            if (offset === 0) {
-                document.getElementById('previewBadge')?.classList.remove('hidden');
-                renderBooks(getMockBooks(), true);
-                booksCache = getMockBooks();
-            }
-        } finally {
-            loading = false;
-            // FIX: Eliminada la línea que causaba el error con loadingIndicator
-            const sentinel = document.getElementById('sentinel');
-            if(sentinel) sentinel.classList.add('opacity-0');
-            document.getElementById('loadingIndicator')?.classList.add('hidden'); // Opcional seguro
-            document.querySelectorAll('.skeleton').forEach(el => el.remove());
-        }
-    }
-
-    function renderBooks(books, clear = false) {
-        if (clear) grid.innerHTML = '';
-        if (books.length === 0 && clear) {
-            grid.innerHTML = `
-                <div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400">
-                    <i class="fas fa-search text-4xl mb-4"></i>
-                    <p class="text-lg">No encontramos resultados.</p>
-                    <button onclick="openRequestModal()" class="mt-4 text-orange-500 font-bold hover:underline">¡Pídenoslo aquí!</button>
-                </div>`;
-            return;
-        }
-
-        books.forEach(book => {
-            const isPaused = book.status === 'paused';
-            const opacityClass = isPaused ? 'opacity-75 grayscale-[0.5]' : '';
-            const imgUrl = book.thumbnail ? book.thumbnail.replace('-I.jpg', '-V.jpg') : 'https://via.placeholder.com/300x400';
-            
-            let badgeHtml = '';
-            if (isPaused) badgeHtml = '<span class="absolute top-2 right-2 bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider z-10">A pedido</span>';
-            else if (book.free_shipping) badgeHtml = '<span class="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider z-10 shadow-sm"><i class="fas fa-truck"></i> Envío Gratis</span>';
-
-            const card = document.createElement('div');
-            card.className = `bg-white p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 group flex flex-col ${opacityClass} relative overflow-hidden`;
-            card.onclick = () => openModal(book);
-            card.innerHTML = `
-                <div class="aspect-[2/3] mb-4 overflow-hidden rounded-xl bg-gray-50 relative">
-                    ${badgeHtml}
-                    <img src="${imgUrl}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" loading="lazy">
                 </div>
-                <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-relaxed mb-2 group-hover:text-orange-600 transition-colors">${book.title}</h3>
-                <div class="mt-auto pt-2 border-t border-gray-50 flex items-center justify-between">
-                    <p class="text-lg font-black text-gray-900">$${book.price}</p>
-                    ${isPaused ? '<i class="fab fa-whatsapp text-green-500 text-lg"></i>' : '<i class="fas fa-shopping-bag text-gray-300 group-hover:text-orange-500"></i>'}
-                </div>`;
-            grid.appendChild(card);
-        });
-    }
-
-    function renderSkeletons(count) {
-        for(let i=0; i<count; i++) {
-            const skel = document.createElement('div');
-            skel.className = 'bg-white p-4 rounded-2xl border border-gray-100 skeleton';
-            skel.innerHTML = '<div class="h-56 bg-gray-200 rounded-xl mb-4"></div><div class="h-4 bg-gray-200 w-3/4 mb-2"></div>';
-            grid.appendChild(skel);
+            `;
         }
-    }
 
-    // --- LIVE SEARCH (BUSCADOR VIVO) ---
-    function setupLiveSearch() {
-        const input = document.getElementById('searchInput');
-        const backdrop = document.getElementById('searchBackdrop');
-        const container = document.getElementById('searchContainer');
-        const dropdown = document.getElementById('searchResultsDropdown');
+        let searchTimeout;
+        async function handleSearch(e) {
+            const query = e.target.value;
+            clearTimeout(searchTimeout);
 
-        input.addEventListener('focus', () => {
-            backdrop.classList.add('backdrop-active');
-            container.classList.add('search-expanded');
-        });
+            if (query.length === 0) { render(allBooks); return; }
+            if (query.length < 3) return;
 
-        backdrop.addEventListener('click', () => {
-            backdrop.classList.remove('backdrop-active');
-            container.classList.remove('search-expanded');
-            dropdown.classList.add('hidden');
-        });
-
-        let debounce;
-        input.addEventListener('input', (e) => {
-            clearTimeout(debounce);
-            const val = e.target.value.toLowerCase();
-            if(val.length < 2) { dropdown.classList.add('hidden'); return; }
-
-            debounce = setTimeout(() => {
-                // Buscamos localmente para velocidad instantánea
-                const matches = booksCache.filter(b => b.title.toLowerCase().includes(val)).slice(0, 5);
-                
-                let html = '';
-                if(matches.length === 0) {
-                    html = `<div class="p-4 text-center text-gray-500 text-sm">
-                                No encontrado. <button onclick="openRequestModal()" class="text-orange-500 font-bold hover:underline">Solicitarlo</button>
-                            </div>`;
-                } else {
-                    matches.forEach(b => {
-                        const img = b.thumbnail ? b.thumbnail.replace('-I.jpg', '-I.jpg') : '';
-                        html += `
-                            <div onclick="openModalById('${b.id}')" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors">
-                                <img src="${img}" class="w-10 h-14 object-contain rounded bg-white border border-gray-100">
-                                <div>
-                                    <p class="font-bold text-sm text-gray-800 line-clamp-1">${b.title}</p>
-                                    <p class="text-orange-600 font-bold text-xs">$${b.price}</p>
-                                </div>
-                            </div>`;
-                    });
-                    html += `<div onclick="fullSearch()" class="p-3 text-center text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 cursor-pointer uppercase tracking-wide">Ver todos los resultados</div>`;
-                }
-                dropdown.innerHTML = html;
-                dropdown.classList.remove('hidden');
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
+                    const results = await res.json();
+                    render(results);
+                } catch (e) { console.error("Error búsqueda:", e); }
             }, 300);
-        });
-
-        input.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter') {
-                backdrop.click(); 
-                fullSearch();
-            }
-        });
-    }
-
-    function fullSearch() {
-        const val = document.getElementById('searchInput').value;
-        currentQuery = val;
-        offset = 0;
-        loadBooks(true);
-        document.getElementById('searchResultsDropdown').classList.add('hidden');
-    }
-
-    // --- ORDENAMIENTO (FILTROS) ---
-    function applySort(type) {
-        if(booksCache.length === 0) return;
-        
-        let sorted = [...booksCache];
-        if (type === 'price_asc') sorted.sort((a, b) => a.price - b.price);
-        if (type === 'price_desc') sorted.sort((a, b) => b.price - a.price);
-        if (type === 'newest') sorted.sort((a, b) => new Date(b.date_created || 0) - new Date(a.date_created || 0));
-
-        renderBooks(sorted, true);
-    }
-
-    // --- MODALES Y GALERÍA ---
-    let currentBook = null;
-    
-    async function openModal(book) {
-        currentBook = book;
-        const isPaused = book.status === 'paused';
-
-        document.getElementById('mImg').src = book.thumbnail ? book.thumbnail.replace('-I.jpg', '-V.jpg') : '';
-        document.getElementById('mTitle').textContent = book.title;
-        document.getElementById('mPrice').textContent = `$${book.price}`;
-        
-        const pauseBadge = document.getElementById('mStatusBadge');
-        if (isPaused) {
-            pauseBadge.textContent = "DISPONIBLE POR ENCARGO";
-            pauseBadge.classList.remove('hidden');
-            pauseBadge.classList.add('bg-blue-600');
-        } else {
-            pauseBadge.classList.add('hidden');
         }
 
-        const shipBadge = document.getElementById('mShippingBadge');
-        if (book.free_shipping && !isPaused) shipBadge.classList.remove('hidden');
-        else shipBadge.classList.add('hidden');
-
-        // Atributos
-        const attrContainer = document.getElementById('mAttributes');
-        let attrHtml = '';
-        if (book.author) attrHtml += `<div class="flex items-center gap-2"><i class="fas fa-pen-nib w-4 text-orange-500"></i> <span class="font-medium">Autor:</span> ${book.author}</div>`;
-        if (book.publisher) attrHtml += `<div class="flex items-center gap-2"><i class="fas fa-building w-4 text-gray-400"></i> <span class="font-medium">Editorial:</span> ${book.publisher}</div>`;
-        if (book.pages) attrHtml += `<div class="flex items-center gap-2"><i class="fas fa-file-alt w-4 text-gray-400"></i> <span class="font-medium">Páginas:</span> ${book.pages}</div>`;
-        attrContainer.innerHTML = attrHtml;
-
-        // Reset
-        document.getElementById('mDescription').innerHTML = '<div class="flex flex-col gap-2 animate-pulse"><div class="h-2 bg-gray-200 rounded w-full"></div><div class="h-2 bg-gray-200 rounded w-5/6"></div></div>';
-        document.getElementById('mGallery').innerHTML = '';
-
-        // Botones dinámicos
-        const btnContainer = document.getElementById('dynamicButtonContainer');
-        if (isPaused) {
-            btnContainer.innerHTML = `<button onclick="shareWhatsappOrder()" class="w-full bg-[#128C7E] hover:bg-[#075E54] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 shadow-lg"><i class="fab fa-whatsapp text-xl"></i><span>ENCARGAR DISPONIBLE</span></button><p class="text-center text-xs text-gray-500 mt-2">En depósito externo.</p>`;
-        } else {
-            btnContainer.innerHTML = `<a href="${book.permalink}" target="_blank" class="block w-full bg-[#FFE600] hover:bg-[#F3D900] text-gray-900 text-center font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"><span>COMPRAR EN MERCADO LIBRE</span><i class="fas fa-external-link-alt text-sm opacity-50"></i></a>`;
-        }
-
-        const modal = document.getElementById('modal');
-        modal.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            modal.classList.remove('opacity-0');
-            document.getElementById('modalContent').classList.remove('scale-95');
-        });
-
-        const basePath = window.location.hostname.includes('pages.dev') ? window.location.pathname : '/';
-        const newUrl = `${basePath}?id=${book.id}`;
-        window.history.pushState({path: newUrl}, '', newUrl);
-
-        // Fetch Detallado (Lazy Load)
-        if (!book.id.startsWith('MOCK')) {
-            try {
-                const res = await fetch(`${API_BASE}/api/book-details?id=${book.id}`);
-                const details = await res.json();
-                
-                document.getElementById('mDescription').innerHTML = details.description.replace(/\n/g, '<br>');
-                
-                if (details.pictures && details.pictures.length > 0) {
-                    let galleryHtml = '';
-                    details.pictures.slice(0, 6).forEach(picUrl => {
-                        galleryHtml += `<img src="${picUrl}" onclick="document.getElementById('mImg').src='${picUrl}'" class="h-16 w-16 object-cover rounded border border-gray-200 cursor-pointer hover:border-orange-500 transition-colors flex-shrink-0 bg-white">`;
-                    });
-                    document.getElementById('mGallery').innerHTML = galleryHtml;
-                    // Auto-seleccionar primera imagen HD
-                    document.getElementById('mImg').src = details.pictures[0];
-                }
-            } catch (e) { console.error(e); }
-        }
-    }
-
-    function closeModal() {
-        const modal = document.getElementById('modal');
-        modal.classList.add('opacity-0');
-        document.getElementById('modalContent').classList.add('scale-95');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            window.history.pushState({path: '/'}, '', '/');
-        }, 300);
-    }
-
-    // Modal de Leads
-    function openRequestModal() {
-        const m = document.getElementById('requestModal');
-        m.classList.remove('hidden');
-        requestAnimationFrame(() => m.classList.remove('opacity-0'));
-    }
-    function closeRequestModal() {
-        const m = document.getElementById('requestModal');
-        m.classList.add('opacity-0');
-        setTimeout(() => m.classList.add('hidden'), 300);
-    }
-    function submitLead(e) {
-        e.preventDefault();
-        const btn = e.target.querySelector('button');
-        const origText = btn.textContent;
-        btn.textContent = '¡Enviado!';
-        btn.classList.replace('bg-gray-900', 'bg-green-600');
-        setTimeout(() => {
-            closeRequestModal();
-            btn.textContent = origText;
-            btn.classList.replace('bg-green-600', 'bg-gray-900');
-            e.target.reset();
-            alert('¡Gracias! Te contactaremos pronto.');
-        }, 1500);
-    }
-
-    function shareWhatsapp() {
-        if(!currentBook) return;
-        const url = window.location.hostname.includes('amadolibros-web.pages.dev') ? window.location.href : `https://amadolibros-web.pages.dev/?id=${currentBook.id}`;
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola AmadoLibros, consulta sobre: ${currentBook.title} - ${url}`)}`, '_blank');
-    }
-
-    function shareWhatsappOrder() {
-        if(!currentBook) return;
-        const url = window.location.hostname.includes('amadolibros-web.pages.dev') ? window.location.href : `https://amadolibros-web.pages.dev/?id=${currentBook.id}`;
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola! Quiero encargar: "${currentBook.title}" - ${url}`)}`, '_blank');
-    }
-
-    async function openModalById(id) {
-        try {
-            const res = await fetch(`${API_BASE}/api/home`);
-            const data = await res.json();
-            const books = Array.isArray(data) ? data : (data.results || []);
-            const book = books.find(b => b.id === id);
-            if(book) openModal(book);
-        } catch(e) { console.error(e); }
-    }
-</script>
+        window.onload = init;
+    </script>
 </body>
 </html>
