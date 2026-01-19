@@ -126,8 +126,8 @@ async function handleSyncCatalog(env, corsHeaders) {
     const accessToken = await getAccessToken(env);
     logs.push('✅ Token obtenido');
 
-    // 2. Obtener TODOS los IDs usando SCAN
-    logs.push('📡 Iniciando SCAN de items (active + paused)...');
+    // 2. Obtener TODOS los IDs usando búsqueda paginada
+    logs.push('📡 Iniciando búsqueda paginada de items (active + paused)...');
     const itemIds = await getAllItemIds(accessToken, logs);
     logs.push(`✅ Total IDs obtenidos: ${itemIds.length}`);
 
@@ -238,28 +238,24 @@ async function getAccessToken(env) {
   return data.access_token;
 }
 
-// ==================== OBTENER TODOS LOS IDs CON SCAN ====================
+// ==================== OBTENER TODOS LOS IDs CON PAGINACIÓN ESTÁNDAR ====================
 async function getAllItemIds(accessToken, logs) {
   const allIds = [];
-  let scrollId = null;
-  let page = 0;
+  let offset = 0;
+  const limit = 50; // Mercado Libre recomienda 50 por página
+  let totalFetched = 0;
 
   while (true) {
-    page++;
-    
-    // Construir URL con parámetros
-    let url = `${ML_API_BASE}/users/${SELLER_ID}/items/search?search_type=scan&status=active,paused&limit=100`;
-    
-    if (scrollId) {
-      url += `&scroll_id=${scrollId}`;
-    }
+    // Usar búsqueda estándar sin search_type=scan
+    const url = `${ML_API_BASE}/users/${SELLER_ID}/items/search?offset=${offset}&limit=${limit}`;
 
     const response = await fetch(url, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     });
 
     if (!response.ok) {
-      throw new Error(`SCAN falló en página ${page}: ${response.status} - ${await response.text()}`);
+      const errorText = await response.text();
+      throw new Error(`Búsqueda falló en offset ${offset}: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -267,16 +263,25 @@ async function getAllItemIds(accessToken, logs) {
     // Agregar IDs de esta página
     if (data.results && data.results.length > 0) {
       allIds.push(...data.results);
+      totalFetched += data.results.length;
+      const page = Math.floor(offset / limit) + 1;
       logs.push(`  → Página ${page}: ${data.results.length} items (total acumulado: ${allIds.length})`);
     }
 
     // Verificar si hay más páginas
-    if (!data.scroll_id || data.results.length === 0) {
-      logs.push(`  → SCAN completado en ${page} páginas`);
+    // Si obtuvimos menos items que el límite, llegamos al final
+    if (!data.results || data.results.length < limit) {
+      logs.push(`  → Búsqueda completada: ${allIds.length} items totales`);
       break;
     }
 
-    scrollId = data.scroll_id;
+    // Verificar si hay más resultados según paging
+    if (data.paging && data.paging.total) {
+      if (offset + limit >= data.paging.total) {
+        logs.push(`  → Alcanzado total reportado: ${data.paging.total} items`);
+        break;
+      }
+    }
 
     // Tope de seguridad
     if (allIds.length >= MAX_ITEMS) {
@@ -284,8 +289,48 @@ async function getAllItemIds(accessToken, logs) {
       break;
     }
 
+    // Avanzar a la siguiente página
+    offset += limit;
+
     // Pequeña pausa para no saturar la API
-    await sleep(100);
+    await sleep(150);
+  }
+
+  // Ahora obtener los items pausados por separado
+  logs.push(`  → Buscando items pausados...`);
+  offset = 0;
+  
+  while (true) {
+    const url = `${ML_API_BASE}/users/${SELLER_ID}/items/search?status=paused&offset=${offset}&limit=${limit}`;
+
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+
+    if (!response.ok) {
+      logs.push(`  ⚠️ No se pudieron obtener items pausados (esto es opcional)`);
+      break;
+    }
+
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      // Agregar solo los que no estén ya en allIds
+      const newPausedIds = data.results.filter(id => !allIds.includes(id));
+      allIds.push(...newPausedIds);
+      logs.push(`  → Items pausados: +${newPausedIds.length} nuevos (total acumulado: ${allIds.length})`);
+    }
+
+    if (!data.results || data.results.length < limit) {
+      break;
+    }
+
+    if (allIds.length >= MAX_ITEMS) {
+      break;
+    }
+
+    offset += limit;
+    await sleep(150);
   }
 
   return allIds;
@@ -389,7 +434,7 @@ async function handleGetCatalog(env, corsHeaders) {
   }
 }
 
-// ==================== OBTENER ESTADÃSTICAS ====================
+// ==================== OBTENER ESTADÍSTICAS ====================
 async function handleStats(env, corsHeaders) {
   try {
     const stats = await env.AMADO_KV.get('books:stats', 'json');
