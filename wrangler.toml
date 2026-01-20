@@ -10,10 +10,10 @@ SELLER_ID = ""
 
 [kv_namespaces]
 binding = "AMADO_KV"
-id = "6ea0ff4682d647118442a24fe384abc4" # Reemplazar con el ID real de tu KV Namespace
+id = "6ea0ff4682d647118442a24fe384abc4"
 
 [site]
 bucket = "./public"
 
 [triggers]
-crons = [ "0 0 * * *" ] # Sincronizar una vez al día a medianoche (UTC)
+crons = [ "0 0,6,12,18 * * *" ]
