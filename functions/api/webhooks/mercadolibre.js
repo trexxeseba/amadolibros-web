@@ -46,7 +46,7 @@ async function handleWebhookAsync(payload, env) {
   try {
     const { topic, user_id, resource, _id } = payload;
 
-    if (user_id !== parseInt(USER_ID)) {
+    if (user_id.toString() !== USER_ID.toString()) {
       console.log(`⚠️ Webhook de otro seller ignorado: ${user_id}`);
       return;
     }
@@ -210,3 +210,7 @@ async function getAccessToken(env) {
   const data = await response.json();
   return data.access_token;
 }
+
+
+
+
