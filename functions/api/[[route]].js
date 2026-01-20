@@ -1,8 +1,10 @@
 // functions/api/[[route]].js
-// Backend para Amado Libros con soporte para scroll_id (sin límite de items)
+// Backend para Amado Libros - Guarda catálogo en GitHub
 
 const APP_ID = '4741021817925208';
 const USER_ID = '440298103';
+const GITHUB_REPO = 'trexxeseba/amadolibros-web';
+const CATALOG_FILE = 'catalog.json';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -41,7 +43,7 @@ export async function onRequest(context) {
 }
 
 // ============================================
-// 🔐 AUTENTICACIÓN
+// 🔐 AUTENTICACIÓN MERCADO LIBRE
 // ============================================
 async function getAccessToken(env) {
   const REFRESH_TOKEN = env.REFRESH_TOKEN;
@@ -68,7 +70,7 @@ async function getAccessToken(env) {
 }
 
 // ============================================
-// 🚀 NUEVA FUNCIÓN: Fetch con scroll_id (SIN LÍMITE)
+// 🚀 FETCH con scroll_id (SIN LÍMITE)
 // ============================================
 async function fetchAllItemsWithScrollId(accessToken) {
   const logs = [];
@@ -174,7 +176,7 @@ async function enrichItemsWithDetails(itemIds, accessToken) {
 }
 
 // ============================================
-// 🔄 TRANSFORMAR ITEM A FORMATO SIMPLIFICADO
+// 🔄 TRANSFORMAR ITEM
 // ============================================
 function transformItem(item) {
   const attributes = {};
@@ -210,6 +212,95 @@ function transformItem(item) {
 }
 
 // ============================================
+// 💾 GUARDAR EN GITHUB
+// ============================================
+async function saveToGitHub(catalog, env) {
+  const GITHUB_TOKEN = env.GITHUB_TOKEN;
+  
+  // 1. Obtener el SHA actual del archivo (si existe)
+  let sha = null;
+  try {
+    const getResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${CATALOG_FILE}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      }
+    );
+    
+    if (getResponse.ok) {
+      const data = await getResponse.json();
+      sha = data.sha;
+    }
+  } catch (error) {
+    // El archivo no existe, está bien
+  }
+
+  // 2. Crear/actualizar el archivo
+  const content = btoa(JSON.stringify(catalog, null, 2));
+  
+  const body = {
+    message: `🔄 Sync catalog: ${catalog.total} items - ${new Date().toISOString()}`,
+    content: content,
+    branch: 'main',
+  };
+
+  if (sha) {
+    body.sha = sha; // Requerido para actualizar archivo existente
+  }
+
+  const response = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CATALOG_FILE}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Error guardando en GitHub: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+// ============================================
+// 📖 LEER DE GITHUB
+// ============================================
+async function readFromGitHub(env) {
+  const GITHUB_TOKEN = env.GITHUB_TOKEN;
+  
+  const response = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CATALOG_FILE}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Catálogo no encontrado. Ejecuta /api/sync-catalog primero.');
+    }
+    throw new Error(`Error leyendo de GitHub: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = atob(data.content);
+  return JSON.parse(content);
+}
+
+// ============================================
 // 🎯 HANDLER: Sincronizar catálogo
 // ============================================
 async function handleSyncCatalog(env, corsHeaders) {
@@ -232,16 +323,16 @@ async function handleSyncCatalog(env, corsHeaders) {
     const { items: enrichedItems, logs: enrichLogs } = await enrichItemsWithDetails(itemIds, accessToken);
     logs.push(...enrichLogs);
 
-    // 4. Guardar en KV
-    logs.push('💾 Guardando en KV...');
+    // 4. Guardar en GitHub
+    logs.push('💾 Guardando en GitHub...');
     const catalog = {
       items: enrichedItems,
       last_sync: new Date().toISOString(),
       total: enrichedItems.length,
     };
 
-    await env.CATALOG_KV.put('catalog', JSON.stringify(catalog));
-    logs.push('✅ Catálogo guardado exitosamente');
+    await saveToGitHub(catalog, env);
+    logs.push('✅ Catálogo guardado en GitHub exitosamente');
 
     // 5. Estadísticas finales
     const durationSeconds = Math.round((Date.now() - startTime) / 1000);
@@ -287,16 +378,7 @@ async function handleSyncCatalog(env, corsHeaders) {
 // ============================================
 async function handleGetCatalog(env, corsHeaders) {
   try {
-    const catalogData = await env.CATALOG_KV.get('catalog');
-    
-    if (!catalogData) {
-      return new Response(
-        JSON.stringify({ error: 'Catálogo no encontrado. Ejecuta /api/sync-catalog primero.' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const catalog = JSON.parse(catalogData);
+    const catalog = await readFromGitHub(env);
     
     return new Response(JSON.stringify(catalog), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
