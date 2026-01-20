@@ -1,17 +1,14 @@
 // functions/api/[[route]].js
-// Backend para Amado Libros - Guarda catálogo en GitHub
+// Backend simple - Devuelve datos directamente
 
 const APP_ID = '4741021817925208';
 const USER_ID = '440298103';
-const GITHUB_REPO = 'trexxeseba/amadolibros-web';
-const CATALOG_FILE = 'catalog.json';
 
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api/, '');
 
-  // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -22,29 +19,19 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Health check
   if (path === '/health') {
     return new Response(JSON.stringify({ status: 'OK', timestamp: new Date().toISOString() }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  // Sync catalog endpoint
   if (path === '/sync-catalog') {
     return handleSyncCatalog(env, corsHeaders);
-  }
-
-  // Get catalog endpoint
-  if (path === '/catalog') {
-    return handleGetCatalog(env, corsHeaders);
   }
 
   return new Response('Not Found', { status: 404, headers: corsHeaders });
 }
 
-// ============================================
-// 🔐 AUTENTICACIÓN MERCADO LIBRE
-// ============================================
 async function getAccessToken(env) {
   const REFRESH_TOKEN = env.REFRESH_TOKEN;
   const CLIENT_SECRET = env.CLIENT_SECRET;
@@ -69,9 +56,6 @@ async function getAccessToken(env) {
   return data.access_token;
 }
 
-// ============================================
-// 🚀 FETCH con scroll_id (SIN LÍMITE)
-// ============================================
 async function fetchAllItemsWithScrollId(accessToken) {
   const logs = [];
   const allItems = [];
@@ -79,7 +63,7 @@ async function fetchAllItemsWithScrollId(accessToken) {
   let page = 1;
   let hasMore = true;
 
-  logs.push('📡 Iniciando sincronización con scroll_id (sin límite de items)...');
+  logs.push('📡 Iniciando sincronización con scroll_id...');
 
   while (hasMore) {
     try {
@@ -96,26 +80,26 @@ async function fetchAllItemsWithScrollId(accessToken) {
       }
 
       const data = await response.json();
-
-      // Guardar scroll_id para siguiente iteración
       scrollId = data.scroll_id;
 
-      // Agregar items de esta página
       if (data.results && data.results.length > 0) {
         allItems.push(...data.results);
-        logs.push(`  → Página ${page}: +${data.results.length} items (total: ${allItems.length})`);
+        
+        // Log cada 10 páginas para no saturar
+        if (page % 10 === 0) {
+          logs.push(`  → Página ${page}: total acumulado ${allItems.length} items`);
+        }
         page++;
       }
 
-      // Si no hay scroll_id, significa que no hay más páginas
       if (!scrollId) {
         hasMore = false;
         logs.push(`✅ Sincronización completa: ${allItems.length} items obtenidos`);
       }
 
-      // Safety: máximo 200 páginas (20,000 items)
+      // Límite de seguridad
       if (page > 200) {
-        logs.push('⚠️ Alcanzado límite de seguridad (200 páginas)');
+        logs.push('⚠️ Alcanzado límite de seguridad (200 páginas / 20,000 items)');
         hasMore = false;
       }
 
@@ -128,16 +112,13 @@ async function fetchAllItemsWithScrollId(accessToken) {
   return { items: allItems, logs };
 }
 
-// ============================================
-// 📚 ENRIQUECER ITEMS CON DETALLES COMPLETOS
-// ============================================
 async function enrichItemsWithDetails(itemIds, accessToken) {
   const logs = [];
   const enrichedItems = [];
   const BATCH_SIZE = 20;
   const totalBatches = Math.ceil(itemIds.length / BATCH_SIZE);
 
-  logs.push(`📚 Enriqueciendo ${itemIds.length} items con detalles completos...`);
+  logs.push(`📚 Enriqueciendo ${itemIds.length} items...`);
 
   for (let i = 0; i < itemIds.length; i += BATCH_SIZE) {
     const batch = itemIds.slice(i, i + BATCH_SIZE);
@@ -162,7 +143,8 @@ async function enrichItemsWithDetails(itemIds, accessToken) {
         }
       });
 
-      if (batchNumber % 10 === 0 || batchNumber === totalBatches) {
+      // Log cada 50 lotes
+      if (batchNumber % 50 === 0 || batchNumber === totalBatches) {
         logs.push(`  → Procesados ${batchNumber}/${totalBatches} lotes (${enrichedItems.length} items)`);
       }
 
@@ -175,9 +157,6 @@ async function enrichItemsWithDetails(itemIds, accessToken) {
   return { items: enrichedItems, logs };
 }
 
-// ============================================
-// 🔄 TRANSFORMAR ITEM
-// ============================================
 function transformItem(item) {
   const attributes = {};
   if (item.attributes) {
@@ -199,158 +178,46 @@ function transformItem(item) {
     permalink: item.permalink,
     shipping: {
       mode: item.shipping?.mode,
-      methods: item.shipping?.methods || [],
-      tags: item.shipping?.tags || [],
-      dimensions: item.shipping?.dimensions,
-      local_pick_up: item.shipping?.local_pick_up,
       free_shipping: item.shipping?.free_shipping,
-      logistic_type: item.shipping?.logistic_type,
-      store_pick_up: item.shipping?.store_pick_up,
+      local_pick_up: item.shipping?.local_pick_up,
     },
     attributes,
   };
 }
 
-// ============================================
-// 💾 GUARDAR EN GITHUB
-// ============================================
-async function saveToGitHub(catalog, env) {
-  const GITHUB_TOKEN = env.GITHUB_TOKEN;
-  
-  // 1. Obtener el SHA actual del archivo (si existe)
-  let sha = null;
-  try {
-    const getResponse = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/contents/${CATALOG_FILE}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${GITHUB_TOKEN}`,
-          'Accept': 'application/vnd.github.v3+json',
-        },
-      }
-    );
-    
-    if (getResponse.ok) {
-      const data = await getResponse.json();
-      sha = data.sha;
-    }
-  } catch (error) {
-    // El archivo no existe, está bien
-  }
-
-  // 2. Crear/actualizar el archivo
-  const content = btoa(JSON.stringify(catalog, null, 2));
-  
-  const body = {
-    message: `🔄 Sync catalog: ${catalog.total} items - ${new Date().toISOString()}`,
-    content: content,
-    branch: 'main',
-  };
-
-  if (sha) {
-    body.sha = sha; // Requerido para actualizar archivo existente
-  }
-
-  const response = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CATALOG_FILE}`,
-    {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error guardando en GitHub: ${response.status} - ${errorText}`);
-  }
-
-  return await response.json();
-}
-
-// ============================================
-// 📖 LEER DE GITHUB
-// ============================================
-async function readFromGitHub(env) {
-  const GITHUB_TOKEN = env.GITHUB_TOKEN;
-  
-  const response = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CATALOG_FILE}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    }
-  );
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error('Catálogo no encontrado. Ejecuta /api/sync-catalog primero.');
-    }
-    throw new Error(`Error leyendo de GitHub: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = atob(data.content);
-  return JSON.parse(content);
-}
-
-// ============================================
-// 🎯 HANDLER: Sincronizar catálogo
-// ============================================
 async function handleSyncCatalog(env, corsHeaders) {
   const startTime = Date.now();
   const logs = [];
 
   try {
-    // 1. Obtener access token
     logs.push('🔐 Obteniendo access token...');
     const accessToken = await getAccessToken(env);
     logs.push('✅ Token obtenido');
 
-    // 2. Obtener TODOS los items con scroll_id
     const { items: itemIds, logs: fetchLogs } = await fetchAllItemsWithScrollId(accessToken);
     logs.push(...fetchLogs);
 
-    logs.push(`✅ Total IDs obtenidos: ${itemIds.length}`);
-
-    // 3. Enriquecer items con detalles completos
     const { items: enrichedItems, logs: enrichLogs } = await enrichItemsWithDetails(itemIds, accessToken);
     logs.push(...enrichLogs);
 
-    // 4. Guardar en GitHub
-    logs.push('💾 Guardando en GitHub...');
-    const catalog = {
-      items: enrichedItems,
-      last_sync: new Date().toISOString(),
-      total: enrichedItems.length,
-    };
-
-    await saveToGitHub(catalog, env);
-    logs.push('✅ Catálogo guardado en GitHub exitosamente');
-
-    // 5. Estadísticas finales
     const durationSeconds = Math.round((Date.now() - startTime) / 1000);
     const stats = {
       total: enrichedItems.length,
       active: enrichedItems.filter(i => i.status === 'active').length,
       paused: enrichedItems.filter(i => i.status === 'paused').length,
       closed: enrichedItems.filter(i => i.status === 'closed').length,
-      last_sync: catalog.last_sync,
+      last_sync: new Date().toISOString(),
       duration_seconds: durationSeconds,
     };
+
+    logs.push(`✅ COMPLETADO: ${enrichedItems.length} items en ${durationSeconds}s`);
 
     return new Response(
       JSON.stringify({
         status: 'SUCCESS',
         stats,
         logs,
-        sample: enrichedItems.slice(0, 3),
+        items: enrichedItems, // TODOS los items aquí
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -369,25 +236,6 @@ async function handleSyncCatalog(env, corsHeaders) {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    );
-  }
-}
-
-// ============================================
-// 📖 HANDLER: Obtener catálogo
-// ============================================
-async function handleGetCatalog(env, corsHeaders) {
-  try {
-    const catalog = await readFromGitHub(env);
-    
-    return new Response(JSON.stringify(catalog), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
