@@ -1,5 +1,5 @@
 // functions/api/[[route]].js
-// Backend simple - Devuelve datos directamente
+// Backend DEFINITIVO - Obtiene TODOS los IDs primero
 
 const APP_ID = '4741021817925208';
 const USER_ID = '440298103';
@@ -56,60 +56,27 @@ async function getAccessToken(env) {
   return data.access_token;
 }
 
-async function fetchAllItemsWithScrollId(accessToken) {
+// NUEVA ESTRATEGIA: Obtener TODOS los IDs primero
+async function getAllItemIds(accessToken) {
   const logs = [];
-  const allItems = [];
-  let scrollId = null;
-  let page = 1;
-  let hasMore = true;
+  
+  logs.push('🔍 Obteniendo lista completa de IDs...');
+  
+  const response = await fetch(
+    `https://api.mercadolibre.com/users/${USER_ID}/items/search`,
+    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+  );
 
-  logs.push('📡 Iniciando sincronización con scroll_id...');
-
-  while (hasMore) {
-    try {
-      const url = scrollId 
-        ? `https://api.mercadolibre.com/users/${USER_ID}/items/search?scroll_id=${scrollId}`
-        : `https://api.mercadolibre.com/users/${USER_ID}/items/search?limit=100`;
-
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      scrollId = data.scroll_id;
-
-      if (data.results && data.results.length > 0) {
-        allItems.push(...data.results);
-        
-        // Log cada 10 páginas para no saturar
-        if (page % 10 === 0) {
-          logs.push(`  → Página ${page}: total acumulado ${allItems.length} items`);
-        }
-        page++;
-      }
-
-      if (!scrollId) {
-        hasMore = false;
-        logs.push(`✅ Sincronización completa: ${allItems.length} items obtenidos`);
-      }
-
-      // Límite de seguridad
-      if (page > 200) {
-        logs.push('⚠️ Alcanzado límite de seguridad (200 páginas / 20,000 items)');
-        hasMore = false;
-      }
-
-    } catch (error) {
-      logs.push(`❌ Error en página ${page}: ${error.message}`);
-      hasMore = false;
-    }
+  if (!response.ok) {
+    throw new Error(`Error HTTP ${response.status}`);
   }
 
-  return { items: allItems, logs };
+  const data = await response.json();
+  const totalItems = data.paging?.total || data.results?.length || 0;
+  
+  logs.push(`✅ Total de items encontrados: ${totalItems}`);
+  
+  return { itemIds: data.results || [], logs, total: totalItems };
 }
 
 async function enrichItemsWithDetails(itemIds, accessToken) {
@@ -143,7 +110,6 @@ async function enrichItemsWithDetails(itemIds, accessToken) {
         }
       });
 
-      // Log cada 50 lotes
       if (batchNumber % 50 === 0 || batchNumber === totalBatches) {
         logs.push(`  → Procesados ${batchNumber}/${totalBatches} lotes (${enrichedItems.length} items)`);
       }
@@ -194,7 +160,7 @@ async function handleSyncCatalog(env, corsHeaders) {
     const accessToken = await getAccessToken(env);
     logs.push('✅ Token obtenido');
 
-    const { items: itemIds, logs: fetchLogs } = await fetchAllItemsWithScrollId(accessToken);
+    const { itemIds, logs: fetchLogs, total } = await getAllItemIds(accessToken);
     logs.push(...fetchLogs);
 
     const { items: enrichedItems, logs: enrichLogs } = await enrichItemsWithDetails(itemIds, accessToken);
@@ -203,6 +169,7 @@ async function handleSyncCatalog(env, corsHeaders) {
     const durationSeconds = Math.round((Date.now() - startTime) / 1000);
     const stats = {
       total: enrichedItems.length,
+      total_reported: total,
       active: enrichedItems.filter(i => i.status === 'active').length,
       paused: enrichedItems.filter(i => i.status === 'paused').length,
       closed: enrichedItems.filter(i => i.status === 'closed').length,
@@ -217,7 +184,7 @@ async function handleSyncCatalog(env, corsHeaders) {
         status: 'SUCCESS',
         stats,
         logs,
-        items: enrichedItems, // TODOS los items aquí
+        items: enrichedItems,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
