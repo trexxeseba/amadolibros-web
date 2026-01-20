@@ -45,6 +45,7 @@ export async function onRequest(context) {
 // ============================================
 async function getAccessToken(env) {
   const REFRESH_TOKEN = env.REFRESH_TOKEN;
+  const CLIENT_SECRET = env.CLIENT_SECRET;
   
   const response = await fetch('https://api.mercadolibre.com/oauth/token', {
     method: 'POST',
@@ -52,12 +53,14 @@ async function getAccessToken(env) {
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       client_id: APP_ID,
+      client_secret: CLIENT_SECRET,
       refresh_token: REFRESH_TOKEN,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Error obteniendo access token: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`Error obteniendo access token: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
