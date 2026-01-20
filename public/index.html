@@ -9,7 +9,7 @@ export default {
     // ========================================================================
     // 1. WEBHOOKS DE MERCADO LIBRE (Sistema de Notificaciones)
     // ========================================================================
-    if (url.pathname === "/api/webhooks/mercadolibre" && request.method === "POST") {
+    if (url.pathname.startsWith("/api/webhooks/mercadolibre") && request.method === "POST") {
       try {
         const body = await request.json();
         const timestamp = Date.now();
@@ -26,7 +26,7 @@ export default {
     // 2. VISOR DE LOGS (Para que tú veas qué pasa)
     // URL: /ver-logs
     // ========================================================================
-    if (url.pathname === "/ver-logs") {
+    if (url.pathname.startsWith("/ver-logs")) {
       try {
         const lista = await env.AMADO_KV.list({ limit: 10, prefix: "webhook_" });
         let logsHtml = `
@@ -48,7 +48,7 @@ export default {
     // 3. API TURBO (Tu "Cocinero" que baja los libros)
     // URL: /api/home
     // ========================================================================
-    if (url.pathname === "/api/home") {
+    if (url.pathname.startsWith("/api/home")) {
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
@@ -572,4 +572,3 @@ const WEBSITE_HTML = `
     </script>
 </body>
 </html>
-`;
