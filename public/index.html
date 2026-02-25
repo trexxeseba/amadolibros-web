@@ -1,133 +1,3 @@
-// CONFIGURACIÓN DE TU TIENDA
-const SELLER_ID = '151675239'; 
-const SITE_ID = 'MLU';
-
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-
-    // ========================================================================
-    // 1. WEBHOOKS DE MERCADO LIBRE (Sistema de Notificaciones)
-    // ========================================================================
-    if (url.pathname.startsWith("/api/webhooks/mercadolibre") && request.method === "POST") {
-      try {
-        const body = await request.json();
-        const timestamp = Date.now();
-        // Guardamos en KV con expiración de 7 días
-        await env.AMADO_KV.put(`webhook_${timestamp}`, JSON.stringify(body, null, 2), { expirationTtl: 604800 });
-        console.log("✅ Webhook guardado");
-        return new Response("OK", { status: 200 });
-      } catch (err) {
-        return new Response("Error: " + err.message, { status: 500 });
-      }
-    }
-
-    // ========================================================================
-    // 2. VISOR DE LOGS (Para que tú veas qué pasa)
-    // URL: /ver-logs
-    // ========================================================================
-    if (url.pathname.startsWith("/ver-logs")) {
-      try {
-        const lista = await env.AMADO_KV.list({ limit: 10, prefix: "webhook_" });
-        let logsHtml = `
-          <html><head><title>Monitor Amado</title><style>body{font-family:sans-serif;padding:20px;background:#f0f0f0}.card{background:white;padding:15px;margin-bottom:10px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}pre{background:#333;color:#fff;padding:10px;overflow:auto}.btn{display:block;padding:10px;background:#007bff;color:white;text-align:center;text-decoration:none;border-radius:5px;margin-bottom:20px;font-weight:bold}</style></head>
-          <body><h1>🔍 Monitor Webhooks</h1><a href="/ver-logs" class="btn">🔄 ACTUALIZAR AHORA</a>`;
-        
-        if (lista.keys.length === 0) logsHtml += `<p style="text-align:center;color:#666">Esperando datos de Mercado Libre...</p>`;
-        
-        for (const key of lista.keys.reverse()) {
-          const valor = await env.AMADO_KV.get(key.name);
-          const fecha = new Date(parseInt(key.name.split('_')[1])).toLocaleString();
-          logsHtml += `<div class="card"><strong>📅 ${fecha}</strong><pre>${valor}</pre></div>`;
-        }
-        return new Response(logsHtml + "</body></html>", { headers: { "Content-Type": "text/html;charset=UTF-8" } });
-      } catch (e) { return new Response(e.message, { status: 500 }); }
-    }
-
-    // ========================================================================
-    // 3. API TURBO (Tu "Cocinero" que baja los libros)
-    // URL: /api/home
-    // ========================================================================
-    if (url.pathname.startsWith("/api/home")) {
-        const corsHeaders = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Cache-Control': 'public, max-age=3600, s-maxage=3600' 
-        };
-
-        if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: corsHeaders });
-        }
-
-        try {
-            let allItems = [];
-            const limit = 50;
-            const MAX_ITEMS = 20000; // Tu límite aumentado
-
-            // PASO 1: Primera petición (Radar)
-            const initialUrl = `https://api.mercadolibre.com/sites/${SITE_ID}/search?seller_id=${SELLER_ID}&offset=0&limit=${limit}`;
-            const initialRes = await fetch(initialUrl);
-            const initialData = await initialRes.json();
-            
-            if (initialData.results && initialData.results.length > 0) {
-                allItems = allItems.concat(initialData.results);
-            }
-
-            const totalAvailable = initialData.paging.total;
-            const totalToFetch = Math.min(totalAvailable, MAX_ITEMS);
-
-            // PASO 2: MODO TURBO - Descarga Paralela
-            const promises = [];
-            
-            for (let offset = 50; offset < totalToFetch; offset += limit) {
-                const urlFetch = `https://api.mercadolibre.com/sites/${SITE_ID}/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
-                promises.push(fetch(urlFetch).then(res => res.json()));
-                
-                // Procesamos en lotes de 10
-                if (promises.length >= 10) {
-                    const results = await Promise.all(promises);
-                    results.forEach(data => {
-                        if(data.results) allItems = allItems.concat(data.results);
-                    });
-                    promises.length = 0; 
-                }
-            }
-
-            // Procesar remanentes
-            if (promises.length > 0) {
-                const results = await Promise.all(promises);
-                results.forEach(data => {
-                    if(data.results) allItems = allItems.concat(data.results);
-                });
-            }
-
-            // 3. Responder con la bolsa gigante de libros
-            return new Response(JSON.stringify(allItems), {
-                headers: { 'Content-Type': 'application/json', ...corsHeaders }
-            });
-
-        } catch (error) {
-            return new Response(JSON.stringify({ error: error.message, detail: "Error conectando con ML" }), {
-                status: 500,
-                headers: corsHeaders
-            });
-        }
-    }
-
-    // ========================================================================
-    // 4. TU SITIO WEB HERMOSO (Ruta por defecto)
-    // ========================================================================
-    return new Response(WEBSITE_HTML, {
-      headers: { "Content-Type": "text/html;charset=UTF-8" },
-    });
-  }
-};
-
-// ============================================================================
-// TU CÓDIGO HTML (Intacto)
-// ============================================================================
-const WEBSITE_HTML = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -376,36 +246,76 @@ const WEBSITE_HTML = `
         let currentBookId = null;
         let wishlist = JSON.parse(localStorage.getItem('amadoWishlist')) || [];
 
-        window.onload = async () => {
-            const status = document.getElementById('statusContainer');
-            const content = document.getElementById('mainContent');
-            content.classList.add('opacity-50');
-            status.classList.remove('hidden');
+        // === CARGA PROGRESIVA v3.0 - Lee del caché KV (instantáneo) ===
+        async function loadAllBooks() {
+            const statusEl = document.getElementById('statusContainer');
+            const contentEl = document.getElementById('mainContent');
+            contentEl.classList.add('opacity-50');
+            statusEl.classList.remove('hidden');
             updateWishlistBadge();
-
             try {
-                const res = await fetch(`\${API_BASE}/api/home`);
+                const res = await fetch(`${API_BASE}/api/catalog?limit=50&page=1`);
                 if (!res.ok) throw new Error('Error de conexión');
                 const data = await res.json();
-                allBooks = Array.isArray(data) ? data : (data.results || []);
-                
-                const count = allBooks.length;
-                document.getElementById('debugCount').innerText = `\${count.toLocaleString()} Libros`;
-                document.getElementById('debugCount').style.color = count < 1000 ? '#ff4d4d' : '#4ade80'; 
 
+                if (data.status === 'CACHE_EMPTY') {
+                    document.getElementById('debugCount').innerText = 'Sincronizando...';
+                    document.getElementById('debugCount').style.color = '#facc15';
+                    showToast('Cargando catálogo por primera vez. Espera un momento...');
+                    fetch(`${API_BASE}/api/sync`).catch(() => {});
+                    setTimeout(() => loadAllBooks(), 30000);
+                    return;
+                }
+
+                allBooks = data.items || [];
+                const totalInCatalog = data.total_in_catalog || allBooks.length;
+                document.getElementById('debugCount').innerText = `${totalInCatalog.toLocaleString()} Libros`;
+                document.getElementById('debugCount').style.color = totalInCatalog < 100 ? '#ff4d4d' : '#4ade80';
                 sortData('recent');
                 filteredBooks = allBooks;
                 resetGrid();
                 document.getElementById('searchInput').addEventListener('input', (e) => filterBooks(e.target.value));
 
+                if (totalInCatalog > 50) {
+                    setTimeout(() => loadRemainingBooks(), 500);
+                }
             } catch (error) {
-                console.error("Error:", error);
-                document.getElementById('debugCount').innerText = "ERROR API";
+                console.error('Error:', error);
+                document.getElementById('debugCount').innerText = 'ERROR - Reintentando...';
                 document.getElementById('debugCount').style.color = 'red';
+                setTimeout(() => loadAllBooks(), 10000);
             } finally {
-                status.classList.add('hidden');
-                content.classList.remove('opacity-50');
+                statusEl.classList.add('hidden');
+                contentEl.classList.remove('opacity-50');
             }
+        }
+
+        async function loadRemainingBooks() {
+            try {
+                const res = await fetch(`${API_BASE}/api/catalog?limit=5000&page=1`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.status !== 'OK' || !data.items || data.items.length <= allBooks.length) return;
+
+                allBooks = data.items;
+                const currentSearch = document.getElementById('searchInput').value;
+                if (currentSearch.trim()) {
+                    filterBooks(currentSearch);
+                } else {
+                    const criteria = document.getElementById('sortSelect').value;
+                    sortData(criteria);
+                    filteredBooks = allBooks;
+                    resetGrid();
+                }
+                document.getElementById('debugCount').innerText = `${allBooks.length.toLocaleString()} Libros`;
+                document.getElementById('debugCount').style.color = allBooks.length < 100 ? '#ff4d4d' : '#4ade80';
+            } catch (e) {
+                console.warn('Error cargando catálogo completo:', e.message);
+            }
+        }
+
+        window.onload = async () => {
+            await loadAllBooks();
         };
 
         function normalizeText(text) { return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }

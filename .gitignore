@@ -1,0 +1,14 @@
+# Credenciales locales - NUNCA subir al repositorio
+.dev.vars
+.env
+.env.local
+*.secret
+
+# Node
+node_modules/
+dist/
+.wrangler/
+
+# OS
+.DS_Store
+Thumbs.db

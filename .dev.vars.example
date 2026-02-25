@@ -1,0 +1,4 @@
+# Copiar este archivo como .dev.vars y completar con los valores reales
+# .dev.vars NO debe subirse al repositorio (está en .gitignore)
+CLIENT_SECRET=tu_client_secret_aqui
+REFRESH_TOKEN=tu_refresh_token_aqui
