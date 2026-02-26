@@ -49,45 +49,62 @@ export async function onRequest(context) {
   return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
 }
 
-// === MANEJO DEL CATÁLOGO (LECTURA) ===
+// === MANEJO DEL CATÁLOGO (LECTURA) - v6.0 ===
+// Lee catalog_index escrito por el Worker v3 de sync (Camino B de Opus)
 async function handleGetCatalog(env, url) {
   try {
-    const searchQuery = url.searchParams.get('q') || '';
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const searchQuery = (url.searchParams.get('q') || '').toLowerCase().trim();
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
 
-    const cachedData = await env.AMADO_KV.get('catalog:full', { type: 'json' });
-
-    if (!cachedData) {
+    // Leer el índice del catálogo (escrito por el Worker v3)
+    const indexMeta = await env.AMADO_KV.get('catalog_index', { type: 'json' });
+    if (!indexMeta || !indexMeta.totalItems) {
       return new Response(
         JSON.stringify({
           status: 'CACHE_EMPTY',
-          message: 'El catálogo se está cargando. Intenta en 2 minutos o visita /api/sync para sincronizar.',
+          message: 'El catálogo se está sincronizando. Volvé en unos minutos.',
           items: [], total: 0
         }),
         { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
       );
     }
 
-    let items = cachedData;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      items = items.filter(b => (b.title && b.title.toLowerCase().includes(q)) || (b.id && b.id.toLowerCase().includes(q)));
+    // Cargar todos los IDs del índice
+    let allIds = [];
+    for (let i = 0; i < indexMeta.chunks; i++) {
+      const chunk = await env.AMADO_KV.get(`catalog_index:${i}`, { type: 'json' });
+      if (chunk) allIds = allIds.concat(chunk);
     }
 
-    const totalFiltered = items.length;
-    const offset = (page - 1) * limit;
-    const paginatedItems = items.slice(offset, offset + limit);
-    const metadata = await env.AMADO_KV.get('catalog:metadata', { type: 'json' });
+    // Paginación
+    const start = page * limit;
+    const pageIds = allIds.slice(start, start + limit);
+
+    // Obtener detalles de los items de esta página
+    const items = (await Promise.all(
+      pageIds.map(id => env.AMADO_KV.get(`item:${id}`, { type: 'json' }))
+    )).filter(Boolean);
+
+    // Filtrar por búsqueda si hay query
+    const filtered = searchQuery
+      ? items.filter(item =>
+          item.title?.toLowerCase().includes(searchQuery) ||
+          item.author?.toLowerCase().includes(searchQuery))
+      : items;
 
     return new Response(
       JSON.stringify({
-        status: 'OK', items: paginatedItems, total: totalFiltered, page, limit,
-        has_more: offset + limit < totalFiltered,
-        last_sync: metadata?.last_sync || null,
-        total_in_catalog: metadata?.total_items || 0
+        status: 'OK',
+        items: filtered,
+        total: indexMeta.totalItems,
+        page,
+        limit,
+        pages: Math.ceil(indexMeta.totalItems / limit),
+        has_more: start + limit < indexMeta.totalItems,
+        updatedAt: indexMeta.updatedAt
       }),
-      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300, s-maxage=300' } }
+      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=60' } }
     );
   } catch (error) {
     return new Response(
