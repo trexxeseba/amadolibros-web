@@ -49,68 +49,72 @@ export async function onRequest(context) {
   return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
 }
 
-// === MANEJO DEL CATÁLOGO (LECTURA) - v6.0 ===
-// Lee catalog_index escrito por el Worker v3 de sync (Camino B de Opus)
+// === MANEJO DEL CATÁLOGO (LECTURA) - v7.0 Opus Fix ===
 async function handleGetCatalog(env, url) {
-  try {
-    const searchQuery = (url.searchParams.get('q') || '').toLowerCase().trim();
-    const page = parseInt(url.searchParams.get('page') || '0');
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+  const page = parseInt(url.searchParams.get('page') || '0');
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+  const search = (url.searchParams.get('q') || '').toLowerCase().trim();
+  const KV = env.AMADO_KV;
 
-    // Leer el índice del catálogo (escrito por el Worker v3)
-    const indexMeta = await env.AMADO_KV.get('catalog_index', { type: 'json' });
-    if (!indexMeta || !indexMeta.totalItems) {
-      return new Response(
-        JSON.stringify({
-          status: 'CACHE_EMPTY',
-          message: 'El catálogo se está sincronizando. Volvé en unos minutos.',
-          items: [], total: 0
-        }),
-        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } }
-      );
+  try {
+    // 1. Leer metadata del índice (el Worker v3 guarda 'total', no 'totalItems')
+    const indexMeta = await KV.get('catalog_index', { type: 'json' });
+
+    if (!indexMeta || !indexMeta.total || indexMeta.total === 0) {
+      return new Response(JSON.stringify({
+        items: [], total: 0, page, limit, pages: 0,
+        message: 'El catálogo se está sincronizando. Intentá de nuevo en unos minutos.'
+      }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
     }
 
-    // Cargar todos los IDs del índice
+    // 2. Cargar los IDs desde los chunks del índice
     let allIds = [];
     for (let i = 0; i < indexMeta.chunks; i++) {
-      const chunk = await env.AMADO_KV.get(`catalog_index:${i}`, { type: 'json' });
-      if (chunk) allIds = allIds.concat(chunk);
+      const chunk = await KV.get(`catalog_index:${i}`, { type: 'json' });
+      if (chunk && Array.isArray(chunk)) allIds = allIds.concat(chunk);
     }
 
-    // Paginación
-    const start = page * limit;
-    const pageIds = allIds.slice(start, start + limit);
+    if (allIds.length === 0) {
+      return new Response(JSON.stringify({
+        items: [], total: 0, page, limit, pages: 0,
+        message: 'Índice vacío. Ejecutá /sync/rebuild-index en el Worker.'
+      }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+    }
 
-    // Obtener detalles de los items de esta página
+    // 3. Búsqueda: cargar primeros 2000 items y filtrar
+    if (search) {
+      const searchIds = allIds.slice(0, 2000);
+      const allItems = (await Promise.all(
+        searchIds.map(id => KV.get(`item:${id}`, { type: 'json' }).catch(() => null))
+      )).filter(Boolean);
+      const filtered = allItems.filter(item =>
+        item.title?.toLowerCase().includes(search) ||
+        item.author?.toLowerCase().includes(search) ||
+        item.editorial?.toLowerCase().includes(search)
+      );
+      const paginated = filtered.slice(page * limit, (page + 1) * limit);
+      return new Response(JSON.stringify({
+        items: paginated, total: filtered.length, page, limit,
+        pages: Math.ceil(filtered.length / limit)
+      }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
+    }
+
+    // 4. Sin búsqueda: paginar directamente los IDs
+    const pageIds = allIds.slice(page * limit, (page + 1) * limit);
     const items = (await Promise.all(
-      pageIds.map(id => env.AMADO_KV.get(`item:${id}`, { type: 'json' }))
+      pageIds.map(id => KV.get(`item:${id}`, { type: 'json' }).catch(() => null))
     )).filter(Boolean);
 
-    // Filtrar por búsqueda si hay query
-    const filtered = searchQuery
-      ? items.filter(item =>
-          item.title?.toLowerCase().includes(searchQuery) ||
-          item.author?.toLowerCase().includes(searchQuery))
-      : items;
+    return new Response(JSON.stringify({
+      items, total: allIds.length, page, limit,
+      pages: Math.ceil(allIds.length / limit),
+      has_more: (page + 1) * limit < allIds.length
+    }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
 
-    return new Response(
-      JSON.stringify({
-        status: 'OK',
-        items: filtered,
-        total: indexMeta.totalItems,
-        page,
-        limit,
-        pages: Math.ceil(indexMeta.totalItems / limit),
-        has_more: start + limit < indexMeta.totalItems,
-        updatedAt: indexMeta.updatedAt
-      }),
-      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=60' } }
-    );
   } catch (error) {
-    return new Response(
-      JSON.stringify({ status: 'ERROR', error: error.message, items: [], total: 0 }),
-      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
-    );
+    console.error('handleGetCatalog error:', error);
+    return new Response(JSON.stringify({ error: error.message, items: [], total: 0 }),
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   }
 }
 
