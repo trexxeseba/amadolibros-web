@@ -121,9 +121,17 @@
                 <p class="text-[10px] text-gray-400 font-medium hidden md:block">Librería Online Premium</p>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-            <button class="p-2 text-gray-400 hover:text-white transition-colors" onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
-            <a href="https://wa.me/59899841325" target="_blank" class="hidden md:flex bg-green-600 px-5 py-2 rounded-full text-xs font-bold transition-all shadow-lg shadow-green-900/20 items-center gap-2 hover:bg-green-500 hover:scale-105">
+        <div class="flex items-center gap-3 flex-1 max-w-lg mx-4">
+            <div class="flex-1 flex items-center bg-white/10 border border-white/20 rounded-full px-3 py-1.5 focus-within:bg-white/20 transition-all">
+                <i class="fas fa-search text-gray-400 text-sm mr-2"></i>
+                <input type="text" id="headerSearch" placeholder="Buscar por título, autor, ISBN..." 
+                    class="bg-transparent border-none outline-none text-white placeholder-gray-400 text-sm w-full"
+                    oninput="onHeaderSearch(this.value)">
+                <button id="headerSearchClear" onclick="clearHeaderSearch()" class="hidden text-gray-400 hover:text-white ml-1"><i class="fas fa-times text-xs"></i></button>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="https://wa.me/59899841325" target="_blank" class="hidden md:flex bg-green-600 px-4 py-2 rounded-full text-xs font-bold transition-all items-center gap-2 hover:bg-green-500">
                 <i class="fab fa-whatsapp text-sm"></i> ATENCIÓN 24/7
             </a>
         </div>
@@ -162,7 +170,7 @@
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full relative z-0">
         <div id="statusContainer" class="hidden py-20 text-center animate-fade-in">
             <div class="inline-block relative"><i class="fas fa-circle-notch fa-spin text-4xl text-brand-orange mb-4"></i></div>
-            <p class="text-slate-500 font-medium">Sincronizando catálogo completo...</p>
+            <p class="text-slate-500 font-medium">Cargando catálogo...</p>
         </div>
 
         <div id="mainContent">
@@ -176,8 +184,16 @@
                      <button onclick="filterByStatus('active')" class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-xs font-bold whitespace-nowrap hover:bg-gray-200 transition-colors">En Stock</button>
                      <button onclick="filterByStatus('paused')" class="px-4 py-2 rounded-full bg-brand-purple/10 text-brand-purple text-xs font-bold whitespace-nowrap hover:bg-brand-purple/20 transition-colors">Por Encargo</button>
                 </div>
-                <div class="relative min-w-[180px]">
-                    <select id="sortSelect" onchange="sortBooks()" class="w-full appearance-none bg-gray-50 border border-gray-200 text-slate-700 text-sm font-bold rounded-lg py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 cursor-pointer">
+                <div class="flex gap-2 items-center">
+                    <select id="priceFilter" onchange="applyPriceFilter()" class="appearance-none bg-gray-50 border border-gray-200 text-slate-700 text-sm font-bold rounded-lg py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 cursor-pointer">
+                        <option value="all">💰 Todos los precios</option>
+                        <option value="0-500">Hasta $500</option>
+                        <option value="500-1000">$500 – $1.000</option>
+                        <option value="1000-2000">$1.000 – $2.000</option>
+                        <option value="2000-5000">$2.000 – $5.000</option>
+                        <option value="5000-99999">Más de $5.000</option>
+                    </select>
+                    <select id="sortSelect" onchange="sortBooks()" class="appearance-none bg-gray-50 border border-gray-200 text-slate-700 text-sm font-bold rounded-lg py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 cursor-pointer">
                         <option value="recent">✨ Más Recientes</option>
                         <option value="priceAsc">💲 Menor Precio</option>
                         <option value="priceDesc">💎 Mayor Precio</option>
@@ -386,7 +402,7 @@
                 card.style.animationDelay = `${(displayedCount % BATCH_SIZE) * 50}ms`;
                 card.innerHTML = `
                     <div class="relative pt-[140%] bg-gray-100">
-                        <img src="${b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : ''}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                        <img src="${(b.pictures && b.pictures[0]) ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg') : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '')}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
                         <div class="absolute top-2 right-2">
                             <button onclick="toggleWishlist(event, '${b.id}')" class="wishlist-btn bg-white/80 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors" aria-label="Añadir a favoritos">
                                 ${wishlist.includes(b.id) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>'}
@@ -395,10 +411,14 @@
                         ${b.status === 'paused' ? '<div class="absolute bottom-0 left-0 w-full bg-brand-purple/80 backdrop-blur-sm text-white text-[10px] font-bold text-center py-1">POR ENCARGO</div>' : ''}
                     </div>
                     <div class="p-3 flex flex-col flex-grow">
-                        <h4 class="text-xs font-bold text-slate-800 line-clamp-2 flex-grow">${b.title}</h4>
-                        <div class="mt-2 flex items-center justify-between">
-                            <p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p>
-                            <button onclick="openModal('${b.id}')" class="bg-brand-orange text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors"><i class="fas fa-plus"></i></button>
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-2">${b.title}</h4>
+                        ${b.author ? '<p class="text-[10px] text-gray-500 mt-0.5 line-clamp-1">' + b.author + '</p>' : ''}
+                        <div class="mt-auto pt-2 flex items-end justify-between">
+                            <div>
+                                <p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p>
+                                <p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>
+                            </div>
+                            <button onclick="openModal('${b.id}')" class="bg-brand-orange text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors flex-shrink-0"><i class="fas fa-plus"></i></button>
                         </div>
                     </div>
                 `;
@@ -411,20 +431,71 @@
             document.getElementById('counter').innerText = `${allLoadedBooks.length} de ${totalBooks} libros`;
         }
         function filterBooks(query) {
-            const lowerQuery = query.toLowerCase();
-            filteredBooks = allBooks.filter(b => 
-                b.title.toLowerCase().includes(lowerQuery) || 
-                (b.attributes && b.attributes.some(attr => attr.id === 'ISBN' && attr.value_name.includes(query)))
-            );
+            activeSearch = query;
+            applyFilters();
+        }
+
+        function onHeaderSearch(val) {
+            // Sincronizar con el input del hero si existe
+            const heroInput = document.getElementById('searchInput');
+            if (heroInput) heroInput.value = val;
+            const clearBtn = document.getElementById('headerSearchClear');
+            if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+            filterBooks(val);
+            // Hacer scroll al catálogo si hay búsqueda
+            if (val.length === 1) {
+                document.getElementById('grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function clearHeaderSearch() {
+            document.getElementById('headerSearch').value = '';
+            const heroInput = document.getElementById('searchInput');
+            if (heroInput) heroInput.value = '';
+            document.getElementById('headerSearchClear').classList.add('hidden');
+            filterBooks('');
+        }
+        let activeStatus = 'all';
+        let activePriceRange = 'all';
+        let activeSearch = '';
+
+        function applyFilters() {
+            let result = allLoadedBooks;
+            // Filtro por búsqueda
+            if (activeSearch) {
+                const q = activeSearch.toLowerCase();
+                result = result.filter(b =>
+                    b.title?.toLowerCase().includes(q) ||
+                    b.author?.toLowerCase().includes(q) ||
+                    (b.attributes && b.attributes.some(a => a.id === 'ISBN' && a.value_name?.includes(activeSearch)))
+                );
+            }
+            // Filtro por estado
+            if (activeStatus !== 'all') {
+                result = result.filter(b => b.status === activeStatus);
+            }
+            // Filtro por precio
+            if (activePriceRange !== 'all') {
+                const [min, max] = activePriceRange.split('-').map(Number);
+                result = result.filter(b => b.price >= min && b.price <= max);
+            }
+            filteredBooks = result;
             sortBooks();
         }
+
         function filterByStatus(status) {
-            if (status === 'all') {
-                filteredBooks = allBooks;
-            } else {
-                filteredBooks = allBooks.filter(b => b.status === status);
-            }
-            sortBooks();
+            activeStatus = status;
+            // Actualizar estilos de botones
+            document.querySelectorAll('[onclick^="filterByStatus"]').forEach(btn => {
+                btn.className = 'px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-xs font-bold whitespace-nowrap hover:bg-gray-200 transition-colors';
+            });
+            event.target.className = 'px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-bold whitespace-nowrap hover:bg-slate-700 transition-colors';
+            applyFilters();
+        }
+
+        function applyPriceFilter() {
+            activePriceRange = document.getElementById('priceFilter').value;
+            applyFilters();
         }
         function sortBooks() {
             const sortValue = document.getElementById('sortSelect').value;
@@ -491,7 +562,14 @@
             }
         }
         document.addEventListener('DOMContentLoaded', loadAllBooks);
-        document.getElementById('searchInput').addEventListener('input', (e) => filterBooks(e.target.value));
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value;
+            const headerInput = document.getElementById('headerSearch');
+            if (headerInput) headerInput.value = val;
+            const clearBtn = document.getElementById('headerSearchClear');
+            if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+            filterBooks(val);
+        });
 
         // === BOTÓN FLOTANTE WHATSAPP ===
         function toggleWhatsAppChat() {
