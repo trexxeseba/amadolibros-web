@@ -389,17 +389,18 @@
             if (btn) { btn.disabled = false; btn.innerText = 'Cargar más libros'; }
         }
 
-                function renderBooks(reset = false) {
+        function renderBooks(reset = false) {
             const grid = document.getElementById('grid');
             if (reset) {
                 grid.innerHTML = '';
             }
             const fragment = document.createDocumentFragment();
-            const booksToRender = reset ? filteredBooks : filteredBooks.slice(grid.children.length);
-            booksToRender.forEach(b => {
+            const currentCount = grid.children.length;
+            const booksToRender = reset ? filteredBooks : filteredBooks.slice(currentCount);
+            booksToRender.forEach((b, i) => {
                 const card = document.createElement('div');
                 card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
-                card.style.animationDelay = `${(displayedCount % BATCH_SIZE) * 50}ms`;
+                card.style.animationDelay = `${i * 30}ms`;
                 card.innerHTML = `
                     <div class="relative pt-[140%] bg-gray-100">
                         <img src="${(b.pictures && b.pictures[0]) ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg') : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '')}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
