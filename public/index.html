@@ -355,15 +355,16 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         const API_BASE = window.location.hostname.includes('amadolibros') ? '' : 'https://amadolibros-web.pages.dev';
+        const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
         const PAGE_SIZE = 40;
         let currentPage = 0;
         let totalBooks = 0;
         let allLoadedBooks = [];   // Solo los libros ya cargados
         let filteredBooks = [];    // Vista filtrada de allLoadedBooks
+        let allBooks = [];         // Todos los libros del catálogo R2
+        let catalogLoaded = false; // Flag para saber si el catálogo R2 ya fue cargado
         let currentBookId = null;
         let wishlist = JSON.parse(localStorage.getItem('amadoWishlist')) || [];
-        // Alias para compatibilidad con openModal
-        let allBooks = allLoadedBooks;
         // === PAGINACIÓN REAL v4.0 ===
         // Función helper: submit búsqueda desde hero
         function submitHeroSearch() {
@@ -442,27 +443,24 @@
         }
 
         async function loadAllBooks() {
+            if (catalogLoaded) return; // Ya cargado, no repetir
             const statusEl = document.getElementById('statusContainer');
             const grid = document.getElementById('grid');
-            // Cambio 7: Ocultar statusContainer desde el inicio
             statusEl.classList.add('hidden');
-            // Cambio 6: Intentar cargar desde sessionStorage (cache)
-            const cached = sessionStorage.getItem('amadoCatalogPage0');
+
+            // Intentar cargar desde sessionStorage (cache)
+            const cached = sessionStorage.getItem('amadoCatalogR2');
             if (cached) {
                 try {
                     const data = JSON.parse(cached);
-                    grid.innerHTML = '';
-                    currentPage = 0;
-                    totalBooks = data.total || data.items.length;
-                    allLoadedBooks = data.items;
-                    allBooks = allLoadedBooks;
-                    filteredBooks = allLoadedBooks;
-                    renderBooks(true);
-                    renderBestsellers(allLoadedBooks);
-                    updateWishlistBadge();
-                    return; // Salir sin hacer fetch
-                } catch(e) { /* Si falla el parse, continuar con fetch normal */ }
+                    allBooks = data.items || [];
+                    totalBooks = data.total || allBooks.length;
+                    catalogLoaded = true;
+                    initializeCatalog();
+                    return;
+                } catch(e) { /* Si falla el parse, continuar con fetch */ }
             }
+
             // Mostrar skeletons
             grid.innerHTML = Array.from({ length: 20 }).map(() => `
                 <div class="book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
@@ -477,55 +475,63 @@
                     </div>
                 </div>
             `).join('');
-            statusEl.classList.remove('hidden');
             updateWishlistBadge();
+
             try {
-                const res = await fetch(`${API_BASE}/api/catalog?page=0&limit=${PAGE_SIZE}`);
-                if (!res.ok) throw new Error('Error de conexión');
+                const res = await fetch(CATALOG_URL);
+                if (!res.ok) throw new Error('Error cargando catálogo R2');
                 const data = await res.json();
                 if (!data.items || data.items.length === 0) {
                     statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-hourglass-half fa-spin text-4xl text-brand-orange mb-4"></i></div><p class="text-slate-500 font-medium">Sincronizando catálogo... volvé en unos minutos.</p>';
+                    statusEl.classList.remove('hidden');
                     setTimeout(loadAllBooks, 5000);
                     return;
                 }
-                statusEl.classList.add('hidden');
-                currentPage = 0;
-                totalBooks = data.total || data.items.length;
-                allLoadedBooks = data.items;
-                allBooks = allLoadedBooks;
-                filteredBooks = allLoadedBooks;
-                // Cambio 6: Guardar en sessionStorage para carga instantánea en recargas
-                try { sessionStorage.setItem('amadoCatalogPage0', JSON.stringify(data)); } catch(e) {}
-                renderBooks(true);
-                renderBestsellers(allLoadedBooks);
+                allBooks = data.items;
+                totalBooks = data.total || allBooks.length;
+                catalogLoaded = true;
+                // Guardar en sessionStorage para carga instantánea
+                try { sessionStorage.setItem('amadoCatalogR2', JSON.stringify({ total: totalBooks, items: allBooks })); } catch(e) {}
+                initializeCatalog();
             } catch (error) {
                 statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i></div><p class="text-slate-500 font-medium">Error de conexión. Reintentando...</p>';
+                statusEl.classList.remove('hidden');
                 setTimeout(loadAllBooks, 5000);
             }
         }
 
-        async function loadNextPage() {
+        function initializeCatalog() {
+            // Mostrar primera página
+            currentPage = 0;
+            const start = currentPage * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            allLoadedBooks = allBooks.slice(start, end);
+            filteredBooks = allLoadedBooks;
+            renderBooks(true);
+            renderBestsellers(allBooks);
+            updateWishlistBadge();
+            document.getElementById('counter').innerText = `${allBooks.length} de ${totalBooks} libros`;
+            document.getElementById('loadMoreContainer').style.display = allBooks.length > PAGE_SIZE ? 'block' : 'none';
+        }
+
+        function loadNextPage() {
             currentPage++;
             const btn = document.querySelector('#loadMoreContainer button');
             if (btn) { btn.disabled = true; btn.innerText = 'Cargando...'; }
-            try {
-                const res = await fetch(`${API_BASE}/api/catalog?page=${currentPage}&limit=${PAGE_SIZE}`);
-                const data = await res.json();
-                if (data.items && data.items.length > 0) {
-                    allLoadedBooks = allLoadedBooks.concat(data.items);
-                    allBooks = allLoadedBooks;
-                    // Si hay filtro activo, re-filtrar; si no, agregar directamente
-                    const searchVal = document.getElementById('headerSearch').value.trim();
-                    if (searchVal) {
-                        filterBooks(searchVal);
-                    } else {
-                        filteredBooks = allLoadedBooks;
-                        renderBooks(false);
-                    }
+            const source = activeSearch ? filteredBooks : allBooks;
+            const start = currentPage * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const newItems = source.slice(start, end);
+            if (newItems.length > 0) {
+                allLoadedBooks = allLoadedBooks.concat(newItems);
+                const searchVal = document.getElementById('headerSearch').value.trim();
+                if (!searchVal) {
+                    filteredBooks = allLoadedBooks;
+                    renderBooks(false);
                 }
-            } catch(e) {
-                currentPage--; // Revertir en caso de error
             }
+            const totalShown = currentPage * PAGE_SIZE + PAGE_SIZE;
+            document.getElementById('loadMoreContainer').style.display = totalShown < source.length ? 'block' : 'none';
             if (btn) { btn.disabled = false; btn.innerText = 'Cargar más libros'; }
         }
 
@@ -568,10 +574,13 @@
                 fragment.appendChild(card);
             });
             grid.appendChild(fragment);
-            // Mostrar botón "Cargar más" si hay más libros en el servidor
-            document.getElementById('loadMoreContainer').style.display = allLoadedBooks.length < totalBooks ? 'block' : 'none';
+            // Mostrar botón "Cargar más"
+            const totalVisible = activeSearch ? filteredBooks.length : allBooks.length;
+            document.getElementById('loadMoreContainer').style.display = allLoadedBooks.length < totalVisible ? 'block' : 'none';
             document.getElementById('noResults').style.display = filteredBooks.length === 0 ? 'block' : 'none';
-            document.getElementById('counter').innerText = `${allLoadedBooks.length} de ${totalBooks} libros`;
+            document.getElementById('counter').innerText = activeSearch
+                ? `${filteredBooks.length} resultados de ${totalBooks} libros`
+                : `${allBooks.length} de ${totalBooks} libros`;
         }
         function filterBooks(query) {
             activeSearch = query;
@@ -599,45 +608,45 @@
         let activePriceRange = 'all';
         let activeSearch = '';
 
-        async function applyFilters() {
-            const grid = document.getElementById('grid');
-            const loadMoreContainer = document.getElementById('loadMoreContainer');
-            const noResults = document.getElementById('noResults');
+        function normalize(str) {
+            return (str || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
 
-            // Si hay búsqueda activa, consultar la API
-            if (activeSearch && activeSearch.length >= 2) {
-                grid.innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-circle-notch fa-spin text-brand-orange text-2xl"></i></div>';
-                try {
-                    const res = await fetch(`${API_BASE}/api/catalog?page=0&limit=40&q=${encodeURIComponent(activeSearch)}`);
-                    const data = await res.json();
-                    filteredBooks = data.items || [];
-                    totalBooks = data.total || filteredBooks.length;
-                    allLoadedBooks = filteredBooks;
-                    allBooks = allLoadedBooks;
-                } catch(e) {
-                    filteredBooks = [];
-                }
-            } else if (!activeSearch) {
-                // Sin búsqueda: recargar catálogo normal
-                await loadAllBooks();
-                return;
+        function applyFilters() {
+            // Buscar sobre allBooks (catálogo completo R2)
+            let result = allBooks;
+
+            // Filtro por búsqueda (normalizada, sin tildes)
+            if (activeSearch && activeSearch.length >= 1) {
+                const q = normalize(activeSearch);
+                result = result.filter(b =>
+                    normalize(b.title).includes(q) ||
+                    normalize(b.author || '').includes(q)
+                );
             }
 
-            // Filtro por estado (client-side sobre los resultados)
-            let result = filteredBooks;
+            // Filtro por estado
             if (activeStatus !== 'all') {
                 if (activeStatus === 'active') {
-                    result = result.filter(b => b.status === 'active' && (b.available_quantity > 0));
+                    result = result.filter(b => b.status === 'active' && b.available_quantity > 0);
                 } else if (activeStatus === 'paused') {
                     result = result.filter(b => b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0);
                 }
             }
+
             // Filtro por precio
             if (activePriceRange !== 'all') {
                 const [min, max] = activePriceRange.split('-').map(Number);
                 result = result.filter(b => b.price >= min && b.price <= max);
             }
+
             filteredBooks = result;
+            // Mostrar primera página de resultados
+            currentPage = 0;
+            allLoadedBooks = filteredBooks.slice(0, PAGE_SIZE);
+            document.getElementById('counter').innerText = `${filteredBooks.length} de ${totalBooks} libros`;
+            document.getElementById('loadMoreContainer').style.display = filteredBooks.length > PAGE_SIZE ? 'block' : 'none';
             updateNoResultsWA(activeSearch);
             sortBooks();
         }
@@ -736,25 +745,24 @@
         // =============================================
         // AUTOCOMPLETE
         // =============================================
-        async function showAutocomplete(query) {
+        function showAutocomplete(query) {
             const dropdown = document.getElementById('autocompleteDropdown');
             if (!dropdown) return;
-            if (!query || query.length < 2) { dropdown.classList.add('hidden'); return; }
-            try {
-                const res = await fetch(`${API_BASE}/api/catalog?page=0&limit=20&q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                const suggestions = (data.items || []).slice(0, 6);
-                if (suggestions.length === 0) { dropdown.classList.add('hidden'); return; }
-                dropdown.innerHTML = suggestions.map(b => {
-                    const escaped = b.title.replace(/'/g, "\'");
-                    const highlighted = b.title.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<strong>$1</strong>');
-                    return `<div class="px-4 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-slate-800 border-b border-gray-50 last:border-0" onclick="selectSuggestion('${escaped}')">
-                        ${highlighted}
-                        ${b.author ? '<span class="text-xs text-gray-400 ml-1">— ' + b.author + '</span>' : ''}
-                    </div>`;
-                }).join('');
-                dropdown.classList.remove('hidden');
-            } catch(e) { dropdown.classList.add('hidden'); }
+            if (!query || query.length < 2 || !catalogLoaded) { dropdown.classList.add('hidden'); return; }
+            const q = normalize(query);
+            const suggestions = allBooks
+                .filter(b => normalize(b.title).includes(q) || normalize(b.author || '').includes(q))
+                .slice(0, 6);
+            if (suggestions.length === 0) { dropdown.classList.add('hidden'); return; }
+            dropdown.innerHTML = suggestions.map(b => {
+                const escaped = b.title.replace(/'/g, "\'");
+                const highlighted = b.title.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<strong>$1</strong>');
+                return `<div class="px-4 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-slate-800 border-b border-gray-50 last:border-0" onclick="selectSuggestion('${escaped}')">
+                    ${highlighted}
+                    ${b.author ? '<span class="text-xs text-gray-400 ml-1">— ' + b.author + '</span>' : ''}
+                </div>`;
+            }).join('');
+            dropdown.classList.remove('hidden');
         }
 
         function selectSuggestion(title) {
