@@ -4,15 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Amado Libros | Tu próxima historia comienza aquí</title>
-    <meta name="description" content="Librería online líder en Uruguay. Más de 15.000 títulos en stock.">
-    <meta name="keywords" content="libros, librería uruguay, comprar libros online">
-    
-    <!-- Open Graph -->
+    <title>Amado Libros | Librería Online Uruguay - +15.000 Títulos</title>
+    <meta name="description" content="La librería online más grande de Uruguay. Más de 15.000 títulos en stock. Envíos en 2 horas a todo el país. Atención 24/7 por WhatsApp.">
+    <meta name="keywords" content="libros uruguay, librería online uruguay, comprar libros, libros montevideo, envio libros uruguay">
+    <meta name="author" content="Amado Libros">
+    <link rel="canonical" href="https://www.amadolibros.com/">
+
+    <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Amado Libros">
-    <meta property="og:description" content="Más de 15.000 títulos disponibles.">
+    <meta property="og:url" content="https://www.amadolibros.com/">
+    <meta property="og:title" content="Amado Libros | Librería Online Uruguay">
+    <meta property="og:description" content="La librería online más grande de Uruguay. +15.000 títulos. Envíos en 2 horas.">
     <meta property="og:image" content="https://images.unsplash.com/photo-1495446815901-a7297e633e8d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Amado Libros | Librería Online Uruguay">
+    <meta name="twitter:description" content="+15.000 títulos. Envíos en 2 horas a todo Uruguay.">
+
+    <!-- Preconnect para acelerar carga de recursos externos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://http2.mlstatic.com">
+    <link rel="dns-prefetch" href="https://api.mercadolibre.com">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,9 +44,12 @@
         }
     </script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- Fuentes con display=swap para no bloquear render -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome con media=print para carga no bloqueante -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" media="print" onload="this.media='all'">
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -55,6 +72,13 @@
             100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
         }
         .system-monitor { font-family: 'Courier New', monospace; font-size: 10px; }
+        /* Skeleton loader para mejorar percepción de velocidad */
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        /* Optimización para móviles */
+        @media (max-width: 768px) { .book-card:hover { transform: none; } }
+        /* Mejora de rendimiento: will-change solo donde se necesita */
+        .book-card { will-change: transform; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col text-slate-900 pb-20 md:pb-0">
