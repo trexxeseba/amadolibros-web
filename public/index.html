@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -152,55 +153,60 @@
     <footer class="bg-slate-900 text-white pt-12 pb-24 md:pb-12 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-4">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 border-b border-slate-800 pb-12">
-                <div class="text-center"><div class="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-orange"><i class="fas fa-truck-fast"></i></div><h4 class="font-bold text-sm">Envíos Rápidos</h4><p class="text-xs text-slate-400 mt-1">A todo el país en 24/48hs</p></div>
-                <div class="text-center"><div class="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-orange"><i class="fas fa-store"></i></div><h4 class="font-bold text-sm">Pickup Center</h4><p class="text-xs text-slate-400 mt-1">Retira en Ciudad Vieja</p></div>
-                <div class="text-center"><div class="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-orange"><i class="fas fa-credit-card"></i></div><h4 class="font-bold text-sm">Pago Seguro</h4><p class="text-xs text-slate-400 mt-1">Mercado Pago y Transferencia</p></div>
-                <div class="text-center"><div class="bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-brand-orange"><i class="fas fa-headset"></i></div><h4 class="font-bold text-sm">Asesoramiento</h4><p class="text-xs text-slate-400 mt-1">Expertos en libros te ayudan</p></div>
-            </div>
-            <div class="flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
-                <p>&copy; 2024 Amado Libros. Todos los derechos reservados.</p>
-                <div class="mt-4 md:mt-0 system-monitor flex items-center gap-2 bg-black/30 px-3 py-1 rounded border border-white/10">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span>API STATUS:</span>
-                    <span id="debugCount" class="text-white font-bold">Verificando...</span>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Amado Libros</h4>
+                    <p class="text-sm text-slate-400">Tu próxima historia comienza aquí. Librería online con miles de títulos y atención personalizada.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Navegación</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-white">Inicio</a></li>
+                        <li><a href="#" class="hover:text-white">Catálogo</a></li>
+                        <li><a href="#" class="hover:text-white">Contacto</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Legales</h4>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-white">Términos y Condiciones</a></li>
+                        <li><a href="#" class="hover:text-white">Política de Privacidad</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Seguinos</h4>
+                    <div class="flex gap-4 text-2xl">
+                        <a href="#" class="hover:text-white"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="hover:text-white"><i class="fab fa-facebook"></i></a>
+                    </div>
                 </div>
             </div>
+            <p class="text-center text-sm text-slate-500">&copy; 2026 Amado Libros. Todos los derechos reservados.</p>
         </div>
     </footer>
 
-    <a href="https://wa.me/59899841325" target="_blank" class="whatsapp-float fixed bottom-24 right-4 md:bottom-8 md:right-8 bg-[#25D366] text-white rounded-full shadow-2xl z-50 flex items-center justify-center w-14 h-14 md:w-16 md:h-16 hover:bg-[#20ba5a] transition-all duration-300" aria-label="Chat en WhatsApp">
-        <i class="fab fa-whatsapp text-3xl md:text-4xl"></i>
-    </a>
-
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-50 md:hidden flex justify-around items-center h-16 text-xs font-medium text-gray-400">
-        <button onclick="window.scrollTo(0,0)" class="flex flex-col items-center gap-1 w-full h-full justify-center text-brand-orange"><i class="fas fa-home text-lg"></i><span>Inicio</span></button>
-        <button onclick="document.getElementById('searchInput').focus()" class="flex flex-col items-center gap-1 w-full h-full justify-center hover:text-slate-900"><i class="fas fa-search text-lg"></i><span>Buscar</span></button>
-        <button onclick="showWishlist()" class="flex flex-col items-center gap-1 w-full h-full justify-center hover:text-slate-900 relative">
-            <i class="fas fa-heart text-lg"></i><span>Favoritos</span>
-            <span id="wishlistCount" class="absolute top-2 right-6 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
-        </button>
-        <a href="https://wa.me/59899841325" target="_blank" class="flex flex-col items-center gap-1 w-full h-full justify-center hover:text-green-600"><i class="fab fa-whatsapp text-lg"></i><span>WhatsApp</span></a>
-    </nav>
-
     <!-- MODAL -->
-    <div id="modalOverlay" class="fixed inset-0 z-[60] hidden" role="dialog" aria-modal="true">
-        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0" id="modalBackdrop" onclick="closeModal()"></div>
-        <div class="absolute inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center pointer-events-none">
-            <div id="modalPanel" class="glass-modal w-full md:w-[850px] md:rounded-2xl rounded-t-2xl shadow-2xl transform transition-all translate-y-full md:translate-y-10 opacity-0 pointer-events-auto flex flex-col md:flex-row overflow-hidden max-h-[90vh] md:max-h-[85vh]">
-                <button onclick="closeModal()" class="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur p-2 rounded-full hover:bg-gray-100 transition-colors shadow-sm"><i class="fas fa-times text-gray-600"></i></button>
-                <div class="w-full md:w-5/12 bg-gray-50 flex items-center justify-center p-8 relative">
-                    <img id="modalImg" src="" alt="Portada" class="max-h-64 md:max-h-full object-contain shadow-2xl rounded-lg transform transition-transform hover:scale-105 duration-500">
-                    <button id="modalWishlistBtn" class="absolute top-6 left-6 text-2xl text-gray-300 hover:text-red-500 transition-colors" onclick="toggleWishlistFromModal()"><i class="fas fa-heart"></i></button>
+    <div id="modalOverlay" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
+        <div id="modalBackdrop" onclick="closeModal()" class="absolute inset-0 transition-opacity duration-300 opacity-0"></div>
+        <div id="modalPanel" class="glass-modal w-full max-w-md md:max-w-4xl rounded-t-2xl md:rounded-2xl shadow-2xl relative transform transition-all duration-300 translate-y-full md:translate-y-10 opacity-0">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition-colors z-10"><i class="fas fa-times text-2xl"></i></button>
+            <div class="flex flex-col md:flex-row">
+                <div class="md:w-1/3 p-4">
+                    <img id="modalImg" src="" alt="" class="w-full h-auto object-cover rounded-lg shadow-lg">
                 </div>
-                <div class="w-full md:w-7/12 p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar bg-white">
-                    <div class="mb-1"><span id="modalCondition" class="text-[10px] font-bold uppercase tracking-widest text-gray-400">NUEVO</span></div>
-                    <h3 id="modalTitle" class="text-xl md:text-2xl font-black text-slate-900 mb-4 leading-tight"></h3>
-                    <div id="viewActive" class="hidden mb-6 space-y-6">
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">PRECIO ONLINE</p>
-                            <div class="flex items-baseline gap-2"><p id="modalPrice" class="text-4xl text-slate-900 font-black tracking-tight"></p></div>
-                            <p id="modalInstallments" class="text-xs text-green-600 font-semibold mt-1 flex items-center gap-1"><i class="fas fa-credit-card"></i> Hasta 12 cuotas sin recargo</p>
+                <div class="md:w-2/3 p-6 flex flex-col">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 id="modalTitle" class="text-xl md:text-2xl font-bold text-slate-900 pr-8"></h3>
+                        <button id="modalWishlistBtn" onclick="toggleWishlistFromModal()" class="text-2xl text-gray-300 hover:text-red-500 transition-colors wishlist-btn"><i class="fas fa-heart"></i></button>
+                    </div>
+                    <div id="viewActive" class="hidden mb-6 space-y-4">
+                        <div class="bg-gradient-to-br from-purple-50 to-white p-5 rounded-2xl border border-purple-100 shadow-sm">
+                            <div class="flex items-center justify-between px-2">
+                                <span class="text-sm font-medium text-gray-600">Precio Lista</span>
+                                <div>
+                                    <span id="modalPrice" class="text-2xl font-bold text-brand-purple"></span>
+                                    <span id="modalInstallments" class="block text-xs text-gray-500 text-right"></span>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center justify-between px-2">
                             <span class="text-sm font-medium text-gray-600">Precio Transferencia (-12%)</span>
@@ -235,7 +241,6 @@
             </div>
         </div>
     </div>
-
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         const API_BASE = window.location.hostname.includes('amadolibros') ? '' : 'https://amadolibros-web.pages.dev';
@@ -245,7 +250,6 @@
         const BATCH_SIZE = 40;      
         let currentBookId = null;
         let wishlist = JSON.parse(localStorage.getItem('amadoWishlist')) || [];
-
         // === CARGA PROGRESIVA v3.0 - Lee del caché KV (instantáneo) ===
         async function loadAllBooks() {
             const statusEl = document.getElementById('statusContainer');
@@ -257,180 +261,93 @@
                 const res = await fetch(`${API_BASE}/api/catalog?limit=50&page=1`);
                 if (!res.ok) throw new Error('Error de conexión');
                 const data = await res.json();
-
-                if (data.status === 'CACHE_EMPTY') {
-                    document.getElementById('debugCount').innerText = 'Sincronizando...';
-                    document.getElementById('debugCount').style.color = '#facc15';
-                    showToast('Cargando catálogo por primera vez. Espera un momento...');
-                    fetch(`${API_BASE}/api/sync`).catch(() => {});
-                    setTimeout(() => loadAllBooks(), 30000);
+                if (data.status === 'CACHE_EMPTY' || data.status === 'SYNC_IN_PROGRESS') {
+                    statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-hourglass-half fa-spin text-4xl text-brand-orange mb-4"></i></div><p class="text-slate-500 font-medium">Sincronizando catálogo... (' + (data.progress || 0) + '% completado)</p>';
+                    setTimeout(loadAllBooks, 5000); // Reintentar en 5 segundos
                     return;
                 }
-
-                allBooks = data.items || [];
-                const totalInCatalog = data.total_in_catalog || allBooks.length;
-                document.getElementById('debugCount').innerText = `${totalInCatalog.toLocaleString()} Libros`;
-                document.getElementById('debugCount').style.color = totalInCatalog < 100 ? '#ff4d4d' : '#4ade80';
-                sortData('recent');
+                allBooks = data.items;
                 filteredBooks = allBooks;
-                resetGrid();
-                document.getElementById('searchInput').addEventListener('input', (e) => filterBooks(e.target.value));
-
-                if (totalInCatalog > 50) {
-                    setTimeout(() => loadRemainingBooks(), 500);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('debugCount').innerText = 'ERROR - Reintentando...';
-                document.getElementById('debugCount').style.color = 'red';
-                setTimeout(() => loadAllBooks(), 10000);
-            } finally {
                 statusEl.classList.add('hidden');
                 contentEl.classList.remove('opacity-50');
+                sortBooks();
+            } catch (error) {
+                statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i></div><p class="text-slate-500 font-medium">Error de conexión. Reintentando...</p>';
+                setTimeout(loadAllBooks, 5000);
             }
         }
-
-        async function loadRemainingBooks() {
-            try {
-                const res = await fetch(`${API_BASE}/api/catalog?limit=5000&page=1`);
-                if (!res.ok) return;
-                const data = await res.json();
-                if (data.status !== 'OK' || !data.items || data.items.length <= allBooks.length) return;
-
-                allBooks = data.items;
-                const currentSearch = document.getElementById('searchInput').value;
-                if (currentSearch.trim()) {
-                    filterBooks(currentSearch);
-                } else {
-                    const criteria = document.getElementById('sortSelect').value;
-                    sortData(criteria);
-                    filteredBooks = allBooks;
-                    resetGrid();
-                }
-                document.getElementById('debugCount').innerText = `${allBooks.length.toLocaleString()} Libros`;
-                document.getElementById('debugCount').style.color = allBooks.length < 100 ? '#ff4d4d' : '#4ade80';
-            } catch (e) {
-                console.warn('Error cargando catálogo completo:', e.message);
+        function renderBooks(reset = false) {
+            const grid = document.getElementById('grid');
+            if (reset) {
+                grid.innerHTML = '';
+                displayedCount = 0;
             }
+            const fragment = document.createDocumentFragment();
+            const booksToRender = filteredBooks.slice(displayedCount, displayedCount + BATCH_SIZE);
+            booksToRender.forEach(b => {
+                const card = document.createElement('div');
+                card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
+                card.style.animationDelay = `${(displayedCount % BATCH_SIZE) * 50}ms`;
+                card.innerHTML = `
+                    <div class="relative pt-[140%] bg-gray-100">
+                        <img src="${b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : ''}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                        <div class="absolute top-2 right-2">
+                            <button onclick="toggleWishlist(event, '${b.id}')" class="wishlist-btn bg-white/80 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors" aria-label="Añadir a favoritos">
+                                ${wishlist.includes(b.id) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>'}
+                            </button>
+                        </div>
+                        ${b.status === 'paused' ? '<div class="absolute bottom-0 left-0 w-full bg-brand-purple/80 backdrop-blur-sm text-white text-[10px] font-bold text-center py-1">POR ENCARGO</div>' : ''}
+                    </div>
+                    <div class="p-3 flex flex-col flex-grow">
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-2 flex-grow">${b.title}</h4>
+                        <div class="mt-2 flex items-center justify-between">
+                            <p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p>
+                            <button onclick="openModal('${b.id}')" class="bg-brand-orange text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(card);
+            });
+            grid.appendChild(fragment);
+            displayedCount += booksToRender.length;
+            document.getElementById('loadMoreContainer').style.display = displayedCount < filteredBooks.length ? 'block' : 'none';
+            document.getElementById('noResults').style.display = filteredBooks.length === 0 ? 'block' : 'none';
+            document.getElementById('counter').innerText = `${filteredBooks.length} libros encontrados`;
         }
-
-        window.onload = async () => {
-            await loadAllBooks();
-        };
-
-        function normalizeText(text) { return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
-
+        function loadNextPage() { renderBooks(); }
         function filterBooks(query) {
-            const rawTerm = normalizeText(query);
-            if (rawTerm.length < 1) {
+            const lowerQuery = query.toLowerCase();
+            filteredBooks = allBooks.filter(b => 
+                b.title.toLowerCase().includes(lowerQuery) || 
+                (b.attributes && b.attributes.some(attr => attr.id === 'ISBN' && attr.value_name.includes(query)))
+            );
+            sortBooks();
+        }
+        function filterByStatus(status) {
+            if (status === 'all') {
                 filteredBooks = allBooks;
             } else {
-                const terms = rawTerm.split(' ').filter(t => t.length > 0);
-                filteredBooks = allBooks.filter(b => {
-                    const title = normalizeText(b.title);
-                    return terms.every(t => title.includes(t)); 
-                });
+                filteredBooks = allBooks.filter(b => b.status === status);
             }
-            const criteria = document.getElementById('sortSelect').value;
-            sortArray(filteredBooks, criteria);
-            resetGrid();
-            
-            const noResults = document.getElementById('noResults');
-            noResults.classList.toggle('hidden', filteredBooks.length > 0);
+            sortBooks();
         }
-
         function sortBooks() {
-            const criteria = document.getElementById('sortSelect').value;
-            sortArray(allBooks, criteria);
-            sortArray(filteredBooks, criteria);
-            resetGrid();
+            const sortValue = document.getElementById('sortSelect').value;
+            filteredBooks.sort((a, b) => {
+                if (sortValue === 'priceAsc') return a.price - b.price;
+                if (sortValue === 'priceDesc') return b.price - a.price;
+                if (sortValue === 'alpha') return a.title.localeCompare(b.title);
+                return 0; // 'recent' is default, no sort needed as API returns recent first
+            });
+            renderBooks(true);
         }
-
-        function sortData(criteria) { sortArray(allBooks, criteria); }
-        function sortArray(arr, criteria) {
-            if (criteria === 'recent') arr.sort((a, b) => new Date(b.start_time || b.date_created || 0) - new Date(a.start_time || a.date_created || 0));
-            else if (criteria === 'priceAsc') arr.sort((a, b) => a.price - b.price);
-            else if (criteria === 'priceDesc') arr.sort((a, b) => b.price - a.price);
-            else if (criteria === 'alpha') arr.sort((a, b) => a.title.localeCompare(b.title));
-        }
-
-        function filterByStatus(status) {
-            if (status === 'all') filteredBooks = allBooks;
-            else if (status === 'active') filteredBooks = allBooks.filter(b => b.status !== 'paused');
-            else if (status === 'paused') filteredBooks = allBooks.filter(b => b.status === 'paused');
-            
-            const criteria = document.getElementById('sortSelect').value;
-            sortArray(filteredBooks, criteria);
-            resetGrid();
-        }
-
-        function resetGrid() {
-            document.getElementById('grid').innerHTML = ''; 
-            displayedCount = 0;
-            loadNextPage();
-        }
-
-        function loadNextPage() {
-            const grid = document.getElementById('grid');
-            const loadMoreBtn = document.getElementById('loadMoreContainer');
-            const nextBatch = filteredBooks.slice(displayedCount, displayedCount + BATCH_SIZE);
-            
-            if (nextBatch.length === 0) {
-                loadMoreBtn.classList.add('hidden');
-                return;
-            }
-
-            const html = nextBatch.map(book => {
-                const img = book.thumbnail ? book.thumbnail.replace('http://', 'https://').replace('I.jpg', 'O.jpg') : 'https://via.placeholder.com/300x400';
-                const isPaused = book.status === 'paused';
-                const isWishlisted = wishlist.includes(book.id);
-                const priceDisplay = isPaused 
-                    ? '<span class="text-xs font-bold text-brand-purple uppercase tracking-wider">A PEDIDO</span>'
-                    : new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(book.price);
-                const badge = isPaused 
-                    ? '<div class="absolute top-2 left-2 bg-white/90 backdrop-blur text-brand-purple text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm flex items-center gap-1"><i class="fas fa-magic"></i> CONSIGUE</div>' 
-                    : '';
-
-                return `
-                <article class="book-card group bg-white rounded-xl overflow-hidden cursor-pointer relative border border-gray-100" onclick="openModal('${book.id}')">
-                    ${badge}
-                    <button onclick="toggleWishlist(event, '${book.id}')" class="absolute top-2 right-2 z-20 bg-white/80 backdrop-blur w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:bg-white wishlist-btn"><i id="wish-${book.id}" class="fas fa-heart ${isWishlisted ? 'text-red-500' : 'text-gray-300'}"></i></button>
-                    <div class="aspect-[2/3] relative overflow-hidden bg-gray-50"><img src="${img}" alt="${book.title}" class="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500" loading="lazy"></div>
-                    <div class="p-4"><h3 class="font-bold text-slate-900 text-sm leading-tight line-clamp-2 mb-2 h-10 group-hover:text-brand-orange transition-colors">${book.title}</h3><p class="font-extrabold text-sm text-slate-800">${priceDisplay}</p></div>
-                </article>`;
-            }).join('');
-
-            grid.insertAdjacentHTML('beforeend', html);
-            displayedCount += nextBatch.length;
-            loadMoreBtn.classList.toggle('hidden', displayedCount >= filteredBooks.length);
-        }
-
-        function toggleWishlist(e, id) {
-            e.stopPropagation();
-            const idx = wishlist.indexOf(id);
-            if(idx === -1) { wishlist.push(id); showToast("Agregado a Favoritos ❤️"); }
-            else { wishlist.splice(idx, 1); showToast("Eliminado de Favoritos 💔"); }
-            localStorage.setItem('amadoWishlist', JSON.stringify(wishlist));
-            updateWishlistBadge();
-            const btn = document.getElementById(`wish-${id}`);
-            if(btn) {
-                btn.classList.toggle('text-red-500'); btn.classList.toggle('text-gray-300');
-                btn.parentElement.classList.add('scale-125'); setTimeout(()=>btn.parentElement.classList.remove('scale-125'),200);
-            }
-        }
+        function toggleWishlist(e, id) { e.stopPropagation(); const index = wishlist.indexOf(id); if (index > -1) { wishlist.splice(index, 1); showToast('💔 Eliminado de favoritos'); } else { wishlist.push(id); showToast('❤️ Agregado a favoritos'); } localStorage.setItem('amadoWishlist', JSON.stringify(wishlist)); updateWishlistBadge(); const btn = e.currentTarget; btn.innerHTML = wishlist.includes(id) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>'; }
         function updateWishlistBadge() {
-            const b = document.getElementById('wishlistCount');
-            if(wishlist.length > 0) { b.innerText = wishlist.length; b.classList.remove('hidden'); }
-            else b.classList.add('hidden');
-        }
-        function showWishlist() {
-            filteredBooks = allBooks.filter(b => wishlist.includes(b.id));
-            resetGrid(); window.scrollTo(0, document.getElementById('mainContent').offsetTop - 100);
-            showToast(filteredBooks.length ? `Mostrando ${filteredBooks.length} favoritos` : "Tu lista está vacía");
+            const count = wishlist.length;
+            // Implement badge update logic here if needed
         }
         function showToast(msg) { Toastify({ text: msg, duration: 3000, gravity: "bottom", position: "center", style: { background: "#0F172A", borderRadius: "50px", fontSize: "12px", fontWeight: "bold" } }).showToast(); }
         function toggleTheme() { document.documentElement.classList.toggle('dark'); showToast("Modo oscuro próximamente"); }
-
         function openModal(id) {
             const b = allBooks.find(x => x.id === id); if(!b) return;
             currentBookId = id;
@@ -443,7 +360,6 @@
             document.getElementById('viewActive').classList.toggle('hidden', isPaused);
             document.getElementById('actionsActive').classList.toggle('hidden', isPaused);
             document.getElementById('viewPaused').classList.toggle('hidden', !isPaused);
-
             if(!isPaused) {
                 const fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
                 document.getElementById('modalPrice').innerText = fmt.format(b.price);
@@ -479,6 +395,33 @@
                 window.location.href = `mailto:contacto@amadolibros.uy?subject=Consulta libro ${b.id}&body=Hola, soy ${name}. Busco: ${b.title}`;
             }
         }
+        document.addEventListener('DOMContentLoaded', loadAllBooks);
+        document.getElementById('searchInput').addEventListener('input', (e) => filterBooks(e.target.value));
     </script>
+    <!-- Botón Flotante WhatsApp v2.0 -->
+    <div id="wa-float-container" class="fixed bottom-6 right-6 z-50 group">
+        <div id="wa-chat-box" class="hidden absolute bottom-20 right-0 w-80 bg-white rounded-xl shadow-2xl transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-2">
+            <div class="bg-green-600 text-white p-4 rounded-t-xl flex items-center gap-3">
+                <img src="https://pbs.twimg.com/profile_images/1384016895528353792/9Tf99q35_400x400.jpg" class="w-12 h-12 rounded-full border-2 border-white/50" alt="Amado Libros">
+                <div>
+                    <p class="font-bold text-lg">Amado Libros</p>
+                    <p class="text-xs opacity-90">Generalmente responde en minutos</p>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-100 text-sm text-gray-800">
+                <div class="bg-white p-3 rounded-lg shadow-sm mb-2">
+                    ¡Hola! 👋 ¿Necesitas ayuda para encontrar un libro o finalizar una compra?
+                </div>
+            </div>
+            <a href="https://wa.me/59899841325?text=Hola%20Amado%20Libros,%20necesito%20ayuda" target="_blank" class="block bg-gray-200 text-center p-4 rounded-b-xl text-green-700 font-bold hover:bg-gray-300 transition-all">
+                <i class="fab fa-whatsapp"></i> Iniciar Chat
+            </a>
+        </div>
+        <button onclick="toggleWhatsAppChat()" class="bg-[#25D366] text-white rounded-full shadow-2xl flex items-center justify-center w-16 h-16 hover:bg-[#20ba5a] transition-all duration-300 transform group-hover:scale-110" aria-label="Chat en WhatsApp">
+            <i id="wa-icon-open" class="fab fa-whatsapp text-4xl transition-all duration-300"></i>
+            <i id="wa-icon-close" class="fas fa-times text-4xl absolute transition-all duration-300 scale-0"></i>
+        </button>
+    </div>
+
 </body>
 </html>
