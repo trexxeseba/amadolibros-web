@@ -122,12 +122,14 @@
             </div>
         </div>
         <div class="flex items-center gap-3 flex-1 max-w-lg mx-4">
-            <div class="flex-1 flex items-center bg-white/10 border border-white/20 rounded-full px-3 py-1.5 focus-within:bg-white/20 transition-all">
+            <div class="flex-1 relative flex items-center bg-white/10 border border-white/20 rounded-full px-3 py-1.5 focus-within:bg-white/20 transition-all">
                 <i class="fas fa-search text-gray-400 text-sm mr-2"></i>
                 <input type="text" id="headerSearch" placeholder="Buscar por título, autor, ISBN..." 
                     class="bg-transparent border-none outline-none text-white placeholder-gray-400 text-sm w-full"
-                    oninput="onHeaderSearch(this.value)">
+                    oninput="onHeaderSearch(this.value)"
+                    onkeydown="if(event.key==='Enter'){filterBooks(this.value);document.getElementById('grid').scrollIntoView({behavior:'smooth',block:'start'})}">
                 <button id="headerSearchClear" onclick="clearHeaderSearch()" class="hidden text-gray-400 hover:text-white ml-1"><i class="fas fa-times text-xs"></i></button>
+                <div id="autocompleteDropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden"></div>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -160,11 +162,7 @@
                 <span class="flex items-center gap-1"><i class="fas fa-tag text-brand-orange"></i> -12% transferencia</span>
             </div>
             
-            <div class="glass-search rounded-full flex items-center p-2 max-w-2xl mx-auto transform transition-all focus-within:scale-105">
-                <div class="pl-4 pr-2 text-gray-400"><i class="fas fa-search text-lg"></i></div>
-                <input type="text" id="searchInput" placeholder="Buscá por título, autor o ISBN..." class="w-full bg-transparent border-none p-3 focus:ring-0 text-slate-800 placeholder-gray-400 font-medium outline-none text-base md:text-lg">
-                <button onclick="submitHeroSearch()" class="bg-brand-orange text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg"><i class="fas fa-arrow-right"></i></button>
-            </div>
+
             
             <div class="flex flex-wrap justify-center gap-3 mt-6">
 
@@ -355,7 +353,7 @@
         // === PAGINACIÓN REAL v4.0 ===
         // Función helper: submit búsqueda desde hero
         function submitHeroSearch() {
-            const val = document.getElementById('searchInput').value.trim();
+            const val = document.getElementById('headerSearch').value.trim();
             if (val) {
                 const headerInput = document.getElementById('headerSearch');
                 if (headerInput) headerInput.value = val;
@@ -366,7 +364,7 @@
 
         // Enter en el buscador del hero también busca
         document.addEventListener('DOMContentLoaded', () => {
-            const heroInput = document.getElementById('searchInput');
+            const heroInput = document.getElementById('headerSearch');
             if (heroInput) heroInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitHeroSearch(); });
         });
 
@@ -374,7 +372,7 @@
             activeSearch = '';
             activeStatus = 'all';
             activePriceRange = 'all';
-            document.getElementById('searchInput').value = '';
+            document.getElementById('headerSearch').value = '';
             const hi = document.getElementById('headerSearch');
             if (hi) hi.value = '';
             const hc = document.getElementById('headerSearchClear');
@@ -482,7 +480,7 @@
                     allLoadedBooks = allLoadedBooks.concat(data.items);
                     allBooks = allLoadedBooks;
                     // Si hay filtro activo, re-filtrar; si no, agregar directamente
-                    const searchVal = document.getElementById('searchInput').value.trim();
+                    const searchVal = document.getElementById('headerSearch').value.trim();
                     if (searchVal) {
                         filterBooks(searchVal);
                     } else {
@@ -546,13 +544,10 @@
         }
 
         function onHeaderSearch(val) {
-            // Sincronizar con el input del hero si existe
-            const heroInput = document.getElementById('searchInput');
-            if (heroInput) heroInput.value = val;
             const clearBtn = document.getElementById('headerSearchClear');
             if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+            showAutocomplete(val);
             filterBooks(val);
-            // Hacer scroll al catálogo si hay búsqueda
             if (val.length === 1) {
                 document.getElementById('grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -560,7 +555,7 @@
 
         function clearHeaderSearch() {
             document.getElementById('headerSearch').value = '';
-            const heroInput = document.getElementById('searchInput');
+            const heroInput = document.getElementById('headerSearch');
             if (heroInput) heroInput.value = '';
             document.getElementById('headerSearchClear').classList.add('hidden');
             filterBooks('');
@@ -569,18 +564,32 @@
         let activePriceRange = 'all';
         let activeSearch = '';
 
-        function applyFilters() {
-            let result = allLoadedBooks;
-            // Filtro por búsqueda
-            if (activeSearch) {
-                const q = activeSearch.toLowerCase();
-                result = result.filter(b =>
-                    b.title?.toLowerCase().includes(q) ||
-                    b.author?.toLowerCase().includes(q) ||
-                    (b.attributes && b.attributes.some(a => a.id === 'ISBN' && a.value_name?.includes(activeSearch)))
-                );
+        async function applyFilters() {
+            const grid = document.getElementById('grid');
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const noResults = document.getElementById('noResults');
+
+            // Si hay búsqueda activa, consultar la API
+            if (activeSearch && activeSearch.length >= 2) {
+                grid.innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-circle-notch fa-spin text-brand-orange text-2xl"></i></div>';
+                try {
+                    const res = await fetch(`${API_BASE}/api/catalog?page=0&limit=40&q=${encodeURIComponent(activeSearch)}`);
+                    const data = await res.json();
+                    filteredBooks = data.items || [];
+                    totalBooks = data.total || filteredBooks.length;
+                    allLoadedBooks = filteredBooks;
+                    allBooks = allLoadedBooks;
+                } catch(e) {
+                    filteredBooks = [];
+                }
+            } else if (!activeSearch) {
+                // Sin búsqueda: recargar catálogo normal
+                await loadAllBooks();
+                return;
             }
-            // Filtro por estado
+
+            // Filtro por estado (client-side sobre los resultados)
+            let result = filteredBooks;
             if (activeStatus !== 'all') {
                 result = result.filter(b => b.status === activeStatus);
             }
@@ -673,7 +682,7 @@
             }
         }
         document.addEventListener('DOMContentLoaded', loadAllBooks);
-        document.getElementById('searchInput').addEventListener('input', (e) => {
+        document.getElementById('headerSearch').addEventListener('input', (e) => {
             const val = e.target.value;
             const headerInput = document.getElementById('headerSearch');
             if (headerInput) headerInput.value = val;
@@ -683,6 +692,46 @@
         });
 
         // === BOTÓN FLOTANTE WHATSAPP ===
+
+        // =============================================
+        // AUTOCOMPLETE
+        // =============================================
+        async function showAutocomplete(query) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            if (!dropdown) return;
+            if (!query || query.length < 2) { dropdown.classList.add('hidden'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/api/catalog?page=0&limit=20&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                const suggestions = (data.items || []).slice(0, 6);
+                if (suggestions.length === 0) { dropdown.classList.add('hidden'); return; }
+                dropdown.innerHTML = suggestions.map(b => {
+                    const escaped = b.title.replace(/'/g, "\'");
+                    const highlighted = b.title.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<strong>$1</strong>');
+                    return `<div class="px-4 py-2.5 hover:bg-orange-50 cursor-pointer text-sm text-slate-800 border-b border-gray-50 last:border-0" onclick="selectSuggestion('${escaped}')">
+                        ${highlighted}
+                        ${b.author ? '<span class="text-xs text-gray-400 ml-1">— ' + b.author + '</span>' : ''}
+                    </div>`;
+                }).join('');
+                dropdown.classList.remove('hidden');
+            } catch(e) { dropdown.classList.add('hidden'); }
+        }
+
+        function selectSuggestion(title) {
+            const input = document.getElementById('headerSearch');
+            if (input) input.value = title;
+            document.getElementById('autocompleteDropdown')?.classList.add('hidden');
+            filterBooks(title);
+            document.getElementById('grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Cerrar dropdown al click fuera
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#headerSearch') && !e.target.closest('#autocompleteDropdown')) {
+                document.getElementById('autocompleteDropdown')?.classList.add('hidden');
+            }
+        });
+
         function toggleWhatsAppChat() {
             const chatBox = document.getElementById('wa-chat-box');
             const iconOpen = document.getElementById('wa-icon-open');
@@ -705,13 +754,7 @@
             }
         }
     </script>
-    <!-- Botón Flotante WhatsApp -->
-    <a href="https://wa.me/59899841325?text=Hola%20Amado%20Libros,%20necesito%20ayuda" 
-       target="_blank" 
-       class="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white rounded-full shadow-2xl flex items-center justify-center w-16 h-16 hover:bg-[#20ba5a] transition-all duration-300 hover:scale-110 whatsapp-float" 
-       aria-label="Chat en WhatsApp">
-        <i class="fab fa-whatsapp text-4xl"></i>
-    </a>
+
 
 </body>
 </html>
