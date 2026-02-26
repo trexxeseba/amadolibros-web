@@ -297,16 +297,20 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         const API_BASE = window.location.hostname.includes('amadolibros') ? '' : 'https://amadolibros-web.pages.dev';
-        let allBooks = [];          
-        let filteredBooks = [];     
-        let displayedCount = 0;     
-        const BATCH_SIZE = 40;      
+        const PAGE_SIZE = 40;
+        let currentPage = 0;
+        let totalBooks = 0;
+        let allLoadedBooks = [];   // Solo los libros ya cargados
+        let filteredBooks = [];    // Vista filtrada de allLoadedBooks
         let currentBookId = null;
         let wishlist = JSON.parse(localStorage.getItem('amadoWishlist')) || [];
-        // === CARGA PROGRESIVA v3.0 - Lee del caché KV (instantáneo) ===
+        // Alias para compatibilidad con openModal
+        let allBooks = allLoadedBooks;
+        // === PAGINACIÓN REAL v4.0 ===
         async function loadAllBooks() {
             const statusEl = document.getElementById('statusContainer');
             const grid = document.getElementById('grid');
+            // Mostrar skeletons
             grid.innerHTML = Array.from({ length: 20 }).map(() => `
                 <div class="book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
                     <div class="relative pt-[140%] bg-gray-200 skeleton"></div>
@@ -323,8 +327,7 @@
             statusEl.classList.remove('hidden');
             updateWishlistBadge();
             try {
-                // Cargar primera página para mostrar rápido
-                const res = await fetch(`${API_BASE}/api/catalog?limit=100&page=0`);
+                const res = await fetch(`${API_BASE}/api/catalog?page=0&limit=${PAGE_SIZE}`);
                 if (!res.ok) throw new Error('Error de conexión');
                 const data = await res.json();
                 if (!data.items || data.items.length === 0) {
@@ -332,57 +335,51 @@
                     setTimeout(loadAllBooks, 5000);
                     return;
                 }
-                // Mostrar primeros libros inmediatamente
                 statusEl.classList.add('hidden');
-                allBooks = data.items;
-                filteredBooks = allBooks;
-                sortBooks();
-                // Cargar el resto en background si hay más páginas
-                const totalPages = data.pages || 1;
-                if (totalPages > 1) {
-                    loadRemainingPages(totalPages);
-                }
+                currentPage = 0;
+                totalBooks = data.total || data.items.length;
+                allLoadedBooks = data.items;
+                allBooks = allLoadedBooks;
+                filteredBooks = allLoadedBooks;
+                renderBooks(true);
             } catch (error) {
                 statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i></div><p class="text-slate-500 font-medium">Error de conexión. Reintentando...</p>';
                 setTimeout(loadAllBooks, 5000);
             }
         }
 
-        async function loadRemainingPages(totalPages) {
-            // Cargar páginas restantes en background de a 3 en paralelo
-            const BATCH = 3;
-            for (let page = 1; page < totalPages; page += BATCH) {
-                const promises = [];
-                for (let p = page; p < Math.min(page + BATCH, totalPages); p++) {
-                    promises.push(
-                        fetch(`${API_BASE}/api/catalog?limit=100&page=${p}`)
-                            .then(r => r.json())
-                            .catch(() => ({ items: [] }))
-                    );
-                }
-                const results = await Promise.all(promises);
-                const newItems = results.flatMap(d => d.items || []);
-                if (newItems.length > 0) {
-                    allBooks = allBooks.concat(newItems);
-                    // Actualizar filteredBooks si no hay filtro activo
+        async function loadNextPage() {
+            currentPage++;
+            const btn = document.querySelector('#loadMoreContainer button');
+            if (btn) { btn.disabled = true; btn.innerText = 'Cargando...'; }
+            try {
+                const res = await fetch(`${API_BASE}/api/catalog?page=${currentPage}&limit=${PAGE_SIZE}`);
+                const data = await res.json();
+                if (data.items && data.items.length > 0) {
+                    allLoadedBooks = allLoadedBooks.concat(data.items);
+                    allBooks = allLoadedBooks;
+                    // Si hay filtro activo, re-filtrar; si no, agregar directamente
                     const searchVal = document.getElementById('searchInput').value.trim();
-                    if (!searchVal) {
-                        filteredBooks = allBooks;
-                        document.getElementById('counter').innerText = `${allBooks.length} libros encontrados`;
+                    if (searchVal) {
+                        filterBooks(searchVal);
+                    } else {
+                        filteredBooks = allLoadedBooks;
+                        renderBooks(false);
                     }
                 }
-                // Pequeña pausa entre batches para no sobrecargar
-                await new Promise(r => setTimeout(r, 200));
+            } catch(e) {
+                currentPage--; // Revertir en caso de error
             }
+            if (btn) { btn.disabled = false; btn.innerText = 'Cargar más libros'; }
         }
-        function renderBooks(reset = false) {
+
+                function renderBooks(reset = false) {
             const grid = document.getElementById('grid');
             if (reset) {
                 grid.innerHTML = '';
-                displayedCount = 0;
             }
             const fragment = document.createDocumentFragment();
-            const booksToRender = filteredBooks.slice(displayedCount, displayedCount + BATCH_SIZE);
+            const booksToRender = reset ? filteredBooks : filteredBooks.slice(grid.children.length);
             booksToRender.forEach(b => {
                 const card = document.createElement('div');
                 card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
@@ -408,12 +405,11 @@
                 fragment.appendChild(card);
             });
             grid.appendChild(fragment);
-            displayedCount += booksToRender.length;
-            document.getElementById('loadMoreContainer').style.display = displayedCount < filteredBooks.length ? 'block' : 'none';
+            // Mostrar botón "Cargar más" si hay más libros en el servidor
+            document.getElementById('loadMoreContainer').style.display = allLoadedBooks.length < totalBooks ? 'block' : 'none';
             document.getElementById('noResults').style.display = filteredBooks.length === 0 ? 'block' : 'none';
-            document.getElementById('counter').innerText = `${filteredBooks.length} libros encontrados`;
+            document.getElementById('counter').innerText = `${allLoadedBooks.length} de ${totalBooks} libros`;
         }
-        function loadNextPage() { renderBooks(); }
         function filterBooks(query) {
             const lowerQuery = query.toLowerCase();
             filteredBooks = allBooks.filter(b => 
