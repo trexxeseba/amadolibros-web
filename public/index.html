@@ -131,14 +131,16 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro..." target="_blank" class="hidden md:flex bg-green-600 px-4 py-2 rounded-full text-xs font-bold transition-all items-center gap-2 hover:bg-green-500 hover:scale-105">
-                <i class="fab fa-whatsapp text-sm"></i> Pedí tu libro
+            <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro..." target="_blank" 
+               class="hidden md:flex items-center justify-center w-9 h-9 bg-green-500/10 hover:bg-green-500/20 text-green-600 rounded-full transition-all hover:scale-110" 
+               title="Contactar por WhatsApp" aria-label="WhatsApp">
+                <i class="fab fa-whatsapp text-lg"></i>
             </a>
         </div>
     </header>
 
     <!-- HERO SECTION -->
-    <section class="relative bg-slate-900 text-white py-14 px-4 overflow-hidden">
+    <section class="relative bg-slate-900 text-white py-8 md:py-10 px-4 overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
             <div class="absolute -top-20 -right-20 w-96 h-96 bg-brand-orange rounded-full blur-3xl"></div>
             <div class="absolute bottom-0 left-20 w-72 h-72 bg-brand-purple rounded-full blur-3xl"></div>
@@ -165,9 +167,7 @@
             </div>
             
             <div class="flex flex-wrap justify-center gap-3 mt-6">
-                <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro..." target="_blank" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:scale-105">
-                    <i class="fab fa-whatsapp text-base"></i> Pedí tu libro por WhatsApp
-                </a>
+
                 <a href="https://listado.mercadolibre.com.uy/_CustId_AMADOLIBROS" target="_blank" class="flex items-center gap-2 bg-[#ffe600] text-slate-900 px-5 py-2.5 rounded-full text-sm font-bold hover:scale-105 transition-transform">
                     <i class="fas fa-handshake"></i> Ver en Mercado Libre
                 </a>
@@ -175,20 +175,6 @@
         </div>
     </section>
     
-    <!-- BANNER "¿No lo encontrás?" -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-4 px-4">
-        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-            <div class="text-center md:text-left">
-                <p class="font-black text-base md:text-lg">¿No encontrás el libro que buscás?</p>
-                <p class="text-blue-200 text-sm">Mandanos el título, una foto o un link — lo buscamos, cotizamos y te lo mandamos a tu puerta.</p>
-            </div>
-            <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro%20que%20no%20encuentro..." target="_blank" 
-               class="flex-shrink-0 bg-white text-blue-700 font-black px-6 py-2.5 rounded-full text-sm hover:bg-blue-50 transition-all hover:scale-105 flex items-center gap-2 shadow-lg">
-                <i class="fab fa-whatsapp text-green-600 text-base"></i> Pedilo por WhatsApp
-            </a>
-        </div>
-    </div>
-
     <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full relative z-0">
         <div id="statusContainer" class="hidden py-20 text-center animate-fade-in">
@@ -403,7 +389,7 @@
             const btn = document.getElementById('noResultsWABtn');
             const txt = document.getElementById('noResultsWAText');
             if (!btn) return;
-            const msg = query ? 'Hola! Busco: "' + query + '"' : 'Hola! Busco un libro...';
+            const msg = query ? 'Hola! Busco el libro ' + query + ', ¿lo tienen disponible?' : 'Hola! Busco un libro...';
             btn.href = 'https://wa.me/59899841325?text=' + encodeURIComponent(msg);
             if (txt) txt.textContent = query ? 'Pedir "' + query.substring(0,30) + (query.length>30?'...':'') + '" por WhatsApp' : 'Pedir por WhatsApp';
         }
@@ -426,6 +412,7 @@
                 const img = (b.pictures && b.pictures[0]) 
                     ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
                     : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '');
+                const permalink = b.permalink || '#';
                 const isPopular = (b.sold_quantity || 0) > 30;
                 return `<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('${b.id}')">
                     <div class="relative pt-[140%] bg-gray-100">
@@ -522,8 +509,8 @@
                 card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
                 card.style.animationDelay = `${i * 30}ms`;
                 card.innerHTML = `
-                    <div class="relative pt-[140%] bg-gray-100">
-                        <img src="${(b.pictures && b.pictures[0]) ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg') : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '')}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                    <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="window.open('${b.permalink || '#'}', '_blank')">
+                        <img src="${(b.pictures && b.pictures[0]) ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg') : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '')}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer" loading="lazy">
                         <div class="absolute top-2 right-2">
                             <button onclick="toggleWishlist(event, '${b.id}')" class="wishlist-btn bg-white/80 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors" aria-label="Añadir a favoritos">
                                 ${wishlist.includes(b.id) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>'}
@@ -540,7 +527,7 @@
                                 <p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>
                             </div>
                             ${b.status === 'paused' 
-                                ? '<a href="https://wa.me/59899841325?text=' + encodeURIComponent('Hola! Me interesa: ' + b.title + (b.author ? ' de ' + b.author : '') + '. ¿Lo tienen?') + '" target="_blank" class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0" title="Pedir por WhatsApp"><i class=\'fab fa-whatsapp text-sm\'></i></a>'
+                                ? '<a href="https://wa.me/59899841325?text=' + encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', ¿me lo podés conseguir?') + '" target="_blank" class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0" title="Pedir por WhatsApp"><i class=\'fab fa-whatsapp text-sm\'></i></a>'
                                 : '<button onclick="openModal(\'' + b.id + '\')" class="bg-brand-orange text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors flex-shrink-0"><i class=\'fas fa-plus\'></i></button>'}
                         </div>
                     </div>
@@ -718,30 +705,13 @@
             }
         }
     </script>
-    <!-- Botón Flotante WhatsApp v2.0 -->
-    <div id="wa-float-container" class="fixed bottom-6 right-6 z-50 group">
-        <div id="wa-chat-box" class="hidden absolute bottom-20 right-0 w-80 bg-white rounded-xl shadow-2xl transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-2">
-            <div class="bg-green-600 text-white p-4 rounded-t-xl flex items-center gap-3">
-                <img src="https://pbs.twimg.com/profile_images/1384016895528353792/9Tf99q35_400x400.jpg" class="w-12 h-12 rounded-full border-2 border-white/50" alt="Amado Libros">
-                <div>
-                    <p class="font-bold text-lg">Amado Libros</p>
-                    <p class="text-xs opacity-90">Generalmente responde en minutos</p>
-                </div>
-            </div>
-            <div class="p-4 bg-gray-100 text-sm text-gray-800">
-                <div class="bg-white p-3 rounded-lg shadow-sm mb-2">
-                    ¡Hola! 👋 ¿Necesitas ayuda para encontrar un libro o finalizar una compra?
-                </div>
-            </div>
-            <a href="https://wa.me/59899841325?text=Hola%20Amado%20Libros,%20necesito%20ayuda" target="_blank" class="block bg-gray-200 text-center p-4 rounded-b-xl text-green-700 font-bold hover:bg-gray-300 transition-all">
-                <i class="fab fa-whatsapp"></i> Iniciar Chat
-            </a>
-        </div>
-        <button onclick="toggleWhatsAppChat()" class="bg-[#25D366] text-white rounded-full shadow-2xl flex items-center justify-center w-16 h-16 hover:bg-[#20ba5a] transition-all duration-300 transform group-hover:scale-110" aria-label="Chat en WhatsApp">
-            <i id="wa-icon-open" class="fab fa-whatsapp text-4xl transition-all duration-300"></i>
-            <i id="wa-icon-close" class="fas fa-times text-4xl absolute transition-all duration-300 scale-0"></i>
-        </button>
-    </div>
+    <!-- Botón Flotante WhatsApp -->
+    <a href="https://wa.me/59899841325?text=Hola%20Amado%20Libros,%20necesito%20ayuda" 
+       target="_blank" 
+       class="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white rounded-full shadow-2xl flex items-center justify-center w-16 h-16 hover:bg-[#20ba5a] transition-all duration-300 hover:scale-110 whatsapp-float" 
+       aria-label="Chat en WhatsApp">
+        <i class="fab fa-whatsapp text-4xl"></i>
+    </a>
 
 </body>
 </html>
