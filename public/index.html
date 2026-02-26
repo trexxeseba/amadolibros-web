@@ -451,7 +451,7 @@
             statusEl.classList.add('hidden');
 
             // Intentar cargar desde sessionStorage (cache)
-            const cached = sessionStorage.getItem('amadoCatalogR2');
+            const cached = sessionStorage.getItem('amadoCatalogR2v2');
             if (cached) {
                 try {
                     const data = JSON.parse(cached);
@@ -493,7 +493,7 @@
                 totalBooks = data.total || allBooks.length;
                 catalogLoaded = true;
                 // Guardar en sessionStorage para carga instantánea
-                try { sessionStorage.setItem('amadoCatalogR2', JSON.stringify({ total: totalBooks, items: allBooks })); } catch(e) {}
+                try { sessionStorage.setItem('amadoCatalogR2v2', JSON.stringify({ total: totalBooks, items: allBooks })); } catch(e) {}
                 initializeCatalog();
             } catch (error) {
                 statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i></div><p class="text-slate-500 font-medium">Error de conexión. Reintentando...</p>';
@@ -503,9 +503,8 @@
         }
 
         function initializeCatalog() {
-            // Inicializar con todos los libros como filteredBooks
+            allLoadedBooks = allBooks; // TODOS los libros, sin slice
             filteredBooks = allBooks;
-            allLoadedBooks = allBooks.slice(0, DISPLAY_PAGE_SIZE);
             displayPage = 0;
             renderBooks(true);
             renderBestsellers(allBooks);
@@ -611,10 +610,8 @@
         }
 
         function applyFilters() {
-            // Buscar sobre allBooks (catálogo completo R2)
-            let result = allBooks;
+            let result = allLoadedBooks; // filtrar sobre allLoadedBooks completo
 
-            // Filtro por búsqueda (normalizada, sin tildes)
             if (activeSearch && activeSearch.length >= 1) {
                 const q = normalize(activeSearch);
                 result = result.filter(b =>
@@ -623,7 +620,6 @@
                 );
             }
 
-            // Filtro por estado
             if (activeStatus !== 'all') {
                 if (activeStatus === 'active') {
                     result = result.filter(b => b.status === 'active' && b.available_quantity > 0);
@@ -632,16 +628,13 @@
                 }
             }
 
-            // Filtro por precio
             if (activePriceRange !== 'all') {
                 const [min, max] = activePriceRange.split('-').map(Number);
                 result = result.filter(b => b.price >= min && b.price <= max);
             }
 
             filteredBooks = result;
-            // Resetear paginación virtual y renderizar primera página
             displayPage = 0;
-            allLoadedBooks = filteredBooks.slice(0, DISPLAY_PAGE_SIZE);
             updateNoResultsWA(activeSearch);
             sortBooks();
         }
