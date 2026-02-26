@@ -314,11 +314,25 @@ async function processWebhookAsync(payload, env) {
 }
 
 async function getAccessToken(env) {
-  const REFRESH_TOKEN = env.REFRESH_TOKEN;
   const CLIENT_SECRET = env.CLIENT_SECRET;
 
+  // El refresh token se guarda en KV para que se actualice automáticamente
+  // ML invalida el RT cada vez que se usa, por eso debemos persistir el nuevo
+  let REFRESH_TOKEN = null;
+  try {
+    const kvToken = await env.AMADO_KV.get('auth:refresh_token');
+    if (kvToken) {
+      REFRESH_TOKEN = kvToken;
+    }
+  } catch(e) { /* KV no disponible, usar variable de entorno */ }
+
+  // Fallback a la variable de entorno si no hay token en KV
+  if (!REFRESH_TOKEN) {
+    REFRESH_TOKEN = env.REFRESH_TOKEN;
+  }
+
   if (!REFRESH_TOKEN || !CLIENT_SECRET) {
-    throw new Error('Credenciales de ML no configuradas en las variables de entorno de Cloudflare.');
+    throw new Error('Credenciales de ML no configuradas. Verifica REFRESH_TOKEN y CLIENT_SECRET en Cloudflare.');
   }
 
   const response = await fetch('https://api.mercadolibre.com/oauth/token', {
@@ -334,9 +348,38 @@ async function getAccessToken(env) {
 
   if (!response.ok) {
     const errText = await response.text();
+    // Si el token de KV falló, intentar con el de la variable de entorno
+    if (REFRESH_TOKEN !== env.REFRESH_TOKEN && env.REFRESH_TOKEN) {
+      const retryResponse = await fetch('https://api.mercadolibre.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: APP_ID,
+          client_secret: CLIENT_SECRET,
+          refresh_token: env.REFRESH_TOKEN,
+        }),
+      });
+      if (retryResponse.ok) {
+        const retryData = await retryResponse.json();
+        // Guardar el nuevo RT en KV
+        try { await env.AMADO_KV.put('auth:refresh_token', retryData.refresh_token, { expirationTtl: 86400 * 30 }); } catch(e) {}
+        return retryData.access_token;
+      }
+    }
     throw new Error(`Error obteniendo token de ML (${response.status}): ${errText}`);
   }
 
   const data = await response.json();
+
+  // Guardar el nuevo refresh token en KV para la próxima vez
+  if (data.refresh_token) {
+    try {
+      await env.AMADO_KV.put('auth:refresh_token', data.refresh_token, { expirationTtl: 86400 * 30 });
+    } catch(e) {
+      console.warn('No se pudo guardar el refresh token en KV:', e.message);
+    }
+  }
+
   return data.access_token;
 }
