@@ -326,14 +326,15 @@
                 const res = await fetch(`${API_BASE}/api/catalog?limit=50&page=0`);
                 if (!res.ok) throw new Error('Error de conexión');
                 const data = await res.json();
-                if (data.status === 'CACHE_EMPTY' || data.status === 'SYNC_IN_PROGRESS') {
-                    statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-hourglass-half fa-spin text-4xl text-brand-orange mb-4"></i></div><p class="text-slate-500 font-medium">Sincronizando catálogo... (' + (data.progress || 0) + '% completado)</p>';
-                    setTimeout(loadAllBooks, 5000); // Reintentar en 5 segundos
+                // Si no hay items o hay mensaje de sincronizando, reintentar
+                if (!data.items || data.items.length === 0) {
+                    statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-hourglass-half fa-spin text-4xl text-brand-orange mb-4"></i></div><p class="text-slate-500 font-medium">Sincronizando catálogo... volvé en unos minutos.</p>';
+                    setTimeout(loadAllBooks, 5000);
                     return;
                 }
+                statusEl.classList.add('hidden'); // Ocultar el mensaje de carga
                 allBooks = data.items;
                 filteredBooks = allBooks;
-            // No ocultar statusEl, ya no se usa. El grid se limpia al renderizar.
                 sortBooks();
             } catch (error) {
                 statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i></div><p class="text-slate-500 font-medium">Error de conexión. Reintentando...</p>';
@@ -461,6 +462,29 @@
         }
         document.addEventListener('DOMContentLoaded', loadAllBooks);
         document.getElementById('searchInput').addEventListener('input', (e) => filterBooks(e.target.value));
+
+        // === BOTÓN FLOTANTE WHATSAPP ===
+        function toggleWhatsAppChat() {
+            const chatBox = document.getElementById('wa-chat-box');
+            const iconOpen = document.getElementById('wa-icon-open');
+            const iconClose = document.getElementById('wa-icon-close');
+            const isHidden = chatBox.classList.contains('hidden');
+            if (isHidden) {
+                chatBox.classList.remove('hidden');
+                setTimeout(() => {
+                    chatBox.classList.remove('scale-95', 'opacity-0');
+                    chatBox.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                iconOpen.classList.add('scale-0');
+                iconClose.classList.remove('scale-0');
+            } else {
+                chatBox.classList.add('scale-95', 'opacity-0');
+                chatBox.classList.remove('scale-100', 'opacity-100');
+                iconOpen.classList.remove('scale-0');
+                iconClose.classList.add('scale-0');
+                setTimeout(() => chatBox.classList.add('hidden'), 300);
+            }
+        }
     </script>
     <!-- Botón Flotante WhatsApp v2.0 -->
     <div id="wa-float-container" class="fixed bottom-6 right-6 z-50 group">
