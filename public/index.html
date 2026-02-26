@@ -296,7 +296,7 @@
     </div>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
-        const API_BASE = window.location.hostname.includes('amadolibros') ? '' : 'https://amadolibros-web.pages.dev';
+        const API_BASE = 'https://amadolibros-sync.undiaes.workers.dev';
         let allBooks = [];          
         let filteredBooks = [];     
         let displayedCount = 0;     
@@ -323,7 +323,7 @@
             statusEl.classList.remove('hidden');
             updateWishlistBadge();
             try {
-                const res = await fetch(`${API_BASE}/api/catalog?limit=50&page=1`);
+                const res = await fetch(`${API_BASE}/api/catalog?limit=50&page=0`);
                 if (!res.ok) throw new Error('Error de conexión');
                 const data = await res.json();
                 if (data.status === 'CACHE_EMPTY' || data.status === 'SYNC_IN_PROGRESS') {
