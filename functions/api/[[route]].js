@@ -1,6 +1,7 @@
 // functions/api/[[route]].js
-// VERSIÓN 4.0 - ARQUITECTURA DE SINCRONIZACIÓN POR CHUNKS
-// Sincroniza 16,000+ libros sin exceder el límite de 30s de Cloudflare
+// VERSIÓN 5.0 - ARQUITECTURA CON BLOQUEO DISTRIBUIDO Y REINTENTOS
+// Solución definitiva para el Refresh Token rotativo de Mercado Libre
+// Consenso de Gemini 2.5 Flash + GPT-4.1: KV como única fuente de verdad + lock + backoff
 
 const APP_ID = '4741021817925208';
 const USER_ID = '440298103';
@@ -36,7 +37,7 @@ export async function onRequest(context) {
   }
   if (path === '/health') {
     return new Response(
-      JSON.stringify({ status: 'OK', timestamp: new Date().toISOString(), version: '4.0' }),
+      JSON.stringify({ status: 'OK', timestamp: new Date().toISOString(), version: '5.0' }),
       { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     );
   }
@@ -216,28 +217,91 @@ async function handleWebhook(request, env) {
   await env.AMADO_KV.put('catalog:full', JSON.stringify(catalog), { expirationTtl: 604800 });
 }
 
+// ============================================================
+// getAccessToken v5.0 - Bloqueo Distribuido + Backoff Exponencial
+// Consenso de Gemini 2.5 Flash + GPT-4.1
+// ============================================================
 async function getAccessToken(env) {
   const CLIENT_SECRET = env.CLIENT_SECRET;
-  let REFRESH_TOKEN = await env.AMADO_KV.get('auth:refresh_token') || env.REFRESH_TOKEN;
+  const KV_KEY = 'auth:refresh_token';
+  const LOCK_KEY = 'auth:refresh_token_lock';
+  const LOCK_TTL = 15;       // segundos máximos que puede durar el lock
+  const MAX_RETRIES = 5;
+  const BASE_DELAY_MS = 200; // backoff exponencial con jitter
 
-  if (!REFRESH_TOKEN || !CLIENT_SECRET) {
-    throw new Error('Credenciales de ML no configuradas.');
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    // 1. Leer el Refresh Token desde KV (única fuente de verdad)
+    let REFRESH_TOKEN = await env.AMADO_KV.get(KV_KEY);
+
+    // 2. Si KV está vacío, usar variable de entorno como fallback de emergencia
+    if (!REFRESH_TOKEN) {
+      REFRESH_TOKEN = env.REFRESH_TOKEN;
+      if (!REFRESH_TOKEN) {
+        throw new Error('No se encontró Refresh Token en KV ni en variables de entorno. Configura auth:refresh_token en KV.');
+      }
+      // Guardar inmediatamente en KV para que futuras llamadas lo encuentren
+      await env.AMADO_KV.put(KV_KEY, REFRESH_TOKEN, { expirationTtl: 86400 * 30 });
+      console.log('[Auth] Refresh Token inicializado en KV desde variable de entorno.');
+    }
+
+    // 3. Verificar si hay un lock activo (otro Worker está refrescando el token)
+    const existingLock = await env.AMADO_KV.get(LOCK_KEY);
+    if (existingLock) {
+      // Otro Worker está refrescando. Esperar y reintentar para leer el nuevo token.
+      const delay = BASE_DELAY_MS * Math.pow(2, i) + Math.random() * BASE_DELAY_MS;
+      console.log(`[Auth] Lock activo, esperando ${Math.round(delay)}ms antes de reintentar (intento ${i+1}/${MAX_RETRIES})...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+
+    // 4. Adquirir el lock antes de usar el Refresh Token
+    await env.AMADO_KV.put(LOCK_KEY, Date.now().toString(), { expirationTtl: LOCK_TTL });
+
+    try {
+      // 5. Llamar a la API de Mercado Libre para obtener el Access Token
+      const response = await fetch('https://api.mercadolibre.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: APP_ID,
+          client_secret: CLIENT_SECRET,
+          refresh_token: REFRESH_TOKEN,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.access_token) {
+        // 6. Éxito: guardar el NUEVO Refresh Token en KV inmediatamente
+        if (data.refresh_token) {
+          await env.AMADO_KV.put(KV_KEY, data.refresh_token, { expirationTtl: 86400 * 30 });
+          console.log('[Auth] Nuevo Refresh Token guardado en KV exitosamente.');
+        }
+        await env.AMADO_KV.delete(LOCK_KEY);
+        return data.access_token;
+
+      } else if (data.error === 'invalid_grant' || (data.message && data.message.includes('invalid'))) {
+        // 7. Token inválido (race condition): liberar lock, esperar con backoff y reintentar
+        await env.AMADO_KV.delete(LOCK_KEY);
+        const delay = BASE_DELAY_MS * Math.pow(2, i) + Math.random() * BASE_DELAY_MS;
+        console.warn(`[Auth] Refresh Token inválido (race condition). Reintentando en ${Math.round(delay)}ms (intento ${i+1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+      } else {
+        // 8. Error inesperado
+        await env.AMADO_KV.delete(LOCK_KEY);
+        throw new Error(`Error obteniendo token de ML (${response.status}): ${JSON.stringify(data)}`);
+      }
+
+    } catch (err) {
+      // 9. Siempre liberar el lock en caso de error
+      await env.AMADO_KV.delete(LOCK_KEY).catch(() => {});
+      if (i === MAX_RETRIES - 1) throw err;
+      const delay = BASE_DELAY_MS * Math.pow(2, i);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 
-  const response = await fetch('https://api.mercadolibre.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'refresh_token', client_id: APP_ID, client_secret: CLIENT_SECRET, refresh_token: REFRESH_TOKEN }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Error obteniendo token de ML (${response.status}): ${errText}`);
-  }
-
-  const data = await response.json();
-  if (data.refresh_token) {
-    await env.AMADO_KV.put('auth:refresh_token', data.refresh_token, { expirationTtl: 86400 * 30 });
-  }
-  return data.access_token;
+  throw new Error('[Auth] Fallo al obtener Access Token después de 5 reintentos. Verifica el Refresh Token en KV.');
 }
