@@ -427,16 +427,16 @@
                     ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
                     : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '');
                 const isPopular = (b.sold_quantity || 0) > 30;
-                return \`<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('\${b.id}')">
+                return `<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('${b.id}')">
                     <div class="relative pt-[140%] bg-gray-100">
-                        <img src="\${img}" alt="\${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
-                        \${isPopular ? '<div class="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">🔥 Popular</div>' : ''}
+                        <img src="${img}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                        ${isPopular ? '<div class="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">🔥 Popular</div>' : ''}
                     </div>
                     <div class="p-2">
-                        <p class="text-[10px] font-bold text-slate-800 line-clamp-2">\${b.title}</p>
-                        <p class="text-xs font-black text-brand-purple mt-1">\${fmt.format(Math.round(b.price * 0.88))}</p>
+                        <p class="text-[10px] font-bold text-slate-800 line-clamp-2">${b.title}</p>
+                        <p class="text-xs font-black text-brand-purple mt-1">${fmt.format(Math.round(b.price * 0.88))}</p>
                     </div>
-                </div>\`;
+                </div>`;
             }).join('');
             
             section.classList.remove('hidden');
