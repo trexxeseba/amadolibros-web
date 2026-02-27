@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Amado Libros | Librería Online Uruguay - +15.000 Títulos</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FF5A1F'/><text y='.9em' font-size='70' x='15'>📚</text></svg>">
+    <link rel="icon" type="image/png" href="/images/logo-amado.png">
     <meta name="description" content="La librería online más grande de Uruguay. Más de 15.000 títulos en stock. Envíos en 2 horas a todo el país. Atención 24/7 por WhatsApp.">
     <meta name="keywords" content="libros uruguay, librería online uruguay, comprar libros, libros montevideo, envio libros uruguay">
     <meta name="author" content="Amado Libros">
@@ -117,11 +117,11 @@
 
     <!-- HEADER -->
     <header class="glass-header text-white sticky top-0 z-40 h-16 flex items-center justify-between px-4 lg:px-8 transition-all">
-        <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.reload()">
-            <div class="bg-brand-orange p-2 rounded-xl group-hover:rotate-12 transition-transform"><i class="fas fa-book-open text-white"></i></div>
+        <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.reload()">
+            <img src="/images/logo-amado.png" alt="Amado Libros" class="h-10 w-auto">
             <div>
-                <h1 class="text-lg font-black uppercase tracking-wide leading-none">Amado<span class="text-brand-orange">Libros</span></h1>
-                <p class="text-[10px] text-gray-400 font-medium hidden md:block">Librería Online Premium</p>
+                <p class="font-black text-white text-lg leading-tight">AMADO LIBROS</p>
+                <p class="text-xs text-gray-400 leading-tight">La librería que te consigue todo</p>
             </div>
         </div>
         <div class="flex-1 flex items-center justify-center max-w-2xl mx-auto px-4 relative">
@@ -158,7 +158,13 @@
                 <i class="fab fa-whatsapp"></i> Respondemos por WhatsApp en minutos
             </div>
             <h2 class="text-4xl md:text-6xl font-black mb-4 leading-tight">Pedinos el libro<br class="hidden md:block"/> <span class="text-brand-orange">que quieras</span></h2>
-            <p class="text-slate-300 text-base md:text-lg mb-3 max-w-2xl mx-auto">Si está publicado, te lo conseguimos. Si no lo encontrás en el catálogo, mandanos un WhatsApp.</p>
+            <p class="text-slate-300 text-base md:text-lg mb-3 max-w-2xl mx-auto">Si está publicado, te lo conseguimos. Si no lo encontrás en el catálogo, mandános un WhatsApp.</p>
+
+            <div class="max-w-2xl mx-auto mt-6 px-4">
+                <input type="text" placeholder="Buscá por título, autor, ISBN..."
+                    class="w-full px-6 py-4 text-lg rounded-full shadow-xl border-0 outline-none focus:ring-4 focus:ring-orange-300 text-gray-800"
+                    oninput="filterBooks(this.value); document.getElementById('headerSearch').value=this.value; setTimeout(()=>document.querySelector('#explorar')?.scrollIntoView({behavior:'smooth'}),300)">
+            </div>
             
             <!-- Stats -->
             <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-400 mb-8">
