@@ -208,11 +208,7 @@
                     <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fas fa-layer-group text-brand-orange"></i> Explorar Colección</h3>
                     <p id="counter" class="text-slate-500 text-xs">Miles de historias a tu alcance</p>
                 </div>
-                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                     <button onclick="filterByStatus('all')" class="px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-bold whitespace-nowrap hover:bg-slate-700 transition-colors">Todos</button>
-                     <button onclick="filterByStatus('active')" class="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-xs font-bold whitespace-nowrap hover:bg-gray-200 transition-colors">En Stock</button>
-                     <button onclick="filterByStatus('paused')" class="px-4 py-2 rounded-full bg-brand-purple/10 text-brand-purple text-xs font-bold whitespace-nowrap hover:bg-brand-purple/20 transition-colors">Por Encargo</button>
-                </div>
+
                 <div class="flex gap-2 items-center">
                     <select id="priceFilter" onchange="applyPriceFilter()" class="appearance-none bg-gray-50 border border-gray-200 text-slate-700 text-sm font-bold rounded-lg py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 cursor-pointer">
                         <option value="all">💰 Todos los precios</option>
@@ -509,7 +505,13 @@
         }
 
         function initializeCatalog() {
-            allLoadedBooks = [...allBooks].sort((a, b) => Number(b.id) - Number(a.id));
+            allLoadedBooks = [...allBooks].sort((a, b) => {
+                const aStock = a.status === 'active' && a.available_quantity > 0;
+                const bStock = b.status === 'active' && b.available_quantity > 0;
+                if (aStock && !bStock) return -1; // en stock primero
+                if (!aStock && bStock) return 1;
+                return Number(b.id) - Number(a.id); // dentro de cada grupo, más nuevos primero
+            });
             filteredBooks = allLoadedBooks;
             displayPage = 0;
             document.getElementById('sortSelect').value = 'recent';
