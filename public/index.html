@@ -816,6 +816,32 @@
         }
     </script>
 
+    <script>
+        const placeholders = [
+            "¿Qué querés leer hoy?",
+            "Buscá por título...",
+            "¿Quién es tu autor favorito?",
+            "Freud, Cortázar, García Márquez...",
+            "Buscá por ISBN...",
+            "Te conseguimos cualquier libro 📚"
+        ];
 
+        let placeholderIndex = 0;
+        function rotatePlaceholder() {
+            placeholderIndex = (placeholderIndex + 1) % placeholders.length;
+            const text = placeholders[placeholderIndex];
+            ['headerSearch', 'heroSearch'].forEach(id => {
+                const input = document.getElementById(id);
+                if (!input || input.value || document.activeElement === input) return;
+                input.style.transition = 'opacity 0.4s';
+                input.style.opacity = '0';
+                setTimeout(() => {
+                    input.placeholder = text;
+                    input.style.opacity = '1';
+                }, 400);
+            });
+        }
+        setInterval(rotatePlaceholder, 3000);
+    </script>
 </body>
 </html>
