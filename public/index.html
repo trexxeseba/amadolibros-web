@@ -508,9 +508,9 @@
             allLoadedBooks = [...allBooks].sort((a, b) => {
                 const aStock = a.status === 'active' && a.available_quantity > 0;
                 const bStock = b.status === 'active' && b.available_quantity > 0;
-                if (aStock && !bStock) return -1; // en stock primero
+                if (aStock && !bStock) return -1;
                 if (!aStock && bStock) return 1;
-                return Number(b.id) - Number(a.id); // dentro de cada grupo, más nuevos primero
+                return new Date(b.start_time) - new Date(a.start_time);
             });
             filteredBooks = allLoadedBooks;
             displayPage = 0;
