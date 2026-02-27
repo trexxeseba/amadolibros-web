@@ -544,7 +544,7 @@
                 card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
                 card.style.animationDelay = `${Math.min(i * 30, 300)}ms`;
                 card.innerHTML = `
-                    <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0 ? `window.open('https://wa.me/59899841325?text=${encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir? \ud83d\udcda')}', '_blank')` : `window.open('${b.permalink || '#'}', '_blank')`}">
+                    <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0 ? `window.open('https://wa.me/59899841325?text=${encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir? \ud83d\udcda')}', '_blank')` : `openModal('${b.id}')`}">
                         <img src="${(b.pictures && b.pictures[0]) ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg') : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '')}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer" loading="lazy">
                         <div class="absolute top-2 right-2">
                             <button onclick="toggleWishlist(event, '${b.id}')" class="wishlist-btn bg-white/80 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors" aria-label="A\u00f1adir a favoritos">
@@ -558,8 +558,10 @@
                         ${b.author ? '<p class="text-[10px] text-gray-500 mt-0.5 line-clamp-1">' + b.author + '</p>' : ''}
                         <div class="mt-auto pt-2 flex items-end justify-between">
                             <div>
-                                <p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p>
-                                <p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>
+                                ${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0
+                                    ? '<p class="text-sm text-slate-500 italic">💬 Pedilo por WhatsApp y te cotizamos en 24hs</p>'
+                                    : `<p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p><p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>`
+                                }
                             </div>
                             ${b.status === 'paused' 
                                 ? '<a href="https://wa.me/59899841325?text=' + encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir?') + '" target="_blank" class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0" title="Pedir por WhatsApp"><i class=\'fab fa-whatsapp text-sm\'></i></a>'
