@@ -635,6 +635,10 @@
         }
 
         function applyFilters() {
+            const bestsellerSection = document.getElementById('bestsellerSection');
+            if (bestsellerSection) {
+                bestsellerSection.classList.toggle('hidden', activeSearch.length > 0);
+            }
             let result = allLoadedBooks; // filtrar sobre allLoadedBooks completo
 
             if (activeSearch && activeSearch.length >= 1) {
@@ -745,11 +749,10 @@
         document.addEventListener('DOMContentLoaded', loadAllBooks);
         document.getElementById('headerSearch').addEventListener('input', (e) => {
             const val = e.target.value;
-            const headerInput = document.getElementById('headerSearch');
-            if (headerInput) headerInput.value = val;
             const clearBtn = document.getElementById('headerSearchClear');
             if (clearBtn) clearBtn.classList.toggle('hidden', !val);
             filterBooks(val);
+            showAutocomplete(val);
         });
 
         // === BOTÓN FLOTANTE WHATSAPP ===
