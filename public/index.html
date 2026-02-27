@@ -421,8 +421,8 @@
             const grid = document.getElementById('bestsellerGrid');
             if (!section || !grid || !books || books.length === 0) return;
             
-            const top = books
-                .filter(b => b.sold_quantity && b.sold_quantity > 0)
+            const inStock = books.filter(b => b.status === 'active' && b.available_quantity > 0);
+            const top = inStock
                 .sort((a, b) => (b.sold_quantity || 0) - (a.sold_quantity || 0))
                 .slice(0, 8);
             
@@ -509,8 +509,8 @@
         }
 
         function initializeCatalog() {
-            allLoadedBooks = allBooks; // TODOS los libros, sin slice
-            filteredBooks = allBooks;
+            allLoadedBooks = [...allBooks].sort((a, b) => Number(b.id) - Number(a.id));
+            filteredBooks = allLoadedBooks;
             displayPage = 0;
             document.getElementById('sortSelect').value = 'recent';
             renderBooks(true);
