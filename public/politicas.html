@@ -36,10 +36,11 @@
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; }
         .glass-header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.1); }
         .breadcrumb { color: #64748b; font-size: 0.875rem; }
-        .policy-section { background: white; border-radius: 0.5rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .policy-section { background: white; border-radius: 0.5rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); scroll-margin-top: 120px; }
         .policy-section h2 { color: #FF5A1F; font-weight: 700; font-size: 1.5rem; margin-bottom: 1rem; margin-top: 0; }
         .policy-section h3 { color: #0F172A; font-weight: 600; font-size: 1.125rem; margin-top: 1.5rem; margin-bottom: 0.75rem; }
         .policy-section ul { list-style: disc; padding-left: 1.5rem; line-height: 1.8; color: #334155; }
@@ -51,9 +52,26 @@
         .toc { background: #f1f5f9; border-left: 4px solid #FF5A1F; padding: 1.5rem; border-radius: 0.25rem; margin-bottom: 2rem; }
         .toc ul { list-style: none; padding: 0; }
         .toc ul li { margin: 0.5rem 0; }
-        .toc a { color: #FF5A1F; text-decoration: none; font-weight: 500; }
+        .toc a { color: #FF5A1F; text-decoration: none; font-weight: 500; cursor: pointer; }
         .toc a:hover { text-decoration: underline; }
     </style>
+    
+    <script>
+        // Smooth scroll custom para evitar que suba al header
+        function smoothScrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                const headerHeight = 80; // altura del header fijo
+                const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                const offsetPosition = elementPosition - headerHeight;
+                
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    </script>
 </head>
 <body>
     <!-- Header -->
@@ -90,9 +108,9 @@
         <div class="toc">
             <h3 style="margin-top: 0; color: #0F172A;">Contenidos</h3>
             <ul>
-                <li><a href="#contacto">1. Contacto</a></li>
-                <li><a href="#envios">2. Política de Envíos y Devoluciones</a></li>
-                <li><a href="#terminos">3. Términos y Condiciones</a></li>
+                <li><a onclick="smoothScrollToSection('contacto'); return false;" href="#contacto">1. Contacto</a></li>
+                <li><a onclick="smoothScrollToSection('envios'); return false;" href="#envios">2. Política de Envíos y Devoluciones</a></li>
+                <li><a onclick="smoothScrollToSection('terminos'); return false;" href="#terminos">3. Términos y Condiciones</a></li>
             </ul>
         </div>
 
