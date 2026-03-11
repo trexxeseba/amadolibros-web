@@ -166,7 +166,10 @@
                     oninput="onHeroSearch(this.value)">
             </div>
             
-            <!-- Stats -->
+            <!-- Schema.org para Product y Book -->
+<script id="product-schema" type="application/ld+json"></script>
+
+<!-- Stats -->
             <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-400 mb-8">
                 <span class="flex items-center gap-1"><i class="fas fa-book text-brand-orange"></i> 16.252 títulos</span>
                 <span class="flex items-center gap-1"><i class="fas fa-bolt text-brand-orange"></i> Envío en 2hs</span>
@@ -549,8 +552,10 @@
 
             const fragment = document.createDocumentFragment();
             booksToRender.forEach((b, i) => {
-                const card = document.createElement('div');
-                card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
+                const bookCard = document.createElement('div');
+
+// Inyectar Schema Markup para el producto
+injectProductSchema(book);             card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
                 card.style.animationDelay = `${Math.min(i * 30, 300)}ms`;
                 card.innerHTML = `
                     <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0 ? `window.open('https://wa.me/59899841325?text=${encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir? \ud83d\udcda')}', '_blank')` : `openModal('${b.id}')`}">
@@ -618,7 +623,34 @@
             setTimeout(() => document.querySelector('#explorar')?.scrollIntoView({ behavior: 'smooth' }), 300);
         }
 
-        function clearHeaderSearch() {
+        function injectProductSchema(book) {
+    const schemaContainer = document.getElementById('product-schema');
+    if (!schemaContainer) return;
+
+    const schema = {
+        '@context': 'https://schema.org',
+        '@type': ['Product', 'Book'],
+        'name': book.title,
+        'description': book.title, // Usamos el título como fallback
+        'image': book.thumbnail,
+        'sku': book.id,
+        'offers': {
+            '@type': 'Offer',
+            'url': book.permalink,
+            'priceCurrency': book.currency,
+            'price': book.price,
+            'availability': book.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            'seller': {
+                '@type': 'Organization',
+                'name': 'Amado Libros'
+            }
+        }
+    };
+
+    schemaContainer.textContent = JSON.stringify(schema, null, 2);
+}
+
+function clearHeaderSearch() {
             document.getElementById('headerSearch').value = '';
             const heroInput = document.getElementById('heroSearch');
             if (heroInput) heroInput.value = '';
