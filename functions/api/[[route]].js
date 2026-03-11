@@ -41,6 +41,20 @@ export async function onRequest(context) {
       { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     );
   }
+  if (path === '/reset' && request.method === 'POST') {
+    waitUntil(handleReset(env));
+    return new Response(
+      JSON.stringify({ status: 'RESET_STARTED', message: 'Los datos de sincronización han sido limpiados. Ejecutá /api/sync para reiniciar.' }),
+      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  }
+  if (path === '/reset' && request.method === 'GET') {
+    waitUntil(handleReset(env));
+    return new Response(
+      JSON.stringify({ status: 'RESET_STARTED', message: 'Los datos de sincronización han sido limpiados. Ejecutá /api/sync para reiniciar.' }),
+      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  }
   if (path === '/webhooks/mercadolibre' && request.method === 'POST') {
     waitUntil(handleWebhook(request, env));
     return new Response(JSON.stringify({ status: 'received' }), { status: 200 });
@@ -325,4 +339,34 @@ async function getAccessToken(env) {
   }
 
   throw new Error('[Auth] Fallo al obtener Access Token después de 5 reintentos. Verifica el Refresh Token en KV.');
+}
+
+// === RESET - LIMPIAR ESTADO CONGELADO ===
+async function handleReset(env) {
+  const keysToDelete = [
+    'sync_status',
+    'sync_phase',
+    'sync_logs',
+    'sync:state',
+    'sync:lock',
+    'all_item_ids',
+    'all_item_ids:0',
+    'all_item_ids:1',
+    'pending_details',
+    'pending_details:0',
+    'scroll_ids_partial',
+    'sync_cursor'
+  ];
+
+  for (const key of keysToDelete) {
+    try {
+      await env.AMADO_KV.delete(key);
+      console.log(`[Reset] Eliminado: ${key}`);
+    } catch (err) {
+      console.error(`[Reset] Error eliminando ${key}:`, err.message);
+    }
+  }
+
+  console.log('[Reset] Estado de sincronización limpiado correctamente.');
+}
 }
