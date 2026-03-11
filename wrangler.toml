@@ -18,3 +18,8 @@ id = "6ea0ff4682d647118442a24fe384abc4"
 # Archivos estáticos del sitio
 [site]
 bucket = "./public"
+
+# === CRON: Sincronización automática cada 6 horas ===
+# Ejecuta el sync automáticamente para mantener precios actualizados
+[[triggers.crons]]
+cron = "0 */6 * * *"

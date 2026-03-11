@@ -12,6 +12,13 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// === CRON TRIGGER ===
+export async function onScheduled(context) {
+  const { env, waitUntil } = context;
+  console.log('[Cron] Ejecutando sincronización programada...');
+  waitUntil(handleCronSync(env));
+}
+
 export async function onRequest(context) {
   const { request, env, waitUntil } = context;
   const url = new URL(request.url);
@@ -368,5 +375,126 @@ async function handleReset(env) {
   }
 
   console.log('[Reset] Estado de sincronización limpiado correctamente.');
+}
+
+// === CRON SYNC - ROBUSTO CON HEALTHCHECK Y REINTENTOS ===
+async function handleCronSync(env) {
+  const CRON_KEY = 'cron:last_run';
+  const CRON_STATUS_KEY = 'cron:status';
+  const MAX_SYNC_TIME = 1800000; // 30 minutos máximo
+  const RETRY_ATTEMPTS = 3;
+  const RETRY_DELAY_MS = 5000;
+
+  try {
+    // 1. HEALTHCHECK: Verificar si hay un sync activo
+    const currentStatus = await env.AMADO_KV.get('sync_status', { type: 'json' });
+    if (currentStatus?.status === 'scrolling' || currentStatus?.status === 'fetching_details') {
+      const startTime = new Date(currentStatus.updatedAt).getTime();
+      const elapsedMs = Date.now() - startTime;
+
+      if (elapsedMs > MAX_SYNC_TIME) {
+        // Sync congelado: resetear y reintentar
+        console.warn(`[Cron] ⚠️  Sync congelado por ${Math.round(elapsedMs / 1000)}s. Resetando...`);
+        await handleReset(env);
+      } else {
+        // Sync todavía en progreso, no interferir
+        console.log(`[Cron] Sync en progreso (${Math.round(elapsedMs / 1000)}s). Saltando...`);
+        await env.AMADO_KV.put(CRON_STATUS_KEY, JSON.stringify({
+          status: 'skipped',
+          reason: 'sync_in_progress',
+          elapsed_ms: elapsedMs,
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+    }
+
+    // 2. VERIFICAR: Último sync exitoso
+    const lastRun = await env.AMADO_KV.get(CRON_KEY);
+    if (lastRun) {
+      const lastTime = new Date(lastRun).getTime();
+      const hoursSinceLastRun = (Date.now() - lastTime) / (1000 * 60 * 60);
+
+      if (hoursSinceLastRun < 5) {
+        // Ejecutado hace menos de 5 horas, skip
+        console.log(`[Cron] ✅ Último sync hace ${Math.round(hoursSinceLastRun)}h. Saltando.`);
+        await env.AMADO_KV.put(CRON_STATUS_KEY, JSON.stringify({
+          status: 'skipped',
+          reason: 'too_recent',
+          hours_since_last_run: Math.round(hoursSinceLastRun * 10) / 10,
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+    }
+
+    // 3. INICIAR SYNC con reintentos
+    let syncStarted = false;
+    for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
+      try {
+        console.log(`[Cron] 🔄 Intento ${attempt}/${RETRY_ATTEMPTS}: Iniciando sync...`);
+        
+        // Lanzar sync en background
+        const accessToken = await getAccessToken(env);
+        let state = await env.AMADO_KV.get('sync:state', { type: 'json' }) || { 
+          offset: 0, allItemIds: [], total: 0, allItems: [] 
+        };
+
+        // Ejecutar la sincronización
+        const startMs = Date.now();
+        await handleSyncCatalog(env, new URL('https://amadolibros-sync.undiaes.workers.dev/api/sync'));
+        const durationMs = Date.now() - startMs;
+
+        // Guardar timestamp de ejecución
+        await env.AMADO_KV.put(CRON_KEY, new Date().toISOString(), { expirationTtl: 86400 * 30 });
+        await env.AMADO_KV.put(CRON_STATUS_KEY, JSON.stringify({
+          status: 'completed',
+          attempt,
+          duration_ms: durationMs,
+          timestamp: new Date().toISOString()
+        }));
+
+        console.log(`[Cron] ✅ Sync completado en ${Math.round(durationMs / 1000)}s`);
+        syncStarted = true;
+        break;
+
+      } catch (err) {
+        console.error(`[Cron] ❌ Intento ${attempt} falló:`, err.message);
+        
+        if (attempt < RETRY_ATTEMPTS) {
+          const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+          console.log(`[Cron] ⏳ Esperando ${Math.round(delay / 1000)}s antes de reintentar...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    if (!syncStarted) {
+      // Todos los reintentos fallaron
+      await env.AMADO_KV.put(CRON_STATUS_KEY, JSON.stringify({
+        status: 'failed',
+        reason: 'max_retries_exceeded',
+        attempts: RETRY_ATTEMPTS,
+        timestamp: new Date().toISOString()
+      }));
+
+      // Guardar alerta para que la vea
+      await env.AMADO_KV.put('cron:last_error', JSON.stringify({
+        error: 'Sync falló después de 3 intentos',
+        timestamp: new Date().toISOString(),
+        check_endpoint: '/api/status'
+      }), { expirationTtl: 86400 });
+
+      console.error('[Cron] ❌ Todos los reintentos fallaron. Alerta guardada.');
+    }
+
+  } catch (err) {
+    console.error('[Cron] 💥 Error crítico:', err.message);
+    await env.AMADO_KV.put(CRON_STATUS_KEY, JSON.stringify({
+      status: 'critical_error',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    }));
+  }
 }
 }
