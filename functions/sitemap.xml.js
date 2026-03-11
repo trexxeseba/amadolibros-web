@@ -1,37 +1,36 @@
 /**
  * functions/sitemap.xml.js
  * 
- * Tarea 1: Generación de Sitemap Dinámico
- * Esta Cloudflare Pages Function genera un sitemap.xml sobre la marcha.
- * Se ejecuta cada vez que un usuario o un motor de búsqueda accede a /sitemap.xml.
+ * Tarea 1: Generación de Sitemap Dinámico (v2 - Corregido)
+ * Corrige 2 fallas críticas de SEO:
+ * 1. Itera sobre el catálogo para generar URLs de productos individuales.
+ * 2. Fuerza el dominio canónico https://www.amadolibros.com en todas las URLs.
  */
 
 export async function onRequest(context) {
-    // El binding al KV se configura en el dashboard de Cloudflare Pages
     const KV = context.env.AMADO_KV;
-    const BASE_URL = "https://www.amadolibros.com";
+    // CORRECCIÓN 2: Forzar el dominio canónico con 'www'
+    const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 
     try {
-        // Estrategia 1: Intentar obtener el catálogo completo desde la llave única.
-        // Es más rápido que obtener miles de llaves individuales.
         const catalog = await KV.get("catalog:full", { type: "json" });
 
         if (!catalog || !Array.isArray(catalog) || catalog.length === 0) {
-            // Si no hay catálogo, devolver un sitemap básico para no dar un error 404.
-            return new Response(generateBasicSitemap(BASE_URL), {
+            return new Response(generateBasicSitemap(CANONICAL_BASE_URL), {
                 headers: {
                     "content-type": "application/xml;charset=UTF-8",
-                    "cache-control": "public, max-age=3600" // Cache por 1 hora
+                    "cache-control": "public, max-age=3600"
                 },
             });
         }
 
+        // CORRECCIÓN 1: Iterar sobre el catálogo y generar URLs de productos
         const sitemapEntries = catalog.map(item => {
-            // Aseguramos que el item tiene un permalink válido
-            if (!item || !item.permalink) return '';
+            if (!item || !item.id) return '';
 
-            // Escapamos la URL para XML por si contiene caracteres especiales
-            const escapedUrl = escapeXml(item.permalink);
+            // El sitio usa un parámetro de búsqueda `?book=MLU...` para mostrar productos
+            const productUrl = `${CANONICAL_BASE_URL}/?book=${item.id}`;
+            const escapedUrl = escapeXml(productUrl);
 
             return `
     <url>
@@ -45,7 +44,7 @@ export async function onRequest(context) {
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>${BASE_URL}/</loc>
+        <loc>${CANONICAL_BASE_URL}/</loc>
         <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
@@ -55,15 +54,13 @@ export async function onRequest(context) {
         return new Response(sitemap, {
             headers: {
                 "content-type": "application/xml;charset=UTF-8",
-                // Cacheamos el sitemap por 6 horas para no sobrecargar el KV
-                "cache-control": "public, max-age=21600",
+                "cache-control": "public, max-age=21600", // Cache por 6 horas
             },
         });
 
     } catch (error) {
-        console.error("Error generando el sitemap:", error);
-        // En caso de error, devolver un sitemap básico y loguear el problema.
-        return new Response(generateBasicSitemap(BASE_URL), {
+        console.error("Error generando el sitemap (v2):", error);
+        return new Response(generateBasicSitemap(CANONICAL_BASE_URL), {
             status: 500,
             headers: { "content-type": "application/xml;charset=UTF-8" },
         });
@@ -84,6 +81,7 @@ function generateBasicSitemap(baseUrl) {
 }
 
 function escapeXml(unsafe) {
+    if (typeof unsafe !== 'string') return '';
     return unsafe.replace(/[<>&'"']/g, function (c) {
         switch (c) {
             case '<': return '&lt;';
