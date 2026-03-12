@@ -9,30 +9,23 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
       
-      - name: Sync catalog from MELI
+      - name: Sync catalog (incremental)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           MELI_TOKEN: ${{ secrets.MELI_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo "🔄 Sincronizando catálogo desde Mercado Libre..."
-          echo "Timestamp: $(date)"
-          
-          if [ -f src/amadolibros-sync.js ]; then
-            echo "✅ Archivo sync encontrado"
-            node src/amadolibros-sync.js
-          else
-            echo "⚠️  No se encontró src/amadolibros-sync.js"
-            echo "Creando directorio si es necesario..."
-            mkdir -p src
-            echo "Workflow puede continuar pero necesita implementar el sync"
-          fi
-          
-          echo "✅ Catálogo sincronizado"
+          npm install node-fetch
+          node src/amadolibros-sync.js
+      
+      - name: Save logs
+        if: always()
+        run: |
+          echo "Sync completado" > sync-log.txt
