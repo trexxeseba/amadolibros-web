@@ -8,136 +8,94 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .section-title { border-bottom: 3px solid #ff5a1f; padding-bottom: 8px; }
+    </style>
 </head>
-<body style="font-family: Inter, sans-serif; background-color: #f8fafc;">
+<body>
 
     <!-- HEADER -->
     <header style="position: sticky; top: 0; z-index: 50; background: #1e293b; color: white; padding: 1rem;">
-        <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
-            <a href="/" style="font-weight: bold; font-size: 1.25rem; color: white; text-decoration: none;">📚 Amado Libros</a>
+        <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <a href="/" style="font-weight: bold; font-size: 1.5rem; color: white; text-decoration: none;">📚 Amado Libros</a>
+            <a href="/" style="color: #cbd5e1; text-decoration: none; font-weight: 500; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#cbd5e1'">Volver a la Tienda</a>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
     <div style="max-width: 900px; margin: 0 auto; padding: 3rem 1rem;">
 
-        <h1 style="font-size: 2.25rem; font-weight: bold; color: #1e293b; margin-bottom: 2rem;">Políticas y Términos</h1>
+        <h1 style="font-size: 2.5rem; font-weight: bold; color: #1e293b; margin-bottom: 2rem; text-align: center;">Políticas y Términos de Servicio</h1>
 
         <!-- TABLE OF CONTENTS -->
-        <div style="background: #dbeafe; border-left: 4px solid #0284c7; padding: 1.5rem; margin-bottom: 2rem; border-radius: 0.25rem;">
-            <h2 style="font-weight: bold; color: #0c4a6e; margin-top: 0; margin-bottom: 1rem;">Índice</h2>
+        <div style="background: #e0f2fe; border-left: 4px solid #0ea5e9; padding: 1.5rem; margin-bottom: 3rem; border-radius: 0.375rem;">
+            <h2 style="font-weight: bold; color: #0369a1; margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem;">Índice Rápido</h2>
             <ul style="list-style: none; padding: 0; margin: 0;">
-                <li style="margin-bottom: 0.5rem;"><a href="#contacto" style="color: #0284c7; text-decoration: underline; font-weight: 500;">1. Contacto</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="#envios" style="color: #0284c7; text-decoration: underline; font-weight: 500;">2. Política de Envíos y Devoluciones</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="#terminos" style="color: #0284c7; text-decoration: underline; font-weight: 500;">3. Términos y Condiciones</a></li>
+                <li style="margin-bottom: 0.75rem;"><a href="#contacto" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">1. Información de Contacto</a></li>
+                <li style="margin-bottom: 0.75rem;"><a href="#envios" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">2. Política de Envíos y Devoluciones</a></li>
+                <li><a href="#terminos" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">3. Términos y Condiciones Generales</a></li>
             </ul>
         </div>
 
         <!-- SECCIÓN 1: CONTACTO -->
-        <div id="contacto" style="background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 2rem;">
-            <h2 style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">Contacto</h2>
-            
-            <div style="background: linear-gradient(135deg, #ff5a1f 0%, #ff8c42 100%); color: white; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
-                <p style="margin-bottom: 0.75rem;"><strong>📞 WhatsApp:</strong> 099 841 325</p>
-                <p style="margin-bottom: 0.75rem;"><strong>📧 Correo Electrónico:</strong> adm@amadolibros.com</p>
-                <p style="margin-bottom: 0.75rem;"><strong>📍 Retiros en persona:</strong> Pick-up a pasos de Plaza Matriz, Ciudad Vieja (Exclusivamente con coordinación previa)</p>
-                <p style="margin: 0;"><strong>🕐 Horario de atención online:</strong> Lunes a Viernes de 9:00 a 17:00 hs</p>
+        <section id="contacto" style="background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); padding: 2rem; margin-bottom: 3rem; scroll-margin-top: 5rem;">
+            <h2 class="section-title" style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">1. Información de Contacto</h2>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; md:grid-template-columns: 1fr 1fr;">
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 1.5rem; border-radius: 0.5rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: bold; color: #9a3412; margin-top: 0; margin-bottom: 1rem;">Canales de Atención</h3>
+                    <p style="margin-bottom: 1rem; color: #78350f;"><strong style="display: inline-flex; align-items: center;"><i class="fab fa-whatsapp" style="margin-right: 8px; color: #16a34a;"></i>WhatsApp:</strong> <a href="https://wa.me/59899841325?text=Hola%20Amado%20Libros" target="_blank" style="color: #1d4ed8; text-decoration: underline; margin-left: 4px;">099 841 325</a></p>
+                    <p style="color: #78350f;"><strong style="display: inline-flex; align-items: center;"><i class="far fa-envelope" style="margin-right: 8px;"></i>Correo Electrónico:</strong> <a href="mailto:adm@amadolibros.com" style="color: #1d4ed8; text-decoration: underline; margin-left: 4px;">adm@amadolibros.com</a></p>
+                </div>
+                <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 1.5rem; border-radius: 0.5rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: bold; color: #075985; margin-top: 0; margin-bottom: 1rem;">Horarios y Retiro Físico</h3>
+                    <p style="margin-bottom: 1rem; color: #0c4a6e;"><strong>Atención online:</strong> Lunes a Viernes de 9:00 a 17:00 hs.</p>
+                    <p style="color: #0c4a6e;"><strong>Retiro en persona (Pick-up):</strong> A pasos de Plaza Matriz, Ciudad Vieja. <strong>Es imprescindible la coordinación previa</strong> vía WhatsApp para asegurar que tu pedido esté listo.</p>
+                </div>
             </div>
-
-            <p style="color: #475569; line-height: 1.6; margin: 0;">Contáctanos a través de cualquiera de nuestros canales. Estamos disponibles para responder tus preguntas, consultas sobre productos y problemas relacionados con tu pedido.</p>
-        </div>
+        </section>
 
         <!-- SECCIÓN 2: ENVÍOS Y DEVOLUCIONES -->
-        <div id="envios" style="background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 2rem;">
-            <h2 style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">Política de Envíos y Devoluciones</h2>
-
-            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem;">Envíos</h3>
-            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                <li>Realizamos envíos a todo el Uruguay.</li>
-                <li>Los tiempos de entrega estimados son de <strong>24 a 48 horas hábiles</strong> una vez despachado el pedido.</li>
+        <section id="envios" style="background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); padding: 2rem; margin-bottom: 3rem; scroll-margin-top: 5rem;">
+            <h2 class="section-title" style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">2. Política de Envíos y Devoluciones</h2>
+            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 1rem;">Envíos a todo el Uruguay</h3>
+            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.7; margin-bottom: 1.5rem; space-y: 0.5rem;">
+                <li>Los envíos se realizan a todo el territorio nacional a través de DAC (Agencia Central).</li>
+                <li>El costo del envío es responsabilidad del comprador y se abona directamente a la agencia al momento de la entrega.</li>
+                <li>El tiempo de despacho de nuestro lado es de <strong>24 a 48 horas hábiles</strong> luego de la confirmación del pago.</li>
+                <li>DAC entrega generalmente en 24-72 horas hábiles. Te facilitaremos un número de seguimiento.</li>
             </ul>
-
-            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem;">Devoluciones y Cambios</h3>
-            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                <li>Si recibes un libro con fallas de fábrica o en mal estado, tienes un plazo máximo de <strong>10 días corridos</strong> desde la recepción para solicitar el cambio o devolución.</li>
-                <li>El libro debe estar en las mismas condiciones en las que fue entregado.</li>
+            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 1rem;">Devoluciones, Cambios y Reembolsos</h3>
+            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.7; margin-bottom: 1.5rem; space-y: 0.5rem;">
+                <li>Si un libro presenta <strong>fallas de fábrica</strong>, tienes un plazo de <strong>10 días corridos</strong> desde la recepción para solicitar el cambio o la devolución completa del dinero. En este caso, Amado Libros cubre todos los costos de envío.</li>
+                <li>Para cambios por otros motivos, el libro debe estar en perfectas condiciones, sin uso. El plazo es de 7 días y los costos de envío corren por cuenta del comprador.</li>
+                <li>Para iniciar cualquier proceso, contactanos por WhatsApp o Email con tu número de orden.</li>
+                <li>Los reembolsos se procesan al mismo medio de pago de la compra en un plazo máximo de <strong>5 días hábiles</strong> tras verificar el estado del libro devuelto. El costo del envío original no es reembolsable.</li>
             </ul>
-
-            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem;">Proceso de Reembolso</h3>
-            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                <li>Para iniciar una devolución, comunícate a nuestro WhatsApp (<strong>099 841 325</strong>) o correo (<strong>adm@amadolibros.com</strong>) con tu número de orden.</li>
-                <li>En caso de aplicar un reembolso, el dinero será devuelto a través del mismo método de pago utilizado en la compra en un plazo <strong>no mayor a 5 días hábiles</strong>.</li>
-            </ul>
-
-            <div style="background: #fef3c7; border-left: 4px solid #eab308; padding: 1rem; border-radius: 0.25rem;">
-                <p style="color: #92400e; margin: 0;"><strong>⚠️ Nota importante:</strong> Todos los reembolsos se procesan únicamente después de verificar el estado del libro.</p>
-            </div>
-        </div>
+        </section>
 
         <!-- SECCIÓN 3: TÉRMINOS Y CONDICIONES -->
-        <div id="terminos" style="background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 2rem;">
-            <h2 style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">Términos y Condiciones</h2>
-
-            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem;">Precios y Moneda</h3>
-            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                <li>Todos los precios expresados en www.amadolibros.com están en <strong>Pesos Uruguayos (UYU)</strong> e incluyen los impuestos correspondientes.</li>
+        <section id="terminos" style="background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); padding: 2rem; scroll-margin-top: 5rem;">
+            <h2 class="section-title" style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">3. Términos y Condiciones Generales</h2>
+            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.7; space-y: 1rem;">
+                <li><strong>Precios y Moneda:</strong> Todos los precios en www.amadolibros.com están en <strong>Pesos Uruguayos (UYU)</strong> e incluyen impuestos. Nos reservamos el derecho de modificar precios sin previo aviso.</li>
+                <li><strong>Disponibilidad de Stock:</strong> El stock se actualiza constantemente, pero es indicativo. Si un libro comprado no está disponible, te contactaremos para ofrecerte una alternativa o el reembolso inmediato.</li>
+                <li><strong>Privacidad de Datos:</strong> Tu privacidad es fundamental. Usamos tus datos personales <strong>exclusivamente para procesar y enviar tus pedidos</strong>. No los compartimos con terceros. Al comprar, aceptas esta política.</li>
+                <li><strong>Aceptación de Términos:</strong> Al utilizar nuestro sitio y realizar una compra, declaras haber leído y aceptado estos términos y condiciones.</li>
             </ul>
-
-            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem;">Disponibilidad de Stock</h3>
-            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                <li>El stock de los productos está sujeto a disponibilidad.</li>
-                <li>En caso de que un libro adquirido se encuentre sin stock por un error de sistema, nos contactaremos de inmediato para ofrecer un reemplazo o el reembolso total del dinero.</li>
-            </ul>
-
-            <h3 style="font-size: 1.25rem; font-weight: bold; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem;">Privacidad y Seguridad de Datos</h3>
-            <ul style="list-style: disc; padding-left: 1.5rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
-                <li>Amado Libros garantiza la privacidad y seguridad de los datos personales ingresados en el sitio.</li>
-                <li>Los datos personales serán utilizados <strong>únicamente para el procesamiento y envío de los pedidos</strong>.</li>
-                <li>No compartimos tu información con terceros sin tu consentimiento previo.</li>
-            </ul>
-
-            <div style="background: #dbeafe; border-left: 4px solid #0284c7; padding: 1rem; border-radius: 0.25rem;">
-                <p style="color: #0c4a6e; margin: 0;"><strong>ℹ️ Información legal:</strong> Al utilizar www.amadolibros.com, aceptas estos términos y condiciones.</p>
-            </div>
-        </div>
-
-        <!-- CTA FINAL -->
-        <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 0.5rem; padding: 2rem; text-align: center;">
-            <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 1rem;">¿Necesitás ayuda?</h3>
-            <p style="color: #475569; margin-bottom: 1.5rem;">Estamos aquí para ayudarte. Contactanos por WhatsApp.</p>
-            <a href="https://wa.me/59899841325" target="_blank" style="display: inline-block; background: #25d366; color: white; padding: 0.75rem 1.5rem; border-radius: 0.375rem; text-decoration: none; font-weight: 600; transition: background 0.3s;">
-                <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
-            </a>
-        </div>
-
+        </section>
     </div>
 
     <!-- FOOTER -->
     <footer style="background: #1e293b; color: white; padding: 3rem 1rem; border-top: 1px solid #334155; margin-top: 3rem;">
-        <div style="max-width: 1280px; margin: 0 auto;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; border-bottom: 1px solid #334155; padding-bottom: 2rem; margin-bottom: 2rem;">
-                <div>
-                    <h4 style="font-weight: bold; font-size: 1.125rem; margin-bottom: 1rem;">Amado Libros</h4>
-                    <p style="font-size: 0.875rem; color: #cbd5e1;">Tu próxima historia comienza aquí.</p>
-                </div>
-                <div>
-                    <h4 style="font-weight: bold; font-size: 1.125rem; margin-bottom: 1rem;">Navegación</h4>
-                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                        <li style="margin-bottom: 0.5rem;"><a href="/" style="color: #cbd5e1; text-decoration: none;">Inicio</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="/#grid" style="color: #cbd5e1; text-decoration: none;">Catálogo</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="#contacto" style="color: #cbd5e1; text-decoration: none;">Contacto</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 style="font-weight: bold; font-size: 1.125rem; margin-bottom: 1rem;">Legales</h4>
-                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                        <li style="margin-bottom: 0.5rem;"><a href="#terminos" style="color: #cbd5e1; text-decoration: none;">Términos y Condiciones</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="#envios" style="color: #cbd5e1; text-decoration: none;">Política de Envíos</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="/politicas" style="color: #cbd5e1; text-decoration: none;">Todas las Políticas</a></li>
-                    </ul>
-                </div>
+        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
+            <p style="font-size: 0.875rem; color: #94a3b8;">&copy; 2026 Amado Libros. Todos los derechos reservados.</p>
+            <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem; font-size: 0.875rem;">
+                <a href="/politicas#contacto" style="color: #cbd5e1; text-decoration: none;">Contacto</a>
+                <a href="/politicas#envios" style="color: #cbd5e1; text-decoration: none;">Envíos y Devoluciones</a>
+                <a href="/politicas#terminos" style="color: #cbd5e1; text-decoration: none;">Términos y Condiciones</a>
             </div>
-            <p style="text-align: center; font-size: 0.875rem; color: #64748b; margin: 0;">&copy; 2026 Amado Libros. Todos los derechos reservados.</p>
         </div>
     </footer>
 
