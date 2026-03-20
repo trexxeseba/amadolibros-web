@@ -44,7 +44,7 @@
       "logo": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
       "contactPoint": {
         "@type": "ContactPoint",
-        "telephone": "+598-99-123-456",
+        "telephone": "+59899841325",
         "contactType": "customer service"
       }
     }
@@ -524,6 +524,19 @@
             renderBooks(true);
             renderBestsellers(allBooks);
             updateWishlistBadge();
+
+            // Manejo de parámetros URL: ?q=busqueda y ?book=MLU123
+            const urlParams = new URLSearchParams(window.location.search);
+            const qParam = urlParams.get('q');
+            const bookParam = urlParams.get('book');
+            if (qParam) {
+                const headerInput = document.getElementById('headerSearch');
+                if (headerInput) headerInput.value = qParam;
+                filterBooks(qParam);
+                setTimeout(() => document.getElementById('grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+            } else if (bookParam) {
+                setTimeout(() => openModal(bookParam), 300);
+            }
         }
 
         function loadNextPage() {
@@ -555,10 +568,9 @@
 
             const fragment = document.createDocumentFragment();
             booksToRender.forEach((b, i) => {
-                const bookCard = document.createElement('div');
-
-// Inyectar Schema Markup para el producto
-injectProductSchema(book);             card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
+                const card = document.createElement('div');
+                injectProductSchema(b);
+                card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
                 card.style.animationDelay = `${Math.min(i * 30, 300)}ms`;
                 card.innerHTML = `
                     <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0 ? `window.open('https://wa.me/59899841325?text=${encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir? \ud83d\udcda')}', '_blank')` : `openModal('${b.id}')`}">
@@ -589,6 +601,7 @@ injectProductSchema(book);             card.className = 'book-card bg-white roun
                 fragment.appendChild(card);
             });
             grid.appendChild(fragment);
+
 
             // Paginación virtual: mostrar "Cargar más" si hay más resultados filtrados
             const hasMore = filteredBooks.length > (displayPage + 1) * DISPLAY_PAGE_SIZE;

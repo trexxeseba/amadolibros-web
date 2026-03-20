@@ -1,0 +1,6 @@
+# Cloudflare Pages — SPA Routing
+# Sirve index.html para cualquier ruta no encontrada (código 200, no redirect)
+# Las rutas /api/* las manejan las Functions
+
+/api/*  /api/:splat  200
+/*      /index.html  200
