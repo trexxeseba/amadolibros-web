@@ -594,11 +594,15 @@
             applyFilters();
         }
 
+        let _searchDebounceTimer = null;
         function onHeaderSearch(val) {
             const clearBtn = document.getElementById('headerSearchClear');
             if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+            // Autocomplete instantáneo (visual inmediato)
             showAutocomplete(val);
-            filterBooks(val);
+            // Filtrado del grid con debounce (16k libros, no ejecutar en cada tecla)
+            clearTimeout(_searchDebounceTimer);
+            _searchDebounceTimer = setTimeout(() => filterBooks(val), 120);
         }
 
         function injectProductSchema(book) {
@@ -761,24 +765,34 @@ function clearHeaderSearch() {
         // (Ver HTML del botón flotante abajo del modal)
 
         // =============================================
-        // AUTOCOMPLETE
+        // AUTOCOMPLETE — Fix 3
+        // Filtra sobre allLoadedBooks (stock primero, orden real)
+        // Debounce en onHeaderSearch, instantáneo en dropdown
+        // Navegación con flechas ↑↓ y Enter
         // =============================================
+        let _acIndex = -1; // índice de item seleccionado con teclado
+
         function showAutocomplete(query) {
             const dropdown = document.getElementById('autocompleteDropdown');
             if (!dropdown) return;
-            if (!query || query.length < 2 || !catalogLoaded) { dropdown.classList.add('hidden'); return; }
+            if (!query || query.length < 2 || !catalogLoaded) {
+                dropdown.classList.add('hidden');
+                _acIndex = -1;
+                return;
+            }
 
             const q = normalize(query);
-            const matches = allBooks.filter(b =>
+            // Filtrar sobre allLoadedBooks → en stock primero (ya ordenado en initializeCatalog)
+            const matches = allLoadedBooks.filter(b =>
                 normalize(b.title).includes(q) || normalize(b.author || '').includes(q)
             );
             const suggestions = matches.slice(0, 8);
-            if (suggestions.length === 0) { dropdown.classList.add('hidden'); return; }
+            if (suggestions.length === 0) { dropdown.classList.add('hidden'); _acIndex = -1; return; }
 
             const fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
             const escapeRx = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-            dropdown.innerHTML = suggestions.map(b => {
+            dropdown.innerHTML = suggestions.map((b, i) => {
                 const img = (b.pictures && b.pictures[0])
                     ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
                     : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '');
@@ -787,7 +801,7 @@ function clearHeaderSearch() {
                     ? `<span class="font-black text-brand-purple text-xs">${fmt.format(Math.round(b.price * 0.88))}</span><span class="text-[10px] text-green-600 ml-1 font-bold">-12%</span>`
                     : `<span class="text-[10px] text-blue-500 font-semibold">💬 Te lo conseguimos</span>`;
                 const highlighted = b.title.replace(new RegExp('(' + escapeRx + ')', 'gi'), '<strong class="text-brand-orange">$1</strong>');
-                return `<div class="flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors" onclick="selectBookFromDropdown('${b.id}')">
+                return `<div class="ac-item flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors" data-id="${b.id}" data-index="${i}" onmousedown="selectBookFromDropdown('${b.id}')">
                     <img src="${img}" alt="" class="w-9 h-12 object-cover rounded flex-shrink-0 bg-gray-100" onerror="this.style.display='none'">
                     <div class="flex-1 min-w-0">
                         <p class="text-xs font-semibold text-slate-800 line-clamp-2 leading-tight">${highlighted}</p>
@@ -798,23 +812,53 @@ function clearHeaderSearch() {
             }).join('');
 
             if (matches.length > 8) {
-                dropdown.innerHTML += `<div class="px-3 py-2.5 text-center border-t border-gray-100 bg-gray-50 cursor-pointer hover:bg-orange-50 transition-colors" onclick="document.getElementById('autocompleteDropdown').classList.add('hidden'); document.getElementById('grid').scrollIntoView({behavior:'smooth'})">
+                dropdown.innerHTML += `<div class="ac-footer px-3 py-2.5 text-center border-t border-gray-100 bg-gray-50 cursor-pointer hover:bg-orange-50 transition-colors" onmousedown="document.getElementById('autocompleteDropdown').classList.add('hidden'); document.getElementById('grid').scrollIntoView({behavior:'smooth'})">
                     <span class="text-xs text-brand-orange font-bold">Ver los ${matches.length.toLocaleString()} resultados para "${query}" →</span>
                 </div>`;
             }
 
+            _acIndex = -1;
             dropdown.classList.remove('hidden');
+        }
+
+        function _acHighlight(idx) {
+            const items = document.querySelectorAll('#autocompleteDropdown .ac-item');
+            items.forEach((el, i) => el.classList.toggle('bg-orange-50', i === idx));
+            _acIndex = idx;
         }
 
         function selectBookFromDropdown(id) {
             document.getElementById('autocompleteDropdown')?.classList.add('hidden');
+            _acIndex = -1;
             openModal(id);
         }
 
-        // Cerrar dropdown al click fuera
+        // Navegación ↑↓ Enter Escape desde el input
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('headerSearch')?.addEventListener('keydown', (e) => {
+                const dropdown = document.getElementById('autocompleteDropdown');
+                if (!dropdown || dropdown.classList.contains('hidden')) return;
+                const items = dropdown.querySelectorAll('.ac-item');
+                const total = items.length;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    _acHighlight((_acIndex + 1) % total);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    _acHighlight((_acIndex - 1 + total) % total);
+                } else if (e.key === 'Enter' && _acIndex >= 0) {
+                    e.preventDefault();
+                    const id = items[_acIndex]?.dataset.id;
+                    if (id) selectBookFromDropdown(id);
+                }
+            });
+        });
+
+        // Cerrar dropdown al click fuera (usa mousedown para que no compita con onmousedown de los items)
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#headerSearch') && !e.target.closest('#autocompleteDropdown')) {
                 document.getElementById('autocompleteDropdown')?.classList.add('hidden');
+                _acIndex = -1;
             }
         });
 
