@@ -137,7 +137,7 @@
                     <i class="fas fa-times text-xs"></i>
                 </button>
             </div>
-            <div id="autocompleteDropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden" style="max-height: 480px; overflow-y: auto;"></div>
+            <!-- dropdown movido a <body> para evitar stacking context del header sticky -->
         </div>
         <div class="flex items-center gap-3">
             <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro..." target="_blank" 
@@ -438,7 +438,7 @@
             statusEl.classList.add('hidden');
 
             // Intentar cargar desde sessionStorage (cache)
-            const cached = sessionStorage.getItem('amadoCatalogR2v2');
+            const cached = sessionStorage.getItem('amadoCatalogR2v3');
             if (cached) {
                 try {
                     const data = JSON.parse(cached);
@@ -480,7 +480,7 @@
                 totalBooks = data.total || allBooks.length;
                 catalogLoaded = true;
                 // Guardar en sessionStorage para carga instantánea
-                try { sessionStorage.setItem('amadoCatalogR2v2', JSON.stringify({ total: totalBooks, items: allBooks })); } catch(e) {}
+                try { sessionStorage.setItem('amadoCatalogR2v3', JSON.stringify({ total: totalBooks, items: allBooks })); } catch(e) {}
                 initializeCatalog();
             } catch (error) {
                 statusEl.innerHTML = '<div class="inline-block relative"><i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i></div><p class="text-slate-500 font-medium">Error de conexión. Reintentando...</p>';
@@ -772,6 +772,17 @@ function clearHeaderSearch() {
         // =============================================
         let _acIndex = -1; // índice de item seleccionado con teclado
 
+        // Posiciona el dropdown fixed alineado debajo del search bar
+        function positionDropdown() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const anchor = document.getElementById('headerSearch')?.closest('[class*="relative"]');
+            if (!dropdown || !anchor) return;
+            const r = anchor.getBoundingClientRect();
+            dropdown.style.top    = (r.bottom + 6) + 'px';
+            dropdown.style.left   = r.left + 'px';
+            dropdown.style.width  = r.width + 'px';
+        }
+
         function showAutocomplete(query) {
             const dropdown = document.getElementById('autocompleteDropdown');
             if (!dropdown) return;
@@ -818,8 +829,16 @@ function clearHeaderSearch() {
             }
 
             _acIndex = -1;
+            positionDropdown();
             dropdown.classList.remove('hidden');
         }
+
+        // Re-posicionar al hacer resize de ventana (mobile rotation, etc.)
+        window.addEventListener('resize', () => {
+            if (!document.getElementById('autocompleteDropdown')?.classList.contains('hidden')) {
+                positionDropdown();
+            }
+        });
 
         function _acHighlight(idx) {
             const items = document.querySelectorAll('#autocompleteDropdown .ac-item');
@@ -910,5 +929,14 @@ function clearHeaderSearch() {
         }
         setInterval(rotatePlaceholder, 3000);
     </script>
+
+    <!--
+        Dropdown fuera del header para evitar el stacking context de position:sticky+z-40.
+        Se posiciona con JS via getBoundingClientRect() — igual que Google/Select2.
+    -->
+    <div id="autocompleteDropdown"
+         class="hidden fixed bg-white rounded-2xl shadow-2xl border border-gray-100"
+         style="z-index: 9999; max-height: 480px; overflow-y: auto; overflow-x: hidden;">
+    </div>
 </body>
 </html>
