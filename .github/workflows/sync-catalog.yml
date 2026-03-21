@@ -1,8 +1,6 @@
 name: Sync Catalog
 
 on:
-  schedule:
-    - cron: '0 * * * *'  # CADA HORA
   workflow_dispatch:
 
 jobs:
