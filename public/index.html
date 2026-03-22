@@ -666,11 +666,21 @@ function clearHeaderSearch() {
         }
         function sortBooks() {
             const sortValue = document.getElementById('sortSelect').value;
+            if (sortValue === 'recent') {
+                filteredBooks.sort((a, b) => {
+                    const aStock = a.status === 'active' && a.available_quantity > 0;
+                    const bStock = b.status === 'active' && b.available_quantity > 0;
+                    if (aStock && !bStock) return -1;
+                    if (!aStock && bStock) return 1;
+                    return new Date(b.start_time) - new Date(a.start_time);
+                });
+                renderBooks(true);
+                return;
+            }
             filteredBooks.sort((a, b) => {
                 if (sortValue === 'priceAsc') return a.price - b.price;
                 if (sortValue === 'priceDesc') return b.price - a.price;
                 if (sortValue === 'alpha') return a.title.localeCompare(b.title);
-                return 0; // 'recent' is default, no sort needed as API returns recent first
             });
             renderBooks(true);
         }
