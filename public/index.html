@@ -163,8 +163,8 @@
         <div id="bestsellerSection" class="mb-8 hidden">
             <div class="flex items-center gap-2 mb-4">
                 <span class="text-2xl">🔥</span>
-                <h3 class="text-xl font-black text-slate-900">Más Vendidos</h3>
-                <span class="text-xs text-gray-400 font-medium ml-1">Los favoritos de nuestros clientes</span>
+                <h3 class="text-xl font-black text-slate-900">Novedades</h3>
+                <span class="text-xs text-gray-400 font-medium ml-1">Los últimos títulos de nuestro catálogo</span>
             </div>
             <div id="bestsellerGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3"></div>
         </div>
@@ -373,7 +373,11 @@
             
             const inStock = books.filter(b => b.status === 'active' && b.available_quantity > 0);
             const top = inStock
-                .sort((a, b) => (b.sold_quantity || 0) - (a.sold_quantity || 0))
+                .sort((a, b) => {
+                    const da = a.start_time ? new Date(a.start_time).getTime() : 0;
+                    const db = b.start_time ? new Date(b.start_time).getTime() : 0;
+                    return db - da;
+                })
                 .slice(0, 8);
             
             if (top.length === 0) return;
@@ -384,11 +388,9 @@
                     ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
                     : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '');
                 const permalink = b.permalink || '#';
-                const isPopular = (b.sold_quantity || 0) > 30;
                 return `<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('${b.id}')">
                     <div class="relative pt-[140%] bg-gray-100">
                         <img src="${img}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
-                        ${isPopular ? '<div class="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">🔥 Popular</div>' : ''}
                     </div>
                     <div class="p-2">
                         <p class="text-[10px] font-bold text-slate-800 line-clamp-2">${b.title}</p>
@@ -621,7 +623,7 @@ function clearHeaderSearch() {
             if (bestsellerSection) {
                 bestsellerSection.classList.toggle('hidden', activeSearch.length > 0);
             }
-            let result = allLoadedBooks; // filtrar sobre allLoadedBooks completo
+            let result = [...allLoadedBooks]; // copia: evita que sort() mute el array base
 
             if (activeSearch && activeSearch.length >= 1) {
                 const q = normalize(activeSearch);
@@ -681,6 +683,7 @@ function clearHeaderSearch() {
                 if (sortValue === 'priceAsc') return a.price - b.price;
                 if (sortValue === 'priceDesc') return b.price - a.price;
                 if (sortValue === 'alpha') return a.title.localeCompare(b.title);
+                return 0;
             });
             renderBooks(true);
         }
