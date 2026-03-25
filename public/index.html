@@ -3,20 +3,21 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Amado Libros | Librería Online Uruguay - +15.000 Títulos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amado Libros | Librería Online Uruguay — 16.000+ Títulos</title>
     <link rel="icon" type="image/png" href="/images/logo-amado.png">
     <meta name="description" content="Librería online en Uruguay con 16.000+ títulos. Envío en 24 a 48hs, -12% con transferencia. Si no lo tenemos, te lo conseguimos. Buscá por título, autor o ISBN.">
     <meta name="keywords" content="libros uruguay, librería online uruguay, comprar libros, libros montevideo, envio libros uruguay">
     <meta name="author" content="Amado Libros">
     <link rel="canonical" href="https://www.amadolibros.com/">
+    <meta name="robots" content="index, follow">
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://amadolibros.com">
+    <meta property="og:url" content="https://www.amadolibros.com/">
     <meta property="og:title" content="Amado Libros — La librería que te consigue todo">
     <meta property="og:description" content="16.000+ libros con envío en 24 a 48hs a todo Uruguay. -12% pagando con transferencia.">
-    <meta property="og:image" content="https://amadolibros.com/images/logo-amado.png">
+    <meta property="og:image" content="https://www.amadolibros.com/images/logo-amado.png">
     <meta property="og:locale" content="es_UY">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Amado Libros — La librería que te consigue todo">
@@ -42,7 +43,7 @@
       "@type": "Organization",
       "name": "Amado Libros",
       "url": "https://www.amadolibros.com/",
-      "logo": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
+      "logo": "https://www.amadolibros.com/images/logo-amado.png",
       "contactPoint": {
         "@type": "ContactPoint",
         "telephone": "+59899841325",
@@ -110,8 +111,11 @@
         @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
         /* Optimización para móviles */
         @media (max-width: 768px) { .book-card:hover { transform: none; } }
-        /* Mejora de rendimiento: will-change solo donde se necesita */
-        .book-card { will-change: transform; }
+        /* will-change: solo se activa en hover, no en todos los cards simultáneamente */
+        .book-card:hover { will-change: transform; }
+        .book-card { will-change: auto; }
+        /* Accesibilidad: oculto visualmente pero legible por crawlers y lectores */
+        .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col text-slate-900 pb-20 md:pb-0">
@@ -152,8 +156,21 @@
     <!-- Schema.org para Product y Book (hero eliminado) -->
     <script id="product-schema" type="application/ld+json"></script>
     
+    <!-- noscript: contenido mínimo para crawlers sin JS -->
+    <noscript>
+        <div style="max-width:900px;margin:2rem auto;padding:1rem;font-family:sans-serif;">
+            <h1>Amado Libros — Librería Online en Uruguay</h1>
+            <p>16.000+ títulos disponibles. Envíos a todo Uruguay en 24 a 48hs hábiles. Descuento del 12% pagando con transferencia.</p>
+            <p>Para ver el catálogo completo, habilitá JavaScript en tu navegador.</p>
+            <p>Contacto: <a href="https://wa.me/59899841325">WhatsApp 099 841 325</a> | <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a></p>
+            <p><a href="/politicas">Políticas de envío y devolución</a></p>
+        </div>
+    </noscript>
+
     <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full relative z-0">
+        <!-- H1 para SEO: visible en DOM pero no intrusivo visualmente -->
+        <h1 class="sr-only">Librería Online Uruguay — Amado Libros: 16.000+ títulos con envío a todo el país</h1>
         <div id="statusContainer" class="hidden py-20 text-center animate-fade-in">
             <div class="inline-block relative"><i class="fas fa-circle-notch fa-spin text-4xl text-brand-orange mb-4"></i></div>
             <p class="text-slate-500 font-medium">Cargando catálogo...</p>
