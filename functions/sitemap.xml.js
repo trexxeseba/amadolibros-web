@@ -1,39 +1,77 @@
 /**
  * functions/sitemap.xml.js
  *
- * Sitemap estático de páginas canónicas e indexables.
- * No incluye URLs de productos SPA (?book=MLU...) porque son JS-rendered
- * y no representan páginas independientes para Google.
- *
- * Para indexar productos individualmente se necesita SSG/SSR (fuera de alcance).
+ * Sitemap dinámico con URLs de todas las fichas de producto.
+ * Lee catalog.json desde R2 (vía URL pública + CF edge cache 1h).
+ * Genera /libro/:id/:slug para cada item activo.
  */
 
-export async function onRequest() {
-    const BASE = "https://www.amadolibros.com";
+const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
+const BASE        = 'https://www.amadolibros.com';
+
+function slugify(text) {
+    return (text || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 60);
+}
+
+async function fetchCatalog(ctx) {
+    const cache    = caches.default;
+    const cacheKey = new Request(CATALOG_URL);
+
+    let resp = await cache.match(cacheKey);
+    if (!resp) {
+        const fetched = await fetch(CATALOG_URL);
+        if (!fetched.ok) return null;
+        resp = new Response(fetched.body, {
+            status:  fetched.status,
+            headers: {
+                'Content-Type':  'application/json',
+                'Cache-Control': 'public, max-age=3600',
+            },
+        });
+        ctx.waitUntil(cache.put(cacheKey, resp.clone()));
+    }
+    try {
+        return await resp.json();
+    } catch {
+        return null;
+    }
+}
+
+export async function onRequest(ctx) {
     const today = new Date().toISOString().split('T')[0];
 
-    const pages = [
-        { loc: `${BASE}/`,          changefreq: "daily",   priority: "1.0" },
-        { loc: `${BASE}/politicas`, changefreq: "monthly", priority: "0.6" },
+    const staticPages = [
+        { loc: `${BASE}/`,         changefreq: 'daily',   priority: '1.0' },
+        { loc: `${BASE}/politicas`, changefreq: 'monthly', priority: '0.3' },
     ];
 
-    const urls = pages.map(p => `
-  <url>
-    <loc>${p.loc}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${p.changefreq}</changefreq>
-    <priority>${p.priority}</priority>
-  </url>`).join('');
+    let bookUrls = [];
+    const catalog = await fetchCatalog(ctx);
+    if (catalog && Array.isArray(catalog.items)) {
+        bookUrls = catalog.items.map(item => ({
+            loc:        `${BASE}/libro/${item.id}/${slugify(item.title)}`,
+            changefreq: 'weekly',
+            priority:   '0.7',
+        }));
+    }
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
-</urlset>`;
+    const allPages = [...staticPages, ...bookUrls];
+
+    const urls = allPages.map(p =>
+        `  <url>\n    <loc>${p.loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`
+    ).join('\n');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 
     return new Response(xml, {
         headers: {
-            "content-type": "application/xml;charset=UTF-8",
-            "cache-control": "public, max-age=86400",
+            'content-type':  'application/xml;charset=UTF-8',
+            'cache-control': 'public, max-age=3600',
         },
     });
 }
