@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amado Libros | Librería Online Uruguay — 16.000+ Títulos</title>
+    <title>Amado Libros | Libros importados y por encargo en Uruguay</title>
     <link rel="icon" type="image/png" href="/images/logo-amado.png">
-    <meta name="description" content="Librería online en Uruguay con 16.000+ títulos. Envío en 24 a 48hs, -12% con transferencia. Si no lo tenemos, te lo conseguimos. Buscá por título, autor o ISBN.">
+    <meta name="description" content="Librería online en Uruguay con 16.000+ títulos. Libros importados, por encargo y difíciles de ubicar. Buscá por título, autor o ISBN en Amado Libros.">
     <meta name="keywords" content="libros uruguay, librería online uruguay, comprar libros, libros montevideo, envio libros uruguay">
     <meta name="author" content="Amado Libros">
     <link rel="canonical" href="https://www.amadolibros.com/">
@@ -68,7 +68,7 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: { orange: '#FF5A1F', dark: '#0F172A', purple: '#7C3AED', mercadolibre: '#ffe600' }
+                        brand: { orange: '#FF5A1F', dark: '#0F172A', purple: '#7C3AED', mercadolibre: '#ffe600', cream: '#faf7f2', ink: '#1c1917' }
                     },
                     fontFamily: { sans: ['Inter', 'sans-serif'] }
                 }
@@ -84,7 +84,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" media="print" onload="this.media='all'">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: #faf7f2; -webkit-tap-highlight-color: transparent; }
         .glass-header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.1); }
         .glass-modal { background: #ffffff; }
         .glass-search { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
@@ -116,6 +116,12 @@
         .book-card { will-change: auto; }
         /* Accesibilidad: oculto visualmente pero legible por crawlers y lectores */
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+        /* Hero section */
+        .hero-section { background: linear-gradient(135deg, #faf7f2 0%, #f0ebe0 100%); }
+        /* Cards editorial feel */
+        .book-card { background: #fffdf9; }
+        /* Skeleton sobre fondo cálido */
+        .skeleton { background: linear-gradient(90deg, #ece8e1 25%, #ddd8cf 50%, #ece8e1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col text-slate-900 pb-20 md:pb-0">
@@ -169,27 +175,64 @@
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full relative z-0">
-        <!-- H1 para SEO: visible en DOM pero no intrusivo visualmente -->
-        <h1 class="sr-only">Librería Online Uruguay — Amado Libros: 16.000+ títulos con envío a todo el país</h1>
+        <!-- Hero Section -->
+        <section class="hero-section rounded-2xl px-6 py-10 mb-8 border border-stone-200">
+            <div class="max-w-2xl">
+                <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">Libros importados y por encargo en Uruguay</h1>
+                <p class="text-base text-stone-600 mb-6 max-w-xl">Más de 16.000 títulos. Entregamos hoy en Montevideo — coordinás la hora. Enviamos a todo el Uruguay en 24 a 48hs. ¿No lo encontrás? Te lo conseguimos.</p>
+                <div class="flex flex-wrap gap-3 mb-7">
+                    <button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})"
+                        class="inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-700 transition-colors text-sm">
+                        <i class="fas fa-book-open text-sm"></i> Explorar catálogo
+                    </button>
+                    <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro..." target="_blank"
+                        class="inline-flex items-center gap-2 bg-white border border-stone-300 text-stone-800 font-bold px-6 py-3 rounded-full hover:bg-stone-50 transition-colors text-sm">
+                        <i class="fab fa-whatsapp text-green-600"></i> Pedir un libro
+                    </a>
+                </div>
+                <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-stone-500 border-t border-stone-200 pt-4">
+                    <span class="flex items-center gap-1.5"><i class="fas fa-bolt text-brand-purple text-xs"></i> Entrega hoy en Montevideo — coordinás la hora</span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-truck text-brand-purple text-xs"></i> Envíos a todo Uruguay en 24–48hs</span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-globe-americas text-brand-purple text-xs"></i> Libros importados y por encargo</span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-headset text-brand-purple text-xs"></i> Atención personalizada</span>
+                </div>
+            </div>
+        </section>
+
         <div id="statusContainer" class="hidden py-20 text-center animate-fade-in">
             <div class="inline-block relative"><i class="fas fa-circle-notch fa-spin text-4xl text-brand-orange mb-4"></i></div>
             <p class="text-slate-500 font-medium">Cargando catálogo...</p>
         </div>
 
-        <!-- SECCIÓN MÁS VENDIDOS -->
+        <!-- SECCIÓN NOVEDADES -->
         <div id="bestsellerSection" class="mb-8 hidden">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="text-2xl">🔥</span>
-                <h3 class="text-xl font-black text-slate-900">Novedades</h3>
-                <span class="text-xs text-gray-400 font-medium ml-1">Los últimos títulos de nuestro catálogo</span>
+            <div class="flex items-center gap-3 mb-4">
+                <h3 class="text-lg font-black text-slate-900">Novedades</h3>
+                <div class="flex-1 h-px bg-stone-200"></div>
+                <span class="text-xs text-stone-400 font-medium">Últimas incorporaciones</span>
             </div>
             <div id="bestsellerGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3"></div>
         </div>
+
+        <!-- SECCIÓN LO CONSEGUIMOS PARA VOS -->
+        <!-- Nota técnica: esta sección muestra items con status=paused o sin stock inmediato.
+             No se usa para afirmar rareza editorial. Solo indica que no están disponibles
+             para entrega inmediata y pueden conseguirse por encargo. -->
+        <div id="hardToFindSection" class="mb-10 hidden">
+            <div class="flex items-center gap-3 mb-3">
+                <h3 class="text-lg font-black text-slate-900">Lo conseguimos para vos</h3>
+                <div class="flex-1 h-px bg-stone-200"></div>
+            </div>
+            <p class="text-sm text-stone-600 max-w-2xl mb-2">Cada semana recibimos títulos desde España, Argentina, Estados Unidos y otros mercados. Si no está en plaza, podemos conseguirlo para vos por encargo.</p>
+            <p class="text-sm text-stone-500 max-w-2xl mb-5">Si te interesa lo último en una temática, un material difícil de ubicar o una búsqueda más especializada, consultanos sin compromiso. Nos gusta buscar bien y orientarte con criterio.</p>
+            <div id="hardToFindGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4"></div>
+            <p class="text-xs text-stone-400 italic">Los tiempos dependen del país de origen y de la disponibilidad del título.</p>
+        </div>
         
         <div id="mainContent">
-            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-gray-100">
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 bg-[#faf7f2]/90 backdrop-blur-md p-4 rounded-xl shadow-sm border border-stone-200">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fas fa-layer-group text-brand-orange"></i> Explorar Colección</h3>
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fas fa-layer-group text-brand-purple"></i> Explorar Colección</h3>
                     <p id="counter" class="text-slate-500 text-xs">Miles de historias a tu alcance</p>
                 </div>
 
@@ -414,8 +457,8 @@
                     ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
                     : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '');
                 const permalink = b.permalink || '#';
-                return `<div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('${b.id}')">
-                    <div class="relative pt-[140%] bg-gray-100">
+                return `<div class="bg-[#fffdf9] rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('${b.id}')">
+                    <div class="relative pt-[140%] bg-stone-100">
                         <img src="${img}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
                     </div>
                     <div class="p-2">
@@ -425,6 +468,34 @@
                 </div>`;
             }).join('');
             
+            section.classList.remove('hidden');
+        }
+
+        function renderHardToFind(books) {
+            const section = document.getElementById('hardToFindSection');
+            const grid = document.getElementById('hardToFindGrid');
+            if (!section || !grid || !books || books.length === 0) return;
+
+            const paused = books.filter(b => b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0);
+            const top = paused.slice(0, 8);
+            if (top.length === 0) return;
+
+            grid.innerHTML = top.map(b => {
+                const img = (b.pictures && b.pictures[0])
+                    ? b.pictures[0].replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
+                    : (b.thumbnail ? b.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-V.jpg') : '');
+                return `<div class="bg-[#fffdf9] rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all group" onclick="openModal('${b.id}')">
+                    <div class="relative pt-[140%] bg-stone-100">
+                        <img src="${img}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                        <div class="absolute bottom-0 left-0 w-full bg-slate-900/75 text-white text-[9px] font-bold text-center py-1 tracking-wide">POR ENCARGO</div>
+                    </div>
+                    <div class="p-2">
+                        <p class="text-[10px] font-bold text-slate-800 line-clamp-2">${b.title}</p>
+                        ${b.author ? `<p class="text-[10px] text-stone-400 mt-0.5 line-clamp-1">${b.author}</p>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
             section.classList.remove('hidden');
         }
 
@@ -449,8 +520,8 @@
 
             // Mostrar skeletons
             grid.innerHTML = Array.from({ length: 20 }).map(() => `
-                <div class="book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
-                    <div class="relative pt-[140%] bg-gray-200 skeleton"></div>
+                <div class="book-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="relative pt-[140%] bg-stone-200 skeleton"></div>
                     <div class="p-3 flex flex-col flex-grow">
                         <div class="h-4 bg-gray-200 rounded w-3/4 skeleton mb-2"></div>
                         <div class="h-3 bg-gray-200 rounded w-1/2 skeleton"></div>
@@ -499,6 +570,7 @@
             document.getElementById('sortSelect').value = 'recent';
             renderBooks(true);
             renderBestsellers(allBooks);
+            renderHardToFind(allBooks);
             updateWishlistBadge();
 
             // Manejo de parámetros URL: ?q=busqueda y ?book=MLU123
@@ -546,7 +618,7 @@
             booksToRender.forEach((b, i) => {
                 const card = document.createElement('div');
                 injectProductSchema(b);
-                card.className = 'book-card bg-white rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
+                card.className = 'book-card rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
                 card.style.animationDelay = `${Math.min(i * 30, 300)}ms`;
                 card.innerHTML = `
                     <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0 ? `window.open('https://wa.me/59899841325?text=${encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir? \ud83d\udcda')}', '_blank')` : `openModal('${b.id}')`}">
@@ -570,7 +642,7 @@
                             </div>
                             ${b.status === 'paused' 
                                 ? '<a href="https://wa.me/59899841325?text=' + encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir?') + '" target="_blank" class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0" title="Pedir por WhatsApp"><i class=\'fab fa-whatsapp text-sm\'></i></a>'
-                                : '<button onclick="openModal(\'' + b.id + '\')" class="bg-brand-orange text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors flex-shrink-0"><i class=\'fas fa-plus\'></i></button>'}
+                                : '<button onclick="openModal(\'' + b.id + '\')" class="bg-slate-900 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors flex-shrink-0"><i class=\'fas fa-plus\'></i></button>'}
                         </div>
                     </div>
                 `;
@@ -648,6 +720,10 @@ function clearHeaderSearch() {
             const bestsellerSection = document.getElementById('bestsellerSection');
             if (bestsellerSection) {
                 bestsellerSection.classList.toggle('hidden', activeSearch.length > 0);
+            }
+            const hardToFindSection = document.getElementById('hardToFindSection');
+            if (hardToFindSection) {
+                hardToFindSection.classList.toggle('hidden', activeSearch.length > 0);
             }
             let result = [...allLoadedBooks]; // copia: evita que sort() mute el array base
 
