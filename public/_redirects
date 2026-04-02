@@ -1,6 +1,22 @@
 # Cloudflare Pages — SPA Routing
-# Sirve index.html para cualquier ruta no encontrada (código 200, no redirect)
-# Las rutas /api/* las manejan las Functions
+#
+# IMPORTANTE: Las rutas manejadas por Pages Functions (functions/) tienen
+# PRIORIDAD sobre estas reglas. Las siguientes rutas son gestionadas por
+# Functions y NUNCA alcanzan _redirects:
+#   /libro/*        → functions/libro/[[path]].js      (SSR fichas de producto)
+#   /catalogo       → functions/catalogo.js            (índice SSR crawlable)
+#   /sitemap.xml    → functions/sitemap.xml.js         (sitemap dinámico)
+#   /feed.xml       → functions/feed.xml.js            (feed GMC)
+#   /api/*          → functions/api/[[route]].js       (API catálogo + sync)
+#   /producto/*     → functions/producto/[[path]].js   (410 legacy URLs)
+#
+# RIESGO: Si una Function falla en el deploy (error de compilación), la regla
+# /* de abajo serviría index.html con HTTP 200 para rutas como /sitemap.xml.
+# Google recibiría HTML en lugar de XML → el sitemap quedaría silenciosamente roto.
+# Monitorear con: curl -I https://www.amadolibros.com/sitemap.xml | grep Content-Type
+#
+# La línea /api/* /api/:splat 200 fue eliminada en seo-p0-hardening porque era
+# dead code: Functions manejan /api/ antes de que _redirects se evalúe.
 
-/api/*  /api/:splat  200
+# SPA fallback: cualquier ruta no manejada por Functions sirve index.html (200)
 /*      /index.html  200

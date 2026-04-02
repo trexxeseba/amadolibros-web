@@ -1,18 +1,40 @@
 /**
  * functions/feed.xml.js
- * 
- * Tarea 2: Feed para Google Merchant Center (v2 - Estructura KV corregida)
- * 
- * CORRECCIONES:
- * 1. Usa la estructura real del KV: catalog_index + item:MLU...
- * 2. Procesa los items en lotes para no exceder el tiempo de CPU del Worker.
- * 3. Fuerza el dominio canónico https://www.amadolibros.com.
- * 
+ *
+ * Feed RSS para Google Merchant Center (v3 — links canónicos amadolibros.com)
+ *
+ * CORRECCIONES v3:
+ * 1. g:link apunta a /libro/{id}/{slug} en amadolibros.com (antes: permalink ML).
+ *    Razón: Google Shopping debe dirigir tráfico al sitio, no a MercadoLibre.
+ * 2. slugify() agregado — debe mantenerse idéntico al de libro/[[path]].js y
+ *    sitemap.xml.js. Si se cambia uno, cambiar los tres.
+ *
+ * ADVERTENCIA — DIFERENCIA DE FUENTES DE DATOS:
+ *   Este feed lee de KV (AMADO_KV, vía catalog_index + item:MLU...).
+ *   Las fichas de producto SSR y el sitemap leen de R2 (catalog.json).
+ *   Si ambas fuentes tienen tiempos de sincronización distintos, un item
+ *   puede aparecer en el feed con un slug generado desde el título en KV
+ *   que difiera del slug generado desde el título en R2 (si el título fue
+ *   editado en ML entre syncs). Resultado: g:link puede apuntar a una URL
+ *   diferente de la canonical del sitemap. Riesgo bajo en la práctica
+ *   (los títulos rara vez cambian), pero documentado aquí.
+ *
  * ESTRUCTURA DEL KV:
  *   catalog_index        → { total: N, chunks: M }
  *   catalog_index:0      → ["MLU123", "MLU456", ...]
  *   item:MLU123          → { id, title, price, currency, permalink, thumbnail, stock, condition }
  */
+
+// Genera el slug de URL a partir del título.
+// CRÍTICO: debe mantenerse idéntico al slugify de libro/[[path]].js y sitemap.xml.js.
+function slugify(text) {
+    return (text || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 60);
+}
 
 export async function onRequest(context) {
     const KV = context.env.AMADO_KV;
@@ -69,7 +91,7 @@ export async function onRequest(context) {
         <g:id>${escapeXml(item.id)}</g:id>
         <g:title>${escapeXml(item.title || '')}</g:title>
         <g:description>${escapeXml(item.title || '')}</g:description>
-        <g:link>${escapeXml(item.permalink)}</g:link>
+        <g:link>${escapeXml(`${CANONICAL_BASE_URL}/libro/${item.id}/${slugify(item.title || '')}`)}</g:link>
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
