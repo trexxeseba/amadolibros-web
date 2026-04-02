@@ -223,7 +223,7 @@ function renderPage(item, slug) {
 
 <header>
   <a href="/">📚 Amado Libros</a>
-  <span>La librería que te consigue todo</span>
+  <span>Tu librería para libros difíciles de ubicar</span>
 </header>
 
 <nav>
