@@ -1,29 +1,29 @@
 /**
  * functions/feed.xml.js
  *
- * Feed RSS para Google Merchant Center (v3 — links canónicos amadolibros.com)
+ * Feed RSS para Google Merchant Center (v4 — fuente única: R2 catalog.json)
  *
- * CORRECCIONES v3:
- * 1. g:link apunta a /libro/{id}/{slug} en amadolibros.com (antes: permalink ML).
- *    Razón: Google Shopping debe dirigir tráfico al sitio, no a MercadoLibre.
- * 2. slugify() agregado — debe mantenerse idéntico al de libro/[[path]].js y
- *    sitemap.xml.js. Si se cambia uno, cambiar los tres.
+ * CAMBIO v4:
+ *   Migrado de KV (catalog_index + item:MLU...) a R2 catalog.json.
+ *   Razón: el catálogo real está en R2. La fuente KV estaba desactualizada
+ *   porque el sync actual (Pages Function) escribe catalog:full, no catalog_index
+ *   + item:*, que era el esquema de una versión anterior del Worker.
+ *   Resultado: el feed leía datos vacíos o stale de KV.
  *
- * ADVERTENCIA — DIFERENCIA DE FUENTES DE DATOS:
- *   Este feed lee de KV (AMADO_KV, vía catalog_index + item:MLU...).
- *   Las fichas de producto SSR y el sitemap leen de R2 (catalog.json).
- *   Si ambas fuentes tienen tiempos de sincronización distintos, un item
- *   puede aparecer en el feed con un slug generado desde el título en KV
- *   que difiera del slug generado desde el título en R2 (si el título fue
- *   editado en ML entre syncs). Resultado: g:link puede apuntar a una URL
- *   diferente de la canonical del sitemap. Riesgo bajo en la práctica
- *   (los títulos rara vez cambian), pero documentado aquí.
+ *   Ahora usa exactamente la misma fuente que catalogo.js, sitemap.xml.js
+ *   y libro/[[path]].js: R2 catalog.json vía URL pública + CF edge cache.
+ *   Esto elimina la posibilidad de desincronía de slugs entre feed y fichas.
  *
- * ESTRUCTURA DEL KV:
- *   catalog_index        → { total: N, chunks: M }
- *   catalog_index:0      → ["MLU123", "MLU456", ...]
- *   item:MLU123          → { id, title, price, currency, permalink, thumbnail, stock, condition }
+ * ESTRUCTURA DE catalog.json (R2):
+ *   { "items": [ { id, title, author, price, status, available_quantity,
+ *                  thumbnail, pictures, permalink, start_time }, ... ] }
+ *   Solo contiene items con status == "active".
+ *
+ * slugify() CRÍTICO: debe mantenerse idéntico al de libro/[[path]].js y
+ *   sitemap.xml.js. Si se cambia uno, cambiar los tres.
  */
+
+const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 
 // Genera el slug de URL a partir del título.
 // CRÍTICO: debe mantenerse idéntico al slugify de libro/[[path]].js y sitemap.xml.js.
@@ -36,57 +36,68 @@ function slugify(text) {
         .substring(0, 60);
 }
 
+// Idéntico al fetchCatalog de catalogo.js y sitemap.xml.js.
+// Usa CF edge cache con TTL 1h para no hacer fetch a R2 en cada request.
+async function fetchCatalog(ctx) {
+    const cache    = caches.default;
+    const cacheKey = new Request(CATALOG_URL);
+
+    let resp = await cache.match(cacheKey);
+    if (!resp) {
+        const fetched = await fetch(CATALOG_URL);
+        if (!fetched.ok) return null;
+        resp = new Response(fetched.body, {
+            status:  fetched.status,
+            headers: {
+                'Content-Type':  'application/json',
+                'Cache-Control': 'public, max-age=3600',
+            },
+        });
+        ctx.waitUntil(cache.put(cacheKey, resp.clone()));
+    }
+    try {
+        return await resp.json();
+    } catch {
+        return null;
+    }
+}
+
 export async function onRequest(context) {
-    const KV = context.env.AMADO_KV;
     const CANONICAL_BASE_URL = "https://www.amadolibros.com";
     const SITE_TITLE = "Amado Libros";
     // Límite de items para el feed (Google procesa hasta 10M pero el Worker tiene límite de CPU)
     const MAX_ITEMS = 5000;
 
     try {
-        // 1. Leer el índice maestro
-        const indexMeta = await KV.get('catalog_index', { type: 'json' });
+        const catalog = await fetchCatalog(context);
+        const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
 
-        if (!indexMeta || !indexMeta.total || indexMeta.total === 0) {
+        if (items.length === 0) {
             return new Response(generateEmptyFeed(CANONICAL_BASE_URL, SITE_TITLE), {
                 headers: { "content-type": "application/xml;charset=UTF-8", "cache-control": "public, max-age=3600" },
             });
         }
 
-        // 2. Cargar todos los IDs desde los chunks
-        let allIds = [];
-        const numChunks = indexMeta.chunks || 1;
-        for (let i = 0; i < numChunks; i++) {
-            const chunk = await KV.get(`catalog_index:${i}`, { type: 'json' });
-            if (chunk && Array.isArray(chunk)) {
-                allIds = allIds.concat(chunk);
-            }
-        }
-
-        // Limitar para no exceder el tiempo de CPU del Worker
-        const idsToProcess = allIds.slice(0, MAX_ITEMS);
-
-        // 3. Cargar los detalles de cada item en lotes de 50
-        const BATCH_SIZE = 50;
+        const itemsToProcess = items.slice(0, MAX_ITEMS);
         let feedItems = '';
-        for (let i = 0; i < idsToProcess.length; i += BATCH_SIZE) {
-            const batch = idsToProcess.slice(i, i + BATCH_SIZE);
-            const items = await Promise.all(
-                batch.map(id => KV.get(`item:${id}`, { type: 'json' }).catch(() => null))
-            );
 
-            for (const item of items) {
-                if (!item || !item.id || !item.permalink) continue;
+        for (const item of itemsToProcess) {
+            if (!item || !item.id || !item.permalink) continue;
 
-                const availability = (item.stock > 0) ? 'in stock' : 'out of stock';
-                const price = item.price ? `${item.price} ${item.currency || 'UYU'}` : null;
-                if (!price) continue; // Omitir items sin precio
+            // catalog.json usa available_quantity (no stock); currency no está presente en R2
+            const stock    = item.available_quantity ?? item.stock ?? 0;
+            const currency = item.currency ?? 'UYU';
+            const cond     = item.condition ?? 'used';
 
-                const imageLink = item.thumbnail
-                    ? item.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
-                    : '';
+            const availability = (stock > 0) ? 'in stock' : 'out of stock';
+            const price = item.price ? `${item.price} ${currency}` : null;
+            if (!price) continue; // Omitir items sin precio
 
-                feedItems += `
+            const imageLink = item.thumbnail
+                ? item.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
+                : '';
+
+            feedItems += `
     <item>
         <g:id>${escapeXml(item.id)}</g:id>
         <g:title>${escapeXml(item.title || '')}</g:title>
@@ -95,11 +106,10 @@ export async function onRequest(context) {
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
-        <g:condition>${escapeXml(item.condition || 'used')}</g:condition>
+        <g:condition>${escapeXml(cond)}</g:condition>
         <g:identifier_exists>no</g:identifier_exists>
         <g:brand>Amado Libros</g:brand>
     </item>`;
-            }
         }
 
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -119,7 +129,7 @@ export async function onRequest(context) {
         });
 
     } catch (error) {
-        console.error("Error generando el feed GMC (v2):", error);
+        console.error("Error generando el feed GMC (v4):", error);
         return new Response(generateEmptyFeed(CANONICAL_BASE_URL, SITE_TITLE), {
             status: 500,
             headers: { "content-type": "application/xml;charset=UTF-8" },
