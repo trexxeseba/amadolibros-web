@@ -148,43 +148,70 @@ async function handleSyncCatalog(env, url) {
   if (syncLock) return;
   await env.AMADO_KV.put('sync:lock', 'true', { expirationTtl: 600 });
 
+  // TEMP DEBUG: write debug fields into syncState so /api/status reveals exact failure point
+  const dbg = { phase: 'init', iteration: 0, last_step: 'lock_acquired', last_url: null, last_successful_write: null, last_error_message: null, last_error_stack_short: null, heartbeat: Date.now() };
+  const persistDebug = async (state) => { try { await env.AMADO_KV.put('sync:state', JSON.stringify({ ...state, debug: dbg })); } catch(e) {} };
+
   try {
+    dbg.last_step = 'before_auth';
     const accessToken = await getAccessToken(env);
+    dbg.last_step = 'auth_acquired';
+
     let state = await env.AMADO_KV.get('sync:state', { type: 'json' }) || { offset: 0, allItemIds: [], total: 0, allItems: [] };
+    dbg.last_step = 'state_loaded';
+    await persistDebug(state);
 
     // 1. OBTENER IDs
     // Chained self-fetch via fetch(url) inside waitUntil is unreliable in CF Pages Functions;
     // the instance may be terminated before the chained request runs. Use a loop instead.
+    dbg.phase = 'phase1_ids';
     while (state.offset < state.total || state.total === 0) {
+      dbg.iteration++;
+      dbg.heartbeat = Date.now();
       const initialUrl = `https://api.mercadolibre.com/users/${USER_ID}/items/search?offset=${state.offset}&limit=100`;
+      dbg.last_url = initialUrl;
+      dbg.last_step = 'before_ml_fetch';
+      await persistDebug(state);
+
       const res = await fetch(initialUrl, { headers: { 'Authorization': `Bearer ${accessToken}` } });
+      dbg.last_step = `ml_fetch_response_${res.status}`;
       if (!res.ok) throw new Error(`Error obteniendo IDs en offset ${state.offset}: ${res.status}`);
       const data = await res.json();
+      dbg.last_step = 'json_parsed';
 
       if (state.offset === 0) state.total = data.paging?.total || 0;
       if (data.results) {
         state.allItemIds.push(...data.results);
         state.offset += data.results.length;
       }
+      dbg.last_step = 'items_appended';
 
-      await env.AMADO_KV.put('sync:state', JSON.stringify(state));
+      dbg.last_successful_write = new Date().toISOString();
+      await persistDebug(state);
+      dbg.last_step = 'kv_written';
 
       if (state.total !== 0 && state.offset >= state.total) break;
+      dbg.last_step = 'loop_continue';
     }
 
     // 2. OBTENER DETALLES DE PRODUCTOS
+    dbg.phase = 'phase2_details';
+    dbg.iteration = 0;
     const batchSize = 20;
     while (state.allItems.length < state.allItemIds.length) {
+      dbg.iteration++;
+      dbg.heartbeat = Date.now();
       const CHUNK_SIZE = 500;
       const unprocessedIds = state.allItemIds.slice(state.allItems.length, state.allItems.length + CHUNK_SIZE);
       if (unprocessedIds.length === 0) break;
 
+      dbg.last_step = `phase2_chunk_start_${state.allItems.length}`;
       for (let i = 0; i < unprocessedIds.length; i += batchSize) {
         const batch = unprocessedIds.slice(i, i + batchSize);
-        const detailRes = await fetch(
-          `https://api.mercadolibre.com/items?ids=${batch.join(',')}&attributes=id,title,price,status,available_quantity,thumbnail,pictures,permalink,condition,currency_id`,
-          { headers: { 'Authorization': `Bearer ${accessToken}` } }
-        );
+        const detailUrl = `https://api.mercadolibre.com/items?ids=${batch.join(',')}&attributes=id,title,price,status,available_quantity,thumbnail,pictures,permalink,condition,currency_id`;
+        dbg.last_url = detailUrl.substring(0, 80);
+        dbg.last_step = `phase2_batch_${i}`;
+        const detailRes = await fetch(detailUrl, { headers: { 'Authorization': `Bearer ${accessToken}` } });
         if (detailRes.ok) {
           const details = await detailRes.json();
           for (const item of details) {
@@ -200,10 +227,12 @@ async function handleSyncCatalog(env, url) {
           }
         }
       }
-      await env.AMADO_KV.put('sync:state', JSON.stringify(state));
+      dbg.last_successful_write = new Date().toISOString();
+      await persistDebug(state);
     }
 
     // 3. FINALIZAR Y GUARDAR
+    dbg.phase = 'phase3_finalize';
     await env.AMADO_KV.put('catalog:full', JSON.stringify(state.allItems), { expirationTtl: 604800 });
     const metadata = {
       total_items: state.allItems.length, total_in_ml: state.total,
@@ -213,6 +242,9 @@ async function handleSyncCatalog(env, url) {
     await env.AMADO_KV.delete('sync:state');
 
   } catch (error) {
+    dbg.last_error_message = error.message;
+    dbg.last_error_stack_short = (error.stack || '').split('\n').slice(0,3).join(' | ');
+    try { const st = await env.AMADO_KV.get('sync:state', { type: 'json' }) || {}; await env.AMADO_KV.put('sync:state', JSON.stringify({ ...st, debug: dbg })); } catch(e2) {}
     console.error('Error crítico en sync:', error.message);
   } finally {
     await env.AMADO_KV.delete('sync:lock');
