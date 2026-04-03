@@ -339,6 +339,10 @@ async function handleSyncCatalog(env, url) {
 
 async function handleStatus(env, url) {
   try {
+    if (!env.AMADO_KV) {
+      return new Response(JSON.stringify({ error: 'KV binding not available', hint: 'Configure AMADO_KV in CF Dashboard > Pages > Settings > Functions' }),
+        { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
     const envPrefix = getEnvPrefix(url);
     const keys = kvKeys(envPrefix);
 
@@ -366,6 +370,10 @@ async function handleStatus(env, url) {
 
 async function handleDebugSync(env, url) {
   try {
+    if (!env.AMADO_KV) {
+      return new Response(JSON.stringify({ error: 'KV binding not available', hint: 'Configure AMADO_KV in CF Dashboard > Pages > Settings > Functions' }),
+        { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
     const envPrefix = getEnvPrefix(url);
     const keys = kvKeys(envPrefix);
 
