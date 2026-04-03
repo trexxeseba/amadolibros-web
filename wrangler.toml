@@ -5,6 +5,9 @@
 name = "amadolibros-web"
 compatibility_date = "2024-09-23"
 
+# Requerido para que wrangler.toml sea reconocido por Pages deploy
+pages_build_output_dir = "./public"
+
 # Variables de entorno no sensibles
 [vars]
 APP_ID = "4741021817925208"
@@ -14,14 +17,3 @@ USER_ID = "440298103"
 [[kv_namespaces]]
 binding = "AMADO_KV"
 id = "6ea0ff4682d647118442a24fe384abc4"
-
-# Archivos estáticos del sitio (pages_build_output_dir requerido para que wrangler.toml sea reconocido por Pages)
-pages_build_output_dir = "./public"
-
-[site]
-bucket = "./public"
-
-# === CRON: Sincronización automática cada 6 horas ===
-# Ejecuta el sync automáticamente para mantener precios actualizados
-[[triggers.crons]]
-cron = "0 */6 * * *"
