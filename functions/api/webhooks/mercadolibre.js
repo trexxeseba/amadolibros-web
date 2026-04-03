@@ -125,40 +125,12 @@ async function handleWebhookAsync(payload, env) {
 }
 
 async function handleItemsChange(itemId, env) {
-  console.log(`📦 Item cambió: ${itemId}`);
-
-  try {
-    const accessToken = await getAccessToken(env);
-    
-    const response = await fetch(
-      `https://api.mercadolibre.com/items/${itemId}?attributes=id,title,price,status,available_quantity`,
-      { headers: { 'Authorization': `Bearer ${accessToken}` } }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}`);
-    }
-
-    const item = await response.json();
-
-    await env.AMADO_KV.put(
-      `item:${itemId}`,
-      JSON.stringify({
-        id: item.id,
-        title: item.title,
-        price: item.price,
-        status: item.status,
-        available_quantity: item.available_quantity,
-        updated_at: new Date().toISOString()
-      }),
-      { expirationTtl: 604800 }
-    );
-
-    console.log(`✅ Item actualizado: ${item.id}`);
-
-  } catch (error) {
-    console.error(`❌ Error actualizando item ${itemId}:`, error.message);
-  }
+  // La escritura de item:MLU* en KV fue eliminada: ese esquema (catalog_index + item:*)
+  // pertenece a una versión anterior del Worker y ya no tiene consumidores.
+  // El catálogo vive en R2 (catalog.json). Las actualizaciones individuales de items
+  // serán responsabilidad del Worker de sync en la próxima arquitectura.
+  // El audit log del webhook (webhook:topic:id) sigue registrando el evento.
+  console.log(`📦 Item cambió: ${itemId} — catalog update deferred to sync Worker`);
 }
 
 async function handleOrdersChange(orderId, env) {

@@ -6,6 +6,9 @@
 const APP_ID = '4741021817925208';
 const USER_ID = '440298103';
 
+// Fuente canónica del catálogo — idéntica a catalogo.js, sitemap.xml.js, feed.xml.js
+const CATALOG_R2_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -83,54 +86,51 @@ export async function onRequest(context) {
       { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     );
   }
-  if (path === '/webhooks/mercadolibre' && request.method === 'POST') {
-    waitUntil(handleWebhook(request, env));
-    return new Response(JSON.stringify({ status: 'received' }), { status: 200 });
-  }
+  // POST /api/webhooks/mercadolibre es capturado por functions/api/webhooks/mercadolibre.js
+  // (archivo específico tiene precedencia sobre [[route]].js en Pages Functions).
+  // handleWebhook eliminado: era código muerto que nunca se ejecutaba.
 
   return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
 }
 
 // ─── Lectura del catálogo ────────────────────────────────────────────────────
+// Migrado de KV (catalog_index + item:MLU*) a R2 catalog.json (v4).
+// Fuente única: CATALOG_R2_URL — idéntica a catalogo.js, sitemap.xml.js, feed.xml.js.
+// Nota: R2 catalog.json solo contiene items activos (status == "active").
+// Campos en R2: id, title, author, price, status, available_quantity,
+//               thumbnail, pictures, permalink, start_time.
+// El endpoint /api/catalog queda funcional pero está deprecado para nuevos callers:
+// la SPA ya lee R2 directamente; usar CATALOG_R2_URL en lugar de este endpoint.
 
 async function handleGetCatalog(env, url) {
-  const page = parseInt(url.searchParams.get('page') || '0');
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+  const page   = parseInt(url.searchParams.get('page')  || '0');
+  const limit  = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
   const search = (url.searchParams.get('q') || '').toLowerCase().trim();
-  const KV = env.AMADO_KV;
 
   try {
-    const indexMeta = await KV.get('catalog_index', { type: 'json' });
-
-    if (!indexMeta || !indexMeta.total || indexMeta.total === 0) {
+    const r2Resp = await fetch(CATALOG_R2_URL);
+    if (!r2Resp.ok) {
       return new Response(JSON.stringify({
         items: [], total: 0, page, limit, pages: 0,
-        message: 'El catálogo se está sincronizando. Intentá de nuevo en unos minutos.'
-      }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+        message: 'Catálogo temporalmente no disponible.'
+      }), { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
     }
 
-    let allIds = [];
-    for (let i = 0; i < indexMeta.chunks; i++) {
-      const chunk = await KV.get(`catalog_index:${i}`, { type: 'json' });
-      if (chunk && Array.isArray(chunk)) allIds = allIds.concat(chunk);
-    }
+    const catalog  = await r2Resp.json();
+    const allItems = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
 
-    if (allIds.length === 0) {
+    if (allItems.length === 0) {
       return new Response(JSON.stringify({
         items: [], total: 0, page, limit, pages: 0,
-        message: 'Índice vacío. Ejecutá /sync/rebuild-index en el Worker.'
+        message: 'Catálogo vacío o no disponible.'
       }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
     }
 
     if (search) {
-      const searchIds = allIds.slice(0, 2000);
-      const allItems = (await Promise.all(
-        searchIds.map(id => KV.get(`item:${id}`, { type: 'json' }).catch(() => null))
-      )).filter(Boolean);
+      // editorial eliminado: no existe en el esquema R2 de catalog.json
       const filtered = allItems.filter(item =>
         item.title?.toLowerCase().includes(search) ||
-        item.author?.toLowerCase().includes(search) ||
-        item.editorial?.toLowerCase().includes(search)
+        item.author?.toLowerCase().includes(search)
       );
       const paginated = filtered.slice(page * limit, (page + 1) * limit);
       return new Response(JSON.stringify({
@@ -139,15 +139,11 @@ async function handleGetCatalog(env, url) {
       }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
     }
 
-    const pageIds = allIds.slice(page * limit, (page + 1) * limit);
-    const items = (await Promise.all(
-      pageIds.map(id => KV.get(`item:${id}`, { type: 'json' }).catch(() => null))
-    )).filter(Boolean);
-
+    const paginated = allItems.slice(page * limit, (page + 1) * limit);
     return new Response(JSON.stringify({
-      items, total: allIds.length, page, limit,
-      pages: Math.ceil(allIds.length / limit),
-      has_more: (page + 1) * limit < allIds.length
+      items: paginated, total: allItems.length, page, limit,
+      pages: Math.ceil(allItems.length / limit),
+      has_more: (page + 1) * limit < allItems.length
     }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
 
   } catch (error) {
@@ -391,35 +387,6 @@ async function handleDebugSync(env, url) {
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     );
   }
-}
-
-// ─── Webhook ─────────────────────────────────────────────────────────────────
-
-async function handleWebhook(request, env) {
-  const payload = await request.json();
-  const { topic, resource } = payload;
-  if (topic !== 'items' || !resource) return;
-  const itemId = resource.split('/').pop();
-  if (!itemId) return;
-
-  const accessToken = await getAccessToken(env);
-  const res = await fetch(`https://api.mercadolibre.com/items/${itemId}?attributes=id,title,price,status,available_quantity,thumbnail,pictures,permalink,condition,currency_id`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
-  if (!res.ok) return;
-  const b = await res.json();
-
-  const catalog = await env.AMADO_KV.get('catalog:full', { type: 'json' });
-  if (!catalog) return;
-
-  const updatedItem = {
-    id: b.id, title: b.title, price: b.price, currency: b.currency_id,
-    status: b.status, stock: b.available_quantity, condition: b.condition,
-    thumbnail: (b.pictures?.[0]?.url || b.thumbnail || '').replace('http://', 'https://').replace('-I.jpg', '-O.jpg'),
-    permalink: b.permalink
-  };
-
-  const idx = catalog.findIndex(i => i.id === itemId);
-  if (idx >= 0) { catalog[idx] = updatedItem; } else { catalog.unshift(updatedItem); }
-  await env.AMADO_KV.put('catalog:full', JSON.stringify(catalog), { expirationTtl: 604800 });
 }
 
 // ─── getAccessToken v5.0 ─────────────────────────────────────────────────────
