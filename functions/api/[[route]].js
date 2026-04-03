@@ -267,7 +267,7 @@ async function getAccessToken(env) {
   const CLIENT_SECRET = env.CLIENT_SECRET;
   const KV_KEY = 'auth:refresh_token';
   const LOCK_KEY = 'auth:refresh_token_lock';
-  const LOCK_TTL = 15;       // segundos máximos que puede durar el lock
+  const LOCK_TTL = 60;       // segundos máximos que puede durar el lock (KV mínimo: 60)
   const MAX_RETRIES = 5;
   const BASE_DELAY_MS = 200; // backoff exponencial con jitter
 
