@@ -338,32 +338,51 @@ async function handleSyncCatalog(env, url) {
 // ─── /api/status ─────────────────────────────────────────────────────────────
 
 async function handleStatus(env, url) {
-  const envPrefix = getEnvPrefix(url);
-  const keys = kvKeys(envPrefix);
+  try {
+    const envPrefix = getEnvPrefix(url);
+    const keys = kvKeys(envPrefix);
 
-  const [syncState, metadata] = await Promise.all([
-    env.AMADO_KV.get(keys.state, { type: 'json' }),
-    env.AMADO_KV.get('catalog:metadata', { type: 'json' }),
-  ]);
+    const syncStateRaw = await env.AMADO_KV.get(keys.state);
+    const metadataRaw  = await env.AMADO_KV.get('catalog:metadata');
 
-  return new Response(
-    JSON.stringify({ env: envPrefix, syncState, metadata }),
-    { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
-  );
+    let syncState = null;
+    let metadata  = null;
+    try { syncState = syncStateRaw ? JSON.parse(syncStateRaw) : null; } catch (e) { syncState = { parse_error: e.message, raw_length: (syncStateRaw || '').length }; }
+    try { metadata  = metadataRaw  ? JSON.parse(metadataRaw)  : null; } catch (e) { metadata  = { parse_error: e.message }; }
+
+    return new Response(
+      JSON.stringify({ env: envPrefix, syncState, metadata }),
+      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: err.message, stack: (err.stack || '').slice(0, 600) }),
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  }
 }
 
 // ─── /api/debug-sync ─────────────────────────────────────────────────────────
 
 async function handleDebugSync(env, url) {
-  const envPrefix = getEnvPrefix(url);
-  const keys = kvKeys(envPrefix);
+  try {
+    const envPrefix = getEnvPrefix(url);
+    const keys = kvKeys(envPrefix);
 
-  const debug = await env.AMADO_KV.get(keys.debug, { type: 'json' });
+    const debugRaw = await env.AMADO_KV.get(keys.debug);
+    let debug = null;
+    try { debug = debugRaw ? JSON.parse(debugRaw) : null; } catch (e) { debug = { parse_error: e.message }; }
 
-  return new Response(
-    JSON.stringify({ env: envPrefix, debug }),
-    { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
-  );
+    return new Response(
+      JSON.stringify({ env: envPrefix, debug }),
+      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: err.message, stack: (err.stack || '').slice(0, 600) }),
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  }
 }
 
 // ─── Webhook ─────────────────────────────────────────────────────────────────
