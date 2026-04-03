@@ -153,7 +153,9 @@ async function handleSyncCatalog(env, url) {
     let state = await env.AMADO_KV.get('sync:state', { type: 'json' }) || { offset: 0, allItemIds: [], total: 0, allItems: [] };
 
     // 1. OBTENER IDs
-    if (state.offset < state.total || state.total === 0) {
+    // Chained self-fetch via fetch(url) inside waitUntil is unreliable in CF Pages Functions;
+    // the instance may be terminated before the chained request runs. Use a loop instead.
+    while (state.offset < state.total || state.total === 0) {
       const initialUrl = `https://api.mercadolibre.com/users/${USER_ID}/items/search?offset=${state.offset}&limit=100`;
       const res = await fetch(initialUrl, { headers: { 'Authorization': `Bearer ${accessToken}` } });
       if (!res.ok) throw new Error(`Error obteniendo IDs en offset ${state.offset}: ${res.status}`);
@@ -167,19 +169,16 @@ async function handleSyncCatalog(env, url) {
 
       await env.AMADO_KV.put('sync:state', JSON.stringify(state));
 
-      if (state.offset < state.total) {
-        // Auto-encadenar la próxima llamada
-        fetch(url.toString()).catch(e => console.error('Error en fetch encadenado:', e));
-        return;
-      }
+      if (state.total !== 0 && state.offset >= state.total) break;
     }
 
     // 2. OBTENER DETALLES DE PRODUCTOS
-    const CHUNK_SIZE = 500;
-    const unprocessedIds = state.allItemIds.slice(state.allItems.length, state.allItems.length + CHUNK_SIZE);
+    const batchSize = 20;
+    while (state.allItems.length < state.allItemIds.length) {
+      const CHUNK_SIZE = 500;
+      const unprocessedIds = state.allItemIds.slice(state.allItems.length, state.allItems.length + CHUNK_SIZE);
+      if (unprocessedIds.length === 0) break;
 
-    if (unprocessedIds.length > 0) {
-      const batchSize = 20;
       for (let i = 0; i < unprocessedIds.length; i += batchSize) {
         const batch = unprocessedIds.slice(i, i + batchSize);
         const detailRes = await fetch(
@@ -202,11 +201,6 @@ async function handleSyncCatalog(env, url) {
         }
       }
       await env.AMADO_KV.put('sync:state', JSON.stringify(state));
-
-      if (state.allItems.length < state.total) {
-        fetch(url.toString()).catch(e => console.error('Error en fetch encadenado:', e));
-        return;
-      }
     }
 
     // 3. FINALIZAR Y GUARDAR
