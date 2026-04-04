@@ -17,10 +17,11 @@
  * KV keys escritas por este Worker:
  *   auth:refresh_token       — compartido con Pages (se actualiza en meli-auth.js)
  *   auth:refresh_token_lock  — mutex para el intercambio de token
- *   sync:state:worker        — estado del último sync { status, started_at, finished_at, total_items, error }
+ *   sync:last_ok             — ISO timestamp del último sync exitoso
+ *   sync:last_error          — string corto del último error (ausente si el último sync fue ok)
  *
- * KV keys que este Worker NO escribe (esquemas obsoletos):
- *   catalog:full, catalog_index, catalog_index:*, item:MLU*
+ * KV keys que este Worker NO escribe:
+ *   catalog:full, catalog_index, catalog_index:*, item:MLU*  — esquemas obsoletos
  *
  * Nota de tiempo de ejecución:
  *   Con ~16.000 items, el sync tarda ~5-8 minutos (principalmente I/O hacia ML API).
@@ -76,12 +77,6 @@ async function runSync(env) {
   const startedAt = new Date().toISOString();
   console.log(`[Sync] Iniciando sync completo — ${startedAt}`);
 
-  await writeState(env, {
-    status:     'running',
-    started_at: startedAt,
-    error:      null,
-  });
-
   try {
     // 1. Auth
     const accessToken = await getAccessToken(env);
@@ -90,9 +85,9 @@ async function runSync(env) {
     // 2. Catálogo
     const catalog = await buildCatalog(env, accessToken);
 
-    // 3. Publicar en R2
-    const finishedAt   = new Date().toISOString();
-    const durationMs   = Date.now() - new Date(startedAt).getTime();
+    // 3. Publicar en R2 (staging → validación → promote)
+    const finishedAt = new Date().toISOString();
+    const durationMs = Date.now() - new Date(startedAt).getTime();
     const syncMeta = {
       total:          catalog.total,
       updated_at:     catalog.updated_at,
@@ -102,41 +97,27 @@ async function runSync(env) {
     };
     await publishToR2(env, catalog, syncMeta);
 
-    // 4. Estado final
-    await writeState(env, {
-      status:      'ok',
-      started_at:  startedAt,
-      finished_at: finishedAt,
-      duration_ms: durationMs,
-      total_items: catalog.total,
-      error:       null,
-    });
+    // 4. Estado: éxito
+    await kvPut(env, 'sync:last_ok', finishedAt);
 
     console.log(`[Sync] Completado: ${catalog.total} items en ${Math.round(durationMs / 1000)}s`);
 
   } catch (err) {
-    const finishedAt = new Date().toISOString();
-    const durationMs = Date.now() - new Date(startedAt).getTime();
     console.error(`[Sync] Error crítico: ${err.message}`);
 
-    await writeState(env, {
-      status:      'error',
-      started_at:  startedAt,
-      finished_at: finishedAt,
-      duration_ms: durationMs,
-      total_items: null,
-      error:       err.message.slice(0, 400),
-    });
+    // Estado: error (string corto)
+    const summary = `${new Date().toISOString()} — ${err.message}`.slice(0, 400);
+    await kvPut(env, 'sync:last_error', summary);
   }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function writeState(env, state) {
+async function kvPut(env, key, value) {
   try {
-    await env.AMADO_KV.put('sync:state:worker', JSON.stringify(state));
+    await env.AMADO_KV.put(key, value);
   } catch (e) {
-    console.error('[Sync] Error escribiendo sync:state:worker:', e.message);
+    console.error(`[Sync] Error escribiendo KV ${key}:`, e.message);
   }
 }
 

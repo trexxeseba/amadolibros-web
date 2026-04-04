@@ -2,12 +2,14 @@
  * worker-sync/meli-auth.js
  *
  * Obtiene un ML access token usando el refresh token rotativo.
- * Lógica idéntica a getAccessToken() en functions/api/[[route]].js:
- *   - Lee auth:refresh_token de KV como fuente principal
- *   - Fallback a env.REFRESH_TOKEN si KV está vacío
+ *
+ * KV es la ÚNICA fuente de auth:refresh_token — no hay fallback a env vars.
+ * Si KV no tiene el token, el sync falla con mensaje claro.
+ * Ver bootstrapping manual en README (sección F de la guía de deploy).
+ *
  *   - Lock distribuido (auth:refresh_token_lock) para evitar race conditions
  *   - Guarda el nuevo refresh_token en KV inmediatamente después de cada uso
- *   - Backoff exponencial en caso de invalid_grant (race condition between Workers)
+ *   - Backoff exponencial en caso de invalid_grant (race condition entre Workers)
  *
  * KV keys usadas:
  *   auth:refresh_token       — refresh token vigente (compartido con Pages)
@@ -29,17 +31,14 @@ export async function getAccessToken(env) {
   }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    // 1. Leer refresh token — KV es la fuente de verdad
-    let refreshToken = await env.AMADO_KV.get(KV_KEY);
+    // 1. Leer refresh token — KV es la única fuente de verdad
+    const refreshToken = await env.AMADO_KV.get(KV_KEY);
 
     if (!refreshToken) {
-      // Fallback: variable de entorno (primera vez o emergencia)
-      refreshToken = env.REFRESH_TOKEN;
-      if (!refreshToken) {
-        throw new Error('[Auth] No hay refresh token en KV ni en REFRESH_TOKEN. Configurá auth:refresh_token en KV.');
-      }
-      await env.AMADO_KV.put(KV_KEY, refreshToken, { expirationTtl: 86400 * 30 });
-      console.log('[Auth] Refresh token inicializado desde env var.');
+      throw new Error(
+        '[Auth] auth:refresh_token no encontrado en KV. ' +
+        'Bootstrap: wrangler kv:key put --binding AMADO_KV auth:refresh_token "<token>" --env production'
+      );
     }
 
     // 2. Verificar lock — otro Worker puede estar haciendo refresh

@@ -1,4 +1,5 @@
-# wrangler.toml - Configuración de AmadoLibros.com
+# wrangler.toml - Configuración de AmadoLibros.com (Pages)
+# Pages es solo lectura. El Worker (worker-sync/) escribe el catálogo en R2.
 # IMPORTANTE: CLIENT_SECRET y REFRESH_TOKEN se configuran como secretos
 # en el Dashboard de Cloudflare Pages > Settings > Environment Variables
 
@@ -8,12 +9,9 @@ compatibility_date = "2024-09-23"
 # Requerido para que wrangler.toml sea reconocido por Pages deploy
 pages_build_output_dir = "./public"
 
-# Variables de entorno no sensibles
-[vars]
-APP_ID = "4741021817925208"
-USER_ID = "440298103"
-
-# Binding al KV Namespace para el caché del catálogo
+# KV: usado por webhooks/mercadolibre.js (audit log, orders, stock)
+# y por /api/status para leer sync:last_ok / sync:last_error del Worker.
+# NO se usa para datos de catálogo.
 [[kv_namespaces]]
 binding = "AMADO_KV"
 id = "6ea0ff4682d647118442a24fe384abc4"
