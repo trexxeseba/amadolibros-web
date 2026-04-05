@@ -4,7 +4,7 @@
  * Entry point del Worker de sincronización de catálogo.
  *
  * Triggers:
- *   scheduled(event) — cron "0 *\/6 * * *" (cada 6 horas)
+ *   scheduled(event) — cron "15 7 * * *" (07:15 UTC = 04:15 Montevideo)
  *   fetch(request)   — POST /trigger con header Authorization: Bearer <SYNC_SECRET>
  *                      para disparar sync manualmente sin esperar al cron
  *
@@ -12,7 +12,7 @@
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
  *   2. Descargar catálogo completo (meli-catalog.js — scroll + batch details)
  *   3. Escribir catalog.json y meta.json en R2 (r2-publish.js)
- *   4. Guardar estado mínimo en KV (sync:state:worker)
+ *   4. Guardar estado mínimo en KV (sync:last_ok / sync:last_error)
  *
  * KV keys escritas por este Worker:
  *   auth:refresh_token       — compartido con Pages (se actualiza en meli-auth.js)
@@ -66,7 +66,7 @@ export default {
 
     return json({
       status:  'SYNC_TRIGGERED',
-      message: 'Sync iniciado en background. Consultá KV sync:state:worker para el resultado.',
+      message: 'Sync iniciado en background. Consultá KV sync:last_ok / sync:last_error para el resultado.',
     });
   },
 };

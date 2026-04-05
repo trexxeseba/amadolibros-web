@@ -7,8 +7,7 @@ name = "amadolibros-sync"
 main = "index.js"
 compatibility_date = "2024-09-23"
 
-# ── Cron: sincronización automática cada 6 horas ─────────────────────────────
-# Se puede cambiar a "0 */12 * * *" si el catálogo cambia poco.
+# ── Cron: sincronización automática 1 vez por día — 07:15 UTC (04:15 Montevideo)
 [triggers]
 crons = ["15 7 * * *"]
 
@@ -35,5 +34,5 @@ id      = "6ea0ff4682d647118442a24fe384abc4"
 
 # ── Secrets a configurar via `wrangler secret put` ───────────────────────────
 # CLIENT_SECRET  — secreto OAuth de la app MercadoLibre
-# REFRESH_TOKEN  — refresh token inicial (fallback si KV está vacío)
 # SYNC_SECRET    — token para el trigger manual POST /trigger
+# (No hay env REFRESH_TOKEN — el token rotativo vive en KV: auth:refresh_token)
