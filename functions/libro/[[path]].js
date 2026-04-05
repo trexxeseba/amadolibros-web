@@ -174,6 +174,11 @@ function renderPage(item, slug) {
   <meta property="og:image"       content="${escapeHtml(img)}">
   <meta property="og:locale"      content="es_UY">
 
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="${safeTitle} | Amado Libros">
+  <meta name="twitter:description" content="${metaDesc}">
+  <meta name="twitter:image"       content="${escapeHtml(img)}">
+
   <script type="application/ld+json">${JSON.stringify(schemaProduct)}</script>
   <script type="application/ld+json">${JSON.stringify(schemaBreadcrumb)}</script>
 

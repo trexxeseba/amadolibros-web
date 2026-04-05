@@ -7,7 +7,6 @@
     <title>Amado Libros | Libros importados y por encargo en Uruguay</title>
     <link rel="icon" type="image/png" href="/images/logo-amado.png">
     <meta name="description" content="Librería online en Uruguay con 16.000+ títulos. Libros importados, por encargo y difíciles de ubicar. Buscá por título, autor o ISBN en Amado Libros.">
-    <meta name="keywords" content="libros uruguay, librería online uruguay, comprar libros, libros montevideo, envio libros uruguay">
     <meta name="author" content="Amado Libros">
     <link rel="canonical" href="https://www.amadolibros.com/">
     <meta name="robots" content="index, follow">
@@ -19,9 +18,14 @@
     <meta property="og:description" content="16.000+ libros con envío en 24 a 48hs a todo Uruguay. -12% pagando con transferencia.">
     <meta property="og:image" content="https://www.amadolibros.com/images/logo-amado.png">
     <meta property="og:locale" content="es_UY">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Amado Libros | Libros importados y por encargo en Uruguay">
     <meta name="twitter:description" content="16.000+ libros con envío en 24 a 48hs a todo Uruguay. -12% pagando con transferencia.">
+    <meta name="twitter:image" content="https://www.amadolibros.com/images/logo-amado.png">
+    <meta name="twitter:image:width" content="512">
+    <meta name="twitter:image:height" content="512">
 
     <!-- Schema.org para SEO Avanzado -->
     <script type="application/ld+json">
@@ -40,7 +44,7 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
+      "@type": ["BookStore", "Organization"],
       "name": "Amado Libros",
       "url": "https://www.amadolibros.com/",
       "logo": "https://www.amadolibros.com/images/logo-amado.png",
@@ -77,6 +81,7 @@
     </script>
     
     <!-- Fuentes con display=swap para no bloquear render -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <!-- FontAwesome con media=print para carga no bloqueante -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
@@ -129,7 +134,7 @@
     <!-- HEADER -->
     <header class="glass-header text-white sticky top-0 z-40 h-16 flex items-center justify-between px-4 lg:px-8 transition-all">
         <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.reload()">
-            <img src="/images/logo-amado.png" alt="Amado Libros" class="h-10 w-auto">
+            <img src="/images/logo-amado.png" alt="Amado Libros" class="h-10 w-auto" fetchpriority="high" width="40" height="40">
             <div>
                 <p class="font-black text-white text-lg leading-tight">AMADO LIBROS</p>
                 <p class="text-xs text-gray-400 leading-tight">Tu librería para libros difíciles de ubicar</p>
@@ -142,8 +147,7 @@
                     placeholder="Buscar por título, autor, ISBN..."
                     class="bg-transparent border-none outline-none text-slate-800 placeholder-gray-400 text-sm w-full font-medium"
                     oninput="onHeaderSearch(this.value)"
-                    onkeydown="if(event.key==='Enter'){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); filterBooks(this.value); document.getElementById('grid').scrollIntoView({behavior:'smooth'}); } else if(event.key==='Escape'){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); this.blur(); }"
-                    autofocus>
+                    onkeydown="if(event.key==='Enter'){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); filterBooks(this.value); document.getElementById('grid').scrollIntoView({behavior:'smooth'}); } else if(event.key==='Escape'){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); this.blur(); }">
                 <button id="headerSearchClear" onclick="clearHeaderSearch()" class="hidden text-gray-400 hover:text-slate-700 ml-2 transition-colors">
                     <i class="fas fa-times text-xs"></i>
                 </button>
@@ -312,6 +316,12 @@
                     <span>WhatsApp</span>
                 </a>
             </div>
+        </div>
+        <!-- Medios de pago -->
+        <div class="max-w-6xl mx-auto mt-8 pt-8 border-t border-slate-700">
+            <h3 class="font-bold text-base mb-2 text-slate-300">Medios de pago</h3>
+            <p class="text-sm text-slate-400">Pago online con Mercado Pago</p>
+            <p class="text-sm text-slate-500 mt-1">Al confirmar tu pedido, te enviamos un link de pago para abonar con tarjeta, cuotas o transferencia según disponibilidad.</p>
         </div>
         <div class="max-w-6xl mx-auto text-center text-xs text-slate-500 pt-8 mt-8 border-t border-slate-700">
             &copy; 2026 Amado Libros. Todos los derechos reservados.
