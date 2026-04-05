@@ -10,7 +10,7 @@ compatibility_date = "2024-09-23"
 # ── Cron: sincronización automática cada 6 horas ─────────────────────────────
 # Se puede cambiar a "0 */12 * * *" si el catálogo cambia poco.
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["15 7 * * *"]
 
 # ── Variables no sensibles ────────────────────────────────────────────────────
 [vars]
