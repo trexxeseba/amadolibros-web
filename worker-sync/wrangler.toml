@@ -1,0 +1,39 @@
+# worker-sync/wrangler.toml
+# Worker independiente de sync — escribe catalog.json en R2.
+# Separado del proyecto Pages: no comparte código, solo comparte KV namespace
+# (auth:refresh_token) y R2 bucket (amadolibros-catalog).
+
+name = "amadolibros-sync"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# ── Cron: sincronización automática cada 6 horas ─────────────────────────────
+# Se puede cambiar a "0 */12 * * *" si el catálogo cambia poco.
+[triggers]
+crons = ["15 7 * * *"]
+
+# ── Variables no sensibles ────────────────────────────────────────────────────
+[vars]
+APP_ID          = "4741021817925208"
+USER_ID         = "440298103"
+# Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
+MIN_ACTIVE_ITEMS = "500"
+
+# ── R2: destino del catálogo ──────────────────────────────────────────────────
+# Binding name: CATALOG_R2
+# Bucket real:  amadolibros-catalog (mismo que usa local_sync.py)
+# URL pública:  https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/
+[[r2_buckets]]
+binding     = "CATALOG_R2"
+bucket_name = "amadolibros-catalog"
+
+# ── KV: compartido con Pages — solo para auth:refresh_token ──────────────────
+# NO escribir aquí catalog_index, item:*, catalog:full ni ningún esquema viejo.
+[[kv_namespaces]]
+binding = "AMADO_KV"
+id      = "6ea0ff4682d647118442a24fe384abc4"
+
+# ── Secrets a configurar via `wrangler secret put` ───────────────────────────
+# CLIENT_SECRET  — secreto OAuth de la app MercadoLibre
+# REFRESH_TOKEN  — refresh token inicial (fallback si KV está vacío)
+# SYNC_SECRET    — token para el trigger manual POST /trigger
