@@ -46,12 +46,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Solo acepta POST /trigger
-    if (request.method !== 'POST' || url.pathname !== '/trigger') {
-      return json({ error: 'Not found. Use POST /trigger.' }, 404);
-    }
-
-    // Validar SYNC_SECRET
+    // Validar SYNC_SECRET (común a todas las rutas protegidas)
     if (!env.SYNC_SECRET) {
       console.error('[Worker] SYNC_SECRET no configurado. Ejecutá: wrangler secret put SYNC_SECRET');
       return json({ error: 'Server misconfiguration: SYNC_SECRET not set.' }, 500);
@@ -59,6 +54,11 @@ export default {
     const authHeader = request.headers.get('Authorization') || '';
     if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
       return json({ error: 'Unauthorized.' }, 401);
+    }
+
+    // Solo acepta POST /trigger
+    if (request.method !== 'POST' || url.pathname !== '/trigger') {
+      return json({ error: 'Not found. Use POST /trigger.' }, 404);
     }
 
     console.log(`[Worker] Trigger manual: ${new Date().toISOString()}`);
