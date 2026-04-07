@@ -12,6 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate home.json
+        # Genera public/home.json desde el catálogo público de R2.
+        # No requiere credenciales. Si falla (R2 down), el deploy continúa
+        # usando el último home.json commiteado como fallback.
+        run: node scripts/generate-home-json.js
+        continue-on-error: true
+
       - name: Deploy via Wrangler
         run: npx wrangler pages deploy ./public --project-name amadolibros-web --branch main
         env:
