@@ -157,7 +157,7 @@
             <div class="w-full flex items-center bg-white rounded-full px-4 py-2 shadow-lg border border-gray-100 focus-within:ring-2 focus-within:ring-brand-orange/40 transition-all">
                 <i class="fas fa-search text-gray-400 text-sm mr-3"></i>
                 <input type="text" id="headerSearch"
-                    placeholder="Buscar por título, autor, ISBN..."
+                    placeholder="Buscá por ISBN, título, autor o palabra clave..."
                     class="bg-transparent border-none outline-none text-slate-800 placeholder-gray-400 text-sm w-full font-medium"
                     oninput="onHeaderSearch(this.value)"
                     onkeydown="if(event.key==='Enter'){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); filterBooks(this.value); document.getElementById('grid').scrollIntoView({behavior:'smooth'}); } else if(event.key==='Escape'){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); this.blur(); }">
@@ -193,11 +193,11 @@
     <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full relative z-0">
         <!-- Hero Section -->
-        <section class="hero-section rounded-2xl px-6 py-10 mb-8 border border-stone-200">
+        <section class="hero-section rounded-2xl px-6 py-6 mb-5 border border-stone-200">
             <div class="max-w-2xl">
                 <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">Libros importados y por encargo en Uruguay</h1>
-                <p class="text-base text-stone-600 mb-6 max-w-xl">Más de 16.000 títulos. Entregamos hoy en Montevideo — coordinás la hora. Enviamos a todo el Uruguay en 24 a 48hs. ¿No lo encontrás? Te lo conseguimos.</p>
-                <div class="flex flex-wrap gap-3 mb-7">
+                <p class="text-base text-stone-600 mb-4 max-w-xl">Entregamos hoy en Montevideo — coordinás la hora. Enviamos a todo el Uruguay en 24 a 48hs. ¿No lo encontrás? Te lo conseguimos.</p>
+                <div class="flex flex-wrap gap-3 mb-5">
                     <button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})"
                         class="inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-700 transition-colors text-sm">
                         <i class="fas fa-book-open text-sm"></i> Explorar catálogo
@@ -1133,7 +1133,7 @@ function clearHeaderSearch() {
             "Buscá por título...",
             "¿Quién es tu autor favorito?",
             "Freud, Cortázar, García Márquez...",
-            "Buscá por ISBN...",
+            "Buscá por ISBN, título, autor o palabra clave...",
             "Te conseguimos cualquier libro 📚"
         ];
 
