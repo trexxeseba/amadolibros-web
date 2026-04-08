@@ -153,7 +153,7 @@
                 <p class="text-xs text-gray-400 leading-tight">Tu librería para libros difíciles de ubicar</p>
             </div>
         </div>
-        <div class="flex-1 flex items-center justify-center max-w-2xl mx-auto px-4 relative">
+        <div id="searchAnchor" class="flex-1 flex items-center justify-center max-w-2xl mx-auto px-4 relative">
             <div class="w-full flex items-center bg-white rounded-full px-4 py-2 shadow-lg border border-gray-100 focus-within:ring-2 focus-within:ring-brand-orange/40 transition-all">
                 <i class="fas fa-search text-gray-400 text-sm mr-3"></i>
                 <input type="text" id="headerSearch"
@@ -998,12 +998,27 @@ function clearHeaderSearch() {
         // Posiciona el dropdown fixed alineado debajo del search bar
         function positionDropdown() {
             const dropdown = document.getElementById('autocompleteDropdown');
-            const anchor = document.getElementById('headerSearch')?.closest('[class*="relative"]');
+            const anchor   = document.getElementById('searchAnchor');
             if (!dropdown || !anchor) return;
-            const r = anchor.getBoundingClientRect();
-            dropdown.style.top    = (r.bottom + 6) + 'px';
-            dropdown.style.left   = r.left + 'px';
-            dropdown.style.width  = r.width + 'px';
+            const r  = anchor.getBoundingClientRect();
+            // En mobile usamos el visualViewport (correcto con teclado virtual iOS)
+            const vvp = window.visualViewport;
+            const vw  = vvp ? vvp.width  : window.innerWidth;
+            const vh  = vvp ? vvp.height : window.innerHeight;
+            const offsetTop = vvp ? vvp.offsetTop : 0;
+            const topPos = r.bottom + 6 + offsetTop;
+            const maxH   = Math.max(120, Math.min(360, vh - topPos - 16));
+            dropdown.style.top       = topPos + 'px';
+            dropdown.style.maxHeight = maxH + 'px';
+            if (vw < 768) {
+                // Mobile: full width con pequeño margen
+                const pad = 8;
+                dropdown.style.left  = pad + 'px';
+                dropdown.style.width = (vw - pad * 2) + 'px';
+            } else {
+                dropdown.style.left  = r.left + 'px';
+                dropdown.style.width = r.width + 'px';
+            }
         }
 
         function showAutocomplete(query) {
@@ -1035,7 +1050,7 @@ function clearHeaderSearch() {
                     ? `<span class="font-black text-brand-purple text-xs">${fmt.format(Math.round(b.price * 0.88))}</span><span class="text-[10px] text-green-600 ml-1 font-bold">-12%</span>`
                     : `<span class="text-[10px] text-blue-500 font-semibold">💬 Te lo conseguimos</span>`;
                 const highlighted = b.title.replace(new RegExp('(' + escapeRx + ')', 'gi'), '<strong class="text-brand-orange">$1</strong>');
-                return `<div class="ac-item flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors" data-id="${b.id}" data-index="${i}" onmousedown="selectBookFromDropdown('${b.id}')">
+                return `<div class="ac-item flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors" data-id="${b.id}" data-index="${i}" onclick="selectBookFromDropdown('${b.id}')">
                     <img src="${img}" alt="" class="w-9 h-12 object-cover rounded flex-shrink-0 bg-gray-100" onerror="this.style.display='none'">
                     <div class="flex-1 min-w-0">
                         <p class="text-xs font-semibold text-slate-800 line-clamp-2 leading-tight">${highlighted}</p>
@@ -1046,7 +1061,7 @@ function clearHeaderSearch() {
             }).join('');
 
             if (matches.length > 8) {
-                dropdown.innerHTML += `<div class="ac-footer px-3 py-2.5 text-center border-t border-gray-100 bg-gray-50 cursor-pointer hover:bg-orange-50 transition-colors" onmousedown="document.getElementById('autocompleteDropdown').classList.add('hidden'); document.getElementById('grid').scrollIntoView({behavior:'smooth'})">
+                dropdown.innerHTML += `<div class="ac-footer px-3 py-2.5 text-center border-t border-gray-100 bg-gray-50 cursor-pointer hover:bg-orange-50 transition-colors" onclick="document.getElementById('autocompleteDropdown').classList.add('hidden'); document.getElementById('grid').scrollIntoView({behavior:'smooth'})">
                     <span class="text-xs text-brand-orange font-bold">Ver los ${matches.length.toLocaleString()} resultados para "${query}" →</span>
                 </div>`;
             }
@@ -1062,6 +1077,14 @@ function clearHeaderSearch() {
                 positionDropdown();
             }
         });
+        // iOS Safari: visualViewport resize cubre apertura/cierre del teclado virtual
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                if (!document.getElementById('autocompleteDropdown')?.classList.contains('hidden')) {
+                    positionDropdown();
+                }
+            });
+        }
 
         function _acHighlight(idx) {
             const items = document.querySelectorAll('#autocompleteDropdown .ac-item');
