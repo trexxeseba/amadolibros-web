@@ -63,6 +63,7 @@ export async function onRequest(ctx) {
         { loc: `${BASE}/`,          changefreq: 'daily',   priority: '1.0', lastmod: today },
         { loc: `${BASE}/politicas`, changefreq: 'monthly', priority: '0.3', lastmod: today },
         { loc: `${BASE}/catalogo`,  changefreq: 'daily',   priority: '0.5', lastmod: today },
+        { loc: `${BASE}/autores`,   changefreq: 'daily',   priority: '0.5', lastmod: today },
     ];
 
     let bookUrls = [];
@@ -81,13 +82,31 @@ export async function onRequest(ctx) {
         }));
 
         // Páginas de catálogo paginado (páginas 2+ — la 1 ya está en staticPages).
-        const activeCount = catalog.items.filter(b => b.status === 'active').length;
-        const totalCatalogPages = Math.max(1, Math.ceil(activeCount / 200));
+        const activeItems = catalog.items.filter(b => b.status === 'active');
+        const totalCatalogPages = Math.max(1, Math.ceil(activeItems.length / 200));
         for (let p = 2; p <= totalCatalogPages; p++) {
             catalogPages.push({
                 loc:        `${BASE}/catalogo?page=${p}`,
                 changefreq: 'daily',
                 priority:   '0.4',
+                lastmod:    today,
+            });
+        }
+
+        // Páginas de autor (/autor/:slug) — una por cada autor único con libros activos.
+        const authorSlugs = new Map();
+        for (const item of activeItems) {
+            if (!item.author) continue;
+            const slug = slugify(item.author.trim());
+            if (!authorSlugs.has(slug)) {
+                authorSlugs.set(slug, item.author.trim());
+            }
+        }
+        for (const slug of authorSlugs.keys()) {
+            catalogPages.push({
+                loc:        `${BASE}/autor/${slug}`,
+                changefreq: 'weekly',
+                priority:   '0.6',
                 lastmod:    today,
             });
         }
