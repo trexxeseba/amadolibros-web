@@ -40,6 +40,7 @@ function fetchJSON(url) {
                 reject(new Error(`HTTP ${res.statusCode} from ${url}`));
                 return;
             }
+            res.setEncoding('utf8');
             res.on('data', chunk => { raw += chunk; });
             res.on('end', () => {
                 try   { resolve(JSON.parse(raw)); }

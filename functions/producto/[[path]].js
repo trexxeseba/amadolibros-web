@@ -4,13 +4,57 @@
  * Limpieza de URLs viejas del sitio anterior (WooCommerce / CMS legacy).
  * Patrón: /producto/:slug/
  *
- * Devuelve 410 Gone — indica a Google que estas páginas son
- * permanentemente eliminadas y deben ser removidas del índice.
- * Es preferible a un soft 404 (200 con index.html) o a un 301
- * al homepage cuando no existe mapeo directo al nuevo /libro/:id/:slug.
+ * Intenta encontrar el libro equivalente en el catálogo actual (R2) comparando
+ * el slug de la URL con el slug generado a partir del título de cada item.
+ * Si hay coincidencia → 301 a /libro/:id/:slug (canonical).
+ * Sin coincidencia → 410 Gone (página permanentemente eliminada, sin equivalente).
+ *
+ * slugify() es idéntico al de libro/[[path]].js, sitemap.xml.js, catalogo.js y
+ * feed.xml.js — CRÍTICO: debe mantenerse idéntico para que los slugs coincidan.
  */
 
-export async function onRequest() {
+const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
+const BASE        = 'https://www.amadolibros.com';
+
+function slugify(text) {
+    return (text || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 60);
+}
+
+async function fetchCatalog() {
+    try {
+        const resp = await fetch(CATALOG_URL);
+        if (!resp.ok) return null;
+        return await resp.json();
+    } catch {
+        return null;
+    }
+}
+
+export async function onRequest(context) {
+    // Extract the slug from the incoming /producto/:slug URL
+    const pathParts = Array.isArray(context.params.path)
+        ? context.params.path
+        : [context.params.path].filter(Boolean);
+    const incomingSlug = (pathParts[0] || '').toLowerCase().replace(/\/+$/, '');
+
+    if (incomingSlug) {
+        const catalog = await fetchCatalog();
+        if (catalog && Array.isArray(catalog.items)) {
+            const match = catalog.items.find(
+                item => slugify(item.title) === incomingSlug
+            );
+            if (match) {
+                const canonicalSlug = slugify(match.title);
+                return Response.redirect(`${BASE}/libro/${match.id}/${canonicalSlug}`, 301);
+            }
+        }
+    }
+
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
