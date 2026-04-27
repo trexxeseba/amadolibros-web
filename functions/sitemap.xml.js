@@ -66,6 +66,7 @@ export async function onRequest(ctx) {
     ];
 
     let bookUrls = [];
+    let catalogPages = [];
     const catalog = await fetchCatalog(ctx);
     if (catalog && Array.isArray(catalog.items)) {
         bookUrls = catalog.items.map(item => ({
@@ -78,9 +79,21 @@ export async function onRequest(ctx) {
             // lo que entrenaba a Google a creer que 7k+ páginas cambiaban diariamente.
             lastmod: toDateStr(item.start_time, today),
         }));
+
+        // Páginas de catálogo paginado (páginas 2+ — la 1 ya está en staticPages).
+        const activeCount = catalog.items.filter(b => b.status === 'active').length;
+        const totalCatalogPages = Math.max(1, Math.ceil(activeCount / 200));
+        for (let p = 2; p <= totalCatalogPages; p++) {
+            catalogPages.push({
+                loc:        `${BASE}/catalogo?page=${p}`,
+                changefreq: 'daily',
+                priority:   '0.4',
+                lastmod:    today,
+            });
+        }
     }
 
-    const allPages = [...staticPages, ...bookUrls];
+    const allPages = [...staticPages, ...catalogPages, ...bookUrls];
 
     const urls = allPages.map(p =>
         `  <url>\n    <loc>${p.loc}</loc>\n    <lastmod>${p.lastmod}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`

@@ -24,11 +24,30 @@ const https   = require('https');
 const fs      = require('fs');
 const path    = require('path');
 
-const CATALOG_URL  = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
-const OUTPUT_PATH  = path.join(__dirname, '..', 'public', 'home.json');
-const ACTIVE_COUNT = 40;   // items activos más recientes para la grilla y novedades
+const CATALOG_URL    = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
+const OUTPUT_PATH    = path.join(__dirname, '..', 'public', 'home.json');
+const INDEX_PATH     = path.join(__dirname, '..', 'public', 'index.html');
+const ACTIVE_COUNT   = 40;   // items activos más recientes para la grilla y novedades
+const NOSCRIPT_COUNT = 50;   // links estáticos inyectados en el bloque <noscript> de index.html
 // Nota: PAUSED_COUNT eliminado. El catálogo actual tiene 0 items pausados/sin stock.
 // Si en el futuro vuelven items pausados, volver a agregar esta lógica.
+
+// CRÍTICO: idéntico al slugify de functions/libro/[[path]].js, catalogo.js, sitemap.xml.js
+function slugify(text) {
+    return (text || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 60);
+}
+
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
 
 console.log('📚 generate-home-json: fetching catalog.json from R2...');
 
@@ -82,6 +101,56 @@ async function main() {
     console.log(`   Total catálogo: ${total.toLocaleString()} libros`);
     console.log(`   Tamaño: ~${sizeKB}KB (vs ~3700KB de catalog.json — ${Math.round(3700/sizeKB)}x más liviano)`);
     console.log(`   Archivo: ${OUTPUT_PATH}`);
+
+    // ── Patch index.html: inyectar links estáticos en el bloque <noscript> ────
+    // Usa los primeros NOSCRIPT_COUNT items activos (misma fuente que home.json).
+    // Divide en dos secciones: Novedades (mitad) + Libros más vendidos (resto).
+    // El bloque reemplaza el contenido entre <!-- NOSCRIPT:BEGIN --> y <!-- NOSCRIPT:END -->.
+    const noscriptItems = items
+        .filter(b => b.status === 'active' && b.available_quantity > 0)
+        .sort((a, b) => new Date(b.start_time || 0) - new Date(a.start_time || 0))
+        .slice(0, NOSCRIPT_COUNT);
+
+    const half   = Math.ceil(noscriptItems.length / 2);
+    const newest = noscriptItems.slice(0, half);
+    const rest   = noscriptItems.slice(half);
+
+    const toLinks = arr => arr.map(b =>
+        `        <li><a href="/libro/${b.id}/${slugify(b.title)}">${escapeHtml(b.title)}</a></li>`
+    ).join('\n');
+
+    const noscriptBlock = [
+        '<!-- NOSCRIPT:BEGIN — regenerado por scripts/generate-home-json.js en cada deploy -->',
+        '    <noscript>',
+        '        <div style="max-width:900px;margin:2rem auto;padding:1rem;font-family:sans-serif">',
+        '            <h1>Amado Libros — Librería Online en Uruguay</h1>',
+        '            <p>16.000+ títulos disponibles. Envíos a todo Uruguay en 24 a 48hs hábiles. Descuento del 12% pagando con transferencia.</p>',
+        '            <h2 style="margin-top:1.5rem;font-size:1.1rem">Novedades</h2>',
+        '            <ul style="columns:2;gap:2rem;list-style:disc;padding-left:1.5rem;line-height:1.9;font-size:.9rem">',
+        toLinks(newest),
+        '            </ul>',
+        '            <h2 style="margin-top:1.5rem;font-size:1.1rem">Libros más vendidos</h2>',
+        '            <ul style="columns:2;gap:2rem;list-style:disc;padding-left:1.5rem;line-height:1.9;font-size:.9rem">',
+        toLinks(rest),
+        '            </ul>',
+        '            <p style="margin-top:1.5rem">Ver el <a href="/catalogo">catálogo completo de libros</a> · <a href="/politicas">políticas de envío</a> · <a href="https://wa.me/59899841325">WhatsApp 099 841 325</a></p>',
+        '        </div>',
+        '    </noscript>',
+        '    <!-- NOSCRIPT:END -->',
+    ].join('\n');
+
+    const indexHtml = fs.readFileSync(INDEX_PATH, 'utf8');
+    const patched   = indexHtml.replace(
+        /<!-- NOSCRIPT:BEGIN[\s\S]*?<!-- NOSCRIPT:END -->/,
+        noscriptBlock
+    );
+
+    if (patched === indexHtml) {
+        console.warn('⚠️  No se encontró el marcador NOSCRIPT:BEGIN/END en index.html — bloque no actualizado');
+    } else {
+        fs.writeFileSync(INDEX_PATH, patched);
+        console.log(`✅ index.html noscript actualizado: ${noscriptItems.length} enlaces (${newest.length} novedades + ${rest.length} más vendidos)`);
+    }
 }
 
 main().catch(err => {
