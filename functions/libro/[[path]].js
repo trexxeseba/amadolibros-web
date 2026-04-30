@@ -307,8 +307,9 @@ export async function onRequest(context) {
 
     const slug = slugify(item.title);
 
-    // Redirect 301 si no viene el slug
-    if (!providedSlug) {
+    // Redirect 301 si no viene el slug, o si el slug no coincide con el canónico
+    // (p.ej. cuando el título del libro cambió después de ser indexado con el slug anterior).
+    if (!providedSlug || providedSlug !== slug) {
         return Response.redirect(`${BASE}/libro/${id}/${slug}`, 301);
     }
 

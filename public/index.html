@@ -822,15 +822,15 @@
         '@context': 'https://schema.org',
         '@type': ['Product', 'Book'],
         'name': book.title,
-        'description': book.title, // Usamos el título como fallback
+        'description': book.title,
         'image': book.thumbnail,
         'sku': book.id,
         'offers': {
             '@type': 'Offer',
-            'url': book.permalink,
+            'url': 'https://www.amadolibros.com/libro/' + book.id + '/' + slugify(book.title),
             'priceCurrency': book.currency,
             'price': book.price,
-            'availability': book.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            'availability': (book.available_quantity > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             'seller': {
                 '@type': 'Organization',
                 'name': 'Amado Libros'
