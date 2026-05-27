@@ -183,7 +183,7 @@
     <!-- noscript: contenido mínimo para crawlers sin JS -->
     <noscript>
         <div style="max-width:900px;margin:2rem auto;padding:1rem;font-family:sans-serif;">
-            <h1>Amado Libros — Librería Online en Uruguay</h1>
+            <p><strong>Amado Libros — Librería Online en Uruguay</strong></p>
             <p>16.000+ títulos disponibles. Envíos a todo Uruguay en 24 a 48hs hábiles. Descuento del 12% pagando con transferencia.</p>
             <p>Para ver el catálogo completo, habilitá JavaScript en tu navegador.</p>
             <p>Contacto: <a href="https://wa.me/59899841325">WhatsApp 099 841 325</a> | <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a></p>
@@ -225,7 +225,7 @@
         <!-- SECCIÓN NOVEDADES -->
         <div id="bestsellerSection" class="mb-8 hidden">
             <div class="flex items-center gap-3 mb-4">
-                <h3 class="text-lg font-black text-slate-900">Novedades</h3>
+                <h2 class="text-lg font-black text-slate-900">Novedades</h2>
                 <div class="flex-1 h-px bg-stone-200"></div>
                 <span class="text-xs text-stone-400 font-medium">Últimas incorporaciones</span>
             </div>
@@ -238,7 +238,7 @@
              para entrega inmediata y pueden conseguirse por encargo. -->
         <div id="hardToFindSection" class="mb-10 hidden">
             <div class="flex items-center gap-3 mb-3">
-                <h3 class="text-lg font-black text-slate-900">Lo conseguimos para vos</h3>
+                <h2 class="text-lg font-black text-slate-900">Lo conseguimos para vos</h2>
                 <div class="flex-1 h-px bg-stone-200"></div>
             </div>
             <p class="text-sm text-stone-600 max-w-2xl mb-2">Cada semana recibimos títulos desde España, Argentina, Estados Unidos y otros mercados. Si no está en plaza, podemos conseguirlo para vos por encargo.</p>
@@ -250,7 +250,7 @@
         <div id="mainContent">
             <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 bg-[#faf7f2]/90 backdrop-blur-md p-4 rounded-xl shadow-sm border border-stone-200">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fas fa-layer-group text-brand-purple"></i> Explorar Colección</h3>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fas fa-layer-group text-brand-purple"></i> Explorar Colección</h2>
                     <p id="counter" class="text-slate-500 text-xs">Miles de historias a tu alcance</p>
                 </div>
 
@@ -822,15 +822,15 @@
         '@context': 'https://schema.org',
         '@type': ['Product', 'Book'],
         'name': book.title,
-        'description': book.title, // Usamos el título como fallback
+        'description': book.author ? book.title + ' — ' + book.author : book.title,
         'image': book.thumbnail,
         'sku': book.id,
         'offers': {
             '@type': 'Offer',
             'url': book.permalink,
-            'priceCurrency': book.currency,
+            'priceCurrency': book.currency || 'UYU',
             'price': book.price,
-            'availability': book.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            'availability': (book.available_quantity || 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             'seller': {
                 '@type': 'Organization',
                 'name': 'Amado Libros'
@@ -980,7 +980,7 @@ function clearHeaderSearch() {
                 const msg = `Hola Amado Libros, soy ${name}. Quiero que me consigan el libro: "${b.title}" (ID: ${b.id}).`;
                 window.open(`https://wa.me/59899841325?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
-                window.location.href = `mailto:contacto@amadolibros.uy?subject=Consulta libro ${b.id}&body=Hola, soy ${name}. Busco: ${b.title}`;
+                window.location.href = `mailto:adm@amadolibros.com?subject=Consulta libro ${b.id}&body=Hola, soy ${name}. Busco: ${b.title}`;
             }
         }
         document.addEventListener('DOMContentLoaded', loadAllBooks);
