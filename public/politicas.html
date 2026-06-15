@@ -40,6 +40,93 @@
       }
     }
     </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["BookStore", "LocalBusiness"],
+      "name": "Amado Libros",
+      "url": "https://www.amadolibros.com",
+      "email": "adm@amadolibros.com",
+      "telephone": "+59899841325",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+59899841325",
+        "contactType": "customer service",
+        "availableLanguage": "Spanish"
+      },
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+        "opens": "09:00",
+        "closes": "17:00"
+      },
+      "location": {
+        "@type": "Place",
+        "description": "Ciudad Vieja, cerca de Plaza Matriz, Montevideo, Uruguay. Retiro con coordinación previa por WhatsApp."
+      },
+      "areaServed": { "@type": "Country", "name": "Uruguay" },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Catálogo de libros importados y por encargo"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Cómo contacto a Amado Libros?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Por WhatsApp al 099 841 325 (https://wa.me/59899841325) o por correo a adm@amadolibros.com. Atención de lunes a viernes de 9:00 a 17:00 hs."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Hacen envíos a todo Uruguay?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí. En Montevideo coordinamos el envío con cadete directo. Para el resto del país enviamos por DAC (Agencia Central). Para la costa este también podemos enviar por De Punta. El envío es gratis en compras mayores a $1.500."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Puedo retirar mi pedido?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí. El retiro es en Ciudad Vieja, cerca de Plaza Matriz, Montevideo. Es imprescindible la coordinación previa por WhatsApp para asegurar que el pedido esté listo."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cuál es el horario de atención?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Atendemos de lunes a viernes de 9:00 a 17:00 hs por WhatsApp y correo electrónico."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cómo funcionan las devoluciones?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Si el libro tiene fallas de fábrica, tenés 10 días corridos desde la recepción para solicitar cambio o devolución. Amado Libros cubre los costos de envío. Para cambios por otros motivos el libro debe estar en perfectas condiciones y el plazo es de 7 días. Los reembolsos se procesan en hasta 5 días hábiles."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Consiguen libros por encargo?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí. Cada semana recibimos títulos desde España, Argentina, Estados Unidos y otros mercados. Si no está en plaza, podemos conseguirlo por encargo. Consultanos por WhatsApp sin compromiso."
+          }
+        }
+      ]
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -71,6 +158,7 @@
                 <li style="margin-bottom: 0.75rem;"><a href="#contacto" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">1. Información de Contacto</a></li>
                 <li style="margin-bottom: 0.75rem;"><a href="#envios" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">2. Política de Envíos y Devoluciones</a></li>
                 <li><a href="#terminos" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">3. Términos y Condiciones Generales</a></li>
+                <li style="margin-bottom: 0.75rem;"><a href="#faq" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">4. Preguntas Frecuentes</a></li>
             </ul>
         </div>
 
@@ -123,6 +211,37 @@
                 <li><strong>Privacidad de Datos:</strong> Tu privacidad es fundamental. Usamos tus datos personales <strong>exclusivamente para procesar y enviar tus pedidos</strong>. No los compartimos con terceros. Al comprar, aceptas esta política.</li>
                 <li><strong>Aceptación de Términos:</strong> Al utilizar nuestro sitio y realizar una compra, declaras haber leído y aceptado estos términos y condiciones.</li>
             </ul>
+        </section>
+
+        <!-- SECCIÓN 4: PREGUNTAS FRECUENTES -->
+        <section id="faq" style="background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); padding: 2rem; margin-top: 3rem; scroll-margin-top: 5rem;">
+            <h2 class="section-title" style="font-size: 1.875rem; font-weight: bold; color: #ff5a1f; margin-top: 0; margin-bottom: 1.5rem;">4. Preguntas Frecuentes</h2>
+            <dl style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div>
+                    <dt style="font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">¿Cómo contacto a Amado Libros?</dt>
+                    <dd style="color: #475569; line-height: 1.7; margin: 0;">Por <a href="https://wa.me/59899841325?text=Hola%20Amado%20Libros" target="_blank" style="color: #1d4ed8; text-decoration: underline;">WhatsApp al 099 841 325</a> o por correo a <a href="mailto:adm@amadolibros.com" style="color: #1d4ed8; text-decoration: underline;">adm@amadolibros.com</a>. Atendemos de lunes a viernes de 9:00 a 17:00 hs.</dd>
+                </div>
+                <div>
+                    <dt style="font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">¿Hacen envíos a todo Uruguay?</dt>
+                    <dd style="color: #475569; line-height: 1.7; margin: 0;">Sí. En Montevideo coordinamos el envío con cadete directo. Para el resto del país enviamos por DAC (Agencia Central). Para la costa este también podemos enviar por De Punta. El envío es gratis en compras mayores a <strong>$1.500</strong>.</dd>
+                </div>
+                <div>
+                    <dt style="font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">¿Puedo retirar mi pedido?</dt>
+                    <dd style="color: #475569; line-height: 1.7; margin: 0;">Sí. El retiro es en Ciudad Vieja, cerca de Plaza Matriz, Montevideo. Es imprescindible la coordinación previa por WhatsApp para asegurar que el pedido esté listo.</dd>
+                </div>
+                <div>
+                    <dt style="font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">¿Cuál es el horario de atención?</dt>
+                    <dd style="color: #475569; line-height: 1.7; margin: 0;">Atendemos de lunes a viernes de 9:00 a 17:00 hs por WhatsApp y correo electrónico.</dd>
+                </div>
+                <div>
+                    <dt style="font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">¿Cómo funcionan las devoluciones?</dt>
+                    <dd style="color: #475569; line-height: 1.7; margin: 0;">Si el libro tiene fallas de fábrica, tenés 10 días corridos desde la recepción para solicitar cambio o devolución completa. Amado Libros cubre todos los costos de envío en ese caso. Para cambios por otros motivos el libro debe estar en perfectas condiciones y el plazo es de 7 días. Los reembolsos se procesan en hasta 5 días hábiles.</dd>
+                </div>
+                <div>
+                    <dt style="font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">¿Consiguen libros por encargo?</dt>
+                    <dd style="color: #475569; line-height: 1.7; margin: 0;">Sí. Cada semana recibimos títulos desde España, Argentina, Estados Unidos y otros mercados. Si no está en plaza, podemos conseguirlo por encargo. Consultanos por WhatsApp sin compromiso.</dd>
+                </div>
+            </dl>
         </section>
     </div>
 
