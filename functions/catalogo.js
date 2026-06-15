@@ -87,6 +87,15 @@ export async function onRequest(ctx) {
   <meta name="description" content="Índice completo de ${activeItems.length} libros disponibles en Amado Libros. Importados y por encargo en Uruguay.">
   <link rel="canonical" href="${BASE}/catalogo">
   <meta name="robots" content="index, follow">
+  <script type="application/ld+json">${JSON.stringify({
+    '@context':   'https://schema.org',
+    '@type':      'CollectionPage',
+    'name':       'Catálogo de libros importados y por encargo en Uruguay',
+    'url':        `${BASE}/catalogo`,
+    'description':'Catálogo de Amado Libros con libros importados, libros por encargo y títulos difíciles de conseguir en Uruguay.',
+    'isPartOf':   { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
+    'publisher':  { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
+  })}</script>
   <style>
     body   { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
              max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1e293b; background: #faf7f2; }
