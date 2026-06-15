@@ -1,5 +1,15 @@
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Disallow: /
+
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
+
 Sitemap: https://www.amadolibros.com/sitemap.xml
