@@ -128,7 +128,7 @@ function renderPage(item, slug) {
     // JSON-LD — generado con JSON.stringify, nunca concatenación
     const schemaProduct = {
         '@context': 'https://schema.org',
-        '@type':    'Product',
+        '@type':    ['Product', 'Book'],
         'name':     item.title,
         'image':    img,
         'description': item.author ? `${item.title} — ${item.author}` : item.title,
