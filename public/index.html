@@ -177,8 +177,7 @@
         </div>
     </header>
 
-    <!-- Schema.org para Product y Book (hero eliminado) -->
-    <script id="product-schema" type="application/ld+json"></script>
+    <!-- schema.org/Product vive solo en fichas SSR (/libro/:id/:slug), no en la home -->
     
     <!-- noscript: contenido mínimo para crawlers sin JS -->
     <noscript>
@@ -757,7 +756,6 @@
             const fragment = document.createDocumentFragment();
             booksToRender.forEach((b, i) => {
                 const card = document.createElement('div');
-                injectProductSchema(b);
                 card.className = 'book-card rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in';
                 card.style.animationDelay = `${Math.min(i * 30, 300)}ms`;
                 card.innerHTML = `
@@ -813,33 +811,6 @@
             clearTimeout(_searchDebounceTimer);
             _searchDebounceTimer = setTimeout(() => filterBooks(val), 120);
         }
-
-        function injectProductSchema(book) {
-    const schemaContainer = document.getElementById('product-schema');
-    if (!schemaContainer) return;
-
-    const schema = {
-        '@context': 'https://schema.org',
-        '@type': ['Product', 'Book'],
-        'name': book.title,
-        'description': book.author ? book.title + ' — ' + book.author : book.title,
-        'image': book.thumbnail,
-        'sku': book.id,
-        'offers': {
-            '@type': 'Offer',
-            'url': book.permalink,
-            'priceCurrency': book.currency || 'UYU',
-            'price': book.price,
-            'availability': (book.available_quantity || 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            'seller': {
-                '@type': 'Organization',
-                'name': 'Amado Libros'
-            }
-        }
-    };
-
-    schemaContainer.textContent = JSON.stringify(schema, null, 2);
-}
 
 function clearHeaderSearch() {
             document.getElementById('headerSearch').value = '';
