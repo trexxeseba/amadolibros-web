@@ -473,9 +473,20 @@
                 .substring(0, 60);
         }
 
-        function isEditorial(b) {
-            return b.author !== null && b.author !== undefined && b.author.trim() !== '';
+        function isAntiqueObject(b) {
+            const hasAuthor = b.author && b.author.trim();
+            if (hasAuthor) return false;
+            const t = (b.title || '').toLowerCase();
+            const antiqueSignals = [
+                'cruz', 'crucifijo', 'bronce', 'chapa esmaltada', 'cartel chapa',
+                'dije', 'plata 925', 'jaspe', 'colgante vintage', 'sacapuntas vintage',
+                'candelabro', 'figura bronce', 'figuras bronce',
+                'decorativo', 'decorativa',
+                'pared cristo', 'cristo inri', 'inri antigua'
+            ];
+            return antiqueSignals.some(s => t.includes(s));
         }
+        function isAmadoCatalogItem(b) { return !isAntiqueObject(b); }
 
         // Renderizar sección Novedades
         function renderBestsellers(books) {
@@ -483,7 +494,7 @@
             const grid = document.getElementById('bestsellerGrid');
             if (!section || !grid || !books || books.length === 0) return;
             
-            const inStock = books.filter(b => b.status === 'active' && b.available_quantity > 0 && isEditorial(b));
+            const inStock = books.filter(b => b.status === 'active' && b.available_quantity > 0 && isAmadoCatalogItem(b));
             const top = inStock
                 .sort((a, b) => {
                     const da = a.start_time ? new Date(a.start_time).getTime() : 0;
@@ -519,7 +530,7 @@
             const grid = document.getElementById('hardToFindGrid');
             if (!section || !grid || !books || books.length === 0) return;
 
-            const paused = books.filter(b => (b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0) && isEditorial(b));
+            const paused = books.filter(b => (b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0) && isAmadoCatalogItem(b));
             const top = paused.slice(0, 8);
             if (top.length === 0) return;
 
@@ -599,7 +610,7 @@
                     initializeCatalog();
                 } else {
                     // Actualizar base de datos silenciosamente: las búsquedas futuras usan el catálogo completo
-                    allLoadedBooks = [...allBooks].sort((a, b) => {
+                    allLoadedBooks = [...allBooks].filter(isAmadoCatalogItem).sort((a, b) => {
                         const aS = a.status === 'active' && a.available_quantity > 0;
                         const bS = b.status === 'active' && b.available_quantity > 0;
                         if (aS && !bS) return -1;
@@ -713,7 +724,7 @@
         }
 
         function initializeCatalog() {
-            allLoadedBooks = [...allBooks].sort((a, b) => {
+            allLoadedBooks = [...allBooks].filter(isAmadoCatalogItem).sort((a, b) => {
                 const aStock = a.status === 'active' && a.available_quantity > 0;
                 const bStock = b.status === 'active' && b.available_quantity > 0;
                 if (aStock && !bStock) return -1;
