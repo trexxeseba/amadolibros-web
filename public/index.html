@@ -157,7 +157,7 @@
             <div class="w-full flex items-center bg-white rounded-full px-4 py-2 shadow-lg border border-gray-100 focus-within:ring-2 focus-within:ring-brand-orange/40 transition-all">
                 <i class="fas fa-search text-gray-400 text-sm mr-3"></i>
                 <input type="text" id="headerSearch"
-                    placeholder="Buscá por ISBN, título, autor o palabra clave..."
+                    placeholder="Buscá título, autor o ISBN..."
                     class="bg-transparent border-none outline-none text-slate-800 placeholder-gray-400 text-sm w-full font-medium"
                     oninput="onHeaderSearch(this.value)"
                     onblur="clearTimeout(_dropdownBlurTimer); _dropdownBlurTimer = setTimeout(function(){ if(!_isPointerInDropdown){ document.getElementById('autocompleteDropdown')?.classList.add('hidden'); _acIndex=-1; } }, 200);"
@@ -195,23 +195,24 @@
         <!-- Hero Section -->
         <section class="hero-section rounded-2xl px-6 py-6 mb-5 border border-stone-200">
             <div class="max-w-2xl">
+                <p class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-3"><i class="fas fa-store text-xs"></i> Librería uruguaya · 7.400+ títulos</p>
                 <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">Libros importados y por encargo en Uruguay</h1>
                 <p class="text-base text-stone-600 mb-4 max-w-xl">Entregamos hoy en Montevideo — coordinás la hora. Enviamos a todo el Uruguay en 24 a 48hs. ¿No lo encontrás? Te lo conseguimos.</p>
                 <div class="flex flex-wrap gap-3 mb-5">
                     <button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})"
                         class="inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-700 transition-colors text-sm">
-                        <i class="fas fa-book-open text-sm"></i> Explorar catálogo
+                        <i class="fas fa-search text-sm"></i> Buscar en catálogo
                     </button>
                     <a href="https://wa.me/59899841325?text=Hola!%20Busco%20un%20libro..." target="_blank"
                         class="inline-flex items-center gap-2 bg-white border border-stone-300 text-stone-800 font-bold px-6 py-3 rounded-full hover:bg-stone-50 transition-colors text-sm">
-                        <i class="fab fa-whatsapp text-green-600"></i> Pedir un libro
+                        <i class="fab fa-whatsapp text-green-600"></i> Pedir por WhatsApp
                     </a>
                 </div>
-                <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-stone-500 border-t border-stone-200 pt-4">
-                    <span class="flex items-center gap-1.5"><i class="fas fa-bolt text-brand-purple text-xs"></i> Entrega hoy en Montevideo — coordinás la hora</span>
-                    <span class="flex items-center gap-1.5"><i class="fas fa-truck text-brand-purple text-xs"></i> Envíos a todo Uruguay en 24–48hs</span>
-                    <span class="flex items-center gap-1.5"><i class="fas fa-globe-americas text-brand-purple text-xs"></i> Libros importados y por encargo</span>
-                    <span class="flex items-center gap-1.5"><i class="fas fa-headset text-brand-purple text-xs"></i> Atención personalizada</span>
+                <div class="grid grid-cols-2 md:flex md:flex-wrap gap-3 md:gap-x-6 md:gap-y-2 text-sm border-t border-stone-200 pt-4">
+                    <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-bolt text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Entrega hoy</b> en Montevideo</span></span>
+                    <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-truck text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Todo Uruguay</b> 24–48hs</span></span>
+                    <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-globe-americas text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Importados</b> y por encargo</span></span>
+                    <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-headset text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Atención</b> personalizada</span></span>
                 </div>
             </div>
         </section>
@@ -228,7 +229,7 @@
                 <div class="flex-1 h-px bg-stone-200"></div>
                 <span class="text-xs text-stone-400 font-medium">Últimas incorporaciones</span>
             </div>
-            <div id="bestsellerGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3"></div>
+            <div id="bestsellerGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3"></div>
         </div>
 
         <!-- SECCIÓN LO CONSEGUIMOS PARA VOS -->
@@ -242,7 +243,7 @@
             </div>
             <p class="text-sm text-stone-600 max-w-2xl mb-2">Cada semana recibimos títulos desde España, Argentina, Estados Unidos y otros mercados. Si no está en plaza, podemos conseguirlo para vos por encargo.</p>
             <p class="text-sm text-stone-500 max-w-2xl mb-5">Si te interesa lo último en una temática, un material difícil de ubicar o una búsqueda más especializada, consultanos sin compromiso. Nos gusta buscar bien y orientarte con criterio.</p>
-            <div id="hardToFindGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4"></div>
+            <div id="hardToFindGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 mb-4"></div>
             <p class="text-xs text-stone-400 italic">Los tiempos dependen del país de origen y de la disponibilidad del título.</p>
         </div>
         
@@ -414,7 +415,7 @@
         const HOME_URL    = '/home.json';       // snapshot liviano (~20KB): 40 items activos + 10 pausados
         const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json'; // catálogo completo (3.7MB)
         const CACHE_KEY   = 'amadoCatalogR2v3'; // clave compartida sessionStorage + localStorage
-        const CACHE_TTL_H = 4;                  // horas hasta revalidación silenciosa del cache
+        const CACHE_TTL_H = 1;                  // horas hasta revalidación silenciosa del cache
         const PAGE_SIZE = 40;
         const DISPLAY_PAGE_SIZE = 40; // Cards a mostrar por vez (paginación virtual)
         let currentPage = 0;
@@ -774,13 +775,13 @@
                         <div class="mt-auto pt-2 flex items-end justify-between">
                             <div>
                                 ${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0
-                                    ? '<p class="text-sm text-slate-500 italic">💬 Pedilo por WhatsApp y te cotizamos en 24hs</p>'
+                                    ? '<p class="text-xs text-stone-500 font-medium">Por encargo · <span class="text-green-600">consultá por WA</span></p>'
                                     : `<p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p><p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>`
                                 }
                             </div>
                             ${b.status === 'paused' 
-                                ? '<a href="https://wa.me/59899841325?text=' + encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir?') + '" target="_blank" class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors flex-shrink-0" title="Pedir por WhatsApp"><i class=\'fab fa-whatsapp text-sm\'></i></a>'
-                                : '<button onclick="openModal(\'' + b.id + '\')" class="bg-slate-900 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors flex-shrink-0"><i class=\'fas fa-plus\'></i></button>'}
+                                ? '<a href="https://wa.me/59899841325?text=' + encodeURIComponent('Hola! Me interesa el libro ' + b.title + ', \u00bfme lo pod\u00e9s conseguir?') + '" target="_blank" class="bg-green-600 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-green-700 transition-colors flex-shrink-0" title="Pedir por WhatsApp"><i class=\'fab fa-whatsapp\'></i></a>'
+                                : '<button onclick="openModal(\'' + b.id + '\')" class="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-colors flex-shrink-0"><i class=\'fas fa-plus\'></i></button>'}
                         </div>
                     </div>
                 `;
