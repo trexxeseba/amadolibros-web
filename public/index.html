@@ -197,7 +197,7 @@
             <div class="max-w-2xl">
                 <p class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-3"><i class="fas fa-store text-xs"></i> Librería uruguaya · 7.400+ títulos</p>
                 <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">Libros importados y por encargo en Uruguay</h1>
-                <p class="text-base text-stone-600 mb-4 max-w-xl">Entregamos hoy en Montevideo — coordinás la hora. Enviamos a todo el Uruguay en 24 a 48hs. ¿No lo encontrás? Te lo conseguimos.</p>
+                <p class="text-base text-stone-600 mb-4 max-w-xl"><strong class="text-slate-800">Montevideo:</strong> entrega hoy, coordinás la hora. <strong class="text-slate-800">Interior:</strong> envíos en 24–48hs a todo Uruguay. Si no está en stock, te lo conseguimos por encargo.</p>
                 <div class="flex flex-wrap gap-3 mb-5">
                     <button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})"
                         class="inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-700 transition-colors text-sm">
@@ -214,6 +214,7 @@
                     <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-globe-americas text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Importados</b> y por encargo</span></span>
                     <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-headset text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Atención</b> personalizada</span></span>
                 </div>
+                <p class="text-xs text-stone-400 mt-3">Librería uruguaya · Respondemos por WhatsApp todos los días</p>
             </div>
         </section>
 
@@ -248,10 +249,10 @@
         </div>
         
         <div id="mainContent">
-            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 bg-[#faf7f2]/90 backdrop-blur-md p-4 rounded-xl shadow-sm border border-stone-200">
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 bg-[#faf7f2]/90 backdrop-blur-md px-3 py-2 md:p-4 rounded-xl shadow-sm border border-stone-200">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i class="fas fa-layer-group text-brand-purple"></i> Explorar Colección</h2>
-                    <p id="counter" class="text-slate-500 text-xs">Miles de historias a tu alcance</p>
+                    <h2 class="hidden md:flex text-lg font-bold text-slate-900 items-center gap-2"><i class="fas fa-layer-group text-brand-purple"></i> Explorar Colección</h2>
+                    <p id="counter" class="text-slate-700 text-sm font-bold">Miles de historias a tu alcance</p>
                 </div>
 
                 <div class="flex gap-2 items-center">
@@ -687,7 +688,7 @@
                         ${b.author ? `<p class="text-[10px] text-gray-500 mt-0.5 line-clamp-1">${b.author}</p>` : ''}
                         <div class="mt-auto pt-2">
                             ${isActive
-                                ? `<p class="text-[10px] text-gray-400 line-through">${fmt.format(b.price)}</p><p class="text-sm font-black text-brand-purple">${fmt.format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>`
+                                ? `<p class="text-[10px] text-gray-400 line-through">${fmt.format(b.price)}</p><p class="text-sm font-black text-brand-purple">${fmt.format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12% transferencia</span></p>`
                                 : `<p class="text-xs text-slate-400 italic">💬 Por encargo</p>`
                             }
                         </div>
@@ -776,7 +777,7 @@
                             <div>
                                 ${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0
                                     ? '<p class="text-xs text-stone-500 font-medium">Por encargo · <span class="text-green-600">consultá por WA</span></p>'
-                                    : `<p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p><p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12%</span></p>`
+                                    : `<p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p><p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12% transferencia</span></p><p class="text-[9px] text-green-600 font-bold mt-0.5">✓ Disponible</p>`
                                 }
                             </div>
                             ${b.status === 'paused' 
@@ -923,7 +924,7 @@ function clearHeaderSearch() {
             if(!isPaused) {
                 const fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
                 document.getElementById('modalPrice').innerText = fmt.format(b.price);
-                document.getElementById('modalInstallments').innerText = `o 12 cuotas de ${fmt.format(b.price/12)}`;
+                document.getElementById('modalInstallments').innerText = `12 cuotas de ${fmt.format(b.price/12)}`;
                 document.getElementById('modalPriceTransfer').innerText = fmt.format(b.price*0.88);
                 document.getElementById('btnML').href = b.permalink || `https://articulo.mercadolibre.com.uy/MLU-${b.id.replace('MLU','')}`;
                 const msg = `Hola Amado Libros, me interesa comprar con descuento: ${b.title} (ID: ${b.id})`;
@@ -1023,7 +1024,7 @@ function clearHeaderSearch() {
                 const isAvailable = b.status === 'active' && b.available_quantity > 0;
                 const priceHtml = isAvailable
                     ? `<span class="font-black text-brand-purple text-xs">${fmt.format(Math.round(b.price * 0.88))}</span><span class="text-[10px] text-green-600 ml-1 font-bold">-12%</span>`
-                    : `<span class="text-[10px] text-blue-500 font-semibold">💬 Te lo conseguimos</span>`;
+                    : `<span class="text-[10px] text-green-600 font-semibold">💬 Te lo conseguimos</span>`;
                 const highlighted = b.title.replace(new RegExp('(' + escapeRx + ')', 'gi'), '<strong class="text-brand-orange">$1</strong>');
                 return `<div class="ac-item flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors" data-id="${b.id}" data-index="${i}">
                     <img src="${img}" alt="" class="w-9 h-12 object-cover rounded flex-shrink-0 bg-gray-100" onerror="this.style.display='none'">
@@ -1160,11 +1161,11 @@ function clearHeaderSearch() {
     <script>
         const placeholders = [
             "¿Qué querés leer hoy?",
-            "Buscá por título...",
+            "Buscá por título o autor...",
             "¿Quién es tu autor favorito?",
             "Freud, Cortázar, García Márquez...",
-            "Buscá por ISBN, título, autor o palabra clave...",
-            "Te conseguimos cualquier libro 📚"
+            "Buscá por ISBN o palabra clave...",
+            "Te conseguimos cualquier libro"
         ];
 
         let placeholderIndex = 0;
