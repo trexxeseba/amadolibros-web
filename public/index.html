@@ -209,7 +209,7 @@
                 <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">Libros importados y por encargo en Uruguay</h1>
                 <p class="text-base text-stone-600 mb-4 max-w-xl">Buscá por título, autor o ISBN. Entrega hoy en Montevideo y envíos a todo Uruguay. Si no lo encontrás, lo conseguimos por encargo.</p>
                 <div class="flex flex-wrap gap-3 mb-5">
-                    <button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})"
+                    <button onclick="focusCatalogSearch()"
                         class="inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-700 transition-colors text-sm">
                         <i class="fas fa-search text-sm"></i> Buscar en catálogo
                     </button>
@@ -471,6 +471,20 @@
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/^-|-$/g, '')
                 .substring(0, 60);
+        }
+
+        function focusCatalogSearch() {
+            const input = document.getElementById('headerSearch');
+            if (!input) {
+                document.getElementById('grid')?.scrollIntoView({behavior: 'smooth'});
+                return;
+            }
+            input.focus();
+            if (input.value) input.select();
+            const anchor = document.getElementById('searchAnchor');
+            if (anchor) {
+                anchor.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }
         }
 
         function isAntiqueObject(b) {
