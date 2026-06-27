@@ -205,9 +205,9 @@
         <!-- Hero Section -->
         <section class="hero-section rounded-2xl px-6 py-6 mb-5 border border-stone-200">
             <div class="max-w-2xl">
-                <p class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-3"><i class="fas fa-store text-xs"></i> Librería uruguaya · 7.400+ títulos</p>
+                <p class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-3"><i class="fas fa-store text-xs"></i> Librería uruguaya · Miles de títulos</p>
                 <h1 class="text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-3">Libros importados y por encargo en Uruguay</h1>
-                <p class="text-base text-stone-600 mb-4 max-w-xl"><strong class="text-slate-800">Montevideo:</strong> entrega hoy, coordinás la hora. <strong class="text-slate-800">Interior:</strong> envíos en 24–48hs a todo Uruguay. Si no está en stock, te lo conseguimos por encargo.</p>
+                <p class="text-base text-stone-600 mb-4 max-w-xl">Buscá por título, autor o ISBN. Entrega hoy en Montevideo y envíos a todo Uruguay. Si no lo encontrás, lo conseguimos por encargo.</p>
                 <div class="flex flex-wrap gap-3 mb-5">
                     <button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})"
                         class="inline-flex items-center gap-2 bg-slate-900 text-white font-bold px-6 py-3 rounded-full hover:bg-slate-700 transition-colors text-sm">
@@ -221,7 +221,7 @@
                 <div class="grid grid-cols-2 md:flex md:flex-wrap gap-3 md:gap-x-6 md:gap-y-2 text-sm border-t border-stone-200 pt-4">
                     <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-bolt text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Entrega hoy</b> en Montevideo</span></span>
                     <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-truck text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Todo Uruguay</b> 24–48hs</span></span>
-                    <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-globe-americas text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Importados</b> y por encargo</span></span>
+                    <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-globe-americas text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Libros</b> difíciles de ubicar</span></span>
                     <span class="flex items-center gap-1.5 text-stone-600"><i class="fas fa-headset text-brand-purple text-xs flex-shrink-0"></i><span><b class="text-slate-800">Atención</b> personalizada</span></span>
                 </div>
                 <p class="text-xs text-stone-400 mt-3">Librería uruguaya · Respondemos por WhatsApp todos los días</p>
@@ -691,7 +691,7 @@
                 return `<div class="book-card rounded-xl shadow-sm overflow-hidden flex flex-col group animate-fade-in" style="animation-delay:${Math.min(i * 20, 200)}ms">
                     <div class="relative pt-[140%] bg-gray-100 cursor-pointer" onclick="${isActive ? `openModal('${b.id}')` : `window.open('https://wa.me/59899841325','_blank')`}">
                         <img src="${img}" alt="${b.title}" class="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
-                        ${!isActive ? '<div class="absolute bottom-0 left-0 w-full bg-blue-600/90 text-white text-[10px] font-bold text-center py-1"><i class="fas fa-magic mr-1"></i>TE LO CONSEGUIMOS</div>' : ''}
+                        ${!isActive ? '<div class="absolute bottom-0 left-0 w-full bg-brand-purple/90 text-white text-[10px] font-bold text-center py-1">POR ENCARGO</div>' : ''}
                     </div>
                     <div class="p-3 flex flex-col flex-grow">
                         <h4 class="text-xs font-bold text-slate-800 line-clamp-2"><a href="/libro/${b.id}/${slugify(b.title)}" class="hover:text-brand-purple transition-colors" onclick="event.stopPropagation()">${b.title}</a></h4>
@@ -778,7 +778,7 @@
                                 ${wishlist.includes(b.id) ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>'}
                             </button>
                         </div>
-                        ${b.status === 'paused' ? '<div class="absolute bottom-0 left-0 w-full bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-bold text-center py-1"><i class="fas fa-magic mr-1"></i>TE LO CONSEGUIMOS</div>' : ''}
+                        ${b.status === 'paused' ? '<div class="absolute bottom-0 left-0 w-full bg-brand-purple/90 backdrop-blur-sm text-white text-[10px] font-bold text-center py-1">POR ENCARGO</div>' : ''}
                     </div>
                     <div class="p-3 flex flex-col flex-grow">
                         <h4 class="text-xs font-bold text-slate-800 line-clamp-2"><a href="/libro/${b.id}/${slugify(b.title)}" class="hover:text-brand-purple transition-colors" onclick="event.stopPropagation()">${b.title}</a></h4>
@@ -786,7 +786,7 @@
                         <div class="mt-auto pt-2 flex items-end justify-between">
                             <div>
                                 ${b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0
-                                    ? '<p class="text-xs text-stone-500 font-medium">Por encargo · <span class="text-green-600">consultá por WA</span></p>'
+                                    ? '<p class="text-xs text-stone-500 font-medium">Lo conseguimos por encargo</p>'
                                     : `<p class="text-[10px] text-gray-400 line-through">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(b.price)}</p><p class="text-sm font-black text-brand-purple">${new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 }).format(Math.round(b.price * 0.88))}<span class="text-[9px] font-bold text-green-600 ml-1">-12% transferencia</span></p><p class="text-[9px] text-green-600 font-bold mt-0.5">✓ Disponible</p>`
                                 }
                             </div>
