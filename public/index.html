@@ -473,13 +473,17 @@
                 .substring(0, 60);
         }
 
+        function isEditorial(b) {
+            return b.author !== null && b.author !== undefined && b.author.trim() !== '';
+        }
+
         // Renderizar sección Novedades
         function renderBestsellers(books) {
             const section = document.getElementById('bestsellerSection');
             const grid = document.getElementById('bestsellerGrid');
             if (!section || !grid || !books || books.length === 0) return;
             
-            const inStock = books.filter(b => b.status === 'active' && b.available_quantity > 0);
+            const inStock = books.filter(b => b.status === 'active' && b.available_quantity > 0 && isEditorial(b));
             const top = inStock
                 .sort((a, b) => {
                     const da = a.start_time ? new Date(a.start_time).getTime() : 0;
@@ -515,7 +519,7 @@
             const grid = document.getElementById('hardToFindGrid');
             if (!section || !grid || !books || books.length === 0) return;
 
-            const paused = books.filter(b => b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0);
+            const paused = books.filter(b => (b.status === 'paused' || !b.available_quantity || b.available_quantity <= 0) && isEditorial(b));
             const top = paused.slice(0, 8);
             if (top.length === 0) return;
 
