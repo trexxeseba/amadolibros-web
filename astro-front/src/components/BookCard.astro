@@ -62,8 +62,7 @@ const listPrice     = fmt.format(book.price);
 
     <div class="bc-prices">
       <span class="bc-price-transfer">{transferPrice}</span>
-      <span class="bc-price-label">con transferencia</span>
-      <span class="bc-price-normal">{listPrice} de lista</span>
+      <span class="bc-price-context">con transferencia · <span class="bc-price-list">{listPrice}</span></span>
     </div>
 
     <a href={waHref} target="_blank" rel="noopener noreferrer" class="bc-wa-btn">
@@ -110,7 +109,7 @@ const listPrice     = fmt.format(book.price);
     padding: 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.45rem;
     flex: 1;
   }
 
@@ -157,7 +156,7 @@ const listPrice     = fmt.format(book.price);
   .bc-prices {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.2rem;
     margin-top: 0.25rem;
   }
 
@@ -168,13 +167,13 @@ const listPrice     = fmt.format(book.price);
     line-height: 1.2;
   }
 
-  .bc-price-label {
+  .bc-price-context {
     font-size: 0.6875rem;
     color: var(--ink-2);
+    line-height: 1.3;
   }
 
-  .bc-price-normal {
-    font-size: 0.6875rem;
+  .bc-price-list {
     color: var(--ink-2);
   }
 
@@ -183,7 +182,7 @@ const listPrice     = fmt.format(book.price);
     align-items: center;
     gap: 0.35rem;
     margin-top: auto;
-    padding-top: 0.625rem;
+    padding-top: 0.875rem;
     font-family: var(--font-ui);
     font-size: 0.75rem;
     font-weight: 600;
