@@ -22,7 +22,7 @@
         placeholder="Título, autor o ISBN"
         autocomplete="off"
         spellcheck="false"
-        enterkeyhint="search"
+        enterkeyhint="done"
         aria-label="Buscar libros"
       />
       <p class="so-hint">
@@ -227,9 +227,13 @@
     waBtn.disabled = !input.value.trim();
   });
 
-  // Enter en input → mover foco al botón WA si hay texto (acción explícita del usuario)
+  // Enter neutralizado: WhatsApp solo se abre con tap explícito en el botón
   input.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && input.value.trim()) waBtn.focus();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
   });
 
   // Botón WA
