@@ -1,16 +1,18 @@
 ﻿---
-// Lote 2-A — home estática visual.
-// Sin catálogo, sin GA4, sin lógica de negocio. noindex activo.
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Header     from '../components/Header.astro';
-import Hero       from '../components/Hero.astro';
-import Footer     from '../components/Footer.astro';
-import WAFloat    from '../components/WAFloat.astro';
+// Lote 2-B — home con sección Novedades renderizada en build desde public/home.json.
+// Sin catálogo completo, sin GA4, sin lógica de negocio. noindex activo.
+import BaseLayout          from '../layouts/BaseLayout.astro';
+import Header              from '../components/Header.astro';
+import Hero                from '../components/Hero.astro';
+import BestsellerSection   from '../components/BestsellerSection.astro';
+import Footer              from '../components/Footer.astro';
+import WAFloat             from '../components/WAFloat.astro';
 ---
 <BaseLayout>
   <Header />
   <main>
     <Hero />
+    <BestsellerSection />
   </main>
   <Footer />
   <WAFloat />
