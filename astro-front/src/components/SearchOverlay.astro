@@ -26,7 +26,7 @@
         aria-label="Buscar libros"
       />
       <p class="so-hint">
-        Escribí lo que buscás. Si no está en stock, lo podemos conseguir por encargo.
+        Escribí lo que buscás y te respondemos por WhatsApp.
       </p>
       <button type="button" id="so-wa-btn" class="so-wa-btn" disabled>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -227,9 +227,9 @@
     waBtn.disabled = !input.value.trim();
   });
 
-  // Enter en input → misma acción que botón WA
+  // Enter en input → mover foco al botón WA si hay texto (acción explícita del usuario)
   input.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') sendWA();
+    if (e.key === 'Enter' && input.value.trim()) waBtn.focus();
   });
 
   // Botón WA
