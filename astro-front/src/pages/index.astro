@@ -1,16 +1,17 @@
+﻿---
+// Lote 2-A — home estática visual.
+// Sin catálogo, sin GA4, sin lógica de negocio. noindex activo.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header     from '../components/Header.astro';
+import Hero       from '../components/Hero.astro';
+import Footer     from '../components/Footer.astro';
+import WAFloat    from '../components/WAFloat.astro';
 ---
-// LOTE 0 — PLACEHOLDER DE MIGRACIÓN.
-// No reemplaza producción. Sin GA4. Sin lógica de negocio.
----
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
-  <title>Amado Libros — Preview de migración</title>
-</head>
-<body>
-  <p>Astro build OK. Preview de migración. Esto no es producción.</p>
-</body>
-</html>
+<BaseLayout>
+  <Header />
+  <main>
+    <Hero />
+  </main>
+  <Footer />
+  <WAFloat />
+</BaseLayout>

@@ -1,0 +1,139 @@
+---
+const WA_HREF =
+  'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quisiera%20consultar';
+const YEAR = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="footer-inner">
+
+    <!-- Marca -->
+    <div class="footer-brand">
+      <p class="footer-name">Amado Libros</p>
+      <p class="footer-tagline">
+        Librería uruguaya. Respondemos por WhatsApp todos los días.
+      </p>
+      <p class="footer-copy">&copy; {YEAR} Amado Libros</p>
+    </div>
+
+    <!-- Info -->
+    <div class="footer-info">
+      <p class="footer-info-title">Cómo comprás</p>
+      <ul class="footer-list">
+        <li>Consultás por WhatsApp o en Mercado Libre</li>
+        <li>Entrega en el día en Montevideo</li>
+        <li>Envíos a todo Uruguay</li>
+        <li>Libros difíciles de ubicar por encargo</li>
+      </ul>
+    </div>
+
+    <!-- Contacto -->
+    <div class="footer-contact">
+      <p class="footer-info-title">Contacto</p>
+      <a
+        href={WA_HREF}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-wa-link"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+        </svg>
+        WhatsApp · 099 841 325
+      </a>
+      <p class="footer-ml-note">
+        También vendemos en
+        <span class="footer-ml-highlight">Mercado Libre</span>
+      </p>
+    </div>
+
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--ink);
+    color: rgba(248, 245, 239, 0.55);
+    margin-top: 4rem;
+  }
+
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .footer-inner { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* Marca */
+  .footer-name {
+    font-family: var(--font-ui);
+    font-weight: 800;
+    font-size: 1rem;
+    color: rgba(248, 245, 239, 0.9);
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-tagline {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    margin-bottom: 1.25rem;
+  }
+
+  .footer-copy {
+    font-size: 0.75rem;
+    color: rgba(248, 245, 239, 0.28);
+  }
+
+  /* Info */
+  .footer-info-title {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(248, 245, 239, 0.35);
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .footer-list li {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  /* Contacto */
+  .footer-contact { display: flex; flex-direction: column; gap: 0; }
+
+  .footer-wa-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--wa);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.875rem;
+    transition: opacity 0.15s;
+  }
+  .footer-wa-link:hover { opacity: 0.8; }
+
+  .footer-ml-note {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .footer-ml-highlight {
+    color: rgba(248, 245, 239, 0.7);
+    font-weight: 600;
+  }
+</style>

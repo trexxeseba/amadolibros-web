@@ -1,0 +1,287 @@
+---
+const WA_HREF =
+  'https://wa.me/59899841325?text=Hola%21%20Quisiera%20consultar%20sobre%20un%20libro';
+---
+<section class="hero">
+
+  <div class="hero-content">
+
+    <!-- Badge -->
+    <span class="hero-badge">Librería uruguaya</span>
+
+    <!-- H1 -->
+    <h1 class="hero-h1">
+      Libros disponibles hoy, pedidos por encargo y atención directa por WhatsApp.
+    </h1>
+
+    <!-- Bajada -->
+    <p class="hero-lead">
+      En Montevideo coordinás entrega en el día. Al interior enviamos a todo Uruguay.
+      Si no está en stock, lo buscamos por encargo.
+    </p>
+
+    <!-- CTAs -->
+    <div class="hero-ctas">
+      <button
+        type="button"
+        class="btn-primary"
+        onclick="(function(){window.scrollTo({top:0,behavior:'smooth'});setTimeout(function(){var el=document.getElementById('headerSearch');if(el)el.focus();},280);})()"
+        aria-label="Ir al buscador del catálogo"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.75"/>
+          <path d="m11 11 3 3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        </svg>
+        Buscar en catálogo
+      </button>
+
+      <a href={WA_HREF} target="_blank" rel="noopener noreferrer" class="btn-wa">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+        </svg>
+        Pedir por WhatsApp
+      </a>
+    </div>
+
+    <!-- Trust line -->
+    <ul class="trust-grid" role="list">
+
+      <li class="trust-item">
+        <span class="trust-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <polyline
+              points="11,2 7,10 11,10 9,18"
+              stroke="currentColor" stroke-width="1.75"
+              stroke-linecap="round" stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+        <span class="trust-label">Entrega hoy en Montevideo</span>
+      </li>
+
+      <li class="trust-item">
+        <span class="trust-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="1" y="6" width="11" height="8" rx="1"
+              stroke="currentColor" stroke-width="1.5"/>
+            <path d="M12 9h3.5l2 3v2h-5.5V9z"
+              stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="4.5" cy="15.5" r="1.5"
+              stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="14.5" cy="15.5" r="1.5"
+              stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </span>
+        <span class="trust-label">Envíos a todo Uruguay</span>
+      </li>
+
+      <li class="trust-item">
+        <span class="trust-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="5" width="16" height="11" rx="2"
+              stroke="currentColor" stroke-width="1.5"/>
+            <path d="M2 9h16" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="4" y="12" width="4" height="1.5" rx=".5"
+              fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="trust-label">12 pagos con Mercado Pago</span>
+      </li>
+
+      <li class="trust-item">
+        <span class="trust-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="6.5" cy="6.5" r="2.5"
+              stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="13.5" cy="13.5" r="2.5"
+              stroke="currentColor" stroke-width="1.5"/>
+            <path d="M5 15L15 5"
+              stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="trust-label">−12% pagando por transferencia</span>
+      </li>
+
+    </ul>
+  </div>
+
+  <!-- Logo (solo desktop) -->
+  <div class="hero-logo-wrap" aria-hidden="true">
+    <div class="hero-logo-card">
+      <img
+        src="/images/logo-amado.jpg"
+        alt=""
+        width="200"
+        height="200"
+        loading="eager"
+        decoding="sync"
+      >
+    </div>
+  </div>
+
+</section>
+
+<style>
+  .hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 3rem;
+  }
+
+  @media (min-width: 768px) {
+    .hero {
+      padding: 5rem 2rem 4.5rem;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 4rem;
+      align-items: center;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero { grid-template-columns: 1fr 340px; }
+  }
+
+  /* Badge */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(228, 153, 130, 0.12);
+    border: 1px solid rgba(228, 153, 130, 0.35);
+    color: var(--salmon-hover);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 1.25rem;
+  }
+
+  /* H1 */
+  .hero-h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.875rem, 4.5vw, 2.75rem);
+    line-height: 1.2;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 1.125rem;
+  }
+
+  /* Bajada */
+  .hero-lead {
+    font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
+    color: var(--ink-2);
+    line-height: 1.7;
+    max-width: 52ch;
+    margin-bottom: 0;
+  }
+
+  /* CTAs */
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--ink);
+    color: var(--surface);
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+  .btn-primary:hover { opacity: 0.82; }
+
+  .btn-wa {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--wa);
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    padding: 0.71rem 1.5rem;
+    border-radius: 999px;
+    border: 1.5px solid rgba(37, 211, 102, 0.38);
+    transition: background 0.15s, border-color 0.15s;
+    line-height: 1;
+  }
+  .btn-wa:hover {
+    background: rgba(37, 211, 102, 0.08);
+    border-color: var(--wa);
+  }
+
+  /* Trust grid */
+  .trust-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
+    list-style: none;
+  }
+
+  @media (min-width: 768px) {
+    .trust-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .trust-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.875rem 0.875rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+  }
+
+  .trust-icon { color: var(--salmon); display: flex; }
+
+  .trust-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+
+  /* Logo card (desktop only) */
+  .hero-logo-wrap { display: none; }
+
+  @media (min-width: 768px) {
+    .hero-logo-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .hero-logo-card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    box-shadow:
+      0 2px 8px rgba(24, 18, 14, 0.06),
+      0 8px 32px rgba(24, 18, 14, 0.08);
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-logo-card img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 0.5rem;
+  }
+</style>
