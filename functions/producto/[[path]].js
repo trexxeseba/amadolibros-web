@@ -12,20 +12,7 @@
  */
 
 import { slugify } from '../_shared/slug.js';
-
-const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
-const BASE        = 'https://www.amadolibros.com';
-
-
-async function fetchCatalog() {
-    try {
-        const resp = await fetch(CATALOG_URL);
-        if (!resp.ok) return null;
-        return await resp.json();
-    } catch {
-        return null;
-    }
-}
+import { BASE, fetchCatalog } from '../_shared/catalog.js';
 
 export async function onRequest(context) {
     // Extract the slug from the incoming /producto/:slug URL
@@ -35,7 +22,7 @@ export async function onRequest(context) {
     const incomingSlug = (pathParts[0] || '').toLowerCase().replace(/\/+$/, '');
 
     if (incomingSlug) {
-        const catalog = await fetchCatalog();
+        const catalog = await fetchCatalog(context);
         if (catalog && Array.isArray(catalog.items)) {
             const match = catalog.items.find(
                 item => slugify(item.title) === incomingSlug
