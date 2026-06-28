@@ -13,6 +13,8 @@
  * - URLs de WhatsApp con encodeURIComponent.
  */
 
+import { slugify } from '../_shared/slug.js';
+
 const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const BASE        = 'https://www.amadolibros.com';
 const WA          = '59899841325';
@@ -31,14 +33,6 @@ function escapeHtml(str) {
         .replace(/'/g,  '&#39;');
 }
 
-function slugify(text) {
-    return (text || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .substring(0, 60);
-}
 
 function httpsImg(url) {
     return (url || '').replace('http://', 'https://');

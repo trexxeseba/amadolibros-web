@@ -19,22 +19,12 @@
  *                  thumbnail, pictures, permalink, start_time }, ... ] }
  *   Solo contiene items con status == "active".
  *
- * slugify() CRÍTICO: debe mantenerse idéntico al de libro/[[path]].js y
- *   sitemap.xml.js. Si se cambia uno, cambiar los tres.
  */
+
+import { slugify } from './_shared/slug.js';
 
 const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 
-// Genera el slug de URL a partir del título.
-// CRÍTICO: debe mantenerse idéntico al slugify de libro/[[path]].js y sitemap.xml.js.
-function slugify(text) {
-    return (text || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .substring(0, 60);
-}
 
 // Idéntico al fetchCatalog de catalogo.js y sitemap.xml.js.
 // Usa CF edge cache con TTL 1h para no hacer fetch a R2 en cada request.

@@ -9,21 +9,13 @@
  * Si hay coincidencia → 301 a /libro/:id/:slug (canonical).
  * Sin coincidencia → 410 Gone (página permanentemente eliminada, sin equivalente).
  *
- * slugify() es idéntico al de libro/[[path]].js, sitemap.xml.js, catalogo.js y
- * feed.xml.js — CRÍTICO: debe mantenerse idéntico para que los slugs coincidan.
  */
+
+import { slugify } from '../_shared/slug.js';
 
 const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const BASE        = 'https://www.amadolibros.com';
 
-function slugify(text) {
-    return (text || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .substring(0, 60);
-}
 
 async function fetchCatalog() {
     try {

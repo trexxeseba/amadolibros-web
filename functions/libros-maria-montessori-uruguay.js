@@ -6,18 +6,12 @@
  * Todo el contenido se renderiza en HTML inicial — sin JS requerido para Googlebot.
  */
 
+import { slugify } from './_shared/slug.js';
+
 const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const BASE        = 'https://www.amadolibros.com';
 const WA          = '59899841325';
 
-function slugify(text) {
-    return (text || '')
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .substring(0, 60);
-}
 
 function escapeHtml(str) {
     if (str == null) return '';
