@@ -25,7 +25,7 @@ const WA_HREF =
       <button
         type="button"
         class="btn-primary"
-        onclick="(function(){window.scrollTo({top:0,behavior:'smooth'});setTimeout(function(){var el=document.getElementById('headerSearch');if(el)el.focus();},280);})()"
+        onclick="document.dispatchEvent(new CustomEvent('amado:openSearch'))"
         aria-label="Ir al buscador del catálogo"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
