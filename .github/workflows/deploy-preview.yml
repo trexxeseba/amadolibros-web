@@ -13,13 +13,21 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.12.0'
 
       - name: Build Astro
         run: |
           cd astro-front
           npm ci
           npm run build
+
+      - name: Verify build output
+        run: |
+          test -f astro-front/dist/index.html
+          grep -q "Astro build OK" astro-front/dist/index.html
+          grep -q "noindex, nofollow" astro-front/dist/index.html
+          test -f astro-front/dist/_headers
+          grep -q "X-Robots-Tag: noindex, nofollow" astro-front/dist/_headers
 
       - name: Deploy preview to CF Pages
         run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch astro-migration
