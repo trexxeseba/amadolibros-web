@@ -15,6 +15,13 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Generate home.json
+        # Genera public/home.json desde el catálogo público de R2.
+        # No requiere credenciales. Si falla (R2 down), el deploy continúa
+        # usando el último home.json commiteado como fallback.
+        run: node scripts/generate-home-json.js
+        continue-on-error: true
+
       - name: Build Astro
         run: |
           cd astro-front
