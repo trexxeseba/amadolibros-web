@@ -61,8 +61,11 @@ const basePrice     = fmt.format(book.price);
     {book.author && <p class="bc-author">{book.author}</p>}
 
     <div class="bc-prices">
-      <span class="bc-price-transfer">Transferencia: {transferPrice}</span>
-      <span class="bc-price-other">Otros medios: {basePrice}</span>
+      <div class="bc-price-main">
+        <span class="bc-price-base">Precio: {basePrice}</span>
+        <span class="bc-cuotas">Hasta 12 cuotas</span>
+      </div>
+      <span class="bc-price-transfer">Transferencia -12%: {transferPrice}</span>
     </div>
 
     <a href={waHref} target="_blank" rel="noopener noreferrer" class="bc-wa-btn">
@@ -160,16 +163,36 @@ const basePrice     = fmt.format(book.price);
     margin-top: 0.25rem;
   }
 
-  .bc-price-transfer {
+  .bc-price-main {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .bc-price-base {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--ink);
     line-height: 1.3;
+    white-space: nowrap;
   }
 
-  .bc-price-other {
+  .bc-cuotas {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: #267a42;
+    background: rgba(37, 160, 80, 0.1);
+    border-radius: 999px;
+    padding: 0.1rem 0.4rem;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .bc-price-transfer {
     font-size: 0.6875rem;
-    color: var(--ink-2);
+    font-weight: 600;
+    color: var(--salmon-hover);
     line-height: 1.3;
   }
 
