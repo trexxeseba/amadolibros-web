@@ -239,18 +239,5 @@
   // Botón WA
   waBtn.addEventListener('click', sendWA);
 
-  // Interceptar header input: prevenir foco real, abrir overlay
-  var headerInput = document.getElementById('headerSearch');
-  if (headerInput) {
-    headerInput.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      document.dispatchEvent(new CustomEvent('amado:openSearch'));
-    });
-    // Fallback para dispositivos sin pointer events
-    headerInput.addEventListener('focus', function () {
-      headerInput.blur();
-      document.dispatchEvent(new CustomEvent('amado:openSearch'));
-    });
-  }
 })();
 </script>
