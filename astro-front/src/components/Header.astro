@@ -11,10 +11,14 @@ const WA_HREF =
       <span class="brand-sub">Librería uruguaya</span>
     </a>
 
-    <!-- Buscador visual -->
+    <!-- CTA de consulta — abre overlay de WhatsApp -->
     <div class="search-wrap">
-      <label for="headerSearch" class="sr-only">Buscar libros</label>
-      <div class="search-box">
+      <button
+        type="button"
+        class="search-box"
+        onclick="document.dispatchEvent(new CustomEvent('amado:openSearch'))"
+        aria-label="Consultar un libro por título, autor o ISBN"
+      >
         <svg
           class="search-icon"
           width="16" height="16"
@@ -25,14 +29,8 @@ const WA_HREF =
           <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/>
           <path d="m11 11 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <input
-          id="headerSearch"
-          type="text"
-          placeholder="Buscá por título, autor o ISBN"
-          autocomplete="off"
-          spellcheck="false"
-        >
-      </div>
+        <span class="search-label">Pedir por título, autor o ISBN</span>
+      </button>
     </div>
 
     <!-- WhatsApp -->
@@ -115,32 +113,34 @@ const WA_HREF =
     width: 100%;
     max-width: 480px;
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 999px;
     padding: 0.5rem 1rem;
     transition: background 0.15s, border-color 0.15s;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    text-align: left;
   }
-  .search-box:focus-within {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(228, 153, 130, 0.55);
+  .search-box:hover,
+  .search-box:focus-visible {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(228, 153, 130, 0.6);
+    outline: none;
   }
 
   .search-icon {
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.45);
     flex-shrink: 0;
   }
 
-  .search-box input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #fff;
-    font-family: var(--font-ui);
-    font-size: 0.875rem;
-    width: 100%;
-    caret-color: var(--salmon);
+  .search-label {
+    color: rgba(255, 255, 255, 0.52);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .search-box input::placeholder { color: rgba(255, 255, 255, 0.32); }
 
   /* WA */
   .wa-btn {
