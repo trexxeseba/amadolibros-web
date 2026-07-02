@@ -143,6 +143,14 @@ const WA_HREF =
   }
   .search-box input::placeholder { color: rgba(255, 255, 255, 0.38); }
 
+  /* Pulse al enfocar desde Hero */
+  @keyframes searchPulse {
+    0%   { border-color: rgba(255,255,255,0.15); box-shadow: none; }
+    40%  { border-color: rgba(228,153,130,0.95); box-shadow: 0 0 0 3px rgba(228,153,130,0.22); }
+    100% { border-color: rgba(255,255,255,0.15); box-shadow: none; }
+  }
+  :global(.s-pulse) { animation: searchPulse 0.85s ease forwards; }
+
   /* WA */
   .wa-btn {
     display: flex;

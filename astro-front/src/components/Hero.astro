@@ -25,7 +25,17 @@ const WA_HREF =
       <button
         type="button"
         class="btn-primary"
-        onclick="var el=document.getElementById('catalogSearchInput');if(el)el.focus();"
+        onclick="(function(){
+          var el=document.getElementById('catalogSearchInput');
+          if(!el)return;
+          var box=el.closest('form');
+          var p=function(){
+            el.focus();
+            if(box){box.classList.add('s-pulse');setTimeout(function(){box.classList.remove('s-pulse');},900);}
+          };
+          if(window.scrollY>10){window.scrollTo({top:0,behavior:'smooth'});setTimeout(p,280);}
+          else{p();}
+        })()"
         aria-label="Ir al buscador del catálogo"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
