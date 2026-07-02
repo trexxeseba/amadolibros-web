@@ -80,8 +80,10 @@ function renderPage(item, slug, isPreview) {
     const img          = httpsImg(
         (item.pictures && item.pictures[0]) ? item.pictures[0] : (item.thumbnail || '')
     );
-    const price     = Number(item.price) || 0;
-    const priceUY   = price.toLocaleString('es-UY');
+    const price         = Number(item.price) || 0;
+    const priceUY       = price.toLocaleString('es-UY');
+    const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
+    const installment   = Math.ceil(price / 12).toLocaleString('es-UY');
     const inStock   = (item.available_quantity || 0) > 0;
     const waMsg     = encodeURIComponent(`Hola! Me interesa: ${item.title}`);
 
@@ -173,8 +175,9 @@ function renderPage(item, slug, isPreview) {
     .out-of-stock{background:#fef9c3;color:#854d0e}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price{font-size:1.75rem;font-weight:800;color:#7c3aed}
-    .price-note{font-size:.78rem;color:#6b7280;margin-top:.2rem}
+    .price-transfer{font-size:1.3rem;font-weight:800;color:#0f172a}
+    .price-base{font-size:.82rem;color:#6b7280;margin-top:.25rem}
+    .price-installment{font-size:.78rem;color:#6b7280}
     .cta{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
@@ -211,8 +214,9 @@ function renderPage(item, slug, isPreview) {
       ${inStock ? '✓ En stock' : '⏳ Por encargo'}
     </span>
     <div class="price-box">
-      <div class="price">$${priceUY} <span style="font-size:.9rem;font-weight:400;color:#6b7280">UYU</span></div>
-      <div class="price-note">Precio lista · Pagando con transferencia: <strong>$${Math.round(price * 0.88).toLocaleString('es-UY')} UYU (−12%)</strong></div>
+      <div class="price-transfer">Transferencia -12%: $${transferPrice} UYU</div>
+      <div class="price-base">Precio: $${priceUY} UYU</div>
+      <div class="price-installment">12 cuotas de $${installment} UYU</div>
     </div>
     <div class="cta">
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">

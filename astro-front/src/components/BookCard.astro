@@ -44,6 +44,7 @@ const fmt = new Intl.NumberFormat('es-UY', {
 });
 const transferPrice = fmt.format(Math.round(book.price * 0.88));
 const basePrice     = fmt.format(book.price);
+const installment   = fmt.format(Math.ceil(book.price / 12));
 ---
 
 <article class="bc-card">
@@ -63,6 +64,7 @@ const basePrice     = fmt.format(book.price);
     <div class="bc-prices">
       <span class="bc-price-transfer">Transferencia -12%: {transferPrice}</span>
       <span class="bc-price-base">Precio: {basePrice}</span>
+      <span class="bc-cuotas">12 cuotas de {installment}</span>
     </div>
 
     <a href={waHref} target="_blank" rel="noopener noreferrer" class="bc-wa-btn">
@@ -168,6 +170,12 @@ const basePrice     = fmt.format(book.price);
   }
 
   .bc-price-base {
+    font-size: 0.6875rem;
+    color: var(--ink-2);
+    line-height: 1.3;
+  }
+
+  .bc-cuotas {
     font-size: 0.6875rem;
     color: var(--ink-2);
     line-height: 1.3;
