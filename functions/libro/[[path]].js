@@ -73,7 +73,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-function renderPage(item, slug) {
+function renderPage(item, slug, isPreview) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
@@ -128,7 +128,7 @@ function renderPage(item, slug) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${safeTitle} | Amado Libros</title>
   <meta name="description" content="${metaDesc}">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="${isPreview ? 'noindex' : 'index, follow'}">
   <link rel="canonical" href="${canonicalUrl}">
 
   <meta property="og:type"        content="product">
@@ -276,7 +276,10 @@ export async function onRequest(context) {
         return Response.redirect(`${BASE}/libro/${id}/${slug}`, 301);
     }
 
-    return new Response(renderPage(item, slug), {
+    const host      = new URL(context.request.url).hostname;
+    const isPreview = host !== 'www.amadolibros.com';
+
+    return new Response(renderPage(item, slug, isPreview), {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',
