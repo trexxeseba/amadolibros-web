@@ -175,9 +175,10 @@ function renderPage(item, slug, isPreview) {
     .out-of-stock{background:#fef9c3;color:#854d0e}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer{font-size:1.3rem;font-weight:800;color:#0f172a}
-    .price-base{font-size:.82rem;color:#6b7280;margin-top:.25rem}
-    .price-installment{font-size:.78rem;color:#6b7280}
+    .price-transfer,.price-base,.price-installment{font-size:1rem;line-height:1.35}
+    .price-transfer{font-weight:600;color:#0f172a}
+    .price-transfer .price-label{font-style:italic;font-weight:700}
+    .price-base,.price-installment{color:#374151;margin-top:.15rem}
     .cta{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
@@ -214,7 +215,7 @@ function renderPage(item, slug, isPreview) {
       ${inStock ? '✓ En stock' : '⏳ Por encargo'}
     </span>
     <div class="price-box">
-      <div class="price-transfer">Transferencia -12%: $${transferPrice} UYU</div>
+      <div class="price-transfer"><span class="price-label">Transferencia -12%:</span> $${transferPrice} UYU</div>
       <div class="price-base">Precio: $${priceUY} UYU</div>
       <div class="price-installment">12 cuotas de $${installment} UYU</div>
     </div>
