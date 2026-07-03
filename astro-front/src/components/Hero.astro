@@ -24,26 +24,6 @@ const WA_HREF =
     <div class="hero-ctas">
       <button
         type="button"
-        class="btn-primary"
-        onclick="(function(){
-          var el=document.getElementById('catalogSearchInput');
-          if(!el)return;
-          el.focus();
-          window.scrollTo({top:0,behavior:'smooth'});
-          var box=el.closest('form');
-          if(box){box.classList.add('s-pulse');setTimeout(function(){box.classList.remove('s-pulse');},900);}
-        })()"
-        aria-label="Ir al buscador del catálogo"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.75"/>
-          <path d="m11 11 3 3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-        </svg>
-        Buscar catálogo
-      </button>
-
-      <button
-        type="button"
         class="btn-wa"
         onclick="document.dispatchEvent(new CustomEvent('amado:openSearch'))"
         aria-label="Pedir un libro por WhatsApp"
@@ -198,24 +178,6 @@ const WA_HREF =
     margin-top: 2rem;
     margin-bottom: 2.5rem;
   }
-
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--ink);
-    color: var(--surface);
-    font-family: var(--font-ui);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    border-radius: 999px;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    line-height: 1;
-  }
-  .btn-primary:hover { opacity: 0.82; }
 
   .btn-wa {
     display: inline-flex;

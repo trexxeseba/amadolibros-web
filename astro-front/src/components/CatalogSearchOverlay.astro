@@ -1,0 +1,220 @@
+---
+// Sin props. Overlay de búsqueda de catálogo.
+// Abre via custom event 'amado:openCatalogSearch'.
+// Submit redirige a https://www.amadolibros.com/?q=<texto>.
+---
+
+<div id="cso-overlay" class="cso-overlay" role="dialog" aria-modal="true" aria-labelledby="cso-title" hidden>
+  <div class="cso-panel">
+
+    <div class="cso-hdr">
+      <span class="cso-title" id="cso-title">Buscar en el catálogo</span>
+      <button type="button" class="cso-close" id="cso-close" aria-label="Cerrar búsqueda">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cso-body">
+      <form
+        id="cso-form"
+        class="cso-form"
+        action="https://www.amadolibros.com/"
+        method="get"
+        role="search"
+      >
+        <input
+          id="cso-input"
+          type="search"
+          name="q"
+          class="cso-input"
+          placeholder="Buscar por título, autor o ISBN"
+          autocomplete="off"
+          spellcheck="false"
+          enterkeyhint="search"
+          aria-label="Buscar en catálogo"
+        />
+        <button type="submit" class="cso-submit">Buscar</button>
+      </form>
+      <p class="cso-hint">Buscás en el catálogo completo de Amado Libros.</p>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .cso-overlay[hidden] { display: none; }
+
+  .cso-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(24, 18, 14, 0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* Mobile: panel ocupa todo el alto */
+  .cso-panel {
+    background: var(--surface);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Desktop: card centrada */
+  @media (min-width: 600px) {
+    .cso-overlay {
+      align-items: center;
+      padding: 2rem;
+    }
+    .cso-panel {
+      max-width: 540px;
+      height: auto;
+      max-height: 80vh;
+      border-radius: var(--r-lg);
+      box-shadow: 0 8px 40px rgba(24, 18, 14, 0.2);
+    }
+  }
+
+  .cso-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .cso-title {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .cso-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--ink-2);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .cso-close:hover { background: var(--bg); }
+
+  .cso-body {
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    flex: 1;
+  }
+
+  .cso-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* font-size: 1rem (16px) — previene zoom automático en iOS */
+  .cso-input {
+    width: 100%;
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 0.9375rem 1rem;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .cso-input:focus { border-color: var(--salmon); }
+  .cso-input::placeholder { color: var(--ink-2); opacity: 0.65; }
+
+  .cso-submit {
+    width: 100%;
+    padding: 0.9375rem 1.5rem;
+    background: var(--ink);
+    color: var(--surface);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .cso-submit:hover { opacity: 0.85; }
+
+  .cso-hint {
+    font-size: 0.875rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+</style>
+
+<script is:inline>
+(function () {
+  var overlay  = document.getElementById('cso-overlay');
+  var input    = document.getElementById('cso-input');
+  var closeBtn = document.getElementById('cso-close');
+  var form     = document.getElementById('cso-form');
+
+  function openOverlay() {
+    if (!overlay.hasAttribute('hidden')) return;
+    overlay.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { input.focus(); });
+    });
+  }
+
+  function closeOverlay() {
+    overlay.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+    input.value = '';
+  }
+
+  // Abre via custom event disparado por Header
+  document.addEventListener('amado:openCatalogSearch', openOverlay);
+
+  // Cierre: botón X
+  closeBtn.addEventListener('click', closeOverlay);
+
+  // Cierre: Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !overlay.hasAttribute('hidden')) closeOverlay();
+  });
+
+  // Cierre: click en backdrop (fuera del panel)
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeOverlay();
+  });
+
+  // Submit: trim + bloquear si vacío
+  form.addEventListener('submit', function (e) {
+    var q = input.value.trim();
+    if (!q) {
+      e.preventDefault();
+      input.focus();
+      return;
+    }
+    // Reemplazar valor con el trimmeado antes de submit
+    input.value = q;
+    // submit procede normalmente → redirect a amadolibros.com/?q=<q>
+  });
+})();
+</script>
