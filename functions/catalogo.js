@@ -29,6 +29,12 @@ function escapeHtml(str) {
         .replace(/'/g,  '&#39;');
 }
 
+function normalizeText(value = '') {
+    return String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '');
+}
 
 export async function onRequest(ctx) {
     const catalog = await fetchCatalog(ctx);
@@ -38,23 +44,47 @@ export async function onRequest(ctx) {
     // aquí se omiten para no inflar el índice con páginas de stock incierto.
     const activeItems = items.filter(b => b.status === 'active');
 
-    const rows = activeItems.map(b => {
+    const url  = new URL(ctx.request.url);
+    const rawQ = url.searchParams.get('q')?.trim() ?? '';
+    const q    = normalizeText(rawQ);
+    const safeQ = escapeHtml(rawQ);
+
+    const filtered = q
+        ? activeItems.filter(b => {
+              const haystack = [b.title, b.author, b.isbn]
+                  .map(normalizeText)
+                  .join(' ');
+              return haystack.includes(q);
+          })
+        : activeItems;
+
+    const rows = filtered.map(b => {
         const slug   = slugify(b.title);
         const href   = `${BASE}/libro/${b.id}/${slug}`;
         const author = b.author ? ` — ${escapeHtml(b.author)}` : '';
         return `    <li><a href="${escapeHtml(href)}">${escapeHtml(b.title)}${author}</a></li>`;
     }).join('\n');
 
+    const pageTitle  = q ? `Resultados para &ldquo;${safeQ}&rdquo; — Amado Libros` : 'Catálogo completo de libros — Amado Libros';
+    const h1Text     = q ? `Resultados para &ldquo;${safeQ}&rdquo;` : 'Catálogo completo';
+    const subText    = q
+        ? (filtered.length > 0
+            ? `${filtered.length} libro${filtered.length === 1 ? '' : 's'} encontrado${filtered.length === 1 ? '' : 's'}.`
+            : `No encontramos resultados para &ldquo;${safeQ}&rdquo;.`)
+        : `${activeItems.length} títulos disponibles. Libros importados y por encargo en Uruguay.`;
+    const canonical  = q ? `${BASE}/catalogo?q=${encodeURIComponent(rawQ)}` : `${BASE}/catalogo`;
+    const metaRobots = q ? 'noindex' : 'index, follow';
+
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Catálogo completo de libros — Amado Libros</title>
+  <title>${pageTitle}</title>
   <meta name="description" content="Índice completo de ${activeItems.length} libros disponibles en Amado Libros. Importados y por encargo en Uruguay.">
-  <link rel="canonical" href="${BASE}/catalogo">
-  <meta name="robots" content="index, follow">
-  <script type="application/ld+json">${JSON.stringify({
+  <link rel="canonical" href="${canonical}">
+  <meta name="robots" content="${metaRobots}">
+  ${!q ? `<script type="application/ld+json">${JSON.stringify({
     '@context':   'https://schema.org',
     '@type':      'CollectionPage',
     'name':       'Catálogo de libros importados y por encargo en Uruguay',
@@ -62,7 +92,7 @@ export async function onRequest(ctx) {
     'description':'Catálogo de Amado Libros con libros importados, libros por encargo y títulos difíciles de conseguir en Uruguay.',
     'isPartOf':   { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
     'publisher':  { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
-  })}</script>
+  })}</script>` : ''}
   <style>
     body   { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
              max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1e293b; background: #faf7f2; }
@@ -81,8 +111,8 @@ export async function onRequest(ctx) {
 </head>
 <body>
   <nav><a href="/">← Amado Libros</a></nav>
-  <h1>Catálogo completo</h1>
-  <p class="sub">${activeItems.length} títulos disponibles. Libros importados y por encargo en Uruguay.</p>
+  <h1>${h1Text}</h1>
+  <p class="sub">${subText}</p>
   <ul>
 ${rows}
   </ul>
