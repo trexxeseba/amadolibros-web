@@ -7,15 +7,30 @@ const {
   title = 'Amado Libros — Librería uruguaya',
   description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
 } = Astro.props;
+
+const indexable  = import.meta.env.PUBLIC_INDEXABLE === 'true';
+const gaId       = import.meta.env.PUBLIC_GA_ID;
+const enableGA4  = indexable && !!gaId;
 ---
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
+  <meta name="robots" content={indexable ? 'index, follow' : 'noindex, nofollow'}>
   <title>{title}</title>
   <meta name="description" content={description}>
+  {enableGA4 && (
+    <>
+      <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+      <script is:inline define:vars={{ gaId }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', gaId);
+      </script>
+    </>
+  )}
   <!-- Astro build OK — lote 2-A -->
   <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
   <link

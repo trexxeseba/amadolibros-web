@@ -12,6 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
       - name: Generate home.json
         # Genera public/home.json desde el catálogo público de R2.
         # No requiere credenciales. Si falla (R2 down), el deploy continúa
@@ -19,8 +23,14 @@ jobs:
         run: node scripts/generate-home-json.js
         continue-on-error: true
 
+      - name: Build Astro
+        run: |
+          cd astro-front
+          npm ci
+          PUBLIC_INDEXABLE=true PUBLIC_GA_ID=G-SDX45VEPP3 npm run build
+
       - name: Deploy via Wrangler
-        run: npx wrangler@3 pages deploy ./public --project-name amadolibros-web --branch main
+        run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
