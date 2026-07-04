@@ -12,3 +12,8 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Astro migration (astro-front/)
+astro-front/node_modules/
+astro-front/dist/
+astro-front/.astro/

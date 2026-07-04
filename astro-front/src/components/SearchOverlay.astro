@@ -1,0 +1,243 @@
+---
+// Sin props, sin datos. Overlay de búsqueda puro — interacción vía custom event 'amado:openSearch'.
+---
+
+<div id="so-overlay" class="so-overlay" role="dialog" aria-modal="true" aria-labelledby="so-title" hidden>
+  <div class="so-panel">
+
+    <div class="so-hdr">
+      <span class="so-title" id="so-title">Consultar un libro</span>
+      <button type="button" class="so-close" id="so-close" aria-label="Cerrar búsqueda">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="so-body">
+      <input
+        id="so-input"
+        type="text"
+        class="so-input"
+        placeholder="Título, autor o ISBN"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="done"
+        aria-label="Buscar libros"
+      />
+      <p class="so-hint">
+        Escribí lo que buscás y te respondemos por WhatsApp.
+      </p>
+      <button type="button" id="so-wa-btn" class="so-wa-btn" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+        </svg>
+        Consultar por WhatsApp
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* Corrección obligatoria: evita que display:flex del overlay anule el atributo hidden */
+  .so-overlay[hidden] {
+    display: none;
+  }
+
+  .so-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(24, 18, 14, 0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* Mobile: panel full-screen */
+  .so-panel {
+    background: var(--surface);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Desktop: card centrada con backdrop */
+  @media (min-width: 600px) {
+    .so-overlay {
+      align-items: center;
+      padding: 2rem;
+    }
+    .so-panel {
+      max-width: 520px;
+      height: auto;
+      max-height: 80vh;
+      border-radius: var(--r-lg);
+      box-shadow: 0 8px 40px rgba(24, 18, 14, 0.2);
+    }
+  }
+
+  .so-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .so-title {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .so-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--ink-2);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .so-close:hover { background: var(--bg); }
+
+  .so-body {
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  /* font-size: 1rem (16px) — previene zoom automático en iOS */
+  .so-input {
+    width: 100%;
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 0.875rem 1rem;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .so-input:focus { border-color: var(--salmon); }
+  .so-input::placeholder { color: var(--ink-2); opacity: 0.7; }
+
+  .so-hint {
+    font-size: 0.875rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+
+  .so-wa-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.9375rem 1.5rem;
+    background: var(--wa);
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .so-wa-btn:hover:not(:disabled) { opacity: 0.88; }
+  .so-wa-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+</style>
+
+<script is:inline>
+(function () {
+  var overlay  = document.getElementById('so-overlay');
+  var input    = document.getElementById('so-input');
+  var closeBtn = document.getElementById('so-close');
+  var waBtn    = document.getElementById('so-wa-btn');
+  var WA_BASE  = 'https://wa.me/59899841325?text=';
+
+  function buildWaUrl(q) {
+    return WA_BASE + encodeURIComponent(
+      'Hola, estoy buscando: "' + q + '". ¿Lo tienen o lo pueden conseguir?'
+    );
+  }
+
+  function openOverlay() {
+    // Guard: evitar doble apertura si pointerdown y focus disparan en secuencia
+    if (!overlay.hasAttribute('hidden')) return;
+
+    overlay.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { input.focus(); });
+    });
+  }
+
+  function closeOverlay() {
+    overlay.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+    input.value = '';
+    waBtn.disabled = true;
+  }
+
+  function sendWA() {
+    var q = input.value.trim();
+    if (!q) return;
+    window.open(buildWaUrl(q), '_blank', 'noopener,noreferrer');
+    closeOverlay();
+  }
+
+  // Apertura vía custom event — disparado por Hero y por el script del header input
+  document.addEventListener('amado:openSearch', openOverlay);
+
+  // Cierre: botón ×
+  closeBtn.addEventListener('click', closeOverlay);
+
+  // Cierre: click fuera del panel (backdrop)
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeOverlay();
+  });
+
+  // Cierre: Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !overlay.hasAttribute('hidden')) closeOverlay();
+  });
+
+  // Input: habilita/deshabilita botón WA
+  input.addEventListener('input', function () {
+    waBtn.disabled = !input.value.trim();
+  });
+
+  // Enter neutralizado: WhatsApp solo se abre con tap explícito en el botón
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+
+  // Botón WA
+  waBtn.addEventListener('click', sendWA);
+
+})();
+</script>

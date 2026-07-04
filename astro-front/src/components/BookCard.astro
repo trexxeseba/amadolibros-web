@@ -1,0 +1,201 @@
+---
+interface Book {
+  id: string;
+  title: string;
+  author?: string;
+  price: number;
+  status: string;
+  available_quantity: number;
+  thumbnail: string;
+  pictures?: string[];
+  start_time?: string;
+}
+
+interface Props {
+  book: Book;
+}
+
+const { book } = Astro.props;
+
+function slugify(text: string): string {
+  return (text || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 60);
+}
+
+function httpsImg(url: string, suffix: string): string {
+  return (url || '').replace('http://', 'https://').replace('-I.jpg', suffix);
+}
+
+const img = (book.pictures && book.pictures[0])
+  ? httpsImg(book.pictures[0], '-O.jpg')
+  : httpsImg(book.thumbnail, '-V.jpg');
+
+const fichaHref = `/libro/${book.id}/${slugify(book.title)}`;
+
+const waText = `Hola! Me interesa el libro "${book.title}", ¿lo tienen disponible?`;
+const waHref = `https://wa.me/59899841325?text=${encodeURIComponent(waText)}`;
+
+const fmt = new Intl.NumberFormat('es-UY', {
+  style: 'currency', currency: 'UYU', maximumFractionDigits: 0,
+});
+const transferPrice = fmt.format(Math.round(book.price * 0.88));
+const basePrice     = fmt.format(book.price);
+const installment   = fmt.format(Math.ceil(book.price / 12));
+---
+
+<article class="bc-card">
+  <a href={fichaHref} class="bc-img-link" tabindex="-1" aria-hidden="true">
+    <img src={img} alt="" loading="lazy" decoding="async" class="bc-img" />
+  </a>
+
+  <div class="bc-body">
+    <span class="bc-badge">Disponible</span>
+
+    <a href={fichaHref} class="bc-title-link">
+      <p class="bc-title">{book.title}</p>
+    </a>
+
+    {book.author && <p class="bc-author">{book.author}</p>}
+
+    <div class="bc-prices">
+      <span class="bc-price-transfer"><span class="bc-price-label">Transferencia -12%:</span> {transferPrice}</span>
+      <span class="bc-price-base">Precio: {basePrice}</span>
+      <span class="bc-cuotas">12 cuotas de {installment}</span>
+    </div>
+
+    <a href={waHref} target="_blank" rel="noopener noreferrer" class="bc-wa-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+      </svg>
+      Pedir por WhatsApp
+    </a>
+  </div>
+</article>
+
+<style>
+  .bc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.15s;
+  }
+  .bc-card:hover {
+    box-shadow: 0 4px 16px rgba(24, 18, 14, 0.1);
+  }
+
+  .bc-img-link {
+    display: block;
+    aspect-ratio: 3 / 4;
+    background: #ede9e1;
+    overflow: hidden;
+  }
+
+  .bc-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.25s;
+  }
+  .bc-card:hover .bc-img {
+    transform: scale(1.04);
+  }
+
+  .bc-body {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    flex: 1;
+  }
+
+  .bc-badge {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #267a42;
+    background: rgba(37, 160, 80, 0.1);
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    align-self: flex-start;
+  }
+
+  .bc-title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .bc-title-link:hover .bc-title {
+    color: var(--salmon-hover);
+  }
+
+  .bc-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .bc-author {
+    font-size: 0.75rem;
+    color: var(--ink-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bc-prices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+  }
+
+  .bc-price-transfer,
+  .bc-price-base,
+  .bc-cuotas {
+    font-size: 0.8125rem;
+    line-height: 1.25;
+  }
+
+  .bc-price-transfer {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .bc-price-label {
+    font-style: italic;
+    font-weight: 700;
+  }
+
+  .bc-price-base,
+  .bc-cuotas {
+    color: var(--ink-2);
+  }
+
+  .bc-wa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: auto;
+    padding-top: 0.875rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--wa);
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .bc-wa-btn:hover { opacity: 0.8; }
+</style>

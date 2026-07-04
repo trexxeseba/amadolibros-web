@@ -1,0 +1,73 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+}
+const {
+  title = 'Amado Libros — Librería uruguaya',
+  description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <!-- Astro build OK — lote 2-A -->
+  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+  <link
+    rel="stylesheet"
+    href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap"
+  >
+  <style is:global>
+    /* ── Custom properties ─────────────────────────────────── */
+    :root {
+      --bg:            #f8f5ef;
+      --surface:       #ffffff;
+      --ink:           #18120e;
+      --ink-2:         #6b6157;
+      --border:        #e2dbd0;
+      --salmon:        #e49982;
+      --salmon-hover:  #c86f5e;
+      --header-bg:     rgba(18, 14, 11, 0.97);
+      --wa:            #25d366;
+      --wa-hover:      #1db954;
+      --font-display:  'Playfair Display', Georgia, 'Times New Roman', serif;
+      --font-ui:       'Inter', system-ui, -apple-system, sans-serif;
+      --r:             0.75rem;
+      --r-lg:          1.25rem;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html  { scroll-behavior: smooth; }
+    body  {
+      font-family:      var(--font-ui);
+      background:       var(--bg);
+      color:            var(--ink);
+      line-height:      1.65;
+      min-height:       100dvh;
+      display:          flex;
+      flex-direction:   column;
+      -webkit-tap-highlight-color: transparent;
+      padding-bottom:   5rem; /* clearance para el botón WA flotante en mobile */
+    }
+    @media (min-width: 768px) { body { padding-bottom: 0; } }
+    main { flex: 1; }
+    img  { max-width: 100%; height: auto; display: block; }
+    a    { color: inherit; text-decoration: none; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+  <slot />
+</body>
+</html>

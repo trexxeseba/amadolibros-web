@@ -13,9 +13,10 @@
  * - URLs de WhatsApp con encodeURIComponent.
  */
 
-const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
-const BASE        = 'https://www.amadolibros.com';
-const WA          = '59899841325';
+import { slugify } from '../_shared/slug.js';
+import { BASE, fetchCatalog } from '../_shared/catalog.js';
+
+const WA = '59899841325';
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -31,46 +32,9 @@ function escapeHtml(str) {
         .replace(/'/g,  '&#39;');
 }
 
-function slugify(text) {
-    return (text || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .substring(0, 60);
-}
 
 function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
-}
-
-// ---------------------------------------------------------------------------
-// Catálogo — CF edge cache, TTL 1h
-// ---------------------------------------------------------------------------
-
-async function fetchCatalog(context) {
-    const cache    = caches.default;
-    const cacheKey = new Request(CATALOG_URL);
-
-    let resp = await cache.match(cacheKey);
-    if (!resp) {
-        const fetched = await fetch(CATALOG_URL);
-        if (!fetched.ok) return null;
-        // Re-envolver con Cache-Control explícito para que CF lo cachee
-        resp = new Response(fetched.body, {
-            status: fetched.status,
-            headers: {
-                'Content-Type':  'application/json',
-                'Cache-Control': 'public, max-age=3600',
-            },
-        });
-        context.waitUntil(cache.put(cacheKey, resp.clone()));
-    }
-    try {
-        return await resp.json();
-    } catch {
-        return null;
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -109,15 +73,17 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-function renderPage(item, slug) {
+function renderPage(item, slug, isPreview) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
     const img          = httpsImg(
         (item.pictures && item.pictures[0]) ? item.pictures[0] : (item.thumbnail || '')
     );
-    const price     = Number(item.price) || 0;
-    const priceUY   = price.toLocaleString('es-UY');
+    const price         = Number(item.price) || 0;
+    const priceUY       = price.toLocaleString('es-UY');
+    const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
+    const installment   = Math.ceil(price / 12).toLocaleString('es-UY');
     const inStock   = (item.available_quantity || 0) > 0;
     const waMsg     = encodeURIComponent(`Hola! Me interesa: ${item.title}`);
 
@@ -164,7 +130,7 @@ function renderPage(item, slug) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${safeTitle} | Amado Libros</title>
   <meta name="description" content="${metaDesc}">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="${isPreview ? 'noindex' : 'index, follow'}">
   <link rel="canonical" href="${canonicalUrl}">
 
   <meta property="og:type"        content="product">
@@ -209,8 +175,10 @@ function renderPage(item, slug) {
     .out-of-stock{background:#fef9c3;color:#854d0e}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price{font-size:1.75rem;font-weight:800;color:#7c3aed}
-    .price-note{font-size:.78rem;color:#6b7280;margin-top:.2rem}
+    .price-transfer,.price-base,.price-installment{font-size:1rem;line-height:1.35}
+    .price-transfer{font-weight:600;color:#0f172a}
+    .price-transfer .price-label{font-style:italic;font-weight:700}
+    .price-base,.price-installment{color:#374151;margin-top:.15rem}
     .cta{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
@@ -247,8 +215,9 @@ function renderPage(item, slug) {
       ${inStock ? '✓ En stock' : '⏳ Por encargo'}
     </span>
     <div class="price-box">
-      <div class="price">$${priceUY} <span style="font-size:.9rem;font-weight:400;color:#6b7280">UYU</span></div>
-      <div class="price-note">Precio lista · Pagando con transferencia: <strong>$${Math.round(price * 0.88).toLocaleString('es-UY')} UYU (−12%)</strong></div>
+      <div class="price-transfer"><span class="price-label">Transferencia -12%:</span> $${transferPrice} UYU</div>
+      <div class="price-base">Precio: $${priceUY} UYU</div>
+      <div class="price-installment">12 cuotas de $${installment} UYU</div>
     </div>
     <div class="cta">
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
@@ -312,7 +281,10 @@ export async function onRequest(context) {
         return Response.redirect(`${BASE}/libro/${id}/${slug}`, 301);
     }
 
-    return new Response(renderPage(item, slug), {
+    const host      = new URL(context.request.url).hostname;
+    const isPreview = host !== 'www.amadolibros.com';
+
+    return new Response(renderPage(item, slug, isPreview), {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',

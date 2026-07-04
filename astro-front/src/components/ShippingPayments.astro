@@ -1,0 +1,129 @@
+<section class="sp-section">
+  <div class="sp-inner">
+    <h2 class="sp-heading">Envíos y pagos</h2>
+    <div class="sp-grid">
+
+      <div class="sp-col">
+        <div class="sp-col-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="6" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13 9h4.5l2.5 4v3h-7V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="5" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="17" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h3 class="sp-col-title">Envíos</h3>
+        <ul class="sp-list">
+          <li>Entrega en el día en Montevideo, coordinada por WhatsApp.</li>
+          <li>Envíos a todo Uruguay.</li>
+          <li>Costo y plazo se confirman según destino.</li>
+        </ul>
+      </div>
+
+      <div class="sp-col">
+        <div class="sp-col-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M2 10h20" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="4" y="13" width="4" height="2" rx="0.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3 class="sp-col-title">Pagos</h3>
+        <ul class="sp-list">
+          <li><strong class="sp-highlight">12% de descuento</strong> pagando por transferencia bancaria.</li>
+          <li>Mercado Pago, según el artículo.</li>
+          <li>Mercado Libre disponible en publicaciones activas.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  .sp-section {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+
+  .sp-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sp-inner { padding: 4rem 2rem; }
+  }
+
+  .sp-heading {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.375rem, 3vw, 1.875rem);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 2rem;
+  }
+
+  .sp-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .sp-grid { grid-template-columns: repeat(2, 1fr); gap: 3rem; }
+  }
+
+  .sp-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .sp-col-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(228, 153, 130, 0.12);
+    border-radius: var(--r);
+    color: var(--salmon-hover);
+    flex-shrink: 0;
+  }
+
+  .sp-col-title {
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .sp-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .sp-list li {
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .sp-list li::before {
+    content: '–';
+    position: absolute;
+    left: 0;
+    color: var(--salmon);
+  }
+
+  .sp-highlight {
+    color: var(--ink);
+    font-weight: 700;
+  }
+</style>

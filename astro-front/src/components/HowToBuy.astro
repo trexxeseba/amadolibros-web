@@ -1,0 +1,136 @@
+<section class="htb-section">
+  <div class="htb-inner">
+    <h2 class="htb-heading">Cómo comprás</h2>
+    <div class="htb-grid">
+
+      <div class="htb-step">
+        <div class="htb-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M2 4h7a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5H2V4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M22 4h-7a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5H22V4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="htb-num">1</span>
+        <h3 class="htb-title">Elegís o consultás el libro</h3>
+        <p class="htb-text">Buscá entre las incorporaciones o escribinos por título, autor o ISBN.</p>
+      </div>
+
+      <div class="htb-step">
+        <div class="htb-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M21 12c0 4.418-3.582 8-8 8a7.96 7.96 0 0 1-4.5-1.381L4 20l1.381-4.5A7.96 7.96 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="htb-num">2</span>
+        <h3 class="htb-title">Te confirmamos stock</h3>
+        <p class="htb-text">Respondemos por WhatsApp con disponibilidad, precio y opciones.</p>
+      </div>
+
+      <div class="htb-step">
+        <div class="htb-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="6" width="12" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13 9h4.5l2.5 4v3h-7V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="5" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="17" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <span class="htb-num">3</span>
+        <h3 class="htb-title">Coordinamos entrega</h3>
+        <p class="htb-text">Entrega en Montevideo y envíos a todo Uruguay, según destino.</p>
+      </div>
+
+      <div class="htb-step">
+        <div class="htb-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M2 10h20" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="4" y="13" width="4" height="2" rx="0.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <span class="htb-num">4</span>
+        <h3 class="htb-title">Pagás como prefieras</h3>
+        <p class="htb-text">Transferencia con 12% de descuento, Mercado Pago o Mercado Libre en publicaciones activas.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  .htb-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .htb-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .htb-inner { padding: 4rem 2rem; }
+  }
+
+  .htb-heading {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.375rem, 3vw, 1.875rem);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 2rem;
+  }
+
+  .htb-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .htb-grid { grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+  }
+
+  .htb-step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .htb-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba(228, 153, 130, 0.12);
+    border-radius: var(--r);
+    color: var(--salmon-hover);
+    flex-shrink: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .htb-num {
+    font-family: var(--font-ui);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--salmon-hover);
+    text-transform: uppercase;
+  }
+
+  .htb-title {
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  .htb-text {
+    font-size: 0.8125rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+</style>

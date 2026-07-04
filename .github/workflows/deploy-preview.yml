@@ -1,0 +1,43 @@
+name: Deploy Astro Preview
+
+on:
+  push:
+    branches: [astro-migration]
+  # Sin workflow_dispatch para evitar disparos manuales accidentales.
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Generate home.json
+        # Genera public/home.json desde el catálogo público de R2.
+        # No requiere credenciales. Si falla (R2 down), el deploy continúa
+        # usando el último home.json commiteado como fallback.
+        run: node scripts/generate-home-json.js
+        continue-on-error: true
+
+      - name: Build Astro
+        run: |
+          cd astro-front
+          npm ci
+          npm run build
+
+      - name: Verify build output
+        run: |
+          test -f astro-front/dist/index.html
+          grep -q "Astro build OK" astro-front/dist/index.html
+          grep -q "noindex, nofollow" astro-front/dist/index.html
+          test -f astro-front/dist/_headers
+          grep -q "X-Robots-Tag: noindex, nofollow" astro-front/dist/_headers
+
+      - name: Deploy preview to CF Pages
+        run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch astro-migration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

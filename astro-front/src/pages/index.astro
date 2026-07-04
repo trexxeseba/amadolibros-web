@@ -1,0 +1,29 @@
+﻿---
+// Lote 2-B — home con sección Novedades renderizada en build desde public/home.json.
+// Sin catálogo completo, sin GA4, sin lógica de negocio. noindex activo.
+import BaseLayout          from '../layouts/BaseLayout.astro';
+import Header              from '../components/Header.astro';
+import Hero                from '../components/Hero.astro';
+import BestsellerSection   from '../components/BestsellerSection.astro';
+import Footer              from '../components/Footer.astro';
+import WAFloat             from '../components/WAFloat.astro';
+import SearchOverlay          from '../components/SearchOverlay.astro';
+import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
+import HowToBuy           from '../components/HowToBuy.astro';
+import ShippingPayments    from '../components/ShippingPayments.astro';
+import NotFoundCTA         from '../components/NotFoundCTA.astro';
+---
+<BaseLayout>
+  <Header />
+  <main>
+    <Hero />
+    <BestsellerSection />
+    <HowToBuy />
+    <ShippingPayments />
+    <NotFoundCTA />
+  </main>
+  <Footer />
+  <WAFloat />
+  <SearchOverlay />
+  <CatalogSearchOverlay />
+</BaseLayout>

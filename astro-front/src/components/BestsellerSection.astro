@@ -1,0 +1,128 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import BookCard from './BookCard.astro';
+
+// home.json lives at <repo-root>/public/home.json.
+// process.cwd() during `astro build` = astro-front/, so '../public/home.json' resolves correctly.
+const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
+
+const ANTIQUE_SIGNALS = [
+  'cruz', 'crucifijo', 'bronce', 'chapa esmaltada', 'cartel chapa',
+  'dije', 'plata 925', 'jaspe', 'colgante vintage', 'sacapuntas vintage',
+  'candelabro', 'figura bronce', 'figuras bronce',
+  'decorativo', 'decorativa',
+  'pared cristo', 'cristo inri', 'inri antigua',
+  'jeringa',
+  'veterinaria vidrio',
+  'volante cine',
+  'antiguo matrimonio',
+  'antigua veterinaria',
+  'pieza antigua',
+  'objeto antiguo',
+];
+
+interface Book {
+  id: string;
+  title: string;
+  author?: string;
+  price: number;
+  status: string;
+  available_quantity: number;
+  thumbnail: string;
+  pictures?: string[];
+  start_time?: string;
+}
+
+function isAntiqueObject(b: Book): boolean {
+  if (b.author && b.author.trim()) return false;
+  const t = (b.title || '').toLowerCase();
+  return ANTIQUE_SIGNALS.some(s => t.includes(s));
+}
+
+let books: Book[] = [];
+let missing = false;
+
+try {
+  const raw = fs.readFileSync(HOME_JSON, 'utf-8');
+  const data = JSON.parse(raw) as { items: Book[] };
+  const filtered = (data.items || [])
+    .filter(b => b.status === 'active' && b.available_quantity > 0 && !isAntiqueObject(b))
+    .sort((a, b) => {
+      const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
+      const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
+      return tb - ta;
+    });
+  const normalize = (v: string | undefined) =>
+    String(v || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+  const seen = new Set<string>();
+  books = filtered.filter(b => {
+    const authorKey = normalize(b.author);
+    const identityKey = authorKey || normalize(b.title).slice(0, 60);
+    const key = `${identityKey}|${Number(b.price || 0)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 8);
+} catch (e: unknown) {
+  missing = true;
+  const msg = e instanceof Error ? e.message : String(e);
+  console.warn('[BestsellerSection] home.json no disponible en build:', msg);
+}
+---
+
+{missing
+  ? <Fragment set:html="<!-- novedades: home.json no encontrado en build — sección omitida -->" />
+  : (books.length > 0 && (
+      <section class="bs-section">
+        <div class="bs-inner">
+          <h2 class="bs-heading">Incorporaciones recientes</h2>
+          <div class="bs-grid">
+            {books.map(book => <BookCard book={book} />)}
+          </div>
+        </div>
+      </section>
+    ))
+}
+
+<style>
+  .bs-section {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+
+  .bs-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .bs-inner { padding: 4rem 2rem; }
+  }
+
+  .bs-heading {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.375rem, 3vw, 1.875rem);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 1.75rem;
+  }
+
+  .bs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .bs-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (min-width: 1024px) {
+    .bs-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
