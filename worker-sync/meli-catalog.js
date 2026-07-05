@@ -29,8 +29,8 @@
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
 const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
-const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR
-  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes';
+const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
+  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition';
 
 // ─── Entrada pública ──────────────────────────────────────────────────────────
 
@@ -156,17 +156,10 @@ async function fetchDetails(ids, accessToken) {
 /**
  * Devuelve solo los campos que consumen los SSR de Pages (catalogo.js,
  * libro/[[path]].js, sitemap.xml.js, feed.xml.js, /api/catalog).
- * Idéntico al slim_item de local_sync.py.
+ * Versión enriquecida: incluye pictures[], isbn, publisher, pages, dimensions, condition.
  */
 function slimItem(raw) {
-  const pics = raw.pictures || [];
-  let firstPic = null;
-  if (pics.length > 0) {
-    firstPic = (typeof pics[0] === 'object' && pics[0] !== null)
-      ? pics[0].url || null
-      : pics[0] || null;
-  }
-
+  const attrs = raw.attributes || [];
   return {
     id:                 raw.id,
     title:              raw.title        || null,
@@ -174,23 +167,94 @@ function slimItem(raw) {
     price:              raw.price        ?? null,
     status:             raw.status       || null,
     available_quantity: raw.available_quantity ?? 0,
+    condition:          raw.condition    || null,
     thumbnail:          raw.thumbnail    || null,
-    pictures:           firstPic ? [firstPic] : [],
+    pictures:           normalizePictures(raw.pictures),
     permalink:          raw.permalink    || null,
     start_time:         raw.start_time   || null,
+    isbn:               extractIsbn(attrs),
+    publisher:          extractPublisher(attrs),
+    pages:              extractPages(attrs),
+    dimensions:         extractDimensions(attrs),
   };
 }
 
 /**
  * Extrae el atributo AUTHOR del array de atributos de ML.
- * Idéntico al extract_author de local_sync.py.
  */
 function extractAuthor(raw) {
-  const attrs = raw.attributes || [];
-  for (const attr of attrs) {
-    if (attr.id === 'AUTHOR') return attr.value_name || null;
+  return getAttrValue(raw.attributes || [], ['AUTHOR']);
+}
+
+// ─── Attribute helpers ────────────────────────────────────────────────────────
+
+/**
+ * Busca el primer atributo cuyo id (normalizado a mayúsculas) esté en `ids`
+ * y devuelve su valor como string.
+ * Prioridad: value_name → value_struct (number + unit) → value_id → value
+ */
+function getAttrValue(attrs, ids) {
+  const upper = ids.map(s => s.toUpperCase());
+  for (const attr of (attrs || [])) {
+    if (!upper.includes(String(attr.id || '').toUpperCase())) continue;
+    if (attr.value_name) return attr.value_name;
+    if (attr.value_struct && attr.value_struct.number != null) {
+      const unit = attr.value_struct.unit ? ` ${attr.value_struct.unit}` : '';
+      return `${attr.value_struct.number}${unit}`;
+    }
+    if (attr.value_id) return String(attr.value_id);
+    if (attr.value)    return String(attr.value);
   }
   return null;
+}
+
+function extractIsbn(attrs) {
+  return getAttrValue(attrs, ['ISBN', 'EAN', 'GTIN', 'BAR_CODE', 'ISBN_13', 'ISBN_10']);
+}
+
+function extractPublisher(attrs) {
+  return getAttrValue(attrs, ['PUBLISHER', 'EDITORIAL', 'BRAND']);
+}
+
+function extractPages(attrs) {
+  const v = getAttrValue(attrs, ['NUMBER_OF_PAGES', 'PAGES']);
+  if (!v) return null;
+  const n = parseInt(v, 10);
+  return isNaN(n) ? null : n;
+}
+
+function extractDimensions(attrs) {
+  const weight = getAttrValue(attrs, ['WEIGHT']);
+  const height = getAttrValue(attrs, ['HEIGHT']);
+  const width  = getAttrValue(attrs, ['WIDTH']);
+  const length = getAttrValue(attrs, ['LENGTH', 'DEPTH']);
+  if (!weight && !height && !width && !length) return null;
+  return {
+    ...(weight && { weight }),
+    ...(height && { height }),
+    ...(width  && { width  }),
+    ...(length && { length }),
+  };
+}
+
+/**
+ * Convierte el array pictures de ML a un array de URLs https, máximo 6.
+ * Acepta objetos {secure_url, url} o strings directos.
+ */
+function normalizePictures(pictures, max = 6) {
+  if (!Array.isArray(pictures) || pictures.length === 0) return [];
+  return pictures
+    .slice(0, max)
+    .map(p => {
+      let url = '';
+      if (typeof p === 'string') {
+        url = p;
+      } else if (p && typeof p === 'object') {
+        url = p.secure_url || p.url || '';
+      }
+      return url.replace('http://', 'https://') || null;
+    })
+    .filter(Boolean);
 }
 
 // ─── HTTP helper ──────────────────────────────────────────────────────────────
