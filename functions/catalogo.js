@@ -182,6 +182,7 @@ ${rows}
       <span class="rc-base">Precio: $${escapeHtml(priceStr)}</span>
       <span class="rc-cuotas">12 cuotas de $${escapeHtml(installment)}</span>
     </div>
+    <span class="rc-cta">Ver ficha →</span>
   </div>
 </a>`;
     }).join('\n');
@@ -236,6 +237,10 @@ ${rows}
     .rc-transfer{color:#18120e;font-weight:500}
     .rc-lbl{font-style:italic;font-weight:700}
     .rc-base,.rc-cuotas{color:#6b6157}
+    .rc-cta{display:inline-block;margin-top:auto;padding:.3rem .75rem;
+            border:1px solid #e2dbd0;border-radius:2rem;font-size:.78rem;
+            font-weight:600;color:#18120e;background:#f5f0ea;align-self:flex-start}
+    .rc-card:hover .rc-cta{background:#e2dbd0}
     .empty{padding:2rem 0;color:#64748b;font-size:.95rem}
     footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e2e8f0;
            font-size:.78rem;color:#94a3b8}
