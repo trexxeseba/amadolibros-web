@@ -178,7 +178,7 @@ ${rows}
     <p class="rc-title">${title}</p>
     ${author}
     <div class="rc-prices">
-      <span class="rc-transfer"><span class="rc-lbl">Transf. -12%:</span> $${escapeHtml(transfer)}</span>
+      <span class="rc-transfer"><span class="rc-lbl">Transferencia -12%:</span> $${escapeHtml(transfer)}</span>
       <span class="rc-base">Precio: $${escapeHtml(priceStr)}</span>
       <span class="rc-cuotas">12 cuotas de $${escapeHtml(installment)}</span>
     </div>
@@ -226,13 +226,13 @@ ${rows}
     .rc-card:hover .rc-img img{transform:scale(1.04)}
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
-    .rc-body{padding:.625rem .75rem;display:flex;flex-direction:column;gap:.3rem;flex:1}
-    .rc-title{font-size:.8rem;font-weight:600;color:#18120e;line-height:1.35;
+    .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+    .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-    .rc-author{font-size:.72rem;color:#6b6157;
+    .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rc-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.25rem}
-    .rc-transfer,.rc-base,.rc-cuotas{font-size:.75rem;line-height:1.25}
+    .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
+    .rc-transfer,.rc-base,.rc-cuotas{font-size:.875rem;line-height:1.3}
     .rc-transfer{color:#18120e;font-weight:500}
     .rc-lbl{font-style:italic;font-weight:700}
     .rc-base,.rc-cuotas{color:#6b6157}
