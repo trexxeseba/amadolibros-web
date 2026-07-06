@@ -37,6 +37,74 @@ function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
 }
 
+function normalizeImages(item) {
+    const urls = [];
+
+    if (Array.isArray(item.pictures)) {
+        for (const picture of item.pictures) {
+            if (typeof picture === 'string') urls.push(picture);
+        }
+    }
+
+    if (item.thumbnail) urls.push(item.thumbnail);
+
+    return [...new Set(urls.map(httpsImg).filter(Boolean))].slice(0, 6);
+}
+
+function formatCondition(condition) {
+    const normalized = String(condition || '').toLowerCase();
+    if (normalized === 'new') return 'Nuevo';
+    if (normalized === 'used') return 'Usado';
+    if (normalized === 'not_specified') return 'No especificada';
+    return condition ? String(condition) : null;
+}
+
+function isValidDimensionValue(v) {
+    if (v == null) return false;
+    const s = String(v).trim();
+    return s !== '' && s !== '-1' && !s.startsWith('-1 ');
+}
+
+function normalizePublisher(publisher) {
+    if (!publisher) return null;
+    const s = String(publisher).trim();
+    if (!s || s.toUpperCase() === 'AMADO LIBROS') return null;
+    return s;
+}
+
+function formatDimensions(dimensions) {
+    if (!dimensions || typeof dimensions !== 'object') return null;
+
+    const rows = [];
+    if (isValidDimensionValue(dimensions.width))  rows.push(`Ancho ${dimensions.width}`);
+    if (isValidDimensionValue(dimensions.height)) rows.push(`Alto ${dimensions.height}`);
+    if (isValidDimensionValue(dimensions.length)) rows.push(`Largo ${dimensions.length}`);
+    if (isValidDimensionValue(dimensions.weight)) rows.push(`Peso ${dimensions.weight}`);
+
+    return rows.length ? rows.join(' · ') : null;
+}
+
+function detailRow(label, value) {
+    if (value == null || value === '') return '';
+    return `<div class="detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+}
+
+function renderGallery(images, safeTitle) {
+    if (!images.length) return '';
+
+    const mainImage = images[0];
+    const thumbs = images.length > 1
+        ? `<div class="thumbs" aria-label="Más imágenes del libro">
+${images.map((url, index) => `      <img class="thumb" src="${escapeHtml(url)}" alt="${safeTitle} — imagen ${index + 1}" loading="lazy" width="56" height="56">`).join('\n')}
+    </div>`
+        : '';
+
+    return `<div class="cover">
+    <img class="cover-main" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager" width="260">
+    ${thumbs}
+  </div>`;
+}
+
 // ---------------------------------------------------------------------------
 // Respuestas de error
 // ---------------------------------------------------------------------------
@@ -77,15 +145,27 @@ function renderPage(item, slug, isPreview) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
-    const img          = httpsImg(
-        (item.pictures && item.pictures[0]) ? item.pictures[0] : (item.thumbnail || '')
-    );
+    const images       = normalizeImages(item);
+    const img          = images[0] || '';
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
     const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
     const installment   = Math.ceil(price / 12).toLocaleString('es-UY');
-    const inStock   = (item.available_quantity || 0) > 0;
-    const waMsg     = encodeURIComponent(`Hola! Me interesa: ${item.title}`);
+    const stockQty      = Number(item.available_quantity) || 0;
+    const inStock       = stockQty > 0;
+    const condition     = formatCondition(item.condition);
+    const dimensions    = formatDimensions(item.dimensions);
+    const waMsg         = encodeURIComponent(`Hola! Me interesa: ${item.title}`);
+
+    const detailRows = [
+        safeAuthor ? detailRow('Autor', item.author) : '',
+        detailRow('ISBN', item.isbn),
+        detailRow('Editorial', normalizePublisher(item.publisher)),
+        item.pages ? detailRow('Páginas', `${item.pages}`) : '',
+        detailRow('Medidas', dimensions),
+        detailRow('Condición', condition),
+        detailRow('Stock', inStock ? `${stockQty} disponible${stockQty === 1 ? '' : 's'}` : 'Consultar disponibilidad'),
+    ].filter(Boolean).join('\n');
 
     const metaDesc = safeAuthor
         ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Precio: $${priceUY} UYU. Envíos a todo Uruguay en 24 a 48hs.`
@@ -96,7 +176,7 @@ function renderPage(item, slug, isPreview) {
         '@context': 'https://schema.org',
         '@type':    ['Product', 'Book'],
         'name':     item.title,
-        'image':    img,
+        'image':    images.length ? images : img,
         'description': item.author ? `${item.title} — ${item.author}` : item.title,
         'sku':      item.id,
         'offers': {
@@ -112,6 +192,21 @@ function renderPage(item, slug, isPreview) {
     };
     if (item.author) {
         schemaProduct.author = { '@type': 'Person', 'name': item.author };
+    }
+    if (item.isbn) {
+        schemaProduct.isbn = String(item.isbn);
+    }
+    const realPublisher = normalizePublisher(item.publisher);
+    if (realPublisher) {
+        schemaProduct.publisher = { '@type': 'Organization', 'name': realPublisher };
+    }
+    if (item.pages) {
+        schemaProduct.numberOfPages = Number(item.pages);
+    }
+    if (item.condition === 'new') {
+        schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
+    } else if (item.condition === 'used') {
+        schemaProduct.offers.itemCondition = 'https://schema.org/UsedCondition';
     }
 
     const schemaBreadcrumb = {
@@ -160,11 +255,13 @@ function renderPage(item, slug, isPreview) {
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#3b82f6;text-decoration:none}
-    main{max-width:820px;margin:1.5rem auto;padding:0 1rem;
+    main{max-width:860px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:1fr;gap:1.75rem}
-    @media(min-width:580px){main{grid-template-columns:260px 1fr}}
-    .cover img{width:100%;max-width:260px;border-radius:.5rem;
-               box-shadow:0 4px 20px rgba(0,0,0,.12);display:block}
+    @media(min-width:640px){main{grid-template-columns:280px 1fr}}
+    .cover-main{width:100%;max-width:260px;border-radius:.5rem;
+                box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
+    .thumbs{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;max-width:260px}
+    .thumb{width:56px;height:56px;object-fit:cover;border:1px solid #e2e8f0;border-radius:.35rem;background:white}
     .info h1{font-size:1.25rem;font-weight:700;line-height:1.35;
              margin-bottom:.75rem;color:#0f172a}
     .meta{font-size:.875rem;color:#475569;margin-bottom:.4rem}
@@ -173,6 +270,13 @@ function renderPage(item, slug, isPreview) {
            font-size:.75rem;font-weight:600;margin-bottom:.875rem}
     .in-stock{background:#dcfce7;color:#16a34a}
     .out-of-stock{background:#fef9c3;color:#854d0e}
+    .details{background:white;border:1px solid #e2e8f0;border-radius:.5rem;
+             margin:.25rem 0 .875rem;overflow:hidden}
+    .detail-row{display:grid;grid-template-columns:94px 1fr;gap:.75rem;
+                padding:.55rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.84rem}
+    .detail-row:last-child{border-bottom:0}
+    .detail-row dt{font-weight:700;color:#334155}
+    .detail-row dd{color:#475569}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
     .price-transfer,.price-base,.price-installment{font-size:1rem;line-height:1.35}
@@ -205,15 +309,13 @@ function renderPage(item, slug, isPreview) {
 </nav>
 
 <main>
-  <div class="cover">
-    <img src="${escapeHtml(img)}" alt="${safeTitle}" loading="eager" width="260">
-  </div>
+  ${renderGallery(images, safeTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
-    ${safeAuthor ? `<p class="meta"><strong>Autor:</strong> ${safeAuthor}</p>` : ''}
     <span class="badge ${inStock ? 'in-stock' : 'out-of-stock'}">
       ${inStock ? '✓ En stock' : '⏳ Por encargo'}
     </span>
+    ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     <div class="price-box">
       <div class="price-transfer"><span class="price-label">Transferencia -12%:</span> $${transferPrice} UYU</div>
       <div class="price-base">Precio: $${priceUY} UYU</div>
