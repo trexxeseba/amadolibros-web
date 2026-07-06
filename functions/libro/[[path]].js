@@ -59,14 +59,27 @@ function formatCondition(condition) {
     return condition ? String(condition) : null;
 }
 
+function isValidDimensionValue(v) {
+    if (v == null) return false;
+    const s = String(v).trim();
+    return s !== '' && s !== '-1' && !s.startsWith('-1 ');
+}
+
+function normalizePublisher(publisher) {
+    if (!publisher) return null;
+    const s = String(publisher).trim();
+    if (!s || s.toUpperCase() === 'AMADO LIBROS') return null;
+    return s;
+}
+
 function formatDimensions(dimensions) {
     if (!dimensions || typeof dimensions !== 'object') return null;
 
     const rows = [];
-    if (dimensions.width) rows.push(`Ancho ${dimensions.width}`);
-    if (dimensions.height) rows.push(`Alto ${dimensions.height}`);
-    if (dimensions.length) rows.push(`Largo ${dimensions.length}`);
-    if (dimensions.weight) rows.push(`Peso ${dimensions.weight}`);
+    if (isValidDimensionValue(dimensions.width))  rows.push(`Ancho ${dimensions.width}`);
+    if (isValidDimensionValue(dimensions.height)) rows.push(`Alto ${dimensions.height}`);
+    if (isValidDimensionValue(dimensions.length)) rows.push(`Largo ${dimensions.length}`);
+    if (isValidDimensionValue(dimensions.weight)) rows.push(`Peso ${dimensions.weight}`);
 
     return rows.length ? rows.join(' · ') : null;
 }
@@ -147,7 +160,7 @@ function renderPage(item, slug, isPreview) {
     const detailRows = [
         safeAuthor ? detailRow('Autor', item.author) : '',
         detailRow('ISBN', item.isbn),
-        detailRow('Editorial', item.publisher),
+        detailRow('Editorial', normalizePublisher(item.publisher)),
         item.pages ? detailRow('Páginas', `${item.pages}`) : '',
         detailRow('Medidas', dimensions),
         detailRow('Condición', condition),
@@ -183,8 +196,9 @@ function renderPage(item, slug, isPreview) {
     if (item.isbn) {
         schemaProduct.isbn = String(item.isbn);
     }
-    if (item.publisher) {
-        schemaProduct.publisher = { '@type': 'Organization', 'name': item.publisher };
+    const realPublisher = normalizePublisher(item.publisher);
+    if (realPublisher) {
+        schemaProduct.publisher = { '@type': 'Organization', 'name': realPublisher };
     }
     if (item.pages) {
         schemaProduct.numberOfPages = Number(item.pages);
