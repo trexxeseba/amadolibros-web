@@ -20,6 +20,7 @@ import { slugify } from './_shared/slug.js';
 import { BASE, fetchCatalog } from './_shared/catalog.js';
 
 const MAX_RESULTS = 48;
+const WA = 'https://wa.me/59899841325';
 
 function escapeHtml(str) {
     if (str == null) return '';
@@ -124,12 +125,24 @@ export async function onRequest(ctx) {
     nav a  { color: #3b82f6; }
     footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;
              font-size: 0.78rem; color: #94a3b8; }
+    .idx-search{display:flex;gap:.5rem;margin-bottom:1.5rem}
+    .idx-search input{flex:1;padding:.55rem .875rem;border:1px solid #d1c8be;border-radius:.5rem;
+                      font-size:.9rem;color:#1e293b;background:#fff;outline:none}
+    .idx-search input:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
+    .idx-search button{padding:.55rem 1rem;background:#18120e;color:#fff;border:none;
+                       border-radius:.5rem;font-size:.875rem;font-weight:600;cursor:pointer;
+                       white-space:nowrap}
+    .idx-search button:hover{background:#2d1f14}
   </style>
 </head>
 <body>
   <nav><a href="/">← Amado Libros</a></nav>
   <h1>Catálogo completo</h1>
-  <p class="sub">${activeItems.length} títulos disponibles. Libros importados y por encargo en Uruguay.</p>
+  <p class="sub">${activeItems.length} títulos disponibles.</p>
+  <form class="idx-search" action="/catalogo" method="get">
+    <input type="search" name="q" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    <button type="submit">Buscar</button>
+  </form>
   <ul>
 ${rows}
   </ul>
@@ -156,7 +169,7 @@ ${rows}
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
 
-    const cards = limited.map(b => {
+    const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
         const href  = escapeHtml(`${BASE}/libro/${b.id}/${slug}`);
         const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
@@ -164,12 +177,12 @@ ${rows}
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
-        const price      = Number(b.price) || 0;
-        const transfer   = Math.round(price * 0.88).toLocaleString('es-UY');
-        const priceStr   = price.toLocaleString('es-UY');
-        const installment = Math.ceil(price / 12).toLocaleString('es-UY');
+        const price    = Number(b.price) || 0;
+        const transfer = Math.round(price * 0.88).toLocaleString('es-UY');
+        const priceStr = price.toLocaleString('es-UY');
+        const loading  = idx < 8 ? 'eager' : 'lazy';
         const imgTag = img
-            ? `<img src="${img}" alt="${title}" loading="lazy" decoding="async">`
+            ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
             : `<div class="rc-no-img">📚</div>`;
 
         return `<a href="${href}" class="rc-card">
@@ -178,9 +191,8 @@ ${rows}
     <p class="rc-title">${title}</p>
     ${author}
     <div class="rc-prices">
-      <span class="rc-transfer"><span class="rc-lbl">Transferencia -12%:</span> $${escapeHtml(transfer)}</span>
+      <span class="rc-transfer"><span class="rc-lbl">Transferencia:</span> $${escapeHtml(transfer)}</span>
       <span class="rc-base">Precio: $${escapeHtml(priceStr)}</span>
-      <span class="rc-cuotas">12 cuotas de $${escapeHtml(installment)}</span>
     </div>
     <span class="rc-cta">Ver ficha →</span>
   </div>
@@ -233,10 +245,19 @@ ${rows}
     .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
-    .rc-transfer,.rc-base,.rc-cuotas{font-size:.875rem;line-height:1.3}
-    .rc-transfer{color:#18120e;font-weight:500}
-    .rc-lbl{font-style:italic;font-weight:700}
-    .rc-base,.rc-cuotas{color:#6b6157}
+    .rc-transfer,.rc-base{font-size:.875rem;line-height:1.3}
+    .rc-transfer{color:#18120e;font-weight:600}
+    .rc-lbl{font-weight:700}
+    .rc-base{color:#6b6157}
+    .search-bar{display:flex;gap:.5rem;margin-bottom:1.5rem}
+    .search-bar input{flex:1;padding:.55rem .875rem;border:1px solid #d1c8be;border-radius:.5rem;
+                      font-size:.9rem;color:#1e293b;background:#fff;outline:none}
+    .search-bar input:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
+    .search-bar button{padding:.55rem 1rem;background:#18120e;color:#fff;border:none;
+                       border-radius:.5rem;font-size:.875rem;font-weight:600;cursor:pointer;
+                       white-space:nowrap}
+    .search-bar button:hover{background:#2d1f14}
+    .wa-link{color:#15803d;font-weight:500}
     .rc-cta{display:inline-block;margin-top:auto;padding:.3rem .75rem;
             border:1px solid #e2dbd0;border-radius:2rem;font-size:.78rem;
             font-weight:600;color:#18120e;background:#f5f0ea;align-self:flex-start}
@@ -251,11 +272,15 @@ ${rows}
 <body>
 <div class="wrap">
   <nav><a href="/">← Amado Libros</a></nav>
+  <form class="search-bar" action="/catalogo" method="get">
+    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    <button type="submit">Buscar</button>
+  </form>
   <h1>Resultados para &ldquo;${safeQ}&rdquo;</h1>
   <p class="sub">${subText}</p>
   ${filtered.length > 0
     ? `<div class="grid">\n${cards}\n</div>`
-    : `<p class="empty">Intentá con otras palabras o <a href="/">volvé al catálogo</a>.</p>`
+    : `<p class="empty">Sin resultados para &ldquo;${safeQ}&rdquo;. Intentá con otras palabras o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.</p>`
   }
   <footer>
     <a href="/">Volver al catálogo</a> · <a href="/politicas">Políticas</a> ·
