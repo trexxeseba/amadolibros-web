@@ -279,9 +279,8 @@ function renderPage(item, slug, isPreview) {
     .detail-row dd{color:#475569}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer,.price-base,.price-installment{font-size:1rem;line-height:1.35}
-    .price-transfer{font-weight:600;color:#0f172a}
-    .price-transfer .price-label{font-style:italic;font-weight:700}
+    .price-transfer,.price-base,.price-installment{font-size:1rem;font-weight:700;line-height:1.35}
+    .price-transfer{color:#0f172a}
     .price-base,.price-installment{color:#374151;margin-top:.15rem}
     .cta{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
