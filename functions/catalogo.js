@@ -98,8 +98,8 @@ export async function onRequest(ctx) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Catálogo completo de libros — Amado Libros</title>
-  <meta name="description" content="Índice completo de ${activeItems.length} libros disponibles en Amado Libros. Importados y por encargo en Uruguay.">
+  <title>Comprar libros online en Uruguay | Amado Libros</title>
+  <meta name="description" content="${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $1.500. Envíos a todo el país.">
   <link rel="canonical" href="${BASE}/catalogo">
   <meta name="robots" content="index, follow">
   <script type="application/ld+json">${JSON.stringify({
