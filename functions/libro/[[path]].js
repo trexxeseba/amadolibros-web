@@ -330,8 +330,7 @@ function renderPage(item, slug, isPreview) {
         💬 Consultar por WhatsApp
       </a>
     </div>
-    <p class="shipping">📚 El libro que buscás, esté donde esté en el mundo, lo acercamos a tus manos.</p>
-    <p class="shipping">🚚 Envíos a todo Uruguay en 24 a 48 hs hábiles · Envío gratis desde $1.500. <a href="/politicas#envios">Ver política de envíos</a>.</p>
+    <p class="shipping">🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500. <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
 </main>
 
