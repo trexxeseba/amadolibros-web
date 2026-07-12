@@ -93,16 +93,94 @@ function renderGallery(images, safeTitle) {
     if (!images.length) return '';
 
     const mainImage = images[0];
-    const thumbs = images.length > 1
-        ? `<div class="thumbs" aria-label="Más imágenes del libro">
-${images.map((url, index) => `      <img class="thumb" src="${escapeHtml(url)}" alt="${safeTitle} — imagen ${index + 1}" loading="lazy" width="56" height="56">`).join('\n')}
-    </div>`
+    const multi = images.length > 1;
+    const imagesJson = JSON.stringify(images).replace(/</g, '\\u003c');
+
+    const thumbsHtml = multi
+        ? `<div class="thumbs" role="list" aria-label="Más imágenes del libro">
+${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} — imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}" role="listitem"><img src="${escapeHtml(url)}" alt="${safeTitle} — imagen ${i + 1}" loading="lazy" width="56" height="56"></button>`).join('\n')}
+  </div>`
+        : '';
+
+    const navBtns = multi
+        ? `<button type="button" class="lb-btn lb-prev" aria-label="Imagen anterior">&#8592;</button>
+      <button type="button" class="lb-btn lb-next" aria-label="Imagen siguiente">&#8594;</button>`
         : '';
 
     return `<div class="cover">
-    <img class="cover-main" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager" width="260">
-    ${thumbs}
-  </div>`;
+  <button type="button" class="cover-btn" id="gMainBtn" data-current-index="0" aria-label="Ampliar imagen de ${safeTitle}">
+    <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager" width="260" data-title="${safeTitle}">
+  </button>
+  ${thumbsHtml}
+  <div id="glb" class="lb" role="dialog" aria-modal="true" aria-label="Galería de imágenes" tabindex="-1" hidden>
+    <div class="lb-inner">
+      <button type="button" class="lb-close" id="glbClose" aria-label="Cerrar galería">&#10005;</button>
+      <img class="lb-img" id="glbImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager">
+      <p class="lb-counter" id="glbCounter" aria-live="polite" aria-atomic="true">Imagen 1 de ${images.length}</p>
+      <div class="lb-nav">${navBtns}</div>
+    </div>
+  </div>
+</div>
+<script>(function(){
+  var imgs=${imagesJson},n=imgs.length,cur=0,opener=null;
+  var lb=document.getElementById('glb');
+  var lbImg=document.getElementById('glbImg');
+  var lbCtr=document.getElementById('glbCounter');
+  var mainBtn=document.getElementById('gMainBtn');
+  var mainImg=document.getElementById('gMainImg');
+  var title=mainImg.getAttribute('data-title')||'';
+  lbImg.setAttribute('data-title',title);
+  var thumbBtns=[].slice.call(document.querySelectorAll('.thumb-btn'));
+
+  function selectThumb(idx){
+    cur=idx;
+    mainImg.src=imgs[idx];
+    mainImg.alt=title+' — imagen '+(idx+1);
+    mainBtn.setAttribute('data-current-index',String(idx));
+    thumbBtns.forEach(function(b,i){b.setAttribute('aria-current',i===idx?'true':'false');});
+  }
+
+  function openLb(idx,trigger){
+    cur=idx;opener=trigger||mainBtn;
+    lb.removeAttribute('hidden');
+    document.body.style.overflow='hidden';
+    updateLb();lb.focus();
+  }
+
+  function closeLb(){
+    lb.setAttribute('hidden','');
+    document.body.style.overflow='';
+    if(opener){opener.focus();opener=null;}
+  }
+
+  function updateLb(){
+    lbImg.src=imgs[cur];
+    lbImg.alt=title+' — imagen '+(cur+1);
+    if(lbCtr)lbCtr.textContent='Imagen '+(cur+1)+' de '+n;
+  }
+
+  function prev(){cur=(cur-1+n)%n;updateLb();}
+  function next(){cur=(cur+1)%n;updateLb();}
+
+  mainBtn.addEventListener('click',function(){
+    openLb(parseInt(mainBtn.getAttribute('data-current-index')||'0',10),mainBtn);
+  });
+  thumbBtns.forEach(function(btn,i){
+    btn.addEventListener('click',function(){selectThumb(i);});
+  });
+  document.getElementById('glbClose').addEventListener('click',closeLb);
+  lb.addEventListener('click',function(e){if(e.target===lb)closeLb();});
+  var pB=document.querySelector('.lb-prev');
+  var nB=document.querySelector('.lb-next');
+  if(pB)pB.addEventListener('click',prev);
+  if(nB)nB.addEventListener('click',next);
+  document.addEventListener('keydown',function(e){
+    if(lb.hasAttribute('hidden'))return;
+    if(e.key==='Escape')closeLb();
+    if(e.key==='ArrowLeft')prev();
+    if(e.key==='ArrowRight')next();
+  });
+})();<\/script>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -261,8 +339,27 @@ function renderPage(item, slug, isPreview) {
     @media(min-width:640px){main{grid-template-columns:280px 1fr}}
     .cover-main{width:100%;max-width:260px;border-radius:.5rem;
                 box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
+    .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
+    .cover-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;border-radius:.5rem}
     .thumbs{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;max-width:260px}
-    .thumb{width:56px;height:56px;object-fit:cover;border:1px solid #e2e8f0;border-radius:.35rem;background:white}
+    .thumb-btn{background:none;border:1px solid #e2e8f0;border-radius:.35rem;padding:0;cursor:pointer;overflow:hidden;width:56px;height:56px;flex-shrink:0}
+    .thumb-btn[aria-current="true"]{border:2px solid #3b82f6}
+    .thumb-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+    .thumb-btn img{width:56px;height:56px;object-fit:cover;display:block;background:white}
+    .lb{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem}
+    .lb[hidden]{display:none}
+    @media(prefers-reduced-motion:no-preference){.lb{animation:_lbi .15s ease}@keyframes _lbi{from{opacity:0}to{opacity:1}}}
+    .lb-inner{position:relative;max-width:min(90vw,860px);width:100%;display:flex;flex-direction:column;align-items:center;gap:.75rem}
+    .lb-img{max-width:100%;max-height:75vh;object-fit:contain;border-radius:.35rem;display:block}
+    .lb-counter{color:rgba(255,255,255,.75);font-size:.82rem}
+    .lb-nav{display:flex;align-items:center;gap:.75rem;min-height:44px}
+    .lb-btn{background:rgba(255,255,255,.15);border:none;color:white;border-radius:.5rem;cursor:pointer;min-width:44px;height:44px;font-size:1.25rem;display:flex;align-items:center;justify-content:center;padding:0 .75rem}
+    .lb-btn:hover{background:rgba(255,255,255,.25)}
+    .lb-btn:focus-visible{outline:2px solid white;outline-offset:2px}
+    .lb-close{position:absolute;top:-.5rem;right:-.5rem;background:rgba(0,0,0,.6);border:none;color:white;border-radius:50%;cursor:pointer;width:40px;height:40px;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .lb-close:hover{background:rgba(0,0,0,.85)}
+    .lb-close:focus-visible{outline:2px solid white;outline-offset:2px}
+    @media(max-width:480px){.lb-img{max-height:60vh}}
     .info h1{font-size:1.25rem;font-weight:700;line-height:1.35;
              margin-bottom:.75rem;color:#0f172a}
     .meta{font-size:.875rem;color:#475569;margin-bottom:.4rem}
