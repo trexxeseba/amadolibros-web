@@ -150,7 +150,7 @@ function renderPage(item, slug, isPreview) {
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
     const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
-    const installment   = Math.ceil(price / 12).toLocaleString('es-UY');
+    const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = stockQty > 0;
     const condition     = formatCondition(item.condition);
@@ -280,9 +280,8 @@ function renderPage(item, slug, isPreview) {
     .detail-row dd{color:#475569}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer,.price-base,.price-installment{font-size:1rem;line-height:1.35}
-    .price-transfer{font-weight:600;color:#0f172a}
-    .price-transfer .price-label{font-style:italic;font-weight:700}
+    .price-transfer,.price-base,.price-installment{font-size:1rem;font-weight:700;line-height:1.35}
+    .price-transfer{color:#0f172a}
     .price-base,.price-installment{color:#374151;margin-top:.15rem}
     .cta{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
@@ -320,7 +319,7 @@ function renderPage(item, slug, isPreview) {
     <div class="price-box">
       <div class="price-transfer"><span class="price-label">Transferencia -12%:</span> $${transferPrice} UYU</div>
       <div class="price-base">Precio: $${priceUY} UYU</div>
-      <div class="price-installment">12 cuotas de $${installment} UYU</div>
+      <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>
     <div class="cta">
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
