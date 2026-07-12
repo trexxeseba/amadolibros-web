@@ -150,7 +150,7 @@ function renderPage(item, slug, isPreview) {
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
     const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
-    const installment   = Math.ceil(price / 12).toLocaleString('es-UY');
+    const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = stockQty > 0;
     const condition     = formatCondition(item.condition);
@@ -318,7 +318,7 @@ function renderPage(item, slug, isPreview) {
     <div class="price-box">
       <div class="price-transfer"><span class="price-label">Transferencia -12%:</span> $${transferPrice} UYU</div>
       <div class="price-base">Precio: $${priceUY} UYU</div>
-      <div class="price-installment">12 cuotas de $${installment} UYU</div>
+      <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>
     <div class="cta">
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
