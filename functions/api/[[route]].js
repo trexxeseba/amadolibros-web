@@ -111,53 +111,141 @@ async function handleGetCatalog(env, url) {
   }
 }
 
+// ─── fetchWithTimeout ────────────────────────────────────────────────────────
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ─── /api/status ─────────────────────────────────────────────────────────────
-// Lee sync:last_ok y sync:last_error del Worker desde KV.
-// Lee metadata del catálogo desde R2 meta.json.
-// No lee ni escribe datos de catálogo en KV.
+// Observabilidad mínima: KV (sync state) + R2 (meta HEAD + catalog HEAD).
+// No devuelve información interna ni mensajes de error crudos.
 
 async function handleStatus(env, url) {
-  try {
-    if (!env.AMADO_KV) {
-      return new Response(
-        JSON.stringify({ error: 'KV binding not available', hint: 'Configure AMADO_KV en CF Dashboard > Pages > Settings > Functions' }),
-        { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
-      );
-    }
+  const checkedAt = new Date().toISOString();
 
-    // Estado del Worker (escrito por worker-sync/)
-    const [lastOk, lastError] = await Promise.all([
+  if (!env.AMADO_KV) {
+    return new Response(
+      JSON.stringify({ status: 'degraded', healthy: false, code: 'kv_unavailable', checked_at: checkedAt }),
+      { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }
+    );
+  }
+
+  try {
+    // KV: leer sync state en paralelo
+    const [lastStarted, lastOk, lastError] = await Promise.all([
+      env.AMADO_KV.get('sync:last_started'),
       env.AMADO_KV.get('sync:last_ok'),
       env.AMADO_KV.get('sync:last_error'),
     ]);
 
-    // Metadata del catálogo desde R2
-    let catalogMeta = null;
-    try {
-      const metaResp = await fetch(META_R2_URL);
-      if (metaResp.ok) {
-        catalogMeta = await metaResp.json();
-      }
-    } catch (e) {
-      catalogMeta = { fetch_error: e.message };
+    // Frescura del sync
+    const STALE_MS = 26 * 60 * 60 * 1000;
+    const STUCK_MS = 45 * 60 * 1000;
+
+    const lastOkDate = lastOk ? new Date(lastOk) : null;
+    const lastOkValid = lastOkDate !== null && !isNaN(lastOkDate.getTime());
+
+    let sync_fresh = false;
+    let age_hours  = null;
+    if (lastOkValid) {
+      const ageMs = Date.now() - lastOkDate.getTime();
+      age_hours   = Math.round((ageMs / 3_600_000) * 10) / 10;
+      sync_fresh  = ageMs <= STALE_MS;
     }
 
+    // Sync en progreso / trabado
+    const lastStartedDate = lastStarted ? new Date(lastStarted) : null;
+    const startedValid    = lastStartedDate !== null && !isNaN(lastStartedDate.getTime());
+    const in_progress     = startedValid && (!lastOkValid || lastStartedDate > lastOkDate);
+    const possibly_stuck  = in_progress && (Date.now() - lastStartedDate.getTime()) > STUCK_MS;
+
+    // R2: verificar meta.json (GET) y catalog.json (HEAD) en paralelo
+    const probeStarted = Date.now();
+    const [metaResult, catalogResult] = await Promise.allSettled([
+      (async () => {
+        const resp = await fetchWithTimeout(META_R2_URL);
+        if (!resp.ok) { console.error('[status] meta probe failed'); return null; }
+        const data = await resp.json();
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          console.error('[status] meta probe failed');
+          return null;
+        }
+        return data;
+      })(),
+      (async () => {
+        const resp = await fetchWithTimeout(CATALOG_R2_URL, { method: 'HEAD' });
+        if (!resp.ok) { console.error('[status] catalog probe failed'); return false; }
+        return true;
+      })(),
+    ]);
+    const r2_probe_ms = Date.now() - probeStarted;
+
+    if (metaResult.status   === 'rejected') console.error('[status] meta probe failed');
+    if (catalogResult.status === 'rejected') console.error('[status] catalog probe failed');
+
+    const meta      = (metaResult.status === 'fulfilled')   ? metaResult.value   : null;
+    const metaOk    = meta !== null;
+    const catalogOk = (catalogResult.status === 'fulfilled') && catalogResult.value === true;
+
+    // Warnings
+    const warnings = [];
+    if (!metaOk)                     warnings.push('meta_unavailable');
+    if (!catalogOk)                  warnings.push('catalog_unavailable');
+    if (!lastOk)                     warnings.push('sync_missing');
+    else if (!sync_fresh)            warnings.push('sync_stale');
+    if (Boolean(lastError))          warnings.push('sync_error');
+    if (possibly_stuck)              warnings.push('sync_possibly_stuck');
+
+    // Salud general
+    const healthy = metaOk && catalogOk && sync_fresh && !Boolean(lastError) && !possibly_stuck;
+
+    const total_items  = (metaOk && typeof meta.total === 'number' && isFinite(meta.total))
+      ? meta.total : null;
+    const last_updated = metaOk ? (meta.last_full_sync || meta.updated_at || null) : null;
+
+    const body = {
+      status:     healthy ? 'ok' : 'degraded',
+      healthy,
+      env:        getEnvPrefix(url),
+      checked_at: checkedAt,
+      worker: {
+        last_started:  lastStarted    || null,
+        last_ok:       lastOk         || null,
+        has_error:     Boolean(lastError),
+        sync_fresh,
+        age_hours,
+        in_progress,
+        possibly_stuck,
+      },
+      catalog: {
+        available:      catalogOk,
+        meta_available: metaOk,
+        total_items,
+        last_updated,
+      },
+      performance: {
+        r2_probe_ms,
+      },
+    };
+    if (warnings.length > 0) body.warnings = warnings;
+
     return new Response(
-      JSON.stringify({
-        env: getEnvPrefix(url),
-        worker: {
-          last_ok:    lastOk   || null,
-          last_error: lastError || null,
-        },
-        catalog: catalogMeta,
-      }),
-      { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      JSON.stringify(body),
+      { status: healthy ? 200 : 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }
     );
 
   } catch (err) {
+    console.error('[status] unexpected error', { name: err && err.name ? err.name : 'Error' });
     return new Response(
-      JSON.stringify({ error: err.message, stack: (err.stack || '').slice(0, 600) }),
-      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      JSON.stringify({ status: 'error', healthy: false, code: 'status_internal_error', checked_at: checkedAt }),
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }
     );
   }
 }
