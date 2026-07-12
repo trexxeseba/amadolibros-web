@@ -401,11 +401,10 @@
                         </div>
                     </div>
                     <div id="actionsActive" class="mt-auto pt-6 flex flex-col gap-3 hidden">
-                        <a id="btnML" href="#" target="_blank" class="group w-full bg-[#ffe600] hover:bg-[#fff059] text-slate-900 font-bold py-4 rounded-xl flex items-center justify-between px-6 transition-all shadow-sm">
-                            <span class="flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Comprar ahora</span>
-                            <span class="text-xs font-normal opacity-70">vía Mercado Libre <i class="fas fa-external-link-alt ml-1"></i></span>
+                        <a id="btnML" href="#" target="_blank" class="group w-full bg-[#ffe600] hover:bg-[#fff059] text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center px-6 transition-all shadow-sm">
+                            <span class="flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Comprar en Mercado Libre</span>
                         </a>
-                        <a id="btnWA" href="#" target="_blank" class="w-full bg-white border-2 border-green-100 text-green-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-green-50 transition-all"><i class="fab fa-whatsapp text-lg"></i> CONSULTA O COMPRA POR WPP</a>
+                        <a id="btnWA" href="#" target="_blank" class="w-full bg-[#25d366] hover:bg-[#20ba5a] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all"><i class="fab fa-whatsapp text-lg"></i> Comprar por WhatsApp</a>
                     </div>
                     <p class="text-[10px] text-gray-400 text-center mt-4 flex items-center justify-center gap-1"><i class="fas fa-lock"></i> Transacción 100% Segura</p>
                 </div>
@@ -963,7 +962,7 @@ function clearHeaderSearch() {
             if(!isPaused) {
                 const fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
                 document.getElementById('modalPrice').innerText = fmt.format(b.price);
-                document.getElementById('modalInstallments').innerText = `12 cuotas de ${fmt.format(b.price/12)}`;
+                document.getElementById('modalInstallments').innerText = `12 cuotas de aprox. ${fmt.format(Math.round(b.price / 12))}`;
                 document.getElementById('modalPriceTransfer').innerText = fmt.format(b.price*0.88);
                 document.getElementById('btnML').href = b.permalink || `https://articulo.mercadolibre.com.uy/MLU-${b.id.replace('MLU','')}`;
                 const msg = `Hola Amado Libros, me interesa comprar con descuento: ${b.title} (ID: ${b.id})`;
