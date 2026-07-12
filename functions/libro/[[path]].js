@@ -168,8 +168,8 @@ function renderPage(item, slug, isPreview) {
     ].filter(Boolean).join('\n');
 
     const metaDesc = safeAuthor
-        ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Precio: $${priceUY} UYU. Envíos a todo Uruguay en 24 a 48hs.`
-        : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Precio: $${priceUY} UYU. Envíos a todo Uruguay en 24 a 48hs.`;
+        ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU, 12% de descuento. Envíos a todo Uruguay.`
+        : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU, 12% de descuento. Envíos a todo Uruguay.`;
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
     const schemaProduct = {
@@ -234,6 +234,7 @@ function renderPage(item, slug, isPreview) {
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:image"       content="${escapeHtml(img)}">
   <meta property="og:locale"      content="es_UY">
+  <meta property="og:site_name"   content="Amado Libros">
 
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="${safeTitle} | Amado Libros">
@@ -328,11 +329,7 @@ function renderPage(item, slug, isPreview) {
         💬 Consultar por WhatsApp
       </a>
     </div>
-    <p class="shipping">
-      🚚 Envíos a todo Uruguay en 24 a 48hs hábiles.
-      Más de 16.000 títulos disponibles en Amado Libros.
-      <a href="/politicas#envios">Ver política de envíos</a>.
-    </p>
+    <p class="shipping">🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500. <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
 </main>
 
