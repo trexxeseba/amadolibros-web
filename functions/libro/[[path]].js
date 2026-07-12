@@ -97,8 +97,8 @@ function renderGallery(images, safeTitle) {
     const imagesJson = JSON.stringify(images).replace(/</g, '\\u003c');
 
     const thumbsHtml = multi
-        ? `<div class="thumbs" role="list" aria-label="Más imágenes del libro">
-${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} — imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}" role="listitem"><img src="${escapeHtml(url)}" alt="${safeTitle} — imagen ${i + 1}" loading="lazy" width="56" height="56"></button>`).join('\n')}
+        ? `<div class="thumbs" role="group" aria-label="Más imágenes del libro">
+${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} — imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}"><img src="${escapeHtml(url)}" alt="${safeTitle} — imagen ${i + 1}" loading="lazy" width="56" height="56"></button>`).join('\n')}
   </div>`
         : '';
 
@@ -356,7 +356,7 @@ function renderPage(item, slug, isPreview) {
     .lb-btn{background:rgba(255,255,255,.15);border:none;color:white;border-radius:.5rem;cursor:pointer;min-width:44px;height:44px;font-size:1.25rem;display:flex;align-items:center;justify-content:center;padding:0 .75rem}
     .lb-btn:hover{background:rgba(255,255,255,.25)}
     .lb-btn:focus-visible{outline:2px solid white;outline-offset:2px}
-    .lb-close{position:absolute;top:-.5rem;right:-.5rem;background:rgba(0,0,0,.6);border:none;color:white;border-radius:50%;cursor:pointer;width:40px;height:40px;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .lb-close{position:absolute;top:-.5rem;right:-.5rem;background:rgba(0,0,0,.6);border:none;color:white;border-radius:50%;cursor:pointer;width:44px;height:44px;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .lb-close:hover{background:rgba(0,0,0,.85)}
     .lb-close:focus-visible{outline:2px solid white;outline-offset:2px}
     @media(max-width:480px){.lb-img{max-height:60vh}}
