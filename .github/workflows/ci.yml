@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  validate:
+    name: Syntax & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find functions scripts worker-sync \
+            -type f \
+            -name '*.js' \
+            -print0 |
+            xargs -0 -r -n1 node --check
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      - name: Build production configuration
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'true'
+          PUBLIC_GA_ID: G-SDX45VEPP3
+        run: npm run build
+
+      - name: Check pull request diff
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff --check \
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+
+      - name: Confirm tracked files remain unchanged
+        run: git diff --exit-code
