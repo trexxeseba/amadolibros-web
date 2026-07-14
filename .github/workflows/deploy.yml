@@ -56,6 +56,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Smoke test production
+        id: smoke
+        env:
+          SMOKE_BASE_URL: https://www.amadolibros.com
+          SMOKE_MAX_ATTEMPTS: '6'
+          SMOKE_RETRY_DELAY_MS: '10000'
+          SMOKE_TIMEOUT_MS: '10000'
+        run: node scripts/smoke-production.js
+
       - name: Deployment summary
         if: always()
         run: |
@@ -66,4 +75,6 @@ jobs:
           echo "| **SHA** | \`${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Trigger** | \`${{ github.event_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **home.json** | ${{ steps.home_json.outcome == 'success' && '✅ fresh' || '⚠️ fallback (committed copy)' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Smoke test** | ${{ steps.smoke.outcome == 'success' && '✅ passed' || steps.smoke.outcome == 'skipped' && '— not run' || '❌ failed' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Attempts** | ${{ steps.smoke.outputs.attempts_used || '—' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **URL** | https://www.amadolibros.com |" >> "$GITHUB_STEP_SUMMARY"
