@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Cotizador Amado v6</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+ <div class="bar">
+  <div class="leftTop">
+   <h1>Cotizador Amado v6</h1>
+   <div class="group"><button id="b-import" class="active" onclick="setModo('import')">📦 Importación</button><button id="b-reventa" onclick="setModo('reventa')">🔁 Reventa</button></div>
+   <div class="group"><button onclick="preset('espana')">España</button><button onclick="preset('argentina')">Argentina</button><button onclick="preset('reventa')">Reventa local</button></div>
+  </div>
+  <div class="rightTop">
+   <div class="rate"><span>USD compra</span><input id="t-usd" value="42" oninput="calc()"></div>
+   <div class="rate"><span>EUR compra</span><input id="t-eur" value="49" oninput="calc()"></div>
+   <div class="rate"><span>UYU→ARS</span><input id="t-ars" value="37" oninput="calc()"></div>
+   <button onclick="borrarGuardado()">Borrar guardado</button>
+  </div>
+ </div>
+ <div class="status">Tasas manuales de compra. Usá la tasa que te cuesta comprar moneda, no la cotización online interbancaria. EUR inicial: 49.</div>
+
+ <div class="grid">
+  <div class="col">
+   <div class="card">
+    <div class="ch">1 · Compra y costos</div>
+    <div class="g2">
+     <div class="fld"><label>Moneda compra</label><select id="moneda" class="ctrl" onchange="calc()"><option>UYU</option><option>USD</option><option>EUR</option><option>ARS</option></select></div>
+     <div class="fld"><label id="l-costo">Costo libro</label><input id="costo" class="ctrl r" value="0" oninput="calc()"></div>
+    </div>
+    <div id="importFields" class="g2">
+     <div class="fld"><label>Peso kg</label><input id="peso" class="ctrl r" value="0,3" oninput="calc()"></div>
+     <div class="fld"><label>Flete internacional USD/kg</label><input id="ckg" class="ctrl r" value="8" oninput="calc()"></div>
+    </div>
+    <div class="g2" style="margin-bottom:0">
+     <div class="fld"><label class="bl">Envío destino</label><input id="envDestino" class="ctrl r bl" value="270" oninput="calc()"><div class="miniBtns"><button onclick="setVal('envDestino','270')">Prom. 270</button><button onclick="setVal('envDestino','200')">MVD 200</button><button onclick="setVal('envDestino','320')">Interior 320</button></div></div>
+     <div class="fld"><label class="rd">Tu laburo</label><input id="lab" class="ctrl r rd" value="0" oninput="calc()"><div class="hint">Gestión interna por orden.</div></div>
+    </div>
+   </div>
+
+   <div class="card">
+    <div class="ch">Resumen de costos reales</div>
+    <div class="costbox">
+     <div class="costrow"><span>Libro en UYU</span><b id="s-libro">$0</b></div>
+     <div class="costrow" id="rowFlete"><span>Flete internacional por kg</span><b id="s-flete">$0</b></div>
+     <div class="costrow"><span>Envío destino al cliente</span><b id="s-destino">$0</b></div>
+     <div class="costrow"><span>Laburo / gestión Amado</span><b id="s-lab">$0</b></div>
+     <div class="costtotal"><span>Total real antes de margen</span><b id="s-total">$0</b></div>
+    </div>
+    <div class="subtle" id="s-detalle">—</div>
+   </div>
+
+   <div class="card">
+    <div class="ch">2 · Ajustes clave</div>
+    <div class="g3">
+     <div class="fld"><label class="gr">Margen %</label><input id="margen" class="ctrl r gr" value="23" oninput="calc()"></div>
+     <div class="fld"><label>Seña %</label><input id="sena" class="ctrl r" value="50" oninput="calc()"></div>
+     <div class="fld"><label>Demora</label><input id="demora" class="ctrl" value="15 a 20 días" oninput="calc()"></div>
+    </div>
+    <details>
+     <summary>Ajustes avanzados</summary>
+     <div class="detailsBody">
+      <div class="g2"><div class="fld"><label>Margen pensado como</label><div class="seg"><button id="mm-venta" class="active" onclick="setMargen('venta')">% sobre venta</button><button id="mm-costo" onclick="setMargen('costo')">Markup costo</button></div></div><div class="fld"><label>Cliente</label><div class="seg"><button id="cl-nuevo" class="active" onclick="setCliente('nuevo')">Nuevo</button><button id="cl-recu" onclick="setCliente('recu')">Recurrente</button></div></div></div>
+      <div class="g3"><div class="fld"><label>Margen recu %</label><input id="margenrecu" class="ctrl r" value="18" oninput="calc()"></div><div class="fld"><label>Com link %</label><input id="clink" class="ctrl r" value="12" oninput="calc()"></div><div class="fld"><label>Com ML %</label><input id="cml" class="ctrl r" value="17" oninput="calc()"></div></div>
+      <div class="g3"><div class="fld"><label>Dcto transferencia %</label><input id="dtransf" class="ctrl r" value="12" oninput="calc()"></div><div class="fld"><label>Piso neto adicional</label><input id="piso" class="ctrl r" value="200" oninput="calc()"></div><div class="fld"><label>Redondear a $</label><input id="redondeo" class="ctrl r" value="10" oninput="calc()"></div></div>
+      <div class="g3" style="margin-bottom:0"><div class="fld"><label>Validez días</label><input id="validez" class="ctrl r" value="7" oninput="calc()"></div><div class="fld"><label>Dcto retiro $</label><input id="pickup" class="ctrl r" value="150" oninput="calc()"></div><div class="fld"><label>Texto cliente</label><select id="tono" class="ctrl" onchange="calc()"><option value="importado">Importado</option><option value="neutro">Neutro</option></select></div></div>
+     </div>
+    </details>
+   </div>
+  </div>
+
+  <div class="col">
+   <div class="priceCard" id="c-transf"><div class="pcTop"><span class="pcName">💵 Transferencia (-<span id="labd">12</span>%)</span><span class="pcPrice" id="p-transf">$0</span></div><div class="pcMet"><div class="mi"><span class="mlab">Comis.</span><span class="mval" id="cm-transf">$0</span></div><div class="mi"><span class="mlab">Bruta</span><span class="mval" id="br-transf">$0</span></div><div class="mi"><span class="mlab">Neta real</span><span class="mval gr" id="ne-transf">$0</span></div><div class="mi"><span class="mlab">Mg neto</span><span class="mval" id="mg-transf">0%</span></div><span class="chip good" id="v-transf">—</span></div></div>
+   <div class="priceCard link" id="c-link"><div class="pcTop"><span class="pcName">💳 PVP / Link de pago</span><span class="pcPrice" id="p-link">$0</span></div><div class="pcMet"><div class="mi"><span class="mlab">Comis.</span><span class="mval" id="cm-link">$0</span></div><div class="mi"><span class="mlab">Bruta</span><span class="mval" id="br-link">$0</span></div><div class="mi"><span class="mlab">Neta real</span><span class="mval gr" id="ne-link">$0</span></div><div class="mi"><span class="mlab">Mg neto</span><span class="mval" id="mg-link">0%</span></div><span class="chip good" id="v-link">—</span></div></div>
+   <div class="priceCard ml" id="c-ml"><div class="pcTop"><span class="pcName">🛒 Mercado Libre</span><span class="pcPrice" id="p-ml">$0</span></div><div class="pcMet"><div class="mi"><span class="mlab">Comis.</span><span class="mval" id="cm-ml">$0</span></div><div class="mi"><span class="mlab">Bruta</span><span class="mval" id="br-ml">$0</span></div><div class="mi"><span class="mlab">Neta real</span><span class="mval gr" id="ne-ml">$0</span></div><div class="mi"><span class="mlab">Mg neto</span><span class="mval" id="mg-ml">0%</span></div><span class="chip good" id="v-ml">—</span></div></div>
+   <div class="card">
+    <div class="ch">Defensa contra competidor</div>
+    <div class="g2"><div class="fld"><label>Precio competidor</label><input id="comp" class="ctrl r" value="0" oninput="calc()"></div><div class="fld"><label>Canal a defender</label><select id="canaldef" class="ctrl" onchange="calc()"><option value="ml">M. Libre</option><option value="link">Link</option><option value="transf">Transfer.</option></select></div></div>
+    <div class="ladder" id="ladder"></div>
+    <div id="decision" class="decision">Cargá precio competidor.</div>
+    <div id="reco" class="reco">—</div>
+   </div>
+  </div>
+
+  <div class="col">
+   <div class="card msgcard">
+    <div class="ch">Mensaje al cliente</div>
+    <textarea id="msg" class="msgarea" spellcheck="false"></textarea>
+    <button id="bcopy" class="copy" onclick="copiar()">Copiar mensaje</button>
+   </div>
+  </div>
+ </div>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>
