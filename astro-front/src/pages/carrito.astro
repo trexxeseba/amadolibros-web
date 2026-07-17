@@ -1,0 +1,683 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import WAFloat from '../components/WAFloat.astro';
+---
+<BaseLayout
+  title="Tu carrito — Amado Libros"
+  description="Revisá los libros que querés pedir en Amado Libros."
+  indexable={false}
+>
+  <Header />
+
+  <main class="cart-page">
+    <div class="cart-wrap">
+      <h1 class="cart-h1">Tu carrito</h1>
+
+      <!-- Región de anuncios accesibles -->
+      <div id="cart-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+      <!-- Estado: cargando -->
+      <div id="cart-loading" class="cart-state-msg" aria-live="polite">
+        <p>Cargando carrito…</p>
+      </div>
+
+      <!-- Estado: vacío -->
+      <div id="cart-empty" class="cart-state-msg" hidden>
+        <div class="empty-icon" aria-hidden="true">🛒</div>
+        <p class="empty-text">Tu carrito está vacío.</p>
+        <a href="/" class="btn-empty-back">← Ver el catálogo</a>
+      </div>
+
+      <!-- Contenido con items -->
+      <div id="cart-content" hidden>
+
+        <!-- Lista de items (llenada por JS) -->
+        <div id="cart-items" role="list" aria-label="Artículos en el carrito"></div>
+
+        <!-- Barra de resumen -->
+        <div class="cart-summary-bar">
+          <button type="button" id="btn-clear" class="btn-clear">
+            Vaciar carrito
+          </button>
+          <p class="cart-subtotal-line">
+            Subtotal estimado:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong>
+          </p>
+        </div>
+
+        <p class="cart-price-note">
+          Precios orientativos. El total definitivo y el costo de envío se
+          confirman al coordinar el pago. Para pago por transferencia bancaria
+          aplicá el descuento del&nbsp;12&nbsp;%.
+        </p>
+
+        <!-- Entrega -->
+        <section class="cart-section">
+          <h2 class="cart-section-h2">Tipo de entrega</h2>
+          <div class="delivery-opts">
+            <label class="delivery-opt">
+              <input type="radio" name="delivery" value="pickup" checked>
+              <span>Retiro en local (Montevideo)</span>
+            </label>
+            <label class="delivery-opt">
+              <input type="radio" name="delivery" value="shipping">
+              <span>Envío a domicilio</span>
+            </label>
+          </div>
+          <div id="address-field" class="form-field" hidden>
+            <label for="delivery-address" class="form-label">Dirección de entrega</label>
+            <input
+              type="text"
+              id="delivery-address"
+              class="form-input"
+              placeholder="Ej: Av. Italia 2000, Apto 3, Montevideo"
+              autocomplete="street-address"
+            >
+          </div>
+        </section>
+
+        <!-- Datos del comprador -->
+        <section class="cart-section">
+          <h2 class="cart-section-h2">Tus datos</h2>
+          <p class="buyer-note">Solo para coordinar el pedido. No se guardan en el navegador.</p>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="buyer-name" class="form-label">Nombre</label>
+              <input type="text" id="buyer-name" class="form-input" autocomplete="name">
+            </div>
+            <div class="form-field">
+              <label for="buyer-email" class="form-label">Email</label>
+              <input type="email" id="buyer-email" class="form-input" autocomplete="email">
+            </div>
+            <div class="form-field">
+              <label for="buyer-phone" class="form-label">Teléfono</label>
+              <input type="tel" id="buyer-phone" class="form-input" autocomplete="tel">
+            </div>
+          </div>
+        </section>
+
+        <!-- Acciones de pago -->
+        <section class="cart-pay-section">
+          <button
+            type="button"
+            class="btn-pay-soon"
+            disabled
+            aria-disabled="true"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+            Pagar con Mercado Pago
+            <span class="soon-chip">próximamente</span>
+          </button>
+          <p class="pay-note">
+            Estamos integrando el pago online. Mientras tanto podés enviarnos el
+            pedido por WhatsApp y te respondemos con los datos de pago.
+          </p>
+          <button type="button" id="btn-wa-order" class="btn-wa-order">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+            </svg>
+            Finalizar pedido por WhatsApp
+          </button>
+        </section>
+
+      </div><!-- /#cart-content -->
+    </div><!-- /.cart-wrap -->
+  </main>
+
+  <WAFloat />
+  <Footer />
+</BaseLayout>
+
+<style>
+  .cart-page {
+    padding: 2rem 1rem 3rem;
+  }
+
+  .cart-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .cart-h1 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    color: var(--ink);
+    margin-bottom: 1.75rem;
+  }
+
+  /* ── Estados: cargando / vacío ─────────────────── */
+  .cart-state-msg {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--ink-2);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-text {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-empty-back {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: var(--salmon);
+    color: #fff;
+    border-radius: var(--r);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+  }
+  .btn-empty-back:hover { background: var(--salmon-hover); }
+
+  /* ── Barra de resumen ──────────────────────────── */
+  .cart-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+
+  .btn-clear {
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: transparent;
+    color: var(--ink-2);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-clear:hover { background: var(--border); color: var(--ink); }
+
+  .cart-subtotal-line {
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  /* ── Nota de precios ───────────────────────────── */
+  .cart-price-note {
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+    padding: 0.875rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── Secciones de formulario ───────────────────── */
+  .cart-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .cart-section-h2 {
+    font-family: var(--font-ui);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+
+  .delivery-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .delivery-opt {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .buyer-note {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    margin-bottom: 1rem;
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .form-input {
+    padding: 0.6rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .form-input:focus {
+    outline: 2px solid var(--salmon);
+    outline-offset: 1px;
+    border-color: var(--salmon);
+  }
+
+  /* ── Sección de pago ───────────────────────────── */
+  .cart-pay-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 0.5rem;
+  }
+
+  .btn-pay-soon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: #d1d5db;
+    color: #6b7280;
+    border: none;
+    border-radius: var(--r);
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: not-allowed;
+    width: 100%;
+  }
+
+  .soon-chip {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #9ca3af;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  .pay-note {
+    font-size: 0.82rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .btn-wa-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: var(--wa);
+    color: #fff;
+    border: none;
+    border-radius: var(--r);
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+  }
+  .btn-wa-order:hover { background: var(--wa-hover); }
+
+  /* ── Items creados por JS ──────────────────────── */
+  :global(.cart-item) {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: 0.875rem;
+    row-gap: 0.4rem;
+    align-items: start;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  :global(.cart-item-img) {
+    grid-row: 1 / 3;
+    width: 56px;
+    height: 76px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #ede9e1;
+    display: block;
+  }
+
+  :global(.cart-item-img-placeholder) {
+    grid-row: 1 / 3;
+    width: 56px;
+    height: 76px;
+    border-radius: 4px;
+    background: #ede9e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--ink-2);
+    flex-shrink: 0;
+  }
+
+  :global(.cart-item-title) {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  :global(.cart-item-unit-price) {
+    font-size: 0.75rem;
+    color: var(--ink-2);
+  }
+
+  :global(.cart-item-controls) {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  :global(.cart-item-line-total) {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  :global(.cart-item-total-price) {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  :global(.cart-qty-btn) {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.1s;
+    flex-shrink: 0;
+  }
+  :global(.cart-qty-btn:hover) { background: var(--border); }
+
+  :global(.cart-qty-val) {
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 1.5rem;
+    text-align: center;
+    color: var(--ink);
+  }
+
+  :global(.cart-item-remove) {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--ink-2);
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.1s;
+  }
+  :global(.cart-item-remove:hover) { color: var(--salmon-hover); }
+</style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', function () {
+    var loadingEl  = document.getElementById('cart-loading');
+    var emptyEl    = document.getElementById('cart-empty');
+    var contentEl  = document.getElementById('cart-content');
+    var itemsList  = document.getElementById('cart-items');
+    var subtotalEl = document.getElementById('cart-subtotal');
+    var announceEl = document.getElementById('cart-announce');
+
+    function announce(msg) {
+      if (!announceEl) return;
+      announceEl.textContent = '';
+      // pequeño delay para que el lector de pantalla detecte el cambio
+      setTimeout(function () { announceEl.textContent = msg; }, 50);
+    }
+
+    var fmt = new Intl.NumberFormat('es-UY', {
+      style: 'currency', currency: 'UYU', maximumFractionDigits: 0,
+    });
+
+    if (!window.AmadoCart) {
+      if (loadingEl) loadingEl.textContent = 'Error al cargar el módulo del carrito.';
+      return;
+    }
+
+    // ── Renderizado de un item ──────────────────────────────────────────
+    function buildItemRow(item) {
+      var art = document.createElement('article');
+      art.className = 'cart-item';
+      art.setAttribute('role', 'listitem');
+
+      // Imagen o placeholder
+      if (item.thumbnail) {
+        var img = document.createElement('img');
+        img.src = item.thumbnail;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.className = 'cart-item-img';
+        art.appendChild(img);
+      } else {
+        var ph = document.createElement('div');
+        ph.className = 'cart-item-img-placeholder';
+        ph.setAttribute('aria-hidden', 'true');
+        ph.textContent = '📚';
+        art.appendChild(ph);
+      }
+
+      // Título
+      var title = document.createElement('p');
+      title.className = 'cart-item-title';
+      title.textContent = item.title;
+      art.appendChild(title);
+
+      // Precio unitario
+      var unit = document.createElement('p');
+      unit.className = 'cart-item-unit-price';
+      unit.textContent = fmt.format(item.price) + ' c/u';
+      art.appendChild(unit);
+
+      // Controles de cantidad
+      var controls = document.createElement('div');
+      controls.className = 'cart-item-controls';
+
+      var btnMinus = document.createElement('button');
+      btnMinus.type = 'button';
+      btnMinus.className = 'cart-qty-btn';
+      btnMinus.textContent = '−';
+      btnMinus.setAttribute('aria-label', 'Disminuir cantidad');
+      btnMinus.addEventListener('click', function () {
+        if (item.quantity <= 1) {
+          announce('Se eliminó "' + item.title + '" del carrito.');
+          window.AmadoCart.remove(item.id);
+        } else {
+          announce('Cantidad de "' + item.title + '": ' + (item.quantity - 1) + '.');
+          window.AmadoCart.setQty(item.id, item.quantity - 1);
+        }
+      });
+
+      var qtyVal = document.createElement('span');
+      qtyVal.className = 'cart-qty-val';
+      qtyVal.textContent = String(item.quantity);
+      qtyVal.setAttribute('aria-label', 'Cantidad: ' + item.quantity);
+
+      var btnPlus = document.createElement('button');
+      btnPlus.type = 'button';
+      btnPlus.className = 'cart-qty-btn';
+      btnPlus.textContent = '+';
+      btnPlus.setAttribute('aria-label', 'Aumentar cantidad');
+      btnPlus.addEventListener('click', function () {
+        announce('Cantidad de "' + item.title + '": ' + (item.quantity + 1) + '.');
+        window.AmadoCart.setQty(item.id, item.quantity + 1);
+      });
+
+      controls.appendChild(btnMinus);
+      controls.appendChild(qtyVal);
+      controls.appendChild(btnPlus);
+      art.appendChild(controls);
+
+      // Total de línea + quitar
+      var lineTotal = document.createElement('div');
+      lineTotal.className = 'cart-item-line-total';
+
+      var totalPrice = document.createElement('span');
+      totalPrice.className = 'cart-item-total-price';
+      totalPrice.textContent = fmt.format(item.price * item.quantity);
+      lineTotal.appendChild(totalPrice);
+
+      var btnRemove = document.createElement('button');
+      btnRemove.type = 'button';
+      btnRemove.className = 'cart-item-remove';
+      btnRemove.textContent = 'Quitar';
+      btnRemove.setAttribute('aria-label', 'Quitar del carrito');
+      btnRemove.addEventListener('click', function () {
+        announce('Se eliminó "' + item.title + '" del carrito.');
+        window.AmadoCart.remove(item.id);
+      });
+      lineTotal.appendChild(btnRemove);
+
+      art.appendChild(lineTotal);
+      return art;
+    }
+
+    // ── Render completo ─────────────────────────────────────────────────
+    function renderCart() {
+      var cart = window.AmadoCart.get();
+
+      if (loadingEl) loadingEl.hidden = true;
+
+      if (cart.items.length === 0) {
+        emptyEl.hidden   = false;
+        contentEl.hidden = true;
+        return;
+      }
+
+      emptyEl.hidden   = true;
+      contentEl.hidden = false;
+
+      // Reconstruir lista
+      while (itemsList.firstChild) itemsList.removeChild(itemsList.firstChild);
+      for (var i = 0; i < cart.items.length; i++) {
+        itemsList.appendChild(buildItemRow(cart.items[i]));
+      }
+
+      // Subtotal
+      subtotalEl.textContent = fmt.format(window.AmadoCart.subtotal());
+    }
+
+    // ── Escuchar cambios ────────────────────────────────────────────────
+    document.addEventListener('amado:cart-updated', renderCart);
+
+    // ── Delivery toggle ─────────────────────────────────────────────────
+    var deliveryRadios = document.querySelectorAll('input[name="delivery"]');
+    var addressField   = document.getElementById('address-field');
+    deliveryRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        if (addressField) addressField.hidden = (radio.value !== 'shipping');
+      });
+    });
+
+    // ── Vaciar carrito ──────────────────────────────────────────────────
+    var btnClear = document.getElementById('btn-clear');
+    if (btnClear) {
+      btnClear.addEventListener('click', function () {
+        if (window.confirm('¿Vaciar el carrito?')) {
+          window.AmadoCart.clear();
+        }
+      });
+    }
+
+    // ── WhatsApp: construir y enviar mensaje ────────────────────────────
+    var btnWa = document.getElementById('btn-wa-order');
+    if (btnWa) {
+      btnWa.addEventListener('click', function () {
+        var cart = window.AmadoCart.get();
+        if (cart.items.length === 0) return;
+
+        var deliveryEl = document.querySelector('input[name="delivery"]:checked');
+        var deliveryType = deliveryEl ? deliveryEl.value : 'pickup';
+        var address = '';
+        var addrInput = document.getElementById('delivery-address');
+        if (addrInput) address = addrInput.value.trim();
+
+        var name  = (document.getElementById('buyer-name')  || {}).value || '';
+        var email = (document.getElementById('buyer-email') || {}).value || '';
+        var phone = (document.getElementById('buyer-phone') || {}).value || '';
+
+        var lines = ['Hola Amado Libros! Quiero hacer este pedido:'];
+        for (var i = 0; i < cart.items.length; i++) {
+          var it = cart.items[i];
+          lines.push('• ' + it.title + ' (x' + it.quantity + ') — ' + fmt.format(it.price) + ' c/u');
+        }
+        lines.push('Subtotal estimado: ' + fmt.format(window.AmadoCart.subtotal()) + ' UYU');
+        lines.push('Entrega: ' + (deliveryType === 'shipping'
+          ? ('Envío a domicilio' + (address ? ': ' + address : ''))
+          : 'Retiro en local'));
+        if (name)  lines.push('Nombre: ' + name);
+        if (email) lines.push('Email: ' + email);
+        if (phone) lines.push('Teléfono: ' + phone);
+
+        var msg = encodeURIComponent(lines.join('\n'));
+        window.open('https://wa.me/59899841325?text=' + msg, '_blank', 'noopener,noreferrer');
+      });
+    }
+
+    // ── Render inicial ──────────────────────────────────────────────────
+    renderCart();
+  });
+</script>

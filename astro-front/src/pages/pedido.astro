@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import WAFloat from '../components/WAFloat.astro';
+
+const WA_HREF =
+  'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quer%C3%ADa%20consultar%20sobre%20mi%20pedido';
+---
+<BaseLayout
+  title="Estado del pedido — Amado Libros"
+  description="Seguimiento de tu pedido en Amado Libros."
+  indexable={false}
+>
+  <Header />
+  <main class="pedido-page">
+    <div class="pedido-wrap">
+      <div class="pedido-icon" aria-hidden="true">🕐</div>
+      <h1>Estado del pedido</h1>
+      <p class="pedido-lead">
+        Estamos terminando la integración con Mercado Pago.
+        Por ahora podés finalizar tu pedido por WhatsApp y te respondemos
+        con los datos de pago.
+      </p>
+      <div class="pedido-ctas">
+        <a href="/carrito" class="btn-back">← Volver al carrito</a>
+        <a
+          href={WA_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-wa-pedido"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+          </svg>
+          Consultar por WhatsApp
+        </a>
+      </div>
+    </div>
+  </main>
+  <WAFloat />
+  <Footer />
+</BaseLayout>
+
+<style>
+  .pedido-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 3rem 1rem;
+  }
+
+  .pedido-wrap {
+    max-width: 480px;
+    text-align: center;
+  }
+
+  .pedido-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+
+  .pedido-lead {
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  .pedido-ctas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--salmon);
+    color: #fff;
+    border-radius: var(--r);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-back:hover { background: var(--salmon-hover); }
+
+  .btn-wa-pedido {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--wa);
+    color: #fff;
+    border-radius: var(--r);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+    width: 100%;
+  }
+  .btn-wa-pedido:hover { background: var(--wa-hover); }
+</style>

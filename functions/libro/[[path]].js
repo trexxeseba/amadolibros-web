@@ -321,6 +321,7 @@ function renderPage(item, slug, isPreview) {
 
   <script type="application/ld+json">${JSON.stringify(schemaProduct)}</script>
   <script type="application/ld+json">${JSON.stringify(schemaBreadcrumb)}</script>
+  <script src="/cart.js" defer></script>
 
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -386,6 +387,9 @@ function renderPage(item, slug, isPreview) {
     .btn:hover{opacity:.85}
     .btn-ml{background:#ffe600;color:#1e293b}
     .btn-wa{background:#25d366;color:white}
+    .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
+              cursor:pointer;width:100%}
+    .btn-cart:disabled{opacity:.7;cursor:default}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
     footer{background:#1e293b;color:#94a3b8;text-align:center;
@@ -419,6 +423,17 @@ function renderPage(item, slug, isPreview) {
       <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>
     <div class="cta">
+      <button
+        type="button"
+        class="btn btn-cart"
+        data-action="add-to-cart"
+        data-id="${escapeHtml(item.id)}"
+        data-title="${escapeHtml(item.title)}"
+        data-price="${price}"
+        data-thumbnail="${escapeHtml(images[0] || '')}"
+      >
+        <span data-cart-label>🛒 Agregar al carrito</span>
+      </button>
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
         🛒 Comprar en MercadoLibre
       </a>
