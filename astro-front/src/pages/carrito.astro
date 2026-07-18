@@ -41,15 +41,20 @@ import WAFloat from '../components/WAFloat.astro';
           <button type="button" id="btn-clear" class="btn-clear">
             Vaciar carrito
           </button>
-          <p class="cart-subtotal-line">
-            Subtotal estimado:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong>
-          </p>
+          <div class="cart-totals">
+            <p class="cart-subtotal-line">Total de productos:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong></p>
+            <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
+            <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
+            <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
+            <p class="cart-transfer-note" id="cart-transfer-note" hidden>Pagando por transferencia se aplica además 12&nbsp;% de descuento.</p>
+            <p class="cart-shipping-msg" id="cart-shipping-msg" hidden></p>
+          </div>
         </div>
 
         <p class="cart-price-note">
-          Precios orientativos. El total definitivo y el costo de envío se
-          confirman al coordinar el pago. Para pago por transferencia bancaria
-          aplicá el descuento del&nbsp;12&nbsp;%.
+          Los precios corresponden al catálogo vigente. El total se actualiza
+          según la forma de entrega y los descuentos aplicables.
+          Pagando por transferencia bancaria obtenés&nbsp;12&nbsp;% de descuento.
         </p>
 
         <!-- Entrega -->
@@ -58,41 +63,77 @@ import WAFloat from '../components/WAFloat.astro';
           <div class="delivery-opts">
             <label class="delivery-opt">
               <input type="radio" name="delivery" value="pickup" checked>
-              <span>Retiro en local (Montevideo)</span>
+              <span class="delivery-opt-content">
+                <strong class="delivery-opt-name">Retiro en Rincón 608</strong>
+                <span class="delivery-opt-meta">A pasos de Plaza Matriz · Lun–Vie 7:30–17:00</span>
+                <span class="delivery-opt-badge">Ahorrás $150 retirando aquí</span>
+              </span>
             </label>
             <label class="delivery-opt">
               <input type="radio" name="delivery" value="shipping">
-              <span>Envío a domicilio</span>
+              <span class="delivery-opt-content">
+                <strong class="delivery-opt-name">Envío a domicilio</strong>
+                <span class="delivery-opt-meta">Coordinamos contigo y el cadete entrega en una franja horaria de tu conveniencia.</span>
+              </span>
             </label>
           </div>
-          <div id="address-field" class="form-field" hidden>
-            <label for="delivery-address" class="form-label">Dirección de entrega</label>
-            <input
-              type="text"
-              id="delivery-address"
-              class="form-input"
-              placeholder="Ej: Av. Italia 2000, Apto 3, Montevideo"
-              autocomplete="street-address"
-            >
+          <div id="shipping-fields" class="shipping-fields" hidden>
+            <div class="form-field">
+              <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
+              <input type="text" id="delivery-address" class="form-input"
+                placeholder="Ej: Av. Italia 2000, Apto 3"
+                autocomplete="shipping street-address">
+            </div>
+            <div class="form-field">
+              <label for="delivery-barrio" class="form-label">Barrio / Localidad</label>
+              <input type="text" id="delivery-barrio" class="form-input"
+                placeholder="Ej: Pocitos, Centro, Malvín"
+                autocomplete="shipping address-level3">
+            </div>
+            <div class="form-field">
+              <label for="delivery-departamento" class="form-label">Departamento <span class="form-req" aria-hidden="true">*</span></label>
+              <select id="delivery-departamento" class="form-input"
+                autocomplete="shipping address-level1">
+                <option value="">Seleccioná tu departamento</option>
+                <option>Artigas</option>
+                <option>Canelones</option>
+                <option>Cerro Largo</option>
+                <option>Colonia</option>
+                <option>Durazno</option>
+                <option>Flores</option>
+                <option>Florida</option>
+                <option>Lavalleja</option>
+                <option>Maldonado</option>
+                <option>Montevideo</option>
+                <option>Paysandú</option>
+                <option>Río Negro</option>
+                <option>Rivera</option>
+                <option>Rocha</option>
+                <option>Salto</option>
+                <option>San José</option>
+                <option>Soriano</option>
+                <option>Tacuarembó</option>
+                <option>Treinta y Tres</option>
+              </select>
+            </div>
           </div>
         </section>
 
         <!-- Datos del comprador -->
         <section class="cart-section">
-          <h2 class="cart-section-h2">Tus datos</h2>
-          <p class="buyer-note">Solo para coordinar el pedido. No se guardan en el navegador.</p>
+          <h2 class="cart-section-h2">Datos para coordinar</h2>
+          <p class="buyer-note">Podés usar los datos guardados en tu navegador. Amado Libros no guarda esta información en este dispositivo.</p>
           <div class="form-grid">
             <div class="form-field">
               <label for="buyer-name" class="form-label">Nombre</label>
               <input type="text" id="buyer-name" class="form-input" autocomplete="name">
             </div>
             <div class="form-field">
-              <label for="buyer-email" class="form-label">Email</label>
-              <input type="email" id="buyer-email" class="form-input" autocomplete="email">
-            </div>
-            <div class="form-field">
-              <label for="buyer-phone" class="form-label">Teléfono</label>
-              <input type="tel" id="buyer-phone" class="form-input" autocomplete="tel">
+              <label for="buyer-phone" class="form-label">WhatsApp / Teléfono</label>
+              <input type="tel" id="buyer-phone" class="form-input"
+                placeholder="Ej: 099 123 456"
+                autocomplete="tel"
+                inputmode="tel">
             </div>
           </div>
         </section>
@@ -205,11 +246,6 @@ import WAFloat from '../components/WAFloat.astro';
   }
   .btn-clear:hover { background: var(--border); color: var(--ink); }
 
-  .cart-subtotal-line {
-    font-size: 1rem;
-    color: var(--ink);
-  }
-
   /* ── Nota de precios ───────────────────────────── */
   .cart-price-note {
     font-size: 0.8rem;
@@ -248,11 +284,57 @@ import WAFloat from '../components/WAFloat.astro';
 
   .delivery-opt {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.6rem;
     font-size: 0.9rem;
     color: var(--ink);
     cursor: pointer;
+  }
+
+  .delivery-opt input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+  }
+
+  .delivery-opt-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .delivery-opt-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .delivery-opt-meta {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+
+  .delivery-opt-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #267a42;
+    background: rgba(37, 160, 80, 0.1);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    align-self: flex-start;
+  }
+
+  .shipping-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    margin-top: 0.875rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .form-req {
+    color: var(--salmon);
   }
 
   .buyer-note {
@@ -471,40 +553,148 @@ import WAFloat from '../components/WAFloat.astro';
     transition: color 0.1s;
   }
   :global(.cart-item-remove:hover) { color: var(--salmon-hover); }
+
+  /* ── Stock label ───────────────────────────────────── */
+  :global(.cart-item-stock-msg) {
+    grid-column: 2;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #b45309;
+    background: rgba(251, 191, 36, 0.15);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    align-self: flex-start;
+    margin-top: 0.1rem;
+  }
+
+  /* ── Totales ───────────────────────────────────────── */
+  .cart-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    text-align: right;
+  }
+
+  .cart-subtotal-line {
+    font-size: 0.9rem;
+    color: var(--ink-2);
+  }
+
+  .cart-discount-line {
+    font-size: 0.875rem;
+    color: #267a42;
+  }
+
+  .cart-total-line {
+    font-size: 1rem;
+    color: var(--ink);
+    border-top: 1px solid var(--border);
+    padding-top: 0.2rem;
+    margin-top: 0.1rem;
+  }
+
+  .cart-shipping-note {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+  }
+
+  .cart-transfer-note {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    font-style: italic;
+  }
+
+  .cart-shipping-msg {
+    font-size: 0.78rem;
+    color: #267a42;
+  }
 </style>
 
 <script is:inline>
   document.addEventListener('DOMContentLoaded', function () {
-    var loadingEl  = document.getElementById('cart-loading');
-    var emptyEl    = document.getElementById('cart-empty');
-    var contentEl  = document.getElementById('cart-content');
-    var itemsList  = document.getElementById('cart-items');
-    var subtotalEl = document.getElementById('cart-subtotal');
-    var announceEl = document.getElementById('cart-announce');
 
-    function announce(msg) {
-      if (!announceEl) return;
-      announceEl.textContent = '';
-      // pequeño delay para que el lector de pantalla detecte el cambio
-      setTimeout(function () { announceEl.textContent = msg; }, 50);
-    }
+    // ── Constantes ──────────────────────────────────────────────────────
+    var RETIRO_DISCOUNT             = 150;
+    var FREE_SHIPPING_THRESHOLD_UYU = null; // sin monto configurado aún
 
+    // ── Elementos ───────────────────────────────────────────────────────
+    var loadingEl        = document.getElementById('cart-loading');
+    var emptyEl          = document.getElementById('cart-empty');
+    var contentEl        = document.getElementById('cart-content');
+    var itemsList        = document.getElementById('cart-items');
+    var subtotalEl       = document.getElementById('cart-subtotal');
+    var discountLineEl   = document.getElementById('cart-discount-line');
+    var totalLineEl      = document.getElementById('cart-total-line');
+    var totalEl          = document.getElementById('cart-total');
+    var shippingNoteEl   = document.getElementById('cart-shipping-note');
+    var transferNoteEl   = document.getElementById('cart-transfer-note');
+    var shippingMsgEl    = document.getElementById('cart-shipping-msg');
+    var announceEl       = document.getElementById('cart-announce');
+    var shippingFieldsEl = document.getElementById('shipping-fields');
+
+    // ── Formato moneda ───────────────────────────────────────────────────
     var fmt = new Intl.NumberFormat('es-UY', {
       style: 'currency', currency: 'UYU', maximumFractionDigits: 0,
     });
 
-    if (!window.AmadoCart) {
-      if (loadingEl) loadingEl.textContent = 'Error al cargar el módulo del carrito.';
-      return;
+    // ── Accesibilidad: anuncios ──────────────────────────────────────────
+    function announce(msg) {
+      if (!announceEl) return;
+      announceEl.textContent = '';
+      setTimeout(function () { announceEl.textContent = msg; }, 50);
     }
 
-    // ── Renderizado de un item ──────────────────────────────────────────
+    // ── Tipo de entrega ──────────────────────────────────────────────────
+    function getDeliveryType() {
+      var checked = document.querySelector('input[name="delivery"]:checked');
+      return checked ? checked.value : 'pickup';
+    }
+
+    // ── Calcular y mostrar totales ───────────────────────────────────────
+    function updateTotals() {
+      if (!window.AmadoCart) return;
+      var subtotal     = window.AmadoCart.subtotal();
+      var deliveryType = getDeliveryType();
+      var isPickup     = deliveryType === 'pickup';
+
+      if (subtotalEl) subtotalEl.textContent = fmt.format(subtotal);
+
+      if (isPickup) {
+        var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
+        if (discountLineEl) discountLineEl.hidden = false;
+        if (totalLineEl)    totalLineEl.hidden    = false;
+        if (totalEl)        totalEl.textContent   = fmt.format(total);
+        if (shippingNoteEl) shippingNoteEl.hidden = true;
+        if (transferNoteEl) transferNoteEl.hidden = false;
+      } else {
+        if (discountLineEl) discountLineEl.hidden = true;
+        if (totalLineEl)    totalLineEl.hidden    = true;
+        if (shippingNoteEl) shippingNoteEl.hidden = false;
+        if (transferNoteEl) transferNoteEl.hidden = true;
+      }
+
+      if (shippingMsgEl) {
+        if (FREE_SHIPPING_THRESHOLD_UYU !== null && !isPickup) {
+          if (subtotal >= FREE_SHIPPING_THRESHOLD_UYU) {
+            shippingMsgEl.textContent = '¡Ya tenés envío gratis!';
+          } else {
+            shippingMsgEl.textContent =
+              'Te faltan ' + fmt.format(FREE_SHIPPING_THRESHOLD_UYU - subtotal) +
+              ' para obtener envío gratis.';
+          }
+          shippingMsgEl.hidden = false;
+        } else {
+          shippingMsgEl.hidden = true;
+        }
+      }
+    }
+
+    // ── Construir fila de item ───────────────────────────────────────────
     function buildItemRow(item) {
       var art = document.createElement('article');
       art.className = 'cart-item';
       art.setAttribute('role', 'listitem');
 
-      // Imagen o placeholder
       if (item.thumbnail) {
         var img = document.createElement('img');
         img.src = item.thumbnail;
@@ -520,27 +710,27 @@ import WAFloat from '../components/WAFloat.astro';
         art.appendChild(ph);
       }
 
-      // Título
-      var title = document.createElement('p');
-      title.className = 'cart-item-title';
-      title.textContent = item.title;
-      art.appendChild(title);
+      var titleEl = document.createElement('p');
+      titleEl.className = 'cart-item-title';
+      titleEl.textContent = item.title;
+      art.appendChild(titleEl);
 
-      // Precio unitario
-      var unit = document.createElement('p');
-      unit.className = 'cart-item-unit-price';
-      unit.textContent = fmt.format(item.price) + ' c/u';
-      art.appendChild(unit);
+      var unitEl = document.createElement('p');
+      unitEl.className = 'cart-item-unit-price';
+      unitEl.textContent = fmt.format(item.price) + ' c/u';
+      art.appendChild(unitEl);
 
-      // Controles de cantidad
       var controls = document.createElement('div');
       controls.className = 'cart-item-controls';
+
+      var maxQty = item.max_qty || 0;
+      var atMax  = maxQty > 0 && item.quantity >= maxQty;
 
       var btnMinus = document.createElement('button');
       btnMinus.type = 'button';
       btnMinus.className = 'cart-qty-btn';
       btnMinus.textContent = '−';
-      btnMinus.setAttribute('aria-label', 'Disminuir cantidad');
+      btnMinus.setAttribute('aria-label', 'Disminuir cantidad de ' + item.title);
       btnMinus.addEventListener('click', function () {
         if (item.quantity <= 1) {
           announce('Se eliminó "' + item.title + '" del carrito.');
@@ -560,31 +750,44 @@ import WAFloat from '../components/WAFloat.astro';
       btnPlus.type = 'button';
       btnPlus.className = 'cart-qty-btn';
       btnPlus.textContent = '+';
-      btnPlus.setAttribute('aria-label', 'Aumentar cantidad');
-      btnPlus.addEventListener('click', function () {
-        announce('Cantidad de "' + item.title + '": ' + (item.quantity + 1) + '.');
-        window.AmadoCart.setQty(item.id, item.quantity + 1);
-      });
+      if (atMax) {
+        btnPlus.disabled = true;
+        btnPlus.setAttribute('aria-label', 'Sin stock adicional para ' + item.title);
+        btnPlus.title = 'Sin stock adicional disponible';
+      } else {
+        btnPlus.setAttribute('aria-label', 'Aumentar cantidad de ' + item.title);
+        btnPlus.addEventListener('click', function () {
+          if (maxQty > 0 && item.quantity >= maxQty) return;
+          announce('Cantidad de "' + item.title + '": ' + (item.quantity + 1) + '.');
+          window.AmadoCart.setQty(item.id, item.quantity + 1);
+        });
+      }
 
       controls.appendChild(btnMinus);
       controls.appendChild(qtyVal);
       controls.appendChild(btnPlus);
       art.appendChild(controls);
 
-      // Total de línea + quitar
+      if (maxQty === 1) {
+        var stockMsg = document.createElement('span');
+        stockMsg.className = 'cart-item-stock-msg';
+        stockMsg.textContent = 'Última unidad disponible';
+        art.appendChild(stockMsg);
+      }
+
       var lineTotal = document.createElement('div');
       lineTotal.className = 'cart-item-line-total';
 
-      var totalPrice = document.createElement('span');
-      totalPrice.className = 'cart-item-total-price';
-      totalPrice.textContent = fmt.format(item.price * item.quantity);
-      lineTotal.appendChild(totalPrice);
+      var lineTotalPrice = document.createElement('span');
+      lineTotalPrice.className = 'cart-item-total-price';
+      lineTotalPrice.textContent = fmt.format(item.price * item.quantity);
+      lineTotal.appendChild(lineTotalPrice);
 
       var btnRemove = document.createElement('button');
       btnRemove.type = 'button';
       btnRemove.className = 'cart-item-remove';
       btnRemove.textContent = 'Quitar';
-      btnRemove.setAttribute('aria-label', 'Quitar del carrito');
+      btnRemove.setAttribute('aria-label', 'Quitar "' + item.title + '" del carrito');
       btnRemove.addEventListener('click', function () {
         announce('Se eliminó "' + item.title + '" del carrito.');
         window.AmadoCart.remove(item.id);
@@ -595,44 +798,50 @@ import WAFloat from '../components/WAFloat.astro';
       return art;
     }
 
-    // ── Render completo ─────────────────────────────────────────────────
+    // ── Render completo ──────────────────────────────────────────────────
     function renderCart() {
+      if (!window.AmadoCart) return;
+      // load() ya aplica normalización silenciosa de max_qty
       var cart = window.AmadoCart.get();
 
       if (loadingEl) loadingEl.hidden = true;
 
       if (cart.items.length === 0) {
-        emptyEl.hidden   = false;
-        contentEl.hidden = true;
+        if (emptyEl)   emptyEl.hidden   = false;
+        if (contentEl) contentEl.hidden = true;
         return;
       }
 
-      emptyEl.hidden   = true;
-      contentEl.hidden = false;
+      if (emptyEl)   emptyEl.hidden   = true;
+      if (contentEl) contentEl.hidden = false;
 
-      // Reconstruir lista
       while (itemsList.firstChild) itemsList.removeChild(itemsList.firstChild);
       for (var i = 0; i < cart.items.length; i++) {
         itemsList.appendChild(buildItemRow(cart.items[i]));
       }
 
-      // Subtotal
-      subtotalEl.textContent = fmt.format(window.AmadoCart.subtotal());
+      updateTotals();
     }
 
-    // ── Escuchar cambios ────────────────────────────────────────────────
+    // ── Guardia ──────────────────────────────────────────────────────────
+    if (!window.AmadoCart) {
+      if (loadingEl) loadingEl.textContent = 'Error al cargar el módulo del carrito.';
+      return;
+    }
+
+    // ── Eventos ──────────────────────────────────────────────────────────
     document.addEventListener('amado:cart-updated', renderCart);
 
-    // ── Delivery toggle ─────────────────────────────────────────────────
+    // ── Toggle entrega ───────────────────────────────────────────────────
     var deliveryRadios = document.querySelectorAll('input[name="delivery"]');
-    var addressField   = document.getElementById('address-field');
     deliveryRadios.forEach(function (radio) {
       radio.addEventListener('change', function () {
-        if (addressField) addressField.hidden = (radio.value !== 'shipping');
+        if (shippingFieldsEl) shippingFieldsEl.hidden = (radio.value !== 'shipping');
+        updateTotals();
       });
     });
 
-    // ── Vaciar carrito ──────────────────────────────────────────────────
+    // ── Vaciar carrito ────────────────────────────────────────────────────
     var btnClear = document.getElementById('btn-clear');
     if (btnClear) {
       btnClear.addEventListener('click', function () {
@@ -642,42 +851,66 @@ import WAFloat from '../components/WAFloat.astro';
       });
     }
 
-    // ── WhatsApp: construir y enviar mensaje ────────────────────────────
+    // ── WhatsApp ──────────────────────────────────────────────────────────
     var btnWa = document.getElementById('btn-wa-order');
     if (btnWa) {
       btnWa.addEventListener('click', function () {
         var cart = window.AmadoCart.get();
         if (cart.items.length === 0) return;
 
-        var deliveryEl = document.querySelector('input[name="delivery"]:checked');
-        var deliveryType = deliveryEl ? deliveryEl.value : 'pickup';
-        var address = '';
-        var addrInput = document.getElementById('delivery-address');
-        if (addrInput) address = addrInput.value.trim();
+        var deliveryType = getDeliveryType();
+        var address      = ((document.getElementById('delivery-address')     || {}).value || '').trim();
+        var barrio       = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
+        var departamento = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
+        var name         = ((document.getElementById('buyer-name')            || {}).value || '').trim();
+        var phone        = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
 
-        var name  = (document.getElementById('buyer-name')  || {}).value || '';
-        var email = (document.getElementById('buyer-email') || {}).value || '';
-        var phone = (document.getElementById('buyer-phone') || {}).value || '';
+        if (deliveryType === 'shipping') {
+          if (!address) {
+            alert('Por favor ingresá la dirección de entrega.');
+            var addrEl = document.getElementById('delivery-address');
+            if (addrEl) addrEl.focus();
+            return;
+          }
+          if (!departamento) {
+            alert('Por favor seleccioná el departamento.');
+            var deptEl = document.getElementById('delivery-departamento');
+            if (deptEl) deptEl.focus();
+            return;
+          }
+        }
+
+        var subtotal = window.AmadoCart.subtotal();
 
         var lines = ['Hola Amado Libros! Quiero hacer este pedido:'];
+        lines.push('');
         for (var i = 0; i < cart.items.length; i++) {
           var it = cart.items[i];
           lines.push('• ' + it.title + ' (x' + it.quantity + ') — ' + fmt.format(it.price) + ' c/u');
         }
-        lines.push('Subtotal estimado: ' + fmt.format(window.AmadoCart.subtotal()) + ' UYU');
-        lines.push('Entrega: ' + (deliveryType === 'shipping'
-          ? ('Envío a domicilio' + (address ? ': ' + address : ''))
-          : 'Retiro en local'));
+        lines.push('');
+        lines.push('Total de productos: ' + fmt.format(subtotal) + ' UYU');
+        if (deliveryType === 'pickup') {
+          var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
+          lines.push('Ahorro por retiro: −$' + RETIRO_DISCOUNT);
+          lines.push('Total con retiro: ' + fmt.format(total) + ' UYU');
+          lines.push('Nota: pagando por transferencia bancaria se aplica además 12 % de descuento.');
+          lines.push('Entrega: Retiro en Rincón 608');
+        } else {
+          lines.push('Envío: a coordinar según destino');
+          var lugar = [address, barrio, departamento].filter(Boolean).join(', ');
+          lines.push('Entrega: Envío a domicilio — ' + lugar);
+          lines.push('Coordinaremos contigo la franja horaria de entrega.');
+        }
         if (name)  lines.push('Nombre: ' + name);
-        if (email) lines.push('Email: ' + email);
-        if (phone) lines.push('Teléfono: ' + phone);
+        if (phone) lines.push('WhatsApp/Tel: ' + phone);
 
         var msg = encodeURIComponent(lines.join('\n'));
         window.open('https://wa.me/59899841325?text=' + msg, '_blank', 'noopener,noreferrer');
       });
     }
 
-    // ── Render inicial ──────────────────────────────────────────────────
+    // ── Render inicial ────────────────────────────────────────────────────
     renderCart();
   });
 </script>

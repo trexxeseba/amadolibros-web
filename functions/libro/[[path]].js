@@ -331,7 +331,18 @@ function renderPage(item, slug, isPreview) {
     header{background:#1e293b;color:white;padding:.75rem 1.25rem;
            display:flex;align-items:center;gap:.75rem}
     header a{color:white;text-decoration:none;font-weight:700;font-size:1.05rem}
-    header span{color:#94a3b8;font-size:.8rem}
+    header span{color:#94a3b8;font-size:.8rem;flex:1}
+    .ssr-cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;
+                   min-width:44px;min-height:44px;padding:.4rem .6rem;
+                   color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18);
+                   border-radius:999px;background:rgba(255,255,255,.08);
+                   text-decoration:none;flex-shrink:0;
+                   transition:background .15s,border-color .15s,color .15s}
+    .ssr-cart-link:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:#fff}
+    .ssr-cart-badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;
+                    padding:0 4px;border-radius:999px;background:#e49982;color:#fff;
+                    font-size:.625rem;font-weight:700;line-height:17px;
+                    text-align:center;pointer-events:none}
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#3b82f6;text-decoration:none}
@@ -402,6 +413,14 @@ function renderPage(item, slug, isPreview) {
 <header>
   <a href="/">📚 Amado Libros</a>
   <span>Tu librería para libros difíciles de ubicar</span>
+  <a href="/carrito" id="ssr-cart-link" class="ssr-cart-link" aria-label="Ver carrito">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+      <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
+    </svg>
+    <span id="ssr-cart-badge" class="ssr-cart-badge" hidden aria-hidden="true">0</span>
+  </a>
 </header>
 
 <nav>
@@ -431,6 +450,7 @@ function renderPage(item, slug, isPreview) {
         data-title="${escapeHtml(item.title)}"
         data-price="${price}"
         data-thumbnail="${escapeHtml(images[0] || '')}"
+        data-max-qty="${stockQty}"
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
@@ -450,6 +470,29 @@ function renderPage(item, slug, isPreview) {
   <a href="/">Catálogo</a> ·
   <a href="/politicas">Políticas</a>
 </footer>
+
+<script>(function(){
+  function updateBadge(n){
+    var badge=document.getElementById('ssr-cart-badge');
+    var link=document.getElementById('ssr-cart-link');
+    if(!badge||!link)return;
+    if(n>0){
+      badge.textContent=n>99?'99+':String(n);
+      badge.hidden=false;
+      link.setAttribute('aria-label','Ver carrito ('+(n===1?'1 artículo':n+' artículos')+')');
+    }else{
+      badge.hidden=true;
+      link.setAttribute('aria-label','Ver carrito');
+    }
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    if(window.AmadoCart)updateBadge(window.AmadoCart.count());
+    document.addEventListener('amado:cart-updated',function(e){
+      var items=e.detail&&Array.isArray(e.detail.items)?e.detail.items:[];
+      updateBadge(items.reduce(function(s,i){return s+(i.quantity||0);},0));
+    });
+  });
+}());<\/script>
 
 </body>
 </html>`;
