@@ -82,17 +82,18 @@ import WAFloat from '../components/WAFloat.astro';
               <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
               <input type="text" id="delivery-address" class="form-input"
                 placeholder="Ej: Av. Italia 2000, Apto 3"
-                autocomplete="street-address">
+                autocomplete="shipping street-address">
             </div>
             <div class="form-field">
               <label for="delivery-barrio" class="form-label">Barrio / Localidad</label>
               <input type="text" id="delivery-barrio" class="form-input"
                 placeholder="Ej: Pocitos, Centro, Malvín"
-                autocomplete="address-level3">
+                autocomplete="shipping address-level3">
             </div>
             <div class="form-field">
               <label for="delivery-departamento" class="form-label">Departamento <span class="form-req" aria-hidden="true">*</span></label>
-              <select id="delivery-departamento" class="form-input">
+              <select id="delivery-departamento" class="form-input"
+                autocomplete="shipping address-level1">
                 <option value="">Seleccioná tu departamento</option>
                 <option>Artigas</option>
                 <option>Canelones</option>
@@ -115,31 +116,24 @@ import WAFloat from '../components/WAFloat.astro';
                 <option>Treinta y Tres</option>
               </select>
             </div>
-            <div class="form-field">
-              <label for="delivery-phone" class="form-label">Teléfono / WhatsApp para coordinar</label>
-              <input type="tel" id="delivery-phone" class="form-input"
-                placeholder="Ej: 099 123 456"
-                autocomplete="tel">
-            </div>
           </div>
         </section>
 
         <!-- Datos del comprador -->
         <section class="cart-section">
-          <h2 class="cart-section-h2">Tus datos</h2>
-          <p class="buyer-note">Solo para coordinar el pedido. No se guardan en el navegador.</p>
+          <h2 class="cart-section-h2">Datos para coordinar</h2>
+          <p class="buyer-note">Podés usar los datos guardados en tu navegador. Amado Libros no guarda esta información en este dispositivo.</p>
           <div class="form-grid">
             <div class="form-field">
               <label for="buyer-name" class="form-label">Nombre</label>
               <input type="text" id="buyer-name" class="form-input" autocomplete="name">
             </div>
             <div class="form-field">
-              <label for="buyer-email" class="form-label">Email</label>
-              <input type="email" id="buyer-email" class="form-input" autocomplete="email">
-            </div>
-            <div class="form-field">
-              <label for="buyer-phone" class="form-label">Teléfono</label>
-              <input type="tel" id="buyer-phone" class="form-input" autocomplete="tel">
+              <label for="buyer-phone" class="form-label">WhatsApp / Teléfono</label>
+              <input type="tel" id="buyer-phone" class="form-input"
+                placeholder="Ej: 099 123 456"
+                autocomplete="tel"
+                inputmode="tel">
             </div>
           </div>
         </section>
@@ -864,14 +858,12 @@ import WAFloat from '../components/WAFloat.astro';
         var cart = window.AmadoCart.get();
         if (cart.items.length === 0) return;
 
-        var deliveryType  = getDeliveryType();
-        var address       = ((document.getElementById('delivery-address')     || {}).value || '').trim();
-        var barrio        = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
-        var departamento  = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
-        var deliveryPhone = ((document.getElementById('delivery-phone')        || {}).value || '').trim();
-        var name          = ((document.getElementById('buyer-name')            || {}).value || '').trim();
-        var email         = ((document.getElementById('buyer-email')           || {}).value || '').trim();
-        var phone         = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
+        var deliveryType = getDeliveryType();
+        var address      = ((document.getElementById('delivery-address')     || {}).value || '').trim();
+        var barrio       = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
+        var departamento = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
+        var name         = ((document.getElementById('buyer-name')            || {}).value || '').trim();
+        var phone        = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
 
         if (deliveryType === 'shipping') {
           if (!address) {
@@ -909,11 +901,9 @@ import WAFloat from '../components/WAFloat.astro';
           var lugar = [address, barrio, departamento].filter(Boolean).join(', ');
           lines.push('Entrega: Envío a domicilio — ' + lugar);
           lines.push('Coordinaremos contigo la franja horaria de entrega.');
-          if (deliveryPhone) lines.push('Tel/WA para coordinar: ' + deliveryPhone);
         }
         if (name)  lines.push('Nombre: ' + name);
-        if (email) lines.push('Email: ' + email);
-        if (phone) lines.push('Teléfono: ' + phone);
+        if (phone) lines.push('WhatsApp/Tel: ' + phone);
 
         var msg = encodeURIComponent(lines.join('\n'));
         window.open('https://wa.me/59899841325?text=' + msg, '_blank', 'noopener,noreferrer');
