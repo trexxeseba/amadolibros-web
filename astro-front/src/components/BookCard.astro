@@ -76,6 +76,7 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
         data-title={book.title}
         data-price={book.price}
         data-thumbnail={img}
+        data-max-qty={book.available_quantity}
         aria-label={`Agregar "${book.title}" al carrito`}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
