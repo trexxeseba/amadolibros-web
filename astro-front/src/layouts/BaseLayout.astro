@@ -2,13 +2,15 @@
 interface Props {
   title?: string;
   description?: string;
+  indexable?: boolean;
 }
 const {
   title = 'Amado Libros — Librería uruguaya',
   description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
+  indexable: indexableProp,
 } = Astro.props;
 
-const indexable  = import.meta.env.PUBLIC_INDEXABLE === 'true';
+const indexable  = indexableProp !== undefined ? indexableProp : import.meta.env.PUBLIC_INDEXABLE === 'true';
 const gaId       = import.meta.env.PUBLIC_GA_ID;
 const enableGA4  = indexable && !!gaId;
 ---
@@ -37,6 +39,7 @@ const enableGA4  = indexable && !!gaId;
     rel="stylesheet"
     href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap"
   >
+  <script src="/cart.js" defer></script>
   <style is:global>
     /* ── Custom properties ─────────────────────────────────── */
     :root {

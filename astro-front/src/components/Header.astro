@@ -1,4 +1,5 @@
 ---
+import CartIcon from './CartIcon.astro';
 const WA_HREF =
   'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quer%C3%ADa%20consultar';
 ---
@@ -24,6 +25,9 @@ const WA_HREF =
       </svg>
       <span class="search-pill-label">Buscar</span>
     </button>
+
+    <!-- Carrito -->
+    <CartIcon />
 
     <!-- WhatsApp -->
     <a
@@ -59,7 +63,7 @@ const WA_HREF =
     padding: 0 1.5rem;
     height: 64px;
     display: grid;
-    grid-template-columns: auto auto auto;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
     gap: 1.25rem;
   }
