@@ -3,7 +3,7 @@
   if (window.AmadoCart) return;
 
   var STORAGE_KEY = 'amado-cart';
-  var VERSION = 1;
+  var VERSION = 2; // v2: incorpora max_qty; carritos v1 sin max_qty se descartan
 
   function uuid() {
     try { return crypto.randomUUID(); } catch (_) {
@@ -87,7 +87,7 @@
         if (incomingMax > 0) found.max_qty = incomingMax;
         var effectiveMax = found.max_qty || 0;
         var newQty = (found.quantity || 1) + 1;
-        if (effectiveMax > 0 && newQty > effectiveMax) return false;
+        if (effectiveMax > 0 && newQty > effectiveMax) return 'at_max';
         found.quantity = newQty;
       } else {
         cart.items.push({
@@ -168,12 +168,15 @@
       max_qty: (isFinite(rawMaxQty) && rawMaxQty >= 0) ? rawMaxQty : 0,
     };
     var added = AmadoCart.add(item);
-    if (!added) return;
+    if (added === false) return; // item inválido, sin feedback
+
     var label = btn.querySelector('[data-cart-label]');
     if (!label) return;
     var orig = label.dataset.origText || label.textContent;
     label.dataset.origText = orig;
-    label.textContent = 'Agregado — Ver carrito';
+    label.textContent = added === 'at_max'
+      ? 'Máximo disponible en el carrito — Ver carrito'
+      : 'Agregado — Ver carrito';
     btn.dataset.goCart = '1';
     var prevAriaLabel = btn.getAttribute('aria-label');
     if (prevAriaLabel !== null) {

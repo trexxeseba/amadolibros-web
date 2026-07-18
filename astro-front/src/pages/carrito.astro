@@ -43,8 +43,10 @@ import WAFloat from '../components/WAFloat.astro';
           </button>
           <div class="cart-totals">
             <p class="cart-subtotal-line">Total de productos:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong></p>
-            <p class="cart-discount-line" id="cart-discount-line" hidden>Descuento retiro en local:&nbsp;<strong>− $150</strong></p>
-            <p class="cart-total-line" id="cart-total-line">Total:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
+            <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
+            <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
+            <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
+            <p class="cart-transfer-note" id="cart-transfer-note" hidden>Pagando por transferencia se aplica además 12&nbsp;% de descuento.</p>
             <p class="cart-shipping-msg" id="cart-shipping-msg" hidden></p>
           </div>
         </div>
@@ -597,6 +599,17 @@ import WAFloat from '../components/WAFloat.astro';
     margin-top: 0.1rem;
   }
 
+  .cart-shipping-note {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+  }
+
+  .cart-transfer-note {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    font-style: italic;
+  }
+
   .cart-shipping-msg {
     font-size: 0.78rem;
     color: #267a42;
@@ -617,7 +630,10 @@ import WAFloat from '../components/WAFloat.astro';
     var itemsList        = document.getElementById('cart-items');
     var subtotalEl       = document.getElementById('cart-subtotal');
     var discountLineEl   = document.getElementById('cart-discount-line');
+    var totalLineEl      = document.getElementById('cart-total-line');
     var totalEl          = document.getElementById('cart-total');
+    var shippingNoteEl   = document.getElementById('cart-shipping-note');
+    var transferNoteEl   = document.getElementById('cart-transfer-note');
     var shippingMsgEl    = document.getElementById('cart-shipping-msg');
     var announceEl       = document.getElementById('cart-announce');
     var shippingFieldsEl = document.getElementById('shipping-fields');
@@ -645,15 +661,26 @@ import WAFloat from '../components/WAFloat.astro';
       if (!window.AmadoCart) return;
       var subtotal     = window.AmadoCart.subtotal();
       var deliveryType = getDeliveryType();
-      var discount     = deliveryType === 'pickup' ? RETIRO_DISCOUNT : 0;
-      var total        = Math.max(0, subtotal - discount);
+      var isPickup     = deliveryType === 'pickup';
 
-      if (subtotalEl)    subtotalEl.textContent   = fmt.format(subtotal);
-      if (discountLineEl) discountLineEl.hidden    = (discount === 0);
-      if (totalEl)        totalEl.textContent      = fmt.format(total);
+      if (subtotalEl) subtotalEl.textContent = fmt.format(subtotal);
+
+      if (isPickup) {
+        var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
+        if (discountLineEl) discountLineEl.hidden = false;
+        if (totalLineEl)    totalLineEl.hidden    = false;
+        if (totalEl)        totalEl.textContent   = fmt.format(total);
+        if (shippingNoteEl) shippingNoteEl.hidden = true;
+        if (transferNoteEl) transferNoteEl.hidden = false;
+      } else {
+        if (discountLineEl) discountLineEl.hidden = true;
+        if (totalLineEl)    totalLineEl.hidden    = true;
+        if (shippingNoteEl) shippingNoteEl.hidden = false;
+        if (transferNoteEl) transferNoteEl.hidden = true;
+      }
 
       if (shippingMsgEl) {
-        if (FREE_SHIPPING_THRESHOLD_UYU !== null && deliveryType === 'shipping') {
+        if (FREE_SHIPPING_THRESHOLD_UYU !== null && !isPickup) {
           if (subtotal >= FREE_SHIPPING_THRESHOLD_UYU) {
             shippingMsgEl.textContent = '¡Ya tenés envío gratis!';
           } else {
@@ -862,8 +889,6 @@ import WAFloat from '../components/WAFloat.astro';
         }
 
         var subtotal = window.AmadoCart.subtotal();
-        var discount = deliveryType === 'pickup' ? RETIRO_DISCOUNT : 0;
-        var total    = Math.max(0, subtotal - discount);
 
         var lines = ['Hola Amado Libros! Quiero hacer este pedido:'];
         lines.push('');
@@ -874,11 +899,13 @@ import WAFloat from '../components/WAFloat.astro';
         lines.push('');
         lines.push('Total de productos: ' + fmt.format(subtotal) + ' UYU');
         if (deliveryType === 'pickup') {
-          lines.push('Descuento retiro en local: − $' + RETIRO_DISCOUNT);
-          lines.push('Total final: ' + fmt.format(total) + ' UYU');
+          var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
+          lines.push('Ahorro por retiro: −$' + RETIRO_DISCOUNT);
+          lines.push('Total con retiro: ' + fmt.format(total) + ' UYU');
+          lines.push('Nota: pagando por transferencia bancaria se aplica además 12 % de descuento.');
           lines.push('Entrega: Retiro en Rincón 608');
         } else {
-          lines.push('Total final: ' + fmt.format(total) + ' UYU');
+          lines.push('Envío: a coordinar según destino');
           var lugar = [address, barrio, departamento].filter(Boolean).join(', ');
           lines.push('Entrega: Envío a domicilio — ' + lugar);
           lines.push('Coordinaremos contigo la franja horaria de entrega.');
