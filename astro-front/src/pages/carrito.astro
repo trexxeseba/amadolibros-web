@@ -122,15 +122,21 @@ import WAFloat from '../components/WAFloat.astro';
               <label for="delivery-date" class="form-label">Fecha preferida</label>
               <input type="date" id="delivery-date" class="form-input" autocomplete="off">
             </div>
-            <div class="form-field">
-              <label for="delivery-time" class="form-label">Franja horaria preferida</label>
-              <select id="delivery-time" class="form-input">
-                <option value="">Sin preferencia</option>
-                <option value="mañana">Mañana (8–12 h)</option>
-                <option value="mediodía">Mediodía (12–15 h)</option>
-                <option value="tarde">Tarde (15–20 h)</option>
-              </select>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="delivery-from" class="form-label">Desde <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="time" id="delivery-from" class="form-input">
+              </div>
+              <div class="form-field">
+                <label for="delivery-to" class="form-label">Hasta <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="time" id="delivery-to" class="form-input">
+              </div>
             </div>
+            <div class="form-field">
+              <label for="delivery-notes" class="form-label">Notas para la entrega</label>
+              <textarea id="delivery-notes" class="form-input form-textarea" rows="2" placeholder="Ej: timbre 2B, dejar con portero"></textarea>
+            </div>
+            <p class="delivery-confirm-note">La fecha y la franja quedan sujetas a confirmación por WhatsApp.</p>
           </div>
         </section>
 
@@ -176,9 +182,10 @@ import WAFloat from '../components/WAFloat.astro';
         </section>
 
         <div id="order-result" class="order-result" hidden>
-          <p class="order-result-h">Pedido registrado</p>
+          <p class="order-result-h">Pedido preparado</p>
           <p>Código: <strong id="order-public-code"></strong></p>
-          <p class="order-result-note">Te contactamos a la brevedad por WhatsApp para coordinar el pago y la entrega.</p>
+          <p>Total confirmado: <strong id="order-total-confirmed"></strong></p>
+          <p class="order-result-note">El pago online se habilitará en la siguiente etapa.</p>
         </div>
 
       </div><!-- /#cart-content -->
@@ -390,6 +397,24 @@ import WAFloat from '../components/WAFloat.astro';
     outline: 2px solid var(--salmon);
     outline-offset: 1px;
     border-color: var(--salmon);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.875rem;
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 4rem;
+  }
+
+  .delivery-confirm-note {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    line-height: 1.5;
+    margin-top: 0.25rem;
   }
 
   /* ── Sección de pago ───────────────────────────── */
@@ -945,10 +970,22 @@ import WAFloat from '../components/WAFloat.astro';
           lines.push('Nota: pagando por transferencia bancaria se aplica además 12 % de descuento.');
           lines.push('Entrega: Retiro en Rincón 608');
         } else {
-          lines.push('Envío: a coordinar según destino');
+          var shippingCostWa = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
+          if (shippingCostWa === 0) {
+            lines.push('Envío: Gratis (compra desde $' + FREE_SHIPPING_THRESHOLD_UYU + ')');
+          } else {
+            lines.push('Envío: $' + SHIPPING_COST);
+          }
+          lines.push('Total con envío: ' + fmt.format(subtotal + shippingCostWa) + ' UYU');
           var lugar = [address, barrio, departamento].filter(Boolean).join(', ');
           lines.push('Entrega: Envío a domicilio — ' + lugar);
-          lines.push('Coordinaremos contigo la franja horaria de entrega.');
+          var waDate = ((document.getElementById('delivery-date') || {}).value || '').trim();
+          var waFrom = ((document.getElementById('delivery-from') || {}).value || '').trim();
+          var waTo   = ((document.getElementById('delivery-to')   || {}).value || '').trim();
+          if (waDate) lines.push('Fecha solicitada: ' + waDate);
+          if (waFrom || waTo) {
+            lines.push('Horario solicitado: ' + [waFrom, waTo].filter(Boolean).join(' – '));
+          }
         }
         if (name)  lines.push('Nombre: ' + name);
         if (phone) lines.push('WhatsApp/Tel: ' + phone);
@@ -972,9 +1009,24 @@ import WAFloat from '../components/WAFloat.astro';
         var prepBarrio   = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
         var prepDepto    = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
         var prepDate     = ((document.getElementById('delivery-date')         || {}).value || '').trim();
-        var prepTime     = ((document.getElementById('delivery-time')         || {}).value || '').trim();
+        var prepFrom     = ((document.getElementById('delivery-from')         || {}).value || '').trim();
+        var prepTo       = ((document.getElementById('delivery-to')           || {}).value || '').trim();
+        var prepNotes    = ((document.getElementById('delivery-notes')        || {}).value || '').trim();
         var prepName     = ((document.getElementById('buyer-name')            || {}).value || '').trim();
         var prepPhone    = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
+
+        if (!prepName) {
+          alert('Por favor ingresá tu nombre.');
+          var nameEl = document.getElementById('buyer-name');
+          if (nameEl) nameEl.focus();
+          return;
+        }
+        if (!prepPhone) {
+          alert('Por favor ingresá tu teléfono o WhatsApp.');
+          var phoneEl = document.getElementById('buyer-phone');
+          if (phoneEl) phoneEl.focus();
+          return;
+        }
 
         if (deliveryType === 'shipping') {
           if (!prepAddress) {
@@ -983,10 +1035,34 @@ import WAFloat from '../components/WAFloat.astro';
             if (addrEl) addrEl.focus();
             return;
           }
+          if (!prepBarrio) {
+            alert('Por favor ingresá la localidad.');
+            var barrioEl = document.getElementById('delivery-barrio');
+            if (barrioEl) barrioEl.focus();
+            return;
+          }
           if (!prepDepto) {
             alert('Por favor seleccioná el departamento.');
             var deptEl = document.getElementById('delivery-departamento');
             if (deptEl) deptEl.focus();
+            return;
+          }
+          if (!prepDate) {
+            alert('Por favor ingresá la fecha preferida de entrega.');
+            var dateEl = document.getElementById('delivery-date');
+            if (dateEl) dateEl.focus();
+            return;
+          }
+          if (!prepFrom) {
+            alert('Por favor ingresá la hora de inicio del horario.');
+            var fromEl = document.getElementById('delivery-from');
+            if (fromEl) fromEl.focus();
+            return;
+          }
+          if (!prepTo) {
+            alert('Por favor ingresá la hora de fin del horario.');
+            var toEl = document.getElementById('delivery-to');
+            if (toEl) toEl.focus();
             return;
           }
         }
@@ -997,17 +1073,22 @@ import WAFloat from '../components/WAFloat.astro';
         var payload = {
           idempotency_key: cart.idempotency_key,
           items: cart.items.map(function (it) {
-            return { id: it.id, title: it.title, price: it.price, quantity: it.quantity };
+            return { product_id: it.id, quantity: it.quantity };
           }),
           delivery_type: deliveryType,
+          buyer: { name: prepName, phone: prepPhone },
         };
-        if (prepName)    payload.buyer_name              = prepName;
-        if (prepPhone)   payload.buyer_phone             = prepPhone;
-        if (prepAddress) payload.delivery_address        = prepAddress;
-        if (prepBarrio)  payload.delivery_barrio         = prepBarrio;
-        if (prepDepto)   payload.delivery_departamento   = prepDepto;
-        if (prepDate)    payload.delivery_date           = prepDate;
-        if (prepTime)    payload.delivery_time           = prepTime;
+        if (deliveryType === 'shipping') {
+          payload.shipping = {
+            address:        prepAddress,
+            locality:       prepBarrio,
+            department:     prepDepto,
+            requested_date: prepDate,
+            requested_from: prepFrom,
+            requested_to:   prepTo,
+          };
+          if (prepNotes) payload.shipping.notes = prepNotes;
+        }
 
         try {
           var resp = await fetch('/api/orders', {
@@ -1024,11 +1105,13 @@ import WAFloat from '../components/WAFloat.astro';
             return;
           }
 
-          var resultEl = document.getElementById('order-result');
-          var codeEl   = document.getElementById('order-public-code');
-          if (codeEl) codeEl.textContent = data.public_code;
-          if (resultEl) resultEl.hidden = false;
-          btnPrepare.textContent = 'Pedido registrado';
+          var resultEl    = document.getElementById('order-result');
+          var codeEl      = document.getElementById('order-public-code');
+          var totalConfEl = document.getElementById('order-total-confirmed');
+          if (codeEl)      codeEl.textContent     = data.order.public_code;
+          if (totalConfEl) totalConfEl.textContent = fmt.format(data.order.payable_total_uyu) + ' UYU';
+          if (resultEl)    resultEl.hidden = false;
+          btnPrepare.textContent = 'Pedido preparado';
         } catch (_fetchErr) {
           alert('Error de conexión. Verificá tu internet e intentá de nuevo.');
           btnPrepare.disabled = false;

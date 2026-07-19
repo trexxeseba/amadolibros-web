@@ -43,4 +43,5 @@ database_id = "<DATABASE_ID_REAL>"
 - Binding en código: `ORDERS_DB`
 - Migración: `migrations/0001_orders.sql`
 - Endpoint: `POST /api/orders` → `functions/api/orders.js`
-- Lógica pura (testeable): `functions/api/_orders_logic.js`
+- Handler (testeable con DI): `functions/api/_orders_handler.js`
+- Lógica pura: `functions/api/_orders_logic.js`
