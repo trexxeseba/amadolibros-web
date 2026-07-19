@@ -1,5 +1,4 @@
--- Migration 0001: tablas de órdenes para amadolibros.com
--- Aplicar con: wrangler d1 execute ORDERS_DB --file migrations/0001_orders.sql
+PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS orders (
   id                        TEXT    PRIMARY KEY,
@@ -10,8 +9,8 @@ CREATE TABLE IF NOT EXISTS orders (
                               CHECK (status IN ('open','paid','cancelled','expired','fulfilled')),
   payment_status            TEXT    NOT NULL DEFAULT 'not_started'
                               CHECK (payment_status IN ('not_started','pending','approved','rejected','refunded','cancelled')),
-  buyer_name                TEXT    NOT NULL,
-  buyer_phone               TEXT    NOT NULL,
+  buyer_name                TEXT    NOT NULL CHECK (length(trim(buyer_name)) > 0),
+  buyer_phone               TEXT    NOT NULL CHECK (length(trim(buyer_phone)) > 0),
   delivery_type             TEXT    NOT NULL CHECK (delivery_type IN ('pickup','shipping')),
   address                   TEXT,
   locality                  TEXT,
@@ -21,10 +20,10 @@ CREATE TABLE IF NOT EXISTS orders (
   requested_delivery_to     TEXT,
   delivery_notes            TEXT,
   products_total_uyu        INTEGER NOT NULL CHECK (products_total_uyu >= 0),
-  pickup_discount_uyu       INTEGER NOT NULL DEFAULT 0 CHECK (pickup_discount_uyu >= 0),
-  shipping_cost_uyu         INTEGER NOT NULL DEFAULT 0 CHECK (shipping_cost_uyu >= 0),
+  pickup_discount_uyu       INTEGER NOT NULL DEFAULT 0 CHECK (pickup_discount_uyu BETWEEN 0 AND 150),
+  shipping_cost_uyu         INTEGER NOT NULL DEFAULT 0 CHECK (shipping_cost_uyu IN (0,250)),
   payable_total_uyu         INTEGER NOT NULL CHECK (payable_total_uyu >= 0),
-  currency                  TEXT    NOT NULL DEFAULT 'UYU',
+  currency                  TEXT    NOT NULL DEFAULT 'UYU' CHECK (currency = 'UYU'),
   payment_provider          TEXT,
   payment_preference_id     TEXT,
   payment_id                TEXT,
@@ -33,7 +32,24 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at                TEXT    NOT NULL,
   paid_at                   TEXT,
   fulfilled_at              TEXT,
-  cancelled_at              TEXT
+  cancelled_at              TEXT,
+  CHECK (payable_total_uyu = products_total_uyu - pickup_discount_uyu + shipping_cost_uyu),
+  CHECK (
+    (delivery_type = 'pickup' AND shipping_cost_uyu = 0)
+    OR
+    (delivery_type = 'shipping' AND pickup_discount_uyu = 0)
+  ),
+  CHECK (
+    delivery_type = 'pickup'
+    OR (
+      address IS NOT NULL AND length(trim(address)) > 0
+      AND locality IS NOT NULL AND length(trim(locality)) > 0
+      AND department IS NOT NULL AND length(trim(department)) > 0
+      AND requested_delivery_date IS NOT NULL AND length(trim(requested_delivery_date)) > 0
+      AND requested_delivery_from IS NOT NULL AND length(trim(requested_delivery_from)) > 0
+      AND requested_delivery_to IS NOT NULL AND length(trim(requested_delivery_to)) > 0
+    )
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_status         ON orders (status);
@@ -47,10 +63,11 @@ CREATE TABLE IF NOT EXISTS order_items (
   title                       TEXT    NOT NULL,
   quantity                    INTEGER NOT NULL CHECK (quantity > 0),
   unit_price_uyu              INTEGER NOT NULL CHECK (unit_price_uyu > 0),
-  line_total_uyu              INTEGER NOT NULL CHECK (line_total_uyu > 0),
+  line_total_uyu              INTEGER NOT NULL CHECK (line_total_uyu = unit_price_uyu * quantity),
   image_url                   TEXT,
-  observed_available_quantity INTEGER,
-  created_at                  TEXT    NOT NULL
+  observed_available_quantity INTEGER CHECK (observed_available_quantity IS NULL OR observed_available_quantity >= 0),
+  created_at                  TEXT    NOT NULL,
+  UNIQUE (order_id, product_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (order_id);
