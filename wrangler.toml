@@ -15,3 +15,12 @@ pages_build_output_dir = "./public"
 [[kv_namespaces]]
 binding = "AMADO_KV"
 id = "6ea0ff4682d647118442a24fe384abc4"
+
+[[env.preview.kv_namespaces]]
+binding = "AMADO_KV"
+id = "6ea0ff4682d647118442a24fe384abc4"
+
+[[env.preview.d1_databases]]
+binding = "ORDERS_DB"
+database_name = "amadolibros-orders-preview"
+database_id = "6fa387af-f29e-46dc-97e5-30298568b4a6"
