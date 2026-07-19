@@ -46,6 +46,8 @@ import WAFloat from '../components/WAFloat.astro';
             <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
             <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
             <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
+            <p class="cart-shipping-cost-line" id="cart-shipping-cost-line" hidden>Envío:&nbsp;<strong id="cart-shipping-cost">$&nbsp;250</strong></p>
+            <p class="cart-total-shipping-line" id="cart-total-shipping-line" hidden>Total con envío:&nbsp;<strong id="cart-total-shipping">$&nbsp;0</strong></p>
             <p class="cart-transfer-note" id="cart-transfer-note" hidden>Pagando por transferencia se aplica además 12&nbsp;% de descuento.</p>
             <p class="cart-shipping-msg" id="cart-shipping-msg" hidden></p>
           </div>
@@ -116,6 +118,19 @@ import WAFloat from '../components/WAFloat.astro';
                 <option>Treinta y Tres</option>
               </select>
             </div>
+            <div class="form-field">
+              <label for="delivery-date" class="form-label">Fecha preferida</label>
+              <input type="date" id="delivery-date" class="form-input" autocomplete="off">
+            </div>
+            <div class="form-field">
+              <label for="delivery-time" class="form-label">Franja horaria preferida</label>
+              <select id="delivery-time" class="form-input">
+                <option value="">Sin preferencia</option>
+                <option value="mañana">Mañana (8–12 h)</option>
+                <option value="mediodía">Mediodía (12–15 h)</option>
+                <option value="tarde">Tarde (15–20 h)</option>
+              </select>
+            </div>
           </div>
         </section>
 
@@ -140,23 +155,17 @@ import WAFloat from '../components/WAFloat.astro';
 
         <!-- Acciones de pago -->
         <section class="cart-pay-section">
-          <button
-            type="button"
-            class="btn-pay-soon"
-            disabled
-            aria-disabled="true"
-          >
+          <button type="button" id="btn-prepare-order" class="btn-prepare-order">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" aria-hidden="true">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
               <line x1="1" y1="10" x2="23" y2="10"/>
             </svg>
-            Pagar con Mercado Pago
-            <span class="soon-chip">próximamente</span>
+            Preparar pago online
           </button>
           <p class="pay-note">
-            Estamos integrando el pago online. Mientras tanto podés enviarnos el
-            pedido por WhatsApp y te respondemos con los datos de pago.
+            Registramos tu pedido y te contactamos por WhatsApp para coordinar
+            el pago y la entrega.
           </p>
           <button type="button" id="btn-wa-order" class="btn-wa-order">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -165,6 +174,12 @@ import WAFloat from '../components/WAFloat.astro';
             Finalizar pedido por WhatsApp
           </button>
         </section>
+
+        <div id="order-result" class="order-result" hidden>
+          <p class="order-result-h">Pedido registrado</p>
+          <p>Código: <strong id="order-public-code"></strong></p>
+          <p class="order-result-note">Te contactamos a la brevedad por WhatsApp para coordinar el pago y la entrega.</p>
+        </div>
 
       </div><!-- /#cart-content -->
     </div><!-- /.cart-wrap -->
@@ -385,32 +400,61 @@ import WAFloat from '../components/WAFloat.astro';
     padding-top: 0.5rem;
   }
 
-  .btn-pay-soon {
+  .btn-prepare-order {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     padding: 0.875rem 1.5rem;
-    background: #d1d5db;
-    color: #6b7280;
+    background: var(--salmon);
+    color: #fff;
     border: none;
     border-radius: var(--r);
     font-family: var(--font-ui);
     font-size: 0.95rem;
-    font-weight: 600;
-    cursor: not-allowed;
+    font-weight: 700;
+    cursor: pointer;
     width: 100%;
+    transition: background 0.15s;
+  }
+  .btn-prepare-order:hover { background: var(--salmon-hover); }
+  .btn-prepare-order:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
   }
 
-  .soon-chip {
-    font-size: 0.7rem;
+  .order-result {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: var(--r);
+    padding: 1rem 1.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .order-result-h {
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: #9ca3af;
-    color: #fff;
-    padding: 0.2rem 0.5rem;
-    border-radius: 999px;
+    color: #166534;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .order-result-note {
+    font-size: 0.82rem;
+    color: #15803d;
+    margin-top: 0.4rem;
+  }
+
+  .cart-shipping-cost-line {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+  }
+
+  .cart-total-shipping-line {
+    font-size: 1rem;
+    color: var(--ink);
+    border-top: 1px solid var(--border);
+    padding-top: 0.2rem;
+    margin-top: 0.1rem;
   }
 
   .pay-note {
@@ -615,7 +659,8 @@ import WAFloat from '../components/WAFloat.astro';
 
     // ── Constantes ──────────────────────────────────────────────────────
     var RETIRO_DISCOUNT             = 150;
-    var FREE_SHIPPING_THRESHOLD_UYU = null; // sin monto configurado aún
+    var SHIPPING_COST               = 250;
+    var FREE_SHIPPING_THRESHOLD_UYU = 2000;
 
     // ── Elementos ───────────────────────────────────────────────────────
     var loadingEl        = document.getElementById('cart-loading');
@@ -630,7 +675,11 @@ import WAFloat from '../components/WAFloat.astro';
     var transferNoteEl   = document.getElementById('cart-transfer-note');
     var shippingMsgEl    = document.getElementById('cart-shipping-msg');
     var announceEl       = document.getElementById('cart-announce');
-    var shippingFieldsEl = document.getElementById('shipping-fields');
+    var shippingFieldsEl     = document.getElementById('shipping-fields');
+    var shippingCostLineEl   = document.getElementById('cart-shipping-cost-line');
+    var shippingCostEl       = document.getElementById('cart-shipping-cost');
+    var totalShippingLineEl  = document.getElementById('cart-total-shipping-line');
+    var totalShippingEl      = document.getElementById('cart-total-shipping');
 
     // ── Formato moneda ───────────────────────────────────────────────────
     var fmt = new Intl.NumberFormat('es-UY', {
@@ -661,31 +710,30 @@ import WAFloat from '../components/WAFloat.astro';
 
       if (isPickup) {
         var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
-        if (discountLineEl) discountLineEl.hidden = false;
-        if (totalLineEl)    totalLineEl.hidden    = false;
-        if (totalEl)        totalEl.textContent   = fmt.format(total);
-        if (shippingNoteEl) shippingNoteEl.hidden = true;
-        if (transferNoteEl) transferNoteEl.hidden = false;
+        if (discountLineEl)      discountLineEl.hidden      = false;
+        if (totalLineEl)         totalLineEl.hidden         = false;
+        if (totalEl)             totalEl.textContent        = fmt.format(total);
+        if (shippingNoteEl)      shippingNoteEl.hidden      = true;
+        if (transferNoteEl)      transferNoteEl.hidden      = false;
+        if (shippingCostLineEl)  shippingCostLineEl.hidden  = true;
+        if (totalShippingLineEl) totalShippingLineEl.hidden = true;
+        if (shippingMsgEl)       shippingMsgEl.hidden       = true;
       } else {
-        if (discountLineEl) discountLineEl.hidden = true;
-        if (totalLineEl)    totalLineEl.hidden    = true;
-        if (shippingNoteEl) shippingNoteEl.hidden = false;
-        if (transferNoteEl) transferNoteEl.hidden = true;
-      }
-
-      if (shippingMsgEl) {
-        if (FREE_SHIPPING_THRESHOLD_UYU !== null && !isPickup) {
-          if (subtotal >= FREE_SHIPPING_THRESHOLD_UYU) {
-            shippingMsgEl.textContent = '¡Ya tenés envío gratis!';
-          } else {
-            shippingMsgEl.textContent =
-              'Te faltan ' + fmt.format(FREE_SHIPPING_THRESHOLD_UYU - subtotal) +
-              ' para obtener envío gratis.';
-          }
-          shippingMsgEl.hidden = false;
-        } else {
-          shippingMsgEl.hidden = true;
+        var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
+        var totalWithShipping = subtotal + shippingCost;
+        if (discountLineEl)     discountLineEl.hidden     = true;
+        if (totalLineEl)        totalLineEl.hidden        = true;
+        if (shippingNoteEl)     shippingNoteEl.hidden     = true;
+        if (transferNoteEl)     transferNoteEl.hidden     = true;
+        if (shippingCostLineEl) {
+          shippingCostLineEl.hidden = false;
+          if (shippingCostEl) shippingCostEl.textContent = shippingCost === 0 ? 'Gratis' : fmt.format(shippingCost);
         }
+        if (totalShippingLineEl) {
+          totalShippingLineEl.hidden = false;
+          if (totalShippingEl) totalShippingEl.textContent = fmt.format(totalWithShipping);
+        }
+        if (shippingMsgEl) shippingMsgEl.hidden = true;
       }
     }
 
@@ -910,7 +958,85 @@ import WAFloat from '../components/WAFloat.astro';
       });
     }
 
-    // ── Render inicial ────────────────────────────────────────────────────
+    // ── Preparar pago online ─────────────────────────────────────────────────
+    var btnPrepare  = document.getElementById('btn-prepare-order');
+    var origBtnHTML = btnPrepare ? btnPrepare.innerHTML : '';
+
+    if (btnPrepare) {
+      btnPrepare.addEventListener('click', async function () {
+        var cart = window.AmadoCart.get();
+        if (cart.items.length === 0) return;
+
+        var deliveryType = getDeliveryType();
+        var prepAddress  = ((document.getElementById('delivery-address')     || {}).value || '').trim();
+        var prepBarrio   = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
+        var prepDepto    = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
+        var prepDate     = ((document.getElementById('delivery-date')         || {}).value || '').trim();
+        var prepTime     = ((document.getElementById('delivery-time')         || {}).value || '').trim();
+        var prepName     = ((document.getElementById('buyer-name')            || {}).value || '').trim();
+        var prepPhone    = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
+
+        if (deliveryType === 'shipping') {
+          if (!prepAddress) {
+            alert('Por favor ingresá la dirección de entrega.');
+            var addrEl = document.getElementById('delivery-address');
+            if (addrEl) addrEl.focus();
+            return;
+          }
+          if (!prepDepto) {
+            alert('Por favor seleccioná el departamento.');
+            var deptEl = document.getElementById('delivery-departamento');
+            if (deptEl) deptEl.focus();
+            return;
+          }
+        }
+
+        btnPrepare.disabled = true;
+        btnPrepare.textContent = 'Procesando…';
+
+        var payload = {
+          idempotency_key: cart.idempotency_key,
+          items: cart.items.map(function (it) {
+            return { id: it.id, title: it.title, price: it.price, quantity: it.quantity };
+          }),
+          delivery_type: deliveryType,
+        };
+        if (prepName)    payload.buyer_name              = prepName;
+        if (prepPhone)   payload.buyer_phone             = prepPhone;
+        if (prepAddress) payload.delivery_address        = prepAddress;
+        if (prepBarrio)  payload.delivery_barrio         = prepBarrio;
+        if (prepDepto)   payload.delivery_departamento   = prepDepto;
+        if (prepDate)    payload.delivery_date           = prepDate;
+        if (prepTime)    payload.delivery_time           = prepTime;
+
+        try {
+          var resp = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          var data = await resp.json();
+
+          if (!resp.ok) {
+            alert('Error: ' + (data.error || 'Intentá de nuevo.'));
+            btnPrepare.disabled = false;
+            btnPrepare.innerHTML = origBtnHTML;
+            return;
+          }
+
+          var resultEl = document.getElementById('order-result');
+          var codeEl   = document.getElementById('order-public-code');
+          if (codeEl) codeEl.textContent = data.public_code;
+          if (resultEl) resultEl.hidden = false;
+          btnPrepare.textContent = 'Pedido registrado';
+        } catch (_fetchErr) {
+          alert('Error de conexión. Verificá tu internet e intentá de nuevo.');
+          btnPrepare.disabled = false;
+          btnPrepare.innerHTML = origBtnHTML;
+        }
+      });
+    }
+
     renderCart();
   });
 </script>

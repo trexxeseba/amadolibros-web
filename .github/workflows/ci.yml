@@ -45,6 +45,9 @@ jobs:
             -print0 |
             xargs -0 -r -n1 node --check
 
+      - name: Test orders
+        run: node --test functions/api/__tests__/orders.test.js
+
       - name: Install Astro dependencies
         working-directory: astro-front
         run: npm ci --no-audit --no-fund
