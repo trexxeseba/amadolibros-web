@@ -74,13 +74,59 @@ database_name = "<NOMBRE_DEL_AMBIENTE>"
 database_id = "<DATABASE_ID_REAL_DEL_AMBIENTE>"
 ```
 
+## 5. Cloudflare Turnstile — protección Preview
+
+`POST /api/orders` requiere verificación Turnstile **solo en el ambiente Preview**. En Producción la variable no está definida y el endpoint no existe.
+
+### Recursos creados
+
+- Widget: `amadolibros-orders-preview` (mode `managed`, domain `amadolibros-web.pages.dev`).
+- Secret almacenado como variable de entorno de Pages: `TURNSTILE_SECRET_KEY` (ambiente Preview únicamente, nunca en Production).
+
+### Comportamiento fail-closed
+
+Si `ORDERS_DB` está presente pero `TURNSTILE_SECRET_KEY` no → 503 `TS_NOT_CONFIGURED`.
+Si ambas están presentes → el token del cliente se valida contra siteverify antes de tocar D1.
+
+### Crear/reutilizar el widget (requiere scope `challenge-widgets.write`)
+
+```bash
+# Verificar si existe
+npx wrangler@latest turnstile widget list
+
+# Crear (si no existe)
+npx wrangler@latest turnstile widget create "amadolibros-orders-preview" \
+  --domain amadolibros-web.pages.dev \
+  --mode managed \
+  --json
+```
+
+El comando muestra el `sitekey` (público) y el `secret`. El `sitekey` se escribe en `carrito.astro` como valor de `TS_SITE_KEY`. El `secret` se almacena via:
+
+```bash
+echo "<SECRET>" | npx wrangler pages secret put TURNSTILE_SECRET_KEY \
+  --project-name amadolibros-web \
+  --env preview
+```
+
+**El secret nunca se escribe en archivos del repositorio ni se incluye en commits.**
+
+### Validaciones que realiza el servidor
+
+- Token no vacío y longitud ≤ 2048 caracteres.
+- `siteverify` con timeout de 5 s (`AbortController`).
+- `action === 'prepare_order'`.
+- `hostname` es `amadolibros-web.pages.dev` o subdomain (cubre hashes de commit y alias de rama).
+
 ## Referencias internas
 
 - Endpoint: `POST /api/orders` → `functions/api/orders.js`.
 - Handler con inyección de dependencias: `functions/api/_orders_handler.js`.
+- Verificación Turnstile: `functions/api/_turnstile.js`.
 - Validación y reglas comerciales: `functions/api/_orders_logic.js`.
 - Tests: `functions/api/__tests__/orders.test.js`.
 - Migración: `migrations/0001_orders.sql`.
+- Carrito (frontend): `astro-front/src/pages/carrito.astro`.
 
 ## Reglas que la base refuerza
 

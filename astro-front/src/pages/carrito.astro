@@ -161,6 +161,7 @@ import WAFloat from '../components/WAFloat.astro';
 
         <!-- Acciones de pago -->
         <section class="cart-pay-section">
+          <div id="cf-ts-container"></div>
           <button type="button" id="btn-prepare-order" class="btn-prepare-order">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -680,6 +681,57 @@ import WAFloat from '../components/WAFloat.astro';
 </style>
 
 <script is:inline>
+  // ── Turnstile Preview ────────────────────────────────────────────────────
+  var TS_PREVIEW_HOST = 'amadolibros-web.pages.dev';
+  var TS_SITE_KEY     = '0x4AAAAAAD6E9kz8K3comwjj';
+  var tsIsPreview     = window.location.hostname === TS_PREVIEW_HOST ||
+                        window.location.hostname.endsWith('.' + TS_PREVIEW_HOST);
+  var tsWidgetId      = null;
+  var tsPending       = null;
+
+  function tsOnSuccess(token) { if (tsPending) { var r=tsPending.resolve; tsPending=null; r(token); } }
+  function tsOnError()        { if (tsPending) { var r=tsPending.reject;  tsPending=null; r(new Error('ts-error')); } }
+  function tsOnExpired()      { if (tsPending) { var r=tsPending.reject;  tsPending=null; r(new Error('ts-expired')); } }
+  function tsOnTimeout()      { if (tsPending) { var r=tsPending.reject;  tsPending=null; r(new Error('ts-timeout')); } }
+
+  function tsRenderWidget() {
+    var container = document.getElementById('cf-ts-container');
+    if (!container || tsWidgetId != null) return;
+    tsWidgetId = window.turnstile.render(container, {
+      sitekey:             TS_SITE_KEY,
+      action:              'prepare_order',
+      appearance:          'interaction-only',
+      execution:           'execute',
+      callback:            tsOnSuccess,
+      'error-callback':    tsOnError,
+      'expired-callback':  tsOnExpired,
+      'timeout-callback':  tsOnTimeout,
+    });
+  }
+
+  function tsGetToken() {
+    return new Promise(function (resolve, reject) {
+      if (tsWidgetId == null) { reject(new Error('ts-not-ready')); return; }
+      tsPending = { resolve: resolve, reject: reject };
+      window.turnstile.reset(tsWidgetId);
+      window.turnstile.execute(tsWidgetId);
+      // Timeout de seguridad en caso de que ningún callback dispare.
+      setTimeout(function () {
+        if (tsPending) { var r=tsPending.reject; tsPending=null; r(new Error('ts-timeout')); }
+      }, 30000);
+    });
+  }
+
+  if (tsIsPreview) {
+    window.__tsOnLoad = function () { tsRenderWidget(); };
+    var _tsScript = document.createElement('script');
+    _tsScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__tsOnLoad&render=explicit';
+    _tsScript.async = true;
+    _tsScript.defer = true;
+    document.head.appendChild(_tsScript);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   document.addEventListener('DOMContentLoaded', function () {
 
     // ── Constantes ──────────────────────────────────────────────────────
@@ -1068,10 +1120,30 @@ import WAFloat from '../components/WAFloat.astro';
         }
 
         btnPrepare.disabled = true;
-        btnPrepare.textContent = 'Procesando…';
+        btnPrepare.textContent = tsIsPreview ? 'Verificando…' : 'Procesando…';
+
+        var cfTsResponse = null;
+        if (tsIsPreview) {
+          if (tsWidgetId == null) {
+            alert('La verificación aún no cargó. Esperá un momento y reintentá.');
+            btnPrepare.disabled = false;
+            btnPrepare.innerHTML = origBtnHTML;
+            return;
+          }
+          try {
+            cfTsResponse = await tsGetToken();
+          } catch (_tsErr) {
+            alert('Error en la verificación. Recargá la página e intentá de nuevo.');
+            btnPrepare.disabled = false;
+            btnPrepare.innerHTML = origBtnHTML;
+            return;
+          }
+          btnPrepare.textContent = 'Procesando…';
+        }
 
         var payload = {
           idempotency_key: cart.idempotency_key,
+          cf_turnstile_response: cfTsResponse,
           items: cart.items.map(function (it) {
             return { product_id: it.id, quantity: it.quantity };
           }),

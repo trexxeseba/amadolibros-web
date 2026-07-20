@@ -9,6 +9,7 @@ import {
   EXPIRY_MINUTES,
   MAX_BODY_BYTES,
 } from './_orders_logic.js';
+import { verifyTurnstile } from './_turnstile.js';
 
 const EXISTING_ORDER_SELECT =
   'SELECT id, public_code, status, payment_status, delivery_type, ' +
@@ -16,7 +17,7 @@ const EXISTING_ORDER_SELECT =
   'payable_total_uyu, currency, expires_at, request_fingerprint ' +
   'FROM orders WHERE idempotency_key = ?';
 
-export function createOrdersHandler({ fetchCatalog, getNow = () => new Date() }) {
+export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), verifyTurnstileToken = verifyTurnstile }) {
   return async function onRequest(context) {
     const { request, env } = context;
 
@@ -48,8 +49,30 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date() })
     const validationError = validateBody(body);
     if (validationError) return json({ error: validationError }, 400);
 
+    // Fail-closed: ORDERS_DB y TURNSTILE_SECRET_KEY deben estar presentes juntos.
     const db = env?.ORDERS_DB;
     if (!db) return json({ error: 'Servicio de órdenes no disponible.' }, 503);
+
+    const tsSecret = env?.TURNSTILE_SECRET_KEY;
+    if (!tsSecret) {
+      return json({ error: 'Servicio de verificación no configurado.', code: 'TS_NOT_CONFIGURED' }, 503);
+    }
+
+    const tsRaw = typeof body.cf_turnstile_response === 'string' ? body.cf_turnstile_response.trim() : '';
+    if (!tsRaw) {
+      return json({ error: 'Verificación requerida.', code: 'TOKEN_MISSING' }, 403);
+    }
+    if (tsRaw.length > 2048) {
+      return json({ error: 'Token inválido.', code: 'TOKEN_INVALID' }, 403);
+    }
+    const tsResult = await verifyTurnstileToken(tsRaw, tsSecret, request.headers.get('CF-Connecting-IP') ?? '');
+    if (!tsResult.ok) {
+      const svcErr = tsResult.code === 'SITEVERIFY_ERROR' || tsResult.code === 'SITEVERIFY_TIMEOUT';
+      return json(
+        { error: svcErr ? 'Servicio de verificación no disponible.' : 'Verificación fallida.', code: tsResult.code },
+        svcErr ? 503 : 403
+      );
+    }
 
     const now = getNow();
     if (!(now instanceof Date) || Number.isNaN(now.getTime())) {

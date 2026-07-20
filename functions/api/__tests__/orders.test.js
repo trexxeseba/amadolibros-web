@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOrdersHandler } from '../_orders_handler.js';
 import { consolidateItems, dateInTimeZone, generateFingerprint, validateBody } from '../_orders_logic.js';
+import { verifyTurnstile } from '../_turnstile.js';
 
 const NOW = new Date('2026-07-19T16:00:00.000Z');
 const CATALOG = { items: [
@@ -12,32 +13,39 @@ const CATALOG = { items: [
   { id:'X', title:'Precio roto', price:'NaN', available_quantity:2, status:'active', thumbnail:null },
 ] };
 
-function dbMock({ existing=null, batchError=null, race=null, lookupError=null }={}) {
+function dbMock({ existing=null, batchError=null, race=null, lookupError=null, strict=false }={}) {
   let lookups=0; const committed=[]; const updates=[];
   return {
     committed, updates, lookups:()=>lookups,
-    prepare(sql){ return { bind(...args){ const stmt={sql,args}; return {
-      async first(){
-        if (sql.includes('idempotency_key')) { lookups++; if(lookupError) throw lookupError; return existing || (lookups>1 ? race : null); }
-        if (sql.includes('public_code')) return null;
-        return null;
-      },
-      async run(){ updates.push(stmt); return {success:true}; },
-      stmt,
-    }; } }; },
+    prepare(sql){
+      if (strict) throw new Error('D1 must not be accessed before Turnstile approval');
+      return { bind(...args){ const stmt={sql,args}; return {
+        async first(){
+          if (sql.includes('idempotency_key')) { lookups++; if(lookupError) throw lookupError; return existing || (lookups>1 ? race : null); }
+          if (sql.includes('public_code')) return null;
+          return null;
+        },
+        async run(){ updates.push(stmt); return {success:true}; },
+        stmt,
+      }; } };
+    },
     async batch(stmts){ if(batchError) throw batchError; committed.push(...stmts); return stmts.map(()=>({success:true})); },
   };
 }
 
+const TS_OK = async () => ({ ok: true });
+
 function ctx(body, db, opts={}) {
   const method=opts.method||'POST'; const headers={'Content-Type':opts.type||'application/json'};
   if(opts.length!==undefined) headers['Content-Length']=String(opts.length);
-  return { request:new Request('https://x/api/orders',{method,headers,body:method==='POST'?(typeof body==='string'?body:JSON.stringify(body)):undefined}), env:db?{ORDERS_DB:db}:{}, waitUntil(){} };
+  // Fail-closed: incluye TURNSTILE_SECRET_KEY cuando ORDERS_DB está presente; permite override vía opts.env.
+  const env = opts.env !== undefined ? opts.env : (db ? { ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret' } : {});
+  return { request:new Request('https://x/api/orders',{method,headers,body:method==='POST'?(typeof body==='string'?body:JSON.stringify(body)):undefined}), env, waitUntil(){} };
 }
-function pickup(key='k'){ return { idempotency_key:key, items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', buyer:{name:'Ana',phone:'099'} }; }
-function shipping(key='s', patch={}) { const base={ idempotency_key:key, items:[{product_id:'G',quantity:1},{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Carlos',phone:'098'}, shipping:{address:'Calle 1',locality:'Centro',department:'Montevideo',requested_date:'2026-07-20',requested_from:'09:00',requested_to:'12:00',notes:'2B'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
+function pickup(key='k'){ return { idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', buyer:{name:'Ana',phone:'099'} }; }
+function shipping(key='s', patch={}) { const base={ idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'G',quantity:1},{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Carlos',phone:'098'}, shipping:{address:'Calle 1',locality:'Centro',department:'Montevideo',requested_date:'2026-07-20',requested_from:'09:00',requested_to:'12:00',notes:'2B'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
 function stored(body, patch={}) { return { id:'uuid', idempotency_key:body.idempotency_key, request_fingerprint:generateFingerprint(body,consolidateItems(body.items)), public_code:'AL-TEST', status:'open', payment_status:'not_started', delivery_type:body.delivery_type, products_total_uyu:3250, pickup_discount_uyu:150, shipping_cost_uyu:0, payable_total_uyu:3100, currency:'UYU', expires_at:'2026-07-19T17:00:00.000Z', ...patch }; }
-function handler(fetchCatalog=async()=>CATALOG, now=NOW){ return createOrdersHandler({fetchCatalog,getNow:()=>new Date(now)}); }
+function handler(fetchCatalog=async()=>CATALOG, now=NOW, verifyTurnstileToken=TS_OK){ return createOrdersHandler({fetchCatalog,getNow:()=>new Date(now),verifyTurnstileToken}); }
 
 async function call(body, db=dbMock(), opts={}, h=handler()){ const response=await h(ctx(body,db,opts)); return {response,data:await response.json(),db}; }
 
@@ -70,7 +78,7 @@ test('notas integran fingerprint', async()=>{
 });
 
 test('precio del navegador se ignora y manda catálogo', async()=>{
-  const body={idempotency_key:'price',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup',buyer:{name:'T',phone:'099'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);
+  const body={idempotency_key:'price',cf_turnstile_response:'ok-token',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup',buyer:{name:'T',phone:'099'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);
 });
 
 test('stock, producto, estado y precio inválidos devuelven 422', async()=>{
@@ -110,4 +118,122 @@ test('límites HTTP y método', async()=>{
 
 test('límites de contrato y consolidación', ()=>{
   assert.equal(validateBody([]),'Body inválido.'); const b=pickup('x'.repeat(129)); assert.match(validateBody(b),/demasiado largo/); b.idempotency_key='q'; b.items=[{product_id:'A',quantity:100}]; assert.equal(validateBody(b),'Cantidad inválida.'); assert.deepEqual(consolidateItems([{product_id:'B',quantity:1},{product_id:'A',quantity:2},{product_id:'B',quantity:3}]),[{product_id:'A',quantity:2},{product_id:'B',quantity:4}]);
+});
+
+// ── Turnstile ─────────────────────────────────────────────────────────────────
+
+test('ts-1: ORDERS_DB presente y TURNSTILE_SECRET_KEY ausente → 503, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'any'}, db, {env:{ORDERS_DB:db}});
+  assert.equal(r.response.status,503);
+  assert.equal(r.data.code,'TS_NOT_CONFIGURED');
+});
+
+test('ts-2: token ausente → 403 TOKEN_MISSING, D1 intacta', async()=>{
+  const body={...pickup()}; delete body.cf_turnstile_response;
+  const db=dbMock({strict:true});
+  const r=await call(body,db);
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'TOKEN_MISSING');
+});
+
+test('ts-3: token demasiado largo → 403 TOKEN_INVALID, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'x'.repeat(2049)},db);
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'TOKEN_INVALID');
+});
+
+test('ts-4: token inválido (siteverify rechaza) → 403 TOKEN_INVALID, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'bad'},db,{},handler(async()=>CATALOG,NOW,async()=>({ok:false,code:'TOKEN_INVALID'})));
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'TOKEN_INVALID');
+});
+
+test('ts-5: token reutilizado/vencido → 403 TOKEN_EXPIRED, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'old'},db,{},handler(async()=>CATALOG,NOW,async()=>({ok:false,code:'TOKEN_EXPIRED'})));
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'TOKEN_EXPIRED');
+});
+
+test('ts-6: error interno de siteverify → 503 SITEVERIFY_ERROR, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'any'},db,{},handler(async()=>CATALOG,NOW,async()=>({ok:false,code:'SITEVERIFY_ERROR'})));
+  assert.equal(r.response.status,503);
+  assert.equal(r.data.code,'SITEVERIFY_ERROR');
+});
+
+test('ts-7: timeout de siteverify → 503 SITEVERIFY_TIMEOUT, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'any'},db,{},handler(async()=>CATALOG,NOW,async()=>({ok:false,code:'SITEVERIFY_TIMEOUT'})));
+  assert.equal(r.response.status,503);
+  assert.equal(r.data.code,'SITEVERIFY_TIMEOUT');
+});
+
+test('ts-8: action incorrecta → 403 ACTION_INVALID, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'any'},db,{},handler(async()=>CATALOG,NOW,async()=>({ok:false,code:'ACTION_INVALID'})));
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'ACTION_INVALID');
+});
+
+test('ts-9: hostname incorrecto → 403 HOSTNAME_INVALID, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'any'},db,{},handler(async()=>CATALOG,NOW,async()=>({ok:false,code:'HOSTNAME_INVALID'})));
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'HOSTNAME_INVALID');
+});
+
+test('ts-10: token válido → 201 y D1 escrita', async()=>{
+  const db=dbMock();
+  const r=await call({...pickup(),cf_turnstile_response:'valid'},db);
+  assert.equal(r.response.status,201);
+  assert.equal(db.committed.length>0,true);
+});
+
+test('ts-11: cf_turnstile_response cadena vacía o espacios → 403 TOKEN_MISSING, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call({...pickup(),cf_turnstile_response:'   '},db);
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'TOKEN_MISSING');
+});
+
+// ── Tests unitarios de _turnstile.js con fetch inyectable ────────────────────
+
+function fakeFetch(body, ok=true) {
+  return async () => ({ ok, json: async () => body });
+}
+
+test('ts-12: siteverify HTTP 500 → SITEVERIFY_ERROR', async()=>{
+  const res=await verifyTurnstile('tok','sec','',{fetch:fakeFetch(null,false)});
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'SITEVERIFY_ERROR');
+});
+
+test('ts-13: siteverify JSON inválido → SITEVERIFY_ERROR', async()=>{
+  const badFetch=async()=>({ok:true,json:async()=>{throw new SyntaxError('bad json');}});
+  const res=await verifyTurnstile('tok','sec','',{fetch:badFetch});
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'SITEVERIFY_ERROR');
+});
+
+test('ts-14: hostname commit-hash Preview → ok: true', async()=>{
+  const f=fakeFetch({success:true,action:'prepare_order',hostname:'abc123def456.amadolibros-web.pages.dev'});
+  const res=await verifyTurnstile('tok','sec','',{fetch:f});
+  assert.equal(res.ok,true);
+});
+
+test('ts-15: hostname alias de rama Preview → ok: true', async()=>{
+  const f=fakeFetch({success:true,action:'prepare_order',hostname:'feature-turnstile.amadolibros-web.pages.dev'});
+  const res=await verifyTurnstile('tok','sec','',{fetch:f});
+  assert.equal(res.ok,true);
+});
+
+test('ts-16: token y secret nunca expuestos en respuesta al cliente', async()=>{
+  const r=await call({...pickup()});
+  const text=JSON.stringify(r.data);
+  assert.ok(!text.includes('ok-token'),'token leaked in response');
+  assert.ok(!text.includes('ts-test-secret'),'secret leaked in response');
 });
