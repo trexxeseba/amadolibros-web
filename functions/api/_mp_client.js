@@ -23,7 +23,7 @@ function validateMpResponse(data, { requireExternalRef = false, publicCode = '' 
 function mpErrorCode(status) {
   if (status === 401) return 'MP_AUTH_ERROR';
   if (status === 429) return 'MP_RATE_LIMIT';
-  return 'MP_API_ERROR';
+  return `MP_HTTP_${status}`;
 }
 
 async function fetchMp(url, opts, timeoutMs, fetchFn) {
