@@ -48,6 +48,9 @@ jobs:
       - name: Test orders
         run: node --test functions/api/__tests__/orders.test.js
 
+      - name: Test preferences
+        run: node --test functions/api/__tests__/preferences.test.js
+
       - name: Install Astro dependencies
         working-directory: astro-front
         run: npm ci --no-audit --no-fund

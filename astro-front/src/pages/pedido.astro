@@ -15,15 +15,17 @@ const WA_HREF =
   <Header />
   <main class="pedido-page">
     <div class="pedido-wrap">
-      <div class="pedido-icon" aria-hidden="true">🕐</div>
-      <h1>Estado del pedido</h1>
-      <p class="pedido-lead">
+      <div id="pedido-icon" class="pedido-icon" aria-hidden="true">🕐</div>
+      <h1 id="pedido-h1">Estado del pedido</h1>
+      <p id="pedido-lead" class="pedido-lead">
         Estamos terminando la integración con Mercado Pago.
         Por ahora podés finalizar tu pedido por WhatsApp y te respondemos
         con los datos de pago.
       </p>
+      <p id="pedido-sub" class="pedido-sub" hidden></p>
+      <p id="pedido-code" class="pedido-code" hidden></p>
       <div class="pedido-ctas">
-        <a href="/carrito" class="btn-back">← Volver al carrito</a>
+        <a id="btn-pedido-back" href="/carrito" class="btn-back" hidden>← Volver al carrito</a>
         <a
           href={WA_HREF}
           target="_blank"
@@ -38,6 +40,34 @@ const WA_HREF =
       </div>
     </div>
   </main>
+
+  <script is:inline>
+    (function () {
+      var params  = new URLSearchParams(window.location.search);
+      var result  = params.get('result');
+      var code    = params.get('code');
+      var iconEl  = document.getElementById('pedido-icon');
+      var h1El    = document.getElementById('pedido-h1');
+      var leadEl  = document.getElementById('pedido-lead');
+      var subEl   = document.getElementById('pedido-sub');
+      var codeEl  = document.getElementById('pedido-code');
+      var backEl  = document.getElementById('btn-pedido-back');
+
+      if (result === 'success' || result === 'pending') {
+        if (iconEl) iconEl.textContent = '⏳';
+        if (h1El)   h1El.textContent   = result === 'success'
+          ? 'Volviste de Mercado Pago. Estamos verificando el pago.'
+          : 'El pago está pendiente de confirmación.';
+        if (leadEl) leadEl.textContent = 'La confirmación definitiva llegará cuando Mercado Pago valide la operación.';
+        if (code && codeEl) { codeEl.textContent = 'Código de pedido: ' + code; codeEl.hidden = false; }
+      } else if (result === 'failure') {
+        if (iconEl) iconEl.textContent = '✗';
+        if (h1El)   h1El.textContent   = 'El pago no se completó.';
+        if (leadEl) leadEl.textContent = 'Podés reintentar el pago desde el carrito.';
+        if (backEl) backEl.hidden = false;
+      }
+    })();
+  </script>
   <WAFloat />
   <Footer />
 </BaseLayout>
@@ -112,4 +142,17 @@ const WA_HREF =
     width: 100%;
   }
   .btn-wa-pedido:hover { background: var(--wa-hover); }
+
+  .pedido-sub, .pedido-code {
+    font-size: 0.9rem;
+    color: var(--ink-2);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+
+  .pedido-code {
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
 </style>

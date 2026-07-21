@@ -118,10 +118,61 @@ echo "<SECRET>" | npx wrangler pages secret put TURNSTILE_SECRET_KEY \
 - `action === 'prepare_order'`.
 - `hostname` es `amadolibros-web.pages.dev` o subdomain (cubre hashes de commit y alias de rama).
 
+## 6. Mercado Pago Checkout Pro — Preview
+
+`POST /api/preferences` inicia un pago MP en sandbox. Solo opera en Preview; Production no tiene `MP_ACCESS_TOKEN` definida.
+
+### App MP
+
+- Nombre: VICTOR SEBASTIÁN
+- App ID: `6816864196905927`
+- User/Collector ID: `440298103`
+- Sitio: `MLU` (Uruguay)
+- Producto: Checkout Pro
+
+### Activar credenciales de prueba (una sola vez, requiere login en MP)
+
+1. Ingresar a `https://www.mercadopago.com.uy/developers/panel/app/6816864196905927`
+2. En "Credenciales" → pestaña **Prueba** → clic en **Activar credenciales**
+3. MP genera `TEST_PUBLIC_KEY` y `TEST_ACCESS_TOKEN`
+
+### Guardar el secret (el valor nunca entra al repositorio)
+
+```bash
+npx wrangler@4.112.0 pages secret put MP_ACCESS_TOKEN \
+  --project-name amadolibros-web \
+  --env preview
+# Wrangler pide el valor interactivamente. Pegar TEST_ACCESS_TOKEN.
+```
+
+### Endpoint `POST /api/preferences`
+
+- Requiere: `{ public_code, idempotency_key }` — ambos del pedido creado por `/api/orders`
+- Devuelve: `{ sandbox_init_point }` — URL de pago de MP sandbox
+- Solo en hosts `*.amadolibros-web.pages.dev`
+- Claim de idempotencia en D1: `creating:<epoch-seconds>:<uuid>`, TTL 30 s
+- Evento D1: `preference_created` con payload `{ preference_id, environment: "test" }`
+- Todos los errores tienen `Cache-Control: no-store`
+
+### Validaciones de sandbox URL
+
+- `protocol === 'https:'`
+- `hostname === 'sandbox.mercadopago.com'` (sin `.com.uy`)
+- `pathname.length > 1`
+
+### Archivos
+
+- `functions/api/preferences.js` — entry point
+- `functions/api/_mp_handler.js` — lógica y claim
+- `functions/api/_mp_client.js` — HTTP a MP, validación de respuesta
+- `functions/api/__tests__/preferences.test.js` — 44 tests
+
 ## Referencias internas
 
 - Endpoint: `POST /api/orders` → `functions/api/orders.js`.
 - Handler con inyección de dependencias: `functions/api/_orders_handler.js`.
+- Endpoint: `POST /api/preferences` → `functions/api/preferences.js`.
+- Client MP con timeout: `functions/api/_mp_client.js`.
 - Verificación Turnstile: `functions/api/_turnstile.js`.
 - Validación y reglas comerciales: `functions/api/_orders_logic.js`.
 - Tests: `functions/api/__tests__/orders.test.js`.

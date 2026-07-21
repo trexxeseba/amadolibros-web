@@ -186,7 +186,10 @@ import WAFloat from '../components/WAFloat.astro';
           <p class="order-result-h">Pedido preparado</p>
           <p>Código: <strong id="order-public-code"></strong></p>
           <p>Total confirmado: <strong id="order-total-confirmed"></strong></p>
-          <p class="order-result-note">El pago online se habilitará en la siguiente etapa.</p>
+          <p id="order-result-note" class="order-result-note">El pago online se habilitará en la siguiente etapa.</p>
+          <button type="button" id="btn-pay-mp" class="btn-pay-mp" hidden>
+            Pagar con Mercado Pago
+          </button>
         </div>
 
       </div><!-- /#cart-content -->
@@ -678,6 +681,27 @@ import WAFloat from '../components/WAFloat.astro';
     font-size: 0.78rem;
     color: #267a42;
   }
+
+  .btn-pay-mp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: #009ee3;
+    color: #fff;
+    border: none;
+    border-radius: var(--r);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 0.75rem;
+    transition: background 0.15s;
+  }
+  .btn-pay-mp:hover { background: #0087c6; }
+  .btn-pay-mp:disabled { background: #9ca3af; cursor: not-allowed; }
 </style>
 
 <script is:inline>
@@ -1047,6 +1071,36 @@ import WAFloat from '../components/WAFloat.astro';
       });
     }
 
+    // ── Pagar con Mercado Pago ────────────────────────────────────────────────
+    var mpPublicCode     = null;
+    var mpIdempotencyKey = null;
+    var btnPayMp         = document.getElementById('btn-pay-mp');
+
+    if (btnPayMp) {
+      btnPayMp.addEventListener('click', async function () {
+        if (!mpPublicCode || !mpIdempotencyKey) return;
+        btnPayMp.disabled    = true;
+        btnPayMp.textContent = 'Iniciando pago…';
+        try {
+          var mpResp = await fetch('/api/preferences', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ public_code: mpPublicCode, idempotency_key: mpIdempotencyKey }),
+          });
+          var mpData = await mpResp.json();
+          if (mpResp.ok && mpData.sandbox_init_point) {
+            window.location.href = mpData.sandbox_init_point;
+            return;
+          }
+          alert('Error al iniciar el pago: ' + (mpData.error || 'Intentá de nuevo.'));
+        } catch (_err) {
+          alert('Error de conexión. Verificá tu internet e intentá de nuevo.');
+        }
+        btnPayMp.disabled    = false;
+        btnPayMp.textContent = 'Pagar con Mercado Pago';
+      });
+    }
+
     // ── Preparar pago online ─────────────────────────────────────────────────
     var btnPrepare  = document.getElementById('btn-prepare-order');
     var origBtnHTML = btnPrepare ? btnPrepare.innerHTML : '';
@@ -1184,6 +1238,14 @@ import WAFloat from '../components/WAFloat.astro';
           if (totalConfEl) totalConfEl.textContent = fmt.format(data.order.payable_total_uyu) + ' UYU';
           if (resultEl)    resultEl.hidden = false;
           btnPrepare.textContent = 'Pedido preparado';
+
+          if (tsIsPreview) {
+            mpPublicCode     = data.order.public_code;
+            mpIdempotencyKey = cart.idempotency_key;
+            var noteEl = document.getElementById('order-result-note');
+            if (noteEl)    noteEl.hidden   = true;
+            if (btnPayMp)  btnPayMp.hidden = false;
+          }
         } catch (_fetchErr) {
           alert('Error de conexión. Verificá tu internet e intentá de nuevo.');
           btnPrepare.disabled = false;
