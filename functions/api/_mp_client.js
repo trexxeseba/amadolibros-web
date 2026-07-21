@@ -55,16 +55,16 @@ export async function createPreference(payload, accessToken, { fetch: f = global
     );
   } catch (e) {
     if (e?.name === 'AbortError') return { ok: false, code: 'MP_TIMEOUT' };
-    return { ok: false, code: 'MP_API_ERROR' };
+    return { ok: false, code: 'MP_NETWORK_ERROR' };
   }
 
   if (!resp.ok) return { ok: false, code: mpErrorCode(resp.status) };
 
   let data;
-  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
+  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_JSON_ERROR' }; }
 
   const err = validateMpResponse(data);
-  if (err) return { ok: false, code: 'MP_API_ERROR' };
+  if (err) return { ok: false, code: `MP_VALIDATE_${err.replace(/\s+/g, '_').toUpperCase()}` };
   return { ok: true, id: data.id, sandbox_init_point: data.sandbox_init_point };
 }
 
