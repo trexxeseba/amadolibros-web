@@ -1,6 +1,6 @@
 const MP_BASE             = 'https://api.mercadopago.com';
 const MP_SANDBOX_HOSTNAME = 'sandbox.mercadopago.com';
-export const MP_COLLECTOR_ID = 440298103;
+export const MP_COLLECTOR_ID = 3559407834;
 export const MP_SITE_ID      = 'MLU';
 
 export function validateSandboxUrl(raw) {
