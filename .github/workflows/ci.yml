@@ -51,6 +51,12 @@ jobs:
       - name: Test preferences
         run: node --test functions/api/__tests__/preferences.test.js
 
+      - name: Test MP webhook
+        run: node --test functions/api/__tests__/mp_webhook.test.js
+
+      - name: Test order status
+        run: node --test functions/api/__tests__/order_status.test.js
+
       - name: Install Astro dependencies
         working-directory: astro-front
         run: npm ci --no-audit --no-fund

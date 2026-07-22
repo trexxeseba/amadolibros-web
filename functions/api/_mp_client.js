@@ -92,6 +92,67 @@ export async function getPreference(prefId, accessToken, publicCode, { fetch: f 
   return { ok: true, id: data.id, sandbox_init_point: data.sandbox_init_point };
 }
 
+export async function getPayment(paymentId, accessToken, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
+  let resp;
+  try {
+    resp = await fetchMp(
+      `${MP_BASE}/v1/payments/${encodeURIComponent(String(paymentId))}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}` } },
+      timeoutMs,
+      f
+    );
+  } catch (e) {
+    if (e?.name === 'AbortError') return { ok: false, code: 'MP_TIMEOUT' };
+    return { ok: false, code: 'MP_API_ERROR' };
+  }
+  if (resp.status === 404) return { ok: false, code: 'NOT_FOUND' };
+  if (!resp.ok) return { ok: false, code: mpErrorCode(resp.status) };
+  let data;
+  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
+  if (!data || typeof data.id !== 'number') return { ok: false, code: 'MP_API_ERROR' };
+  return {
+    ok: true,
+    id: data.id,
+    status: data.status,
+    live_mode: data.live_mode,
+    collector_id: data.collector_id,
+    currency_id: data.currency_id,
+    transaction_amount: data.transaction_amount,
+    external_reference: data.external_reference ?? null,
+    order_id: data.order?.id ?? null,
+    date_approved: data.date_approved ?? null,
+  };
+}
+
+export async function getMerchantOrder(merchantOrderId, accessToken, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
+  let resp;
+  try {
+    resp = await fetchMp(
+      `${MP_BASE}/merchant_orders/${encodeURIComponent(String(merchantOrderId))}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}` } },
+      timeoutMs,
+      f
+    );
+  } catch (e) {
+    if (e?.name === 'AbortError') return { ok: false, code: 'MP_TIMEOUT' };
+    return { ok: false, code: 'MP_API_ERROR' };
+  }
+  if (resp.status === 404) return { ok: false, code: 'NOT_FOUND' };
+  if (!resp.ok) return { ok: false, code: mpErrorCode(resp.status) };
+  let data;
+  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
+  if (!data || typeof data.id !== 'number') return { ok: false, code: 'MP_API_ERROR' };
+  return {
+    ok: true,
+    id: data.id,
+    preference_id: data.preference_id ?? null,
+    external_reference: data.external_reference ?? null,
+    payments: Array.isArray(data.payments)
+      ? data.payments.map(p => ({ id: p.id, status: p.status }))
+      : [],
+  };
+}
+
 export async function searchPreferenceByRef(publicCode, accessToken, now, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
   let resp;
   try {

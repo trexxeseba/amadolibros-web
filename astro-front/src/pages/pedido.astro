@@ -53,11 +53,10 @@ const WA_HREF =
       var codeEl  = document.getElementById('pedido-code');
       var backEl  = document.getElementById('btn-pedido-back');
 
+      // ── Estado inicial según result de MP ──────────────────────────────────
       if (result === 'success' || result === 'pending') {
         if (iconEl) iconEl.textContent = '⏳';
-        if (h1El)   h1El.textContent   = result === 'success'
-          ? 'Volviste de Mercado Pago. Estamos verificando el pago.'
-          : 'El pago está pendiente de confirmación.';
+        if (h1El)   h1El.textContent   = 'Estamos verificando el pago…';
         if (leadEl) leadEl.textContent = 'La confirmación definitiva llegará cuando Mercado Pago valide la operación.';
         if (code && codeEl) { codeEl.textContent = 'Código de pedido: ' + code; codeEl.hidden = false; }
       } else if (result === 'failure') {
@@ -66,6 +65,80 @@ const WA_HREF =
         if (leadEl) leadEl.textContent = 'Podés reintentar el pago desde el carrito.';
         if (backEl) backEl.hidden = false;
       }
+
+      // ── Polling de estado real en D1 ─────────────────────────────────────
+      if (!code || (result !== 'success' && result !== 'pending')) return;
+
+      var auth = null;
+      try { auth = JSON.parse(sessionStorage.getItem('amado-mp-auth') || 'null'); } catch (_) {}
+
+      if (!auth || auth.public_code !== code || !auth.idempotency_key) return;
+
+      var MAX_ATTEMPTS  = 20;
+      var INTERVAL_MS   = 3000;
+      var attempts      = 0;
+      var stopped       = false;
+
+      var TERMINAL_STATES = { approved: true, rejected: true, cancelled: true, refunded: true };
+
+      function applyFinalState(paymentStatus) {
+        if (paymentStatus === 'approved') {
+          if (iconEl) iconEl.textContent = '✓';
+          if (h1El)   h1El.textContent   = 'Pago confirmado';
+          if (leadEl) leadEl.textContent = 'Tu pedido está confirmado. Te contactaremos por WhatsApp para coordinar la entrega.';
+        } else if (paymentStatus === 'rejected') {
+          if (iconEl) iconEl.textContent = '✗';
+          if (h1El)   h1El.textContent   = 'Pago rechazado.';
+          if (leadEl) leadEl.textContent = 'El pago no fue aprobado. Podés reintentar desde el carrito.';
+          if (backEl) backEl.hidden = false;
+        } else if (paymentStatus === 'cancelled') {
+          if (iconEl) iconEl.textContent = '✗';
+          if (h1El)   h1El.textContent   = 'Pago cancelado.';
+          if (leadEl) leadEl.textContent = 'El pago fue cancelado. Podés iniciar uno nuevo desde el carrito.';
+          if (backEl) backEl.hidden = false;
+        } else if (paymentStatus === 'refunded') {
+          if (iconEl) iconEl.textContent = '↩';
+          if (h1El)   h1El.textContent   = 'Pago reembolsado.';
+          if (leadEl) leadEl.textContent = 'El pago fue reembolsado. Consultá por WhatsApp si tenés preguntas.';
+        }
+      }
+
+      function onTimeout() {
+        if (iconEl) iconEl.textContent = '⏳';
+        if (h1El)   h1El.textContent   = 'Verificando el pago…';
+        if (leadEl) leadEl.textContent = 'Esto puede tardar unos minutos. Consultá por WhatsApp si el estado no se actualiza.';
+      }
+
+      function poll() {
+        if (stopped) return;
+        attempts++;
+        fetch('/api/orders/status', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ public_code: code, idempotency_key: auth.idempotency_key }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (stopped) return;
+            var ps = data.payment_status;
+            if (ps && TERMINAL_STATES[ps]) {
+              stopped = true;
+              applyFinalState(ps);
+            } else if (attempts >= MAX_ATTEMPTS) {
+              stopped = true;
+              onTimeout();
+            } else {
+              setTimeout(poll, INTERVAL_MS);
+            }
+          })
+          .catch(function () {
+            if (stopped) return;
+            if (attempts >= MAX_ATTEMPTS) { stopped = true; onTimeout(); return; }
+            setTimeout(poll, INTERVAL_MS);
+          });
+      }
+
+      setTimeout(poll, 1500);
     })();
   </script>
   <WAFloat />

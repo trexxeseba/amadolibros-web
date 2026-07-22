@@ -1089,6 +1089,12 @@ import WAFloat from '../components/WAFloat.astro';
           });
           var mpData = await mpResp.json();
           if (mpResp.ok && mpData.sandbox_init_point) {
+            try {
+              sessionStorage.setItem('amado-mp-auth', JSON.stringify({
+                public_code:     mpPublicCode,
+                idempotency_key: mpIdempotencyKey,
+              }));
+            } catch (_) {}
             window.location.href = mpData.sandbox_init_point;
             return;
           }

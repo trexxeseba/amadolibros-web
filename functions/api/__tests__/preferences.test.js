@@ -533,11 +533,17 @@ test('mp-43: respuestas no exponen datos internos', async () => {
   assert.ok(!text.includes('AbortError'),'error interno no debe exponerse');
 });
 
-// mp-44 — pedido.astro nunca contiene "Pago confirmado"
-test('mp-44: pedido.astro no contiene texto "Pago confirmado"', () => {
+// mp-44 — pedido.astro solo muestra "Pago confirmado" desde JS cuando D1 devuelve approved,
+//          nunca en el HTML estático inicial
+test('mp-44: pedido.astro muestra "Pago confirmado" solo en JS post-D1, no en HTML estático', () => {
   const src = readFileSync(
     new URL('../../../astro-front/src/pages/pedido.astro', import.meta.url),
     'utf8'
   );
-  assert.ok(!src.includes('Pago confirmado'), 'pedido.astro no debe tener "Pago confirmado"');
+  // La función applyFinalState debe existir y contener el texto
+  assert.ok(src.includes('applyFinalState'), 'debe existir función applyFinalState para confirmed state');
+  assert.ok(src.includes('Pago confirmado'), 'debe existir la cadena para cuando D1 confirma approved');
+  // El HTML estático (sin scripts) no contiene "Pago confirmado"
+  const withoutScripts = src.replace(/<script[\s\S]*?<\/script>/gi, '');
+  assert.ok(!withoutScripts.includes('Pago confirmado'), 'HTML estático no debe mostrar "Pago confirmado" sin D1 approval');
 });
