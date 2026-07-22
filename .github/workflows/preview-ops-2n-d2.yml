@@ -64,11 +64,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: List Pages secrets (names only, no values)
+      - name: List Pages secrets — Preview environment (names only, no values)
         run: |
-          echo "## Secrets configurados en el proyecto Pages" >> "$GITHUB_STEP_SUMMARY"
-          npx wrangler@4.112.0 pages secret list --project-name amadolibros-web 2>&1 | tee secret_list.txt || true
-          cat secret_list.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "=== PREVIEW secrets ==="
+          npx wrangler@4.112.0 pages secret list --project-name amadolibros-web --env preview 2>&1 || true
+          echo "=== PRODUCTION secrets (referencia, no se toca) ==="
+          npx wrangler@4.112.0 pages secret list --project-name amadolibros-web --env production 2>&1 || true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -82,11 +83,12 @@ jobs:
 
       - name: Inspect D1 preview (read-only counts)
         run: |
-          echo "## D1 amadolibros-orders-preview — conteos" >> "$GITHUB_STEP_SUMMARY"
+          echo "=== D1 amadolibros-orders-preview: conteos ==="
           npx wrangler@4.112.0 d1 execute amadolibros-orders-preview --remote \
             --command "SELECT (SELECT COUNT(*) FROM orders) AS orders, (SELECT COUNT(*) FROM order_items) AS order_items, (SELECT COUNT(*) FROM order_events) AS order_events;" \
-            2>&1 | tee d1_counts.txt || true
-          cat d1_counts.txt >> "$GITHUB_STEP_SUMMARY"
+            2>&1 || true
+          echo "=== D1 list (bases visibles con este token) ==="
+          npx wrangler@4.112.0 d1 list 2>&1 || true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -94,24 +96,24 @@ jobs:
       - name: Smoke test — webhook rejection paths (no secret needed)
         run: |
           URL="${{ steps.deploy.outputs.preview_url }}"
-          echo "## Smoke test webhook: $URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Smoke test webhook: $URL"
           if [ -z "$URL" ]; then
-            echo "ERROR: no se obtuvo preview_url del deploy" >> "$GITHUB_STEP_SUMMARY"
+            echo "ERROR: no se obtuvo preview_url del deploy"
             exit 0
           fi
 
-          echo "--- GET (método no permitido) ---" >> "$GITHUB_STEP_SUMMARY"
-          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X GET "$URL/api/webhooks/mercadopago" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          echo "--- GET (método no permitido) ---"
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X GET "$URL/api/webhooks/mercadopago" || true
 
-          echo "--- POST sin firma ---" >> "$GITHUB_STEP_SUMMARY"
+          echo "--- POST sin firma ---"
           curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST "$URL/api/webhooks/mercadopago?data.id=123" \
-            -H "Content-Type: application/json" -d '{"type":"payment","data":{"id":"123"}}' >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+            -H "Content-Type: application/json" -d '{"type":"payment","data":{"id":"123"}}' || true
 
-          echo "--- POST con firma inválida ---" >> "$GITHUB_STEP_SUMMARY"
+          echo "--- POST con firma inválida ---"
           curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST "$URL/api/webhooks/mercadopago?data.id=123" \
             -H "Content-Type: application/json" \
             -H "x-signature: ts=1,v1=deadbeef" -H "x-request-id: test-req-1" \
-            -d '{"type":"payment","data":{"id":"123"}}' >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+            -d '{"type":"payment","data":{"id":"123"}}' || true
 
-          echo "--- GET /api/orders/status sin params ---" >> "$GITHUB_STEP_SUMMARY"
-          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X GET "$URL/api/orders/status" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          echo "--- GET /api/orders/status sin params ---"
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X GET "$URL/api/orders/status" || true
