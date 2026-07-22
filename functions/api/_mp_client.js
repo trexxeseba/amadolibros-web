@@ -1,12 +1,12 @@
-const MP_BASE             = 'https://api.mercadopago.com';
-const MP_SANDBOX_HOSTNAME = 'sandbox.mercadopago.com';
+const MP_BASE              = 'https://api.mercadopago.com';
+const MP_SANDBOX_HOSTNAMES = new Set(['sandbox.mercadopago.com', 'sandbox.mercadopago.com.uy']);
 export const MP_COLLECTOR_ID = 3559407834;
 export const MP_SITE_ID      = 'MLU';
 
 export function validateSandboxUrl(raw) {
   try {
     const u = new URL(raw);
-    return u.protocol === 'https:' && u.hostname === MP_SANDBOX_HOSTNAME && u.pathname.length > 1;
+    return u.protocol === 'https:' && MP_SANDBOX_HOSTNAMES.has(u.hostname) && u.pathname.length > 1;
   } catch { return false; }
 }
 
@@ -23,7 +23,7 @@ function validateMpResponse(data, { requireExternalRef = false, publicCode = '' 
 function mpErrorCode(status) {
   if (status === 401) return 'MP_AUTH_ERROR';
   if (status === 429) return 'MP_RATE_LIMIT';
-  return `MP_HTTP_${status}`;
+  return 'MP_API_ERROR';
 }
 
 async function fetchMp(url, opts, timeoutMs, fetchFn) {
@@ -44,8 +44,8 @@ export async function createPreference(payload, accessToken, { fetch: f = global
       {
         method:  'POST',
         headers: {
-          'Authorization':    `Bearer ${accessToken}`,
-          'Content-Type':     'application/json',
+          'Authorization':     `Bearer ${accessToken}`,
+          'Content-Type':      'application/json',
           'X-Idempotency-Key': crypto.randomUUID(),
         },
         body: JSON.stringify(payload),
@@ -55,16 +55,16 @@ export async function createPreference(payload, accessToken, { fetch: f = global
     );
   } catch (e) {
     if (e?.name === 'AbortError') return { ok: false, code: 'MP_TIMEOUT' };
-    return { ok: false, code: 'MP_NETWORK_ERROR' };
+    return { ok: false, code: 'MP_API_ERROR' };
   }
 
   if (!resp.ok) return { ok: false, code: mpErrorCode(resp.status) };
 
   let data;
-  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_JSON_ERROR' }; }
+  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
 
   const err = validateMpResponse(data);
-  if (err) return { ok: false, code: `MP_VALIDATE_${err.replace(/\s+/g, '_').toUpperCase()}` };
+  if (err) return { ok: false, code: 'MP_API_ERROR' };
   return { ok: true, id: data.id, sandbox_init_point: data.sandbox_init_point };
 }
 

@@ -408,9 +408,13 @@ test('mp-31: sandbox.mercadopago.com HTTPS → validateSandboxUrl true', () => {
   assert.equal(validateSandboxUrl('https://sandbox.mercadopago.com/p/TEST'), true);
 });
 
-// mp-32 — sandbox.mercadopago.com.uy → rechazado
-test('mp-32: sandbox.mercadopago.com.uy → validateSandboxUrl false', () => {
-  assert.equal(validateSandboxUrl('https://sandbox.mercadopago.com.uy/checkout/pay/123'), false);
+// mp-32 — sandbox.mercadopago.com.uy → aceptado (URL real de sandbox para cuentas MLU)
+test('mp-32: sandbox.mercadopago.com.uy → validateSandboxUrl true', () => {
+  assert.equal(validateSandboxUrl('https://sandbox.mercadopago.com.uy/checkout/v1/redirect?pref_id=123'), true);
+  assert.equal(validateSandboxUrl('https://sandbox.mercadopago.com.uy/checkout/pay/TEST'), true);
+  // dominios similares pero no válidos siguen rechazados
+  assert.equal(validateSandboxUrl('https://www.mercadopago.com.uy/checkout/pay/123'), false);
+  assert.equal(validateSandboxUrl('https://mercadopago.com.uy/checkout/pay/123'), false);
 });
 
 // mp-33 — URL HTTP (no HTTPS) → rechazada
