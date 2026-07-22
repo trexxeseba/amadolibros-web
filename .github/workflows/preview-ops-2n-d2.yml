@@ -1,0 +1,112 @@
+name: Preview Ops — 2-N-D2 (diagnóstico, solo lectura + deploy Preview)
+
+# Workflow temporal de diagnóstico para retomar 2-N-D2 (webhook Mercado Pago).
+# Reutiliza los secrets ya existentes (CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID)
+# que ya usan deploy.yml / deploy-preview.yml / deploy-worker-sync.yml.
+# No toca `main` ni Production: siempre construye y despliega el branch que
+# disparó el run, y todos los pasos de D1/secrets son de solo lectura.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-ops-2n-d2
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      - name: Build Astro (Preview config)
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+        run: npm run build
+
+      - name: Verify build output is noindex
+        run: |
+          test -f astro-front/dist/index.html
+          grep -q "noindex" astro-front/dist/index.html || echo "WARN: index.html sin noindex explícito"
+
+      - name: Deploy to Cloudflare Pages Preview (this branch only)
+        id: deploy
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "Deploying branch: $BRANCH"
+          npx wrangler@3 pages deploy ./astro-front/dist \
+            --project-name amadolibros-web \
+            --branch "$BRANCH" | tee deploy_output.txt
+          URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.amadolibros-web\.pages\.dev' deploy_output.txt | tail -1)
+          echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "### Preview URL: $URL" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: List Pages secrets (names only, no values)
+        run: |
+          echo "## Secrets configurados en el proyecto Pages" >> "$GITHUB_STEP_SUMMARY"
+          npx wrangler@4.112.0 pages secret list --project-name amadolibros-web 2>&1 | tee secret_list.txt || true
+          cat secret_list.txt >> "$GITHUB_STEP_SUMMARY"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: List recent Pages deployments (preview branch)
+        run: |
+          npx wrangler@4.112.0 pages deployment list --project-name amadolibros-web 2>&1 | tee deployment_list.txt || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Inspect D1 preview (read-only counts)
+        run: |
+          echo "## D1 amadolibros-orders-preview — conteos" >> "$GITHUB_STEP_SUMMARY"
+          npx wrangler@4.112.0 d1 execute amadolibros-orders-preview --remote \
+            --command "SELECT (SELECT COUNT(*) FROM orders) AS orders, (SELECT COUNT(*) FROM order_items) AS order_items, (SELECT COUNT(*) FROM order_events) AS order_events;" \
+            2>&1 | tee d1_counts.txt || true
+          cat d1_counts.txt >> "$GITHUB_STEP_SUMMARY"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke test — webhook rejection paths (no secret needed)
+        run: |
+          URL="${{ steps.deploy.outputs.preview_url }}"
+          echo "## Smoke test webhook: $URL" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$URL" ]; then
+            echo "ERROR: no se obtuvo preview_url del deploy" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "--- GET (método no permitido) ---" >> "$GITHUB_STEP_SUMMARY"
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X GET "$URL/api/webhooks/mercadopago" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+
+          echo "--- POST sin firma ---" >> "$GITHUB_STEP_SUMMARY"
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST "$URL/api/webhooks/mercadopago?data.id=123" \
+            -H "Content-Type: application/json" -d '{"type":"payment","data":{"id":"123"}}' >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+
+          echo "--- POST con firma inválida ---" >> "$GITHUB_STEP_SUMMARY"
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X POST "$URL/api/webhooks/mercadopago?data.id=123" \
+            -H "Content-Type: application/json" \
+            -H "x-signature: ts=1,v1=deadbeef" -H "x-request-id: test-req-1" \
+            -d '{"type":"payment","data":{"id":"123"}}' >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+
+          echo "--- GET /api/orders/status sin params ---" >> "$GITHUB_STEP_SUMMARY"
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" -X GET "$URL/api/orders/status" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
