@@ -8,6 +8,11 @@ name: Preview Ops — 2-N-D2 (diagnóstico, solo lectura + deploy Preview)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/webhook-mercado-pago-2nd2-fhcks8
+    paths:
+      - .github/workflows/preview-ops-2n-d2.yml
 
 permissions:
   contents: read
