@@ -5,6 +5,13 @@ import { consolidateItems, dateInTimeZone, generateFingerprint, validateBody } f
 import { verifyTurnstile } from '../_turnstile.js';
 
 const NOW = new Date('2026-07-19T16:00:00.000Z');
+
+const PREVIEW_CONFIG = {
+  APP_ENV:          'preview',
+  MP_COLLECTOR_ID:  '3559407834',
+  CHECKOUT_ENABLED: 'true',
+  CANONICAL_ORIGIN: 'https://preview.amadolibros-web.pages.dev',
+};
 const CATALOG = { items: [
   { id:'A', title:'Alpha', price:1000, available_quantity:5, status:'active', thumbnail:null },
   { id:'B', title:'Beta', price:1250, available_quantity:3, status:'active', thumbnail:null },
@@ -39,7 +46,7 @@ function ctx(body, db, opts={}) {
   const method=opts.method||'POST'; const headers={'Content-Type':opts.type||'application/json'};
   if(opts.length!==undefined) headers['Content-Length']=String(opts.length);
   // Fail-closed: incluye TURNSTILE_SECRET_KEY cuando ORDERS_DB está presente; permite override vía opts.env.
-  const env = opts.env !== undefined ? opts.env : (db ? { ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret' } : {});
+  const env = opts.env !== undefined ? opts.env : (db ? { ...PREVIEW_CONFIG, ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret' } : { ...PREVIEW_CONFIG });
   return { request:new Request('https://x/api/orders',{method,headers,body:method==='POST'?(typeof body==='string'?body:JSON.stringify(body)):undefined}), env, waitUntil(){} };
 }
 function pickup(key='k'){ return { idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', buyer:{name:'Ana',phone:'099'} }; }
@@ -124,7 +131,7 @@ test('límites de contrato y consolidación', ()=>{
 
 test('ts-1: ORDERS_DB presente y TURNSTILE_SECRET_KEY ausente → 503, D1 intacta', async()=>{
   const db=dbMock({strict:true});
-  const r=await call({...pickup(),cf_turnstile_response:'any'}, db, {env:{ORDERS_DB:db}});
+  const r=await call({...pickup(),cf_turnstile_response:'any'}, db, {env:{...PREVIEW_CONFIG, ORDERS_DB:db}});
   assert.equal(r.response.status,503);
   assert.equal(r.data.code,'TS_NOT_CONFIGURED');
 });
@@ -219,16 +226,26 @@ test('ts-13: siteverify JSON inválido → SITEVERIFY_ERROR', async()=>{
   assert.equal(res.code,'SITEVERIFY_ERROR');
 });
 
+const PAGES_PREVIEW_HOSTNAME_RE = /^[^.]+\.amadolibros-web\.pages\.dev$/;
+const isPreviewHostnameForTest  = (h) => PAGES_PREVIEW_HOSTNAME_RE.test(h);
+
 test('ts-14: hostname commit-hash Preview → ok: true', async()=>{
   const f=fakeFetch({success:true,action:'prepare_order',hostname:'abc123def456.amadolibros-web.pages.dev'});
-  const res=await verifyTurnstile('tok','sec','',{fetch:f});
+  const res=await verifyTurnstile('tok','sec','',{fetch:f, isAllowedHostname:isPreviewHostnameForTest});
   assert.equal(res.ok,true);
 });
 
 test('ts-15: hostname alias de rama Preview → ok: true', async()=>{
   const f=fakeFetch({success:true,action:'prepare_order',hostname:'feature-turnstile.amadolibros-web.pages.dev'});
-  const res=await verifyTurnstile('tok','sec','',{fetch:f});
+  const res=await verifyTurnstile('tok','sec','',{fetch:f, isAllowedHostname:isPreviewHostnameForTest});
   assert.equal(res.ok,true);
+});
+
+test('ts-14b: isAllowedHostname ausente → HOSTNAME_INVALID (fail-closed, no default hardcodeado)', async()=>{
+  const f=fakeFetch({success:true,action:'prepare_order',hostname:'abc123def456.amadolibros-web.pages.dev'});
+  const res=await verifyTurnstile('tok','sec','',{fetch:f});
+  assert.equal(res.ok,false);
+  assert.equal(res.code,'HOSTNAME_INVALID');
 });
 
 test('ts-16: token y secret nunca expuestos en respuesta al cliente', async()=>{
@@ -236,4 +253,72 @@ test('ts-16: token y secret nunca expuestos en respuesta al cliente', async()=>{
   const text=JSON.stringify(r.data);
   assert.ok(!text.includes('ok-token'),'token leaked in response');
   assert.ok(!text.includes('ts-test-secret'),'secret leaked in response');
+});
+
+// ── 2-N-E1: config centralizada, kill switch, Turnstile por hostname ────────
+
+test('cfg-1: APP_ENV ausente → 503 fail-closed', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call(pickup(),db,{env:{ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret'}});
+  assert.equal(r.response.status,503);
+});
+
+test('cfg-2: MP_COLLECTOR_ID inválido (no decimal) → 503 fail-closed', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call(pickup(),db,{env:{...PREVIEW_CONFIG, MP_COLLECTOR_ID:'no-es-numero', ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret'}});
+  assert.equal(r.response.status,503);
+});
+
+test('kill-1: CHECKOUT_ENABLED ausente → 503 checkout_temporarily_unavailable, D1 intacta', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call(pickup(),db,{env:{...PREVIEW_CONFIG, CHECKOUT_ENABLED:undefined, ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret'}});
+  assert.equal(r.response.status,503);
+  assert.equal(r.data.code,'checkout_temporarily_unavailable');
+  assert.equal(r.response.headers.get('Cache-Control'),'no-store');
+});
+
+test('kill-2: CHECKOUT_ENABLED="false" → 503 checkout_temporarily_unavailable', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call(pickup(),db,{env:{...PREVIEW_CONFIG, CHECKOUT_ENABLED:'false', ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret'}});
+  assert.equal(r.response.status,503);
+  assert.equal(r.data.code,'checkout_temporarily_unavailable');
+});
+
+test('kill-3: CHECKOUT_ENABLED="TRUE" (mayúsculas) → deshabilitado, exige el string exacto "true"', async()=>{
+  const db=dbMock({strict:true});
+  const r=await call(pickup(),db,{env:{...PREVIEW_CONFIG, CHECKOUT_ENABLED:'TRUE', ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret'}});
+  assert.equal(r.response.status,503);
+  assert.equal(r.data.code,'checkout_temporarily_unavailable');
+});
+
+test('kill-4: CHECKOUT_ENABLED="true" → checkout normal, D1 escrita', async()=>{
+  const db=dbMock();
+  const r=await call({...pickup(),cf_turnstile_response:'valid'},db,{env:{...PREVIEW_CONFIG, ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret'}});
+  assert.equal(r.response.status,201);
+  assert.equal(db.committed.length>0,true);
+});
+
+test('ts-17: verifyTurnstile real con hostname de Preview válido (vía config) → pedido creado', async()=>{
+  const db=dbMock();
+  const f=fakeFetch({success:true,action:'prepare_order',hostname:'feature-2-n-e1-production-ready-code.amadolibros-web.pages.dev'});
+  const r=await call(
+    {...pickup(),cf_turnstile_response:'valid'},
+    db,
+    {},
+    handler(async()=>CATALOG,NOW,(token,secret,ip,opts)=>verifyTurnstile(token,secret,ip,{...opts,fetch:f}))
+  );
+  assert.equal(r.response.status,201);
+});
+
+test('ts-18: verifyTurnstile real con hostname engañoso (no pertenece al proyecto) → 403 HOSTNAME_INVALID', async()=>{
+  const db=dbMock({strict:true});
+  const f=fakeFetch({success:true,action:'prepare_order',hostname:'amadolibros-web.pages.dev.evil.com'});
+  const r=await call(
+    {...pickup(),cf_turnstile_response:'bad-host'},
+    db,
+    {},
+    handler(async()=>CATALOG,NOW,(token,secret,ip,opts)=>verifyTurnstile(token,secret,ip,{...opts,fetch:f}))
+  );
+  assert.equal(r.response.status,403);
+  assert.equal(r.data.code,'HOSTNAME_INVALID');
 });

@@ -1,16 +1,12 @@
-const MAX_BODY_BYTES    = 8192;
-const MP_ALLOWED_SUFFIX = '.amadolibros-web.pages.dev';
-const MP_ALLOWED_APEX   = 'amadolibros-web.pages.dev';
+import { resolveConfig } from './_env_config.js';
+
+const MAX_BODY_BYTES = 8192;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json;charset=UTF-8', 'Cache-Control': 'no-store' },
   });
-}
-
-function isAllowedHost(hostname) {
-  return hostname === MP_ALLOWED_APEX || hostname.endsWith(MP_ALLOWED_SUFFIX);
 }
 
 export function createOrderStatusHandler() {
@@ -21,8 +17,11 @@ export function createOrderStatusHandler() {
       return json({ error: 'Método no permitido.' }, 405);
     }
 
+    const config = resolveConfig(env);
+    if (!config.ok) return json({ error: 'Servicio no disponible.' }, 503);
+
     const reqUrl = new URL(request.url);
-    if (!isAllowedHost(reqUrl.hostname)) {
+    if (!config.isAllowedRequestHost(reqUrl.hostname)) {
       return json({ error: 'Origen no permitido.' }, 400);
     }
 

@@ -1,7 +1,7 @@
 const MP_BASE              = 'https://api.mercadopago.com';
 const MP_SANDBOX_HOSTNAMES = new Set(['sandbox.mercadopago.com', 'sandbox.mercadopago.com.uy']);
-export const MP_COLLECTOR_ID = 3559407834;
-export const MP_SITE_ID      = 'MLU';
+const MP_LIVE_HOSTNAMES    = new Set(['www.mercadopago.com', 'www.mercadopago.com.uy']);
+export const MP_SITE_ID    = 'MLU';
 
 export function validateSandboxUrl(raw) {
   try {
@@ -10,11 +10,30 @@ export function validateSandboxUrl(raw) {
   } catch { return false; }
 }
 
-function validateMpResponse(data, { requireExternalRef = false, publicCode = '' } = {}) {
+export function validateLiveUrl(raw) {
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' && MP_LIVE_HOSTNAMES.has(u.hostname) && u.pathname.length > 1;
+  } catch { return false; }
+}
+
+// checkoutField selecciona exclusivamente el campo correcto para el ambiente
+// actual — nunca hay fallback cruzado entre sandbox_init_point e init_point.
+function pickCheckoutUrl(data, checkoutField) {
+  if (checkoutField === 'sandbox_init_point') {
+    return validateSandboxUrl(data?.sandbox_init_point) ? data.sandbox_init_point : null;
+  }
+  if (checkoutField === 'init_point') {
+    return validateLiveUrl(data?.init_point) ? data.init_point : null;
+  }
+  return null;
+}
+
+function validateMpResponse(data, { requireExternalRef = false, publicCode = '', expectedCollectorId, checkoutField } = {}) {
   if (!data || typeof data !== 'object') return 'respuesta vacía';
   if (typeof data.id !== 'string' || !data.id) return 'id ausente';
-  if (!validateSandboxUrl(data.sandbox_init_point)) return 'sandbox_init_point inválido';
-  if (data.collector_id !== undefined && data.collector_id !== MP_COLLECTOR_ID) return 'collector_id incorrecto';
+  if (!pickCheckoutUrl(data, checkoutField)) return `${checkoutField} inválido o ausente`;
+  if (data.collector_id !== undefined && data.collector_id !== expectedCollectorId) return 'collector_id incorrecto';
   if (data.site_id !== undefined && data.site_id !== MP_SITE_ID) return 'site_id incorrecto';
   if (requireExternalRef && data.external_reference !== publicCode) return 'external_reference no coincide';
   return null;
@@ -36,7 +55,7 @@ async function fetchMp(url, opts, timeoutMs, fetchFn) {
   }
 }
 
-export async function createPreference(payload, accessToken, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
+export async function createPreference(payload, accessToken, { expectedCollectorId, checkoutField, fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
   let resp;
   try {
     resp = await fetchMp(
@@ -63,12 +82,12 @@ export async function createPreference(payload, accessToken, { fetch: f = global
   let data;
   try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
 
-  const err = validateMpResponse(data);
+  const err = validateMpResponse(data, { expectedCollectorId, checkoutField });
   if (err) return { ok: false, code: 'MP_API_ERROR' };
-  return { ok: true, id: data.id, sandbox_init_point: data.sandbox_init_point };
+  return { ok: true, id: data.id, checkout_url: pickCheckoutUrl(data, checkoutField) };
 }
 
-export async function getPreference(prefId, accessToken, publicCode, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
+export async function getPreference(prefId, accessToken, publicCode, { expectedCollectorId, checkoutField, fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
   let resp;
   try {
     resp = await fetchMp(
@@ -87,9 +106,9 @@ export async function getPreference(prefId, accessToken, publicCode, { fetch: f 
   let data;
   try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
 
-  const err = validateMpResponse(data, { requireExternalRef: true, publicCode });
+  const err = validateMpResponse(data, { requireExternalRef: true, publicCode, expectedCollectorId, checkoutField });
   if (err) return { ok: false, code: 'MP_API_ERROR' };
-  return { ok: true, id: data.id, sandbox_init_point: data.sandbox_init_point };
+  return { ok: true, id: data.id, checkout_url: pickCheckoutUrl(data, checkoutField) };
 }
 
 export async function getPayment(paymentId, accessToken, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
@@ -153,7 +172,7 @@ export async function getMerchantOrder(merchantOrderId, accessToken, { fetch: f 
   };
 }
 
-export async function searchPreferenceByRef(publicCode, accessToken, now, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
+export async function searchPreferenceByRef(publicCode, accessToken, now, { expectedCollectorId, checkoutField, fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
   let resp;
   try {
     resp = await fetchMp(
@@ -177,7 +196,7 @@ export async function searchPreferenceByRef(publicCode, accessToken, now, { fetc
 
   const candidates = elements.filter(e => {
     if (e.external_reference !== publicCode) return false;
-    if (e.collector_id !== undefined && e.collector_id !== MP_COLLECTOR_ID) return false;
+    if (e.collector_id !== undefined && e.collector_id !== expectedCollectorId) return false;
     if (e.site_id !== undefined && e.site_id !== MP_SITE_ID) return false;
     if (e.expiration_date_to && Date.parse(e.expiration_date_to) <= nowMs) return false;
     return true;
@@ -186,5 +205,5 @@ export async function searchPreferenceByRef(publicCode, accessToken, now, { fetc
   if (candidates.length === 0) return { ok: false, code: 'NOT_FOUND' };
 
   candidates.sort((a, b) => Date.parse(b.date_created || '0') - Date.parse(a.date_created || '0'));
-  return getPreference(candidates[0].id, accessToken, publicCode, { fetch: f, timeoutMs });
+  return getPreference(candidates[0].id, accessToken, publicCode, { expectedCollectorId, checkoutField, fetch: f, timeoutMs });
 }

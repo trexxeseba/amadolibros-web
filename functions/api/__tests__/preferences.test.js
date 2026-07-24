@@ -2,11 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createPreferenceHandler } from '../_mp_handler.js';
-import { validateSandboxUrl } from '../_mp_client.js';
+import { validateSandboxUrl, validateLiveUrl } from '../_mp_client.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const PREVIEW_URL  = 'https://bd6523de.amadolibros-web.pages.dev/api/preferences';
+const PRODUCTION_URL = 'https://www.amadolibros.com/api/preferences';
 const SANDBOX_URL  = 'https://sandbox.mercadopago.com/checkout/pay/TEST-123';
+const LIVE_URL      = 'https://www.mercadopago.com.uy/checkout/v1/redirect?pref_id=TEST-PREF-456';
 const NOW          = new Date('2026-07-21T15:00:00.000Z');
 const EPOCH_NOW    = Math.floor(NOW.getTime() / 1000);
 const PREF_ID      = 'TEST-PREF-456';
@@ -15,6 +17,21 @@ const PUBLIC_CODE  = 'AL-210726-TEST';
 const IDEM_KEY     = 'idem-key-abc';
 const FRESH_CLAIM  = 'creating:' + (EPOCH_NOW + 100) + ':' + 'aaaaaaaa-0000-0000-0000-000000000000';
 const STALE_CLAIM  = 'creating:' + (EPOCH_NOW - 60)  + ':' + 'bbbbbbbb-0000-0000-0000-000000000000';
+
+const PREVIEW_CONFIG = {
+  APP_ENV:          'preview',
+  MP_COLLECTOR_ID:  '3559407834',
+  CHECKOUT_ENABLED: 'true',
+  CANONICAL_ORIGIN: 'https://bd6523de.amadolibros-web.pages.dev',
+};
+
+const PRODUCTION_CONFIG = {
+  APP_ENV:          'production',
+  MP_COLLECTOR_ID:  '440298103',
+  CHECKOUT_ENABLED: 'true',
+  CANONICAL_ORIGIN: 'https://www.amadolibros.com',
+  ALLOWED_HOSTS:    'amadolibros.com,www.amadolibros.com',
+};
 
 // ── Order factories ────────────────────────────────────────────────────────────
 function openOrder(patch = {}) {
@@ -75,8 +92,8 @@ function dbMock({
 
 // ── MP client mock ─────────────────────────────────────────────────────────────
 function mpMock({
-  createResult = { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL },
-  getResult    = { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL },
+  createResult = { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL },
+  getResult    = { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL },
   searchResult = { ok: false, code: 'NOT_FOUND' },
 } = {}) {
   const createCalls = [];
@@ -84,18 +101,18 @@ function mpMock({
   const searchCalls = [];
   return {
     createCalls, getCalls, searchCalls,
-    async createPreference(payload, token) { createCalls.push({ payload, token }); return createResult; },
-    async getPreference(prefId, token, publicCode) { getCalls.push({ prefId, token, publicCode }); return getResult; },
-    async searchPreferenceByRef(publicCode, token, now) { searchCalls.push({ publicCode, token }); return searchResult; },
+    async createPreference(payload, token, opts) { createCalls.push({ payload, token, opts }); return createResult; },
+    async getPreference(prefId, token, publicCode, opts) { getCalls.push({ prefId, token, publicCode, opts }); return getResult; },
+    async searchPreferenceByRef(publicCode, token, now, opts) { searchCalls.push({ publicCode, token, opts }); return searchResult; },
   };
 }
 
 // ── Request factory ────────────────────────────────────────────────────────────
-function ctx(body, db, { token = TOKEN, method = 'POST', contentType = 'application/json', contentLength } = {}) {
+function ctx(body, db, { token = TOKEN, method = 'POST', contentType = 'application/json', contentLength, url = PREVIEW_URL, config = PREVIEW_CONFIG } = {}) {
   const headers = { 'Content-Type': contentType };
   if (contentLength !== undefined) headers['Content-Length'] = String(contentLength);
-  const env = { ORDERS_DB: db, ...(token ? { MP_ACCESS_TOKEN: token } : {}) };
-  const request = new Request(PREVIEW_URL, {
+  const env = { ...config, ORDERS_DB: db, ...(token ? { MP_ACCESS_TOKEN: token } : {}) };
+  const request = new Request(url, {
     method,
     headers,
     body: method === 'POST' ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
@@ -143,7 +160,7 @@ test('mp-4: JSON inválido → 400', async () => {
     headers: { 'Content-Type': 'application/json' },
     body: 'not-json{{{',
   });
-  const env      = { ORDERS_DB: dbMock(), MP_ACCESS_TOKEN: TOKEN };
+  const env      = { ...PREVIEW_CONFIG, ORDERS_DB: dbMock(), MP_ACCESS_TOKEN: TOKEN };
   const response = await handler({ request, env });
   assert.equal(response.status, 400);
   const data = await response.json();
@@ -194,7 +211,7 @@ test('mp-10: hostname fuera de allowlist → 400 INVALID_ORIGIN', async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body()),
   });
-  const env      = { ORDERS_DB: dbMock(), MP_ACCESS_TOKEN: TOKEN };
+  const env      = { ...PREVIEW_CONFIG, ORDERS_DB: dbMock(), MP_ACCESS_TOKEN: TOKEN };
   const response = await handler({ request, env });
   assert.equal(response.status, 400);
   const data = await response.json();
@@ -257,7 +274,7 @@ test('mp-17: claim vencido → adquirido, llama a MP', async () => {
   const mp = mpMock();
   const r  = await call(body(), dbMock({ order: openOrder({ payment_preference_id: STALE_CLAIM }), acquireChanges: 1 }), mp);
   assert.equal(r.response.status, 200);
-  assert.ok(r.data.sandbox_init_point, 'debe tener sandbox_init_point');
+  assert.ok(r.data.checkout_url, 'debe tener checkout_url');
   assert.equal(mp.createCalls.length, 1, 'MP create debe llamarse una vez');
 });
 
@@ -277,28 +294,28 @@ test('mp-18: acquire=0 y current empieza con creating: → PREFERENCE_CREATING s
 
 // mp-19 — carrera: acquire=0, current tiene pref real → getPreference, no createPreference
 test('mp-19: carrera simultánea → solo getPreference, no createPreference', async () => {
-  const mp = mpMock({ getResult: { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL } });
+  const mp = mpMock({ getResult: { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL } });
   const r  = await call(
     body(),
     dbMock({ order: openOrder(), acquireChanges: 0, currentPref: PREF_ID }),
     mp
   );
   assert.equal(r.response.status, 200);
-  assert.ok(r.data.sandbox_init_point);
+  assert.ok(r.data.checkout_url);
   assert.equal(mp.createCalls.length, 0, 'createPreference no debe llamarse');
   assert.equal(mp.getCalls.length, 1,    'getPreference debe llamarse una vez');
 });
 
 // mp-20 — pref real existente en orden → getPreference (idempotencia)
 test('mp-20: pref real existente → getPreference directo', async () => {
-  const mp = mpMock({ getResult: { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL } });
+  const mp = mpMock({ getResult: { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL } });
   const r  = await call(
     body(),
     dbMock({ order: openOrder({ payment_preference_id: PREF_ID }) }),
     mp
   );
   assert.equal(r.response.status, 200);
-  assert.equal(r.data.sandbox_init_point, SANDBOX_URL);
+  assert.equal(r.data.checkout_url, SANDBOX_URL);
   assert.equal(mp.createCalls.length, 0, 'no debe crear nueva preferencia');
   assert.equal(mp.getCalls.length, 1);
   assert.equal(mp.getCalls[0].prefId, PREF_ID);
@@ -346,11 +363,11 @@ test('mp-24: MP 500 → 502 MP_API_ERROR, claim limpiado', async () => {
 test('mp-25: timeout MP → search encuentra pref → usa sandbox_init_point', async () => {
   const mp = mpMock({
     createResult: { ok: false, code: 'MP_TIMEOUT' },
-    searchResult: { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL },
+    searchResult: { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL },
   });
   const r = await call(body(), dbMock({ order: openOrder(), acquireChanges: 1 }), mp);
   assert.equal(r.response.status, 200);
-  assert.equal(r.data.sandbox_init_point, SANDBOX_URL);
+  assert.equal(r.data.checkout_url, SANDBOX_URL);
   assert.equal(mp.searchCalls.length, 1);
 });
 
@@ -464,9 +481,9 @@ test('mp-38: timeout + search sin candidatos válidos → 503 MP_TIMEOUT', async
   assert.equal(r.data.code, 'MP_TIMEOUT');
 });
 
-// mp-39 — evento preference_created payload_json: solo {preference_id, environment:"test"}, sin URL
+// mp-39 — evento preference_created payload_json: solo {preference_id, environment}, sin URL
 test('mp-39: evento preference_created sin URL, solo {preference_id, environment}', async () => {
-  const mp = mpMock({ createResult: { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL } });
+  const mp = mpMock({ createResult: { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL } });
   const db = dbMock({ order: openOrder(), acquireChanges: 1 });
   await call(body(), db, mp);
   assert.equal(db.batches.length, 1, 'debe haber exactamente un batch');
@@ -474,7 +491,8 @@ test('mp-39: evento preference_created sin URL, solo {preference_id, environment
   const payloadJson = JSON.parse(insertStmt.args[3]);
   assert.deepEqual(Object.keys(payloadJson).sort(), ['environment', 'preference_id']);
   assert.equal(payloadJson.preference_id, PREF_ID);
-  assert.equal(payloadJson.environment, 'test');
+  assert.equal(payloadJson.environment, 'preview');
+  assert.ok(!('checkout_url' in payloadJson), 'no debe tener checkout_url');
   assert.ok(!('sandbox_init_point' in payloadJson), 'no debe tener sandbox_init_point');
 });
 
@@ -490,7 +508,7 @@ test('mp-40: batch contiene UPDATE + INSERT', async () => {
 
 // mp-41 — batch.changes = 0 (claim robado) → consulta estado, retorna coherente
 test('mp-41: batch changes=0 (claim robado) → getPreference del ganador', async () => {
-  const mp = mpMock({ getResult: { ok: true, id: PREF_ID, sandbox_init_point: SANDBOX_URL } });
+  const mp = mpMock({ getResult: { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL } });
   const db = dbMock({
     order:        openOrder(),
     acquireChanges: 1,
@@ -499,7 +517,7 @@ test('mp-41: batch changes=0 (claim robado) → getPreference del ganador', asyn
   });
   const r = await call(body(), db, mp);
   assert.equal(r.response.status, 200);
-  assert.equal(r.data.sandbox_init_point, SANDBOX_URL);
+  assert.equal(r.data.checkout_url, SANDBOX_URL);
   assert.equal(mp.getCalls.length, 1, 'getPreference del ganador debe llamarse');
 });
 
@@ -546,4 +564,190 @@ test('mp-44: pedido.astro muestra "Pago confirmado" solo en JS post-D1, no en HT
   // El HTML estático (sin scripts) no contiene "Pago confirmado"
   const withoutScripts = src.replace(/<script[\s\S]*?<\/script>/gi, '');
   assert.ok(!withoutScripts.includes('Pago confirmado'), 'HTML estático no debe mostrar "Pago confirmado" sin D1 approval');
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 2-N-E1 — config centralizada, TEST/LIVE por ambiente, origen canónico, kill switch
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Config fail-closed ──────────────────────────────────────────────────────
+test('cfg-1: APP_ENV ausente → 503 fail-closed', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, APP_ENV: undefined } });
+  assert.equal(r.response.status, 503);
+});
+
+test('cfg-2: APP_ENV con valor inválido → 503 fail-closed', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, APP_ENV: 'staging' } });
+  assert.equal(r.response.status, 503);
+});
+
+test('cfg-3: MP_COLLECTOR_ID ausente → 503 fail-closed', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, MP_COLLECTOR_ID: undefined } });
+  assert.equal(r.response.status, 503);
+});
+
+test('cfg-4: MP_COLLECTOR_ID no decimal ("3559407834x") → 503 fail-closed', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, MP_COLLECTOR_ID: '3559407834x' } });
+  assert.equal(r.response.status, 503);
+});
+
+test('cfg-5: CANONICAL_ORIGIN con path → 503 fail-closed', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, CANONICAL_ORIGIN: 'https://x.amadolibros-web.pages.dev/algo' } });
+  assert.equal(r.response.status, 503);
+});
+
+test('cfg-6: CANONICAL_ORIGIN http (no https) → 503 fail-closed', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, CANONICAL_ORIGIN: 'http://x.amadolibros-web.pages.dev' } });
+  assert.equal(r.response.status, 503);
+});
+
+test('cfg-7: Production sin ALLOWED_HOSTS → 503 fail-closed', async () => {
+  const badProd = { ...PRODUCTION_CONFIG, ALLOWED_HOSTS: undefined };
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: badProd, url: PRODUCTION_URL });
+  assert.equal(r.response.status, 503);
+});
+
+// ── Kill switch ──────────────────────────────────────────────────────────────
+test('kill-1: CHECKOUT_ENABLED ausente → 503 checkout_temporarily_unavailable, sin llamar a MP ni tocar D1', async () => {
+  const mp = mpMock();
+  const db = dbMock({ order: openOrder() });
+  const r  = await call(body(), db, mp, { config: { ...PREVIEW_CONFIG, CHECKOUT_ENABLED: undefined } });
+  assert.equal(r.response.status, 503);
+  assert.equal(r.data.code, 'checkout_temporarily_unavailable');
+  assert.equal(r.response.headers.get('Cache-Control'), 'no-store');
+  assert.equal(mp.createCalls.length, 0);
+  assert.equal(mp.getCalls.length, 0);
+  assert.equal(db.runs.length, 0, 'D1 no debe tocarse');
+});
+
+test('kill-2: CHECKOUT_ENABLED="false" → 503 checkout_temporarily_unavailable', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: { ...PREVIEW_CONFIG, CHECKOUT_ENABLED: 'false' } });
+  assert.equal(r.response.status, 503);
+  assert.equal(r.data.code, 'checkout_temporarily_unavailable');
+});
+
+// ── Preview: exclusivamente sandbox_init_point ───────────────────────────────
+test('env-1: Preview usa exclusivamente sandbox_init_point (checkoutField pasado al cliente)', async () => {
+  const mp = mpMock({ createResult: { ok: true, id: PREF_ID, checkout_url: SANDBOX_URL } });
+  const r  = await call(body(), dbMock({ order: openOrder(), acquireChanges: 1 }), mp, { config: PREVIEW_CONFIG });
+  assert.equal(r.response.status, 200);
+  assert.equal(r.data.checkout_url, SANDBOX_URL);
+  assert.equal(mp.createCalls[0].opts.checkoutField, 'sandbox_init_point');
+  assert.equal(mp.createCalls[0].opts.expectedCollectorId, 3559407834);
+});
+
+// ── Production: exclusivamente init_point ────────────────────────────────────
+test('env-2: Production usa exclusivamente init_point (checkoutField pasado al cliente)', async () => {
+  const mp = mpMock({ createResult: { ok: true, id: PREF_ID, checkout_url: LIVE_URL } });
+  const r  = await call(body(), dbMock({ order: openOrder(), acquireChanges: 1 }), mp, { config: PRODUCTION_CONFIG, url: PRODUCTION_URL });
+  assert.equal(r.response.status, 200);
+  assert.equal(r.data.checkout_url, LIVE_URL);
+  assert.equal(mp.createCalls[0].opts.checkoutField, 'init_point');
+  assert.equal(mp.createCalls[0].opts.expectedCollectorId, 440298103);
+});
+
+// ── Sin fallback cruzado: probado directo contra el cliente real (sin mock) ──
+test('env-3: cliente real — Preview con solo init_point (sin sandbox_init_point) → error controlado, nunca usa init_point como fallback', async () => {
+  const fakeFetch = async () => ({
+    ok: true,
+    json: async () => ({ id: PREF_ID, collector_id: 3559407834, site_id: 'MLU', init_point: LIVE_URL }),
+  });
+  const { createPreference } = await import('../_mp_client.js');
+  const result = await createPreference({}, TOKEN, { expectedCollectorId: 3559407834, checkoutField: 'sandbox_init_point', fetch: fakeFetch });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'MP_API_ERROR');
+});
+
+test('env-4: cliente real — Production con solo sandbox_init_point (sin init_point) → error controlado, nunca usa sandbox como fallback', async () => {
+  const fakeFetch = async () => ({
+    ok: true,
+    json: async () => ({ id: PREF_ID, collector_id: 440298103, site_id: 'MLU', sandbox_init_point: SANDBOX_URL }),
+  });
+  const { createPreference } = await import('../_mp_client.js');
+  const result = await createPreference({}, TOKEN, { expectedCollectorId: 440298103, checkoutField: 'init_point', fetch: fakeFetch });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'MP_API_ERROR');
+});
+
+test('env-5: validateLiveUrl acepta www.mercadopago.com.uy HTTPS, rechaza sandbox y HTTP', () => {
+  assert.equal(validateLiveUrl('https://www.mercadopago.com.uy/checkout/v1/redirect?pref_id=123'), true);
+  assert.equal(validateLiveUrl('https://www.mercadopago.com/checkout/v1/redirect?pref_id=123'), true);
+  assert.equal(validateLiveUrl('http://www.mercadopago.com.uy/checkout/v1/redirect?pref_id=123'), false);
+  assert.equal(validateLiveUrl('https://sandbox.mercadopago.com.uy/checkout/v1/redirect?pref_id=123'), false);
+});
+
+// ── Collector por ambiente rechaza el que no corresponde ─────────────────────
+test('env-6: cliente real — collector_id de Preview (test) rechazado si se espera el de Production', async () => {
+  const fakeFetch = async () => ({
+    ok: true,
+    json: async () => ({ id: PREF_ID, collector_id: 3559407834, site_id: 'MLU', init_point: LIVE_URL }),
+  });
+  const { createPreference } = await import('../_mp_client.js');
+  const result = await createPreference({}, TOKEN, { expectedCollectorId: 440298103, checkoutField: 'init_point', fetch: fakeFetch });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'MP_API_ERROR');
+});
+
+// ── notification_url / back_urls: siempre desde el origen canónico ──────────
+test('url-1: notification_url y back_urls completas se construyen desde CANONICAL_ORIGIN (Preview)', async () => {
+  const mp = mpMock();
+  await call(body(), dbMock({ order: openOrder(), acquireChanges: 1 }), mp, { config: PREVIEW_CONFIG });
+  const payload = mp.createCalls[0].payload;
+  assert.equal(payload.notification_url, 'https://bd6523de.amadolibros-web.pages.dev/api/webhooks/mercadopago');
+  assert.equal(payload.back_urls.success, 'https://bd6523de.amadolibros-web.pages.dev/pedido/?result=success&code=' + PUBLIC_CODE);
+  assert.equal(payload.back_urls.pending, 'https://bd6523de.amadolibros-web.pages.dev/pedido/?result=pending&code=' + PUBLIC_CODE);
+  assert.equal(payload.back_urls.failure, 'https://bd6523de.amadolibros-web.pages.dev/pedido/?result=failure&code=' + PUBLIC_CODE);
+});
+
+test('url-2: notification_url y back_urls completas se construyen desde CANONICAL_ORIGIN (Production, apex y www colapsan al mismo origen)', async () => {
+  const mp = mpMock();
+  await call(body(), dbMock({ order: openOrder(), acquireChanges: 1 }), mp, { config: PRODUCTION_CONFIG, url: 'https://amadolibros.com/api/preferences' });
+  const payload = mp.createCalls[0].payload;
+  assert.equal(payload.notification_url, 'https://www.amadolibros.com/api/webhooks/mercadopago');
+  assert.equal(payload.back_urls.success, 'https://www.amadolibros.com/pedido/?result=success&code=' + PUBLIC_CODE);
+});
+
+test('url-3: ninguna URL depende de headers del cliente (Host/X-Forwarded-Host/Origin/Referer)', async () => {
+  const mp = mpMock();
+  const db = dbMock({ order: openOrder(), acquireChanges: 1 });
+  const handlerFn = createPreferenceHandler({ mpClient: mp });
+  const request = new Request(PREVIEW_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':      'application/json',
+      'X-Forwarded-Host':  'attacker.example.com',
+      'Origin':            'https://attacker.example.com',
+      'Referer':           'https://attacker.example.com/',
+    },
+    body: JSON.stringify(body()),
+  });
+  const env = { ...PREVIEW_CONFIG, ORDERS_DB: db, MP_ACCESS_TOKEN: TOKEN };
+  await handlerFn({ request, env });
+  const payload = mp.createCalls[0].payload;
+  assert.ok(!payload.notification_url.includes('attacker.example.com'));
+  assert.ok(!payload.back_urls.success.includes('attacker.example.com'));
+  assert.equal(payload.notification_url, PREVIEW_CONFIG.CANONICAL_ORIGIN + '/api/webhooks/mercadopago');
+});
+
+// ── Hosts aceptados: legítimos vs dominios engañosos ─────────────────────────
+test('host-1: dominio engañoso tipo prefijo (evilamadolibros-web.pages.dev) → 400 INVALID_ORIGIN', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { url: 'https://evilamadolibros-web.pages.dev/api/preferences' });
+  assert.equal(r.response.status, 400);
+  assert.equal(r.data.code, 'INVALID_ORIGIN');
+});
+
+test('host-2: dominio engañoso tipo sufijo (amadolibros-web.pages.dev.evil.com) → 400 INVALID_ORIGIN', async () => {
+  const r = await call(body(), dbMock({ order: openOrder() }), mpMock(), { url: 'https://amadolibros-web.pages.dev.evil.com/api/preferences' });
+  assert.equal(r.response.status, 400);
+  assert.equal(r.data.code, 'INVALID_ORIGIN');
+});
+
+test('host-3: Production acepta apex y www exactos, rechaza subdominio no listado', async () => {
+  const r1 = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: PRODUCTION_CONFIG, url: 'https://amadolibros.com/api/preferences' });
+  const r2 = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: PRODUCTION_CONFIG, url: 'https://www.amadolibros.com/api/preferences' });
+  const r3 = await call(body(), dbMock({ order: openOrder() }), mpMock(), { config: PRODUCTION_CONFIG, url: 'https://staging.amadolibros.com/api/preferences' });
+  assert.notEqual(r1.response.status, 400);
+  assert.notEqual(r2.response.status, 400);
+  assert.equal(r3.response.status, 400);
+  assert.equal(r3.data.code, 'INVALID_ORIGIN');
 });

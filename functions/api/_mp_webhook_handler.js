@@ -1,12 +1,10 @@
 import {
-  MP_COLLECTOR_ID,
   getPayment      as defaultGetPayment,
   getMerchantOrder as defaultGetMerchantOrder,
 } from './_mp_client.js';
+import { resolveConfig } from './_env_config.js';
 
-const MAX_BODY_BYTES    = 32768;
-const MP_ALLOWED_SUFFIX = '.amadolibros-web.pages.dev';
-const MP_ALLOWED_APEX   = 'amadolibros-web.pages.dev';
+const MAX_BODY_BYTES = 32768;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -17,10 +15,6 @@ function json(data, status = 200) {
 
 function noContent(status) {
   return new Response(null, { status, headers: { 'Cache-Control': 'no-store' } });
-}
-
-function isAllowedHost(hostname) {
-  return hostname === MP_ALLOWED_APEX || hostname.endsWith(MP_ALLOWED_SUFFIX);
 }
 
 async function verifyHmac(secret, message, hexSignature) {
@@ -134,8 +128,13 @@ export function createMpWebhookHandler({
       return json({ error: 'Método no permitido.' }, 405);
     }
 
+    // Config falla cerrada antes de tocar cualquier otra cosa. Mercado Pago
+    // no es un navegador: este endpoint nunca exige encabezado Origin.
+    const config = resolveConfig(env);
+    if (!config.ok) return noContent(503);
+
     const reqUrl = new URL(request.url);
-    if (!isAllowedHost(reqUrl.hostname)) {
+    if (!config.isAllowedRequestHost(reqUrl.hostname)) {
       return json({ error: 'Origen no permitido.' }, 400);
     }
 
@@ -196,20 +195,20 @@ export function createMpWebhookHandler({
     const db = env?.ORDERS_DB;
     if (!db) return noContent(503);
 
-    // Fetch payment from MP — transient errors get 500 for retry
+    // Fetch payment from MP. Cualquier falla (timeout, red, 429, 5xx, y
+    // también 401/403/404) es una imposibilidad de validar, no un "no
+    // corresponde" — se devuelve 503 para que Mercado Pago reintente en vez
+    // de asumir silenciosamente que el evento es irrelevante.
     const paymentResult = await mpClient.getPayment(queryDataId, accessToken);
-    if (!paymentResult.ok) {
-      if (paymentResult.code === 'NOT_FOUND') return json({ ok: true });
-      return json({ error: 'Error temporal.' }, 500);
-    }
+    if (!paymentResult.ok) return noContent(503);
     const payment = paymentResult;
 
-    // Validate ownership/identity — live_mode is informational only, not a gate
-    // (a payment made against our own MP_COLLECTOR_ID with a matching amount,
-    // external_reference and merchant_order is ours regardless of how MP
-    // classified the mode of the transaction).
-    if (payment.collector_id !== MP_COLLECTOR_ID) return json({ ok: true });
-    if (payment.currency_id !== 'UYU')            return json({ ok: true });
+    // Validate ownership/identity — live_mode es solo diagnóstico, nunca gate
+    // (un pago contra nuestro MP_COLLECTOR_ID configurado, con importe,
+    // external_reference y merchant_order coincidentes, es nuestro sin
+    // importar cómo Mercado Pago clasificó el modo de la transacción).
+    if (payment.collector_id !== config.mpCollectorId) return json({ ok: true });
+    if (payment.currency_id !== 'UYU')                 return json({ ok: true });
 
     // Find order by external_reference
     const publicCode = payment.external_reference;
@@ -227,10 +226,7 @@ export function createMpWebhookHandler({
     // Validate via merchant order if available
     if (payment.order_id) {
       const moResult = await mpClient.getMerchantOrder(payment.order_id, accessToken);
-      if (!moResult.ok) {
-        if (moResult.code === 'NOT_FOUND') return json({ ok: true });
-        return json({ error: 'Error temporal.' }, 500);
-      }
+      if (!moResult.ok) return noContent(503);
 
       const prefId = order.payment_preference_id;
       if (prefId && !prefId.startsWith('creating:') && moResult.preference_id !== prefId) {
@@ -248,8 +244,13 @@ export function createMpWebhookHandler({
       if (!inPayments) return json({ ok: true });
     }
 
-    if (payment.live_mode !== false) {
-      console.warn('mp_webhook: live_mode inesperado en pago validado', { payment_id: payment.id, live_mode: payment.live_mode });
+    if (payment.live_mode !== config.expectedLiveMode) {
+      console.warn('mp_webhook: live_mode inesperado', {
+        payment_id: payment.id,
+        app_env: config.appEnv,
+        expected: config.expectedLiveMode,
+        observed: payment.live_mode,
+      });
     }
 
     const normalized = normalizeStatus(payment.status);

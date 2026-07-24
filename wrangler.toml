@@ -24,3 +24,21 @@ id = "6ea0ff4682d647118442a24fe384abc4"
 binding = "ORDERS_DB"
 database_name = "amadolibros-orders-preview"
 database_id = "6fa387af-f29e-46dc-97e5-30298568b4a6"
+
+# Auditoría 2-N-E1: no existe (ni debe crearse en este lote) un bloque
+# [[env.production.d1_databases]] ni un [[d1_databases]] de nivel superior.
+# ORDERS_DB solo vive bajo env.preview. Si algún día se agrega Production,
+# Cloudflare exige declarar su propio binding ORDERS_DB con un database_id
+# DISTINTO al de Preview — nunca reutilizar este database_id.
+#
+# Vars no secretas de Preview — env.preview.vars aplica a TODOS los
+# preview deployments del proyecto, no solo a esta rama. CANONICAL_ORIGIN
+# queda fijado al alias de esta rama porque Cloudflare Pages no permite
+# vars por-rama; otras ramas de preview que usen checkout recibirán un
+# origen canónico incorrecto hasta que 2-N-E2 resuelva ese alcance (ver
+# docs/environments.md, sección "Riesgos pendientes").
+[env.preview.vars]
+APP_ENV           = "preview"
+MP_COLLECTOR_ID   = "3559407834"
+CHECKOUT_ENABLED  = "true"
+CANONICAL_ORIGIN  = "https://feature-2-n-e1-production-re.amadolibros-web.pages.dev"

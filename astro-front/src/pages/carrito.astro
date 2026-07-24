@@ -1088,14 +1088,14 @@ import WAFloat from '../components/WAFloat.astro';
             body:    JSON.stringify({ public_code: mpPublicCode, idempotency_key: mpIdempotencyKey }),
           });
           var mpData = await mpResp.json();
-          if (mpResp.ok && mpData.sandbox_init_point) {
+          if (mpResp.ok && mpData.checkout_url) {
             try {
               sessionStorage.setItem('amado-mp-auth', JSON.stringify({
                 public_code:     mpPublicCode,
                 idempotency_key: mpIdempotencyKey,
               }));
             } catch (_) {}
-            window.location.href = mpData.sandbox_init_point;
+            window.location.href = mpData.checkout_url;
             return;
           }
           alert('Error al iniciar el pago: ' + (mpData.error || 'Intentá de nuevo.'));

@@ -3,11 +3,11 @@ import {
   getPreference    as defaultGetPreference,
   searchPreferenceByRef as defaultSearchPreferenceByRef,
 } from './_mp_client.js';
+import { resolveConfig, checkoutDisabledResponse } from './_env_config.js';
 
-const MAX_BODY_BYTES      = 8192;
-const MP_CLAIM_TTL        = 30;
-const MP_ALLOWED_SUFFIX   = '.amadolibros-web.pages.dev';
-const MP_ALLOWED_APEX     = 'amadolibros-web.pages.dev';
+const MAX_BODY_BYTES = 8192;
+const MP_CLAIM_TTL   = 30;
+const WEBHOOK_PATH    = '/api/webhooks/mercadopago';
 
 function json(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), {
@@ -20,8 +20,8 @@ function json(data, status = 200, extra = {}) {
   });
 }
 
-function isAllowedHost(hostname) {
-  return hostname === MP_ALLOWED_APEX || hostname.endsWith(MP_ALLOWED_SUFFIX);
+function configErrorResponse() {
+  return json({ error: 'Servicio no disponible.' }, 503);
 }
 
 async function clearClaim(db, orderId, claimValue, now) {
@@ -33,8 +33,8 @@ async function clearClaim(db, orderId, claimValue, now) {
   } catch { /* best effort */ }
 }
 
-async function savePrefBatch(db, orderId, claimValue, prefId, now) {
-  const payload = JSON.stringify({ preference_id: prefId, environment: 'test' });
+async function savePrefBatch(db, orderId, claimValue, prefId, now, appEnv) {
+  const payload = JSON.stringify({ preference_id: prefId, environment: appEnv });
   return db.batch([
     db.prepare(
       "UPDATE orders SET payment_preference_id = ?, payment_provider = 'mercadopago', updated_at = ? WHERE id = ? AND payment_preference_id = ?"
@@ -64,6 +64,13 @@ export function createPreferenceHandler({
       return json({ error: 'Content-Type debe ser application/json.' }, 415);
     }
 
+    const config = resolveConfig(env);
+    if (!config.ok) return configErrorResponse();
+
+    if (!config.checkoutEnabled) return checkoutDisabledResponse();
+
+    const checkoutField = config.isProduction ? 'init_point' : 'sandbox_init_point';
+
     const token = env?.MP_ACCESS_TOKEN;
     if (!token) {
       return json({ error: 'Servicio de pago no configurado.', code: 'MP_NOT_CONFIGURED' }, 503);
@@ -92,7 +99,7 @@ export function createPreferenceHandler({
     const idempotencyKey = body.idempotency_key.trim();
 
     const reqUrl = new URL(request.url);
-    if (!isAllowedHost(reqUrl.hostname)) {
+    if (!config.isAllowedRequestHost(reqUrl.hostname)) {
       return json({ error: 'Origen no permitido.', code: 'INVALID_ORIGIN' }, 400);
     }
 
@@ -124,10 +131,12 @@ export function createPreferenceHandler({
       return json({ error: 'El pedido ya fue pagado.', code: 'ORDER_ALREADY_PAID' }, 409);
     }
 
+    const mpOpts = { expectedCollectorId: config.mpCollectorId, checkoutField };
+
     const existingPref = order.payment_preference_id;
     if (existingPref && !existingPref.startsWith('creating:')) {
-      const r = await mpClient.getPreference(existingPref, token, publicCode);
-      if (r.ok) return json({ sandbox_init_point: r.sandbox_init_point });
+      const r = await mpClient.getPreference(existingPref, token, publicCode, mpOpts);
+      if (r.ok) return json({ checkout_url: r.checkout_url });
       const s = r.code === 'MP_RATE_LIMIT' ? 503 : 502;
       return json({ error: 'Error al recuperar preferencia.', code: r.code }, s);
     }
@@ -156,8 +165,8 @@ export function createPreferenceHandler({
       if (!curPref || curPref.startsWith('creating:')) {
         return json({ error: 'Pago en proceso. Intentá en unos segundos.', code: 'PREFERENCE_CREATING' }, 409);
       }
-      const r = await mpClient.getPreference(curPref, token, publicCode);
-      if (r.ok) return json({ sandbox_init_point: r.sandbox_init_point });
+      const r = await mpClient.getPreference(curPref, token, publicCode, mpOpts);
+      if (r.ok) return json({ checkout_url: r.checkout_url });
       return json({ error: 'Error al recuperar preferencia.', code: r.code }, 502);
     }
 
@@ -172,23 +181,24 @@ export function createPreferenceHandler({
       external_reference: publicCode,
       expires:            true,
       expiration_date_to: order.expires_at,
+      notification_url: config.canonicalOrigin + WEBHOOK_PATH,
       back_urls: {
-        success: reqUrl.origin + '/pedido/?result=success&code=' + publicCode,
-        pending: reqUrl.origin + '/pedido/?result=pending&code='  + publicCode,
-        failure: reqUrl.origin + '/pedido/?result=failure&code='  + publicCode,
+        success: config.canonicalOrigin + '/pedido/?result=success&code=' + publicCode,
+        pending: config.canonicalOrigin + '/pedido/?result=pending&code='  + publicCode,
+        failure: config.canonicalOrigin + '/pedido/?result=failure&code='  + publicCode,
       },
       auto_return:          'approved',
       statement_descriptor: 'AMADO LIBROS',
     };
 
-    const mpResult = await mpClient.createPreference(mpPayload, token);
+    const mpResult = await mpClient.createPreference(mpPayload, token, mpOpts);
 
     if (!mpResult.ok) {
       if (mpResult.code === 'MP_TIMEOUT') {
-        const search = await mpClient.searchPreferenceByRef(publicCode, token, now);
+        const search = await mpClient.searchPreferenceByRef(publicCode, token, now, mpOpts);
         if (search.ok) {
-          await savePrefBatch(db, order.id, claimValue, search.id, now);
-          return json({ sandbox_init_point: search.sandbox_init_point });
+          await savePrefBatch(db, order.id, claimValue, search.id, now, config.appEnv);
+          return json({ checkout_url: search.checkout_url });
         }
         await clearClaim(db, order.id, claimValue, now);
         return json({ error: 'Servicio de pago no disponible.', code: 'MP_TIMEOUT' }, 503);
@@ -198,7 +208,7 @@ export function createPreferenceHandler({
       return json({ error: 'Error al crear preferencia de pago.', code: mpResult.code }, s);
     }
 
-    const batchResult = await savePrefBatch(db, order.id, claimValue, mpResult.id, now);
+    const batchResult = await savePrefBatch(db, order.id, claimValue, mpResult.id, now, config.appEnv);
 
     if (batchResult[0].meta.changes !== 1) {
       const current2 = await db
@@ -207,12 +217,12 @@ export function createPreferenceHandler({
         .first();
       const winner = current2?.payment_preference_id;
       if (winner && !winner.startsWith('creating:')) {
-        const r = await mpClient.getPreference(winner, token, publicCode);
-        if (r.ok) return json({ sandbox_init_point: r.sandbox_init_point });
+        const r = await mpClient.getPreference(winner, token, publicCode, mpOpts);
+        if (r.ok) return json({ checkout_url: r.checkout_url });
       }
       return json({ error: 'Error al guardar preferencia.', code: 'PREFERENCE_WRITE_ERROR' }, 500);
     }
 
-    return json({ sandbox_init_point: mpResult.sandbox_init_point });
+    return json({ checkout_url: mpResult.checkout_url });
   };
 }

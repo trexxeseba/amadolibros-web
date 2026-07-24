@@ -10,6 +10,7 @@ import {
   MAX_BODY_BYTES,
 } from './_orders_logic.js';
 import { verifyTurnstile } from './_turnstile.js';
+import { resolveConfig, checkoutDisabledResponse } from './_env_config.js';
 
 const EXISTING_ORDER_SELECT =
   'SELECT id, public_code, status, payment_status, delivery_type, ' +
@@ -29,6 +30,10 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     if (!contentType.toLowerCase().includes('application/json')) {
       return json({ error: 'Content-Type debe ser application/json.' }, 415);
     }
+
+    const config = resolveConfig(env);
+    if (!config.ok) return json({ error: 'Servicio no disponible.' }, 503);
+    if (!config.checkoutEnabled) return checkoutDisabledResponse();
 
     const contentLength = Number.parseInt(request.headers.get('Content-Length') || '0', 10);
     if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
@@ -65,7 +70,9 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     if (tsRaw.length > 2048) {
       return json({ error: 'Token inválido.', code: 'TOKEN_INVALID' }, 403);
     }
-    const tsResult = await verifyTurnstileToken(tsRaw, tsSecret, request.headers.get('CF-Connecting-IP') ?? '');
+    const tsResult = await verifyTurnstileToken(tsRaw, tsSecret, request.headers.get('CF-Connecting-IP') ?? '', {
+      isAllowedHostname: config.isExpectedTurnstileHostname,
+    });
     if (!tsResult.ok) {
       const svcErr = tsResult.code === 'SITEVERIFY_ERROR' || tsResult.code === 'SITEVERIFY_TIMEOUT';
       return json(

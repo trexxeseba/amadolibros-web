@@ -3,7 +3,7 @@ const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverif
 export async function verifyTurnstile(token, secret, ip = '', {
   fetch: fetchFn = globalThis.fetch,
   action = 'prepare_order',
-  allowedHostname = 'amadolibros-web.pages.dev',
+  isAllowedHostname,
 } = {}) {
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), 5000);
@@ -37,7 +37,9 @@ export async function verifyTurnstile(token, secret, ip = '', {
 
   if (data.action !== action) return { ok: false, code: 'ACTION_INVALID' };
   const h = data.hostname || '';
-  if (h !== allowedHostname && !h.endsWith('.' + allowedHostname)) return { ok: false, code: 'HOSTNAME_INVALID' };
+  if (typeof isAllowedHostname !== 'function' || !isAllowedHostname(h)) {
+    return { ok: false, code: 'HOSTNAME_INVALID' };
+  }
 
   return { ok: true };
 }

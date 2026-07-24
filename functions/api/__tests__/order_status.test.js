@@ -4,6 +4,13 @@ import { createOrderStatusHandler } from '../_order_status_handler.js';
 
 const ALLOWED_HOST = 'feature.amadolibros-web.pages.dev';
 
+const PREVIEW_CONFIG = {
+  APP_ENV:          'preview',
+  MP_COLLECTOR_ID:  '3559407834',
+  CHECKOUT_ENABLED: 'true',
+  CANONICAL_ORIGIN: 'https://feature.amadolibros-web.pages.dev',
+};
+
 function dbMock({ order = null } = {}) {
   return {
     prepare(sql) {
@@ -28,14 +35,14 @@ function makeReq({ method = 'POST', host = ALLOWED_HOST, body = undefined, ct = 
   });
 }
 
-function env(order = { payment_status: 'approved', status: 'paid' }) {
-  return { ORDERS_DB: dbMock({ order }) };
+function env(order = { payment_status: 'approved', status: 'paid' }, envPatch = {}) {
+  return { ...PREVIEW_CONFIG, ORDERS_DB: dbMock({ order }), ...envPatch };
 }
 
-async function call(reqOpts = {}, order = { payment_status: 'approved', status: 'paid' }) {
+async function call(reqOpts = {}, order = { payment_status: 'approved', status: 'paid' }, envPatch = {}) {
   const h   = createOrderStatusHandler();
   const req = makeReq(reqOpts);
-  const res = await h({ request: req, env: env(order) });
+  const res = await h({ request: req, env: env(order, envPatch) });
   let data;
   try { data = await res.json(); } catch { data = null; }
   return { res, data };
@@ -68,7 +75,7 @@ test('os-04: idempotency_key ausente → 400', async () => {
 test('os-05: par inválido (no match en D1) → 404', async () => {
   const h   = createOrderStatusHandler();
   const req = makeReq({ body: { public_code: 'AL-999', idempotency_key: 'wrong-key' } });
-  const res = await h({ request: req, env: { ORDERS_DB: dbMock({ order: null }) } });
+  const res = await h({ request: req, env: env(null) });
   assert.equal(res.status, 404);
 });
 
@@ -118,11 +125,55 @@ test('os-10: payment_status pending devuelto correctamente', async () => {
 test('os-11: ORDERS_DB no disponible → 503', async () => {
   const h   = createOrderStatusHandler();
   const req = makeReq({ body: { public_code: 'AL-001', idempotency_key: 'k' } });
-  const res = await h({ request: req, env: {} });
+  const res = await h({ request: req, env: { ...PREVIEW_CONFIG } });
   assert.equal(res.status, 503);
 });
 
 test('os-12: Content-Type incorrecto → 415', async () => {
   const { res } = await call({ ct: 'text/plain', body: '{}' });
   assert.equal(res.status, 415);
+});
+
+// ── 2-N-E1: config centralizada, fail-closed, hosts ─────────────────────────
+
+test('os-13: APP_ENV ausente → 503 fail-closed (config inválida)', async () => {
+  const { res } = await call(
+    { body: { public_code: 'AL-001', idempotency_key: 'key-1' } },
+    { payment_status: 'approved', status: 'paid' },
+    { APP_ENV: undefined }
+  );
+  assert.equal(res.status, 503);
+});
+
+test('os-14: APP_ENV con valor inválido (ni preview ni production) → 503', async () => {
+  const { res } = await call(
+    { body: { public_code: 'AL-001', idempotency_key: 'key-1' } },
+    { payment_status: 'approved', status: 'paid' },
+    { APP_ENV: 'staging' }
+  );
+  assert.equal(res.status, 503);
+});
+
+test('os-15: MP_COLLECTOR_ID no decimal → 503', async () => {
+  const { res } = await call(
+    { body: { public_code: 'AL-001', idempotency_key: 'key-1' } },
+    { payment_status: 'approved', status: 'paid' },
+    { MP_COLLECTOR_ID: 'abc' }
+  );
+  assert.equal(res.status, 503);
+});
+
+test('os-16: dominio engañoso tipo prefijo (evilamadolibros-web.pages.dev) → 400', async () => {
+  const { res } = await call({ host: 'evilamadolibros-web.pages.dev', body: { public_code: 'AL-001', idempotency_key: 'k' } });
+  assert.equal(res.status, 400);
+});
+
+test('os-17: dominio engañoso tipo sufijo (amadolibros-web.pages.dev.evil.com) → 400', async () => {
+  const { res } = await call({ host: 'amadolibros-web.pages.dev.evil.com', body: { public_code: 'AL-001', idempotency_key: 'k' } });
+  assert.equal(res.status, 400);
+});
+
+test('os-18: hostname de Preview con hash de deployment válido → 200', async () => {
+  const { res } = await call({ host: '61953b88.amadolibros-web.pages.dev', body: { public_code: 'AL-001', idempotency_key: 'key-1' } });
+  assert.equal(res.status, 200);
 });
