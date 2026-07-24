@@ -246,10 +246,19 @@ test('wh-16: getPayment timeout → 500', async () => {
   assert.equal(res.status, 500);
 });
 
-test('wh-17: live_mode true → 200 silencio', async () => {
+test('wh-17: live_mode true con identidad verificada (collector/monto/referencia) → procesa el pago', async () => {
   const { res, db } = await call(
     {},
     { getPayment: async () => basePayment({ live_mode: true }) }
+  );
+  assert.equal(res.status, 200);
+  assert.equal(db.batches.length, 1);
+});
+
+test('wh-45: collector_id incorrecto con live_mode true → sigue rechazando', async () => {
+  const { res, db } = await call(
+    {},
+    { getPayment: async () => basePayment({ live_mode: true, collector_id: 9999 }) }
   );
   assert.equal(res.status, 200);
   assert.equal(db.batches.length, 0);

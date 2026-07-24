@@ -204,8 +204,10 @@ export function createMpWebhookHandler({
     }
     const payment = paymentResult;
 
-    // Validate test environment
-    if (payment.live_mode !== false)             return json({ ok: true });
+    // Validate ownership/identity — live_mode is informational only, not a gate
+    // (a payment made against our own MP_COLLECTOR_ID with a matching amount,
+    // external_reference and merchant_order is ours regardless of how MP
+    // classified the mode of the transaction).
     if (payment.collector_id !== MP_COLLECTOR_ID) return json({ ok: true });
     if (payment.currency_id !== 'UYU')            return json({ ok: true });
 
@@ -244,6 +246,10 @@ export function createMpWebhookHandler({
         p => String(p.id) === pidStr || p.id === Number(queryDataId)
       );
       if (!inPayments) return json({ ok: true });
+    }
+
+    if (payment.live_mode !== false) {
+      console.warn('mp_webhook: live_mode inesperado en pago validado', { payment_id: payment.id, live_mode: payment.live_mode });
     }
 
     const normalized = normalizeStatus(payment.status);
