@@ -1,4 +1,12 @@
-# Preview de migración — no indexar, no cachear
-/*
-  X-Robots-Tag: noindex, nofollow
-  Cache-Control: no-store
+# Este archivo aplica por igual a Preview y a Producción (Cloudflare Pages
+# no permite condicionar _headers por hostname). La protección real de
+# Preview (noindex + no-store) la aplica functions/_middleware.js, que sí
+# distingue el ambiente (hostname *.pages.dev) y la inyecta en cada
+# response — incluidas las de assets estáticos, que pasan por el mismo
+# middleware antes de servirse.
+#
+# Una regla global acá (aunque diga "solo Preview" en el comentario)
+# también se aplica en Producción, sin excepción — eso hacía que la
+# portada, /carrito y /pedido quedaran noindex + no-store en
+# www.amadolibros.com. No agregar reglas de robots/caché en este archivo
+# sin verificar antes que no se filtren a Producción.
