@@ -34,7 +34,12 @@ jobs:
           grep -q "Astro build OK" astro-front/dist/index.html
           grep -q "noindex, nofollow" astro-front/dist/index.html
           test -f astro-front/dist/_headers
-          grep -q "X-Robots-Tag: noindex, nofollow" astro-front/dist/_headers
+          # _headers ya no debe llevar la regla global de noindex/no-store:
+          # esa regla se aplicaba por igual en Preview y Producción. La
+          # protección de Preview la impone functions/_middleware.js
+          # (condicionado por hostname *.pages.dev), no _headers.
+          ! grep -q "X-Robots-Tag: noindex, nofollow" astro-front/dist/_headers
+          ! grep -q "Cache-Control: no-store" astro-front/dist/_headers
 
       - name: Deploy preview to CF Pages
         run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch astro-migration
