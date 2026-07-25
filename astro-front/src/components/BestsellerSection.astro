@@ -1,26 +1,11 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
+// "Incorporaciones recientes" — ya no lee un snapshot de build-time.
+// La sección arranca oculta y un script cliente la llena consultando
+// GET /api/home-picks (catálogo real, calculado en cada request — ver
+// functions/api/home-picks.js). Si ese fetch falla o no trae resultados,
+// la sección permanece oculta: nunca se muestra un precio, stock o
+// producto congelado de una build anterior.
 import BookCard from './BookCard.astro';
-
-// home.json lives at <repo-root>/public/home.json.
-// process.cwd() during `astro build` = astro-front/, so '../public/home.json' resolves correctly.
-const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
-
-const ANTIQUE_SIGNALS = [
-  'cruz', 'crucifijo', 'bronce', 'chapa esmaltada', 'cartel chapa',
-  'dije', 'plata 925', 'jaspe', 'colgante vintage', 'sacapuntas vintage',
-  'candelabro', 'figura bronce', 'figuras bronce',
-  'decorativo', 'decorativa',
-  'pared cristo', 'cristo inri', 'inri antigua',
-  'jeringa',
-  'veterinaria vidrio',
-  'volante cine',
-  'antiguo matrimonio',
-  'antigua veterinaria',
-  'pieza antigua',
-  'objeto antiguo',
-];
 
 interface Book {
   id: string;
@@ -34,58 +19,142 @@ interface Book {
   start_time?: string;
 }
 
-function isAntiqueObject(b: Book): boolean {
-  if (b.author && b.author.trim()) return false;
-  const t = (b.title || '').toLowerCase();
-  return ANTIQUE_SIGNALS.some(s => t.includes(s));
-}
+const MAX_SLOTS = 8;
 
-let books: Book[] = [];
-let missing = false;
-
-try {
-  const raw = fs.readFileSync(HOME_JSON, 'utf-8');
-  const data = JSON.parse(raw) as { items: Book[] };
-  const filtered = (data.items || [])
-    .filter(b => b.status === 'active' && b.available_quantity > 0 && !isAntiqueObject(b))
-    .sort((a, b) => {
-      const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
-      const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
-      return tb - ta;
-    });
-  const normalize = (v: string | undefined) =>
-    String(v || '').toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, ' ').trim();
-  const seen = new Set<string>();
-  books = filtered.filter(b => {
-    const authorKey = normalize(b.author);
-    const identityKey = authorKey || normalize(b.title).slice(0, 60);
-    const key = `${identityKey}|${Number(b.price || 0)}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, 8);
-} catch (e: unknown) {
-  missing = true;
-  const msg = e instanceof Error ? e.message : String(e);
-  console.warn('[BestsellerSection] home.json no disponible en build:', msg);
-}
+// Solo para emitir la estructura/estilos de BookCard en build-time.
+// Nunca se muestra: cada slot nace con `hidden` y la sección entera
+// también, hasta que el script cliente confirma datos reales.
+const PLACEHOLDER_BOOK: Book = {
+  id: '',
+  title: ' ',
+  author: ' ',
+  price: 0,
+  status: 'active',
+  available_quantity: 1,
+  thumbnail: '',
+  pictures: [],
+  start_time: '',
+};
 ---
 
-{missing
-  ? <Fragment set:html="<!-- novedades: home.json no encontrado en build — sección omitida -->" />
-  : (books.length > 0 && (
-      <section class="bs-section">
-        <div class="bs-inner">
-          <h2 class="bs-heading">Incorporaciones recientes</h2>
-          <div class="bs-grid">
-            {books.map(book => <BookCard book={book} />)}
-          </div>
+<section id="home-picks" class="bs-section" hidden>
+  <div class="bs-inner">
+    <h2 class="bs-heading">Incorporaciones recientes</h2>
+    <div class="bs-grid" id="home-picks-grid">
+      {Array.from({ length: MAX_SLOTS }).map((_, i) => (
+        <div class="bs-slot" data-slot={i} hidden>
+          <BookCard book={PLACEHOLDER_BOOK} />
         </div>
-      </section>
-    ))
-}
+      ))}
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+(function () {
+  var TRANSPARENT_PX = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7';
+
+  function slugify(text) {
+    return String(text || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 60);
+  }
+
+  function httpsImg(url, suffix) {
+    return String(url || '').replace('http://', 'https://').replace('-I.jpg', suffix);
+  }
+
+  var fmt = new Intl.NumberFormat('es-UY', {
+    style: 'currency', currency: 'UYU', maximumFractionDigits: 0,
+  });
+
+  // Debe reflejar exactamente el mismo criterio que BookCard.astro
+  // (isAvailable) y functions/api/home-picks.js (filtro de comprables).
+  function isAvailable(book) {
+    return book.status === 'active' && Number(book.available_quantity) > 0;
+  }
+
+  function fillSlot(slot, book) {
+    if (!isAvailable(book)) return; // defensa adicional; el endpoint ya filtra esto
+
+    var img = (book.pictures && book.pictures[0])
+      ? httpsImg(book.pictures[0], '-O.jpg')
+      : httpsImg(book.thumbnail, '-V.jpg');
+    var fichaHref = '/libro/' + encodeURIComponent(book.id) + '/' + slugify(book.title);
+    var waText = 'Hola! Me interesa el libro "' + book.title + '", ¿lo tienen disponible?';
+    var waHref = 'https://wa.me/59899841325?text=' + encodeURIComponent(waText);
+    var transferPrice = fmt.format(Math.round(book.price * 0.88));
+    var basePrice = fmt.format(book.price);
+    var installment = fmt.format(Math.ceil(book.price / 12));
+
+    var imgEl = slot.querySelector('[data-img]');
+    if (imgEl) { imgEl.src = img || TRANSPARENT_PX; imgEl.alt = book.title || ''; }
+
+    var linkEls = slot.querySelectorAll('[data-ficha-link]');
+    for (var i = 0; i < linkEls.length; i++) linkEls[i].href = fichaHref;
+
+    var titleEl = slot.querySelector('[data-title]');
+    if (titleEl) titleEl.textContent = book.title || '';
+
+    var authorEl = slot.querySelector('[data-author]');
+    if (authorEl) {
+      if (book.author) { authorEl.textContent = book.author; authorEl.hidden = false; }
+      else { authorEl.hidden = true; }
+    }
+
+    var tEl = slot.querySelector('[data-price-transfer]');
+    if (tEl) tEl.textContent = transferPrice;
+    var bEl = slot.querySelector('[data-price-base]');
+    if (bEl) bEl.textContent = basePrice;
+    var iEl = slot.querySelector('[data-installment]');
+    if (iEl) iEl.textContent = installment;
+
+    var cartBtn = slot.querySelector('.bc-cart-btn');
+    if (cartBtn) {
+      cartBtn.setAttribute('data-id', book.id);
+      cartBtn.setAttribute('data-title', book.title || '');
+      cartBtn.setAttribute('data-price', book.price);
+      cartBtn.setAttribute('data-thumbnail', img || '');
+      cartBtn.setAttribute('aria-label', 'Agregar "' + (book.title || '') + '" al carrito');
+    }
+
+    var waEl = slot.querySelector('[data-wa-link]');
+    if (waEl) waEl.href = waHref;
+
+    slot.hidden = false;
+  }
+
+  function init() {
+    var section = document.getElementById('home-picks');
+    if (!section) return;
+    var slots = section.querySelectorAll('[data-slot]');
+
+    fetch('/api/home-picks')
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('bad status')); })
+      .then(function (data) {
+        if (!data || data.ok !== true || !Array.isArray(data.items) || data.items.length === 0) {
+          return; // sin datos confiables: la sección se queda oculta
+        }
+        var items = data.items.slice(0, slots.length);
+        for (var i = 0; i < items.length; i++) fillSlot(slots[i], items[i]);
+        section.hidden = false;
+      })
+      .catch(function () {
+        // Fallo temporal de R2/catálogo: la sección permanece oculta,
+        // nunca se muestra un dato viejo como si fuera vigente.
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
 
 <style>
   .bs-section {
