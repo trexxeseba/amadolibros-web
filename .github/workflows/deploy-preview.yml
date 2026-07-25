@@ -1,48 +1,55 @@
-name: Deploy Astro Preview
+name: Deploy PR21 WhatsApp Preview
 
 on:
   push:
-    branches: [astro-migration]
-  # Sin workflow_dispatch para evitar disparos manuales accidentales.
+    branches: [preview/pr21-cierre-whatsapp]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-pr21-cierre-whatsapp
+  cancel-in-progress: true
 
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
 
       - name: Generate home.json
-        # Genera public/home.json desde el catálogo público de R2.
-        # No requiere credenciales. Si falla (R2 down), el deploy continúa
-        # usando el último home.json commiteado como fallback.
         run: node scripts/generate-home-json.js
         continue-on-error: true
 
-      - name: Build Astro
+      - name: Build Astro Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: G-SDX45VEPP3
         run: |
-          cd astro-front
-          npm ci
+          npm ci --no-audit --no-fund
           npm run build
 
-      - name: Verify build output
+      - name: Verify Preview build
         run: |
+          set -euo pipefail
           test -f astro-front/dist/index.html
-          grep -q "Astro build OK" astro-front/dist/index.html
-          grep -q "noindex, nofollow" astro-front/dist/index.html
-          test -f astro-front/dist/_headers
-          # _headers ya no debe llevar la regla global de noindex/no-store:
-          # esa regla se aplicaba por igual en Preview y Producción. La
-          # protección de Preview la impone functions/_middleware.js
-          # (condicionado por hostname *.pages.dev), no _headers.
-          ! grep -q "X-Robots-Tag: noindex, nofollow" astro-front/dist/_headers
-          ! grep -q "Cache-Control: no-store" astro-front/dist/_headers
+          test -f astro-front/dist/carrito/index.html
+          grep -q "Finalizá tu pedido" astro-front/dist/carrito/index.html
+          grep -q "Enviar pedido por WhatsApp" astro-front/dist/carrito/index.html
+          grep -q "PEDIDO WEB" astro-front/dist/carrito/index.html
+          ! grep -q "btn-pay-soon" astro-front/dist/carrito/index.html
+          grep -q "noindex, nofollow" astro-front/dist/carrito/index.html
 
-      - name: Deploy preview to CF Pages
-        run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch astro-migration
+      - name: Deploy isolated Cloudflare Preview
+        run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch pr21-cierre-whatsapp
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
