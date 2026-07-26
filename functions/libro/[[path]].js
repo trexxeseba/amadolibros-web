@@ -230,10 +230,14 @@ function renderPage(item, slug, isPreview) {
     const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
     const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
-    const inStock       = stockQty > 0;
+    const inStock       = item.status === 'active' && stockQty > 0;
     const condition     = formatCondition(item.condition);
     const dimensions    = formatDimensions(item.dimensions);
-    const waMsg         = encodeURIComponent(`Hola! Me interesa: ${item.title}`);
+    const waMsg         = encodeURIComponent(
+        inStock
+            ? `Hola! Me interesa: ${item.title}`
+            : `Hola Amado Libros, quiero consultar disponibilidad de: ${item.title}`
+    );
 
     const detailRows = [
         safeAuthor ? detailRow('Autor', item.author) : '',
@@ -242,12 +246,19 @@ function renderPage(item, slug, isPreview) {
         item.pages ? detailRow('Páginas', `${item.pages}`) : '',
         detailRow('Medidas', dimensions),
         detailRow('Condición', condition),
-        detailRow('Stock', inStock ? `${stockQty} disponible${stockQty === 1 ? '' : 's'}` : 'Consultar disponibilidad'),
+        detailRow(
+            'Disponibilidad',
+            inStock
+                ? `${stockQty} disponible${stockQty === 1 ? '' : 's'}`
+                : 'Por encargo — entrega estimada 15–20 días'
+        ),
     ].filter(Boolean).join('\n');
 
-    const metaDesc = safeAuthor
-        ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU, 12% de descuento. Envíos a todo Uruguay.`
-        : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU, 12% de descuento. Envíos a todo Uruguay.`;
+    const metaDesc = inStock
+        ? (safeAuthor
+            ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
+            : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
+        : `Consultá disponibilidad de &quot;${safeTitle}&quot; por encargo en Amado Libros. Entrega estimada de 15–20 días, sujeta a confirmación.`;
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
     const schemaProduct = {
@@ -257,17 +268,17 @@ function renderPage(item, slug, isPreview) {
         'image':    images.length ? images : img,
         'description': item.author ? `${item.title} — ${item.author}` : item.title,
         'sku':      item.id,
-        'offers': {
+    };
+    if (inStock) {
+        schemaProduct.offers = {
             '@type':        'Offer',
             'url':          canonicalUrl,
             'priceCurrency':'UYU',
             'price':        String(price),
-            'availability': inStock
-                ? 'https://schema.org/InStock'
-                : 'https://schema.org/OutOfStock',
+            'availability': 'https://schema.org/InStock',
             'seller': { '@type': 'Organization', 'name': 'Amado Libros' },
-        },
-    };
+        };
+    }
     if (item.author) {
         schemaProduct.author = { '@type': 'Person', 'name': item.author };
     }
@@ -281,11 +292,46 @@ function renderPage(item, slug, isPreview) {
     if (item.pages) {
         schemaProduct.numberOfPages = Number(item.pages);
     }
-    if (item.condition === 'new') {
+    if (schemaProduct.offers && item.condition === 'new') {
         schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
-    } else if (item.condition === 'used') {
+    } else if (schemaProduct.offers && item.condition === 'used') {
         schemaProduct.offers.itemCondition = 'https://schema.org/UsedCondition';
     }
+
+    const priceHtml = inStock
+        ? `<div class="price-box">
+      <div class="price-transfer"><span class="price-label">Transferencia:</span> $${transferPrice} UYU</div>
+      <div class="price-base">Precio: $${priceUY} UYU</div>
+      <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
+    </div>`
+        : `<div class="order-box">
+      <strong>Por encargo</strong>
+      <span>Entrega estimada: 15–20 días</span>
+      <small>Sujeto a confirmación de disponibilidad.</small>
+    </div>`;
+
+    const actionHtml = inStock
+        ? `<button
+        type="button"
+        class="btn btn-cart"
+        data-action="add-to-cart"
+        data-id="${escapeHtml(item.id)}"
+        data-title="${escapeHtml(item.title)}"
+        data-price="${price}"
+        data-thumbnail="${escapeHtml(images[0] || '')}"
+        data-max-qty="${stockQty}"
+      >
+        <span data-cart-label>🛒 Agregar al carrito</span>
+      </button>
+      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
+        🛒 Comprar en MercadoLibre
+      </a>
+      <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+        💬 Consultar por WhatsApp
+      </a>`
+        : `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+        💬 Consultar disponibilidad
+      </a>`;
 
     const schemaBreadcrumb = {
         '@context': 'https://schema.org',
@@ -303,7 +349,7 @@ function renderPage(item, slug, isPreview) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${safeTitle} | Amado Libros</title>
   <meta name="description" content="${metaDesc}">
-  <meta name="robots" content="${isPreview ? 'noindex' : 'index, follow'}">
+  <meta name="robots" content="${isPreview || !inStock ? 'noindex, follow' : 'index, follow'}">
   <link rel="canonical" href="${canonicalUrl}">
 
   <meta property="og:type"        content="product">
@@ -392,6 +438,12 @@ function renderPage(item, slug, isPreview) {
     .price-transfer,.price-base,.price-installment{font-size:1rem;font-weight:700;line-height:1.35}
     .price-transfer{color:#0f172a}
     .price-base,.price-installment{color:#374151;margin-top:.15rem}
+    .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
+               border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
+               margin:.875rem 0;color:#6b4218}
+    .order-box strong{text-transform:uppercase;letter-spacing:.05em;font-size:.82rem}
+    .order-box span{font-weight:700;color:#3f2b17}
+    .order-box small{font-size:.78rem;color:#7c6b59}
     .cta{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
@@ -436,32 +488,14 @@ function renderPage(item, slug, isPreview) {
       ${inStock ? '✓ En stock' : '⏳ Por encargo'}
     </span>
     ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
-    <div class="price-box">
-      <div class="price-transfer"><span class="price-label">Transferencia -12%:</span> $${transferPrice} UYU</div>
-      <div class="price-base">Precio: $${priceUY} UYU</div>
-      <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
-    </div>
+    ${priceHtml}
     <div class="cta">
-      <button
-        type="button"
-        class="btn btn-cart"
-        data-action="add-to-cart"
-        data-id="${escapeHtml(item.id)}"
-        data-title="${escapeHtml(item.title)}"
-        data-price="${price}"
-        data-thumbnail="${escapeHtml(images[0] || '')}"
-        data-max-qty="${stockQty}"
-      >
-        <span data-cart-label>🛒 Agregar al carrito</span>
-      </button>
-      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
-        🛒 Comprar en MercadoLibre
-      </a>
-      <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
-        💬 Consultar por WhatsApp
-      </a>
+      ${actionHtml}
     </div>
-    <p class="shipping">🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000. <a href="/politicas#envios">Ver política de envíos</a>.</p>
+    <p class="shipping">${inStock
+      ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000.'
+      : '🌎 Lo buscamos por encargo en el exterior. Confirmamos disponibilidad, precio y plazo antes de avanzar.'
+    } <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
 </main>
 

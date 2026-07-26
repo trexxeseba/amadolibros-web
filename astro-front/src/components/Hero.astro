@@ -1,261 +1,389 @@
----
-const WA_HREF =
-  'https://wa.me/59899841325?text=Hola%21%20Quisiera%20consultar%20sobre%20un%20libro';
----
-<section class="hero">
+<section class="hero-shell">
+  <div class="hero">
+    <div class="hero-content">
+      <span class="hero-badge">Librería uruguaya</span>
 
-  <div class="hero-content">
+      <h1 class="hero-h1">Especialistas en libros difíciles de conseguir.</h1>
 
-    <!-- Badge -->
-    <span class="hero-badge">Librería uruguaya</span>
+      <p class="hero-lead">
+        Buscá entre nuestros libros disponibles y los que conseguimos por encargo en todo el mundo.
+      </p>
 
-    <!-- H1 -->
-    <h1 class="hero-h1">
-      Libros disponibles hoy, pedidos por encargo y atención directa por WhatsApp.
-    </h1>
+      <form class="hero-search" action="/catalogo" method="get" role="search">
+        <label class="sr-only" for="hero-search-input">Buscar por título, autor o ISBN</label>
+        <span class="hero-search-icon" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+            <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+            <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <input
+          id="hero-search-input"
+          type="search"
+          name="q"
+          placeholder="Título, autor o ISBN"
+          autocomplete="off"
+          enterkeyhint="search"
+        >
+        <button type="submit">Buscar</button>
+      </form>
 
-    <!-- Bajada -->
-    <p class="hero-lead">
-      En Montevideo coordinás entrega en el día. Al interior enviamos a todo Uruguay.
-      Si no está en stock, lo buscamos por encargo.
-    </p>
-
-    <!-- CTAs -->
-    <div class="hero-ctas">
-      <button
-        type="button"
-        class="btn-wa"
-        onclick="document.dispatchEvent(new CustomEvent('amado:openSearch'))"
-        aria-label="Pedir un libro por WhatsApp"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
-        </svg>
-        Pedir por WhatsApp
-      </button>
+      <p class="hero-search-note">
+        Un solo lugar para encontrar libros disponibles y consultar títulos por encargo.
+      </p>
     </div>
 
-    <!-- Trust line -->
-    <ul class="trust-grid" role="list">
+    <div class="hero-services" aria-label="Formas de conseguir tu libro">
+      <div class="hero-brand" aria-hidden="true">
+        <img
+          src="/images/logo-amado.jpg"
+          alt=""
+          width="74"
+          height="74"
+          loading="eager"
+          decoding="sync"
+        >
+        <span>Amado<br>Libros</span>
+      </div>
 
-      <li class="trust-item">
-        <span class="trust-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <polyline
-              points="11,2 7,10 11,10 9,18"
-              stroke="currentColor" stroke-width="1.75"
-              stroke-linecap="round" stroke-linejoin="round"
-            />
-          </svg>
-        </span>
-        <span class="trust-label">Entrega hoy en Montevideo</span>
-      </li>
+      <div class="service-grid">
+        <article class="service-card">
+          <span class="service-icon" aria-hidden="true">
+            <svg width="54" height="54" viewBox="0 0 64 64" fill="none">
+              <path d="M10 51h44M15 48V19h9v29M26 48V13h11v35M39 48V22h8v26M48 48V17l7 2v29"
+                stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+              <path d="M26 22h11M26 36h11" stroke="var(--salmon)" stroke-width="3"/>
+            </svg>
+          </span>
+          <h2>Disponibles en Amado</h2>
+          <p>Libros que tenemos en Montevideo, listos para entregar o enviar.</p>
+        </article>
 
-      <li class="trust-item">
-        <span class="trust-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="1" y="6" width="11" height="8" rx="1"
-              stroke="currentColor" stroke-width="1.5"/>
-            <path d="M12 9h3.5l2 3v2h-5.5V9z"
-              stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <circle cx="4.5" cy="15.5" r="1.5"
-              stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="14.5" cy="15.5" r="1.5"
-              stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-        </span>
-        <span class="trust-label">Envíos a todo Uruguay</span>
-      </li>
-
-      <li class="trust-item">
-        <span class="trust-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="5" width="16" height="11" rx="2"
-              stroke="currentColor" stroke-width="1.5"/>
-            <path d="M2 9h16" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="4" y="12" width="4" height="1.5" rx=".5"
-              fill="currentColor"/>
-          </svg>
-        </span>
-        <span class="trust-label">12 pagos con Mercado Pago</span>
-      </li>
-
-      <li class="trust-item">
-        <span class="trust-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="6.5" cy="6.5" r="2.5"
-              stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="13.5" cy="13.5" r="2.5"
-              stroke="currentColor" stroke-width="1.5"/>
-            <path d="M5 15L15 5"
-              stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </span>
-        <span class="trust-label">−12% pagando por transferencia</span>
-      </li>
-
-    </ul>
-  </div>
-
-  <!-- Logo (solo desktop) -->
-  <div class="hero-logo-wrap" aria-hidden="true">
-    <div class="hero-logo-card">
-      <img
-        src="/images/logo-amado.jpg"
-        alt=""
-        width="200"
-        height="200"
-        loading="eager"
-        decoding="sync"
-      >
+        <article class="service-card">
+          <span class="service-icon" aria-hidden="true">
+            <svg width="54" height="54" viewBox="0 0 64 64" fill="none">
+              <circle cx="30" cy="31" r="20" stroke="currentColor" stroke-width="2.2"/>
+              <path d="M10 31h40M30 11c7 7 9 14 9 20s-2 13-9 20M30 11c-7 7-9 14-9 20s2 13 9 20"
+                stroke="currentColor" stroke-width="2"/>
+              <path d="M49 13c-5 0-9 4-9 9 0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9Z"
+                fill="var(--salmon)" stroke="currentColor" stroke-width="1.8"/>
+              <circle cx="49" cy="22" r="2.5" fill="#fff"/>
+            </svg>
+          </span>
+          <h2>Por encargo en todo el mundo</h2>
+          <p>Conseguimos títulos en Europa, Estados Unidos y América Latina.</p>
+        </article>
+      </div>
     </div>
   </div>
 
+  <ul class="trust-strip" role="list">
+    <li>
+      <svg width="27" height="27" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M3 19h17V9H3v10Zm17-7h5l4 5v2h-9v-7Z" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="8" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="24" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+      <span>Entrega rápida en Montevideo</span>
+    </li>
+    <li>
+      <svg width="27" height="27" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M11 5 7 9l1 4-3 4 3 6 5 1 3 4 5-3 4-1 1-6-3-4 1-5-5-3-3 1-5-2Z"
+          stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+      <span>Envíos a todo Uruguay</span>
+    </li>
+    <li>
+      <svg width="27" height="27" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <circle cx="16" cy="13" r="8" stroke="currentColor" stroke-width="1.8"/>
+        <path d="m12 21-2 7 6-3 6 3-2-7M12.5 13.5l2.2 2.2 4.8-5"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Tienda Oficial en Mercado Libre</span>
+    </li>
+  </ul>
 </section>
 
 <style>
+  .hero-shell {
+    background:
+      radial-gradient(circle at 18% 30%, rgba(228, 153, 130, 0.08), transparent 34%),
+      var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
   .hero {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 3.5rem 1.5rem 3rem;
-  }
-
-  @media (min-width: 768px) {
-    .hero {
-      padding: 5rem 2rem 4.5rem;
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 4rem;
-      align-items: center;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .hero { grid-template-columns: 1fr 340px; }
-  }
-
-  /* Badge */
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    background: rgba(228, 153, 130, 0.12);
-    border: 1px solid rgba(228, 153, 130, 0.35);
-    color: var(--salmon-hover);
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.3rem 0.75rem;
-    border-radius: 999px;
-    margin-bottom: 1.25rem;
-  }
-
-  /* H1 */
-  .hero-h1 {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(1.875rem, 4.5vw, 2.75rem);
-    line-height: 1.2;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-    margin-bottom: 1.125rem;
-  }
-
-  /* Bajada */
-  .hero-lead {
-    font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
-    color: var(--ink-2);
-    line-height: 1.7;
-    max-width: 52ch;
-    margin-bottom: 0;
-  }
-
-  /* CTAs */
-  .hero-ctas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 2rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .btn-wa {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    color: var(--wa);
-    font-family: var(--font-ui);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    padding: 0.71rem 1.5rem;
-    border-radius: 999px;
-    border: 1.5px solid rgba(37, 211, 102, 0.38);
-    transition: background 0.15s, border-color 0.15s;
-    line-height: 1;
-  }
-  .btn-wa:hover {
-    background: rgba(37, 211, 102, 0.08);
-    border-color: var(--wa);
-  }
-
-  /* Trust grid */
-  .trust-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.625rem;
-    list-style: none;
   }
 
-  @media (min-width: 768px) {
-    .trust-grid { grid-template-columns: repeat(4, 1fr); }
+  .hero-content,
+  .hero-services {
+    padding: 2.5rem 1.5rem;
   }
 
-  .trust-item {
+  .hero-content {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.875rem 0.875rem 1rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-  }
-
-  .trust-icon { color: var(--salmon); display: flex; }
-
-  .trust-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1.35;
-  }
-
-  /* Logo card (desktop only) */
-  .hero-logo-wrap { display: none; }
-
-  @media (min-width: 768px) {
-    .hero-logo-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  }
-
-  .hero-logo-card {
-    background: var(--surface);
-    border-radius: var(--r-lg);
-    box-shadow:
-      0 2px 8px rgba(24, 18, 14, 0.06),
-      0 8px 32px rgba(24, 18, 14, 0.08);
-    padding: 2rem;
-    display: flex;
-    align-items: center;
     justify-content: center;
   }
 
-  .hero-logo-card img {
-    width: 200px;
-    height: 200px;
-    object-fit: contain;
-    border-radius: 0.5rem;
+  .hero-badge {
+    align-self: flex-start;
+    color: var(--salmon-hover);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero-h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.15rem, 7.6vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.04;
+    max-width: 12.5ch;
+    color: var(--ink);
+  }
+
+  .hero-lead {
+    max-width: 48ch;
+    margin-top: 1.25rem;
+    color: var(--ink-2);
+    font-size: clamp(1rem, 2vw, 1.125rem);
+    line-height: 1.6;
+  }
+
+  .hero-search {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    max-width: 650px;
+    margin-top: 1.75rem;
+    padding: 0.45rem;
+    padding-left: 1rem;
+    background: var(--surface);
+    border: 1.5px solid #d8cfc4;
+    border-radius: 0.875rem;
+    box-shadow: 0 8px 28px rgba(24, 18, 14, 0.06);
+  }
+
+  .hero-search:focus-within {
+    border-color: var(--salmon);
+    box-shadow: 0 0 0 4px rgba(228, 153, 130, 0.14);
+  }
+
+  .hero-search-icon {
+    display: flex;
+    color: var(--ink);
+  }
+
+  .hero-search input {
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font: 500 1rem/1.2 var(--font-ui);
+    padding: 0.7rem 0;
+  }
+
+  .hero-search input::placeholder { color: #8a8178; opacity: 1; }
+
+  .hero-search button {
+    min-height: 46px;
+    padding: 0.7rem 1.35rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: var(--salmon);
+    color: #fff;
+    font: 700 0.95rem/1 var(--font-ui);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+
+  .hero-search button:hover { background: var(--salmon-hover); }
+  .hero-search button:active { transform: translateY(1px); }
+
+  .hero-search-note {
+    margin-top: 0.7rem;
+    color: var(--ink-2);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .hero-services {
+    border-top: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.36);
+  }
+
+  .hero-brand {
+    display: none;
+  }
+
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .service-card {
+    min-width: 0;
+    padding: 1.25rem 0.8rem;
+    border: 1px solid #d8cfc4;
+    border-radius: var(--r);
+    background: rgba(255, 255, 255, 0.68);
+    text-align: center;
+  }
+
+  .service-icon {
+    display: inline-flex;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+  }
+
+  .service-card h2 {
+    max-width: 14ch;
+    margin: 0 auto;
+    color: var(--ink);
+    font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+    line-height: 1.25;
+  }
+
+  .service-card h2::after {
+    content: '';
+    display: block;
+    width: 34px;
+    height: 2px;
+    margin: 0.75rem auto;
+    background: var(--salmon);
+  }
+
+  .service-card p {
+    color: var(--ink-2);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .trust-strip {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    list-style: none;
+    display: grid;
+    border-top: 1px solid var(--border);
+  }
+
+  .trust-strip li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.9rem 0;
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .trust-strip li + li { border-top: 1px solid var(--border); }
+  .trust-strip svg { flex: 0 0 auto; color: var(--salmon-hover); }
+
+  @media (min-width: 700px) {
+    .hero-content,
+    .hero-services { padding: 3.5rem 2rem; }
+
+    .trust-strip {
+      grid-template-columns: repeat(3, 1fr);
+      padding: 0 2rem;
+    }
+
+    .trust-strip li {
+      justify-content: center;
+      padding: 1.1rem 1.25rem;
+      font-size: 0.86rem;
+    }
+
+    .trust-strip li + li {
+      border-top: 0;
+      border-left: 1px solid var(--border);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.12fr) minmax(390px, 0.88fr);
+      min-height: 540px;
+    }
+
+    .hero-content { padding: 4rem 3rem 4rem 2rem; }
+
+    .hero-services {
+      padding: 3rem 2rem;
+      border-top: 0;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .hero-brand img {
+      width: 74px;
+      height: 74px;
+      object-fit: cover;
+      border: 1px solid #d8cfc4;
+      border-radius: 0.75rem;
+    }
+
+    .hero-brand span {
+      font-family: var(--font-display);
+      color: var(--ink);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 0.88;
+    }
+
+    .service-card {
+      padding: 1.5rem 1rem;
+      min-height: 255px;
+    }
+
+    .service-card h2 { font-size: 1.1rem; }
+    .service-card p { font-size: 0.86rem; }
+  }
+
+  @media (min-width: 1200px) {
+    .hero-content { padding-left: 0; }
+    .hero-services { padding-right: 0; }
+  }
+
+  @media (max-width: 430px) {
+    .hero-search {
+      grid-template-columns: auto minmax(0, 1fr);
+      padding: 0.6rem 0.8rem;
+    }
+
+    .hero-search button {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+
+    .service-grid { grid-template-columns: 1fr; }
+    .service-card { display: grid; grid-template-columns: auto 1fr; text-align: left; column-gap: 0.85rem; }
+    .service-icon { grid-row: 1 / span 2; margin: 0; align-self: center; }
+    .service-card h2 { max-width: none; margin: 0; }
+    .service-card h2::after { margin: 0.6rem 0; }
   }
 </style>
