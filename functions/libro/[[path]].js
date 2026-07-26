@@ -461,7 +461,7 @@ function renderPage(item, slug, isPreview) {
         💬 Consultar por WhatsApp
       </a>
     </div>
-    <p class="shipping">🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500. <a href="/politicas#envios">Ver política de envíos</a>.</p>
+    <p class="shipping">🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000. <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
 </main>
 
@@ -529,9 +529,12 @@ export async function onRequest(context) {
 
     const slug = slugify(item.title);
 
-    // Redirect 301 si no viene el slug
+    // Redirect 301 si no viene el slug — mismo origen de la request (Preview
+    // permanece en Preview, Producción permanece en Producción). BASE queda
+    // reservado para canonical/JSON-LD, nunca para navegación real del usuario.
     if (!providedSlug) {
-        return Response.redirect(`${BASE}/libro/${id}/${slug}`, 301);
+        const origin = new URL(context.request.url).origin;
+        return Response.redirect(`${origin}/libro/${id}/${slug}`, 301);
     }
 
     const host      = new URL(context.request.url).hostname;

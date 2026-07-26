@@ -88,7 +88,7 @@ export async function onRequest(ctx) {
     if (!rawQ) {
         const rows = activeItems.map(b => {
             const slug   = slugify(b.title);
-            const href   = `${BASE}/libro/${b.id}/${slug}`;
+            const href   = `/libro/${b.id}/${slug}`;
             const author = b.author ? ` — ${escapeHtml(b.author)}` : '';
             return `    <li><a href="${escapeHtml(href)}">${escapeHtml(b.title)}${author}</a></li>`;
         }).join('\n');
@@ -99,7 +99,7 @@ export async function onRequest(ctx) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Comprar libros online en Uruguay | Amado Libros</title>
-  <meta name="description" content="${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $1.500. Envíos a todo el país.">
+  <meta name="description" content="${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $2.000. Envíos a todo el país.">
   <link rel="canonical" href="${BASE}/catalogo">
   <meta name="robots" content="index, follow">
   <script type="application/ld+json">${JSON.stringify({
@@ -171,7 +171,7 @@ ${rows}
 
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
-        const href  = escapeHtml(`${BASE}/libro/${b.id}/${slug}`);
+        const href  = escapeHtml(`/libro/${b.id}/${slug}`);
         const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
         const title = escapeHtml(b.title);
         const author = b.author
