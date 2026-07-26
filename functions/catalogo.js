@@ -168,7 +168,10 @@ ${rows}
 
     // ── Con query: resultados visuales filtrados ──────────────────────────────
     const queryTokens = tokenize(rawQ);
-    const queryDigits = onlyDigits(rawQ);
+    // Solo interpretar la consulta como ISBN cuando contiene únicamente
+    // números y separadores habituales. Una búsqueda alfanumérica como
+    // "zzzinexistente999" no debe coincidir con ISBN que contengan 999.
+    const queryDigits = /^[\d\s-]+$/.test(rawQ.trim()) ? onlyDigits(rawQ) : '';
 
     const filtered = eligibleItems
         .filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
