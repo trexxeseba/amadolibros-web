@@ -25,12 +25,22 @@
       ['delivery-address', 'Por favor ingresá la dirección de entrega.'],
       ['delivery-barrio', 'Por favor ingresá la localidad.'],
       ['delivery-departamento', 'Por favor seleccioná el departamento.'],
+    ];
+    for (var i = 0; i < required.length; i++) {
+      if (!valueOf(required[i][0])) return { message: required[i][1], field: required[i][0] };
+    }
+
+    // Fecha y horario solo se exigen para Montevideo (cadete propio) — el
+    // interior se coordina con la agencia de envíos, sin franja fija.
+    if (valueOf('delivery-departamento') !== 'Montevideo') return null;
+
+    var montevideoRequired = [
       ['delivery-date', 'Por favor ingresá la fecha preferida de entrega.'],
       ['delivery-from', 'Por favor ingresá la hora de inicio del horario.'],
       ['delivery-to', 'Por favor ingresá la hora de fin del horario.'],
     ];
-    for (var i = 0; i < required.length; i++) {
-      if (!valueOf(required[i][0])) return { message: required[i][1], field: required[i][0] };
+    for (var j = 0; j < montevideoRequired.length; j++) {
+      if (!valueOf(montevideoRequired[j][0])) return { message: montevideoRequired[j][1], field: montevideoRequired[j][0] };
     }
     if (valueOf('delivery-to') <= valueOf('delivery-from')) {
       return { message: 'La hora de fin debe ser posterior a la hora de inicio.', field: 'delivery-to' };
@@ -65,9 +75,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    // delivery-date/from/to quedan fuera de esta lista a propósito: solo
+    // aplican a Montevideo, y su required/aria-required lo controla
+    // exclusivamente carrito.astro (syncMontevideoFields) según el
+    // departamento elegido — forzarlos acá los pisaría siempre a true.
     var requiredIds = [
       'buyer-name', 'buyer-phone', 'delivery-address', 'delivery-barrio',
-      'delivery-departamento', 'delivery-date', 'delivery-from', 'delivery-to',
+      'delivery-departamento',
     ];
     for (var i = 0; i < requiredIds.length; i++) {
       var field = document.getElementById(requiredIds[i]);

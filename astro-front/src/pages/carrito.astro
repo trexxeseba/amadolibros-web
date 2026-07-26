@@ -118,25 +118,30 @@ import WAFloat from '../components/WAFloat.astro';
                 <option>Treinta y Tres</option>
               </select>
             </div>
-            <div class="form-field">
-              <label for="delivery-date" class="form-label">Fecha preferida</label>
-              <input type="date" id="delivery-date" class="form-input" autocomplete="off">
-            </div>
-            <div class="form-row">
+            <!-- Fecha/horario: solo aplican a Montevideo (entrega con cadete propio).
+                 El interior se coordina con la agencia de envíos, sin franja fija. -->
+            <div id="montevideo-fields" class="montevideo-fields" hidden>
               <div class="form-field">
-                <label for="delivery-from" class="form-label">Desde <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="time" id="delivery-from" class="form-input">
+                <label for="delivery-date" class="form-label">Fecha preferida</label>
+                <input type="date" id="delivery-date" class="form-input" autocomplete="off">
               </div>
-              <div class="form-field">
-                <label for="delivery-to" class="form-label">Hasta <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="time" id="delivery-to" class="form-input">
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="delivery-from" class="form-label">Desde <span class="form-req" aria-hidden="true">*</span></label>
+                  <input type="time" id="delivery-from" class="form-input">
+                </div>
+                <div class="form-field">
+                  <label for="delivery-to" class="form-label">Hasta <span class="form-req" aria-hidden="true">*</span></label>
+                  <input type="time" id="delivery-to" class="form-input">
+                </div>
               </div>
+              <p class="delivery-confirm-note">La fecha y la franja quedan sujetas a confirmación por WhatsApp.</p>
             </div>
+            <p id="interior-note" class="delivery-confirm-note" hidden>El envío al interior se coordina según la agencia y el destino.</p>
             <div class="form-field">
               <label for="delivery-notes" class="form-label">Notas para la entrega</label>
               <textarea id="delivery-notes" class="form-input form-textarea" rows="2" placeholder="Ej: timbre 2B, dejar con portero"></textarea>
             </div>
-            <p class="delivery-confirm-note">La fecha y la franja quedan sujetas a confirmación por WhatsApp.</p>
           </div>
         </section>
 
@@ -373,6 +378,13 @@ import WAFloat from '../components/WAFloat.astro';
     padding-top: 0.875rem;
     border-top: 1px solid var(--border);
   }
+
+  .montevideo-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+  .montevideo-fields[hidden] { display: none; }
 
   .form-req {
     color: var(--salmon);
@@ -1034,13 +1046,47 @@ import WAFloat from '../components/WAFloat.astro';
     document.addEventListener('amado:cart-updated', renderCart);
 
     // ── Toggle entrega ───────────────────────────────────────────────────
-    var deliveryRadios = document.querySelectorAll('input[name="delivery"]');
+    var deliveryRadios       = document.querySelectorAll('input[name="delivery"]');
+    var departamentoEl       = document.getElementById('delivery-departamento');
+    var montevideoFieldsEl   = document.getElementById('montevideo-fields');
+    var interiorNoteEl       = document.getElementById('interior-note');
+    var mvDateEl             = document.getElementById('delivery-date');
+    var mvFromEl             = document.getElementById('delivery-from');
+    var mvToEl               = document.getElementById('delivery-to');
+
+    // Fecha y horario solo aplican a Montevideo (cadete propio); el interior
+    // se coordina con la agencia de envíos, sin franja fija (2-K-C).
+    function syncMontevideoFields() {
+      var dept         = departamentoEl ? departamentoEl.value : '';
+      var isMontevideo = dept === 'Montevideo';
+
+      if (montevideoFieldsEl) montevideoFieldsEl.hidden = !isMontevideo;
+      if (interiorNoteEl)     interiorNoteEl.hidden      = (dept === '' || isMontevideo);
+
+      if (!isMontevideo) {
+        if (mvDateEl) mvDateEl.value = '';
+        if (mvFromEl) mvFromEl.value = '';
+        if (mvToEl)   mvToEl.value   = '';
+      }
+
+      [mvDateEl, mvFromEl, mvToEl].forEach(function (el) {
+        if (!el) return;
+        el.required = isMontevideo;
+        if (isMontevideo) el.setAttribute('aria-required', 'true');
+        else el.removeAttribute('aria-required');
+      });
+    }
+
     deliveryRadios.forEach(function (radio) {
       radio.addEventListener('change', function () {
         if (shippingFieldsEl) shippingFieldsEl.hidden = (radio.value !== 'shipping');
+        syncMontevideoFields();
         updateTotals();
       });
     });
+
+    if (departamentoEl) departamentoEl.addEventListener('change', syncMontevideoFields);
+    syncMontevideoFields();
 
     // ── Vaciar carrito ────────────────────────────────────────────────────
     var btnClear = document.getElementById('btn-clear');
@@ -1241,23 +1287,27 @@ import WAFloat from '../components/WAFloat.astro';
             if (deptEl) deptEl.focus();
             return;
           }
-          if (!prepDate) {
-            alert('Por favor ingresá la fecha preferida de entrega.');
-            var dateEl = document.getElementById('delivery-date');
-            if (dateEl) dateEl.focus();
-            return;
-          }
-          if (!prepFrom) {
-            alert('Por favor ingresá la hora de inicio del horario.');
-            var fromEl = document.getElementById('delivery-from');
-            if (fromEl) fromEl.focus();
-            return;
-          }
-          if (!prepTo) {
-            alert('Por favor ingresá la hora de fin del horario.');
-            var toEl = document.getElementById('delivery-to');
-            if (toEl) toEl.focus();
-            return;
+          // Fecha y horario solo se exigen para Montevideo — el interior se
+          // coordina con la agencia, sin franja fija.
+          if (prepDepto === 'Montevideo') {
+            if (!prepDate) {
+              alert('Por favor ingresá la fecha preferida de entrega.');
+              var dateEl = document.getElementById('delivery-date');
+              if (dateEl) dateEl.focus();
+              return;
+            }
+            if (!prepFrom) {
+              alert('Por favor ingresá la hora de inicio del horario.');
+              var fromEl = document.getElementById('delivery-from');
+              if (fromEl) fromEl.focus();
+              return;
+            }
+            if (!prepTo) {
+              alert('Por favor ingresá la hora de fin del horario.');
+              var toEl = document.getElementById('delivery-to');
+              if (toEl) toEl.focus();
+              return;
+            }
           }
         }
 
@@ -1294,13 +1344,17 @@ import WAFloat from '../components/WAFloat.astro';
         };
         if (deliveryType === 'shipping') {
           payload.shipping = {
-            address:        prepAddress,
-            locality:       prepBarrio,
-            department:     prepDepto,
-            requested_date: prepDate,
-            requested_from: prepFrom,
-            requested_to:   prepTo,
+            address:    prepAddress,
+            locality:   prepBarrio,
+            department: prepDepto,
           };
+          // Fecha/horario solo existen para Montevideo — para el interior no
+          // se inventan valores, se omiten y el backend los persiste NULL.
+          if (prepDepto === 'Montevideo') {
+            payload.shipping.requested_date = prepDate;
+            payload.shipping.requested_from = prepFrom;
+            payload.shipping.requested_to   = prepTo;
+          }
           if (prepNotes) payload.shipping.notes = prepNotes;
         }
 

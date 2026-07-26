@@ -51,6 +51,9 @@ function ctx(body, db, opts={}) {
 }
 function pickup(key='k'){ return { idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', buyer:{name:'Ana',phone:'099'} }; }
 function shipping(key='s', patch={}) { const base={ idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'G',quantity:1},{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Carlos',phone:'098'}, shipping:{address:'Calle 1',locality:'Centro',department:'Montevideo',requested_date:'2026-07-20',requested_from:'09:00',requested_to:'12:00',notes:'2B'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
+// Envío al interior (2-K-C): sin fecha/horario — reflejan lo que carrito.astro
+// ahora envía cuando el departamento no es Montevideo.
+function interiorShipping(key='i', patch={}) { const base={ idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'G',quantity:1},{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Delia',phone:'097'}, shipping:{address:'Ruta 5 km 30',locality:'Centro',department:'Canelones'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
 function stored(body, patch={}) { return { id:'uuid', idempotency_key:body.idempotency_key, request_fingerprint:generateFingerprint(body,consolidateItems(body.items)), public_code:'AL-TEST', status:'open', payment_status:'not_started', delivery_type:body.delivery_type, products_total_uyu:3250, pickup_discount_uyu:150, shipping_cost_uyu:0, payable_total_uyu:3100, currency:'UYU', expires_at:'2026-07-19T17:00:00.000Z', ...patch }; }
 function handler(fetchCatalog=async()=>CATALOG, now=NOW, verifyTurnstileToken=TS_OK){ return createOrdersHandler({fetchCatalog,getNow:()=>new Date(now),verifyTurnstileToken}); }
 
@@ -105,6 +108,50 @@ test('fecha de Uruguay no se adelanta por UTC', async()=>{
 test('fecha y horas imposibles o desordenadas devuelven 400', async()=>{
   const cases=[shipping('d',{shipping:{requested_date:'2026-02-31'}}),shipping('h',{shipping:{requested_from:'28:75'}}),shipping('o',{shipping:{requested_from:'14:00',requested_to:'14:00'}})];
   for(const b of cases) assert.equal((await call(b)).response.status,400);
+});
+
+// ── 2-K-C: entrega según departamento (fecha/horario solo Montevideo) ──────────
+
+test('2kc-1: Montevideo sin fecha devuelve 400', async()=>{
+  assert.equal((await call(shipping('mvd-nodate',{shipping:{requested_date:undefined}}))).response.status,400);
+});
+
+test('2kc-2: Montevideo sin hora desde/hasta devuelve 400', async()=>{
+  assert.equal((await call(shipping('mvd-nofrom',{shipping:{requested_from:undefined}}))).response.status,400);
+  assert.equal((await call(shipping('mvd-noto',{shipping:{requested_to:undefined}}))).response.status,400);
+});
+
+test('2kc-3: Montevideo con fecha/horario válidos se acepta', async()=>{
+  const r=await call(shipping('mvd-ok')); assert.equal(r.response.status,201);
+});
+
+test('2kc-4: "montevideo" con espacios/mayúsculas distintas se trata como Montevideo', async()=>{
+  assert.equal((await call(shipping('mvd-case-bad',{shipping:{department:'  MonteVideo  ',requested_date:undefined}}))).response.status,400);
+  assert.equal((await call(shipping('mvd-case-ok',{shipping:{department:'  MonteVideo  '}}))).response.status,201);
+});
+
+test('2kc-5: interior sin fecha ni horarios se acepta', async()=>{
+  const r=await call(interiorShipping('int-ok')); assert.equal(r.response.status,201);
+});
+
+test('2kc-6: interior persiste fecha/horario como NULL aunque lleguen valores (ej. cambio previo desde Montevideo sin limpiar)', async()=>{
+  const d=dbMock();
+  const b=interiorShipping('int-null',{shipping:{requested_date:'2026-07-20',requested_from:'09:00',requested_to:'10:00'}});
+  const r=await call(b,d); assert.equal(r.response.status,201);
+  const args=d.committed[0].stmt.args; // orderStmt es el primer statement del batch
+  assert.equal(args[10],null); // requested_delivery_date
+  assert.equal(args[11],null); // requested_delivery_from
+  assert.equal(args[12],null); // requested_delivery_to
+});
+
+test('2kc-7: dirección/localidad/departamento siguen obligatorios para cualquier envío', async()=>{
+  assert.equal((await call(interiorShipping('int-noaddr',{shipping:{address:undefined}}))).response.status,400);
+  assert.equal((await call(interiorShipping('int-noloc',{shipping:{locality:undefined}}))).response.status,400);
+  assert.equal((await call(interiorShipping('int-nodept',{shipping:{department:undefined}}))).response.status,400);
+});
+
+test('2kc-8: retiro (pickup) no se ve afectado', async()=>{
+  const r=await call(pickup('pickup-2kc')); assert.equal(r.response.status,201); assert.equal(r.data.order.delivery_type,'pickup');
 });
 
 test('batch fallido devuelve 500 sin commit', async()=>{

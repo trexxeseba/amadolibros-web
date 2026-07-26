@@ -1,6 +1,7 @@
 import {
   validateBody,
   validateShippingDate,
+  isMontevideoDepartment,
   consolidateItems,
   buildSnapshot,
   calculateTotals,
@@ -87,7 +88,10 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       return json({ error: 'Error interno. Intentá de nuevo.' }, 500);
     }
 
-    if (body.delivery_type === 'shipping') {
+    const isMontevideoShipping = body.delivery_type === 'shipping' &&
+      isMontevideoDepartment(body.shipping.department);
+
+    if (isMontevideoShipping) {
       const dateError = validateShippingDate(
         body.shipping.requested_date,
         body.shipping.requested_from,
@@ -150,6 +154,12 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     const createdAt = now.toISOString();
     const expiresAt = new Date(now.getTime() + EXPIRY_MINUTES * 60 * 1000).toISOString();
     const shipping = body.shipping || {};
+    // Fuera de Montevideo, fecha y horario nunca se persisten aunque el
+    // cliente los haya enviado — no hay franja que coordinar, y no se
+    // inventan valores. Consistente con generateFingerprint().
+    const requestedDate = isMontevideoShipping ? (shipping.requested_date || null) : null;
+    const requestedFrom = isMontevideoShipping ? (shipping.requested_from || null) : null;
+    const requestedTo   = isMontevideoShipping ? (shipping.requested_to   || null) : null;
 
     const orderStmt = db.prepare(
       'INSERT INTO orders (' +
@@ -182,9 +192,9 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       typeof shipping.address === 'string' ? shipping.address.trim() : null,
       typeof shipping.locality === 'string' ? shipping.locality.trim() : null,
       typeof shipping.department === 'string' ? shipping.department.trim() : null,
-      shipping.requested_date || null,
-      shipping.requested_from || null,
-      shipping.requested_to || null,
+      requestedDate,
+      requestedFrom,
+      requestedTo,
       typeof shipping.notes === 'string' && shipping.notes.trim() ? shipping.notes.trim() : null,
       productsTotal,
       pickupDiscount,

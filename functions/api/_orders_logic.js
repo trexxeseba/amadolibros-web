@@ -38,6 +38,14 @@ function isValidTimeString(value) {
   return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
 }
 
+// Fecha y horario de entrega solo aplican al envío dentro de Montevideo
+// (cadete propio, franja coordinada) — el interior se coordina con la
+// agencia de envíos según destino, sin franja fija (2-K-C). Comparación
+// normalizada (trim + minúsculas) para no depender de cómo llegue el string.
+export function isMontevideoDepartment(department) {
+  return typeof department === 'string' && department.trim().toLowerCase() === 'montevideo';
+}
+
 export function validateBody(body) {
   if (!isRecord(body)) return 'Body inválido.';
 
@@ -79,9 +87,11 @@ export function validateBody(body) {
     if (!isNonEmptyString(shipping.department)) return 'Departamento requerido.';
     if (shipping.department.trim().length > MAX_DEPARTMENT_LEN) return 'Departamento demasiado largo.';
 
-    if (!isValidDateString(shipping.requested_date)) return 'Fecha inválida (formato YYYY-MM-DD).';
-    if (!isValidTimeString(shipping.requested_from)) return 'Hora desde inválida (formato HH:MM).';
-    if (!isValidTimeString(shipping.requested_to)) return 'Hora hasta inválida (formato HH:MM).';
+    if (isMontevideoDepartment(shipping.department)) {
+      if (!isValidDateString(shipping.requested_date)) return 'Fecha inválida (formato YYYY-MM-DD).';
+      if (!isValidTimeString(shipping.requested_from)) return 'Hora desde inválida (formato HH:MM).';
+      if (!isValidTimeString(shipping.requested_to)) return 'Hora hasta inválida (formato HH:MM).';
+    }
 
     if (shipping.notes !== undefined && shipping.notes !== null) {
       if (typeof shipping.notes !== 'string') return 'Notas inválidas.';
@@ -210,13 +220,16 @@ export function generateFingerprint(body, consolidatedItems) {
   };
 
   if (body.delivery_type === 'shipping') {
+    const montevideo = isMontevideoDepartment(body.shipping.department);
     fingerprint.shipping = {
       address: body.shipping.address.trim(),
       locality: body.shipping.locality.trim(),
       department: body.shipping.department.trim(),
-      requested_date: body.shipping.requested_date,
-      requested_from: body.shipping.requested_from,
-      requested_to: body.shipping.requested_to,
+      // Fuera de Montevideo estos campos no aplican — se fija null acá para
+      // que el fingerprint sea consistente con lo que realmente se persiste.
+      requested_date: montevideo ? body.shipping.requested_date : null,
+      requested_from: montevideo ? body.shipping.requested_from : null,
+      requested_to: montevideo ? body.shipping.requested_to : null,
       notes: typeof body.shipping.notes === 'string' ? body.shipping.notes.trim() : '',
     };
   }

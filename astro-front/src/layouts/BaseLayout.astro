@@ -1,4 +1,6 @@
 ---
+import CatalogSearchOverlay from '../components/CatalogSearchOverlay.astro';
+
 interface Props {
   title?: string;
   description?: string;
@@ -88,5 +90,6 @@ const enableGA4  = indexable && !!gaId;
 </head>
 <body>
   <slot />
+  <CatalogSearchOverlay />
 </body>
 </html>
