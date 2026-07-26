@@ -76,9 +76,14 @@ export async function onRequest(ctx) {
     const catalog = await fetchCatalog(ctx);
     const items   = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
 
-    // Solo items activos. Paused se muestran en la home como "por encargo" pero
-    // aquí se omiten para no inflar el índice con páginas de stock incierto.
-    const activeItems = items.filter(b => b.status === 'active');
+    // El índice SEO sin búsqueda mantiene únicamente disponibles. Los pausados
+    // y activos sin stock existen para la búsqueda humana como "por encargo".
+    const eligibleItems = items.filter(
+        b => b.status === 'active' || b.status === 'paused'
+    );
+    const activeItems = eligibleItems.filter(
+        b => b.status === 'active' && Number(b.available_quantity) > 0
+    );
 
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
@@ -163,9 +168,18 @@ ${rows}
 
     // ── Con query: resultados visuales filtrados ──────────────────────────────
     const queryTokens = tokenize(rawQ);
-    const queryDigits = onlyDigits(rawQ);
+    // Solo interpretar la consulta como ISBN cuando contiene únicamente
+    // números y separadores habituales. Una búsqueda alfanumérica como
+    // "zzzinexistente999" no debe coincidir con ISBN que contengan 999.
+    const queryDigits = /^[\d\s-]+$/.test(rawQ.trim()) ? onlyDigits(rawQ) : '';
 
-    const filtered  = activeItems.filter(b => itemMatchesQuery(b, queryTokens, queryDigits));
+    const filtered = eligibleItems
+        .filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
+        .sort((a, b) => {
+            const aAvailable = a.status === 'active' && Number(a.available_quantity) > 0;
+            const bAvailable = b.status === 'active' && Number(b.available_quantity) > 0;
+            return Number(bAvailable) - Number(aAvailable);
+        });
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
 
@@ -177,26 +191,36 @@ ${rows}
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
-        const price    = Number(b.price) || 0;
-        const transfer = Math.round(price * 0.88).toLocaleString('es-UY');
-        const priceStr = price.toLocaleString('es-UY');
+        const available = b.status === 'active' && Number(b.available_quantity) > 0;
+        const price     = Number(b.price) || 0;
+        const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
+        const priceStr  = price.toLocaleString('es-UY');
         const loading  = idx < 8 ? 'eager' : 'lazy';
+        const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar disponibilidad de: ${b.title}`)}`;
         const imgTag = img
             ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
             : `<div class="rc-no-img">📚</div>`;
 
-        return `<a href="${href}" class="rc-card">
-  <div class="rc-img">${imgTag}</div>
+        return `<article class="rc-card${available ? '' : ' is-order'}">
+  <a href="${href}" class="rc-img">${imgTag}</a>
   <div class="rc-body">
-    <p class="rc-title">${title}</p>
+    <span class="rc-badge ${available ? 'available' : 'order'}">${available ? 'Disponible' : 'Por encargo'}</span>
+    <a href="${href}" class="rc-title-link"><p class="rc-title">${title}</p></a>
     ${author}
-    <div class="rc-prices">
+    ${available
+      ? `<div class="rc-prices">
       <span class="rc-transfer"><span class="rc-lbl">Transferencia:</span> $${escapeHtml(transfer)}</span>
       <span class="rc-base">Precio: $${escapeHtml(priceStr)}</span>
     </div>
-    <span class="rc-cta">Ver ficha →</span>
+    <a href="${href}" class="rc-cta">Ver ficha →</a>`
+      : `<div class="rc-order-info">
+      <strong>Entrega estimada: 15–20 días</strong>
+      <span>Sujeto a confirmación de disponibilidad.</span>
+    </div>
+    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>`
+    }
   </div>
-</a>`;
+</article>`;
     }).join('\n');
 
     const subText = filtered.length === 0
@@ -230,10 +254,11 @@ ${rows}
     @media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr)}}
     .rc-card{display:flex;flex-direction:column;background:#fff;
              border:1px solid #e2dbd0;border-radius:.75rem;overflow:hidden;
-             text-decoration:none;color:inherit;
+             color:inherit;
              transition:box-shadow .15s}
     .rc-card:hover{box-shadow:0 4px 16px rgba(24,18,14,.1)}
-    .rc-img{aspect-ratio:3/4;background:#ede9e1;overflow:hidden}
+    .rc-card.is-order{border-color:#e8c9a0}
+    .rc-img{display:block;aspect-ratio:3/4;background:#ede9e1;overflow:hidden}
     .rc-img img{width:100%;height:100%;object-fit:cover;display:block;
                 transition:transform .25s}
     .rc-card:hover .rc-img img{transform:scale(1.04)}
@@ -242,6 +267,8 @@ ${rows}
     .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
     .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .rc-title-link{text-decoration:none;color:inherit}
+    .rc-title-link:hover .rc-title{color:#a94e3d}
     .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
@@ -258,10 +285,21 @@ ${rows}
                        white-space:nowrap}
     .search-bar button:hover{background:#2d1f14}
     .wa-link{color:#15803d;font-weight:500}
+    .rc-badge{display:inline-flex;align-self:flex-start;padding:.18rem .55rem;
+              border-radius:999px;font-size:.68rem;font-weight:800;
+              letter-spacing:.05em;text-transform:uppercase}
+    .rc-badge.available{color:#267a42;background:#eaf7ee}
+    .rc-badge.order{color:#8a4b08;background:#fff2dc}
+    .rc-order-info{display:flex;flex-direction:column;gap:.15rem;margin-top:.35rem;
+                   color:#6b4b2a;font-size:.8rem;line-height:1.4}
+    .rc-order-info span{color:#7c6b59;font-size:.75rem}
     .rc-cta{display:inline-block;margin-top:auto;padding:.3rem .75rem;
             border:1px solid #e2dbd0;border-radius:2rem;font-size:.78rem;
-            font-weight:600;color:#18120e;background:#f5f0ea;align-self:flex-start}
+            font-weight:600;color:#18120e;background:#f5f0ea;align-self:flex-start;
+            text-decoration:none}
     .rc-card:hover .rc-cta{background:#e2dbd0}
+    .rc-cta.rc-wa{color:#117a37;border-color:#b9dfc7;background:#effaf3}
+    .rc-card:hover .rc-cta.rc-wa{background:#dcf5e5}
     .empty{padding:2rem 0;color:#64748b;font-size:.95rem}
     footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e2e8f0;
            font-size:.78rem;color:#94a3b8}
