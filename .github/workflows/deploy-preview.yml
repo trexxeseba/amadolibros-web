@@ -2,7 +2,8 @@ name: Deploy Astro Preview
 
 on:
   push:
-    branches: [astro-migration]
+    branches-ignore:
+      - main
   # Sin workflow_dispatch para evitar disparos manuales accidentales.
 
 jobs:
@@ -21,6 +22,18 @@ jobs:
         # usando el último home.json commiteado como fallback.
         run: node scripts/generate-home-json.js
         continue-on-error: true
+
+      - name: Test orders
+        run: node --test functions/api/__tests__/orders.test.js
+
+      - name: Test preferences
+        run: node --test functions/api/__tests__/preferences.test.js
+
+      - name: Test MP webhook
+        run: node --test functions/api/__tests__/mp_webhook.test.js
+
+      - name: Test order status
+        run: node --test functions/api/__tests__/order_status.test.js
 
       - name: Build Astro
         run: |
@@ -42,7 +55,10 @@ jobs:
           ! grep -q "Cache-Control: no-store" astro-front/dist/_headers
 
       - name: Deploy preview to CF Pages
-        run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch astro-migration
+        # --branch usa el nombre real de la rama (Cloudflare Pages sanea/trunca
+        # el alias resultante automáticamente, como ya ocurre hoy con ramas
+        # largas: ver docs/environments.md).
+        run: npx wrangler@3 pages deploy ./astro-front/dist --project-name amadolibros-web --branch "${GITHUB_REF_NAME}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
