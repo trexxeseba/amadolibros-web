@@ -8,6 +8,7 @@ const CATALOG = {
   items: [
     {
       id: 'MLU1', title: 'Alpha disponible', author: 'Autora Uno',
+      isbn: '9789991234567',
       price: 1000, status: 'active', available_quantity: 2,
       thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU1',
     },
