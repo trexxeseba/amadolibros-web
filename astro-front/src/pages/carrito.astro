@@ -159,8 +159,29 @@ import WAFloat from '../components/WAFloat.astro';
           </div>
         </section>
 
-        <!-- Acciones de pago -->
-        <section class="cart-pay-section">
+        <!-- Cierre asistido por WhatsApp -->
+        <section class="cart-pay-section" aria-labelledby="cart-checkout-title">
+          <h2 id="cart-checkout-title" class="cart-checkout-title">Finalizá tu pedido</h2>
+          <p class="pay-note">
+            Enviá el carrito y confirmamos contigo el stock, la entrega y el total final.
+          </p>
+          <button type="button" id="btn-wa-order" class="btn-wa-order">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+            </svg>
+            Enviar pedido por WhatsApp
+          </button>
+          <p class="checkout-reassurance">
+            No pagás ahora. Te enviamos los datos para transferencia o un link de Mercado Pago.
+          </p>
+        </section>
+
+        <!-- Pago online (Mercado Pago). Nace oculto y solo se muestra si el
+             backend confirma que CHECKOUT_ENABLED está activo — la autoridad
+             es exclusivamente del servidor. Con el kill switch apagado, esta
+             sección nunca aparece y WhatsApp queda como único cierre. -->
+        <section id="online-pay-section" class="cart-pay-section online-pay-section" hidden>
+          <p class="online-pay-or">o pagá online ahora</p>
           <div id="cf-ts-container"></div>
           <button type="button" id="btn-prepare-order" class="btn-prepare-order">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -174,12 +195,6 @@ import WAFloat from '../components/WAFloat.astro';
             Registramos tu pedido y te contactamos por WhatsApp para coordinar
             el pago y la entrega.
           </p>
-          <button type="button" id="btn-wa-order" class="btn-wa-order">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
-            </svg>
-            Finalizar pedido por WhatsApp
-          </button>
         </section>
 
         <div id="order-result" class="order-result" hidden>
@@ -421,12 +436,36 @@ import WAFloat from '../components/WAFloat.astro';
     margin-top: 0.25rem;
   }
 
-  /* ── Sección de pago ───────────────────────────── */
+  /* ── Cierre por WhatsApp ───────────────────────── */
   .cart-pay-section {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding-top: 0.5rem;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+  }
+
+  .cart-checkout-title {
+    font-family: var(--font-ui);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: center;
+  }
+
+  /* ── Pago online (solo visible con CHECKOUT_ENABLED activo) ── */
+  .online-pay-section {
+    margin-top: 0.75rem;
+  }
+
+  .online-pay-or {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-align: center;
+    text-transform: lowercase;
   }
 
   .btn-prepare-order {
@@ -487,9 +526,9 @@ import WAFloat from '../components/WAFloat.astro';
   }
 
   .pay-note {
-    font-size: 0.82rem;
+    font-size: 0.875rem;
     color: var(--ink-2);
-    line-height: 1.6;
+    line-height: 1.5;
     text-align: center;
   }
 
@@ -508,9 +547,22 @@ import WAFloat from '../components/WAFloat.astro';
     font-weight: 700;
     cursor: pointer;
     width: 100%;
-    transition: background 0.15s;
+    min-height: 48px;
+    transition: background 0.15s, transform 0.15s;
   }
   .btn-wa-order:hover { background: var(--wa-hover); }
+  .btn-wa-order:active { transform: translateY(1px); }
+  .btn-wa-order:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .checkout-reassurance {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    line-height: 1.5;
+    text-align: center;
+  }
 
   /* ── Items creados por JS ──────────────────────── */
   :global(.cart-item) {
@@ -1031,7 +1083,7 @@ import WAFloat from '../components/WAFloat.astro';
 
         var subtotal = window.AmadoCart.subtotal();
 
-        var lines = ['Hola Amado Libros! Quiero hacer este pedido:'];
+        var lines = ['PEDIDO WEB', '', 'Hola Amado Libros! Quiero hacer este pedido:'];
         lines.push('');
         for (var i = 0; i < cart.items.length; i++) {
           var it = cart.items[i];
@@ -1106,6 +1158,36 @@ import WAFloat from '../components/WAFloat.astro';
         btnPayMp.textContent = 'Pagar con Mercado Pago';
       });
     }
+
+    // ── Gate de CHECKOUT_ENABLED ─────────────────────────────────────────────
+    // El kill switch es autoridad exclusiva del backend y no está disponible en
+    // el build estático. Se consulta al propio endpoint endurecido con un body
+    // vacío: la comprobación de CHECKOUT_ENABLED ocurre antes de validar el
+    // body, así que la sonda no crea pedidos, no llama a Mercado Pago y no
+    // escribe en D1.
+    //   - checkout activo   → 400 MISSING_PUBLIC_CODE
+    //   - kill switch off   → 503 checkout_temporarily_unavailable
+    //   - config incompleta → 503 (sin code) / MP_NOT_CONFIGURED
+    // Solo el primer caso habilita el pago online. Cualquier otro resultado,
+    // incluido un error de red, deja la sección oculta y WhatsApp como cierre.
+    var checkoutAvailable = false;
+
+    function probeCheckoutEnabled() {
+      return fetch('/api/preferences', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    '{}',
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (d) { return d && d.code === 'MISSING_PUBLIC_CODE'; })
+        .catch(function () { return false; });
+    }
+
+    probeCheckoutEnabled().then(function (enabled) {
+      checkoutAvailable = enabled;
+      var onlineSection = document.getElementById('online-pay-section');
+      if (enabled && onlineSection) onlineSection.hidden = false;
+    });
 
     // ── Preparar pago online ─────────────────────────────────────────────────
     var btnPrepare  = document.getElementById('btn-prepare-order');
@@ -1245,7 +1327,9 @@ import WAFloat from '../components/WAFloat.astro';
           if (resultEl)    resultEl.hidden = false;
           btnPrepare.textContent = 'Pedido preparado';
 
-          if (tsIsPreview) {
+          // El botón de pago real depende del kill switch del backend, no del
+          // ambiente: si CHECKOUT_ENABLED está apagado nunca se llega acá.
+          if (checkoutAvailable) {
             mpPublicCode     = data.order.public_code;
             mpIdempotencyKey = cart.idempotency_key;
             var noteEl = document.getElementById('order-result-note');
