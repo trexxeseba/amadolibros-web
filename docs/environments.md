@@ -1,10 +1,15 @@
-# Ambientes — Preview y Production (2-N-E1)
+# Ambientes — Preview y Production (2-N-E1, actualizado en 2-N-G2)
 
 Este documento describe la configuración centralizada introducida en 2-N-E1
 (`functions/api/_env_config.js`). El código queda preparado para operar en
-Preview y Production. Production ya tiene D1 propia y hosts declarados, pero
-el checkout permanece apagado y oculto: no hay credenciales LIVE ni Turnstile
-de Production configurados.
+Preview y Production. Production ya tiene D1 propia, hosts declarados,
+`MP_COLLECTOR_ID` confirmado y site key pública de Turnstile inyectada por
+`deploy.yml` (2-N-G2) — pero el checkout permanece apagado y oculto:
+`CHECKOUT_ENABLED` y `PUBLIC_CHECKOUT_ENABLED` siguen en `"false"` y
+Mercado Pago no procesa ningún cobro real. `MP_ACCESS_TOKEN` y
+`MP_WEBHOOK_SECRET` de Production están presentes por nombre en el dashboard
+de Cloudflare Pages (confirmado en la auditoría 2-N-G1); sus valores no se
+leen, validan ni modifican desde este repo ni en este lote.
 
 ## Principio general
 
@@ -15,17 +20,19 @@ responde fail-closed (503) sin asumir ningún valor por defecto.
 
 ## Matriz de variables
 
-| Variable | Preview (valor actual) | Production (valor propuesto, no aplicado) | Tipo | Obligatoria | Si falta o es inválida | Quién la configura |
+| Variable | Preview (valor actual) | Production (valor actual — checkout sigue apagado) | Tipo | Obligatoria | Si falta o es inválida | Quién la configura |
 |---|---|---|---|---|---|---|
 | `APP_ENV` | `preview` | `production` | var (`wrangler.toml`) | Sí | 503 en todos los endpoints de pagos/pedidos | Repo — `wrangler.toml` |
-| `MP_COLLECTOR_ID` | `3559407834` (collector de la cuenta TEST) | Collector real de la cuenta LIVE — **a confirmar empíricamente antes de 2-N-E2**, no asumir el `440298103` documentado como owner de la app | var | Sí | 503 fail-closed | Repo — `wrangler.toml` |
+| `MP_COLLECTOR_ID` | `3559407834` (collector de la cuenta TEST) | `440298103` — **confirmado en 2-N-G2**. No confundir con el número de aplicación de Mercado Pago (`6816864196905927`), que es solo informativo y no se usa en runtime | var | Sí | 503 fail-closed | Repo — `wrangler.toml` |
 | `CHECKOUT_ENABLED` | `"true"` | `"false"` | var | No (ausente = deshabilitado) | `POST /api/orders` y `POST /api/preferences` responden `503 checkout_temporarily_unavailable`; webhook, `/api/orders/status` y `/pedido` siguen funcionando | Repo — `wrangler.toml` |
 | `PUBLIC_CHECKOUT_ENABLED` | Según build de Preview | `"false"` | variable de build pública | Sí para mostrar el checkout | Los botones y el flujo de pago online no se renderizan | Workflow de build/deploy |
-| `CANONICAL_ORIGIN` | `https://feature-2-n-e1-production-re.amadolibros-web.pages.dev` (alias truncado por Cloudflare Pages — el nombre completo de la rama no entra en el límite de un label DNS) | `https://www.amadolibros.com` (propuesto) | var | Sí | 503 fail-closed | Repo — `wrangler.toml` |
-| `ALLOWED_HOSTS` | No aplica — Preview usa una validación estructural (ver abajo), no una lista | `amadolibros.com,www.amadolibros.com` (propuesto) | var | Sí en Production | 503 fail-closed en Production | Repo — `wrangler.toml` (bloque `env.production`, a crear en 2-N-E2) |
-| `MP_ACCESS_TOKEN` | Token TEST de la app MP | Token LIVE — **no cargar en este lote** | secret | Sí | `503 MP_NOT_CONFIGURED` (preferencias) / `503` sin cuerpo (webhook) | Dashboard de Cloudflare Pages — nunca en el repo |
-| `MP_WEBHOOK_SECRET` | Secret del webhook configurado para la URL de Preview | Secret del webhook Production — requiere su propia entrada en el panel de MP | secret | Sí | `503` sin cuerpo | Dashboard de Cloudflare Pages |
-| `TURNSTILE_SECRET_KEY` | Secret del widget `amadolibros-orders-preview` | Secret de un widget Production **todavía no creado** | secret | Sí | `503 TS_NOT_CONFIGURED` — bloquea la creación de pedidos, Turnstile nunca se desactiva silenciosamente | Dashboard de Cloudflare Pages |
+| `PUBLIC_TURNSTILE_SITE_KEY` | **Pendiente.** No hay un workflow de GitHub efectivo identificado que construya el Preview con checkout — ver "Pendientes" | `0x4AAAAAAD_Ul8KGae_hdWwj` (inyectada en `deploy.yml`, no es secreta) | variable de build pública | Sí para cargar el widget | El script de `carrito.astro` nunca carga Turnstile ni permite preparar el pago (falla cerrado) | Workflow de build/deploy |
+| `PUBLIC_TURNSTILE_ALLOWED_HOSTS` | **Pendiente**, mismo motivo que la fila anterior | `amadolibros.com,www.amadolibros.com` | variable de build pública | Sí para cargar el widget | Mismo fail-closed que la site key ausente | Workflow de build/deploy |
+| `CANONICAL_ORIGIN` | `https://feature-2-n-e1-production-re.amadolibros-web.pages.dev` (alias truncado por Cloudflare Pages — el nombre completo de la rama no entra en el límite de un label DNS) | `https://www.amadolibros.com` | var | Sí | 503 fail-closed | Repo — `wrangler.toml` |
+| `ALLOWED_HOSTS` | No aplica — Preview usa una validación estructural (ver abajo), no una lista | `amadolibros.com,www.amadolibros.com` | var | Sí en Production | 503 fail-closed en Production | Repo — `wrangler.toml` (bloque `env.production`) |
+| `MP_ACCESS_TOKEN` | Token TEST de la app MP | **Presente por nombre** en Cloudflare Pages Production (confirmado en auditoría 2-N-G1); su valor no fue leído ni validado en 2-N-G2 | secret | Sí | `503 MP_NOT_CONFIGURED` (preferencias) / `503` sin cuerpo (webhook) | Dashboard de Cloudflare Pages — nunca en el repo |
+| `MP_WEBHOOK_SECRET` | Secret del webhook configurado para la URL de Preview | **Presente por nombre** en Cloudflare Pages Production (confirmado en auditoría 2-N-G1); su valor no fue leído ni validado en 2-N-G2 | secret | Sí | `503` sin cuerpo | Dashboard de Cloudflare Pages |
+| `TURNSTILE_SECRET_KEY` | Secret del widget `amadolibros-orders-preview` | Secret del widget Production — **ya cargado manualmente en el dashboard de Cloudflare Pages** (2-N-G2); su valor nunca se lee, imprime ni versiona desde este repo | secret | Sí | `503 TS_NOT_CONFIGURED` — bloquea la creación de pedidos, Turnstile nunca se desactiva silenciosamente | Dashboard de Cloudflare Pages |
 | `ORDERS_DB` (binding D1) | `amadolibros-orders-preview` | `amadolibros-orders-production` | binding D1 | Sí | `503` sin fallback a Preview, memoria u otra base | `wrangler.toml` |
 
 ## Origen canónico vs. hosts aceptados
@@ -60,15 +67,36 @@ Son dos conceptos deliberadamente separados:
 
 ## Turnstile por ambiente
 
-- Preview: widget `amadolibros-orders-preview` (modo `managed`, dominio
-  `amadolibros-web.pages.dev`), secret en `TURNSTILE_SECRET_KEY` de
-  Preview únicamente.
-- Production: **sin crear todavía**. Va a necesitar su propio widget
-  (dominio `amadolibros.com`/`www.amadolibros.com`) y su propio secret.
-  El hostname esperado por `verifyTurnstile()` ya no tiene un valor por
-  defecto hardcodeado — se toma de `resolveConfig()`, así que si falta la
-  configuración, la verificación falla cerrada (bloquea la creación de
-  pedidos) en vez de aceptar cualquier hostname.
+Hay dos mitades independientes, backend y frontend, ambas fail-closed:
+
+- **Backend** (`verifyTurnstile()` en `_turnstile.js`, vía
+  `resolveConfig()`): valida el token contra el hostname esperado del
+  ambiente. Preview usa el widget `amadolibros-orders-preview` (modo
+  `managed`, dominio `amadolibros-web.pages.dev`) con su
+  `TURNSTILE_SECRET_KEY` propio. Production usa su propio widget
+  (dominio `amadolibros.com`/`www.amadolibros.com`); su
+  `TURNSTILE_SECRET_KEY` ya está cargado en el dashboard de Cloudflare
+  Pages (2-N-G2) — su valor no vive ni se lee desde este repo. Si falta
+  la configuración de cualquiera de los dos lados, la verificación falla
+  cerrada (bloquea la creación de pedidos) en vez de aceptar cualquier
+  hostname.
+- **Frontend** (`carrito.astro`, desde 2-N-G2): la site key pública y los
+  hosts permitidos para cargar el widget ya no están hardcodeados ni se
+  infieren del hostname del navegador — se inyectan en build time vía
+  `PUBLIC_TURNSTILE_SITE_KEY`/`PUBLIC_TURNSTILE_ALLOWED_HOSTS` (ver
+  matriz arriba). El matching de hosts es por labels completos, nunca
+  por substring (`evil-amadolibros.com` o `amadolibros.com.evil.example`
+  nunca matchean `amadolibros.com`); está probado en
+  `astro-front/src/lib/__tests__/turnstile-hosts.test.js`. Si el checkout
+  está habilitado pero la site key falta o el host actual no está en la
+  lista, el widget nunca se carga y "Preparar pago online" muestra un
+  error controlado en vez de mandar la request sin verificación.
+  **Solo Production tiene esta configuración conectada a un workflow real
+  (`deploy.yml`).** Para Preview la mecánica está lista en el código
+  (`carrito.astro` acepta las mismas variables) pero **no hay ningún
+  workflow de GitHub identificado como efectivo** para construir un
+  Preview con checkout — ver "Pendientes" más abajo. No se afirma que
+  Preview quede configurado por este lote.
 
 ## Collector por ambiente
 
@@ -134,14 +162,30 @@ y exclusivamente en base al estado que devuelve `POST
    validando ahora mismo; cualquier otra rama de preview que intente usar
    checkout va a generar `notification_url`/`back_urls` apuntando a esta
    rama hasta que se resuelva el alcance (por rama, o con otra estrategia).
-2. **`MP_COLLECTOR_ID` de Production no está confirmado.** El valor
-   documentado como owner de la app (`440298103`) no debe asumirse como el
-   collector real de pagos LIVE sin verificarlo empíricamente, tal como se
-   tuvo que corregir para el collector de TEST en el fix de `live_mode`
-   (commit `6e3e181`).
-3. **Faltan el widget/secret de Turnstile y las credenciales LIVE de
-   Production.** No se crean ni cargan en este lote.
-4. **La activación exige dos llaves explícitas.** El backend requiere
-   `CHECKOUT_ENABLED="true"` y el frontend debe compilarse con
-   `PUBLIC_CHECKOUT_ENABLED="true"`. Mientras cualquiera permanezca apagada,
-   no se ofrece el flujo de cobro.
+2. **`MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` de Production están presentes
+   por nombre** en el dashboard de Cloudflare Pages (confirmado en la
+   auditoría 2-N-G1), y `MP_COLLECTOR_ID` (`440298103`) está confirmado y
+   cargado (2-N-G2). Lo que falta es **validar funcionalmente** esas dos
+   credenciales (que el token sea válido, que el secret del webhook sea
+   el correcto) — ese valor no se lee, no se prueba ni se modifica desde
+   este repo ni en este lote.
+3. **No existe actualmente un workflow de GitHub identificado como
+   efectivo para desplegar un Preview con el checkout de Mercado Pago.**
+   `deploy-preview.yml` sigue exactamente como en `origin/main` (trigger
+   limitado a la rama `astro-migration`, que no tiene código de pagos) —
+   2-N-G2 no lo modificó. La configuración pública de Turnstile para
+   Preview (`PUBLIC_TURNSTILE_SITE_KEY`/`PUBLIC_TURNSTILE_ALLOWED_HOSTS`
+   con los valores `0x4AAAAAAD6E9kz8K3comwjj` /
+   `amadolibros-web.pages.dev,.amadolibros-web.pages.dev`) queda
+   documentada acá como pendiente de conectar el día que se identifique o
+   cree el pipeline efectivo — no se afirma que Preview haya quedado
+   configurado por este lote.
+4. **La activación exige varias llaves explícitas, no solo una.** El
+   backend requiere `CHECKOUT_ENABLED="true"`, el frontend debe
+   compilarse con `PUBLIC_CHECKOUT_ENABLED="true"`, y además necesita
+   `PUBLIC_TURNSTILE_SITE_KEY`/`PUBLIC_TURNSTILE_ALLOWED_HOSTS` válidos
+   para el host que sirve la página — si falta cualquiera de estas
+   últimas dos, el checkout no se oculta pero el pago queda bloqueado
+   igual (fail-closed) hasta que se corrija. Mientras `CHECKOUT_ENABLED`
+   o `PUBLIC_CHECKOUT_ENABLED` permanezcan apagadas, no se ofrece el
+   flujo de cobro en absoluto.
