@@ -50,7 +50,12 @@ binding = "ORDERS_DB"
 database_name = "amadolibros-orders-production"
 database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
 
-# CHECKOUT_ENABLED en "false": el kill switch queda apagado a propósito.
+# CHECKOUT_ENABLED en "true" (2-N-H1): el kill switch queda encendido, así que
+# POST /api/orders y POST /api/preferences aceptan pedidos reales. Para apagar
+# los cobros de forma inmediata, cambiar esta variable a "false" en el
+# dashboard de Cloudflare Pages (Production) — el webhook y /api/orders/status
+# siguen funcionando igual, así que un pago ya iniciado se confirma sin
+# problemas. Ver docs/environments.md, "Procedimiento operativo".
 # MP_COLLECTOR_ID confirmado en 2-N-G2 (440298103) — NO es el número de
 # aplicación de Mercado Pago (6816864196905927, solo informativo, no se usa
 # en runtime). MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y TURNSTILE_SECRET_KEY
@@ -58,7 +63,7 @@ database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
 # de Cloudflare Pages.
 [env.production.vars]
 APP_ENV           = "production"
-CHECKOUT_ENABLED  = "false"
+CHECKOUT_ENABLED  = "true"
 CANONICAL_ORIGIN  = "https://www.amadolibros.com"
 ALLOWED_HOSTS     = "amadolibros.com,www.amadolibros.com"
 MP_COLLECTOR_ID   = "440298103"

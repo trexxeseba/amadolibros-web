@@ -48,11 +48,13 @@ jobs:
         env:
           PUBLIC_INDEXABLE: 'true'
           PUBLIC_GA_ID: G-SDX45VEPP3
-          PUBLIC_CHECKOUT_ENABLED: 'false'
+          # PUBLIC_CHECKOUT_ENABLED en 'true' (2-N-H1): el build renderiza el
+          # flujo de pago online. El backend tiene su propio interruptor
+          # (CHECKOUT_ENABLED en wrangler.toml) — los dos deben estar en true
+          # para que se pueda cobrar.
+          PUBLIC_CHECKOUT_ENABLED: 'true'
           # Site key pública de Turnstile Production (no es secreto, puede
-          # versionarse) y los hosts exactos donde se acepta — el checkout
-          # sigue apagado (PUBLIC_CHECKOUT_ENABLED=false) hasta que se
-          # habilite explícitamente en un lote aparte.
+          # versionarse) y los hosts exactos donde se acepta.
           PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD_Ul8KGae_hdWwj'
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com'
         run: npm run build
@@ -70,6 +72,11 @@ jobs:
           SMOKE_MAX_ATTEMPTS: '6'
           SMOKE_RETRY_DELAY_MS: '10000'
           SMOKE_TIMEOUT_MS: '10000'
+          # Debe reflejar el valor de PUBLIC_CHECKOUT_ENABLED de arriba: el
+          # smoke verifica el HTML real de /carrito/ y falla el deploy si el
+          # estado desplegado no coincide con el esperado. Si se hace rollback
+          # a PUBLIC_CHECKOUT_ENABLED='false', cambiar esto a 'disabled'.
+          SMOKE_EXPECT_CHECKOUT: 'enabled'
         run: node scripts/smoke-production.js
 
       - name: Deployment summary
