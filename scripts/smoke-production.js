@@ -6,10 +6,21 @@
  * Uses only Node.js 22 native APIs — no external dependencies.
  *
  * Configuration via environment variables:
- *   SMOKE_BASE_URL        default: https://www.amadolibros.com
- *   SMOKE_MAX_ATTEMPTS    default: 6
- *   SMOKE_RETRY_DELAY_MS  default: 10000
- *   SMOKE_TIMEOUT_MS      default: 10000
+ *   SMOKE_BASE_URL          default: https://www.amadolibros.com
+ *   SMOKE_MAX_ATTEMPTS      default: 6
+ *   SMOKE_RETRY_DELAY_MS    default: 10000
+ *   SMOKE_TIMEOUT_MS        default: 10000
+ *   SMOKE_EXPECT_CHECKOUT   required: "enabled" | "disabled"
+ *
+ * SMOKE_EXPECT_CHECKOUT declara en qué estado debe estar el checkout de
+ * Mercado Pago en Producción. El smoke analiza el HTML servido de /carrito/ y
+ * falla si el estado desplegado no coincide. No tiene valor por defecto a
+ * propósito (fail-closed): quien despliega debe declarar explícitamente qué
+ * espera, para que una activación o un rollback nunca pasen inadvertidos.
+ *
+ * Este script solo hace GET. Nunca envía POST, nunca crea órdenes, nunca pide
+ * un token de Turnstile y nunca llama a Mercado Pago. El análisis es sobre el
+ * HTML servido — no ejecuta JavaScript ni simula clics.
  */
 
 'use strict';
@@ -20,6 +31,24 @@ const BASE_URL       = process.env.SMOKE_BASE_URL       || 'https://www.amadolib
 const MAX_ATTEMPTS   = parseInt(process.env.SMOKE_MAX_ATTEMPTS   || '6',     10);
 const RETRY_DELAY_MS = parseInt(process.env.SMOKE_RETRY_DELAY_MS || '10000', 10);
 const TIMEOUT_MS     = parseInt(process.env.SMOKE_TIMEOUT_MS     || '10000', 10);
+
+const VALID_CHECKOUT_EXPECTATIONS = ['enabled', 'disabled'];
+
+// Site keys públicas de Turnstile (no son secretos: viajan en el HTML).
+const TURNSTILE_SITE_KEY_PRODUCTION = '0x4AAAAAAD_Ul8KGae_hdWwj';
+const TURNSTILE_SITE_KEY_PREVIEW    = '0x4AAAAAAD6E9kz8K3comwjj';
+
+// Nombres/prefijos que jamás deben viajar al navegador. Se busca la marca, no
+// el valor: si algo coincide, se reporta la coincidencia sin imprimir nunca el
+// contenido que la rodea.
+const SECRET_MARKERS = [
+  'MP_ACCESS_TOKEN',
+  'MP_WEBHOOK_SECRET',
+  'TURNSTILE_SECRET_KEY',
+  'CLOUDFLARE_API_TOKEN',
+  'APP_USR-',
+  'access_token=',
+];
 
 // Exact property names that must not appear in JSON responses from API routes.
 // Note: "has_error" is intentionally excluded — it is part of the public contract.
@@ -32,6 +61,7 @@ const ROUTES = [
   { path: '/', kind: 'html', canonical: `${BASE_URL}/`, robots: 'index, follow' },
   { path: '/catalogo', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'index, follow' },
   { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex' },
+  { path: '/carrito/', kind: 'cart' },
   { path: '/robots.txt', kind: 'robots' },
   { path: '/sitemap.xml', kind: 'sitemap' },
   { path: '/api/health' },
@@ -81,6 +111,111 @@ function hasCanonical(body, expected) {
   return tags.some(tag => tag.includes(`href="${expected}"`));
 }
 
+// ─── Análisis del estado del checkout en /carrito/ ───────────────────────────
+
+function escapeForRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Detecta un elemento HTML realmente renderizado con ese id.
+ *
+ * Deliberadamente NO alcanza con que el id aparezca en cualquier parte del
+ * documento: el bloque <script> del carrito contiene referencias inertes como
+ * document.getElementById('cf-ts-container') incluso cuando el checkout está
+ * apagado y el elemento nunca se renderiza. Por eso se exige la apertura de una
+ * etiqueta (`<div ... id="...")`, y `[^>]*` no puede cruzar un `>`, así que una
+ * cadena suelta dentro del script jamás satisface el patrón.
+ */
+function hasRenderedElementWithId(html, id) {
+  const re = new RegExp(`<[a-zA-Z][a-zA-Z0-9-]*\\s[^>]*id=["']${escapeForRegExp(id)}["']`, 'i');
+  return re.test(html);
+}
+
+function findSecretMarkers(html) {
+  return SECRET_MARKERS.filter(marker => html.includes(marker));
+}
+
+/**
+ * Analiza el HTML servido de /carrito/ contra el estado esperado del checkout.
+ * Función pura: no hace red ni lee el entorno, para poder ejercitarla con
+ * fixtures en los tests sin tocar Producción.
+ *
+ * @param {string} html          HTML crudo de /carrito/
+ * @param {'enabled'|'disabled'} expectation
+ * @returns {{ok: boolean, reason?: string}}
+ */
+function analyzeCartCheckoutState(html, expectation) {
+  if (!VALID_CHECKOUT_EXPECTATIONS.includes(expectation)) {
+    return {
+      ok: false,
+      reason: `SMOKE_EXPECT_CHECKOUT inválido: se esperaba ${VALID_CHECKOUT_EXPECTATIONS.join(' o ')}`,
+    };
+  }
+
+  if (typeof html !== 'string' || html.trim().length === 0) {
+    return { ok: false, reason: 'empty body' };
+  }
+
+  // Controles válidos en ambos estados.
+  const secrets = findSecretMarkers(html);
+  if (secrets.length > 0) {
+    // Nunca se imprime el contenido: solo qué marcador coincidió.
+    return { ok: false, reason: `posible secreto expuesto (marcador: ${secrets.join(', ')})` };
+  }
+  if (html.includes(TURNSTILE_SITE_KEY_PREVIEW)) {
+    return { ok: false, reason: 'la Site key de Turnstile Preview aparece en Producción' };
+  }
+  // El cierre por WhatsApp nunca debe desaparecer: es la vía de compra que
+  // funciona con el checkout online prendido o apagado.
+  if (!hasRenderedElementWithId(html, 'btn-wa-order')) {
+    return { ok: false, reason: 'falta el cierre por WhatsApp (btn-wa-order)' };
+  }
+
+  const marker           = `data-online-checkout="${expectation}"`;
+  const hasPrepareButton = hasRenderedElementWithId(html, 'btn-prepare-order');
+  const hasTurnstileBox  = hasRenderedElementWithId(html, 'cf-ts-container');
+
+  if (!html.includes(marker)) {
+    return { ok: false, reason: `falta ${marker}` };
+  }
+
+  if (expectation === 'enabled') {
+    if (!hasPrepareButton) {
+      return { ok: false, reason: 'falta el botón renderizado id="btn-prepare-order"' };
+    }
+    if (!hasTurnstileBox) {
+      return { ok: false, reason: 'falta el contenedor renderizado de Turnstile (cf-ts-container)' };
+    }
+    if (!html.includes(TURNSTILE_SITE_KEY_PRODUCTION)) {
+      return { ok: false, reason: 'falta la Site key de Turnstile Production' };
+    }
+    return { ok: true };
+  }
+
+  // expectation === 'disabled'
+  if (hasPrepareButton) {
+    return { ok: false, reason: 'btn-prepare-order sigue renderizado con el checkout apagado' };
+  }
+  if (hasTurnstileBox) {
+    return { ok: false, reason: 'el contenedor de Turnstile sigue renderizado con el checkout apagado' };
+  }
+  return { ok: true };
+}
+
+function resolveCheckoutExpectation(rawValue) {
+  const value = typeof rawValue === 'string' ? rawValue.trim() : '';
+  if (!VALID_CHECKOUT_EXPECTATIONS.includes(value)) {
+    return {
+      ok: false,
+      reason:
+        'SMOKE_EXPECT_CHECKOUT debe valer exactamente "enabled" o "disabled" ' +
+        `(recibido: ${value === '' ? '<sin definir>' : JSON.stringify(value)})`,
+    };
+  }
+  return { ok: true, value };
+}
+
 function writeGitHubOutputs(attemptsUsed, result) {
   const outputFile = process.env.GITHUB_OUTPUT;
   if (!outputFile) return;
@@ -90,7 +225,7 @@ function writeGitHubOutputs(attemptsUsed, result) {
 
 // ─── Route validators ─────────────────────────────────────────────────────────
 
-async function checkRoute(path) {
+async function checkRoute(path, checkoutExpectation) {
   const url = BASE_URL + path;
   let resp;
 
@@ -123,6 +258,22 @@ async function checkRoute(path) {
     }
     if (!hasHtmlMeta(body, 'robots', route.robots)) {
       return { ok: false, path, reason: `missing robots meta "${route.robots}"` };
+    }
+    return { ok: true, path };
+  }
+
+  // ── /carrito/ — estado del checkout (solo lectura del HTML) ──────────────
+  if (route && route.kind === 'cart') {
+    if (status !== 200) {
+      return { ok: false, path, reason: `HTTP ${status} (expected 200)` };
+    }
+    if (!hasContentType(resp.headers, 'text/html')) {
+      return { ok: false, path, reason: `Content-Type not text/html (got: ${resp.headers.get('content-type') || 'none'})` };
+    }
+    const body = await resp.text();
+    const analysis = analyzeCartCheckoutState(body, checkoutExpectation);
+    if (!analysis.ok) {
+      return { ok: false, path, reason: `checkout esperado "${checkoutExpectation}": ${analysis.reason}` };
     }
     return { ok: true, path };
   }
@@ -226,10 +377,18 @@ async function checkRoute(path) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const expectation = resolveCheckoutExpectation(process.env.SMOKE_EXPECT_CHECKOUT);
+  if (!expectation.ok) {
+    console.error(`[smoke] ${expectation.reason}`);
+    process.exit(1);
+  }
+  const checkoutExpectation = expectation.value;
+
   console.log(`[smoke] Base URL:       ${BASE_URL}`);
   console.log(`[smoke] Max attempts:   ${MAX_ATTEMPTS}`);
   console.log(`[smoke] Retry delay:    ${RETRY_DELAY_MS}ms`);
   console.log(`[smoke] Timeout/route:  ${TIMEOUT_MS}ms`);
+  console.log(`[smoke] Checkout esperado: ${checkoutExpectation}`);
   console.log('');
 
   const lastStatus = {};
@@ -241,7 +400,7 @@ async function main() {
     attemptsUsed = attempt;
     console.log(`[smoke] ── Attempt ${attempt}/${MAX_ATTEMPTS} ─────────────────────────`);
 
-    const results = await Promise.all(ROUTES.map(r => checkRoute(r.path)));
+    const results = await Promise.all(ROUTES.map(r => checkRoute(r.path, checkoutExpectation)));
 
     let allPassed = true;
     for (const r of results) {
@@ -277,4 +436,18 @@ async function main() {
   process.exit(1);
 }
 
-main();
+// Exportado para poder ejercitar el análisis con fixtures en los tests, sin
+// red y sin tocar Producción. El smoke solo corre cuando se invoca el archivo
+// directamente (node scripts/smoke-production.js).
+module.exports = {
+  analyzeCartCheckoutState,
+  resolveCheckoutExpectation,
+  hasRenderedElementWithId,
+  VALID_CHECKOUT_EXPECTATIONS,
+  TURNSTILE_SITE_KEY_PRODUCTION,
+  TURNSTILE_SITE_KEY_PREVIEW,
+};
+
+if (require.main === module) {
+  main();
+}

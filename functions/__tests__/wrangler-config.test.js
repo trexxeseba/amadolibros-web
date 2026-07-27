@@ -1,8 +1,12 @@
 // Verifica que wrangler.toml, deploy.yml y carrito.astro sigan declarando la
-// configuración de Producción esperada tras 2-N-G2: MP_COLLECTOR_ID
-// confirmado, checkout apagado en ambos niveles (runtime y build), y la site
+// configuración de Producción esperada tras 2-N-H1: MP_COLLECTOR_ID
+// confirmado, checkout ENCENDIDO en ambos niveles (runtime y build), la site
 // key pública de Turnstile de Producción inyectada por build en vez de
-// hardcodeada en el código.
+// hardcodeada en el código, y el smoke post-deploy declarando explícitamente
+// qué estado de checkout espera encontrar.
+//
+// Los dos interruptores deben moverse juntos: si un rollback baja uno solo,
+// estos tests fallan y avisan de la inconsistencia.
 //
 // No hay tests sobre deploy-preview.yml acá a propósito: ese workflow no es
 // actualmente el pipeline efectivo para ningún Preview con checkout (su
@@ -42,8 +46,14 @@ test('wrangler.toml: Producción resuelve MP_COLLECTOR_ID=440298103', () => {
   assert.match(productionVars, /MP_COLLECTOR_ID\s*=\s*"440298103"/);
 });
 
-test('wrangler.toml: CHECKOUT_ENABLED de Producción permanece en false', () => {
-  assert.match(productionVars, /CHECKOUT_ENABLED\s*=\s*"false"/);
+test('wrangler.toml: CHECKOUT_ENABLED de Producción está en true (2-N-H1)', () => {
+  assert.match(productionVars, /CHECKOUT_ENABLED\s*=\s*"true"/);
+});
+
+test('wrangler.toml: Producción conserva APP_ENV, CANONICAL_ORIGIN y ALLOWED_HOSTS intactos', () => {
+  assert.match(productionVars, /APP_ENV\s*=\s*"production"/);
+  assert.match(productionVars, /CANONICAL_ORIGIN\s*=\s*"https:\/\/www\.amadolibros\.com"/);
+  assert.match(productionVars, /ALLOWED_HOSTS\s*=\s*"amadolibros\.com,www\.amadolibros\.com"/);
 });
 
 test('wrangler.toml: Producción no declara secrets (MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, TURNSTILE_SECRET_KEY)', () => {
@@ -52,8 +62,25 @@ test('wrangler.toml: Producción no declara secrets (MP_ACCESS_TOKEN, MP_WEBHOOK
   assert.doesNotMatch(productionVars, /TURNSTILE_SECRET_KEY/);
 });
 
-test('deploy.yml: build de Producción mantiene PUBLIC_CHECKOUT_ENABLED en false', () => {
-  assert.match(deployYml, /PUBLIC_CHECKOUT_ENABLED:\s*'false'/);
+test('deploy.yml: build de Producción tiene PUBLIC_CHECKOUT_ENABLED en true (2-N-H1)', () => {
+  assert.match(deployYml, /PUBLIC_CHECKOUT_ENABLED:\s*'true'/);
+  assert.doesNotMatch(deployYml, /PUBLIC_CHECKOUT_ENABLED:\s*'false'/);
+});
+
+test('deploy.yml: el smoke post-deploy declara SMOKE_EXPECT_CHECKOUT=enabled', () => {
+  assert.match(deployYml, /SMOKE_EXPECT_CHECKOUT:\s*'enabled'/);
+});
+
+test('deploy.yml: los dos interruptores de checkout coinciden entre sí', () => {
+  // Un rollback a medias (frontend apagado pero smoke esperando "enabled", o
+  // viceversa) haría que el deploy pase el smoke mostrando el estado
+  // equivocado. Los dos valores tienen que moverse juntos.
+  const publicFlag = deployYml.match(/PUBLIC_CHECKOUT_ENABLED:\s*'(true|false)'/);
+  const smokeFlag  = deployYml.match(/SMOKE_EXPECT_CHECKOUT:\s*'(enabled|disabled)'/);
+  assert.ok(publicFlag, 'PUBLIC_CHECKOUT_ENABLED no encontrado en deploy.yml');
+  assert.ok(smokeFlag, 'SMOKE_EXPECT_CHECKOUT no encontrado en deploy.yml');
+  const expectedSmoke = publicFlag[1] === 'true' ? 'enabled' : 'disabled';
+  assert.equal(smokeFlag[1], expectedSmoke);
 });
 
 test('deploy.yml: contiene solamente la site key pública de Turnstile de Producción', () => {
