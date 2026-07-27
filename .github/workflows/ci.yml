@@ -51,6 +51,9 @@ jobs:
       - name: Test catalog display
         run: node --test functions/__tests__/*.test.js
 
+      - name: Test Turnstile host matching (carrito.astro)
+        run: node --test astro-front/src/lib/__tests__/*.test.js
+
       - name: Test orders
         run: node --test functions/api/__tests__/orders.test.js
 

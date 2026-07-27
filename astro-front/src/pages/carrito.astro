@@ -5,6 +5,16 @@ import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
 
 const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
+
+// Site key pública de Turnstile y hosts donde puede usarse — inyectadas por
+// ambiente en tiempo de build (nunca hardcodeadas ni derivadas del hostname
+// del navegador). Ver PUBLIC_TURNSTILE_SITE_KEY / PUBLIC_TURNSTILE_ALLOWED_HOSTS
+// en deploy.yml / deploy-preview.yml.
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '';
+const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS || '')
+  .split(',')
+  .map((h) => h.trim())
+  .filter(Boolean);
 ---
 <BaseLayout
   title="Tu carrito — Amado Libros"
@@ -728,15 +738,61 @@ const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
   .btn-pay-mp:disabled { background: #9ca3af; cursor: not-allowed; }
 </style>
 
-<script is:inline>
-  // ── Turnstile Preview ────────────────────────────────────────────────────
+<script is:inline define:vars={{ turnstileSiteKey, turnstileAllowedHosts }}>
+  // ── Turnstile ────────────────────────────────────────────────────────────
   var onlineCheckoutEnabled = document.querySelector('.cart-page')?.dataset.onlineCheckout === 'enabled';
-  var TS_PREVIEW_HOST = 'amadolibros-web.pages.dev';
-  var TS_SITE_KEY     = '0x4AAAAAAD6E9kz8K3comwjj';
-  var tsIsPreview     = window.location.hostname === TS_PREVIEW_HOST ||
-                        window.location.hostname.endsWith('.' + TS_PREVIEW_HOST);
-  var tsWidgetId      = null;
-  var tsPending       = null;
+
+  // Hosts aceptados para Turnstile, inyectados por ambiente (nunca
+  // hardcodeados ni derivados de heurísticas sobre el hostname del
+  // navegador). Convención de cada entrada:
+  //   - sin punto inicial ("amadolibros.com"): coincidencia EXACTA solamente,
+  //     nunca acepta subdominios (así se comportan los hosts de Producción).
+  //   - con punto inicial (".amadolibros-web.pages.dev"): acepta cualquier
+  //     subdominio ESTRICTO de ese dominio, nunca el host desnudo por sí solo
+  //     ni coincidencias parciales.
+  // La comparación siempre es por labels completos del hostname (nunca
+  // substring/startsWith/endsWith sobre el string crudo), para que
+  // "evil-amadolibros.com", "amadolibros.com.evil.example" o
+  // "evilamadolibros-web.pages.dev.evil.example" nunca puedan pasar.
+  //
+  // Copia inline de src/lib/turnstile-hosts.js (probada con `node --test` en
+  // astro-front/src/lib/__tests__/turnstile-hosts.test.js). No puede
+  // importarse acá porque este <script is:inline> corre sin bundler; si se
+  // cambia esta lógica, replicar el cambio también en ese módulo.
+  function hostMatchesEntry(hostname, entry) {
+    if (!entry) return false;
+    if (entry.charAt(0) === '.') {
+      var domainLabels = entry.slice(1).split('.').filter(Boolean);
+      var hostLabels   = hostname.split('.');
+      if (domainLabels.length === 0 || hostLabels.length <= domainLabels.length) return false;
+      var tail = hostLabels.slice(hostLabels.length - domainLabels.length);
+      for (var i = 0; i < domainLabels.length; i++) {
+        if (tail[i] !== domainLabels[i]) return false;
+      }
+      return true;
+    }
+    return hostname === entry;
+  }
+  function isTurnstileHostAllowed(hostname) {
+    for (var i = 0; i < turnstileAllowedHosts.length; i++) {
+      if (hostMatchesEntry(hostname, turnstileAllowedHosts[i])) return true;
+    }
+    return false;
+  }
+
+  // turnstileConfigured: todo lo necesario está presente y el host actual
+  // está permitido -> se carga el widget real.
+  // turnstileBlocked: el checkout está habilitado pero Turnstile NO puede
+  // inicializarse (falta site key, o el host no está en la lista) -> falla
+  // cerrado: nunca se carga el script de Cloudflare ni se intenta un pago
+  // sin verificación; el intento de "Preparar pago online" muestra un error
+  // controlado en vez de mandar la request igual.
+  var turnstileHostOk      = isTurnstileHostAllowed(window.location.hostname);
+  var turnstileConfigured  = onlineCheckoutEnabled && !!turnstileSiteKey && turnstileHostOk;
+  var turnstileBlocked     = onlineCheckoutEnabled && !turnstileConfigured;
+
+  var tsWidgetId = null;
+  var tsPending  = null;
 
   function tsOnSuccess(token) { if (tsPending) { var r=tsPending.resolve; tsPending=null; r(token); } }
   function tsOnError()        { if (tsPending) { var r=tsPending.reject;  tsPending=null; r(new Error('ts-error')); } }
@@ -747,7 +803,7 @@ const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
     var container = document.getElementById('cf-ts-container');
     if (!container || tsWidgetId != null) return;
     tsWidgetId = window.turnstile.render(container, {
-      sitekey:             TS_SITE_KEY,
+      sitekey:             turnstileSiteKey,
       action:              'prepare_order',
       appearance:          'interaction-only',
       execution:           'execute',
@@ -771,13 +827,15 @@ const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
     });
   }
 
-  if (onlineCheckoutEnabled && tsIsPreview) {
+  if (turnstileConfigured) {
     window.__tsOnLoad = function () { tsRenderWidget(); };
     var _tsScript = document.createElement('script');
     _tsScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__tsOnLoad&render=explicit';
     _tsScript.async = true;
     _tsScript.defer = true;
     document.head.appendChild(_tsScript);
+  } else if (turnstileBlocked) {
+    console.error('[carrito] Turnstile no configurado para este host — pago online deshabilitado.');
   }
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -1205,10 +1263,20 @@ const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
         }
 
         btnPrepare.disabled = true;
-        btnPrepare.textContent = tsIsPreview ? 'Verificando…' : 'Procesando…';
+
+        // Fail closed: si el checkout está habilitado pero Turnstile no
+        // pudo configurarse (site key ausente, o este host no está
+        // permitido), nunca se manda la request sin verificación.
+        if (turnstileBlocked) {
+          alert('El pago online no está disponible en este momento. Probá más tarde o escribinos por WhatsApp.');
+          btnPrepare.disabled = false;
+          return;
+        }
+
+        btnPrepare.textContent = turnstileConfigured ? 'Verificando…' : 'Procesando…';
 
         var cfTsResponse = null;
-        if (tsIsPreview) {
+        if (turnstileConfigured) {
           if (tsWidgetId == null) {
             alert('La verificación aún no cargó. Esperá un momento y reintentá.');
             btnPrepare.disabled = false;
@@ -1270,7 +1338,7 @@ const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
           if (resultEl)    resultEl.hidden = false;
           btnPrepare.textContent = 'Pedido preparado';
 
-          if (tsIsPreview) {
+          if (turnstileConfigured) {
             mpPublicCode     = data.order.public_code;
             mpIdempotencyKey = cart.idempotency_key;
             var noteEl = document.getElementById('order-result-note');

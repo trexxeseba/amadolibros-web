@@ -49,6 +49,12 @@ jobs:
           PUBLIC_INDEXABLE: 'true'
           PUBLIC_GA_ID: G-SDX45VEPP3
           PUBLIC_CHECKOUT_ENABLED: 'false'
+          # Site key pública de Turnstile Production (no es secreto, puede
+          # versionarse) y los hosts exactos donde se acepta — el checkout
+          # sigue apagado (PUBLIC_CHECKOUT_ENABLED=false) hasta que se
+          # habilite explícitamente en un lote aparte.
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD_Ul8KGae_hdWwj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com'
         run: npm run build
 
       - name: Deploy via Wrangler
