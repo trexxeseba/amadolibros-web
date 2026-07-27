@@ -48,6 +48,7 @@ jobs:
         env:
           PUBLIC_INDEXABLE: 'true'
           PUBLIC_GA_ID: G-SDX45VEPP3
+          PUBLIC_CHECKOUT_ENABLED: 'false'
         run: npm run build
 
       - name: Deploy via Wrangler
