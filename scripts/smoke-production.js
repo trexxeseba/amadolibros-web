@@ -29,8 +29,11 @@ const INTERNAL_FIELDS = [
 ];
 
 const ROUTES = [
-  { path: '/' },
-  { path: '/catalogo' },
+  { path: '/', kind: 'html', canonical: `${BASE_URL}/`, robots: 'index, follow' },
+  { path: '/catalogo', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'index, follow' },
+  { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex' },
+  { path: '/robots.txt', kind: 'robots' },
+  { path: '/sitemap.xml', kind: 'sitemap' },
   { path: '/api/health' },
   { path: '/api/status' },
 ];
@@ -67,6 +70,17 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function hasHtmlMeta(body, name, expected) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tag = body.match(new RegExp(`<meta\\s+name=["']${escaped}["'][^>]*>`, 'i'));
+  return !!tag && tag[0].toLowerCase().includes(`content="${expected.toLowerCase()}"`);
+}
+
+function hasCanonical(body, expected) {
+  const tags = body.match(/<link\s+[^>]*rel=["']canonical["'][^>]*>/gi) || [];
+  return tags.some(tag => tag.includes(`href="${expected}"`));
+}
+
 function writeGitHubOutputs(attemptsUsed, result) {
   const outputFile = process.env.GITHUB_OUTPUT;
   if (!outputFile) return;
@@ -91,8 +105,9 @@ async function checkRoute(path) {
 
   const { status } = resp;
 
-  // ── / and /catalogo ──────────────────────────────────────────────────────
-  if (path === '/' || path === '/catalogo') {
+  // ── HTML indexable/noindex routes ────────────────────────────────────────
+  const route = ROUTES.find(r => r.path === path);
+  if (route && route.kind === 'html') {
     if (status !== 200) {
       return { ok: false, path, reason: `HTTP ${status} (expected 200)` };
     }
@@ -102,6 +117,44 @@ async function checkRoute(path) {
     const body = await resp.text();
     if (!body || body.trim().length === 0) {
       return { ok: false, path, reason: 'empty body' };
+    }
+    if (!hasCanonical(body, route.canonical)) {
+      return { ok: false, path, reason: `missing canonical "${route.canonical}"` };
+    }
+    if (!hasHtmlMeta(body, 'robots', route.robots)) {
+      return { ok: false, path, reason: `missing robots meta "${route.robots}"` };
+    }
+    return { ok: true, path };
+  }
+
+  // ── /robots.txt ──────────────────────────────────────────────────────────
+  if (path === '/robots.txt') {
+    if (status !== 200) return { ok: false, path, reason: `HTTP ${status} (expected 200)` };
+    if (!hasContentType(resp.headers, 'text/plain')) {
+      return { ok: false, path, reason: `Content-Type not text/plain (got: ${resp.headers.get('content-type') || 'none'})` };
+    }
+    const body = await resp.text();
+    if (!/^User-agent:/m.test(body) || !body.includes(`Sitemap: ${BASE_URL}/sitemap.xml`)) {
+      return { ok: false, path, reason: 'invalid robots.txt body or missing sitemap directive' };
+    }
+    if (/<html|<!doctype/i.test(body)) {
+      return { ok: false, path, reason: 'robots.txt returned HTML' };
+    }
+    return { ok: true, path };
+  }
+
+  // ── /sitemap.xml ─────────────────────────────────────────────────────────
+  if (path === '/sitemap.xml') {
+    if (status !== 200) return { ok: false, path, reason: `HTTP ${status} (expected 200)` };
+    if (!hasContentType(resp.headers, 'application/xml')) {
+      return { ok: false, path, reason: `Content-Type not XML (got: ${resp.headers.get('content-type') || 'none'})` };
+    }
+    const body = await resp.text();
+    if (!body.startsWith('<?xml') || !body.includes('<urlset ') || !body.includes(`<loc>${BASE_URL}/</loc>`)) {
+      return { ok: false, path, reason: 'invalid sitemap XML body' };
+    }
+    if (body.includes(`<loc>${BASE_URL}/politicas</loc>`)) {
+      return { ok: false, path, reason: 'sitemap includes unavailable /politicas page' };
     }
     return { ok: true, path };
   }
