@@ -28,7 +28,6 @@ export async function onRequest(ctx) {
     // Páginas estáticas: lastmod = hoy (se actualizan con cada deploy).
     const staticPages = [
         { loc: `${BASE}/`,                                    changefreq: 'daily',   priority: '1.0', lastmod: today },
-        { loc: `${BASE}/politicas`,                         changefreq: 'monthly', priority: '0.3', lastmod: today },
         { loc: `${BASE}/catalogo`,                          changefreq: 'daily',   priority: '0.5', lastmod: today },
         { loc: `${BASE}/libros-maria-montessori-uruguay`,   changefreq: 'weekly',  priority: '0.8', lastmod: today },
     ];
