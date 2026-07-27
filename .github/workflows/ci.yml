@@ -51,6 +51,18 @@ jobs:
       - name: Test catalog display
         run: node --test functions/__tests__/*.test.js
 
+      - name: Test orders
+        run: node --test functions/api/__tests__/orders.test.js
+
+      - name: Test preferences
+        run: node --test functions/api/__tests__/preferences.test.js
+
+      - name: Test MP webhook
+        run: node --test functions/api/__tests__/mp_webhook.test.js
+
+      - name: Test order status
+        run: node --test functions/api/__tests__/order_status.test.js
+
       - name: Install Astro dependencies
         working-directory: astro-front
         run: npm ci --no-audit --no-fund
@@ -60,7 +72,14 @@ jobs:
         env:
           PUBLIC_INDEXABLE: 'true'
           PUBLIC_GA_ID: G-SDX45VEPP3
+          PUBLIC_CHECKOUT_ENABLED: 'false'
         run: npm run build
+
+      - name: Confirm production checkout remains hidden
+        run: |
+          grep -q 'data-online-checkout="disabled"' astro-front/dist/carrito/index.html
+          ! grep -q 'id="btn-prepare-order"' astro-front/dist/carrito/index.html
+          ! grep -q 'id="btn-pay-mp"' astro-front/dist/carrito/index.html
 
       - name: Check pull request diff
         if: github.event_name == 'pull_request'
