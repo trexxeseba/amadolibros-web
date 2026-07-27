@@ -45,6 +45,12 @@ jobs:
             -print0 |
             xargs -0 -r -n1 node --check
 
+      - name: Test catalog sync
+        run: node --test worker-sync/__tests__/*.test.js
+
+      - name: Test catalog display
+        run: node --test functions/__tests__/*.test.js
+
       - name: Install Astro dependencies
         working-directory: astro-front
         run: npm ci --no-audit --no-fund

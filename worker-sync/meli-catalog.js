@@ -5,9 +5,9 @@
  * que consume R2 (catalog.json). Replica la lógica de local_sync.py.
  *
  * Flujo:
- *   1. fetchAllIds()  — scroll API (search_type=scan) para obtener todos los IDs
+ *   1. fetchAllIds()  — scroll API para obtener IDs activos y pausados
  *   2. fetchDetails() — multi-get /items?ids= en batches de 20
- *   3. buildCatalog() — slim_item, filtro activos, guarda mínimo
+ *   3. buildCatalog() — slim_item, filtro de estados publicables, guarda mínima
  *
  * Esquema de salida (catalog.json):
  *   {
@@ -46,8 +46,9 @@ export async function buildCatalog(env, accessToken) {
 
   console.log(`[Catalog] Iniciando fetch para seller ${userId}`);
 
-  // Paso 1: obtener todos los IDs
-  const allIds = await fetchAllIds(userId, accessToken);
+  // Paso 1: obtener activos + pausados en recorridos separados. Consultar cada
+  // estado explícitamente evita depender del estado predeterminado de la API.
+  const allIds = await fetchAllIds(userId, accessToken, ['active', 'paused']);
   console.log(`[Catalog] IDs obtenidos: ${allIds.length}`);
 
   if (allIds.length === 0) {
@@ -58,15 +59,20 @@ export async function buildCatalog(env, accessToken) {
   const rawItems = await fetchDetails(allIds, accessToken);
   console.log(`[Catalog] Detalles obtenidos: ${rawItems.length} de ${allIds.length}`);
 
-  // Paso 3: slim + filtro activos
-  const activeItems = [];
-  for (const raw of rawItems) {
-    if (raw.status === 'active') {
-      activeItems.push(slimItem(raw));
-    }
-  }
+  // Paso 3: slim + filtro. Closed/deleted/under_review siguen fuera del sitio.
+  const catalogItems = rawItems
+    .filter(raw => raw.status === 'active' || raw.status === 'paused')
+    .map(slimItem);
+  const activeItems = catalogItems.filter(
+    item => item.status === 'active' && Number(item.available_quantity) > 0
+  );
+  const orderItems = catalogItems.filter(
+    item => item.status === 'paused' || Number(item.available_quantity) <= 0
+  );
 
-  console.log(`[Catalog] Items activos: ${activeItems.length} | pausados/otros: ${rawItems.length - activeItems.length}`);
+  console.log(
+    `[Catalog] Disponibles: ${activeItems.length} | por encargo: ${orderItems.length} | excluidos: ${rawItems.length - catalogItems.length}`
+  );
 
   // Guarda mínima: prevenir sobreescribir R2 con catálogo vacío o roto
   if (activeItems.length < minActiveItems) {
@@ -78,42 +84,48 @@ export async function buildCatalog(env, accessToken) {
 
   const updatedAt = new Date().toISOString();
   return {
-    total:      activeItems.length,
+    total:      catalogItems.length,
+    active_total: activeItems.length,
+    order_total:  orderItems.length,
     updated_at: updatedAt,
-    items:      activeItems,
+    items:      catalogItems,
   };
 }
 
 // ─── Scroll de IDs ────────────────────────────────────────────────────────────
 
-async function fetchAllIds(userId, accessToken) {
+async function fetchAllIds(userId, accessToken, statuses = ['active']) {
   const ids = [];
-  let scrollId = null;
-  let page     = 0;
+  for (const status of statuses) {
+    let scrollId = null;
+    let page = 0;
 
-  while (true) {
-    page++;
-    let url = `https://api.mercadolibre.com/users/${userId}/items/search?limit=100&search_type=scan`;
-    if (scrollId) url += `&scroll_id=${encodeURIComponent(scrollId)}`;
+    while (true) {
+      page++;
+      let url =
+        `https://api.mercadolibre.com/users/${userId}/items/search` +
+        `?limit=100&search_type=scan&status=${encodeURIComponent(status)}`;
+      if (scrollId) url += `&scroll_id=${encodeURIComponent(scrollId)}`;
 
-    const data = await mlGet(url, accessToken);
+      const data = await mlGet(url, accessToken);
+      const batch = data.results || [];
+      scrollId = data.scroll_id || null;
+      ids.push(...batch);
 
-    const batch = data.results || [];
-    scrollId = data.scroll_id || null;
-    ids.push(...batch);
+      if (page === 1 || page % 20 === 0) {
+        console.log(
+          `[Catalog] ${status} pág ${page}: +${batch.length} IDs | acumulado: ${ids.length} | scroll: ${scrollId ? 'sí' : 'FIN'}`
+        );
+      }
 
-    if (page === 1 || page % 20 === 0) {
-      console.log(`[Catalog] Scroll pág ${page}: +${batch.length} IDs | total: ${ids.length} | scroll: ${scrollId ? 'sí' : 'FIN'}`);
+      if (batch.length === 0 || !scrollId) break;
+      await sleep(SCROLL_SLEEP_MS);
     }
-
-    // Fin del scroll: sin más resultados o sin cursor
-    if (batch.length === 0 || !scrollId) break;
-
-    await sleep(SCROLL_SLEEP_MS);
   }
 
-  console.log(`[Catalog] Scroll completo: ${ids.length} IDs en ${page} páginas`);
-  return ids;
+  const uniqueIds = [...new Set(ids)];
+  console.log(`[Catalog] Scroll completo: ${uniqueIds.length} IDs únicos`);
+  return uniqueIds;
 }
 
 // ─── Detalles en batch ───────────────────────────────────────────────────────
