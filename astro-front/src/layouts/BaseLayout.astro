@@ -3,11 +3,13 @@ interface Props {
   title?: string;
   description?: string;
   indexable?: boolean;
+  canonical?: string;
 }
 const {
   title = 'Amado Libros — Librería uruguaya',
   description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
   indexable: indexableProp,
+  canonical,
 } = Astro.props;
 
 const indexable  = indexableProp !== undefined ? indexableProp : import.meta.env.PUBLIC_INDEXABLE === 'true';
@@ -22,6 +24,7 @@ const enableGA4  = indexable && !!gaId;
   <meta name="robots" content={indexable ? 'index, follow' : 'noindex, nofollow'}>
   <title>{title}</title>
   <meta name="description" content={description}>
+  {canonical && <link rel="canonical" href={canonical}>}
   {enableGA4 && (
     <>
       <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
