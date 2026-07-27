@@ -1,10 +1,23 @@
 ---
 import CartIcon from './CartIcon.astro';
+
+interface Props {
+  showSearch?: boolean;
+  showMobileDeliveryBanner?: boolean;
+}
+
+const {
+  showSearch = true,
+  showMobileDeliveryBanner = false,
+} = Astro.props;
+
 const WA_HREF =
   'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quer%C3%ADa%20consultar';
+const DELIVERY_WA_HREF =
+  'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quiero%20coordinar%20una%20entrega%20en%202%20horas%20en%20Montevideo';
 ---
 <header class="site-header">
-  <div class="header-inner">
+  <div class:list={['header-inner', { 'without-search': !showSearch }]}>
 
     <!-- Marca -->
     <a href="/" class="brand" aria-label="Amado Libros — inicio">
@@ -13,18 +26,20 @@ const WA_HREF =
     </a>
 
     <!-- Buscador — abre overlay de búsqueda -->
-    <button
-      type="button"
-      class="search-pill"
-      onclick="document.dispatchEvent(new CustomEvent('amado:openCatalogSearch'))"
-      aria-label="Buscar en el catálogo"
-    >
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="m11 11 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <span class="search-pill-label">Buscar</span>
-    </button>
+    {showSearch && (
+      <button
+        type="button"
+        class="search-pill"
+        onclick="document.dispatchEvent(new CustomEvent('amado:openCatalogSearch'))"
+        aria-label="Buscar en el catálogo"
+      >
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="m11 11 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="search-pill-label">Buscar</span>
+      </button>
+    )}
 
     <!-- Carrito -->
     <CartIcon />
@@ -44,6 +59,20 @@ const WA_HREF =
     </a>
 
   </div>
+
+  {showMobileDeliveryBanner && (
+    <a
+      href={DELIVERY_WA_HREF}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="mobile-delivery-banner"
+      aria-label="Coordinar entrega en 2 horas en Montevideo por WhatsApp"
+    >
+      <span aria-hidden="true">⚡</span>
+      <strong>Montevideo: entrega en 2 horas</strong>
+      <span class="mobile-delivery-cta">Coordinar →</span>
+    </a>
+  )}
 </header>
 
 <style>
@@ -66,6 +95,14 @@ const WA_HREF =
     grid-template-columns: auto 1fr auto auto;
     align-items: center;
     gap: 1.25rem;
+  }
+
+  .header-inner.without-search {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .mobile-delivery-banner {
+    display: none;
   }
 
   /* Marca */
@@ -152,5 +189,29 @@ const WA_HREF =
       gap: 0.75rem;
     }
     .wa-btn { padding: 0.4rem 0.75rem; }
+
+    .mobile-delivery-banner {
+      min-height: 38px;
+      padding: 0.45rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      background: #e49982;
+      color: #18120e;
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 0.73rem;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .mobile-delivery-banner strong {
+      font-weight: 800;
+    }
+
+    .mobile-delivery-cta {
+      font-weight: 700;
+      white-space: nowrap;
+    }
   }
 </style>

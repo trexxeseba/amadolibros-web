@@ -17,7 +17,7 @@
  * ESTRUCTURA DE catalog.json (R2):
  *   { "items": [ { id, title, author, price, status, available_quantity,
  *                  thumbnail, pictures, permalink, start_time }, ... ] }
- *   Solo contiene items con status == "active".
+ *   Contiene activos y pausados; el feed publica únicamente activos con stock.
  *
  */
 
@@ -40,7 +40,9 @@ export async function onRequest(context) {
             });
         }
 
-        const itemsToProcess = items.slice(0, MAX_ITEMS);
+        const itemsToProcess = items
+            .filter(item => item.status === 'active' && Number(item.available_quantity) > 0)
+            .slice(0, MAX_ITEMS);
         let feedItems = '';
 
         for (const item of itemsToProcess) {

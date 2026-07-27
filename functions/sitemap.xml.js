@@ -37,7 +37,7 @@ export async function onRequest(ctx) {
     const catalog = await fetchCatalog(ctx);
     if (catalog && Array.isArray(catalog.items)) {
         bookUrls = catalog.items
-            .filter(item => item.status === 'active')
+            .filter(item => item.status === 'active' && Number(item.available_quantity) > 0)
             .map(item => ({
             loc:        `${BASE}/libro/${item.id}/${slugify(item.title)}`,
             changefreq: 'weekly',

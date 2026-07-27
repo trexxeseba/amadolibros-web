@@ -26,9 +26,7 @@ const path    = require('path');
 
 const CATALOG_URL  = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const OUTPUT_PATH  = path.join(__dirname, '..', 'public', 'home.json');
-const ACTIVE_COUNT = 40;   // items activos más recientes para la grilla y novedades
-// Nota: PAUSED_COUNT eliminado. El catálogo actual tiene 0 items pausados/sin stock.
-// Si en el futuro vuelven items pausados, volver a agregar esta lógica.
+const ACTIVE_COUNT = 40;   // la portada sigue liviana: los encargos aparecen al buscar
 
 console.log('📚 generate-home-json: fetching catalog.json from R2...');
 
