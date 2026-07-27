@@ -115,7 +115,10 @@ test('smoke-7: la Site key de Preview en Producción falla en ambos estados', ()
 });
 
 test('smoke-8: un marcador de secreto falla y el motivo nunca incluye el valor', () => {
-  const leaked = HTML_ENABLED.replace('</body>', '<!-- APP_USR-1234567890-abcdef --></body>');
+  // Construido en runtime (nunca escrito literal) para que un secret scanner
+  // no lo confunda con una credencial real filtrada en el repo.
+  const fakeSecretMarker = 'APP_' + 'USR-' + '1234567890-abcdef';
+  const leaked = HTML_ENABLED.replace('</body>', `<!-- ${fakeSecretMarker} --></body>`);
   const r = analyzeCartCheckoutState(leaked, 'enabled');
   assert.equal(r.ok, false);
   assert.match(r.reason, /posible secreto expuesto/);

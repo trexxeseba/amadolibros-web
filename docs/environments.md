@@ -15,11 +15,11 @@ Estos tres planos son independientes y no hay que confundirlos:
   `PUBLIC_CHECKOUT_ENABLED: 'true'`. Si esta rama se mergea y se despliega tal
   cual, el checkout de Mercado Pago queda activo en Producción.
 - **Estado realmente desplegado en `www.amadolibros.com` ahora mismo**: sigue
-  **apagado**. Esta rama no fue mergeada ni desplegada — fue preparada en
-  2-N-H1 sin commit, push, PR ni deploy (ver el reporte de ese lote). El
-  código de `origin/main` sigue siendo el de 2-N-G2, con ambos interruptores
-  en `"false"`. Nada de lo descrito en esta sección "activo" aplica a
-  Producción hasta que un merge y un deploy exitoso lo confirmen.
+  **apagado**. El checkout permanece apagado en Producción mientras este PR
+  no sea mergeado y su deployment productivo no haya terminado con el smoke
+  en verde. El código de `origin/main` sigue siendo el de 2-N-G2, con ambos
+  interruptores en `"false"`. Nada de lo descrito en esta sección "activo"
+  aplica a Producción hasta que un merge y un deploy exitoso lo confirmen.
 - **Cómo se confirma que la activación fue efectiva**: el deploy no se
   considera exitoso solo porque el build compiló — el step "Smoke test
   production" de `deploy.yml` corre `scripts/smoke-production.js` con
@@ -27,8 +27,8 @@ Estos tres planos son independientes y no hay que confundirlos:
   `/carrito/` (no un mock) y hace fallar el deploy si el estado desplegado no
   coincide con lo esperado. Un merge exitoso sin ese smoke en verde no debe
   interpretarse como "ya está activo".
-- **Procedimiento operativo de ahí en más**: ver "Kill switch" y "Rollback
-  completo" más abajo.
+- **Procedimiento operativo de ahí en más**: ver "Kill switch de emergencia"
+  y "Rollback permanente en código" más abajo.
 
 ## Principio general
 
@@ -148,36 +148,44 @@ apagado instantáneo en caliente.
 
 ### Procedimiento operativo — kill switch de emergencia
 
-Para impedir la creación de nuevas órdenes lo más rápido posible, **sin
-esperar un deploy**: cambiar `CHECKOUT_ENABLED` a `false` directamente en el
-dashboard de Cloudflare Pages (Settings → Environment Variables → Production).
-Efecto inmediato en la próxima invocación de las Functions — no requiere
-rebuild ni redeploy. El frontend puede seguir mostrando los botones hasta el
-siguiente build (porque `PUBLIC_CHECKOUT_ENABLED` es una variable de build,
-no de runtime), pero cualquier intento de pago recibe `503
-checkout_temporarily_unavailable` sin crear ninguna orden ni cobrar nada. Se
-verifica con un `POST` de prueba a `/api/orders` (sin datos reales) y
-confirmando la respuesta `503`.
+`wrangler.toml` es la fuente de verdad de la configuración desplegada — no
+alcanza con cambiar una variable en el dashboard de Cloudflare, porque eso no
+se refleja en el repo ni sobrevive al próximo deploy normal. Para apagar el
+checkout lo más rápido posible sin esperar un `git revert` + deploy:
 
-### Procedimiento operativo — rollback completo
+1. Entrar a Cloudflare Pages → el proyecto `amadolibros-web` → **Deployments**.
+2. Localizar el deployment productivo estable anterior a la activación (el
+   último con `CHECKOUT_ENABLED`/`PUBLIC_CHECKOUT_ENABLED` en `false`).
+3. Ejecutar **Rollback** sobre ese deployment.
+4. Ese rollback restaura tanto el frontend como el backend apagados —
+   `PUBLIC_CHECKOUT_ENABLED` (build) y `CHECKOUT_ENABLED` (runtime) vuelven
+   al estado del deployment restaurado, sin depender de una edición manual de
+   variables.
+5. Verificar `/carrito/`: debe mostrar `data-online-checkout="disabled"`.
+6. Verificar que `POST /api/orders` responde `503`.
+7. **No borrar** `orders`, `order_items` ni `order_events` en ningún momento
+   de este procedimiento.
+8. El webhook de Mercado Pago debe seguir procesando pagos ya iniciados — el
+   rollback de Cloudflare Pages no afecta las Functions del webhook en sí
+   más que devolverlas también al código de ese deployment anterior, que ya
+   procesaba el webhook igual (ver `kill-1`/`kill-2` en `mp_webhook.test.js`).
 
-1. Revertir el commit de activación (o abrir uno correctivo) que deje
-   `CHECKOUT_ENABLED = "false"` en `wrangler.toml` y
-   `PUBLIC_CHECKOUT_ENABLED: 'false'` (con `SMOKE_EXPECT_CHECKOUT: 'disabled'`
-   junto a él) en `deploy.yml`.
-2. Deploy normal vía push a `main`.
-3. El smoke post-deploy (`SMOKE_EXPECT_CHECKOUT=disabled`) debe pasar solo; si
-   falla, el checkout no quedó realmente oculto y no hay que darlo por
+### Procedimiento operativo — rollback permanente en código
+
+El paso anterior es la respuesta inmediata; este es el que deja el repositorio
+consistente con lo que quedó desplegado:
+
+1. Confirmar en `wrangler.toml`: `CHECKOUT_ENABLED = "false"`.
+2. Confirmar en `.github/workflows/deploy.yml`:
+   `PUBLIC_CHECKOUT_ENABLED: 'false'` y `SMOKE_EXPECT_CHECKOUT: 'disabled'`
+   (los dos juntos — ver el test "los dos interruptores de checkout coinciden
+   entre sí" en `wrangler-config.test.js`).
+3. Commit, merge a `main` y deploy normal (no manual) — el push a `main`
+   dispara `deploy.yml`.
+4. El smoke post-deploy (`SMOKE_EXPECT_CHECKOUT=disabled`) debe pasar solo;
+   si falla, el checkout no quedó realmente oculto y no hay que darlo por
    apagado hasta corregirlo.
-4. **Nunca borrar `orders`, `order_items` ni `order_events`** durante un
-   rollback — apagar el checkout no es un evento destructivo sobre datos ya
-   existentes.
-5. El webhook de Mercado Pago **debe seguir procesándose** aunque
-   `CHECKOUT_ENABLED` esté en `false` — así un pago que ya estaba en curso
-   antes del rollback se termina de confirmar igual. Esto ya está garantizado
-   por el código (`_mp_webhook_handler.js` no depende de `checkoutEnabled`) y
-   cubierto por los tests `kill-1`/`kill-2` de `mp_webhook.test.js`.
-6. Órdenes ya creadas o pagos pendientes al momento del rollback quedan tal
+5. Órdenes ya creadas o pagos pendientes al momento del rollback quedan tal
    cual en D1 — se resuelven manualmente (confirmar el pago cuando llegue el
    webhook, o contactar al comprador si quedó pendiente).
 
