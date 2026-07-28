@@ -13,8 +13,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Misma barrera que corre en cada PR (.github/workflows/ci.yml), invocando
+  # el mismo script — nunca una copia aparte que pueda desviarse. El build
+  # real de más abajo (job `deploy`) no arranca si este job falla: un PR
+  # pudo haber sido aprobado hace tiempo y el checkout de main pudo cambiar
+  # entretanto, así que esto vuelve a probar sintaxis, la suite completa y
+  # ambos modos de checkout contra el commit que realmente se va a desplegar.
+  validate:
+    name: Validate before deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Validate (shared script — syntax, tests, both checkout builds)
+        run: bash scripts/validate-ci.sh
+
   deploy:
     name: Deploy
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -43,6 +69,12 @@ jobs:
         working-directory: astro-front
         run: npm ci --no-audit --no-fund
 
+      - name: Load production Turnstile config
+        id: ts_config
+        # Misma fuente que ya validó el job `validate` — nunca un literal
+        # aparte en este YAML que pueda desviarse del que se acaba de probar.
+        run: bash scripts/validate-ci.sh --print-turnstile-config >> "$GITHUB_OUTPUT"
+
       - name: Build Astro
         working-directory: astro-front
         env:
@@ -53,10 +85,8 @@ jobs:
           # (CHECKOUT_ENABLED en wrangler.toml) — los dos deben estar en true
           # para que se pueda cobrar.
           PUBLIC_CHECKOUT_ENABLED: 'true'
-          # Site key pública de Turnstile Production (no es secreto, puede
-          # versionarse) y los hosts exactos donde se acepta.
-          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD_Ul8KGae_hdWwj'
-          PUBLIC_TURNSTILE_ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com'
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ steps.ts_config.outputs.site_key }}
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: ${{ steps.ts_config.outputs.allowed_hosts }}
         run: npm run build
 
       - name: Deploy via Wrangler
