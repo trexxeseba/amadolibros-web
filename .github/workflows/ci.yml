@@ -20,7 +20,9 @@ jobs:
   validate:
     name: Syntax & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 15 min (antes 10): el validador compartido ahora corre dos builds
+    # completos (checkout OFF y ON) en vez de uno solo.
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -35,54 +37,13 @@ jobs:
           cache: npm
           cache-dependency-path: astro-front/package-lock.json
 
-      - name: Check JavaScript syntax
-        shell: bash
-        run: |
-          set -euo pipefail
-          find functions scripts worker-sync \
-            -type f \
-            -name '*.js' \
-            -print0 |
-            xargs -0 -r -n1 node --check
-
-      - name: Test catalog sync
-        run: node --test worker-sync/__tests__/*.test.js
-
-      - name: Test catalog display
-        run: node --test functions/__tests__/*.test.js
-
-      - name: Test Turnstile host matching (carrito.astro)
-        run: node --test astro-front/src/lib/__tests__/*.test.js
-
-      - name: Test orders
-        run: node --test functions/api/__tests__/orders.test.js
-
-      - name: Test preferences
-        run: node --test functions/api/__tests__/preferences.test.js
-
-      - name: Test MP webhook
-        run: node --test functions/api/__tests__/mp_webhook.test.js
-
-      - name: Test order status
-        run: node --test functions/api/__tests__/order_status.test.js
-
-      - name: Install Astro dependencies
-        working-directory: astro-front
-        run: npm ci --no-audit --no-fund
-
-      - name: Build production configuration
-        working-directory: astro-front
-        env:
-          PUBLIC_INDEXABLE: 'true'
-          PUBLIC_GA_ID: G-SDX45VEPP3
-          PUBLIC_CHECKOUT_ENABLED: 'false'
-        run: npm run build
-
-      - name: Confirm production checkout remains hidden
-        run: |
-          grep -q 'data-online-checkout="disabled"' astro-front/dist/carrito/index.html
-          ! grep -q 'id="btn-prepare-order"' astro-front/dist/carrito/index.html
-          ! grep -q 'id="btn-pay-mp"' astro-front/dist/carrito/index.html
+      # Único punto de verdad de la validación — el mismo script corre acá y
+      # en el job `validate` de deploy.yml (ver ese archivo). Cubre sintaxis,
+      # la suite completa, build con checkout OFF y build con checkout ON con
+      # la configuración pública de Turnstile de Producción. Ver
+      # scripts/validate-ci.sh para el detalle de cada paso.
+      - name: Validate (shared script — syntax, tests, both checkout builds)
+        run: bash scripts/validate-ci.sh
 
       - name: Check pull request diff
         if: github.event_name == 'pull_request'
