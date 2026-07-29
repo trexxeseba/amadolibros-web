@@ -13,6 +13,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  guard:
+    name: Guard production ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Block manual deploy outside main
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "Deploy bloqueado: solo se permite ejecutar manualmente desde main."
+          exit 1
+
   # Misma barrera que corre en cada PR (.github/workflows/ci.yml), invocando
   # el mismo script — nunca una copia aparte que pueda desviarse. El build
   # real de más abajo (job `deploy`) no arranca si este job falla: un PR
@@ -21,6 +33,7 @@ jobs:
   # ambos modos de checkout contra el commit que realmente se va a desplegar.
   validate:
     name: Validate before deploy
+    needs: guard
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
