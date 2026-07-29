@@ -10,7 +10,7 @@ const YEAR = new Date().getFullYear();
     <div class="footer-brand">
       <p class="footer-name">Amado Libros</p>
       <p class="footer-tagline">
-        Librería uruguaya. Respondemos por WhatsApp todos los días.
+        Librería uruguaya con atención y retiro en Ciudad Vieja.
       </p>
       <p class="footer-copy">&copy; {YEAR} Amado Libros</p>
     </div>
@@ -19,10 +19,10 @@ const YEAR = new Date().getFullYear();
     <div class="footer-info">
       <p class="footer-info-title">Cómo comprás</p>
       <ul class="footer-list">
-        <li>Consultás por WhatsApp o en Mercado Libre</li>
-        <li>Entrega en el día en Montevideo</li>
-        <li>Envíos a todo Uruguay</li>
-        <li>Libros difíciles de ubicar por encargo</li>
+        <li><a href="/envios">Envíos y retiro</a></li>
+        <li><a href="/devoluciones">Devoluciones y reembolsos</a></li>
+        <li><a href="/terminos">Términos y cancelaciones</a></li>
+        <li><a href="/privacidad">Privacidad</a></li>
       </ul>
     </div>
 
@@ -40,7 +40,9 @@ const YEAR = new Date().getFullYear();
         </svg>
         WhatsApp · 099 841 325
       </a>
-      <p class="footer-ml-note">También vendemos en <span class="footer-ml-highlight">Mercado Libre</span></p>
+      <a href="mailto:adm@amadolibros.com" class="footer-text-link">adm@amadolibros.com</a>
+      <a href="/contacto" class="footer-text-link">Rincón 608 · Montevideo</a>
+      <p class="footer-hours">Lun–Vie 9:30–17:30</p>
     </div>
 
   </div>
@@ -109,6 +111,8 @@ const YEAR = new Date().getFullYear();
     line-height: 1.45;
   }
 
+  .footer-list a:hover, .footer-text-link:hover { color: rgba(248, 245, 239, 0.9); }
+
   /* Contacto */
   .footer-contact { display: flex; flex-direction: column; gap: 0; }
 
@@ -124,13 +128,11 @@ const YEAR = new Date().getFullYear();
   }
   .footer-wa-link:hover { opacity: 0.8; }
 
-  .footer-ml-note {
+  .footer-text-link, .footer-hours {
     font-size: 0.8125rem;
     line-height: 1.45;
+    margin-bottom: 0.35rem;
   }
 
-  .footer-ml-highlight {
-    color: rgba(248, 245, 239, 0.7);
-    font-weight: 600;
-  }
+  .footer-text-link { color: rgba(248, 245, 239, 0.7); }
 </style>
