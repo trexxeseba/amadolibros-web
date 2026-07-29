@@ -304,8 +304,10 @@ async function checkRoute(path, checkoutExpectation) {
     if (!body.startsWith('<?xml') || !body.includes('<urlset ') || !body.includes(`<loc>${BASE_URL}/</loc>`)) {
       return { ok: false, path, reason: 'invalid sitemap XML body' };
     }
-    if (body.includes(`<loc>${BASE_URL}/politicas</loc>`)) {
-      return { ok: false, path, reason: 'sitemap includes unavailable /politicas page' };
+    for (const requiredPage of ['politicas', 'envios', 'devoluciones', 'terminos', 'privacidad', 'contacto']) {
+      if (!body.includes(`<loc>${BASE_URL}/${requiredPage}</loc>`)) {
+        return { ok: false, path, reason: `sitemap missing /${requiredPage}` };
+      }
     }
     return { ok: true, path };
   }

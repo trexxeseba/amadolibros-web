@@ -30,6 +30,12 @@ export async function onRequest(ctx) {
         { loc: `${BASE}/`,                                    changefreq: 'daily',   priority: '1.0', lastmod: today },
         { loc: `${BASE}/catalogo`,                          changefreq: 'daily',   priority: '0.5', lastmod: today },
         { loc: `${BASE}/libros-maria-montessori-uruguay`,   changefreq: 'weekly',  priority: '0.8', lastmod: today },
+        { loc: `${BASE}/politicas`,                        changefreq: 'monthly', priority: '0.4', lastmod: today },
+        { loc: `${BASE}/envios`,                           changefreq: 'monthly', priority: '0.4', lastmod: today },
+        { loc: `${BASE}/devoluciones`,                     changefreq: 'monthly', priority: '0.4', lastmod: today },
+        { loc: `${BASE}/terminos`,                         changefreq: 'monthly', priority: '0.4', lastmod: today },
+        { loc: `${BASE}/privacidad`,                       changefreq: 'monthly', priority: '0.3', lastmod: today },
+        { loc: `${BASE}/contacto`,                         changefreq: 'monthly', priority: '0.4', lastmod: today },
     ];
 
     let bookUrls = [];
