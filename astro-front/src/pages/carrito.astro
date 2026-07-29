@@ -191,22 +191,21 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
           <div id="checkout-error" class="checkout-error" role="alert" hidden></div>
 
-          {checkoutEnabled && (
-            <div class="checkout-sticky-total" aria-hidden="true">
-              <span class="checkout-sticky-total-label">Total</span>
-              <strong id="checkout-sticky-total-value">$&nbsp;0</strong>
-            </div>
-          )}
-
           {checkoutEnabled ? (
-            <button type="button" id="btn-prepare-order" class="btn-checkout-primary" aria-describedby="checkout-error">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
-              </svg>
-              <span class="btn-checkout-primary-text">Continuar a Mercado Pago</span>
-            </button>
+            <div class="checkout-mobile-bar">
+              <div class="checkout-sticky-total" aria-hidden="true">
+                <span class="checkout-sticky-total-label">Total</span>
+                <strong id="checkout-sticky-total-value">$&nbsp;0</strong>
+              </div>
+              <button type="button" id="btn-prepare-order" class="btn-checkout-primary" aria-describedby="checkout-error">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+                <span class="btn-checkout-primary-text">Continuar a Mercado Pago</span>
+              </button>
+            </div>
           ) : (
             <button type="button" id="btn-wa-order" class="btn-wa-order">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -405,6 +404,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     border-top: 1px solid var(--border);
   }
 
+  /* El atributo hidden debe ganar sobre el layout flex. Sin esta regla,
+     algunos navegadores terminan mostrando los campos aunque esté elegido
+     Retiro. */
+  .shipping-fields[hidden] {
+    display: none;
+  }
+
   .form-req {
     color: var(--salmon);
   }
@@ -496,7 +502,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     line-height: 1.5;
   }
 
-  /* Mini-total mostrado junto al CTA — solo visible en la barra sticky de
+  .checkout-mobile-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* Mini-total mostrado junto al CTA — solo visible en la barra mobile de
      mobile (ver media query más abajo); en flujo normal/desktop queda oculto
      porque el resumen detallado ya está visible más arriba. */
   .checkout-sticky-total {
@@ -780,22 +792,32 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     color: #267a42;
   }
 
-  /* ── Barra inferior sticky (mobile, checkout ON) ──────────────────────
-     position: sticky (no fixed): se ancla al fondo del viewport mientras se
-     recorre #cart-content, y se libera naturalmente al llegar al final de su
-     propio contenedor — por construcción nunca tapa el footer ni WAFloat,
-     sin necesidad de reservar padding extra. También evita los problemas de
-     `position: fixed` con el teclado virtual en iOS/Android. */
+  /* ── Barra inferior persistente (mobile, checkout ON) ──────────────────
+     La barra vive fija al viewport para que el total y el CTA sean visibles
+     durante todo el formulario. JS la oculta cuando aparece el teclado móvil
+     o cuando el footer entra en pantalla. */
   @media (max-width: 640px) {
-    .cart-page[data-online-checkout="enabled"] .cart-pay-section {
-      position: sticky;
+    .cart-page[data-online-checkout="enabled"] {
+      padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .cart-page[data-online-checkout="enabled"] .checkout-mobile-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
       bottom: 0;
-      z-index: 10;
+      z-index: 50;
       background: var(--bg);
       border-top: 1px solid var(--border);
       box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
       padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
-      margin: 0 -1rem;
+      transition: transform 0.18s ease, visibility 0.18s ease;
+    }
+
+    .cart-page[data-online-checkout="enabled"][data-overlay-suppressed="true"] .checkout-mobile-bar {
+      transform: translateY(110%);
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .cart-page[data-online-checkout="enabled"] .checkout-sticky-total {
@@ -939,6 +961,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var totalShippingEl      = document.getElementById('cart-total-shipping');
     var stickyTotalEl        = document.getElementById('checkout-sticky-total-value');
     var checkoutErrorEl      = document.getElementById('checkout-error');
+    var cartPageEl           = document.querySelector('.cart-page');
 
     // ── Formato moneda ───────────────────────────────────────────────────
     var fmt = new Intl.NumberFormat('es-UY', {
@@ -1180,13 +1203,66 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     document.addEventListener('amado:cart-updated', renderCart);
 
     // ── Toggle entrega ───────────────────────────────────────────────────
+    function syncShippingFields() {
+      if (!shippingFieldsEl) return;
+      var shippingSelected = getDeliveryType() === 'shipping';
+      shippingFieldsEl.hidden = !shippingSelected;
+      shippingFieldsEl.setAttribute('aria-hidden', shippingSelected ? 'false' : 'true');
+
+      var controls = shippingFieldsEl.querySelectorAll('input, select, textarea');
+      for (var i = 0; i < controls.length; i++) {
+        controls[i].disabled = !shippingSelected;
+        if (!shippingSelected) controls[i].removeAttribute('aria-invalid');
+      }
+
+      if (!shippingSelected) {
+        var shippingErrors = shippingFieldsEl.querySelectorAll('.field-error');
+        for (var j = 0; j < shippingErrors.length; j++) {
+          shippingErrors[j].hidden = true;
+          shippingErrors[j].textContent = '';
+        }
+      }
+    }
+
     var deliveryRadios = document.querySelectorAll('input[name="delivery"]');
     deliveryRadios.forEach(function (radio) {
       radio.addEventListener('change', function () {
-        if (shippingFieldsEl) shippingFieldsEl.hidden = (radio.value !== 'shipping');
+        syncShippingFields();
         updateTotals();
       });
     });
+    syncShippingFields();
+
+    // ── Barra mobile: no tapar teclado ni footer ─────────────────────────
+    if (onlineCheckoutEnabled && cartPageEl) {
+      var keyboardOpen = false;
+      var footerVisible = false;
+
+      function syncCheckoutOverlay() {
+        cartPageEl.dataset.overlaySuppressed = (keyboardOpen || footerVisible) ? 'true' : 'false';
+      }
+
+      function detectMobileKeyboard() {
+        if (!window.visualViewport) return;
+        keyboardOpen = window.visualViewport.height < window.innerHeight - 140;
+        syncCheckoutOverlay();
+      }
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', detectMobileKeyboard);
+        window.visualViewport.addEventListener('scroll', detectMobileKeyboard);
+        detectMobileKeyboard();
+      }
+
+      var footerEl = document.querySelector('footer');
+      if (footerEl && 'IntersectionObserver' in window) {
+        var footerObserver = new IntersectionObserver(function (entries) {
+          footerVisible = entries[0] ? entries[0].isIntersecting : false;
+          syncCheckoutOverlay();
+        }, { threshold: 0.05 });
+        footerObserver.observe(footerEl);
+      }
+    }
 
     // ── Vaciar carrito ────────────────────────────────────────────────────
     var btnClear = document.getElementById('btn-clear');
