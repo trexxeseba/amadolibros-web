@@ -160,25 +160,48 @@ test('carrito.astro: no expone TURNSTILE_SECRET_KEY, MP_ACCESS_TOKEN ni MP_WEBHO
   assert.doesNotMatch(carritoAstro, /MP_WEBHOOK_SECRET/);
 });
 
-// ── Barra inferior sticky (mobile) ──────────────────────────────────────────
+// ── Barra inferior persistente (mobile) ─────────────────────────────────────
 
-test('carrito.astro: la barra de pago usa position: sticky en mobile, condicionada a checkout ON', () => {
+test('carrito.astro: la barra de pago usa position: fixed en mobile, condicionada a checkout ON', () => {
   assert.match(
     carritoAstro,
-    /\.cart-page\[data-online-checkout="enabled"\]\s+\.cart-pay-section\s*\{[^}]*position:\s*sticky/,
+    /\.cart-page\[data-online-checkout="enabled"\]\s+\.checkout-mobile-bar\s*\{[^}]*position:\s*fixed/,
   );
 });
 
-test('carrito.astro: el total se refleja en la barra sticky (mismo valor que el resumen, sin recalcular)', () => {
+test('carrito.astro: el total se refleja en la barra mobile (mismo valor que el resumen, sin recalcular)', () => {
   assert.match(carritoAstro, /id="checkout-sticky-total-value"/);
   assert.match(carritoAstro, /stickyTotalEl\.textContent\s*=\s*fmt\.format/);
 });
 
-test('carrito.astro: el bubble flotante de WhatsApp no compite con la barra sticky en mobile', () => {
+test('carrito.astro: la barra mobile se oculta frente al teclado o el footer', () => {
+  assert.match(carritoAstro, /window\.visualViewport\.height\s*<\s*window\.innerHeight\s*-\s*140/);
+  assert.match(carritoAstro, /new IntersectionObserver/);
+  assert.match(carritoAstro, /data-overlay-suppressed="true"/);
+});
+
+test('carrito.astro: el bubble flotante de WhatsApp no compite con la barra mobile', () => {
   assert.match(
     carritoAstro,
     /\.cart-page\[data-online-checkout="enabled"\]\s*~\s*:global\(\.wa-float\)\s*\{\s*display:\s*none;/,
   );
+});
+
+// ── Claridad retiro / envío ─────────────────────────────────────────────────
+
+test('carrito.astro: los campos de envío ocultos no son forzados a display flex', () => {
+  assert.match(carritoAstro, /\.shipping-fields\[hidden\]\s*\{\s*display:\s*none;/);
+});
+
+test('carrito.astro: retiro oculta y deshabilita todos los controles de envío', () => {
+  const fnStart = carritoAstro.indexOf('function syncShippingFields');
+  assert.notEqual(fnStart, -1);
+  const fnBody = carritoAstro.slice(fnStart, fnStart + 1300);
+  assert.match(fnBody, /shippingFieldsEl\.hidden\s*=\s*!shippingSelected/);
+  assert.match(fnBody, /querySelectorAll\('input, select, textarea'\)/);
+  assert.match(fnBody, /controls\[i\]\.disabled\s*=\s*!shippingSelected/);
+  assert.match(carritoAstro, /syncShippingFields\(\);\s*\n\s*updateTotals\(\);/);
+  assert.match(carritoAstro, /syncShippingFields\(\);\s*\n\s*\n\s*\/\/ ── Barra mobile/);
 });
 
 // ── Carrito conservado antes de pago aprobado (2-N-I1 v2) ───────────────────
