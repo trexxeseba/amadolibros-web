@@ -87,8 +87,16 @@
     if (!validation) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    window.alert(validation.message);
-    focusField(validation.field);
+    // carrito.astro expone este hook para mostrar el error debajo del campo
+    // (accesible, sin bloquear la pantalla) — si por algún motivo no está
+    // disponible (script no cargado todavía, u otra página), alert() sigue
+    // funcionando como respaldo.
+    if (typeof window.__amadoCheckoutShowFieldError === 'function') {
+      window.__amadoCheckoutShowFieldError(validation.field, validation.message);
+    } else {
+      window.alert(validation.message);
+      focusField(validation.field);
+    }
   }, true);
 
   var nativeFetch = window.fetch.bind(window);
