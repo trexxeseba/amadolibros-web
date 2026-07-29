@@ -96,18 +96,23 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
               <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
               <input type="text" id="delivery-address" class="form-input"
                 placeholder="Ej: Av. Italia 2000, Apto 3"
-                autocomplete="shipping street-address">
+                autocomplete="shipping street-address"
+                aria-describedby="err-delivery-address">
+              <span class="field-error" id="err-delivery-address" role="alert" hidden></span>
             </div>
             <div class="form-field">
               <label for="delivery-barrio" class="form-label">Barrio / Localidad</label>
               <input type="text" id="delivery-barrio" class="form-input"
                 placeholder="Ej: Pocitos, Centro, Malvín"
-                autocomplete="shipping address-level3">
+                autocomplete="shipping address-level3"
+                aria-describedby="err-delivery-barrio">
+              <span class="field-error" id="err-delivery-barrio" role="alert" hidden></span>
             </div>
             <div class="form-field">
               <label for="delivery-departamento" class="form-label">Departamento <span class="form-req" aria-hidden="true">*</span></label>
               <select id="delivery-departamento" class="form-input"
-                autocomplete="shipping address-level1">
+                autocomplete="shipping address-level1"
+                aria-describedby="err-delivery-departamento">
                 <option value="">Seleccioná tu departamento</option>
                 <option>Artigas</option>
                 <option>Canelones</option>
@@ -129,19 +134,24 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
                 <option>Tacuarembó</option>
                 <option>Treinta y Tres</option>
               </select>
+              <span class="field-error" id="err-delivery-departamento" role="alert" hidden></span>
             </div>
             <div class="form-field">
               <label for="delivery-date" class="form-label">Fecha preferida</label>
-              <input type="date" id="delivery-date" class="form-input" autocomplete="off">
+              <input type="date" id="delivery-date" class="form-input" autocomplete="off"
+                aria-describedby="err-delivery-date">
+              <span class="field-error" id="err-delivery-date" role="alert" hidden></span>
             </div>
             <div class="form-row">
               <div class="form-field">
                 <label for="delivery-from" class="form-label">Desde <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="time" id="delivery-from" class="form-input">
+                <input type="time" id="delivery-from" class="form-input" aria-describedby="err-delivery-from">
+                <span class="field-error" id="err-delivery-from" role="alert" hidden></span>
               </div>
               <div class="form-field">
                 <label for="delivery-to" class="form-label">Hasta <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="time" id="delivery-to" class="form-input">
+                <input type="time" id="delivery-to" class="form-input" aria-describedby="err-delivery-to">
+                <span class="field-error" id="err-delivery-to" role="alert" hidden></span>
               </div>
             </div>
             <div class="form-field">
@@ -159,59 +169,74 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           <div class="form-grid">
             <div class="form-field">
               <label for="buyer-name" class="form-label">Nombre</label>
-              <input type="text" id="buyer-name" class="form-input" autocomplete="name">
+              <input type="text" id="buyer-name" class="form-input" autocomplete="name"
+                aria-describedby="err-buyer-name">
+              <span class="field-error" id="err-buyer-name" role="alert" hidden></span>
             </div>
             <div class="form-field">
               <label for="buyer-phone" class="form-label">WhatsApp / Teléfono</label>
               <input type="tel" id="buyer-phone" class="form-input"
                 placeholder="Ej: 099 123 456"
                 autocomplete="tel"
-                inputmode="tel">
+                inputmode="tel"
+                aria-describedby="err-buyer-phone">
+              <span class="field-error" id="err-buyer-phone" role="alert" hidden></span>
             </div>
           </div>
         </section>
 
-        <!-- Acciones de pago -->
-        <section class="cart-pay-section">
+        <!-- Acciones de pago — pantalla única: un solo botón principal -->
+        <section class="cart-pay-section" aria-label="Confirmar y pagar">
           {checkoutEnabled && <div id="cf-ts-container"></div>}
+
+          <div id="checkout-error" class="checkout-error" role="alert" hidden></div>
+
           {checkoutEnabled && (
-            <button type="button" id="btn-prepare-order" class="btn-prepare-order">
+            <div class="checkout-sticky-total" aria-hidden="true">
+              <span class="checkout-sticky-total-label">Total</span>
+              <strong id="checkout-sticky-total-value">$&nbsp;0</strong>
+            </div>
+          )}
+
+          {checkoutEnabled ? (
+            <button type="button" id="btn-prepare-order" class="btn-checkout-primary" aria-describedby="checkout-error">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                 <line x1="1" y1="10" x2="23" y2="10"/>
               </svg>
-              Preparar pago online
+              <span class="btn-checkout-primary-text">Continuar a Mercado Pago</span>
+            </button>
+          ) : (
+            <button type="button" id="btn-wa-order" class="btn-wa-order">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+              </svg>
+              Enviar pedido por WhatsApp
             </button>
           )}
+
           {checkoutEnabled && (
-            <p class="pay-note">
-              Registramos tu pedido y te contactamos por WhatsApp para coordinar
-              el pago y la entrega.
+            <>
+              <p class="checkout-reassurance">
+                Vas a pagar en el sitio seguro de Mercado Pago. Tu carrito se
+                mantiene hasta que el pago quede aprobado.
+              </p>
+              <button type="button" id="btn-wa-order" class="btn-wa-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+                </svg>
+                O coordinar por WhatsApp
+              </button>
+            </>
+          )}
+
+          {!checkoutEnabled && (
+            <p class="checkout-reassurance">
+              No pagás ahora. Te enviamos los datos para transferencia o un link de Mercado Pago.
             </p>
           )}
-          <button type="button" id="btn-wa-order" class="btn-wa-order">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
-            </svg>
-            Enviar pedido por WhatsApp
-          </button>
-          <p class="checkout-reassurance">
-            No pagás ahora. Te enviamos los datos para transferencia o un link de Mercado Pago.
-          </p>
         </section>
-
-        {checkoutEnabled && (
-          <div id="order-result" class="order-result" hidden>
-            <p class="order-result-h">Pedido preparado</p>
-            <p>Código: <strong id="order-public-code"></strong></p>
-            <p>Total confirmado: <strong id="order-total-confirmed"></strong></p>
-            <p id="order-result-note" class="order-result-note">El pago online se habilitará en la siguiente etapa.</p>
-            <button type="button" id="btn-pay-mp" class="btn-pay-mp" hidden>
-              Pagar con Mercado Pago
-            </button>
-          </div>
-        )}
 
       </div><!-- /#cart-content -->
     </div><!-- /.cart-wrap -->
@@ -424,6 +449,17 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     border-color: var(--salmon);
   }
 
+  .form-input[aria-invalid="true"] {
+    border-color: #b42318;
+  }
+
+  .field-error {
+    display: block;
+    font-size: 0.78rem;
+    color: #b42318;
+    line-height: 1.4;
+  }
+
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -442,15 +478,40 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     margin-top: 0.25rem;
   }
 
-  /* ── Sección de pago ───────────────────────────── */
+  /* ── Sección de pago — pantalla única ──────────── */
   .cart-pay-section {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     padding-top: 0.5rem;
   }
 
-  .btn-prepare-order {
+  .checkout-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b42318;
+    border-radius: var(--r);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  /* Mini-total mostrado junto al CTA — solo visible en la barra sticky de
+     mobile (ver media query más abajo); en flujo normal/desktop queda oculto
+     porque el resumen detallado ya está visible más arriba. */
+  .checkout-sticky-total {
+    display: none;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--ink-2);
+  }
+  .checkout-sticky-total strong {
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+
+  .btn-checkout-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -465,33 +526,43 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     font-weight: 700;
     cursor: pointer;
     width: 100%;
+    min-height: 48px;
     transition: background 0.15s;
   }
-  .btn-prepare-order:hover { background: var(--salmon-hover); }
-  .btn-prepare-order:disabled {
+  .btn-checkout-primary:hover { background: var(--salmon-hover); }
+  .btn-checkout-primary:disabled {
     background: #9ca3af;
     cursor: not-allowed;
   }
-
-  .order-result {
-    background: #f0fdf4;
-    border: 1px solid #86efac;
-    border-radius: var(--r);
-    padding: 1rem 1.25rem;
-    margin-top: 0.5rem;
+  .btn-checkout-primary:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
   }
 
-  .order-result-h {
-    font-weight: 700;
-    color: #166534;
-    font-size: 1rem;
-    margin-bottom: 0.4rem;
-  }
-
-  .order-result-note {
+  /* WhatsApp como alternativa secundaria — nunca compite visualmente con el
+     botón principal de pago. */
+  .btn-wa-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    color: var(--ink-2);
+    border: none;
+    font-family: var(--font-ui);
     font-size: 0.82rem;
-    color: #15803d;
-    margin-top: 0.4rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    min-height: 44px;
+    align-self: center;
+  }
+  .btn-wa-secondary:hover { color: var(--ink); }
+  .btn-wa-secondary:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
   }
 
   .cart-shipping-cost-line {
@@ -505,13 +576,6 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     border-top: 1px solid var(--border);
     padding-top: 0.2rem;
     margin-top: 0.1rem;
-  }
-
-  .pay-note {
-    font-size: 0.875rem;
-    color: var(--ink-2);
-    line-height: 1.5;
-    text-align: center;
   }
 
   .btn-wa-order {
@@ -716,26 +780,35 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     color: #267a42;
   }
 
-  .btn-pay-mp {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background: #009ee3;
-    color: #fff;
-    border: none;
-    border-radius: var(--r);
-    font-family: var(--font-ui);
-    font-size: 0.9rem;
-    font-weight: 700;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 0.75rem;
-    transition: background 0.15s;
+  /* ── Barra inferior sticky (mobile, checkout ON) ──────────────────────
+     position: sticky (no fixed): se ancla al fondo del viewport mientras se
+     recorre #cart-content, y se libera naturalmente al llegar al final de su
+     propio contenedor — por construcción nunca tapa el footer ni WAFloat,
+     sin necesidad de reservar padding extra. También evita los problemas de
+     `position: fixed` con el teclado virtual en iOS/Android. */
+  @media (max-width: 640px) {
+    .cart-page[data-online-checkout="enabled"] .cart-pay-section {
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+      margin: 0 -1rem;
+    }
+
+    .cart-page[data-online-checkout="enabled"] .checkout-sticky-total {
+      display: flex;
+    }
+
+    /* La burbuja flotante de WhatsApp (WAFloat, fuera de <main>) competiría
+       visualmente con la barra sticky que ya incluye su propia alternativa
+       de WhatsApp — se oculta solo en este caso puntual. */
+    .cart-page[data-online-checkout="enabled"] ~ :global(.wa-float) {
+      display: none;
+    }
   }
-  .btn-pay-mp:hover { background: #0087c6; }
-  .btn-pay-mp:disabled { background: #9ca3af; cursor: not-allowed; }
 </style>
 
 <script is:inline define:vars={{ turnstileSiteKey, turnstileAllowedHosts }}>
@@ -864,6 +937,8 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var shippingCostEl       = document.getElementById('cart-shipping-cost');
     var totalShippingLineEl  = document.getElementById('cart-total-shipping-line');
     var totalShippingEl      = document.getElementById('cart-total-shipping');
+    var stickyTotalEl        = document.getElementById('checkout-sticky-total-value');
+    var checkoutErrorEl      = document.getElementById('checkout-error');
 
     // ── Formato moneda ───────────────────────────────────────────────────
     var fmt = new Intl.NumberFormat('es-UY', {
@@ -875,6 +950,44 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (!announceEl) return;
       announceEl.textContent = '';
       setTimeout(function () { announceEl.textContent = msg; }, 50);
+    }
+
+    // ── Errores de campo (accesibles, nunca alert()) ─────────────────────
+    // Expuesto en window para que orders-guard.js (guardia global e
+    // independiente de este script) pueda mostrar el mismo tipo de error
+    // inline en vez de un alert() bloqueante, sin duplicar esta lógica.
+    function clearFieldErrors() {
+      var errs = document.querySelectorAll('.field-error');
+      for (var i = 0; i < errs.length; i++) { errs[i].hidden = true; errs[i].textContent = ''; }
+      var invalids = document.querySelectorAll('[aria-invalid="true"]');
+      for (var j = 0; j < invalids.length; j++) { invalids[j].removeAttribute('aria-invalid'); }
+    }
+    function showFieldError(fieldId, message) {
+      var field = document.getElementById(fieldId);
+      var errEl = document.getElementById('err-' + fieldId);
+      if (errEl) { errEl.textContent = message; errEl.hidden = false; }
+      if (field) {
+        field.setAttribute('aria-invalid', 'true');
+        if (typeof field.scrollIntoView === 'function') {
+          field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        field.focus();
+      }
+    }
+    window.__amadoCheckoutShowFieldError = showFieldError;
+    window.__amadoCheckoutClearFieldErrors = clearFieldErrors;
+
+    // ── Error general del checkout (Turnstile, red, servidor) ────────────
+    function clearCheckoutError() {
+      if (checkoutErrorEl) { checkoutErrorEl.hidden = true; checkoutErrorEl.textContent = ''; }
+    }
+    function showCheckoutError(message) {
+      if (!checkoutErrorEl) { alert(message); return; }
+      checkoutErrorEl.textContent = message;
+      checkoutErrorEl.hidden = false;
+      if (typeof checkoutErrorEl.scrollIntoView === 'function') {
+        checkoutErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
 
     // ── Tipo de entrega ──────────────────────────────────────────────────
@@ -902,6 +1015,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (shippingCostLineEl)  shippingCostLineEl.hidden  = true;
         if (totalShippingLineEl) totalShippingLineEl.hidden = true;
         if (shippingMsgEl)       shippingMsgEl.hidden       = true;
+        if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(total);
       } else {
         var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
         var totalWithShipping = subtotal + shippingCost;
@@ -918,6 +1032,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           if (totalShippingEl) totalShippingEl.textContent = fmt.format(totalWithShipping);
         }
         if (shippingMsgEl) shippingMsgEl.hidden = true;
+        if (stickyTotalEl) stickyTotalEl.textContent = fmt.format(totalWithShipping);
       }
     }
 
@@ -1154,50 +1269,34 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
-    // ── Pagar con Mercado Pago ────────────────────────────────────────────────
-    var mpPublicCode     = null;
-    var mpIdempotencyKey = null;
-    var btnPayMp         = document.getElementById('btn-pay-mp');
-
-    if (btnPayMp) {
-      btnPayMp.addEventListener('click', async function () {
-        if (!mpPublicCode || !mpIdempotencyKey) return;
-        btnPayMp.disabled    = true;
-        btnPayMp.textContent = 'Iniciando pago…';
-        try {
-          var mpResp = await fetch('/api/preferences', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ public_code: mpPublicCode, idempotency_key: mpIdempotencyKey }),
-          });
-          var mpData = await mpResp.json();
-          if (mpResp.ok && mpData.checkout_url) {
-            try {
-              sessionStorage.setItem('amado-mp-auth', JSON.stringify({
-                public_code:     mpPublicCode,
-                idempotency_key: mpIdempotencyKey,
-              }));
-            } catch (_) {}
-            window.location.href = mpData.checkout_url;
-            return;
-          }
-          alert('Error al iniciar el pago: ' + (mpData.error || 'Intentá de nuevo.'));
-        } catch (_err) {
-          alert('Error de conexión. Verificá tu internet e intentá de nuevo.');
-        }
-        btnPayMp.disabled    = false;
-        btnPayMp.textContent = 'Pagar con Mercado Pago';
-      });
-    }
-
-    // ── Preparar pago online ─────────────────────────────────────────────────
+    // ── Continuar a Mercado Pago — pantalla única ────────────────────────
+    // Un solo clic encadena: crear/recuperar la orden (POST /api/orders) →
+    // crear/recuperar la preferencia (POST /api/preferences) → redirect.
+    // Ambos endpoints ya son idempotentes por diseño (idempotency_key /
+    // public_code), así que reintentar todo el flujo tras cualquier falla es
+    // siempre seguro: nunca duplica la orden ni la preferencia. No se
+    // modificó el contrato de ninguno de los dos endpoints.
     var btnPrepare  = document.getElementById('btn-prepare-order');
     var origBtnHTML = btnPrepare ? btnPrepare.innerHTML : '';
 
+    function resetPrepareButton() {
+      if (!btnPrepare) return;
+      btnPrepare.disabled = false;
+      btnPrepare.removeAttribute('aria-busy');
+      btnPrepare.innerHTML = origBtnHTML;
+    }
+
     if (btnPrepare) {
       btnPrepare.addEventListener('click', async function () {
+        // Guarda extra contra doble envío — disabled ya lo impide, pero un
+        // reintento de teclado/lector de pantalla podría reordenar eventos.
+        if (btnPrepare.disabled) return;
+
         var cart = window.AmadoCart.get();
         if (cart.items.length === 0) return;
+
+        clearCheckoutError();
+        clearFieldErrors();
 
         var deliveryType = getDeliveryType();
         var prepAddress  = ((document.getElementById('delivery-address')     || {}).value || '').trim();
@@ -1210,66 +1309,34 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var prepName     = ((document.getElementById('buyer-name')            || {}).value || '').trim();
         var prepPhone    = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
 
+        // Primer campo inválido gana — mismo orden que antes, ahora con
+        // error inline debajo del campo en vez de un alert() bloqueante.
         if (!prepName) {
-          alert('Por favor ingresá tu nombre.');
-          var nameEl = document.getElementById('buyer-name');
-          if (nameEl) nameEl.focus();
+          showFieldError('buyer-name', 'Por favor ingresá tu nombre.');
           return;
         }
         if (!prepPhone) {
-          alert('Por favor ingresá tu teléfono o WhatsApp.');
-          var phoneEl = document.getElementById('buyer-phone');
-          if (phoneEl) phoneEl.focus();
+          showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.');
           return;
         }
-
         if (deliveryType === 'shipping') {
-          if (!prepAddress) {
-            alert('Por favor ingresá la dirección de entrega.');
-            var addrEl = document.getElementById('delivery-address');
-            if (addrEl) addrEl.focus();
-            return;
-          }
-          if (!prepBarrio) {
-            alert('Por favor ingresá la localidad.');
-            var barrioEl = document.getElementById('delivery-barrio');
-            if (barrioEl) barrioEl.focus();
-            return;
-          }
-          if (!prepDepto) {
-            alert('Por favor seleccioná el departamento.');
-            var deptEl = document.getElementById('delivery-departamento');
-            if (deptEl) deptEl.focus();
-            return;
-          }
-          if (!prepDate) {
-            alert('Por favor ingresá la fecha preferida de entrega.');
-            var dateEl = document.getElementById('delivery-date');
-            if (dateEl) dateEl.focus();
-            return;
-          }
-          if (!prepFrom) {
-            alert('Por favor ingresá la hora de inicio del horario.');
-            var fromEl = document.getElementById('delivery-from');
-            if (fromEl) fromEl.focus();
-            return;
-          }
-          if (!prepTo) {
-            alert('Por favor ingresá la hora de fin del horario.');
-            var toEl = document.getElementById('delivery-to');
-            if (toEl) toEl.focus();
-            return;
-          }
+          if (!prepAddress) { showFieldError('delivery-address', 'Por favor ingresá la dirección de entrega.'); return; }
+          if (!prepBarrio)  { showFieldError('delivery-barrio', 'Por favor ingresá la localidad.'); return; }
+          if (!prepDepto)   { showFieldError('delivery-departamento', 'Por favor seleccioná el departamento.'); return; }
+          if (!prepDate)    { showFieldError('delivery-date', 'Por favor ingresá la fecha preferida de entrega.'); return; }
+          if (!prepFrom)    { showFieldError('delivery-from', 'Por favor ingresá la hora de inicio del horario.'); return; }
+          if (!prepTo)      { showFieldError('delivery-to', 'Por favor ingresá la hora de fin del horario.'); return; }
         }
 
         btnPrepare.disabled = true;
+        btnPrepare.setAttribute('aria-busy', 'true');
 
         // Fail closed: si el checkout está habilitado pero Turnstile no
         // pudo configurarse (site key ausente, o este host no está
         // permitido), nunca se manda la request sin verificación.
         if (turnstileBlocked) {
-          alert('El pago online no está disponible en este momento. Probá más tarde o escribinos por WhatsApp.');
-          btnPrepare.disabled = false;
+          showCheckoutError('El pago online no está disponible en este momento. Probá más tarde o escribinos por WhatsApp.');
+          resetPrepareButton();
           return;
         }
 
@@ -1278,21 +1345,20 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var cfTsResponse = null;
         if (turnstileConfigured) {
           if (tsWidgetId == null) {
-            alert('La verificación aún no cargó. Esperá un momento y reintentá.');
-            btnPrepare.disabled = false;
-            btnPrepare.innerHTML = origBtnHTML;
+            showCheckoutError('La verificación aún no cargó. Esperá un momento y reintentá.');
+            resetPrepareButton();
             return;
           }
           try {
             cfTsResponse = await tsGetToken();
           } catch (_tsErr) {
-            alert('Error en la verificación. Recargá la página e intentá de nuevo.');
-            btnPrepare.disabled = false;
-            btnPrepare.innerHTML = origBtnHTML;
+            showCheckoutError('Error en la verificación. Recargá la página e intentá de nuevo.');
+            resetPrepareButton();
             return;
           }
-          btnPrepare.textContent = 'Procesando…';
         }
+
+        btnPrepare.textContent = 'Preparando tu pedido…';
 
         var payload = {
           idempotency_key: cart.idempotency_key,
@@ -1315,40 +1381,59 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           if (prepNotes) payload.shipping.notes = prepNotes;
         }
 
+        var orderData;
         try {
           var resp = await fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          var data = await resp.json();
-
+          orderData = await resp.json();
           if (!resp.ok) {
-            alert('Error: ' + (data.error || 'Intentá de nuevo.'));
-            btnPrepare.disabled = false;
-            btnPrepare.innerHTML = origBtnHTML;
+            showCheckoutError('Error: ' + (orderData.error || 'Intentá de nuevo.'));
+            resetPrepareButton();
             return;
           }
-
-          var resultEl    = document.getElementById('order-result');
-          var codeEl      = document.getElementById('order-public-code');
-          var totalConfEl = document.getElementById('order-total-confirmed');
-          if (codeEl)      codeEl.textContent     = data.order.public_code;
-          if (totalConfEl) totalConfEl.textContent = fmt.format(data.order.payable_total_uyu) + ' UYU';
-          if (resultEl)    resultEl.hidden = false;
-          btnPrepare.textContent = 'Pedido preparado';
-
-          if (turnstileConfigured) {
-            mpPublicCode     = data.order.public_code;
-            mpIdempotencyKey = cart.idempotency_key;
-            var noteEl = document.getElementById('order-result-note');
-            if (noteEl)    noteEl.hidden   = true;
-            if (btnPayMp)  btnPayMp.hidden = false;
-          }
         } catch (_fetchErr) {
-          alert('Error de conexión. Verificá tu internet e intentá de nuevo.');
-          btnPrepare.disabled = false;
-          btnPrepare.innerHTML = origBtnHTML;
+          showCheckoutError('Error de conexión. Verificá tu internet e intentá de nuevo.');
+          resetPrepareButton();
+          return;
+        }
+
+        // Sin CTA de pago online (Turnstile no configurado para este host):
+        // la orden ya quedó registrada, coordinar el resto por WhatsApp.
+        if (!turnstileConfigured) {
+          btnPrepare.textContent = 'Pedido preparado';
+          return;
+        }
+
+        btnPrepare.textContent = 'Redirigiendo a Mercado Pago…';
+
+        try {
+          var mpResp = await fetch('/api/preferences', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              public_code:     orderData.order.public_code,
+              idempotency_key: cart.idempotency_key,
+            }),
+          });
+          var mpData = await mpResp.json();
+          if (mpResp.ok && mpData.checkout_url) {
+            try {
+              sessionStorage.setItem('amado-mp-auth', JSON.stringify({
+                public_code:     orderData.order.public_code,
+                idempotency_key: cart.idempotency_key,
+              }));
+            } catch (_) {}
+            window.location.href = mpData.checkout_url;
+            return;
+          }
+          showCheckoutError('Error al iniciar el pago: ' + (mpData.error || 'Intentá de nuevo.'));
+          resetPrepareButton();
+        } catch (_err) {
+          showCheckoutError('Error de conexión. Verificá tu internet e intentá de nuevo.');
+          resetPrepareButton();
         }
       });
     }

@@ -85,6 +85,15 @@ const WA_HREF =
           if (iconEl) iconEl.textContent = '✓';
           if (h1El)   h1El.textContent   = 'Pago confirmado';
           if (leadEl) leadEl.textContent = 'Tu pedido está confirmado. Te contactaremos por WhatsApp para coordinar la entrega.';
+          // Único punto donde se vacía el carrito: recién acá hay
+          // confirmación real de pago aprobado, leída de D1 vía
+          // /api/orders/status (nunca del simple regreso del navegador ni
+          // del parámetro ?result= de la URL). Nunca se vacía al hacer clic
+          // en "Continuar a Mercado Pago" ni por un retorno pending/rejected/
+          // abandonado — ver el polling más abajo.
+          if (window.AmadoCart && typeof window.AmadoCart.clear === 'function') {
+            window.AmadoCart.clear();
+          }
         } else if (paymentStatus === 'rejected') {
           if (iconEl) iconEl.textContent = '✗';
           if (h1El)   h1El.textContent   = 'Pago rechazado.';
