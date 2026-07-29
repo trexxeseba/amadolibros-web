@@ -104,7 +104,7 @@ export async function onRequest(ctx) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Comprar libros online en Uruguay | Amado Libros</title>
-  <meta name="description" content="${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $1.500. Envíos a todo el país.">
+  <meta name="description" content="${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $2.000. Envíos a todo el país.">
   <link rel="canonical" href="${BASE}/catalogo">
   <meta name="robots" content="index, follow">
   <script type="application/ld+json">${JSON.stringify({
@@ -209,8 +209,8 @@ ${rows}
     ${author}
     ${available
       ? `<div class="rc-prices">
-      <span class="rc-transfer"><span class="rc-lbl">Transferencia:</span> $${escapeHtml(transfer)}</span>
-      <span class="rc-base">Precio: $${escapeHtml(priceStr)}</span>
+      <span class="rc-base"><span class="rc-lbl">Precio web / tarjeta:</span> $${escapeHtml(priceStr)}</span>
+      <span class="rc-transfer">Transferencia: $${escapeHtml(transfer)} · ahorrás 12%</span>
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
       : `<div class="rc-order-info">
@@ -272,10 +272,10 @@ ${rows}
     .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
-    .rc-transfer,.rc-base{font-size:.875rem;line-height:1.3}
-    .rc-transfer{color:#18120e;font-weight:600}
+    .rc-transfer,.rc-base{line-height:1.3}
+    .rc-base{font-size:.95rem;color:#18120e;font-weight:700}
+    .rc-transfer{font-size:.8rem;color:#267a42;font-weight:600}
     .rc-lbl{font-weight:700}
-    .rc-base{color:#6b6157}
     .search-bar{display:flex;gap:.5rem;margin-bottom:1.5rem}
     .search-bar input{flex:1;padding:.55rem .875rem;border:1px solid #d1c8be;border-radius:.5rem;
                       font-size:.9rem;color:#1e293b;background:#fff;outline:none}

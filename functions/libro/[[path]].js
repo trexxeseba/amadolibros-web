@@ -256,8 +256,8 @@ function renderPage(item, slug, isPreview) {
 
     const metaDesc = inStock
         ? (safeAuthor
-            ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
-            : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
+            ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Precio web: $${priceUY} UYU. Envíos a todo Uruguay.`
+            : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Precio web: $${priceUY} UYU. Envíos a todo Uruguay.`)
         : `Consultá disponibilidad de &quot;${safeTitle}&quot; por encargo en Amado Libros. Entrega estimada de 15–20 días, sujeta a confirmación.`;
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
@@ -300,8 +300,8 @@ function renderPage(item, slug, isPreview) {
 
     const priceHtml = inStock
         ? `<div class="price-box">
-      <div class="price-transfer"><span class="price-label">Transferencia:</span> $${transferPrice} UYU</div>
-      <div class="price-base">Precio: $${priceUY} UYU</div>
+      <div class="price-base"><span class="price-label">Precio web / tarjeta:</span> $${priceUY} UYU</div>
+      <div class="price-transfer">Transferencia: $${transferPrice} UYU · ahorrás 12%</div>
       <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>`
         : `<div class="order-box">
@@ -435,9 +435,10 @@ function renderPage(item, slug, isPreview) {
     .detail-row dd{color:#475569}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer,.price-base,.price-installment{font-size:1rem;font-weight:700;line-height:1.35}
-    .price-transfer{color:#0f172a}
-    .price-base,.price-installment{color:#374151;margin-top:.15rem}
+    .price-transfer,.price-base,.price-installment{font-weight:700;line-height:1.35}
+    .price-base{font-size:1.2rem;color:#0f172a}
+    .price-transfer{font-size:.95rem;color:#267a42;margin-top:.2rem}
+    .price-installment{font-size:.95rem;color:#374151;margin-top:.15rem}
     .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
                border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
                margin:.875rem 0;color:#6b4218}

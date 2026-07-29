@@ -62,8 +62,8 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
     {book.author && <p class="bc-author">{book.author}</p>}
 
     <div class="bc-prices">
-      <span class="bc-price-transfer"><span class="bc-price-label">Transferencia -12%:</span> {transferPrice}</span>
-      <span class="bc-price-base">Precio: {basePrice}</span>
+      <span class="bc-price-base"><span class="bc-price-label">Precio web / tarjeta:</span> {basePrice}</span>
+      <span class="bc-price-transfer">Transferencia: {transferPrice} · ahorrás 12%</span>
       <span class="bc-cuotas">12 cuotas de {installment}</span>
     </div>
 
@@ -186,23 +186,28 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
   .bc-price-transfer,
   .bc-price-base,
   .bc-cuotas {
-    font-size: 0.8125rem;
     line-height: 1.25;
   }
 
-  .bc-price-transfer {
+  .bc-price-base {
     color: var(--ink);
-    font-weight: 500;
-  }
-
-  .bc-price-label {
-    font-style: italic;
+    font-size: 0.875rem;
     font-weight: 700;
   }
 
-  .bc-price-base,
+  .bc-price-transfer {
+    color: #267a42;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .bc-price-label {
+    font-weight: 700;
+  }
+
   .bc-cuotas {
     color: var(--ink-2);
+    font-size: 0.75rem;
   }
 
   .bc-actions {

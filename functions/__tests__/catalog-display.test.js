@@ -88,5 +88,26 @@ test('la ficha activa conserva precio y carrito en producción', async () => {
 
   assert.match(html, /index, follow/);
   assert.match(html, /Agregar al carrito/);
-  assert.match(html, /Transferencia:/);
+  assert.match(html, /Precio web \/ tarjeta:<\/span> \$1[.,]000 UYU/);
+  assert.match(html, /Transferencia: \$880 UYU · ahorrás 12%/);
+  assert.ok(
+    html.indexOf('Precio web / tarjeta:') < html.indexOf('Transferencia:'),
+    'el precio cobrable debe aparecer antes que el beneficio por transferencia'
+  );
+  assert.match(html, /"price":"1000"/);
+  assert.match(html, /data-price="1000"/);
+});
+
+test('el catálogo muestra primero el mismo precio base que usa la compra', async () => {
+  const response = await catalogRequest(
+    context('https://www.amadolibros.com/catalogo?q=Alpha+disponible')
+  );
+  const html = await response.text();
+
+  assert.match(html, /Precio web \/ tarjeta:<\/span> \$1[.,]000/);
+  assert.match(html, /Transferencia: \$880 · ahorrás 12%/);
+  assert.ok(
+    html.indexOf('Precio web / tarjeta:') < html.indexOf('Transferencia:'),
+    'el catálogo debe priorizar el precio web'
+  );
 });
