@@ -24,6 +24,9 @@ const enableGA4  = indexable && !!gaId;
   <meta name="robots" content={indexable ? 'index, follow' : 'noindex, nofollow'}>
   <title>{title}</title>
   <meta name="description" content={description}>
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
   {canonical && <link rel="canonical" href={canonical}>}
   {enableGA4 && (
     <>
