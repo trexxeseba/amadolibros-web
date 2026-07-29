@@ -1,3 +1,9 @@
+---
+const requestText =
+  'Hola Amado Libros, estoy buscando un libro. Les paso título, autor, ISBN o una foto de la tapa:';
+const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(requestText)}`;
+---
+
 <section class="hero-shell">
   <div class="hero">
     <div class="hero-content">
@@ -27,87 +33,92 @@
         >
         <button type="submit">Buscar</button>
       </form>
-
-      <p class="hero-search-note">
-        Un solo lugar para encontrar libros disponibles y consultar títulos por encargo.
-      </p>
     </div>
 
-    <div class="hero-services" aria-label="Formas de conseguir tu libro">
-      <div class="hero-brand" aria-hidden="true">
-        <img
-          src="/images/logo-amado.jpg"
-          alt=""
-          width="74"
-          height="74"
-          loading="eager"
-          decoding="sync"
+    <aside class="hero-commercial" aria-label="Ventajas de comprar en Amado Libros">
+      <div class="commercial-heading">
+        <span>Comprar en Amado Libros</span>
+        <h2>Claro, rápido y con atención personal.</h2>
+      </div>
+
+      <ul class="benefit-grid" role="list">
+        <li>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M3 19h17V9H3v10Zm17-7h5l4 5v2h-9v-7Z" stroke="currentColor" stroke-width="1.8"/>
+              <circle cx="8" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+              <circle cx="24" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+            </svg>
+          </span>
+          <span>
+            <strong>Entrega en 2 horas</strong>
+            <small>En Montevideo</small>
+          </span>
+        </li>
+
+        <li>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="3.5" y="7" width="25" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M4 12h24M8 20h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>
+            <strong>Hasta 12 cuotas</strong>
+            <small>Con Mercado Pago</small>
+          </span>
+        </li>
+
+        <li>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M6 10.5A4.5 4.5 0 1 0 15 10.5a4.5 4.5 0 0 0-9 0ZM17 21.5a4.5 4.5 0 1 0 9 0 4.5 4.5 0 0 0-9 0Z" stroke="currentColor" stroke-width="1.8"/>
+              <path d="m8 26 16-20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>
+            <strong>12% menos</strong>
+            <small>Pagando por transferencia</small>
+          </span>
+        </li>
+
+        <li>
+          <span class="benefit-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <circle cx="14.5" cy="15.5" r="9.5" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M5 15.5h19M14.5 6c3.4 3.3 4.5 6.5 4.5 9.5S17.9 21.7 14.5 25M14.5 6C11.1 9.3 10 12.5 10 15.5s1.1 6.2 4.5 9.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="m22 22 6 6M23.5 18.5v7M20 22h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>
+            <strong>Libros por encargo</strong>
+            <small>Los buscamos en el exterior</small>
+          </span>
+        </li>
+      </ul>
+
+      <div class="request-box">
+        <div>
+          <strong>¿No encontrás el libro?</strong>
+          <span>Lo buscamos por vos en el exterior.</span>
+        </div>
+        <a
+          href={requestHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Pedir un libro por WhatsApp"
         >
-        <span>Amado<br>Libros</span>
+          Pedir un libro por WhatsApp
+        </a>
       </div>
-
-      <div class="service-grid">
-        <article class="service-card">
-          <span class="service-icon" aria-hidden="true">
-            <svg width="54" height="54" viewBox="0 0 64 64" fill="none">
-              <path d="M10 51h44M15 48V19h9v29M26 48V13h11v35M39 48V22h8v26M48 48V17l7 2v29"
-                stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-              <path d="M26 22h11M26 36h11" stroke="var(--salmon)" stroke-width="3"/>
-            </svg>
-          </span>
-          <h2>Disponibles en Amado</h2>
-          <p>Libros que tenemos en Montevideo, listos para entregar o enviar.</p>
-        </article>
-
-        <article class="service-card">
-          <span class="service-icon" aria-hidden="true">
-            <svg width="54" height="54" viewBox="0 0 64 64" fill="none">
-              <circle cx="30" cy="31" r="20" stroke="currentColor" stroke-width="2.2"/>
-              <path d="M10 31h40M30 11c7 7 9 14 9 20s-2 13-9 20M30 11c-7 7-9 14-9 20s2 13 9 20"
-                stroke="currentColor" stroke-width="2"/>
-              <path d="M49 13c-5 0-9 4-9 9 0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9Z"
-                fill="var(--salmon)" stroke="currentColor" stroke-width="1.8"/>
-              <circle cx="49" cy="22" r="2.5" fill="#fff"/>
-            </svg>
-          </span>
-          <h2>Por encargo en todo el mundo</h2>
-          <p>Conseguimos títulos en Europa, Estados Unidos y América Latina.</p>
-        </article>
-      </div>
-    </div>
+    </aside>
   </div>
-
-  <ul class="trust-strip" role="list">
-    <li>
-      <svg width="27" height="27" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <path d="M3 19h17V9H3v10Zm17-7h5l4 5v2h-9v-7Z" stroke="currentColor" stroke-width="1.8"/>
-        <circle cx="8" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
-        <circle cx="24" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
-      </svg>
-      <span>Entrega en 2 horas en Montevideo</span>
-    </li>
-    <li>
-      <svg width="27" height="27" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <path d="M11 5 7 9l1 4-3 4 3 6 5 1 3 4 5-3 4-1 1-6-3-4 1-5-5-3-3 1-5-2Z"
-          stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-      </svg>
-      <span>Envíos a todo Uruguay</span>
-    </li>
-    <li>
-      <svg width="27" height="27" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <circle cx="16" cy="13" r="8" stroke="currentColor" stroke-width="1.8"/>
-        <path d="m12 21-2 7 6-3 6 3-2-7M12.5 13.5l2.2 2.2 4.8-5"
-          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Tienda Oficial en Mercado Libre</span>
-    </li>
-  </ul>
 </section>
 
 <style>
   .hero-shell {
     background:
-      radial-gradient(circle at 18% 30%, rgba(228, 153, 130, 0.08), transparent 34%),
+      radial-gradient(circle at 18% 30%, rgba(228, 153, 130, 0.1), transparent 34%),
       var(--bg);
     border-bottom: 1px solid var(--border);
   }
@@ -118,43 +129,39 @@
     display: grid;
   }
 
-  .hero-content,
-  .hero-services {
-    padding: 2.5rem 1.5rem;
-  }
-
   .hero-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    padding: 2rem 1.25rem;
   }
 
   .hero-badge {
     align-self: flex-start;
+    margin-bottom: 0.8rem;
     color: var(--salmon-hover);
     font-size: 0.6875rem;
     font-weight: 800;
     letter-spacing: 0.09em;
     text-transform: uppercase;
-    margin-bottom: 1rem;
   }
 
   .hero-h1 {
+    max-width: 12.5ch;
+    color: var(--ink);
     font-family: var(--font-display);
-    font-size: clamp(2.15rem, 7.6vw, 4rem);
+    font-size: clamp(2.05rem, 7vw, 3.8rem);
     font-weight: 700;
     letter-spacing: -0.035em;
     line-height: 1.04;
-    max-width: 12.5ch;
-    color: var(--ink);
   }
 
   .hero-lead {
     max-width: 48ch;
-    margin-top: 1.25rem;
+    margin-top: 1rem;
     color: var(--ink-2);
-    font-size: clamp(1rem, 2vw, 1.125rem);
-    line-height: 1.6;
+    font-size: clamp(0.96rem, 2vw, 1.08rem);
+    line-height: 1.55;
   }
 
   .hero-search {
@@ -164,8 +171,8 @@
     gap: 0.65rem;
     width: 100%;
     max-width: 650px;
-    margin-top: 1.75rem;
-    padding: 0.45rem;
+    margin-top: 1.35rem;
+    padding: 0.4rem;
     padding-left: 1rem;
     background: var(--surface);
     border: 1.5px solid #d8cfc4;
@@ -186,18 +193,21 @@
   .hero-search input {
     min-width: 0;
     width: 100%;
+    padding: 0.68rem 0;
     border: 0;
     outline: 0;
     background: transparent;
     color: var(--ink);
     font: 500 1rem/1.2 var(--font-ui);
-    padding: 0.7rem 0;
   }
 
-  .hero-search input::placeholder { color: #8a8178; opacity: 1; }
+  .hero-search input::placeholder {
+    color: #8a8178;
+    opacity: 1;
+  }
 
   .hero-search button {
-    min-height: 46px;
+    min-height: 44px;
     padding: 0.7rem 1.35rem;
     border: 0;
     border-radius: 0.65rem;
@@ -211,168 +221,172 @@
   .hero-search button:hover { background: var(--salmon-hover); }
   .hero-search button:active { transform: translateY(1px); }
 
-  .hero-search-note {
-    margin-top: 0.7rem;
-    color: var(--ink-2);
-    font-size: 0.78rem;
-    line-height: 1.45;
-  }
-
-  .hero-services {
+  .hero-commercial {
+    padding: 1.4rem 1.25rem 1.6rem;
     border-top: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.36);
+    background: var(--ink);
+    color: #fff;
   }
 
-  .hero-brand {
-    display: none;
+  .commercial-heading > span {
+    color: var(--salmon);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  .service-grid {
+  .commercial-heading h2 {
+    max-width: 22ch;
+    margin-top: 0.35rem;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+    line-height: 1.12;
+  }
+
+  .benefit-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.65rem;
+    margin-top: 1.1rem;
+    padding: 0;
+    list-style: none;
   }
 
-  .service-card {
+  .benefit-grid li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
     min-width: 0;
-    padding: 1.25rem 0.8rem;
-    border: 1px solid #d8cfc4;
-    border-radius: var(--r);
-    background: rgba(255, 255, 255, 0.68);
-    text-align: center;
+    padding: 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
   }
 
-  .service-icon {
-    display: inline-flex;
-    color: var(--ink);
-    margin-bottom: 0.6rem;
+  .benefit-icon {
+    display: flex;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    color: var(--salmon);
   }
 
-  .service-card h2 {
-    max-width: 14ch;
-    margin: 0 auto;
-    color: var(--ink);
-    font-size: clamp(0.9rem, 3.2vw, 1.05rem);
+  .benefit-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .benefit-grid strong,
+  .benefit-grid small {
+    display: block;
+  }
+
+  .benefit-grid strong {
+    color: #fff;
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .benefit-grid small {
+    margin-top: 0.2rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.68rem;
     line-height: 1.25;
   }
 
-  .service-card h2::after {
-    content: '';
-    display: block;
-    width: 34px;
-    height: 2px;
-    margin: 0.75rem auto;
-    background: var(--salmon);
-  }
-
-  .service-card p {
-    color: var(--ink-2);
-    font-size: 0.78rem;
-    line-height: 1.45;
-  }
-
-  .trust-strip {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-    list-style: none;
+  .request-box {
     display: grid;
-    border-top: 1px solid var(--border);
+    gap: 0.85rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
   }
 
-  .trust-strip li {
-    display: flex;
+  .request-box strong,
+  .request-box span {
+    display: block;
+  }
+
+  .request-box strong {
+    color: #fff;
+    font-size: 0.95rem;
+  }
+
+  .request-box span {
+    margin-top: 0.2rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.78rem;
+  }
+
+  .request-box a {
+    display: inline-flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.9rem 0;
-    color: var(--ink);
-    font-size: 0.8rem;
-    font-weight: 600;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.75rem 1rem;
+    border-radius: 0.65rem;
+    background: var(--salmon);
+    color: #fff;
+    font-size: 0.84rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.15s;
   }
 
-  .trust-strip li + li { border-top: 1px solid var(--border); }
-  .trust-strip svg { flex: 0 0 auto; color: var(--salmon-hover); }
+  .request-box a:hover { background: var(--salmon-hover); }
+  .request-box a:active { transform: translateY(1px); }
 
   @media (min-width: 700px) {
-    .hero-content,
-    .hero-services { padding: 3.5rem 2rem; }
+    .hero-content { padding: 3rem 2rem; }
 
-    .trust-strip {
-      grid-template-columns: repeat(3, 1fr);
-      padding: 0 2rem;
+    .hero-commercial {
+      padding: 2rem;
     }
 
-    .trust-strip li {
-      justify-content: center;
-      padding: 1.1rem 1.25rem;
-      font-size: 0.86rem;
-    }
-
-    .trust-strip li + li {
-      border-top: 0;
-      border-left: 1px solid var(--border);
+    .request-box {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
     }
   }
 
   @media (min-width: 900px) {
     .hero {
-      grid-template-columns: minmax(0, 1.12fr) minmax(390px, 0.88fr);
-      min-height: 540px;
+      grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
+      min-height: 510px;
+      align-items: stretch;
     }
 
-    .hero-content { padding: 4rem 3rem 4rem 2rem; }
-
-    .hero-services {
-      padding: 3rem 2rem;
-      border-top: 0;
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .hero-content {
+      padding: 3.5rem 3rem 3.5rem 2rem;
     }
 
-    .hero-brand {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      margin-bottom: 1.75rem;
+    .hero-commercial {
+      align-self: center;
+      margin: 2.25rem 2rem 2.25rem 0;
+      padding: 1.75rem;
+      border: 0;
+      border-radius: 1rem;
+      box-shadow: 0 18px 48px rgba(24, 18, 14, 0.18);
     }
 
-    .hero-brand img {
-      width: 74px;
-      height: 74px;
-      object-fit: cover;
-      border: 1px solid #d8cfc4;
-      border-radius: 0.75rem;
-    }
-
-    .hero-brand span {
-      font-family: var(--font-display);
-      color: var(--ink);
-      font-size: 2rem;
-      font-weight: 700;
-      line-height: 0.88;
-    }
-
-    .service-card {
-      padding: 1.5rem 1rem;
-      min-height: 255px;
-    }
-
-    .service-card h2 { font-size: 1.1rem; }
-    .service-card p { font-size: 0.86rem; }
+    .benefit-grid li { padding: 0.8rem; }
+    .benefit-grid strong { font-size: 0.84rem; }
+    .benefit-grid small { font-size: 0.72rem; }
   }
 
   @media (min-width: 1200px) {
     .hero-content { padding-left: 0; }
-    .hero-services { padding-right: 0; }
+    .hero-commercial { margin-right: 0; }
   }
 
   @media (max-width: 430px) {
     .hero-search {
       grid-template-columns: auto minmax(0, 1fr);
-      padding: 0.6rem 0.8rem;
+      padding: 0.55rem 0.75rem;
     }
 
     .hero-search button {
@@ -380,10 +394,10 @@
       width: 100%;
     }
 
-    .service-grid { grid-template-columns: 1fr; }
-    .service-card { display: grid; grid-template-columns: auto 1fr; text-align: left; column-gap: 0.85rem; }
-    .service-icon { grid-row: 1 / span 2; margin: 0; align-self: center; }
-    .service-card h2 { max-width: none; margin: 0; }
-    .service-card h2::after { margin: 0.6rem 0; }
+    .commercial-heading h2 { max-width: none; }
+  }
+
+  @media (max-width: 350px) {
+    .benefit-grid { grid-template-columns: 1fr; }
   }
 </style>
