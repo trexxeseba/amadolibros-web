@@ -107,8 +107,8 @@ test('email-test-6: un fallo muestra sólo un código seguro, nunca secretos', a
   try {
     const result = await onRequest({ request: request('POST'), env: env() });
     const body = await result.text();
-    assert.equal(result.status, 502);
-    assert.equal(body, 'No se pudo enviar la prueba: RESEND_HTTP_401');
+    assert.equal(result.status, 200);
+    assert.equal(body, 'FALLO — No se pudo enviar la prueba: RESEND_HTTP_401');
     assert.ok(!body.includes('re_test_secret'));
     assert.ok(!body.includes('uno@example.com'));
   } finally {
