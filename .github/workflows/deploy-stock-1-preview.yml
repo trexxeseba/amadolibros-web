@@ -42,58 +42,66 @@ jobs:
         run: bash scripts/validate-ci.sh
 
   measure-paused:
-    name: Measure paused without publishing
+    name: Measure paused without deploying
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    environment:
+      name: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
-      - name: Measure Mercado Libre catalog in memory
+
+      - name: Upload isolated Worker version
+        id: upload
+        working-directory: worker-sync
         env:
-          MELI_TOKEN: ${{ secrets.MELI_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "$MELI_TOKEN" ]; then
-            echo "ERROR: MELI_TOKEN no está configurado en GitHub Actions."
+          OUTPUT=$(npx wrangler@4.107.0 versions upload \
+            --preview-alias stock-measure \
+            --keep-vars \
+            --message "STOCK-1 medicion sin despliegue")
+          echo "$OUTPUT"
+
+          PREVIEW_URL=$(echo "$OUTPUT" | grep -Eo 'https://[^[:space:]]+\.workers\.dev' | tail -1)
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "ERROR: Wrangler no devolvió la URL de Preview."
             exit 1
           fi
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
-          node --input-type=module <<'NODE'
-          import { buildCatalog } from './worker-sync/meli-catalog.js';
+      - name: Execute measurement only
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          sleep 10
+          RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
+            -X POST "$PREVIEW_URL/measure" \
+            -H "Authorization: Bearer $SYNC_SECRET")
 
-          const catalog = await buildCatalog(
-            { USER_ID: '440298103', MIN_ACTIVE_ITEMS: '500' },
-            process.env.MELI_TOKEN
-          );
-          const items = Array.isArray(catalog.items) ? catalog.items : [];
-          const ids = items.map(item => item.id).filter(Boolean);
-          const uniqueIds = new Set(ids);
-          const active = items.filter(
-            item => item.status === 'active' && Number(item.available_quantity) > 0
-          ).length;
-          const paused = items.filter(item => item.status === 'paused').length;
-          const activeWithoutStock = items.filter(
-            item => item.status === 'active' && Number(item.available_quantity) <= 0
-          ).length;
-          const invalid = items.filter(
-            item => !item.id || !item.title || !['active', 'paused'].includes(item.status)
-          ).length;
-          const bytes = new TextEncoder().encode(JSON.stringify(catalog)).length;
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
 
-          console.log('MEASUREMENT_RESULT=' + JSON.stringify({
-            total: items.length,
-            active,
-            paused,
-            active_without_stock: activeWithoutStock,
-            duplicate_ids: ids.length - uniqueIds.size,
-            invalid,
-            bytes,
-            mebibytes: Math.round((bytes / 1024 / 1024) * 100) / 100,
-            published: false
-          }));
-          NODE
+          echo "HTTP status: $HTTP_STATUS"
+          echo "MEASUREMENT_RESULT=$BODY"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "ERROR: /measure respondió HTTP $HTTP_STATUS."
+            exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"published":false'; then
+            echo "ERROR: la respuesta no confirmó published=false."
+            exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"status":"measured"'; then
+            echo "ERROR: la medición no terminó en estado measured."
+            exit 1
+          fi
 
   deploy-preview:
     name: Deploy Preview
