@@ -42,7 +42,7 @@ jobs:
         run: bash scripts/validate-ci.sh
 
   deploy-preview:
-    name: Migrate and deploy Preview
+    name: Deploy Preview
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 15
