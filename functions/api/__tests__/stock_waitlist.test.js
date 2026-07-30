@@ -42,6 +42,12 @@ function memoryDb({ duplicate = false } = {}) {
         bind(...args) {
           return {
             async run() {
+              if (sql.includes('CREATE TABLE IF NOT EXISTS stock_waitlist')) {
+                return { meta: { changes: 0 } };
+              }
+              if (sql.includes('CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_waitlist')) {
+                return { meta: { changes: 0 } };
+              }
               if (sql.startsWith('INSERT OR IGNORE INTO stock_waitlist')) {
                 if (duplicate) return { meta: { changes: 0 } };
                 const [id, productId, productTitle, email, sourceUrl, createdAt, updatedAt] = args;
@@ -157,6 +163,29 @@ test('stock-1: registra libro no disponible, normaliza email y avisa internament
   assert.deepEqual(emailBody.to, ['uno@example.com', 'dos@example.com']);
   assert.match(emailBody.html, /Libro &lt;agotado&gt;/);
   assert.equal(db.updates[0][0], 'sent');
+});
+
+test('stock-1: Producción nunca intenta crear el esquema en runtime', async () => {
+  const db = memoryDb();
+  const originalPrepare = db.prepare;
+  let ddlCalls = 0;
+  db.prepare = sql => {
+    if (/CREATE (TABLE|UNIQUE INDEX)/.test(sql)) ddlCalls++;
+    return originalPrepare.call(db, sql);
+  };
+  const { response } = await call(
+    makeHandler(),
+    db,
+    validBody(),
+    {
+      APP_ENV: 'production',
+      ALLOWED_HOSTS: 'www.amadolibros.com',
+    },
+    { url: 'https://www.amadolibros.com/api/stock-waitlist' }
+  );
+
+  assert.equal(response.status, 201);
+  assert.equal(ddlCalls, 0);
 });
 
 test('stock-1: el duplicado responde éxito y no vuelve a mandar correo', async () => {

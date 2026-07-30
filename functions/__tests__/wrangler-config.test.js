@@ -104,15 +104,12 @@ test('wrangler.toml: Preview declara destinatarios internos sin declarar RESEND_
   assert.doesNotMatch(previewVars, /RESEND_API_KEY/);
 });
 
-test('STOCK-1 Preview queda limitado a su rama, D1 Preview y checkout apagado', () => {
+test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
   assert.match(stockPreviewYml, /refs\/heads\/agent\/stock-1-preview/);
-  assert.match(
-    stockPreviewYml,
-    /d1 migrations apply ORDERS_DB --env preview --remote/,
-  );
   assert.match(stockPreviewYml, /--branch agent\/stock-1-preview/);
   assert.match(stockPreviewYml, /PUBLIC_INDEXABLE:\s*'false'/);
   assert.match(stockPreviewYml, /PUBLIC_CHECKOUT_ENABLED:\s*'false'/);
+  assert.doesNotMatch(stockPreviewYml, /d1 migrations apply/);
   assert.doesNotMatch(stockPreviewYml, /--branch main/);
   assert.doesNotMatch(stockPreviewYml, /env\.production/);
 });

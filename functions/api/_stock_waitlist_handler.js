@@ -4,6 +4,31 @@ const MAX_BODY_BYTES = 8 * 1024;
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
 const PAGES_PREVIEW_HOSTNAME_RE = /^[^.]+\.amadolibros-web\.pages\.dev$/;
+const previewSchemaPromises = new WeakMap();
+
+const PREVIEW_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS stock_waitlist (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL,
+  product_title TEXT NOT NULL,
+  email TEXT NOT NULL COLLATE NOCASE,
+  status TEXT NOT NULL DEFAULT 'waiting'
+    CHECK (status IN ('waiting','notified','cancelled')),
+  source_url TEXT,
+  internal_notification_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (internal_notification_status IN ('pending','sent','failed','skipped')),
+  internal_notification_id TEXT,
+  internal_notification_error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  restocked_at TEXT,
+  notified_at TEXT
+)`;
+
+const PREVIEW_UNIQUE_INDEX_SQL = `
+CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_waitlist_waiting_email_product
+  ON stock_waitlist (product_id, lower(email))
+  WHERE status = 'waiting'`;
 
 function cleanString(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -24,6 +49,23 @@ function safeErrorName(error) {
   return error && typeof error === 'object' && typeof error.name === 'string'
     ? error.name
     : 'Error';
+}
+
+async function ensurePreviewSchema(db) {
+  let pending = previewSchemaPromises.get(db);
+  if (!pending) {
+    pending = (async () => {
+      await db.prepare(PREVIEW_TABLE_SQL).bind().run();
+      await db.prepare(PREVIEW_UNIQUE_INDEX_SQL).bind().run();
+    })();
+    previewSchemaPromises.set(db, pending);
+  }
+  try {
+    await pending;
+  } catch (error) {
+    previewSchemaPromises.delete(db);
+    throw error;
+  }
 }
 
 function normalizeEmail(value) {
@@ -237,6 +279,19 @@ export function createStockWaitlistHandler({
     const inStock = product.status === 'active' && Number(product.available_quantity) > 0;
     if (inStock) {
       return json({ error: 'Este libro ya está disponible.', code: 'ALREADY_IN_STOCK' }, 409);
+    }
+
+    // El token usado por el pipeline de Preview publica Pages pero no tiene
+    // permisos de administración D1. El binding runtime sí puede escribir.
+    // Por eso Preview inicializa idempotentemente solo su tabla propia.
+    // Producción nunca usa este atajo: allí se exige aplicar 0003 antes del merge.
+    if (cleanString(env?.APP_ENV) === 'preview') {
+      try {
+        await ensurePreviewSchema(db);
+      } catch (error) {
+        console.error('[stock-waitlist] Preview schema error', safeErrorName(error));
+        return json({ error: 'Servicio no disponible.' }, 503);
+      }
     }
 
     const now = getNow();
