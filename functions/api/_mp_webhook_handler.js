@@ -3,6 +3,7 @@ import {
   getMerchantOrder as defaultGetMerchantOrder,
 } from './_mp_client.js';
 import { resolveConfig } from './_env_config.js';
+import { sendSaleNotification as defaultSendSaleNotification } from './_sale_notification.js';
 
 const MAX_BODY_BYTES = 32768;
 
@@ -119,7 +120,8 @@ async function applyRefunded(db, order, payment, now) {
 
 export function createMpWebhookHandler({
   mpClient = { getPayment: defaultGetPayment, getMerchantOrder: defaultGetMerchantOrder },
-  getNow   = () => new Date(),
+  getNow       = () => new Date(),
+  saleNotifier = defaultSendSaleNotification,
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -215,7 +217,13 @@ export function createMpWebhookHandler({
     if (!publicCode || typeof publicCode !== 'string') return json({ ok: true });
 
     const order = await db
-      .prepare('SELECT id,status,payment_status,payable_total_uyu,payment_preference_id FROM orders WHERE public_code=?')
+      .prepare(
+        'SELECT id,public_code,status,payment_status,buyer_name,buyer_phone,delivery_type,' +
+        'address,locality,department,requested_delivery_date,requested_delivery_from,' +
+        'requested_delivery_to,delivery_notes,products_total_uyu,pickup_discount_uyu,' +
+        'shipping_cost_uyu,payable_total_uyu,currency,payment_preference_id ' +
+        'FROM orders WHERE public_code=?'
+      )
       .bind(publicCode)
       .first();
     if (!order) return json({ ok: true });
@@ -265,6 +273,24 @@ export function createMpWebhookHandler({
       else if (normalized === 'refunded')  await applyRefunded(db, order, payment, now);
     } catch {
       return json({ error: 'Error temporal.' }, 500);
+    }
+
+    // La notificación interna nunca forma parte de la confirmación del pago:
+    // primero D1 queda en paid/approved y después se envía en segundo plano.
+    // Un fallo de Resend se registra en order_events, pero Mercado Pago recibe
+    // 200 para no degradar una venta ya validada.
+    if (normalized === 'approved' && config.isProduction) {
+      const notification = Promise.resolve(
+        saleNotifier({ db, env, order, payment, now })
+      ).catch(error => {
+        console.error('[mp_webhook] falló la tarea de notificación', {
+          order_id: order.id,
+          error: error?.name || 'Error',
+        });
+      });
+
+      if (typeof context.waitUntil === 'function') context.waitUntil(notification);
+      else await notification;
     }
 
     return json({ ok: true });

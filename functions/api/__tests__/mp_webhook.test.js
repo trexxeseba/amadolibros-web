@@ -99,9 +99,24 @@ function baseMerchantOrder(patch = {}) {
 function baseOrder(patch = {}) {
   return {
     id:                     'order-uuid',
+    public_code:            'AL-TEST',
     status:                 'open',
     payment_status:         'not_started',
+    buyer_name:             'Ana Pérez',
+    buyer_phone:            '099123456',
+    delivery_type:          'pickup',
+    address:                null,
+    locality:               null,
+    department:             null,
+    requested_delivery_date: null,
+    requested_delivery_from: null,
+    requested_delivery_to:   null,
+    delivery_notes:          null,
+    products_total_uyu:      3250,
+    pickup_discount_uyu:     150,
+    shipping_cost_uyu:       0,
     payable_total_uyu:      3100,
+    currency:               'UYU',
     payment_preference_id:  'pref-1',
     ...patch,
   };
@@ -142,8 +157,16 @@ function env(opts = {}) {
   };
 }
 
-function handler({ getPayment = async () => basePayment(), getMerchantOrder = async () => ({ ok: false, code: 'NOT_FOUND' }) } = {}) {
-  return createMpWebhookHandler({ mpClient: { getPayment, getMerchantOrder }, getNow: () => NOW });
+function handler({
+  getPayment = async () => basePayment(),
+  getMerchantOrder = async () => ({ ok: false, code: 'NOT_FOUND' }),
+  saleNotifier = async () => ({ ok: true }),
+} = {}) {
+  return createMpWebhookHandler({
+    mpClient: { getPayment, getMerchantOrder },
+    getNow: () => NOW,
+    saleNotifier,
+  });
 }
 
 async function call(reqOpts = {}, mpOpts = {}, envOpts = {}) {
@@ -679,4 +702,78 @@ test('origin-1: request sin encabezado Origin funciona normalmente', async () =>
   assert.equal(req.headers.get('Origin'), null, 'precondición: la request de prueba no manda Origin');
   const { res } = await call();
   assert.equal(res.status, 200);
+});
+
+// ── EMAIL-1: aviso interno de venta aprobada ────────────────────────────────
+test('email-1: pago aprobado en producción agenda una notificación con la orden completa', async () => {
+  const calls = [];
+  const db_ = dbMock({ order: baseOrder() });
+  const h = handler({
+    getPayment: async () => basePayment({ collector_id: PROD_COLLECTOR_ID, live_mode: true }),
+    saleNotifier: async args => {
+      calls.push(args);
+      return { ok: true };
+    },
+  });
+  const res = await h({
+    request: makeReq({ host: 'www.amadolibros.com' }),
+    env: {
+      ...PRODUCTION_ENV_CONFIG,
+      MP_WEBHOOK_SECRET: TEST_SECRET,
+      MP_ACCESS_TOKEN: TEST_TOKEN,
+      ORDERS_DB: db_,
+    },
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].order.public_code, 'AL-TEST');
+  assert.equal(calls[0].order.buyer_name, 'Ana Pérez');
+  assert.equal(calls[0].payment.id, 123);
+  assert.equal(calls[0].now.toISOString(), NOW.toISOString());
+});
+
+test('email-2: pago aprobado en preview no envía notificación interna', async () => {
+  let calls = 0;
+  const h = handler({
+    saleNotifier: async () => {
+      calls += 1;
+      return { ok: true };
+    },
+  });
+  const res = await h({
+    request: makeReq(),
+    env: env(),
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(calls, 0);
+});
+
+test('email-3: un fallo de notificación no revierte ni degrada el pago aprobado', async () => {
+  const db_ = dbMock({ order: baseOrder() });
+  const h = handler({
+    getPayment: async () => basePayment({ collector_id: PROD_COLLECTOR_ID, live_mode: true }),
+    saleNotifier: async () => {
+      throw new Error('Resend unavailable');
+    },
+  });
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const res = await h({
+      request: makeReq({ host: 'www.amadolibros.com' }),
+      env: {
+        ...PRODUCTION_ENV_CONFIG,
+        MP_WEBHOOK_SECRET: TEST_SECRET,
+        MP_ACCESS_TOKEN: TEST_TOKEN,
+        ORDERS_DB: db_,
+      },
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(db_.batches.length, 1, 'el pago debe quedar aplicado antes del correo');
+  } finally {
+    console.error = originalError;
+  }
 });
