@@ -52,10 +52,32 @@ test.beforeEach(() => {
             current: {
               version: VERSION,
               index_key: `${PREFIX}/index.json`,
+              active_index_key: `${PREFIX}/active-index.json`,
               block_prefix: PREFIX,
               block_count: 128,
             },
             previous: null,
+          });
+        }
+        if (request.url === `${R2_BASE}/${PREFIX}/active-index.json`) {
+          return Response.json({
+            schema_version: 1,
+            fields: [
+              'id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity',
+            ],
+            derived_fields: {
+              slug: 'slugify-v1',
+              status: 'active',
+            },
+            items: [[
+              CATALOG.items[0].id,
+              CATALOG.items[0].title,
+              CATALOG.items[0].author,
+              CATALOG.items[0].isbn,
+              '',
+              CATALOG.items[0].price,
+              CATALOG.items[0].available_quantity,
+            ]],
           });
         }
         if (request.url === `${R2_BASE}/${PREFIX}/index.json`) {
@@ -98,6 +120,25 @@ test('la búsqueda muestra pausados con acceso al aviso sin precio anterior', as
   assert.match(html, /https:\/\/preview\.example\/libro\/MLU2\/alpha-raro/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
+});
+
+test('la búsqueda Preview usa el índice activo compacto y conserva el precio', async () => {
+  const requests = [];
+  const originalMatch = globalThis.caches.default.match;
+  globalThis.caches.default.match = async request => {
+    requests.push(request.url);
+    return originalMatch(request);
+  };
+
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo?q=Alpha+disponible')
+  );
+  const html = await response.text();
+
+  assert.match(html, /Alpha disponible/);
+  assert.match(html, /Transferencia:/);
+  assert.match(html, /Precio:/);
+  assert.equal(requests.includes(CATALOG_URL), false);
 });
 
 test('una búsqueda sin coincidencias reales termina en cero resultados', async () => {

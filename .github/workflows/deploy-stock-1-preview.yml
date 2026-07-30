@@ -113,6 +113,10 @@ jobs:
             process.stdin.on("end", () => {
               const result = JSON.parse(input);
               const paused = result.paused_catalog || {};
+              const active = result.active_catalog || {};
+              if (!(active.total > 0 && active.index_bytes > 0 && active.index_bytes < 2097152)) {
+                throw new Error(`Índice activo fuera de objetivo: ${active.index_bytes}`);
+              }
               if (!(paused.index_bytes > 0 && paused.index_bytes < 2097152)) {
                 throw new Error(`Índice fuera de objetivo: ${paused.index_bytes}`);
               }

@@ -214,7 +214,9 @@ test('publica únicamente la clave fija del catálogo STOCK-1 Preview', async ()
   assert.equal(result.key, PAUSED_MANIFEST_KEY);
   assert.deepEqual(result.sample_paused, { id: 'MLU2', title: 'Pausado' });
   assert.equal(result.paused_catalog.block_count, 128);
-  assert.equal(writes.length, 130);
+  assert.equal(result.active_catalog.total, 1);
+  assert.ok(result.active_catalog.index_bytes > 0);
+  assert.equal(writes.length, 131);
   assert.equal(writes.at(-1).key, 'stock1-preview/manifest.json');
   assert.ok(writes.slice(0, -1).every(write => write.key.includes('/versions/')));
   assert.ok(writes.every(write => write.key !== 'catalog.json'));
@@ -245,7 +247,10 @@ test('no cambia el manifest si falla la verificación de un bloque', async () =>
     getAccessTokenFn: async () => 'token',
     buildCatalogFn: async () => ({
       updated_at: '2026-07-30T12:00:00.000Z',
-      items: [{ id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 }],
+      items: [
+        { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 1 },
+        { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+      ],
     }),
   });
 
@@ -272,6 +277,13 @@ test('índice pausado compacto y bloques usan una asignación determinista', () 
   assert.equal(index.fields.join(','), 'id,title,author,isbn,image');
   assert.equal(index.derived_fields.slug, 'slugify-v1');
   assert.equal(index.derived_fields.status, 'paused');
+  const activeIndex = JSON.parse(artifacts.active_index.body);
+  assert.equal(activeIndex.items.length, 1);
+  assert.equal(
+    activeIndex.fields.join(','),
+    'id,title,author,isbn,image,price,available_quantity'
+  );
+  assert.equal(activeIndex.derived_fields.status, 'active');
   assert.equal(blockNumberForId(index.items[1][0], 128), blockNumberForId('MLU476064526', 128));
   assert.ok(artifacts.max_block_bytes < 204800);
 });

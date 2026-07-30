@@ -50,6 +50,12 @@ function validDescriptor(value) {
         value.block_count >= 1;
 }
 
+function validActiveDescriptor(value) {
+    return validDescriptor(value) &&
+        typeof value.active_index_key === 'string' &&
+        value.active_index_key.endsWith('/active-index.json');
+}
+
 async function fetchPausedManifest(ctx) {
     if (!isPreview(ctx)) return null;
     const manifest = await fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60);
@@ -91,6 +97,43 @@ function expandPausedIndex(index) {
     return items;
 }
 
+function expandActiveIndex(index) {
+    const expectedFields = [
+        'id',
+        'title',
+        'author',
+        'isbn',
+        'image',
+        'price',
+        'available_quantity',
+    ];
+    if (!index || index.schema_version !== 1 || !Array.isArray(index.items)) return null;
+    if (JSON.stringify(index.fields) !== JSON.stringify(expectedFields)) return null;
+    if (index.derived_fields?.slug !== 'slugify-v1' ||
+        index.derived_fields?.status !== 'active') return null;
+    const items = [];
+    for (const row of index.items) {
+        if (!Array.isArray(row) || row.length !== expectedFields.length) return null;
+        const [id, title, author, isbn, thumbnail, price, availableQuantity] = row;
+        if (!/^MLU\d+$/.test(id) || !title ||
+            !Number.isFinite(Number(price)) ||
+            !Number.isFinite(Number(availableQuantity)) ||
+            Number(availableQuantity) <= 0) return null;
+        items.push({
+            id,
+            title,
+            author: author || null,
+            isbn: isbn || null,
+            thumbnail: thumbnail || null,
+            price: Number(price),
+            status: 'active',
+            available_quantity: Number(availableQuantity),
+            slug: slugify(title),
+        });
+    }
+    return items;
+}
+
 function slugify(text) {
     return (text || '')
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -106,6 +149,17 @@ export async function fetchPausedIndex(ctx) {
         const url = `${R2_BASE}/${descriptor.index_key}`;
         const index = await fetchJsonCached(ctx, url, 31536000);
         const items = expandPausedIndex(index);
+        if (items) return { version: descriptor.version, items };
+    }
+    return null;
+}
+
+export async function fetchActiveIndex(ctx) {
+    const manifest = await fetchPausedManifest(ctx);
+    for (const descriptor of descriptorCandidates(manifest).filter(validActiveDescriptor)) {
+        const url = `${R2_BASE}/${descriptor.active_index_key}`;
+        const index = await fetchJsonCached(ctx, url, 31536000);
+        const items = expandActiveIndex(index);
         if (items) return { version: descriptor.version, items };
     }
     return null;

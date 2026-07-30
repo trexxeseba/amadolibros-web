@@ -1,5 +1,14 @@
 const DEFAULT_BLOCK_COUNT = 128;
 const INDEX_FIELDS = ['id', 'title', 'author', 'isbn', 'image'];
+const ACTIVE_INDEX_FIELDS = [
+  'id',
+  'title',
+  'author',
+  'isbn',
+  'image',
+  'price',
+  'available_quantity',
+];
 
 function slugify(text) {
   return (text || '')
@@ -35,8 +44,12 @@ export function buildPausedCatalogArtifacts(catalog, {
   const paused = (Array.isArray(catalog?.items) ? catalog.items : [])
     .filter(item => item?.status === 'paused')
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const active = (Array.isArray(catalog?.items) ? catalog.items : [])
+    .filter(item => item?.status === 'active' && Number(item.available_quantity) > 0)
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
 
   if (paused.length === 0) throw new Error('No hay publicaciones pausadas para versionar.');
+  if (active.length === 0) throw new Error('No hay publicaciones activas para indexar.');
   if (!/^\d{14,17}$/.test(version)) throw new Error('Versión de catálogo pausado inválida.');
   if (!Number.isInteger(blockCount) || blockCount < 64 || blockCount > 256) {
     throw new Error('blockCount debe estar entre 64 y 256.');
@@ -57,6 +70,25 @@ export function buildPausedCatalogArtifacts(catalog, {
   }
 
   const prefix = `stock1-preview/versions/${version}`;
+  const activeIndexRows = active.map(item => [
+    item.id,
+    item.title || '',
+    item.author || '',
+    item.isbn || '',
+    item.thumbnail || item.pictures?.[0] || '',
+    Number(item.price) || 0,
+    Number(item.available_quantity) || 0,
+  ]);
+  const activeIndexBody = JSON.stringify({
+    schema_version: 1,
+    fields: ACTIVE_INDEX_FIELDS,
+    derived_fields: {
+      slug: 'slugify-v1',
+      status: 'active',
+    },
+    total: activeIndexRows.length,
+    items: activeIndexRows,
+  });
   const indexBody = JSON.stringify({
     schema_version: 1,
     fields: INDEX_FIELDS,
@@ -91,10 +123,17 @@ export function buildPausedCatalogArtifacts(catalog, {
     prefix,
     total: paused.length,
     block_count: blockCount,
+    active_total: active.length,
     index: {
       key: `${prefix}/index.json`,
       body: indexBody,
       bytes: byteLength(indexBody),
+    },
+    active_index: {
+      key: `${prefix}/active-index.json`,
+      body: activeIndexBody,
+      bytes: byteLength(activeIndexBody),
+      total: active.length,
     },
     blocks: blockArtifacts,
     max_block_bytes: Math.max(...blockArtifacts.map(block => block.bytes)),
@@ -109,6 +148,9 @@ export function versionDescriptor(artifacts) {
     block_count: artifacts.block_count,
     index_key: artifacts.index.key,
     index_bytes: artifacts.index.bytes,
+    active_index_key: artifacts.active_index.key,
+    active_index_bytes: artifacts.active_index.bytes,
+    active_total: artifacts.active_index.total,
     block_prefix: artifacts.prefix,
     max_block_bytes: artifacts.max_block_bytes,
     total_detail_bytes: artifacts.total_detail_bytes,

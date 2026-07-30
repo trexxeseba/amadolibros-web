@@ -5,6 +5,7 @@ import {
   PAUSED_MANIFEST_URL,
   R2_BASE,
   catalogUrlFor,
+  fetchActiveIndex,
   fetchCatalog,
   fetchPausedIndex,
   fetchPausedItem,
@@ -14,12 +15,14 @@ import {
 const CURRENT = {
   version: '20260730120000000',
   index_key: 'stock1-preview/versions/20260730120000000/index.json',
+  active_index_key: 'stock1-preview/versions/20260730120000000/active-index.json',
   block_prefix: 'stock1-preview/versions/20260730120000000',
   block_count: 128,
 };
 const PREVIOUS = {
   version: '20260729120000000',
   index_key: 'stock1-preview/versions/20260729120000000/index.json',
+  active_index_key: 'stock1-preview/versions/20260729120000000/active-index.json',
   block_prefix: 'stock1-preview/versions/20260729120000000',
   block_count: 128,
 };
@@ -99,6 +102,50 @@ test('índice pausado sólo se lee en Preview y expande el formato compacto', as
       paused_block: 2,
     });
     assert.deepEqual(requests, [PAUSED_MANIFEST_URL, `${R2_BASE}/${CURRENT.index_key}`]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('índice activo compacto conserva precio, stock y fallback versionado', async () => {
+  const originalFetch = globalThis.fetch;
+  const previousUrl = `${R2_BASE}/${PREVIOUS.active_index_key}`;
+  const objects = new Map([
+    [PAUSED_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: PREVIOUS }],
+    [previousUrl, {
+      schema_version: 1,
+      fields: [
+        'id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity',
+      ],
+      derived_fields: {
+        slug: 'slugify-v1',
+        status: 'active',
+      },
+      total: 1,
+      items: [['MLU1', 'Libro activo', 'Autora', '9781', 'https://img', 1234, 2]],
+    }],
+  ]);
+  const requests = installNetwork(objects);
+  try {
+    assert.equal(await fetchActiveIndex(context('production')), null);
+    const result = await fetchActiveIndex(context('preview'));
+    assert.equal(result.version, PREVIOUS.version);
+    assert.deepEqual(result.items[0], {
+      id: 'MLU1',
+      title: 'Libro activo',
+      author: 'Autora',
+      isbn: '9781',
+      thumbnail: 'https://img',
+      price: 1234,
+      status: 'active',
+      available_quantity: 2,
+      slug: 'libro-activo',
+    });
+    assert.deepEqual(requests, [
+      PAUSED_MANIFEST_URL,
+      `${R2_BASE}/${CURRENT.active_index_key}`,
+      previousUrl,
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }

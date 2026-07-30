@@ -194,6 +194,11 @@ export async function runPreviewCatalogPublish(env, {
     const previousManifest = await readExistingManifest(env.CATALOG_R2);
     const manifest = buildManifest(artifacts, previousManifest);
 
+    await putPreviewArtifact(
+      env.CATALOG_R2,
+      artifacts.active_index.key,
+      artifacts.active_index.body,
+    );
     await putPreviewArtifact(env.CATALOG_R2, artifacts.index.key, artifacts.index.body);
     for (const block of artifacts.blocks) {
       await putPreviewArtifact(env.CATALOG_R2, block.key, block.body);
@@ -230,6 +235,10 @@ export async function runPreviewCatalogPublish(env, {
         max_block_bytes: artifacts.max_block_bytes,
         total_detail_bytes: artifacts.total_detail_bytes,
         previous_version: manifest.previous?.version || null,
+      },
+      active_catalog: {
+        total: artifacts.active_index.total,
+        index_bytes: artifacts.active_index.bytes,
       },
       data_quality: catalog.data_quality || null,
       sample_paused: samplePaused
@@ -279,6 +288,7 @@ async function verifyPreviewArtifacts(bucket, artifacts) {
     throw new Error('CATALOG_R2.head no está disponible para verificar publicación.');
   }
   const expected = [
+    { key: artifacts.active_index.key, bytes: artifacts.active_index.bytes },
     { key: artifacts.index.key, bytes: artifacts.index.bytes },
     ...artifacts.blocks.map(block => ({ key: block.key, bytes: block.bytes })),
   ];
