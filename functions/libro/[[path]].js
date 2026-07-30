@@ -645,14 +645,15 @@ export async function onRequest(context) {
     if (!item) return notFound();
 
     const slug = slugify(item.title);
+    const isPreview = context.env?.APP_ENV === 'preview';
+    const navigationBase = isPreview
+        ? new URL(context.request.url).origin
+        : BASE;
 
     // Redirect 301 si no viene el slug
     if (!providedSlug) {
-        return Response.redirect(`${BASE}/libro/${id}/${slug}`, 301);
+        return Response.redirect(`${navigationBase}/libro/${id}/${slug}`, 301);
     }
-
-    const host      = new URL(context.request.url).hostname;
-    const isPreview = host !== 'www.amadolibros.com';
 
     const waitlistSiteKey = typeof context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY === 'string'
         ? context.env.STOCK_WAITLIST_TURNSTILE_SITE_KEY.trim()

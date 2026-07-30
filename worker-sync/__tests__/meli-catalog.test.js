@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildCatalog } from '../meli-catalog.js';
-import { runMeasure, summarizeCatalog } from '../index.js';
+import {
+  STOCK1_PREVIEW_CATALOG_KEY,
+  runMeasure,
+  runPreviewCatalogPublish,
+  summarizeCatalog,
+} from '../index.js';
 
 test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', async () => {
   const originalFetch = globalThis.fetch;
@@ -121,4 +126,51 @@ test('measure resume activos y pausados sin publicar', async () => {
   assert.equal(result.catalog.invalid, 1);
   assert.equal(authCalls, 1);
   assert.equal(buildCalls, 1);
+});
+
+test('publica únicamente la clave fija del catálogo STOCK-1 Preview', async () => {
+  const writes = [];
+  const catalog = {
+    total: 2,
+    updated_at: '2026-07-30T12:00:00.000Z',
+    items: [
+      { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 2 },
+      { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+    ],
+  };
+  const env = {
+    STOCK1_PREVIEW_PUBLISH_ENABLED: 'true',
+    CATALOG_R2: {
+      async put(key, body, options) {
+        writes.push({ key, body, options });
+      },
+    },
+  };
+
+  const result = await runPreviewCatalogPublish(env, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => catalog,
+  });
+
+  assert.equal(result.status, 'published-preview');
+  assert.equal(result.published, true);
+  assert.equal(result.production_catalog_modified, false);
+  assert.equal(result.key, STOCK1_PREVIEW_CATALOG_KEY);
+  assert.deepEqual(result.sample_paused, { id: 'MLU2', title: 'Pausado' });
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].key, 'catalog-stock1-preview.json');
+  assert.notEqual(writes[0].key, 'catalog.json');
+  assert.deepEqual(JSON.parse(writes[0].body), catalog);
+  assert.equal(writes[0].options.customMetadata.scope, 'stock-1-preview-only');
+});
+
+test('bloquea publicación Preview cuando la versión aislada no la habilita', async () => {
+  let wrote = false;
+  const result = await runPreviewCatalogPublish({
+    CATALOG_R2: { async put() { wrote = true; } },
+  });
+
+  assert.equal(result.status, 'error');
+  assert.equal(result.published, false);
+  assert.equal(wrote, false);
 });

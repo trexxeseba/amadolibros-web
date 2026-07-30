@@ -41,8 +41,8 @@ jobs:
       - name: Validate shared suite
         run: bash scripts/validate-ci.sh
 
-  measure-paused:
-    name: Measure paused without deploying
+  publish-preview-catalog:
+    name: Publish separate Preview catalog
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -62,6 +62,7 @@ jobs:
           OUTPUT=$(npx wrangler@4.107.0 versions upload \
             --preview-alias stock-measure \
             --keep-vars \
+            --var STOCK1_PREVIEW_PUBLISH_ENABLED:true \
             --message "STOCK-1 medicion sin despliegue")
           echo "$OUTPUT"
 
@@ -72,38 +73,42 @@ jobs:
           fi
           echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
 
-      - name: Execute measurement only
+      - name: Publish fixed Preview-only R2 key
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           sleep 10
           RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
-            -X POST "$PREVIEW_URL/measure" \
+            -X POST "$PREVIEW_URL/publish-preview-catalog" \
             -H "Authorization: Bearer $SYNC_SECRET")
 
           HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
 
           echo "HTTP status: $HTTP_STATUS"
-          echo "MEASUREMENT_RESULT=$BODY"
+          echo "PREVIEW_CATALOG_RESULT=$BODY"
 
           if [ "$HTTP_STATUS" != "200" ]; then
-            echo "ERROR: /measure respondió HTTP $HTTP_STATUS."
+            echo "ERROR: /publish-preview-catalog respondió HTTP $HTTP_STATUS."
             exit 1
           fi
-          if ! echo "$BODY" | grep -q '"published":false'; then
-            echo "ERROR: la respuesta no confirmó published=false."
+          if ! echo "$BODY" | grep -q '"published":true'; then
+            echo "ERROR: la respuesta no confirmó published=true."
             exit 1
           fi
-          if ! echo "$BODY" | grep -q '"status":"measured"'; then
-            echo "ERROR: la medición no terminó en estado measured."
+          if ! echo "$BODY" | grep -q '"production_catalog_modified":false'; then
+            echo "ERROR: no se confirmó que catalog.json quedó intacto."
+            exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"key":"catalog-stock1-preview.json"'; then
+            echo "ERROR: el Worker no confirmó la clave fija de Preview."
             exit 1
           fi
 
   deploy-preview:
     name: Deploy Preview
-    needs: validate
+    needs: publish-preview-catalog
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

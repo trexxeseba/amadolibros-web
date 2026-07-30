@@ -112,6 +112,8 @@ test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
   assert.doesNotMatch(stockPreviewYml, /d1 migrations apply/);
   assert.doesNotMatch(stockPreviewYml, /--branch main/);
   assert.doesNotMatch(stockPreviewYml, /env\.production/);
+  assert.match(stockPreviewYml, /--var STOCK1_PREVIEW_PUBLISH_ENABLED:true/);
+  assert.match(stockPreviewYml, /catalog-stock1-preview\.json/);
 });
 
 test('wrangler.toml: Producción no declara secrets', () => {

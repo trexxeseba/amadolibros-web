@@ -9,6 +9,8 @@
  *                      para disparar sync manualmente.
  *                    — GET /status con el mismo header para auditar KV + R2.
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
+ *                    — POST /publish-preview-catalog escribe únicamente el catálogo
+ *                      separado de STOCK-1 cuando la versión aislada lo habilita.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -35,6 +37,8 @@
 import { getAccessToken } from './meli-auth.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
+
+export const STOCK1_PREVIEW_CATALOG_KEY = 'catalog-stock1-preview.json';
 
 export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
@@ -64,6 +68,14 @@ export default {
     if (request.method === 'POST' && url.pathname === '/measure') {
       const result = await runMeasure(env);
       return json(result, result.status === 'measured' ? 200 : 500);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/publish-preview-catalog') {
+      if (env.STOCK1_PREVIEW_PUBLISH_ENABLED !== 'true') {
+        return json({ error: 'Not found.' }, 404);
+      }
+      const result = await runPreviewCatalogPublish(env);
+      return json(result, result.status === 'published-preview' ? 200 : 500);
     }
 
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
@@ -137,6 +149,72 @@ export async function runMeasure(env, {
       status: 'error',
       checked_at: new Date().toISOString(),
       published: false,
+      error: String(err.message || 'Error').slice(0, 400),
+    };
+  }
+}
+
+export async function runPreviewCatalogPublish(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  if (env?.STOCK1_PREVIEW_PUBLISH_ENABLED !== 'true') {
+    return {
+      status: 'error',
+      published: false,
+      error: 'Preview catalog publishing is disabled.',
+    };
+  }
+  if (!env?.CATALOG_R2 || typeof env.CATALOG_R2.put !== 'function') {
+    return {
+      status: 'error',
+      published: false,
+      error: 'CATALOG_R2 binding is unavailable.',
+    };
+  }
+
+  try {
+    const accessToken = await getAccessTokenFn(env);
+    const catalog = await buildCatalogFn(env, accessToken);
+    const summary = summarizeCatalog(catalog);
+
+    if (summary.invalid > 0 || summary.duplicate_ids > 0 || summary.paused === 0) {
+      throw new Error(
+        `Catálogo Preview inválido: paused=${summary.paused}, ` +
+        `duplicate_ids=${summary.duplicate_ids}, invalid=${summary.invalid}.`
+      );
+    }
+
+    const body = JSON.stringify(catalog);
+    await env.CATALOG_R2.put(STOCK1_PREVIEW_CATALOG_KEY, body, {
+      httpMetadata: {
+        contentType: 'application/json',
+        cacheControl: 'public, max-age=300',
+      },
+      customMetadata: {
+        scope: 'stock-1-preview-only',
+      },
+    });
+
+    const samplePaused = catalog.items.find(item => item.status === 'paused') || null;
+    return {
+      status: 'published-preview',
+      published: true,
+      production_catalog_modified: false,
+      key: STOCK1_PREVIEW_CATALOG_KEY,
+      checked_at: new Date().toISOString(),
+      catalog: summary,
+      sample_paused: samplePaused
+        ? { id: samplePaused.id, title: samplePaused.title }
+        : null,
+    };
+  } catch (err) {
+    console.error(`[Preview catalog] Error: ${err.message}`);
+    return {
+      status: 'error',
+      published: false,
+      production_catalog_modified: false,
+      key: STOCK1_PREVIEW_CATALOG_KEY,
       error: String(err.message || 'Error').slice(0, 400),
     };
   }

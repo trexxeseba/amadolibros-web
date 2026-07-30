@@ -20,11 +20,12 @@ const CATALOG = {
   ],
 };
 
-function context(url, params = {}) {
+function context(url, params = {}, appEnv = 'preview') {
   return {
     request: new Request(url),
     params,
     env: {
+      APP_ENV: appEnv,
       STOCK_WAITLIST_TURNSTILE_SITE_KEY: '0xpreview-test-sitekey',
     },
     waitUntil() {},
@@ -51,6 +52,7 @@ test('la búsqueda muestra pausados con acceso al aviso sin precio anterior', as
   assert.match(html, /No disponible/);
   assert.match(html, /Avisame cuando llegue/);
   assert.match(html, /Buscarlo por encargo/);
+  assert.match(html, /https:\/\/preview\.example\/libro\/MLU2\/alpha-raro/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
 });
@@ -88,11 +90,22 @@ test('la ficha activa conserva precio y carrito en producción', async () => {
   const response = await bookRequest(
     context('https://www.amadolibros.com/libro/MLU1/alpha-disponible', {
       path: ['MLU1', 'alpha-disponible'],
-    })
+    }, 'production')
   );
   const html = await response.text();
 
   assert.match(html, /index, follow/);
   assert.match(html, /Agregar al carrito/);
   assert.match(html, /Transferencia:/);
+});
+
+test('la ficha sin slug redirige dentro del mismo Preview', async () => {
+  const response = await bookRequest(
+    context('https://preview.example/libro/MLU2', {
+      path: ['MLU2'],
+    })
+  );
+
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('location'), 'https://preview.example/libro/MLU2/alpha-raro');
 });

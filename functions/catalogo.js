@@ -75,6 +75,9 @@ function httpsImg(url) {
 export async function onRequest(ctx) {
     const catalog = await fetchCatalog(ctx);
     const items   = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
+    const previewBase = ctx.env?.APP_ENV === 'preview'
+        ? new URL(ctx.request.url).origin
+        : BASE;
 
     // El índice SEO sin búsqueda mantiene únicamente disponibles. Los pausados
     // y activos sin stock existen para la búsqueda humana como no disponibles.
@@ -93,7 +96,7 @@ export async function onRequest(ctx) {
     if (!rawQ) {
         const rows = activeItems.map(b => {
             const slug   = slugify(b.title);
-            const href   = `${BASE}/libro/${b.id}/${slug}`;
+            const href   = `${previewBase}/libro/${b.id}/${slug}`;
             const author = b.author ? ` — ${escapeHtml(b.author)}` : '';
             return `    <li><a href="${escapeHtml(href)}">${escapeHtml(b.title)}${author}</a></li>`;
         }).join('\n');
@@ -185,7 +188,7 @@ ${rows}
 
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
-        const href  = escapeHtml(`${BASE}/libro/${b.id}/${slug}`);
+        const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
         const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
         const title = escapeHtml(b.title);
         const author = b.author
