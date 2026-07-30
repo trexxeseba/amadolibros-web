@@ -41,6 +41,60 @@ jobs:
       - name: Validate shared suite
         run: bash scripts/validate-ci.sh
 
+  measure-paused:
+    name: Measure paused without publishing
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Measure Mercado Libre catalog in memory
+        env:
+          MELI_TOKEN: ${{ secrets.MELI_TOKEN }}
+        run: |
+          if [ -z "$MELI_TOKEN" ]; then
+            echo "ERROR: MELI_TOKEN no está configurado en GitHub Actions."
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import { buildCatalog } from './worker-sync/meli-catalog.js';
+
+          const catalog = await buildCatalog(
+            { USER_ID: '440298103', MIN_ACTIVE_ITEMS: '500' },
+            process.env.MELI_TOKEN
+          );
+          const items = Array.isArray(catalog.items) ? catalog.items : [];
+          const ids = items.map(item => item.id).filter(Boolean);
+          const uniqueIds = new Set(ids);
+          const active = items.filter(
+            item => item.status === 'active' && Number(item.available_quantity) > 0
+          ).length;
+          const paused = items.filter(item => item.status === 'paused').length;
+          const activeWithoutStock = items.filter(
+            item => item.status === 'active' && Number(item.available_quantity) <= 0
+          ).length;
+          const invalid = items.filter(
+            item => !item.id || !item.title || !['active', 'paused'].includes(item.status)
+          ).length;
+          const bytes = new TextEncoder().encode(JSON.stringify(catalog)).length;
+
+          console.log('MEASUREMENT_RESULT=' + JSON.stringify({
+            total: items.length,
+            active,
+            paused,
+            active_without_stock: activeWithoutStock,
+            duplicate_ids: ids.length - uniqueIds.size,
+            invalid,
+            bytes,
+            mebibytes: Math.round((bytes / 1024 / 1024) * 100) / 100,
+            published: false
+          }));
+          NODE
+
   deploy-preview:
     name: Deploy Preview
     needs: validate
