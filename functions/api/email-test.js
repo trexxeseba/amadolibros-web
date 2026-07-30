@@ -85,7 +85,10 @@ export async function onRequest(context) {
     console.error('[email-test] Resend no confirmó el correo', {
       code: safeCode,
     });
-    return response(`No se pudo enviar la prueba: ${safeCode}`, 502);
+    // Cloudflare reemplaza respuestas 502 por su página genérica y oculta el
+    // código seguro. Esta ruta es temporal: responde 200 para que el operador
+    // pueda leer el diagnóstico y distingue el fallo con un prefijo explícito.
+    return response(`FALLO — No se pudo enviar la prueba: ${safeCode}`);
   }
 
   return response('Prueba enviada correctamente.');
