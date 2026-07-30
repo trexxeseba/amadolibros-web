@@ -100,3 +100,18 @@ test('email-test-5: método ajeno queda rechazado', async () => {
   assert.equal(result.status, 405);
   assert.equal(result.headers.get('Allow'), 'GET, POST');
 });
+
+test('email-test-6: un fallo muestra sólo un código seguro, nunca secretos', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ message: 'invalid api key' }, { status: 401 });
+  try {
+    const result = await onRequest({ request: request('POST'), env: env() });
+    const body = await result.text();
+    assert.equal(result.status, 502);
+    assert.equal(body, 'No se pudo enviar la prueba: RESEND_HTTP_401');
+    assert.ok(!body.includes('re_test_secret'));
+    assert.ok(!body.includes('uno@example.com'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

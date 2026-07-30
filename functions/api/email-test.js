@@ -79,10 +79,13 @@ export async function onRequest(context) {
 
   const result = await sendSafeTestNotification({ env });
   if (!result.ok) {
+    const safeCode = /^[A-Z0-9_:-]{1,80}$/.test(result.code || '')
+      ? result.code
+      : 'RESEND_ERROR';
     console.error('[email-test] Resend no confirmó el correo', {
-      code: result.code || 'RESEND_ERROR',
+      code: safeCode,
     });
-    return response('No se pudo enviar la prueba.', 502);
+    return response(`No se pudo enviar la prueba: ${safeCode}`, 502);
   }
 
   return response('Prueba enviada correctamente.');
