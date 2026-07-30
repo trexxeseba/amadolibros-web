@@ -84,16 +84,20 @@ test('aborta si faltan disponibles aunque existan publicaciones pausadas', async
 test('measure resume activos y pausados sin publicar', async () => {
   const catalog = {
     items: [
-      { id: 'MLU1', status: 'active', available_quantity: 2 },
-      { id: 'MLU2', status: 'paused', available_quantity: 0 },
-      { id: 'MLU3', status: 'active', available_quantity: 0 },
+      { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 2 },
+      { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+      { id: 'MLU3', title: 'Sin stock', status: 'active', available_quantity: 0 },
+      { id: 'MLU2', title: 'Duplicado', status: 'paused', available_quantity: 0 },
+      { id: '', title: '', status: 'broken', available_quantity: 0 },
     ],
   };
   const summary = summarizeCatalog(catalog);
-  assert.equal(summary.total, 3);
+  assert.equal(summary.total, 5);
   assert.equal(summary.active, 1);
-  assert.equal(summary.paused, 1);
+  assert.equal(summary.paused, 2);
   assert.equal(summary.active_without_stock, 1);
+  assert.equal(summary.duplicate_ids, 1);
+  assert.equal(summary.invalid, 1);
   assert.ok(summary.bytes > 0);
 
   let authCalls = 0;
@@ -112,7 +116,9 @@ test('measure resume activos y pausados sin publicar', async () => {
 
   assert.equal(result.status, 'measured');
   assert.equal(result.published, false);
-  assert.equal(result.catalog.paused, 1);
+  assert.equal(result.catalog.paused, 2);
+  assert.equal(result.catalog.duplicate_ids, 1);
+  assert.equal(result.catalog.invalid, 1);
   assert.equal(authCalls, 1);
   assert.equal(buildCalls, 1);
 });

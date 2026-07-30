@@ -100,12 +100,19 @@ export function summarizeCatalog(catalog) {
   const activeWithoutStock = items.filter(
     item => item.status === 'active' && Number(item.available_quantity) <= 0
   ).length;
+  const ids = items.map(item => item.id).filter(Boolean);
+  const duplicateIds = ids.length - new Set(ids).size;
+  const invalid = items.filter(
+    item => !item.id || !item.title || !['active', 'paused'].includes(item.status)
+  ).length;
   const bytes = new TextEncoder().encode(JSON.stringify(catalog)).length;
   return {
     total: items.length,
     active,
     paused,
     active_without_stock: activeWithoutStock,
+    duplicate_ids: duplicateIds,
+    invalid,
     bytes,
     mebibytes: Math.round((bytes / 1024 / 1024) * 100) / 100,
   };
