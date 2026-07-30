@@ -102,6 +102,19 @@ jobs:
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: ${{ steps.ts_config.outputs.allowed_hosts }}
         run: npm run build
 
+      - name: Sync Resend secret to Cloudflare Pages
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "::error::Falta el secret RESEND_API_KEY en el environment production de GitHub."
+            exit 1
+          fi
+          printf '%s' "$RESEND_API_KEY" |
+            npx wrangler@3.114.17 pages secret put RESEND_API_KEY --project-name amadolibros-web
+
       - name: Deploy via Wrangler
         run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:
