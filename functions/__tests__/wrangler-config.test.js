@@ -65,10 +65,37 @@ test('wrangler.toml: Producción conserva APP_ENV, CANONICAL_ORIGIN y ALLOWED_HO
   assert.match(productionVars, /ALLOWED_HOSTS\s*=\s*"amadolibros\.com,www\.amadolibros\.com"/);
 });
 
-test('wrangler.toml: Producción no declara secrets (MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, TURNSTILE_SECRET_KEY)', () => {
+test('wrangler.toml: Producción declara remitente y destinatarios de email', () => {
+  assert.match(
+    productionVars,
+    /SALES_NOTIFICATION_FROM\s*=\s*"Amado Libros <web@notificaciones\.amadolibros\.com>"/,
+  );
+  assert.match(
+    productionVars,
+    /SALES_NOTIFICATION_TO\s*=\s*"undiaes@gmail\.com,adm@amadolibros\.com"/,
+  );
+});
+
+test('wrangler.toml: Producción no declara secrets', () => {
   assert.doesNotMatch(productionVars, /MP_ACCESS_TOKEN/);
   assert.doesNotMatch(productionVars, /MP_WEBHOOK_SECRET/);
   assert.doesNotMatch(productionVars, /TURNSTILE_SECRET_KEY/);
+  assert.doesNotMatch(productionVars, /RESEND_API_KEY/);
+});
+
+test('deploy.yml: sincroniza RESEND_API_KEY cifrada antes de publicar', () => {
+  const secretStepIdx = deployYml.indexOf('Sync Resend secret to Cloudflare Pages');
+  const deployStepIdx = deployYml.indexOf('Deploy via Wrangler');
+  assert.notEqual(secretStepIdx, -1, 'step de sincronización de Resend no encontrado');
+  assert.notEqual(deployStepIdx, -1, 'step de deploy no encontrado');
+  assert.ok(secretStepIdx < deployStepIdx, 'el secret debe sincronizarse antes del deploy');
+  assert.match(deployYml, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
+  assert.match(
+    deployYml,
+    /wrangler@3\.114\.17 pages secret put RESEND_API_KEY --project-name amadolibros-web/,
+  );
+  assert.match(deployYml, /if \[ -z "\$RESEND_API_KEY" \]/);
+  assert.doesNotMatch(deployYml, /re_[A-Za-z0-9_-]+/);
 });
 
 test('deploy.yml: build de Producción tiene PUBLIC_CHECKOUT_ENABLED en true (2-N-H1)', () => {
