@@ -20,7 +20,7 @@ function formatMoney(value) {
   return `$${new Intl.NumberFormat('es-UY', { maximumFractionDigits: 0 }).format(Number(value) || 0)}`;
 }
 
-export function resolveEmailConfig(env) {
+function resolveEmailConfig(env) {
   const apiKey = cleanString(env?.RESEND_API_KEY);
   const from = cleanString(env?.SALES_NOTIFICATION_FROM);
   const to = cleanString(env?.SALES_NOTIFICATION_TO)
@@ -189,7 +189,7 @@ function safeFailureCode(value) {
   return /^[A-Z0-9_:-]{1,80}$/.test(code) ? code : 'RESEND_ERROR';
 }
 
-export async function postToResend({ config, email, idempotencyKey, fetchFn, timeoutMs }) {
+async function postToResend({ config, email, idempotencyKey, fetchFn, timeoutMs }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -328,40 +328,3 @@ export function createSaleNotificationSender({
 }
 
 export const sendSaleNotification = createSaleNotificationSender();
-
-export async function sendSafeTestNotification({
-  env,
-  fetchFn = globalThis.fetch,
-  timeoutMs = REQUEST_TIMEOUT_MS,
-} = {}) {
-  const config = resolveEmailConfig(env);
-  if (!config) {
-    return { ok: false, code: 'EMAIL_CONFIG_MISSING' };
-  }
-
-  const email = {
-    subject: 'PRUEBA — Notificación de venta web',
-    text: [
-      'Prueba correcta de notificaciones de Amado Libros.',
-      '',
-      'Este correo no corresponde a una venta.',
-      'No se creó ningún pedido y no se contactó a Mercado Pago.',
-    ].join('\n'),
-    html: `<!doctype html>
-<html lang="es">
-  <body style="font-family:Arial,sans-serif;color:#222;line-height:1.45">
-    <h1 style="font-size:22px">Prueba correcta de notificaciones</h1>
-    <p>Este correo no corresponde a una venta.</p>
-    <p>No se creó ningún pedido y no se contactó a Mercado Pago.</p>
-  </body>
-</html>`,
-  };
-
-  return postToResend({
-    config,
-    email,
-    idempotencyKey: 'safe-email-test/2026-07-30-v1',
-    fetchFn,
-    timeoutMs,
-  });
-}
