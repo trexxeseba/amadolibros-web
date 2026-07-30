@@ -77,6 +77,15 @@ export async function onRequest(context) {
     return response(confirmationPage(token), 200, 'text/html; charset=utf-8');
   }
 
+  const missingBindings = [
+    !String(env?.RESEND_API_KEY || '').trim() && 'API_KEY',
+    !String(env?.SALES_NOTIFICATION_FROM || '').trim() && 'FROM',
+    !String(env?.SALES_NOTIFICATION_TO || '').trim() && 'TO',
+  ].filter(Boolean);
+  if (missingBindings.length > 0) {
+    return response(`FALLO — No se pudo enviar la prueba: EMAIL_CONFIG_MISSING_${missingBindings.join('_')}`);
+  }
+
   let result;
   try {
     result = await sendSafeTestNotification({ env });
