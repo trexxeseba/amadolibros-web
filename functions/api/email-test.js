@@ -77,7 +77,21 @@ export async function onRequest(context) {
     return response(confirmationPage(token), 200, 'text/html; charset=utf-8');
   }
 
-  const result = await sendSafeTestNotification({ env });
+  let result;
+  try {
+    result = await sendSafeTestNotification({ env });
+  } catch (error) {
+    const errorName = String(error?.name || 'ERROR')
+      .toUpperCase()
+      .replace(/[^A-Z0-9_:-]/g, '')
+      .slice(0, 40) || 'ERROR';
+    const safeCode = `EMAIL_TEST_EXCEPTION_${errorName}`;
+    console.error('[email-test] excepción controlada durante la prueba', {
+      code: safeCode,
+    });
+    return response(`FALLO — No se pudo enviar la prueba: ${safeCode}`);
+  }
+
   if (!result.ok) {
     const safeCode = /^[A-Z0-9_:-]{1,80}$/.test(result.code || '')
       ? result.code
