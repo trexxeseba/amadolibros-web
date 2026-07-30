@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildCatalog } from '../meli-catalog.js';
+import { runMeasure, summarizeCatalog } from '../index.js';
 
 test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', async () => {
   const originalFetch = globalThis.fetch;
@@ -78,4 +79,40 @@ test('aborta si faltan disponibles aunque existan publicaciones pausadas', async
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('measure resume activos y pausados sin publicar', async () => {
+  const catalog = {
+    items: [
+      { id: 'MLU1', status: 'active', available_quantity: 2 },
+      { id: 'MLU2', status: 'paused', available_quantity: 0 },
+      { id: 'MLU3', status: 'active', available_quantity: 0 },
+    ],
+  };
+  const summary = summarizeCatalog(catalog);
+  assert.equal(summary.total, 3);
+  assert.equal(summary.active, 1);
+  assert.equal(summary.paused, 1);
+  assert.equal(summary.active_without_stock, 1);
+  assert.ok(summary.bytes > 0);
+
+  let authCalls = 0;
+  let buildCalls = 0;
+  const result = await runMeasure(
+    { USER_ID: '123' },
+    {
+      getAccessTokenFn: async () => { authCalls++; return 'token'; },
+      buildCatalogFn: async (_env, token) => {
+        buildCalls++;
+        assert.equal(token, 'token');
+        return catalog;
+      },
+    }
+  );
+
+  assert.equal(result.status, 'measured');
+  assert.equal(result.published, false);
+  assert.equal(result.catalog.paused, 1);
+  assert.equal(authCalls, 1);
+  assert.equal(buildCalls, 1);
 });

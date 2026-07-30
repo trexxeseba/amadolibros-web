@@ -24,6 +24,9 @@ function context(url, params = {}) {
   return {
     request: new Request(url),
     params,
+    env: {
+      STOCK_WAITLIST_TURNSTILE_SITE_KEY: '0xpreview-test-sitekey',
+    },
     waitUntil() {},
   };
 }
@@ -39,15 +42,15 @@ test.beforeEach(() => {
   };
 });
 
-test('la búsqueda muestra pausados como encargo sin precio anterior', async () => {
+test('la búsqueda muestra pausados con acceso al aviso sin precio anterior', async () => {
   const response = await catalogRequest(
     context('https://preview.example/catalogo?q=Alpha+raro')
   );
   const html = await response.text();
 
-  assert.match(html, /Por encargo/);
-  assert.match(html, /Entrega estimada: 15–20 días/);
-  assert.match(html, /Consultar disponibilidad/);
+  assert.match(html, /No disponible/);
+  assert.match(html, /Avisame cuando llegue/);
+  assert.match(html, /Buscarlo por encargo/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
 });
@@ -71,8 +74,11 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   const html = await response.text();
 
   assert.match(html, /noindex, follow/);
-  assert.match(html, /Entrega estimada: 15–20 días/);
-  assert.match(html, /Consultar disponibilidad/);
+  assert.match(html, /No disponible por el momento/);
+  assert.match(html, /Avisame cuando llegue/);
+  assert.match(html, /data-action="stock_waitlist"/);
+  assert.match(html, /\/api\/stock-waitlist/);
+  assert.match(html, /Buscarlo por encargo por WhatsApp/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
   assert.doesNotMatch(html, /Comprar en MercadoLibre/);

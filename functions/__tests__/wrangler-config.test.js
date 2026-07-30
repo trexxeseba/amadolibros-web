@@ -32,6 +32,10 @@ const wranglerToml   = readFileSync(path.join(ROOT, 'wrangler.toml'), 'utf8');
 const deployYml      = readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
 const ciYml          = readFileSync(path.join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 const validateCiSh   = readFileSync(path.join(ROOT, 'scripts', 'validate-ci.sh'), 'utf8');
+const stockPreviewYml = readFileSync(
+  path.join(ROOT, '.github', 'workflows', 'deploy-stock-1-preview.yml'),
+  'utf8',
+);
 const carritoAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'pages', 'carrito.astro'),
   'utf8',
@@ -50,6 +54,7 @@ function extractTomlSection(toml, header) {
 }
 
 const productionVars = extractTomlSection(wranglerToml, '[env.production.vars]');
+const previewVars = extractTomlSection(wranglerToml, '[env.preview.vars]');
 
 test('wrangler.toml: Producción resuelve MP_COLLECTOR_ID=440298103', () => {
   assert.match(productionVars, /MP_COLLECTOR_ID\s*=\s*"440298103"/);
@@ -74,6 +79,42 @@ test('wrangler.toml: Producción declara remitente y destinatarios de email', ()
     productionVars,
     /SALES_NOTIFICATION_TO\s*=\s*"undiaes@gmail\.com,adm@amadolibros\.com"/,
   );
+});
+
+test('wrangler.toml: STOCK-1 declara la site key pública correcta en Preview y Producción', () => {
+  assert.match(
+    previewVars,
+    new RegExp(`STOCK_WAITLIST_TURNSTILE_SITE_KEY\\s*=\\s*"${PREVIEW_SITE_KEY}"`),
+  );
+  assert.match(
+    productionVars,
+    new RegExp(`STOCK_WAITLIST_TURNSTILE_SITE_KEY\\s*=\\s*"${PRODUCTION_SITE_KEY}"`),
+  );
+});
+
+test('wrangler.toml: Preview declara destinatarios internos sin declarar RESEND_API_KEY', () => {
+  assert.match(
+    previewVars,
+    /SALES_NOTIFICATION_FROM\s*=\s*"Amado Libros <web@notificaciones\.amadolibros\.com>"/,
+  );
+  assert.match(
+    previewVars,
+    /SALES_NOTIFICATION_TO\s*=\s*"undiaes@gmail\.com,adm@amadolibros\.com"/,
+  );
+  assert.doesNotMatch(previewVars, /RESEND_API_KEY/);
+});
+
+test('STOCK-1 Preview queda limitado a su rama, D1 Preview y checkout apagado', () => {
+  assert.match(stockPreviewYml, /refs\/heads\/agent\/stock-1-preview/);
+  assert.match(
+    stockPreviewYml,
+    /d1 migrations apply ORDERS_DB --env preview --remote/,
+  );
+  assert.match(stockPreviewYml, /--branch agent\/stock-1-preview/);
+  assert.match(stockPreviewYml, /PUBLIC_INDEXABLE:\s*'false'/);
+  assert.match(stockPreviewYml, /PUBLIC_CHECKOUT_ENABLED:\s*'false'/);
+  assert.doesNotMatch(stockPreviewYml, /--branch main/);
+  assert.doesNotMatch(stockPreviewYml, /env\.production/);
 });
 
 test('wrangler.toml: Producción no declara secrets', () => {

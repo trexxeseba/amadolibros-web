@@ -77,7 +77,7 @@ export async function onRequest(ctx) {
     const items   = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
 
     // El índice SEO sin búsqueda mantiene únicamente disponibles. Los pausados
-    // y activos sin stock existen para la búsqueda humana como "por encargo".
+    // y activos sin stock existen para la búsqueda humana como no disponibles.
     const eligibleItems = items.filter(
         b => b.status === 'active' || b.status === 'paused'
     );
@@ -196,7 +196,7 @@ ${rows}
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const loading  = idx < 8 ? 'eager' : 'lazy';
-        const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar disponibilidad de: ${b.title}`)}`;
+        const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
         const imgTag = img
             ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
             : `<div class="rc-no-img">📚</div>`;
@@ -204,7 +204,7 @@ ${rows}
         return `<article class="rc-card${available ? '' : ' is-order'}">
   <a href="${href}" class="rc-img">${imgTag}</a>
   <div class="rc-body">
-    <span class="rc-badge ${available ? 'available' : 'order'}">${available ? 'Disponible' : 'Por encargo'}</span>
+    <span class="rc-badge ${available ? 'available' : 'order'}">${available ? 'Disponible' : 'No disponible'}</span>
     <a href="${href}" class="rc-title-link"><p class="rc-title">${title}</p></a>
     ${author}
     ${available
@@ -214,10 +214,11 @@ ${rows}
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
       : `<div class="rc-order-info">
-      <strong>Entrega estimada: 15–20 días</strong>
-      <span>Sujeto a confirmación de disponibilidad.</span>
+      <strong>No disponible por el momento</strong>
+      <span>Podés pedir que te avisemos cuando vuelva.</span>
     </div>
-    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>`
+    <a href="${href}#aviso-stock" class="rc-cta">Avisame cuando llegue</a>
+    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Buscarlo por encargo</a>`
     }
   </div>
 </article>`;

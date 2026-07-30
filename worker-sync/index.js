@@ -8,6 +8,7 @@
  *   fetch(request)   — POST /trigger con header Authorization: Bearer <SYNC_SECRET>
  *                      para disparar sync manualmente.
  *                    — GET /status con el mismo header para auditar KV + R2.
+ *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -60,8 +61,13 @@ export default {
       return json(await readStatus(env));
     }
 
+    if (request.method === 'POST' && url.pathname === '/measure') {
+      const result = await runMeasure(env);
+      return json(result, result.status === 'measured' ? 200 : 500);
+    }
+
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
-      return json({ error: 'Not found. Use POST /trigger or GET /status.' }, 404);
+      return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
     }
 
     const mode = url.searchParams.get('mode') || 'async';
@@ -82,6 +88,52 @@ export default {
     }, 202);
   },
 };
+
+// ── Medición segura ─────────────────────────────────────────────────────────
+
+export function summarizeCatalog(catalog) {
+  const items = Array.isArray(catalog?.items) ? catalog.items : [];
+  const active = items.filter(
+    item => item.status === 'active' && Number(item.available_quantity) > 0
+  ).length;
+  const paused = items.filter(item => item.status === 'paused').length;
+  const activeWithoutStock = items.filter(
+    item => item.status === 'active' && Number(item.available_quantity) <= 0
+  ).length;
+  const bytes = new TextEncoder().encode(JSON.stringify(catalog)).length;
+  return {
+    total: items.length,
+    active,
+    paused,
+    active_without_stock: activeWithoutStock,
+    bytes,
+    mebibytes: Math.round((bytes / 1024 / 1024) * 100) / 100,
+  };
+}
+
+export async function runMeasure(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  try {
+    const accessToken = await getAccessTokenFn(env);
+    const catalog = await buildCatalogFn(env, accessToken);
+    return {
+      status: 'measured',
+      checked_at: new Date().toISOString(),
+      catalog: summarizeCatalog(catalog),
+      published: false,
+    };
+  } catch (err) {
+    console.error(`[Measure] Error: ${err.message}`);
+    return {
+      status: 'error',
+      checked_at: new Date().toISOString(),
+      published: false,
+      error: String(err.message || 'Error').slice(0, 400),
+    };
+  }
+}
 
 // ── Sync principal ────────────────────────────────────────────────────────────
 
