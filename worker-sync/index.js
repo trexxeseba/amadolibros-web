@@ -71,7 +71,7 @@ export default {
     }
 
     if (request.method === 'POST' && url.pathname === '/publish-preview-catalog') {
-      if (env.STOCK1_PREVIEW_PUBLISH_ENABLED !== 'true') {
+      if (String(env.STOCK1_PREVIEW_PUBLISH_ENABLED) !== 'true') {
         return json({ error: 'Not found.' }, 404);
       }
       const result = await runPreviewCatalogPublish(env);
@@ -158,7 +158,7 @@ export async function runPreviewCatalogPublish(env, {
   getAccessTokenFn = getAccessToken,
   buildCatalogFn = buildCatalog,
 } = {}) {
-  if (env?.STOCK1_PREVIEW_PUBLISH_ENABLED !== 'true') {
+  if (String(env?.STOCK1_PREVIEW_PUBLISH_ENABLED) !== 'true') {
     return {
       status: 'error',
       published: false,

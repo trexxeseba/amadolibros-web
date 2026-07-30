@@ -139,7 +139,7 @@ test('publica únicamente la clave fija del catálogo STOCK-1 Preview', async ()
     ],
   };
   const env = {
-    STOCK1_PREVIEW_PUBLISH_ENABLED: 'true',
+    STOCK1_PREVIEW_PUBLISH_ENABLED: true,
     CATALOG_R2: {
       async put(key, body, options) {
         writes.push({ key, body, options });
