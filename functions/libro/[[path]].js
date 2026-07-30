@@ -14,7 +14,7 @@
  */
 
 import { slugify } from '../_shared/slug.js';
-import { BASE, fetchCatalog } from '../_shared/catalog.js';
+import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 
 const WA = '59899841325';
 
@@ -634,14 +634,19 @@ export async function onRequest(context) {
 
     // Cargar catálogo (con edge cache)
     const catalog = await fetchCatalog(context);
-    if (!catalog || !Array.isArray(catalog.items)) {
+    const activeCatalogAvailable = catalog && Array.isArray(catalog.items);
+    let item = activeCatalogAvailable
+        ? catalog.items.find(b => b.id === id)
+        : null;
+    if (!item && context.env?.APP_ENV === 'preview') {
+        item = await fetchPausedItem(context, id);
+    }
+    if (!item && !activeCatalogAvailable) {
         return new Response('Error al cargar el catálogo. Intentá de nuevo en unos segundos.', {
             status: 503,
             headers: { 'content-type': 'text/plain;charset=UTF-8' },
         });
     }
-
-    const item = catalog.items.find(b => b.id === id);
     if (!item) return notFound();
 
     const slug = slugify(item.title);

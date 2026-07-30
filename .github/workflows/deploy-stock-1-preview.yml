@@ -78,6 +78,8 @@ jobs:
           PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
+          CATALOG_URL="https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json"
+          BEFORE=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
           sleep 10
           RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
             -X POST "$PREVIEW_URL/publish-preview-catalog" \
@@ -101,8 +103,32 @@ jobs:
             echo "ERROR: no se confirmó que catalog.json quedó intacto."
             exit 1
           fi
-          if ! echo "$BODY" | grep -q '"key":"catalog-stock1-preview.json"'; then
-            echo "ERROR: el Worker no confirmó la clave fija de Preview."
+          if ! echo "$BODY" | grep -q '"key":"stock1-preview/manifest.json"'; then
+            echo "ERROR: el Worker no confirmó el manifest fijo de Preview."
+            exit 1
+          fi
+          echo "$BODY" | node -e '
+            let input="";
+            process.stdin.on("data", chunk => input += chunk);
+            process.stdin.on("end", () => {
+              const result = JSON.parse(input);
+              const paused = result.paused_catalog || {};
+              if (!(paused.index_bytes > 0 && paused.index_bytes < 2097152)) {
+                throw new Error(`Índice fuera de objetivo: ${paused.index_bytes}`);
+              }
+              if (!(paused.block_count >= 64 && paused.block_count <= 256)) {
+                throw new Error(`Cantidad de bloques inválida: ${paused.block_count}`);
+              }
+              if (!(paused.max_block_bytes > 0 && paused.max_block_bytes < 204800)) {
+                throw new Error(`Bloque fuera de objetivo: ${paused.max_block_bytes}`);
+              }
+            });
+          '
+          AFTER=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
+          if [ "$BEFORE" != "$AFTER" ]; then
+            echo "ERROR: las cabeceras de catalog.json cambiaron durante la publicación."
+            echo "ANTES=$BEFORE"
+            echo "DESPUÉS=$AFTER"
             exit 1
           fi
 

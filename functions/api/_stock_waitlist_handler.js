@@ -192,6 +192,7 @@ async function recordNotificationResult(db, waitlistId, result, now) {
 
 export function createStockWaitlistHandler({
   fetchCatalog,
+  fetchPausedItem,
   verifyTurnstileToken = verifyTurnstile,
   fetchFn = globalThis.fetch,
   getNow = () => new Date(),
@@ -271,10 +272,16 @@ export function createStockWaitlistHandler({
     }
 
     const catalog = await fetchCatalog(context).catch(() => null);
-    if (!catalog || !Array.isArray(catalog.items)) {
+    const activeCatalogAvailable = catalog && Array.isArray(catalog.items);
+    let product = activeCatalogAvailable
+      ? catalog.items.find(item => item?.id === productId)
+      : null;
+    if (!product && cleanString(env?.APP_ENV) === 'preview' && typeof fetchPausedItem === 'function') {
+      product = await fetchPausedItem(context, productId).catch(() => null);
+    }
+    if (!product && !activeCatalogAvailable) {
       return json({ error: 'Catálogo no disponible. Intentá nuevamente.' }, 503);
     }
-    const product = catalog.items.find(item => item?.id === productId);
     if (!product) return json({ error: 'Libro no encontrado.' }, 404);
     const inStock = product.status === 'active' && Number(product.available_quantity) > 0;
     if (inStock) {

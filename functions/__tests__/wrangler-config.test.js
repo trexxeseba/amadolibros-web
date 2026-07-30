@@ -113,7 +113,10 @@ test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
   assert.doesNotMatch(stockPreviewYml, /--branch main/);
   assert.doesNotMatch(stockPreviewYml, /env\.production/);
   assert.match(stockPreviewYml, /--var STOCK1_PREVIEW_PUBLISH_ENABLED:true/);
-  assert.match(stockPreviewYml, /catalog-stock1-preview\.json/);
+  assert.match(stockPreviewYml, /stock1-preview\/manifest\.json/);
+  assert.match(stockPreviewYml, /index_bytes/);
+  assert.match(stockPreviewYml, /max_block_bytes/);
+  assert.match(stockPreviewYml, /catalog\.json changed|catalog\.json cambiaron/);
 });
 
 test('wrangler.toml: Producción no declara secrets', () => {

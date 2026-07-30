@@ -77,6 +77,7 @@ function memoryDb({ duplicate = false } = {}) {
 
 function makeHandler({
   catalog = { items: [PAUSED, ACTIVE] },
+  pausedItem = null,
   verify = async () => ({ ok: true }),
   fetchFn = async () => Response.json({ id: 'email-1' }),
   hooks = {},
@@ -85,6 +86,10 @@ function makeHandler({
     fetchCatalog: async () => {
       hooks.catalogCalls = (hooks.catalogCalls || 0) + 1;
       return catalog;
+    },
+    fetchPausedItem: async (_context, id) => {
+      hooks.pausedItemCalls = (hooks.pausedItemCalls || 0) + 1;
+      return pausedItem?.id === id ? pausedItem : null;
     },
     verifyTurnstileToken: async (...args) => {
       hooks.verifyArgs = args;
@@ -163,6 +168,22 @@ test('stock-1: registra libro no disponible, normaliza email y avisa internament
   assert.deepEqual(emailBody.to, ['uno@example.com', 'dos@example.com']);
   assert.match(emailBody.html, /Libro &lt;agotado&gt;/);
   assert.equal(db.updates[0][0], 'sent');
+});
+
+test('stock-1: valida un pausado desde su bloque cuando no está en catalog.json', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const handler = makeHandler({
+    catalog: { items: [ACTIVE] },
+    pausedItem: PAUSED,
+    hooks,
+  });
+  const { response, data } = await call(handler, db, validBody());
+
+  assert.equal(response.status, 201);
+  assert.equal(data.registered, true);
+  assert.equal(hooks.pausedItemCalls, 1);
+  assert.equal([...db.rows.values()][0].product_id, PAUSED.id);
 });
 
 test('stock-1: Producción nunca intenta crear el esquema en runtime', async () => {

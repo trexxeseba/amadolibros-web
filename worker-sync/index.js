@@ -37,8 +37,13 @@
 import { getAccessToken } from './meli-auth.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
+import {
+  buildManifest,
+  buildPausedCatalogArtifacts,
+  PAUSED_MANIFEST_KEY,
+} from './paused-catalog.js';
 
-export const STOCK1_PREVIEW_CATALOG_KEY = 'catalog-stock1-preview.json';
+export const STOCK1_PREVIEW_CATALOG_KEY = PAUSED_MANIFEST_KEY;
 
 export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
@@ -185,14 +190,27 @@ export async function runPreviewCatalogPublish(env, {
       );
     }
 
-    const body = JSON.stringify(catalog);
-    await env.CATALOG_R2.put(STOCK1_PREVIEW_CATALOG_KEY, body, {
+    const artifacts = buildPausedCatalogArtifacts(catalog);
+    const previousManifest = await readExistingManifest(env.CATALOG_R2);
+    const manifest = buildManifest(artifacts, previousManifest);
+
+    await putPreviewArtifact(env.CATALOG_R2, artifacts.index.key, artifacts.index.body);
+    for (const block of artifacts.blocks) {
+      await putPreviewArtifact(env.CATALOG_R2, block.key, block.body);
+    }
+    await verifyPreviewArtifacts(env.CATALOG_R2, artifacts);
+
+    // El manifest es el único puntero mutable y se publica último. Si cualquier
+    // escritura o verificación anterior falla, Preview conserva la versión previa.
+    const manifestBody = JSON.stringify(manifest);
+    await env.CATALOG_R2.put(PAUSED_MANIFEST_KEY, manifestBody, {
       httpMetadata: {
         contentType: 'application/json',
-        cacheControl: 'public, max-age=300',
+        cacheControl: 'public, max-age=60',
       },
       customMetadata: {
         scope: 'stock-1-preview-only',
+        publication: 'atomic-pointer',
       },
     });
 
@@ -204,6 +222,16 @@ export async function runPreviewCatalogPublish(env, {
       key: STOCK1_PREVIEW_CATALOG_KEY,
       checked_at: new Date().toISOString(),
       catalog: summary,
+      paused_catalog: {
+        version: artifacts.version,
+        total: artifacts.total,
+        index_bytes: artifacts.index.bytes,
+        block_count: artifacts.block_count,
+        max_block_bytes: artifacts.max_block_bytes,
+        total_detail_bytes: artifacts.total_detail_bytes,
+        previous_version: manifest.previous?.version || null,
+      },
+      data_quality: catalog.data_quality || null,
       sample_paused: samplePaused
         ? { id: samplePaused.id, title: samplePaused.title }
         : null,
@@ -217,6 +245,51 @@ export async function runPreviewCatalogPublish(env, {
       key: STOCK1_PREVIEW_CATALOG_KEY,
       error: String(err.message || 'Error').slice(0, 400),
     };
+  }
+}
+
+async function readExistingManifest(bucket) {
+  if (typeof bucket.get !== 'function') return null;
+  try {
+    const object = await bucket.get(PAUSED_MANIFEST_KEY);
+    if (!object) return null;
+    const parsed = JSON.parse(await object.text());
+    return parsed?.schema_version === 1 ? parsed : null;
+  } catch (error) {
+    console.warn(`[Preview catalog] No se pudo leer manifest anterior: ${error.message}`);
+    return null;
+  }
+}
+
+async function putPreviewArtifact(bucket, key, body) {
+  await bucket.put(key, body, {
+    httpMetadata: {
+      contentType: 'application/json',
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: {
+      scope: 'stock-1-preview-only',
+      publication: 'immutable-version',
+    },
+  });
+}
+
+async function verifyPreviewArtifacts(bucket, artifacts) {
+  if (typeof bucket.head !== 'function') {
+    throw new Error('CATALOG_R2.head no está disponible para verificar publicación.');
+  }
+  const expected = [
+    { key: artifacts.index.key, bytes: artifacts.index.bytes },
+    ...artifacts.blocks.map(block => ({ key: block.key, bytes: block.bytes })),
+  ];
+  for (const artifact of expected) {
+    const object = await bucket.head(artifact.key);
+    if (!object || Number(object.size) !== artifact.bytes) {
+      throw new Error(
+        `Verificación R2 falló para ${artifact.key}: ` +
+        `esperado=${artifact.bytes}, recibido=${object?.size ?? 'null'}.`
+      );
+    }
   }
 }
 
@@ -234,7 +307,9 @@ async function runSync(env, options = {}) {
     console.log('[Sync] Access token obtenido.');
 
     // 2. Catálogo
-    const catalog = await buildCatalog(env, accessToken);
+    // El catálogo público conserva únicamente publicaciones activas. Los
+    // pausados se generan por el flujo versionado y aislado de Preview.
+    const catalog = await buildCatalog(env, accessToken, { statuses: ['active'] });
 
     // 3. Publicar en R2 (staging → validación → promote)
     const finishedAt = new Date().toISOString();

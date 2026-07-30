@@ -1,32 +1,139 @@
-export const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
-export const PREVIEW_CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog-stock1-preview.json';
-export const BASE        = 'https://www.amadolibros.com';
+export const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
+export const CATALOG_URL = `${R2_BASE}/catalog.json`;
+export const PAUSED_MANIFEST_URL = `${R2_BASE}/stock1-preview/manifest.json`;
+export const BASE = 'https://www.amadolibros.com';
 
-export function catalogUrlFor(ctx) {
-    return ctx?.env?.APP_ENV === 'preview' ? PREVIEW_CATALOG_URL : CATALOG_URL;
+export function catalogUrlFor() {
+    return CATALOG_URL;
 }
 
-export async function fetchCatalog(ctx) {
-    const catalogUrl = catalogUrlFor(ctx);
-    const cache    = caches.default;
-    const cacheKey = new Request(catalogUrl);
-
-    let resp = await cache.match(cacheKey);
-    if (!resp) {
-        const fetched = await fetch(catalogUrl);
+async function fetchJsonCached(ctx, url, maxAge) {
+    const cache = caches.default;
+    const cacheKey = new Request(url);
+    let response = await cache.match(cacheKey);
+    if (!response) {
+        const fetched = await fetch(url);
         if (!fetched.ok) return null;
-        resp = new Response(fetched.body, {
-            status:  fetched.status,
+        response = new Response(fetched.body, {
+            status: fetched.status,
             headers: {
-                'Content-Type':  'application/json',
-                'Cache-Control': 'public, max-age=3600',
+                'Content-Type': 'application/json',
+                'Cache-Control': `public, max-age=${maxAge}`,
             },
         });
-        ctx.waitUntil(cache.put(cacheKey, resp.clone()));
+        if (typeof ctx?.waitUntil === 'function') {
+            ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        }
     }
     try {
-        return await resp.json();
+        return await response.json();
     } catch {
         return null;
     }
+}
+
+export async function fetchCatalog(ctx) {
+    return fetchJsonCached(ctx, CATALOG_URL, 3600);
+}
+
+function isPreview(ctx) {
+    return ctx?.env?.APP_ENV === 'preview';
+}
+
+function validDescriptor(value) {
+    return value &&
+        typeof value === 'object' &&
+        typeof value.version === 'string' &&
+        typeof value.index_key === 'string' &&
+        typeof value.block_prefix === 'string' &&
+        Number.isInteger(value.block_count) &&
+        value.block_count >= 1;
+}
+
+async function fetchPausedManifest(ctx) {
+    if (!isPreview(ctx)) return null;
+    const manifest = await fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60);
+    if (!manifest || manifest.schema_version !== 1 || !validDescriptor(manifest.current)) {
+        return null;
+    }
+    return manifest;
+}
+
+function descriptorCandidates(manifest) {
+    return [manifest?.current, manifest?.previous].filter(validDescriptor);
+}
+
+function expandPausedIndex(index) {
+    const expectedFields = ['id', 'title', 'author', 'isbn', 'image'];
+    if (!index || index.schema_version !== 1 || !Array.isArray(index.items)) return null;
+    if (JSON.stringify(index.fields) !== JSON.stringify(expectedFields)) return null;
+    if (index.derived_fields?.slug !== 'slugify-v1' ||
+        index.derived_fields?.status !== 'paused' ||
+        index.derived_fields?.block !== 'numeric-id-mod-block-count' ||
+        !Number.isInteger(index.block_count)) return null;
+    const items = [];
+    for (const row of index.items) {
+        if (!Array.isArray(row) || row.length !== expectedFields.length) return null;
+        const [id, title, author, isbn, thumbnail] = row;
+        if (!/^MLU\d+$/.test(id) || !title) return null;
+        items.push({
+            id,
+            title,
+            author: author || null,
+            isbn: isbn || null,
+            thumbnail: thumbnail || null,
+            slug: slugify(title),
+            status: 'paused',
+            available_quantity: 0,
+            paused_block: pausedBlockNumberForId(id, index.block_count),
+        });
+    }
+    return items;
+}
+
+function slugify(text) {
+    return (text || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 60);
+}
+
+export async function fetchPausedIndex(ctx) {
+    const manifest = await fetchPausedManifest(ctx);
+    for (const descriptor of descriptorCandidates(manifest)) {
+        const url = `${R2_BASE}/${descriptor.index_key}`;
+        const index = await fetchJsonCached(ctx, url, 31536000);
+        const items = expandPausedIndex(index);
+        if (items) return { version: descriptor.version, items };
+    }
+    return null;
+}
+
+export function pausedBlockNumberForId(id, blockCount) {
+    const digits = String(id || '').replace(/\D/g, '');
+    if (!digits || !Number.isInteger(blockCount) || blockCount < 1) return 0;
+    let remainder = 0;
+    for (const digit of digits) remainder = ((remainder * 10) + Number(digit)) % blockCount;
+    return remainder;
+}
+
+function blockFilename(block) {
+    return `block-${String(block).padStart(3, '0')}.json`;
+}
+
+export async function fetchPausedItem(ctx, id) {
+    const productId = String(id || '').toUpperCase();
+    if (!isPreview(ctx) || !/^MLU\d+$/.test(productId)) return null;
+    const manifest = await fetchPausedManifest(ctx);
+    for (const descriptor of descriptorCandidates(manifest)) {
+        const block = pausedBlockNumberForId(productId, descriptor.block_count);
+        const url = `${R2_BASE}/${descriptor.block_prefix}/${blockFilename(block)}`;
+        const payload = await fetchJsonCached(ctx, url, 31536000);
+        if (!payload || payload.schema_version !== 1 || !Array.isArray(payload.items)) continue;
+        const item = payload.items.find(candidate => candidate?.id === productId);
+        if (item?.status === 'paused') return item;
+    }
+    return null;
 }

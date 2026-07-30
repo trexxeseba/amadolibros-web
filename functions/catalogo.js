@@ -17,7 +17,7 @@
  */
 
 import { slugify } from './_shared/slug.js';
-import { BASE, fetchCatalog } from './_shared/catalog.js';
+import { BASE, fetchCatalog, fetchPausedIndex } from './_shared/catalog.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
@@ -73,23 +73,27 @@ function httpsImg(url) {
 }
 
 export async function onRequest(ctx) {
-    const catalog = await fetchCatalog(ctx);
-    const items   = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
+    const url  = new URL(ctx.request.url);
+    const rawQ = url.searchParams.get('q')?.trim() ?? '';
+    const pausedPromise = rawQ && ctx.env?.APP_ENV === 'preview'
+        ? fetchPausedIndex(ctx)
+        : Promise.resolve(null);
+    const [catalog, pausedIndex] = await Promise.all([
+        fetchCatalog(ctx),
+        pausedPromise,
+    ]);
+    const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
+    const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
     const previewBase = ctx.env?.APP_ENV === 'preview'
         ? new URL(ctx.request.url).origin
         : BASE;
 
-    // El índice SEO sin búsqueda mantiene únicamente disponibles. Los pausados
-    // y activos sin stock existen para la búsqueda humana como no disponibles.
-    const eligibleItems = items.filter(
-        b => b.status === 'active' || b.status === 'paused'
-    );
-    const activeItems = eligibleItems.filter(
+    // Home e índice SEO leen exclusivamente catalog.json. El índice pausado se
+    // solicita sólo cuando Preview recibe una búsqueda con texto.
+    const activeItems = items.filter(
         b => b.status === 'active' && Number(b.available_quantity) > 0
     );
-
-    const url  = new URL(ctx.request.url);
-    const rawQ = url.searchParams.get('q')?.trim() ?? '';
+    const eligibleItems = rawQ ? [...activeItems, ...pausedItems] : activeItems;
     const safeQ = escapeHtml(rawQ);
 
     // ── Sin query: índice SEO completo (comportamiento original) ─────────────

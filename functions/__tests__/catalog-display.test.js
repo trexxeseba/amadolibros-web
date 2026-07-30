@@ -2,9 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { onRequest as catalogRequest } from '../catalogo.js';
 import { onRequest as bookRequest } from '../libro/[[path]].js';
+import {
+  CATALOG_URL,
+  PAUSED_MANIFEST_URL,
+  R2_BASE,
+  pausedBlockNumberForId,
+} from '../_shared/catalog.js';
 
 const CATALOG = {
-  total: 2,
+  total: 1,
   items: [
     {
       id: 'MLU1', title: 'Alpha disponible', author: 'Autora Uno',
@@ -12,13 +18,16 @@ const CATALOG = {
       price: 1000, status: 'active', available_quantity: 2,
       thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU1',
     },
-    {
-      id: 'MLU2', title: 'Alpha raro', author: 'Autor Dos',
-      price: 98765, status: 'paused', available_quantity: 0,
-      thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU2',
-    },
   ],
 };
+const PAUSED = {
+  id: 'MLU2', title: 'Alpha raro', author: 'Autor Dos',
+  price: 98765, status: 'paused', available_quantity: 0,
+  thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU2',
+};
+const VERSION = '20260730120000000';
+const BLOCK = pausedBlockNumberForId(PAUSED.id, 128);
+const PREFIX = `stock1-preview/versions/${VERSION}`;
 
 function context(url, params = {}, appEnv = 'preview') {
   return {
@@ -35,8 +44,42 @@ function context(url, params = {}, appEnv = 'preview') {
 test.beforeEach(() => {
   globalThis.caches = {
     default: {
-      async match() {
-        return Response.json(CATALOG);
+      async match(request) {
+        if (request.url === CATALOG_URL) return Response.json(CATALOG);
+        if (request.url === PAUSED_MANIFEST_URL) {
+          return Response.json({
+            schema_version: 1,
+            current: {
+              version: VERSION,
+              index_key: `${PREFIX}/index.json`,
+              block_prefix: PREFIX,
+              block_count: 128,
+            },
+            previous: null,
+          });
+        }
+        if (request.url === `${R2_BASE}/${PREFIX}/index.json`) {
+          return Response.json({
+            schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image'],
+            derived_fields: {
+              slug: 'slugify-v1',
+              status: 'paused',
+              block: 'numeric-id-mod-block-count',
+            },
+            block_count: 128,
+            items: [[PAUSED.id, PAUSED.title, PAUSED.author, '', '']],
+          });
+        }
+        if (request.url === `${R2_BASE}/${PREFIX}/block-${String(BLOCK).padStart(3, '0')}.json`) {
+          return Response.json({
+            schema_version: 1,
+            version: VERSION,
+            block: BLOCK,
+            items: [PAUSED],
+          });
+        }
+        return null;
       },
       async put() {},
     },
