@@ -101,7 +101,17 @@ test('email-test-5: método ajeno queda rechazado', async () => {
   assert.equal(result.headers.get('Allow'), 'GET, POST');
 });
 
-test('email-test-6: un fallo muestra sólo un código seguro, nunca secretos', async () => {
+test('email-test-6: identifica exactamente el binding de correo ausente', async () => {
+  const result = await onRequest({
+    request: request('POST'),
+    env: env({ SALES_NOTIFICATION_FROM: '' }),
+  });
+  const body = await result.text();
+  assert.equal(result.status, 200);
+  assert.equal(body, 'FALLO — No se pudo enviar la prueba: EMAIL_CONFIG_MISSING_FROM');
+});
+
+test('email-test-7: un fallo muestra sólo un código seguro, nunca secretos', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json({ message: 'invalid api key' }, { status: 401 });
   try {
