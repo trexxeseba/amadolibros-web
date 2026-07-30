@@ -59,11 +59,13 @@ database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
 # MP_COLLECTOR_ID confirmado en 2-N-G2 (440298103) — NO es el número de
 # aplicación de Mercado Pago (6816864196905927, solo informativo, no se usa
 # en runtime). MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET y TURNSTILE_SECRET_KEY
-# siguen sin declararse acá — son secrets, viven únicamente en el dashboard
-# de Cloudflare Pages.
+# siguen sin declararse acá — son secrets. RESEND_API_KEY tampoco se declara:
+# el workflow lo sincroniza como secret cifrado antes de cada deploy.
 [env.production.vars]
 APP_ENV           = "production"
 CHECKOUT_ENABLED  = "true"
 CANONICAL_ORIGIN  = "https://www.amadolibros.com"
 ALLOWED_HOSTS     = "amadolibros.com,www.amadolibros.com"
 MP_COLLECTOR_ID   = "440298103"
+SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
+SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"
