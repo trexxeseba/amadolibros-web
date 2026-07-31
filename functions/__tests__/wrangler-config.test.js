@@ -237,3 +237,20 @@ test('carrito.astro: no contiene ninguna site key de Turnstile hardcodeada', () 
 test('carrito.astro: la site key se lee de PUBLIC_TURNSTILE_SITE_KEY, no de un literal', () => {
   assert.match(carritoAstro, /import\.meta\.env\.PUBLIC_TURNSTILE_SITE_KEY/);
 });
+
+// ── CF-R2-1: binding R2 exclusivo de Preview ────────────────────────────────
+
+test('wrangler.toml: el binding R2 de CF-R2-1 existe solo en env.preview, nunca en env.production', () => {
+  assert.match(wranglerToml, /\[\[env\.preview\.r2_buckets\]\]/);
+  assert.match(wranglerToml, /binding\s*=\s*"CATALOG_BUCKET"/);
+  assert.match(wranglerToml, /bucket_name\s*=\s*"amadolibros-catalog"/);
+  assert.doesNotMatch(wranglerToml, /\[\[env\.production\.r2_buckets\]\]/);
+});
+
+test('wrangler.toml: CATALOG_BUCKET usa el mismo bucket real que worker-sync (amadolibros-catalog)', () => {
+  const workerSyncToml = readFileSync(
+    path.join(ROOT, 'worker-sync', 'wrangler.toml'),
+    'utf8',
+  );
+  assert.match(workerSyncToml, /bucket_name\s*=\s*"amadolibros-catalog"/);
+});
