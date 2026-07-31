@@ -17,6 +17,7 @@
 export async function onRequest(context) {
     const url = new URL(context.request.url);
     const isPreview = url.hostname.endsWith('.pages.dev');
+    const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
 
     // --- Producción: redirect non-www → www ---
     if (!isPreview && url.hostname === 'amadolibros.com') {
@@ -41,11 +42,27 @@ export async function onRequest(context) {
         const response = await context.next();
         const newHeaders = new Headers(response.headers);
         newHeaders.set('X-Robots-Tag',  'noindex, nofollow');
-        newHeaders.set('Cache-Control', 'no-store');
+        newHeaders.set(
+            'Cache-Control',
+            isHashedAstroAsset
+                ? 'public, max-age=31536000, immutable'
+                : 'no-store',
+        );
         return new Response(response.body, {
             status:     response.status,
             statusText: response.statusText,
             headers:    newHeaders,
+        });
+    }
+
+    if (isHashedAstroAsset) {
+        const response = await context.next();
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+        return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders,
         });
     }
 

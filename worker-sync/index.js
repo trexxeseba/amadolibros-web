@@ -11,6 +11,8 @@
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *                    — POST /publish-preview-catalog escribe únicamente el catálogo
  *                      separado de STOCK-1 cuando la versión aislada lo habilita.
+ *                    — PUT /publish-brotli-probe sube un único objeto efímero
+ *                      para validar descompresión dentro de Pages Functions.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -83,6 +85,11 @@ export default {
       return json(result, result.status === 'published-preview' ? 200 : 500);
     }
 
+    if (request.method === 'PUT' && url.pathname === '/publish-brotli-probe') {
+      const result = await runBrotliProbePublish(env, request);
+      return json(result, result.published ? 200 : 500);
+    }
+
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
       return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
     }
@@ -107,6 +114,40 @@ export default {
 };
 
 // ── Medición segura ─────────────────────────────────────────────────────────
+
+export async function runBrotliProbePublish(env, request) {
+  if (String(env?.STOCK1_PREVIEW_PUBLISH_ENABLED) !== 'true') {
+    return { published: false, error: 'Not found.' };
+  }
+  if (!env?.CATALOG_R2 || typeof env.CATALOG_R2.put !== 'function') {
+    return { published: false, error: 'CATALOG_R2 binding is unavailable.' };
+  }
+  const contentLength = Number(request.headers.get('Content-Length') || 0);
+  if (!Number.isFinite(contentLength) || contentLength <= 0 || contentLength > 1024 * 1024) {
+    return { published: false, error: 'Invalid probe size.' };
+  }
+  const body = await request.arrayBuffer();
+  if (body.byteLength !== contentLength) {
+    return { published: false, error: 'Incomplete probe body.' };
+  }
+  const key = 'stock1-preview/probes/active-index.json.br';
+  await env.CATALOG_R2.put(key, body, {
+    httpMetadata: {
+      contentType: 'application/octet-stream',
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: {
+      scope: 'stock-1-preview-only',
+      purpose: 'brotli-runtime-probe',
+    },
+  });
+  return {
+    published: true,
+    production_catalog_modified: false,
+    key,
+    bytes: body.byteLength,
+  };
+}
 
 export function summarizeCatalog(catalog) {
   const items = Array.isArray(catalog?.items) ? catalog.items : [];

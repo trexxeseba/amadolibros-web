@@ -23,6 +23,13 @@ import {
     fetchCatalog,
     fetchPausedIndex,
 } from './_shared/catalog.js';
+import {
+    ensurePerf,
+    perfNow,
+    perfSummary,
+    recordPerf,
+    serverTimingValue,
+} from './_shared/perf.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
@@ -78,6 +85,8 @@ function httpsImg(url) {
 }
 
 export async function onRequest(ctx) {
+    const requestStartedAt = perfNow();
+    ensurePerf(ctx);
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
     const useCompactSearch = Boolean(rawQ && ctx.env?.APP_ENV === 'preview');
@@ -187,6 +196,7 @@ ${rows}
     // "zzzinexistente999" no debe coincidir con ISBN que contengan 999.
     const queryDigits = /^[\d\s-]+$/.test(rawQ.trim()) ? onlyDigits(rawQ) : '';
 
+    const searchStartedAt = perfNow();
     const filtered = eligibleItems
         .filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
         .sort((a, b) => {
@@ -194,6 +204,7 @@ ${rows}
             const bAvailable = b.status === 'active' && Number(b.available_quantity) > 0;
             return Number(bAvailable) - Number(aAvailable);
         });
+    recordPerf(ctx, 'search', searchStartedAt);
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
 
@@ -244,6 +255,7 @@ ${rows}
             ? `Mostrando los primeros ${MAX_RESULTS} de ${filtered.length} resultados.`
             : `${filtered.length} resultado${filtered.length === 1 ? '' : 's'}.`;
 
+    const renderStartedAt = perfNow();
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -343,10 +355,24 @@ ${rows}
 </body>
 </html>`;
 
+    recordPerf(ctx, 'render', renderStartedAt);
+    const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;
+    const serverTiming = serverTimingValue(ctx, [{
+        name: 'total',
+        duration_ms: totalDuration,
+    }]);
+    console.log(JSON.stringify(perfSummary(ctx, {
+        route: '/catalogo',
+        mode: useCompactSearch ? 'compact' : 'full',
+        result_count: filtered.length,
+        total_ms: totalDuration,
+    })));
+
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=300',
+            'server-timing': serverTiming,
         },
     });
 }

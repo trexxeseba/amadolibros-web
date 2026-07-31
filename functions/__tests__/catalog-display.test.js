@@ -139,6 +139,10 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   assert.match(html, /Transferencia:/);
   assert.match(html, /Precio:/);
   assert.equal(requests.includes(CATALOG_URL), false);
+  assert.match(response.headers.get('server-timing'), /active_index_parse/);
+  assert.match(response.headers.get('server-timing'), /search;dur=/);
+  assert.match(response.headers.get('server-timing'), /render;dur=/);
+  assert.match(response.headers.get('server-timing'), /total;dur=/);
 });
 
 test('una búsqueda sin coincidencias reales termina en cero resultados', async () => {

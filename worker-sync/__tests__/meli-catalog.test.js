@@ -8,6 +8,7 @@ import {
 } from '../meli-catalog.js';
 import {
   STOCK1_PREVIEW_CATALOG_KEY,
+  runBrotliProbePublish,
   runMeasure,
   runPreviewCatalogPublish,
   summarizeCatalog,
@@ -230,6 +231,49 @@ test('bloquea publicación Preview cuando la versión aislada no la habilita', a
   });
 
   assert.equal(result.status, 'error');
+  assert.equal(result.published, false);
+  assert.equal(wrote, false);
+});
+
+test('sube únicamente el objeto Brotli efímero con guarda Preview', async () => {
+  const writes = [];
+  const body = new Uint8Array([1, 2, 3, 4, 5]);
+  const result = await runBrotliProbePublish({
+    STOCK1_PREVIEW_PUBLISH_ENABLED: true,
+    CATALOG_R2: {
+      async put(key, uploadedBody, options) {
+        writes.push({
+          key,
+          body: new Uint8Array(uploadedBody),
+          options,
+        });
+      },
+    },
+  }, new Request('https://worker.example/publish-brotli-probe', {
+    method: 'PUT',
+    headers: { 'Content-Length': String(body.byteLength) },
+    body,
+  }));
+
+  assert.equal(result.published, true);
+  assert.equal(result.production_catalog_modified, false);
+  assert.equal(result.key, 'stock1-preview/probes/active-index.json.br');
+  assert.equal(writes.length, 1);
+  assert.deepEqual([...writes[0].body], [...body]);
+  assert.equal(writes[0].options.httpMetadata.contentType, 'application/octet-stream');
+  assert.equal(writes[0].key.includes('catalog.json'), false);
+});
+
+test('bloquea objeto Brotli fuera de la versión aislada', async () => {
+  let wrote = false;
+  const body = new Uint8Array([1]);
+  const result = await runBrotliProbePublish({
+    CATALOG_R2: { async put() { wrote = true; } },
+  }, new Request('https://worker.example/publish-brotli-probe', {
+    method: 'PUT',
+    headers: { 'Content-Length': '1' },
+    body,
+  }));
   assert.equal(result.published, false);
   assert.equal(wrote, false);
 });

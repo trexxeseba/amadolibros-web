@@ -1,3 +1,5 @@
+import { perfNow, recordPerf } from './perf.js';
+
 export const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
 export const CATALOG_URL = `${R2_BASE}/catalog.json`;
 export const PAUSED_MANIFEST_URL = `${R2_BASE}/stock1-preview/manifest.json`;
@@ -7,12 +9,17 @@ export function catalogUrlFor() {
     return CATALOG_URL;
 }
 
-async function fetchJsonCached(ctx, url, maxAge) {
+async function fetchJsonCached(ctx, url, maxAge, timingName = 'catalog_fetch') {
     const cache = caches.default;
     const cacheKey = new Request(url);
+    const cacheStartedAt = perfNow();
     let response = await cache.match(cacheKey);
+    const cacheStatus = response ? 'hit' : 'miss';
+    recordPerf(ctx, `${timingName}_cache`, cacheStartedAt, { cache: cacheStatus });
     if (!response) {
+        const originStartedAt = perfNow();
         const fetched = await fetch(url);
+        recordPerf(ctx, `${timingName}_origin`, originStartedAt);
         if (!fetched.ok) return null;
         response = new Response(fetched.body, {
             status: fetched.status,
@@ -26,14 +33,17 @@ async function fetchJsonCached(ctx, url, maxAge) {
         }
     }
     try {
-        return await response.json();
+        const parseStartedAt = perfNow();
+        const result = await response.json();
+        recordPerf(ctx, `${timingName}_parse`, parseStartedAt);
+        return result;
     } catch {
         return null;
     }
 }
 
 export async function fetchCatalog(ctx) {
-    return fetchJsonCached(ctx, CATALOG_URL, 3600);
+    return fetchJsonCached(ctx, CATALOG_URL, 3600, 'catalog');
 }
 
 function isPreview(ctx) {
@@ -58,7 +68,7 @@ function validActiveDescriptor(value) {
 
 async function fetchPausedManifest(ctx) {
     if (!isPreview(ctx)) return null;
-    const manifest = await fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60);
+    const manifest = await fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60, 'manifest');
     if (!manifest || manifest.schema_version !== 1 || !validDescriptor(manifest.current)) {
         return null;
     }
@@ -147,7 +157,7 @@ export async function fetchPausedIndex(ctx) {
     const manifest = await fetchPausedManifest(ctx);
     for (const descriptor of descriptorCandidates(manifest)) {
         const url = `${R2_BASE}/${descriptor.index_key}`;
-        const index = await fetchJsonCached(ctx, url, 31536000);
+        const index = await fetchJsonCached(ctx, url, 31536000, 'paused_index');
         const items = expandPausedIndex(index);
         if (items) return { version: descriptor.version, items };
     }
@@ -158,7 +168,7 @@ export async function fetchActiveIndex(ctx) {
     const manifest = await fetchPausedManifest(ctx);
     for (const descriptor of descriptorCandidates(manifest).filter(validActiveDescriptor)) {
         const url = `${R2_BASE}/${descriptor.active_index_key}`;
-        const index = await fetchJsonCached(ctx, url, 31536000);
+        const index = await fetchJsonCached(ctx, url, 31536000, 'active_index');
         const items = expandActiveIndex(index);
         if (items) return { version: descriptor.version, items };
     }
@@ -184,7 +194,7 @@ export async function fetchPausedItem(ctx, id) {
     for (const descriptor of descriptorCandidates(manifest)) {
         const block = pausedBlockNumberForId(productId, descriptor.block_count);
         const url = `${R2_BASE}/${descriptor.block_prefix}/${blockFilename(block)}`;
-        const payload = await fetchJsonCached(ctx, url, 31536000);
+        const payload = await fetchJsonCached(ctx, url, 31536000, 'paused_block');
         if (!payload || payload.schema_version !== 1 || !Array.isArray(payload.items)) continue;
         const item = payload.items.find(candidate => candidate?.id === productId);
         if (item?.status === 'paused') return item;
