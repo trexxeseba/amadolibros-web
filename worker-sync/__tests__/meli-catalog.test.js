@@ -8,12 +8,12 @@ import {
 } from '../meli-catalog.js';
 import {
   STOCK1_PREVIEW_CATALOG_KEY,
-  runBrotliProbePublish,
   runMeasure,
   runPreviewCatalogPublish,
   summarizeCatalog,
 } from '../index.js';
 import {
+  addCompressedIndexes,
   blockNumberForId,
   buildPausedCatalogArtifacts,
   PAUSED_MANIFEST_KEY,
@@ -198,7 +198,11 @@ test('publica únicamente la clave fija del catálogo STOCK-1 Preview', async ()
       },
       async head(key) {
         const body = objects.get(key);
-        return body == null ? null : { size: new TextEncoder().encode(body).length };
+        return body == null ? null : {
+          size: typeof body === 'string'
+            ? new TextEncoder().encode(body).length
+            : body.byteLength,
+        };
       },
     },
   };
@@ -217,11 +221,13 @@ test('publica únicamente la clave fija del catálogo STOCK-1 Preview', async ()
   assert.equal(result.paused_catalog.block_count, 128);
   assert.equal(result.active_catalog.total, 1);
   assert.ok(result.active_catalog.index_bytes > 0);
-  assert.equal(writes.length, 131);
+  assert.equal(writes.length, 133);
   assert.equal(writes.at(-1).key, 'stock1-preview/manifest.json');
   assert.ok(writes.slice(0, -1).every(write => write.key.includes('/versions/')));
   assert.ok(writes.every(write => write.key !== 'catalog.json'));
   assert.equal(writes.at(-1).options.customMetadata.publication, 'atomic-pointer');
+  assert.ok(result.active_catalog.index_gzip_bytes < result.active_catalog.index_bytes);
+  assert.ok(result.paused_catalog.index_gzip_bytes < result.paused_catalog.index_bytes);
 });
 
 test('bloquea publicación Preview cuando la versión aislada no la habilita', async () => {
@@ -231,49 +237,6 @@ test('bloquea publicación Preview cuando la versión aislada no la habilita', a
   });
 
   assert.equal(result.status, 'error');
-  assert.equal(result.published, false);
-  assert.equal(wrote, false);
-});
-
-test('sube únicamente el objeto Brotli efímero con guarda Preview', async () => {
-  const writes = [];
-  const body = new Uint8Array([1, 2, 3, 4, 5]);
-  const result = await runBrotliProbePublish({
-    STOCK1_PREVIEW_PUBLISH_ENABLED: true,
-    CATALOG_R2: {
-      async put(key, uploadedBody, options) {
-        writes.push({
-          key,
-          body: new Uint8Array(uploadedBody),
-          options,
-        });
-      },
-    },
-  }, new Request('https://worker.example/publish-brotli-probe', {
-    method: 'PUT',
-    headers: { 'Content-Length': String(body.byteLength) },
-    body,
-  }));
-
-  assert.equal(result.published, true);
-  assert.equal(result.production_catalog_modified, false);
-  assert.equal(result.key, 'stock1-preview/probes/active-index.json.br');
-  assert.equal(writes.length, 1);
-  assert.deepEqual([...writes[0].body], [...body]);
-  assert.equal(writes[0].options.httpMetadata.contentType, 'application/octet-stream');
-  assert.equal(writes[0].key.includes('catalog.json'), false);
-});
-
-test('bloquea objeto Brotli fuera de la versión aislada', async () => {
-  let wrote = false;
-  const body = new Uint8Array([1]);
-  const result = await runBrotliProbePublish({
-    CATALOG_R2: { async put() { wrote = true; } },
-  }, new Request('https://worker.example/publish-brotli-probe', {
-    method: 'PUT',
-    headers: { 'Content-Length': '1' },
-    body,
-  }));
   assert.equal(result.published, false);
   assert.equal(wrote, false);
 });
@@ -330,6 +293,34 @@ test('índice pausado compacto y bloques usan una asignación determinista', () 
   assert.equal(activeIndex.derived_fields.status, 'active');
   assert.equal(blockNumberForId(index.items[1][0], 128), blockNumberForId('MLU476064526', 128));
   assert.ok(artifacts.max_block_bytes < 204800);
+});
+
+test('genera índices gzip menores y descomprimibles sin modificar los JSON base', async () => {
+  const artifacts = buildPausedCatalogArtifacts({
+    updated_at: '2026-07-30T12:34:56.789Z',
+    items: [
+      ...Array.from({ length: 100 }, (_, index) => ({
+        id: `MLU${1000 + index}`,
+        title: `Activo repetible ${index}`,
+        status: 'active',
+        available_quantity: 1,
+        price: 1000,
+      })),
+      ...Array.from({ length: 100 }, (_, index) => ({
+        id: `MLU${2000 + index}`,
+        title: `Pausado repetible ${index}`,
+        status: 'paused',
+        available_quantity: 0,
+      })),
+    ],
+  });
+  const compressed = await addCompressedIndexes(artifacts);
+  assert.equal(compressed.active_index.body, artifacts.active_index.body);
+  assert.equal(compressed.index.body, artifacts.index.body);
+  assert.ok(compressed.active_index.gzip_bytes < compressed.active_index.bytes);
+  assert.ok(compressed.index.gzip_bytes < compressed.index.bytes);
+  assert.match(compressed.active_index.gzip_key, /active-index\.json\.gz$/);
+  assert.match(compressed.index.gzip_key, /index\.json\.gz$/);
 });
 
 test('normaliza medidas razonables y omite valores absurdos o unidades desconocidas', () => {

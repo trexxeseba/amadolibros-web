@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { gzipSync } from 'node:zlib';
 import {
   CATALOG_URL,
   PAUSED_MANIFEST_URL,
@@ -146,6 +147,113 @@ test('índice activo compacto conserva precio, stock y fallback versionado', asy
       `${R2_BASE}/${CURRENT.active_index_key}`,
       previousUrl,
     ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('índices gzip se descomprimen dentro de Pages y evitan bajar el JSON normal', async () => {
+  const originalFetch = globalThis.fetch;
+  const current = {
+    ...CURRENT,
+    index_gzip_key: `${CURRENT.index_key}.gz`,
+    active_index_gzip_key: `${CURRENT.active_index_key}.gz`,
+  };
+  const activePayload = {
+    schema_version: 1,
+    fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+    derived_fields: { slug: 'slugify-v1', status: 'active' },
+    items: [['MLU1', 'Activo gzip', '', '', '', 1200, 1]],
+  };
+  const pausedPayload = {
+    schema_version: 1,
+    fields: ['id', 'title', 'author', 'isbn', 'image'],
+    derived_fields: {
+      slug: 'slugify-v1',
+      status: 'paused',
+      block: 'numeric-id-mod-block-count',
+    },
+    block_count: 128,
+    items: [['MLU2', 'Pausado gzip', '', '', '']],
+  };
+  const responses = new Map([
+    [PAUSED_MANIFEST_URL, Response.json({
+      schema_version: 1,
+      current,
+      previous: null,
+    })],
+    [`${R2_BASE}/${current.active_index_gzip_key}`, new Response(
+      gzipSync(Buffer.from(JSON.stringify(activePayload))),
+    )],
+    [`${R2_BASE}/${current.index_gzip_key}`, new Response(
+      gzipSync(Buffer.from(JSON.stringify(pausedPayload))),
+    )],
+  ]);
+  const requests = [];
+  globalThis.caches = {
+    default: {
+      async match(request) {
+        requests.push(request.url);
+        return responses.get(request.url)?.clone() || null;
+      },
+      async put() {},
+    },
+  };
+  globalThis.fetch = async () => new Response('not found', { status: 404 });
+  const ctx = context('preview');
+  try {
+    const [active, paused] = await Promise.all([
+      fetchActiveIndex(ctx),
+      fetchPausedIndex(ctx),
+    ]);
+    assert.equal(active.items[0].title, 'Activo gzip');
+    assert.equal(paused.items[0].title, 'Pausado gzip');
+    assert.equal(requests.includes(`${R2_BASE}/${CURRENT.active_index_key}`), false);
+    assert.equal(requests.includes(`${R2_BASE}/${CURRENT.index_key}`), false);
+    assert.ok(ctx.data.perf.segments.some(
+      segment => segment.name === 'active_index_gzip_decompress',
+    ));
+    assert.ok(ctx.data.perf.segments.some(
+      segment => segment.name === 'paused_index_gzip_decompress',
+    ));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('si gzip está corrupto conserva fallback al JSON normal', async () => {
+  const originalFetch = globalThis.fetch;
+  const current = {
+    ...CURRENT,
+    active_index_gzip_key: `${CURRENT.active_index_key}.gz`,
+  };
+  const normalUrl = `${R2_BASE}/${CURRENT.active_index_key}`;
+  const responses = new Map([
+    [PAUSED_MANIFEST_URL, Response.json({
+      schema_version: 1,
+      current,
+      previous: null,
+    })],
+    [`${R2_BASE}/${current.active_index_gzip_key}`, new Response('gzip roto')],
+    [normalUrl, Response.json({
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU1', 'Fallback normal', '', '', '', 1200, 1]],
+    })],
+  ]);
+  globalThis.caches = {
+    default: {
+      async match(request) {
+        return responses.get(request.url)?.clone() || null;
+      },
+      async put() {},
+    },
+  };
+  globalThis.fetch = async () => new Response('not found', { status: 404 });
+  try {
+    const active = await fetchActiveIndex(context('preview'));
+    assert.equal(active.items[0].title, 'Fallback normal');
   } finally {
     globalThis.fetch = originalFetch;
   }

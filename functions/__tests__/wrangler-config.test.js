@@ -117,9 +117,9 @@ test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
   assert.match(stockPreviewYml, /index_bytes/);
   assert.match(stockPreviewYml, /max_block_bytes/);
   assert.match(stockPreviewYml, /catalog\.json changed|catalog\.json cambiaron/);
-  assert.match(stockPreviewYml, /build-brotli-probe\.mjs/);
-  assert.match(stockPreviewYml, /publish-brotli-probe/);
-  assert.match(stockPreviewYml, /\/api\/perf-brotli/);
+  assert.match(stockPreviewYml, /index_gzip_bytes/);
+  assert.match(stockPreviewYml, /active_index_gzip_decompress/);
+  assert.match(stockPreviewYml, /paused_index_gzip_decompress/);
   assert.doesNotMatch(stockPreviewYml, /--branch main/);
 });
 

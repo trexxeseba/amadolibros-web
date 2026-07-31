@@ -11,8 +11,6 @@
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *                    — POST /publish-preview-catalog escribe únicamente el catálogo
  *                      separado de STOCK-1 cuando la versión aislada lo habilita.
- *                    — PUT /publish-brotli-probe sube un único objeto efímero
- *                      para validar descompresión dentro de Pages Functions.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -40,6 +38,7 @@ import { getAccessToken } from './meli-auth.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import {
+  addCompressedIndexes,
   buildManifest,
   buildPausedCatalogArtifacts,
   PAUSED_MANIFEST_KEY,
@@ -85,11 +84,6 @@ export default {
       return json(result, result.status === 'published-preview' ? 200 : 500);
     }
 
-    if (request.method === 'PUT' && url.pathname === '/publish-brotli-probe') {
-      const result = await runBrotliProbePublish(env, request);
-      return json(result, result.published ? 200 : 500);
-    }
-
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
       return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
     }
@@ -114,40 +108,6 @@ export default {
 };
 
 // ── Medición segura ─────────────────────────────────────────────────────────
-
-export async function runBrotliProbePublish(env, request) {
-  if (String(env?.STOCK1_PREVIEW_PUBLISH_ENABLED) !== 'true') {
-    return { published: false, error: 'Not found.' };
-  }
-  if (!env?.CATALOG_R2 || typeof env.CATALOG_R2.put !== 'function') {
-    return { published: false, error: 'CATALOG_R2 binding is unavailable.' };
-  }
-  const contentLength = Number(request.headers.get('Content-Length') || 0);
-  if (!Number.isFinite(contentLength) || contentLength <= 0 || contentLength > 1024 * 1024) {
-    return { published: false, error: 'Invalid probe size.' };
-  }
-  const body = await request.arrayBuffer();
-  if (body.byteLength !== contentLength) {
-    return { published: false, error: 'Incomplete probe body.' };
-  }
-  const key = 'stock1-preview/probes/active-index.json.br';
-  await env.CATALOG_R2.put(key, body, {
-    httpMetadata: {
-      contentType: 'application/octet-stream',
-      cacheControl: 'public, max-age=31536000, immutable',
-    },
-    customMetadata: {
-      scope: 'stock-1-preview-only',
-      purpose: 'brotli-runtime-probe',
-    },
-  });
-  return {
-    published: true,
-    production_catalog_modified: false,
-    key,
-    bytes: body.byteLength,
-  };
-}
 
 export function summarizeCatalog(catalog) {
   const items = Array.isArray(catalog?.items) ? catalog.items : [];
@@ -231,7 +191,7 @@ export async function runPreviewCatalogPublish(env, {
       );
     }
 
-    const artifacts = buildPausedCatalogArtifacts(catalog);
+    const artifacts = await addCompressedIndexes(buildPausedCatalogArtifacts(catalog));
     const previousManifest = await readExistingManifest(env.CATALOG_R2);
     const manifest = buildManifest(artifacts, previousManifest);
 
@@ -240,7 +200,19 @@ export async function runPreviewCatalogPublish(env, {
       artifacts.active_index.key,
       artifacts.active_index.body,
     );
+    await putPreviewArtifact(
+      env.CATALOG_R2,
+      artifacts.active_index.gzip_key,
+      artifacts.active_index.gzip_body,
+      'application/gzip',
+    );
     await putPreviewArtifact(env.CATALOG_R2, artifacts.index.key, artifacts.index.body);
+    await putPreviewArtifact(
+      env.CATALOG_R2,
+      artifacts.index.gzip_key,
+      artifacts.index.gzip_body,
+      'application/gzip',
+    );
     for (const block of artifacts.blocks) {
       await putPreviewArtifact(env.CATALOG_R2, block.key, block.body);
     }
@@ -272,6 +244,7 @@ export async function runPreviewCatalogPublish(env, {
         version: artifacts.version,
         total: artifacts.total,
         index_bytes: artifacts.index.bytes,
+        index_gzip_bytes: artifacts.index.gzip_bytes,
         block_count: artifacts.block_count,
         max_block_bytes: artifacts.max_block_bytes,
         total_detail_bytes: artifacts.total_detail_bytes,
@@ -280,6 +253,7 @@ export async function runPreviewCatalogPublish(env, {
       active_catalog: {
         total: artifacts.active_index.total,
         index_bytes: artifacts.active_index.bytes,
+        index_gzip_bytes: artifacts.active_index.gzip_bytes,
       },
       data_quality: catalog.data_quality || null,
       sample_paused: samplePaused
@@ -311,10 +285,10 @@ async function readExistingManifest(bucket) {
   }
 }
 
-async function putPreviewArtifact(bucket, key, body) {
+async function putPreviewArtifact(bucket, key, body, contentType = 'application/json') {
   await bucket.put(key, body, {
     httpMetadata: {
-      contentType: 'application/json',
+      contentType,
       cacheControl: 'public, max-age=31536000, immutable',
     },
     customMetadata: {
@@ -330,7 +304,9 @@ async function verifyPreviewArtifacts(bucket, artifacts) {
   }
   const expected = [
     { key: artifacts.active_index.key, bytes: artifacts.active_index.bytes },
+    { key: artifacts.active_index.gzip_key, bytes: artifacts.active_index.gzip_bytes },
     { key: artifacts.index.key, bytes: artifacts.index.bytes },
+    { key: artifacts.index.gzip_key, bytes: artifacts.index.gzip_bytes },
     ...artifacts.blocks.map(block => ({ key: block.key, bytes: block.bytes })),
   ];
   for (const artifact of expected) {

@@ -23,6 +23,12 @@ function byteLength(value) {
   return new TextEncoder().encode(value).length;
 }
 
+async function gzipText(value) {
+  const input = new TextEncoder().encode(value);
+  const stream = new Blob([input]).stream().pipeThrough(new CompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
 export function blockNumberForId(id, blockCount = DEFAULT_BLOCK_COUNT) {
   const digits = String(id || '').replace(/\D/g, '');
   if (!digits || !Number.isInteger(blockCount) || blockCount < 1) return 0;
@@ -141,6 +147,28 @@ export function buildPausedCatalogArtifacts(catalog, {
   };
 }
 
+export async function addCompressedIndexes(artifacts) {
+  const [activeBody, pausedBody] = await Promise.all([
+    gzipText(artifacts.active_index.body),
+    gzipText(artifacts.index.body),
+  ]);
+  return {
+    ...artifacts,
+    active_index: {
+      ...artifacts.active_index,
+      gzip_key: `${artifacts.active_index.key}.gz`,
+      gzip_body: activeBody,
+      gzip_bytes: activeBody.byteLength,
+    },
+    index: {
+      ...artifacts.index,
+      gzip_key: `${artifacts.index.key}.gz`,
+      gzip_body: pausedBody,
+      gzip_bytes: pausedBody.byteLength,
+    },
+  };
+}
+
 export function versionDescriptor(artifacts) {
   return {
     version: artifacts.version,
@@ -148,8 +176,12 @@ export function versionDescriptor(artifacts) {
     block_count: artifacts.block_count,
     index_key: artifacts.index.key,
     index_bytes: artifacts.index.bytes,
+    index_gzip_key: artifacts.index.gzip_key,
+    index_gzip_bytes: artifacts.index.gzip_bytes,
     active_index_key: artifacts.active_index.key,
     active_index_bytes: artifacts.active_index.bytes,
+    active_index_gzip_key: artifacts.active_index.gzip_key,
+    active_index_gzip_bytes: artifacts.active_index.gzip_bytes,
     active_total: artifacts.active_index.total,
     block_prefix: artifacts.prefix,
     max_block_bytes: artifacts.max_block_bytes,

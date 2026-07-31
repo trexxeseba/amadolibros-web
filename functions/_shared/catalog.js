@@ -42,6 +42,48 @@ async function fetchJsonCached(ctx, url, maxAge, timingName = 'catalog_fetch') {
     }
 }
 
+async function fetchGzipJsonCached(ctx, url, maxAge, timingName) {
+    const cache = caches.default;
+    const cacheKey = new Request(url);
+    const cacheStartedAt = perfNow();
+    let response = await cache.match(cacheKey);
+    const cacheStatus = response ? 'hit' : 'miss';
+    recordPerf(ctx, `${timingName}_cache`, cacheStartedAt, { cache: cacheStatus });
+    if (!response) {
+        const originStartedAt = perfNow();
+        const fetched = await fetch(url, { headers: { 'Accept-Encoding': 'identity' } });
+        recordPerf(ctx, `${timingName}_origin`, originStartedAt);
+        if (!fetched.ok) return null;
+        response = new Response(fetched.body, {
+            status: fetched.status,
+            headers: {
+                'Content-Type': 'application/gzip',
+                'Cache-Control': `public, max-age=${maxAge}`,
+            },
+        });
+        if (typeof ctx?.waitUntil === 'function') {
+            ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        }
+    }
+    try {
+        const compressed = new Uint8Array(await response.arrayBuffer());
+        const decompressStartedAt = perfNow();
+        const stream = new Blob([compressed]).stream()
+            .pipeThrough(new DecompressionStream('gzip'));
+        const decompressed = await new Response(stream).arrayBuffer();
+        recordPerf(ctx, `${timingName}_decompress`, decompressStartedAt, {
+            compressed_bytes: compressed.byteLength,
+            decompressed_bytes: decompressed.byteLength,
+        });
+        const parseStartedAt = perfNow();
+        const result = JSON.parse(new TextDecoder().decode(decompressed));
+        recordPerf(ctx, `${timingName}_parse`, parseStartedAt);
+        return result;
+    } catch {
+        return null;
+    }
+}
+
 export async function fetchCatalog(ctx) {
     return fetchJsonCached(ctx, CATALOG_URL, 3600, 'catalog');
 }
@@ -64,6 +106,10 @@ function validActiveDescriptor(value) {
     return validDescriptor(value) &&
         typeof value.active_index_key === 'string' &&
         value.active_index_key.endsWith('/active-index.json');
+}
+
+function validGzipKey(value, field, suffix) {
+    return typeof value?.[field] === 'string' && value[field].endsWith(suffix);
 }
 
 async function fetchPausedManifest(ctx) {
@@ -156,6 +202,17 @@ function slugify(text) {
 export async function fetchPausedIndex(ctx) {
     const manifest = await fetchPausedManifest(ctx);
     for (const descriptor of descriptorCandidates(manifest)) {
+        if (validGzipKey(descriptor, 'index_gzip_key', '/index.json.gz')) {
+            const gzipUrl = `${R2_BASE}/${descriptor.index_gzip_key}`;
+            const gzipIndex = await fetchGzipJsonCached(
+                ctx,
+                gzipUrl,
+                31536000,
+                'paused_index_gzip',
+            );
+            const gzipItems = expandPausedIndex(gzipIndex);
+            if (gzipItems) return { version: descriptor.version, items: gzipItems };
+        }
         const url = `${R2_BASE}/${descriptor.index_key}`;
         const index = await fetchJsonCached(ctx, url, 31536000, 'paused_index');
         const items = expandPausedIndex(index);
@@ -167,6 +224,21 @@ export async function fetchPausedIndex(ctx) {
 export async function fetchActiveIndex(ctx) {
     const manifest = await fetchPausedManifest(ctx);
     for (const descriptor of descriptorCandidates(manifest).filter(validActiveDescriptor)) {
+        if (validGzipKey(
+            descriptor,
+            'active_index_gzip_key',
+            '/active-index.json.gz',
+        )) {
+            const gzipUrl = `${R2_BASE}/${descriptor.active_index_gzip_key}`;
+            const gzipIndex = await fetchGzipJsonCached(
+                ctx,
+                gzipUrl,
+                31536000,
+                'active_index_gzip',
+            );
+            const gzipItems = expandActiveIndex(gzipIndex);
+            if (gzipItems) return { version: descriptor.version, items: gzipItems };
+        }
         const url = `${R2_BASE}/${descriptor.active_index_key}`;
         const index = await fetchJsonCached(ctx, url, 31536000, 'active_index');
         const items = expandActiveIndex(index);
