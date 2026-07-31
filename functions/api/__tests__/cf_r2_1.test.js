@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { onRequest } from '../cf-r2-1.js';
 
 const PREVIEW_URL = 'https://agent-stock-1-preview.amadolibros-web.pages.dev/api/cf-r2-1';
+const SECRET_HEADER = 'X-Perf-Verify-Secret';
+const TEST_SECRET = 'test-cf-r2-1-secret';
 const MANIFEST = {
   current: {
     version: 'v1',
@@ -11,10 +13,14 @@ const MANIFEST = {
 };
 const GZIP_BYTES = new Uint8Array([1, 2, 3, 4, 5]);
 
-function ctxFor(query, env = {}) {
+// Por defecto, ctxFor ya incluye el secreto configurado y el header correcto
+// — los tests de la protección en sí (más abajo) lo pisan explícitamente.
+function ctxFor(query, env = {}, headers = {}) {
   return {
-    request: new Request(`${PREVIEW_URL}?${query}`),
-    env: { APP_ENV: 'preview', ...env },
+    request: new Request(`${PREVIEW_URL}?${query}`, {
+      headers: { [SECRET_HEADER]: TEST_SECRET, ...headers },
+    }),
+    env: { APP_ENV: 'preview', CF_R2_1_DIAGNOSTIC_SECRET: TEST_SECRET, ...env },
     data: {},
   };
 }
@@ -24,6 +30,64 @@ function withMockFetch(handler, fn) {
   globalThis.fetch = handler;
   return fn().finally(() => { globalThis.fetch = original; });
 }
+
+// ── Protección por secreto ───────────────────────────────────────────────
+
+test('CF-R2-1 sin CF_R2_1_DIAGNOSTIC_SECRET configurado responde 404 sin tocar R2', async () => {
+  await withMockFetch(
+    async () => { throw new Error('no debería llamarse a fetch sin secreto configurado'); },
+    async () => {
+      const response = await onRequest(ctxFor('variant=r2dev', { CF_R2_1_DIAGNOSTIC_SECRET: undefined }));
+      assert.equal(response.status, 404);
+    },
+  );
+});
+
+test('CF-R2-1 con secreto configurado pero header ausente responde 401 sin tocar R2', async () => {
+  await withMockFetch(
+    async () => { throw new Error('no debería llamarse a fetch sin header'); },
+    async () => {
+      const response = await onRequest({
+        request: new Request(`${PREVIEW_URL}?variant=r2dev`),
+        env: { APP_ENV: 'preview', CF_R2_1_DIAGNOSTIC_SECRET: TEST_SECRET },
+        data: {},
+      });
+      assert.equal(response.status, 401);
+      const data = await response.json();
+      assert.equal(JSON.stringify(data).includes(TEST_SECRET), false);
+    },
+  );
+});
+
+test('CF-R2-1 con header incorrecto responde 401 sin tocar R2', async () => {
+  await withMockFetch(
+    async () => { throw new Error('no debería llamarse a fetch con secreto incorrecto'); },
+    async () => {
+      const response = await onRequest(ctxFor('variant=r2dev', {}, { [SECRET_HEADER]: 'valor-incorrecto' }));
+      assert.equal(response.status, 401);
+    },
+  );
+});
+
+test('CF-R2-1 nunca refleja el secreto esperado ni el provisto en la respuesta', async () => {
+  await withMockFetch(async () => new Response(JSON.stringify(MANIFEST), { status: 200 }), async () => {
+    const response = await onRequest(ctxFor('variant=ftp'));
+    const text = await response.text();
+    assert.equal(text.includes(TEST_SECRET), false);
+  });
+});
+
+test('CF-R2-1 en producción responde 404 incluso con el secreto correcto', async () => {
+  const response = await onRequest({
+    request: new Request('https://www.amadolibros.com/api/cf-r2-1?variant=r2dev', {
+      headers: { [SECRET_HEADER]: TEST_SECRET },
+    }),
+    env: { APP_ENV: 'production', CF_R2_1_DIAGNOSTIC_SECRET: TEST_SECRET },
+  });
+  assert.equal(response.status, 404);
+});
+
+// ── Comportamiento general (con secreto válido) ──────────────────────────
 
 test('CF-R2-1 no existe fuera de Preview', async () => {
   const response = await onRequest({
