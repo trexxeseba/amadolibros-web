@@ -87,10 +87,15 @@ export async function readObjectViaVariant(ctx, variant, key, timingName) {
   const originStartedAt = perfNow();
   let response;
   try {
-    response = await fetch(url, {
-      headers: { 'Accept-Encoding': 'identity', 'Cache-Control': 'no-cache' },
-      cf: { cacheTtl: 0, cacheEverything: false },
-    });
+    // Mismas opciones exactas que fetchGzipJsonCached() en _shared/catalog.js
+    // — nada de `cf: { cacheTtl: 0 }` ni `Cache-Control: no-cache`. Agregar
+    // esas opciones aquí sería introducir una segunda variable (desactivar
+    // el cacheo de borde propio de Cloudflare para el subrequest) además del
+    // método de acceso, rompiendo el aislamiento que pide CF-R2-1. r2.dev es
+    // contenido público servido por la CDN de Cloudflare — comparar contra
+    // ese comportamiento normal es correcto; forzarlo a bypasear su propio
+    // borde no lo sería.
+    response = await fetch(url, { headers: { 'Accept-Encoding': 'identity' } });
   } catch (error) {
     return { ok: false, code: 'fetch_error', detail: safeErrorMessage(error) };
   }
