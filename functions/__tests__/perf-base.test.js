@@ -10,6 +10,15 @@ import {
   serverTimingValue,
 } from '../_shared/perf.js';
 
+function runtimeSupportsBrotliStream() {
+  try {
+    new DecompressionStream('brotli');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 test('PERF-BASE registra segmentos sin incluir consultas ni datos personales', () => {
   const ctx = { env: { APP_ENV: 'preview' }, data: {} };
   ensurePerf(ctx);
@@ -72,7 +81,9 @@ test('ASSET-CACHE-1 aplica la misma regla exacta a assets hash en Producción', 
   assert.equal(response.headers.has('x-robots-tag'), false);
 });
 
-test('prueba mínima descomprime y parsea un índice Brotli real', async () => {
+test('prueba mínima descomprime y parsea un índice Brotli real', {
+  skip: !runtimeSupportsBrotliStream(),
+}, async () => {
   const originalFetch = globalThis.fetch;
   const index = {
     schema_version: 1,
@@ -102,6 +113,28 @@ test('prueba mínima descomprime y parsea un índice Brotli real', async () => {
     assert.ok(result.decompress.median_ms >= 0);
     assert.ok(result.parse.median_ms >= 0);
     assert.match(response.headers.get('server-timing'), /probe_decompress/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('si el runtime no soporta Brotli responde incompatibilidad controlada', {
+  skip: runtimeSupportsBrotliStream(),
+}, async () => {
+  const originalFetch = globalThis.fetch;
+  const compressed = brotliCompressSync(Buffer.from(JSON.stringify({
+    schema_version: 1,
+    items: [['MLU1', 'Prueba']],
+  })));
+  globalThis.fetch = async () => new Response(compressed, { status: 200 });
+  try {
+    const response = await brotliProbeRequest({
+      env: { APP_ENV: 'preview' },
+    });
+    const result = await response.json();
+    assert.equal(response.status, 501);
+    assert.equal(result.compatible, false);
+    assert.equal(result.stage, 'decompress_or_parse');
   } finally {
     globalThis.fetch = originalFetch;
   }
