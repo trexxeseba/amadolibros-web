@@ -55,4 +55,5 @@ test('PERF-VERIFY-1 GET en Preview exige configuración y renderiza Turnstile', 
   const html = await response.text();
   assert.match(html, /data-action="perf_verify"/);
   assert.match(html, /20 repeticiones/);
+  assert.match(html, /p95/);
 });

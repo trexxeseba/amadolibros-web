@@ -145,6 +145,43 @@ function timingMap(header){
     return match?[match[1],Number(match[2])]:null;
   }).filter(Boolean));
 }
+function percentile(values,p){
+  const sorted=values.slice().sort((a,b)=>a-b);
+  return sorted[Math.max(0,Math.ceil((p/100)*sorted.length)-1)];
+}
+function stats(rows,getter){
+  const values=rows.map(getter).filter(Number.isFinite);
+  return {n:values.length,median:percentile(values,50),p95:percentile(values,95)};
+}
+function summarize(rows){
+  const fields={
+    external_ms:row=>row.external_ms,
+    worker_total:row=>row.server_timing.worker_total,
+    route_total:row=>row.server_timing.route_total,
+    manifest_read:row=>row.server_timing.manifest_read,
+    active_index_read:row=>row.server_timing.active_index_gzip_read,
+    paused_index_read:row=>row.server_timing.paused_index_gzip_read,
+    search:row=>row.server_timing.search,
+    render:row=>row.server_timing.render
+  };
+  const summarizeRows=selected=>Object.fromEntries(
+    Object.entries(fields).map(([name,getter])=>[name,stats(selected,getter)])
+  );
+  return {
+    sample_size:rows.length,
+    cf_rays:[...new Set(rows.map(row=>row.cf_ray).filter(Boolean))],
+    overall:Object.fromEntries(['cold','warm'].map(condition=>[
+      condition,summarizeRows(rows.filter(row=>row.condition===condition))
+    ])),
+    by_query:Object.fromEntries(queries.map(query=>[
+      query,
+      Object.fromEntries(['cold','warm'].map(condition=>[
+        condition,
+        summarizeRows(rows.filter(row=>row.query===query&&row.condition===condition))
+      ]))
+    ]))
+  };
+}
 async function api(body,session=''){
   const response=await fetch('/api/perf-verify',{
     method:'POST',
@@ -196,7 +233,11 @@ document.getElementById('run').addEventListener('click',async()=>{
         rows.push(cold,warm);
       }
     }
-    output.value=JSON.stringify({created_at:new Date().toISOString(),rows},null,2);
+    output.value=JSON.stringify({
+      created_at:new Date().toISOString(),
+      exact_cache_deletions_confirmed:queries.length*20,
+      ...summarize(rows)
+    },null,2);
     statusNode.textContent='Terminó: '+rows.length+' muestras válidas.';
   }catch(error){
     statusNode.textContent='Error: '+error.message;
