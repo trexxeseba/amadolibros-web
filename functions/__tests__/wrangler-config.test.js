@@ -120,6 +120,8 @@ test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
   assert.match(stockPreviewYml, /index_gzip_bytes/);
   assert.match(stockPreviewYml, /active_index_gzip_decompress/);
   assert.match(stockPreviewYml, /paused_index_gzip_decompress/);
+  assert.match(stockPreviewYml, /Manifest anterior aún cacheado/);
+  assert.match(stockPreviewYml, /GZIP_CONFIRMED/);
   assert.doesNotMatch(stockPreviewYml, /--branch main/);
 });
 

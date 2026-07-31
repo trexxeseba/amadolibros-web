@@ -181,19 +181,23 @@ jobs:
       - name: Benchmark instrumented search
         run: |
           PREVIEW_URL="https://agent-stock-1-preview.amadolibros-web.pages.dev"
-          for ATTEMPT in 1 2 3 4 5 6; do
+          GZIP_CONFIRMED=false
+          for ATTEMPT in 1 2 3 4 5 6 7 8; do
             HEADERS=$(mktemp)
             curl -sS --retry 5 --retry-all-errors --retry-delay 3 \
               --max-time 60 -D "$HEADERS" -o /dev/null \
               "$PREVIEW_URL/catalogo?q=alpha"
             TIMING=$(tr -d '\r' < "$HEADERS" | grep -i '^server-timing:' || true)
             echo "PERF_ATTEMPT_${ATTEMPT}=$TIMING"
-            if ! echo "$TIMING" | grep -q 'active_index_gzip_decompress'; then
-              echo "ERROR: la búsqueda no confirmó descompresión gzip del índice activo."
-              exit 1
+            if echo "$TIMING" | grep -q 'active_index_gzip_decompress' &&
+               echo "$TIMING" | grep -q 'paused_index_gzip_decompress'; then
+              GZIP_CONFIRMED=true
+              break
             fi
-            if ! echo "$TIMING" | grep -q 'paused_index_gzip_decompress'; then
-              echo "ERROR: la búsqueda no confirmó descompresión gzip del índice pausado."
-              exit 1
-            fi
+            echo "Manifest anterior aún cacheado; reintento en 15 segundos."
+            sleep 15
           done
+          if [ "$GZIP_CONFIRMED" != "true" ]; then
+            echo "ERROR: la búsqueda no confirmó ambos índices gzip tras 8 intentos."
+            exit 1
+          fi
