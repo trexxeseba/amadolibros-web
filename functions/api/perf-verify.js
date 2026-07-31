@@ -80,8 +80,6 @@ function manifestCacheKeys(manifest) {
   const relativeKeys = [
     descriptor.active_index_gzip_key,
     descriptor.index_gzip_key,
-    descriptor.active_index_key,
-    descriptor.index_key,
   ].filter(value => typeof value === 'string' && value.startsWith('stock1-preview/versions/'));
   return [
     PAUSED_MANIFEST_URL,
@@ -101,7 +99,7 @@ async function loadCurrentManifest() {
 async function clearExactCatalogKeys() {
   const manifest = await loadCurrentManifest();
   const keys = manifestCacheKeys(manifest);
-  if (keys.length < 5) throw new Error('manifest_keys_invalid');
+  if (keys.length !== 3) throw new Error('manifest_keys_invalid');
   const deleted = await Promise.all(
     keys.map(async key => ({
       key,

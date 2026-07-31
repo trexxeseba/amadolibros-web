@@ -19,7 +19,7 @@ test('PERF-VERIFY-1 resuelve únicamente claves exactas del descriptor actual', 
       index_key: 'stock1-preview/versions/v1/index.json',
     },
   });
-  assert.equal(keys.length, 5);
+  assert.equal(keys.length, 3);
   assert.equal(keys[0], 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/stock1-preview/manifest.json');
   assert.equal(keys.every(key => key.startsWith('https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/')), true);
 });
