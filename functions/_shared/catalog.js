@@ -10,6 +10,7 @@ export function catalogUrlFor() {
 }
 
 async function fetchJsonCached(ctx, url, maxAge, timingName = 'catalog_fetch') {
+    const readStartedAt = perfNow();
     const cache = caches.default;
     const cacheKey = new Request(url);
     const cacheStartedAt = perfNow();
@@ -33,8 +34,16 @@ async function fetchJsonCached(ctx, url, maxAge, timingName = 'catalog_fetch') {
         }
     }
     try {
+        const bodyStartedAt = perfNow();
+        const body = await response.arrayBuffer();
+        recordPerf(ctx, `${timingName}_body`, bodyStartedAt, {
+            bytes: body.byteLength,
+        });
+        recordPerf(ctx, `${timingName}_read`, readStartedAt, {
+            bytes: body.byteLength,
+        });
         const parseStartedAt = perfNow();
-        const result = await response.json();
+        const result = JSON.parse(new TextDecoder().decode(body));
         recordPerf(ctx, `${timingName}_parse`, parseStartedAt);
         return result;
     } catch {
@@ -43,6 +52,7 @@ async function fetchJsonCached(ctx, url, maxAge, timingName = 'catalog_fetch') {
 }
 
 async function fetchGzipJsonCached(ctx, url, maxAge, timingName) {
+    const readStartedAt = perfNow();
     const cache = caches.default;
     const cacheKey = new Request(url);
     const cacheStartedAt = perfNow();
@@ -66,7 +76,14 @@ async function fetchGzipJsonCached(ctx, url, maxAge, timingName) {
         }
     }
     try {
+        const bodyStartedAt = perfNow();
         const compressed = new Uint8Array(await response.arrayBuffer());
+        recordPerf(ctx, `${timingName}_body`, bodyStartedAt, {
+            bytes: compressed.byteLength,
+        });
+        recordPerf(ctx, `${timingName}_read`, readStartedAt, {
+            bytes: compressed.byteLength,
+        });
         const decompressStartedAt = perfNow();
         const stream = new Blob([compressed]).stream()
             .pipeThrough(new DecompressionStream('gzip'));

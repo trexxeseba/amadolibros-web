@@ -358,9 +358,10 @@ ${rows}
     recordPerf(ctx, 'render', renderStartedAt);
     const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;
     const serverTiming = serverTimingValue(ctx, [{
-        name: 'total',
+        name: 'route_total',
         duration_ms: totalDuration,
     }]);
+    const cacheStatus = ctx.data.perf.cache.miss > 0 ? 'MISS' : 'HIT';
     console.log(JSON.stringify(perfSummary(ctx, {
         route: '/catalogo',
         mode: useCompactSearch ? 'compact' : 'full',
@@ -373,6 +374,9 @@ ${rows}
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=300',
             'server-timing': serverTiming,
+            'x-cache-status': cacheStatus,
+            'x-perf-cache-hits': String(ctx.data.perf.cache.hit),
+            'x-perf-cache-misses': String(ctx.data.perf.cache.miss),
         },
     });
 }

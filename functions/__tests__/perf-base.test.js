@@ -12,11 +12,11 @@ test('PERF-BASE registra segmentos sin incluir consultas ni datos personales', (
   const ctx = { env: { APP_ENV: 'preview' }, data: {} };
   ensurePerf(ctx);
   recordPerf(ctx, 'active_index_parse', performance.now(), { cache: 'hit' });
-  const header = serverTimingValue(ctx, [{ name: 'total', duration_ms: 12.34 }]);
+  const header = serverTimingValue(ctx, [{ name: 'route_total', duration_ms: 12.34 }]);
   const summary = perfSummary(ctx, { route: '/catalogo', result_count: 2 });
 
   assert.match(header, /active_index_parse;dur=/);
-  assert.match(header, /total;dur=12.34/);
+  assert.match(header, /route_total;dur=12.34/);
   assert.equal(summary.cache_hits, 1);
   assert.equal(summary.route, '/catalogo');
   assert.equal(JSON.stringify(summary).includes('q='), false);
@@ -36,6 +36,8 @@ test('ASSET-CACHE-1 cachea sólo CSS/JS hash de Astro en Preview', async () => {
     'public, max-age=31536000, immutable',
   );
   assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow');
+  assert.match(response.headers.get('server-timing'), /middleware_before;dur=/);
+  assert.match(response.headers.get('server-timing'), /worker_total;dur=/);
 });
 
 test('ASSET-CACHE-1 no aplica caché larga a HTML, API ni assets sin hash', async () => {
