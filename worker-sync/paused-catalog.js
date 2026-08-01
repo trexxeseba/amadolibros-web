@@ -46,6 +46,9 @@ export function buildPausedCatalogArtifacts(catalog, {
   version = String(catalog?.updated_at || new Date().toISOString())
     .replace(/[^0-9]/g, '')
     .slice(0, 17),
+  // CF-R2-2-BRIDGE: Preview y producción publican bajo prefijos de R2
+  // completamente distintos — nunca deben poder pisarse ni confundirse.
+  prefixRoot = 'stock1-preview/versions',
 } = {}) {
   const paused = (Array.isArray(catalog?.items) ? catalog.items : [])
     .filter(item => item?.status === 'paused')
@@ -75,7 +78,7 @@ export function buildPausedCatalogArtifacts(catalog, {
     ]);
   }
 
-  const prefix = `stock1-preview/versions/${version}`;
+  const prefix = `${prefixRoot}/${version}`;
   const activeIndexRows = active.map(item => [
     item.id,
     item.title || '',
@@ -203,4 +206,8 @@ export function buildManifest(artifacts, previousManifest, generatedAt = new Dat
 }
 
 export const PAUSED_MANIFEST_KEY = 'stock1-preview/manifest.json';
+export const PAUSED_PREFIX_ROOT = 'stock1-preview/versions';
+// CF-R2-2-BRIDGE: prefijo y manifest productivos — nunca 'stock1-preview/*'.
+export const PRODUCTION_MANIFEST_KEY = 'catalog/manifest.json';
+export const PRODUCTION_PREFIX_ROOT = 'catalog/versions';
 export const PAUSED_BLOCK_COUNT = DEFAULT_BLOCK_COUNT;

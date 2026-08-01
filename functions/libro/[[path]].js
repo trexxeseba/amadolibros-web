@@ -645,7 +645,12 @@ export async function onRequest(context) {
     let item = activeCatalogAvailable
         ? catalog.items.find(b => b.id === id)
         : null;
-    if (!item && context.env?.APP_ENV === 'preview') {
+    // CF-R2-2-BRIDGE: habilitado en Preview y producción — cada uno resuelve
+    // contra su propio manifest (fetchPausedItem -> manifestUrlFor en
+    // _shared/catalog.js). Si el manifest de ese entorno falta o es
+    // inválido, fetchPausedItem devuelve null y el flujo sigue igual que
+    // hoy (notFound), sin 500.
+    if (!item && ['preview', 'production'].includes(context.env?.APP_ENV)) {
         item = await fetchPausedItem(context, id);
     }
     if (!item && !activeCatalogAvailable) {

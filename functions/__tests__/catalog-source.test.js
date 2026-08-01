@@ -4,6 +4,7 @@ import { gzipSync } from 'node:zlib';
 import {
   CATALOG_URL,
   PAUSED_MANIFEST_URL,
+  PRODUCTION_MANIFEST_URL,
   R2_BASE,
   catalogUrlFor,
   fetchActiveIndex,
@@ -69,7 +70,7 @@ test('catálogo principal siempre apunta al archivo activo de producción', asyn
   }
 });
 
-test('índice pausado sólo se lee en Preview y expande el formato compacto', async () => {
+test('índice pausado expande el formato compacto (producción intenta su propio manifest, ausente en este mock)', async () => {
   const originalFetch = globalThis.fetch;
   const objects = new Map([
     [PAUSED_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: null }],
@@ -102,7 +103,11 @@ test('índice pausado sólo se lee en Preview y expande el formato compacto', as
       available_quantity: 0,
       paused_block: 2,
     });
-    assert.deepEqual(requests, [PAUSED_MANIFEST_URL, `${R2_BASE}/${CURRENT.index_key}`]);
+    assert.deepEqual(requests, [
+      PRODUCTION_MANIFEST_URL,
+      PAUSED_MANIFEST_URL,
+      `${R2_BASE}/${CURRENT.index_key}`,
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -143,6 +148,7 @@ test('índice activo compacto conserva precio, stock y fallback versionado', asy
       slug: 'libro-activo',
     });
     assert.deepEqual(requests, [
+      PRODUCTION_MANIFEST_URL,
       PAUSED_MANIFEST_URL,
       `${R2_BASE}/${CURRENT.active_index_key}`,
       previousUrl,
@@ -425,6 +431,141 @@ test('una ficha pausada descarga únicamente su bloque y usa fallback', async ()
     assert.equal(requests.length, 3);
     assert.match(requests[1], new RegExp(`block-${String(currentBlock).padStart(3, '0')}\\.json$`));
     assert.equal(requests[2], previousUrl);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+// ── CF-R2-2-BRIDGE: soporte productivo del catálogo pausado ─────────────────
+
+test('CF-R2-2-BRIDGE: separación estricta — cada entorno lee sólo su propio manifest, nunca el del otro', async () => {
+  const originalFetch = globalThis.fetch;
+  const objects = new Map([
+    [PAUSED_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: null }],
+    [`${R2_BASE}/${CURRENT.active_index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU1', 'Activo de Preview', '', '', '', 1000, 1]],
+    }],
+    [PRODUCTION_MANIFEST_URL, { schema_version: 1, current: PREVIOUS, previous: null }],
+    [`${R2_BASE}/${PREVIOUS.active_index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU9', 'Activo de producción', '', '', '', 2000, 3]],
+    }],
+  ]);
+  const requests = installNetwork(objects);
+  try {
+    const previewResult = await fetchActiveIndex(context('preview'));
+    const requestsAfterPreview = requests.slice();
+    const productionResult = await fetchActiveIndex(context('production'));
+    const requestsAfterProduction = requests.slice(requestsAfterPreview.length);
+
+    assert.equal(previewResult.items[0].title, 'Activo de Preview');
+    assert.equal(productionResult.items[0].title, 'Activo de producción');
+
+    // Preview sólo pidió sus propias claves (stock1-preview/*), nunca las
+    // de producción (catalog/*).
+    assert.ok(requestsAfterPreview.includes(PAUSED_MANIFEST_URL));
+    assert.ok(requestsAfterPreview.includes(`${R2_BASE}/${CURRENT.active_index_key}`));
+    assert.equal(requestsAfterPreview.includes(PRODUCTION_MANIFEST_URL), false);
+    assert.equal(requestsAfterPreview.includes(`${R2_BASE}/${PREVIOUS.active_index_key}`), false);
+
+    // Producción sólo pidió sus propias claves (catalog/*), nunca las de
+    // Preview (stock1-preview/*).
+    assert.ok(requestsAfterProduction.includes(PRODUCTION_MANIFEST_URL));
+    assert.ok(requestsAfterProduction.includes(`${R2_BASE}/${PREVIOUS.active_index_key}`));
+    assert.equal(requestsAfterProduction.includes(PAUSED_MANIFEST_URL), false);
+    assert.equal(requestsAfterProduction.includes(`${R2_BASE}/${CURRENT.active_index_key}`), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('CF-R2-2-BRIDGE: producción puede leer su propio manifest e índices válidos, sin ninguna URL de Preview', async () => {
+  const originalFetch = globalThis.fetch;
+  // Descriptor con prefijo productivo real (catalog/versions/...) — nunca
+  // stock1-preview/*, a diferencia de los fixtures CURRENT/PREVIOUS de
+  // arriba (esos representan claves de Preview).
+  const PRODUCTION_CURRENT = {
+    version: '20260730120000000',
+    index_key: 'catalog/versions/20260730120000000/index.json',
+    active_index_key: 'catalog/versions/20260730120000000/active-index.json',
+    block_prefix: 'catalog/versions/20260730120000000',
+    block_count: 128,
+  };
+  const objects = new Map([
+    [PRODUCTION_MANIFEST_URL, { schema_version: 1, current: PRODUCTION_CURRENT, previous: null }],
+    [`${R2_BASE}/${PRODUCTION_CURRENT.active_index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU5', 'Activo productivo', '', '', '', 500, 4]],
+    }],
+    [`${R2_BASE}/${PRODUCTION_CURRENT.index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image'],
+      derived_fields: { slug: 'slugify-v1', status: 'paused', block: 'numeric-id-mod-block-count' },
+      block_count: 128,
+      items: [['MLU6', 'Pausado productivo', '', '', '']],
+    }],
+  ]);
+  const requests = installNetwork(objects);
+  try {
+    const active = await fetchActiveIndex(context('production'));
+    const paused = await fetchPausedIndex(context('production'));
+    assert.equal(active.items[0].title, 'Activo productivo');
+    assert.equal(paused.items[0].title, 'Pausado productivo');
+    assert.ok(requests.length > 0);
+    assert.ok(requests.every(url => !url.includes('stock1-preview')));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('CF-R2-2-BRIDGE: manifest de producción ausente o inválido no rompe el catálogo activo (fallback, sin 500)', async () => {
+  const originalFetch = globalThis.fetch;
+  const objects = new Map([
+    [CATALOG_URL, { total: 1, items: [{ id: 'MLU1', status: 'active', available_quantity: 1 }] }],
+    // PRODUCTION_MANIFEST_URL deliberadamente ausente del mock -> 404.
+  ]);
+  installNetwork(objects);
+  try {
+    assert.equal(await fetchActiveIndex(context('production')), null);
+    assert.equal(await fetchPausedIndex(context('production')), null);
+    const fallback = await fetchCatalog(context('production'));
+    assert.equal(fallback.items[0].id, 'MLU1');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('CF-R2-2-BRIDGE: producción también deduplica el fetch del manifest dentro de una misma request', async () => {
+  const originalFetch = globalThis.fetch;
+  const objects = new Map([
+    [PRODUCTION_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: null }],
+    [`${R2_BASE}/${CURRENT.active_index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU1', 'Activo', '', '', '', 1000, 1]],
+    }],
+    [`${R2_BASE}/${CURRENT.index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image'],
+      derived_fields: { slug: 'slugify-v1', status: 'paused', block: 'numeric-id-mod-block-count' },
+      block_count: 128,
+      items: [['MLU2', 'Pausado', '', '', '']],
+    }],
+  ]);
+  const requests = installNetwork(objects);
+  try {
+    const ctx = context('production');
+    await Promise.all([fetchActiveIndex(ctx), fetchPausedIndex(ctx)]);
+    const manifestRequests = requests.filter(u => u === PRODUCTION_MANIFEST_URL);
+    assert.equal(manifestRequests.length, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }

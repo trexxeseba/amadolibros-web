@@ -7,9 +7,11 @@ import {
   slimItem,
 } from '../meli-catalog.js';
 import {
+  PRODUCTION_CATALOG_KEY,
   STOCK1_PREVIEW_CATALOG_KEY,
   runMeasure,
   runPreviewCatalogPublish,
+  runProductionCatalogPublish,
   summarizeCatalog,
 } from '../index.js';
 import {
@@ -17,6 +19,7 @@ import {
   blockNumberForId,
   buildPausedCatalogArtifacts,
   PAUSED_MANIFEST_KEY,
+  PRODUCTION_MANIFEST_KEY,
 } from '../paused-catalog.js';
 
 test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', async () => {
@@ -364,4 +367,146 @@ test('slimItem conserva la publicación cuando descarta sus medidas inválidas',
   assert.equal(item.dimensions, null);
   assert.equal(quality.omitted_dimension_fields, 1);
   assert.equal(quality.omitted_weight_fields, 1);
+});
+
+// ── CF-R2-2-BRIDGE: publicación productiva del catálogo pausado ─────────────
+
+test('CF-R2-2-BRIDGE: publica el catálogo productivo bajo catalog/*, nunca stock1-preview/*', async () => {
+  const writes = [];
+  const objects = new Map();
+  const catalog = {
+    total: 2,
+    updated_at: '2026-08-01T09:00:00.000Z',
+    items: [
+      { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 2 },
+      { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+    ],
+  };
+  const env = {
+    PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED: true,
+    CATALOG_R2: {
+      async put(key, body, options) {
+        writes.push({ key, body, options });
+        objects.set(key, body);
+      },
+      async get(key) {
+        const body = objects.get(key);
+        return body == null ? null : { async text() { return body; } };
+      },
+      async head(key) {
+        const body = objects.get(key);
+        return body == null ? null : {
+          size: typeof body === 'string'
+            ? new TextEncoder().encode(body).length
+            : body.byteLength,
+        };
+      },
+    },
+  };
+
+  const result = await runProductionCatalogPublish(env, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => catalog,
+  });
+
+  assert.equal(result.status, 'published-production');
+  assert.equal(result.published, true);
+  assert.equal(result.production_catalog_modified, false);
+  assert.equal(result.key, PRODUCTION_CATALOG_KEY);
+  assert.equal(result.key, PRODUCTION_MANIFEST_KEY);
+  assert.deepEqual(result.sample_paused, { id: 'MLU2', title: 'Pausado' });
+  assert.equal(writes.length, 133);
+  assert.equal(writes.at(-1).key, 'catalog/manifest.json');
+  assert.ok(writes.slice(0, -1).every(write => write.key.startsWith('catalog/versions/')));
+  assert.ok(writes.every(write => write.key !== 'catalog.json'));
+  assert.ok(writes.every(write => !write.key.startsWith('stock1-preview')));
+  assert.equal(writes.at(-1).options.customMetadata.scope, 'production');
+  assert.equal(writes.at(-1).options.customMetadata.publication, 'atomic-pointer');
+});
+
+test('CF-R2-2-BRIDGE: bloquea publicación productiva cuando el flag no la habilita', async () => {
+  let wrote = false;
+  const result = await runProductionCatalogPublish({
+    CATALOG_R2: { async put() { wrote = true; } },
+  });
+
+  assert.equal(result.status, 'error');
+  assert.equal(result.published, false);
+  assert.equal(wrote, false);
+});
+
+test('CF-R2-2-BRIDGE: publicar producción no toca ninguna clave de Preview, y viceversa', async () => {
+  const previewWrites = [];
+  const productionWrites = [];
+  const catalog = {
+    total: 2,
+    updated_at: '2026-08-01T09:00:00.000Z',
+    items: [
+      { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 2 },
+      { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+    ],
+  };
+  function makeBucket(sink) {
+    const objects = new Map();
+    return {
+      async put(key, body, options) { sink.push(key); objects.set(key, body); },
+      async get(key) {
+        const body = objects.get(key);
+        return body == null ? null : { async text() { return body; } };
+      },
+      async head(key) {
+        const body = objects.get(key);
+        return body == null ? null : {
+          size: typeof body === 'string'
+            ? new TextEncoder().encode(body).length
+            : body.byteLength,
+        };
+      },
+    };
+  }
+
+  await runPreviewCatalogPublish({
+    STOCK1_PREVIEW_PUBLISH_ENABLED: true,
+    CATALOG_R2: makeBucket(previewWrites),
+  }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => catalog,
+  });
+  await runProductionCatalogPublish({
+    PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED: true,
+    CATALOG_R2: makeBucket(productionWrites),
+  }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => catalog,
+  });
+
+  assert.ok(previewWrites.every(key => key.startsWith('stock1-preview')));
+  assert.ok(productionWrites.every(key => key.startsWith('catalog/')));
+  assert.equal(previewWrites.some(key => productionWrites.includes(key)), false);
+});
+
+test('CF-R2-2-BRIDGE: producción tampoco cambia su manifest si falla la verificación de un bloque', async () => {
+  const writtenKeys = [];
+  const result = await runProductionCatalogPublish({
+    PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED: true,
+    CATALOG_R2: {
+      async put(key) { writtenKeys.push(key); },
+      async get() { return null; },
+      async head() { return null; },
+    },
+  }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => ({
+      updated_at: '2026-08-01T09:00:00.000Z',
+      items: [
+        { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 1 },
+        { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+      ],
+    }),
+  });
+
+  assert.equal(result.status, 'error');
+  assert.equal(result.published, false);
+  assert.equal(writtenKeys.includes(PRODUCTION_MANIFEST_KEY), false);
+  assert.ok(writtenKeys.some(key => key.includes('/versions/')));
 });

@@ -89,7 +89,13 @@ export async function onRequest(ctx) {
     ensurePerf(ctx);
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
-    const useCompactSearch = Boolean(rawQ && ctx.env?.APP_ENV === 'preview');
+    // CF-R2-2-BRIDGE: habilitado explícitamente en Preview y producción — cada
+    // uno con su propio manifest (ver manifestUrlFor en _shared/catalog.js).
+    // Si el manifest del entorno falta o es inválido, fetchActiveIndex/
+    // fetchPausedIndex devuelven null y el fallback de abajo usa
+    // fetchCatalog() igual que antes — nunca 500 por esto.
+    const useCompactSearch = Boolean(rawQ) &&
+        ['preview', 'production'].includes(ctx.env?.APP_ENV);
     const [activeIndex, pausedIndex] = useCompactSearch
         ? await Promise.all([fetchActiveIndex(ctx), fetchPausedIndex(ctx)])
         : [null, null];

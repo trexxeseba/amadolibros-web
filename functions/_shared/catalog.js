@@ -2,7 +2,10 @@ import { perfNow, recordPerf } from './perf.js';
 
 export const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
 export const CATALOG_URL = `${R2_BASE}/catalog.json`;
+// CF-R2-2-BRIDGE: cada entorno tiene su propio manifest, en su propio prefijo
+// de R2, publicado por su propio workflow — nunca comparten claves.
 export const PAUSED_MANIFEST_URL = `${R2_BASE}/stock1-preview/manifest.json`;
+export const PRODUCTION_MANIFEST_URL = `${R2_BASE}/catalog/manifest.json`;
 export const BASE = 'https://www.amadolibros.com';
 
 export function catalogUrlFor() {
@@ -105,8 +108,15 @@ export async function fetchCatalog(ctx) {
     return fetchJsonCached(ctx, CATALOG_URL, 3600, 'catalog');
 }
 
-function isPreview(ctx) {
-    return ctx?.env?.APP_ENV === 'preview';
+// CF-R2-2-BRIDGE: única fuente de verdad de "qué manifest le corresponde a
+// esta request". Preview y producción jamás comparten el mismo valor —
+// cualquier otro APP_ENV (tests, dev local) devuelve null y el catálogo
+// pausado queda deshabilitado ahí, sin fetch alguno.
+function manifestUrlFor(ctx) {
+    const appEnv = ctx?.env?.APP_ENV;
+    if (appEnv === 'preview') return PAUSED_MANIFEST_URL;
+    if (appEnv === 'production') return PRODUCTION_MANIFEST_URL;
+    return null;
 }
 
 function validDescriptor(value) {
@@ -130,7 +140,8 @@ function validGzipKey(value, field, suffix) {
 }
 
 async function fetchPausedManifest(ctx) {
-    if (!isPreview(ctx)) return null;
+    const manifestUrl = manifestUrlFor(ctx);
+    if (!manifestUrl) return null;
     // CF-R2-2B: fetchActiveIndex() y fetchPausedIndex() llaman a esta función
     // cada una, y catalogo.js las corre en paralelo (Promise.all) — sin
     // memoizar, un MISS dispara dos fetches simultáneos e idénticos del
@@ -138,10 +149,12 @@ async function fetchPausedManifest(ctx) {
     // atada a esta request (mismo patrón que ensurePerf en perf.js), para
     // que ambas ramas compartan una única llamada a origen. Reduce trabajo
     // y solicitudes a origen; el efecto sobre el tiempo total se mide
-    // aparte, no se asume acá.
+    // aparte, no se asume acá. La URL ya es la correcta por entorno
+    // (manifestUrlFor), así que memoizar por ctx.data nunca mezcla Preview
+    // con producción — cada request tiene su propio ctx.
     if (!ctx.data || typeof ctx.data !== 'object') ctx.data = {};
     if (!ctx.data.__pausedManifestPromise) {
-        ctx.data.__pausedManifestPromise = fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60, 'manifest');
+        ctx.data.__pausedManifestPromise = fetchJsonCached(ctx, manifestUrl, 60, 'manifest');
     }
     const manifest = await ctx.data.__pausedManifestPromise;
     if (!manifest || manifest.schema_version !== 1 || !validDescriptor(manifest.current)) {
@@ -290,7 +303,7 @@ function blockFilename(block) {
 
 export async function fetchPausedItem(ctx, id) {
     const productId = String(id || '').toUpperCase();
-    if (!isPreview(ctx) || !/^MLU\d+$/.test(productId)) return null;
+    if (!manifestUrlFor(ctx) || !/^MLU\d+$/.test(productId)) return null;
     const manifest = await fetchPausedManifest(ctx);
     for (const descriptor of descriptorCandidates(manifest)) {
         const block = pausedBlockNumberForId(productId, descriptor.block_count);

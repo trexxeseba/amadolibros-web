@@ -10,7 +10,12 @@
  *                    — GET /status con el mismo header para auditar KV + R2.
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *                    — POST /publish-preview-catalog escribe únicamente el catálogo
- *                      separado de STOCK-1 cuando la versión aislada lo habilita.
+ *                      separado de STOCK-1 (prefijo stock1-preview/*) cuando la
+ *                      versión aislada lo habilita.
+ *                    — POST /publish-production-catalog escribe el catálogo
+ *                      productivo separado (prefijo catalog/*, nunca
+ *                      stock1-preview/*) cuando PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED
+ *                      lo habilita. No toca catalog.json ni meta.json.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -42,9 +47,13 @@ import {
   buildManifest,
   buildPausedCatalogArtifacts,
   PAUSED_MANIFEST_KEY,
+  PAUSED_PREFIX_ROOT,
+  PRODUCTION_MANIFEST_KEY,
+  PRODUCTION_PREFIX_ROOT,
 } from './paused-catalog.js';
 
 export const STOCK1_PREVIEW_CATALOG_KEY = PAUSED_MANIFEST_KEY;
+export const PRODUCTION_CATALOG_KEY = PRODUCTION_MANIFEST_KEY;
 
 export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
@@ -82,6 +91,14 @@ export default {
       }
       const result = await runPreviewCatalogPublish(env);
       return json(result, result.status === 'published-preview' ? 200 : 500);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/publish-production-catalog') {
+      if (String(env.PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED) !== 'true') {
+        return json({ error: 'Not found.' }, 404);
+      }
+      const result = await runProductionCatalogPublish(env);
+      return json(result, result.status === 'published-production' ? 200 : 500);
     }
 
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
@@ -160,15 +177,24 @@ export async function runMeasure(env, {
   }
 }
 
-export async function runPreviewCatalogPublish(env, {
-  getAccessTokenFn = getAccessToken,
-  buildCatalogFn = buildCatalog,
-} = {}) {
-  if (String(env?.STOCK1_PREVIEW_PUBLISH_ENABLED) !== 'true') {
+// CF-R2-2-BRIDGE: lógica compartida entre Preview y producción. Sólo
+// difieren en el flag que lo habilita, el manifest/prefijo de R2 destino y
+// la etiqueta de scope — nunca en el algoritmo de construcción/verificación.
+async function publishPausedCatalog(env, {
+  getAccessTokenFn,
+  buildCatalogFn,
+  enabledFlag,
+  manifestKey,
+  prefixRoot,
+  scope,
+  statusOk,
+  errorLabel,
+}) {
+  if (String(env?.[enabledFlag]) !== 'true') {
     return {
       status: 'error',
       published: false,
-      error: 'Preview catalog publishing is disabled.',
+      error: `${errorLabel} catalog publishing is disabled.`,
     };
   }
   if (!env?.CATALOG_R2 || typeof env.CATALOG_R2.put !== 'function') {
@@ -186,58 +212,65 @@ export async function runPreviewCatalogPublish(env, {
 
     if (summary.invalid > 0 || summary.duplicate_ids > 0 || summary.paused === 0) {
       throw new Error(
-        `Catálogo Preview inválido: paused=${summary.paused}, ` +
+        `Catálogo ${errorLabel} inválido: paused=${summary.paused}, ` +
         `duplicate_ids=${summary.duplicate_ids}, invalid=${summary.invalid}.`
       );
     }
 
-    const artifacts = await addCompressedIndexes(buildPausedCatalogArtifacts(catalog));
-    const previousManifest = await readExistingManifest(env.CATALOG_R2);
+    const artifacts = await addCompressedIndexes(
+      buildPausedCatalogArtifacts(catalog, { prefixRoot }),
+    );
+    const previousManifest = await readExistingManifest(env.CATALOG_R2, manifestKey, errorLabel);
     const manifest = buildManifest(artifacts, previousManifest);
 
-    await putPreviewArtifact(
+    await putCatalogArtifact(
       env.CATALOG_R2,
       artifacts.active_index.key,
       artifacts.active_index.body,
+      'application/json',
+      scope,
     );
-    await putPreviewArtifact(
+    await putCatalogArtifact(
       env.CATALOG_R2,
       artifacts.active_index.gzip_key,
       artifacts.active_index.gzip_body,
       'application/gzip',
+      scope,
     );
-    await putPreviewArtifact(env.CATALOG_R2, artifacts.index.key, artifacts.index.body);
-    await putPreviewArtifact(
+    await putCatalogArtifact(env.CATALOG_R2, artifacts.index.key, artifacts.index.body, 'application/json', scope);
+    await putCatalogArtifact(
       env.CATALOG_R2,
       artifacts.index.gzip_key,
       artifacts.index.gzip_body,
       'application/gzip',
+      scope,
     );
     for (const block of artifacts.blocks) {
-      await putPreviewArtifact(env.CATALOG_R2, block.key, block.body);
+      await putCatalogArtifact(env.CATALOG_R2, block.key, block.body, 'application/json', scope);
     }
-    await verifyPreviewArtifacts(env.CATALOG_R2, artifacts);
+    await verifyCatalogArtifacts(env.CATALOG_R2, artifacts);
 
     // El manifest es el único puntero mutable y se publica último. Si cualquier
-    // escritura o verificación anterior falla, Preview conserva la versión previa.
+    // escritura o verificación anterior falla, este entorno conserva la
+    // versión previa — nunca queda en un estado a medio publicar.
     const manifestBody = JSON.stringify(manifest);
-    await env.CATALOG_R2.put(PAUSED_MANIFEST_KEY, manifestBody, {
+    await env.CATALOG_R2.put(manifestKey, manifestBody, {
       httpMetadata: {
         contentType: 'application/json',
         cacheControl: 'public, max-age=60',
       },
       customMetadata: {
-        scope: 'stock-1-preview-only',
+        scope,
         publication: 'atomic-pointer',
       },
     });
 
     const samplePaused = catalog.items.find(item => item.status === 'paused') || null;
     return {
-      status: 'published-preview',
+      status: statusOk,
       published: true,
       production_catalog_modified: false,
-      key: STOCK1_PREVIEW_CATALOG_KEY,
+      key: manifestKey,
       checked_at: new Date().toISOString(),
       catalog: summary,
       paused_catalog: {
@@ -261,44 +294,76 @@ export async function runPreviewCatalogPublish(env, {
         : null,
     };
   } catch (err) {
-    console.error(`[Preview catalog] Error: ${err.message}`);
+    console.error(`[${errorLabel} catalog] Error: ${err.message}`);
     return {
       status: 'error',
       published: false,
       production_catalog_modified: false,
-      key: STOCK1_PREVIEW_CATALOG_KEY,
+      key: manifestKey,
       error: String(err.message || 'Error').slice(0, 400),
     };
   }
 }
 
-async function readExistingManifest(bucket) {
+export async function runPreviewCatalogPublish(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  return publishPausedCatalog(env, {
+    getAccessTokenFn,
+    buildCatalogFn,
+    enabledFlag: 'STOCK1_PREVIEW_PUBLISH_ENABLED',
+    manifestKey: PAUSED_MANIFEST_KEY,
+    prefixRoot: PAUSED_PREFIX_ROOT,
+    scope: 'stock-1-preview-only',
+    statusOk: 'published-preview',
+    errorLabel: 'Preview',
+  });
+}
+
+export async function runProductionCatalogPublish(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  return publishPausedCatalog(env, {
+    getAccessTokenFn,
+    buildCatalogFn,
+    enabledFlag: 'PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED',
+    manifestKey: PRODUCTION_MANIFEST_KEY,
+    prefixRoot: PRODUCTION_PREFIX_ROOT,
+    scope: 'production',
+    statusOk: 'published-production',
+    errorLabel: 'Production',
+  });
+}
+
+async function readExistingManifest(bucket, manifestKey, errorLabel) {
   if (typeof bucket.get !== 'function') return null;
   try {
-    const object = await bucket.get(PAUSED_MANIFEST_KEY);
+    const object = await bucket.get(manifestKey);
     if (!object) return null;
     const parsed = JSON.parse(await object.text());
     return parsed?.schema_version === 1 ? parsed : null;
   } catch (error) {
-    console.warn(`[Preview catalog] No se pudo leer manifest anterior: ${error.message}`);
+    console.warn(`[${errorLabel} catalog] No se pudo leer manifest anterior: ${error.message}`);
     return null;
   }
 }
 
-async function putPreviewArtifact(bucket, key, body, contentType = 'application/json') {
+async function putCatalogArtifact(bucket, key, body, contentType, scope) {
   await bucket.put(key, body, {
     httpMetadata: {
       contentType,
       cacheControl: 'public, max-age=31536000, immutable',
     },
     customMetadata: {
-      scope: 'stock-1-preview-only',
+      scope,
       publication: 'immutable-version',
     },
   });
 }
 
-async function verifyPreviewArtifacts(bucket, artifacts) {
+async function verifyCatalogArtifacts(bucket, artifacts) {
   if (typeof bucket.head !== 'function') {
     throw new Error('CATALOG_R2.head no está disponible para verificar publicación.');
   }

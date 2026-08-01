@@ -5,6 +5,7 @@ import { onRequest as bookRequest } from '../libro/[[path]].js';
 import {
   CATALOG_URL,
   PAUSED_MANIFEST_URL,
+  PRODUCTION_MANIFEST_URL,
   R2_BASE,
   pausedBlockNumberForId,
 } from '../_shared/catalog.js';
@@ -255,4 +256,133 @@ test('CF-R2-2B: el mismo MLU nunca da 404 solo por pasar de activo a pausado', a
 
   assert.equal(activeResponse.status, 200);
   assert.equal(pausedResponse.status, 200);
+});
+
+// ── CF-R2-2-BRIDGE: catálogo pausado en producción ───────────────────────────
+
+const PROD_VERSION = '20260801090000000';
+const PROD_PREFIX = `catalog/versions/${PROD_VERSION}`;
+const PROD_ACTIVE = {
+  id: 'MLU10', title: 'Beta productivo', author: 'Autora Prod',
+  isbn: '9789990001112',
+  price: 1500, status: 'active', available_quantity: 3,
+  thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU10',
+};
+const PROD_PAUSED = {
+  id: 'MLU11', title: 'Gamma pausado productivo', author: 'Autor Prod Dos',
+  price: 50000, status: 'paused', available_quantity: 0,
+  thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU11',
+};
+const PROD_BLOCK = pausedBlockNumberForId(PROD_PAUSED.id, 128);
+
+function installProductionCatalogMock() {
+  const requestedUrls = [];
+  globalThis.caches = {
+    default: {
+      async match(request) {
+        requestedUrls.push(request.url);
+        if (request.url === CATALOG_URL) {
+          return Response.json({ total: 1, items: [PROD_ACTIVE] });
+        }
+        if (request.url === PRODUCTION_MANIFEST_URL) {
+          return Response.json({
+            schema_version: 1,
+            current: {
+              version: PROD_VERSION,
+              index_key: `${PROD_PREFIX}/index.json`,
+              active_index_key: `${PROD_PREFIX}/active-index.json`,
+              block_prefix: PROD_PREFIX,
+              block_count: 128,
+            },
+            previous: null,
+          });
+        }
+        if (request.url === PAUSED_MANIFEST_URL) {
+          // Nunca debería pedirse en producción — si esto se sirve, algo
+          // está mal (el test que lo detecta corre por separado).
+          return null;
+        }
+        if (request.url === `${R2_BASE}/${PROD_PREFIX}/active-index.json`) {
+          return Response.json({
+            schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+            derived_fields: { slug: 'slugify-v1', status: 'active' },
+            items: [[
+              PROD_ACTIVE.id, PROD_ACTIVE.title, PROD_ACTIVE.author, PROD_ACTIVE.isbn,
+              '', PROD_ACTIVE.price, PROD_ACTIVE.available_quantity,
+            ]],
+          });
+        }
+        if (request.url === `${R2_BASE}/${PROD_PREFIX}/index.json`) {
+          return Response.json({
+            schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image'],
+            derived_fields: {
+              slug: 'slugify-v1',
+              status: 'paused',
+              block: 'numeric-id-mod-block-count',
+            },
+            block_count: 128,
+            items: [[PROD_PAUSED.id, PROD_PAUSED.title, PROD_PAUSED.author, '', '']],
+          });
+        }
+        if (request.url === `${R2_BASE}/${PROD_PREFIX}/block-${String(PROD_BLOCK).padStart(3, '0')}.json`) {
+          return Response.json({
+            schema_version: 1,
+            version: PROD_VERSION,
+            block: PROD_BLOCK,
+            items: [PROD_PAUSED],
+          });
+        }
+        return null;
+      },
+      async put() {},
+    },
+  };
+  return requestedUrls;
+}
+
+test('CF-R2-2-BRIDGE: búsqueda productiva encuentra un libro pausado', async () => {
+  const requestedUrls = installProductionCatalogMock();
+  const response = await catalogRequest(
+    context('https://www.amadolibros.com/catalogo?q=Gamma+pausado', {}, 'production')
+  );
+  const html = await response.text();
+
+  assert.match(html, /Gamma pausado productivo/);
+  assert.doesNotMatch(html, /Agregar al carrito/);
+  assert.equal(requestedUrls.includes(PAUSED_MANIFEST_URL), false);
+});
+
+test('CF-R2-2-BRIDGE: ficha productiva por ID encuentra un libro pausado', async () => {
+  const requestedUrls = installProductionCatalogMock();
+  const response = await bookRequest(
+    context('https://www.amadolibros.com/libro/MLU11/gamma-pausado-productivo', {
+      path: ['MLU11', 'gamma-pausado-productivo'],
+    }, 'production')
+  );
+
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /noindex, follow/);
+  assert.match(html, /Vendimos todos los ejemplares disponibles\./);
+  assert.doesNotMatch(html, /Agregar al carrito/);
+  assert.doesNotMatch(html, /Comprar en MercadoLibre/);
+  assert.equal(requestedUrls.includes(PAUSED_MANIFEST_URL), false);
+});
+
+test('CF-R2-2-BRIDGE: ficha productiva de un activo sigue funcionando normalmente', async () => {
+  const requestedUrls = installProductionCatalogMock();
+  const response = await bookRequest(
+    context('https://www.amadolibros.com/libro/MLU10/beta-productivo', {
+      path: ['MLU10', 'beta-productivo'],
+    }, 'production')
+  );
+
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /index, follow/);
+  assert.match(html, /Agregar al carrito/);
+  assert.match(html, /Transferencia:/);
+  assert.equal(requestedUrls.includes(PAUSED_MANIFEST_URL), false);
 });
