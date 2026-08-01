@@ -165,8 +165,8 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   const html = await response.text();
 
   assert.match(html, /noindex, follow/);
-  assert.match(html, /Vendimos todos los ejemplares disponibles\./);
-  assert.match(html, /Si querés, lo buscamos para vos\./);
+  assert.match(html, /¿Buscás este libro\?/);
+  assert.match(html, /Podemos intentar conseguirlo por encargo\./);
   assert.match(html, /Consultar si podemos conseguirlo/);
   assert.match(html, /Avisame cuando llegue/);
   assert.match(html, /data-action="stock_waitlist"/);
@@ -174,6 +174,13 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
   assert.doesNotMatch(html, /Comprar en MercadoLibre/);
+  // CF-STOCK-1-UX-FIX: no repetir el problema — sin badge "No disponible"
+  // ni fila "Disponibilidad" en la ficha técnica.
+  assert.doesNotMatch(html, /No disponible/);
+  assert.doesNotMatch(html, /<dt>Disponibilidad<\/dt>/);
+  // Jerarquía: el WhatsApp principal debe aparecer antes que el
+  // formulario de aviso secundario.
+  assert.ok(html.indexOf('Consultar si podemos conseguirlo') < html.indexOf('id="aviso-stock"'));
 
   const expectedWaMsg = encodeURIComponent(
     'Hola, me interesa conseguir “Alpha raro”, de Autor Dos. ¿Podrían buscarlo por encargo?'
@@ -365,7 +372,7 @@ test('CF-R2-2-BRIDGE: ficha productiva por ID encuentra un libro pausado', async
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /noindex, follow/);
-  assert.match(html, /Vendimos todos los ejemplares disponibles\./);
+  assert.match(html, /¿Buscás este libro\?/);
   assert.doesNotMatch(html, /Agregar al carrito/);
   assert.doesNotMatch(html, /Comprar en MercadoLibre/);
   assert.equal(requestedUrls.includes(PAUSED_MANIFEST_URL), false);

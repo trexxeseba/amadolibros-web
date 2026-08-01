@@ -254,12 +254,13 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
         item.pages ? detailRow('Páginas', `${item.pages}`) : '',
         detailRow('Medidas', dimensions),
         detailRow('Condición', condition),
-        detailRow(
-            'Disponibilidad',
-            inStock
-                ? `${stockQty} disponible${stockQty === 1 ? '' : 's'}`
-                : 'No disponible por el momento'
-        ),
+        // CF-STOCK-1-UX-FIX: la fila "Disponibilidad" solo tiene sentido
+        // cuando hay stock que mostrar. Para no disponibles, la jerarquía
+        // comercial (ver más abajo) ya cubre el mensaje — repetirlo acá
+        // sería la tercera vez que la ficha dice "no disponible".
+        inStock
+            ? detailRow('Disponibilidad', `${stockQty} disponible${stockQty === 1 ? '' : 's'}`)
+            : '',
     ].filter(Boolean).join('\n');
 
     const metaDesc = inStock
@@ -313,8 +314,8 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
       <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>`
         : `<div class="order-box">
-      <strong>Vendimos todos los ejemplares disponibles.</strong>
-      <span>Si querés, lo buscamos para vos.</span>
+      <strong>¿Buscás este libro?</strong>
+      <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>
     </div>`;
 
     const actionHtml = inStock
@@ -447,7 +448,6 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .badge{display:inline-block;padding:.2rem .7rem;border-radius:2rem;
            font-size:.75rem;font-weight:600;margin-bottom:.875rem}
     .in-stock{background:#dcfce7;color:#16a34a}
-    .out-of-stock{background:#fef9c3;color:#854d0e}
     .details{background:white;border:1px solid #e2e8f0;border-radius:.5rem;
              margin:.25rem 0 .875rem;overflow:hidden}
     .detail-row{display:grid;grid-template-columns:94px 1fr;gap:.75rem;
@@ -525,14 +525,13 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
   ${renderGallery(images, safeTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
-    <span class="badge ${inStock ? 'in-stock' : 'out-of-stock'}">
-      ${inStock ? '✓ En stock' : 'No disponible'}
-    </span>
-    ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
+    ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
+    ${inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     ${priceHtml}
     <div class="cta">
       ${actionHtml}
     </div>
+    ${!inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     <p class="shipping">${inStock
       ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
