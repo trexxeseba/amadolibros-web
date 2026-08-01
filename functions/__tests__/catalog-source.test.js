@@ -287,6 +287,122 @@ test('si falla el índice actual usa automáticamente la versión anterior', asy
   }
 });
 
+test('CF-R2-2B: fetchActiveIndex y fetchPausedIndex en paralelo comparten un único fetch del manifest', async () => {
+  const originalFetch = globalThis.fetch;
+  const objects = new Map([
+    [PAUSED_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: null }],
+    [`${R2_BASE}/${CURRENT.active_index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU1', 'Activo paralelo', '', '', '', 1000, 1]],
+    }],
+    [`${R2_BASE}/${CURRENT.index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image'],
+      derived_fields: { slug: 'slugify-v1', status: 'paused', block: 'numeric-id-mod-block-count' },
+      block_count: 128,
+      items: [['MLU2', 'Pausado paralelo', '', '', '']],
+    }],
+  ]);
+  const requests = installNetwork(objects);
+  try {
+    const ctx = context('preview');
+    const [active, paused] = await Promise.all([
+      fetchActiveIndex(ctx),
+      fetchPausedIndex(ctx),
+    ]);
+    assert.equal(active.items[0].title, 'Activo paralelo');
+    assert.equal(paused.items[0].title, 'Pausado paralelo');
+    const manifestRequests = requests.filter(u => u === PAUSED_MANIFEST_URL);
+    assert.equal(
+      manifestRequests.length, 1,
+      'ambas ramas deben compartir un único fetch a origen del manifest, no uno cada una',
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('CF-R2-2B: la memoización del manifest no se comparte entre requests distintas', async () => {
+  const originalFetch = globalThis.fetch;
+  const objects = new Map([
+    [PAUSED_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: null }],
+    [`${R2_BASE}/${CURRENT.active_index_key}`, {
+      schema_version: 1,
+      fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+      derived_fields: { slug: 'slugify-v1', status: 'active' },
+      items: [['MLU1', 'Otra request', '', '', '', 1000, 1]],
+    }],
+  ]);
+  const requests = installNetwork(objects);
+  try {
+    const ctxA = context('preview');
+    const ctxB = context('preview');
+    await fetchActiveIndex(ctxA);
+    await fetchActiveIndex(ctxB);
+    const manifestRequests = requests.filter(u => u === PAUSED_MANIFEST_URL);
+    assert.equal(
+      manifestRequests.length, 2,
+      'cada request (cada ctx) debe hacer su propio fetch — la memoización es por-request, no global',
+    );
+    assert.notEqual(
+      ctxA.data.__pausedManifestPromise, ctxB.data.__pausedManifestPromise,
+      'la promesa memoizada no debe compartirse entre objetos ctx distintos',
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('CF-R2-2B: un fallo del manifest no deja estado reutilizado en otra request', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.caches = {
+    default: {
+      async match() { return null; },
+      async put() {},
+    },
+  };
+  let manifestCalls = 0;
+  globalThis.fetch = async url => {
+    if (String(url) === PAUSED_MANIFEST_URL) {
+      manifestCalls += 1;
+      throw new Error('network down');
+    }
+    return new Response('not found', { status: 404 });
+  };
+  try {
+    const ctxA = context('preview');
+    // Dentro de la misma request, el fallo también queda memoizado: dos
+    // lecturas del índice sobre el mismo ctx no deben reintentar el fetch.
+    await assert.rejects(() => fetchActiveIndex(ctxA));
+    await assert.rejects(() => fetchPausedIndex(ctxA));
+    assert.equal(
+      manifestCalls, 1,
+      'el fallo memoizado no debe disparar un segundo intento de fetch dentro de la misma request',
+    );
+
+    // Una request nueva (ctx nuevo) no hereda el fallo: arranca de cero.
+    globalThis.fetch = async url => {
+      const value = new Map([
+        [PAUSED_MANIFEST_URL, { schema_version: 1, current: CURRENT, previous: null }],
+        [`${R2_BASE}/${CURRENT.active_index_key}`, {
+          schema_version: 1,
+          fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+          derived_fields: { slug: 'slugify-v1', status: 'active' },
+          items: [['MLU1', 'Request nueva tras fallo', '', '', '', 1000, 1]],
+        }],
+      ]).get(String(url));
+      return value == null ? new Response('not found', { status: 404 }) : Response.json(value);
+    };
+    const ctxB = context('preview');
+    const result = await fetchActiveIndex(ctxB);
+    assert.equal(result.items[0].title, 'Request nueva tras fallo');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('una ficha pausada descarga únicamente su bloque y usa fallback', async () => {
   const originalFetch = globalThis.fetch;
   const id = 'MLU476064526';

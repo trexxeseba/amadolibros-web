@@ -131,7 +131,19 @@ function validGzipKey(value, field, suffix) {
 
 async function fetchPausedManifest(ctx) {
     if (!isPreview(ctx)) return null;
-    const manifest = await fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60, 'manifest');
+    // CF-R2-2B: fetchActiveIndex() y fetchPausedIndex() llaman a esta función
+    // cada una, y catalogo.js las corre en paralelo (Promise.all) — sin
+    // memoizar, un MISS dispara dos fetches simultáneos e idénticos del
+    // mismo manifest.json a origen. Se memoiza la promesa en ctx.data,
+    // atada a esta request (mismo patrón que ensurePerf en perf.js), para
+    // que ambas ramas compartan una única llamada a origen. Reduce trabajo
+    // y solicitudes a origen; el efecto sobre el tiempo total se mide
+    // aparte, no se asume acá.
+    if (!ctx.data || typeof ctx.data !== 'object') ctx.data = {};
+    if (!ctx.data.__pausedManifestPromise) {
+        ctx.data.__pausedManifestPromise = fetchJsonCached(ctx, PAUSED_MANIFEST_URL, 60, 'manifest');
+    }
+    const manifest = await ctx.data.__pausedManifestPromise;
     if (!manifest || manifest.schema_version !== 1 || !validDescriptor(manifest.current)) {
         return null;
     }

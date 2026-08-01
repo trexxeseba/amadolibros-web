@@ -197,3 +197,42 @@ test('la ficha sin slug redirige dentro del mismo Preview', async () => {
   assert.equal(response.status, 301);
   assert.equal(response.headers.get('location'), 'https://preview.example/libro/MLU2/alpha-raro');
 });
+
+test('CF-R2-2B: una URL histórica con slug viejo resuelve por ID, nunca 404, y el canonical apunta al slug actual', async () => {
+  // Simula el caso que preocupa: el título cambió (o el libro pasó de
+  // activo a pausado) después de que la URL vieja quedara indexada/guardada
+  // en algún lado. El slug del path ("titulo-historico-que-ya-no-existe")
+  // no coincide con el título actual del ítem — la ficha debe resolver
+  // igual por ID, nunca 404 solo por eso.
+  const response = await bookRequest(
+    context('https://www.amadolibros.com/libro/MLU2/titulo-historico-que-ya-no-existe', {
+      path: ['MLU2', 'titulo-historico-que-ya-no-existe'],
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, new RegExp(
+    `<link rel="canonical" href="https://www\\.amadolibros\\.com/libro/MLU2/alpha-raro">`
+  ));
+  assert.match(html, /Alpha raro/);
+});
+
+test('CF-R2-2B: el mismo MLU nunca da 404 solo por pasar de activo a pausado', async () => {
+  // MLU1 existe como activo en CATALOG; MLU2 existe como pausado en el
+  // índice separado. Ambos deben resolver 200 por el mismo mecanismo de
+  // búsqueda por ID — el estado (activo/pausado) no es motivo de 404.
+  const activeResponse = await bookRequest(
+    context('https://www.amadolibros.com/libro/MLU1/alpha-disponible', {
+      path: ['MLU1', 'alpha-disponible'],
+    })
+  );
+  const pausedResponse = await bookRequest(
+    context('https://www.amadolibros.com/libro/MLU2/alpha-raro', {
+      path: ['MLU2', 'alpha-raro'],
+    })
+  );
+
+  assert.equal(activeResponse.status, 200);
+  assert.equal(pausedResponse.status, 200);
+});
