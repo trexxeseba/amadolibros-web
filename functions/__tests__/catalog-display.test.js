@@ -164,14 +164,34 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   const html = await response.text();
 
   assert.match(html, /noindex, follow/);
-  assert.match(html, /No disponible por el momento/);
+  assert.match(html, /Vendimos todos los ejemplares disponibles\./);
+  assert.match(html, /Si querés, lo buscamos para vos\./);
+  assert.match(html, /Consultar si podemos conseguirlo/);
   assert.match(html, /Avisame cuando llegue/);
   assert.match(html, /data-action="stock_waitlist"/);
   assert.match(html, /\/api\/stock-waitlist/);
-  assert.match(html, /Buscarlo por encargo por WhatsApp/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
   assert.doesNotMatch(html, /Comprar en MercadoLibre/);
+
+  const expectedWaMsg = encodeURIComponent(
+    'Hola, me interesa conseguir “Alpha raro”, de Autor Dos. ¿Podrían buscarlo por encargo?'
+  );
+  assert.ok(html.includes(`https://wa.me/59899841325?text=${expectedWaMsg}`));
+});
+
+test('CF-R2-2C: schema Book de una ficha pausada no incluye Offer', async () => {
+  const response = await bookRequest(
+    context('https://www.amadolibros.com/libro/MLU2/alpha-raro', {
+      path: ['MLU2', 'alpha-raro'],
+    })
+  );
+  const html = await response.text();
+  const match = html.match(/<script type="application\/ld\+json">(\{"@context":"https:\/\/schema\.org","@type":\["Product","Book"\].*?)<\/script>/);
+  assert.ok(match, 'no se encontró el JSON-LD de Product/Book');
+  const schema = JSON.parse(match[1]);
+  assert.equal(schema.offers, undefined);
+  assert.equal(schema.sku, 'MLU2');
 });
 
 test('la ficha activa conserva precio y carrito en producción', async () => {

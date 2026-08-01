@@ -84,6 +84,14 @@ function formatDimensions(dimensions) {
     return rows.length ? rows.join(' · ') : null;
 }
 
+function buildPausedWaMessage(item) {
+    let msg = `Hola, me interesa conseguir “${item.title}”`;
+    if (item.author) msg += `, de ${item.author}`;
+    if (item.isbn) msg += ` (${item.isbn})`;
+    msg += '. ¿Podrían buscarlo por encargo?';
+    return msg;
+}
+
 function detailRow(label, value) {
     if (value == null || value === '') return '';
     return `<div class="detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
@@ -236,7 +244,7 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     const waMsg         = encodeURIComponent(
         inStock
             ? `Hola! Me interesa: ${item.title}`
-            : `Hola Amado Libros, quiero consultar disponibilidad de: ${item.title}`
+            : buildPausedWaMessage(item)
     );
 
     const detailRows = [
@@ -305,9 +313,8 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
       <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>`
         : `<div class="order-box">
-      <strong>No disponible por el momento</strong>
-      <span>Dejanos tu correo y te avisamos cuando vuelva.</span>
-      <small>También podemos buscarlo especialmente por encargo.</small>
+      <strong>Vendimos todos los ejemplares disponibles.</strong>
+      <span>Si querés, lo buscamos para vos.</span>
     </div>`;
 
     const actionHtml = inStock
@@ -329,8 +336,11 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
       <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         💬 Consultar por WhatsApp
       </a>`
-        : `${waitlistSiteKey ? `<form class="waitlist-form" id="aviso-stock" novalidate>
-        <label for="waitlist-email">Correo electrónico</label>
+        : `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+        Consultar si podemos conseguirlo
+      </a>
+      ${waitlistSiteKey ? `<form class="waitlist-form" id="aviso-stock" novalidate>
+        <label for="waitlist-email">O dejanos tu correo y te avisamos si vuelve</label>
         <div class="waitlist-row">
           <input id="waitlist-email" name="email" type="email" inputmode="email"
                  autocomplete="email" maxlength="254" required
@@ -343,10 +353,7 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
         <div class="cf-turnstile" data-sitekey="${escapeHtml(waitlistSiteKey)}"
              data-action="stock_waitlist" data-theme="light"></div>
         <p class="waitlist-status" id="waitlist-status" role="status" aria-live="polite"></p>
-      </form>` : `<p class="waitlist-unavailable">El aviso por correo no está disponible en este ambiente.</p>`}
-      <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
-        Buscarlo por encargo por WhatsApp
-      </a>`;
+      </form>` : ''}`;
 
     const schemaBreadcrumb = {
         '@context': 'https://schema.org',
