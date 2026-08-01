@@ -186,6 +186,34 @@ test('stock-1: valida un pausado desde su bloque cuando no está en catalog.json
   assert.equal([...db.rows.values()][0].product_id, PAUSED.id);
 });
 
+test('CF-STOCK-1-UX-FIX: en producción también valida un pausado desde su bloque cuando no está en catalog.json', async () => {
+  // Regresión: el fallback a fetchPausedItem estaba hardcodeado a
+  // APP_ENV==='preview' y nunca se actualizó cuando CF-R2-2-BRIDGE
+  // generalizó el resto del catálogo pausado a producción. Un libro
+  // genuinamente pausado devolvía 404 "Libro no encontrado" en
+  // producción antes de llegar a D1 — confirmado con 0 filas reales en
+  // producción tras dos envíos humanos.
+  const db = memoryDb();
+  const hooks = {};
+  const handler = makeHandler({
+    catalog: { items: [ACTIVE] },
+    pausedItem: PAUSED,
+    hooks,
+  });
+  const { response, data } = await call(
+    handler,
+    db,
+    validBody(),
+    { APP_ENV: 'production', ALLOWED_HOSTS: 'www.amadolibros.com' },
+    { url: 'https://www.amadolibros.com/api/stock-waitlist' },
+  );
+
+  assert.equal(response.status, 201);
+  assert.equal(data.registered, true);
+  assert.equal(hooks.pausedItemCalls, 1);
+  assert.equal([...db.rows.values()][0].product_id, PAUSED.id);
+});
+
 test('stock-1: Producción nunca intenta crear el esquema en runtime', async () => {
   const db = memoryDb();
   const originalPrepare = db.prepare;
