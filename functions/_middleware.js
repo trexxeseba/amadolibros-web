@@ -14,9 +14,22 @@
  *      cubiertos por astro-front/public/_headers).
  */
 
+import { perfNow } from './_shared/perf.js';
+
+function appendServerTiming(headers, name, duration) {
+    const rounded = Math.round(duration * 100) / 100;
+    const current = headers.get('Server-Timing');
+    headers.set(
+        'Server-Timing',
+        current ? `${current}, ${name};dur=${rounded}` : `${name};dur=${rounded}`,
+    );
+}
+
 export async function onRequest(context) {
+    const workerStartedAt = perfNow();
     const url = new URL(context.request.url);
     const isPreview = url.hostname.endsWith('.pages.dev');
+    const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
 
     // --- Producción: redirect non-www → www ---
     if (!isPreview && url.hostname === 'amadolibros.com') {
@@ -38,14 +51,33 @@ export async function onRequest(context) {
 
     // --- Preview: inyectar noindex en todas las respuestas de functions ---
     if (isPreview) {
+        const middlewareBeforeMs = perfNow() - workerStartedAt;
         const response = await context.next();
         const newHeaders = new Headers(response.headers);
+        appendServerTiming(newHeaders, 'middleware_before', middlewareBeforeMs);
+        appendServerTiming(newHeaders, 'worker_total', perfNow() - workerStartedAt);
         newHeaders.set('X-Robots-Tag',  'noindex, nofollow');
-        newHeaders.set('Cache-Control', 'no-store');
+        newHeaders.set(
+            'Cache-Control',
+            isHashedAstroAsset
+                ? 'public, max-age=31536000, immutable'
+                : 'no-store',
+        );
         return new Response(response.body, {
             status:     response.status,
             statusText: response.statusText,
             headers:    newHeaders,
+        });
+    }
+
+    if (isHashedAstroAsset) {
+        const response = await context.next();
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+        return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders,
         });
     }
 

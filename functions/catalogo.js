@@ -17,7 +17,19 @@
  */
 
 import { slugify } from './_shared/slug.js';
-import { BASE, fetchCatalog } from './_shared/catalog.js';
+import {
+    BASE,
+    fetchActiveIndex,
+    fetchCatalog,
+    fetchPausedIndex,
+} from './_shared/catalog.js';
+import {
+    ensurePerf,
+    perfNow,
+    perfSummary,
+    recordPerf,
+    serverTimingValue,
+} from './_shared/perf.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
@@ -73,27 +85,44 @@ function httpsImg(url) {
 }
 
 export async function onRequest(ctx) {
-    const catalog = await fetchCatalog(ctx);
-    const items   = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
-
-    // El índice SEO sin búsqueda mantiene únicamente disponibles. Los pausados
-    // y activos sin stock existen para la búsqueda humana como "por encargo".
-    const eligibleItems = items.filter(
-        b => b.status === 'active' || b.status === 'paused'
-    );
-    const activeItems = eligibleItems.filter(
-        b => b.status === 'active' && Number(b.available_quantity) > 0
-    );
-
+    const requestStartedAt = perfNow();
+    ensurePerf(ctx);
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
+    // CF-R2-2-BRIDGE: habilitado explícitamente en Preview y producción — cada
+    // uno con su propio manifest (ver manifestUrlFor en _shared/catalog.js).
+    // Si el manifest del entorno falta o es inválido, fetchActiveIndex/
+    // fetchPausedIndex devuelven null y el fallback de abajo usa
+    // fetchCatalog() igual que antes — nunca 500 por esto.
+    const useCompactSearch = Boolean(rawQ) &&
+        ['preview', 'production'].includes(ctx.env?.APP_ENV);
+    const [activeIndex, pausedIndex] = useCompactSearch
+        ? await Promise.all([fetchActiveIndex(ctx), fetchPausedIndex(ctx)])
+        : [null, null];
+    // El catálogo completo sólo se necesita para home/índice sin búsqueda,
+    // producción o fallback de una versión compacta ausente/corrupta.
+    const catalog = !useCompactSearch || !Array.isArray(activeIndex?.items)
+        ? await fetchCatalog(ctx)
+        : null;
+    const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
+    const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
+    const previewBase = ctx.env?.APP_ENV === 'preview'
+        ? new URL(ctx.request.url).origin
+        : BASE;
+
+    // Home e índice SEO leen exclusivamente catalog.json. El índice pausado se
+    // solicita sólo cuando Preview recibe una búsqueda con texto.
+    const activeItems = Array.isArray(activeIndex?.items)
+        ? activeIndex.items
+        : items.filter(b => b.status === 'active' && Number(b.available_quantity) > 0);
+    const eligibleItems = rawQ ? [...activeItems, ...pausedItems] : activeItems;
     const safeQ = escapeHtml(rawQ);
 
     // ── Sin query: índice SEO completo (comportamiento original) ─────────────
     if (!rawQ) {
         const rows = activeItems.map(b => {
             const slug   = slugify(b.title);
-            const href   = `${BASE}/libro/${b.id}/${slug}`;
+            const href   = `${previewBase}/libro/${b.id}/${slug}`;
             const author = b.author ? ` — ${escapeHtml(b.author)}` : '';
             return `    <li><a href="${escapeHtml(href)}">${escapeHtml(b.title)}${author}</a></li>`;
         }).join('\n');
@@ -173,6 +202,7 @@ ${rows}
     // "zzzinexistente999" no debe coincidir con ISBN que contengan 999.
     const queryDigits = /^[\d\s-]+$/.test(rawQ.trim()) ? onlyDigits(rawQ) : '';
 
+    const searchStartedAt = perfNow();
     const filtered = eligibleItems
         .filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
         .sort((a, b) => {
@@ -180,12 +210,13 @@ ${rows}
             const bAvailable = b.status === 'active' && Number(b.available_quantity) > 0;
             return Number(bAvailable) - Number(aAvailable);
         });
+    recordPerf(ctx, 'search', searchStartedAt);
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
 
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
-        const href  = escapeHtml(`${BASE}/libro/${b.id}/${slug}`);
+        const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
         const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
         const title = escapeHtml(b.title);
         const author = b.author
@@ -196,7 +227,7 @@ ${rows}
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const loading  = idx < 8 ? 'eager' : 'lazy';
-        const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar disponibilidad de: ${b.title}`)}`;
+        const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
         const imgTag = img
             ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
             : `<div class="rc-no-img">📚</div>`;
@@ -204,7 +235,7 @@ ${rows}
         return `<article class="rc-card${available ? '' : ' is-order'}">
   <a href="${href}" class="rc-img">${imgTag}</a>
   <div class="rc-body">
-    <span class="rc-badge ${available ? 'available' : 'order'}">${available ? 'Disponible' : 'Por encargo'}</span>
+    <span class="rc-badge ${available ? 'available' : 'order'}">${available ? 'Disponible' : 'No disponible'}</span>
     <a href="${href}" class="rc-title-link"><p class="rc-title">${title}</p></a>
     ${author}
     ${available
@@ -214,10 +245,11 @@ ${rows}
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
       : `<div class="rc-order-info">
-      <strong>Entrega estimada: 15–20 días</strong>
-      <span>Sujeto a confirmación de disponibilidad.</span>
+      <strong>No disponible por el momento</strong>
+      <span>Podés pedir que te avisemos cuando vuelva.</span>
     </div>
-    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Consultar disponibilidad</a>`
+    <a href="${href}#aviso-stock" class="rc-cta">Avisame cuando llegue</a>
+    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Buscarlo por encargo</a>`
     }
   </div>
 </article>`;
@@ -229,6 +261,7 @@ ${rows}
             ? `Mostrando los primeros ${MAX_RESULTS} de ${filtered.length} resultados.`
             : `${filtered.length} resultado${filtered.length === 1 ? '' : 's'}.`;
 
+    const renderStartedAt = perfNow();
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -328,10 +361,28 @@ ${rows}
 </body>
 </html>`;
 
+    recordPerf(ctx, 'render', renderStartedAt);
+    const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;
+    const serverTiming = serverTimingValue(ctx, [{
+        name: 'route_total',
+        duration_ms: totalDuration,
+    }]);
+    const cacheStatus = ctx.data.perf.cache.miss > 0 ? 'MISS' : 'HIT';
+    console.log(JSON.stringify(perfSummary(ctx, {
+        route: '/catalogo',
+        mode: useCompactSearch ? 'compact' : 'full',
+        result_count: filtered.length,
+        total_ms: totalDuration,
+    })));
+
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=300',
+            'server-timing': serverTiming,
+            'x-cache-status': cacheStatus,
+            'x-perf-cache-hits': String(ctx.data.perf.cache.hit),
+            'x-perf-cache-misses': String(ctx.data.perf.cache.miss),
         },
     });
 }

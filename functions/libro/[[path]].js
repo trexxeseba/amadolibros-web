@@ -14,7 +14,7 @@
  */
 
 import { slugify } from '../_shared/slug.js';
-import { BASE, fetchCatalog } from '../_shared/catalog.js';
+import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 
 const WA = '59899841325';
 
@@ -82,6 +82,14 @@ function formatDimensions(dimensions) {
     if (isValidDimensionValue(dimensions.weight)) rows.push(`Peso ${dimensions.weight}`);
 
     return rows.length ? rows.join(' · ') : null;
+}
+
+function buildPausedWaMessage(item) {
+    let msg = `Hola, me interesa conseguir “${item.title}”`;
+    if (item.author) msg += `, de ${item.author}`;
+    if (item.isbn) msg += ` (${item.isbn})`;
+    msg += '. ¿Podrían buscarlo por encargo?';
+    return msg;
 }
 
 function detailRow(label, value) {
@@ -219,7 +227,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-function renderPage(item, slug, isPreview) {
+function renderPage(item, slug, isPreview, waitlistSiteKey) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
@@ -236,7 +244,7 @@ function renderPage(item, slug, isPreview) {
     const waMsg         = encodeURIComponent(
         inStock
             ? `Hola! Me interesa: ${item.title}`
-            : `Hola Amado Libros, quiero consultar disponibilidad de: ${item.title}`
+            : buildPausedWaMessage(item)
     );
 
     const detailRows = [
@@ -250,7 +258,7 @@ function renderPage(item, slug, isPreview) {
             'Disponibilidad',
             inStock
                 ? `${stockQty} disponible${stockQty === 1 ? '' : 's'}`
-                : 'Por encargo — entrega estimada 15–20 días'
+                : 'No disponible por el momento'
         ),
     ].filter(Boolean).join('\n');
 
@@ -258,7 +266,7 @@ function renderPage(item, slug, isPreview) {
         ? (safeAuthor
             ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
             : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
-        : `Consultá disponibilidad de &quot;${safeTitle}&quot; por encargo en Amado Libros. Entrega estimada de 15–20 días, sujeta a confirmación.`;
+        : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
     const schemaProduct = {
@@ -305,9 +313,8 @@ function renderPage(item, slug, isPreview) {
       <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
     </div>`
         : `<div class="order-box">
-      <strong>Por encargo</strong>
-      <span>Entrega estimada: 15–20 días</span>
-      <small>Sujeto a confirmación de disponibilidad.</small>
+      <strong>Vendimos todos los ejemplares disponibles.</strong>
+      <span>Si querés, lo buscamos para vos.</span>
     </div>`;
 
     const actionHtml = inStock
@@ -330,8 +337,23 @@ function renderPage(item, slug, isPreview) {
         💬 Consultar por WhatsApp
       </a>`
         : `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
-        💬 Consultar disponibilidad
-      </a>`;
+        Consultar si podemos conseguirlo
+      </a>
+      ${waitlistSiteKey ? `<form class="waitlist-form" id="aviso-stock" novalidate>
+        <label for="waitlist-email">O dejanos tu correo y te avisamos si vuelve</label>
+        <div class="waitlist-row">
+          <input id="waitlist-email" name="email" type="email" inputmode="email"
+                 autocomplete="email" maxlength="254" required
+                 placeholder="tu@email.com">
+          <button class="btn btn-waitlist" type="submit">Avisame cuando llegue</button>
+        </div>
+        <div class="waitlist-hp" aria-hidden="true">
+          <label>Empresa <input name="company" type="text" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div class="cf-turnstile" data-sitekey="${escapeHtml(waitlistSiteKey)}"
+             data-action="stock_waitlist" data-theme="light"></div>
+        <p class="waitlist-status" id="waitlist-status" role="status" aria-live="polite"></p>
+      </form>` : ''}`;
 
     const schemaBreadcrumb = {
         '@context': 'https://schema.org',
@@ -453,6 +475,25 @@ function renderPage(item, slug, isPreview) {
     .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
               cursor:pointer;width:100%}
     .btn-cart:disabled{opacity:.7;cursor:default}
+    .waitlist-form{background:#fff;border:1px solid #d8d1c7;border-radius:.65rem;
+                   padding:1rem;scroll-margin-top:1rem}
+    .waitlist-form label{display:block;font-size:.82rem;font-weight:700;color:#334155;
+                         margin-bottom:.35rem}
+    .waitlist-row{display:flex;gap:.55rem;align-items:stretch}
+    .waitlist-row input{min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:.5rem;
+                        padding:.75rem;font:inherit;color:#1e293b}
+    .waitlist-row input:focus{outline:2px solid #a94e3d;outline-offset:1px}
+    .btn-waitlist{background:#a94e3d;color:#fff;border:0;font-family:inherit;
+                  cursor:pointer;white-space:nowrap;padding:.75rem 1rem}
+    .btn-waitlist:disabled{opacity:.65;cursor:wait}
+    .waitlist-hp{position:absolute!important;left:-10000px!important;width:1px!important;
+                 height:1px!important;overflow:hidden!important}
+    .cf-turnstile{margin-top:.75rem;min-height:65px}
+    .waitlist-status{font-size:.84rem;color:#475569;margin-top:.45rem;min-height:1.3em}
+    .waitlist-status.is-error{color:#b42318}
+    .waitlist-status.is-ok{color:#16733a;font-weight:700}
+    .waitlist-unavailable{font-size:.85rem;color:#64748b}
+    @media(max-width:520px){.waitlist-row{flex-direction:column}.btn-waitlist{width:100%}}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
     footer{background:#1e293b;color:#94a3b8;text-align:center;
@@ -485,7 +526,7 @@ function renderPage(item, slug, isPreview) {
   <div class="info">
     <h1>${safeTitle}</h1>
     <span class="badge ${inStock ? 'in-stock' : 'out-of-stock'}">
-      ${inStock ? '✓ En stock' : '⏳ Por encargo'}
+      ${inStock ? '✓ En stock' : 'No disponible'}
     </span>
     ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     ${priceHtml}
@@ -494,7 +535,7 @@ function renderPage(item, slug, isPreview) {
     </div>
     <p class="shipping">${inStock
       ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000.'
-      : '🌎 Lo buscamos por encargo en el exterior. Confirmamos disponibilidad, precio y plazo antes de avanzar.'
+      : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
     } <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
 </main>
@@ -527,6 +568,55 @@ function renderPage(item, slug, isPreview) {
     });
   });
 }());<\/script>
+${!inStock && waitlistSiteKey ? `
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer><\/script>
+<script>(function(){
+  var form=document.getElementById('aviso-stock');
+  if(!form)return;
+  var status=document.getElementById('waitlist-status');
+  var button=form.querySelector('button[type="submit"]');
+  function show(message,kind){
+    status.textContent=message;
+    status.className='waitlist-status '+(kind||'');
+  }
+  form.addEventListener('submit',async function(event){
+    event.preventDefault();
+    var email=form.elements.email.value.trim();
+    var tokenInput=form.querySelector('input[name="cf-turnstile-response"]');
+    var token=tokenInput?tokenInput.value:'';
+    if(!email){show('Ingresá tu correo.','is-error');form.elements.email.focus();return;}
+    if(!token){show('Completá la verificación antes de continuar.','is-error');return;}
+    button.disabled=true;
+    button.textContent='Guardando…';
+    show('','');
+    try{
+      var response=await fetch('/api/stock-waitlist',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          product_id:${JSON.stringify(item.id)},
+          email:email,
+          company:form.elements.company.value,
+          source_path:window.location.pathname,
+          cf_turnstile_response:token
+        })
+      });
+      var data={};
+      try{data=await response.json();}catch(_error){}
+      if(!response.ok)throw new Error(data.error||'No pudimos guardar el aviso.');
+      show(data.already_registered
+        ? 'Ya teníamos registrado este correo para este libro.'
+        : 'Pronto. Te avisaremos cuando vuelva a estar disponible.','is-ok');
+      form.elements.email.value='';
+    }catch(error){
+      show(error&&error.message?error.message:'No pudimos guardar el aviso. Intentá nuevamente.','is-error');
+    }finally{
+      button.disabled=false;
+      button.textContent='Avisame cuando llegue';
+      if(window.turnstile)window.turnstile.reset();
+    }
+  });
+}());<\/script>` : ''}
 
 </body>
 </html>`;
@@ -551,27 +641,42 @@ export async function onRequest(context) {
 
     // Cargar catálogo (con edge cache)
     const catalog = await fetchCatalog(context);
-    if (!catalog || !Array.isArray(catalog.items)) {
+    const activeCatalogAvailable = catalog && Array.isArray(catalog.items);
+    let item = activeCatalogAvailable
+        ? catalog.items.find(b => b.id === id)
+        : null;
+    // CF-R2-2-BRIDGE: habilitado en Preview y producción — cada uno resuelve
+    // contra su propio manifest (fetchPausedItem -> manifestUrlFor en
+    // _shared/catalog.js). Si el manifest de ese entorno falta o es
+    // inválido, fetchPausedItem devuelve null y el flujo sigue igual que
+    // hoy (notFound), sin 500.
+    if (!item && ['preview', 'production'].includes(context.env?.APP_ENV)) {
+        item = await fetchPausedItem(context, id);
+    }
+    if (!item && !activeCatalogAvailable) {
         return new Response('Error al cargar el catálogo. Intentá de nuevo en unos segundos.', {
             status: 503,
             headers: { 'content-type': 'text/plain;charset=UTF-8' },
         });
     }
-
-    const item = catalog.items.find(b => b.id === id);
     if (!item) return notFound();
 
     const slug = slugify(item.title);
+    const isPreview = context.env?.APP_ENV === 'preview';
+    const navigationBase = isPreview
+        ? new URL(context.request.url).origin
+        : BASE;
 
     // Redirect 301 si no viene el slug
     if (!providedSlug) {
-        return Response.redirect(`${BASE}/libro/${id}/${slug}`, 301);
+        return Response.redirect(`${navigationBase}/libro/${id}/${slug}`, 301);
     }
 
-    const host      = new URL(context.request.url).hostname;
-    const isPreview = host !== 'www.amadolibros.com';
+    const waitlistSiteKey = typeof context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY === 'string'
+        ? context.env.STOCK_WAITLIST_TURNSTILE_SITE_KEY.trim()
+        : '';
 
-    return new Response(renderPage(item, slug, isPreview), {
+    return new Response(renderPage(item, slug, isPreview, waitlistSiteKey), {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',

@@ -25,6 +25,20 @@ binding = "ORDERS_DB"
 database_name = "amadolibros-orders-preview"
 database_id = "6fa387af-f29e-46dc-97e5-30298568b4a6"
 
+# CF-R2-1: binding R2 directo, únicamente en Preview — jamás en Production.
+# Mismo bucket que ya usa worker-sync/wrangler.toml (binding CATALOG_R2 ahí,
+# CATALOG_BUCKET acá — nombres distintos a propósito para no confundir el
+# Worker de sync con las Pages Functions). Usado exclusivamente por
+# functions/api/cf-r2-1.js para comparar contra el acceso actual vía r2.dev;
+# no reemplaza ninguna lectura de producción todavía. Si Cloudflare Pages no
+# adjunta este binding automáticamente a partir de este archivo, hace falta
+# que alguien con acceso al dashboard lo agregue a mano en Settings →
+# Functions → R2 bucket bindings del entorno Preview — confirmar antes de
+# asumir que ya funciona.
+[[env.preview.r2_buckets]]
+binding     = "CATALOG_BUCKET"
+bucket_name = "amadolibros-catalog"
+
 # Vars no secretas de Preview — env.preview.vars aplica a TODOS los
 # preview deployments del proyecto, no solo a esta rama. CANONICAL_ORIGIN
 # queda fijado al alias de esta rama porque Cloudflare Pages no permite
@@ -36,6 +50,9 @@ APP_ENV           = "preview"
 MP_COLLECTOR_ID   = "3559407834"
 CHECKOUT_ENABLED  = "true"
 CANONICAL_ORIGIN  = "https://feature-2-n-e1-production-re.amadolibros-web.pages.dev"
+STOCK_WAITLIST_TURNSTILE_SITE_KEY = "0x4AAAAAAD6E9kz8K3comwjj"
+SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
+SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"
 
 # ── Producción (2-K-E2) ───────────────────────────────────────────────────
 # Base D1 propia, con database_id DISTINTO al de Preview — nunca reutilizar
@@ -67,5 +84,6 @@ CHECKOUT_ENABLED  = "true"
 CANONICAL_ORIGIN  = "https://www.amadolibros.com"
 ALLOWED_HOSTS     = "amadolibros.com,www.amadolibros.com"
 MP_COLLECTOR_ID   = "440298103"
+STOCK_WAITLIST_TURNSTILE_SITE_KEY = "0x4AAAAAAD_Ul8KGae_hdWwj"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"

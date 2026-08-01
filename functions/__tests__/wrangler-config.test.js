@@ -32,6 +32,10 @@ const wranglerToml   = readFileSync(path.join(ROOT, 'wrangler.toml'), 'utf8');
 const deployYml      = readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
 const ciYml          = readFileSync(path.join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 const validateCiSh   = readFileSync(path.join(ROOT, 'scripts', 'validate-ci.sh'), 'utf8');
+const stockPreviewYml = readFileSync(
+  path.join(ROOT, '.github', 'workflows', 'deploy-stock-1-preview.yml'),
+  'utf8',
+);
 const carritoAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'pages', 'carrito.astro'),
   'utf8',
@@ -50,6 +54,7 @@ function extractTomlSection(toml, header) {
 }
 
 const productionVars = extractTomlSection(wranglerToml, '[env.production.vars]');
+const previewVars = extractTomlSection(wranglerToml, '[env.preview.vars]');
 
 test('wrangler.toml: Producción resuelve MP_COLLECTOR_ID=440298103', () => {
   assert.match(productionVars, /MP_COLLECTOR_ID\s*=\s*"440298103"/);
@@ -74,6 +79,50 @@ test('wrangler.toml: Producción declara remitente y destinatarios de email', ()
     productionVars,
     /SALES_NOTIFICATION_TO\s*=\s*"undiaes@gmail\.com,adm@amadolibros\.com"/,
   );
+});
+
+test('wrangler.toml: STOCK-1 declara la site key pública correcta en Preview y Producción', () => {
+  assert.match(
+    previewVars,
+    new RegExp(`STOCK_WAITLIST_TURNSTILE_SITE_KEY\\s*=\\s*"${PREVIEW_SITE_KEY}"`),
+  );
+  assert.match(
+    productionVars,
+    new RegExp(`STOCK_WAITLIST_TURNSTILE_SITE_KEY\\s*=\\s*"${PRODUCTION_SITE_KEY}"`),
+  );
+});
+
+test('wrangler.toml: Preview declara destinatarios internos sin declarar RESEND_API_KEY', () => {
+  assert.match(
+    previewVars,
+    /SALES_NOTIFICATION_FROM\s*=\s*"Amado Libros <web@notificaciones\.amadolibros\.com>"/,
+  );
+  assert.match(
+    previewVars,
+    /SALES_NOTIFICATION_TO\s*=\s*"undiaes@gmail\.com,adm@amadolibros\.com"/,
+  );
+  assert.doesNotMatch(previewVars, /RESEND_API_KEY/);
+});
+
+test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
+  assert.match(stockPreviewYml, /refs\/heads\/agent\/stock-1-preview/);
+  assert.match(stockPreviewYml, /--branch agent\/stock-1-preview/);
+  assert.match(stockPreviewYml, /PUBLIC_INDEXABLE:\s*'false'/);
+  assert.match(stockPreviewYml, /PUBLIC_CHECKOUT_ENABLED:\s*'false'/);
+  assert.doesNotMatch(stockPreviewYml, /d1 migrations apply/);
+  assert.doesNotMatch(stockPreviewYml, /--branch main/);
+  assert.doesNotMatch(stockPreviewYml, /env\.production/);
+  assert.match(stockPreviewYml, /--var STOCK1_PREVIEW_PUBLISH_ENABLED:true/);
+  assert.match(stockPreviewYml, /stock1-preview\/manifest\.json/);
+  assert.match(stockPreviewYml, /index_bytes/);
+  assert.match(stockPreviewYml, /max_block_bytes/);
+  assert.match(stockPreviewYml, /catalog\.json changed|catalog\.json cambiaron/);
+  assert.match(stockPreviewYml, /index_gzip_bytes/);
+  assert.match(stockPreviewYml, /active_index_gzip_decompress/);
+  assert.match(stockPreviewYml, /paused_index_gzip_decompress/);
+  assert.match(stockPreviewYml, /Manifest anterior aún cacheado/);
+  assert.match(stockPreviewYml, /GZIP_CONFIRMED/);
+  assert.doesNotMatch(stockPreviewYml, /--branch main/);
 });
 
 test('wrangler.toml: Producción no declara secrets', () => {
@@ -187,4 +236,21 @@ test('carrito.astro: no contiene ninguna site key de Turnstile hardcodeada', () 
 
 test('carrito.astro: la site key se lee de PUBLIC_TURNSTILE_SITE_KEY, no de un literal', () => {
   assert.match(carritoAstro, /import\.meta\.env\.PUBLIC_TURNSTILE_SITE_KEY/);
+});
+
+// ── CF-R2-1: binding R2 exclusivo de Preview ────────────────────────────────
+
+test('wrangler.toml: el binding R2 de CF-R2-1 existe solo en env.preview, nunca en env.production', () => {
+  assert.match(wranglerToml, /\[\[env\.preview\.r2_buckets\]\]/);
+  assert.match(wranglerToml, /binding\s*=\s*"CATALOG_BUCKET"/);
+  assert.match(wranglerToml, /bucket_name\s*=\s*"amadolibros-catalog"/);
+  assert.doesNotMatch(wranglerToml, /\[\[env\.production\.r2_buckets\]\]/);
+});
+
+test('wrangler.toml: CATALOG_BUCKET usa el mismo bucket real que worker-sync (amadolibros-catalog)', () => {
+  const workerSyncToml = readFileSync(
+    path.join(ROOT, 'worker-sync', 'wrangler.toml'),
+    'utf8',
+  );
+  assert.match(workerSyncToml, /bucket_name\s*=\s*"amadolibros-catalog"/);
 });

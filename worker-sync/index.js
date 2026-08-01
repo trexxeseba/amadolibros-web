@@ -8,6 +8,14 @@
  *   fetch(request)   — POST /trigger con header Authorization: Bearer <SYNC_SECRET>
  *                      para disparar sync manualmente.
  *                    — GET /status con el mismo header para auditar KV + R2.
+ *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
+ *                    — POST /publish-preview-catalog escribe únicamente el catálogo
+ *                      separado de STOCK-1 (prefijo stock1-preview/*) cuando la
+ *                      versión aislada lo habilita.
+ *                    — POST /publish-production-catalog escribe el catálogo
+ *                      productivo separado (prefijo catalog/*, nunca
+ *                      stock1-preview/*) cuando PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED
+ *                      lo habilita. No toca catalog.json ni meta.json.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -34,6 +42,18 @@
 import { getAccessToken } from './meli-auth.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
+import {
+  addCompressedIndexes,
+  buildManifest,
+  buildPausedCatalogArtifacts,
+  PAUSED_MANIFEST_KEY,
+  PAUSED_PREFIX_ROOT,
+  PRODUCTION_MANIFEST_KEY,
+  PRODUCTION_PREFIX_ROOT,
+} from './paused-catalog.js';
+
+export const STOCK1_PREVIEW_CATALOG_KEY = PAUSED_MANIFEST_KEY;
+export const PRODUCTION_CATALOG_KEY = PRODUCTION_MANIFEST_KEY;
 
 export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
@@ -60,8 +80,29 @@ export default {
       return json(await readStatus(env));
     }
 
+    if (request.method === 'POST' && url.pathname === '/measure') {
+      const result = await runMeasure(env);
+      return json(result, result.status === 'measured' ? 200 : 500);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/publish-preview-catalog') {
+      if (String(env.STOCK1_PREVIEW_PUBLISH_ENABLED) !== 'true') {
+        return json({ error: 'Not found.' }, 404);
+      }
+      const result = await runPreviewCatalogPublish(env);
+      return json(result, result.status === 'published-preview' ? 200 : 500);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/publish-production-catalog') {
+      if (String(env.PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED) !== 'true') {
+        return json({ error: 'Not found.' }, 404);
+      }
+      const result = await runProductionCatalogPublish(env);
+      return json(result, result.status === 'published-production' ? 200 : 500);
+    }
+
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
-      return json({ error: 'Not found. Use POST /trigger or GET /status.' }, 404);
+      return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
     }
 
     const mode = url.searchParams.get('mode') || 'async';
@@ -83,6 +124,267 @@ export default {
   },
 };
 
+// ── Medición segura ─────────────────────────────────────────────────────────
+
+export function summarizeCatalog(catalog) {
+  const items = Array.isArray(catalog?.items) ? catalog.items : [];
+  const active = items.filter(
+    item => item.status === 'active' && Number(item.available_quantity) > 0
+  ).length;
+  const paused = items.filter(item => item.status === 'paused').length;
+  const activeWithoutStock = items.filter(
+    item => item.status === 'active' && Number(item.available_quantity) <= 0
+  ).length;
+  const ids = items.map(item => item.id).filter(Boolean);
+  const duplicateIds = ids.length - new Set(ids).size;
+  const invalid = items.filter(
+    item => !item.id || !item.title || !['active', 'paused'].includes(item.status)
+  ).length;
+  const bytes = new TextEncoder().encode(JSON.stringify(catalog)).length;
+  return {
+    total: items.length,
+    active,
+    paused,
+    active_without_stock: activeWithoutStock,
+    duplicate_ids: duplicateIds,
+    invalid,
+    bytes,
+    mebibytes: Math.round((bytes / 1024 / 1024) * 100) / 100,
+  };
+}
+
+export async function runMeasure(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  try {
+    const accessToken = await getAccessTokenFn(env);
+    const catalog = await buildCatalogFn(env, accessToken);
+    return {
+      status: 'measured',
+      checked_at: new Date().toISOString(),
+      catalog: summarizeCatalog(catalog),
+      published: false,
+    };
+  } catch (err) {
+    console.error(`[Measure] Error: ${err.message}`);
+    return {
+      status: 'error',
+      checked_at: new Date().toISOString(),
+      published: false,
+      error: String(err.message || 'Error').slice(0, 400),
+    };
+  }
+}
+
+// CF-R2-2-BRIDGE: lógica compartida entre Preview y producción. Sólo
+// difieren en el flag que lo habilita, el manifest/prefijo de R2 destino y
+// la etiqueta de scope — nunca en el algoritmo de construcción/verificación.
+async function publishPausedCatalog(env, {
+  getAccessTokenFn,
+  buildCatalogFn,
+  enabledFlag,
+  manifestKey,
+  prefixRoot,
+  scope,
+  statusOk,
+  errorLabel,
+}) {
+  if (String(env?.[enabledFlag]) !== 'true') {
+    return {
+      status: 'error',
+      published: false,
+      error: `${errorLabel} catalog publishing is disabled.`,
+    };
+  }
+  if (!env?.CATALOG_R2 || typeof env.CATALOG_R2.put !== 'function') {
+    return {
+      status: 'error',
+      published: false,
+      error: 'CATALOG_R2 binding is unavailable.',
+    };
+  }
+
+  try {
+    const accessToken = await getAccessTokenFn(env);
+    const catalog = await buildCatalogFn(env, accessToken);
+    const summary = summarizeCatalog(catalog);
+
+    if (summary.invalid > 0 || summary.duplicate_ids > 0 || summary.paused === 0) {
+      throw new Error(
+        `Catálogo ${errorLabel} inválido: paused=${summary.paused}, ` +
+        `duplicate_ids=${summary.duplicate_ids}, invalid=${summary.invalid}.`
+      );
+    }
+
+    const artifacts = await addCompressedIndexes(
+      buildPausedCatalogArtifacts(catalog, { prefixRoot }),
+    );
+    const previousManifest = await readExistingManifest(env.CATALOG_R2, manifestKey, errorLabel);
+    const manifest = buildManifest(artifacts, previousManifest);
+
+    await putCatalogArtifact(
+      env.CATALOG_R2,
+      artifacts.active_index.key,
+      artifacts.active_index.body,
+      'application/json',
+      scope,
+    );
+    await putCatalogArtifact(
+      env.CATALOG_R2,
+      artifacts.active_index.gzip_key,
+      artifacts.active_index.gzip_body,
+      'application/gzip',
+      scope,
+    );
+    await putCatalogArtifact(env.CATALOG_R2, artifacts.index.key, artifacts.index.body, 'application/json', scope);
+    await putCatalogArtifact(
+      env.CATALOG_R2,
+      artifacts.index.gzip_key,
+      artifacts.index.gzip_body,
+      'application/gzip',
+      scope,
+    );
+    for (const block of artifacts.blocks) {
+      await putCatalogArtifact(env.CATALOG_R2, block.key, block.body, 'application/json', scope);
+    }
+    await verifyCatalogArtifacts(env.CATALOG_R2, artifacts);
+
+    // El manifest es el único puntero mutable y se publica último. Si cualquier
+    // escritura o verificación anterior falla, este entorno conserva la
+    // versión previa — nunca queda en un estado a medio publicar.
+    const manifestBody = JSON.stringify(manifest);
+    await env.CATALOG_R2.put(manifestKey, manifestBody, {
+      httpMetadata: {
+        contentType: 'application/json',
+        cacheControl: 'public, max-age=60',
+      },
+      customMetadata: {
+        scope,
+        publication: 'atomic-pointer',
+      },
+    });
+
+    const samplePaused = catalog.items.find(item => item.status === 'paused') || null;
+    return {
+      status: statusOk,
+      published: true,
+      production_catalog_modified: false,
+      key: manifestKey,
+      checked_at: new Date().toISOString(),
+      catalog: summary,
+      paused_catalog: {
+        version: artifacts.version,
+        total: artifacts.total,
+        index_bytes: artifacts.index.bytes,
+        index_gzip_bytes: artifacts.index.gzip_bytes,
+        block_count: artifacts.block_count,
+        max_block_bytes: artifacts.max_block_bytes,
+        total_detail_bytes: artifacts.total_detail_bytes,
+        previous_version: manifest.previous?.version || null,
+      },
+      active_catalog: {
+        total: artifacts.active_index.total,
+        index_bytes: artifacts.active_index.bytes,
+        index_gzip_bytes: artifacts.active_index.gzip_bytes,
+      },
+      data_quality: catalog.data_quality || null,
+      sample_paused: samplePaused
+        ? { id: samplePaused.id, title: samplePaused.title }
+        : null,
+    };
+  } catch (err) {
+    console.error(`[${errorLabel} catalog] Error: ${err.message}`);
+    return {
+      status: 'error',
+      published: false,
+      production_catalog_modified: false,
+      key: manifestKey,
+      error: String(err.message || 'Error').slice(0, 400),
+    };
+  }
+}
+
+export async function runPreviewCatalogPublish(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  return publishPausedCatalog(env, {
+    getAccessTokenFn,
+    buildCatalogFn,
+    enabledFlag: 'STOCK1_PREVIEW_PUBLISH_ENABLED',
+    manifestKey: PAUSED_MANIFEST_KEY,
+    prefixRoot: PAUSED_PREFIX_ROOT,
+    scope: 'stock-1-preview-only',
+    statusOk: 'published-preview',
+    errorLabel: 'Preview',
+  });
+}
+
+export async function runProductionCatalogPublish(env, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+} = {}) {
+  return publishPausedCatalog(env, {
+    getAccessTokenFn,
+    buildCatalogFn,
+    enabledFlag: 'PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED',
+    manifestKey: PRODUCTION_MANIFEST_KEY,
+    prefixRoot: PRODUCTION_PREFIX_ROOT,
+    scope: 'production',
+    statusOk: 'published-production',
+    errorLabel: 'Production',
+  });
+}
+
+async function readExistingManifest(bucket, manifestKey, errorLabel) {
+  if (typeof bucket.get !== 'function') return null;
+  try {
+    const object = await bucket.get(manifestKey);
+    if (!object) return null;
+    const parsed = JSON.parse(await object.text());
+    return parsed?.schema_version === 1 ? parsed : null;
+  } catch (error) {
+    console.warn(`[${errorLabel} catalog] No se pudo leer manifest anterior: ${error.message}`);
+    return null;
+  }
+}
+
+async function putCatalogArtifact(bucket, key, body, contentType, scope) {
+  await bucket.put(key, body, {
+    httpMetadata: {
+      contentType,
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+    customMetadata: {
+      scope,
+      publication: 'immutable-version',
+    },
+  });
+}
+
+async function verifyCatalogArtifacts(bucket, artifacts) {
+  if (typeof bucket.head !== 'function') {
+    throw new Error('CATALOG_R2.head no está disponible para verificar publicación.');
+  }
+  const expected = [
+    { key: artifacts.active_index.key, bytes: artifacts.active_index.bytes },
+    { key: artifacts.active_index.gzip_key, bytes: artifacts.active_index.gzip_bytes },
+    { key: artifacts.index.key, bytes: artifacts.index.bytes },
+    { key: artifacts.index.gzip_key, bytes: artifacts.index.gzip_bytes },
+    ...artifacts.blocks.map(block => ({ key: block.key, bytes: block.bytes })),
+  ];
+  for (const artifact of expected) {
+    const object = await bucket.head(artifact.key);
+    if (!object || Number(object.size) !== artifact.bytes) {
+      throw new Error(
+        `Verificación R2 falló para ${artifact.key}: ` +
+        `esperado=${artifact.bytes}, recibido=${object?.size ?? 'null'}.`
+      );
+    }
+  }
+}
+
 // ── Sync principal ────────────────────────────────────────────────────────────
 
 async function runSync(env, options = {}) {
@@ -97,7 +399,9 @@ async function runSync(env, options = {}) {
     console.log('[Sync] Access token obtenido.');
 
     // 2. Catálogo
-    const catalog = await buildCatalog(env, accessToken);
+    // El catálogo público conserva únicamente publicaciones activas. Los
+    // pausados se generan por el flujo versionado y aislado de Preview.
+    const catalog = await buildCatalog(env, accessToken, { statuses: ['active'] });
 
     // 3. Publicar en R2 (staging → validación → promote)
     const finishedAt = new Date().toISOString();

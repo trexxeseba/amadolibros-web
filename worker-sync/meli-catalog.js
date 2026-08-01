@@ -40,15 +40,17 @@ const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enric
  * @param {string} accessToken — ML access token vigente
  * @returns {{ total, updated_at, items }}
  */
-export async function buildCatalog(env, accessToken) {
+export async function buildCatalog(env, accessToken, { statuses = ['active', 'paused'] } = {}) {
   const userId         = env.USER_ID;
   const minActiveItems = parseInt(env.MIN_ACTIVE_ITEMS || '500', 10);
 
   console.log(`[Catalog] Iniciando fetch para seller ${userId}`);
 
-  // Paso 1: obtener activos + pausados en recorridos separados. Consultar cada
-  // estado explícitamente evita depender del estado predeterminado de la API.
-  const allIds = await fetchAllIds(userId, accessToken, ['active', 'paused']);
+  // Paso 1: consultar explícitamente cada estado solicitado. Preview pide
+  // activos + pausados; el catálogo público pide únicamente activos.
+  const requestedStatuses = statuses.filter(status => ['active', 'paused'].includes(status));
+  if (requestedStatuses.length === 0) throw new Error('[Catalog] No se solicitó un estado publicable.');
+  const allIds = await fetchAllIds(userId, accessToken, requestedStatuses);
   console.log(`[Catalog] IDs obtenidos: ${allIds.length}`);
 
   if (allIds.length === 0) {
@@ -60,9 +62,10 @@ export async function buildCatalog(env, accessToken) {
   console.log(`[Catalog] Detalles obtenidos: ${rawItems.length} de ${allIds.length}`);
 
   // Paso 3: slim + filtro. Closed/deleted/under_review siguen fuera del sitio.
+  const dataQuality = createDataQualitySummary();
   const catalogItems = rawItems
     .filter(raw => raw.status === 'active' || raw.status === 'paused')
-    .map(slimItem);
+    .map(raw => slimItem(raw, dataQuality));
   const activeItems = catalogItems.filter(
     item => item.status === 'active' && Number(item.available_quantity) > 0
   );
@@ -88,6 +91,7 @@ export async function buildCatalog(env, accessToken) {
     active_total: activeItems.length,
     order_total:  orderItems.length,
     updated_at: updatedAt,
+    data_quality: dataQuality,
     items:      catalogItems,
   };
 }
@@ -170,7 +174,7 @@ async function fetchDetails(ids, accessToken) {
  * libro/[[path]].js, sitemap.xml.js, feed.xml.js, /api/catalog).
  * Versión enriquecida: incluye pictures[], isbn, publisher, pages, dimensions, condition.
  */
-function slimItem(raw) {
+export function slimItem(raw, dataQuality = createDataQualitySummary()) {
   const attrs = raw.attributes || [];
   return {
     id:                 raw.id,
@@ -187,7 +191,7 @@ function slimItem(raw) {
     isbn:               extractIsbn(attrs),
     publisher:          extractPublisher(attrs),
     pages:              extractPages(attrs),
-    dimensions:         extractDimensions(attrs),
+    dimensions:         extractDimensions(attrs, dataQuality),
   };
 }
 
@@ -235,17 +239,156 @@ function extractPages(attrs) {
   return isNaN(n) ? null : n;
 }
 
-function extractDimensions(attrs) {
-  const weight = getAttrValue(attrs, ['WEIGHT']);
-  const height = getAttrValue(attrs, ['HEIGHT']);
-  const width  = getAttrValue(attrs, ['WIDTH']);
-  const length = getAttrValue(attrs, ['LENGTH', 'DEPTH']);
-  if (!weight && !height && !width && !length) return null;
+export function createDataQualitySummary() {
   return {
-    ...(weight && { weight }),
-    ...(height && { height }),
-    ...(width  && { width  }),
-    ...(length && { length }),
+    items_with_valid_measurements: 0,
+    valid_dimension_fields: 0,
+    valid_weight_fields: 0,
+    omitted_dimension_fields: 0,
+    omitted_weight_fields: 0,
+    unknown_unit_fields: 0,
+  };
+}
+
+const DIMENSION_ATTRS = [
+  ['height', ['HEIGHT']],
+  ['width', ['WIDTH']],
+  ['length', ['LENGTH', 'DEPTH']],
+];
+
+function findAttr(attrs, ids) {
+  const allowed = new Set(ids.map(value => value.toUpperCase()));
+  return (attrs || []).find(attr => allowed.has(String(attr?.id || '').toUpperCase())) || null;
+}
+
+function parseMeasurement(attr) {
+  if (!attr) return { present: false };
+  if (attr.value_struct?.number != null) {
+    return {
+      present: true,
+      number: Number(attr.value_struct.number),
+      unit: String(attr.value_struct.unit || '').trim(),
+    };
+  }
+
+  const raw = String(attr.value_name ?? attr.value ?? '').trim();
+  if (!raw) return { present: true, number: NaN, unit: '' };
+  const match = raw.replace(',', '.').match(/^(-?\d+(?:\.\d+)?)\s*([^\d\s].*)?$/u);
+  return {
+    present: true,
+    number: match ? Number(match[1]) : NaN,
+    unit: match ? String(match[2] || '').trim() : '',
+  };
+}
+
+function normalizedUnit(unit) {
+  return String(unit || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('.', '')
+    .replace(/\s+/g, '');
+}
+
+function round(value, decimals = 2) {
+  const factor = 10 ** decimals;
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function normalizeDimension(attr) {
+  const parsed = parseMeasurement(attr);
+  if (!parsed.present) return { present: false };
+  const unit = normalizedUnit(parsed.unit);
+  const factors = {
+    mm: 0.1,
+    millimeter: 0.1,
+    millimeters: 0.1,
+    milimetro: 0.1,
+    milimetros: 0.1,
+    cm: 1,
+    centimeter: 1,
+    centimeters: 1,
+    centimetro: 1,
+    centimetros: 1,
+    m: 100,
+    meter: 100,
+    meters: 100,
+    metro: 100,
+    metros: 100,
+  };
+  if (!Object.hasOwn(factors, unit)) return { present: true, valid: false, unknownUnit: true };
+  const centimeters = parsed.number * factors[unit];
+  if (!Number.isFinite(centimeters) || centimeters < 0.1 || centimeters > 100) {
+    return { present: true, valid: false, unknownUnit: false };
+  }
+  return { present: true, valid: true, value: `${round(centimeters)} cm` };
+}
+
+function normalizeWeight(attr) {
+  const parsed = parseMeasurement(attr);
+  if (!parsed.present) return { present: false };
+  const unit = normalizedUnit(parsed.unit);
+  const factors = {
+    mg: 0.001,
+    milligram: 0.001,
+    milligrams: 0.001,
+    miligramo: 0.001,
+    miligramos: 0.001,
+    g: 1,
+    gr: 1,
+    gram: 1,
+    grams: 1,
+    gramo: 1,
+    gramos: 1,
+    kg: 1000,
+    kilogram: 1000,
+    kilograms: 1000,
+    kilogramo: 1000,
+    kilogramos: 1000,
+  };
+  if (!Object.hasOwn(factors, unit)) return { present: true, valid: false, unknownUnit: true };
+  const grams = parsed.number * factors[unit];
+  if (!Number.isFinite(grams) || grams < 1 || grams > 15000) {
+    return { present: true, valid: false, unknownUnit: false };
+  }
+  const value = grams >= 1000
+    ? `${round(grams / 1000, 3)} kg`
+    : `${round(grams)} g`;
+  return { present: true, valid: true, value };
+}
+
+export function extractDimensions(attrs, dataQuality = createDataQualitySummary()) {
+  const dimensions = {};
+  let validFields = 0;
+
+  for (const [field, ids] of DIMENSION_ATTRS) {
+    const result = normalizeDimension(findAttr(attrs, ids));
+    if (!result.present) continue;
+    if (result.valid) {
+      dimensions[field] = result.value;
+      dataQuality.valid_dimension_fields++;
+      validFields++;
+    } else {
+      dataQuality.omitted_dimension_fields++;
+      if (result.unknownUnit) dataQuality.unknown_unit_fields++;
+    }
+  }
+
+  const weight = normalizeWeight(findAttr(attrs, ['WEIGHT']));
+  if (weight.present) {
+    if (weight.valid) {
+      dimensions.weight = weight.value;
+      dataQuality.valid_weight_fields++;
+      validFields++;
+    } else {
+      dataQuality.omitted_weight_fields++;
+      if (weight.unknownUnit) dataQuality.unknown_unit_fields++;
+    }
+  }
+
+  if (validFields > 0) dataQuality.items_with_valid_measurements++;
+  if (validFields === 0) return null;
+  return {
+    ...dimensions,
   };
 }
 

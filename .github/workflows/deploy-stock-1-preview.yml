@@ -1,0 +1,203 @@
+name: Deploy STOCK-1 Preview
+
+on:
+  push:
+    branches:
+      - agent/stock-1-preview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stock-1-preview
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Guard Preview ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Block every other branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/agent/stock-1-preview" ]; then
+            echo "Deploy bloqueado: este workflow solo publica agent/stock-1-preview."
+            exit 1
+          fi
+
+  validate:
+    name: Validate STOCK-1
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - name: Validate shared suite
+        run: bash scripts/validate-ci.sh
+
+  publish-preview-catalog:
+    name: Publish separate Preview catalog
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Upload isolated Worker version
+        id: upload
+        working-directory: worker-sync
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          OUTPUT=$(npx wrangler@4.107.0 versions upload \
+            --preview-alias stock-measure \
+            --keep-vars \
+            --var STOCK1_PREVIEW_PUBLISH_ENABLED:true \
+            --message "STOCK-1 medicion sin despliegue")
+          echo "$OUTPUT"
+
+          PREVIEW_URL=$(echo "$OUTPUT" | grep -Eo 'https://[^[:space:]]+\.workers\.dev' | tail -1)
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "ERROR: Wrangler no devolvió la URL de Preview."
+            exit 1
+          fi
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Publish fixed Preview-only R2 key
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          CATALOG_URL="https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json"
+          BEFORE=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
+          sleep 10
+          RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
+            -X POST "$PREVIEW_URL/publish-preview-catalog" \
+            -H "Authorization: Bearer $SYNC_SECRET")
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+
+          echo "HTTP status: $HTTP_STATUS"
+          echo "PREVIEW_CATALOG_RESULT=$BODY"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "ERROR: /publish-preview-catalog respondió HTTP $HTTP_STATUS."
+            exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"published":true'; then
+            echo "ERROR: la respuesta no confirmó published=true."
+            exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"production_catalog_modified":false'; then
+            echo "ERROR: no se confirmó que catalog.json quedó intacto."
+            exit 1
+          fi
+          if ! echo "$BODY" | grep -q '"key":"stock1-preview/manifest.json"'; then
+            echo "ERROR: el Worker no confirmó el manifest fijo de Preview."
+            exit 1
+          fi
+          echo "$BODY" | node -e '
+            let input="";
+            process.stdin.on("data", chunk => input += chunk);
+            process.stdin.on("end", () => {
+              const result = JSON.parse(input);
+              const paused = result.paused_catalog || {};
+              const active = result.active_catalog || {};
+              if (!(active.total > 0 && active.index_bytes > 0 && active.index_bytes < 2097152)) {
+                throw new Error(`Índice activo fuera de objetivo: ${active.index_bytes}`);
+              }
+              if (!(active.index_gzip_bytes > 0 && active.index_gzip_bytes < active.index_bytes)) {
+                throw new Error(`Gzip activo inválido: ${active.index_gzip_bytes}`);
+              }
+              if (!(paused.index_bytes > 0 && paused.index_bytes < 2097152)) {
+                throw new Error(`Índice fuera de objetivo: ${paused.index_bytes}`);
+              }
+              if (!(paused.index_gzip_bytes > 0 && paused.index_gzip_bytes < paused.index_bytes)) {
+                throw new Error(`Gzip pausado inválido: ${paused.index_gzip_bytes}`);
+              }
+              if (!(paused.block_count >= 64 && paused.block_count <= 256)) {
+                throw new Error(`Cantidad de bloques inválida: ${paused.block_count}`);
+              }
+              if (!(paused.max_block_bytes > 0 && paused.max_block_bytes < 204800)) {
+                throw new Error(`Bloque fuera de objetivo: ${paused.max_block_bytes}`);
+              }
+            });
+          '
+          AFTER=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
+          if [ "$BEFORE" != "$AFTER" ]; then
+            echo "ERROR: las cabeceras de catalog.json cambiaron durante la publicación."
+            echo "ANTES=$BEFORE"
+            echo "DESPUÉS=$AFTER"
+            exit 1
+          fi
+
+  deploy-preview:
+    name: Deploy Preview
+    needs: publish-preview-catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      - name: Build protected Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'false'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: npm run build
+
+      - name: Deploy branch to Cloudflare Pages Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch agent/stock-1-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Benchmark instrumented search
+        run: |
+          PREVIEW_URL="https://agent-stock-1-preview.amadolibros-web.pages.dev"
+          GZIP_CONFIRMED=false
+          for ATTEMPT in 1 2 3 4 5 6 7 8; do
+            HEADERS=$(mktemp)
+            curl -sS --retry 5 --retry-all-errors --retry-delay 3 \
+              --max-time 60 -D "$HEADERS" -o /dev/null \
+              "$PREVIEW_URL/catalogo?q=alpha"
+            TIMING=$(tr -d '\r' < "$HEADERS" | grep -i '^server-timing:' || true)
+            echo "PERF_ATTEMPT_${ATTEMPT}=$TIMING"
+            if echo "$TIMING" | grep -q 'active_index_gzip_decompress' &&
+               echo "$TIMING" | grep -q 'paused_index_gzip_decompress'; then
+              GZIP_CONFIRMED=true
+              break
+            fi
+            echo "Manifest anterior aún cacheado; reintento en 15 segundos."
+            sleep 15
+          done
+          if [ "$GZIP_CONFIRMED" != "true" ]; then
+            echo "ERROR: la búsqueda no confirmó ambos índices gzip tras 8 intentos."
+            exit 1
+          fi
