@@ -1,0 +1,128 @@
+---
+// Página aislada de sólo-lectura para aprobar variantes de logo/favicon
+// antes de tocar Header.astro / BaseLayout.astro. No forma parte del sitio
+// real, no se linkea desde ningún lado, noindex. Se borra cuando se apruebe
+// HOME-1 y se implemente de verdad.
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Amado Libros</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo-preview/icon-transparent-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/logo-preview/icon-transparent-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logo-preview/icon-transparent-180.png">
+  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap">
+  <style>
+    :root {
+      --bg: #f8f5ef; --ink: #18120e; --ink-2: #6b6157;
+      --header-bg: rgba(18, 14, 11, 0.97);
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-ui: 'Inter', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-ui); background: var(--bg); color: var(--ink); padding: 2rem 1.25rem 5rem; }
+    h1 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 0.25rem; }
+    .note { color: var(--ink-2); font-size: 0.9rem; max-width: 60ch; margin-bottom: 2.5rem; }
+    section { margin-bottom: 3rem; }
+    h2 { font-size: 1.05rem; margin-bottom: 0.9rem; }
+    .swatch-label { font-size: 0.78rem; color: var(--ink-2); margin-top: 0.4rem; }
+
+    /* ── Header horizontal, mismos colores/fuente que Header.astro real ── */
+    .header-mock {
+      background: var(--header-bg);
+      border-radius: 0.75rem;
+      padding: 0 1.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      max-width: 480px;
+    }
+    .header-mock img { width: 36px; height: 36px; flex-shrink: 0; }
+    .brand-stack { display: flex; flex-direction: column; line-height: 1.2; gap: 0.1rem; }
+    .brand-name { font-family: var(--font-ui); font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: -0.015em; }
+    .brand-sub { font-size: 0.6875rem; color: rgba(255,255,255,0.38); }
+
+    /* ── Comparativa de tamaño de ícono (favicon real, sin escalar por CSS) ── */
+    .favicon-row { display: flex; align-items: center; gap: 2.5rem; flex-wrap: wrap; }
+    .favicon-item { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .tab-mock {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: #dee1e6; border-radius: 8px 8px 0 0;
+      padding: 0.45rem 0.8rem; font-size: 0.78rem; color: #3c4043;
+      font-family: var(--font-ui);
+    }
+    .tab-mock img { width: 16px; height: 16px; }
+    .px32 { image-rendering: pixelated; width: 32px; height: 32px; }
+    .px32-big { width: 96px; height: 96px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; max-width: 700px; }
+    .card { background: #fff; border: 1px solid #e2dbd0; border-radius: 0.75rem; padding: 1.25rem; text-align: center; }
+    .card img { width: 140px; height: 140px; margin: 0 auto 0.75rem; }
+    .card.dark { background: var(--header-bg); }
+    .card.dark .swatch-label { color: rgba(255,255,255,0.6); }
+  </style>
+</head>
+<body>
+  <h1>Variantes de logo — para aprobar antes de HOME-1</h1>
+  <p class="note">
+    Página aislada, no forma parte del sitio (noindex, sin links). Fuente: la imagen circular que pasaste (idéntica a
+    <code>astro-front/public/images/logo-amado.jpg</code> ya en el repo). Recorte del gato+libro sin la tipografía en
+    arco, sin deformar ni estirar ningún píxel — sólo recorte circular + máscara de transparencia sobre el fondo gris
+    plano original.
+  </p>
+
+  <section>
+    <h2>1. Variante horizontal para el encabezado</h2>
+    <p class="note" style="margin-bottom:1rem">
+      El ícono (recorte gato+libro, fondo transparente) al lado del texto real "Amado Libros" — el texto sigue siendo
+      HTML/CSS en vivo (Inter, igual que hoy), no una imagen. Mismos colores y tamaños que el header real.
+    </p>
+    <div class="header-mock">
+      <img src="/images/logo-preview/icon-transparent-512.png" alt="Amado Libros">
+      <div class="brand-stack">
+        <span class="brand-name">Amado Libros</span>
+        <span class="brand-sub">Librería uruguaya</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Variante simplificada para el favicon</h2>
+    <p class="note" style="margin-bottom:1rem">
+      La pestaña de este navegador ya está usando la variante A (fondo transparente) ahora mismo — mirá el ícono en la
+      pestaña del browser. Abajo, las dos opciones de fondo a tamaño real (32px, como se ve en una pestaña) y ampliadas.
+    </p>
+    <div class="favicon-row">
+      <div class="favicon-item">
+        <div class="tab-mock"><img src="/images/logo-preview/icon-transparent-32.png" alt=""><span>Amado Libros</span></div>
+        <img class="px32-big" src="/images/logo-preview/icon-transparent-32.png" alt="">
+        <span class="swatch-label">A — fondo transparente (recomendada)</span>
+      </div>
+      <div class="favicon-item">
+        <div class="tab-mock"><img src="/images/logo-preview/icon-disc-32.png" alt=""><span>Amado Libros</span></div>
+        <img class="px32-big" src="/images/logo-preview/icon-disc-32.png" alt="">
+        <span class="swatch-label">B — disco gris original, sin transparencia</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. El mismo ícono sobre fondo claro y oscuro (contraste)</h2>
+    <div class="grid-2">
+      <div class="card">
+        <img src="/images/logo-preview/icon-transparent-512.png" alt="">
+        <span class="swatch-label">Sobre fondo claro (--bg)</span>
+      </div>
+      <div class="card dark">
+        <img src="/images/logo-preview/icon-transparent-512.png" alt="">
+        <span class="swatch-label">Sobre fondo oscuro (--header-bg)</span>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
