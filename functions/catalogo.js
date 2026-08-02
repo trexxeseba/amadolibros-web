@@ -1,13 +1,18 @@
 /**
  * functions/catalogo.js
  *
- * Página de índice SSR — vector de descubrimiento para Googlebot.
+ * Página de índice SSR — vector de descubrimiento para Googlebot y catálogo
+ * navegable para compradores.
  *
  * PROPÓSITO SEO:
  *   La home (index.html) carga los libros vía JS client-side (fetch R2 → DOM).
  *   Googlebot puede ejecutar JS, pero lo hace en una segunda pasada con delay.
  *   Esta página sirve HTML estático con <a href="/libro/{id}/{slug}"> para
- *   cada libro activo, permitiendo descubrimiento en el primer crawl pass.
+ *   cada libro, permitiendo descubrimiento en el primer crawl pass. El
+ *   listado completo para crawlers vive en sitemap.xml (no tocado acá);
+ *   esta página muestra sus primeros 48 resultados como grilla de cards,
+ *   igual que cualquier vista filtrada — nunca una lista de texto plano
+ *   (CF-CATEGORÍAS-2D punto 4.1: causa raíz del bug reportado).
  *
  *   Es una página visible y accesible para usuarios (no un div oculto).
  *   Linked desde el footer de index.html y listada en el sitemap.
@@ -15,14 +20,20 @@
  * DATOS: R2 catalog.json — misma fuente que libro/[[path]].js y sitemap.xml.js.
  *
  * CF-CATEGORÍAS-2C (solo Preview): filtro por categoría (?categoria=) y
- * subcategoría (?subcategoria=) sobre el catálogo ACTIVO, usando el
+ * subcategoría (?subcategoria=) sobre el catálogo público, usando el
  * artefacto compacto generado por scripts/categorize/export-active-categories.js
- * (mlu -> [categoryId, subcategoryId?], TODOS los activos — incluye
+ * (mlu -> [categoryId, subcategoryId?], activos + pausados — incluye
  * "otros-productos" para lo que no es un libro, visible, no oculto).
  * Combinable con ?q=, con orden de relevancia (ISBN exacto > título exacto
  * > título empieza con > frase en título > autor exacto > todas las
- * palabras > coincidencia parcial). Fuera de Preview, los parámetros se
- * ignoran por completo — catálogo sin cambios.
+ * palabras > coincidencia parcial), con el estado comercial (activa antes
+ * que pausada) como desempate. Fuera de Preview, los parámetros se ignoran
+ * por completo — catálogo sin cambios.
+ *
+ * CF-CATEGORÍAS-2D (solo Preview): las pausadas se muestran públicamente,
+ * mezcladas con las activas, con badge "Disponible por encargo" y CTA
+ * "Pedir este libro" (WhatsApp) en vez de compra directa — nunca entran al
+ * checkout, nunca muestran un precio no garantizado.
  */
 
 import { slugify } from './_shared/slug.js';
@@ -150,6 +161,18 @@ function fuzzyMatches(book, queryTokens) {
     return titleWords.some(w => w.length >= 4 && levenshteinAtMost1(q, w));
 }
 
+// CF-CATEGORÍAS-2D punto 3.4: el estado comercial solo desempata — a
+// relevancia equivalente, activa antes que pausada. Dentro de "activa",
+// con stock disponible antes que sin stock (comportamiento previo,
+// CF-STOCK-1). Nunca gana contra una diferencia real de relevancia: el
+// sort principal es por `rank`, esto solo decide entre empates.
+function commercialTier(b) {
+    if (b.status === 'active' && Number(b.available_quantity) > 0) return 0;
+    if (b.status === 'active') return 1;
+    if (b.status === 'paused') return 2;
+    return 3;
+}
+
 function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
 }
@@ -260,6 +283,18 @@ const CAT_SELECT_STYLES = `
     }
 `;
 
+// CF-CATEGORÍAS-2D punto 3.1: mensaje de WhatsApp autocompletado para pedir
+// una pausada por encargo — título, autor (si existe), MLU siempre, y la
+// URL de la ficha cuando existe. Nunca se muestra "pausado"/"paused" en el
+// texto visible.
+function buildOrderWaMessage(book, href) {
+    let msg = `Hola, quiero consultar por encargo el libro "${book.title}"`;
+    if (book.author) msg += `, de ${book.author}`;
+    msg += `. Referencia: ${book.id}.`;
+    if (href) msg += ` ${href}`;
+    return msg;
+}
+
 export async function onRequest(ctx) {
     const requestStartedAt = perfNow();
     ensurePerf(ctx);
@@ -268,10 +303,12 @@ export async function onRequest(ctx) {
     const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
     const rawSubcategoria = url.searchParams.get('subcategoria')?.trim() ?? '';
 
-    // CF-CATEGORÍAS-2C: el filtro de categoría solo existe en Preview — en
-    // producción los parámetros se ignoran completamente, catálogo sin cambios.
-    const categoryFeatureEnabled = ctx.env?.APP_ENV === 'preview';
-    const categoryData = categoryFeatureEnabled ? await fetchActiveCategories(ctx) : null;
+    // CF-CATEGORÍAS-2C/2D: el filtro de categoría y la inclusión de pausadas
+    // solo existen en Preview — en producción los parámetros se ignoran
+    // completamente y no se muestran pausadas, catálogo sin cambios, hasta
+    // que una revisión aparte apruebe llevar esto a producción.
+    const previewFeaturesEnabled = ctx.env?.APP_ENV === 'preview';
+    const categoryData = previewFeaturesEnabled ? await fetchActiveCategories(ctx) : null;
     const categories = categoryData?.categories || [];
     const categoryItems = categoryData?.items || {}; // mlu -> [categoryId, subcategoryId?]
     const validCategoryIds = new Set(categories.map(c => c.id));
@@ -292,10 +329,17 @@ export async function onRequest(ctx) {
     // fetchCatalog() igual que antes — nunca 500 por esto.
     const useCompactSearch = Boolean(rawQ) &&
         ['preview', 'production'].includes(ctx.env?.APP_ENV);
-    const [activeIndex, pausedIndex] = useCompactSearch
-        ? await Promise.all([fetchActiveIndex(ctx), fetchPausedIndex(ctx)])
-        : [null, null];
-    // El catálogo completo sólo se necesita para home/índice sin búsqueda,
+    // CF-CATEGORÍAS-2D: las pausadas participan de "Todos" incluso sin
+    // búsqueda en Preview — se piden siempre que la funcionalidad de
+    // Preview esté habilitada, no solo cuando hay ?q=. En producción se
+    // preserva el comportamiento CF-R2-2-BRIDGE previo: pausadas solo se
+    // piden cuando hay búsqueda compacta.
+    const needPausedIndex = previewFeaturesEnabled || useCompactSearch;
+    const [activeIndex, pausedIndex] = await Promise.all([
+        useCompactSearch ? fetchActiveIndex(ctx) : Promise.resolve(null),
+        needPausedIndex ? fetchPausedIndex(ctx) : Promise.resolve(null),
+    ]);
+    // El catálogo completo sólo se necesita para el índice sin compactar,
     // producción o fallback de una versión compacta ausente/corrupta.
     const catalog = !useCompactSearch || !Array.isArray(activeIndex?.items)
         ? await fetchCatalog(ctx)
@@ -306,14 +350,13 @@ export async function onRequest(ctx) {
         ? new URL(ctx.request.url).origin
         : BASE;
 
-    // Home e índice SEO leen exclusivamente catalog.json. El índice pausado se
-    // solicita sólo cuando Preview recibe una búsqueda con texto.
     const activeItems = Array.isArray(activeIndex?.items)
         ? activeIndex.items
         : items.filter(b => b.status === 'active' && Number(b.available_quantity) > 0);
-    // "Todos" (CF-CATEGORÍAS-2C punto 1) — el catálogo activo completo, sin
-    // recorte por clasificación: cualquier activo sin filtro sigue visible.
-    const eligibleItemsRaw = rawQ ? [...activeItems, ...pausedItems] : activeItems;
+    // "Todos" (CF-CATEGORÍAS-2C/2D) = activas visibles + pausadas visibles,
+    // exactamente — ninguna exclusión por confianza, ninguna cerrada o
+    // eliminada (esas nunca llegan a activeIndex/pausedIndex).
+    const eligibleItemsRaw = [...activeItems, ...pausedItems];
     // Nunca duplicar un MLU en la grilla — red de seguridad aunque
     // activos/pausados deberían ser conjuntos disjuntos por construcción.
     const seenIds = new Set();
@@ -325,74 +368,12 @@ export async function onRequest(ctx) {
     const safeQ = escapeHtml(rawQ);
     const hasFilter = Boolean(rawQ) || Boolean(categoria);
 
-    // ── Sin ningún filtro: índice SEO completo (comportamiento original) ─────
-    if (!hasFilter) {
-        const rows = activeItems.map(b => {
-            const slug   = slugify(b.title);
-            const href   = `${previewBase}/libro/${b.id}/${slug}`;
-            const author = b.author ? ` — ${escapeHtml(b.author)}` : '';
-            return `    <li><a href="${escapeHtml(href)}">${escapeHtml(b.title)}${author}</a></li>`;
-        }).join('\n');
-
-        const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Comprar libros online en Uruguay | Amado Libros</title>
-  <meta name="description" content="${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $1.500. Envíos a todo el país.">
-  <link rel="canonical" href="${BASE}/catalogo">
-  <meta name="robots" content="index, follow">
-  <script type="application/ld+json">${JSON.stringify({
-    '@context':   'https://schema.org',
-    '@type':      'CollectionPage',
-    'name':       'Catálogo de libros importados y por encargo en Uruguay',
-    'url':        `${BASE}/catalogo`,
-    'description':'Catálogo de Amado Libros con libros importados, libros por encargo y títulos difíciles de conseguir en Uruguay.',
-    'isPartOf':   { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
-    'publisher':  { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
-  })}</script>
-  <style>
-    body   { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-             max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1e293b; background: #faf7f2; }
-    h1     { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.4rem; }
-    .sub   { color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem; }
-    ul     { list-style: none; padding: 0; column-count: 2; column-gap: 1.5rem; }
-    @media (max-width: 600px) { ul { column-count: 1; } }
-    li     { margin-bottom: 0.4rem; font-size: 0.82rem; break-inside: avoid; }
-    a      { color: #1c1917; text-decoration: none; }
-    a:hover { text-decoration: underline; color: #3b82f6; }
-    nav    { margin-bottom: 1.5rem; font-size: 0.85rem; }
-    nav a  { color: #3b82f6; }
-    footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;
-             font-size: 0.78rem; color: #94a3b8; }
-    ${CAT_SELECT_STYLES}
-  </style>
-</head>
-<body>
-  <nav><a href="/">← Amado Libros</a></nav>
-  <h1>Catálogo completo</h1>
-  <p class="sub">${activeItems.length} títulos disponibles.</p>
-  ${filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, selectedCategory })}
-  <ul>
-${rows}
-  </ul>
-  <footer>
-    <a href="/">Volver al catálogo</a> · <a href="/politicas">Políticas</a> ·
-    &copy; 2026 Amado Libros
-  </footer>
-</body>
-</html>`;
-
-        return new Response(html, {
-            headers: {
-                'content-type':  'text/html;charset=UTF-8',
-                'cache-control': 'public, max-age=3600',
-            },
-        });
-    }
-
-    // ── Con filtro (búsqueda y/o categoría): resultados visuales ──────────────
+    // ── Pipeline único de filtrado + orden — usado tanto para "Todos" (sin
+    // filtro) como para búsqueda/categoría. CF-CATEGORÍAS-2D punto 4.1: la
+    // versión anterior tenía una rama separada de solo-texto para "sin
+    // filtro" — esa rama, no la herramienta de captura, era la causa de la
+    // "lista textual en dos columnas" que vio Seba. Unificado: siempre
+    // cards.
     const queryTokens = tokenize(rawQ);
     // Solo interpretar la consulta como ISBN cuando contiene únicamente
     // números y separadores habituales. Una búsqueda alfanumérica como
@@ -418,9 +399,7 @@ ${rows}
         .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
             if (a.rank !== b.rank) return a.rank - b.rank;
-            const aAvailable = a.book.status === 'active' && Number(a.book.available_quantity) > 0;
-            const bAvailable = b.book.status === 'active' && Number(b.book.available_quantity) > 0;
-            return Number(bAvailable) - Number(aAvailable);
+            return commercialTier(a.book) - commercialTier(b.book);
         })
         .map(x => x.book);
     recordPerf(ctx, 'search', searchStartedAt);
@@ -436,34 +415,53 @@ ${rows}
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
         const available = b.status === 'active' && Number(b.available_quantity) > 0;
+        // El tratamiento "Disponible por encargo"/"Pedir este libro" es
+        // parte del lote de Preview (CF-CATEGORÍAS-2D) — en producción una
+        // pausada sigue mostrándose con el tratamiento previo (CF-STOCK-1),
+        // sin cambios de comportamiento fuera de Preview.
+        const isPaused   = b.status === 'paused' && previewFeaturesEnabled;
         const price     = Number(b.price) || 0;
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const loading  = idx < 8 ? 'eager' : 'lazy';
         const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
+        const orderWaHref = `${WA}?text=${encodeURIComponent(buildOrderWaMessage(b, href))}`;
         const imgTag = img
             ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
             : `<div class="rc-no-img">📚</div>`;
 
-        return `<article class="rc-card${available ? '' : ' is-order'}">
-  <a href="${href}" class="rc-img">${imgTag}</a>
-  <div class="rc-body">
-    <span class="rc-badge ${available ? 'available' : 'order'}">${available ? 'Disponible' : 'No disponible'}</span>
-    <a href="${href}" class="rc-title-link"><p class="rc-title">${title}</p></a>
-    ${author}
-    ${available
-      ? `<div class="rc-prices">
+        const badge = available
+            ? `<span class="rc-badge available">Disponible</span>`
+            : isPaused
+                ? `<span class="rc-badge order">Disponible por encargo</span>`
+                : `<span class="rc-badge order">No disponible</span>`;
+
+        const bodyCta = available
+            ? `<div class="rc-prices">
       <span class="rc-transfer"><span class="rc-lbl">Transferencia:</span> $${escapeHtml(transfer)}</span>
       <span class="rc-base">Precio: $${escapeHtml(priceStr)}</span>
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
-      : `<div class="rc-order-info">
+            : isPaused
+                ? `<div class="rc-order-info">
+      <strong>Disponible por encargo</strong>
+      <span>Precio y disponibilidad a confirmar.</span>
+    </div>
+    <a href="${escapeHtml(orderWaHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Pedir este libro</a>`
+                : `<div class="rc-order-info">
       <strong>No disponible por el momento</strong>
       <span>Podés pedir que te avisemos cuando vuelva.</span>
     </div>
     <a href="${href}#aviso-stock" class="rc-cta">Avisame cuando llegue</a>
-    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Buscarlo por encargo</a>`
-    }
+    <a href="${escapeHtml(waHref)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer">Buscarlo por encargo</a>`;
+
+        return `<article class="rc-card${available ? '' : ' is-order'}">
+  <a href="${href}" class="rc-img">${imgTag}</a>
+  <div class="rc-body">
+    ${badge}
+    <a href="${href}" class="rc-title-link"><p class="rc-title">${title}</p></a>
+    ${author}
+    ${bodyCta}
   </div>
 </article>`;
     }).join('\n');
@@ -484,12 +482,14 @@ ${rows}
         ? `Resultados para &ldquo;${safeQ}&rdquo; en ${filterLabel}`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo;`
-            : filterLabel;
+            : filterLabel || 'Catálogo completo';
     const pageTitle = rawQ && filterLabel
         ? `${safeQ} en ${filterLabel} — Amado Libros`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo; — Amado Libros`
-            : `${filterLabel} — Amado Libros`;
+            : filterLabel
+                ? `${filterLabel} — Amado Libros`
+                : 'Comprar libros online en Uruguay | Amado Libros';
     const emptyMessage = rawQ
         ? `Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''} o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.`
         : `Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.`;
@@ -501,6 +501,26 @@ ${rows}
     if (subcategoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedSubcategoryName)}</span>`);
     const chipsHtml = chips.length > 0 ? `<div class="active-filters">${chips.join('')}</div>` : '';
 
+    // Sin filtro: página de índice, indexable, con metadatos/JSON-LD ricos
+    // para SEO (comportamiento previo). Con filtro: noindex, evita
+    // contenido delgado/duplicado en resultados de búsqueda/categoría.
+    const isIndex = !hasFilter;
+    const metaDescription = isIndex
+        ? `${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $1.500. Envíos a todo el país.`
+        : 'Resultados en Amado Libros.';
+    const robotsMeta = isIndex ? 'index, follow' : 'noindex';
+    const jsonLd = isIndex
+        ? `<script type="application/ld+json">${JSON.stringify({
+            '@context':   'https://schema.org',
+            '@type':      'CollectionPage',
+            'name':       'Catálogo de libros importados y por encargo en Uruguay',
+            'url':        `${BASE}/catalogo`,
+            'description':'Catálogo de Amado Libros con libros importados, libros por encargo y títulos difíciles de conseguir en Uruguay.',
+            'isPartOf':   { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
+            'publisher':  { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
+          })}</script>`
+        : '';
+
     const renderStartedAt = perfNow();
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -508,9 +528,10 @@ ${rows}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${pageTitle}</title>
-  <meta name="description" content="Resultados en Amado Libros.">
+  <meta name="description" content="${metaDescription}">
   <link rel="canonical" href="${BASE}/catalogo">
-  <meta name="robots" content="noindex">
+  <meta name="robots" content="${robotsMeta}">
+  ${jsonLd}
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -609,7 +630,7 @@ ${rows}
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
-            'cache-control': 'public, max-age=300',
+            'cache-control': isIndex ? 'public, max-age=3600' : 'public, max-age=300',
             'server-timing': serverTiming,
             'x-cache-status': cacheStatus,
             'x-perf-cache-hits': String(ctx.data.perf.cache.hit),

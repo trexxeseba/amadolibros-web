@@ -109,18 +109,22 @@ test.beforeEach(() => {
   };
 });
 
-test('la búsqueda muestra pausados con acceso al aviso sin precio anterior', async () => {
+// CF-CATEGORÍAS-2D: en Preview, un pausado ya no se muestra como "No
+// disponible" (esa etiqueta queda para activos sin stock) — se muestra
+// como "Disponible por encargo" con CTA "Pedir este libro" por WhatsApp,
+// nunca con un precio no garantizado.
+test('la búsqueda muestra pausados como "Disponible por encargo", sin precio anterior', async () => {
   const response = await catalogRequest(
     context('https://preview.example/catalogo?q=Alpha+raro')
   );
   const html = await response.text();
 
-  assert.match(html, /No disponible/);
-  assert.match(html, /Avisame cuando llegue/);
-  assert.match(html, /Buscarlo por encargo/);
+  assert.match(html, /Disponible por encargo/);
+  assert.match(html, /Pedir este libro/);
   assert.match(html, /https:\/\/preview\.example\/libro\/MLU2\/alpha-raro/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
+  assert.doesNotMatch(html, /Ver ficha/);
 });
 
 test('la búsqueda Preview usa el índice activo compacto y conserva el precio', async () => {
