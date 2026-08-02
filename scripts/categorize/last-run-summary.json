@@ -1,0 +1,39 @@
+{
+  "run_at": "2026-08-02T02:35:49.407Z",
+  "taxonomy_version": 1,
+  "rules_version": 2,
+  "snapshot_fetched_at": "2026-08-02T02:30:10.654Z",
+  "mlu_unicos_procesados": 17148,
+  "reused_from_previous_run": 0,
+  "reclassified_this_run": 17148,
+  "manual_corrections_applied": 0,
+  "by_type": {
+    "book": 5106,
+    "object": 319,
+    "uncertain": 11723
+  },
+  "by_category": {
+    "medicina-salud": 367,
+    "educacion": 228,
+    "filosofia-ciencias-sociales": 138,
+    "literatura-ficcion": 293,
+    "psicologia": 377,
+    "infantil-juvenil": 617,
+    "esoterismo-tarot": 1005,
+    "cocina-gastronomia": 135,
+    "idiomas-aprendizaje": 434,
+    "desarrollo-personal": 331,
+    "religion-espiritualidad": 523,
+    "negocios-economia": 98,
+    "comics-manga": 292,
+    "arte-diseno-fotografia": 76,
+    "derecho": 12,
+    "ciencia-tecnologia": 89,
+    "historia": 91
+  },
+  "by_method": {
+    "rule": 17148
+  },
+  "needs_review": 11723,
+  "validation_errors": []
+}
