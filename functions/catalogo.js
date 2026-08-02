@@ -19,21 +19,21 @@
  *
  * DATOS: R2 catalog.json — misma fuente que libro/[[path]].js y sitemap.xml.js.
  *
- * CF-CATEGORÍAS-2C (solo Preview): filtro por categoría (?categoria=) y
- * subcategoría (?subcategoria=) sobre el catálogo público, usando el
- * artefacto compacto generado por scripts/categorize/export-active-categories.js
- * (mlu -> [categoryId, subcategoryId?], activos + pausados — incluye
- * "otros-productos" para lo que no es un libro, visible, no oculto).
- * Combinable con ?q=, con orden de relevancia (ISBN exacto > título exacto
- * > título empieza con > frase en título > autor exacto > todas las
- * palabras > coincidencia parcial), con el estado comercial (activa antes
- * que pausada) como desempate. Fuera de Preview, los parámetros se ignoran
- * por completo — catálogo sin cambios.
+ * CF-CATEGORÍAS-2C (Preview y producción): filtro por categoría
+ * (?categoria=) y subcategoría (?subcategoria=) sobre el catálogo público,
+ * usando el artefacto compacto generado por
+ * scripts/categorize/export-active-categories.js (mlu -> [categoryId,
+ * subcategoryId?], activos + pausados — incluye "otros-productos" para lo
+ * que no es un libro, visible, no oculto). Combinable con ?q=, con orden de
+ * relevancia (ISBN exacto > título exacto > título empieza con > frase en
+ * título > autor exacto > todas las palabras > coincidencia parcial), con
+ * el estado comercial (activa antes que pausada) como desempate.
  *
- * CF-CATEGORÍAS-2D (solo Preview): las pausadas se muestran públicamente,
- * mezcladas con las activas, con badge "Disponible por encargo" y CTA
- * "Pedir este libro" (WhatsApp) en vez de compra directa — nunca entran al
- * checkout, nunca muestran un precio no garantizado.
+ * CF-CATEGORÍAS-2D (Preview y producción, aprobado en PR #52): las
+ * pausadas se muestran públicamente, mezcladas con las activas, con badge
+ * "Disponible por encargo" y CTA "Pedir este libro" (WhatsApp) en vez de
+ * compra directa — nunca entran al checkout, nunca muestran un precio no
+ * garantizado.
  */
 
 import { slugify } from './_shared/slug.js';
@@ -178,7 +178,7 @@ function httpsImg(url) {
 }
 
 // CF-CATEGORÍAS-2 — artefacto compacto mlu->[categoryId,subcategoryId?],
-// solo Preview. Mismo patrón de cache de borde que fetchCatalog/
+// Preview y producción. Mismo patrón de cache de borde que fetchCatalog/
 // fetchActiveIndex (functions/_shared/catalog.js), pero deliberadamente
 // separado: este archivo es propio de este lote (no pertenece al catálogo
 // de MELI) y no debe volverse una dependencia de _shared/catalog.js sin
@@ -303,12 +303,13 @@ export async function onRequest(ctx) {
     const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
     const rawSubcategoria = url.searchParams.get('subcategoria')?.trim() ?? '';
 
-    // CF-CATEGORÍAS-2C/2D: el filtro de categoría y la inclusión de pausadas
-    // solo existen en Preview — en producción los parámetros se ignoran
-    // completamente y no se muestran pausadas, catálogo sin cambios, hasta
-    // que una revisión aparte apruebe llevar esto a producción.
-    const previewFeaturesEnabled = ctx.env?.APP_ENV === 'preview';
-    const categoryData = previewFeaturesEnabled ? await fetchActiveCategories(ctx) : null;
+    // CF-CATEGORÍAS-2C/2D: el filtro de categoría/subcategoría y la
+    // inclusión pública de pausadas están habilitados en Preview y en
+    // producción (aprobado explícitamente para producción — ver PR #52).
+    // Cualquier otro entorno (tests, dev local sin APP_ENV) los deja
+    // deshabilitados, catálogo sin cambios.
+    const categoryFeaturesEnabled = ['preview', 'production'].includes(ctx.env?.APP_ENV);
+    const categoryData = categoryFeaturesEnabled ? await fetchActiveCategories(ctx) : null;
     const categories = categoryData?.categories || [];
     const categoryItems = categoryData?.items || {}; // mlu -> [categoryId, subcategoryId?]
     const validCategoryIds = new Set(categories.map(c => c.id));
@@ -330,11 +331,9 @@ export async function onRequest(ctx) {
     const useCompactSearch = Boolean(rawQ) &&
         ['preview', 'production'].includes(ctx.env?.APP_ENV);
     // CF-CATEGORÍAS-2D: las pausadas participan de "Todos" incluso sin
-    // búsqueda en Preview — se piden siempre que la funcionalidad de
-    // Preview esté habilitada, no solo cuando hay ?q=. En producción se
-    // preserva el comportamiento CF-R2-2-BRIDGE previo: pausadas solo se
-    // piden cuando hay búsqueda compacta.
-    const needPausedIndex = previewFeaturesEnabled || useCompactSearch;
+    // búsqueda, en Preview y en producción — se piden siempre que la
+    // funcionalidad de categorías esté habilitada, no solo cuando hay ?q=.
+    const needPausedIndex = categoryFeaturesEnabled || useCompactSearch;
     const [activeIndex, pausedIndex] = await Promise.all([
         useCompactSearch ? fetchActiveIndex(ctx) : Promise.resolve(null),
         needPausedIndex ? fetchPausedIndex(ctx) : Promise.resolve(null),
@@ -415,11 +414,9 @@ export async function onRequest(ctx) {
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
         const available = b.status === 'active' && Number(b.available_quantity) > 0;
-        // El tratamiento "Disponible por encargo"/"Pedir este libro" es
-        // parte del lote de Preview (CF-CATEGORÍAS-2D) — en producción una
-        // pausada sigue mostrándose con el tratamiento previo (CF-STOCK-1),
-        // sin cambios de comportamiento fuera de Preview.
-        const isPaused   = b.status === 'paused' && previewFeaturesEnabled;
+        // Tratamiento "Disponible por encargo"/"Pedir este libro"
+        // (CF-CATEGORÍAS-2D) — habilitado en Preview y producción.
+        const isPaused   = b.status === 'paused' && categoryFeaturesEnabled;
         const price     = Number(b.price) || 0;
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');

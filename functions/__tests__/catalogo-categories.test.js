@@ -258,12 +258,14 @@ test('objetos (otros-productos) quedan visibles en su categoría, no excluidos',
   assert.match(html, /Vinilo The Beatles/);
 });
 
-test('fuera de Preview (producción), los parámetros de categoría se ignoran por completo', async () => {
+// CF-CATEGORÍAS-2C/2D aprobado para producción (PR #52): el filtro de
+// categoría ya no se limita a Preview.
+test('en producción, el filtro de categoría también funciona', async () => {
   const res = await catalogRequest(context('https://www.amadolibros.com/catalogo?categoria=esoterismo-tarot', 'production'));
   const html = await res.text();
-  assert.doesNotMatch(html, /<select/);
-  assert.match(html, /El Género En Disputa/);
+  assert.match(html, /<select/);
   assert.match(html, /Tarot De Los Ángeles/);
+  assert.doesNotMatch(html, /El Género En Disputa/);
 });
 
 test('muestra cantidad de resultados', async () => {
@@ -397,8 +399,15 @@ test('una coincidencia exacta pausada supera a una coincidencia débil activa', 
   assert.ok(idxExactPaused < idxWeakActive, 'la coincidencia exacta (aunque pausada) debe ir primero');
 });
 
-test('fuera de Preview (producción), las pausadas no se incluyen', async () => {
+// El manifest de pausadas de producción de este fixture está anulado
+// (PRODUCTION_MANIFEST_URL -> current/previous null) — sin manifest válido,
+// fetchPausedIndex devuelve null y no rompe /catalogo (mismo criterio que
+// en Preview): no es que producción excluya pausadas por diseño, es que
+// este fixture no simula un manifest real de producción.
+test('en producción, un manifest de pausadas ausente/inválido no rompe /catalogo', async () => {
   const res = await catalogRequest(context('https://www.amadolibros.com/catalogo', 'production'));
+  assert.equal(res.status, 200);
   const html = await res.text();
   assert.doesNotMatch(html, /Diccionario Inglés Avanzado/);
+  assert.match(html, /El Género En Disputa/);
 });
