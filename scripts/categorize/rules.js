@@ -13,7 +13,7 @@
 // aparecían repetidos en categorías distintas) se filtraron antes de esta
 // exportación porque no son una señal útil.
 
-export const RULES_VERSION = 3;
+export const RULES_VERSION = 6;
 
 export const MINED_AUTHOR_SIGNALS = {
   "esoterismo-tarot": {
@@ -567,93 +567,213 @@ export const MINED_AUTHOR_SIGNALS = {
 // es una frase de 2+ palabras, o una palabra suficientemente específica
 // (ej. "tarot", "biblia", "manga") que casi no aparece fuera de su rubro.
 // Se buscan como substring dentro del título normalizado (sin acentos, en
-// minúscula). Confianza más baja que un autor reconocido (ver classify.js).
+// minúscula). Cada entrada puede fijar subcategoryId — si no, queda sin
+// subcategoría (null). Confianza más baja que un autor reconocido (ver
+// classify.js). CF-CATEGORÍAS-2C: ampliado a partir del análisis de
+// frecuencia de palabras sobre los 4.437 activos que habían quedado sin
+// categoría específica en la V1 (ver scripts/categorize/data/word_freq —
+// no versionado, generado ad-hoc para este lote).
+function kw(phrase, subcategoryId = null) { return { phrase, subcategoryId }; }
+
 export const KEYWORD_SIGNALS = {
   'esoterismo-tarot': [
-    'tarot', 'oraculo', 'oraculos', 'cartas oraculo', 'runas', 'wicca',
-    'brujeria', 'chamanismo', 'astrologia', 'horoscopo', 'cabala mistica',
-    'grimorio', 'hechiceria', 'numerologia', 'quiromancia', 'yoga',
-    'meditacion',
+    kw('tarot', 'tarot-oraculos'), kw('oraculo', 'tarot-oraculos'),
+    kw('oraculos', 'tarot-oraculos'), kw('cartas oraculo', 'tarot-oraculos'),
+    kw('runas', 'tarot-oraculos'), kw('wicca'), kw('brujeria'),
+    kw('chamanismo'), kw('astrologia', 'astrologia'),
+    kw('horoscopo', 'astrologia'), kw('cabala mistica'), kw('grimorio'),
+    kw('hechiceria'), kw('numerologia'), kw('quiromancia'), kw('yoga'),
+    kw('meditacion'), kw('magia'), kw('cabala'), kw('reiki'),
+    kw('angeles'), kw('alma'),
   ],
   'religion-espiritualidad': [
-    'biblia', 'evangelio', 'nuevo testamento', 'antiguo testamento',
-    'catecismo', 'teologia', 'iglesia catolica', 'espiritualidad cristiana',
-    'sagrada escritura', 'salmos', 'reina valera',
+    kw('biblia', 'biblia'), kw('evangelio', 'biblia'),
+    kw('nuevo testamento', 'biblia'), kw('antiguo testamento', 'biblia'),
+    kw('catecismo', 'espiritualidad'), kw('teologia', 'espiritualidad'),
+    kw('iglesia catolica', 'espiritualidad'),
+    kw('espiritualidad cristiana', 'espiritualidad'),
+    kw('sagrada escritura', 'biblia'), kw('salmos', 'biblia'),
+    kw('reina valera', 'biblia'), kw('dios', 'espiritualidad'),
+    kw('jesus', 'espiritualidad'), kw('cristiano', 'espiritualidad'),
+    kw('sabiduria', 'espiritualidad'),
   ],
   'infantil-juvenil': [
-    'cuento infantil', 'cuentos infantiles', 'para ninos', 'para niños',
-    'libro infantil', 'colorear', 'para colorear', 'primera infancia',
-    'juvenil', 'young adult', 'cuento', 'cuentos',
+    kw('cuento infantil', 'literatura-infantil'),
+    kw('cuentos infantiles', 'literatura-infantil'),
+    kw('para ninos', 'literatura-infantil'),
+    kw('libro infantil', 'literatura-infantil'),
+    kw('colorear', 'actividades-aprendizaje'),
+    kw('para colorear', 'actividades-aprendizaje'),
+    kw('primera infancia', 'primera-infancia'),
+    kw('juvenil', 'literatura-juvenil'), kw('young adult', 'literatura-juvenil'),
+    kw('cuento', 'literatura-infantil'), kw('cuentos', 'literatura-infantil'),
+    kw('bebe', 'primera-infancia'), kw('ninos', 'literatura-infantil'),
+    kw('nino', 'literatura-infantil'), kw('disney', 'literatura-infantil'),
+    kw('marvel', 'literatura-infantil'), kw('actividades', 'actividades-aprendizaje'),
+    kw('adolescentes', 'literatura-juvenil'),
   ],
   'comics-manga': [
-    'manga', 'comic', 'cómic', 'novela grafica', 'novela gráfica', 'historieta',
+    kw('manga'), kw('comic'), kw('cómic'), kw('novela grafica'),
+    kw('novela gráfica'), kw('historieta'),
   ],
   'cocina-gastronomia': [
-    'receta', 'recetas', 'cocina', 'gastronomia', 'gastronomía', 'reposteria',
-    'pasteleria', 'culinari',
+    kw('receta'), kw('recetas'), kw('cocina'), kw('gastronomia'),
+    kw('gastronomía'), kw('reposteria'), kw('pasteleria'), kw('culinari'),
   ],
   'idiomas-aprendizaje': [
-    'workbook', "student's book", 'grammar in use', 'phrasal verbs',
-    'english file', 'aprender ingles', 'aprender inglés', 'diccionario ingles',
-    'cambridge english', 'gramatica inglesa', 'diccionario',
+    kw('workbook', 'ingles'), kw("student's book", 'ingles'),
+    kw('grammar in use', 'ingles'), kw('phrasal verbs', 'ingles'),
+    kw('english file', 'ingles'), kw('aprender ingles', 'ingles'),
+    kw('diccionario ingles', 'ingles'), kw('cambridge english', 'ingles'),
+    kw('gramatica inglesa', 'ingles'), kw('diccionario'), kw('english', 'ingles'),
+    kw('oxford', 'ingles'), kw('pearson', 'ingles'), kw('with cd', 'ingles'),
+    kw('lenguaje'), kw('ingles', 'ingles'),
   ],
   'medicina-salud': [
-    'medicina interna', 'anatomia', 'anatomía', 'fisiologia', 'fisiología',
-    'farmacologia', 'farmacología', 'clinica medica', 'manual clinico',
-    'enfermeria', 'nutricion clinica', 'pediatria', 'cardiologia',
-    'trastorno', 'trastornos', 'psicomotricidad', 'autismo', 'embarazo',
-    'ansiedad', 'tdah', 'depresion', 'depresión', 'abuso sexual', 'atlas',
+    kw('medicina interna'), kw('anatomia', 'anatomia'),
+    kw('anatomía', 'anatomia'), kw('fisiologia'), kw('fisiología'),
+    kw('farmacologia'), kw('farmacología'), kw('clinica medica'),
+    kw('manual clinico'), kw('enfermeria', 'enfermeria'),
+    kw('nutricion clinica', 'nutricion'), kw('pediatria'), kw('cardiologia'),
+    kw('trastorno', 'salud-mental'), kw('trastornos', 'salud-mental'),
+    kw('psicomotricidad'), kw('autismo', 'salud-mental'), kw('embarazo'),
+    kw('ansiedad', 'salud-mental'), kw('tdah', 'salud-mental'),
+    kw('depresion', 'salud-mental'), kw('depresión', 'salud-mental'),
+    kw('abuso sexual', 'salud-mental'), kw('atlas', 'anatomia'),
+    kw('nutricion', 'nutricion'), kw('salud'), kw('cuerpo'), kw('cerebro'),
+    kw('mente', 'salud-mental'), kw('medicina'), kw('clinica'),
+    kw('enfermedades'), kw('tratamiento'), kw('diagnostico'),
   ],
   'psicologia': [
-    'psicoanalisis', 'psicoanálisis', 'psicoterapia', 'terapia cognitiva',
-    'psicologia clinica', 'trastorno de ansiedad', 'psicologia del desarrollo',
+    kw('psicoanalisis', 'psicoanalisis'), kw('psicoanálisis', 'psicoanalisis'),
+    kw('psicoterapia', 'psicologia-clinica'),
+    kw('terapia cognitiva', 'psicologia-clinica'),
+    kw('psicologia clinica', 'psicologia-clinica'),
+    kw('trastorno de ansiedad', 'psicologia-clinica'),
+    kw('psicologia del desarrollo', 'neuropsicologia'),
+    kw('psicologia', 'psicologia-clinica'), kw('lacan', 'psicoanalisis'),
+    kw('freud', 'psicoanalisis'), kw('terapia', 'psicologia-clinica'),
+    kw('emociones'),
   ],
   'derecho': [
-    'derecho penal', 'derecho civil', 'codigo civil', 'código civil',
-    'derecho procesal', 'jurisprudencia',
+    kw('derecho penal'), kw('derecho civil'), kw('codigo civil'),
+    kw('código civil'), kw('derecho procesal'), kw('jurisprudencia'),
   ],
   'negocios-economia': [
-    'marketing', 'finanzas personales', 'emprendimiento', 'negociacion',
-    'liderazgo empresarial', 'management', 'estrategia de negocios',
+    kw('marketing'), kw('finanzas personales'), kw('emprendimiento'),
+    kw('negociacion'), kw('liderazgo empresarial'), kw('management'),
+    kw('estrategia de negocios'), kw('economia'), kw('gestion'),
+    kw('liderazgo'),
   ],
   'ciencia-tecnologia': [
-    'programacion', 'programación', 'quimica organica', 'quimica general',
-    'fisica universitaria', 'biologia molecular', 'matematica universitaria',
-    'calculo diferencial', 'matematica', 'matemática',
+    kw('programacion', 'programacion'), kw('programación', 'programacion'),
+    kw('quimica organica', 'fisica-quimica'),
+    kw('quimica general', 'fisica-quimica'),
+    kw('fisica universitaria', 'fisica-quimica'),
+    kw('biologia molecular', 'biologia'),
+    kw('matematica universitaria', 'matematica'),
+    kw('calculo diferencial', 'matematica'),
+    kw('matematica', 'matematica'), kw('matemática', 'matematica'),
+    kw('ciencia'), kw('ciencias'),
   ],
   'historia': [
-    'segunda guerra mundial', 'primera guerra mundial', 'historia de uruguay',
-    'historia argentina', 'revolucion rusa', 'historia contemporanea',
-    'memorias', 'biografia', 'biografía',
+    kw('segunda guerra mundial', 'historia-mundial'),
+    kw('primera guerra mundial', 'historia-mundial'),
+    kw('historia de uruguay', 'historia-argentina-uruguay'),
+    kw('historia argentina', 'historia-argentina-uruguay'),
+    kw('revolucion rusa', 'historia-mundial'),
+    kw('historia contemporanea', 'historia-mundial'),
+    kw('memorias'), kw('biografia'), kw('biografía'), kw('historia'),
+    kw('guerra', 'historia-mundial'),
   ],
   'arte-diseno-fotografia': [
-    'diseño grafico', 'diseno grafico', 'fotografia', 'historia del arte',
-    'ilustracion', 'ilustración',
+    kw('diseño grafico'), kw('diseno grafico'), kw('fotografia'),
+    kw('historia del arte'), kw('ilustracion'), kw('ilustración'),
+    kw('arte'),
   ],
   'filosofia-ciencias-sociales': [
-    'filosofia', 'filosofía', 'sociologia', 'antropologia', 'ciencia politica',
-    'teoria critica', 'ensayo',
+    kw('filosofia', 'filosofia'), kw('filosofía', 'filosofia'),
+    kw('sociologia', 'sociologia-antropologia'),
+    kw('antropologia', 'sociologia-antropologia'),
+    kw('ciencia politica', 'sociologia-antropologia'),
+    kw('teoria critica', 'sociologia-antropologia'), kw('ensayo'),
   ],
   'educacion': [
-    'pedagogia', 'pedagogía', 'didactica', 'nivel inicial', 'formacion docente',
-    'montessori', 'crianza',
+    kw('pedagogia', 'pedagogia'), kw('pedagogía', 'pedagogia'),
+    kw('didactica', 'pedagogia'), kw('nivel inicial', 'pedagogia'),
+    kw('formacion docente', 'formacion-docente'), kw('montessori', 'pedagogia'),
+    kw('crianza', 'pedagogia'), kw('educacion', 'pedagogia'), kw('escuela', 'formacion-docente'),
+    kw('aprendizaje', 'pedagogia'), kw('aprender'),
   ],
   'literatura-ficcion': [
-    'novela', 'teatro',
+    kw('novela', 'novela'), kw('teatro', 'teatro'), kw('poesia', 'poesia'),
+    kw('poesía', 'poesia'), kw('policial', 'policial-suspenso'),
+    kw('suspenso', 'policial-suspenso'), kw('misterio', 'policial-suspenso'),
+    kw('ciencia ficcion', 'ciencia-ficcion-fantasia'),
+    kw('ciencia ficción', 'ciencia-ficcion-fantasia'),
+    kw('fantasia', 'ciencia-ficcion-fantasia'),
+    kw('fantasía', 'ciencia-ficcion-fantasia'),
+    kw('cuentos completos', 'cuento'), kw('relatos', 'cuento'),
+    kw('secreto'), kw('literatura'),
   ],
   'desarrollo-personal': [
-    'duelo', 'mindfulness',
+    kw('duelo'), kw('mindfulness'), kw('miedo'), kw('habitos'),
+    kw('autoayuda'), kw('motivacion'),
   ],
 };
 
-// ─── Señales de "no es un libro" ───────────────────────────────────────────
+// Segunda pasada, solo si nada de lo anterior matcheó: palabras sueltas
+// bastante genéricas que igual dan una señal razonable — confianza más baja
+// (ver CONFIDENCE.KEYWORD_WEAK en classify.js). Ninguna decide sola contra
+// una coincidencia de autor/editorial/frase fuerte.
+export const KEYWORD_SIGNALS_WEAK = {
+  'infantil-juvenil': [kw('juego'), kw('juegos'), kw('album')],
+  'historia': [kw('mundo'), kw('vida')],
+  'desarrollo-personal': [kw('poder'), kw('mejor'), kw('vivir')],
+};
+
+// ─── Señales de tipo "no es un libro" con sub-tipo ─────────────────────────
+// A diferencia de OBJECT_SIGNALS (abajo), estas señales fijan también el
+// `type` (music/magazine/object) y la subcategoría dentro de
+// "otros-productos" — CF-CATEGORÍAS-2C: estos productos quedan VISIBLES en
+// el catálogo bajo esa categoría comercial, no ocultos.
+export const OBJECT_TYPE_SIGNALS = [
+  // Música — 'vinilo'/'cd'/'lp'/'dvd' se resuelven aparte como palabra
+  // exacta en classify.js (ver findObjectSignal), no acá.
+  { phrase: 'lp remasterizado', type: 'music', subcategoryId: 'discos-vinilos' },
+  { phrase: 'disco cd', type: 'music', subcategoryId: 'discos-vinilos' },
+  { phrase: 'cd fisico', type: 'music', subcategoryId: 'discos-vinilos' },
+  { phrase: 'edicion cd', type: 'music', subcategoryId: 'discos-vinilos' },
+  { phrase: 'cd para coleccion', type: 'music', subcategoryId: 'discos-vinilos' },
+  { phrase: 'vinilo', type: 'music', subcategoryId: 'discos-vinilos' },
+  // Revistas / efímera periódica
+  { phrase: 'lote de revistas', type: 'magazine', subcategoryId: 'revistas' },
+  { phrase: 'revista coleccionista', type: 'magazine', subcategoryId: 'revistas' },
+  { phrase: 'fasciculo coleccionable', type: 'magazine', subcategoryId: 'revistas' },
+  { phrase: 'revista', type: 'magazine', subcategoryId: 'revistas' },
+  // Manualidades / papelería / merchandising
+  { phrase: 'cartuchera', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'estuche de cosmeticos', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'estuche de maquillaje', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'vincha tiara', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'kit de ganchillo', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'kit de crochet', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'crochet', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'amigurumi', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'flashcards', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'agenda 20', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'planner', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'adhesivos', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'expansion juego de mesa', type: 'object', subcategoryId: 'papeleria-manualidades' },
+  { phrase: 'juego de mesa', type: 'object', subcategoryId: 'papeleria-manualidades' },
+];
+
+// ─── Señales de "no es un libro" (objetos de colección/antigüedades) ──────
 // Ampliado desde la lista original de BestsellerSection.astro (24 términos,
 // probado insuficiente en CF-CATEGORÍAS-IA-DIAGNÓSTICO: solo detectaba 5 de
 // 200 objetos reales) con lo aprendido clasificando a mano ~600 casos reales
-// en CF-CATEGORÍAS-0B/0C: discos, merchandising con licencia, juegos de mesa,
-// papelería, joyería, antigüedades.
+// en CF-CATEGORÍAS-0B/0C. subcategoryId fijo: 'objetos-coleccion'.
 export const OBJECT_SIGNALS = [
-  // Antigüedades y decoración (lista original ampliada)
   'cruz', 'crucifijo', 'bronce', 'chapa esmaltada', 'cartel chapa', 'dije',
   'plata 925', 'jaspe', 'colgante vintage', 'sacapuntas vintage',
   'candelabro', 'figura bronce', 'figuras bronce', 'decorativo', 'decorativa',
@@ -667,17 +787,6 @@ export const OBJECT_SIGNALS = [
   'matricula vintage', 'matricula antigua', 'postales antiguas',
   'plato limoges', 'porcelana', 'ceramica antigua', 'pesas antiguas',
   'prendedor plata', 'anillo plata 925',
-  // Música / medios físicos — no detectados en la primera pasada. Se evita
-  // un "cd" suelto de 2 letras: matchearía como substring dentro de
-  // cualquier palabra que lo contenga (ver rules.test.js).
-  'vinilo', 'lp remasterizado', 'disco cd', 'cd fisico', 'edicion cd',
-  'cd para coleccion',
-  // Merchandising / juguetes / papelería
-  'cartuchera', 'estuche de cosmeticos', 'estuche de maquillaje',
-  'vincha tiara', 'kit de ganchillo', 'kit de crochet', 'flashcards',
-  'agenda 20', 'planner', 'expansion juego de mesa', 'juego de mesa',
-  'adhesivos', 'lote de revistas', 'revista coleccionista',
-  'fasciculo coleccionable',
 ];
 
 // Umbral de fan-out para considerar un rasgo "genérico" en vez de específico

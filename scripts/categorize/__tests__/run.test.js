@@ -109,14 +109,14 @@ test('una corrección manual persiste y gana incluso después de una corrida pre
 
     const noCorrectionPath = writeCorrections(dir, []);
     const first = run({ snapshotPath, outputPath, correctionsPath: noCorrectionPath });
-    assert.equal(first.results[0].categoryId, 'filosofia-ciencias-sociales');
+    assert.equal(first.results[0].primaryCategoryId, 'filosofia-ciencias-sociales');
     assert.equal(first.results[0].method, 'rule');
 
     const withCorrectionPath = writeCorrections(dir, [
-      { mlu: 'MLU1', type: 'book', categoryId: 'historia', subcategoryId: null, tags: [], note: 'corrección manual de prueba' },
+      { mlu: 'MLU1', type: 'book', primaryCategoryId: 'historia', subcategoryId: null, secondaryCategoryIds: [], tags: [], note: 'corrección manual de prueba' },
     ]);
     const second = run({ snapshotPath, outputPath, correctionsPath: withCorrectionPath });
-    assert.equal(second.results[0].categoryId, 'historia');
+    assert.equal(second.results[0].primaryCategoryId, 'historia');
     assert.equal(second.results[0].method, 'manual');
     assert.equal(second.summary.manual_corrections_applied, 1);
   } finally {
@@ -137,6 +137,47 @@ test('sin errores de validación en una corrida normal', () => {
     const outputPath = path.join(dir, 'out.json');
     const { errors } = run({ snapshotPath, outputPath, correctionsPath });
     assert.deepEqual(errors, []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CF-CATEGORÍAS-2C: todos los activos quedan incluidos, ninguno con primaryCategoryId null', () => {
+  const dir = makeTempDir();
+  try {
+    const items = [
+      { id: 'MLU1', title: 'Tarot Egipcio', author: '', status: 'active' },
+      { id: 'MLU2', title: 'Candelabro Bronce Antiguo Decorativo', author: '', publisher: 'Genérica', status: 'active' },
+      { id: 'MLU3', title: 'xkzq blorp completamente sin señal', author: '', publisher: '', isbn: '', status: 'active' },
+      { id: 'MLU4', title: 'Revista Patrones 421', author: '', isbn: '', status: 'active' },
+    ];
+    const snapshotPath = writeSnapshot(dir, items);
+    const correctionsPath = writeCorrections(dir, []);
+    const outputPath = path.join(dir, 'out.json');
+    const { results } = run({ snapshotPath, outputPath, correctionsPath });
+    assert.equal(results.length, items.length);
+    for (const r of results) {
+      assert.notEqual(r.primaryCategoryId, null, `${r.mlu} quedó sin categoría`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('sin MLU duplicados en la salida', () => {
+  const dir = makeTempDir();
+  try {
+    const items = [
+      { id: 'MLU1', title: 'Tarot Egipcio', author: '', status: 'active' },
+      { id: 'MLU2', title: 'Historia Del Uruguay', author: '', status: 'active' },
+      { id: 'MLU1', title: 'Duplicado accidental', author: '', status: 'active' },
+    ];
+    const snapshotPath = writeSnapshot(dir, items);
+    const correctionsPath = writeCorrections(dir, []);
+    const outputPath = path.join(dir, 'out.json');
+    const { results } = run({ snapshotPath, outputPath, correctionsPath });
+    const ids = results.map(r => r.mlu);
+    assert.equal(new Set(ids).size, ids.length);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

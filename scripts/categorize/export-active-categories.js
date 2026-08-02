@@ -1,13 +1,14 @@
 // scripts/categorize/export-active-categories.js
 //
-// Genera el artefacto compacto que consume /catalogo en Preview para el
-// filtro de categoría — mlu -> categoryId, solo activos, solo libros ya
-// resueltos (no objetos ni pendientes). Deliberadamente chico (no el
-// classifications.json completo de 6MB) para poder fetchearse en cada
-// request sin costo real. No modifica el dato original de MELI, no toca
-// R2/D1/KV — solo lee scripts/categorize/data/classifications.json (ya
-// generado por run.js) y escribe un archivo estático versionado que se
+// Genera el artefacto compacto que consume /catalogo en Preview — mlu ->
+// {categoryId, subcategoryId}, solo activos. Deliberadamente chico (no el
+// classifications.json completo de 6MB). No modifica el dato original de
+// MELI, no toca R2/D1/KV — solo lee scripts/categorize/data/classifications.json
+// (ya generado por run.js) y escribe un archivo estático versionado que se
 // despliega junto con el sitio (astro-front/public/).
+//
+// CF-CATEGORÍAS-2C: incluye "otros-productos" (antes excluido) y las
+// subcategorías reales de cada categoría con libros activos.
 //
 // Uso: node scripts/categorize/export-active-categories.js
 
@@ -25,22 +26,38 @@ function main() {
   const results = JSON.parse(readFileSync(CLASSIFICATIONS_PATH, 'utf8'));
   const summary = JSON.parse(readFileSync(SUMMARY_PATH, 'utf8'));
 
-  const items = {};
-  const counts = {};
+  const items = {}; // mlu -> [categoryId, subcategoryId|null]
+  const counts = {}; // categoryId -> count
+  const subCounts = {}; // "categoryId/subcategoryId" -> count
+
   for (const r of results) {
-    if (r.status !== 'active' || r.type !== 'book' || !r.categoryId) continue;
-    items[r.mlu] = r.categoryId;
-    counts[r.categoryId] = (counts[r.categoryId] || 0) + 1;
+    if (r.status !== 'active' || !r.primaryCategoryId) continue;
+    items[r.mlu] = r.subcategoryId ? [r.primaryCategoryId, r.subcategoryId] : [r.primaryCategoryId];
+    counts[r.primaryCategoryId] = (counts[r.primaryCategoryId] || 0) + 1;
+    if (r.subcategoryId) {
+      const key = `${r.primaryCategoryId}/${r.subcategoryId}`;
+      subCounts[key] = (subCounts[key] || 0) + 1;
+    }
   }
 
-  const categories = CATEGORIES.filter(c => counts[c.id] > 0);
+  // Solo categorías/subcategorías con al menos un libro activo — nunca un
+  // menú con opciones vacías.
+  const categories = CATEGORIES
+    .filter(c => counts[c.id] > 0)
+    .map(c => ({
+      id: c.id,
+      name: c.name,
+      count: counts[c.id],
+      subcategories: (c.subcategories || [])
+        .filter(s => subCounts[`${c.id}/${s.id}`] > 0)
+        .map(s => ({ id: s.id, name: s.name, count: subCounts[`${c.id}/${s.id}`] })),
+    }));
 
   const out = {
     generated_at: new Date().toISOString(),
     taxonomy_version: summary.taxonomy_version,
     rules_version: summary.rules_version,
     categories,
-    counts,
     items,
   };
 

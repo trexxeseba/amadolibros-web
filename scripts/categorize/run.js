@@ -1,7 +1,9 @@
 // scripts/categorize/run.js
 //
 // Orquesta la clasificación del catálogo completo:
-//   correcciones manuales > reglas > pendiente (uncertain, sin categoría inventada)
+//   correcciones manuales > reglas > mejor categoría disponible
+// (CF-CATEGORÍAS-2C: ningún activo queda sin primaryCategoryId — el peor
+// caso es "otros-libros"/"otros-productos", nunca una exclusión silenciosa).
 //
 // No llama IA (eso es un lote aparte, y requeriría aprobación de gasto).
 // No toca R2/D1/KV/producción — solo lee scripts/categorize/data/catalog-snapshot.json
@@ -120,13 +122,15 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
 }
 
 function buildSummary(results, snapshot, meta) {
-  const byType = { book: 0, object: 0, uncertain: 0 };
+  const byType = { book: 0, magazine: 0, music: 0, object: 0, other: 0 };
   const byCategory = {};
+  const bySubcategory = {};
   const byMethod = {};
   let needsReview = 0;
   for (const r of results) {
     byType[r.type] = (byType[r.type] || 0) + 1;
-    if (r.categoryId) byCategory[r.categoryId] = (byCategory[r.categoryId] || 0) + 1;
+    if (r.primaryCategoryId) byCategory[r.primaryCategoryId] = (byCategory[r.primaryCategoryId] || 0) + 1;
+    if (r.subcategoryId) bySubcategory[r.subcategoryId] = (bySubcategory[r.subcategoryId] || 0) + 1;
     byMethod[r.method] = (byMethod[r.method] || 0) + 1;
     if (r.needsReview) needsReview += 1;
   }
@@ -141,6 +145,7 @@ function buildSummary(results, snapshot, meta) {
     manual_corrections_applied: meta.manualApplied,
     by_type: byType,
     by_category: byCategory,
+    by_subcategory: bySubcategory,
     by_method: byMethod,
     needs_review: needsReview,
     validation_errors: meta.errors,
