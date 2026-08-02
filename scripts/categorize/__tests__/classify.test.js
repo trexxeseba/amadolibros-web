@@ -31,6 +31,28 @@ test('un caso dudoso nunca recibe categoría inventada', () => {
   assert.equal(result.needsReview, true);
 });
 
+test('libro real (tiene ISBN) sin categoría clara cae en otros-libros, no en uncertain', () => {
+  const record = { mlu: 'MLU4b', title: 'xkzq blorp fnarp', author: '', publisher: '', isbn: '9781234567890', status: 'active' };
+  const result = classify(record);
+  assert.equal(result.type, TYPES.BOOK);
+  assert.equal(result.categoryId, 'otros-libros');
+  assert.equal(result.needsReview, true);
+});
+
+test('libro real (tiene autor) sin categoría clara cae en otros-libros', () => {
+  const record = { mlu: 'MLU4c', title: 'xkzq blorp fnarp', author: 'Un Autor Desconocido', publisher: '', isbn: '', status: 'active' };
+  const result = classify(record);
+  assert.equal(result.type, TYPES.BOOK);
+  assert.equal(result.categoryId, 'otros-libros');
+});
+
+test('sin autor, sin ISBN y sin señal de objeto queda uncertain (no se afirma que sea libro)', () => {
+  const record = { mlu: 'MLU4d', title: 'xkzq blorp fnarp', author: '', publisher: '', isbn: '', status: 'active' };
+  const result = classify(record);
+  assert.equal(result.type, TYPES.UNCERTAIN);
+  assert.equal(result.categoryId, null);
+});
+
 test('autor reconocido clasifica como libro con alta confianza', () => {
   const record = { mlu: 'MLU5', title: 'Cualquier título', author: 'Judith Butler', publisher: '', isbn: '1', status: 'active' };
   const result = classify(record);

@@ -14,6 +14,12 @@
  *
  * DATOS: R2 catalog.json — misma fuente que libro/[[path]].js y sitemap.xml.js.
  *
+ * CF-CATEGORÍAS-2 (solo Preview): filtro opcional por categoría (?categoria=)
+ * sobre el catálogo ACTIVO, usando el artefacto compacto generado por
+ * scripts/categorize/export-active-categories.js (mlu -> categoryId, solo
+ * activos ya resueltos por reglas — nunca el classifications.json completo
+ * de 6MB). No aplica a pausados todavía. Combinable con ?q=. Fuera de
+ * Preview, el parámetro se ignora por completo — catálogo sin cambios.
  */
 
 import { slugify } from './_shared/slug.js';
@@ -84,11 +90,91 @@ function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
 }
 
+// CF-CATEGORÍAS-2 — artefacto compacto mlu->categoryId, solo Preview.
+// Mismo patrón de cache de borde que fetchCatalog/fetchActiveIndex
+// (functions/_shared/catalog.js), pero deliberadamente separado: este
+// archivo es propio de este lote (no pertenece al catálogo de MELI) y no
+// debe volverse una dependencia de _shared/catalog.js sin necesidad real.
+async function fetchActiveCategories(ctx) {
+    // Nunca debe romper /catalogo: si el artefacto no existe todavía (por
+    // ejemplo en tests, o antes del primer deploy que lo incluya), el
+    // selector de categoría simplemente no aparece — mismo criterio que
+    // fetchActiveIndex/fetchPausedIndex en _shared/catalog.js.
+    try {
+        const url = new URL('/data/active-categories.json', ctx.request.url).toString();
+        const cache = caches.default;
+        const cacheKey = new Request(url);
+        let response = await cache.match(cacheKey);
+        if (!response) {
+            const fetched = await fetch(url);
+            if (!fetched.ok) return null;
+            response = new Response(fetched.body, {
+                status: fetched.status,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'public, max-age=300',
+                },
+            });
+            if (typeof ctx?.waitUntil === 'function') {
+                ctx.waitUntil(cache.put(cacheKey, response.clone()));
+            }
+        }
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
+function categorySelectHtml(categories, counts, selectedId) {
+    if (!categories || categories.length === 0) return '';
+    const options = [`<option value=""${selectedId ? '' : ' selected'}>Todos los libros</option>`]
+        .concat(categories.map(c => {
+            const n = counts?.[c.id] ?? 0;
+            const sel = c.id === selectedId ? ' selected' : '';
+            return `<option value="${escapeHtml(c.id)}"${sel}>${escapeHtml(c.name)} (${n})</option>`;
+        }))
+        .join('\n      ');
+    return `<label class="cat-select-wrap">
+      <span class="sr-only">Categoría</span>
+      <select name="categoria" id="cat-select" onchange="this.form.submit()">
+      ${options}
+      </select>
+    </label>`;
+}
+
+const CAT_SELECT_STYLES = `
+    .filters-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem}
+    .filters-bar input[type=search]{flex:1;min-width:180px}
+    .cat-select-wrap{display:flex}
+    .cat-select-wrap select{padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
+                      font-size:.85rem;color:#1e293b;background:#fff;outline:none;max-width:100%}
+    .cat-select-wrap select:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+             clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media (max-width: 480px){.filters-bar{flex-direction:column}.filters-bar input[type=search],.cat-select-wrap select{width:100%}}
+`;
+
 export async function onRequest(ctx) {
     const requestStartedAt = perfNow();
     ensurePerf(ctx);
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
+    const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
+
+    // CF-CATEGORÍAS-2: el filtro de categoría solo existe en Preview — en
+    // producción el parámetro se ignora completamente, catálogo sin cambios.
+    const categoryFeatureEnabled = ctx.env?.APP_ENV === 'preview';
+    const categoryData = categoryFeatureEnabled ? await fetchActiveCategories(ctx) : null;
+    const categories = categoryData?.categories || [];
+    const categoryCounts = categoryData?.counts || {};
+    const categoryItems = categoryData?.items || {};
+    const validCategoryIds = new Set(categories.map(c => c.id));
+    // Categoría inválida vuelve a "Todos los libros" — nunca 404, nunca error.
+    const categoria = rawCategoria && validCategoryIds.has(rawCategoria) ? rawCategoria : '';
+    const selectedCategoryName = categoria
+        ? (categories.find(c => c.id === categoria)?.name || '')
+        : '';
+
     // CF-R2-2-BRIDGE: habilitado explícitamente en Preview y producción — cada
     // uno con su propio manifest (ver manifestUrlFor en _shared/catalog.js).
     // Si el manifest del entorno falta o es inválido, fetchActiveIndex/
@@ -117,9 +203,10 @@ export async function onRequest(ctx) {
         : items.filter(b => b.status === 'active' && Number(b.available_quantity) > 0);
     const eligibleItems = rawQ ? [...activeItems, ...pausedItems] : activeItems;
     const safeQ = escapeHtml(rawQ);
+    const hasFilter = Boolean(rawQ) || Boolean(categoria);
 
-    // ── Sin query: índice SEO completo (comportamiento original) ─────────────
-    if (!rawQ) {
+    // ── Sin ningún filtro: índice SEO completo (comportamiento original) ─────
+    if (!hasFilter) {
         const rows = activeItems.map(b => {
             const slug   = slugify(b.title);
             const href   = `${previewBase}/libro/${b.id}/${slug}`;
@@ -167,14 +254,16 @@ export async function onRequest(ctx) {
                        border-radius:.5rem;font-size:.875rem;font-weight:600;cursor:pointer;
                        white-space:nowrap}
     .idx-search button:hover{background:#2d1f14}
+    ${CAT_SELECT_STYLES}
   </style>
 </head>
 <body>
   <nav><a href="/">← Amado Libros</a></nav>
   <h1>Catálogo completo</h1>
   <p class="sub">${activeItems.length} títulos disponibles.</p>
-  <form class="idx-search" action="/catalogo" method="get">
+  <form class="idx-search filters-bar" action="/catalogo" method="get">
     <input type="search" name="q" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    ${categorySelectHtml(categories, categoryCounts, categoria)}
     <button type="submit">Buscar</button>
   </form>
   <ul>
@@ -195,7 +284,7 @@ ${rows}
         });
     }
 
-    // ── Con query: resultados visuales filtrados ──────────────────────────────
+    // ── Con filtro (búsqueda y/o categoría): resultados visuales ──────────────
     const queryTokens = tokenize(rawQ);
     // Solo interpretar la consulta como ISBN cuando contiene únicamente
     // números y separadores habituales. Una búsqueda alfanumérica como
@@ -204,7 +293,8 @@ ${rows}
 
     const searchStartedAt = perfNow();
     const filtered = eligibleItems
-        .filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
+        .filter(b => (rawQ ? itemMatchesQuery(b, queryTokens, queryDigits) : true))
+        .filter(b => (categoria ? categoryItems[b.id] === categoria : true))
         .sort((a, b) => {
             const aAvailable = a.status === 'active' && Number(a.available_quantity) > 0;
             const bAvailable = b.status === 'active' && Number(b.available_quantity) > 0;
@@ -255,11 +345,26 @@ ${rows}
 </article>`;
     }).join('\n');
 
+    const resultLabel = filtered.length === 1 ? 'resultado' : 'resultados';
     const subText = filtered.length === 0
-        ? `No encontramos resultados para &ldquo;${safeQ}&rdquo;.`
+        ? 'No encontramos resultados.'
         : truncated
-            ? `Mostrando los primeros ${MAX_RESULTS} de ${filtered.length} resultados.`
-            : `${filtered.length} resultado${filtered.length === 1 ? '' : 's'}.`;
+            ? `Mostrando los primeros ${MAX_RESULTS} de ${filtered.length} ${resultLabel}.`
+            : `${filtered.length} ${resultLabel}.`;
+
+    const heading = rawQ && categoria
+        ? `Resultados para &ldquo;${safeQ}&rdquo; en ${escapeHtml(selectedCategoryName)}`
+        : rawQ
+            ? `Resultados para &ldquo;${safeQ}&rdquo;`
+            : escapeHtml(selectedCategoryName);
+    const pageTitle = rawQ && categoria
+        ? `${safeQ} en ${escapeHtml(selectedCategoryName)} — Amado Libros`
+        : rawQ
+            ? `Resultados para &ldquo;${safeQ}&rdquo; — Amado Libros`
+            : `${escapeHtml(selectedCategoryName)} — Amado Libros`;
+    const emptyMessage = rawQ
+        ? `Sin resultados para &ldquo;${safeQ}&rdquo;${categoria ? ` en ${escapeHtml(selectedCategoryName)}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''} o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.`
+        : `Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.`;
 
     const renderStartedAt = perfNow();
     const html = `<!DOCTYPE html>
@@ -267,8 +372,8 @@ ${rows}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Resultados para &ldquo;${safeQ}&rdquo; — Amado Libros</title>
-  <meta name="description" content="Resultados de búsqueda para &ldquo;${safeQ}&rdquo; en Amado Libros.">
+  <title>${pageTitle}</title>
+  <meta name="description" content="Resultados en Amado Libros.">
   <link rel="canonical" href="${BASE}/catalogo">
   <meta name="robots" content="noindex">
   <style>
@@ -338,20 +443,22 @@ ${rows}
            font-size:.78rem;color:#94a3b8}
     footer a{color:#cbd5e1;text-decoration:none}
     footer a:hover{text-decoration:underline}
+    ${CAT_SELECT_STYLES}
   </style>
 </head>
 <body>
 <div class="wrap">
   <nav><a href="/">← Amado Libros</a></nav>
-  <form class="search-bar" action="/catalogo" method="get">
+  <form class="search-bar filters-bar" action="/catalogo" method="get">
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    ${categorySelectHtml(categories, categoryCounts, categoria)}
     <button type="submit">Buscar</button>
   </form>
-  <h1>Resultados para &ldquo;${safeQ}&rdquo;</h1>
+  <h1>${heading}</h1>
   <p class="sub">${subText}</p>
   ${filtered.length > 0
     ? `<div class="grid">\n${cards}\n</div>`
-    : `<p class="empty">Sin resultados para &ldquo;${safeQ}&rdquo;. Intentá con otras palabras o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.</p>`
+    : `<p class="empty">${emptyMessage}</p>`
   }
   <footer>
     <a href="/">Volver al catálogo</a> · <a href="/politicas">Políticas</a> ·

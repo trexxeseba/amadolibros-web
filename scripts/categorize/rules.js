@@ -13,7 +13,7 @@
 // aparecían repetidos en categorías distintas) se filtraron antes de esta
 // exportación porque no son una señal útil.
 
-export const RULES_VERSION = 2;
+export const RULES_VERSION = 3;
 
 export const MINED_AUTHOR_SIGNALS = {
   "esoterismo-tarot": {
@@ -572,7 +572,8 @@ export const KEYWORD_SIGNALS = {
   'esoterismo-tarot': [
     'tarot', 'oraculo', 'oraculos', 'cartas oraculo', 'runas', 'wicca',
     'brujeria', 'chamanismo', 'astrologia', 'horoscopo', 'cabala mistica',
-    'grimorio', 'hechiceria', 'numerologia', 'quiromancia',
+    'grimorio', 'hechiceria', 'numerologia', 'quiromancia', 'yoga',
+    'meditacion',
   ],
   'religion-espiritualidad': [
     'biblia', 'evangelio', 'nuevo testamento', 'antiguo testamento',
@@ -582,7 +583,7 @@ export const KEYWORD_SIGNALS = {
   'infantil-juvenil': [
     'cuento infantil', 'cuentos infantiles', 'para ninos', 'para niños',
     'libro infantil', 'colorear', 'para colorear', 'primera infancia',
-    'juvenil', 'young adult',
+    'juvenil', 'young adult', 'cuento', 'cuentos',
   ],
   'comics-manga': [
     'manga', 'comic', 'cómic', 'novela grafica', 'novela gráfica', 'historieta',
@@ -594,12 +595,14 @@ export const KEYWORD_SIGNALS = {
   'idiomas-aprendizaje': [
     'workbook', "student's book", 'grammar in use', 'phrasal verbs',
     'english file', 'aprender ingles', 'aprender inglés', 'diccionario ingles',
-    'cambridge english', 'gramatica inglesa',
+    'cambridge english', 'gramatica inglesa', 'diccionario',
   ],
   'medicina-salud': [
     'medicina interna', 'anatomia', 'anatomía', 'fisiologia', 'fisiología',
     'farmacologia', 'farmacología', 'clinica medica', 'manual clinico',
     'enfermeria', 'nutricion clinica', 'pediatria', 'cardiologia',
+    'trastorno', 'trastornos', 'psicomotricidad', 'autismo', 'embarazo',
+    'ansiedad', 'tdah', 'depresion', 'depresión', 'abuso sexual', 'atlas',
   ],
   'psicologia': [
     'psicoanalisis', 'psicoanálisis', 'psicoterapia', 'terapia cognitiva',
@@ -616,11 +619,12 @@ export const KEYWORD_SIGNALS = {
   'ciencia-tecnologia': [
     'programacion', 'programación', 'quimica organica', 'quimica general',
     'fisica universitaria', 'biologia molecular', 'matematica universitaria',
-    'calculo diferencial',
+    'calculo diferencial', 'matematica', 'matemática',
   ],
   'historia': [
     'segunda guerra mundial', 'primera guerra mundial', 'historia de uruguay',
     'historia argentina', 'revolucion rusa', 'historia contemporanea',
+    'memorias', 'biografia', 'biografía',
   ],
   'arte-diseno-fotografia': [
     'diseño grafico', 'diseno grafico', 'fotografia', 'historia del arte',
@@ -628,10 +632,17 @@ export const KEYWORD_SIGNALS = {
   ],
   'filosofia-ciencias-sociales': [
     'filosofia', 'filosofía', 'sociologia', 'antropologia', 'ciencia politica',
-    'teoria critica',
+    'teoria critica', 'ensayo',
   ],
   'educacion': [
     'pedagogia', 'pedagogía', 'didactica', 'nivel inicial', 'formacion docente',
+    'montessori', 'crianza',
+  ],
+  'literatura-ficcion': [
+    'novela', 'teatro',
+  ],
+  'desarrollo-personal': [
+    'duelo', 'mindfulness',
   ],
 };
 

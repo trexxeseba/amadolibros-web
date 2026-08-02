@@ -21,6 +21,7 @@ const CONFIDENCE = {
   KEYWORD: 0.75,
   OBJECT: 0.85,
   OBJECT_WEAK: 0.6,
+  OTHER_BOOKS: 0.5,
 };
 
 // Umbral bajo el cual needsReview queda en true incluso si hay categoría.
@@ -239,7 +240,29 @@ export function classify(record, manualCorrection = null) {
     };
   }
 
-  // Sin evidencia suficiente — nunca inventar categoría.
+  // Sin coincidencia de materia — pero si hay evidencia razonable de que es
+  // un libro real (autor o ISBN cargado, y ninguna señal de objeto) cae en
+  // "otros-libros" en vez de quedar fuera del catálogo público (CF-CATEGORÍAS-2
+  // punto "libro real sin categoría suficientemente clara"). Sin esa mínima
+  // evidencia, no se afirma que sea un libro — queda uncertain, sin categoría,
+  // para revisión (podría ser objeto/revista/disco sin señal de título).
+  if (!objectSignal && (hasAuthor || hasIsbn)) {
+    return {
+      ...base,
+      type: TYPES.BOOK,
+      categoryId: 'otros-libros',
+      subcategoryId: null,
+      tags: [],
+      confidence: CONFIDENCE.OTHER_BOOKS,
+      method: 'rule',
+      evidence: [
+        'sin coincidencia de autor/editorial/frase conocida',
+        hasAuthor ? 'tiene autor cargado' : 'tiene ISBN cargado',
+      ],
+      needsReview: true,
+    };
+  }
+
   return {
     ...base,
     type: TYPES.UNCERTAIN,
@@ -248,7 +271,7 @@ export function classify(record, manualCorrection = null) {
     tags: [],
     confidence: 0,
     method: 'rule',
-    evidence: ['sin coincidencia de autor, editorial ni frase de título conocida'],
+    evidence: ['sin coincidencia de autor, editorial ni frase de título conocida, y sin autor/ISBN que respalde que sea un libro'],
     needsReview: true,
   };
 }

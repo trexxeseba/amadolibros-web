@@ -1,39 +1,40 @@
 {
-  "run_at": "2026-08-02T02:35:49.407Z",
+  "run_at": "2026-08-02T02:51:28.179Z",
   "taxonomy_version": 1,
-  "rules_version": 2,
+  "rules_version": 3,
   "snapshot_fetched_at": "2026-08-02T02:30:10.654Z",
   "mlu_unicos_procesados": 17148,
   "reused_from_previous_run": 0,
   "reclassified_this_run": 17148,
   "manual_corrections_applied": 0,
   "by_type": {
-    "book": 5106,
+    "book": 16556,
     "object": 319,
-    "uncertain": 11723
+    "uncertain": 273
   },
   "by_category": {
-    "medicina-salud": 367,
-    "educacion": 228,
-    "filosofia-ciencias-sociales": 138,
-    "literatura-ficcion": 293,
-    "psicologia": 377,
-    "infantil-juvenil": 617,
-    "esoterismo-tarot": 1005,
+    "otros-libros": 10553,
+    "educacion": 319,
+    "medicina-salud": 640,
+    "filosofia-ciencias-sociales": 156,
+    "literatura-ficcion": 382,
+    "psicologia": 365,
+    "infantil-juvenil": 760,
+    "esoterismo-tarot": 1083,
+    "ciencia-tecnologia": 118,
     "cocina-gastronomia": 135,
-    "idiomas-aprendizaje": 434,
-    "desarrollo-personal": 331,
-    "religion-espiritualidad": 523,
+    "idiomas-aprendizaje": 496,
+    "desarrollo-personal": 386,
+    "religion-espiritualidad": 522,
     "negocios-economia": 98,
     "comics-manga": 292,
+    "historia": 163,
     "arte-diseno-fotografia": 76,
-    "derecho": 12,
-    "ciencia-tecnologia": 89,
-    "historia": 91
+    "derecho": 12
   },
   "by_method": {
     "rule": 17148
   },
-  "needs_review": 11723,
+  "needs_review": 10826,
   "validation_errors": []
 }
