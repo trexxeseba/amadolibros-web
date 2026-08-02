@@ -4,6 +4,7 @@
 import BaseLayout          from '../layouts/BaseLayout.astro';
 import Header              from '../components/Header.astro';
 import Hero                from '../components/Hero.astro';
+import CategoryAccess      from '../components/CategoryAccess.astro';
 import BestsellerSection   from '../components/BestsellerSection.astro';
 import Footer              from '../components/Footer.astro';
 import WAFloat             from '../components/WAFloat.astro';
@@ -17,6 +18,7 @@ import NotFoundCTA         from '../components/NotFoundCTA.astro';
   <Header showSearch={false} showMobileDeliveryBanner={true} />
   <main>
     <Hero />
+    <CategoryAccess />
     <BestsellerSection />
     <HowToBuy />
     <ShippingPayments />
