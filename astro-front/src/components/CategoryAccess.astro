@@ -163,16 +163,19 @@ try {
     }
   }
 
-  @media (min-width: 1024px) {
-    .ca-row {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-    }
+  /* "Ver todo el catálogo" como noveno ítem, en su propia fila, centrado —
+     evita desbordes de una columna "auto" combinada con row-span (bug
+     encontrado en QA visual: el chip se salía del contenedor). */
+  .ca-chip-all {
+    justify-content: center;
+    text-align: center;
+  }
 
+  @media (min-width: 700px) {
     .ca-chip-all {
-      grid-column: 4 / 5;
-      grid-row: 1 / 4;
-      justify-content: center;
-      text-align: center;
+      grid-column: 1 / -1;
+      max-width: 260px;
+      margin: 0 auto;
     }
   }
 </style>
