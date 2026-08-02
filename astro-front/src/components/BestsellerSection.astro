@@ -82,6 +82,7 @@ try {
           <div class="bs-grid">
             {books.map(book => <BookCard book={book} />)}
           </div>
+          <a class="bs-see-all" href="/catalogo">Ver todo el catálogo →</a>
         </div>
       </section>
     ))
@@ -118,11 +119,36 @@ try {
     gap: 1rem;
   }
 
+  /* HOME-COMERCIAL-1 punto 2: mobile muestra 4 de las 8 (desktop mantiene
+     8) — display:none real, no ocupa espacio ni dejan huecos. Un acceso
+     claro a "Ver todo el catálogo" cubre el resto. */
+  @media (max-width: 639px) {
+    .bs-grid > :nth-child(n + 5) { display: none; }
+  }
+
   @media (min-width: 640px) {
     .bs-grid { grid-template-columns: repeat(3, 1fr); }
   }
 
   @media (min-width: 1024px) {
     .bs-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .bs-see-all {
+    display: inline-flex;
+    margin-top: 1.5rem;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 1.5px solid var(--salmon);
+    padding-bottom: 0.15rem;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .bs-see-all:hover {
+    color: var(--salmon-hover);
+    border-color: var(--salmon-hover);
   }
 </style>

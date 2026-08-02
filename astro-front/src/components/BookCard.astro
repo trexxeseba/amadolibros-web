@@ -1,4 +1,9 @@
 ---
+// HOME-COMERCIAL-1: jerarquía de card aprobada — precio principal, cuotas
+// debajo, transferencia como beneficio secundario, envío gratis cuando
+// corresponde, "Agregar al carrito" como acción principal, WhatsApp como
+// enlace secundario. Sin badge "Disponible" (estas cards ya son, por
+// construcción, solo activos con stock — home.json las filtra así).
 interface Book {
   id: string;
   title: string;
@@ -16,6 +21,10 @@ interface Props {
 }
 
 const { book } = Astro.props;
+
+// Debe coincidir con FREE_SHIPPING_THRESHOLD en functions/api/_orders_logic.js
+// (control previo HOME-COMERCIAL-1: el checkout real usa $2.000, no $1.500).
+const FREE_SHIPPING_THRESHOLD = 2000;
 
 function slugify(text: string): string {
   return (text || '')
@@ -36,7 +45,9 @@ const img = (book.pictures && book.pictures[0])
 
 const fichaHref = `/libro/${book.id}/${slugify(book.title)}`;
 
-const waText = `Hola! Me interesa el libro "${book.title}", ¿lo tienen disponible?`;
+// Corregido (HOME-COMERCIAL-1): estas cards ya muestran solo libros
+// disponibles — el mensaje no debe preguntar si lo están.
+const waText = `Hola! Me interesa el libro "${book.title}". Tengo una consulta antes de comprar.`;
 const waHref = `https://wa.me/59899841325?text=${encodeURIComponent(waText)}`;
 
 const fmt = new Intl.NumberFormat('es-UY', {
@@ -45,6 +56,7 @@ const fmt = new Intl.NumberFormat('es-UY', {
 const transferPrice = fmt.format(Math.round(book.price * 0.88));
 const basePrice     = fmt.format(book.price);
 const installment   = fmt.format(Math.ceil(book.price / 12));
+const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
 ---
 
 <article class="bc-card">
@@ -53,8 +65,6 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
   </a>
 
   <div class="bc-body">
-    <span class="bc-badge">Disponible</span>
-
     <a href={fichaHref} class="bc-title-link">
       <p class="bc-title">{book.title}</p>
     </a>
@@ -62,9 +72,14 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
     {book.author && <p class="bc-author">{book.author}</p>}
 
     <div class="bc-prices">
-      <span class="bc-price-transfer"><span class="bc-price-label">Transferencia -12%:</span> {transferPrice}</span>
-      <span class="bc-price-base">Precio: {basePrice}</span>
-      <span class="bc-cuotas">12 cuotas de {installment}</span>
+      <span class="bc-price-main">{basePrice}</span>
+      <span class="bc-cuotas">
+        {book.price >= 1500
+          ? `12 cuotas sin recargo de ${installment}`
+          : '12 cuotas sin recargo'}
+      </span>
+      <span class="bc-price-transfer">12% menos por transferencia: {transferPrice}</span>
+      {hasFreeShipping && <span class="bc-free-shipping">Envío gratis</span>}
     </div>
 
     <div class="bc-actions">
@@ -91,7 +106,7 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
         </svg>
-        Pedir por WhatsApp
+        Consultar por WhatsApp
       </a>
     </div>
   </div>
@@ -136,19 +151,6 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
     flex: 1;
   }
 
-  .bc-badge {
-    display: inline-block;
-    font-size: 0.625rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: #267a42;
-    background: rgba(37, 160, 80, 0.1);
-    border-radius: 999px;
-    padding: 0.15rem 0.5rem;
-    align-self: flex-start;
-  }
-
   .bc-title-link {
     color: inherit;
     text-decoration: none;
@@ -179,30 +181,37 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
   .bc-prices {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.15rem;
     margin-top: 0.25rem;
   }
 
-  .bc-price-transfer,
-  .bc-price-base,
-  .bc-cuotas {
-    font-size: 0.8125rem;
-    line-height: 1.25;
-  }
-
-  .bc-price-transfer {
+  /* Precio principal — el precio web/tarjeta, es lo primero que se lee. */
+  .bc-price-main {
+    font-size: 1rem;
+    font-weight: 800;
     color: var(--ink);
-    font-weight: 500;
+    line-height: 1.2;
   }
 
-  .bc-price-label {
-    font-style: italic;
-    font-weight: 700;
-  }
-
-  .bc-price-base,
   .bc-cuotas {
+    font-size: 0.78125rem;
     color: var(--ink-2);
+    line-height: 1.3;
+  }
+
+  /* Transferencia — beneficio secundario, no compite con el precio principal. */
+  .bc-price-transfer {
+    font-size: 0.75rem;
+    color: var(--salmon-hover);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .bc-free-shipping {
+    font-size: 0.75rem;
+    color: #267a42;
+    font-weight: 600;
+    line-height: 1.3;
   }
 
   .bc-actions {
@@ -237,6 +246,7 @@ const installment   = fmt.format(Math.ceil(book.price / 12));
   .bc-wa-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.35rem;
     font-family: var(--font-ui);
     font-size: 0.75rem;
