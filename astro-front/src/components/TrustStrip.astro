@@ -1,0 +1,83 @@
+---
+// HOME-COMERCIAL-1 punto 7: franja de confianza compacta, sin
+// estadísticas ni afirmaciones no verificadas. "Devoluciones y
+// reembolsos" está respaldado por una política real y accesible en
+// /devoluciones (derecho de retracto, plazos, quién paga el envío de
+// devolución — ver astro-front/src/pages/devoluciones.astro).
+---
+<section class="ts-section" aria-label="Confianza y garantías">
+  <div class="ts-inner">
+    <div class="ts-item">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 2 4 5v6c0 5 3.4 8.6 8 9 4.6-.4 8-4 8-9V5l-8-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Compra segura con Mercado Pago</span>
+    </div>
+
+    <div class="ts-item">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <circle cx="12" cy="9.5" r="2.3" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+      <a href="/contacto">Punto de retiro en Rincón 608 · Montevideo</a>
+    </div>
+
+    <div class="ts-item">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 10h13a4 4 0 0 1 0 8H8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m7 6-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <a href="/devoluciones">Devoluciones y reembolsos</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ts-section {
+    background: var(--ink);
+  }
+
+  .ts-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .ts-inner {
+      flex-direction: row;
+      justify-content: center;
+      gap: 2.5rem;
+      padding: 1.1rem 2rem;
+    }
+  }
+
+  .ts-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: rgba(248, 245, 239, 0.85);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .ts-item svg {
+    flex-shrink: 0;
+    color: var(--salmon);
+  }
+
+  .ts-item a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ts-item a:hover {
+    color: #fff;
+    text-decoration: underline;
+  }
+</style>

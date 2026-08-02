@@ -51,7 +51,7 @@ const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(request
             </svg>
           </span>
           <span>
-            <strong>Entrega en 2 horas</strong>
+            <strong>Entrega en 2 horas*</strong>
             <small>En Montevideo</small>
           </span>
         </li>
@@ -96,6 +96,8 @@ const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(request
           </span>
         </li>
       </ul>
+
+      <p class="delivery-disclaimer">*El plazo depende de la zona y del horario del pedido. Coordinamos la entrega con vos.</p>
 
       <div class="request-box">
         <div>
@@ -294,6 +296,13 @@ const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(request
     color: rgba(255, 255, 255, 0.72);
     font-size: 0.68rem;
     line-height: 1.25;
+  }
+
+  .delivery-disclaimer {
+    margin-top: 0.6rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.68rem;
+    line-height: 1.4;
   }
 
   .request-box {

@@ -12,9 +12,12 @@ import SearchOverlay          from '../components/SearchOverlay.astro';
 import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
 import HowToBuy           from '../components/HowToBuy.astro';
 import ShippingPayments    from '../components/ShippingPayments.astro';
-import NotFoundCTA         from '../components/NotFoundCTA.astro';
+import TrustStrip          from '../components/TrustStrip.astro';
 ---
-<BaseLayout canonical="https://www.amadolibros.com/">
+<BaseLayout
+  canonical="https://www.amadolibros.com/"
+  description="Libros importados y por encargo en Uruguay. Entrega en 2 horas en Montevideo y envíos a todo el país."
+>
   <Header showSearch={false} showMobileDeliveryBanner={true} />
   <main>
     <Hero />
@@ -22,7 +25,7 @@ import NotFoundCTA         from '../components/NotFoundCTA.astro';
     <BestsellerSection />
     <HowToBuy />
     <ShippingPayments />
-    <NotFoundCTA />
+    <TrustStrip />
   </main>
   <Footer />
   <WAFloat />
