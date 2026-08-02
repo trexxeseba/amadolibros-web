@@ -14,12 +14,15 @@
  *
  * DATOS: R2 catalog.json — misma fuente que libro/[[path]].js y sitemap.xml.js.
  *
- * CF-CATEGORÍAS-2 (solo Preview): filtro opcional por categoría (?categoria=)
- * sobre el catálogo ACTIVO, usando el artefacto compacto generado por
- * scripts/categorize/export-active-categories.js (mlu -> categoryId, solo
- * activos ya resueltos por reglas — nunca el classifications.json completo
- * de 6MB). No aplica a pausados todavía. Combinable con ?q=. Fuera de
- * Preview, el parámetro se ignora por completo — catálogo sin cambios.
+ * CF-CATEGORÍAS-2C (solo Preview): filtro por categoría (?categoria=) y
+ * subcategoría (?subcategoria=) sobre el catálogo ACTIVO, usando el
+ * artefacto compacto generado por scripts/categorize/export-active-categories.js
+ * (mlu -> [categoryId, subcategoryId?], TODOS los activos — incluye
+ * "otros-productos" para lo que no es un libro, visible, no oculto).
+ * Combinable con ?q=, con orden de relevancia (ISBN exacto > título exacto
+ * > título empieza con > frase en título > autor exacto > todas las
+ * palabras > coincidencia parcial). Fuera de Preview, los parámetros se
+ * ignoran por completo — catálogo sin cambios.
  */
 
 import { slugify } from './_shared/slug.js';
@@ -54,7 +57,8 @@ function normalizeText(value = '') {
     return String(value)
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '');
+        .replace(/[̀-ͯ]/g, '')
+        .trim();
 }
 
 function tokenize(value = '') {
@@ -86,15 +90,76 @@ function itemMatchesQuery(book, queryTokens, queryDigits) {
     return textMatch || isbnMatch;
 }
 
+// ── Orden de relevancia (CF-CATEGORÍAS-2C punto 5) ─────────────────────────
+// Rangos, de más a menos relevante. Todo lo que entra al resultado ya pasó
+// itemMatchesQuery (o no hay q) — esto solo decide el ORDEN entre lo que ya
+// matcheó, nunca agrega resultados nuevos.
+const RANK = {
+    ISBN_EXACT: 1,
+    TITLE_EXACT: 2,
+    TITLE_STARTS_WITH: 3,
+    TITLE_PHRASE: 4,
+    AUTHOR_EXACT: 5,
+    ALL_WORDS_EXACT: 6,
+    PARTIAL: 7,
+    FUZZY: 8,
+};
+
+function relevanceRank(book, ctx) {
+    const { normalizedQuery, queryTokens, queryDigits } = ctx;
+    if (!normalizedQuery) return RANK.PARTIAL;
+    const normTitle = normalizeText(book.title);
+    const normAuthor = normalizeText(book.author);
+    if (queryDigits.length >= 3 && onlyDigits(String(book.isbn ?? '')) === queryDigits) return RANK.ISBN_EXACT;
+    if (normTitle === normalizedQuery) return RANK.TITLE_EXACT;
+    if (normTitle.startsWith(normalizedQuery)) return RANK.TITLE_STARTS_WITH;
+    if (normTitle.includes(normalizedQuery)) return RANK.TITLE_PHRASE;
+    if (normAuthor === normalizedQuery) return RANK.AUTHOR_EXACT;
+    const titleWords = tokenize(book.title);
+    if (queryTokens.length > 0 && queryTokens.every(qt => titleWords.includes(qt))) return RANK.ALL_WORDS_EXACT;
+    return RANK.PARTIAL;
+}
+
+// Tolerancia liviana a errores de tipeo — CF-CATEGORÍAS-2C punto 5: "si se
+// implementa, debe ser liviana y estar acotada". Se usa SOLO como último
+// recurso, cuando la búsqueda estricta (itemMatchesQuery) no encontró nada,
+// y solo compara la palabra completa de la consulta contra palabras del
+// título de longitud similar (distancia de edición <= 1) — nunca sobre
+// fragmentos cortos (<4 letras), para no producir resultados absurdos.
+function levenshteinAtMost1(a, b) {
+    if (a === b) return true;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    let i = 0, j = 0, edits = 0;
+    while (i < la && j < lb) {
+        if (a[i] === b[j]) { i++; j++; continue; }
+        edits++;
+        if (edits > 1) return false;
+        if (la === lb) { i++; j++; } // sustitución
+        else if (la > lb) i++; // borrado en a
+        else j++; // inserción en a
+    }
+    if (i < la || j < lb) edits++;
+    return edits <= 1;
+}
+
+function fuzzyMatches(book, queryTokens) {
+    if (queryTokens.length !== 1 || queryTokens[0].length < 4) return false;
+    const q = queryTokens[0];
+    const titleWords = tokenize(book.title);
+    return titleWords.some(w => w.length >= 4 && levenshteinAtMost1(q, w));
+}
+
 function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
 }
 
-// CF-CATEGORÍAS-2 — artefacto compacto mlu->categoryId, solo Preview.
-// Mismo patrón de cache de borde que fetchCatalog/fetchActiveIndex
-// (functions/_shared/catalog.js), pero deliberadamente separado: este
-// archivo es propio de este lote (no pertenece al catálogo de MELI) y no
-// debe volverse una dependencia de _shared/catalog.js sin necesidad real.
+// CF-CATEGORÍAS-2 — artefacto compacto mlu->[categoryId,subcategoryId?],
+// solo Preview. Mismo patrón de cache de borde que fetchCatalog/
+// fetchActiveIndex (functions/_shared/catalog.js), pero deliberadamente
+// separado: este archivo es propio de este lote (no pertenece al catálogo
+// de MELI) y no debe volverse una dependencia de _shared/catalog.js sin
+// necesidad real.
 async function fetchActiveCategories(ctx) {
     // Nunca debe romper /catalogo: si el artefacto no existe todavía (por
     // ejemplo en tests, o antes del primer deploy que lo incluya), el
@@ -125,33 +190,74 @@ async function fetchActiveCategories(ctx) {
     }
 }
 
-function categorySelectHtml(categories, counts, selectedId) {
-    if (!categories || categories.length === 0) return '';
-    const options = [`<option value=""${selectedId ? '' : ' selected'}>Todos los libros</option>`]
+function filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, selectedCategory }) {
+    if (!categories || categories.length === 0) {
+        return `<form class="filters-bar" action="/catalogo" method="get">
+    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    <button type="submit">Buscar</button>
+  </form>`;
+    }
+    const catOptions = [`<option value=""${categoria ? '' : ' selected'}>Todos</option>`]
         .concat(categories.map(c => {
-            const n = counts?.[c.id] ?? 0;
-            const sel = c.id === selectedId ? ' selected' : '';
-            return `<option value="${escapeHtml(c.id)}"${sel}>${escapeHtml(c.name)} (${n})</option>`;
-        }))
-        .join('\n      ');
-    return `<label class="cat-select-wrap">
+            const sel = c.id === categoria ? ' selected' : '';
+            return `<option value="${escapeHtml(c.id)}"${sel}>${escapeHtml(c.name)} (${c.count})</option>`;
+        })).join('\n      ');
+
+    // Compacto en mobile: la subcategoría solo se renderiza cuando ya hay
+    // una categoría elegida con subcategorías reales — nunca se muestran
+    // las 19 categorías y todas las subcategorías a la vez.
+    const subOptionsHtml = (selectedCategory?.subcategories?.length)
+        ? `<label class="cat-select-wrap">
+      <span class="sr-only">Subcategoría</span>
+      <select name="subcategoria" id="subcat-select" onchange="this.form.submit()">
+      ${[`<option value=""${subcategoria ? '' : ' selected'}>Todas</option>`]
+            .concat(selectedCategory.subcategories.map(s => {
+                const sel = s.id === subcategoria ? ' selected' : '';
+                return `<option value="${escapeHtml(s.id)}"${sel}>${escapeHtml(s.name)} (${s.count})</option>`;
+            })).join('\n      ')}
+      </select>
+    </label>`
+        : '';
+
+    const hasAnyFilter = Boolean(rawQ) || Boolean(categoria) || Boolean(subcategoria);
+    const clearHref = rawQ ? `/catalogo?q=${encodeURIComponent(rawQ)}` : '/catalogo';
+    const clearLink = hasAnyFilter && (categoria || subcategoria)
+        ? `<a class="clear-filters" href="${escapeHtml(clearHref)}">Limpiar filtros ✕</a>`
+        : '';
+
+    return `<form class="filters-bar" action="/catalogo" method="get">
+    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    <label class="cat-select-wrap">
       <span class="sr-only">Categoría</span>
       <select name="categoria" id="cat-select" onchange="this.form.submit()">
-      ${options}
+      ${catOptions}
       </select>
-    </label>`;
+    </label>
+    ${subOptionsHtml}
+    <button type="submit">Buscar</button>
+  </form>
+  ${clearLink}`;
 }
 
 const CAT_SELECT_STYLES = `
-    .filters-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem}
+    .filters-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem}
     .filters-bar input[type=search]{flex:1;min-width:180px}
     .cat-select-wrap{display:flex}
     .cat-select-wrap select{padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
                       font-size:.85rem;color:#1e293b;background:#fff;outline:none;max-width:100%}
     .cat-select-wrap select:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
+    .clear-filters{display:inline-block;margin-bottom:1.25rem;font-size:.82rem;
+                    color:#a94e3d;text-decoration:none;font-weight:600}
+    .clear-filters:hover{text-decoration:underline}
+    .active-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
+    .filter-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;
+                 background:#efe6db;border-radius:999px;font-size:.75rem;color:#4a3d30;font-weight:600}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
              clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    @media (max-width: 480px){.filters-bar{flex-direction:column}.filters-bar input[type=search],.cat-select-wrap select{width:100%}}
+    @media (max-width: 480px){
+      .filters-bar{flex-direction:column}
+      .filters-bar input[type=search],.cat-select-wrap select{width:100%}
+    }
 `;
 
 export async function onRequest(ctx) {
@@ -160,19 +266,23 @@ export async function onRequest(ctx) {
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
     const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
+    const rawSubcategoria = url.searchParams.get('subcategoria')?.trim() ?? '';
 
-    // CF-CATEGORÍAS-2: el filtro de categoría solo existe en Preview — en
-    // producción el parámetro se ignora completamente, catálogo sin cambios.
+    // CF-CATEGORÍAS-2C: el filtro de categoría solo existe en Preview — en
+    // producción los parámetros se ignoran completamente, catálogo sin cambios.
     const categoryFeatureEnabled = ctx.env?.APP_ENV === 'preview';
     const categoryData = categoryFeatureEnabled ? await fetchActiveCategories(ctx) : null;
     const categories = categoryData?.categories || [];
-    const categoryCounts = categoryData?.counts || {};
-    const categoryItems = categoryData?.items || {};
+    const categoryItems = categoryData?.items || {}; // mlu -> [categoryId, subcategoryId?]
     const validCategoryIds = new Set(categories.map(c => c.id));
-    // Categoría inválida vuelve a "Todos los libros" — nunca 404, nunca error.
+    // Categoría inválida vuelve a "Todos" — nunca 404, nunca error.
     const categoria = rawCategoria && validCategoryIds.has(rawCategoria) ? rawCategoria : '';
-    const selectedCategoryName = categoria
-        ? (categories.find(c => c.id === categoria)?.name || '')
+    const selectedCategory = categoria ? categories.find(c => c.id === categoria) : null;
+    const validSubcategoryIds = new Set((selectedCategory?.subcategories || []).map(s => s.id));
+    // Subcategoría inválida (o sin categoría elegida) vuelve a "Todas".
+    const subcategoria = categoria && rawSubcategoria && validSubcategoryIds.has(rawSubcategoria) ? rawSubcategoria : '';
+    const selectedSubcategoryName = subcategoria
+        ? (selectedCategory.subcategories.find(s => s.id === subcategoria)?.name || '')
         : '';
 
     // CF-R2-2-BRIDGE: habilitado explícitamente en Preview y producción — cada
@@ -201,7 +311,17 @@ export async function onRequest(ctx) {
     const activeItems = Array.isArray(activeIndex?.items)
         ? activeIndex.items
         : items.filter(b => b.status === 'active' && Number(b.available_quantity) > 0);
-    const eligibleItems = rawQ ? [...activeItems, ...pausedItems] : activeItems;
+    // "Todos" (CF-CATEGORÍAS-2C punto 1) — el catálogo activo completo, sin
+    // recorte por clasificación: cualquier activo sin filtro sigue visible.
+    const eligibleItemsRaw = rawQ ? [...activeItems, ...pausedItems] : activeItems;
+    // Nunca duplicar un MLU en la grilla — red de seguridad aunque
+    // activos/pausados deberían ser conjuntos disjuntos por construcción.
+    const seenIds = new Set();
+    const eligibleItems = eligibleItemsRaw.filter(b => {
+        if (seenIds.has(b.id)) return false;
+        seenIds.add(b.id);
+        return true;
+    });
     const safeQ = escapeHtml(rawQ);
     const hasFilter = Boolean(rawQ) || Boolean(categoria);
 
@@ -246,14 +366,6 @@ export async function onRequest(ctx) {
     nav a  { color: #3b82f6; }
     footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;
              font-size: 0.78rem; color: #94a3b8; }
-    .idx-search{display:flex;gap:.5rem;margin-bottom:1.5rem}
-    .idx-search input{flex:1;padding:.55rem .875rem;border:1px solid #d1c8be;border-radius:.5rem;
-                      font-size:.9rem;color:#1e293b;background:#fff;outline:none}
-    .idx-search input:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
-    .idx-search button{padding:.55rem 1rem;background:#18120e;color:#fff;border:none;
-                       border-radius:.5rem;font-size:.875rem;font-weight:600;cursor:pointer;
-                       white-space:nowrap}
-    .idx-search button:hover{background:#2d1f14}
     ${CAT_SELECT_STYLES}
   </style>
 </head>
@@ -261,11 +373,7 @@ export async function onRequest(ctx) {
   <nav><a href="/">← Amado Libros</a></nav>
   <h1>Catálogo completo</h1>
   <p class="sub">${activeItems.length} títulos disponibles.</p>
-  <form class="idx-search filters-bar" action="/catalogo" method="get">
-    <input type="search" name="q" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
-    ${categorySelectHtml(categories, categoryCounts, categoria)}
-    <button type="submit">Buscar</button>
-  </form>
+  ${filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, selectedCategory })}
   <ul>
 ${rows}
   </ul>
@@ -290,16 +398,31 @@ ${rows}
     // números y separadores habituales. Una búsqueda alfanumérica como
     // "zzzinexistente999" no debe coincidir con ISBN que contengan 999.
     const queryDigits = /^[\d\s-]+$/.test(rawQ.trim()) ? onlyDigits(rawQ) : '';
+    const normalizedQuery = normalizeText(rawQ);
+    const rankCtx = { normalizedQuery, queryTokens, queryDigits };
 
     const searchStartedAt = perfNow();
-    const filtered = eligibleItems
-        .filter(b => (rawQ ? itemMatchesQuery(b, queryTokens, queryDigits) : true))
-        .filter(b => (categoria ? categoryItems[b.id] === categoria : true))
+    let strictMatches = rawQ
+        ? eligibleItems.filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
+        : eligibleItems;
+    // Tolerancia liviana a errores de tipeo: solo si la búsqueda estricta no
+    // encontró nada, con una sola palabra, y acotada a distancia 1.
+    let usedFuzzy = false;
+    if (rawQ && strictMatches.length === 0 && queryTokens.length === 1) {
+        const fuzzy = eligibleItems.filter(b => fuzzyMatches(b, queryTokens));
+        if (fuzzy.length > 0) { strictMatches = fuzzy; usedFuzzy = true; }
+    }
+    const filtered = strictMatches
+        .filter(b => (categoria ? (categoryItems[b.id] || [])[0] === categoria : true))
+        .filter(b => (subcategoria ? (categoryItems[b.id] || [])[1] === subcategoria : true))
+        .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
-            const aAvailable = a.status === 'active' && Number(a.available_quantity) > 0;
-            const bAvailable = b.status === 'active' && Number(b.available_quantity) > 0;
+            if (a.rank !== b.rank) return a.rank - b.rank;
+            const aAvailable = a.book.status === 'active' && Number(a.book.available_quantity) > 0;
+            const bAvailable = b.book.status === 'active' && Number(b.book.available_quantity) > 0;
             return Number(bAvailable) - Number(aAvailable);
-        });
+        })
+        .map(x => x.book);
     recordPerf(ctx, 'search', searchStartedAt);
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
@@ -352,19 +475,31 @@ ${rows}
             ? `Mostrando los primeros ${MAX_RESULTS} de ${filtered.length} ${resultLabel}.`
             : `${filtered.length} ${resultLabel}.`;
 
-    const heading = rawQ && categoria
-        ? `Resultados para &ldquo;${safeQ}&rdquo; en ${escapeHtml(selectedCategoryName)}`
+    const filterLabelParts = [];
+    if (categoria) filterLabelParts.push(escapeHtml(selectedCategory.name));
+    if (subcategoria) filterLabelParts.push(escapeHtml(selectedSubcategoryName));
+    const filterLabel = filterLabelParts.join(' › ');
+
+    const heading = rawQ && filterLabel
+        ? `Resultados para &ldquo;${safeQ}&rdquo; en ${filterLabel}`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo;`
-            : escapeHtml(selectedCategoryName);
-    const pageTitle = rawQ && categoria
-        ? `${safeQ} en ${escapeHtml(selectedCategoryName)} — Amado Libros`
+            : filterLabel;
+    const pageTitle = rawQ && filterLabel
+        ? `${safeQ} en ${filterLabel} — Amado Libros`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo; — Amado Libros`
-            : `${escapeHtml(selectedCategoryName)} — Amado Libros`;
+            : `${filterLabel} — Amado Libros`;
     const emptyMessage = rawQ
-        ? `Sin resultados para &ldquo;${safeQ}&rdquo;${categoria ? ` en ${escapeHtml(selectedCategoryName)}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''} o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.`
+        ? `Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''} o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.`
         : `Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.`;
+
+    // Chips de filtros activos — visibilidad clara de qué está aplicado.
+    const chips = [];
+    if (rawQ) chips.push(`<span class="filter-chip">“${safeQ}”</span>`);
+    if (categoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedCategory.name)}</span>`);
+    if (subcategoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedSubcategoryName)}</span>`);
+    const chipsHtml = chips.length > 0 ? `<div class="active-filters">${chips.join('')}</div>` : '';
 
     const renderStartedAt = perfNow();
     const html = `<!DOCTYPE html>
@@ -385,7 +520,7 @@ ${rows}
     nav a{color:#3b82f6;text-decoration:none}
     nav a:hover{text-decoration:underline}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
-    .sub{color:#64748b;font-size:.875rem;margin-bottom:1.5rem}
+    .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
     .grid{display:grid;gap:1rem;
           grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
     @media(min-width:500px){.grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
@@ -414,14 +549,6 @@ ${rows}
     .rc-transfer{color:#18120e;font-weight:600}
     .rc-lbl{font-weight:700}
     .rc-base{color:#6b6157}
-    .search-bar{display:flex;gap:.5rem;margin-bottom:1.5rem}
-    .search-bar input{flex:1;padding:.55rem .875rem;border:1px solid #d1c8be;border-radius:.5rem;
-                      font-size:.9rem;color:#1e293b;background:#fff;outline:none}
-    .search-bar input:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
-    .search-bar button{padding:.55rem 1rem;background:#18120e;color:#fff;border:none;
-                       border-radius:.5rem;font-size:.875rem;font-weight:600;cursor:pointer;
-                       white-space:nowrap}
-    .search-bar button:hover{background:#2d1f14}
     .wa-link{color:#15803d;font-weight:500}
     .rc-badge{display:inline-flex;align-self:flex-start;padding:.18rem .55rem;
               border-radius:999px;font-size:.68rem;font-weight:800;
@@ -449,11 +576,8 @@ ${rows}
 <body>
 <div class="wrap">
   <nav><a href="/">← Amado Libros</a></nav>
-  <form class="search-bar filters-bar" action="/catalogo" method="get">
-    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
-    ${categorySelectHtml(categories, categoryCounts, categoria)}
-    <button type="submit">Buscar</button>
-  </form>
+  ${filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, selectedCategory })}
+  ${chipsHtml}
   <h1>${heading}</h1>
   <p class="sub">${subText}</p>
   ${filtered.length > 0
