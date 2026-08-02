@@ -183,6 +183,45 @@ test('sin MLU duplicados en la salida', () => {
   }
 });
 
+test('CF-CATEGORÍAS-2D: las pausadas también quedan clasificadas, sin categoría nula', () => {
+  const dir = makeTempDir();
+  try {
+    const items = [
+      { id: 'MLU1', title: 'Historia Del Uruguay', author: 'Ian Kershaw', status: 'active' },
+      { id: 'MLU2', title: 'Tarot Egipcio', author: '', status: 'paused' },
+      { id: 'MLU3', title: 'xkzq blorp sin señal alguna', author: '', publisher: '', isbn: '', status: 'paused' },
+    ];
+    const snapshotPath = writeSnapshot(dir, items);
+    const correctionsPath = writeCorrections(dir, []);
+    const outputPath = path.join(dir, 'out.json');
+    const { results } = run({ snapshotPath, outputPath, correctionsPath });
+    const paused = results.filter(r => r.status === 'paused');
+    assert.equal(paused.length, 2);
+    for (const r of paused) assert.notEqual(r.primaryCategoryId, null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CF-CATEGORÍAS-2D: la categoría de un producto no depende de su status (se conserva al reactivarse)', () => {
+  const dir = makeTempDir();
+  try {
+    const active = writeSnapshot(dir, [
+      { id: 'MLU1', title: 'Tarot Egipcio Oráculo', author: '', status: 'active' },
+    ]);
+    const paused = writeSnapshot(dir, [
+      { id: 'MLU1', title: 'Tarot Egipcio Oráculo', author: '', status: 'paused' },
+    ]);
+    const correctionsPath = writeCorrections(dir, []);
+    const rActive = run({ snapshotPath: active, outputPath: path.join(dir, 'out-active.json'), correctionsPath });
+    const rPaused = run({ snapshotPath: paused, outputPath: path.join(dir, 'out-paused.json'), correctionsPath });
+    assert.equal(rActive.results[0].primaryCategoryId, rPaused.results[0].primaryCategoryId);
+    assert.equal(rActive.results[0].subcategoryId, rPaused.results[0].subcategoryId);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('lanza un error claro si no existe el snapshot (no intenta llamar a producción)', () => {
   const dir = makeTempDir();
   try {

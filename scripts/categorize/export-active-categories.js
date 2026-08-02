@@ -1,14 +1,18 @@
 // scripts/categorize/export-active-categories.js
 //
 // Genera el artefacto compacto que consume /catalogo en Preview — mlu ->
-// {categoryId, subcategoryId}, solo activos. Deliberadamente chico (no el
-// classifications.json completo de 6MB). No modifica el dato original de
-// MELI, no toca R2/D1/KV — solo lee scripts/categorize/data/classifications.json
-// (ya generado por run.js) y escribe un archivo estático versionado que se
+// {categoryId, subcategoryId}, para el universo público completo (activos +
+// pausados; los cerrados/eliminados nunca entran al snapshot de origen, ver
+// fetch-catalog.js). Deliberadamente chico (no el classifications.json
+// completo de ~7MB). No modifica el dato original de MELI, no toca
+// R2/D1/KV — solo lee scripts/categorize/data/classifications.json (ya
+// generado por run.js) y escribe un archivo estático versionado que se
 // despliega junto con el sitio (astro-front/public/).
 //
 // CF-CATEGORÍAS-2C: incluye "otros-productos" (antes excluido) y las
 // subcategorías reales de cada categoría con libros activos.
+// CF-CATEGORÍAS-2D: incluye también pausados — "Todos" en /catalogo debe
+// ser activos + pausados visibles, con la misma clasificación y filtros.
 //
 // Uso: node scripts/categorize/export-active-categories.js
 
@@ -31,7 +35,7 @@ function main() {
   const subCounts = {}; // "categoryId/subcategoryId" -> count
 
   for (const r of results) {
-    if (r.status !== 'active' || !r.primaryCategoryId) continue;
+    if ((r.status !== 'active' && r.status !== 'paused') || !r.primaryCategoryId) continue;
     items[r.mlu] = r.subcategoryId ? [r.primaryCategoryId, r.subcategoryId] : [r.primaryCategoryId];
     counts[r.primaryCategoryId] = (counts[r.primaryCategoryId] || 0) + 1;
     if (r.subcategoryId) {
@@ -40,8 +44,8 @@ function main() {
     }
   }
 
-  // Solo categorías/subcategorías con al menos un libro activo — nunca un
-  // menú con opciones vacías.
+  // Solo categorías/subcategorías con al menos un producto público (activo o
+  // pausado) — nunca un menú con opciones vacías.
   const categories = CATEGORIES
     .filter(c => counts[c.id] > 0)
     .map(c => ({
@@ -64,7 +68,7 @@ function main() {
   mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   const json = JSON.stringify(out);
   writeFileSync(OUT_PATH, json);
-  console.log(`[export-active-categories] ${Object.keys(items).length} MLU activos en ${categories.length} categorías -> ${OUT_PATH}`);
+  console.log(`[export-active-categories] ${Object.keys(items).length} MLU públicos (activos+pausados) en ${categories.length} categorías -> ${OUT_PATH}`);
   console.log(`[export-active-categories] tamaño: ${(json.length / 1024).toFixed(1)} KB`);
 }
 

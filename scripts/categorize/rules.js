@@ -13,7 +13,7 @@
 // aparecían repetidos en categorías distintas) se filtraron antes de esta
 // exportación porque no son una señal útil.
 
-export const RULES_VERSION = 6;
+export const RULES_VERSION = 8;
 
 export const MINED_AUTHOR_SIGNALS = {
   "esoterismo-tarot": {
@@ -57,7 +57,13 @@ export const MINED_AUTHOR_SIGNALS = {
       "Salerno Toni Carmine",
       "Travis McHenry",
       "Vanesa Maiorana",
-      "Yoshi Yoshitani"
+      "Yoshi Yoshitani",
+      "Rebecca Campbell",
+      "Campbell, Rebecca",
+      "Benny Hinn",
+      "Hinn, Benny",
+      "C. W. Leadbeater",
+      "LEADBEATER, C. W."
     ],
     "publishers": [
       "Da Brigh",
@@ -216,7 +222,51 @@ export const MINED_AUTHOR_SIGNALS = {
       "Tennessee Williams",
       "Tolkien, J. R. R.",
       "Wilde, Oscar",
-      "Zahn, Timothy"
+      "Zahn, Timothy",
+      "Stephen King",
+      "King, Stephen",
+      "Neil Gaiman",
+      "Carlos Ruiz Zafón",
+      "Ruiz Zafón, Carlos",
+      "George R. R. Martin",
+      "Martin, George R. R.",
+      "Nora Roberts",
+      "Roberts, Nora",
+      "Paul Auster",
+      "Orhan Pamuk",
+      "Ayn Rand",
+      "Anthony Doerr",
+      "Doerr, Anthony",
+      "Colleen Hoover",
+      "Hoover, Colleen",
+      "Julia Quinn",
+      "Quinn, Julia",
+      "Elísabet Benavent",
+      "Alice Kellen",
+      "Mercedes Ron",
+      "Rebecca Yarros",
+      "Holly Jackson",
+      "Alice Oseman",
+      "Oseman, Alice",
+      "Florencia Bonelli",
+      "Santiago Posteguillo",
+      "Michael McDowell",
+      "Ana Huang",
+      "Leigh Bardugo",
+      "Holly Black",
+      "Black, Holly",
+      "Maggie Stiefvater",
+      "Stiefvater, Maggie",
+      "Jennifer L. Armentrout",
+      "Marissa Meyer",
+      "Haruki Murakami",
+      "Murakami, Haruki",
+      "Émile Zola",
+      "Zola, Émile",
+      "Joe Abercrombie",
+      "Abercrombie, Joe",
+      "Roald Dahl",
+      "Dahl, Roald"
     ],
     "publishers": []
   },
@@ -261,7 +311,27 @@ export const MINED_AUTHOR_SIGNALS = {
       "Sam Falconer",
       "Santiago, Roberto",
       "Star Wars",
-      "Yael Frankel"
+      "Yael Frankel",
+      "Sam McBratney",
+      "McBratney, Sam",
+      "Eric Carle",
+      "Carle, Eric",
+      "Fiona Watt",
+      "Watt, Fiona",
+      "Megan Cullis",
+      "Cullis, Megan",
+      "Hervé Tullet",
+      "Tullet, Hervé",
+      "Manas, Pedro",
+      "Pedro Mañas",
+      "Orianne Lallemand",
+      "Lallemand, Orianne",
+      "Violeta Denou",
+      "Scott Cawthon",
+      "Cawthon, Scott",
+      "Astley - Baker - Davies",
+      "Nickelodeon",
+      "Peppa Pig"
     ],
     "publishers": []
   },
@@ -300,7 +370,35 @@ export const MINED_AUTHOR_SIGNALS = {
       "SHAPIRO, FORREST y otros",
       "Sergio Siciliano",
       "Sigmund, Freud",
-      "YUNI JOSE A"
+      "YUNI JOSE A",
+      "Carl Gustav Jung",
+      "Jung, Carl Gustav",
+      "Carl G. Jung",
+      "Jung, Carl G.",
+      "Carl Jung",
+      "John Bowlby",
+      "Bowlby, John",
+      "Jacques-Alain Miller",
+      "Miller, Jacques-Alain",
+      "Luciano Lutereau",
+      "Diana S. Rabinovich",
+      "Esteban Levin",
+      "Levin, Esteban",
+      "Claudio Naranjo",
+      "Laura Gutman",
+      "Alicia Fernandez",
+      "Rebeca Anijovich",
+      "Anijovich, Rebeca",
+      "Maritchu Seitún",
+      "Bert Hellinger",
+      "Peter A. Levine",
+      "Levine, Peter A.",
+      "Daniel Goleman",
+      "Goleman, Daniel",
+      "Margarita Maine",
+      "MAINE, MARGARITA",
+      "José Carlos Bermejo",
+      "Bermejo, José Carlos"
     ],
     "publishers": []
   },
@@ -323,7 +421,14 @@ export const MINED_AUTHOR_SIGNALS = {
       "Piñuel, Iñaki",
       "Serrano Ruiz, Francisca",
       "Verne Harnish",
-      "Voss, Chris"
+      "Voss, Chris",
+      "Benjamin Graham",
+      "Graham, Benjamin",
+      "Mary Buffett y David Clark",
+      "Don Tapscott",
+      "José Luis Espert",
+      "Thomas Piketty",
+      "Alex Hormozi"
     ],
     "publishers": []
   },
@@ -371,7 +476,24 @@ export const MINED_AUTHOR_SIGNALS = {
       "Samsó, Raimon",
       "Sharman Robin",
       "Victoria Conte",
-      "Yoshinori Noguchi"
+      "Yoshinori Noguchi",
+      "Jorge Bucay",
+      "Allen Carr",
+      "Russ Harris",
+      "Jordan B. Peterson",
+      "Bernardo Stamateas",
+      "Stamateas, Bernardo",
+      "Jane Nelsen",
+      "Nelsen, Jane",
+      "JANE NELSEN",
+      "Dawn Huebner",
+      "Huebner, Dawn",
+      "Silvia Congost Provensal",
+      "Congost Provensal, Silvia",
+      "Míriam Tirado",
+      "Tirado, Míriam",
+      "Anamar Orihuela",
+      "Orihuela, Anamar"
     ],
     "publishers": []
   },
@@ -422,7 +544,12 @@ export const MINED_AUTHOR_SIGNALS = {
       "Read, Carol",
       "Sheila Dignen - Lynda Edwards",
       "Spencer, David",
-      "Thompson, Tamzin"
+      "Thompson, Tamzin",
+      "Cambridge",
+      "Editora Cambridge",
+      "Richmond",
+      "Macmillan",
+      "Macmillan Education"
     ],
     "publishers": []
   },
@@ -448,7 +575,11 @@ export const MINED_AUTHOR_SIGNALS = {
       "Ruocco, Juan",
       "Sayak Valencia",
       "Segato Rita Laura",
-      "Stanley, Jason"
+      "Stanley, Jason",
+      "Byung Chul Han",
+      "Byung-Chul Han",
+      "Simone Weil",
+      "Platón"
     ],
     "publishers": []
   },
@@ -491,7 +622,15 @@ export const MINED_AUTHOR_SIGNALS = {
       "SATI",
       "SEARS BARRY",
       "Torralva, Teresa",
-      "Valls, Carme"
+      "Valls, Carme",
+      "Henry Marsh",
+      "Marsh, Henry",
+      "Julio Basulto",
+      "Basulto, Julio",
+      "Anthony William",
+      "William, Anthony",
+      "Carlos Jaramillo",
+      "Jaramillo, Carlos"
     ],
     "publishers": []
   },
@@ -539,7 +678,12 @@ export const MINED_AUTHOR_SIGNALS = {
       "LAPIERRE, DOMINIQUE",
       "Michael H. Kater",
       "Raymond Cartier",
-      "SABORIDO JORGE"
+      "SABORIDO JORGE",
+      "René Favaloro",
+      "Ceferino Reato",
+      "Juan B. Yofre",
+      "Massimiliano Afiero",
+      "Afiero, Massimiliano"
     ],
     "publishers": []
   },
@@ -627,6 +771,9 @@ export const KEYWORD_SIGNALS = {
     kw('diccionario ingles', 'ingles'), kw('cambridge english', 'ingles'),
     kw('gramatica inglesa', 'ingles'), kw('diccionario'), kw('english', 'ingles'),
     kw('oxford', 'ingles'), kw('pearson', 'ingles'), kw('with cd', 'ingles'),
+    kw("pupil's book", 'ingles'), kw('pupils book', 'ingles'),
+    kw('activity book', 'ingles'), kw('kids box', 'ingles'),
+    kw('super minds', 'ingles'), kw('work book', 'ingles'),
     kw('lenguaje'), kw('ingles', 'ingles'),
   ],
   'medicina-salud': [
@@ -652,7 +799,8 @@ export const KEYWORD_SIGNALS = {
     kw('trastorno de ansiedad', 'psicologia-clinica'),
     kw('psicologia del desarrollo', 'neuropsicologia'),
     kw('psicologia', 'psicologia-clinica'), kw('lacan', 'psicoanalisis'),
-    kw('freud', 'psicoanalisis'), kw('terapia', 'psicologia-clinica'),
+    kw('freud', 'psicoanalisis'), kw('carl jung', 'psicoanalisis'),
+    kw('terapia', 'psicologia-clinica'),
     kw('emociones'),
   ],
   'derecho': [
@@ -730,6 +878,11 @@ export const KEYWORD_SIGNALS_WEAK = {
   'infantil-juvenil': [kw('juego'), kw('juegos'), kw('album')],
   'historia': [kw('mundo'), kw('vida')],
   'desarrollo-personal': [kw('poder'), kw('mejor'), kw('vivir')],
+  // Sellos/colecciones de bolsillo dedicados casi exclusivamente a ficción
+  // literaria (visto en el análisis de otros-libros: Paul Auster, Nora
+  // Roberts, Orhan Pamuk, George R. R. Martin bajo estos sellos) — señal
+  // débil porque el sello no garantiza género, solo lo hace muy probable.
+  'literatura-ficcion': [kw('booket', 'novela'), kw('debolsillo', 'novela')],
 };
 
 // ─── Señales de tipo "no es un libro" con sub-tipo ─────────────────────────
