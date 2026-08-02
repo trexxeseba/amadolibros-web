@@ -86,11 +86,30 @@ function buildPublisherIndex() {
 const AUTHOR_INDEX = buildAuthorIndex();
 const PUBLISHER_INDEX = buildPublisherIndex();
 
+// Encontrado en QA (CF-CATEGORÍAS-2D): normalizedTitle.includes(key) hacía
+// match de substring sin límite de palabra — "evangelion" (anime) contiene
+// literalmente "evangelio" como prefijo, "artesanal" contiene "arte", etc.
+// containsPhrase exige que la frase aparezca como palabra(s) completas,
+// delimitada por espacios o los bordes del texto (normalizeText ya deja
+// solo letras/dígitos separados por un único espacio).
+function containsPhrase(normalizedText, normalizedPhrase) {
+  if (!normalizedPhrase) return false;
+  return ` ${normalizedText} `.includes(` ${normalizedPhrase} `);
+}
+
 function wordSetMatch(normalizedA, normalizedB) {
   const wordsA = normalizedA.split(' ').filter(w => w.length >= 3);
   const wordsB = normalizedB.split(' ').filter(w => w.length >= 3);
   if (wordsA.length === 0 || wordsB.length === 0) return false;
   const [shorter, longer] = wordsA.length <= wordsB.length ? [wordsA, wordsB] : [wordsB, wordsA];
+  // Encontrado en QA (CF-CATEGORÍAS-2D): un campo de autor de una sola
+  // palabra (ej. solo el apellido "Cabrera") no debe alcanzar para
+  // matchear contra una señal de varias palabras ("Ana Maria Cabrera") —
+  // un apellido común coincide con cualquier autor mineado que lo
+  // contenga. Una coincidencia de una sola palabra solo se acepta cuando
+  // AMBOS lados son de una sola palabra (nombres de pluma reales:
+  // "Quino", "Disney", "Cambridge").
+  if (shorter.length === 1 && longer.length > 1) return false;
   const longerSet = new Set(longer);
   return shorter.every(w => longerSet.has(w));
 }
@@ -123,7 +142,7 @@ function findKeywordMatches(normalizedTitle, table) {
   for (const categoryId of Object.keys(table)) {
     for (const { phrase, subcategoryId } of table[categoryId]) {
       const key = normalizeText(phrase);
-      if (key && normalizedTitle.includes(key)) {
+      if (key && containsPhrase(normalizedTitle, key)) {
         if (!seenCategories.has(categoryId)) {
           matches.push({ categoryId, subcategoryId, evidence: `título contiene frase distintiva: "${phrase}"` });
           seenCategories.add(categoryId);
@@ -146,12 +165,12 @@ const BOOK_WITH_AUDIO_CONTEXT = ['workbook', 'student', 'activity book', 'practi
 function findObjectTypeSignal(normalizedTitle) {
   for (const { phrase, type, subcategoryId } of OBJECT_TYPE_SIGNALS) {
     const key = normalizeText(phrase);
-    if (key && normalizedTitle.includes(key)) {
+    if (key && containsPhrase(normalizedTitle, key)) {
       return { type, subcategoryId, evidence: `título contiene señal de "${type}": "${phrase}"` };
     }
   }
   const words = normalizedTitle.split(' ');
-  const looksLikeBookWithAudio = BOOK_WITH_AUDIO_CONTEXT.some(p => normalizedTitle.includes(normalizeText(p)));
+  const looksLikeBookWithAudio = BOOK_WITH_AUDIO_CONTEXT.some(p => containsPhrase(normalizedTitle, normalizeText(p)));
   if (!looksLikeBookWithAudio) {
     for (const token of OBJECT_FORMAT_TOKENS) {
       if (words.includes(token)) {
@@ -165,7 +184,7 @@ function findObjectTypeSignal(normalizedTitle) {
 function findGenericObjectSignal(normalizedTitle) {
   for (const phrase of OBJECT_SIGNALS) {
     const key = normalizeText(phrase);
-    if (key && normalizedTitle.includes(key)) return phrase;
+    if (key && containsPhrase(normalizedTitle, key)) return phrase;
   }
   return null;
 }

@@ -13,7 +13,7 @@
 // aparecían repetidos en categorías distintas) se filtraron antes de esta
 // exportación porque no son una señal útil.
 
-export const RULES_VERSION = 8;
+export const RULES_VERSION = 11;
 
 export const MINED_AUTHOR_SIGNALS = {
   "esoterismo-tarot": {
@@ -770,7 +770,7 @@ export const KEYWORD_SIGNALS = {
     kw('english file', 'ingles'), kw('aprender ingles', 'ingles'),
     kw('diccionario ingles', 'ingles'), kw('cambridge english', 'ingles'),
     kw('gramatica inglesa', 'ingles'), kw('diccionario'), kw('english', 'ingles'),
-    kw('oxford', 'ingles'), kw('pearson', 'ingles'), kw('with cd', 'ingles'),
+    kw('oxford', 'ingles'), kw('with cd', 'ingles'),
     kw("pupil's book", 'ingles'), kw('pupils book', 'ingles'),
     kw('activity book', 'ingles'), kw('kids box', 'ingles'),
     kw('super minds', 'ingles'), kw('work book', 'ingles'),
@@ -876,7 +876,9 @@ export const KEYWORD_SIGNALS = {
 // una coincidencia de autor/editorial/frase fuerte.
 export const KEYWORD_SIGNALS_WEAK = {
   'infantil-juvenil': [kw('juego'), kw('juegos'), kw('album')],
-  'historia': [kw('mundo'), kw('vida')],
+  // 'mundo'/'vida' se retiraron (CF-CATEGORÍAS-2D, hallado en QA): eran
+  // demasiado genéricas — mandaban decenas de libros de autoayuda/negocios/
+  // crianza a "historia" solo por contener esas palabras sueltas.
   'desarrollo-personal': [kw('poder'), kw('mejor'), kw('vivir')],
   // Sellos/colecciones de bolsillo dedicados casi exclusivamente a ficción
   // literaria (visto en el análisis de otros-libros: Paul Auster, Nora
