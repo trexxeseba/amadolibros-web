@@ -19,9 +19,16 @@ const DELIVERY_WA_HREF =
 <header class="site-header">
   <div class:list={['header-inner', { 'without-search': !showSearch }]}>
 
-    <!-- Marca -->
+    <!-- Marca — logo (gato+libro), sin duplicar el texto "Amado Libros"
+         que ya lleva la imagen. width/height fijos: evita layout shift. -->
     <a href="/" class="brand" aria-label="Amado Libros — inicio">
-      <span class="brand-name">Amado Libros</span>
+      <img
+        src="/images/logo-amado.webp"
+        alt="Amado Libros"
+        width="58"
+        height="57"
+        class="brand-logo"
+      />
       <span class="brand-sub">Librería uruguaya</span>
     </a>
 
@@ -90,7 +97,7 @@ const DELIVERY_WA_HREF =
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1.5rem;
-    height: 64px;
+    height: 72px;
     display: grid;
     grid-template-columns: auto 1fr auto auto;
     align-items: center;
@@ -108,21 +115,19 @@ const DELIVERY_WA_HREF =
   /* Marca */
   .brand {
     display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-    gap: 0.1rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.55rem;
     flex-shrink: 0;
     transition: opacity 0.15s;
   }
   .brand:hover { opacity: 0.8; }
 
-  .brand-name {
-    font-family: var(--font-ui);
-    font-weight: 800;
-    font-size: 1rem;
-    color: #fff;
-    letter-spacing: -0.015em;
-    white-space: nowrap;
+  .brand-logo {
+    display: block;
+    height: 57px;
+    width: 58px;
+    flex-shrink: 0;
   }
 
   .brand-sub {
