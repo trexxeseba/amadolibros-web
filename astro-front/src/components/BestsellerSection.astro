@@ -121,9 +121,16 @@ try {
 
   /* HOME-COMERCIAL-1 punto 2: mobile muestra 4 de las 8 (desktop mantiene
      8) — display:none real, no ocupa espacio ni dejan huecos. Un acceso
-     claro a "Ver todo el catálogo" cubre el resto. */
+     claro a "Ver todo el catálogo" cubre el resto.
+     HOTFIX (HOME-UX-MOBILE-1): los hijos directos de .bs-grid son
+     <BookCard>, un componente aparte con su propio hash de scope de
+     Astro — el selector scopeado
+     ".bs-grid[data-astro-cid-X] > [data-astro-cid-X]:nth-child(n+5)"
+     nunca matcheaba nada (BookCard nunca lleva el hash de
+     BestsellerSection). :global() en la parte del hijo evita que Astro
+     le exija ese hash, y sigue alcanzando la raíz real de cada BookCard. */
   @media (max-width: 639px) {
-    .bs-grid > :nth-child(n + 5) { display: none; }
+    .bs-grid > :global(:nth-child(n + 5)) { display: none; }
   }
 
   @media (min-width: 640px) {
