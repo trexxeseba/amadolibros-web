@@ -2,25 +2,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import BookCard from './BookCard.astro';
+import { pickRecentBooks } from '../lib/pick-recent-books.js';
 
 // home.json lives at <repo-root>/public/home.json.
 // process.cwd() during `astro build` = astro-front/, so '../public/home.json' resolves correctly.
 const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
-
-const ANTIQUE_SIGNALS = [
-  'cruz', 'crucifijo', 'bronce', 'chapa esmaltada', 'cartel chapa',
-  'dije', 'plata 925', 'jaspe', 'colgante vintage', 'sacapuntas vintage',
-  'candelabro', 'figura bronce', 'figuras bronce',
-  'decorativo', 'decorativa',
-  'pared cristo', 'cristo inri', 'inri antigua',
-  'jeringa',
-  'veterinaria vidrio',
-  'volante cine',
-  'antiguo matrimonio',
-  'antigua veterinaria',
-  'pieza antigua',
-  'objeto antiguo',
-];
 
 interface Book {
   id: string;
@@ -32,12 +18,7 @@ interface Book {
   thumbnail: string;
   pictures?: string[];
   start_time?: string;
-}
-
-function isAntiqueObject(b: Book): boolean {
-  if (b.author && b.author.trim()) return false;
-  const t = (b.title || '').toLowerCase();
-  return ANTIQUE_SIGNALS.some(s => t.includes(s));
+  condition?: string | null;
 }
 
 let books: Book[] = [];
@@ -46,26 +27,12 @@ let missing = false;
 try {
   const raw = fs.readFileSync(HOME_JSON, 'utf-8');
   const data = JSON.parse(raw) as { items: Book[] };
-  const filtered = (data.items || [])
-    .filter(b => b.status === 'active' && b.available_quantity > 0 && !isAntiqueObject(b))
-    .sort((a, b) => {
-      const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
-      const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
-      return tb - ta;
-    });
-  const normalize = (v: string | undefined) =>
-    String(v || '').toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, ' ').trim();
-  const seen = new Set<string>();
-  books = filtered.filter(b => {
-    const authorKey = normalize(b.author);
-    const identityKey = authorKey || normalize(b.title).slice(0, 60);
-    const key = `${identityKey}|${Number(b.price || 0)}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, 8);
+  // HOME-RECENT-NEW-ONLY: pickRecentBooks (astro-front/src/lib/pick-recent-books.js)
+  // filtra activo+stock+condition==='new'+no-antigüedad, ordena por
+  // start_time desc, deduplica por autor+precio y corta a 8 — defensa
+  // adicional aunque home.json ya debería venir filtrado por
+  // generate-home-json.js. Ausente/null/distinto de 'new' => afuera.
+  books = pickRecentBooks(data.items || [], 8);
 } catch (e: unknown) {
   missing = true;
   const msg = e instanceof Error ? e.message : String(e);
