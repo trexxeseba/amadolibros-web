@@ -50,6 +50,21 @@ function fetchJSON(url) {
     });
 }
 
+// HOME-RECENT-NEW-ONLY: "Incorporaciones recientes" debe mostrar solo
+// libros nuevos — el campo `condition` viene directo de MercadoLibre
+// (worker-sync/meli-catalog.js, ya usado como fuente de verdad en la
+// ficha de producto y en el schema.org itemCondition). Un valor ausente,
+// null, undefined o distinto de 'new' se EXCLUYE — nunca se asume "nuevo"
+// por defecto, para no arriesgar mostrar un usado sin condición cargada.
+// El filtro corre sobre el catálogo completo, antes de ordenar y de
+// cortar a ACTIVE_COUNT, para no quedarse con menos de los disponibles.
+function selectActiveItems(items, count = ACTIVE_COUNT) {
+    return items
+        .filter(b => b.status === 'active' && b.available_quantity > 0 && b.condition === 'new')
+        .sort((a, b) => new Date(b.start_time || 0) - new Date(a.start_time || 0))
+        .slice(0, count);
+}
+
 async function main() {
     const catalog = await fetchJSON(CATALOG_URL);
     const items   = catalog.items || [];
@@ -60,11 +75,7 @@ async function main() {
         process.exit(1);
     }
 
-    // Top ACTIVE_COUNT items activos, ordenados por fecha de alta (más recientes primero)
-    const active = items
-        .filter(b => b.status === 'active' && b.available_quantity > 0)
-        .sort((a, b) => new Date(b.start_time || 0) - new Date(a.start_time || 0))
-        .slice(0, ACTIVE_COUNT);
+    const active = selectActiveItems(items);
 
     const homeData = {
         items:        active,
@@ -82,7 +93,12 @@ async function main() {
     console.log(`   Archivo: ${OUTPUT_PATH}`);
 }
 
-main().catch(err => {
-    console.error('❌ Error generando home.json:', err.message);
-    process.exit(1);
-});
+module.exports = { selectActiveItems, ACTIVE_COUNT };
+
+const isMain = require.main === module;
+if (isMain) {
+    main().catch(err => {
+        console.error('❌ Error generando home.json:', err.message);
+        process.exit(1);
+    });
+}
