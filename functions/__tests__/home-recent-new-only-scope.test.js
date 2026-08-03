@@ -26,6 +26,13 @@ test('functions/libro/[[path]].js solo usa `condition` para mostrarla, nunca par
 
 test('functions/feed.xml.js sigue incluyendo ítems usados en el feed (con su <g:condition> correspondiente, no excluidos)', () => {
   const src = read('functions/feed.xml.js');
-  assert.doesNotMatch(src, /condition\s*===?\s*['"]new['"]/);
+  // SEO-GMC-FEED-1: la descripción del feed distingue "Ejemplar nuevo."/
+  // "Ejemplar usado." por texto (item.condition === 'new'/'used'), sin
+  // excluir nada — igual que libro/[[path]].js (línea de abajo), el
+  // patrón prohibido es específicamente un filtro exclusorio
+  // (`condition === 'new' && <algo que corta la lista>`), no cualquier
+  // lectura de `condition` para mostrarla.
+  assert.doesNotMatch(src, /condition\s*===?\s*['"]new['"]\s*&&/);
+  assert.doesNotMatch(src, /\.filter\([^)]*condition/);
   assert.match(src, /g:condition/);
 });
