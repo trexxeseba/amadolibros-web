@@ -227,7 +227,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-function renderPage(item, slug, isPreview, waitlistSiteKey) {
+export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
@@ -309,9 +309,9 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
 
     const priceHtml = inStock
         ? `<div class="price-box">
-      <div class="price-transfer"><span class="price-label">Transferencia:</span> $${transferPrice} UYU</div>
-      <div class="price-base">Precio: $${priceUY} UYU</div>
-      <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
+      <div class="price-main"><span class="price-label">Precio web/tarjeta:</span> $${priceUY} UYU</div>
+      <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
+      <div class="price-transfer">Transferencia: $${transferPrice} UYU</div>
     </div>`
         : `<div class="order-box">
       <strong>¿Buscás este libro?</strong>
@@ -331,11 +331,11 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
-      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
-        🛒 Comprar en MercadoLibre
-      </a>
       <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         💬 Consultar por WhatsApp
+      </a>
+      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
+        Comprar en MercadoLibre
       </a>`
         : `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         Consultar si podemos conseguirlo
@@ -457,9 +457,10 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .detail-row dd{color:#475569}
     .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer,.price-base,.price-installment{font-size:1rem;font-weight:700;line-height:1.35}
-    .price-transfer{color:#0f172a}
-    .price-base,.price-installment{color:#374151;margin-top:.15rem}
+    .price-main{font-size:1.35rem;font-weight:800;color:#0f172a;line-height:1.3}
+    .price-label{font-weight:800}
+    .price-installment{font-size:1rem;font-weight:600;color:#374151;margin-top:.35rem}
+    .price-transfer{font-size:.85rem;font-weight:600;color:#a94e3d;margin-top:.35rem}
     .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
                border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
                margin:.875rem 0;color:#6b4218}
@@ -470,11 +471,16 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
     .btn:hover{opacity:.85}
-    .btn-ml{background:#ffe600;color:#1e293b}
     .btn-wa{background:#25d366;color:white}
     .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
               cursor:pointer;width:100%}
     .btn-cart:disabled{opacity:.7;cursor:default}
+    /* AL-WEB: Mercado Libre queda tercero y subordinado — sin relleno
+       amarillo dominante, fuente más chica y peso menor que carrito/WhatsApp.
+       Sigue siendo un enlace funcional, solo pierde peso visual. */
+    .btn-ml{background:#fff;color:#7a6a1f;border:1.5px solid #e8dfa0;
+            font-size:.82rem;font-weight:600;padding:.65rem 1.25rem}
+    .btn-ml:hover{background:#fdf9e8;opacity:1}
     .waitlist-form{background:#fff;border:1px solid #d8d1c7;border-radius:.65rem;
                    padding:1rem;scroll-margin-top:1rem}
     .waitlist-form label{display:block;font-size:.82rem;font-weight:700;color:#334155;
