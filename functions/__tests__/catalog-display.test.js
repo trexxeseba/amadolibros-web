@@ -142,12 +142,36 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
 
   assert.match(html, /Alpha disponible/);
   assert.match(html, /Transferencia:/);
-  assert.match(html, /Precio:/);
+  assert.match(html, /Precio web\/tarjeta:/);
   assert.equal(requests.includes(CATALOG_URL), false);
   assert.match(response.headers.get('server-timing'), /active_index_parse/);
   assert.match(response.headers.get('server-timing'), /search;dur=/);
   assert.match(response.headers.get('server-timing'), /render;dur=/);
   assert.match(response.headers.get('server-timing'), /total;dur=/);
+});
+
+test('el catálogo prioriza precio web y cuotas antes que transferencia', async () => {
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo?q=Alpha+disponible')
+  );
+  const html = await response.text();
+  const prices = html.match(/<div class="rc-prices">([\s\S]*?)<\/div>/)?.[1] || '';
+
+  assert.match(prices, /Precio web\/tarjeta:<\/span> \$1[.,]000 UYU/);
+  assert.match(prices, /Hasta 12 cuotas de aprox\. \$83 UYU/);
+  assert.match(prices, /Transferencia: \$880 UYU/);
+  assert.ok(prices.indexOf('Precio web/tarjeta:') < prices.indexOf('Hasta 12 cuotas'));
+  assert.ok(prices.indexOf('Hasta 12 cuotas') < prices.indexOf('Transferencia:'));
+});
+
+test('el precio principal del catálogo tiene más fuerza visual que transferencia', async () => {
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo?q=Alpha+disponible')
+  );
+  const html = await response.text();
+
+  assert.match(html, /\.rc-base\{font-size:\.95rem[^}]*font-weight:700\}/);
+  assert.match(html, /\.rc-transfer\{font-size:\.78rem[^}]*font-weight:600\}/);
 });
 
 test('una búsqueda sin coincidencias reales termina en cero resultados', async () => {
