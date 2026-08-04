@@ -549,7 +549,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
         <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
       </span>
     </a>
-    <form class="header-search" action="/" method="get" role="search">
+    <form class="header-search" action="/catalogo" method="get" role="search">
       <input type="search" name="q" placeholder="Buscar por título, autor, temática o ISBN"
              aria-label="Buscar por título, autor, temática o ISBN" autocomplete="off">
       <button type="submit" aria-label="Buscar libros">Buscar</button>

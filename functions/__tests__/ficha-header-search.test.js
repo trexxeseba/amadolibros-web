@@ -22,9 +22,9 @@ test('1. La ficha muestra el logo gráfico real y la marca enlaza al inicio', ()
     assert.doesNotMatch(html, />📚 Amado Libros<\/a>/);
 });
 
-test('2. El buscador de la ficha envía una búsqueda GET compatible con la home', () => {
+test('2. El buscador de la ficha envía la consulta al catálogo', () => {
     const html = render();
-    assert.match(html, /<form class="header-search" action="\/" method="get" role="search">/);
+    assert.match(html, /<form class="header-search" action="\/catalogo" method="get" role="search">/);
     assert.match(html, /<input type="search" name="q"/);
     assert.match(html, /placeholder="Buscar por título, autor, temática o ISBN"/);
     assert.match(html, /<button type="submit" aria-label="Buscar libros">Buscar<\/button>/);
