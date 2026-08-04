@@ -397,10 +397,31 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#f8fafc;color:#1e293b;line-height:1.6}
     a{color:#3b82f6}
-    header{background:#1e293b;color:white;padding:.75rem 1.25rem;
-           display:flex;align-items:center;gap:.75rem}
-    header a{color:white;text-decoration:none;font-weight:700;font-size:1.05rem}
-    header span{color:#94a3b8;font-size:.8rem;flex:1}
+    .product-header{background:#1e293b;color:white;padding:.65rem 1.25rem;
+                    position:sticky;top:0;z-index:50;
+                    box-shadow:0 2px 10px rgba(15,23,42,.18)}
+    .header-inner{width:100%;max-width:1180px;margin:0 auto;display:grid;
+                  grid-template-columns:auto minmax(260px,680px) auto;
+                  align-items:center;gap:1rem}
+    .brand-link{display:flex;align-items:center;gap:.65rem;min-width:max-content;
+                color:white;text-decoration:none}
+    .brand-logo{width:44px;height:44px;display:block;object-fit:cover;
+                border-radius:50%;background:#fff;flex-shrink:0}
+    .brand-copy{display:flex;flex-direction:column;line-height:1.15}
+    .brand-name{font-size:1.05rem;font-weight:800;color:#fff}
+    .brand-tagline{color:#94a3b8;font-size:.72rem;margin-top:.2rem}
+    .header-search{width:100%;height:44px;display:flex;align-items:stretch;
+                   background:#fff;border:1px solid rgba(255,255,255,.2);
+                   border-radius:999px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.16)}
+    .header-search:focus-within{outline:3px solid rgba(228,153,130,.45);outline-offset:2px}
+    .header-search input{min-width:0;flex:1;border:0;background:#fff;color:#1e293b;
+                         padding:0 .25rem 0 1rem;font:inherit;font-size:.9rem;outline:0}
+    .header-search input::placeholder{color:#64748b}
+    .header-search button{min-width:88px;border:0;background:#e49982;color:#fff;
+                          padding:0 1rem;font:inherit;font-size:.85rem;font-weight:800;
+                          cursor:pointer}
+    .header-search button:hover{background:#d98972}
+    .header-search button:focus-visible{outline:3px solid #fff;outline-offset:-4px}
     .ssr-cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;
                    min-width:44px;min-height:44px;padding:.4rem .6rem;
                    color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18);
@@ -412,6 +433,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
                     padding:0 4px;border-radius:999px;background:#e49982;color:#fff;
                     font-size:.625rem;font-weight:700;line-height:17px;
                     text-align:center;pointer-events:none}
+    @media(max-width:760px){
+      .product-header{padding:.55rem .85rem}
+      .header-inner{grid-template-columns:minmax(0,1fr) auto;gap:.55rem .75rem}
+      .brand-logo{width:38px;height:38px}
+      .brand-name{font-size:1rem}
+      .brand-tagline{display:none}
+      .header-search{grid-column:1/-1;height:42px}
+      .header-search input{font-size:.86rem;padding-left:.9rem}
+      .header-search button{min-width:76px;padding:0 .8rem;font-size:.8rem}
+    }
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#3b82f6;text-decoration:none}
@@ -509,17 +540,29 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
 </head>
 <body>
 
-<header>
-  <a href="/">📚 Amado Libros</a>
-  <span>Tu librería para libros difíciles de ubicar</span>
-  <a href="/carrito" id="ssr-cart-link" class="ssr-cart-link" aria-label="Ver carrito">
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-      <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
-    </svg>
-    <span id="ssr-cart-badge" class="ssr-cart-badge" hidden aria-hidden="true">0</span>
-  </a>
+<header class="product-header">
+  <div class="header-inner">
+    <a href="/" class="brand-link" aria-label="Amado Libros — ir al inicio">
+      <img src="/images/logo-amado.png" alt="" class="brand-logo" width="44" height="44" fetchpriority="high">
+      <span class="brand-copy">
+        <span class="brand-name">AMADO LIBROS</span>
+        <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
+      </span>
+    </a>
+    <form class="header-search" action="/" method="get" role="search">
+      <input type="search" name="q" placeholder="Buscar por título, autor, temática o ISBN"
+             aria-label="Buscar por título, autor, temática o ISBN" autocomplete="off">
+      <button type="submit" aria-label="Buscar libros">Buscar</button>
+    </form>
+    <a href="/carrito" id="ssr-cart-link" class="ssr-cart-link" aria-label="Ver carrito">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
+      </svg>
+      <span id="ssr-cart-badge" class="ssr-cart-badge" hidden aria-hidden="true">0</span>
+    </a>
+  </div>
 </header>
 
 <nav>
