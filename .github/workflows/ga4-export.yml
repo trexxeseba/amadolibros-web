@@ -1,0 +1,78 @@
+name: GA4 manual export
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: Fecha inicial (YYYY-MM-DD)
+        required: true
+        default: '2026-07-01'
+      end_date:
+        description: Fecha final (YYYY-MM-DD)
+        required: true
+        default: '2026-07-31'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ga4-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: Extract GA4 data
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate required secrets
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+        run: |
+          test -n "$GA4_SERVICE_ACCOUNT_JSON" || { echo "::error::Falta GA4_SERVICE_ACCOUNT_JSON"; exit 1; }
+          test -n "$GA4_PROPERTY_ID" || { echo "::error::Falta GA4_PROPERTY_ID"; exit 1; }
+
+      - name: Authenticate with Google
+        id: google_auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+
+      - name: Extract GA4 reports
+        env:
+          GA4_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          GA4_START_DATE: ${{ inputs.start_date }}
+          GA4_END_DATE: ${{ inputs.end_date }}
+          GA4_OUTPUT_DIR: artifacts/ga4
+        run: node scripts/ga4-export.js
+
+      - name: Upload JSON and CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: ga4-${{ inputs.start_date }}-${{ inputs.end_date }}
+          path: artifacts/ga4/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write run summary
+        if: always()
+        run: |
+          echo "## GA4 manual export" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Property: configured through GA4_PROPERTY_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Period: ${{ inputs.start_date }} to ${{ inputs.end_date }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Claude API: not called" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deploy: not triggered" >> "$GITHUB_STEP_SUMMARY"
