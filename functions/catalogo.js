@@ -173,8 +173,10 @@ function commercialTier(b) {
     return 3;
 }
 
-function httpsImg(url) {
-    return (url || '').replace('http://', 'https://');
+export function catalogImageUrl(url) {
+    return String(url || '')
+        .replace(/^http:\/\//, 'https://')
+        .replace(/-I\.jpg$/, '-O.jpg');
 }
 
 // CF-CATEGORÍAS-2 — artefacto compacto mlu->[categoryId,subcategoryId?],
@@ -405,10 +407,11 @@ export async function onRequest(ctx) {
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
 
-    const cards = limited.map((b, idx) => {
+    let renderedImageCount = 0;
+    const cards = limited.map(b => {
         const slug  = slugify(b.title);
         const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
-        const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
+        const img   = escapeHtml(catalogImageUrl(b.pictures?.[0] || b.thumbnail || ''));
         const title = escapeHtml(b.title);
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
@@ -421,11 +424,13 @@ export async function onRequest(ctx) {
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const installment = Math.round(price / 12).toLocaleString('es-UY');
-        const loading  = idx < 8 ? 'eager' : 'lazy';
+        const imageIndex = img ? renderedImageCount++ : -1;
+        const loading = imageIndex >= 0 && imageIndex < 4 ? 'eager' : 'lazy';
+        const fetchPriority = imageIndex === 0 ? ' fetchpriority="high"' : '';
         const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
         const orderWaHref = `${WA}?text=${encodeURIComponent(buildOrderWaMessage(b, href))}`;
         const imgTag = img
-            ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
+            ? `<img src="${img}" alt="${title}" width="180" height="240" loading="${loading}" decoding="async"${fetchPriority}>`
             : `<div class="rc-no-img">📚</div>`;
 
         const badge = available
@@ -529,6 +534,7 @@ export async function onRequest(ctx) {
   <title>${pageTitle}</title>
   <meta name="description" content="${metaDescription}">
   <link rel="canonical" href="${BASE}/catalogo">
+  <link rel="preconnect" href="https://http2.mlstatic.com" crossorigin>
   <meta name="robots" content="${robotsMeta}">
   ${jsonLd}
   <style>
@@ -552,7 +558,7 @@ export async function onRequest(ctx) {
     .rc-card:hover{box-shadow:0 4px 16px rgba(24,18,14,.1)}
     .rc-card.is-order{border-color:#e8c9a0}
     .rc-img{display:block;aspect-ratio:3/4;background:#ede9e1;overflow:hidden}
-    .rc-img img{width:100%;height:100%;object-fit:cover;display:block;
+    .rc-img img{width:100%;height:100%;object-fit:contain;display:block;
                 transition:transform .25s}
     .rc-card:hover .rc-img img{transform:scale(1.04)}
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;

@@ -298,6 +298,44 @@ test('índice pausado compacto y bloques usan una asignación determinista', () 
   assert.ok(artifacts.max_block_bytes < 204800);
 });
 
+test('los índices compactos priorizan pictures[0] y conservan thumbnail como fallback', () => {
+  const artifacts = buildPausedCatalogArtifacts({
+    updated_at: '2026-08-05T12:00:00.000Z',
+    items: [
+      {
+        id: 'MLU1', title: 'Activo principal', status: 'active', available_quantity: 1,
+        pictures: ['https://http2.mlstatic.com/activo-O.jpg'],
+        thumbnail: 'https://http2.mlstatic.com/activo-I.jpg',
+      },
+      {
+        id: 'MLU2', title: 'Activo fallback', status: 'active', available_quantity: 1,
+        pictures: [], thumbnail: 'https://http2.mlstatic.com/activo-fallback-I.jpg',
+      },
+      {
+        id: 'MLU3', title: 'Pausado principal', status: 'paused', available_quantity: 0,
+        pictures: ['https://http2.mlstatic.com/pausado-O.jpg'],
+        thumbnail: 'https://http2.mlstatic.com/pausado-I.jpg',
+      },
+      {
+        id: 'MLU4', title: 'Pausado fallback', status: 'paused', available_quantity: 0,
+        pictures: [], thumbnail: 'https://http2.mlstatic.com/pausado-fallback-I.jpg',
+      },
+    ],
+  });
+
+  const activeImages = JSON.parse(artifacts.active_index.body).items.map(row => row[4]);
+  const pausedImages = JSON.parse(artifacts.index.body).items.map(row => row[4]);
+
+  assert.deepEqual(activeImages, [
+    'https://http2.mlstatic.com/activo-O.jpg',
+    'https://http2.mlstatic.com/activo-fallback-I.jpg',
+  ]);
+  assert.deepEqual(pausedImages, [
+    'https://http2.mlstatic.com/pausado-O.jpg',
+    'https://http2.mlstatic.com/pausado-fallback-I.jpg',
+  ]);
+});
+
 test('genera índices gzip menores y descomprimibles sin modificar los JSON base', async () => {
   const artifacts = buildPausedCatalogArtifacts({
     updated_at: '2026-07-30T12:34:56.789Z',
