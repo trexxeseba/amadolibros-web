@@ -276,7 +276,13 @@ export function createStockWaitlistHandler({
     let product = activeCatalogAvailable
       ? catalog.items.find(item => item?.id === productId)
       : null;
-    if (!product && cleanString(env?.APP_ENV) === 'preview' && typeof fetchPausedItem === 'function') {
+    // CF-STOCK-1-UX-FIX: fetchPausedItem ya resuelve el manifest correcto por
+    // entorno (manifestUrlFor en _shared/catalog.js, desde CF-R2-2-BRIDGE) —
+    // este handler se había quedado atado a 'preview' y nunca se actualizó,
+    // por lo que un libro genuinamente pausado (no presente en catalog.json)
+    // devolvía 404 "Libro no encontrado" en producción antes de llegar a D1.
+    if (!product && ['preview', 'production'].includes(cleanString(env?.APP_ENV)) &&
+      typeof fetchPausedItem === 'function') {
       product = await fetchPausedItem(context, productId).catch(() => null);
     }
     if (!product && !activeCatalogAvailable) {

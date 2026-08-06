@@ -17,3 +17,8 @@ Thumbs.db
 astro-front/node_modules/
 astro-front/dist/
 astro-front/.astro/
+
+# CF-CATEGORÍAS-1 — snapshot local del catálogo y salida de clasificación
+# masiva (~17k registros): datos derivados, reproducibles desde R2 público,
+# no pertenecen al repositorio. Reglas, esquema y tests sí se versionan.
+scripts/categorize/data/

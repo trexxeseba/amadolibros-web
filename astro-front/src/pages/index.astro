@@ -4,6 +4,7 @@
 import BaseLayout          from '../layouts/BaseLayout.astro';
 import Header              from '../components/Header.astro';
 import Hero                from '../components/Hero.astro';
+import CategoryAccess      from '../components/CategoryAccess.astro';
 import BestsellerSection   from '../components/BestsellerSection.astro';
 import Footer              from '../components/Footer.astro';
 import WAFloat             from '../components/WAFloat.astro';
@@ -11,16 +12,20 @@ import SearchOverlay          from '../components/SearchOverlay.astro';
 import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
 import HowToBuy           from '../components/HowToBuy.astro';
 import ShippingPayments    from '../components/ShippingPayments.astro';
-import NotFoundCTA         from '../components/NotFoundCTA.astro';
+import TrustStrip          from '../components/TrustStrip.astro';
 ---
-<BaseLayout canonical="https://www.amadolibros.com/">
+<BaseLayout
+  canonical="https://www.amadolibros.com/"
+  description="Libros importados y por encargo en Uruguay. Entrega en 2 horas en Montevideo y envíos a todo el país."
+>
   <Header showSearch={false} showMobileDeliveryBanner={true} />
   <main>
     <Hero />
+    <CategoryAccess />
     <BestsellerSection />
     <HowToBuy />
     <ShippingPayments />
-    <NotFoundCTA />
+    <TrustStrip />
   </main>
   <Footer />
   <WAFloat />

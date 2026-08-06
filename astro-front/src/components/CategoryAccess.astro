@@ -1,0 +1,185 @@
+---
+// HOME — ACCESO A CATEGORÍAS
+// Acceso visual compacto a las categorías principales, conectado con el
+// filtro ?categoria= de /catalogo. Mismo patrón de BestsellerSection: lee
+// un JSON estático en build time (fs), sin JS cliente, sin llamada nueva
+// en runtime. No toca checkout, Mercado Pago ni fichas individuales.
+//
+// Fuente: astro-front/public/data/active-categories.json — el mismo
+// artefacto que consume functions/catalogo.js (scripts/categorize/
+// export-active-categories.js). No se regenera en cada deploy: se
+// actualiza cuando se vuelve a correr el pipeline de clasificación y se
+// commitea, igual que en el catálogo.
+import fs from 'node:fs';
+import path from 'node:path';
+
+const CATEGORIES_JSON = path.resolve(process.cwd(), 'public/data/active-categories.json');
+
+interface Category {
+  id: string;
+  name: string;
+  count: number;
+}
+
+const MAX_CATEGORIES = 8;
+
+let categories: Category[] = [];
+let missing = false;
+
+try {
+  const raw = fs.readFileSync(CATEGORIES_JSON, 'utf-8');
+  const data = JSON.parse(raw) as { categories: Category[] };
+  // "otros-libros" es el catch-all interno de libros sin materia
+  // específica, y "otros-productos" agrupa discos/revistas/objetos de
+  // colección — ninguno de los dos es un punto de entrada útil para
+  // descubrir por tema en la home.
+  const EXCLUDED_IDS = new Set(['otros-libros', 'otros-productos']);
+  categories = (data.categories || [])
+    .filter(c => !EXCLUDED_IDS.has(c.id))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, MAX_CATEGORIES);
+} catch (e: unknown) {
+  missing = true;
+  const msg = e instanceof Error ? e.message : String(e);
+  console.warn('[CategoryAccess] active-categories.json no disponible en build:', msg);
+}
+---
+
+{missing
+  ? <Fragment set:html="<!-- acceso a categorías: active-categories.json no encontrado en build — sección omitida -->" />
+  : (categories.length > 0 && (
+      <section class="ca-section" aria-label="Categorías del catálogo">
+        <div class="ca-inner">
+          <h2 class="ca-heading">Explorá por categoría</h2>
+          <div class="ca-row" role="list">
+            {categories.map(cat => (
+              <a
+                class="ca-chip"
+                href={`/catalogo?categoria=${encodeURIComponent(cat.id)}`}
+                role="listitem"
+              >
+                <span class="ca-chip-name">{cat.name}</span>
+                <span class="ca-chip-count">{cat.count}</span>
+              </a>
+            ))}
+            <a class="ca-chip ca-chip-all" href="/catalogo">
+              Ver todo el catálogo →
+            </a>
+          </div>
+        </div>
+      </section>
+    ))
+}
+
+<style>
+  .ca-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .ca-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .ca-inner { padding: 2.25rem 2rem; }
+  }
+
+  .ca-heading {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.125rem, 2.4vw, 1.375rem);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+  }
+
+  /* Mobile (HOME-UX-MOBILE-1 punto 2): grilla compacta de 2 columnas
+     iguales, sin scroll horizontal — antes era una fila con scroll que
+     escondía categorías sin que fuera evidente que había que arrastrar.
+     Nombre arriba (puede ocupar 2 líneas), cantidad debajo y
+     visualmente secundaria. */
+  .ca-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .ca-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    min-height: 3.25rem;
+    padding: 0.75rem 0.9rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: normal;
+    overflow-wrap: break-word;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  }
+
+  .ca-chip:hover {
+    background: rgba(228, 153, 130, 0.12);
+    border-color: var(--salmon);
+    transform: translateY(-1px);
+  }
+
+  .ca-chip-name {
+    line-height: 1.3;
+  }
+
+  .ca-chip-count {
+    color: var(--ink-2);
+    font-weight: 500;
+    font-size: 0.75rem;
+  }
+
+  .ca-chip-all {
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+
+  .ca-chip-all:hover {
+    background: var(--salmon-hover);
+    border-color: var(--salmon-hover);
+  }
+
+  /* Desktop (>=700px): presentación anterior — pill de una línea, nombre
+     y cantidad lado a lado, grid de 3 columnas. Queda igual que antes de
+     este lote. */
+  @media (min-width: 700px) {
+    .ca-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ca-chip {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      min-height: 0;
+      padding: 0.6rem 1rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .ca-chip-all {
+      max-width: 260px;
+      margin: 0 auto;
+    }
+  }
+</style>

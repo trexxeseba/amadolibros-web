@@ -227,7 +227,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-function renderPage(item, slug, isPreview, waitlistSiteKey) {
+export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
@@ -235,7 +235,9 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     const img          = images[0] || '';
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
-    const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
+    const transferValue = Math.round(price * 0.88);
+    const transferPrice = transferValue.toLocaleString('es-UY');
+    const transferSaving = Math.max(0, price - transferValue).toLocaleString('es-UY');
     const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = item.status === 'active' && stockQty > 0;
@@ -254,12 +256,13 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
         item.pages ? detailRow('Páginas', `${item.pages}`) : '',
         detailRow('Medidas', dimensions),
         detailRow('Condición', condition),
-        detailRow(
-            'Disponibilidad',
-            inStock
-                ? `${stockQty} disponible${stockQty === 1 ? '' : 's'}`
-                : 'No disponible por el momento'
-        ),
+        // CF-STOCK-1-UX-FIX: la fila "Disponibilidad" solo tiene sentido
+        // cuando hay stock que mostrar. Para no disponibles, la jerarquía
+        // comercial (ver más abajo) ya cubre el mensaje — repetirlo acá
+        // sería la tercera vez que la ficha dice "no disponible".
+        inStock
+            ? detailRow('Disponibilidad', `${stockQty} disponible${stockQty === 1 ? '' : 's'}`)
+            : '',
     ].filter(Boolean).join('\n');
 
     const metaDesc = inStock
@@ -308,13 +311,19 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
 
     const priceHtml = inStock
         ? `<div class="price-box">
-      <div class="price-transfer"><span class="price-label">Transferencia:</span> $${transferPrice} UYU</div>
-      <div class="price-base">Precio: $${priceUY} UYU</div>
-      <div class="price-installment">12 cuotas de aprox. $${installment} UYU</div>
+      <div class="price-transfer">
+        <span class="price-transfer-label">Mejor precio · Transferencia</span>
+        <strong>$${transferPrice} UYU</strong>
+        <span class="price-saving">12% menos · Ahorrás $${transferSaving}</span>
+      </div>
+      <div class="price-card">
+        <strong>Con tarjeta: $${priceUY} UYU</strong>
+        <span>Hasta 12 cuotas de aprox. $${installment} UYU</span>
+      </div>
     </div>`
         : `<div class="order-box">
-      <strong>Vendimos todos los ejemplares disponibles.</strong>
-      <span>Si querés, lo buscamos para vos.</span>
+      <strong>¿Buscás este libro?</strong>
+      <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>
     </div>`;
 
     const actionHtml = inStock
@@ -330,11 +339,11 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
-      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
-        🛒 Comprar en MercadoLibre
-      </a>
       <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         💬 Consultar por WhatsApp
+      </a>
+      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
+        Comprar en MercadoLibre
       </a>`
         : `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         Consultar si podemos conseguirlo
@@ -396,10 +405,31 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#f8fafc;color:#1e293b;line-height:1.6}
     a{color:#3b82f6}
-    header{background:#1e293b;color:white;padding:.75rem 1.25rem;
-           display:flex;align-items:center;gap:.75rem}
-    header a{color:white;text-decoration:none;font-weight:700;font-size:1.05rem}
-    header span{color:#94a3b8;font-size:.8rem;flex:1}
+    .product-header{background:#1e293b;color:white;padding:.65rem 1.25rem;
+                    position:sticky;top:0;z-index:50;
+                    box-shadow:0 2px 10px rgba(15,23,42,.18)}
+    .header-inner{width:100%;max-width:1180px;margin:0 auto;display:grid;
+                  grid-template-columns:auto minmax(260px,680px) auto;
+                  align-items:center;gap:1rem}
+    .brand-link{display:flex;align-items:center;gap:.65rem;min-width:max-content;
+                color:white;text-decoration:none}
+    .brand-logo{width:44px;height:44px;display:block;object-fit:cover;
+                border-radius:50%;background:#fff;flex-shrink:0}
+    .brand-copy{display:flex;flex-direction:column;line-height:1.15}
+    .brand-name{font-size:1.05rem;font-weight:800;color:#fff}
+    .brand-tagline{color:#94a3b8;font-size:.72rem;margin-top:.2rem}
+    .header-search{width:100%;height:44px;display:flex;align-items:stretch;
+                   background:#fff;border:1px solid rgba(255,255,255,.2);
+                   border-radius:999px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.16)}
+    .header-search:focus-within{outline:3px solid rgba(228,153,130,.45);outline-offset:2px}
+    .header-search input{min-width:0;flex:1;border:0;background:#fff;color:#1e293b;
+                         padding:0 .25rem 0 1rem;font:inherit;font-size:.9rem;outline:0}
+    .header-search input::placeholder{color:#64748b}
+    .header-search button{min-width:88px;border:0;background:#e49982;color:#fff;
+                          padding:0 1rem;font:inherit;font-size:.85rem;font-weight:800;
+                          cursor:pointer}
+    .header-search button:hover{background:#d98972}
+    .header-search button:focus-visible{outline:3px solid #fff;outline-offset:-4px}
     .ssr-cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;
                    min-width:44px;min-height:44px;padding:.4rem .6rem;
                    color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18);
@@ -411,6 +441,16 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
                     padding:0 4px;border-radius:999px;background:#e49982;color:#fff;
                     font-size:.625rem;font-weight:700;line-height:17px;
                     text-align:center;pointer-events:none}
+    @media(max-width:760px){
+      .product-header{padding:.55rem .85rem}
+      .header-inner{grid-template-columns:minmax(0,1fr) auto;gap:.55rem .75rem}
+      .brand-logo{width:38px;height:38px}
+      .brand-name{font-size:1rem}
+      .brand-tagline{display:none}
+      .header-search{grid-column:1/-1;height:42px}
+      .header-search input{font-size:.86rem;padding-left:.9rem}
+      .header-search button{min-width:76px;padding:0 .8rem;font-size:.8rem}
+    }
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#3b82f6;text-decoration:none}
@@ -447,7 +487,6 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .badge{display:inline-block;padding:.2rem .7rem;border-radius:2rem;
            font-size:.75rem;font-weight:600;margin-bottom:.875rem}
     .in-stock{background:#dcfce7;color:#16a34a}
-    .out-of-stock{background:#fef9c3;color:#854d0e}
     .details{background:white;border:1px solid #e2e8f0;border-radius:.5rem;
              margin:.25rem 0 .875rem;overflow:hidden}
     .detail-row{display:grid;grid-template-columns:94px 1fr;gap:.75rem;
@@ -455,11 +494,18 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .detail-row:last-child{border-bottom:0}
     .detail-row dt{font-weight:700;color:#334155}
     .detail-row dd{color:#475569}
-    .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
-               padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer,.price-base,.price-installment{font-size:1rem;font-weight:700;line-height:1.35}
-    .price-transfer{color:#0f172a}
-    .price-base,.price-installment{color:#374151;margin-top:.15rem}
+    .price-box{display:flex;flex-direction:column;gap:.75rem;background:#fff;
+               border:1px solid #e2dbd0;border-radius:.65rem;padding:.85rem;margin:.875rem 0}
+    .price-transfer{display:flex;flex-direction:column;gap:.12rem;padding:.85rem 1rem;
+                    border:1px solid #e8b6a6;border-radius:.55rem;background:#fff4ef;color:#713629}
+    .price-transfer-label{font-size:.78rem;font-weight:850;line-height:1.25;
+                          letter-spacing:.055em;text-transform:uppercase}
+    .price-transfer strong{font-size:2rem;font-weight:850;line-height:1.12;color:#a94e3d}
+    .price-saving{font-size:.95rem;font-weight:750;line-height:1.3;color:#713629}
+    .price-card{display:flex;flex-direction:column;gap:.18rem;padding:.8rem 1rem;
+                border:1px solid #d8d1c7;border-radius:.55rem;background:#faf8f5;color:#0f172a}
+    .price-card strong{font-size:1.3rem;font-weight:800;line-height:1.25}
+    .price-card span{font-size:1.05rem;font-weight:700;line-height:1.3;color:#374151}
     .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
                border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
                margin:.875rem 0;color:#6b4218}
@@ -470,11 +516,16 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
     .btn:hover{opacity:.85}
-    .btn-ml{background:#ffe600;color:#1e293b}
     .btn-wa{background:#25d366;color:white}
     .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
               cursor:pointer;width:100%}
     .btn-cart:disabled{opacity:.7;cursor:default}
+    /* AL-WEB: Mercado Libre queda tercero y subordinado — sin relleno
+       amarillo dominante, fuente más chica y peso menor que carrito/WhatsApp.
+       Sigue siendo un enlace funcional, solo pierde peso visual. */
+    .btn-ml{background:#fff;color:#7a6a1f;border:1.5px solid #e8dfa0;
+            font-size:.82rem;font-weight:600;padding:.65rem 1.25rem}
+    .btn-ml:hover{background:#fdf9e8;opacity:1}
     .waitlist-form{background:#fff;border:1px solid #d8d1c7;border-radius:.65rem;
                    padding:1rem;scroll-margin-top:1rem}
     .waitlist-form label{display:block;font-size:.82rem;font-weight:700;color:#334155;
@@ -503,17 +554,29 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
 </head>
 <body>
 
-<header>
-  <a href="/">📚 Amado Libros</a>
-  <span>Tu librería para libros difíciles de ubicar</span>
-  <a href="/carrito" id="ssr-cart-link" class="ssr-cart-link" aria-label="Ver carrito">
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-      <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
-    </svg>
-    <span id="ssr-cart-badge" class="ssr-cart-badge" hidden aria-hidden="true">0</span>
-  </a>
+<header class="product-header">
+  <div class="header-inner">
+    <a href="/" class="brand-link" aria-label="Amado Libros — ir al inicio">
+      <img src="/images/logo-amado.webp" alt="" class="brand-logo" width="44" height="44" fetchpriority="high">
+      <span class="brand-copy">
+        <span class="brand-name">AMADO LIBROS</span>
+        <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
+      </span>
+    </a>
+    <form class="header-search" action="/catalogo" method="get" role="search">
+      <input type="search" name="q" placeholder="Buscar por título, autor, temática o ISBN"
+             aria-label="Buscar por título, autor, temática o ISBN" autocomplete="off">
+      <button type="submit" aria-label="Buscar libros">Buscar</button>
+    </form>
+    <a href="/carrito" id="ssr-cart-link" class="ssr-cart-link" aria-label="Ver carrito">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
+      </svg>
+      <span id="ssr-cart-badge" class="ssr-cart-badge" hidden aria-hidden="true">0</span>
+    </a>
+  </div>
 </header>
 
 <nav>
@@ -525,14 +588,13 @@ function renderPage(item, slug, isPreview, waitlistSiteKey) {
   ${renderGallery(images, safeTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
-    <span class="badge ${inStock ? 'in-stock' : 'out-of-stock'}">
-      ${inStock ? '✓ En stock' : 'No disponible'}
-    </span>
-    ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
+    ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
+    ${inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     ${priceHtml}
     <div class="cta">
       ${actionHtml}
     </div>
+    ${!inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     <p class="shipping">${inStock
       ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'

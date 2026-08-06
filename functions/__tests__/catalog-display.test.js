@@ -109,18 +109,22 @@ test.beforeEach(() => {
   };
 });
 
-test('la búsqueda muestra pausados con acceso al aviso sin precio anterior', async () => {
+// CF-CATEGORÍAS-2D: en Preview, un pausado ya no se muestra como "No
+// disponible" (esa etiqueta queda para activos sin stock) — se muestra
+// como "Disponible por encargo" con CTA "Pedir este libro" por WhatsApp,
+// nunca con un precio no garantizado.
+test('la búsqueda muestra pausados como "Disponible por encargo", sin precio anterior', async () => {
   const response = await catalogRequest(
     context('https://preview.example/catalogo?q=Alpha+raro')
   );
   const html = await response.text();
 
-  assert.match(html, /No disponible/);
-  assert.match(html, /Avisame cuando llegue/);
-  assert.match(html, /Buscarlo por encargo/);
+  assert.match(html, /Disponible por encargo/);
+  assert.match(html, /Pedir este libro/);
   assert.match(html, /https:\/\/preview\.example\/libro\/MLU2\/alpha-raro/);
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
+  assert.doesNotMatch(html, /Ver ficha/);
 });
 
 test('la búsqueda Preview usa el índice activo compacto y conserva el precio', async () => {
@@ -137,13 +141,83 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   const html = await response.text();
 
   assert.match(html, /Alpha disponible/);
-  assert.match(html, /Transferencia:/);
-  assert.match(html, /Precio:/);
+  assert.match(html, /Mejor precio · Transferencia/);
+  assert.match(html, /Con tarjeta:/);
   assert.equal(requests.includes(CATALOG_URL), false);
   assert.match(response.headers.get('server-timing'), /active_index_parse/);
   assert.match(response.headers.get('server-timing'), /search;dur=/);
   assert.match(response.headers.get('server-timing'), /render;dur=/);
   assert.match(response.headers.get('server-timing'), /total;dur=/);
+});
+
+test('CF-R2-3A: la raíz Preview usa el índice activo compacto y no descarga catalog.json', async () => {
+  const requests = [];
+  const originalMatch = globalThis.caches.default.match;
+  globalThis.caches.default.match = async request => {
+    requests.push(request.url);
+    return originalMatch(request);
+  };
+
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo')
+  );
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Alpha disponible/);
+  assert.match(html, /Alpha raro/);
+  assert.equal(requests.includes(CATALOG_URL), false);
+  assert.match(response.headers.get('server-timing'), /active_index_parse/);
+});
+
+test('CF-R2-3A: la raíz conserva catalog.json como fallback si falta el índice activo', async () => {
+  const requests = [];
+  globalThis.caches.default.match = async request => {
+    requests.push(request.url);
+    if (request.url === CATALOG_URL) return Response.json(CATALOG);
+    if (request.url === PAUSED_MANIFEST_URL) {
+      return Response.json({ schema_version: 1, current: null, previous: null });
+    }
+    return null;
+  };
+
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo')
+  );
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Alpha disponible/);
+  assert.equal(requests.includes(CATALOG_URL), true);
+  assert.doesNotMatch(response.headers.get('server-timing'), /active_index_parse/);
+  assert.match(response.headers.get('server-timing'), /catalog_parse/);
+});
+
+test('el catálogo prioriza transferencia y mantiene tarjeta y cuotas visibles', async () => {
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo?q=Alpha+disponible')
+  );
+  const html = await response.text();
+  const prices = html.match(/<div class="rc-prices">([\s\S]*?)<a href="[^"]+" class="rc-cta">/)?.[1] || '';
+
+  assert.match(prices, /Mejor precio · Transferencia/);
+  assert.match(prices, /\$880 UYU/);
+  assert.match(prices, /12% menos · Ahorrás \$120/);
+  assert.match(prices, /Con tarjeta: \$1[.,]000 UYU/);
+  assert.match(prices, /Hasta 12 cuotas de aprox\. \$83 UYU/);
+  assert.ok(prices.indexOf('Mejor precio · Transferencia') < prices.indexOf('Con tarjeta:'));
+});
+
+test('transferencia lidera sin ocultar visualmente tarjeta y cuotas', async () => {
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo?q=Alpha+disponible')
+  );
+  const html = await response.text();
+
+  assert.match(html, /\.rc-transfer strong\{font-size:1\.35rem;font-weight:850/);
+  assert.match(html, /\.rc-card-price strong\{font-size:1\.05rem;font-weight:800/);
+  assert.match(html, /\.rc-card-price span\{font-size:\.86rem;font-weight:700/);
+  assert.match(html, /\.rc-card-price\{[^}]*border:1px solid #d8d1c7[^}]*background:#faf8f5/);
 });
 
 test('una búsqueda sin coincidencias reales termina en cero resultados', async () => {
@@ -165,8 +239,8 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   const html = await response.text();
 
   assert.match(html, /noindex, follow/);
-  assert.match(html, /Vendimos todos los ejemplares disponibles\./);
-  assert.match(html, /Si querés, lo buscamos para vos\./);
+  assert.match(html, /¿Buscás este libro\?/);
+  assert.match(html, /Podemos intentar conseguirlo por encargo\./);
   assert.match(html, /Consultar si podemos conseguirlo/);
   assert.match(html, /Avisame cuando llegue/);
   assert.match(html, /data-action="stock_waitlist"/);
@@ -174,6 +248,13 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   assert.doesNotMatch(html, /98[.,]765/);
   assert.doesNotMatch(html, /Agregar al carrito/);
   assert.doesNotMatch(html, /Comprar en MercadoLibre/);
+  // CF-STOCK-1-UX-FIX: no repetir el problema — sin badge "No disponible"
+  // ni fila "Disponibilidad" en la ficha técnica.
+  assert.doesNotMatch(html, /No disponible/);
+  assert.doesNotMatch(html, /<dt>Disponibilidad<\/dt>/);
+  // Jerarquía: el WhatsApp principal debe aparecer antes que el
+  // formulario de aviso secundario.
+  assert.ok(html.indexOf('Consultar si podemos conseguirlo') < html.indexOf('id="aviso-stock"'));
 
   const expectedWaMsg = encodeURIComponent(
     'Hola, me interesa conseguir “Alpha raro”, de Autor Dos. ¿Podrían buscarlo por encargo?'
@@ -365,7 +446,7 @@ test('CF-R2-2-BRIDGE: ficha productiva por ID encuentra un libro pausado', async
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /noindex, follow/);
-  assert.match(html, /Vendimos todos los ejemplares disponibles\./);
+  assert.match(html, /¿Buscás este libro\?/);
   assert.doesNotMatch(html, /Agregar al carrito/);
   assert.doesNotMatch(html, /Comprar en MercadoLibre/);
   assert.equal(requestedUrls.includes(PAUSED_MANIFEST_URL), false);
