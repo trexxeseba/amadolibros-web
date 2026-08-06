@@ -1,6 +1,8 @@
 // HEADER-FICHA-1: identidad y búsqueda consistentes en la ficha individual.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { access } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { renderPage } from '../libro/[[path]].js';
 
 function render() {
@@ -17,9 +19,15 @@ function render() {
 test('1. La ficha muestra el logo gráfico real y la marca enlaza al inicio', () => {
     const html = render();
     assert.match(html, /<a href="\/" class="brand-link"[^>]*>/);
-    assert.match(html, /<img src="\/images\/logo-amado\.png" alt="" class="brand-logo"[^>]*fetchpriority="high">/);
+    assert.match(html, /<img src="\/images\/logo-amado\.webp" alt="" class="brand-logo"[^>]*fetchpriority="high">/);
+    assert.doesNotMatch(html, /logo-amado\.png/);
     assert.match(html, /<span class="brand-name">AMADO LIBROS<\/span>/);
     assert.doesNotMatch(html, />📚 Amado Libros<\/a>/);
+});
+
+test('1b. El logo de la ficha existe dentro del public que Astro despliega', async () => {
+    const logo = fileURLToPath(new URL('../../astro-front/public/images/logo-amado.webp', import.meta.url));
+    await assert.doesNotReject(access(logo));
 });
 
 test('2. El buscador de la ficha envía la consulta al catálogo', () => {

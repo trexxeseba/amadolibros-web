@@ -543,7 +543,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
 <header class="product-header">
   <div class="header-inner">
     <a href="/" class="brand-link" aria-label="Amado Libros — ir al inicio">
-      <img src="/images/logo-amado.png" alt="" class="brand-logo" width="44" height="44" fetchpriority="high">
+      <img src="/images/logo-amado.webp" alt="" class="brand-logo" width="44" height="44" fetchpriority="high">
       <span class="brand-copy">
         <span class="brand-name">AMADO LIBROS</span>
         <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
