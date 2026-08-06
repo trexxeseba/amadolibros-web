@@ -41,7 +41,7 @@ jobs:
           grep -q 'src="/images/logo-amado.webp"' 'functions/libro/[[path]].js'
           grep -q '@media(max-width:499px)' functions/catalogo.js
           grep -q '@media(min-width:500px)' functions/catalogo.js
-          grep -q 'normalizeCatalogImageUrl' functions/catalogo.js
+          grep -q 'catalogImageUrl' functions/catalogo.js
           grep -q 'object-fit:contain' functions/catalogo.js
 
       - name: Deploy isolated Cloudflare Preview
