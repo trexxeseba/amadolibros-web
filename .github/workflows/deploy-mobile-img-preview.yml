@@ -1,0 +1,54 @@
+name: Deploy MOBILE+IMG Preview
+
+on:
+  push:
+    branches:
+      - agent/mobile-img-integration-preview
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Validate integration
+        run: bash scripts/validate-ci.sh
+
+      - name: Build Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_CHECKOUT_ENABLED: 'false'
+        run: npm run build
+
+      - name: Verify integration safeguards
+        run: |
+          test -f astro-front/dist/index.html
+          grep -q "noindex, nofollow" astro-front/dist/index.html
+          test -f astro-front/dist/images/logo-amado.webp
+          grep -q 'src="/images/logo-amado.webp"' 'functions/libro/[[path]].js'
+          grep -q '@media(max-width:499px)' functions/catalogo.js
+          grep -q '@media(min-width:500px)' functions/catalogo.js
+          grep -q 'normalizeCatalogImageUrl' functions/catalogo.js
+          grep -q 'object-fit:contain' functions/catalogo.js
+
+      - name: Deploy isolated Cloudflare Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch mobile-img-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
