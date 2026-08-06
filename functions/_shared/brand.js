@@ -145,11 +145,14 @@ export function footerHtml(year = new Date().getFullYear()) {
 export const FOOTER_STYLES = `
     .site-footer{background:#18120e;color:rgba(248,245,239,.55);
         margin-top:2.5rem;font-size:.85rem;line-height:1.55}
+    /* El padding inferior reserva el alto de la burbuja flotante (56px) mas
+       su separacion, para que no tape la ultima linea del footer. */
     .footer-inner{max-width:1100px;margin:0 auto;
-        padding:2rem 1rem calc(2rem + env(safe-area-inset-bottom,0px));
+        padding:2rem 1rem calc(5.5rem + env(safe-area-inset-bottom,0px));
         display:grid;gap:1.75rem;grid-template-columns:minmax(0,1fr)}
     @media(min-width:760px){
-        .footer-inner{grid-template-columns:2fr 1fr 1fr;gap:2rem}
+        .footer-inner{grid-template-columns:2fr 1fr 1fr;gap:2rem;
+            padding-bottom:calc(3rem + env(safe-area-inset-bottom,0px))}
     }
     .site-footer a{color:rgba(248,245,239,.8);text-decoration:none}
     .site-footer a:hover{text-decoration:underline}
