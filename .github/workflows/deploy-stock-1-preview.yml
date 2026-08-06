@@ -1,4 +1,5 @@
 name: Deploy STOCK-1 Preview
+# CF-R2-3A: indice activo compacto en la raiz con fallback seguro
 
 on:
   push:
