@@ -297,11 +297,132 @@ function buildOrderWaMessage(book, href) {
     return msg;
 }
 
+// ── CATALOGO-PAGINACION-1 ────────────────────────────────────────────────────
+// Antes de este lote la página truncaba en MAX_RESULTS sin forma de continuar:
+// `/catalogo` mostraba 48 de 17.142 y no existía ningún parámetro de página.
+// Los títulos restantes seguían siendo alcanzables con una búsqueda ?q=
+// suficientemente específica, pero no se podían *navegar*. Acá se agrega esa
+// navegación server-side, con enlaces HTML reales y sin depender de JS.
+
+// `page` se valida como cadena, no con parseInt: parseInt('2abc') daría 2 y
+// parseInt('2.9') daría 2, aceptando URLs que no queremos tratar como válidas.
+// Tope de 7 dígitos para que Number() nunca reciba algo desbordado.
+const PAGE_PARAM_RE = /^[1-9][0-9]{0,6}$/;
+
+function parsePageParam(raw) {
+    if (raw === null || raw === undefined) return { present: false, valid: true, page: 1 };
+    const trimmed = String(raw).trim();
+    if (!PAGE_PARAM_RE.test(trimmed)) return { present: true, valid: false, page: 1 };
+    return { present: true, valid: true, page: Number(trimmed) };
+}
+
+// Forma canónica de una URL del catálogo: siempre el mismo orden de
+// parámetros y sin `page` cuando es la primera. Se usa para el canonical y
+// para cada enlace de paginación, así una misma vista tiene una sola URL.
+function catalogPath({ q, categoria, subcategoria, page }) {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (categoria) params.set('categoria', categoria);
+    if (subcategoria) params.set('subcategoria', subcategoria);
+    if (page && page > 1) params.set('page', String(page));
+    const qs = params.toString();
+    return qs ? `/catalogo?${qs}` : '/catalogo';
+}
+
+// Ventana de páginas: primera, última, actual y sus vecinas inmediatas.
+// Como máximo 7 celdas (1 … n-1 [n] n+1 … M), que es lo que entra en una
+// fila a 390 px sin desbordar.
+function paginationWindow(page, totalPages) {
+    const wanted = new Set([1, totalPages, page, page - 1, page + 1]);
+    const sorted = [...wanted]
+        .filter(p => Number.isInteger(p) && p >= 1 && p <= totalPages)
+        .sort((a, b) => a - b);
+    const cells = [];
+    let previous = 0;
+    for (const p of sorted) {
+        if (previous && p - previous > 1) cells.push('gap');
+        cells.push(p);
+        previous = p;
+    }
+    return cells;
+}
+
+// Dos filas, pensadas para mobile primero:
+//   fila 1 → ‹ Anterior · Página N de M · Siguiente ›
+//   fila 2 → 1 … n-1 [n] n+1 … M
+// Todo son <a href> reales: la navegación funciona sin JavaScript. Los
+// extremos deshabilitados se renderizan como <span>, nunca como enlaces a
+// una página inexistente.
+function paginationHtml({ page, totalPages, hrefFor }) {
+    if (totalPages <= 1) return '';
+
+    const prevControl = page > 1
+        ? `<a class="pg-ctl" rel="prev" href="${escapeHtml(hrefFor(page - 1))}" aria-label="Ir a la página anterior">‹ Anterior</a>`
+        : `<span class="pg-ctl is-off" aria-disabled="true">‹ Anterior</span>`;
+    const nextControl = page < totalPages
+        ? `<a class="pg-ctl" rel="next" href="${escapeHtml(hrefFor(page + 1))}" aria-label="Ir a la página siguiente">Siguiente ›</a>`
+        : `<span class="pg-ctl is-off" aria-disabled="true">Siguiente ›</span>`;
+
+    const numbers = paginationWindow(page, totalPages).map(cell => {
+        if (cell === 'gap') return '<span class="pg-gap" aria-hidden="true">…</span>';
+        if (cell === page) return `<span class="pg-num is-current" aria-current="page">${cell}</span>`;
+        const label = cell === 1
+            ? 'Ir a la primera página'
+            : cell === totalPages
+                ? `Ir a la última página, ${cell}`
+                : `Ir a la página ${cell}`;
+        return `<a class="pg-num" href="${escapeHtml(hrefFor(cell))}" aria-label="${label}">${cell}</a>`;
+    }).join('');
+
+    return `<nav class="pg" aria-label="Paginación de resultados">
+  <div class="pg-row pg-main">
+    ${prevControl}
+    <span class="pg-status">Página ${page} de ${totalPages}</span>
+    ${nextControl}
+  </div>
+  <div class="pg-row pg-nums">${numbers}</div>
+</nav>`;
+}
+
+const PAGINATION_STYLES = `
+    .pg{margin-top:1.75rem;display:flex;flex-direction:column;gap:.5rem}
+    .pg-row{display:flex;align-items:center;gap:.3rem}
+    .pg-main{justify-content:space-between}
+    .pg-nums{justify-content:center;flex-wrap:wrap}
+    .pg-ctl,.pg-num,.pg-gap{min-width:44px;min-height:44px;
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:0 .55rem;border-radius:.5rem;font-size:.85rem;
+        text-decoration:none;line-height:1}
+    .pg-ctl,.pg-num{border:1px solid #e2dbd0;background:#fff;color:#18120e}
+    .pg-ctl{font-weight:600;white-space:nowrap}
+    .pg-ctl:hover,.pg-num:hover{background:#f5efe6}
+    .pg-ctl.is-off{color:#b3aaa0;background:#f5f2ee;border-color:#eee7dd}
+    .pg-num.is-current{background:#18120e;color:#fff;border-color:#18120e;
+        font-weight:800}
+    .pg-gap{border:0;background:none;color:#94a3b8;min-width:24px}
+    .pg-status{flex:1;text-align:center;font-size:.8rem;color:#64748b}
+    .pg-ctl:focus-visible,.pg-num:focus-visible{outline:2px solid #a94e3d;
+        outline-offset:2px}
+`;
+
 export async function onRequest(ctx) {
     const requestStartedAt = perfNow();
     ensurePerf(ctx);
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
+
+    // Una sola URL por vista: `?page=1` y cualquier `page` inválido redirigen
+    // a la forma limpia. Va antes de tocar R2 — no hace falta el catálogo
+    // para saber que la URL no es canónica.
+    const pageParam = parsePageParam(url.searchParams.get('page'));
+    if (pageParam.present && (!pageParam.valid || pageParam.page === 1)) {
+        const clean = new URL(url);
+        clean.searchParams.delete('page');
+        return new Response(null, {
+            status: 301,
+            headers: { Location: `${clean.pathname}${clean.search}` },
+        });
+    }
     const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
     const rawSubcategoria = url.searchParams.get('subcategoria')?.trim() ?? '';
 
@@ -400,12 +521,41 @@ export async function onRequest(ctx) {
         .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
             if (a.rank !== b.rank) return a.rank - b.rank;
-            return commercialTier(a.book) - commercialTier(b.book);
+            const tier = commercialTier(a.book) - commercialTier(b.book);
+            if (tier !== 0) return tier;
+            // CATALOGO-PAGINACION-1: desempate final por id. Sin esto el orden
+            // de los empatados depende de la posición en el JSON de R2, que el
+            // cron regenera a diario: al paginar, un mismo libro podría
+            // repetirse entre páginas o no aparecer en ninguna. `id` (MLU…) es
+            // único y estable, así que la secuencia es reproducible.
+            return String(a.book.id).localeCompare(String(b.book.id));
         })
         .map(x => x.book);
     recordPerf(ctx, 'search', searchStartedAt);
-    const limited   = filtered.slice(0, MAX_RESULTS);
-    const truncated = filtered.length > MAX_RESULTS;
+
+    const totalResults = filtered.length;
+    const totalPages   = Math.max(1, Math.ceil(totalResults / MAX_RESULTS));
+    // Fuera de rango: 302 (no 301) a la última página válida. El destino
+    // depende del tamaño actual del catálogo, que cambia con cada sync, así
+    // que no debe quedar cacheado como permanente.
+    if (pageParam.page > totalPages) {
+        const target = new URL(url);
+        if (totalPages > 1) target.searchParams.set('page', String(totalPages));
+        else target.searchParams.delete('page');
+        return new Response(null, {
+            status: 302,
+            headers: {
+                Location: `${target.pathname}${target.search}`,
+                'Cache-Control': 'no-store',
+            },
+        });
+    }
+
+    const page      = pageParam.page;
+    const offset    = (page - 1) * MAX_RESULTS;
+    const limited   = filtered.slice(offset, offset + MAX_RESULTS);
+    const rangeFrom = totalResults === 0 ? 0 : offset + 1;
+    const rangeTo   = offset + limited.length;
 
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
@@ -467,12 +617,12 @@ export async function onRequest(ctx) {
 </article>`;
     }).join('\n');
 
-    const resultLabel = filtered.length === 1 ? 'resultado' : 'resultados';
-    const subText = filtered.length === 0
+    const resultLabel = totalResults === 1 ? 'resultado' : 'resultados';
+    const subText = totalResults === 0
         ? 'No encontramos resultados.'
-        : truncated
-            ? `Mostrando los primeros ${MAX_RESULTS} de ${filtered.length} ${resultLabel}.`
-            : `${filtered.length} ${resultLabel}.`;
+        : totalPages > 1
+            ? `Mostrando ${rangeFrom}–${rangeTo} de ${totalResults} ${resultLabel}.`
+            : `${totalResults} ${resultLabel}.`;
 
     const filterLabelParts = [];
     if (categoria) filterLabelParts.push(escapeHtml(selectedCategory.name));
@@ -509,7 +659,24 @@ export async function onRequest(ctx) {
     const metaDescription = isIndex
         ? `${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $2.000. Envíos a todo el país.`
         : 'Resultados en Amado Libros.';
-    const robotsMeta = isIndex ? 'index, follow' : 'noindex';
+    // Las búsquedas internas no se indexan, pero sí se siguen: `follow` deja
+    // que el crawler descubra las fichas enlazadas desde los resultados.
+    const robotsMeta = isIndex
+        ? 'index, follow'
+        : rawQ ? 'noindex, follow' : 'noindex';
+    // Canonical propio por página: una secuencia paginada no es contenido
+    // duplicado, así que `?page=2` no debe canonicalizar hacia la página 1 —
+    // hacerlo le pediría a Google que descarte el resto del catálogo.
+    const canonicalHref = `${BASE}${catalogPath({
+        q: rawQ, categoria, subcategoria, page,
+    })}`;
+    const paginationBlock = paginationHtml({
+        page,
+        totalPages,
+        hrefFor: target => catalogPath({
+            q: rawQ, categoria, subcategoria, page: target,
+        }),
+    });
     const jsonLd = isIndex
         ? `<script type="application/ld+json">${JSON.stringify({
             '@context':   'https://schema.org',
@@ -530,7 +697,7 @@ export async function onRequest(ctx) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${pageTitle}</title>
   <meta name="description" content="${metaDescription}">
-  <link rel="canonical" href="${BASE}/catalogo">
+  <link rel="canonical" href="${escapeHtml(canonicalHref)}">
   <meta name="robots" content="${robotsMeta}">
   ${faviconHeadHtml()}
   ${jsonLd}
@@ -595,6 +762,7 @@ export async function onRequest(ctx) {
     footer a{color:#cbd5e1;text-decoration:none}
     footer a:hover{text-decoration:underline}
     ${CAT_SELECT_STYLES}
+    ${PAGINATION_STYLES}
   </style>
 </head>
 <body>
@@ -604,8 +772,8 @@ export async function onRequest(ctx) {
   ${chipsHtml}
   <h1>${heading}</h1>
   <p class="sub">${subText}</p>
-  ${filtered.length > 0
-    ? `<div class="grid">\n${cards}\n</div>`
+  ${totalResults > 0
+    ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
     : `<p class="empty">${emptyMessage}</p>`
   }
   <footer>
