@@ -38,6 +38,8 @@
  */
 
 import { slugify } from './_shared/slug.js';
+// GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
+import { faviconHeadHtml } from './_shared/brand.js';
 import {
     BASE,
     fetchActiveIndex,
@@ -721,6 +723,7 @@ export async function onRequest(ctx) {
   <link rel="canonical" href="${escapeHtml(canonicalHref)}">
   <link rel="preconnect" href="https://http2.mlstatic.com" crossorigin>
   <meta name="robots" content="${robotsMeta}">
+  ${faviconHeadHtml()}
   ${jsonLd}
   <style>
     *{box-sizing:border-box;margin:0;padding:0}

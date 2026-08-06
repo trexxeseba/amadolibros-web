@@ -15,6 +15,15 @@
 
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+// GLOBAL-SHELL-1: shell global compartido con Astro (marca, favicon, footer
+// y burbuja de WhatsApp). Ver functions/_shared/brand.js.
+import {
+    faviconHeadHtml,
+    footerHtml,
+    FOOTER_STYLES,
+    waFloatHtml,
+    WA_FLOAT_STYLES,
+} from '../_shared/brand.js';
 
 const WA = '59899841325';
 
@@ -203,6 +212,7 @@ function notFound() {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Libro no encontrado — Amado Libros</title>
   <meta name="robots" content="noindex">
+  ${faviconHeadHtml()}
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          max-width:600px;margin:4rem auto;padding:1rem;text-align:center;color:#1e293b}
@@ -382,6 +392,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
   <meta name="description" content="${metaDesc}">
   <meta name="robots" content="${isPreview || !inStock ? 'noindex, follow' : 'index, follow'}">
   <link rel="canonical" href="${canonicalUrl}">
+  ${faviconHeadHtml()}
 
   <meta property="og:type"        content="product">
   <meta property="og:url"         content="${canonicalUrl}">
@@ -547,9 +558,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     @media(max-width:520px){.waitlist-row{flex-direction:column}.btn-waitlist{width:100%}}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
-    footer{background:#1e293b;color:#94a3b8;text-align:center;
-           font-size:.8rem;padding:1.5rem;margin-top:2.5rem}
-    footer a{color:#cbd5e1;text-decoration:none}
+    ${FOOTER_STYLES}
+    ${WA_FLOAT_STYLES}
   </style>
 </head>
 <body>
@@ -557,7 +567,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
 <header class="product-header">
   <div class="header-inner">
     <a href="/" class="brand-link" aria-label="Amado Libros — ir al inicio">
-      <img src="/images/logo-amado.webp" alt="" class="brand-logo" width="44" height="44" fetchpriority="high">
+      <img src="/images/logo-amado.webp" alt="Amado Libros" class="brand-logo" width="44" height="44" fetchpriority="high">
       <span class="brand-copy">
         <span class="brand-name">AMADO LIBROS</span>
         <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
@@ -602,11 +612,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
   </div>
 </main>
 
-<footer>
-  &copy; 2026 Amado Libros. Todos los derechos reservados. ·
-  <a href="/">Catálogo</a> ·
-  <a href="/politicas">Políticas</a>
-</footer>
+${footerHtml()}
+${waFloatHtml(`Hola, tengo una consulta sobre ${item.title}.`)}
 
 <script>(function(){
   function updateBadge(n){
