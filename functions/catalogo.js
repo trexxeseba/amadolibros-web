@@ -173,8 +173,10 @@ function commercialTier(b) {
     return 3;
 }
 
-function httpsImg(url) {
-    return (url || '').replace('http://', 'https://');
+export function catalogImageUrl(url) {
+    return String(url || '')
+        .replace(/^http:\/\//, 'https://')
+        .replace(/-I\.jpg$/, '-O.jpg');
 }
 
 // CF-CATEGORÍAS-2 — artefacto compacto mlu->[categoryId,subcategoryId?],
@@ -263,11 +265,18 @@ function filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, sele
 }
 
 const CAT_SELECT_STYLES = `
-    .filters-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem}
-    .filters-bar input[type=search]{flex:1;min-width:180px}
-    .cat-select-wrap{display:flex}
-    .cat-select-wrap select{padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
-                      font-size:.85rem;color:#1e293b;background:#fff;outline:none;max-width:100%}
+    .filters-bar{display:flex;flex-wrap:wrap;align-items:stretch;gap:.5rem;margin-bottom:.6rem;min-width:0}
+    .filters-bar input[type=search],.cat-select-wrap select,.filters-bar button{
+                      min-height:44px;border:1px solid #d1c8be;border-radius:.5rem;
+                      font:inherit;font-size:.9rem;outline:none}
+    .filters-bar input[type=search]{flex:1;min-width:180px;padding:.6rem .75rem;color:#1e293b;background:#fff}
+    .cat-select-wrap{display:flex;min-width:0}
+    .cat-select-wrap select{width:100%;padding:.55rem 2rem .55rem .75rem;
+                      color:#1e293b;background:#fff;max-width:100%}
+    .filters-bar button{padding:.55rem 1rem;border-color:#1e293b;background:#1e293b;
+                        color:#fff;font-weight:700;cursor:pointer}
+    .filters-bar button:hover{background:#334155}
+    .filters-bar input[type=search]:focus,.filters-bar button:focus-visible,
     .cat-select-wrap select:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
     .clear-filters{display:inline-block;margin-bottom:1.25rem;font-size:.82rem;
                     color:#a94e3d;text-decoration:none;font-weight:600}
@@ -278,8 +287,9 @@ const CAT_SELECT_STYLES = `
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
              clip:rect(0,0,0,0);white-space:nowrap;border:0}
     @media (max-width: 480px){
-      .filters-bar{flex-direction:column}
-      .filters-bar input[type=search],.cat-select-wrap select{width:100%}
+      .filters-bar{display:grid;grid-template-columns:minmax(0,1fr)}
+      .filters-bar input[type=search],.cat-select-wrap,.cat-select-wrap select,.filters-bar button{
+        width:100%;min-width:0}
     }
 `;
 
@@ -405,10 +415,11 @@ export async function onRequest(ctx) {
     const limited   = filtered.slice(0, MAX_RESULTS);
     const truncated = filtered.length > MAX_RESULTS;
 
-    const cards = limited.map((b, idx) => {
+    let renderedImageCount = 0;
+    const cards = limited.map(b => {
         const slug  = slugify(b.title);
         const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
-        const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
+        const img   = escapeHtml(catalogImageUrl(b.pictures?.[0] || b.thumbnail || ''));
         const title = escapeHtml(b.title);
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
@@ -421,11 +432,13 @@ export async function onRequest(ctx) {
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const installment = Math.round(price / 12).toLocaleString('es-UY');
-        const loading  = idx < 8 ? 'eager' : 'lazy';
+        const imageIndex = img ? renderedImageCount++ : -1;
+        const loading = imageIndex >= 0 && imageIndex < 4 ? 'eager' : 'lazy';
+        const fetchPriority = imageIndex === 0 ? ' fetchpriority="high"' : '';
         const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
         const orderWaHref = `${WA}?text=${encodeURIComponent(buildOrderWaMessage(b, href))}`;
         const imgTag = img
-            ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
+            ? `<img src="${img}" alt="${title}" width="180" height="240" loading="${loading}" decoding="async"${fetchPriority}>`
             : `<div class="rc-no-img">📚</div>`;
 
         const badge = available
@@ -529,35 +542,36 @@ export async function onRequest(ctx) {
   <title>${pageTitle}</title>
   <meta name="description" content="${metaDescription}">
   <link rel="canonical" href="${BASE}/catalogo">
+  <link rel="preconnect" href="https://http2.mlstatic.com" crossorigin>
   <meta name="robots" content="${robotsMeta}">
   ${jsonLd}
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
+    html,body{max-width:100%;overflow-x:hidden}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#faf7f2;color:#1e293b;line-height:1.5}
-    .wrap{max-width:1100px;margin:0 auto;padding:1.25rem 1rem 3rem}
+    .wrap{width:100%;max-width:1100px;min-width:0;margin:0 auto;padding:1.25rem 1rem 3rem}
     nav{font-size:.875rem;margin-bottom:1.25rem}
     nav a{color:#3b82f6;text-decoration:none}
     nav a:hover{text-decoration:underline}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
     .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
-    .grid{display:grid;gap:1rem;
-          grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-    @media(min-width:500px){.grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;min-width:0}
+    @media(min-width:500px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr)}}
-    .rc-card{display:flex;flex-direction:column;background:#fff;
+    .rc-card{display:flex;flex-direction:column;min-width:0;background:#fff;
              border:1px solid #e2dbd0;border-radius:.75rem;overflow:hidden;
              color:inherit;
              transition:box-shadow .15s}
     .rc-card:hover{box-shadow:0 4px 16px rgba(24,18,14,.1)}
     .rc-card.is-order{border-color:#e8c9a0}
     .rc-img{display:block;aspect-ratio:3/4;background:#ede9e1;overflow:hidden}
-    .rc-img img{width:100%;height:100%;object-fit:cover;display:block;
+    .rc-img img{width:100%;height:100%;object-fit:contain;display:block;
                 transition:transform .25s}
     .rc-card:hover .rc-img img{transform:scale(1.04)}
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
-    .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+    .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1;min-width:0}
     .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .rc-title-link{text-decoration:none;color:inherit}
@@ -565,7 +579,7 @@ export async function onRequest(ctx) {
     .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
-    .rc-base,.rc-installment,.rc-transfer{line-height:1.3}
+    .rc-base,.rc-installment,.rc-transfer{line-height:1.3;overflow-wrap:anywhere}
     .rc-base{font-size:.95rem;color:#18120e;font-weight:700}
     .rc-installment{font-size:.82rem;color:#374151;font-weight:600}
     .rc-transfer{font-size:.78rem;color:#a94e3d;font-weight:600}
@@ -587,6 +601,20 @@ export async function onRequest(ctx) {
     .rc-cta.rc-wa{color:#117a37;border-color:#b9dfc7;background:#effaf3}
     .rc-card:hover .rc-cta.rc-wa{background:#dcf5e5}
     .empty{padding:2rem 0;color:#64748b;font-size:.95rem}
+    @media(max-width:499px){
+      .wrap{padding:1rem .75rem 2.5rem}
+      .grid{gap:.75rem}
+      .rc-card{display:grid;grid-template-columns:minmax(108px,34%) minmax(0,1fr)}
+      .rc-img{height:100%;min-height:184px;aspect-ratio:auto}
+      .rc-img img{object-fit:contain}
+      .rc-body{padding:.75rem;gap:.38rem}
+      .rc-title{font-size:.9rem;-webkit-line-clamp:3}
+      .rc-author{font-size:.78rem}
+      .rc-base{font-size:.9rem}
+      .rc-installment{font-size:.77rem}
+      .rc-transfer{font-size:.74rem}
+      .rc-cta{max-width:100%;text-align:center;white-space:normal}
+    }
     footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e2e8f0;
            font-size:.78rem;color:#94a3b8}
     footer a{color:#cbd5e1;text-decoration:none}
