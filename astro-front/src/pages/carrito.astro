@@ -79,11 +79,29 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             <label class="delivery-opt">
               <input type="radio" name="delivery" value="pickup" checked>
               <span class="delivery-opt-content">
-                <strong class="delivery-opt-name">Retiro en Rincón 608</strong>
-                <span class="delivery-opt-meta">A pasos de Plaza Matriz · Lun–Vie 7:30–17:00</span>
+                <strong class="delivery-opt-name">Pick up a pasos de Plaza Matriz</strong>
+                <span class="delivery-opt-meta">Lunes a viernes, de 8 a 17 h</span>
                 <span class="delivery-opt-badge">Ahorrás $150 retirando aquí</span>
               </span>
             </label>
+          </div>
+
+          <!-- PICKUP-CX-1: aviso y aceptación obligatoria. Solo visible con
+               retiro seleccionado; al pasar a envío se oculta y se limpia. -->
+          <div id="pickup-ack-box" class="pickup-ack">
+            <p class="pickup-ack-notice">
+              Para evitar que vengas en vano, esperá nuestra confirmación por
+              WhatsApp antes de venir. Te avisaremos apenas tu pedido esté
+              pronto para retirar.
+            </p>
+            <label class="pickup-ack-label" for="pickup-ack">
+              <input type="checkbox" id="pickup-ack" aria-describedby="err-pickup-ack">
+              <span>Entiendo que debo esperar la confirmación por WhatsApp antes de ir a retirar.</span>
+            </label>
+            <span class="field-error" id="err-pickup-ack" role="alert" hidden></span>
+          </div>
+
+          <div class="delivery-opts-rest">
             <label class="delivery-opt">
               <input type="radio" name="delivery" value="shipping">
               <span class="delivery-opt-content">
@@ -387,6 +405,20 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 </BaseLayout>
 
 <style>
+  /* PICKUP-CX-1: aviso y aceptación del retiro. */
+  .pickup-ack{margin:.85rem 0 1rem;padding:.9rem 1rem;border-radius:.6rem;
+    background:#fff8ed;border:1px solid #f0d9b5}
+  .pickup-ack[hidden]{display:none}
+  .pickup-ack-notice{font-size:.9rem;line-height:1.5;color:#5b4636;margin:0 0 .7rem}
+  .pickup-ack-label{display:flex;gap:.6rem;align-items:flex-start;
+    font-size:.9rem;line-height:1.45;cursor:pointer;min-height:44px}
+  .pickup-ack-label input{width:22px;height:22px;margin-top:.15rem;flex:none;
+    accent-color:#a94e3d;cursor:pointer}
+  .pickup-ack-label input:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
+  .pickup-ack .field-error{display:block;margin-top:.5rem;color:#b42318;
+    font-size:.85rem;font-weight:600}
+  .pickup-ack .field-error[hidden]{display:none}
+
   .cart-page {
     padding: 2rem 1rem 3rem;
   }
@@ -1433,6 +1465,41 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       return checked ? checked.value : 'pickup';
     }
 
+    // ── PICKUP-CX-1 ──────────────────────────────────────────────────────
+    var pickupAckBox = document.getElementById('pickup-ack-box');
+    var pickupAck    = document.getElementById('pickup-ack');
+    var pickupAckErr = document.getElementById('err-pickup-ack');
+
+    function isPickupAccepted() {
+      return !!(pickupAck && pickupAck.checked);
+    }
+
+    function clearPickupAckError() {
+      if (!pickupAckErr) return;
+      pickupAckErr.hidden = true;
+      pickupAckErr.textContent = '';
+      if (pickupAck) pickupAck.removeAttribute('aria-invalid');
+    }
+
+    // Se llama al cambiar de modalidad: con envío el aviso se oculta y la
+    // aceptación se limpia, para que no quede un consentimiento colgado de
+    // una opción que el comprador ya no eligió.
+    function syncPickupAck() {
+      var isPickup = getDeliveryType() === 'pickup';
+      if (pickupAckBox) pickupAckBox.hidden = !isPickup;
+      if (!isPickup && pickupAck) {
+        pickupAck.checked = false;
+        clearPickupAckError();
+      }
+    }
+
+    if (pickupAck) pickupAck.addEventListener('change', clearPickupAckError);
+    Array.prototype.forEach.call(
+      document.querySelectorAll('input[name="delivery"]'),
+      function (r) { r.addEventListener('change', syncPickupAck); }
+    );
+    syncPickupAck();
+
     function getPaymentMethod() {
       var checked = document.querySelector('input[name="payment-method"]:checked');
       return checked ? checked.value : 'card';
@@ -1861,7 +1928,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           lines.push('Ahorro por retiro: −$' + RETIRO_DISCOUNT);
           lines.push('Total con retiro: ' + fmt.format(total) + ' UYU');
           lines.push('Nota: pagando por transferencia bancaria se aplica además 12 % de descuento.');
-          lines.push('Entrega: Retiro en Rincón 608');
+          lines.push('Entrega: Pick up a pasos de Plaza Matriz');
         } else {
           var shippingCostWa = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
           if (shippingCostWa === 0) {
@@ -1977,6 +2044,23 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           }
         }
 
+        // No se puede continuar al pago sin aceptar la espera de confirmación.
+        // El servidor lo vuelve a validar: esto es sólo para explicarlo acá.
+        if (deliveryType === 'pickup' && !isPickupAccepted()) {
+          if (pickupAckErr) {
+            pickupAckErr.textContent =
+              'Necesitamos que confirmes esto antes de seguir.';
+            pickupAckErr.hidden = false;
+          }
+          if (pickupAck) {
+            pickupAck.setAttribute('aria-invalid', 'true');
+            pickupAck.focus();
+            pickupAck.scrollIntoView({ block: 'center' });
+          }
+          resetPrepareButton();
+          return;
+        }
+
         btnPrepare.textContent = 'Preparando tu pedido…';
 
         var payload = {
@@ -1988,6 +2072,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           delivery_type: deliveryType,
           buyer: { name: prepName, phone: prepPhone },
         };
+        if (deliveryType === 'pickup') payload.pickup_ack = true;
         if (deliveryType === 'shipping') {
           payload.shipping = {
             address:        prepAddress,

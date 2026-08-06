@@ -104,7 +104,7 @@ function baseOrder(patch = {}) {
     payment_status:         'not_started',
     buyer_name:             'Ana Pérez',
     buyer_phone:            '099123456',
-    delivery_type:          'pickup',
+    delivery_type:'pickup', pickup_ack:true,
     address:                null,
     locality:               null,
     department:             null,

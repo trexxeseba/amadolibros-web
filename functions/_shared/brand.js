@@ -34,14 +34,37 @@ export const BRAND = {
     logoAlt: 'Amado Libros',
 };
 
+/** Copy canónico del punto de retiro. Única fuente para Astro y SSR. */
+export const PICKUP = {
+    name:  'Pick up a pasos de Plaza Matriz',
+    hours: 'Lunes a viernes, de 8 a 17 h',
+    notice: 'Para evitar que vengas en vano, esperá nuestra confirmación por ' +
+            'WhatsApp antes de venir. Te avisaremos apenas tu pedido esté ' +
+            'pronto para retirar.',
+    checkbox: 'Entiendo que debo esperar la confirmación por WhatsApp antes ' +
+              'de ir a retirar.',
+    confirmation: 'Tu compra quedó confirmada y ya estamos preparando tu ' +
+                  'pedido. Esperá nuestro mensaje por WhatsApp: te avisaremos ' +
+                  'apenas esté pronto para retirar.',
+    internalNotice: 'PICK UP — ACCIÓN PENDIENTE: avisar al cliente por ' +
+                    'WhatsApp cuando el pedido esté pronto. El cliente fue ' +
+                    'informado de que no debe concurrir antes de recibir la ' +
+                    'confirmación.',
+};
+
 export const CONTACT = {
     whatsappNumber: '59899841325',
     whatsappDisplay: '099 841 325',
     email: 'adm@amadolibros.com',
-    // Copy heredado de Footer.astro sin cambios. PICKUP-CX-1 lo reescribe.
-    pickupLine: 'Punto de retiro: Rincón 608 · Montevideo',
-    pickupHours: 'De 8 a 17, coordinado previamente',
+    // PICKUP-CX-1: el contenido público ya no expone la dirección exacta del
+    // punto de retiro. Un comprador que la veía podía presentarse antes de que
+    // el pedido estuviera pronto y volverse con las manos vacías. La dirección
+    // se entrega recién en la confirmación por WhatsApp, cuando ya está listo.
+    // El domicilio legal/comercial es otra cosa y vive en /contacto.
+    pickupLine: PICKUP.name,
+    pickupHours: PICKUP.hours,
 };
+
 
 export const FOOTER_LINKS = [
     { href: '/envios',       label: 'Envíos y retiro' },
