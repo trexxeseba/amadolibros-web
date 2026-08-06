@@ -201,7 +201,10 @@ test('carrito.astro: retiro oculta y deshabilita todos los controles de envío',
   assert.match(fnBody, /querySelectorAll\('input, select, textarea'\)/);
   assert.match(fnBody, /controls\[i\]\.disabled\s*=\s*!shippingSelected/);
   assert.match(carritoAstro, /syncShippingFields\(\);\s*\n\s*updateTotals\(\);/);
-  assert.match(carritoAstro, /syncShippingFields\(\);\s*\n\s*\n\s*\/\/ ── Barra mobile/);
+  const initialSync = carritoAstro.indexOf('syncShippingFields();', fnStart);
+  const mobileBar = carritoAstro.indexOf('// ── Barra mobile', initialSync);
+  assert.ok(initialSync > fnStart && mobileBar > initialSync,
+    'los campos de envío deben sincronizarse antes de inicializar la barra mobile');
 });
 
 // ── Carrito conservado antes de pago aprobado (2-N-I1 v2) ───────────────────
