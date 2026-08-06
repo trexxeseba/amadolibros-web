@@ -150,6 +150,49 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   assert.match(response.headers.get('server-timing'), /total;dur=/);
 });
 
+test('CF-R2-3A: la raíz Preview usa el índice activo compacto y no descarga catalog.json', async () => {
+  const requests = [];
+  const originalMatch = globalThis.caches.default.match;
+  globalThis.caches.default.match = async request => {
+    requests.push(request.url);
+    return originalMatch(request);
+  };
+
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo')
+  );
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Alpha disponible/);
+  assert.match(html, /Alpha raro/);
+  assert.equal(requests.includes(CATALOG_URL), false);
+  assert.match(response.headers.get('server-timing'), /active_index_parse/);
+});
+
+test('CF-R2-3A: la raíz conserva catalog.json como fallback si falta el índice activo', async () => {
+  const requests = [];
+  globalThis.caches.default.match = async request => {
+    requests.push(request.url);
+    if (request.url === CATALOG_URL) return Response.json(CATALOG);
+    if (request.url === PAUSED_MANIFEST_URL) {
+      return Response.json({ schema_version: 1, current: null, previous: null });
+    }
+    return null;
+  };
+
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo')
+  );
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Alpha disponible/);
+  assert.equal(requests.includes(CATALOG_URL), true);
+  assert.doesNotMatch(response.headers.get('server-timing'), /active_index_parse/);
+  assert.match(response.headers.get('server-timing'), /catalog_parse/);
+});
+
 test('el catálogo prioriza transferencia y mantiene tarjeta y cuotas visibles', async () => {
   const response = await catalogRequest(
     context('https://preview.example/catalogo?q=Alpha+disponible')

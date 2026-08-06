@@ -17,7 +17,8 @@
  *   Es una página visible y accesible para usuarios (no un div oculto).
  *   Linked desde el footer de index.html y listada en el sitemap.
  *
- * DATOS: R2 catalog.json — misma fuente que libro/[[path]].js y sitemap.xml.js.
+ * DATOS: índice activo compacto versionado en R2, con catalog.json como
+ * fallback seguro — libro/[[path]].js y sitemap.xml.js conservan sus fuentes.
  *
  * CF-CATEGORÍAS-2C (Preview y producción): filtro por categoría
  * (?categoria=) y subcategoría (?subcategoria=) sobre el catálogo público,
@@ -454,24 +455,25 @@ export async function onRequest(ctx) {
         ? (selectedCategory.subcategories.find(s => s.id === subcategoria)?.name || '')
         : '';
 
-    // CF-R2-2-BRIDGE: habilitado explícitamente en Preview y producción — cada
+    // CF-R2-3A: habilitado explícitamente en Preview y producción — cada
     // uno con su propio manifest (ver manifestUrlFor en _shared/catalog.js).
     // Si el manifest del entorno falta o es inválido, fetchActiveIndex/
     // fetchPausedIndex devuelven null y el fallback de abajo usa
     // fetchCatalog() igual que antes — nunca 500 por esto.
-    const useCompactSearch = Boolean(rawQ) &&
-        ['preview', 'production'].includes(ctx.env?.APP_ENV);
+    // La raíz, categorías, paginación y búsquedas comparten la misma fuente
+    // compacta: no hace falta descargar catalog.json para renderizar cards.
+    const useCompactIndex = ['preview', 'production'].includes(ctx.env?.APP_ENV);
     // CF-CATEGORÍAS-2D: las pausadas participan de "Todos" incluso sin
     // búsqueda, en Preview y en producción — se piden siempre que la
     // funcionalidad de categorías esté habilitada, no solo cuando hay ?q=.
-    const needPausedIndex = categoryFeaturesEnabled || useCompactSearch;
+    const needPausedIndex = categoryFeaturesEnabled || useCompactIndex;
     const [activeIndex, pausedIndex] = await Promise.all([
-        useCompactSearch ? fetchActiveIndex(ctx) : Promise.resolve(null),
+        useCompactIndex ? fetchActiveIndex(ctx) : Promise.resolve(null),
         needPausedIndex ? fetchPausedIndex(ctx) : Promise.resolve(null),
     ]);
-    // El catálogo completo sólo se necesita para el índice sin compactar,
-    // producción o fallback de una versión compacta ausente/corrupta.
-    const catalog = !useCompactSearch || !Array.isArray(activeIndex?.items)
+    // El catálogo completo sólo se necesita fuera de Preview/producción o
+    // como fallback de una versión compacta ausente/corrupta.
+    const catalog = !useCompactIndex || !Array.isArray(activeIndex?.items)
         ? await fetchCatalog(ctx)
         : null;
     const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
@@ -833,7 +835,7 @@ export async function onRequest(ctx) {
     const cacheStatus = ctx.data.perf.cache.miss > 0 ? 'MISS' : 'HIT';
     console.log(JSON.stringify(perfSummary(ctx, {
         route: '/catalogo',
-        mode: useCompactSearch ? 'compact' : 'full',
+        mode: Array.isArray(activeIndex?.items) ? 'compact' : 'full_fallback',
         result_count: filtered.length,
         total_ms: totalDuration,
     })));
