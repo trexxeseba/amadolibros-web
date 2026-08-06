@@ -579,7 +579,9 @@ export async function onRequest(ctx) {
         // (CF-CATEGORÍAS-2D) — habilitado en Preview y producción.
         const isPaused   = b.status === 'paused' && categoryFeaturesEnabled;
         const price     = Number(b.price) || 0;
-        const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
+        const transferValue = Math.round(price * 0.88);
+        const transfer  = transferValue.toLocaleString('es-UY');
+        const savings   = Math.max(0, price - transferValue).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const installment = Math.round(price / 12).toLocaleString('es-UY');
         const imageIndex = img ? renderedImageCount++ : -1;
@@ -599,9 +601,15 @@ export async function onRequest(ctx) {
 
         const bodyCta = available
             ? `<div class="rc-prices">
-      <span class="rc-base"><span class="rc-lbl">Precio web/tarjeta:</span> $${escapeHtml(priceStr)} UYU</span>
-      <span class="rc-installment">Hasta 12 cuotas de aprox. $${escapeHtml(installment)} UYU</span>
-      <span class="rc-transfer">Transferencia: $${escapeHtml(transfer)} UYU</span>
+      <div class="rc-transfer">
+        <span class="rc-transfer-label">Mejor precio · Transferencia</span>
+        <strong>$${escapeHtml(transfer)} UYU</strong>
+        <span class="rc-saving">12% menos · Ahorrás $${escapeHtml(savings)}</span>
+      </div>
+      <div class="rc-card-price">
+        <strong>Con tarjeta: $${escapeHtml(priceStr)} UYU</strong>
+        <span>Hasta 12 cuotas de aprox. $${escapeHtml(installment)} UYU</span>
+      </div>
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
             : isPaused
@@ -745,12 +753,18 @@ export async function onRequest(ctx) {
     .rc-title-link:hover .rc-title{color:#a94e3d}
     .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
-    .rc-base,.rc-installment,.rc-transfer{line-height:1.3;overflow-wrap:anywhere}
-    .rc-base{font-size:.95rem;color:#18120e;font-weight:700}
-    .rc-installment{font-size:.82rem;color:#374151;font-weight:600}
-    .rc-transfer{font-size:.78rem;color:#a94e3d;font-weight:600}
-    .rc-lbl{font-weight:700}
+    .rc-prices{display:flex;flex-direction:column;gap:.55rem;margin-top:.35rem}
+    .rc-transfer,.rc-card-price{min-width:0;overflow-wrap:anywhere}
+    .rc-transfer{display:flex;flex-direction:column;gap:.08rem;padding:.55rem .65rem;
+                 border:1px solid #e8b6a6;border-radius:.55rem;background:#fff4ef;color:#713629}
+    .rc-transfer-label{font-size:.68rem;font-weight:800;line-height:1.25;
+                       letter-spacing:.045em;text-transform:uppercase}
+    .rc-transfer strong{font-size:1.35rem;font-weight:850;line-height:1.15;color:#a94e3d}
+    .rc-saving{font-size:.75rem;font-weight:750;line-height:1.3;color:#713629}
+    .rc-card-price{display:flex;flex-direction:column;gap:.12rem;padding:.5rem .65rem;
+                   border:1px solid #d8d1c7;border-radius:.55rem;background:#faf8f5;color:#18120e}
+    .rc-card-price strong{font-size:1.05rem;font-weight:800;line-height:1.25}
+    .rc-card-price span{font-size:.86rem;font-weight:700;line-height:1.3;color:#374151}
     .wa-link{color:#15803d;font-weight:500}
     .rc-badge{display:inline-flex;align-self:flex-start;padding:.18rem .55rem;
               border-radius:999px;font-size:.68rem;font-weight:800;
@@ -777,9 +791,10 @@ export async function onRequest(ctx) {
       .rc-body{padding:.75rem;gap:.38rem}
       .rc-title{font-size:.9rem;-webkit-line-clamp:3}
       .rc-author{font-size:.78rem}
-      .rc-base{font-size:.9rem}
-      .rc-installment{font-size:.77rem}
-      .rc-transfer{font-size:.74rem}
+      .rc-transfer,.rc-card-price{padding:.48rem .55rem}
+      .rc-transfer strong{font-size:1.22rem}
+      .rc-card-price strong{font-size:.98rem}
+      .rc-card-price span{font-size:.8rem}
       .rc-cta{max-width:100%;text-align:center;white-space:normal}
     }
     footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e2e8f0;

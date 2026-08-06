@@ -58,7 +58,9 @@ test('MOBILE-STAB-1: 360, 393 y 412 px quedan cubiertos por la tarjeta horizonta
   assert.match(html, /\.rc-body\{padding:\.75rem;gap:\.38rem\}/);
   assert.match(html, /html,body\{max-width:100%;overflow-x:hidden\}/);
   assert.match(html, /\.rc-card\{display:flex;flex-direction:column;min-width:0;/);
-  assert.match(html, /\.rc-base,\.rc-installment,\.rc-transfer\{line-height:1\.3;overflow-wrap:anywhere\}/);
+  assert.match(html, /\.rc-transfer,\.rc-card-price\{min-width:0;overflow-wrap:anywhere\}/);
+  assert.match(html, /\.rc-transfer strong\{font-size:1\.35rem;font-weight:850/);
+  assert.match(html, /\.rc-card-price strong\{font-size:1\.05rem;font-weight:800/);
 });
 
 test('MOBILE-STAB-1: buscador, selector y botón son táctiles, de ancho completo y no desbordan', async () => {

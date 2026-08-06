@@ -65,4 +65,9 @@ test('integración comercial: página 2 conserva paginación, portadas nítidas 
   assert.match(html, /@media\(max-width:499px\)\{/);
   assert.match(html, /\.rc-card\{display:grid;grid-template-columns:minmax\(108px,34%\) minmax\(0,1fr\)\}/);
   assert.match(html, /\.pg-ctl,\.pg-num,\.pg-gap\{min-width:44px;min-height:44px;/);
+  assert.match(html, /Mejor precio · Transferencia/);
+  assert.match(html, /Con tarjeta:/);
+  assert.match(html, /Hasta 12 cuotas de aprox\./);
+  assert.match(html, /\.rc-transfer strong\{font-size:1\.35rem;font-weight:850/);
+  assert.match(html, /\.rc-card-price strong\{font-size:1\.05rem;font-weight:800/);
 });

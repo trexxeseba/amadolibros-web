@@ -1,7 +1,7 @@
 // AL-WEB: jerarquía de precios y orden de acciones en la ficha individual
 // (functions/libro/[[path]].js). Cubre las dos correcciones comerciales:
-// 1. Precio web/tarjeta primero, cuotas debajo, transferencia como
-//    beneficio secundario.
+// 1. Transferencia como mejor precio, seguida por tarjeta y cuotas en
+//    un bloque propio igualmente visible.
 // 2. Agregar al carrito → WhatsApp → Mercado Libre, con Mercado Libre
 //    visualmente subordinado (sin el relleno amarillo dominante que tenía).
 import test from 'node:test';
@@ -35,34 +35,36 @@ function extractBlock(html, className) {
     return match[0];
 }
 
-test('1. Precio web/tarjeta aparece antes que transferencia, con el texto exacto aprobado (dentro del price-box, no en meta description)', () => {
+test('1. Transferencia aparece primero con ahorro concreto y tarjeta visible en bloque propio', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
-    assert.match(html, /Precio web\/tarjeta:<\/span> \$1\.200 UYU/);
-    assert.match(html, /Transferencia: \$1\.056 UYU/); // 1200 * 0.88 = 1056
+    assert.match(html, /Mejor precio · Transferencia/);
+    assert.match(html, /\$1\.056 UYU/); // 1200 * 0.88 = 1056
+    assert.match(html, /12% menos · Ahorrás \$144/);
+    assert.match(html, /Con tarjeta: \$1\.200 UYU/);
     const priceBox = extractBlock(html, 'price-box');
-    const priceIdx = priceBox.indexOf('Precio web/tarjeta:');
-    const transferIdx = priceBox.indexOf('Transferencia:');
-    assert.ok(priceIdx > -1 && transferIdx > -1);
-    assert.ok(priceIdx < transferIdx, 'el precio principal debe aparecer antes que la transferencia');
+    const transferIdx = priceBox.indexOf('Mejor precio · Transferencia');
+    const cardIdx = priceBox.indexOf('Con tarjeta:');
+    assert.ok(transferIdx > -1 && cardIdx > -1);
+    assert.ok(transferIdx < cardIdx, 'el mejor precio debe aparecer antes que tarjeta');
 });
 
-test('2. Cuotas visibles, con el texto aprobado, entre precio y transferencia', () => {
+test('2. Cuotas visibles junto al precio con tarjeta y marcadas como aproximadas', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
     assert.match(html, /Hasta 12 cuotas de aprox\. \$100 UYU/); // 1200 / 12 = 100
     const priceBox = extractBlock(html, 'price-box');
-    const priceIdx = priceBox.indexOf('Precio web/tarjeta:');
+    const cardIdx = priceBox.indexOf('Con tarjeta:');
     const installmentIdx = priceBox.indexOf('Hasta 12 cuotas');
-    const transferIdx = priceBox.indexOf('Transferencia:');
-    assert.ok(priceIdx < installmentIdx, 'el precio principal debe ir antes que las cuotas');
-    assert.ok(installmentIdx < transferIdx, 'las cuotas deben ir antes que la transferencia');
+    assert.ok(cardIdx < installmentIdx, 'tarjeta debe aparecer antes que sus cuotas');
 });
 
-test('3. Precio principal usa una clase visualmente más fuerte que transferencia', () => {
+test('3. Transferencia lidera y tarjeta conserva alta visibilidad', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
-    assert.match(html, /class="price-main"/);
     assert.match(html, /class="price-transfer"/);
-    assert.match(html, /\.price-main\{font-size:1\.35rem;font-weight:800/);
-    assert.match(html, /\.price-transfer\{font-size:\.85rem;font-weight:600/);
+    assert.match(html, /class="price-card"/);
+    assert.match(html, /\.price-transfer strong\{font-size:2rem;font-weight:850/);
+    assert.match(html, /\.price-card strong\{font-size:1\.3rem;font-weight:800/);
+    assert.match(html, /\.price-card span\{font-size:1\.05rem;font-weight:700/);
+    assert.match(html, /\.price-card\{[^}]*border:1px solid #d8d1c7[^}]*background:#faf8f5/);
 });
 
 test('4. Orden de botones: Agregar al carrito → WhatsApp → Mercado Libre (dentro del bloque .cta, no de la hoja de estilos)', () => {
@@ -106,9 +108,10 @@ test('8. Ficha con Mercado Libre: los tres botones están presentes', () => {
     assert.match(html, /class="btn btn-ml"/);
 });
 
-test('9. Ficha sin stock ("por encargo"): no hay precio web/tarjeta ni botón de Mercado Libre, solo WhatsApp/aviso', () => {
+test('9. Ficha sin stock ("por encargo"): no hay bloques de precio ni botón de Mercado Libre, solo WhatsApp/aviso', () => {
     const html = renderPage(book({ status: 'paused', available_quantity: 0 }), 'un-libro', false, 'site-key-fake');
-    assert.doesNotMatch(html, /Precio web\/tarjeta/);
+    assert.doesNotMatch(html, /Mejor precio · Transferencia/);
+    assert.doesNotMatch(html, /Con tarjeta:/);
     assert.doesNotMatch(html, /class="btn btn-ml"/);
     assert.doesNotMatch(html, /data-action="add-to-cart"/);
     assert.match(html, /class="btn btn-wa"/);

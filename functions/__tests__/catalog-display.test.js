@@ -141,8 +141,8 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   const html = await response.text();
 
   assert.match(html, /Alpha disponible/);
-  assert.match(html, /Transferencia:/);
-  assert.match(html, /Precio web\/tarjeta:/);
+  assert.match(html, /Mejor precio · Transferencia/);
+  assert.match(html, /Con tarjeta:/);
   assert.equal(requests.includes(CATALOG_URL), false);
   assert.match(response.headers.get('server-timing'), /active_index_parse/);
   assert.match(response.headers.get('server-timing'), /search;dur=/);
@@ -150,28 +150,31 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   assert.match(response.headers.get('server-timing'), /total;dur=/);
 });
 
-test('el catálogo prioriza precio web y cuotas antes que transferencia', async () => {
+test('el catálogo prioriza transferencia y mantiene tarjeta y cuotas visibles', async () => {
   const response = await catalogRequest(
     context('https://preview.example/catalogo?q=Alpha+disponible')
   );
   const html = await response.text();
-  const prices = html.match(/<div class="rc-prices">([\s\S]*?)<\/div>/)?.[1] || '';
+  const prices = html.match(/<div class="rc-prices">([\s\S]*?)<a href="[^"]+" class="rc-cta">/)?.[1] || '';
 
-  assert.match(prices, /Precio web\/tarjeta:<\/span> \$1[.,]000 UYU/);
+  assert.match(prices, /Mejor precio · Transferencia/);
+  assert.match(prices, /\$880 UYU/);
+  assert.match(prices, /12% menos · Ahorrás \$120/);
+  assert.match(prices, /Con tarjeta: \$1[.,]000 UYU/);
   assert.match(prices, /Hasta 12 cuotas de aprox\. \$83 UYU/);
-  assert.match(prices, /Transferencia: \$880 UYU/);
-  assert.ok(prices.indexOf('Precio web/tarjeta:') < prices.indexOf('Hasta 12 cuotas'));
-  assert.ok(prices.indexOf('Hasta 12 cuotas') < prices.indexOf('Transferencia:'));
+  assert.ok(prices.indexOf('Mejor precio · Transferencia') < prices.indexOf('Con tarjeta:'));
 });
 
-test('el precio principal del catálogo tiene más fuerza visual que transferencia', async () => {
+test('transferencia lidera sin ocultar visualmente tarjeta y cuotas', async () => {
   const response = await catalogRequest(
     context('https://preview.example/catalogo?q=Alpha+disponible')
   );
   const html = await response.text();
 
-  assert.match(html, /\.rc-base\{font-size:\.95rem[^}]*font-weight:700\}/);
-  assert.match(html, /\.rc-transfer\{font-size:\.78rem[^}]*font-weight:600\}/);
+  assert.match(html, /\.rc-transfer strong\{font-size:1\.35rem;font-weight:850/);
+  assert.match(html, /\.rc-card-price strong\{font-size:1\.05rem;font-weight:800/);
+  assert.match(html, /\.rc-card-price span\{font-size:\.86rem;font-weight:700/);
+  assert.match(html, /\.rc-card-price\{[^}]*border:1px solid #d8d1c7[^}]*background:#faf8f5/);
 });
 
 test('una búsqueda sin coincidencias reales termina en cero resultados', async () => {

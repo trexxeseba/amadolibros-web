@@ -235,7 +235,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     const img          = images[0] || '';
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
-    const transferPrice = Math.round(price * 0.88).toLocaleString('es-UY');
+    const transferValue = Math.round(price * 0.88);
+    const transferPrice = transferValue.toLocaleString('es-UY');
+    const transferSaving = Math.max(0, price - transferValue).toLocaleString('es-UY');
     const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = item.status === 'active' && stockQty > 0;
@@ -309,9 +311,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
 
     const priceHtml = inStock
         ? `<div class="price-box">
-      <div class="price-main"><span class="price-label">Precio web/tarjeta:</span> $${priceUY} UYU</div>
-      <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
-      <div class="price-transfer">Transferencia: $${transferPrice} UYU</div>
+      <div class="price-transfer">
+        <span class="price-transfer-label">Mejor precio · Transferencia</span>
+        <strong>$${transferPrice} UYU</strong>
+        <span class="price-saving">12% menos · Ahorrás $${transferSaving}</span>
+      </div>
+      <div class="price-card">
+        <strong>Con tarjeta: $${priceUY} UYU</strong>
+        <span>Hasta 12 cuotas de aprox. $${installment} UYU</span>
+      </div>
     </div>`
         : `<div class="order-box">
       <strong>¿Buscás este libro?</strong>
@@ -486,12 +494,18 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .detail-row:last-child{border-bottom:0}
     .detail-row dt{font-weight:700;color:#334155}
     .detail-row dd{color:#475569}
-    .price-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
-               padding:1rem 1.25rem;margin:.875rem 0}
-    .price-main{font-size:1.35rem;font-weight:800;color:#0f172a;line-height:1.3}
-    .price-label{font-weight:800}
-    .price-installment{font-size:1rem;font-weight:600;color:#374151;margin-top:.35rem}
-    .price-transfer{font-size:.85rem;font-weight:600;color:#a94e3d;margin-top:.35rem}
+    .price-box{display:flex;flex-direction:column;gap:.75rem;background:#fff;
+               border:1px solid #e2dbd0;border-radius:.65rem;padding:.85rem;margin:.875rem 0}
+    .price-transfer{display:flex;flex-direction:column;gap:.12rem;padding:.85rem 1rem;
+                    border:1px solid #e8b6a6;border-radius:.55rem;background:#fff4ef;color:#713629}
+    .price-transfer-label{font-size:.78rem;font-weight:850;line-height:1.25;
+                          letter-spacing:.055em;text-transform:uppercase}
+    .price-transfer strong{font-size:2rem;font-weight:850;line-height:1.12;color:#a94e3d}
+    .price-saving{font-size:.95rem;font-weight:750;line-height:1.3;color:#713629}
+    .price-card{display:flex;flex-direction:column;gap:.18rem;padding:.8rem 1rem;
+                border:1px solid #d8d1c7;border-radius:.55rem;background:#faf8f5;color:#0f172a}
+    .price-card strong{font-size:1.3rem;font-weight:800;line-height:1.25}
+    .price-card span{font-size:1.05rem;font-weight:700;line-height:1.3;color:#374151}
     .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
                border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
                margin:.875rem 0;color:#6b4218}
