@@ -1,0 +1,59 @@
+name: Deploy CATALOGO-PAGINACION-1 Preview
+
+on:
+  push:
+    branches:
+      - agent/catalogo-paginacion-deploy-preview
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Suite de paginación
+        run: node --test functions/__tests__/catalogo-paginacion.test.js
+
+      - name: Build Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_CHECKOUT_ENABLED: 'false'
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Verify CATALOGO-PAGINACION-1 and Preview safeguards
+        run: |
+          test -f astro-front/dist/index.html
+          grep -q "noindex, nofollow" astro-front/dist/index.html
+          # La paginación existe y es server-side, con enlaces reales.
+          grep -q 'class="pg-ctl"' functions/catalogo.js
+          grep -q 'aria-label="Paginación de resultados"' functions/catalogo.js
+          grep -q 'min-width:44px;min-height:44px' functions/catalogo.js
+          # Desempate estable: sin esto la paginación repite o saltea libros.
+          grep -q 'localeCompare(String(b.book.id))' functions/catalogo.js
+          # Contador por rango, ya no "los primeros 48".
+          grep -q 'Mostrando \${rangeFrom}' functions/catalogo.js
+          ! grep -q 'Mostrando los primeros' functions/catalogo.js
+
+      - name: Deploy isolated Cloudflare Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch catalogo-paginacion-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
