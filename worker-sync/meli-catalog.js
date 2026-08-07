@@ -20,7 +20,7 @@
  *   }
  *
  * Edge cases manejados:
- *   - Rate limit 429: retry con 2s de delay
+ *   - Rate limit 429 y 5xx transitorios: retry acotado con Retry-After/equal jitter
  *   - scroll_id nulo o results vacíos: fin del scroll, continuar con los IDs que hay
  *   - Errores en batch de detalles: loguear y continuar (no abortar sync completo)
  *   - MIN_ACTIVE_ITEMS: abortar si R2 quedaría con muy pocos items activos
@@ -32,6 +32,18 @@ const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
   'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition';
 
+export const ML_MAX_RETRIES = 6;
+export const ML_BASE_BACKOFF_MS = 1000;
+export const ML_MAX_BACKOFF_MS = 30000;
+export const ML_MAX_CUMULATIVE_WAIT_MS = 120000;
+export const ML_SYNC_MAX_RETRY_WAIT_MS = 180000;
+
+const ML_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+export function createSyncRetryBudget(maxWaitMs = ML_SYNC_MAX_RETRY_WAIT_MS) {
+  return { remainingMs: Math.max(0, Number(maxWaitMs) || 0) };
+}
+
 // ─── Entrada pública ──────────────────────────────────────────────────────────
 
 /**
@@ -40,7 +52,11 @@ const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enric
  * @param {string} accessToken — ML access token vigente
  * @returns {{ total, updated_at, items }}
  */
-export async function buildCatalog(env, accessToken, { statuses = ['active', 'paused'] } = {}) {
+export async function buildCatalog(env, accessToken, {
+  statuses = ['active', 'paused'],
+  retryBudget = createSyncRetryBudget(),
+  mlGetDeps = {},
+} = {}) {
   const userId         = env.USER_ID;
   const minActiveItems = parseInt(env.MIN_ACTIVE_ITEMS || '500', 10);
 
@@ -50,7 +66,13 @@ export async function buildCatalog(env, accessToken, { statuses = ['active', 'pa
   // activos + pausados; el catálogo público pide únicamente activos.
   const requestedStatuses = statuses.filter(status => ['active', 'paused'].includes(status));
   if (requestedStatuses.length === 0) throw new Error('[Catalog] No se solicitó un estado publicable.');
-  const allIds = await fetchAllIds(userId, accessToken, requestedStatuses);
+  const allIds = await fetchAllIds(
+    userId,
+    accessToken,
+    requestedStatuses,
+    retryBudget,
+    mlGetDeps,
+  );
   console.log(`[Catalog] IDs obtenidos: ${allIds.length}`);
 
   if (allIds.length === 0) {
@@ -58,7 +80,7 @@ export async function buildCatalog(env, accessToken, { statuses = ['active', 'pa
   }
 
   // Paso 2: obtener detalles en batches
-  const rawItems = await fetchDetails(allIds, accessToken);
+  const rawItems = await fetchDetails(allIds, accessToken, retryBudget, mlGetDeps);
   console.log(`[Catalog] Detalles obtenidos: ${rawItems.length} de ${allIds.length}`);
 
   // Paso 3: slim + filtro. Closed/deleted/under_review siguen fuera del sitio.
@@ -98,7 +120,13 @@ export async function buildCatalog(env, accessToken, { statuses = ['active', 'pa
 
 // ─── Scroll de IDs ────────────────────────────────────────────────────────────
 
-async function fetchAllIds(userId, accessToken, statuses = ['active']) {
+async function fetchAllIds(
+  userId,
+  accessToken,
+  statuses = ['active'],
+  retryBudget,
+  mlGetDeps = {},
+) {
   const ids = [];
   for (const status of statuses) {
     let scrollId = null;
@@ -111,7 +139,7 @@ async function fetchAllIds(userId, accessToken, statuses = ['active']) {
         `?limit=100&search_type=scan&status=${encodeURIComponent(status)}`;
       if (scrollId) url += `&scroll_id=${encodeURIComponent(scrollId)}`;
 
-      const data = await mlGet(url, accessToken);
+      const data = await mlGet(url, accessToken, { ...mlGetDeps, retryBudget });
       const batch = data.results || [];
       scrollId = data.scroll_id || null;
       ids.push(...batch);
@@ -134,7 +162,7 @@ async function fetchAllIds(userId, accessToken, statuses = ['active']) {
 
 // ─── Detalles en batch ───────────────────────────────────────────────────────
 
-async function fetchDetails(ids, accessToken) {
+async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
   const items       = [];
   const totalBatches = Math.ceil(ids.length / DETAIL_BATCH);
 
@@ -144,7 +172,7 @@ async function fetchDetails(ids, accessToken) {
     const url       = `https://api.mercadolibre.com/items?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
 
     try {
-      const data = await mlGet(url, accessToken);
+      const data = await mlGet(url, accessToken, { ...mlGetDeps, retryBudget });
       // data es un array de { code, body } o directamente el item
       const entries = Array.isArray(data) ? data : [data];
       for (const entry of entries) {
@@ -415,30 +443,122 @@ function normalizePictures(pictures, max = 6) {
 // ─── HTTP helper ──────────────────────────────────────────────────────────────
 
 /**
- * GET a la API de MercadoLibre con retry automático en 429.
+ * Interpreta Retry-After en segundos enteros o fecha HTTP y lo acota al
+ * máximo de espera individual. Devuelve null si el header no es válido.
  */
-async function mlGet(url, accessToken, retries = 3) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    const resp = await fetch(url, {
+export function parseRetryAfterMs(value, {
+  nowMs = Date.now(),
+  maxBackoffMs = ML_MAX_BACKOFF_MS,
+} = {}) {
+  if (value == null) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+
+  if (/^\d+$/.test(raw)) {
+    return Math.min(Number(raw) * 1000, maxBackoffMs);
+  }
+
+  const parsedDate = Date.parse(raw);
+  if (!Number.isFinite(parsedDate)) return null;
+  return Math.min(Math.max(0, parsedDate - nowMs), maxBackoffMs);
+}
+
+/** Equal jitter: conserva un piso de la mitad del backoff exponencial. */
+export function computeBackoffMs(attempt, {
+  random = Math.random,
+  baseBackoffMs = ML_BASE_BACKOFF_MS,
+  maxBackoffMs = ML_MAX_BACKOFF_MS,
+} = {}) {
+  const ceiling = Math.min(maxBackoffMs, baseBackoffMs * (2 ** attempt));
+  const half = ceiling / 2;
+  return Math.floor(half + Math.max(0, Math.min(1, random())) * half);
+}
+
+export function sanitizeEndpoint(value) {
+  try {
+    const url = new URL(String(value));
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return '[endpoint inválido]';
+  }
+}
+
+function retryBudgetError(scope, endpoint) {
+  const label = scope === 'global' ? 'global del sync' : 'por request';
+  return new Error(`[Catalog] Presupuesto de espera ${label} agotado en ${endpoint}`);
+}
+
+/**
+ * GET a la API de MercadoLibre con retry acotado para 429 y 5xx transitorios.
+ */
+export async function mlGet(url, accessToken, {
+  fetchFn = globalThis.fetch,
+  sleepFn = sleep,
+  random = Math.random,
+  now = Date.now,
+  retryBudget = null,
+  maxRetries = ML_MAX_RETRIES,
+  baseBackoffMs = ML_BASE_BACKOFF_MS,
+  maxBackoffMs = ML_MAX_BACKOFF_MS,
+  maxCumulativeWaitMs = ML_MAX_CUMULATIVE_WAIT_MS,
+} = {}) {
+  const endpoint = sanitizeEndpoint(url);
+  let cumulativeWaitMs = 0;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const resp = await fetchFn(url, {
       headers: { 'Authorization': `Bearer ${accessToken}` },
     });
 
-    if (resp.status === 429) {
-      // Rate limit: esperar 2 segundos antes de reintentar
-      const delay = 2000 * (attempt + 1);
-      console.warn(`[Catalog] Rate limit 429 en ${url.slice(0, 80)}. Esperando ${delay}ms.`);
-      await sleep(delay);
-      continue;
+    if (resp.ok) return await resp.json();
+
+    if (!ML_TRANSIENT_STATUSES.has(resp.status)) {
+      throw new Error(`[Catalog] HTTP ${resp.status} no reintentable en ${endpoint}`);
     }
 
-    if (!resp.ok) {
-      throw new Error(`[Catalog] HTTP ${resp.status} en ${url.slice(0, 100)}`);
+    if (attempt >= maxRetries) {
+      throw new Error(
+        `[Catalog] Agotados ${maxRetries} reintentos tras HTTP ${resp.status} en ${endpoint}`
+      );
     }
 
-    return await resp.json();
+    const requestRemainingMs = maxCumulativeWaitMs - cumulativeWaitMs;
+    if (requestRemainingMs <= 0) throw retryBudgetError('request', endpoint);
+
+    const globalRemainingMs = retryBudget == null
+      ? Number.POSITIVE_INFINITY
+      : Number(retryBudget.remainingMs);
+    if (globalRemainingMs <= 0) throw retryBudgetError('global', endpoint);
+
+    const retryAfterMs = parseRetryAfterMs(resp.headers?.get?.('Retry-After'), {
+      nowMs: now(),
+      maxBackoffMs,
+    });
+    const calculatedDelayMs = retryAfterMs ?? computeBackoffMs(attempt, {
+      random,
+      baseBackoffMs,
+      maxBackoffMs,
+    });
+    const delayMs = Math.max(0, Math.floor(Math.min(
+      calculatedDelayMs,
+      maxBackoffMs,
+      requestRemainingMs,
+      globalRemainingMs,
+    )));
+
+    console.warn(
+      `[Catalog] HTTP ${resp.status} transitorio en ${endpoint}. ` +
+      `Reintento ${attempt + 1}/${maxRetries} en ${delayMs}ms.`
+    );
+
+    if (delayMs > 0) {
+      await sleepFn(delayMs);
+      cumulativeWaitMs += delayMs;
+      if (retryBudget != null) retryBudget.remainingMs -= delayMs;
+    }
   }
 
-  throw new Error(`[Catalog] Agotados ${retries} reintentos por rate limit en ${url.slice(0, 100)}`);
+  throw new Error(`[Catalog] Reintentos agotados en ${endpoint}`);
 }
 
 function sleep(ms) {

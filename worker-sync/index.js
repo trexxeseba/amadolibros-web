@@ -30,6 +30,9 @@
  *   sync:last_ok             — ISO timestamp del último sync exitoso
  *   sync:last_error          — string corto del último error (ausente si el último sync fue ok)
  *
+ * Secret opcional:
+ *   SYNC_HEALTHCHECK_URL     — Ping URL base de Healthchecks.io (nunca se loguea)
+ *
  * KV keys que este Worker NO escribe:
  *   catalog:full, catalog_index, catalog_index:*, item:MLU*  — esquemas obsoletos
  *
@@ -42,6 +45,7 @@
 import { getAccessToken } from './meli-auth.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
+import { notifyHealthcheck } from './healthcheck.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -387,21 +391,30 @@ async function verifyCatalogArtifacts(bucket, artifacts) {
 
 // ── Sync principal ────────────────────────────────────────────────────────────
 
-async function runSync(env, options = {}) {
+export async function runSync(env, options = {}, {
+  getAccessTokenFn = getAccessToken,
+  buildCatalogFn = buildCatalog,
+  publishToR2Fn = publishToR2,
+  notifyHealthcheckFn = notifyHealthcheck,
+} = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
   console.log(`[Sync] Iniciando sync completo — ${startedAt} | source=${source}`);
+
+  if (source === 'cron') {
+    await safeNotifyHealthcheck(notifyHealthcheckFn, env, 'start');
+  }
   await kvPut(env, 'sync:last_started', startedAt);
 
   try {
     // 1. Auth
-    const accessToken = await getAccessToken(env);
+    const accessToken = await getAccessTokenFn(env);
     console.log('[Sync] Access token obtenido.');
 
     // 2. Catálogo
     // El catálogo público conserva únicamente publicaciones activas. Los
     // pausados se generan por el flujo versionado y aislado de Preview.
-    const catalog = await buildCatalog(env, accessToken, { statuses: ['active'] });
+    const catalog = await buildCatalogFn(env, accessToken, { statuses: ['active'] });
 
     // 3. Publicar en R2 (staging → validación → promote)
     const finishedAt = new Date().toISOString();
@@ -414,11 +427,12 @@ async function runSync(env, options = {}) {
       status:         'ok',
       source,
     };
-    await publishToR2(env, catalog, syncMeta);
+    await publishToR2Fn(env, catalog, syncMeta);
 
     // 4. Estado: éxito
     await kvPut(env, 'sync:last_ok', finishedAt);
     await kvDelete(env, 'sync:last_error');
+    await safeNotifyHealthcheck(notifyHealthcheckFn, env, 'success');
 
     console.log(`[Sync] Completado: ${catalog.total} items en ${Math.round(durationMs / 1000)}s`);
     return {
@@ -439,6 +453,7 @@ async function runSync(env, options = {}) {
     const durationMs = Date.now() - new Date(startedAt).getTime();
     const summary = `${finishedAt} — ${err.message}`.slice(0, 400);
     await kvPut(env, 'sync:last_error', summary);
+    await safeNotifyHealthcheck(notifyHealthcheckFn, env, 'fail');
 
     return {
       status:      'error',
@@ -448,6 +463,15 @@ async function runSync(env, options = {}) {
       duration_ms: durationMs,
       error:       err.message,
     };
+  }
+}
+
+async function safeNotifyHealthcheck(notifyFn, env, kind) {
+  try {
+    await notifyFn(env, kind);
+  } catch {
+    // La observabilidad nunca cambia el resultado del sync ni oculta su error.
+    console.warn(`[Healthcheck] No se pudo enviar la señal ${kind}.`);
   }
 }
 
