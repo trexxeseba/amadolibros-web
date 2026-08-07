@@ -60,6 +60,15 @@ export function validateBody(body) {
 
   if (!['pickup', 'shipping'].includes(body.delivery_type)) return 'delivery_type inválido.';
 
+  // PICKUP-CX-1: con retiro, el comprador tiene que aceptar explícitamente que
+  // espera la confirmación por WhatsApp antes de presentarse. Se valida acá y
+  // no solo en el navegador: el checkbox del checkout se puede saltear
+  // llamando la API directamente, y el punto del lote es justamente que nadie
+  // llegue al local antes de que el pedido esté pronto.
+  if (body.delivery_type === 'pickup' && body.pickup_ack !== true) {
+    return 'Para retirar tenés que aceptar esperar la confirmación por WhatsApp.';
+  }
+
   if (!isRecord(body.buyer)) return 'Falta buyer.';
   if (!isNonEmptyString(body.buyer.name)) return 'Nombre del comprador requerido.';
   if (body.buyer.name.trim().length > MAX_NAME_LEN) return 'Nombre demasiado largo.';
@@ -203,6 +212,7 @@ export function generateFingerprint(body, consolidatedItems) {
   const fingerprint = {
     items: consolidatedItems,
     delivery_type: body.delivery_type,
+    pickup_ack: body.delivery_type === 'pickup' ? true : undefined,
     buyer: {
       name: body.buyer.name.trim(),
       phone: body.buyer.phone.trim(),

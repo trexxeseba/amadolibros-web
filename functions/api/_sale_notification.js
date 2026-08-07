@@ -34,7 +34,15 @@ function resolveEmailConfig(env) {
 
 function deliveryLines(order) {
   if (order.delivery_type === 'pickup') {
-    return ['Entrega: Retiro en el punto de entrega'];
+    // PICKUP-CX-1: el comprador acepto esperar la confirmacion. Este aviso
+    // recuerda que avisarle es una accion pendiente nuestra. No se afirma que
+    // se le mando un mail: el checkout no pide direccion de correo.
+    return [
+      'Entrega: PICK UP',
+      'PICK UP — ACCIÓN PENDIENTE: avisar al cliente por WhatsApp cuando el ' +
+      'pedido esté pronto. El cliente fue informado de que no debe concurrir ' +
+      'antes de recibir la confirmación.',
+    ];
   }
 
   const lines = [

@@ -68,7 +68,9 @@ test('carrito.astro: un solo listener de click maneja todo el pago (no hay un se
 test('carrito.astro: el mismo click crea la orden y la preferencia, sin un segundo clic', () => {
   const handlerStart = carritoAstro.indexOf("btnPrepare.addEventListener('click'");
   assert.notEqual(handlerStart, -1);
-  const handlerBlock = carritoAstro.slice(handlerStart, handlerStart + 6000);
+  // PICKUP-CX-1 sumo la validacion del acuse de retiro dentro del handler,
+  // que crecio y ya no entraba en la ventana de 6000 caracteres.
+  const handlerBlock = carritoAstro.slice(handlerStart, handlerStart + 9000);
   assert.match(handlerBlock, /fetch\('\/api\/orders'/);
   assert.match(handlerBlock, /fetch\('\/api\/preferences'/);
   // El orden importa: primero se crea/recupera la orden, después la preferencia.

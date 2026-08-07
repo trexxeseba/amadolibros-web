@@ -84,7 +84,14 @@ const WA_HREF =
         if (paymentStatus === 'approved') {
           if (iconEl) iconEl.textContent = '✓';
           if (h1El)   h1El.textContent   = 'Pago confirmado';
-          if (leadEl) leadEl.textContent = 'Tu pedido está confirmado. Te contactaremos por WhatsApp para coordinar la entrega.';
+          // PICKUP-CX-1: con retiro el mensaje es especifico -- nada de
+          // "coordinar la entrega" ni direccion exacta: el comprador tiene
+          // que esperar el aviso de que el pedido esta pronto.
+          if (leadEl) {
+            leadEl.textContent = (data && data.order && data.order.delivery_type === 'pickup')
+              ? 'Tu compra quedó confirmada y ya estamos preparando tu pedido. Esperá nuestro mensaje por WhatsApp: te avisaremos apenas esté pronto para retirar.'
+              : 'Tu pedido está confirmado. Te contactaremos por WhatsApp para coordinar la entrega.';
+          }
           // Único punto donde se vacía el carrito: recién acá hay
           // confirmación real de pago aprobado, leída de D1 vía
           // /api/orders/status (nunca del simple regreso del navegador ni

@@ -49,7 +49,7 @@ function ctx(body, db, opts={}) {
   const env = opts.env !== undefined ? opts.env : (db ? { ...PREVIEW_CONFIG, ORDERS_DB:db, TURNSTILE_SECRET_KEY:'ts-test-secret' } : { ...PREVIEW_CONFIG });
   return { request:new Request('https://x/api/orders',{method,headers,body:method==='POST'?(typeof body==='string'?body:JSON.stringify(body)):undefined}), env, waitUntil(){} };
 }
-function pickup(key='k'){ return { idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', buyer:{name:'Ana',phone:'099'} }; }
+function pickup(key='k'){ return { idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', pickup_ack:true, buyer:{name:'Ana',phone:'099'} }; }
 function shipping(key='s', patch={}) { const base={ idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'G',quantity:1},{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Carlos',phone:'098'}, shipping:{address:'Calle 1',locality:'Centro',department:'Montevideo',requested_date:'2026-07-20',requested_from:'09:00',requested_to:'12:00',notes:'2B'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
 function stored(body, patch={}) { return { id:'uuid', idempotency_key:body.idempotency_key, request_fingerprint:generateFingerprint(body,consolidateItems(body.items)), public_code:'AL-TEST', status:'open', payment_status:'not_started', delivery_type:body.delivery_type, products_total_uyu:3250, pickup_discount_uyu:150, shipping_cost_uyu:0, payable_total_uyu:3100, currency:'UYU', expires_at:'2026-07-19T17:00:00.000Z', ...patch }; }
 function handler(fetchCatalog=async()=>CATALOG, now=NOW, verifyTurnstileToken=TS_OK){ return createOrdersHandler({fetchCatalog,getNow:()=>new Date(now),verifyTurnstileToken}); }
@@ -85,7 +85,7 @@ test('notas integran fingerprint', async()=>{
 });
 
 test('precio del navegador se ignora y manda catálogo', async()=>{
-  const body={idempotency_key:'price',cf_turnstile_response:'ok-token',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup',buyer:{name:'T',phone:'099'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);
+  const body={idempotency_key:'price',cf_turnstile_response:'ok-token',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup', pickup_ack:true,buyer:{name:'T',phone:'099'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);
 });
 
 test('stock, producto, estado y precio inválidos devuelven 422', async()=>{
