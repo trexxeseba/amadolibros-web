@@ -22,7 +22,7 @@
  * Edge cases manejados:
  *   - Rate limit 429 y 5xx transitorios: retry acotado con Retry-After/equal jitter
  *   - scroll_id nulo o results vacíos: fin del scroll, continuar con los IDs que hay
- *   - Errores en batch de detalles: loguear y continuar (no abortar sync completo)
+ *   - Errores definitivos en batch de detalles: abortar para no publicar un catálogo parcial
  *   - MIN_ACTIVE_ITEMS: abortar si R2 quedaría con muy pocos items activos
  */
 
@@ -180,9 +180,11 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
         if (item && item.id) items.push(item);
       }
     } catch (err) {
-      // Error en un batch individual: loguear y continuar
-      // Perder un batch de 20 items es preferible a abortar todo el sync
-      console.error(`[Catalog] Error en batch ${batchNum}/${totalBatches} (offset ${i}): ${err.message}`);
+      const message =
+        `[Catalog] Error definitivo en batch ${batchNum}/${totalBatches} ` +
+        `(offset ${i}). Abortando para no publicar un catálogo parcial: ${err.message}`;
+      console.error(message);
+      throw new Error(message, { cause: err });
     }
 
     if (batchNum % 100 === 0 || batchNum === totalBatches) {

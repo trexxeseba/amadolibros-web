@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runSync } from '../index.js';
+import { buildCatalog } from '../meli-catalog.js';
 
 function fakeEnv({ putThrows = false } = {}) {
   const puts = [];
@@ -37,6 +38,57 @@ test('si falla la descarga, publishToR2 se llama cero veces y registra error', a
   assert.equal(publishCalls, 0);
   assert.ok(puts.some(entry => entry.key === 'sync:last_error'));
 });
+
+test('si un lote de detalles agota sus reintentos, el catálogo real aborta y no publica parcialmente', async () => {
+  const { env, puts } = fakeEnv();
+  env.USER_ID = '123';
+  env.MIN_ACTIVE_ITEMS = '1';
+
+  const ids = Array.from({ length: 40 }, (_, index) => `MLU${index + 1}`);
+  let detailAttempts = 0;
+  const fetchFn = async url => {
+    if (String(url).includes('/items/search')) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async json() { return { results: ids, scroll_id: null }; },
+      };
+    }
+
+    detailAttempts++;
+    return {
+      ok: false,
+      status: 503,
+      headers: { get: () => null },
+      async json() { return {}; },
+    };
+  };
+
+  let publishCalls = 0;
+  const result = await runSync(env, { source: 'manual-await' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: (buildEnv, token, options) => buildCatalog(buildEnv, token, {
+      ...options,
+      mlGetDeps: {
+        fetchFn,
+        sleepFn: async () => {},
+        random: () => 0,
+        maxRetries: 2,
+      },
+    }),
+    publishToR2Fn: async () => { publishCalls++; },
+    notifyHealthcheckFn: noHealthcheck,
+  });
+
+  assert.equal(detailAttempts, 3);
+  assert.equal(result.status, 'error');
+  assert.match(result.error, /Error definitivo en batch 1\/2/);
+  assert.match(result.error, /Agotados 2 reintentos/);
+  assert.equal(publishCalls, 0);
+  assert.ok(puts.some(entry => entry.key === 'sync:last_error'));
+});
+
 test('runSync conserva el filtro público statuses active', async () => {
   const { env } = fakeEnv();
   let receivedOptions;
