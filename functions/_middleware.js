@@ -16,6 +16,36 @@
 
 import { perfNow } from './_shared/perf.js';
 
+const LEGACY_REDIRECTS = [
+    { pattern: /^\/(?:shop|tienda|mas-vendidos)$/, destination: '/catalogo' },
+    { pattern: /^\/tienda\/page\/\d+$/, destination: '/catalogo' },
+    { pattern: /^\/page\/\d+$/, destination: '/catalogo' },
+    { pattern: /^\/my-orders$/, destination: '/contacto' },
+];
+
+function withoutTrailingSlash(pathname) {
+    return pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+}
+
+/**
+ * Recupera autoridad de URLs de WordPress con un reemplazo actual claro.
+ *
+ * Los parámetros viejos se descartan deliberadamente. En Producción se
+ * apunta directamente al host canónico para evitar la cadena
+ * non-www -> www -> destino; Preview conserva su propio host.
+ */
+export function legacyRedirectForRequest(request) {
+    const url = new URL(request.url);
+    const path = withoutTrailingSlash(url.pathname);
+    const rule = LEGACY_REDIRECTS.find(({ pattern }) => pattern.test(path));
+
+    if (!rule) return null;
+
+    const isPreview = url.hostname.endsWith('.pages.dev');
+    const base = isPreview ? url.origin : 'https://www.amadolibros.com';
+    return Response.redirect(new URL(rule.destination, base).toString(), 301);
+}
+
 function appendServerTiming(headers, name, duration) {
     const rounded = Math.round(duration * 100) / 100;
     const current = headers.get('Server-Timing');
@@ -30,6 +60,10 @@ export async function onRequest(context) {
     const url = new URL(context.request.url);
     const isPreview = url.hostname.endsWith('.pages.dev');
     const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
+
+    // --- SEO-P3: redirecciones selectivas de la tienda WordPress anterior ---
+    const legacyRedirect = legacyRedirectForRequest(context.request);
+    if (legacyRedirect) return legacyRedirect;
 
     // --- Producción: redirect non-www → www ---
     if (!isPreview && url.hostname === 'amadolibros.com') {
