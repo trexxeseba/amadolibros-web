@@ -8,6 +8,7 @@
 
 import { slugify } from './_shared/slug.js';
 import { BASE, fetchCatalog } from './_shared/catalog.js';
+import { SEO_CATEGORIES } from './_shared/seo-categories.js';
 
 // Convierte un valor de start_time (ISO 8601) a fecha YYYY-MM-DD.
 // Devuelve fallback si el valor es nulo, vacío o inválido.
@@ -30,6 +31,12 @@ export async function onRequest(ctx) {
         { loc: `${BASE}/`,                                    changefreq: 'daily',   priority: '1.0', lastmod: today },
         { loc: `${BASE}/catalogo`,                          changefreq: 'daily',   priority: '0.5', lastmod: today },
         { loc: `${BASE}/libros-maria-montessori-uruguay`,   changefreq: 'weekly',  priority: '0.8', lastmod: today },
+        ...SEO_CATEGORIES.map(category => ({
+            loc: `${BASE}/libros/${category.id}`,
+            changefreq: 'daily',
+            priority: '0.8',
+            lastmod: today,
+        })),
         { loc: `${BASE}/politicas`,                        changefreq: 'monthly', priority: '0.4', lastmod: today },
         { loc: `${BASE}/envios`,                           changefreq: 'monthly', priority: '0.4', lastmod: today },
         { loc: `${BASE}/devoluciones`,                     changefreq: 'monthly', priority: '0.4', lastmod: today },

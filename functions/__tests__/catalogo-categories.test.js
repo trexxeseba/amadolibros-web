@@ -266,6 +266,8 @@ test('en producción, el filtro de categoría también funciona', async () => {
   assert.match(html, /<select/);
   assert.match(html, /Tarot De Los Ángeles/);
   assert.doesNotMatch(html, /El Género En Disputa/);
+  assert.match(html, /<meta name="robots" content="noindex">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/catalogo">/);
 });
 
 test('muestra cantidad de resultados', async () => {
