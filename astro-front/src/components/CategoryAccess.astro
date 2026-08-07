@@ -21,7 +21,20 @@ interface Category {
   count: number;
 }
 
-const MAX_CATEGORIES = 8;
+// Allowlist SEO: solo estas categorías tienen una landing limpia e
+// indexable. Mantener cerrada evita enlazar automáticamente categorías
+// débiles o catch-all a páginas que Google no debería indexar.
+const SEO_CATEGORY_IDS = [
+  'infantil-juvenil',
+  'esoterismo-tarot',
+  'medicina-salud',
+  'literatura-ficcion',
+  'idiomas-aprendizaje',
+  'psicologia',
+  'desarrollo-personal',
+  'religion-espiritualidad',
+];
+const seoOrder = new Map(SEO_CATEGORY_IDS.map((id, index) => [id, index]));
 
 let categories: Category[] = [];
 let missing = false;
@@ -29,15 +42,9 @@ let missing = false;
 try {
   const raw = fs.readFileSync(CATEGORIES_JSON, 'utf-8');
   const data = JSON.parse(raw) as { categories: Category[] };
-  // "otros-libros" es el catch-all interno de libros sin materia
-  // específica, y "otros-productos" agrupa discos/revistas/objetos de
-  // colección — ninguno de los dos es un punto de entrada útil para
-  // descubrir por tema en la home.
-  const EXCLUDED_IDS = new Set(['otros-libros', 'otros-productos']);
   categories = (data.categories || [])
-    .filter(c => !EXCLUDED_IDS.has(c.id))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, MAX_CATEGORIES);
+    .filter(c => seoOrder.has(c.id))
+    .sort((a, b) => seoOrder.get(a.id)! - seoOrder.get(b.id)!);
 } catch (e: unknown) {
   missing = true;
   const msg = e instanceof Error ? e.message : String(e);
@@ -55,7 +62,7 @@ try {
             {categories.map(cat => (
               <a
                 class="ca-chip"
-                href={`/catalogo?categoria=${encodeURIComponent(cat.id)}`}
+                href={`/libros/${encodeURIComponent(cat.id)}`}
                 role="listitem"
               >
                 <span class="ca-chip-name">{cat.name}</span>
