@@ -1,0 +1,108 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import WAFloat from '../components/WAFloat.astro';
+import CatalogSearchOverlay from '../components/CatalogSearchOverlay.astro';
+---
+
+<BaseLayout
+  title="Página no encontrada — Amado Libros"
+  description="La página que buscás no existe o cambió de dirección."
+  indexable={false}
+>
+  <Header />
+  <main class="not-found-page">
+    <section class="not-found-card" aria-labelledby="not-found-title">
+      <p class="not-found-code" aria-hidden="true">404</p>
+      <h1 id="not-found-title">No encontramos esta página</h1>
+      <p>
+        Es posible que el enlace haya cambiado o que la página ya no exista.
+        Podés buscar el libro en nuestro catálogo o volver al inicio.
+      </p>
+      <div class="not-found-actions">
+        <a class="not-found-primary" href="/catalogo">Buscar en el catálogo</a>
+        <a class="not-found-secondary" href="/">Volver al inicio</a>
+      </div>
+    </section>
+  </main>
+  <Footer />
+  <WAFloat />
+  <CatalogSearchOverlay />
+</BaseLayout>
+
+<style>
+  .not-found-page {
+    display: grid;
+    place-items: center;
+    padding: clamp(2.5rem, 8vw, 6rem) 1rem;
+  }
+
+  .not-found-card {
+    width: min(100%, 680px);
+    padding: clamp(1.5rem, 5vw, 3.5rem);
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: 0 12px 32px rgba(24, 18, 14, 0.06);
+  }
+
+  .not-found-code {
+    margin-bottom: 0.5rem;
+    color: var(--salmon-hover);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+  }
+
+  h1 {
+    margin-bottom: 1rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 8vw, 3.25rem);
+    line-height: 1.08;
+  }
+
+  .not-found-card > p:not(.not-found-code) {
+    max-width: 52ch;
+    margin: 0 auto;
+    color: var(--ink-2);
+  }
+
+  .not-found-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .not-found-actions a {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1.25rem;
+    border-radius: var(--r);
+    font-weight: 700;
+  }
+
+  .not-found-primary {
+    background: var(--ink);
+    color: var(--surface);
+  }
+
+  .not-found-secondary {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .not-found-actions a:hover { opacity: 0.85; }
+
+  @media (min-width: 520px) {
+    .not-found-actions {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+</style>
