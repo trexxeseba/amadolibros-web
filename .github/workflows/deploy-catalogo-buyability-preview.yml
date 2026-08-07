@@ -1,0 +1,66 @@
+name: Deploy catálogo comprable Preview
+# TRANSFERENCIA-H1: despliegue técnico del prototipo seguro
+
+on:
+  push:
+    branches:
+      - agent/catalogo-buyability-deploy-preview
+  # Los eventos de push dejaron de crear runs en este repo (el ultimo fue
+  # 2026-08-06T17:48Z pese a varios pushes posteriores). Con disparo manual
+  # la Preview se puede desplegar igual, sin depender de ese evento.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Validar integración comercial
+        run: |
+          node --test \
+            functions/__tests__/catalog-buyability-integration.test.js \
+            functions/__tests__/catalog-images.test.js \
+            functions/__tests__/catalogo-paginacion.test.js \
+            functions/__tests__/mobile-stability.test.js \
+            functions/__tests__/ficha-header-search.test.js \
+            functions/__tests__/transfer-h1-preview.test.js
+
+      - name: Build Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_CHECKOUT_ENABLED: 'false'
+          ASTRO_TELEMETRY_DISABLED: '1'
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Verificar protecciones y alcance
+        run: |
+          test -f astro-front/dist/index.html
+          grep -q "noindex, nofollow" astro-front/dist/index.html
+          grep -q 'logo-amado.webp' 'functions/libro/[[path]].js'
+          ! grep -q 'logo-amado.png' 'functions/libro/[[path]].js'
+          ! grep -q '<button[^>]*id="btn-prepare-order"' astro-front/dist/carrito/index.html
+
+      - name: Deploy isolated Cloudflare Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch shell-pickup-clean-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
