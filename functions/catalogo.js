@@ -37,6 +37,8 @@
  */
 
 import { slugify } from './_shared/slug.js';
+// GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
+import { faviconHeadHtml } from './_shared/brand.js';
 import {
     BASE,
     fetchActiveIndex,
@@ -530,6 +532,7 @@ export async function onRequest(ctx) {
   <meta name="description" content="${metaDescription}">
   <link rel="canonical" href="${BASE}/catalogo">
   <meta name="robots" content="${robotsMeta}">
+  ${faviconHeadHtml()}
   ${jsonLd}
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
