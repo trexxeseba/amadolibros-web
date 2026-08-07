@@ -1,6 +1,11 @@
 name: Deploy Worker Sync
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker-sync/**'
+      - '.github/workflows/deploy-worker-sync.yml'
   workflow_dispatch:
     inputs:
       run_trigger:
