@@ -184,6 +184,17 @@ test('una búsqueda sin coincidencias reales termina en cero resultados', async 
   assert.doesNotMatch(html, /class="rc-card/);
 });
 
+test('el catálogo indexable comunica el umbral real de envío gratis', async () => {
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo')
+  );
+  const html = await response.text();
+  const description = html.match(/<meta name="description" content="([^"]+)">/)?.[1] || '';
+
+  assert.match(description, /envío gratis desde \$2\.000/);
+  assert.doesNotMatch(description, /envío gratis desde \$1\.500/);
+});
+
 test('la ficha pausada queda noindex, sin precio ni compra directa', async () => {
   const response = await bookRequest(
     context('https://www.amadolibros.com/libro/MLU2/alpha-raro', {
