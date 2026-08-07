@@ -54,6 +54,20 @@ has_rendered_element_with_id() {
   grep -Eq "<[a-zA-Z][a-zA-Z0-9-]*[[:space:]][^>]*id=[\"']${id}[\"']" "$file"
 }
 
+# Cloudflare Pages deja de aplicar el fallback SPA cuando el artefacto incluye
+# 404.html. Este guard evita volver a publicar la portada con HTTP 200 para
+# rutas inexistentes y exige que la página de error nunca sea indexable.
+assert_404_page() {
+  local file='astro-front/dist/404.html'
+  test -f "$file"
+  grep -Eq '<meta name="robots" content="noindex, nofollow">' "$file"
+  grep -Eq '<h1[^>]*id="not-found-title"' "$file"
+  grep -Eq '<a[^>]*href="/catalogo"' "$file"
+  grep -Eq '<a[^>]*href="/"' "$file"
+  ! grep -Eq '<link rel="canonical"' "$file"
+  echo "  OK: 404.html presente, no indexable y con salidas útiles."
+}
+
 # ── 1. Sintaxis ───────────────────────────────────────────────────────────
 step "Sintaxis JS (functions, scripts, worker-sync)"
 find functions scripts worker-sync -type f -name '*.js' -print0 |
@@ -83,6 +97,8 @@ step "Build — checkout OFF"
   npm run build
 )
 
+assert_404_page
+
 CART_OFF=astro-front/dist/carrito/index.html
 test -f "$CART_OFF"
 grep -q 'data-online-checkout="disabled"' "$CART_OFF"
@@ -106,6 +122,8 @@ step "Build — checkout ON (config pública de Turnstile igual a Producción)"
   PUBLIC_TURNSTILE_ALLOWED_HOSTS="$PRODUCTION_TURNSTILE_ALLOWED_HOSTS" \
   npm run build
 )
+
+assert_404_page
 
 CART_ON=astro-front/dist/carrito/index.html
 test -f "$CART_ON"
