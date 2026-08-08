@@ -1,0 +1,80 @@
+name: GSC manual export
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: Fecha inicial (YYYY-MM-DD)
+        required: true
+        default: '2026-05-11'
+      end_date:
+        description: Fecha final (YYYY-MM-DD)
+        required: true
+        default: '2026-08-08'
+      site_url:
+        description: Propiedad exacta de Search Console (URL-prefix o sc-domain:...)
+        required: true
+        default: 'https://www.amadolibros.com/'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gsc-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: Extract Search Console data
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate required secret
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
+        run: |
+          test -n "$GOOGLE_SERVICE_ACCOUNT_JSON" || { echo "::error::Falta GA4_SERVICE_ACCOUNT_JSON (se reutiliza el mismo service account; debe tener acceso de lectura en Search Console)"; exit 1; }
+
+      - name: Authenticate with Google
+        id: google_auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/webmasters.readonly
+
+      - name: Extract Search Analytics
+        env:
+          GSC_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GSC_SITE_URL: ${{ inputs.site_url }}
+          GSC_START_DATE: ${{ inputs.start_date }}
+          GSC_END_DATE: ${{ inputs.end_date }}
+          GSC_OUTPUT_DIR: artifacts/gsc
+        run: node scripts/seo/gsc-export.mjs
+
+      - name: Upload JSON and CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-${{ inputs.start_date }}-${{ inputs.end_date }}
+          path: artifacts/gsc/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write run summary
+        if: always()
+        run: |
+          echo "## GSC manual export" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Property: ${{ inputs.site_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Period: ${{ inputs.start_date }} to ${{ inputs.end_date }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reports: page + query" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deploy: not triggered by this workflow" >> "$GITHUB_STEP_SUMMARY"
