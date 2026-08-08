@@ -6,6 +6,7 @@ on:
       - agent/seo-url-canonical-enforcement-1
     paths:
       - '.github/workflows/seo-canonical-apply.yml'
+      - 'scripts/seo/apply-product-canonical-slug.mjs'
 
 permissions:
   contents: write
