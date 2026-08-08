@@ -10,6 +10,11 @@
  * - evita cadenas non-www -> www -> destino;
  * - no modifica URLs actuales salvo quitar el parámetro de presentación `layout`.
  *
+ * SEO-CRAWL-LOGS-3:
+ * - agenda observabilidad de crawl fuera del camino crítico con waitUntil();
+ * - nunca lee/bufferea el body de respuesta para medir bytes;
+ * - el flag, muestreo, verificación Googlebot y escritura D1 ocurren en background.
+ *
  * Además conserva las protecciones existentes de Preview y cache de assets Astro.
  */
 
@@ -17,17 +22,13 @@ import { perfNow } from './_shared/perf.js';
 import { BASE, fetchCatalog, fetchPausedItem } from './_shared/catalog.js';
 import { slugify } from './_shared/slug.js';
 import { goneResponse } from './_shared/gone.js';
+import { scheduleCrawlAnalytics } from './_shared/crawl-analytics.js';
 
 const LEGACY_ROOT_REDIRECTS = [
     { pattern: /^\/(?:shop|tienda|mas-vendidos)$/, destination: '/catalogo', name: 'legacy_root_catalog' },
     { pattern: /^\/my-orders$/, destination: '/contacto', name: 'legacy_my_orders' },
 ];
 
-/**
- * Mapa deliberadamente conservador: solo equivalencias inequívocas.
- * Los IDs SEO actuales se mapean a sí mismos; "novelas" es una equivalencia
- * histórica conocida; la categoría genérica WooCommerce apunta al catálogo.
- */
 export const LEGACY_CATEGORY_MAP = Object.freeze({
     'libros-revistas-y-comics': '/catalogo',
     'novelas': '/libros/literatura-ficcion',
@@ -90,11 +91,6 @@ function redirectFor(request, pattern, destination) {
     return response;
 }
 
-/**
- * Resuelve un MLU contra el mismo origen de datos usado por las fichas.
- * Si el catálogo activo falla, devolvemos "unavailable" para NO convertir una
- * caída transitoria de R2 en un 410 permanente.
- */
 async function lookupLegacyBook(context, id) {
     let catalog;
     try {
@@ -122,17 +118,12 @@ async function lookupLegacyBook(context, id) {
     return { state: 'missing' };
 }
 
-/**
- * Devuelve una respuesta solo cuando la request es legacy/normalizable.
- * `options.lookupBook` existe para tests y evita dependencias de red.
- */
 export async function legacyResponseForRequest(context, options = {}) {
     const request = context.request;
     const url = new URL(request.url);
     const path = withoutTrailingSlash(url.pathname);
     const lookupBook = options.lookupBook || lookupLegacyBook;
 
-    // 1) ?book=MLU tiene máxima prioridad: identifica exactamente una entidad.
     if (url.searchParams.has('book')) {
         const id = String(url.searchParams.get('book') || '').trim().toUpperCase();
         if (!/^MLU\d+$/.test(id)) return goneFor(request, 'query_book_invalid');
@@ -158,17 +149,14 @@ export async function legacyResponseForRequest(context, options = {}) {
         return redirectFor(request, 'query_book_resolved', destination);
     }
 
-    // 2) IDs WooCommerce sin mapping no pueden resolverse de forma segura.
     if (url.searchParams.has('add-to-cart')) {
         return goneFor(request, 'query_add_to_cart');
     }
 
-    // 3) Paginaciones históricas: no representan una página actual equivalente.
     if (/^\/(?:tienda|shop)\/page\/\d+$/.test(path) || /^\/page\/\d+$/.test(path)) {
         return goneFor(request, 'legacy_pagination');
     }
 
-    // 4) Categorías WooCommerce: raíz equivalente -> 301; paginación/resto -> 410.
     if (path === '/categoria-producto') {
         return redirectFor(request, 'legacy_category_root', '/catalogo');
     }
@@ -183,13 +171,11 @@ export async function legacyResponseForRequest(context, options = {}) {
         return goneFor(request, 'legacy_category_pagination_or_nested');
     }
 
-    // 5) Raíces legacy con reemplazo real.
     const rootRule = LEGACY_ROOT_REDIRECTS.find(({ pattern }) => pattern.test(path));
     if (rootRule) {
         return redirectFor(request, rootRule.name, rootRule.destination);
     }
 
-    // 6) `layout` solo cambia presentación: sobre una URL actual se elimina.
     if (url.searchParams.has('layout')) {
         const clean = new URL(url.toString());
         clean.searchParams.delete('layout');
@@ -215,29 +201,32 @@ export async function onRequest(context) {
     const isPreview = isPreviewUrl(url);
     const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
 
-    // --- SEO-LEGACY-URL-CLEANUP-1: resolver antes del redirect de host ---
-    const legacyResponse = await legacyResponseForRequest(context);
-    if (legacyResponse) return legacyResponse;
+    const finish = response => {
+        if (!isHashedAstroAsset) {
+            scheduleCrawlAnalytics(context, response, perfNow() - workerStartedAt);
+        }
+        return response;
+    };
 
-    // --- Producción: redirect non-www → www ---
+    const legacyResponse = await legacyResponseForRequest(context);
+    if (legacyResponse) return finish(legacyResponse);
+
     if (!isPreview && url.hostname === 'amadolibros.com') {
         url.hostname = 'www.amadolibros.com';
-        return Response.redirect(url.toString(), 301);
+        return finish(Response.redirect(url.toString(), 301));
     }
 
-    // --- Preview: bloquear webhook Mercado Libre ---
     if (isPreview && url.pathname.startsWith('/api/webhooks/mercadolibre')) {
-        return new Response('Forbidden on preview', {
+        return finish(new Response('Forbidden on preview', {
             status: 403,
             headers: {
                 'Content-Type':  'text/plain; charset=utf-8',
                 'X-Robots-Tag':  'noindex, nofollow',
                 'Cache-Control': 'no-store',
             },
-        });
+        }));
     }
 
-    // --- Preview: inyectar noindex en todas las respuestas de functions ---
     if (isPreview) {
         const middlewareBeforeMs = perfNow() - workerStartedAt;
         const response = await context.next();
@@ -251,11 +240,11 @@ export async function onRequest(context) {
                 ? 'public, max-age=31536000, immutable'
                 : 'no-store',
         );
-        return new Response(response.body, {
+        return finish(new Response(response.body, {
             status:     response.status,
             statusText: response.statusText,
             headers:    newHeaders,
-        });
+        }));
     }
 
     if (isHashedAstroAsset) {
@@ -269,5 +258,5 @@ export async function onRequest(context) {
         });
     }
 
-    return context.next();
+    return finish(await context.next());
 }
