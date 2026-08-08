@@ -1,0 +1,71 @@
+name: SEO baseline public audit
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'scripts/seo/**'
+      - 'docs/seo/**'
+      - '.github/workflows/seo-baseline-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seo-baseline-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Reproduce public SEO baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Syntax check
+        run: |
+          node --check scripts/seo/link-graph-audit.mjs
+          node --check scripts/seo/duplication-report.mjs
+          node --check scripts/seo/gsc-export.mjs
+
+      - name: Run link graph baseline
+        env:
+          SEO_OUTPUT_DATE: '2026-08-08'
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: node scripts/seo/link-graph-audit.mjs
+
+      - name: Run duplication baseline
+        env:
+          SEO_OUTPUT_DATE: '2026-08-08'
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: node scripts/seo/duplication-report.mjs
+
+      - name: Validate generated reports
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const link = JSON.parse(fs.readFileSync('artifacts/seo/link-graph-audit-2026-08-08.json', 'utf8'));
+          const dup = JSON.parse(fs.readFileSync('artifacts/seo/duplication-report-2026-08-08.json', 'utf8'));
+          if (!(link?.totals?.sitemapBooks > 0)) throw new Error('link graph sin sitemapBooks');
+          if (!(link?.totals?.linkedBooks >= 0)) throw new Error('link graph sin linkedBooks');
+          if (!(dup?.inventory?.activeCatalogItems > 0)) throw new Error('duplication report sin activos');
+          console.log({ link: link.totals, duplicates: dup.summaries, inventory: dup.inventory });
+          NODE
+
+      - name: Upload reproducible baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-baseline-public-2026-08-08
+          path: artifacts/seo/
+          if-no-files-found: error
+          retention-days: 30

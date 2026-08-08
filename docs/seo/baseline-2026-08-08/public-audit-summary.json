@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "baselineDate": "2026-08-08",
+  "workflowRun": 31259055898,
+  "artifact": {
+    "id": 9022236776,
+    "name": "seo-baseline-public-2026-08-08",
+    "sha256": "6a8276459259a5b0b7f67bafc47691c5135036c7bc5a73012dcdc005c792c0f4"
+  },
+  "linkGraph": {
+    "sitemapBooks": 7123,
+    "linkedBooks": 460,
+    "orphanBooks": 6663,
+    "linkedPercent": 6.46,
+    "orphanPercent": 93.54
+  },
+  "catalogInventory": {
+    "catalogItems": 7123,
+    "activeCatalogItems": 7123,
+    "activeIndexItems": 7128,
+    "pausedIndexItems": 10038,
+    "activeIndexParity": {
+      "onlyInCatalogCount": 4,
+      "onlyInIndexCount": 9
+    }
+  },
+  "duplication": {
+    "byIsbn": {
+      "duplicateGroups": 3164,
+      "duplicateListings": 6341,
+      "sameBookCandidateGroups": 211,
+      "isbnInconsistentGroups": 2953
+    },
+    "byTitleAuthor": {
+      "duplicateGroups": 225,
+      "duplicateListings": 452,
+      "sameBookCandidateGroups": 217,
+      "isbnInconsistentGroups": 8
+    }
+  },
+  "notes": [
+    "sameBookCandidateGroups is a detection class only; it does not authorize automatic canonicalization or redirects.",
+    "Full JSON reports are reproducible with scripts/seo and were retained as the GitHub Actions artifact identified above."
+  ]
+}
