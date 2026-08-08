@@ -154,4 +154,7 @@ test('el sitemap publica las ocho landings SEO', async () => {
     for (const category of SEO_CATEGORIES) {
         assert.ok(xml.includes(`<loc>https://www.amadolibros.com/libros/${category.id}</loc>`), category.id);
     }
+
+    assert.doesNotMatch(xml, /<loc>[^<]*\?/);
+    assert.doesNotMatch(xml, /\/(?:shop|tienda|page|categoria-producto|wp-content)(?:\/|<)/);
 });
