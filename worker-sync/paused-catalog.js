@@ -74,7 +74,7 @@ export function buildPausedCatalogArtifacts(catalog, {
       item.title || '',
       item.author || '',
       item.isbn || '',
-      item.thumbnail || item.pictures?.[0] || '',
+      item.pictures?.[0] || item.thumbnail || '',
     ]);
   }
 
@@ -84,7 +84,7 @@ export function buildPausedCatalogArtifacts(catalog, {
     item.title || '',
     item.author || '',
     item.isbn || '',
-    item.thumbnail || item.pictures?.[0] || '',
+    item.pictures?.[0] || item.thumbnail || '',
     Number(item.price) || 0,
     Number(item.available_quantity) || 0,
   ]);
