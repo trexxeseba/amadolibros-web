@@ -124,7 +124,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     }
 
     const { productsTotal, pickupDiscount, shippingCost, payableTotal } =
-      calculateTotals(snapshot, body.delivery_type);
+      calculateTotals(snapshot, body.delivery_type, body.shipping?.department || '');
 
     let publicCode = null;
     try {

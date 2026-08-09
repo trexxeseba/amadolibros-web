@@ -2,7 +2,6 @@
   'use strict';
 
   var CART_KEY = 'amado-cart';
-  var TIME_ZONE = 'America/Montevideo';
 
   function valueOf(id) {
     var element = document.getElementById(id);
@@ -23,31 +22,12 @@
 
     var required = [
       ['delivery-address', 'Por favor ingresá la dirección de entrega.'],
-      ['delivery-barrio', 'Por favor ingresá la localidad.'],
       ['delivery-departamento', 'Por favor seleccioná el departamento.'],
-      ['delivery-date', 'Por favor ingresá la fecha preferida de entrega.'],
-      ['delivery-from', 'Por favor ingresá la hora de inicio del horario.'],
-      ['delivery-to', 'Por favor ingresá la hora de fin del horario.'],
     ];
     for (var i = 0; i < required.length; i++) {
       if (!valueOf(required[i][0])) return { message: required[i][1], field: required[i][0] };
     }
-    if (valueOf('delivery-to') <= valueOf('delivery-from')) {
-      return { message: 'La hora de fin debe ser posterior a la hora de inicio.', field: 'delivery-to' };
-    }
     return null;
-  }
-
-  function localDateString() {
-    var parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: TIME_ZONE,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(new Date());
-    var values = {};
-    for (var i = 0; i < parts.length; i++) values[parts[i].type] = parts[i].value;
-    return values.year + '-' + values.month + '-' + values.day;
   }
 
   function rotateIdempotencyKey() {
@@ -66,8 +46,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     var requiredIds = [
-      'buyer-name', 'buyer-phone', 'delivery-address', 'delivery-barrio',
-      'delivery-departamento', 'delivery-date', 'delivery-from', 'delivery-to',
+      'buyer-name', 'buyer-phone', 'delivery-address', 'delivery-departamento',
     ];
     for (var i = 0; i < requiredIds.length; i++) {
       var field = document.getElementById(requiredIds[i]);
@@ -76,8 +55,6 @@
         field.setAttribute('aria-required', 'true');
       }
     }
-    var dateField = document.getElementById('delivery-date');
-    if (dateField) dateField.min = localDateString();
   });
 
   document.addEventListener('click', function (event) {
@@ -133,7 +110,7 @@
     if (isNaN(parsed.getTime())) return;
     expiry.textContent = 'Orden válida durante 60 minutos, hasta ' +
       new Intl.DateTimeFormat('es-UY', {
-        timeZone: TIME_ZONE,
+        timeZone: 'America/Montevideo',
         hour: '2-digit',
         minute: '2-digit',
       }).format(parsed) + '.';

@@ -671,7 +671,7 @@ export async function onRequest(ctx) {
     // contenido delgado/duplicado en resultados de búsqueda/categoría.
     const isIndex = !hasFilter;
     const metaDescription = isIndex
-        ? `${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $2.000. Envíos a todo el país.`
+        ? `${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $1.500. Envíos a todo el país.`
         : 'Resultados en Amado Libros.';
     // Las búsquedas internas no se indexan, pero sí se siguen: `follow` deja
     // que el crawler descubra las fichas enlazadas desde los resultados.

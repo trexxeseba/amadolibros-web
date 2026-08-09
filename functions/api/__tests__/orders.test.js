@@ -16,6 +16,7 @@ const CATALOG = { items: [
   { id:'A', title:'Alpha', price:1000, available_quantity:5, status:'active', thumbnail:null },
   { id:'B', title:'Beta', price:1250, available_quantity:3, status:'active', thumbnail:null },
   { id:'G', title:'Gamma', price:800, available_quantity:5, status:'active', thumbnail:null },
+  { id:'C', title:'Centro', price:500, available_quantity:5, status:'active', thumbnail:null },
   { id:'P', title:'Pausado', price:300, available_quantity:10, status:'paused', thumbnail:null },
   { id:'X', title:'Precio roto', price:'NaN', available_quantity:2, status:'active', thumbnail:null },
 ] };
@@ -50,16 +51,24 @@ function ctx(body, db, opts={}) {
   return { request:new Request('https://x/api/orders',{method,headers,body:method==='POST'?(typeof body==='string'?body:JSON.stringify(body)):undefined}), env, waitUntil(){} };
 }
 function pickup(key='k'){ return { idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:2},{product_id:'B',quantity:1}], delivery_type:'pickup', pickup_ack:true, buyer:{name:'Ana',phone:'099'} }; }
-function shipping(key='s', patch={}) { const base={ idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'G',quantity:1},{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Carlos',phone:'098'}, shipping:{address:'Calle 1',locality:'Centro',department:'Montevideo',requested_date:'2026-07-20',requested_from:'09:00',requested_to:'12:00',notes:'2B'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
+function shipping(key='s', patch={}) { const base={ idempotency_key:key, cf_turnstile_response:'ok-token', items:[{product_id:'A',quantity:1}], delivery_type:'shipping', buyer:{name:'Carlos',phone:'098'}, shipping:{address:'Calle 1',department:'Montevideo',notes:'2B'} }; return {...base,...patch,shipping:{...base.shipping,...(patch.shipping||{})}}; }
 function stored(body, patch={}) { return { id:'uuid', idempotency_key:body.idempotency_key, request_fingerprint:generateFingerprint(body,consolidateItems(body.items)), public_code:'AL-TEST', status:'open', payment_status:'not_started', delivery_type:body.delivery_type, products_total_uyu:3250, pickup_discount_uyu:150, shipping_cost_uyu:0, payable_total_uyu:3100, currency:'UYU', expires_at:'2026-07-19T17:00:00.000Z', ...patch }; }
 function handler(fetchCatalog=async()=>CATALOG, now=NOW, verifyTurnstileToken=TS_OK){ return createOrdersHandler({fetchCatalog,getNow:()=>new Date(now),verifyTurnstileToken}); }
 
 async function call(body, db=dbMock(), opts={}, h=handler()){ const response=await h(ctx(body,db,opts)); return {response,data:await response.json(),db}; }
 
-test('reglas comerciales: retiro, envío pago y umbral inclusivo', async()=>{
+test('reglas comerciales: retiro desde $1.000, envío por departamento y gratis desde $1.500', async()=>{
   let r=await call(pickup()); assert.equal(r.data.order.payable_total_uyu,3100);
-  r=await call(shipping()); assert.equal(r.data.order.payable_total_uyu,2050);
-  r=await call(shipping('t',{items:[{product_id:'A',quantity:2}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,2000);
+  r=await call({...pickup('pickup-low'),items:[{product_id:'G',quantity:1}]}); assert.equal(r.data.order.pickup_discount_uyu,0); assert.equal(r.data.order.payable_total_uyu,800);
+  r=await call({...pickup('pickup-threshold'),items:[{product_id:'A',quantity:1}]}); assert.equal(r.data.order.pickup_discount_uyu,150); assert.equal(r.data.order.payable_total_uyu,850);
+  r=await call(shipping()); assert.equal(r.data.order.shipping_cost_uyu,250); assert.equal(r.data.order.payable_total_uyu,1250);
+  r=await call(shipping('interior',{shipping:{department:'Canelones'}})); assert.equal(r.data.order.shipping_cost_uyu,300); assert.equal(r.data.order.payable_total_uyu,1300);
+  r=await call(shipping('free',{items:[{product_id:'A',quantity:1},{product_id:'C',quantity:1}],shipping:{department:'Canelones'}})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1500);
+});
+
+test('localidad, fecha y horario son opcionales para crear la orden', async()=>{
+  const r=await call(shipping('optional'));
+  assert.equal(r.response.status,201);
 });
 
 test('expira exactamente en 60 minutos y no expone UUID', async()=>{

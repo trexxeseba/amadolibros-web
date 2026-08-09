@@ -290,8 +290,8 @@ test('el catálogo indexable comunica el umbral real de envío gratis', async ()
   const html = await response.text();
   const description = html.match(/<meta name="description" content="([^"]+)">/)?.[1] || '';
 
-  assert.match(description, /envío gratis desde \$2\.000/);
-  assert.doesNotMatch(description, /envío gratis desde \$1\.500/);
+  assert.match(description, /envío gratis desde \$1\.500/);
+  assert.doesNotMatch(description, /envío gratis desde \$2\.000/);
 });
 
 test('la ficha pausada queda noindex, sin precio ni compra directa', async () => {

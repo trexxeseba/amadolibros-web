@@ -23,8 +23,8 @@ interface Props {
 const { book } = Astro.props;
 
 // Debe coincidir con FREE_SHIPPING_THRESHOLD en functions/api/_orders_logic.js
-// (control previo HOME-COMERCIAL-1: el checkout real usa $2.000, no $1.500).
-const FREE_SHIPPING_THRESHOLD = 2000;
+// (control previo HOME-COMERCIAL-1: el checkout y la comunicación deben coincidir).
+const FREE_SHIPPING_THRESHOLD = 1500;
 
 function slugify(text: string): string {
   return (text || '')

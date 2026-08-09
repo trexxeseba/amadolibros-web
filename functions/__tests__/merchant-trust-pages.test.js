@@ -24,9 +24,11 @@ test('shipping policy matches checkout cost and free-shipping threshold', () => 
   const page = read('astro-front/src/pages/envios.astro');
   const logic = read('functions/api/_orders_logic.js');
   assert.match(page, /\$250 UYU/);
-  assert.match(page, /gratis desde \$2\.000 UYU/);
-  assert.match(logic, /FREE_SHIPPING_THRESHOLD = 2000/);
-  assert.match(logic, /SHIPPING_COST\s+= 250/);
+  assert.match(page, /\$300 UYU/);
+  assert.match(page, /gratis desde \$1\.500 UYU/);
+  assert.match(logic, /FREE_SHIPPING_THRESHOLD\s+= 1500/);
+  assert.match(logic, /SHIPPING_COST_MONTEVIDEO\s+= 250/);
+  assert.match(logic, /SHIPPING_COST_INTERIOR\s+= 300/);
 });
 
 test('footer and checkout expose trust links before purchase', () => {
