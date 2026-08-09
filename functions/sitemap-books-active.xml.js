@@ -11,5 +11,5 @@ export function activeBookSitemapEntries(catalog) {
 
 export async function onRequest(ctx) {
   const catalog = await fetchCatalog(ctx);
-  return xmlResponse(urlsetXml(activeBookSitemapEntries(catalog)));
+  return xmlResponse(ctx.request, urlsetXml(activeBookSitemapEntries(catalog)));
 }
