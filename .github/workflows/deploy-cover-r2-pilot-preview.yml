@@ -1,0 +1,151 @@
+name: Deploy Cover R2 Pilot Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - 'cover-r2-pilot/**'
+      - '.github/workflows/deploy-cover-r2-pilot-preview.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cover-r2-pilot-preview
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block every source except the isolated in-repo pilot
+        if: github.head_ref != 'agent/cover-r2-pilot-20' || github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "Deploy bloqueado: sólo se permite el PR in-repo agent/cover-r2-pilot-20 -> main."
+          exit 1
+
+  validate:
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Validate isolated pilot
+        run: |
+          find cover-r2-pilot -type f -name '*.js' -print0 | xargs -0 -r -n1 node --check
+          node --test cover-r2-pilot/__tests__/*.test.js
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Create one-run pilot secret
+        run: |
+          PILOT_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::$PILOT_SECRET"
+          echo "COVER_PILOT_SECRET=$PILOT_SECRET" >> "$GITHUB_ENV"
+      - name: Ensure isolated Preview bucket exists
+        run: |
+          BUCKETS="$(npx wrangler@3.114.17 r2 bucket list)"
+          if echo "$BUCKETS" | grep -Fq 'amadolibros-images-preview'; then
+            echo "Bucket Preview ya existe."
+          else
+            echo "Bucket Preview ausente; se crea una sola vez."
+            npx wrangler@3.114.17 r2 bucket create amadolibros-images-preview
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Configure pilot secret
+        run: |
+          printf '%s' "$COVER_PILOT_SECRET" | npx wrangler@3.114.17 secret put COVER_PILOT_SECRET --config cover-r2-pilot/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy isolated pilot Worker
+        run: |
+          npx wrangler@3.114.17 deploy --config cover-r2-pilot/wrangler.toml 2>&1 | tee /tmp/cover-pilot-deploy.txt
+          PILOT_URL="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/cover-pilot-deploy.txt | tail -1)"
+          if [ -z "$PILOT_URL" ]; then
+            echo "No se pudo resolver la URL workers.dev del deploy."
+            exit 1
+          fi
+          echo "PILOT_URL=$PILOT_URL" >> "$GITHUB_ENV"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Build payload from 20 real catalog covers
+        run: |
+          curl -fsS --max-time 180 \
+            'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json' \
+            | node cover-r2-pilot/scripts/select-real-covers.js \
+            > /tmp/cover-pilot-payload.json
+          node -e "const p=require('/tmp/cover-pilot-payload.json'); if(p.items.length!==20) process.exit(1); console.log('Payload real: 20 portadas.');"
+      - name: Import and verify 20 real covers
+        run: |
+          echo "Esperando propagación del Worker Preview..."
+          sleep 10
+          STATUS_CODE=""
+          for attempt in 1 2 3 4 5 6; do
+            STATUS_CODE="$(curl -sS --max-time 30 -o /tmp/cover-pilot-before.json -w '%{http_code}' \
+              "$PILOT_URL/status" \
+              -H "Authorization: Bearer $COVER_PILOT_SECRET")"
+            if [ "$STATUS_CODE" != "401" ]; then
+              break
+            fi
+            echo "Secret todavía propagándose para status inicial (intento $attempt/6); espero 10 s."
+            sleep 10
+          done
+          if [ "$STATUS_CODE" != "200" ]; then
+            echo "Status inicial respondió HTTP $STATUS_CODE."
+            cat /tmp/cover-pilot-before.json
+            exit 1
+          fi
+
+          IMPORT_CODE=""
+          for attempt in 1 2 3 4 5 6; do
+            IMPORT_CODE="$(curl -sS --max-time 300 -o /tmp/cover-pilot-import.json -w '%{http_code}' \
+              -X POST "$PILOT_URL/import" \
+              -H "Authorization: Bearer $COVER_PILOT_SECRET" \
+              -H 'Content-Type: application/json' \
+              --data-binary @/tmp/cover-pilot-payload.json)"
+            if [ "$IMPORT_CODE" != "401" ]; then
+              break
+            fi
+            echo "Secret todavía propagándose (intento $attempt/6); espero 10 s."
+            sleep 10
+          done
+          cat /tmp/cover-pilot-import.json
+          if [ "$IMPORT_CODE" != "200" ]; then
+            echo "Import respondió HTTP $IMPORT_CODE."
+            exit 1
+          fi
+          node -e "const r=require('/tmp/cover-pilot-import.json'); if(r.attempted!==20||r.failed!==0) process.exit(1); console.log('Import real: 20/20 sin fallos.');"
+
+          AFTER_CODE=""
+          for attempt in 1 2 3 4 5 6; do
+            AFTER_CODE="$(curl -sS --max-time 30 -o /tmp/cover-pilot-after.json -w '%{http_code}' \
+              "$PILOT_URL/status" \
+              -H "Authorization: Bearer $COVER_PILOT_SECRET")"
+            if [ "$AFTER_CODE" != "401" ]; then
+              break
+            fi
+            echo "Secret todavía propagándose para status (intento $attempt/6); espero 10 s."
+            sleep 10
+          done
+          cat /tmp/cover-pilot-after.json
+          if [ "$AFTER_CODE" != "200" ]; then
+            echo "Status final respondió HTTP $AFTER_CODE."
+            exit 1
+          fi
+          node -e "const s=require('/tmp/cover-pilot-after.json'); if(s.manifest.with_valid_copy!==20) process.exit(1); console.log('Manifest verificado: 20 copias válidas.');"
