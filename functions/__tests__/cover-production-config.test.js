@@ -10,6 +10,10 @@ const promotion = readFileSync(
   'utf8',
 );
 const deploy = readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
+const promotionScript = readFileSync(
+  path.join(ROOT, 'scripts', 'promote-cover-r2-production.sh'),
+  'utf8',
+);
 const resolver = readFileSync(
   path.join(ROOT, 'functions', '_shared', 'preview-cover.js'),
   'utf8',
@@ -19,23 +23,37 @@ const route = readFileSync(
   'utf8',
 );
 
-test('promoción R2 sólo corre para la rama productiva in-repo autorizada', () => {
+test('PR R2 sólo prueba la rama in-repo autorizada y no abre Producción', () => {
   assert.match(promotion, /github\.head_ref == 'agent\/cover-r2-production-20'/);
   assert.match(promotion, /head\.repo\.full_name == github\.repository/);
-  assert.match(promotion, /environment:\s*\n\s+name: production/);
+  assert.match(promotion, /environment:\s*\n\s+name: preview/);
+  assert.doesNotMatch(promotion, /name: production/);
+  assert.doesNotMatch(promotion, /seed-production-bucket/);
   assert.doesNotMatch(promotion, /push:\s*\n\s+branches:\s*\[main\]/);
 });
 
 test('promoción usa buckets separados, verifica SHA y publica el manifest último', () => {
-  assert.match(promotion, /SOURCE_BUCKET: amadolibros-images-preview/);
-  assert.match(promotion, /TARGET_BUCKET: amadolibros-images-production/);
-  assert.match(promotion, /entries\.length !== 20/);
-  assert.match(promotion, /sha256sum "\$SOURCE_FILE"/);
-  assert.match(promotion, /sha256sum "\$VERIFY_FILE"/);
-  assert.match(promotion, /cmp \/tmp\/cover-r2-manifest\.json \/tmp\/cover-r2-production-manifest\.json/);
-  const objectLoop = promotion.indexOf("done < /tmp/cover-r2-objects.tsv");
-  const manifestPut = promotion.indexOf('$TARGET_BUCKET/covers/v1/manifest.json');
+  assert.match(promotionScript, /SOURCE_BUCKET:-amadolibros-images-preview/);
+  assert.match(promotionScript, /TARGET_BUCKET:-amadolibros-images-production/);
+  assert.match(promotionScript, /entries\.length !== 20/);
+  assert.match(promotionScript, /sha256sum "\$SOURCE_FILE"/);
+  assert.match(promotionScript, /sha256sum "\$VERIFY_FILE"/);
+  assert.match(promotionScript, /cmp \/tmp\/cover-r2-manifest\.json \/tmp\/cover-r2-production-manifest\.json/);
+  const objectLoop = promotionScript.indexOf("done < /tmp/cover-r2-objects.tsv");
+  const manifestPut = promotionScript.indexOf('$TARGET_BUCKET/covers/v1/manifest.json');
   assert.ok(objectLoop > -1 && manifestPut > objectLoop, 'el manifest debe escribirse después de los objetos');
+});
+
+test('main promueve el bucket antes de desplegar Pages', () => {
+  assert.match(deploy, /name: Promote 20 validated covers to production R2/);
+  assert.match(deploy, /bash scripts\/promote-cover-r2-production\.sh/);
+  assert.match(deploy, /SOURCE_BUCKET: amadolibros-images-preview/);
+  assert.match(deploy, /TARGET_BUCKET: amadolibros-images-production/);
+  assert.ok(
+    deploy.indexOf('name: Promote 20 validated covers to production R2') <
+      deploy.indexOf('name: Deploy via Wrangler'),
+    'la promoción debe terminar antes del deploy productivo',
+  );
 });
 
 test('runtime R2 admite sólo Preview/Producción y mantiene acceso de lectura', () => {

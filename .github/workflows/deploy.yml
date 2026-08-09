@@ -219,6 +219,14 @@ jobs:
           printf '%s' "$RESEND_API_KEY" |
             npx wrangler@3.114.17 pages secret put RESEND_API_KEY --project-name amadolibros-web
 
+      - name: Promote 20 validated covers to production R2
+        run: bash scripts/promote-cover-r2-production.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SOURCE_BUCKET: amadolibros-images-preview
+          TARGET_BUCKET: amadolibros-images-production
+
       - name: Deploy via Wrangler
         run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:
