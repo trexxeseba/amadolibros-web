@@ -60,7 +60,7 @@ const INTERNAL_FIELDS = [
 const ROUTES = [
   { path: '/', kind: 'html', canonical: `${BASE_URL}/`, robots: 'index, follow' },
   { path: '/catalogo', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'index, follow' },
-  { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex' },
+  { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex, follow' },
   { path: '/carrito/', kind: 'cart' },
   { path: '/robots.txt', kind: 'robots' },
   { path: '/sitemap.xml', kind: 'sitemap-index' },
@@ -513,6 +513,8 @@ module.exports = {
   analyzeSitemapBody,
   resolveCheckoutExpectation,
   hasRenderedElementWithId,
+  hasHtmlMeta,
+  SMOKE_ROUTES: ROUTES,
   VALID_CHECKOUT_EXPECTATIONS,
   TURNSTILE_SITE_KEY_PRODUCTION,
   TURNSTILE_SITE_KEY_PREVIEW,
