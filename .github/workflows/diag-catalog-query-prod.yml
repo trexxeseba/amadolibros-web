@@ -1,0 +1,37 @@
+name: Diagnostic catalog query production
+
+on:
+  push:
+    branches:
+      - agent/diag-catalog-query-prod
+    paths:
+      - '.github/workflows/diag-catalog-query-prod.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe clean and query catalog responses
+        run: |
+          set -euo pipefail
+          for URL in \
+            'https://www.amadolibros.com/catalogo' \
+            'https://www.amadolibros.com/catalogo?q=zzzinexistente999' \
+            'https://www.amadolibros.com/catalogo?q=zzzinexistente999&probe=1'
+          do
+            echo "===== $URL ====="
+            BODY=$(mktemp)
+            HDR=$(mktemp)
+            curl -sS --max-time 30 -D "$HDR" -o "$BODY" "$URL"
+            head -n 1 "$HDR" | tr -d '\r'
+            grep -Ei '^(cache-control|cf-cache-status|age|content-type|x-cache-status|vary):' "$HDR" | tr -d '\r' || true
+            echo '-- tags --'
+            grep -Eio '<meta name="robots"[^>]*>|<link rel="canonical"[^>]*>|<title>[^<]*</title>' "$BODY" | head -10 || true
+            echo '-- hashes --'
+            sha256sum "$BODY"
+            wc -c "$BODY"
+          done
