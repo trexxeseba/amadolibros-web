@@ -1,0 +1,127 @@
+name: Catalog identity sync and measure once
+
+on:
+  push:
+    branches:
+      - ops/catalog-identity-sync-measure-20260809
+    paths:
+      - '.github/workflows/catalog-identity-sync-measure-once.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalog-identity-sync-measure-once
+  cancel-in-progress: false
+
+jobs:
+  sync-and-measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+
+    steps:
+      - name: Trigger full catalog sync with deployed Worker
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
+            echo "ERROR: WORKER_SYNC_TRIGGER_URL no está configurada."
+            exit 1
+          fi
+          if [[ "$WORKER_SYNC_TRIGGER_URL" == *\?* ]]; then
+            TRIGGER_URL="${WORKER_SYNC_TRIGGER_URL}&mode=await"
+          else
+            TRIGGER_URL="${WORKER_SYNC_TRIGGER_URL}?mode=await"
+          fi
+          RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
+            -X POST "$TRIGGER_URL" \
+            -H "Authorization: Bearer $SYNC_SECRET")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Trigger HTTP: $HTTP_STATUS"
+          echo "Trigger body: $BODY"
+          test "$HTTP_STATUS" = "200"
+          echo "$BODY" | grep -q '"source":"manual-await"'
+          echo "$BODY" | grep -q '"status":"ok"'
+
+      - name: Verify sync status
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
+        run: |
+          set -euo pipefail
+          BASE_URL="${WORKER_SYNC_TRIGGER_URL%/trigger}"
+          RESPONSE=$(curl -sS --max-time 30 -w "\nHTTP_STATUS:%{http_code}" \
+            -X GET "$BASE_URL/status" \
+            -H "Authorization: Bearer $SYNC_SECRET")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Status HTTP: $HTTP_STATUS"
+          echo "Status body: $BODY"
+          test "$HTTP_STATUS" = "200"
+
+      - name: Checkout auditor branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/seo-duplicate-enrichment-1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Test catalog identity auditor
+        run: node --test scripts/seo/__tests__/duplicate-review.test.mjs
+
+      - name: Run duplicate auditor against fresh R2 catalog
+        env:
+          SEO_OUTPUT_DATE: '2026-08-09'
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: node scripts/seo/duplication-report.mjs
+
+      - name: Summarize Mercado Libre catalog identity
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = 'artifacts/seo/duplication-report-2026-08-09.json';
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const groups = report.groups.strictSameBookReview || [];
+          const summary = {
+            strictIsbnGroups: groups.length,
+            completeProductIdsGroups: 0,
+            completeListingFlagsGroups: 0,
+            sameCatalogProductGroups: 0,
+            mixedTraditionalCatalogGroups: 0,
+            mixedTraditionalCatalogSameProductGroups: 0,
+            incompleteSignalGroups: 0,
+          };
+          for (const group of groups) {
+            const catalog = group.evidence && group.evidence.catalogIdentity;
+            if (catalog && catalog.completeProductIds) summary.completeProductIdsGroups++;
+            if (catalog && catalog.completeListingFlags) summary.completeListingFlagsGroups++;
+            if (catalog && catalog.sameCatalogProduct) summary.sameCatalogProductGroups++;
+            if (catalog && catalog.mixedTraditionalCatalog) summary.mixedTraditionalCatalogGroups++;
+            if (catalog && catalog.mixedTraditionalCatalog && catalog.sameCatalogProduct) {
+              summary.mixedTraditionalCatalogSameProductGroups++;
+            }
+            if (!catalog || !catalog.completeProductIds || !catalog.completeListingFlags) {
+              summary.incompleteSignalGroups++;
+            }
+          }
+          console.log('CATALOG_IDENTITY_SUMMARY=' + JSON.stringify(summary));
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            '## Catalog identity measurement\n\n```json\n' +
+            JSON.stringify(summary, null, 2) + '\n```\n');
+          NODE
+
+      - name: Upload measurement artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-identity-measurement-2026-08-09
+          path: artifacts/seo/duplication-report-2026-08-09.json
+          if-no-files-found: error
+          retention-days: 30
