@@ -126,13 +126,13 @@ ${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="
 
     return `<div class="cover">
   <button type="button" class="cover-btn" id="gMainBtn" data-current-index="0" aria-label="Ampliar imagen de ${safeTitle}">
-    <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager" width="260" data-title="${safeTitle}">
+    <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager" fetchpriority="high" decoding="async" width="260" height="390" data-title="${safeTitle}">
   </button>
   ${thumbsHtml}
   <div id="glb" class="lb" role="dialog" aria-modal="true" aria-label="Galería de imágenes" tabindex="-1" hidden>
     <div class="lb-inner">
       <button type="button" class="lb-close" id="glbClose" aria-label="Cerrar galería">&#10005;</button>
-      <img class="lb-img" id="glbImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager">
+      <img class="lb-img" id="glbImg" alt="${safeTitle}" decoding="async">
       <p class="lb-counter" id="glbCounter" aria-live="polite" aria-atomic="true">Imagen 1 de ${images.length}</p>
       <div class="lb-nav">${navBtns}</div>
     </div>
@@ -159,9 +159,9 @@ ${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="
 
   function openLb(idx,trigger){
     cur=idx;opener=trigger||mainBtn;
-    lb.removeAttribute('hidden');
+    updateLb();lb.removeAttribute('hidden');
     document.body.style.overflow='hidden';
-    updateLb();lb.focus();
+    lb.focus();
   }
 
   function closeLb(){
@@ -341,7 +341,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
-      <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+      <a class="btn btn-wa btn-secondary" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         💬 Consultar por WhatsApp
       </a>
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
@@ -460,7 +460,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     main{max-width:860px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:1fr;gap:1.75rem}
     @media(min-width:640px){main{grid-template-columns:280px 1fr}}
-    .cover-main{width:100%;max-width:260px;border-radius:.5rem;
+    .cover-main{width:100%;max-width:260px;height:auto;aspect-ratio:2/3;object-fit:contain;border-radius:.5rem;
                 box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
     .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
     .cover-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;border-radius:.5rem}
@@ -514,6 +514,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
     .btn:hover{opacity:.85}
     .btn-wa{background:#25d366;color:white}
+    .btn-wa.btn-secondary{background:#fff;color:#128c45;border:1.5px solid #25d366}
+    .btn-wa.btn-secondary:hover{background:#f0fff5;opacity:1}
     .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
               cursor:pointer;width:100%}
     .btn-cart:disabled{opacity:.7;cursor:default}
@@ -553,7 +555,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
 <header class="product-header">
   <div class="header-inner">
     <a href="/" class="brand-link" aria-label="Amado Libros — ir al inicio">
-      <img src="/images/logo-amado.webp" alt="Amado Libros" class="brand-logo" width="44" height="44" fetchpriority="high">
+      <img src="/images/logo-amado.webp" alt="Amado Libros" class="brand-logo" width="44" height="44" decoding="async">
       <span class="brand-copy">
         <span class="brand-name">AMADO LIBROS</span>
         <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
