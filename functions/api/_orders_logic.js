@@ -1,6 +1,8 @@
 export const RETIRO_DISCOUNT         = 150;
-export const SHIPPING_COST           = 250;
-export const FREE_SHIPPING_THRESHOLD = 2000;
+export const RETIRO_DISCOUNT_THRESHOLD = 1000;
+export const SHIPPING_COST_MONTEVIDEO  = 250;
+export const SHIPPING_COST_INTERIOR    = 300;
+export const FREE_SHIPPING_THRESHOLD   = 1500;
 export const EXPIRY_MINUTES          = 60;
 export const MAX_BODY_BYTES          = 32 * 1024;
 export const MAX_ITEMS               = 20;
@@ -82,15 +84,23 @@ export function validateBody(body) {
     if (!isNonEmptyString(shipping.address)) return 'Dirección requerida.';
     if (shipping.address.trim().length > MAX_ADDRESS_LEN) return 'Dirección demasiado larga.';
 
-    if (!isNonEmptyString(shipping.locality)) return 'Localidad requerida.';
-    if (shipping.locality.trim().length > MAX_LOCALITY_LEN) return 'Localidad demasiado larga.';
+    if (shipping.locality !== undefined && shipping.locality !== null) {
+      if (typeof shipping.locality !== 'string') return 'Localidad inválida.';
+      if (shipping.locality.trim().length > MAX_LOCALITY_LEN) return 'Localidad demasiado larga.';
+    }
 
     if (!isNonEmptyString(shipping.department)) return 'Departamento requerido.';
     if (shipping.department.trim().length > MAX_DEPARTMENT_LEN) return 'Departamento demasiado largo.';
 
-    if (!isValidDateString(shipping.requested_date)) return 'Fecha inválida (formato YYYY-MM-DD).';
-    if (!isValidTimeString(shipping.requested_from)) return 'Hora desde inválida (formato HH:MM).';
-    if (!isValidTimeString(shipping.requested_to)) return 'Hora hasta inválida (formato HH:MM).';
+    if (shipping.requested_date && !isValidDateString(shipping.requested_date)) {
+      return 'Fecha inválida (formato YYYY-MM-DD).';
+    }
+    if (shipping.requested_from && !isValidTimeString(shipping.requested_from)) {
+      return 'Hora desde inválida (formato HH:MM).';
+    }
+    if (shipping.requested_to && !isValidTimeString(shipping.requested_to)) {
+      return 'Hora hasta inválida (formato HH:MM).';
+    }
 
     if (shipping.notes !== undefined && shipping.notes !== null) {
       if (typeof shipping.notes !== 'string') return 'Notas inválidas.';
@@ -114,8 +124,10 @@ export function dateInTimeZone(now, timeZone = BUSINESS_TIME_ZONE) {
 
 export function validateShippingDate(requestedDate, requestedFrom, requestedTo, now) {
   const today = dateInTimeZone(now);
-  if (requestedDate < today) return 'La fecha solicitada ya pasó.';
-  if (requestedTo <= requestedFrom) return 'La hora de fin debe ser posterior a la hora de inicio.';
+  if (requestedDate && requestedDate < today) return 'La fecha solicitada ya pasó.';
+  if (requestedFrom && requestedTo && requestedTo <= requestedFrom) {
+    return 'La hora de fin debe ser posterior a la hora de inicio.';
+  }
   return null;
 }
 
@@ -193,15 +205,18 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
   return { errors, snapshot };
 }
 
-export function calculateTotals(snapshotItems, deliveryType) {
+export function calculateTotals(snapshotItems, deliveryType, department = '') {
   const productsTotal = snapshotItems.reduce((sum, item) => sum + item.line_total_uyu, 0);
   let pickupDiscount = 0;
   let shippingCost = 0;
 
   if (deliveryType === 'pickup') {
-    pickupDiscount = Math.min(RETIRO_DISCOUNT, productsTotal);
+    pickupDiscount = productsTotal >= RETIRO_DISCOUNT_THRESHOLD ? RETIRO_DISCOUNT : 0;
   } else {
-    shippingCost = productsTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_COST : 0;
+    const isMontevideo = department.trim().toLocaleLowerCase('es-UY') === 'montevideo';
+    shippingCost = productsTotal < FREE_SHIPPING_THRESHOLD
+      ? (isMontevideo ? SHIPPING_COST_MONTEVIDEO : SHIPPING_COST_INTERIOR)
+      : 0;
   }
 
   const payableTotal = Math.max(0, productsTotal - pickupDiscount + shippingCost);
@@ -222,7 +237,7 @@ export function generateFingerprint(body, consolidatedItems) {
   if (body.delivery_type === 'shipping') {
     fingerprint.shipping = {
       address: body.shipping.address.trim(),
-      locality: body.shipping.locality.trim(),
+      locality: typeof body.shipping.locality === 'string' ? body.shipping.locality.trim() : '',
       department: body.shipping.department.trim(),
       requested_date: body.shipping.requested_date,
       requested_from: body.shipping.requested_from,

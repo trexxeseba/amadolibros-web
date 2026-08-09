@@ -35,11 +35,7 @@ const REQUIRED_FIELD_IDS = [
   'buyer-name',
   'buyer-phone',
   'delivery-address',
-  'delivery-barrio',
   'delivery-departamento',
-  'delivery-date',
-  'delivery-from',
-  'delivery-to',
 ];
 
 // ── Una sola pantalla, un solo botón principal ──────────────────────────────
@@ -55,8 +51,9 @@ test('carrito.astro: exactamente un botón principal id="btn-prepare-order" en e
   assert.equal(matches.length, 1);
 });
 
-test('carrito.astro: el CTA principal dice "Continuar a Mercado Pago"', () => {
-  assert.match(carritoAstro, /Continuar a Mercado Pago/);
+test('carrito.astro: Mercado Pago muestra el total sin descuento por transferencia', () => {
+  assert.match(carritoAstro, /Pagar con Mercado Pago/);
+  assert.match(carritoAstro, /id="mp-cta-total"/);
 });
 
 test('carrito.astro: un solo listener de click maneja todo el pago (no hay un segundo botón/handler de "pagar")', () => {
@@ -81,12 +78,31 @@ test('carrito.astro: el mismo click crea la orden y la preferencia, sin un segun
 
 // ── WhatsApp subordinado, no competidor ─────────────────────────────────────
 
-test('carrito.astro: con checkout ON, WhatsApp usa estilo secundario (no compite con el CTA principal)', () => {
-  assert.match(carritoAstro, /class="btn-wa-secondary"/);
+test('carrito.astro: con checkout ON, transferencia tiene CTA y total final explícitos', () => {
+  assert.match(carritoAstro, /Comprar por transferencia — 12% menos/);
+  assert.match(carritoAstro, /class="btn-transfer-order"/);
+  assert.match(carritoAstro, /id="transfer-cta-total"/);
 });
 
 test('carrito.astro: con checkout OFF, WhatsApp sigue siendo la única acción disponible', () => {
   assert.match(carritoAstro, /class="btn-wa-order"/);
+});
+
+test('carrito.astro: localidad no bloquea y día/horario se coordinan después del pago', () => {
+  assert.match(carritoAstro, /Barrio \/ Localidad[\s\S]*\(opcional\)/);
+  assert.doesNotMatch(carritoAstro, /if \(!prepBarrio\)/);
+  assert.doesNotMatch(carritoAstro, /id="delivery-date"/);
+  assert.doesNotMatch(carritoAstro, /id="delivery-from"/);
+  assert.doesNotMatch(carritoAstro, /id="delivery-to"/);
+  assert.match(carritoAstro, /Después del pago coordinamos el día y el horario por WhatsApp/);
+});
+
+test('carrito.astro: refleja las reglas comerciales aprobadas', () => {
+  assert.match(carritoAstro, /RETIRO_DISCOUNT_THRESHOLD_UYU\s*=\s*1000/);
+  assert.match(carritoAstro, /SHIPPING_COST_MONTEVIDEO\s*=\s*250/);
+  assert.match(carritoAstro, /SHIPPING_COST_INTERIOR\s*=\s*300/);
+  assert.match(carritoAstro, /FREE_SHIPPING_THRESHOLD_UYU\s*=\s*1500/);
+  assert.match(carritoAstro, /Math\.round\(subtotal \* TRANSFER_FACTOR\)/);
 });
 
 // ── Validación inline y accesibilidad ───────────────────────────────────────
