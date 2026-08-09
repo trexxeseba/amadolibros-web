@@ -6,6 +6,6 @@ import { urlsetXml, xmlResponse } from './_shared/sitemap.js';
  * explícitamente aprobada. Mantener el endpoint permite habilitarla sin
  * cambiar el contrato de URLs de sitemap más adelante.
  */
-export async function onRequest() {
-  return xmlResponse(urlsetXml([]));
+export async function onRequest(ctx) {
+  return xmlResponse(ctx.request, urlsetXml([]));
 }
