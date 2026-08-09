@@ -463,10 +463,22 @@ export async function onRequest(ctx) {
     ]);
     // El catálogo completo sólo se necesita para el índice sin compactar,
     // producción o fallback de una versión compacta ausente/corrupta.
-    const catalog = !useCompactSearch || !Array.isArray(activeIndex?.items)
-        ? await fetchCatalog(ctx)
-        : null;
-    const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
+    const needsFullCatalog = !useCompactSearch || !Array.isArray(activeIndex?.items);
+    const catalog = needsFullCatalog ? await fetchCatalog(ctx) : null;
+    if (needsFullCatalog && (!catalog || !Array.isArray(catalog.items))) {
+        return new Response(
+            '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><title>Catálogo temporalmente no disponible — Amado Libros</title></head><body><main><h1>Catálogo temporalmente no disponible</h1><p>Intentá nuevamente en unos minutos.</p></main></body></html>',
+            {
+                status: 503,
+                headers: {
+                    'Content-Type': 'text/html;charset=UTF-8',
+                    'Cache-Control': 'no-store',
+                    'X-Robots-Tag': 'noindex, nofollow',
+                },
+            },
+        );
+    }
+    const items = catalog?.items || [];
     const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
     const previewBase = ctx.env?.APP_ENV === 'preview'
         ? new URL(ctx.request.url).origin
