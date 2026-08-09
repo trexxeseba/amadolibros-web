@@ -1,0 +1,46 @@
+name: SEO URL policy audit corrected
+
+on:
+  push:
+    branches:
+      - agent/seo-url-inventory-1
+    paths:
+      - '.github/workflows/seo-url-policy-audit-correct.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  correct-audit-clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-url-inventory-1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Correct equivalent policy expectations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/seo/url-policy-audit.mjs')
+          s=p.read_text()
+          s=s.replace("{ status: 404, robotsHeader: 'noindex, nofollow' } },\n  { pattern: '/libro/{id}/{slug}'", "{ status: 404, robotsMeta: 'noindex, nofollow' } },\n  { pattern: '/libro/{id}/{slug}'")
+          s=s.replace("{ status: 301, location: '/catalogo' } },\n  { pattern: '/mas-vendidos'", "{ status: 301, location: `${BASE}/catalogo` } },\n  { pattern: '/mas-vendidos'")
+          s=s.replace("{ status: 301, location: '/catalogo' } },\n  { pattern: '/page/N'", "{ status: 301, location: `${BASE}/catalogo` } },\n  { pattern: '/page/N'")
+          p.write_text(s)
+          PY
+          node --check scripts/seo/url-policy-audit.mjs
+          node scripts/seo/url-policy-audit.mjs
+          git diff --check
+      - name: Commit correction and clean helper
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/seo/url-policy-audit.mjs
+          git commit -m 'SEO-CRAWL-EFFICIENCY-2: align audit with effective URL policy'
+          git rm .github/workflows/seo-url-policy-audit-correct.yml
+          git commit -m 'SEO URL policy: remove temporary correction workflow'
+          git push origin HEAD:agent/seo-url-inventory-1
