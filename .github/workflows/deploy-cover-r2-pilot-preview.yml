@@ -1,13 +1,13 @@
 name: Deploy Cover R2 Pilot Preview
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
     branches:
-      - agent/cover-r2-pilot-20
+      - main
     paths:
       - 'cover-r2-pilot/**'
       - '.github/workflows/deploy-cover-r2-pilot-preview.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,10 +21,10 @@ jobs:
   guard:
     runs-on: ubuntu-latest
     steps:
-      - name: Block every branch except the isolated pilot
-        if: github.ref != 'refs/heads/agent/cover-r2-pilot-20'
+      - name: Block every source except the isolated in-repo pilot
+        if: github.head_ref != 'agent/cover-r2-pilot-20' || github.event.pull_request.head.repo.full_name != github.repository
         run: |
-          echo "Deploy bloqueado: este Worker sólo existe en agent/cover-r2-pilot-20."
+          echo "Deploy bloqueado: sólo se permite el PR in-repo agent/cover-r2-pilot-20 -> main."
           exit 1
 
   validate:
@@ -134,10 +134,11 @@ jobs:
           script: |
             const result = '${{ needs.deploy.result }}';
             const succeeded = result === 'success';
+            const headSha = context.payload.pull_request.head.sha;
             const body = [
               `### COVER-R2-PILOT — ${succeeded ? '20/20 CONFIRMADO' : 'NO CONFIRMADO'}`,
               '',
-              `- Commit: \`${context.sha}\``,
+              `- Commit: \`${headSha}\``,
               `- Deploy/aceptación: **${result}**`,
               `- Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               succeeded

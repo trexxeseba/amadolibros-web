@@ -13,11 +13,12 @@ test('wrangler usa sólo el bucket Preview y no declara cron ni routes', () => {
   assert.doesNotMatch(wrangler, /\[triggers\]|crons\s*=|routes?\s*=/);
 });
 
-test('deploy automático y manual queda bloqueado a la rama exacta del piloto', () => {
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /push:\n\s+branches:\n\s+- agent\/cover-r2-pilot-20/);
-  assert.match(workflow, /refs\/heads\/agent\/cover-r2-pilot-20/);
-  assert.doesNotMatch(workflow, /refs\/heads\/main|branches:\s*\[?main/);
+test('deploy del PR queda bloqueado a la rama y repo exactos del piloto', () => {
+  assert.match(workflow, /pull_request:\n\s+types: \[opened, synchronize, reopened\]/);
+  assert.match(workflow, /branches:\n\s+- main/);
+  assert.match(workflow, /github\.head_ref != 'agent\/cover-r2-pilot-20'/);
+  assert.match(workflow, /github\.event\.pull_request\.head\.repo\.full_name != github\.repository/);
+  assert.doesNotMatch(workflow, /workflow_dispatch:|\npush:/);
   assert.match(workflow, /COVER_PILOT_SECRET/);
   assert.match(workflow, /environment:\n\s+name: preview/);
   assert.match(workflow, /r2 bucket create amadolibros-images-preview/);
