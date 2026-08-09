@@ -17,6 +17,55 @@ import {
 import { findSeoCategory, SEO_CATEGORIES } from '../_shared/seo-categories.js';
 
 const MAX_RESULTS = 48;
+const PAGE_PARAM_RE = /^[1-9][0-9]{0,6}$/;
+
+function parsePageParam(raw) {
+    if (raw === null || raw === undefined) return { present: false, valid: true, page: 1 };
+    const trimmed = String(raw).trim();
+    if (!PAGE_PARAM_RE.test(trimmed)) return { present: true, valid: false, page: 1 };
+    return { present: true, valid: true, page: Number(trimmed) };
+}
+
+function categoryPath(categoryId, page = 1) {
+    return page > 1 ? `/libros/${categoryId}?page=${page}` : `/libros/${categoryId}`;
+}
+
+function paginationWindow(page, totalPages) {
+    const wanted = new Set([1, totalPages, page, page - 1, page + 1]);
+    const sorted = [...wanted]
+        .filter(p => Number.isInteger(p) && p >= 1 && p <= totalPages)
+        .sort((a, b) => a - b);
+    const cells = [];
+    let previous = 0;
+    for (const p of sorted) {
+        if (previous && p - previous > 1) cells.push('gap');
+        cells.push(p);
+        previous = p;
+    }
+    return cells;
+}
+
+function paginationHtml({ categoryId, page, totalPages }) {
+    if (totalPages <= 1) return '';
+    const hrefFor = target => categoryPath(categoryId, target);
+    const prev = page > 1
+        ? `<a class="pg-ctl" rel="prev" href="${escapeHtml(hrefFor(page - 1))}">‹ Anterior</a>`
+        : '<span class="pg-ctl is-off" aria-disabled="true">‹ Anterior</span>';
+    const next = page < totalPages
+        ? `<a class="pg-ctl" rel="next" href="${escapeHtml(hrefFor(page + 1))}">Siguiente ›</a>`
+        : '<span class="pg-ctl is-off" aria-disabled="true">Siguiente ›</span>';
+    const numbers = paginationWindow(page, totalPages).map(cell => {
+        if (cell === 'gap') return '<span class="pg-gap" aria-hidden="true">…</span>';
+        if (cell === page) return `<span class="pg-num is-current" aria-current="page">${cell}</span>`;
+        return `<a class="pg-num" href="${escapeHtml(hrefFor(cell))}" aria-label="Ir a la página ${cell}">${cell}</a>`;
+    }).join('');
+    return `<nav class="pg" aria-label="Paginación de ${escapeHtml(categoryId)}">
+  <div class="pg-row pg-main">${prev}<span class="pg-status">Página ${page} de ${totalPages}</span>${next}</div>
+  <div class="pg-row pg-nums">${numbers}</div>
+</nav>`;
+}
+
+const PAGINATION_STYLES = `.pg{margin:1.5rem 0 0;display:flex;flex-direction:column;gap:.5rem}.pg-row{display:flex;align-items:center;gap:.3rem}.pg-main{justify-content:space-between}.pg-nums{justify-content:center;flex-wrap:wrap}.pg-ctl,.pg-num,.pg-gap{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0 .55rem;border-radius:.5rem;font-size:.85rem;text-decoration:none}.pg-ctl,.pg-num{border:1px solid #e2dbd0;background:#fff}.pg-ctl{font-weight:700;white-space:nowrap}.pg-ctl.is-off{color:#aaa;background:#f5f2ee}.pg-num.is-current{background:#18120e;color:#fff;border-color:#18120e;font-weight:800}.pg-gap{min-width:24px}.pg-status{flex:1;text-align:center;font-size:.8rem;color:#6b6157}`;
 
 function escapeHtml(value) {
     if (value == null) return '';
@@ -134,12 +183,13 @@ ${faviconHeadHtml()}
     });
 }
 
-function renderPage({ category, items, isPreview, hasParameters, navigationBase }) {
-    const canonical = `${BASE}/libros/${category.id}`;
-    const visibleItems = items.slice(0, MAX_RESULTS);
+function renderPage({ category, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages }) {
+    const canonical = `${BASE}${categoryPath(category.id, page)}`;
+    const offset = (page - 1) * MAX_RESULTS;
+    const visibleItems = items.slice(offset, offset + MAX_RESULTS);
     const itemList = visibleItems.slice(0, 20).map((item, index) => ({
         '@type': 'ListItem',
-        'position': index + 1,
+        'position': offset + index + 1,
         'url': `${BASE}/libro/${item.id}/${slugify(item.title)}`,
         'name': item.title,
     }));
@@ -166,34 +216,41 @@ function renderPage({ category, items, isPreview, hasParameters, navigationBase 
             { '@type': 'ListItem', 'position': 3, 'name': category.name, 'item': canonical },
         ],
     };
-    const resultText = `${items.length} libro${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'}`;
+    const rangeFrom = items.length === 0 ? 0 : offset + 1;
+    const rangeTo = offset + visibleItems.length;
+    const resultText = items.length === 0
+        ? 'Sin títulos disponibles'
+        : totalPages > 1
+            ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} libros disponibles`
+            : `${items.length} libro${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'}`;
     const cards = visibleItems.map((item, index) => cardHtml(item, index, navigationBase)).join('\n');
-    // Parámetros arbitrarios no crean variantes indexables de la landing.
-    // La URL limpia es la única que puede entrar al índice.
-    const robots = isPreview || hasParameters || items.length === 0
+    const robots = isPreview || hasUnexpectedParameters || items.length === 0
         ? 'noindex, follow'
         : 'index, follow';
+    const pageTitle = page > 1 ? `${category.title} — Página ${page}` : category.title;
+    const pageDescription = page > 1 ? `${category.description} Página ${page} de ${totalPages}.` : category.description;
+    const pagination = paginationHtml({ categoryId: category.id, page, totalPages });
 
     return `<!doctype html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(category.title)}</title>
-  <meta name="description" content="${escapeHtml(category.description)}">
+  <title>${escapeHtml(pageTitle)}</title>
+  <meta name="description" content="${escapeHtml(pageDescription)}">
   <meta name="robots" content="${robots}">
   <link rel="canonical" href="${canonical}">
   ${faviconHeadHtml()}
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_UY">
   <meta property="og:url" content="${canonical}">
-  <meta property="og:title" content="${escapeHtml(category.title)}">
-  <meta property="og:description" content="${escapeHtml(category.description)}">
+  <meta property="og:title" content="${escapeHtml(pageTitle)}">
+  <meta property="og:description" content="${escapeHtml(pageDescription)}">
   <meta property="og:image" content="${BASE}${BRAND.logo}">
   <script type="application/ld+json">${safeJson(collectionSchema)}</script>
   <script type="application/ld+json">${safeJson(breadcrumbSchema)}</script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.category-header{position:sticky;top:0;z-index:40;background:rgba(18,14,11,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{max-width:1200px;height:72px;margin:auto;padding:0 1rem;display:grid;grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:1rem}.brand-link{display:flex;align-items:center;gap:.55rem;text-decoration:none}.brand-link img{width:44px;height:44px}.brand-link span{display:flex;flex-direction:column}.brand-link strong{font-size:.92rem}.brand-link small{color:rgba(255,255,255,.55);font-size:.7rem}.header-search{height:42px;display:flex;max-width:620px;width:100%;justify-self:center}.header-search input{min-width:0;flex:1;border:0;border-radius:999px 0 0 999px;padding:0 1rem;font:inherit}.header-search button{border:0;border-radius:0 999px 999px 0;padding:0 1rem;background:#e49982;color:#18120e;font-weight:800;cursor:pointer}.cart-link{min-height:42px;display:inline-flex;align-items:center;padding:0 .9rem;border:1px solid rgba(255,255,255,.2);border-radius:999px;text-decoration:none;font-size:.82rem}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${FOOTER_STYLES}${WA_FLOAT_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.header-inner{height:auto;min-height:68px;grid-template-columns:1fr auto;padding:.55rem .8rem}.brand-link small,.cart-link{display:none}.header-search{grid-column:1/-1;grid-row:2;margin-bottom:.2rem}.category-header{position:relative}}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.category-header{position:sticky;top:0;z-index:40;background:rgba(18,14,11,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{max-width:1200px;height:72px;margin:auto;padding:0 1rem;display:grid;grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:1rem}.brand-link{display:flex;align-items:center;gap:.55rem;text-decoration:none}.brand-link img{width:44px;height:44px}.brand-link span{display:flex;flex-direction:column}.brand-link strong{font-size:.92rem}.brand-link small{color:rgba(255,255,255,.55);font-size:.7rem}.header-search{height:42px;display:flex;max-width:620px;width:100%;justify-self:center}.header-search input{min-width:0;flex:1;border:0;border-radius:999px 0 0 999px;padding:0 1rem;font:inherit}.header-search button{border:0;border-radius:0 999px 999px 0;padding:0 1rem;background:#e49982;color:#18120e;font-weight:800;cursor:pointer}.cart-link{min-height:42px;display:inline-flex;align-items:center;padding:0 .9rem;border:1px solid rgba(255,255,255,.2);border-radius:999px;text-decoration:none;font-size:.82rem}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${PAGINATION_STYLES}${FOOTER_STYLES}${WA_FLOAT_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.header-inner{height:auto;min-height:68px;grid-template-columns:1fr auto;padding:.55rem .8rem}.brand-link small,.cart-link{display:none}.header-search{grid-column:1/-1;grid-row:2;margin-bottom:.2rem}.category-header{position:relative}}
   </style>
 </head>
 <body>
@@ -205,8 +262,8 @@ ${headerHtml()}
     <p>${escapeHtml(category.intro)}</p>
     <div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>
   </section>
-  <div class="results-head"><h2>Libros disponibles</h2><p>${resultText}${items.length > MAX_RESULTS ? ` · mostrando ${MAX_RESULTS}` : ''}</p></div>
-  ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
+  <div class="results-head"><h2>Libros disponibles</h2><p>${resultText}</p></div>
+  ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
   ${categoryNavHtml(category.id)}
 </main>
 ${footerHtml()}
@@ -227,6 +284,19 @@ export async function onRequest(ctx) {
     if (!category) {
         return errorPage(404, 'Categoría no encontrada', 'La categoría que buscás no existe.');
     }
+
+    const requestUrl = new URL(ctx.request.url);
+    const pageParam = parsePageParam(requestUrl.searchParams.get('page'));
+    if (pageParam.present && (!pageParam.valid || pageParam.page === 1)) {
+        const clean = new URL(requestUrl);
+        clean.searchParams.delete('page');
+        return new Response(null, {
+            status: 301,
+            headers: { Location: `${clean.pathname}${clean.search}` },
+        });
+    }
+    const hasUnexpectedParameters = [...requestUrl.searchParams.keys()].some(key => key !== 'page')
+        || requestUrl.searchParams.getAll('page').length > 1;
 
     const [categoryData, activeIndex] = await Promise.all([
         fetchCategoryData(ctx),
@@ -249,18 +319,23 @@ export async function onRequest(ctx) {
         );
     }
 
-    const items = activeItems.filter(item =>
-        (categoryData.items[item.id] || [])[0] === category.id
-    );
+    const items = activeItems
+        .filter(item => (categoryData.items[item.id] || [])[0] === category.id)
+        .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    const totalPages = Math.max(1, Math.ceil(items.length / MAX_RESULTS));
+    if (pageParam.page > totalPages) {
+        return errorPage(404, 'Página no encontrada', 'La página de esta categoría que buscás no existe.');
+    }
     const isPreview = ctx.env?.APP_ENV === 'preview';
-    const navigationBase = isPreview ? new URL(ctx.request.url).origin : BASE;
-    const hasParameters = new URL(ctx.request.url).searchParams.size > 0;
+    const navigationBase = isPreview ? requestUrl.origin : BASE;
     const html = renderPage({
         category,
         items,
         isPreview,
-        hasParameters,
+        hasUnexpectedParameters,
         navigationBase,
+        page: pageParam.page,
+        totalPages,
     });
 
     return new Response(html, {
