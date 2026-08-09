@@ -63,7 +63,10 @@ const ROUTES = [
   { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex' },
   { path: '/carrito/', kind: 'cart' },
   { path: '/robots.txt', kind: 'robots' },
-  { path: '/sitemap.xml', kind: 'sitemap' },
+  { path: '/sitemap.xml', kind: 'sitemap-index' },
+  { path: '/sitemap-pages.xml', kind: 'sitemap-pages' },
+  { path: '/sitemap-categories.xml', kind: 'sitemap-categories' },
+  { path: '/sitemap-books-active.xml', kind: 'sitemap-books-active' },
   { path: '/api/health' },
   { path: '/api/status' },
 ];
@@ -223,6 +226,76 @@ function writeGitHubOutputs(attemptsUsed, result) {
   fs.appendFileSync(outputFile, `smoke_result=${result}\n`);
 }
 
+// ─── Sitemap validators ───────────────────────────────────────────────────────
+
+function sitemapLocs(body) {
+  return [...String(body || '').matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+}
+
+function analyzeSitemapBody(body, kind) {
+  if (typeof body !== 'string' || !body.startsWith('<?xml')) {
+    return { ok: false, reason: 'invalid XML declaration' };
+  }
+  if (/<(?:priority|changefreq|lastmod)>/i.test(body)) {
+    return { ok: false, reason: 'sitemap reintroduced priority/changefreq/lastmod' };
+  }
+
+  const locs = sitemapLocs(body);
+  const allOnCanonicalHost = locs.every(value => value.startsWith(BASE_URL + '/'));
+  if (!allOnCanonicalHost) return { ok: false, reason: 'sitemap contains non-canonical host/url' };
+
+  if (kind === 'sitemap-index') {
+    if (!body.includes('<sitemapindex ')) return { ok: false, reason: 'root sitemap is not a sitemapindex' };
+    const required = [
+      BASE_URL + '/sitemap-pages.xml',
+      BASE_URL + '/sitemap-categories.xml',
+      BASE_URL + '/sitemap-books-active.xml',
+    ];
+    for (const value of required) {
+      if (!locs.includes(value)) return { ok: false, reason: 'sitemap index missing ' + value };
+    }
+    if (locs.some(value => value.includes('paused'))) {
+      return { ok: false, reason: 'paused sitemap must not be in root index yet' };
+    }
+    if (locs.length !== required.length) {
+      return { ok: false, reason: 'sitemap index has unexpected segmentos' };
+    }
+    return { ok: true };
+  }
+
+  if (!body.includes('<urlset ')) return { ok: false, reason: kind + ' is not a urlset' };
+
+  if (kind === 'sitemap-pages') {
+    const requiredPaths = [
+      '/', '/catalogo', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
+      '/devoluciones', '/terminos', '/privacidad', '/contacto',
+    ];
+    for (const path of requiredPaths) {
+      const expected = BASE_URL + path;
+      if (!locs.includes(expected)) return { ok: false, reason: 'sitemap pages missing ' + path };
+    }
+    return { ok: true };
+  }
+
+  if (kind === 'sitemap-categories') {
+    if (locs.length === 0) return { ok: false, reason: 'category sitemap is empty' };
+    if (!locs.every(value => value.startsWith(BASE_URL + '/libros/'))) {
+      return { ok: false, reason: 'category sitemap contains non-category URL' };
+    }
+    return { ok: true };
+  }
+
+  if (kind === 'sitemap-books-active') {
+    if (locs.length === 0) return { ok: false, reason: 'active books sitemap is empty' };
+    if (!locs.every(value => value.startsWith(BASE_URL + '/libro/'))) {
+      return { ok: false, reason: 'active books sitemap contains non-product URL' };
+    }
+    return { ok: true };
+  }
+
+  return { ok: false, reason: 'unknown sitemap kind' };
+}
+
 // ─── Route validators ─────────────────────────────────────────────────────────
 
 async function checkRoute(path, checkoutExpectation) {
@@ -294,21 +367,15 @@ async function checkRoute(path, checkoutExpectation) {
     return { ok: true, path };
   }
 
-  // ── /sitemap.xml ─────────────────────────────────────────────────────────
-  if (path === '/sitemap.xml') {
-    if (status !== 200) return { ok: false, path, reason: `HTTP ${status} (expected 200)` };
+  // ── Sitemaps ──────────────────────────────────────────────────────────────
+  if (route && route.kind && route.kind.startsWith('sitemap-')) {
+    if (status !== 200) return { ok: false, path, reason: 'HTTP ' + status + ' (expected 200)' };
     if (!hasContentType(resp.headers, 'application/xml')) {
-      return { ok: false, path, reason: `Content-Type not XML (got: ${resp.headers.get('content-type') || 'none'})` };
+      return { ok: false, path, reason: 'Content-Type not XML (got: ' + (resp.headers.get('content-type') || 'none') + ')' };
     }
     const body = await resp.text();
-    if (!body.startsWith('<?xml') || !body.includes('<urlset ') || !body.includes(`<loc>${BASE_URL}/</loc>`)) {
-      return { ok: false, path, reason: 'invalid sitemap XML body' };
-    }
-    for (const requiredPage of ['politicas', 'envios', 'devoluciones', 'terminos', 'privacidad', 'contacto']) {
-      if (!body.includes(`<loc>${BASE_URL}/${requiredPage}</loc>`)) {
-        return { ok: false, path, reason: `sitemap missing /${requiredPage}` };
-      }
-    }
+    const analysis = analyzeSitemapBody(body, route.kind);
+    if (!analysis.ok) return { ok: false, path, reason: analysis.reason };
     return { ok: true, path };
   }
 
@@ -443,6 +510,7 @@ async function main() {
 // directamente (node scripts/smoke-production.js).
 module.exports = {
   analyzeCartCheckoutState,
+  analyzeSitemapBody,
   resolveCheckoutExpectation,
   hasRenderedElementWithId,
   VALID_CHECKOUT_EXPECTATIONS,
