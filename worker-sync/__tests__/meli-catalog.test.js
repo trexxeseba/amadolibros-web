@@ -43,6 +43,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
         body: {
           id: 'MLU1', title: 'Disponible', price: 1000, status: 'active',
           available_quantity: 2, attributes: [], pictures: [],
+          catalog_listing: false, catalog_product_id: 'MLU-P1',
         },
       },
       {
@@ -62,8 +63,12 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     assert.equal(catalog.active_total, 1);
     assert.equal(catalog.order_total, 1);
     assert.deepEqual(catalog.items.map(item => item.status), ['active', 'paused']);
+    assert.equal(catalog.items[0].catalog_listing, false);
+    assert.equal(catalog.items[0].catalog_product_id, 'MLU-P1');
     assert.ok(urls.some(url => url.includes('status=active')));
     assert.ok(urls.some(url => url.includes('status=paused')));
+    assert.ok(urls.some(url => url.includes('catalog_listing')));
+    assert.ok(urls.some(url => url.includes('catalog_product_id')));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -367,6 +372,24 @@ test('slimItem conserva la publicación cuando descarta sus medidas inválidas',
   assert.equal(item.dimensions, null);
   assert.equal(quality.omitted_dimension_fields, 1);
   assert.equal(quality.omitted_weight_fields, 1);
+});
+
+test('slimItem conserva identidad de catálogo ML sin inventar señales ausentes', () => {
+  const catalogListing = slimItem({
+    id: 'MLU10',
+    catalog_listing: true,
+    catalog_product_id: '  MLU-P123  ',
+  });
+  assert.equal(catalogListing.catalog_listing, true);
+  assert.equal(catalogListing.catalog_product_id, 'MLU-P123');
+
+  const traditional = slimItem({ id: 'MLU11', catalog_listing: false });
+  assert.equal(traditional.catalog_listing, false);
+  assert.equal(traditional.catalog_product_id, null);
+
+  const unknown = slimItem({ id: 'MLU12', catalog_listing: 'false', catalog_product_id: '' });
+  assert.equal(unknown.catalog_listing, null);
+  assert.equal(unknown.catalog_product_id, null);
 });
 
 // ── CF-R2-2-BRIDGE: publicación productiva del catálogo pausado ─────────────
