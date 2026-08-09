@@ -15,7 +15,8 @@
  *     updated_at: ISO string,
  *     items: [{
  *       id, title, author, price, status, available_quantity,
- *       thumbnail, pictures, permalink, start_time
+ *       thumbnail, pictures, permalink, start_time,
+ *       catalog_listing, catalog_product_id
  *     }]
  *   }
  *
@@ -30,7 +31,7 @@ const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
 const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
-  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition';
+  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,catalog_listing,catalog_product_id';
 
 export const ML_MAX_RETRIES = 6;
 export const ML_BASE_BACKOFF_MS = 1000;
@@ -202,7 +203,7 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
 /**
  * Devuelve solo los campos que consumen los SSR de Pages (catalogo.js,
  * libro/[[path]].js, sitemap.xml.js, feed.xml.js, /api/catalog).
- * Versión enriquecida: incluye pictures[], isbn, publisher, pages, dimensions, condition.
+ * Versión enriquecida: incluye pictures[], ISBN, datos bibliográficos e identidad de catálogo ML.
  */
 export function slimItem(raw, dataQuality = createDataQualitySummary()) {
   const attrs = raw.attributes || [];
@@ -218,6 +219,10 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     pictures:           normalizePictures(raw.pictures),
     permalink:          raw.permalink    || null,
     start_time:         raw.start_time   || null,
+    catalog_listing:    typeof raw.catalog_listing === 'boolean' ? raw.catalog_listing : null,
+    catalog_product_id: typeof raw.catalog_product_id === 'string' && raw.catalog_product_id.trim()
+      ? raw.catalog_product_id.trim()
+      : null,
     isbn:               extractIsbn(attrs),
     publisher:          extractPublisher(attrs),
     pages:              extractPages(attrs),
