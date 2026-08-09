@@ -57,12 +57,13 @@ test('2. Cuotas visibles, con el texto aprobado, entre precio y transferencia', 
     assert.ok(installmentIdx < transferIdx, 'las cuotas deben ir antes que la transferencia');
 });
 
-test('3. Precio principal usa una clase visualmente más fuerte que transferencia', () => {
+test('3. Precio web sigue visible y transferencia destaca el ahorro', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
     assert.match(html, /class="price-main"/);
     assert.match(html, /class="price-transfer"/);
     assert.match(html, /\.price-main\{font-size:1\.35rem;font-weight:800/);
-    assert.match(html, /\.price-transfer\{font-size:\.85rem;font-weight:600/);
+    assert.match(html, /\.price-transfer\{display:flex;[^}]*font-size:1rem;font-weight:700/s);
+    assert.match(html, /\.discount-badge\{display:inline-flex;[^}]*font-weight:900/s);
 });
 
 test('4. Orden de botones: Agregar al carrito → WhatsApp → Mercado Libre (dentro del bloque .cta, no de la hoja de estilos)', () => {
@@ -102,7 +103,7 @@ test('7. El enlace de Mercado Libre sigue siendo válido (permalink real, escapa
 test('8. Ficha con Mercado Libre: los tres botones están presentes', () => {
     const html = renderPage(book({ permalink: 'https://articulo.mercadolibre.com.uy/MLU-1' }), 'un-libro', false, '');
     assert.match(html, /data-action="add-to-cart"/);
-    assert.match(html, /class="btn btn-wa"/);
+    assert.match(html, /class="btn btn-wa btn-secondary"/);
     assert.match(html, /class="btn btn-ml"/);
 });
 
