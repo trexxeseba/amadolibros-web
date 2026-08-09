@@ -13,13 +13,16 @@ test('wrangler usa sólo el bucket Preview y no declara cron ni routes', () => {
   assert.doesNotMatch(wrangler, /\[triggers\]|crons\s*=|routes?\s*=/);
 });
 
-test('deploy es manual y queda bloqueado a la rama exacta del piloto', () => {
+test('deploy automático y manual queda bloqueado a la rama exacta del piloto', () => {
   assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /push:\n\s+branches:\n\s+- agent\/cover-r2-pilot-20/);
   assert.match(workflow, /refs\/heads\/agent\/cover-r2-pilot-20/);
-  assert.doesNotMatch(workflow, /^\s*push:/m);
   assert.doesNotMatch(workflow, /refs\/heads\/main|branches:\s*\[?main/);
   assert.match(workflow, /COVER_PILOT_SECRET/);
   assert.match(workflow, /environment:\n\s+name: preview/);
+  assert.match(workflow, /r2 bucket create amadolibros-images-preview/);
+  assert.match(workflow, /openssl rand -hex 32/);
+  assert.match(workflow, /attempted!==20\|\|r\.failed!==0/);
 });
 
 test('CI compartido incluye sintaxis y tests del piloto', () => {

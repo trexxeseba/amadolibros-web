@@ -72,3 +72,11 @@ recalcularse con el consumo real de toda la cuenta antes de ampliar el piloto.
 El HTTP 200 indica que todas las entradas terminaron sin error; HTTP 207
 indica resultado mixto. Cada resultado informa `imported`, `revalidated`,
 `not-modified`, `fresh-skip` o `failed`.
+
+## Despliegue del piloto
+
+El workflow se dispara únicamente al actualizar `agent/cover-r2-pilot-20` o
+manualmente desde esa misma rama. Comprueba el bucket Preview, genera un secret
+aleatorio de una sola ejecución, lo enmascara, despliega el Worker, selecciona
+20 portadas reales del catálogo público y exige `20/20` importaciones válidas.
+No declara ningún trigger sobre `main`.
