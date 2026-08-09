@@ -24,10 +24,11 @@ function validDimension(value) {
 }
 
 function imageCount(item) {
-  const values = [];
-  if (Array.isArray(item?.pictures)) values.push(...item.pictures);
-  if (item?.thumbnail) values.push(item.thumbnail);
-  return new Set(values.filter(nonEmpty)).size;
+  const pictures = Array.isArray(item?.pictures)
+    ? [...new Set(item.pictures.filter(nonEmpty))]
+    : [];
+  if (pictures.length > 0) return pictures.length;
+  return nonEmpty(item?.thumbnail) ? 1 : 0;
 }
 
 function pct(count, total) {
