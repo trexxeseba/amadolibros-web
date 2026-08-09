@@ -1,0 +1,41 @@
+name: SEO sitemap stale-test one-shot
+
+on:
+  push:
+    branches:
+      - agent/seo-sitemap-architecture-4
+    paths:
+      - '.github/workflows/seo-sitemap-test-update.yml'
+      - 'scripts/seo/update-sitemap-category-test.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  update-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-sitemap-architecture-4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Update stale sitemap assertion
+        run: node scripts/seo/update-sitemap-category-test.mjs
+
+      - name: Validate sitemap tests
+        run: |
+          node --test functions/__tests__/seo-category-pages.test.js functions/__tests__/sitemap-segmentation.test.js
+          git diff --check
+
+      - name: Commit updated test
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add functions/__tests__/seo-category-pages.test.js
+          git commit -m 'SEO sitemap: align category regression test'
+          git push origin HEAD:agent/seo-sitemap-architecture-4
