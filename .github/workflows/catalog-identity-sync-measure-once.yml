@@ -18,9 +18,6 @@ jobs:
   sync-and-measure:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    environment:
-      name: production
-
     steps:
       - name: Trigger full catalog sync with deployed Worker
         env:
@@ -28,8 +25,8 @@ jobs:
           WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
         run: |
           set -euo pipefail
-          if [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
-            echo "ERROR: WORKER_SYNC_TRIGGER_URL no está configurada."
+          if [ -z "$WORKER_SYNC_TRIGGER_URL" ] || [ -z "$SYNC_SECRET" ]; then
+            echo "ERROR: URL o secreto no disponibles fuera del entorno production; no se ejecutó el trigger."
             exit 1
           fi
           if [[ "$WORKER_SYNC_TRIGGER_URL" == *\?* ]]; then
