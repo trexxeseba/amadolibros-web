@@ -52,6 +52,7 @@ import {
     recordPerf,
     serverTimingValue,
 } from './_shared/perf.js';
+import { previewCoverUrl } from './_shared/preview-cover.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
@@ -555,10 +556,25 @@ export async function onRequest(ctx) {
     const rangeFrom = totalResults === 0 ? 0 : offset + 1;
     const rangeTo   = offset + limited.length;
 
+    // COVER-R2-PREVIEW-UI-1: una sola lectura memoizada del manifest por
+    // request. Con catálogo completo exigimos coincidencia de la URL origen;
+    // el índice compacto no conserva pictures[] y pasa null explícitamente.
+    const previewCovers = ctx.env?.APP_ENV === 'preview'
+        ? await Promise.all(limited.map(b => {
+            const hasFullPictures = Array.isArray(b.pictures);
+            const source = hasFullPictures
+                ? httpsImg(b.pictures[0] || b.thumbnail || '')
+                : null;
+            return previewCoverUrl(ctx, b.id, 0, source);
+        }))
+        : Array(limited.length).fill(null);
+
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
         const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
-        const img   = escapeHtml(httpsImg(b.pictures?.[0] || b.thumbnail || ''));
+        const img   = escapeHtml(
+            previewCovers[idx] || httpsImg(b.pictures?.[0] || b.thumbnail || '')
+        );
         const title = escapeHtml(b.title);
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`

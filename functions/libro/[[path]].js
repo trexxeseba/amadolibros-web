@@ -15,6 +15,7 @@
 
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 // GLOBAL-SHELL-1: shell global compartido con Astro (marca, favicon, footer
 // y burbuja de WhatsApp). Ver functions/_shared/brand.js.
 import {
@@ -46,7 +47,7 @@ function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
 }
 
-function normalizeImages(item) {
+function normalizeImages(item, previewCoverSrc = '') {
     const urls = [];
 
     if (Array.isArray(item.pictures)) {
@@ -57,7 +58,9 @@ function normalizeImages(item) {
 
     if (item.thumbnail) urls.push(item.thumbnail);
 
-    return [...new Set(urls.map(httpsImg).filter(Boolean))].slice(0, 6);
+    const normalized = [...new Set(urls.map(httpsImg).filter(Boolean))].slice(0, 6);
+    if (previewCoverSrc && normalized.length > 0) normalized[0] = previewCoverSrc;
+    return normalized;
 }
 
 function formatCondition(condition) {
@@ -237,11 +240,11 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-export function renderPage(item, slug, isPreview, waitlistSiteKey) {
+export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '') {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
-    const images       = normalizeImages(item);
+    const images       = normalizeImages(item, previewCoverSrc);
     const img          = images[0] || '';
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
@@ -758,7 +761,12 @@ export async function onRequest(context) {
         ? context.env.STOCK_WAITLIST_TURNSTILE_SITE_KEY.trim()
         : '';
 
-    return new Response(renderPage(item, slug, isPreview, waitlistSiteKey), {
+    const originalImages = normalizeImages(item);
+    const previewCoverSrc = isPreview && originalImages[0]
+        ? await resolvePreviewCoverUrl(context, item.id, 0, originalImages[0])
+        : null;
+
+    return new Response(renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || ''), {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',
