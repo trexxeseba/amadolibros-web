@@ -104,3 +104,23 @@ test('umbrales quedan congelados y explícitos', () => {
     weightPct: 35,
   });
 });
+
+
+test('catalog_product_id aporta evidencia sin cambiar la decisión por sí solo', () => {
+  const result = classifyStrictDuplicateItems([
+    item({ id: 'MLU1', catalog_listing: false, catalog_product_id: 'MLU-P1' }),
+    item({ id: 'MLU2', catalog_listing: true, catalog_product_id: 'MLU-P1' }),
+  ]);
+  assert.equal(result.decision, 'green_candidate');
+  assert.equal(result.evidence.catalogIdentity.sameCatalogProduct, true);
+  assert.equal(result.evidence.catalogIdentity.mixedTraditionalCatalog, true);
+});
+
+test('señal de catálogo ausente queda como evidencia incompleta, no como inferencia', () => {
+  const result = classifyStrictDuplicateItems([
+    item({ id: 'MLU1' }),
+    item({ id: 'MLU2' }),
+  ]);
+  assert.equal(result.evidence.catalogIdentity.completeProductIds, false);
+  assert.equal(result.evidence.catalogIdentity.mixedTraditionalCatalog, false);
+});

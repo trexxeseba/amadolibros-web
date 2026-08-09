@@ -100,12 +100,32 @@ function dimensionEvidence(items) {
   };
 }
 
+function catalogIdentityEvidence(items) {
+  const productIds = items.map((item) => item.catalog_product_id ? String(item.catalog_product_id) : null);
+  const listingFlags = items.map((item) => item.catalog_listing === true ? true : item.catalog_listing === false ? false : null);
+  const distinctProductIds = [...new Set(productIds.filter(Boolean))].sort();
+  const completeProductIds = productIds.every(Boolean);
+  const completeListingFlags = listingFlags.every((value) => value !== null);
+  const hasCatalog = listingFlags.includes(true);
+  const hasTraditional = listingFlags.includes(false);
+  return {
+    productIds,
+    listingFlags,
+    distinctProductIds,
+    completeProductIds,
+    completeListingFlags,
+    sameCatalogProduct: completeProductIds && distinctProductIds.length === 1,
+    mixedTraditionalCatalog: completeListingFlags && hasCatalog && hasTraditional,
+  };
+}
+
 export function classifyStrictDuplicateItems(items) {
   const conditions = items.map((item) => normalizeCondition(item.condition));
   const conditionValues = [...new Set(conditions.filter(Boolean))].sort();
   const conditionComplete = conditions.every(Boolean);
   const prices = priceEvidence(items);
   const dimensions = dimensionEvidence(items);
+  const catalogIdentity = catalogIdentityEvidence(items);
 
   const reasons = [];
   let decision = 'green_candidate';
@@ -134,6 +154,7 @@ export function classifyStrictDuplicateItems(items) {
       },
       prices,
       dimensions,
+      catalogIdentity,
     },
   };
 }
@@ -148,6 +169,8 @@ export function enrichStrictDuplicateGroup(group, itemById) {
       dimensions: source.dimensions && typeof source.dimensions === 'object'
         ? source.dimensions
         : null,
+      catalog_listing: typeof source.catalog_listing === 'boolean' ? source.catalog_listing : null,
+      catalog_product_id: source.catalog_product_id || null,
     };
   });
 
