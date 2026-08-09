@@ -187,12 +187,31 @@ export function summarizeStrictReview(groups) {
   return groups.reduce((summary, group) => {
     summary.total++;
     summary[group.decision]++;
+    const catalog = group.evidence?.catalogIdentity;
+    if (catalog?.completeProductIds) summary.catalogIdentity.completeProductIdsGroups++;
+    if (catalog?.completeListingFlags) summary.catalogIdentity.completeListingFlagsGroups++;
+    if (catalog?.sameCatalogProduct) summary.catalogIdentity.sameCatalogProductGroups++;
+    if (catalog?.mixedTraditionalCatalog) summary.catalogIdentity.mixedTraditionalCatalogGroups++;
+    if (catalog?.mixedTraditionalCatalog && catalog?.sameCatalogProduct) {
+      summary.catalogIdentity.mixedTraditionalCatalogSameProductGroups++;
+    }
+    if (!catalog?.completeProductIds || !catalog?.completeListingFlags) {
+      summary.catalogIdentity.incompleteSignalGroups++;
+    }
     return summary;
   }, {
     total: 0,
     green_candidate: 0,
     review: 0,
     no_consolidate: 0,
+    catalogIdentity: {
+      completeProductIdsGroups: 0,
+      completeListingFlagsGroups: 0,
+      sameCatalogProductGroups: 0,
+      mixedTraditionalCatalogGroups: 0,
+      mixedTraditionalCatalogSameProductGroups: 0,
+      incompleteSignalGroups: 0,
+    },
   });
 }
 
