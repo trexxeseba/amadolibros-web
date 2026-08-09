@@ -1,0 +1,55 @@
+name: SEO structured data policy one-shot
+
+on:
+  push:
+    branches:
+      - agent/seo-structured-data-return-policy-1
+    paths:
+      - '.github/workflows/seo-structured-data-policy-apply.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-structured-data-return-policy-1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Add real merchant return policy link
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('functions/libro/[[path]].js')
+          s=p.read_text()
+          old="""            'availability': 'https://schema.org/InStock',
+            'seller': { '@type': 'Organization', 'name': 'Amado Libros' },
+        };"""
+          new="""            'availability': 'https://schema.org/InStock',
+            'seller': { '@type': 'Organization', 'name': 'Amado Libros', 'url': BASE },
+            'hasMerchantReturnPolicy': {
+                '@type': 'MerchantReturnPolicy',
+                'merchantReturnLink': `${BASE}/devoluciones`,
+            },
+        };"""
+          if s.count(old) != 1:
+              raise SystemExit(f'expected one Offer block, got {s.count(old)}')
+          p.write_text(s.replace(old,new))
+          PY
+          node --check 'functions/libro/[[path]].js'
+          node --test functions/__tests__/product-structured-data-policy.test.js
+          git diff --check
+      - name: Commit implementation and clean helper
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'functions/libro/[[path]].js' functions/__tests__/product-structured-data-policy.test.js
+          git commit -m 'SEO-STRUCTURED-DATA-9: link real merchant return policy'
+          git rm .github/workflows/seo-structured-data-policy-apply.yml
+          git commit -m 'SEO structured data: remove temporary policy helper'
+          git push origin HEAD:agent/seo-structured-data-return-policy-1
