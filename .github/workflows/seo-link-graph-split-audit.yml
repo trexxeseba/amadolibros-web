@@ -1,0 +1,43 @@
+name: SEO link graph split audit
+
+on:
+  push:
+    branches:
+      - agent/seo-link-graph-universe-split-1
+    paths:
+      - '.github/workflows/seo-link-graph-split-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-link-graph-universe-split-1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Syntax check
+        run: node --check scripts/seo/link-graph-audit.mjs
+      - name: Measure production graph
+        env:
+          SEO_OUTPUT_DATE: '2026-08-09-post-c1-split'
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: |
+          node scripts/seo/link-graph-audit.mjs
+          node - <<'NODE'
+          const fs = require('fs');
+          const p='artifacts/seo/link-graph-audit-2026-08-09-post-c1-split.json';
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          console.log('ACTIVE_COVERAGE=' + JSON.stringify(r.activeCoverage));
+          console.log('TOTAL_LINKED_UNIVERSE=' + JSON.stringify(r.totalLinkedUniverse));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seo-link-graph-post-c1-split
+          path: artifacts/seo/
+          retention-days: 30
