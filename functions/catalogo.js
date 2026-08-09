@@ -37,6 +37,7 @@
  */
 
 import { slugify } from './_shared/slug.js';
+import { conditionalResponse } from './_shared/http-conditional.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import {
@@ -796,7 +797,8 @@ export async function onRequest(ctx) {
         total_ms: totalDuration,
     })));
 
-    return new Response(html, {
+    return conditionalResponse(ctx.request, html, {
+        enable: isIndex,
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': isIndex ? 'public, max-age=3600' : 'public, max-age=300',
