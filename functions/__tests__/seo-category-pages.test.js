@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { onRequest as categoryRequest } from '../libros/[[path]].js';
-import { onRequest as sitemapRequest } from '../sitemap.xml.js';
+import { onRequest as categorySitemapRequest } from '../sitemap-categories.xml.js';
 import {
     CATALOG_URL,
     PAUSED_MANIFEST_URL,
@@ -142,9 +142,9 @@ test('la portada enlaza las ocho landings limpias y no filtros con parámetros',
     }
 });
 
-test('el sitemap publica las ocho landings SEO', async () => {
-    const response = await sitemapRequest({
-        request: new Request('https://www.amadolibros.com/sitemap.xml'),
+test('el sitemap de categorías publica las ocho landings SEO', async () => {
+    const response = await categorySitemapRequest({
+        request: new Request('https://www.amadolibros.com/sitemap-categories.xml'),
         env: { APP_ENV: 'production' },
         data: {},
         waitUntil() {},
