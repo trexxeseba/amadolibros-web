@@ -8,33 +8,37 @@ source = source.replace(
   "import { onRequest as categorySitemapRequest } from '../sitemap-categories.xml.js';",
 );
 
-const oldBlock = `test('el sitemap publica las ocho landings SEO', async () => {
-    const response = await sitemapRequest({
-        request: new Request('https://www.amadolibros.com/sitemap.xml'),
-        env: { APP_ENV: 'production' },
-        data: {},
-        waitUntil() {},
-    });
-    const xml = await response.text();
+const oldBlock = [
+  "test('el sitemap publica las ocho landings SEO', async () => {",
+  '    const response = await sitemapRequest({',
+  "        request: new Request('https://www.amadolibros.com/sitemap.xml'),",
+  "        env: { APP_ENV: 'production' },",
+  '        data: {},',
+  '        waitUntil() {},',
+  '    });',
+  '    const xml = await response.text();',
+  '',
+  '    for (const category of SEO_CATEGORIES) {',
+  '        assert.ok(xml.includes(`<loc>https://www.amadolibros.com/libros/${category.id}</loc>`), category.id);',
+  '    }',
+  '});',
+].join('\n');
 
-    for (const category of SEO_CATEGORIES) {
-        assert.ok(xml.includes(\`<loc>https://www.amadolibros.com/libros/${category.id}</loc>\`), category.id);
-    }
-});`;
-
-const newBlock = `test('el sitemap de categorías publica las ocho landings SEO', async () => {
-    const response = await categorySitemapRequest({
-        request: new Request('https://www.amadolibros.com/sitemap-categories.xml'),
-        env: { APP_ENV: 'production' },
-        data: {},
-        waitUntil() {},
-    });
-    const xml = await response.text();
-
-    for (const category of SEO_CATEGORIES) {
-        assert.ok(xml.includes(\`<loc>https://www.amadolibros.com/libros/${category.id}</loc>\`), category.id);
-    }
-});`;
+const newBlock = [
+  "test('el sitemap de categorías publica las ocho landings SEO', async () => {",
+  '    const response = await categorySitemapRequest({',
+  "        request: new Request('https://www.amadolibros.com/sitemap-categories.xml'),",
+  "        env: { APP_ENV: 'production' },",
+  '        data: {},',
+  '        waitUntil() {},',
+  '    });',
+  '    const xml = await response.text();',
+  '',
+  '    for (const category of SEO_CATEGORIES) {',
+  '        assert.ok(xml.includes(`<loc>https://www.amadolibros.com/libros/${category.id}</loc>`), category.id);',
+  '    }',
+  '});',
+].join('\n');
 
 if (!source.includes(oldBlock)) {
   throw new Error('No se encontró el test antiguo de categorías en sitemap.xml.');
