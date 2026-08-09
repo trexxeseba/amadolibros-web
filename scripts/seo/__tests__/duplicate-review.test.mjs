@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   classifyStrictDuplicateItems,
   DUPLICATE_REVIEW_THRESHOLDS,
+  summarizeStrictReview,
 } from '../duplicate-review.mjs';
 
 function item(overrides = {}) {
@@ -123,4 +124,30 @@ test('señal de catálogo ausente queda como evidencia incompleta, no como infer
   ]);
   assert.equal(result.evidence.catalogIdentity.completeProductIds, false);
   assert.equal(result.evidence.catalogIdentity.mixedTraditionalCatalog, false);
+});
+
+test('el resumen cuantifica identidad de catálogo sin revisar grupos a mano', () => {
+  const groups = [
+    { decision: 'green_candidate', ...classifyStrictDuplicateItems([
+      item({ id: 'MLU1', catalog_listing: false, catalog_product_id: 'MLU-P1' }),
+      item({ id: 'MLU2', catalog_listing: true, catalog_product_id: 'MLU-P1' }),
+    ]) },
+    { decision: 'review', ...classifyStrictDuplicateItems([
+      item({ id: 'MLU3', catalog_listing: true, catalog_product_id: 'MLU-P2' }),
+      item({ id: 'MLU4', catalog_listing: true, catalog_product_id: 'MLU-P3' }),
+    ]) },
+    { decision: 'review', ...classifyStrictDuplicateItems([
+      item({ id: 'MLU5' }),
+      item({ id: 'MLU6' }),
+    ]) },
+  ];
+
+  assert.deepEqual(summarizeStrictReview(groups).catalogIdentity, {
+    completeProductIdsGroups: 2,
+    completeListingFlagsGroups: 2,
+    sameCatalogProductGroups: 1,
+    mixedTraditionalCatalogGroups: 1,
+    mixedTraditionalCatalogSameProductGroups: 1,
+    incompleteSignalGroups: 1,
+  });
 });
