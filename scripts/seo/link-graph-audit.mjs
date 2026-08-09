@@ -148,12 +148,20 @@ async function main() {
     });
   }
 
+  // Métrica histórica y comparable contra el baseline del 8/8:
+  // sólo fichas activas presentes en sitemap-books-active.xml.
   const linkedInSitemap = [...linkedBookIds].filter((id) => sitemapById.has(id));
   const orphanIds = [...sitemapById.keys()].filter((id) => !linkedBookIds.has(id)).sort();
   const total = sitemapById.size;
   const linked = linkedInSitemap.length;
   const orphaned = orphanIds.length;
   const linkedPercent = total ? Number(((linked / total) * 100).toFixed(2)) : 0;
+
+  // Segundo universo: todas las fichas /libro/ enlazadas que el crawler vio,
+  // incluidas pausadas/noindex. No se usa como denominador SEO porque no existe
+  // un sitemap de pausadas activo; sirve para medir descubrimiento bruto.
+  const totalLinkedBooks = linkedBookIds.size;
+  const linkedNonSitemapBooks = totalLinkedBooks - linked;
 
   const report = {
     schemaVersion: 1,
@@ -165,10 +173,25 @@ async function main() {
     pagesFetched: pages.length,
     pages,
     totals: {
+      // Backward-compatible names: these remain ACTIVE-only.
       sitemapBooks: total,
       linkedBooks: linked,
       orphanBooks: orphaned,
       linkedPercent,
+      // Additive fields for the full linked universe.
+      totalLinkedBooks,
+      linkedNonSitemapBooks,
+    },
+    activeCoverage: {
+      activeSitemapBooks: total,
+      activeLinkedBooks: linked,
+      activeOrphanBooks: orphaned,
+      activeLinkedPercent: linkedPercent,
+    },
+    totalLinkedUniverse: {
+      totalLinkedBooks,
+      linkedActiveBooks: linked,
+      linkedNonSitemapBooks,
     },
     orphanBookIds: orphanIds,
   };
