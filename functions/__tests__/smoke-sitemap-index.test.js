@@ -1,0 +1,66 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { analyzeSitemapBody } = require('../../scripts/smoke-production.js');
+
+const BASE = 'https://www.amadolibros.com';
+const xml = body => `<?xml version="1.0" encoding="UTF-8"?>\n${body}`;
+const loc = value => `<loc>${value}</loc>`;
+
+test('acepta el sitemap index segmentado de producción', () => {
+  const body = xml(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <sitemap>${loc(`${BASE}/sitemap-pages.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-categories.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-books-active.xml`)}</sitemap>
+  </sitemapindex>`);
+  assert.deepEqual(analyzeSitemapBody(body, 'sitemap-index'), { ok: true });
+});
+
+test('rechaza el sitemap raíz legacy tipo urlset', () => {
+  const body = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${loc(`${BASE}/`)}</urlset>`);
+  const result = analyzeSitemapBody(body, 'sitemap-index');
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /sitemapindex/);
+});
+
+test('el índice no admite pausados ni segmentos inesperados', () => {
+  const body = xml(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <sitemap>${loc(`${BASE}/sitemap-pages.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-categories.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-books-active.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-books-paused.xml`)}</sitemap>
+  </sitemapindex>`);
+  const result = analyzeSitemapBody(body, 'sitemap-index');
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /segmentos|paused/);
+});
+
+test('pages exige todas las páginas estáticas relevantes', () => {
+  const pages = [
+    '/', '/catalogo', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
+    '/devoluciones', '/terminos', '/privacidad', '/contacto',
+  ];
+  const valid = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${pages.map(path => `<url>${loc(`${BASE}${path}`)}</url>`).join('')}</urlset>`);
+  assert.deepEqual(analyzeSitemapBody(valid, 'sitemap-pages'), { ok: true });
+
+  const missing = valid.replace(`<url>${loc(`${BASE}/privacidad`)}</url>`, '');
+  const result = analyzeSitemapBody(missing, 'sitemap-pages');
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /privacidad/);
+});
+
+test('categorías y libros activos deben ser urlsets no vacíos y del espacio correcto', () => {
+  const categories = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libros/literatura`)}</url></urlset>`);
+  const books = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libro/MLU1/libro-uno`)}</url></urlset>`);
+  assert.deepEqual(analyzeSitemapBody(categories, 'sitemap-categories'), { ok: true });
+  assert.deepEqual(analyzeSitemapBody(books, 'sitemap-books-active'), { ok: true });
+});
+
+test('rechaza señales SEO ficticias reintroducidas en sitemaps', () => {
+  const body = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libros/literatura`)}<priority>1.0</priority></url></urlset>`);
+  const result = analyzeSitemapBody(body, 'sitemap-categories');
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /priority|changefreq|lastmod/);
+});
