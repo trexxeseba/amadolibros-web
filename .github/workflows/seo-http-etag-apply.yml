@@ -1,0 +1,43 @@
+name: SEO HTTP ETag 304 apply one-shot
+
+on:
+  push:
+    branches:
+      - agent/seo-http-etag-304-1
+    paths:
+      - '.github/workflows/seo-http-etag-apply.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-test-clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-http-etag-304-1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Apply SSR patch
+        run: node scripts/seo/apply-etag-304.mjs
+      - name: Validate targeted behavior
+        run: |
+          node --check functions/_shared/http-conditional.js
+          node --check functions/_shared/sitemap.js
+          node --check 'functions/libro/[[path]].js'
+          node --check functions/catalogo.js
+          node --check 'functions/libros/[[path]].js'
+          node --test functions/__tests__/http-conditional.test.js functions/__tests__/sitemap-segments.test.js functions/__tests__/catalogo-paginacion.test.js functions/__tests__/seo-category-pagination.test.js
+          git diff --check
+      - name: Commit implementation and clean helpers
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add functions/_shared/http-conditional.js functions/_shared/sitemap.js functions/sitemap.xml.js functions/sitemap-pages.xml.js functions/sitemap-categories.xml.js functions/sitemap-books-active.xml.js functions/sitemap-books-paused.xml.js 'functions/libro/[[path]].js' functions/catalogo.js 'functions/libros/[[path]].js' functions/__tests__/http-conditional.test.js
+          git commit -m 'SEO-HTTP-EFFICIENCY-10: add representation ETag and 304'
+          git rm .github/workflows/seo-http-etag-apply.yml scripts/seo/apply-etag-304.mjs
+          git commit -m 'SEO HTTP: remove temporary ETag helpers'
+          git push origin HEAD:agent/seo-http-etag-304-1
