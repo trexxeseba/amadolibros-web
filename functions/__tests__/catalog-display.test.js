@@ -265,24 +265,21 @@ test('la ficha sin slug redirige dentro del mismo Preview', async () => {
   assert.equal(response.headers.get('location'), 'https://preview.example/libro/MLU2/alpha-raro');
 });
 
-test('CF-R2-2B: una URL histórica con slug viejo resuelve por ID, nunca 404, y el canonical apunta al slug actual', async () => {
-  // Simula el caso que preocupa: el título cambió (o el libro pasó de
-  // activo a pausado) después de que la URL vieja quedara indexada/guardada
-  // en algún lado. El slug del path ("titulo-historico-que-ya-no-existe")
-  // no coincide con el título actual del ítem — la ficha debe resolver
-  // igual por ID, nunca 404 solo por eso.
+test('CF-R2-2B: una URL histórica con slug viejo resuelve por ID y redirige al slug canónico actual', async () => {
+  // Si el título cambió después de que una URL histórica quedara indexada,
+  // la entidad sigue resolviéndose por MLU. La variante vieja no da 404 ni
+  // sirve un 200 duplicado: consolida en un solo salto a la URL canónica.
   const response = await bookRequest(
     context('https://www.amadolibros.com/libro/MLU2/titulo-historico-que-ya-no-existe', {
       path: ['MLU2', 'titulo-historico-que-ya-no-existe'],
     })
   );
 
-  assert.equal(response.status, 200);
-  const html = await response.text();
-  assert.match(html, new RegExp(
-    `<link rel="canonical" href="https://www\\.amadolibros\\.com/libro/MLU2/alpha-raro">`
-  ));
-  assert.match(html, /Alpha raro/);
+  assert.equal(response.status, 301);
+  assert.equal(
+    response.headers.get('location'),
+    'https://www.amadolibros.com/libro/MLU2/alpha-raro',
+  );
 });
 
 test('CF-R2-2B: el mismo MLU nunca da 404 solo por pasar de activo a pausado', async () => {

@@ -678,6 +678,26 @@ ${!inStock && waitlistSiteKey ? `
 }
 
 // ---------------------------------------------------------------------------
+// Normalización de URL canónica de producto
+// ---------------------------------------------------------------------------
+
+export function canonicalProductRedirectUrl({
+    requestUrl,
+    navigationBase,
+    id,
+    providedSlug,
+    canonicalSlug,
+}) {
+    if (providedSlug && providedSlug === canonicalSlug) return null;
+
+    const currentUrl = new URL(requestUrl);
+    // layout es un parámetro histórico de presentación: no debe sobrevivir
+    // al salto canónico. El resto de la query se conserva.
+    currentUrl.searchParams.delete('layout');
+    return `${navigationBase}/libro/${id}/${canonicalSlug}${currentUrl.search}`;
+}
+
+// ---------------------------------------------------------------------------
 // Handler principal
 // ---------------------------------------------------------------------------
 
@@ -722,9 +742,16 @@ export async function onRequest(context) {
         ? new URL(context.request.url).origin
         : BASE;
 
-    // Redirect 301 si no viene el slug
-    if (!providedSlug) {
-        return Response.redirect(`${navigationBase}/libro/${id}/${slug}`, 301);
+    // Una sola URL por entidad: slug faltante o incorrecto -> 301 canónico.
+    const canonicalRedirect = canonicalProductRedirectUrl({
+        requestUrl: context.request.url,
+        navigationBase,
+        id,
+        providedSlug,
+        canonicalSlug: slug,
+    });
+    if (canonicalRedirect) {
+        return Response.redirect(canonicalRedirect, 301);
     }
 
     const waitlistSiteKey = typeof context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY === 'string'
