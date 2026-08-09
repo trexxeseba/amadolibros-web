@@ -29,3 +29,14 @@ El reporte conserva `groups.byIsbn` y `groups.byTitleAuthor` y agrega:
 - `methodology.strictReviewThresholds`
 
 Cada candidato muestra lado a lado `condition`, `price` y `dimensions`, además de las razones de la clasificación.
+
+## Identidad de catálogo Mercado Libre
+
+El reporte conserva, cuando el origen las entrega:
+
+- `catalog_listing`: distingue publicación de catálogo (`true`) de tradicional (`false`);
+- `catalog_product_id`: identifica el producto de catálogo relacionado;
+- `sameCatalogProduct`: verdadero sólo cuando todos los listings del grupo tienen el mismo `catalog_product_id`;
+- `mixedTraditionalCatalog`: verdadero sólo cuando el grupo contiene al menos una publicación tradicional y una de catálogo con señales completas.
+
+Estas señales aportan evidencia, pero no cambian por sí solas la decisión de consolidación. Si faltan, el reporte las marca como incompletas y no infiere valores.
