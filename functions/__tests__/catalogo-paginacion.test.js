@@ -132,18 +132,17 @@ test('8. un ?page desbordado no llega a Number() y se trata como inválido', asy
   assert.equal(response.headers.get('Location'), '/catalogo');
 });
 
-test('9. ?page fuera de rango redirige 302 a la última página válida', async () => {
+test('9. ?page fuera de rango devuelve 404 real', async () => {
   const { response } = await render(`${BASE_URL}?page=400`);
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get('Location'), '/catalogo?page=3');
-  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('Location'), null);
+  assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow');
 });
 
-test('10. fuera de rango con una sola página redirige a la URL sin page', async () => {
-  CATALOG = buildCatalog(10); // una sola página
+test('10. fuera de rango con una sola página también devuelve 404', async () => {
+  CATALOG = buildCatalog(10);
   const { response } = await render(`${BASE_URL}?page=5`);
-  assert.equal(response.status, 302);
-  assert.equal(response.headers.get('Location'), '/catalogo');
+  assert.equal(response.status, 404);
 });
 
 // ── 3. Conservación de filtros ──────────────────────────────────────────────
@@ -156,10 +155,10 @@ test('11. ?q se conserva en todos los enlaces de paginación', async () => {
   for (const href of hrefs) assert.match(href, /(\?|&amp;)q=prueba/);
 });
 
-test('12. ?q fuera de rango conserva q en el destino del 302', async () => {
+test('12. ?q fuera de rango devuelve 404 y no normaliza a otra página', async () => {
   const { response } = await render(`${BASE_URL}?q=prueba&page=400`);
-  assert.equal(response.status, 302);
-  assert.match(response.headers.get('Location'), /^\/catalogo\?q=prueba&page=3$/);
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('Location'), null);
 });
 
 test('13. ?page=1 explícito con q conserva q al redirigir', async () => {

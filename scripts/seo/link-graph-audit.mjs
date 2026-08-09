@@ -82,10 +82,33 @@ async function fetchText(url) {
   return response.text();
 }
 
+async function collectSitemapBookUrls(rootUrl) {
+  const rootOrigin = new URL(rootUrl).origin;
+  const queue = [new URL(rootUrl)];
+  const queued = new Set(queue.map(url => url.toString()));
+  const books = new Map();
+
+  while (queue.length) {
+    const current = queue.shift();
+    const xml = await fetchText(current);
+    for (const loc of sitemapEntries(xml)) {
+      const id = bookIdFromUrl(loc);
+      if (id) {
+        books.set(id, loc);
+        continue;
+      }
+      if (loc.origin === rootOrigin && /\.xml$/i.test(loc.pathname) && !queued.has(loc.toString())) {
+        queued.add(loc.toString());
+        queue.push(loc);
+      }
+    }
+  }
+  return [...books.values()];
+}
+
 async function main() {
   const startedAt = new Date().toISOString();
-  const sitemapXml = await fetchText(SITEMAP_URL);
-  const sitemapBookUrls = sitemapEntries(sitemapXml).filter((url) => bookIdFromUrl(url));
+  const sitemapBookUrls = await collectSitemapBookUrls(SITEMAP_URL);
   const sitemapById = new Map(sitemapBookUrls.map((url) => [bookIdFromUrl(url), url.toString()]));
 
   const queue = SEED_PATHS.map((seed) => new URL(seed, BASE_URL));

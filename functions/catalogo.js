@@ -535,18 +535,16 @@ export async function onRequest(ctx) {
 
     const totalResults = filtered.length;
     const totalPages   = Math.max(1, Math.ceil(totalResults / MAX_RESULTS));
-    // Fuera de rango: 302 (no 301) a la última página válida. El destino
-    // depende del tamaño actual del catálogo, que cambia con cada sync, así
-    // que no debe quedar cacheado como permanente.
+    // Página inexistente: 404 real. No redirigimos a la última página porque
+    // el tamaño del catálogo cambia y esa normalización convertiría una URL
+    // inexistente en contenido distinto según el sync.
     if (pageParam.page > totalPages) {
-        const target = new URL(url);
-        if (totalPages > 1) target.searchParams.set('page', String(totalPages));
-        else target.searchParams.delete('page');
-        return new Response(null, {
-            status: 302,
+        return new Response('<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><title>Página no encontrada — Amado Libros</title></head><body><main><h1>Página no encontrada</h1><p>La página del catálogo que buscás no existe.</p><p><a href="/catalogo">Volver al catálogo</a></p></main></body></html>', {
+            status: 404,
             headers: {
-                Location: `${target.pathname}${target.search}`,
-                'Cache-Control': 'no-store',
+                'Content-Type': 'text/html;charset=UTF-8',
+                'Cache-Control': 'public, max-age=300',
+                'X-Robots-Tag': 'noindex, nofollow',
             },
         });
     }
