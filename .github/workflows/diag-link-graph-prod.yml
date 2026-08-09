@@ -1,0 +1,40 @@
+name: Diagnostic production link graph
+
+on:
+  push:
+    branches:
+      - agent/diag-catalog-query-prod
+    paths:
+      - '.github/workflows/diag-link-graph-prod.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diag-catalog-query-prod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Run production link graph audit
+        env:
+          SEO_OUTPUT_DATE: '2026-08-09-post-c1'
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: |
+          node scripts/seo/link-graph-audit.mjs
+          node - <<'NODE'
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/seo/link-graph-audit-2026-08-09-post-c1.json','utf8'));
+          console.log('POST_C1_TOTALS=' + JSON.stringify(report.totals));
+          console.log('POST_C1_ORPHAN_SAMPLE=' + JSON.stringify((report.orphanBooks || report.orphans || []).slice(0,20)));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seo-link-graph-post-c1
+          path: artifacts/seo/
+          retention-days: 30
