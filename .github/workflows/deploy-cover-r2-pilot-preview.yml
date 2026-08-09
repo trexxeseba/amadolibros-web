@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: deploy-cover-r2-pilot-preview
@@ -121,3 +122,33 @@ jobs:
             -o /tmp/cover-pilot-after.json
           cat /tmp/cover-pilot-after.json
           node -e "const s=require('/tmp/cover-pilot-after.json'); if(s.manifest.with_valid_copy!==20) process.exit(1); console.log('Manifest verificado: 20 copias válidas.');"
+
+  report:
+    if: always()
+    needs: [guard, validate, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish durable pilot result on PR 99
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = '${{ needs.deploy.result }}';
+            const succeeded = result === 'success';
+            const body = [
+              `### COVER-R2-PILOT — ${succeeded ? '20/20 CONFIRMADO' : 'NO CONFIRMADO'}`,
+              '',
+              `- Commit: \`${context.sha}\``,
+              `- Deploy/aceptación: **${result}**`,
+              `- Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              succeeded
+                ? '- El workflow desplegó el Worker Preview y verificó 20 copias válidas en el manifest.'
+                : '- Revisar el paso fallido del run. No reintentar hasta identificar la causa.',
+              '',
+              'Producción y `amadolibros-catalog` no fueron modificados.',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 99,
+              body,
+            });

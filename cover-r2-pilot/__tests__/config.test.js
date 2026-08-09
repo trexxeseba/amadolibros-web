@@ -23,6 +23,9 @@ test('deploy automático y manual queda bloqueado a la rama exacta del piloto', 
   assert.match(workflow, /r2 bucket create amadolibros-images-preview/);
   assert.match(workflow, /openssl rand -hex 32/);
   assert.match(workflow, /attempted!==20\|\|r\.failed!==0/);
+  assert.match(workflow, /issues: write/);
+  assert.match(workflow, /COVER-R2-PILOT —.*20\/20 CONFIRMADO/);
+  assert.match(workflow, /issue_number: 99/);
 });
 
 test('CI compartido incluye sintaxis y tests del piloto', () => {
