@@ -24,9 +24,9 @@ test('deploy del PR queda bloqueado a la rama y repo exactos del piloto', () => 
   assert.match(workflow, /r2 bucket create amadolibros-images-preview/);
   assert.match(workflow, /openssl rand -hex 32/);
   assert.match(workflow, /attempted!==20\|\|r\.failed!==0/);
-  assert.match(workflow, /issues: write/);
-  assert.match(workflow, /COVER-R2-PILOT —.*20\/20 CONFIRMADO/);
-  assert.match(workflow, /issue_number: 99/);
+  assert.match(workflow, /for attempt in 1 2 3 4 5 6/);
+  assert.match(workflow, /if \[ "\$IMPORT_CODE" != "401" \]/);
+  assert.doesNotMatch(workflow, /issues: write|createComment/);
 });
 
 test('CI compartido incluye sintaxis y tests del piloto', () => {

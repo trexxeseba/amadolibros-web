@@ -75,8 +75,10 @@ indica resultado mixto. Cada resultado informa `imported`, `revalidated`,
 
 ## Despliegue del piloto
 
-El workflow se dispara únicamente al actualizar `agent/cover-r2-pilot-20` o
-manualmente desde esa misma rama. Comprueba el bucket Preview, genera un secret
-aleatorio de una sola ejecución, lo enmascara, despliega el Worker, selecciona
-20 portadas reales del catálogo público y exige `20/20` importaciones válidas.
-No declara ningún trigger sobre `main`.
+El workflow se dispara únicamente al actualizar el PR in-repo de
+`agent/cover-r2-pilot-20` hacia `main`. Comprueba el bucket Preview, genera un
+secret aleatorio de una sola ejecución, lo enmascara, despliega el Worker,
+selecciona 20 portadas reales del catálogo público y exige `20/20`
+importaciones válidas. Si una ubicación edge todavía no recibió el secret
+nuevo, reintenta únicamente la respuesta 401 hasta seis veces. No declara
+ningún trigger de despliegue sobre `main`.

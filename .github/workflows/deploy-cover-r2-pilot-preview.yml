@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: deploy-cover-r2-pilot-preview
@@ -96,20 +95,36 @@ jobs:
         run: |
           echo "Esperando propagación del Worker Preview..."
           sleep 10
-          STATUS_CODE="$(curl -sS --max-time 30 -o /tmp/cover-pilot-before.json -w '%{http_code}' \
-            "$PILOT_URL/status" \
-            -H "Authorization: Bearer $COVER_PILOT_SECRET")"
+          STATUS_CODE=""
+          for attempt in 1 2 3 4 5 6; do
+            STATUS_CODE="$(curl -sS --max-time 30 -o /tmp/cover-pilot-before.json -w '%{http_code}' \
+              "$PILOT_URL/status" \
+              -H "Authorization: Bearer $COVER_PILOT_SECRET")"
+            if [ "$STATUS_CODE" != "401" ]; then
+              break
+            fi
+            echo "Secret todavía propagándose para status inicial (intento $attempt/6); espero 10 s."
+            sleep 10
+          done
           if [ "$STATUS_CODE" != "200" ]; then
             echo "Status inicial respondió HTTP $STATUS_CODE."
             cat /tmp/cover-pilot-before.json
             exit 1
           fi
 
-          IMPORT_CODE="$(curl -sS --max-time 300 -o /tmp/cover-pilot-import.json -w '%{http_code}' \
-            -X POST "$PILOT_URL/import" \
-            -H "Authorization: Bearer $COVER_PILOT_SECRET" \
-            -H 'Content-Type: application/json' \
-            --data-binary @/tmp/cover-pilot-payload.json)"
+          IMPORT_CODE=""
+          for attempt in 1 2 3 4 5 6; do
+            IMPORT_CODE="$(curl -sS --max-time 300 -o /tmp/cover-pilot-import.json -w '%{http_code}' \
+              -X POST "$PILOT_URL/import" \
+              -H "Authorization: Bearer $COVER_PILOT_SECRET" \
+              -H 'Content-Type: application/json' \
+              --data-binary @/tmp/cover-pilot-payload.json)"
+            if [ "$IMPORT_CODE" != "401" ]; then
+              break
+            fi
+            echo "Secret todavía propagándose (intento $attempt/6); espero 10 s."
+            sleep 10
+          done
           cat /tmp/cover-pilot-import.json
           if [ "$IMPORT_CODE" != "200" ]; then
             echo "Import respondió HTTP $IMPORT_CODE."
@@ -117,39 +132,20 @@ jobs:
           fi
           node -e "const r=require('/tmp/cover-pilot-import.json'); if(r.attempted!==20||r.failed!==0) process.exit(1); console.log('Import real: 20/20 sin fallos.');"
 
-          curl -fsS --max-time 30 "$PILOT_URL/status" \
-            -H "Authorization: Bearer $COVER_PILOT_SECRET" \
-            -o /tmp/cover-pilot-after.json
+          AFTER_CODE=""
+          for attempt in 1 2 3 4 5 6; do
+            AFTER_CODE="$(curl -sS --max-time 30 -o /tmp/cover-pilot-after.json -w '%{http_code}' \
+              "$PILOT_URL/status" \
+              -H "Authorization: Bearer $COVER_PILOT_SECRET")"
+            if [ "$AFTER_CODE" != "401" ]; then
+              break
+            fi
+            echo "Secret todavía propagándose para status (intento $attempt/6); espero 10 s."
+            sleep 10
+          done
           cat /tmp/cover-pilot-after.json
+          if [ "$AFTER_CODE" != "200" ]; then
+            echo "Status final respondió HTTP $AFTER_CODE."
+            exit 1
+          fi
           node -e "const s=require('/tmp/cover-pilot-after.json'); if(s.manifest.with_valid_copy!==20) process.exit(1); console.log('Manifest verificado: 20 copias válidas.');"
-
-  report:
-    if: always()
-    needs: [guard, validate, deploy]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish durable pilot result on PR 99
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const result = '${{ needs.deploy.result }}';
-            const succeeded = result === 'success';
-            const headSha = context.payload.pull_request.head.sha;
-            const body = [
-              `### COVER-R2-PILOT — ${succeeded ? '20/20 CONFIRMADO' : 'NO CONFIRMADO'}`,
-              '',
-              `- Commit: \`${headSha}\``,
-              `- Deploy/aceptación: **${result}**`,
-              `- Run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              succeeded
-                ? '- El workflow desplegó el Worker Preview y verificó 20 copias válidas en el manifest.'
-                : '- Revisar el paso fallido del run. No reintentar hasta identificar la causa.',
-              '',
-              'Producción y `amadolibros-catalog` no fueron modificados.',
-            ].join('\n');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 99,
-              body,
-            });
