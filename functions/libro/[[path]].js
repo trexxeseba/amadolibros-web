@@ -762,7 +762,8 @@ export async function onRequest(context) {
         : '';
 
     const originalImages = normalizeImages(item);
-    const previewCoverSrc = isPreview && originalImages[0]
+    const coversEnabled = ['preview', 'production'].includes(context.env?.APP_ENV);
+    const previewCoverSrc = coversEnabled && originalImages[0]
         ? await resolvePreviewCoverUrl(context, item.id, 0, originalImages[0])
         : null;
 

@@ -23,13 +23,13 @@ concurrency:
 
 jobs:
   guard:
+    # Workflow de aceptación de un solo uso. En ramas posteriores queda
+    # omitido en vez de producir un check rojo falso por compartir paths.
+    if: github.head_ref == 'agent/cover-r2-preview-ui-20' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Block every source except the isolated in-repo Preview
-        if: github.head_ref != 'agent/cover-r2-preview-ui-20' || github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo "Deploy bloqueado: sólo se permite agent/cover-r2-preview-ui-20 -> main."
-          exit 1
+      - name: Confirm isolated in-repo Preview source
+        run: echo "Rama Preview aislada confirmada."
 
   validate:
     needs: guard

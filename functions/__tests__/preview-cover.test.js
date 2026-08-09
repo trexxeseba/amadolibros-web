@@ -68,9 +68,16 @@ test('Preview resuelve una URL inmutable del mismo origen y memoiza el manifest'
   assert.deepEqual(coverBucket.reads, [PREVIEW_COVER_MANIFEST_KEY]);
 });
 
-test('Producción no consulta el bucket ni expone una portada Preview', async () => {
+test('Producción resuelve la misma URL inmutable desde su binding separado', async () => {
   const coverBucket = bucket();
   const result = await previewCoverUrl(ctx({ appEnv: 'production', coverBucket }), ID, 0, SOURCE);
+  assert.equal(result, `https://cover-ui.example/preview-cover/${ID}/0/${HASH}.jpg`);
+  assert.deepEqual(coverBucket.reads, [PREVIEW_COVER_MANIFEST_KEY]);
+});
+
+test('Entorno desconocido no consulta el bucket', async () => {
+  const coverBucket = bucket();
+  const result = await previewCoverUrl(ctx({ appEnv: 'test', coverBucket }), ID, 0, SOURCE);
   assert.equal(result, null);
   assert.deepEqual(coverBucket.reads, []);
 });
@@ -109,24 +116,32 @@ test('HEAD valida la misma portada y devuelve headers sin cuerpo', async () => {
   assert.equal(await response.text(), '');
 });
 
-test('Ruta rechaza hash ajeno, métodos de escritura y cualquier acceso en Producción', async () => {
+test('Ruta rechaza hash ajeno, métodos de escritura y entornos desconocidos', async () => {
   const wrongHash = await coverRequest(ctx({ path: [ID, '0', `${'b'.repeat(64)}.jpg`] }));
   assert.equal(wrongHash.status, 404);
   const post = await coverRequest(ctx({ path: [ID, '0', `${HASH}.jpg`], method: 'POST' }));
   assert.equal(post.status, 405);
-  const production = await coverRequest(ctx({
-    appEnv: 'production', path: [ID, '0', `${HASH}.jpg`],
+  const unknown = await coverRequest(ctx({
+    appEnv: 'test', path: [ID, '0', `${HASH}.jpg`],
   }));
-  assert.equal(production.status, 404);
+  assert.equal(unknown.status, 404);
 });
 
-test('Status Preview expone sólo conteo y un ID de muestra; Producción devuelve 404', async () => {
+test('Status expone sólo conteo y un ID de muestra en Preview y Producción', async () => {
   const summary = await previewCoverSummary(ctx());
   assert.deepEqual(summary, { entries: 1, with_valid_copy: 1, sample_product_id: ID });
   const response = await coverRequest(ctx({ path: ['status'] }));
   assert.deepEqual(await response.json(), summary);
   const production = await coverRequest(ctx({ appEnv: 'production', path: ['status'] }));
-  assert.equal(production.status, 404);
+  assert.deepEqual(await production.json(), summary);
+});
+
+test('Producción etiqueta los bytes como R2 productivo', async () => {
+  const response = await coverRequest(ctx({
+    appEnv: 'production', path: [ID, '0', `${HASH}.jpg`],
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('x-amado-cover-source'), 'r2-production');
 });
 
 test('Ficha usa la portada R2 sólo como primera imagen y conserva las secundarias', () => {

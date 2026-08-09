@@ -104,15 +104,19 @@ test('wrangler.toml: Preview declara destinatarios internos sin declarar RESEND_
   assert.doesNotMatch(previewVars, /RESEND_API_KEY/);
 });
 
-test('COVER-R2: binding de portadas existe sólo en Preview', () => {
+test('COVER-R2: Preview y Producción usan buckets separados', () => {
   assert.match(
     wranglerToml,
     /\[\[env\.preview\.r2_buckets\]\][\s\S]*?binding\s*=\s*"COVER_R2"[\s\S]*?bucket_name\s*=\s*"amadolibros-images-preview"/,
   );
   const productionStart = wranglerToml.indexOf('[[env.production.kv_namespaces]]');
   assert.ok(productionStart > -1);
-  assert.doesNotMatch(wranglerToml.slice(productionStart), /binding\s*=\s*"COVER_R2"/);
-  assert.doesNotMatch(wranglerToml.slice(productionStart), /amadolibros-images-preview/);
+  const productionConfig = wranglerToml.slice(productionStart);
+  assert.match(
+    productionConfig,
+    /\[\[env\.production\.r2_buckets\]\][\s\S]*?binding\s*=\s*"COVER_R2"[\s\S]*?bucket_name\s*=\s*"amadolibros-images-production"/,
+  );
+  assert.doesNotMatch(productionConfig, /amadolibros-images-preview/);
 });
 
 test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
@@ -249,13 +253,15 @@ test('carrito.astro: la site key se lee de PUBLIC_TURNSTILE_SITE_KEY, no de un l
   assert.match(carritoAstro, /import\.meta\.env\.PUBLIC_TURNSTILE_SITE_KEY/);
 });
 
-// ── CF-R2-1: binding R2 exclusivo de Preview ────────────────────────────────
+// ── CF-R2-1: el catálogo R2 sigue siendo exclusivo de Preview ──────────────
 
-test('wrangler.toml: el binding R2 de CF-R2-1 existe solo en env.preview, nunca en env.production', () => {
+test('wrangler.toml: CATALOG_BUCKET existe solo en Preview, nunca en Producción', () => {
   assert.match(wranglerToml, /\[\[env\.preview\.r2_buckets\]\]/);
   assert.match(wranglerToml, /binding\s*=\s*"CATALOG_BUCKET"/);
   assert.match(wranglerToml, /bucket_name\s*=\s*"amadolibros-catalog"/);
-  assert.doesNotMatch(wranglerToml, /\[\[env\.production\.r2_buckets\]\]/);
+  const productionStart = wranglerToml.indexOf('[[env.production.kv_namespaces]]');
+  assert.ok(productionStart > -1);
+  assert.doesNotMatch(wranglerToml.slice(productionStart), /binding\s*=\s*"CATALOG_BUCKET"/);
 });
 
 test('wrangler.toml: CATALOG_BUCKET usa el mismo bucket real que worker-sync (amadolibros-catalog)', () => {

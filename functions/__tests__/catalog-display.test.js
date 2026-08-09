@@ -164,6 +164,30 @@ test('COVER-R2 Preview: card y ficha usan la copia validada del mismo origen', a
   );
 });
 
+test('COVER-R2 Producción: card y ficha usan el binding productivo', async () => {
+  const env = { COVER_R2: previewCoverBucket() };
+  const catalogResponse = await catalogRequest(
+    context('https://www.amadolibros.com/catalogo', {}, 'production', env)
+  );
+  const catalogHtml = await catalogResponse.text();
+  assert.match(
+    catalogHtml,
+    new RegExp(`/preview-cover/MLU1/0/${PREVIEW_COVER_HASH}\\.jpg`),
+  );
+
+  const bookResponse = await bookRequest(context(
+    'https://www.amadolibros.com/libro/MLU1/alpha-disponible',
+    { path: ['MLU1', 'alpha-disponible'] },
+    'production',
+    env,
+  ));
+  const bookHtml = await bookResponse.text();
+  assert.match(
+    bookHtml,
+    new RegExp(`/preview-cover/MLU1/0/${PREVIEW_COVER_HASH}\\.jpg`),
+  );
+});
+
 test('COVER-R2 Preview: URL origen distinta mantiene mlstatic como fallback', async () => {
   const staleManifest = structuredClone(PREVIEW_COVER_MANIFEST);
   staleManifest.entries['MLU1:0'].current.source_url =

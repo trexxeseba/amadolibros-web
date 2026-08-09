@@ -219,6 +219,14 @@ jobs:
           printf '%s' "$RESEND_API_KEY" |
             npx wrangler@3.114.17 pages secret put RESEND_API_KEY --project-name amadolibros-web
 
+      - name: Promote 20 validated covers to production R2
+        run: bash scripts/promote-cover-r2-production.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SOURCE_BUCKET: amadolibros-images-preview
+          TARGET_BUCKET: amadolibros-images-production
+
       - name: Deploy via Wrangler
         run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:
@@ -239,6 +247,55 @@ jobs:
           SMOKE_EXPECT_CHECKOUT: 'enabled'
         run: node scripts/smoke-production.js
 
+      - name: Verify production R2 covers
+        id: cover_r2_smoke
+        run: |
+          STATUS_CODE=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            STATUS_CODE="$(curl -sS --max-time 30 -o /tmp/cover-r2-status.json -w '%{http_code}' \
+              'https://www.amadolibros.com/preview-cover/status')"
+            [ "$STATUS_CODE" = "200" ] && break
+            echo "Portadas R2 todavía propagándose (intento $attempt/8; HTTP $STATUS_CODE)."
+            sleep 10
+          done
+          cat /tmp/cover-r2-status.json
+          if [ "$STATUS_CODE" != "200" ]; then
+            echo "Status R2 productivo no respondió 200."
+            exit 1
+          fi
+
+          SAMPLE_ID="$(node -e '
+            const s=require("/tmp/cover-r2-status.json");
+            if (!(s.with_valid_copy >= 20) || !/^MLU\d+$/.test(s.sample_product_id || "")) process.exit(1);
+            process.stdout.write(s.sample_product_id);
+          ')"
+          BOOK_CODE=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            BOOK_CODE="$(curl -sSL --max-time 60 -o /tmp/cover-r2-book.html -w '%{http_code}' \
+              "https://www.amadolibros.com/libro/$SAMPLE_ID")"
+            if [ "$BOOK_CODE" = "200" ] && grep -Fq "/preview-cover/$SAMPLE_ID/0/" /tmp/cover-r2-book.html; then
+              break
+            fi
+            echo "Ficha R2 productiva todavía propagándose (intento $attempt/8; HTTP $BOOK_CODE)."
+            sleep 10
+          done
+          if [ "$BOOK_CODE" != "200" ]; then
+            echo "La ficha productiva no respondió 200."
+            exit 1
+          fi
+          IMAGE_PATH="$(grep -Eo "/preview-cover/$SAMPLE_ID/0/[a-f0-9]{64}\.(jpg|png|webp)" \
+            /tmp/cover-r2-book.html | head -1)"
+          if [ -z "$IMAGE_PATH" ]; then
+            echo "La ficha productiva no contiene una URL R2 inmutable."
+            exit 1
+          fi
+          curl -fsS --max-time 60 -D /tmp/cover-r2-image.headers \
+            "https://www.amadolibros.com$IMAGE_PATH" -o /tmp/cover-r2-image.bin
+          tr -d '\r' < /tmp/cover-r2-image.headers | grep -Eqi '^content-type: image/(jpeg|png|webp)$'
+          tr -d '\r' < /tmp/cover-r2-image.headers | grep -Fqi 'x-amado-cover-source: r2-production'
+          test -s /tmp/cover-r2-image.bin
+          echo "Portadas R2 productivas: manifest, ficha y bytes OK."
+
       - name: Deployment summary
         if: always()
         run: |
@@ -250,5 +307,6 @@ jobs:
           echo "| **Trigger** | \`${{ github.event_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **home.json** | ${{ steps.home_json.outcome == 'success' && '✅ fresh' || '⚠️ fallback (committed copy)' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Smoke test** | ${{ steps.smoke.outcome == 'success' && '✅ passed' || steps.smoke.outcome == 'skipped' && '— not run' || '❌ failed' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **R2 covers** | ${{ steps.cover_r2_smoke.outcome == 'success' && '✅ passed' || steps.cover_r2_smoke.outcome == 'skipped' && '— not run' || '❌ failed' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Attempts** | ${{ steps.smoke.outputs.attempts_used || '—' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **URL** | https://www.amadolibros.com |" >> "$GITHUB_STEP_SUMMARY"

@@ -22,8 +22,8 @@ function runtimeJsFiles(dir) {
 }
 
 test('workflow R2 UI sólo acepta la rama Preview in-repo y despliega checkout apagado', () => {
-  assert.match(workflow, /github\.head_ref != 'agent\/cover-r2-preview-ui-20'/);
-  assert.match(workflow, /head\.repo\.full_name != github\.repository/);
+  assert.match(workflow, /github\.head_ref == 'agent\/cover-r2-preview-ui-20'/);
+  assert.match(workflow, /head\.repo\.full_name == github\.repository/);
   assert.match(workflow, /--branch agent\/cover-r2-preview-ui-20/);
   assert.match(workflow, /PUBLIC_INDEXABLE:\s*'false'/);
   assert.match(workflow, /PUBLIC_CHECKOUT_ENABLED:\s*'false'/);

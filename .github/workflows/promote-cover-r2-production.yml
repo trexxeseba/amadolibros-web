@@ -1,0 +1,112 @@
+name: Promote Cover R2 Production
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - 'functions/_shared/preview-cover.js'
+      - 'functions/preview-cover/**'
+      - 'functions/catalogo.js'
+      - 'functions/libro/**'
+      - 'functions/__tests__/**'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-cover-r2-preview-ui.yml'
+      - '.github/workflows/promote-cover-r2-production.yml'
+      - 'scripts/promote-cover-r2-production.sh'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-cover-r2-production-20
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    if: github.head_ref == 'agent/cover-r2-production-20' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Promoción R2 productiva autorizada para la rama aislada."
+
+  validate:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - run: bash scripts/validate-ci.sh
+
+  deploy-preview:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: preview
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - name: Install and build protected Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'false'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Deploy isolated Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch agent/cover-r2-production-20
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verify Preview fallback and image bytes
+        env:
+          PREVIEW_URL: https://agent-cover-r2-production-20.amadolibros-web.pages.dev
+        run: |
+          STATUS_CODE=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            STATUS_CODE="$(curl -sS --max-time 30 -o /tmp/cover-status.json -w '%{http_code}' \
+              "$PREVIEW_URL/preview-cover/status")"
+            [ "$STATUS_CODE" = "200" ] && break
+            sleep 10
+          done
+          [ "$STATUS_CODE" = "200" ]
+          SAMPLE_ID="$(node -e '
+            const s=require("/tmp/cover-status.json");
+            if (s.with_valid_copy !== 20 || !/^MLU\d+$/.test(s.sample_product_id || "")) process.exit(1);
+            process.stdout.write(s.sample_product_id);
+          ')"
+          BOOK_CODE=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            BOOK_CODE="$(curl -sSL --max-time 60 -o /tmp/cover-book.html -w '%{http_code}' \
+              "$PREVIEW_URL/libro/$SAMPLE_ID")"
+            if [ "$BOOK_CODE" = "200" ] && grep -Fq "/preview-cover/$SAMPLE_ID/0/" /tmp/cover-book.html; then
+              break
+            fi
+            echo "Ficha Preview todavía propagándose (intento $attempt/8; HTTP $BOOK_CODE)."
+            sleep 10
+          done
+          [ "$BOOK_CODE" = "200" ]
+          IMAGE_PATH="$(grep -Eo "/preview-cover/$SAMPLE_ID/0/[a-f0-9]{64}\.(jpg|png|webp)" \
+            /tmp/cover-book.html | head -1)"
+          [ -n "$IMAGE_PATH" ]
+          curl -fsS -D /tmp/cover-image.headers \
+            "$PREVIEW_URL$IMAGE_PATH" -o /tmp/cover-image.bin
+          tr -d '\r' < /tmp/cover-image.headers | grep -Fqi 'x-amado-cover-source: r2-preview'
+          test -s /tmp/cover-image.bin
