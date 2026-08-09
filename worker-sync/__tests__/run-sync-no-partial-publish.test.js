@@ -103,7 +103,9 @@ test('runSync conserva el filtro público statuses active', async () => {
   });
 
   assert.equal(result.status, 'ok');
-  assert.deepEqual(receivedOptions, { statuses: ['active'] });
+  assert.deepEqual(receivedOptions.statuses, ['active']);
+  assert.equal(receivedOptions.telemetry.schema_version, 1);
+  assert.equal(receivedOptions.telemetry.rate_limit_429_count, 0);
 });
 
 test('un sync exitoso publica una vez y registra sync:last_ok', async () => {
@@ -123,7 +125,8 @@ test('un sync exitoso publica una vez y registra sync:last_ok', async () => {
   assert.equal(result.status, 'ok');
   assert.equal(publishCalls, 1);
   assert.ok(puts.some(entry => entry.key === 'sync:last_ok'));
-  assert.deepEqual(deletes, ['sync:last_error']);
+  assert.ok(puts.some(entry => entry.key === 'sync:last_rate_limit:v1'));
+  assert.deepEqual(deletes, ['sync:last_error', 'sync:last_error_detail:v1']);
 });
 
 test('si falla autenticación tampoco intenta publicar', async () => {
@@ -154,6 +157,53 @@ test('un fallo de KV no impide devolver el error de descarga', async () => {
   assert.equal(result.status, 'error');
   assert.equal(result.error, 'error original');
   assert.ok(puts.some(entry => entry.key === 'sync:last_error'));
+});
+
+test('429 fatal en scan persiste fase, página y Retry-After sin guardar query ni scroll', async () => {
+  const { env, puts } = fakeEnv();
+  env.USER_ID = '123';
+  env.MIN_ACTIVE_ITEMS = '1';
+  const fetchFn = async () => ({
+    ok: false,
+    status: 429,
+    headers: { get: name => name.toLowerCase() === 'retry-after' ? '60' : null },
+    async json() { return {}; },
+  });
+
+  const result = await runSync(env, { source: 'manual-await' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: (buildEnv, token, options) => buildCatalog(buildEnv, token, {
+      ...options,
+      mlGetDeps: {
+        fetchFn,
+        sleepFn: async () => {},
+        random: () => 0,
+        maxRetries: 1,
+      },
+    }),
+    publishToR2Fn: async () => { throw new Error('no debe publicar'); },
+    notifyHealthcheckFn: noHealthcheck,
+  });
+
+  assert.equal(result.status, 'error');
+  const summaryEntry = puts.find(entry => entry.key === 'sync:last_rate_limit:v1');
+  const detailEntry = puts.find(entry => entry.key === 'sync:last_error_detail:v1');
+  assert.ok(summaryEntry);
+  assert.ok(detailEntry);
+  const summary = JSON.parse(summaryEntry.value);
+  const detail = JSON.parse(detailEntry.value);
+  assert.equal(summary.rate_limit_429_count, 2);
+  assert.equal(summary.rate_limit_by_phase.scan, 2);
+  assert.equal(summary.max_retry_after_ms, 60000);
+  assert.equal(summary.max_applied_delay_ms, 30000);
+  assert.equal(detail.last_retry_event.phase, 'scan');
+  assert.equal(detail.last_retry_event.catalog_status, 'active');
+  assert.equal(detail.last_retry_event.page, 1);
+  assert.equal(detail.last_retry_event.status, 429);
+  assert.equal(detail.last_retry_event.stop_reason, 'max_retries');
+  const serialized = summaryEntry.value + detailEntry.value;
+  assert.equal(serialized.includes('scroll_id'), false);
+  assert.equal(serialized.includes('?'), false);
 });
 
 test('si falla publishToR2 el resultado final conserva ese error', async () => {
