@@ -8,6 +8,6 @@ export function categorySitemapEntries() {
   }));
 }
 
-export async function onRequest() {
-  return xmlResponse(urlsetXml(categorySitemapEntries()));
+export async function onRequest(ctx) {
+  return xmlResponse(ctx.request, urlsetXml(categorySitemapEntries()));
 }
