@@ -1,0 +1,34 @@
+name: SEO link graph pagination port one-shot
+
+on:
+  push:
+    branches:
+      - agent/seo-internal-link-graph-5
+    paths:
+      - '.github/workflows/seo-link-graph-port.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  port-pagination:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-internal-link-graph-5
+          fetch-depth: 0
+      - name: Port isolated historical pagination commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin e309b644f650ca5571812a8fa1a4ec3ccb277490
+          git cherry-pick e309b644f650ca5571812a8fa1a4ec3ccb277490
+      - name: Validate port
+        run: |
+          node --check functions/catalogo.js
+          node --test functions/__tests__/catalogo-paginacion.test.js
+          git diff --check HEAD^ HEAD
+      - name: Push port
+        run: git push origin HEAD:agent/seo-internal-link-graph-5
