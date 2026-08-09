@@ -269,8 +269,20 @@ jobs:
             if (!(s.with_valid_copy >= 20) || !/^MLU\d+$/.test(s.sample_product_id || "")) process.exit(1);
             process.stdout.write(s.sample_product_id);
           ')"
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 --max-time 60 \
-            "https://www.amadolibros.com/libro/$SAMPLE_ID" > /tmp/cover-r2-book.html
+          BOOK_CODE=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            BOOK_CODE="$(curl -sSL --max-time 60 -o /tmp/cover-r2-book.html -w '%{http_code}' \
+              "https://www.amadolibros.com/libro/$SAMPLE_ID")"
+            if [ "$BOOK_CODE" = "200" ] && grep -Fq "/preview-cover/$SAMPLE_ID/0/" /tmp/cover-r2-book.html; then
+              break
+            fi
+            echo "Ficha R2 productiva todavía propagándose (intento $attempt/8; HTTP $BOOK_CODE)."
+            sleep 10
+          done
+          if [ "$BOOK_CODE" != "200" ]; then
+            echo "La ficha productiva no respondió 200."
+            exit 1
+          fi
           IMAGE_PATH="$(grep -Eo "/preview-cover/$SAMPLE_ID/0/[a-f0-9]{64}\.(jpg|png|webp)" \
             /tmp/cover-r2-book.html | head -1)"
           if [ -z "$IMAGE_PATH" ]; then

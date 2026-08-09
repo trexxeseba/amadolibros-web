@@ -30,6 +30,8 @@ test('PR R2 sólo prueba la rama in-repo autorizada y no abre Producción', () =
   assert.doesNotMatch(promotion, /name: production/);
   assert.doesNotMatch(promotion, /seed-production-bucket/);
   assert.doesNotMatch(promotion, /push:\s*\n\s+branches:\s*\[main\]/);
+  assert.match(promotion, /Ficha Preview todavía propagándose/);
+  assert.match(promotion, /grep -Fq "\/preview-cover\/\$SAMPLE_ID\/0\/"/);
 });
 
 test('promoción usa buckets separados, verifica SHA y publica el manifest último', () => {
@@ -70,6 +72,8 @@ test('deploy productivo exige manifest, ficha y bytes R2 antes de quedar verde',
   assert.match(deploy, /name: Verify production R2 covers/);
   assert.match(deploy, /s\.with_valid_copy >= 20/);
   assert.match(deploy, /www\.amadolibros\.com\/libro\/\$SAMPLE_ID/);
+  assert.match(deploy, /Ficha R2 productiva todavía propagándose/);
+  assert.match(deploy, /grep -Fq "\/preview-cover\/\$SAMPLE_ID\/0\/"/);
   assert.match(deploy, /x-amado-cover-source: r2-production/i);
   assert.match(deploy, /steps\.cover_r2_smoke\.outcome/);
 });
