@@ -20,7 +20,9 @@ test('1. La ficha muestra el logo gráfico real y la marca enlaza al inicio', ()
     // GLOBAL-SHELL-1: el logo pasa del .png inexistente (devolvia text/html)
     // al .webp real, y de alt="" a alt="Amado Libros". El <a> que lo envuelve
     // ya tiene aria-label, que sigue ganando como nombre accesible.
-    assert.match(html, /<img src="\/images\/logo-amado\.webp" alt="Amado Libros" class="brand-logo"[^>]*fetchpriority="high">/);
+    const logo = html.match(/<img src="\/images\/logo-amado\.webp" alt="Amado Libros" class="brand-logo"[^>]*>/)?.[0] || '';
+    assert.match(logo, /decoding="async"/);
+    assert.doesNotMatch(logo, /fetchpriority="high"/);
     assert.doesNotMatch(html, /logo-amado\.png/);
     assert.match(html, /<span class="brand-name">AMADO LIBROS<\/span>/);
     assert.doesNotMatch(html, />📚 Amado Libros<\/a>/);
