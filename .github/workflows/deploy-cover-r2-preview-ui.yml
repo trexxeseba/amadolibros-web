@@ -109,7 +109,7 @@ jobs:
           )"
           export SAMPLE_ID
 
-          curl -fsS --max-time 180 \
+          curl -fsS --retry 5 --retry-all-errors --retry-delay 3 --max-time 180 \
             'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json' \
             > /tmp/cover-ui-catalog.json
           SAMPLE_QUERY="$(node <<'NODE'

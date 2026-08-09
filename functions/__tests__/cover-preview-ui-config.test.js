@@ -33,6 +33,10 @@ test('workflow R2 UI sólo acepta la rama Preview in-repo y despliega checkout a
 
 test('workflow prueba 20 copias, card, ficha, bytes y 404 productivo sin secret de portada', () => {
   assert.match(workflow, /status\.with_valid_copy !== 20/);
+  assert.match(
+    workflow,
+    /curl -fsS --retry 5 --retry-all-errors --retry-delay 3 --max-time 180/,
+  );
   assert.match(workflow, /\/catalogo\?q=\$SAMPLE_QUERY/);
   assert.match(workflow, /\/libro\/\$SAMPLE_ID/);
   assert.match(workflow, /x-amado-cover-source: r2-preview/i);
