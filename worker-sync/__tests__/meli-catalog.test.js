@@ -13,6 +13,7 @@ import {
   runPreviewCatalogPublish,
   runProductionCatalogPublish,
   summarizeCatalog,
+  summarizeCatalogIdentity,
 } from '../index.js';
 import {
   addCompressedIndexes,
@@ -509,4 +510,36 @@ test('CF-R2-2-BRIDGE: producción tampoco cambia su manifest si falla la verific
   assert.equal(result.published, false);
   assert.equal(writtenKeys.includes(PRODUCTION_MANIFEST_KEY), false);
   assert.ok(writtenKeys.some(key => key.includes('/versions/')));
+});
+
+
+// ── ML-CATALOG-IDENTITY-1 ───────────────────────────────────────────────────
+test('slimItem conserva catalog_listing y catalog_product_id de Mercado Libre', () => {
+  const catalogItem = slimItem({
+    id: 'MLU100', title: 'Catálogo', status: 'active', available_quantity: 1,
+    catalog_listing: true, catalog_product_id: 'MLU12345', attributes: [], pictures: [],
+  });
+  const traditional = slimItem({
+    id: 'MLU101', title: 'Tradicional', status: 'active', available_quantity: 1,
+    catalog_listing: false, catalog_product_id: 'MLU12345', attributes: [], pictures: [],
+  });
+  assert.equal(catalogItem.catalog_listing, true);
+  assert.equal(catalogItem.catalog_product_id, 'MLU12345');
+  assert.equal(traditional.catalog_listing, false);
+  assert.equal(traditional.catalog_product_id, 'MLU12345');
+});
+
+test('resume grupos mixtos tradicional/catalogo sin consolidar automáticamente', () => {
+  const summary = summarizeCatalogIdentity([
+    { id:'MLU1', status:'active', available_quantity:1, catalog_listing:false, catalog_product_id:'P1', condition:'new', isbn:'9789500000001' },
+    { id:'MLU2', status:'active', available_quantity:1, catalog_listing:true,  catalog_product_id:'P1', condition:'new', isbn:'9789500000001' },
+    { id:'MLU3', status:'active', available_quantity:1, catalog_listing:true,  catalog_product_id:'P2', condition:'new', isbn:'9789500000002' },
+    { id:'MLU4', status:'active', available_quantity:1, catalog_listing:false, catalog_product_id:'P2', condition:'used', isbn:'9789500000002' },
+  ]);
+  assert.equal(summary.catalog_listings, 2);
+  assert.equal(summary.traditional_with_catalog_product_id, 2);
+  assert.equal(summary.repeated_catalog_product_groups, 2);
+  assert.equal(summary.mixed_traditional_catalog_groups, 2);
+  assert.equal(summary.mixed_aligned_condition_isbn_groups, 1);
+  assert.equal(summary.items_in_mixed_groups, 4);
 });

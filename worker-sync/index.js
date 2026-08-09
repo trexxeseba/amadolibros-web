@@ -130,6 +130,39 @@ export default {
 
 // ── Medición segura ─────────────────────────────────────────────────────────
 
+export function summarizeCatalogIdentity(items = []) {
+  const active = items.filter(item => item?.status === 'active' && Number(item.available_quantity) > 0);
+  const catalogListings = active.filter(item => item.catalog_listing === true);
+  const traditionalLinked = active.filter(item => item.catalog_listing !== true && item.catalog_product_id);
+  const groups = new Map();
+  for (const item of active) {
+    if (!item.catalog_product_id) continue;
+    const id = String(item.catalog_product_id);
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(item);
+  }
+  const repeatedGroups = [...groups.values()].filter(group => group.length > 1);
+  const mixedGroups = repeatedGroups.filter(group =>
+    group.some(item => item.catalog_listing === true) &&
+    group.some(item => item.catalog_listing !== true)
+  );
+  const mixedAlignedGroups = mixedGroups.filter(group => {
+    const conditions = new Set(group.map(item => String(item.condition || '')));
+    const isbns = new Set(group.map(item => String(item.isbn || '').replace(/\D/g, '')).filter(Boolean));
+    return conditions.size <= 1 && isbns.size <= 1;
+  });
+  return {
+    active_items: active.length,
+    catalog_listings: catalogListings.length,
+    traditional_with_catalog_product_id: traditionalLinked.length,
+    catalog_product_groups: groups.size,
+    repeated_catalog_product_groups: repeatedGroups.length,
+    mixed_traditional_catalog_groups: mixedGroups.length,
+    mixed_aligned_condition_isbn_groups: mixedAlignedGroups.length,
+    items_in_mixed_groups: mixedGroups.reduce((sum, group) => sum + group.length, 0),
+  };
+}
+
 export function summarizeCatalog(catalog) {
   const items = Array.isArray(catalog?.items) ? catalog.items : [];
   const active = items.filter(
@@ -154,6 +187,7 @@ export function summarizeCatalog(catalog) {
     invalid,
     bytes,
     mebibytes: Math.round((bytes / 1024 / 1024) * 100) / 100,
+    catalog_identity: summarizeCatalogIdentity(items),
   };
 }
 

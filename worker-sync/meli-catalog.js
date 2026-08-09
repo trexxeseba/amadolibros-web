@@ -30,7 +30,7 @@ const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
 const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
-  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition';
+  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,catalog_listing,catalog_product_id';
 
 export const ML_MAX_RETRIES = 6;
 export const ML_BASE_BACKOFF_MS = 1000;
@@ -214,6 +214,8 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     status:             raw.status       || null,
     available_quantity: raw.available_quantity ?? 0,
     condition:          raw.condition    || null,
+    catalog_listing:    raw.catalog_listing === true,
+    catalog_product_id: raw.catalog_product_id || null,
     thumbnail:          raw.thumbnail    || null,
     pictures:           normalizePictures(raw.pictures),
     permalink:          raw.permalink    || null,
