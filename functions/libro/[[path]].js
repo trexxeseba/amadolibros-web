@@ -295,7 +295,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
             'priceCurrency':'UYU',
             'price':        String(price),
             'availability': 'https://schema.org/InStock',
-            'seller': { '@type': 'Organization', 'name': 'Amado Libros' },
+            'seller': { '@type': 'Organization', 'name': 'Amado Libros', 'url': BASE },
+            'hasMerchantReturnPolicy': {
+                '@type': 'MerchantReturnPolicy',
+                'merchantReturnLink': `${BASE}/devoluciones`,
+            },
         };
     }
     if (item.author) {
