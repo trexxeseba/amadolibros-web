@@ -1,0 +1,41 @@
+name: SEO canonical stale-test one-shot
+
+on:
+  push:
+    branches:
+      - agent/seo-url-canonical-enforcement-1
+    paths:
+      - '.github/workflows/seo-canonical-test-update.yml'
+      - 'scripts/seo/update-canonical-legacy-test.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  update-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/seo-url-canonical-enforcement-1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Update stale assertion
+        run: node scripts/seo/update-canonical-legacy-test.mjs
+
+      - name: Validate canonical tests
+        run: |
+          node --test functions/__tests__/product-canonical-slug.test.js functions/__tests__/catalog-display.test.js
+          git diff --check
+
+      - name: Commit updated test
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add functions/__tests__/catalog-display.test.js
+          git commit -m 'SEO canonical: align historical slug regression test'
+          git push origin HEAD:agent/seo-url-canonical-enforcement-1
