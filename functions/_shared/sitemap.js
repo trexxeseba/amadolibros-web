@@ -1,4 +1,5 @@
 import { BASE } from './catalog.js';
+import { conditionalResponse } from './http-conditional.js';
 
 export const SITEMAP_SEGMENTS = Object.freeze([
   `${BASE}/sitemap-pages.xml`,
@@ -34,8 +35,8 @@ export function urlsetXml(entries = []) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows}\n</urlset>`;
 }
 
-export function xmlResponse(xml, maxAge = 3600) {
-  return new Response(xml, {
+export function xmlResponse(request, xml, maxAge = 3600) {
+  return conditionalResponse(request, xml, {
     headers: {
       'content-type': 'application/xml;charset=UTF-8',
       'cache-control': `public, max-age=${maxAge}`,

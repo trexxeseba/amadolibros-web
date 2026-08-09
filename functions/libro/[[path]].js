@@ -15,6 +15,7 @@
 
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { conditionalResponse } from '../_shared/http-conditional.js';
 // GLOBAL-SHELL-1: shell global compartido con Astro (marca, favicon, footer
 // y burbuja de WhatsApp). Ver functions/_shared/brand.js.
 import {
@@ -758,7 +759,8 @@ export async function onRequest(context) {
         ? context.env.STOCK_WAITLIST_TURNSTILE_SITE_KEY.trim()
         : '';
 
-    return new Response(renderPage(item, slug, isPreview, waitlistSiteKey), {
+    const html = renderPage(item, slug, isPreview, waitlistSiteKey);
+    return conditionalResponse(context.request, html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',

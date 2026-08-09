@@ -6,6 +6,7 @@
  */
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchActiveIndex, fetchCatalog } from '../_shared/catalog.js';
+import { conditionalResponse } from '../_shared/http-conditional.js';
 import {
     BRAND,
     faviconHeadHtml,
@@ -338,7 +339,8 @@ export async function onRequest(ctx) {
         totalPages,
     });
 
-    return new Response(html, {
+    return conditionalResponse(ctx.request, html, {
+        enable: !hasUnexpectedParameters && items.length > 0,
         headers: {
             'content-type': 'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',

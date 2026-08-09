@@ -13,6 +13,6 @@ export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/contacto`,
 ]);
 
-export async function onRequest() {
-  return xmlResponse(urlsetXml(STATIC_SITEMAP_PAGES.map(loc => ({ loc }))));
+export async function onRequest(ctx) {
+  return xmlResponse(ctx.request, urlsetXml(STATIC_SITEMAP_PAGES.map(loc => ({ loc }))));
 }

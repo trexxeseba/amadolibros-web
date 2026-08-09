@@ -7,6 +7,6 @@
 
 import { sitemapIndexXml, xmlResponse } from './_shared/sitemap.js';
 
-export async function onRequest() {
-    return xmlResponse(sitemapIndexXml());
+export async function onRequest(ctx) {
+    return xmlResponse(ctx.request, sitemapIndexXml());
 }
