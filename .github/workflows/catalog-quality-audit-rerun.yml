@@ -1,0 +1,42 @@
+name: Catalog quality audit rerun
+
+on:
+  push:
+    branches:
+      - agent/catalog-quality-audit-1
+    paths:
+      - '.github/workflows/catalog-quality-audit-rerun.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit-clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/catalog-quality-audit-1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Run corrected catalog quality audit
+        env:
+          SEO_OUTPUT_DATE: '2026-08-09'
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: |
+          node --check scripts/seo/catalog-quality-audit.mjs
+          node scripts/seo/catalog-quality-audit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: catalog-quality-audit-corrected-2026-08-09
+          path: artifacts/seo/
+          retention-days: 30
+      - name: Remove rerun helper
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/catalog-quality-audit-rerun.yml
+          git commit -m 'SEO data: remove corrected audit helper'
+          git push origin HEAD:agent/catalog-quality-audit-1
