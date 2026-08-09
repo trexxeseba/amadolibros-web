@@ -73,6 +73,12 @@ binding = "ORDERS_DB"
 database_name = "amadolibros-orders-production"
 database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
 
+# COVER-R2-PRODUCTION-1: bucket productivo separado, promovido desde el piloto
+# sólo después de validar SHA-256 de las 20 copias. Pages únicamente lo lee.
+[[env.production.r2_buckets]]
+binding     = "COVER_R2"
+bucket_name = "amadolibros-images-production"
+
 # CHECKOUT_ENABLED en "true" (2-N-H1): el kill switch queda encendido, así que
 # POST /api/orders y POST /api/preferences aceptan pedidos reales. Para apagar
 # los cobros de forma inmediata, cambiar esta variable a "false" en el

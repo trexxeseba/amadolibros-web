@@ -17,7 +17,7 @@ function pathParts(context) {
 }
 
 export async function onRequest(context) {
-    if (context.env?.APP_ENV !== 'preview') return notFound();
+    if (!['preview', 'production'].includes(context.env?.APP_ENV)) return notFound();
     if (context.request.method !== 'GET' && context.request.method !== 'HEAD') {
         return new Response('Method not allowed', {
             status: 405,
@@ -52,7 +52,9 @@ export async function onRequest(context) {
             'Cache-Control': 'public, max-age=31536000, immutable',
             'ETag': `"${cover.sha256}"`,
             'X-Content-Type-Options': 'nosniff',
-            'X-Amado-Cover-Source': 'r2-preview',
+            'X-Amado-Cover-Source': context.env.APP_ENV === 'production'
+                ? 'r2-production'
+                : 'r2-preview',
         });
         if (Number.isFinite(Number(object.size))) {
             headers.set('Content-Length', String(object.size));

@@ -23,12 +23,12 @@ function validManifest(value) {
 }
 
 async function readPreviewManifest(ctx) {
-    if (ctx?.env?.APP_ENV !== 'preview') return null;
+    if (!['preview', 'production'].includes(ctx?.env?.APP_ENV)) return null;
     const bucket = ctx?.env?.COVER_R2;
     if (!bucket || typeof bucket.get !== 'function') return null;
     if (!ctx.data || typeof ctx.data !== 'object') ctx.data = {};
-    if (!ctx.data.__previewCoverManifestPromise) {
-        ctx.data.__previewCoverManifestPromise = (async () => {
+    if (!ctx.data.__coverManifestPromise) {
+        ctx.data.__coverManifestPromise = (async () => {
             try {
                 const object = await bucket.get(MANIFEST_KEY);
                 if (!object || typeof object.text !== 'function') return null;
@@ -39,7 +39,7 @@ async function readPreviewManifest(ctx) {
             }
         })();
     }
-    return ctx.data.__previewCoverManifestPromise;
+    return ctx.data.__coverManifestPromise;
 }
 
 function validCurrent(entry) {

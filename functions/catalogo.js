@@ -556,10 +556,10 @@ export async function onRequest(ctx) {
     const rangeFrom = totalResults === 0 ? 0 : offset + 1;
     const rangeTo   = offset + limited.length;
 
-    // COVER-R2-PREVIEW-UI-1: una sola lectura memoizada del manifest por
+    // COVER-R2-PRODUCTION-1: una sola lectura memoizada del manifest por
     // request. Con catálogo completo exigimos coincidencia de la URL origen;
     // el índice compacto no conserva pictures[] y pasa null explícitamente.
-    const previewCovers = ctx.env?.APP_ENV === 'preview'
+    const r2Covers = ['preview', 'production'].includes(ctx.env?.APP_ENV)
         ? await Promise.all(limited.map(b => {
             const hasFullPictures = Array.isArray(b.pictures);
             const source = hasFullPictures
@@ -573,7 +573,7 @@ export async function onRequest(ctx) {
         const slug  = slugify(b.title);
         const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
         const img   = escapeHtml(
-            previewCovers[idx] || httpsImg(b.pictures?.[0] || b.thumbnail || '')
+            r2Covers[idx] || httpsImg(b.pictures?.[0] || b.thumbnail || '')
         );
         const title = escapeHtml(b.title);
         const author = b.author
