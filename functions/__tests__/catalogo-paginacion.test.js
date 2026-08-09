@@ -219,10 +219,10 @@ test('17. cada página tiene canonical propio y nunca apunta a la página 1', as
   assert.doesNotMatch(h2, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/catalogo">/);
 });
 
-test('18. una búsqueda paginada es noindex, follow con canonical propio', async () => {
+test('18. una búsqueda paginada es noindex, follow y canonicaliza al catálogo limpio', async () => {
   const { html } = await render(`${BASE_URL}?q=prueba&page=2`);
   assert.match(html, /<meta name="robots" content="noindex, follow">/);
-  assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/catalogo\?q=prueba&amp;page=2">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/catalogo">/);
 });
 
 test('19. el catálogo sin filtros sigue siendo index, follow en cualquier página', async () => {

@@ -662,12 +662,12 @@ export async function onRequest(ctx) {
     const robotsMeta = isIndex
         ? 'index, follow'
         : rawQ ? 'noindex, follow' : 'noindex';
-    // Canonical propio por página: una secuencia paginada no es contenido
-    // duplicado, así que `?page=2` no debe canonicalizar hacia la página 1 —
-    // hacerlo le pediría a Google que descarte el resto del catálogo.
-    const canonicalHref = `${BASE}${catalogPath({
-        q: rawQ, categoria, subcategoria, page,
-    })}`;
+    // La secuencia limpia /catalogo?page=N tiene canonical propio. Las vistas
+    // con búsqueda/categoría/subcategoría siguen noindex y canonicalizan al
+    // catálogo limpio: no abrimos un segundo espacio SEO de filtros.
+    const canonicalHref = isIndex
+        ? `${BASE}${catalogPath({ q: '', categoria: '', subcategoria: '', page })}`
+        : `${BASE}/catalogo`;
     const paginationBlock = paginationHtml({
         page,
         totalPages,
