@@ -39,6 +39,12 @@ database_id = "6fa387af-f29e-46dc-97e5-30298568b4a6"
 binding     = "CATALOG_BUCKET"
 bucket_name = "amadolibros-catalog"
 
+# COVER-R2-PREVIEW-UI-1: lectura exclusiva de las 20 portadas validadas del
+# piloto. Pages nunca escribe en este bucket y Producción no recibe el binding.
+[[env.preview.r2_buckets]]
+binding     = "COVER_R2"
+bucket_name = "amadolibros-images-preview"
+
 # Vars no secretas de Preview — env.preview.vars aplica a TODOS los
 # preview deployments del proyecto, no solo a esta rama. CANONICAL_ORIGIN
 # queda fijado al alias de esta rama porque Cloudflare Pages no permite

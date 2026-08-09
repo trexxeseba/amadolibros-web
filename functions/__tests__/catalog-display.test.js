@@ -17,7 +17,8 @@ const CATALOG = {
       id: 'MLU1', title: 'Alpha disponible', author: 'Autora Uno',
       isbn: '9789991234567',
       price: 1000, status: 'active', available_quantity: 2,
-      thumbnail: '', pictures: [], permalink: 'https://articulo.mercadolibre.com.uy/MLU1',
+      thumbnail: '', pictures: ['https://http2.mlstatic.com/D_TEST-O.jpg'],
+      permalink: 'https://articulo.mercadolibre.com.uy/MLU1',
     },
   ],
 };
@@ -30,15 +31,45 @@ const VERSION = '20260730120000000';
 const BLOCK = pausedBlockNumberForId(PAUSED.id, 128);
 const PREFIX = `stock1-preview/versions/${VERSION}`;
 
-function context(url, params = {}, appEnv = 'preview') {
+function context(url, params = {}, appEnv = 'preview', envOverrides = {}) {
   return {
     request: new Request(url),
     params,
     env: {
       APP_ENV: appEnv,
       STOCK_WAITLIST_TURNSTILE_SITE_KEY: '0xpreview-test-sitekey',
+      ...envOverrides,
     },
     waitUntil() {},
+  };
+}
+
+const PREVIEW_COVER_HASH = 'a'.repeat(64);
+const PREVIEW_COVER_MANIFEST = {
+  schema_version: 1,
+  updated_at: '2026-08-09T21:00:00.000Z',
+  entries: {
+    'MLU1:0': {
+      product_id: 'MLU1',
+      position: 0,
+      current: {
+        object_key: `covers/v1/objects/${PREVIEW_COVER_HASH}.jpg`,
+        sha256: PREVIEW_COVER_HASH,
+        mime: 'image/jpeg',
+        source_url: 'https://http2.mlstatic.com/D_TEST-O.jpg',
+      },
+    },
+  },
+};
+
+function previewCoverBucket() {
+  return {
+    async get(key) {
+      if (key === 'covers/v1/manifest.json') {
+        return { async text() { return JSON.stringify(PREVIEW_COVER_MANIFEST); } };
+      }
+      return null;
+    },
   };
 }
 
@@ -107,6 +138,50 @@ test.beforeEach(() => {
       async put() {},
     },
   };
+});
+
+test('COVER-R2 Preview: card y ficha usan la copia validada del mismo origen', async () => {
+  const env = { COVER_R2: previewCoverBucket() };
+  const catalogResponse = await catalogRequest(
+    context('https://preview.example/catalogo', {}, 'preview', env)
+  );
+  const catalogHtml = await catalogResponse.text();
+  assert.match(
+    catalogHtml,
+    new RegExp(`/preview-cover/MLU1/0/${PREVIEW_COVER_HASH}\\.jpg`),
+  );
+
+  const bookResponse = await bookRequest(context(
+    'https://preview.example/libro/MLU1/alpha-disponible',
+    { path: ['MLU1', 'alpha-disponible'] },
+    'preview',
+    env,
+  ));
+  const bookHtml = await bookResponse.text();
+  assert.match(
+    bookHtml,
+    new RegExp(`/preview-cover/MLU1/0/${PREVIEW_COVER_HASH}\\.jpg`),
+  );
+});
+
+test('COVER-R2 Preview: URL origen distinta mantiene mlstatic como fallback', async () => {
+  const staleManifest = structuredClone(PREVIEW_COVER_MANIFEST);
+  staleManifest.entries['MLU1:0'].current.source_url =
+    'https://http2.mlstatic.com/D_OLD-O.jpg';
+  const staleBucket = {
+    async get(key) {
+      if (key === 'covers/v1/manifest.json') {
+        return { async text() { return JSON.stringify(staleManifest); } };
+      }
+      return null;
+    },
+  };
+  const response = await catalogRequest(
+    context('https://preview.example/catalogo', {}, 'preview', { COVER_R2: staleBucket })
+  );
+  const html = await response.text();
+  assert.doesNotMatch(html, /\/preview-cover\/MLU1\/0\//);
+  assert.match(html, /https:\/\/http2\.mlstatic\.com\/D_TEST-O\.jpg/);
 });
 
 // CF-CATEGORÍAS-2D: en Preview, un pausado ya no se muestra como "No

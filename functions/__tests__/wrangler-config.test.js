@@ -104,6 +104,17 @@ test('wrangler.toml: Preview declara destinatarios internos sin declarar RESEND_
   assert.doesNotMatch(previewVars, /RESEND_API_KEY/);
 });
 
+test('COVER-R2: binding de portadas existe sólo en Preview', () => {
+  assert.match(
+    wranglerToml,
+    /\[\[env\.preview\.r2_buckets\]\][\s\S]*?binding\s*=\s*"COVER_R2"[\s\S]*?bucket_name\s*=\s*"amadolibros-images-preview"/,
+  );
+  const productionStart = wranglerToml.indexOf('[[env.production.kv_namespaces]]');
+  assert.ok(productionStart > -1);
+  assert.doesNotMatch(wranglerToml.slice(productionStart), /binding\s*=\s*"COVER_R2"/);
+  assert.doesNotMatch(wranglerToml.slice(productionStart), /amadolibros-images-preview/);
+});
+
 test('STOCK-1 Preview queda limitado a su rama y checkout apagado', () => {
   assert.match(stockPreviewYml, /refs\/heads\/agent\/stock-1-preview/);
   assert.match(stockPreviewYml, /--branch agent\/stock-1-preview/);
