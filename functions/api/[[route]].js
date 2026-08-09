@@ -3,6 +3,8 @@
 // El catálogo vive en R2. El Worker (worker-sync/) es la única fuente de escritura.
 // Pages ya no sincroniza, no resetea, y no escribe datos de catálogo en KV.
 
+import { STATUS_SYNC_STALE_MS, STATUS_SYNC_STUCK_MS } from '../_shared/status-policy.js';
+
 // Fuente canónica del catálogo — idéntica a catalogo.js, sitemap.xml.js, feed.xml.js
 const CATALOG_R2_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const META_R2_URL    = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/meta.json';
@@ -145,10 +147,7 @@ async function handleStatus(env, url) {
       env.AMADO_KV.get('sync:last_error'),
     ]);
 
-    // Frescura del sync
-    const STALE_MS = 26 * 60 * 60 * 1000;
-    const STUCK_MS = 45 * 60 * 1000;
-
+    // Frescura del sync — umbrales definidos una sola vez en _shared/status-policy.js.
     const lastOkDate = lastOk ? new Date(lastOk) : null;
     const lastOkValid = lastOkDate !== null && !isNaN(lastOkDate.getTime());
 
@@ -157,14 +156,14 @@ async function handleStatus(env, url) {
     if (lastOkValid) {
       const ageMs = Date.now() - lastOkDate.getTime();
       age_hours   = Math.round((ageMs / 3_600_000) * 10) / 10;
-      sync_fresh  = ageMs <= STALE_MS;
+      sync_fresh  = ageMs <= STATUS_SYNC_STALE_MS;
     }
 
     // Sync en progreso / trabado
     const lastStartedDate = lastStarted ? new Date(lastStarted) : null;
     const startedValid    = lastStartedDate !== null && !isNaN(lastStartedDate.getTime());
     const in_progress     = startedValid && (!lastOkValid || lastStartedDate > lastOkDate);
-    const possibly_stuck  = in_progress && (Date.now() - lastStartedDate.getTime()) > STUCK_MS;
+    const possibly_stuck  = in_progress && (Date.now() - lastStartedDate.getTime()) > STATUS_SYNC_STUCK_MS;
 
     // R2: verificar meta.json (GET) y catalog.json (HEAD) en paralelo
     const probeStarted = Date.now();
