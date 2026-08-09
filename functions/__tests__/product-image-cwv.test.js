@@ -65,3 +65,12 @@ test('en pausadas WhatsApp conserva rol de CTA principal', () => {
   assert.match(body, /class="btn btn-wa"/);
   assert.doesNotMatch(body, /class="btn btn-wa btn-secondary"/);
 });
+
+
+test('transferencia destaca el ahorro con sello 12% OFF sin reemplazar precio web', () => {
+  const body = html({ price: 1650 });
+  assert.match(body, /Precio web\/tarjeta:<\/span> \$1\.650 UYU/);
+  assert.match(body, /Transferencia:<\/span> <strong>\$1\.452 UYU<\/strong>/);
+  assert.match(body, />12% OFF<\/span>/);
+  assert.match(body, /class="discount-badge" aria-label="12 por ciento de descuento"/);
+});

@@ -321,7 +321,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
         ? `<div class="price-box">
       <div class="price-main"><span class="price-label">Precio web/tarjeta:</span> $${priceUY} UYU</div>
       <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
-      <div class="price-transfer">Transferencia: $${transferPrice} UYU</div>
+      <div class="price-transfer"><span class="price-transfer-label">Transferencia:</span> <strong>$${transferPrice} UYU</strong><span class="discount-badge" aria-label="12 por ciento de descuento">12% OFF</span></div>
     </div>`
         : `<div class="order-box">
       <strong>¿Buscás este libro?</strong>
@@ -502,7 +502,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey) {
     .price-main{font-size:1.35rem;font-weight:800;color:#0f172a;line-height:1.3}
     .price-label{font-weight:800}
     .price-installment{font-size:1rem;font-weight:600;color:#374151;margin-top:.35rem}
-    .price-transfer{font-size:.85rem;font-weight:600;color:#a94e3d;margin-top:.35rem}
+    .price-transfer{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem .5rem;
+                    font-size:1rem;font-weight:700;color:#a94e3d;margin-top:.55rem}
+    .price-transfer strong{font-size:1.08rem;color:#8f3f30}
+    .price-transfer-label{font-weight:700}
+    .discount-badge{display:inline-flex;align-items:center;justify-content:center;
+                    padding:.22rem .5rem;border-radius:999px;background:#8f3f30;color:#fff;
+                    font-size:.8rem;font-weight:900;letter-spacing:.035em;line-height:1;
+                    white-space:nowrap}
     .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
                border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
                margin:.875rem 0;color:#6b4218}
