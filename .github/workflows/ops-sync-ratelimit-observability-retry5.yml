@@ -1,0 +1,77 @@
+name: OPS sync 429 observability retry5 one-shot
+
+on:
+  push:
+    branches:
+      - agent/ops-sync-ratelimit-observability-1
+    paths:
+      - '.github/workflows/ops-sync-ratelimit-observability-retry5.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-test-clean-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ops-sync-ratelimit-observability-1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Fix generator
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/ops/apply-sync-ratelimit-observability.mjs')
+          s = p.read_text()
+          old = '  const serialized = `${summaryEntry.value}${detailEntry.value}`;'
+          if s.count(old) != 1:
+              raise SystemExit('interpolation marker mismatch')
+          s = s.replace(old, '  const serialized = summaryEntry.value + detailEntry.value;')
+          anchor = "function replaceOnce(source, from, to, label) {\n  const count = source.split(from).length - 1;\n  if (count !== 1) throw new Error(`${label}: esperado 1 match, encontrados ${count}`);\n  return source.replace(from, to);\n}\n"
+          if s.count(anchor) != 1:
+              raise SystemExit('replaceOnce helper marker mismatch')
+          helper = anchor + "\nfunction replaceFirst(source, from, to, label) {\n  const index = source.indexOf(from);\n  if (index < 0) throw new Error(`${label}: pattern no encontrado`);\n  return source.slice(0, index) + to + source.slice(index + from.length);\n}\n"
+          s = s.replace(anchor, helper)
+          label = "    'scan context',\n  );"
+          label_pos = s.find(label)
+          if label_pos < 0:
+              raise SystemExit('scan context label not found')
+          call_pos = s.rfind('  s = replaceOnce(', 0, label_pos)
+          if call_pos < 0:
+              raise SystemExit('scan replaceOnce call not found')
+          tail = s[call_pos:].replace('  s = replaceOnce(', '  s = replaceFirst(', 1)
+          s = s[:call_pos] + tail
+          p.write_text(s)
+          PY
+          node --check scripts/ops/apply-sync-ratelimit-observability.mjs
+      - name: Apply patch
+        run: node scripts/ops/apply-sync-ratelimit-observability.mjs
+      - name: Validate targeted tests
+        run: |
+          node --check worker-sync/meli-catalog.js
+          node --check worker-sync/index.js
+          node --test worker-sync/__tests__/mlget-rate-limit.test.js worker-sync/__tests__/run-sync-no-partial-publish.test.js
+          git diff --check
+      - name: Commit implementation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add worker-sync/meli-catalog.js worker-sync/index.js worker-sync/__tests__/mlget-rate-limit.test.js worker-sync/__tests__/run-sync-no-partial-publish.test.js
+          git commit -m 'OPS-SYNC-RATELIMIT-1: instrument ML retry context'
+      - name: Remove all temporary helpers
+        run: |
+          git rm -f \
+            .github/workflows/ops-sync-ratelimit-observability-apply.yml \
+            .github/workflows/ops-sync-ratelimit-observability-retry.yml \
+            .github/workflows/ops-sync-ratelimit-observability-retry2.yml \
+            .github/workflows/ops-sync-ratelimit-observability-retry3.yml \
+            .github/workflows/ops-sync-ratelimit-observability-retry4.yml \
+            .github/workflows/ops-sync-ratelimit-observability-retry5.yml \
+            scripts/ops/apply-sync-ratelimit-observability.mjs
+          git commit -m 'OPS sync: remove temporary observability helpers'
+      - name: Push clean branch
+        run: git push origin HEAD:agent/ops-sync-ratelimit-observability-1
