@@ -1,0 +1,31 @@
+name: Diagnostic production smoke no deploy
+
+on:
+  push:
+    branches:
+      - agent/diag-catalog-query-prod
+    paths:
+      - '.github/workflows/diag-smoke-production-no-deploy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Smoke current production without deploy
+        env:
+          SMOKE_BASE_URL: https://www.amadolibros.com
+          SMOKE_MAX_ATTEMPTS: '6'
+          SMOKE_RETRY_DELAY_MS: '10000'
+          SMOKE_TIMEOUT_MS: '10000'
+          SMOKE_EXPECT_CHECKOUT: 'enabled'
+        run: node scripts/smoke-production.js
