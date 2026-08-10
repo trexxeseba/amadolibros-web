@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   computeBackoffMs,
+  createMlRetryTelemetry,
   createSyncRetryBudget,
   mlGet,
   parseRetryAfterMs,
@@ -75,6 +76,57 @@ test('429 respeta Retry-After como fecha HTTP', async () => {
 
 test('Retry-After queda acotado a 30 segundos', () => {
   assert.equal(parseRetryAfterMs('120', { nowMs: 0 }), 30000);
+});
+
+test('telemetría conserva Retry-After anunciado aunque el comportamiento siga capado a 30 s', async () => {
+  const telemetry = createMlRetryTelemetry();
+  const { deps, waits } = deterministicDeps({
+    fetchFn: sequenceFetch([fakeResponse(429, {}, '60'), fakeResponse(200)]),
+    telemetry,
+    requestContext: {
+      phase: 'scan', catalog_status: 'active', page: 37, endpoint_kind: 'items_search',
+    },
+  });
+  await mlGet(URL_WITH_SECRETS, 'token', deps);
+  assert.deepEqual(waits, [30000]);
+  assert.equal(telemetry.rate_limit_429_count, 1);
+  assert.equal(telemetry.rate_limit_by_phase.scan, 1);
+  assert.equal(telemetry.max_retry_after_ms, 60000);
+  assert.equal(telemetry.max_applied_delay_ms, 30000);
+  assert.deepEqual(telemetry.last_event, {
+    status: 429,
+    phase: 'scan',
+    catalog_status: 'active',
+    page: 37,
+    batch: null,
+    total_batches: null,
+    endpoint_kind: 'items_search',
+    attempt: 1,
+    will_retry: true,
+    stop_reason: null,
+    retry_after_ms: 60000,
+    applied_delay_ms: 30000,
+  });
+  const serialized = JSON.stringify(telemetry);
+  assert.equal(serialized.includes('TOKEN-SECRETO'), false);
+  assert.equal(serialized.includes('SCROLL-SECRETO'), false);
+});
+
+test('telemetría distingue la fase details y el batch sin guardar IDs ni query', async () => {
+  const telemetry = createMlRetryTelemetry();
+  const { deps } = deterministicDeps({
+    fetchFn: sequenceFetch([fakeResponse(503), fakeResponse(200)]),
+    telemetry,
+    requestContext: { phase: 'details', batch: 12, total_batches: 80, endpoint_kind: 'items_details' },
+  });
+  await mlGet('https://api.mercadolibre.com/items?ids=MLU1,MLU2', 'token', deps);
+  assert.equal(telemetry.transient_count, 1);
+  assert.equal(telemetry.rate_limit_429_count, 0);
+  assert.equal(telemetry.last_event.phase, 'details');
+  assert.equal(telemetry.last_event.batch, 12);
+  assert.equal(telemetry.last_event.total_batches, 80);
+  assert.equal(telemetry.last_event.endpoint_kind, 'items_details');
+  assert.equal(JSON.stringify(telemetry).includes('MLU1'), false);
 });
 
 test('Retry-After ausente usa equal jitter determinista', async () => {

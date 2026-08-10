@@ -41,6 +41,69 @@ export const ML_SYNC_MAX_RETRY_WAIT_MS = 180000;
 
 const ML_TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504]);
 
+export function createMlRetryTelemetry() {
+  return {
+    schema_version: 1,
+    transient_count: 0,
+    rate_limit_429_count: 0,
+    rate_limit_by_phase: { scan: 0, details: 0, unknown: 0 },
+    max_retry_after_ms: null,
+    max_applied_delay_ms: 0,
+    last_event: null,
+  };
+}
+
+function normalizedRetryContext(requestContext = {}) {
+  const phase = ['scan', 'details'].includes(requestContext?.phase)
+    ? requestContext.phase
+    : 'unknown';
+  const catalogStatus = ['active', 'paused'].includes(requestContext?.catalog_status)
+    ? requestContext.catalog_status
+    : null;
+  const positiveInt = value => Number.isInteger(value) && value > 0 ? value : null;
+  return {
+    phase,
+    catalog_status: catalogStatus,
+    page: positiveInt(requestContext?.page),
+    batch: positiveInt(requestContext?.batch),
+    total_batches: positiveInt(requestContext?.total_batches),
+    endpoint_kind: ['items_search', 'items_details'].includes(requestContext?.endpoint_kind)
+      ? requestContext.endpoint_kind
+      : 'other',
+  };
+}
+
+function recordRetryTelemetry(telemetry, event) {
+  if (!telemetry || typeof telemetry !== 'object') return;
+  const ctx = normalizedRetryContext(event.requestContext);
+  telemetry.transient_count = (Number(telemetry.transient_count) || 0) + 1;
+  if (event.status === 429) {
+    telemetry.rate_limit_429_count = (Number(telemetry.rate_limit_429_count) || 0) + 1;
+    telemetry.rate_limit_by_phase ||= { scan: 0, details: 0, unknown: 0 };
+    telemetry.rate_limit_by_phase[ctx.phase] = (Number(telemetry.rate_limit_by_phase[ctx.phase]) || 0) + 1;
+  }
+  if (Number.isFinite(event.retryAfterMs)) {
+    telemetry.max_retry_after_ms = Math.max(Number(telemetry.max_retry_after_ms) || 0, event.retryAfterMs);
+  }
+  if (Number.isFinite(event.appliedDelayMs)) {
+    telemetry.max_applied_delay_ms = Math.max(Number(telemetry.max_applied_delay_ms) || 0, event.appliedDelayMs);
+  }
+  telemetry.last_event = {
+    status: event.status,
+    phase: ctx.phase,
+    catalog_status: ctx.catalog_status,
+    page: ctx.page,
+    batch: ctx.batch,
+    total_batches: ctx.total_batches,
+    endpoint_kind: ctx.endpoint_kind,
+    attempt: event.attempt,
+    will_retry: Boolean(event.willRetry),
+    stop_reason: event.stopReason || null,
+    retry_after_ms: Number.isFinite(event.retryAfterMs) ? event.retryAfterMs : null,
+    applied_delay_ms: Number.isFinite(event.appliedDelayMs) ? event.appliedDelayMs : null,
+  };
+}
+
 export function createSyncRetryBudget(maxWaitMs = ML_SYNC_MAX_RETRY_WAIT_MS) {
   return { remainingMs: Math.max(0, Number(maxWaitMs) || 0) };
 }
@@ -57,6 +120,7 @@ export async function buildCatalog(env, accessToken, {
   statuses = ['active', 'paused'],
   retryBudget = createSyncRetryBudget(),
   mlGetDeps = {},
+  telemetry = createMlRetryTelemetry(),
 } = {}) {
   const userId         = env.USER_ID;
   const minActiveItems = parseInt(env.MIN_ACTIVE_ITEMS || '500', 10);
@@ -73,6 +137,7 @@ export async function buildCatalog(env, accessToken, {
     requestedStatuses,
     retryBudget,
     mlGetDeps,
+    telemetry,
   );
   console.log(`[Catalog] IDs obtenidos: ${allIds.length}`);
 
@@ -81,7 +146,7 @@ export async function buildCatalog(env, accessToken, {
   }
 
   // Paso 2: obtener detalles en batches
-  const rawItems = await fetchDetails(allIds, accessToken, retryBudget, mlGetDeps);
+  const rawItems = await fetchDetails(allIds, accessToken, retryBudget, mlGetDeps, telemetry);
   console.log(`[Catalog] Detalles obtenidos: ${rawItems.length} de ${allIds.length}`);
 
   // Paso 3: slim + filtro. Closed/deleted/under_review siguen fuera del sitio.
@@ -127,6 +192,7 @@ async function fetchAllIds(
   statuses = ['active'],
   retryBudget,
   mlGetDeps = {},
+  telemetry = null,
 ) {
   const ids = [];
   for (const status of statuses) {
@@ -140,7 +206,17 @@ async function fetchAllIds(
         `?limit=100&search_type=scan&status=${encodeURIComponent(status)}`;
       if (scrollId) url += `&scroll_id=${encodeURIComponent(scrollId)}`;
 
-      const data = await mlGet(url, accessToken, { ...mlGetDeps, retryBudget });
+      const data = await mlGet(url, accessToken, {
+        ...mlGetDeps,
+        retryBudget,
+        telemetry,
+        requestContext: {
+          phase: 'scan',
+          catalog_status: status,
+          page,
+          endpoint_kind: 'items_search',
+        },
+      });
       const batch = data.results || [];
       scrollId = data.scroll_id || null;
       ids.push(...batch);
@@ -163,7 +239,7 @@ async function fetchAllIds(
 
 // ─── Detalles en batch ───────────────────────────────────────────────────────
 
-async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
+async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}, telemetry = null) {
   const items       = [];
   const totalBatches = Math.ceil(ids.length / DETAIL_BATCH);
 
@@ -173,7 +249,17 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
     const url       = `https://api.mercadolibre.com/items?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
 
     try {
-      const data = await mlGet(url, accessToken, { ...mlGetDeps, retryBudget });
+      const data = await mlGet(url, accessToken, {
+        ...mlGetDeps,
+        retryBudget,
+        telemetry,
+        requestContext: {
+          phase: 'details',
+          batch: batchNum,
+          total_batches: totalBatches,
+          endpoint_kind: 'items_details',
+        },
+      });
       // data es un array de { code, body } o directamente el item
       const entries = Array.isArray(data) ? data : [data];
       for (const entry of entries) {
@@ -508,6 +594,8 @@ export async function mlGet(url, accessToken, {
   baseBackoffMs = ML_BASE_BACKOFF_MS,
   maxBackoffMs = ML_MAX_BACKOFF_MS,
   maxCumulativeWaitMs = ML_MAX_CUMULATIVE_WAIT_MS,
+  telemetry = null,
+  requestContext = null,
 } = {}) {
   const endpoint = sanitizeEndpoint(url);
   let cumulativeWaitMs = 0;
@@ -523,25 +611,55 @@ export async function mlGet(url, accessToken, {
       throw new Error(`[Catalog] HTTP ${resp.status} no reintentable en ${endpoint}`);
     }
 
+    // Observamos el Retry-After anunciado sin alterar la política vigente:
+    // mlGet sigue aplicando el cap maxBackoffMs (30 s por defecto). Guardamos
+    // ambos valores para poder distinguir "ML pidió 60 s" de "esperamos 30 s".
+    const retryAfterObservedMs = parseRetryAfterMs(resp.headers?.get?.('Retry-After'), {
+      nowMs: now(),
+      maxBackoffMs: Number.MAX_SAFE_INTEGER,
+    });
+
     if (attempt >= maxRetries) {
+      recordRetryTelemetry(telemetry, {
+        status: resp.status,
+        requestContext,
+        attempt: attempt + 1,
+        willRetry: false,
+        stopReason: 'max_retries',
+        retryAfterMs: retryAfterObservedMs,
+        appliedDelayMs: null,
+      });
       throw new Error(
         `[Catalog] Agotados ${maxRetries} reintentos tras HTTP ${resp.status} en ${endpoint}`
       );
     }
 
     const requestRemainingMs = maxCumulativeWaitMs - cumulativeWaitMs;
-    if (requestRemainingMs <= 0) throw retryBudgetError('request', endpoint);
+    if (requestRemainingMs <= 0) {
+      recordRetryTelemetry(telemetry, {
+        status: resp.status, requestContext, attempt: attempt + 1,
+        willRetry: false, stopReason: 'request_budget',
+        retryAfterMs: retryAfterObservedMs, appliedDelayMs: null,
+      });
+      throw retryBudgetError('request', endpoint);
+    }
 
     const globalRemainingMs = retryBudget == null
       ? Number.POSITIVE_INFINITY
       : Number(retryBudget.remainingMs);
-    if (globalRemainingMs <= 0) throw retryBudgetError('global', endpoint);
+    if (globalRemainingMs <= 0) {
+      recordRetryTelemetry(telemetry, {
+        status: resp.status, requestContext, attempt: attempt + 1,
+        willRetry: false, stopReason: 'global_budget',
+        retryAfterMs: retryAfterObservedMs, appliedDelayMs: null,
+      });
+      throw retryBudgetError('global', endpoint);
+    }
 
-    const retryAfterMs = parseRetryAfterMs(resp.headers?.get?.('Retry-After'), {
-      nowMs: now(),
-      maxBackoffMs,
-    });
-    const calculatedDelayMs = retryAfterMs ?? computeBackoffMs(attempt, {
+    const retryAfterAppliedMs = Number.isFinite(retryAfterObservedMs)
+      ? Math.min(retryAfterObservedMs, maxBackoffMs)
+      : null;
+    const calculatedDelayMs = retryAfterAppliedMs ?? computeBackoffMs(attempt, {
       random,
       baseBackoffMs,
       maxBackoffMs,
@@ -552,6 +670,16 @@ export async function mlGet(url, accessToken, {
       requestRemainingMs,
       globalRemainingMs,
     )));
+
+    recordRetryTelemetry(telemetry, {
+      status: resp.status,
+      requestContext,
+      attempt: attempt + 1,
+      willRetry: true,
+      stopReason: null,
+      retryAfterMs: retryAfterObservedMs,
+      appliedDelayMs: delayMs,
+    });
 
     console.warn(
       `[Catalog] HTTP ${resp.status} transitorio en ${endpoint}. ` +

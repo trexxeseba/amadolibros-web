@@ -43,7 +43,7 @@
  */
 
 import { getAccessToken } from './meli-auth.js';
-import { buildCatalog   } from './meli-catalog.js';
+import { buildCatalog, createMlRetryTelemetry } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import {
@@ -399,6 +399,7 @@ export async function runSync(env, options = {}, {
 } = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
+  const mlRetryTelemetry = createMlRetryTelemetry();
   console.log(`[Sync] Iniciando sync completo — ${startedAt} | source=${source}`);
 
   if (source === 'cron') {
@@ -414,7 +415,10 @@ export async function runSync(env, options = {}, {
     // 2. Catálogo
     // El catálogo público conserva únicamente publicaciones activas. Los
     // pausados se generan por el flujo versionado y aislado de Preview.
-    const catalog = await buildCatalogFn(env, accessToken, { statuses: ['active'] });
+    const catalog = await buildCatalogFn(env, accessToken, {
+      statuses: ['active'],
+      telemetry: mlRetryTelemetry,
+    });
 
     // 3. Publicar en R2 (staging → validación → promote)
     const finishedAt = new Date().toISOString();
@@ -432,6 +436,8 @@ export async function runSync(env, options = {}, {
     // 4. Estado: éxito
     await kvPut(env, 'sync:last_ok', finishedAt);
     await kvDelete(env, 'sync:last_error');
+    await kvDelete(env, 'sync:last_error_detail:v1');
+    await kvPut(env, 'sync:last_rate_limit:v1', JSON.stringify(rateLimitSummary(mlRetryTelemetry, finishedAt, source)));
     await safeNotifyHealthcheck(notifyHealthcheckFn, env, 'success');
 
     console.log(`[Sync] Completado: ${catalog.total} items en ${Math.round(durationMs / 1000)}s`);
@@ -443,6 +449,7 @@ export async function runSync(env, options = {}, {
       started_at:     startedAt,
       finished_at:    finishedAt,
       duration_ms:    durationMs,
+      rate_limit:     rateLimitSummary(mlRetryTelemetry, finishedAt, source),
     };
 
   } catch (err) {
@@ -452,7 +459,17 @@ export async function runSync(env, options = {}, {
     const finishedAt = new Date().toISOString();
     const durationMs = Date.now() - new Date(startedAt).getTime();
     const summary = `${finishedAt} — ${err.message}`.slice(0, 400);
+    const rateLimit = rateLimitSummary(mlRetryTelemetry, finishedAt, source);
+    const errorDetail = {
+      schema_version: 1,
+      finished_at: finishedAt,
+      source,
+      last_retry_event: mlRetryTelemetry.last_event || null,
+      rate_limit: rateLimit,
+    };
     await kvPut(env, 'sync:last_error', summary);
+    await kvPut(env, 'sync:last_error_detail:v1', JSON.stringify(errorDetail));
+    await kvPut(env, 'sync:last_rate_limit:v1', JSON.stringify(rateLimit));
     await safeNotifyHealthcheck(notifyHealthcheckFn, env, 'fail');
 
     return {
@@ -462,8 +479,29 @@ export async function runSync(env, options = {}, {
       finished_at: finishedAt,
       duration_ms: durationMs,
       error:       err.message,
+      rate_limit:  rateLimitSummary(mlRetryTelemetry, finishedAt, source),
     };
   }
+}
+
+function rateLimitSummary(telemetry, finishedAt, source) {
+  return {
+    schema_version: 1,
+    finished_at: finishedAt,
+    source,
+    transient_count: Number(telemetry?.transient_count) || 0,
+    rate_limit_429_count: Number(telemetry?.rate_limit_429_count) || 0,
+    rate_limit_by_phase: {
+      scan: Number(telemetry?.rate_limit_by_phase?.scan) || 0,
+      details: Number(telemetry?.rate_limit_by_phase?.details) || 0,
+      unknown: Number(telemetry?.rate_limit_by_phase?.unknown) || 0,
+    },
+    max_retry_after_ms: Number.isFinite(telemetry?.max_retry_after_ms)
+      ? telemetry.max_retry_after_ms
+      : null,
+    max_applied_delay_ms: Number(telemetry?.max_applied_delay_ms) || 0,
+    last_event: telemetry?.last_event || null,
+  };
 }
 
 async function safeNotifyHealthcheck(notifyFn, env, kind) {
