@@ -56,6 +56,7 @@ import { previewCoverUrl } from './_shared/preview-cover.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
+const FREE_SHIPPING_THRESHOLD_UYU = 2000;
 
 function escapeHtml(str) {
     if (str == null) return '';
@@ -587,6 +588,7 @@ export async function onRequest(ctx) {
         const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const installment = Math.round(price / 12).toLocaleString('es-UY');
+        const hasFreeShipping = price >= FREE_SHIPPING_THRESHOLD_UYU;
         const loading  = idx < 8 ? 'eager' : 'lazy';
         const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
         const orderWaHref = `${WA}?text=${encodeURIComponent(buildOrderWaMessage(b, href))}`;
@@ -604,7 +606,8 @@ export async function onRequest(ctx) {
             ? `<div class="rc-prices">
       <span class="rc-base"><span class="rc-lbl">Precio web/tarjeta:</span> $${escapeHtml(priceStr)} UYU</span>
       <span class="rc-installment">Hasta 12 cuotas de aprox. $${escapeHtml(installment)} UYU</span>
-      <span class="rc-transfer">Transferencia: $${escapeHtml(transfer)} UYU</span>
+      <span class="rc-transfer"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>
+      ${hasFreeShipping ? '<span class="rc-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</span>' : ''}
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
             : isPaused
@@ -749,10 +752,11 @@ export async function onRequest(ctx) {
     .rc-author{font-size:.82rem;color:#6b6157;
                white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .rc-prices{display:flex;flex-direction:column;gap:.2rem;margin-top:.35rem}
-    .rc-base,.rc-installment,.rc-transfer{line-height:1.3}
+    .rc-base,.rc-installment,.rc-transfer,.rc-free-shipping{line-height:1.3}
     .rc-base{font-size:.95rem;color:#18120e;font-weight:700}
     .rc-installment{font-size:.82rem;color:#374151;font-weight:600}
     .rc-transfer{font-size:.78rem;color:#a94e3d;font-weight:600}
+    .rc-free-shipping{font-size:.78rem;color:#267a42;font-weight:700}
     .rc-lbl{font-weight:700}
     .wa-link{color:#15803d;font-weight:500}
     .rc-badge{display:inline-flex;align-self:flex-start;padding:.18rem .55rem;

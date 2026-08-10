@@ -96,14 +96,18 @@ test('carrito.astro: no publica cuentas ni cédula en el HTML estático', () => 
   assert.doesNotMatch(carritoAstro, /00065582200001|1960816881|8969114|2373466|57211|28688206/);
 });
 
-test('carrito.astro: transferencia permite copiar, abrir banco y copiar todo', () => {
-  assert.match(carritoAstro, /id="btn-copy-account"/);
-  assert.match(carritoAstro, /id="btn-copy-open-bank"/);
+test('carrito.astro: transferencia sólo ofrece copiar todos los datos', () => {
   assert.match(carritoAstro, /id="btn-copy-all"/);
+  assert.match(carritoAstro, />Copiar datos<\/button>/);
   assert.match(carritoAstro, /navigator\.clipboard\.writeText/);
+  assert.doesNotMatch(carritoAstro, /id="btn-copy-account"/);
+  assert.doesNotMatch(carritoAstro, /¿Desde qué banco o app pagás\?/);
+  assert.doesNotMatch(carritoAstro, /id="payer-channel"/);
+  assert.doesNotMatch(carritoAstro, /Copiar y abrir mi banco/);
+  assert.doesNotMatch(carritoAstro, /btn-copy-open-bank/);
 });
 
-test('carrito.astro: formulario y paso se restauran tras banco, WhatsApp o recarga', () => {
+test('carrito.astro: formulario y paso se restauran tras WhatsApp o recarga', () => {
   assert.match(carritoAstro, /amado-checkout-draft-v2/);
   assert.match(carritoAstro, /sessionStorage\.setItem\(CHECKOUT_DRAFT_KEY/);
   assert.match(carritoAstro, /restoredDraft\.step === 'transfer'/);

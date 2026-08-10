@@ -240,7 +240,7 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   const html = await response.text();
 
   assert.match(html, /Alpha disponible/);
-  assert.match(html, /Transferencia:/);
+  assert.match(html, /12% menos por transferencia:/);
   assert.match(html, /Precio web\/tarjeta:/);
   assert.equal(requests.includes(CATALOG_URL), false);
   assert.match(response.headers.get('server-timing'), /active_index_parse/);
@@ -258,9 +258,30 @@ test('el catálogo prioriza precio web y cuotas antes que transferencia', async 
 
   assert.match(prices, /Precio web\/tarjeta:<\/span> \$1[.,]000 UYU/);
   assert.match(prices, /Hasta 12 cuotas de aprox\. \$83 UYU/);
-  assert.match(prices, /Transferencia: \$880 UYU/);
+  assert.match(prices, /🏷️<\/span> 12% menos por transferencia: \$880 UYU/);
   assert.ok(prices.indexOf('Precio web/tarjeta:') < prices.indexOf('Hasta 12 cuotas'));
-  assert.ok(prices.indexOf('Hasta 12 cuotas') < prices.indexOf('Transferencia:'));
+  assert.ok(prices.indexOf('Hasta 12 cuotas') < prices.indexOf('12% menos por transferencia:'));
+});
+
+test('el catálogo marca con iconos el 12% y el envío gratis sólo desde el umbral', async () => {
+  const paidResponse = await catalogRequest(
+    context('https://preview.example/catalogo?q=Alpha')
+  );
+  const paidHtml = await paidResponse.text();
+  assert.match(paidHtml, /🏷️<\/span> 12% menos por transferencia/);
+  assert.doesNotMatch(paidHtml, /🚚<\/span> Envío gratis/);
+
+  const originalPrice = CATALOG.items[0].price;
+  CATALOG.items[0].price = 2100;
+  try {
+    const freeResponse = await catalogRequest(
+      context('https://preview.example/catalogo?q=Alpha')
+    );
+    const freeHtml = await freeResponse.text();
+    assert.match(freeHtml, /🚚<\/span> Envío gratis/);
+  } finally {
+    CATALOG.items[0].price = originalPrice;
+  }
 });
 
 test('el precio principal del catálogo tiene más fuerza visual que transferencia', async () => {

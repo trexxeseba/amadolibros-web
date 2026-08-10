@@ -49,18 +49,6 @@ export const TRANSFER_ACCOUNTS = Object.freeze([
   }),
 ]);
 
-// Enlaces oficiales verificados el 9/8/2026. No son deep links: ningún banco
-// uruguayo documenta un esquema universal que permita precargar destinatario
-// e importe de manera segura desde una web. El checkout copia primero el dato
-// y abre el canal oficial elegido.
-export const PAYER_CHANNELS = Object.freeze([
-  Object.freeze({ id: 'brou', name: 'BROU / eBROU', url: 'https://ebanking.brou.com.uy/frontend/' }),
-  Object.freeze({ id: 'itau', name: 'Itaú', url: 'https://www.itau.com.uy/' }),
-  Object.freeze({ id: 'oca', name: 'OCA / OCA Blue', url: 'https://oca.uy/descarga-app/' }),
-  Object.freeze({ id: 'prex', name: 'Prex', url: 'https://www.prexcard.com/' }),
-  Object.freeze({ id: 'other', name: 'Otro banco o billetera', url: null }),
-]);
-
 export function createTransferOptionsHandler({
   getNow = () => new Date(),
   orderEmails = defaultOrderEmailService,
@@ -188,7 +176,6 @@ export function createTransferOptionsHandler({
         expires_at: order.expires_at,
       },
       accounts: TRANSFER_ACCOUNTS,
-      payer_channels: PAYER_CHANNELS,
     });
   };
 }

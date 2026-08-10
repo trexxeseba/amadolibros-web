@@ -27,6 +27,7 @@ import {
 } from '../_shared/brand.js';
 
 const WA = '59899841325';
+const FREE_SHIPPING_THRESHOLD_UYU = 2000;
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -254,6 +255,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = item.status === 'active' && stockQty > 0;
+    const hasFreeShipping = inStock && price >= FREE_SHIPPING_THRESHOLD_UYU;
     const condition     = formatCondition(item.condition);
     const dimensions    = formatDimensions(item.dimensions);
     const waMsg         = encodeURIComponent(
@@ -324,13 +326,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 
     const priceHtml = inStock
         ? `<div class="price-box">
+      <div class="price-main">
+        <span class="price-main-label">Precio web/tarjeta:</span>
+        <strong>$${priceUY} UYU</strong>
+      </div>
+      <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
       <div class="price-transfer">
-        <span class="price-transfer-kicker">12% menos por transferencia</span>
-        <strong>$${transferPrice} UYU</strong>
+        <span class="price-transfer-line"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
         <span class="price-saving">Ahorrás $${transferSaving} UYU</span>
       </div>
-      <div class="price-card"><span class="price-label">Precio web/tarjeta:</span> $${priceUY} UYU</div>
-      <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
+      ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</div>' : ''}
     </div>`
         : `<div class="order-box">
       <strong>¿Buscás este libro?</strong>
@@ -506,19 +511,18 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .detail-row:last-child{border-bottom:0}
     .detail-row dt{font-weight:700;color:#334155}
     .detail-row dd{color:#475569}
-    .price-box{background:#f0fdf4;border:1px solid #86efac;border-radius:.65rem;
+    .price-box{background:#fff;border:1px solid #d8d1c7;border-radius:.65rem;
                padding:1rem 1.25rem;margin:.875rem 0}
-    .price-transfer{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem}
-    .price-transfer-kicker{display:inline-flex;background:#166534;color:#fff;border-radius:999px;
-                           padding:.2rem .65rem;font-size:.74rem;font-weight:800;
-                           letter-spacing:.035em;text-transform:uppercase;line-height:1.35}
-    .price-transfer strong{font-size:1.55rem;font-weight:850;color:#14532d;line-height:1.25;
-                           margin-top:.2rem}
-    .price-saving{font-size:.88rem;font-weight:700;color:#166534}
-    .price-card{font-size:.9rem;font-weight:600;color:#334155;margin-top:.8rem;
-                padding-top:.7rem;border-top:1px solid #bbf7d0}
-    .price-label{font-weight:700}
-    .price-installment{font-size:.88rem;font-weight:600;color:#475569;margin-top:.2rem}
+    .price-main{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem}
+    .price-main-label{font-size:.82rem;font-weight:700;color:#334155}
+    .price-main strong{font-size:1.55rem;font-weight:850;color:#18120e;line-height:1.25}
+    .price-installment{font-size:.88rem;font-weight:600;color:#475569;margin-top:.15rem}
+    .price-transfer{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem;
+                    margin-top:.75rem;padding-top:.7rem;border-top:1px solid #e2e8f0}
+    .price-transfer-line{font-size:.88rem;font-weight:700;color:#a94e3d;line-height:1.35}
+    .price-transfer-line strong{font-size:1rem;font-weight:850;color:#8f4436}
+    .price-saving{font-size:.78rem;font-weight:650;color:#64748b}
+    .price-free-shipping{font-size:.86rem;font-weight:750;color:#267a42;margin-top:.5rem}
     .order-box{display:flex;flex-direction:column;gap:.25rem;background:#fff7e8;
                border:1px solid #efd2a6;border-radius:.5rem;padding:1rem 1.25rem;
                margin:.875rem 0;color:#6b4218}
