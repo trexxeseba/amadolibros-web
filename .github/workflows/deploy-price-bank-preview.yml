@@ -1,0 +1,115 @@
+name: Deploy PRICE-BANK Preview
+
+on:
+  push:
+    branches:
+      - agent/price-icons-bank-copy-fix
+
+permissions:
+  contents: read
+
+concurrency:
+  group: price-bank-preview-112
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Guard Preview ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Block every other branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/agent/price-icons-bank-copy-fix" ]; then
+            echo "Deploy bloqueado: rama incorrecta."
+            exit 1
+          fi
+
+  validate:
+    name: Validate exact PR code
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - name: Validate shared suite
+        run: bash scripts/validate-ci.sh
+
+  deploy-preview:
+    name: Deploy isolated Preview
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      - name: Build protected Preview with checkout visible
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'true'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: npm run build
+
+      - name: Deploy branch to Cloudflare Pages Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch price-bank-preview-112
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke price hierarchy, benefits and transfer copy
+        env:
+          PREVIEW_URL: https://price-bank-preview-112.amadolibros-web.pages.dev
+        run: |
+          ready=false
+          for attempt in 1 2 3 4 5 6; do
+            code=$(curl -sSL -o /tmp/book.html -w '%{http_code}' \
+              "$PREVIEW_URL/libro/MLU1001092502/prueba" || true)
+            if [ "$code" = "200" ] && grep -Fq 'class="price-main"' /tmp/book.html; then
+              ready=true
+              break
+            fi
+            sleep 10
+          done
+          test "$ready" = "true"
+
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('/tmp/book.html', 'utf8');
+          const price = html.indexOf('class="price-main"');
+          const installments = html.indexOf('class="price-installment"');
+          const transfer = html.indexOf('class="price-transfer"');
+          if (!(price >= 0 && price < installments && installments < transfer)) {
+            throw new Error('La ficha no conserva precio → cuotas → transferencia.');
+          }
+          if (!html.includes('🏷️') || !html.includes('🚚')) {
+            throw new Error('Faltan los iconos comerciales en la ficha elegible.');
+          }
+          NODE
+
+          curl -sSL "$PREVIEW_URL/carrito/" -o /tmp/cart.html
+          grep -Fq 'data-online-checkout="enabled"' /tmp/cart.html
+          grep -Fq 'id="btn-copy-all"' /tmp/cart.html
+          grep -Fq '>Copiar datos</button>' /tmp/cart.html
+          ! grep -Fq '¿Desde qué banco o app pagás?' /tmp/cart.html
+          ! grep -Fq 'Copiar y abrir mi banco' /tmp/cart.html
+          ! grep -Fq 'id="payer-channel"' /tmp/cart.html
