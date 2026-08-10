@@ -76,7 +76,9 @@ find functions scripts worker-sync -type f -name '*.js' -print0 |
 # ── 2. Suite completa ─────────────────────────────────────────────────────
 step "Suite completa de tests"
 node --test worker-sync/__tests__/*.test.js
-node --test functions/__tests__/*.test.js
+# Node 22.12 (runner fijado en CI/deploy) todavía mantiene node:sqlite detrás
+# de este flag. En Node >=22.13 el flag es inocuo y conserva la misma suite.
+node --experimental-sqlite --test functions/__tests__/*.test.js
 node --test astro-front/src/lib/__tests__/*.test.js
 node --test functions/api/__tests__/*.test.js
 
