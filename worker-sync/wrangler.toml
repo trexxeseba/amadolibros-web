@@ -17,6 +17,8 @@ APP_ID          = "4741021817925208"
 USER_ID         = "440298103"
 # Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
 MIN_ACTIVE_ITEMS = "500"
+CANONICAL_ORIGIN = "https://www.amadolibros.com"
+SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
 # Binding name: CATALOG_R2
@@ -32,7 +34,14 @@ bucket_name = "amadolibros-catalog"
 binding = "AMADO_KV"
 id      = "6ea0ff4682d647118442a24fe384abc4"
 
+# D1 productiva: únicamente lee y actualiza solicitudes de aviso de stock.
+[[d1_databases]]
+binding = "ORDERS_DB"
+database_name = "amadolibros-orders-production"
+database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
+
 # ── Secrets a configurar via `wrangler secret put` ───────────────────────────
 # CLIENT_SECRET  — secreto OAuth de la app MercadoLibre
 # SYNC_SECRET    — token para el trigger manual POST /trigger
+# RESEND_API_KEY — envío automático al cliente cuando vuelve el stock
 # (No hay env REFRESH_TOKEN — el token rotativo vive en KV: auth:refresh_token)
