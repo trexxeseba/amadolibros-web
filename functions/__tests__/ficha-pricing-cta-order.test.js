@@ -1,7 +1,6 @@
 // AL-WEB: jerarquía de precios y orden de acciones en la ficha individual
 // (functions/libro/[[path]].js). Cubre las dos correcciones comerciales:
-// 1. Precio web/tarjeta primero, cuotas debajo, transferencia como
-//    beneficio secundario.
+// 1. Transferencia y ahorro primero, precio web/tarjeta y cuotas debajo.
 // 2. Agregar al carrito → WhatsApp → Mercado Libre, con Mercado Libre
 //    visualmente subordinado (sin el relleno amarillo dominante que tenía).
 import test from 'node:test';
@@ -35,34 +34,37 @@ function extractBlock(html, className) {
     return match[0];
 }
 
-test('1. Precio web/tarjeta aparece antes que transferencia, con el texto exacto aprobado (dentro del price-box, no en meta description)', () => {
+test('1. Transferencia aparece primero y muestra el 12% y el ahorro exacto', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
     assert.match(html, /Precio web\/tarjeta:<\/span> \$1\.200 UYU/);
-    assert.match(html, /Transferencia: \$1\.056 UYU/); // 1200 * 0.88 = 1056
+    assert.match(html, /12% menos por transferencia/);
+    assert.match(html, /<strong>\$1\.056 UYU<\/strong>/); // 1200 * 0.88 = 1056
+    assert.match(html, /Ahorrás \$144 UYU/);
     const priceBox = extractBlock(html, 'price-box');
     const priceIdx = priceBox.indexOf('Precio web/tarjeta:');
-    const transferIdx = priceBox.indexOf('Transferencia:');
+    const transferIdx = priceBox.indexOf('12% menos por transferencia');
     assert.ok(priceIdx > -1 && transferIdx > -1);
-    assert.ok(priceIdx < transferIdx, 'el precio principal debe aparecer antes que la transferencia');
+    assert.ok(transferIdx < priceIdx, 'la transferencia debe aparecer antes que tarjeta');
 });
 
-test('2. Cuotas visibles, con el texto aprobado, entre precio y transferencia', () => {
+test('2. Tarjeta y cuotas quedan visibles debajo de transferencia', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
     assert.match(html, /Hasta 12 cuotas de aprox\. \$100 UYU/); // 1200 / 12 = 100
     const priceBox = extractBlock(html, 'price-box');
     const priceIdx = priceBox.indexOf('Precio web/tarjeta:');
     const installmentIdx = priceBox.indexOf('Hasta 12 cuotas');
-    const transferIdx = priceBox.indexOf('Transferencia:');
-    assert.ok(priceIdx < installmentIdx, 'el precio principal debe ir antes que las cuotas');
-    assert.ok(installmentIdx < transferIdx, 'las cuotas deben ir antes que la transferencia');
+    const transferIdx = priceBox.indexOf('12% menos por transferencia');
+    assert.ok(transferIdx < priceIdx, 'transferencia debe ir antes que tarjeta');
+    assert.ok(priceIdx < installmentIdx, 'tarjeta debe ir antes que las cuotas');
 });
 
-test('3. Precio principal usa una clase visualmente más fuerte que transferencia', () => {
+test('3. Transferencia usa la jerarquía visual principal y tarjeta la secundaria', () => {
     const html = renderPage(book({ price: 1200 }), 'un-libro-de-prueba', false, '');
-    assert.match(html, /class="price-main"/);
     assert.match(html, /class="price-transfer"/);
-    assert.match(html, /\.price-main\{font-size:1\.35rem;font-weight:800/);
-    assert.match(html, /\.price-transfer\{font-size:\.85rem;font-weight:600/);
+    assert.match(html, /class="price-card"/);
+    assert.match(html, /\.price-transfer strong\{font-size:1\.55rem;font-weight:850/);
+    assert.match(html, /\.price-card\{font-size:\.9rem;font-weight:600/);
+    assert.match(html, /\.price-transfer-kicker\{display:inline-flex;background:#166534;color:#fff/);
 });
 
 test('4. Orden de botones: Agregar al carrito → WhatsApp → Mercado Libre (dentro del bloque .cta, no de la hoja de estilos)', () => {
@@ -118,6 +120,7 @@ test('10. No cambia el cálculo de precio, cuotas ni transferencia (solo texto/o
     const html = renderPage(book({ price: 999 }), 'un-libro', false, '');
     assert.match(html, /\$999 UYU/); // precio base sin redondeo especial
     assert.match(html, /\$879 UYU/); // 999 * 0.88 = 879.12 -> Math.round = 879 (transferencia)
+    assert.match(html, /Ahorrás \$120 UYU/); // ahorro = 999 - 879, consistente con el total final
     assert.match(html, /\$83 UYU/);  // Math.round(999/12) = 83 (cuotas)
 });
 
