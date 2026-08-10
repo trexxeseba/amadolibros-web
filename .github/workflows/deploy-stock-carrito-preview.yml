@@ -1,0 +1,103 @@
+name: Deploy STOCK-CARRITO-1 Preview
+
+on:
+  push:
+    branches:
+      - agent/stock-carrito-1-preview
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stock-carrito-1-preview
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Guard Preview ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Block every other branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/agent/stock-carrito-1-preview" ]; then
+            echo "Deploy bloqueado: rama incorrecta."
+            exit 1
+          fi
+
+  validate:
+    name: Validate exact PR code
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - name: Validate shared suite
+        run: bash scripts/validate-ci.sh
+
+  deploy-preview:
+    name: Deploy isolated Preview
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      - name: Build protected Preview with checkout visible
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'true'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: npm run build
+
+      - name: Deploy branch to Cloudflare Pages Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch agent/stock-carrito-1-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke Preview and cart validation contract
+        env:
+          PREVIEW_URL: https://agent-stock-carrito-1-preview.amadolibros-web.pages.dev
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /tmp/cart-test.html -w '%{http_code}' "$PREVIEW_URL/stock-carrito-test.html" || true)
+            if [ "$code" = "200" ]; then break; fi
+            sleep 10
+          done
+          test "$code" = "200"
+          grep -Fq 'Probar un disponible + un agotado' /tmp/cart-test.html
+          curl -sS "$PREVIEW_URL/carrito" -o /tmp/cart.html
+          grep -Fq 'data-online-checkout="enabled"' /tmp/cart.html
+
+          curl -sS -X POST "$PREVIEW_URL/api/cart/validate" \
+            -H 'Content-Type: application/json' \
+            --data '{"items":[{"product_id":"MLU1001092502","quantity":1,"unit_price_uyu":2790},{"product_id":"MLU1001304230","quantity":1,"unit_price_uyu":2500}]}' \
+            -o /tmp/validation.json
+          node -e '
+            const body = require("/tmp/validation.json");
+            const byId = Object.fromEntries(body.items.map(item => [item.product_id, item]));
+            if (byId.MLU1001092502.status !== "ok") throw new Error("active sample did not validate");
+            if (!["sin_stock", "no_existe"].includes(byId.MLU1001304230.status)) throw new Error("paused sample remained sellable");
+            if (!body.has_blocking_items || !body.has_changes) throw new Error("mixed cart flags missing");
+          '
