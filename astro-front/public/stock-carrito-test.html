@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Prueba STOCK-CARRITO-1</title>
+    <script src="/cart.js" defer></script>
+    <style>
+      body{font-family:system-ui,sans-serif;max-width:680px;margin:3rem auto;padding:0 1rem;color:#18120e}
+      button{display:block;width:100%;margin:.8rem 0;padding:1rem;border:0;border-radius:.6rem;background:#18120e;color:#fff;font:700 1rem system-ui;cursor:pointer}
+      p{line-height:1.5;color:#5f554c}
+    </style>
+  </head>
+  <body>
+    <h1>Prueba aislada del carrito</h1>
+    <p>Esta página sólo existe en la rama temporal de Preview. Prepara un carrito antiguo para comprobar qué pasa cuando el stock cambia.</p>
+    <button id="seed-mixed" type="button">Probar un disponible + un agotado</button>
+    <button id="seed-unavailable" type="button">Probar todos agotados</button>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var active = {
+          id: 'MLU1001092502',
+          title: 'Rodolfo Walsh, La Palabra Y La Acción',
+          price: 2790,
+          max_qty: 1,
+          thumbnail: '',
+        };
+        var pausedOne = {
+          id: 'MLU1001304230',
+          title: 'La Creación De La Experiencia Economía Experiencial',
+          price: 2500,
+          max_qty: 1,
+          thumbnail: '',
+        };
+        var pausedTwo = {
+          id: 'MLU1001343376',
+          title: 'Happycracia',
+          price: 1900,
+          max_qty: 1,
+          thumbnail: '',
+        };
+
+        function seed(items) {
+          window.AmadoCart.clear();
+          items.forEach(function (item) { window.AmadoCart.add(item); });
+          window.location.href = '/carrito';
+        }
+
+        document.getElementById('seed-mixed').addEventListener('click', function () {
+          seed([active, pausedOne]);
+        });
+        document.getElementById('seed-unavailable').addEventListener('click', function () {
+          seed([pausedOne, pausedTwo]);
+        });
+      });
+    </script>
+  </body>
+</html>
