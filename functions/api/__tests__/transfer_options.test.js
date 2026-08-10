@@ -16,6 +16,7 @@ const CONFIG = {
 
 function openOrder(patch = {}) {
   return {
+    id: 'order-uuid',
     public_code: 'AL-260809-TEST',
     status: 'open',
     payment_status: 'not_started',
@@ -25,6 +26,13 @@ function openOrder(patch = {}) {
     shipping_cost_uyu: 0,
     payable_total_uyu: 1850,
     currency: 'UYU',
+    buyer_name: 'Ana Pérez',
+    buyer_phone: '099123456',
+    buyer_email: 'ana@example.com',
+    delivery_type: 'pickup',
+    address: null,
+    locality: null,
+    department: null,
     ...patch,
   };
 }
@@ -55,8 +63,11 @@ function request(body = { public_code: 'AL-260809-TEST', idempotency_key: 'idem-
   });
 }
 
-async function call({ body, order, requestPatch, envPatch, dbOptions } = {}) {
-  const handler = createTransferOptionsHandler({ getNow: () => NOW });
+async function call({ body, order, requestPatch, envPatch, dbOptions, orderEmails } = {}) {
+  const handler = createTransferOptionsHandler({
+    getNow: () => NOW,
+    orderEmails: orderEmails || { sendTransferNotifications: async () => ({}) },
+  });
   const response = await handler({
     request: request(body, requestPatch),
     env: { ...CONFIG, ORDERS_DB: dbMock(order === undefined ? openOrder() : order, dbOptions), ...envPatch },
@@ -94,6 +105,21 @@ test('transfer: 12% se aplica a libros, no al ahorro de retiro', async () => {
   assert.equal(data.payment.transfer_discount_uyu, 240);
   assert.equal(data.payment.transfer_total_uyu, 1610);
   assert.equal(data.payment.list_total_uyu, 1850);
+});
+
+test('transfer: agenda confirmación al cliente y aviso interno con el total exacto', async () => {
+  const calls = [];
+  const { response } = await call({
+    orderEmails: {
+      sendTransferNotifications: async args => { calls.push(args); return {}; },
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].order.buyer_email, 'ana@example.com');
+  assert.equal(calls[0].payment.method, 'bank_transfer');
+  assert.equal(calls[0].payment.transfer_discount_uyu, 240);
+  assert.equal(calls[0].payment.total_uyu, 1610);
 });
 
 test('transfer: costo de envío no recibe 12% de descuento', async () => {
