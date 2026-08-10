@@ -289,6 +289,14 @@ export async function fetchActiveIndex(ctx) {
     return null;
 }
 
+// Stock y precios de checkout deben seguir el manifiesto vigente (60 s), no
+// catalog.json cacheado durante una hora. El índice activo es versionado y es
+// la misma fuente que publica el sincronizador para Producción y Preview.
+export async function fetchCheckoutCatalog(ctx) {
+    const activeIndex = await fetchActiveIndex(ctx);
+    return activeIndex && Array.isArray(activeIndex.items) ? activeIndex : null;
+}
+
 export function pausedBlockNumberForId(id, blockCount) {
     const digits = String(id || '').replace(/\D/g, '');
     if (!digits || !Number.isInteger(blockCount) || blockCount < 1) return 0;

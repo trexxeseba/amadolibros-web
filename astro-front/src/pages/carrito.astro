@@ -896,6 +896,62 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     margin-top: 0.1rem;
   }
 
+  :global(.cart-item-unavailable) {
+    background: #fff8f5;
+    border: 1px solid #efc7ba;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+    padding: 0.875rem;
+  }
+
+  :global(.cart-item-unavailable .cart-item-img),
+  :global(.cart-item-unavailable .cart-item-img-placeholder) {
+    opacity: 0.58;
+  }
+
+  :global(.cart-unavailable-box) {
+    grid-column: 2 / 4;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    color: #7f2f20;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  :global(.cart-unavailable-box strong) {
+    flex-basis: 100%;
+  }
+
+  :global(.cart-unavailable-wa) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    background: #267a42;
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  :global(.cart-unavailable-remove) {
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: #7f2f20;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  :global(.cart-item-update-msg) {
+    grid-column: 2 / 4;
+    color: #267a42;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
   /* ── Totales ───────────────────────────────────────── */
   .cart-totals {
     display: flex;
@@ -1168,6 +1224,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var transferData         = null;
     var transferIdempotencyKey = '';
     var selectedAccountId    = 'brou';
+    var cartValidationById   = {};
+    var cartValidationReady  = false;
+    var cartValidationFailed = false;
+    var cartValidationChanged = false;
+    var validationRequest    = null;
+    var applyingValidation   = false;
 
     // ── Formato moneda ───────────────────────────────────────────────────
     var fmt = new Intl.NumberFormat('es-UY', {
@@ -1342,10 +1404,135 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var restoredDraft = restoreDraft();
     syncPickupAck();
 
+    // ── STOCK-CARRITO-1: disponibilidad vigente ────────────────────────
+    function isUnavailableStatus(status) {
+      return status === 'sin_stock' || status === 'no_existe';
+    }
+
+    function validationFor(item) {
+      return cartValidationById[item.id] || null;
+    }
+
+    function getSellableItems(cart) {
+      if (!cartValidationReady || cartValidationFailed) return [];
+      return cart.items.filter(function (item) {
+        var validation = validationFor(item);
+        return validation && !isUnavailableStatus(validation.status);
+      });
+    }
+
+    function getSellableSubtotal() {
+      if (!window.AmadoCart) return 0;
+      return getSellableItems(window.AmadoCart.get()).reduce(function (sum, item) {
+        return sum + item.price * item.quantity;
+      }, 0);
+    }
+
+    function paymentItemsPayload(cart) {
+      return getSellableItems(cart).map(function (item) {
+        return { product_id: item.id, quantity: item.quantity };
+      });
+    }
+
+    function syncPaymentAvailability() {
+      var cart = window.AmadoCart ? window.AmadoCart.get() : { items: [] };
+      var canPay = cartValidationReady && !cartValidationFailed &&
+        !validationRequest && getSellableItems(cart).length > 0;
+      var transferButton = document.getElementById('btn-transfer-order');
+      var mercadoPagoButton = document.getElementById('btn-prepare-order');
+      if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !canPay;
+      if (mercadoPagoButton && !mercadoPagoButton.hasAttribute('aria-busy')) mercadoPagoButton.disabled = !canPay;
+    }
+
+    function buildCartValidationPayload(cart) {
+      return {
+        items: cart.items.map(function (item) {
+          return {
+            product_id: item.id,
+            quantity: item.quantity,
+            unit_price_uyu: item.price,
+          };
+        }),
+      };
+    }
+
+    async function runCartValidation(options) {
+      var cart = window.AmadoCart.get();
+      if (cart.items.length === 0) {
+        cartValidationById = {};
+        cartValidationReady = true;
+        cartValidationFailed = false;
+        cartValidationChanged = false;
+        renderCart();
+        return false;
+      }
+
+      if (options && options.initial && loadingEl) {
+        loadingEl.hidden = false;
+        loadingEl.textContent = 'Verificando disponibilidad…';
+      }
+
+      var response = await fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildCartValidationPayload(cart)),
+      });
+      var data = await response.json();
+      if (!response.ok || !Array.isArray(data.items)) {
+        var validationError = new Error(
+          data.error || 'No pudimos verificar la disponibilidad. Probá de nuevo en unos minutos.'
+        );
+        validationError.code = data.code || '';
+        throw validationError;
+      }
+
+      var nextById = {};
+      for (var i = 0; i < data.items.length; i++) {
+        nextById[data.items[i].product_id] = data.items[i];
+      }
+      cartValidationById = nextById;
+      cartValidationReady = true;
+      cartValidationFailed = false;
+      cartValidationChanged = data.has_changes === true;
+
+      applyingValidation = true;
+      try { window.AmadoCart.syncValidated(data.items); }
+      finally { applyingValidation = false; }
+
+      renderCart();
+      var remaining = getSellableItems(window.AmadoCart.get()).length;
+      if (data.has_changes) {
+        announce(remaining > 0
+          ? 'Actualizamos la disponibilidad del carrito. Podés continuar con los libros disponibles.'
+          : 'Los libros del carrito ya no están disponibles. Podés pedir que los busquemos por encargo.');
+      }
+      return remaining > 0;
+    }
+
+    async function refreshCartAvailability(options) {
+      if (validationRequest) return validationRequest;
+      cartValidationReady = false;
+      cartValidationFailed = false;
+      syncPaymentAvailability();
+      validationRequest = runCartValidation(options).catch(function (error) {
+        cartValidationReady = false;
+        cartValidationFailed = true;
+        renderCart();
+        showCheckoutError(
+          error.message || 'No pudimos verificar la disponibilidad. Probá de nuevo en unos minutos.'
+        );
+        return false;
+      }).finally(function () {
+        validationRequest = null;
+        syncPaymentAvailability();
+      });
+      return validationRequest;
+    }
+
     // ── Calcular y mostrar totales ───────────────────────────────────────
     function updateTotals() {
       if (!window.AmadoCart) return;
-      var subtotal     = window.AmadoCart.subtotal();
+      var subtotal     = getSellableSubtotal();
       var deliveryType = getDeliveryType();
       var isPickup     = deliveryType === 'pickup';
 
@@ -1383,7 +1570,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     }
 
     // ── Construir fila de item ───────────────────────────────────────────
-    function buildItemRow(item) {
+    function buildItemRow(item, validation) {
       var art = document.createElement('article');
       art.className = 'cart-item';
       art.setAttribute('role', 'listitem');
@@ -1408,10 +1595,58 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       titleEl.textContent = item.title;
       art.appendChild(titleEl);
 
+      if (validation && isUnavailableStatus(validation.status)) {
+        art.classList.add('cart-item-unavailable');
+        var unavailableBox = document.createElement('div');
+        unavailableBox.className = 'cart-unavailable-box';
+
+        var unavailableText = document.createElement('strong');
+        unavailableText.textContent = 'Vendimos todos los ejemplares de “' + item.title + '”. Si querés, lo buscamos para vos.';
+        unavailableBox.appendChild(unavailableText);
+
+        var waText = 'Hola, vi que “' + item.title + '”';
+        var currentAuthor = validation.author || '';
+        if (currentAuthor) waText += ' de ' + currentAuthor;
+        waText += ' ya no está disponible. ¿Pueden buscarlo por encargo?';
+        var waLink = document.createElement('a');
+        waLink.className = 'cart-unavailable-wa';
+        waLink.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waText);
+        waLink.target = '_blank';
+        waLink.rel = 'noopener noreferrer';
+        waLink.textContent = 'Buscarlo por encargo';
+        unavailableBox.appendChild(waLink);
+
+        var unavailableRemove = document.createElement('button');
+        unavailableRemove.type = 'button';
+        unavailableRemove.className = 'cart-unavailable-remove';
+        unavailableRemove.textContent = 'Quitar del carrito';
+        unavailableRemove.addEventListener('click', function () {
+          announce('Se eliminó "' + item.title + '" del carrito.');
+          window.AmadoCart.remove(item.id);
+        });
+        unavailableBox.appendChild(unavailableRemove);
+        art.appendChild(unavailableBox);
+        return art;
+      }
+
       var unitEl = document.createElement('p');
       unitEl.className = 'cart-item-unit-price';
       unitEl.textContent = fmt.format(item.price) + ' c/u';
       art.appendChild(unitEl);
+
+      if (validation && validation.status === 'precio_cambiado') {
+        var priceUpdate = document.createElement('span');
+        priceUpdate.className = 'cart-item-update-msg';
+        priceUpdate.textContent = 'El precio se actualizó a ' + fmt.format(item.price) + ' según el catálogo vigente.';
+        art.appendChild(priceUpdate);
+      }
+
+      if (validation && validation.status === 'cantidad_ajustada') {
+        var quantityUpdate = document.createElement('span');
+        quantityUpdate.className = 'cart-item-update-msg';
+        quantityUpdate.textContent = 'Quedaba menos stock: ajustamos la cantidad a ' + item.quantity + '.';
+        art.appendChild(quantityUpdate);
+      }
 
       var controls = document.createElement('div');
       controls.className = 'cart-item-controls';
@@ -1510,10 +1745,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
       while (itemsList.firstChild) itemsList.removeChild(itemsList.firstChild);
       for (var i = 0; i < cart.items.length; i++) {
-        itemsList.appendChild(buildItemRow(cart.items[i]));
+        itemsList.appendChild(buildItemRow(cart.items[i], validationFor(cart.items[i])));
       }
 
       updateTotals();
+      syncPaymentAvailability();
     }
 
     // ── Guardia ──────────────────────────────────────────────────────────
@@ -1532,7 +1768,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (checkoutEditStepEl) checkoutEditStepEl.hidden = false;
         try { sessionStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch (_) {}
       }
-      renderCart();
+      if (applyingValidation) {
+        renderCart();
+      } else {
+        cartValidationReady = false;
+        cartValidationFailed = false;
+        refreshCartAvailability();
+      }
     });
 
     // ── Toggle entrega ───────────────────────────────────────────────────
@@ -1621,9 +1863,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     // ── WhatsApp ──────────────────────────────────────────────────────────
     var btnWa = document.getElementById('btn-wa-order');
     if (btnWa) {
-      btnWa.addEventListener('click', function () {
+      btnWa.addEventListener('click', async function () {
         var cart = window.AmadoCart.get();
         if (cart.items.length === 0) return;
+        if (!await refreshCartAvailability({ beforePayment: true })) return;
+        cart = window.AmadoCart.get();
+        var sellableItems = getSellableItems(cart);
+        if (sellableItems.length === 0) return;
 
         var deliveryType = getDeliveryType();
         var address      = ((document.getElementById('delivery-address')     || {}).value || '').trim();
@@ -1647,12 +1893,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           }
         }
 
-        var subtotal = window.AmadoCart.subtotal();
+        var subtotal = getSellableSubtotal();
 
         var lines = ['PEDIDO WEB', '', 'Hola Amado Libros! Quiero hacer este pedido:'];
         lines.push('');
-        for (var i = 0; i < cart.items.length; i++) {
-          var it = cart.items[i];
+        for (var i = 0; i < sellableItems.length; i++) {
+          var it = sellableItems[i];
           lines.push('• ' + it.title + ' (x' + it.quantity + ') — ' + fmt.format(it.price) + ' c/u');
         }
         lines.push('');
@@ -1691,6 +1937,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       btnTransfer.disabled = false;
       btnTransfer.removeAttribute('aria-busy');
       btnTransfer.innerHTML = btnTransferOriginalHtml;
+      syncPaymentAvailability();
     }
 
     function selectedTransferAccount() {
@@ -1810,14 +2057,15 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       var payment = transferData.payment;
       var account = selectedTransferAccount();
       var cart = window.AmadoCart.get();
+      var sellableItems = getSellableItems(cart);
       var lines = [
         'COMPROBANTE DE TRANSFERENCIA',
         '',
         'Hola Amado Libros. Ya realicé la transferencia de mi pedido ' + payment.public_code + '.',
         '',
       ];
-      for (var i = 0; i < cart.items.length; i++) {
-        lines.push('• ' + cart.items[i].title + ' (x' + cart.items[i].quantity + ')');
+      for (var i = 0; i < sellableItems.length; i++) {
+        lines.push('• ' + sellableItems[i].title + ' (x' + sellableItems[i].quantity + ')');
       }
       lines.push('');
       lines.push('Total transferido: ' + fmt.format(payment.transfer_total_uyu) + ' UYU');
@@ -1926,11 +2174,15 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       btnTransfer.setAttribute('aria-busy', 'true');
       btnTransfer.textContent = 'Verificando precio y stock…';
 
+      var availabilityOk = await refreshCartAvailability({ beforePayment: true });
+      if (!availabilityOk) return null;
+      cart = window.AmadoCart.get();
+
       var token = await getTurnstileTokenForOrder();
       var payload = {
         idempotency_key: cart.idempotency_key,
         cf_turnstile_response: token,
-        items: cart.items.map(function (item) { return { product_id: item.id, quantity: item.quantity }; }),
+        items: paymentItemsPayload(cart),
         delivery_type: deliveryType,
         buyer: { name: name, phone: phone },
       };
@@ -1946,6 +2198,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         body: JSON.stringify(payload),
       });
       var orderData = await response.json();
+      if (!response.ok && orderData.code === 'CART_CHANGED') {
+        await refreshCartAvailability({ beforePayment: true });
+        return null;
+      }
       if (!response.ok) throw new Error(orderData.error || 'No pudimos preparar el pedido.');
       transferIdempotencyKey = cart.idempotency_key;
       return orderData.order;
@@ -2053,6 +2309,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       btnPrepare.disabled = false;
       btnPrepare.removeAttribute('aria-busy');
       btnPrepare.innerHTML = origBtnHTML;
+      syncPaymentAvailability();
     }
 
     if (btnPrepare) {
@@ -2093,6 +2350,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
         btnPrepare.disabled = true;
         btnPrepare.setAttribute('aria-busy', 'true');
+
+        var availabilityOk = await refreshCartAvailability({ beforePayment: true });
+        if (!availabilityOk) {
+          resetPrepareButton();
+          return;
+        }
+        cart = window.AmadoCart.get();
 
         // Fail closed: si el checkout está habilitado pero Turnstile no
         // pudo configurarse (site key ausente, o este host no está
@@ -2143,9 +2407,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var payload = {
           idempotency_key: cart.idempotency_key,
           cf_turnstile_response: cfTsResponse,
-          items: cart.items.map(function (it) {
-            return { product_id: it.id, quantity: it.quantity };
-          }),
+          items: paymentItemsPayload(cart),
           delivery_type: deliveryType,
           buyer: { name: prepName, phone: prepPhone },
         };
@@ -2168,6 +2430,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           });
           orderData = await resp.json();
           if (!resp.ok) {
+            if (orderData.code === 'CART_CHANGED') {
+              await refreshCartAvailability({ beforePayment: true });
+              resetPrepareButton();
+              return;
+            }
             showCheckoutError('Error: ' + (orderData.error || 'Intentá de nuevo.'));
             resetPrepareButton();
             return;
@@ -2216,24 +2483,26 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
-    renderCart();
-    if (transferStepEl && restoredDraft && restoredDraft.step === 'transfer' && restoredDraft.transfer_auth &&
-        restoredDraft.transfer_auth.idempotency_key === window.AmadoCart.get().idempotency_key) {
-      transferIdempotencyKey = restoredDraft.transfer_auth.idempotency_key;
-      fetchTransferOptions(restoredDraft.transfer_auth.public_code, transferIdempotencyKey)
-        .then(function (data) {
-          transferData = data;
-          showTransferStep(restoredDraft.payer_channel_id, restoredDraft.scroll_y);
-        })
-        .catch(function (error) {
-          transferData = null;
-          transferIdempotencyKey = '';
-          try { sessionStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch (_) {}
-          showEditStep();
-          showCheckoutError(error.message || 'No pudimos recuperar la transferencia. Prepará el pedido nuevamente.');
-        });
-    } else if (restoredDraft && Number.isFinite(restoredDraft.scroll_y)) {
-      requestAnimationFrame(function () { window.scrollTo(0, restoredDraft.scroll_y); });
-    }
+    refreshCartAvailability({ initial: true }).then(function () {
+      if (transferStepEl && restoredDraft && restoredDraft.step === 'transfer' &&
+          restoredDraft.transfer_auth && !cartValidationChanged &&
+          restoredDraft.transfer_auth.idempotency_key === window.AmadoCart.get().idempotency_key) {
+        transferIdempotencyKey = restoredDraft.transfer_auth.idempotency_key;
+        fetchTransferOptions(restoredDraft.transfer_auth.public_code, transferIdempotencyKey)
+          .then(function (data) {
+            transferData = data;
+            showTransferStep(restoredDraft.payer_channel_id, restoredDraft.scroll_y);
+          })
+          .catch(function (error) {
+            transferData = null;
+            transferIdempotencyKey = '';
+            try { sessionStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch (_) {}
+            showEditStep();
+            showCheckoutError(error.message || 'No pudimos recuperar la transferencia. Prepará el pedido nuevamente.');
+          });
+      } else if (restoredDraft && Number.isFinite(restoredDraft.scroll_y)) {
+        requestAnimationFrame(function () { window.scrollTo(0, restoredDraft.scroll_y); });
+      }
+    });
   });
 </script>

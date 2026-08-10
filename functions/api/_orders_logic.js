@@ -150,22 +150,42 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
   }
 
   const errors = [];
+  const issues = [];
   const snapshot = [];
 
   for (const item of consolidatedItems) {
     const catalogItem = byId.get(item.product_id);
     if (!catalogItem) {
       errors.push('Producto no encontrado: ' + item.product_id);
+      issues.push({
+        product_id: item.product_id,
+        status: 'no_existe',
+        available_quantity: 0,
+      });
       continue;
     }
     if (catalogItem.status && catalogItem.status !== 'active') {
       errors.push('Producto no disponible: ' + item.product_id);
+      issues.push({
+        product_id: item.product_id,
+        status: 'sin_stock',
+        title: typeof catalogItem.title === 'string' ? catalogItem.title : '',
+        author: typeof catalogItem.author === 'string' ? catalogItem.author : '',
+        available_quantity: 0,
+      });
       continue;
     }
 
     const available = Number(catalogItem.available_quantity);
     if (!Number.isInteger(available) || available < 0) {
       errors.push('Stock inválido para: ' + item.product_id);
+      issues.push({
+        product_id: item.product_id,
+        status: 'sin_stock',
+        title: typeof catalogItem.title === 'string' ? catalogItem.title : '',
+        author: typeof catalogItem.author === 'string' ? catalogItem.author : '',
+        available_quantity: 0,
+      });
       continue;
     }
     if (item.quantity > available) {
@@ -173,12 +193,25 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
         'Stock insuficiente para: ' + item.product_id +
         ' (disponible: ' + available + ')'
       );
+      issues.push({
+        product_id: item.product_id,
+        status: available === 0 ? 'sin_stock' : 'cantidad_ajustada',
+        title: typeof catalogItem.title === 'string' ? catalogItem.title : '',
+        author: typeof catalogItem.author === 'string' ? catalogItem.author : '',
+        available_quantity: available,
+        suggested_quantity: available,
+      });
       continue;
     }
 
     const rawPrice = Number(catalogItem.price);
     if (!Number.isFinite(rawPrice) || rawPrice <= 0) {
       errors.push('Precio inválido para: ' + item.product_id);
+      issues.push({
+        product_id: item.product_id,
+        status: 'no_existe',
+        available_quantity: 0,
+      });
       continue;
     }
 
@@ -199,7 +232,92 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
     });
   }
 
-  return { errors, snapshot };
+  return { errors, issues, snapshot };
+}
+
+export function validateCartBody(body) {
+  if (!isRecord(body)) return 'Body inválido.';
+  if (!Array.isArray(body.items) || body.items.length === 0) return 'El carrito está vacío.';
+  if (body.items.length > MAX_ITEMS) return 'Demasiados productos (máx. ' + MAX_ITEMS + ').';
+
+  const ids = new Set();
+  for (const item of body.items) {
+    if (!isRecord(item)) return 'Item inválido.';
+    if (!isNonEmptyString(item.product_id)) return 'product_id inválido.';
+    const productId = item.product_id.trim();
+    if (productId.length > MAX_PRODUCT_ID_LEN) return 'product_id demasiado largo.';
+    if (ids.has(productId)) return 'Producto duplicado.';
+    ids.add(productId);
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_QUANTITY_PER_ITEM) {
+      return 'Cantidad inválida.';
+    }
+    if (item.unit_price_uyu !== undefined) {
+      const clientPrice = Number(item.unit_price_uyu);
+      if (!Number.isFinite(clientPrice) || clientPrice <= 0) return 'Precio inválido.';
+    }
+  }
+  return null;
+}
+
+export function validateCartAgainstCatalog(requestItems, catalogItems) {
+  const byId = new Map();
+  for (const catalogItem of catalogItems) {
+    if (isRecord(catalogItem) && typeof catalogItem.id === 'string') {
+      byId.set(catalogItem.id, catalogItem);
+    }
+  }
+
+  return requestItems.map(requestItem => {
+    const productId = requestItem.product_id.trim();
+    const catalogItem = byId.get(productId);
+    if (!catalogItem) {
+      return { product_id: productId, status: 'no_existe', available_quantity: 0 };
+    }
+
+    const title = typeof catalogItem.title === 'string' ? catalogItem.title : '';
+    const author = typeof catalogItem.author === 'string' ? catalogItem.author : '';
+    const available = Number(catalogItem.available_quantity);
+    const active = (!catalogItem.status || catalogItem.status === 'active') &&
+      Number.isInteger(available) && available > 0;
+    if (!active) {
+      return {
+        product_id: productId,
+        status: 'sin_stock',
+        title,
+        author,
+        available_quantity: 0,
+      };
+    }
+
+    const price = Math.round(Number(catalogItem.price));
+    if (!Number.isFinite(price) || price <= 0) {
+      return { product_id: productId, status: 'no_existe', available_quantity: 0 };
+    }
+
+    if (requestItem.quantity > available) {
+      return {
+        product_id: productId,
+        status: 'cantidad_ajustada',
+        title,
+        author,
+        price_uyu: price,
+        available_quantity: available,
+        suggested_quantity: available,
+      };
+    }
+
+    const clientPrice = Number(requestItem.unit_price_uyu);
+    return {
+      product_id: productId,
+      status: Number.isFinite(clientPrice) && Math.round(clientPrice) !== price
+        ? 'precio_cambiado'
+        : 'ok',
+      title,
+      author,
+      price_uyu: price,
+      available_quantity: available,
+    };
+  });
 }
 
 export function calculateTotals(snapshotItems, deliveryType) {

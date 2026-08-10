@@ -118,9 +118,13 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       return json({ error: 'Catálogo no disponible. Intentá de nuevo en unos segundos.' }, 503);
     }
 
-    const { errors, snapshot } = buildSnapshot(consolidatedItems, catalog.items);
+    const { errors, issues, snapshot } = buildSnapshot(consolidatedItems, catalog.items);
     if (errors.length > 0) {
-      return json({ error: 'Productos con problemas.', details: errors }, 422);
+      return json({
+        error: 'Actualizamos la disponibilidad de tu carrito.',
+        code: 'CART_CHANGED',
+        issues,
+      }, 422);
     }
 
     const { productsTotal, pickupDiscount, shippingCost, payableTotal } =

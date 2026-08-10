@@ -193,6 +193,46 @@
       return cart.idempotency_key;
     },
 
+    // Actualiza solamente datos comerciales confirmados por /api/cart/validate.
+    // Los agotados permanecen en el carrito para poder ofrecer el encargo;
+    // esta función nunca confía en título, precio o stock del navegador.
+    syncValidated: function (validatedItems) {
+      if (!Array.isArray(validatedItems)) return false;
+      var byId = {};
+      for (var i = 0; i < validatedItems.length; i++) {
+        var validated = validatedItems[i];
+        if (validated && typeof validated.product_id === 'string') {
+          byId[validated.product_id] = validated;
+        }
+      }
+      var cart = load();
+      var changed = false;
+      for (var j = 0; j < cart.items.length; j++) {
+        var item = cart.items[j];
+        var current = byId[item.id];
+        if (!current || current.status === 'sin_stock' || current.status === 'no_existe') continue;
+        var price = Math.round(Number(current.price_uyu));
+        var available = Math.floor(Number(current.available_quantity));
+        if (isFinite(price) && price > 0 && item.price !== price) {
+          item.price = price;
+          changed = true;
+        }
+        if (isFinite(available) && available > 0 && item.max_qty !== available) {
+          item.max_qty = available;
+          changed = true;
+        }
+        if (isFinite(available) && available > 0 && item.quantity > available) {
+          item.quantity = available;
+          changed = true;
+        }
+      }
+      if (changed) {
+        cart.idempotency_key = uuid();
+        save(cart);
+      }
+      return changed;
+    },
+
     count: function () {
       return load().items.reduce(function (s, i) { return s + (i.quantity || 0); }, 0);
     },
