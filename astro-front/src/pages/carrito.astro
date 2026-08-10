@@ -77,10 +77,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
         <!-- Entrega -->
         <section class="cart-section">
-          <h2 class="cart-section-h2">Tipo de entrega</h2>
-          <div class="delivery-opts">
+          <h2 class="cart-section-h2">¿Cómo querés recibir tu pedido?</h2>
+          <div class="delivery-opts" role="radiogroup" aria-describedby="err-delivery">
             <label class="delivery-opt">
-              <input type="radio" name="delivery" value="pickup" checked>
+              <input type="radio" name="delivery" value="pickup">
               <span class="delivery-opt-content">
                 <strong class="delivery-opt-name">Pick up a pasos de Plaza Matriz</strong>
                 <span class="delivery-opt-meta">Lunes a viernes, de 8 a 17 h</span>
@@ -91,7 +91,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
           <!-- PICKUP-CX-1: aviso y aceptación obligatoria. Solo visible con
                retiro seleccionado; al pasar a envío se oculta y se limpia. -->
-          <div id="pickup-ack-box" class="pickup-ack">
+          <div id="pickup-ack-box" class="pickup-ack" hidden>
             <p class="pickup-ack-notice">
               Para evitar que vengas en vano, esperá nuestra confirmación por
               WhatsApp antes de venir. Te avisaremos apenas tu pedido esté
@@ -110,9 +110,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
               <span class="delivery-opt-content">
                 <strong class="delivery-opt-name">Envío a domicilio</strong>
                 <span class="delivery-opt-meta">Coordinamos contigo y el cadete entrega en una franja horaria de tu conveniencia.</span>
+                <span class="delivery-opt-badge">Envío gratis en compras desde $2.000</span>
               </span>
             </label>
           </div>
+          <span class="field-error delivery-error" id="err-delivery" role="alert" hidden></span>
           <div id="shipping-fields" class="shipping-fields" hidden>
             <div class="form-field">
               <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
@@ -462,14 +464,26 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     display: flex;
     align-items: flex-start;
     gap: 0.6rem;
+    min-height: 44px;
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: #fff;
     font-size: 0.9rem;
     color: var(--ink);
     cursor: pointer;
   }
 
+  .delivery-opt:has(input[type="radio"]:checked) {
+    border-color: #267a42;
+    background: rgba(37, 160, 80, 0.06);
+    box-shadow: 0 0 0 1px rgba(37, 160, 80, 0.18);
+  }
+
   .delivery-opt input[type="radio"] {
     margin-top: 0.2rem;
     flex-shrink: 0;
+    accent-color: #267a42;
   }
 
   .delivery-opt-content {
@@ -499,6 +513,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     padding: 0.1rem 0.5rem;
     align-self: flex-start;
   }
+
+  .delivery-error {
+    display: block;
+    margin-top: 0.65rem;
+  }
+
+  .delivery-error[hidden] { display: none; }
 
   .shipping-fields {
     display: flex;
@@ -1190,7 +1211,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var RETIRO_DISCOUNT             = 150;
     var SHIPPING_COST               = 250;
     var FREE_SHIPPING_THRESHOLD_UYU = 2000;
-    var CHECKOUT_DRAFT_KEY           = 'amado-checkout-draft-v1';
+    var CHECKOUT_DRAFT_KEY           = 'amado-checkout-draft-v2';
     var WHATSAPP_NUMBER              = '59899841325';
 
     // ── Elementos ───────────────────────────────────────────────────────
@@ -1284,7 +1305,32 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     // ── Tipo de entrega ──────────────────────────────────────────────────
     function getDeliveryType() {
       var checked = document.querySelector('input[name="delivery"]:checked');
-      return checked ? checked.value : 'pickup';
+      return checked ? checked.value : '';
+    }
+
+    function requireDeliveryType() {
+      var deliveryType = getDeliveryType();
+      if (deliveryType) return deliveryType;
+      var errEl = document.getElementById('err-delivery');
+      if (errEl) {
+        errEl.textContent = 'Elegí envío o retiro para continuar.';
+        errEl.hidden = false;
+      }
+      var firstDelivery = document.querySelector('input[name="delivery"]');
+      if (firstDelivery) {
+        firstDelivery.setAttribute('aria-invalid', 'true');
+        firstDelivery.focus();
+        firstDelivery.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return '';
+    }
+
+    function clearDeliveryError() {
+      var errEl = document.getElementById('err-delivery');
+      if (errEl) { errEl.textContent = ''; errEl.hidden = true; }
+      document.querySelectorAll('input[name="delivery"]').forEach(function (radio) {
+        radio.removeAttribute('aria-invalid');
+      });
     }
 
     // ── Persistencia de la etapa y los datos mínimos ─────────────────────
@@ -1363,6 +1409,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     }
     document.querySelectorAll('input[name="delivery"]').forEach(function (radio) {
       radio.addEventListener('change', saveDraft);
+      radio.addEventListener('change', clearDeliveryError);
     });
     window.addEventListener('pagehide', saveDraft);
 
@@ -1437,7 +1484,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     function syncPaymentAvailability() {
       var cart = window.AmadoCart ? window.AmadoCart.get() : { items: [] };
       var canPay = cartValidationReady && !cartValidationFailed &&
-        !validationRequest && getSellableItems(cart).length > 0;
+        !validationRequest && getSellableItems(cart).length > 0 && !!getDeliveryType();
       var transferButton = document.getElementById('btn-transfer-order');
       var mercadoPagoButton = document.getElementById('btn-prepare-order');
       if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !canPay;
@@ -1537,6 +1584,18 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       var isPickup     = deliveryType === 'pickup';
 
       if (subtotalEl) subtotalEl.textContent = fmt.format(subtotal);
+
+      if (!deliveryType || subtotal <= 0) {
+        if (discountLineEl)      discountLineEl.hidden      = true;
+        if (totalLineEl)         totalLineEl.hidden         = true;
+        if (shippingNoteEl)      shippingNoteEl.hidden      = true;
+        if (transferNoteEl)      transferNoteEl.hidden      = true;
+        if (shippingCostLineEl)  shippingCostLineEl.hidden  = true;
+        if (totalShippingLineEl) totalShippingLineEl.hidden = true;
+        if (shippingMsgEl)       shippingMsgEl.hidden       = true;
+        if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(subtotal);
+        return;
+      }
 
       if (isPickup) {
         var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
@@ -1804,6 +1863,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       radio.addEventListener('change', function () {
         syncShippingFields();
         updateTotals();
+        syncPaymentAvailability();
       });
     });
     syncShippingFields();
@@ -1878,6 +1938,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var name         = ((document.getElementById('buyer-name')            || {}).value || '').trim();
         var phone        = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
 
+        if (!deliveryType) { requireDeliveryType(); return; }
         if (deliveryType === 'shipping') {
           if (!address) {
             alert('Por favor ingresá la dirección de entrega.');
@@ -2150,6 +2211,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
       clearCheckoutError();
       clearFieldErrors();
+      if (!deliveryType) { requireDeliveryType(); return null; }
       if (!name) { showFieldError('buyer-name', 'Por favor ingresá tu nombre.'); return null; }
       if (!phone) { showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.'); return null; }
       if (deliveryType === 'shipping') {
@@ -2331,6 +2393,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var prepNotes    = ((document.getElementById('delivery-notes')        || {}).value || '').trim();
         var prepName     = ((document.getElementById('buyer-name')            || {}).value || '').trim();
         var prepPhone    = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
+
+        if (!deliveryType) {
+          requireDeliveryType();
+          return;
+        }
 
         // Primer campo inválido gana — mismo orden que antes, ahora con
         // error inline debajo del campo en vez de un alert() bloqueante.

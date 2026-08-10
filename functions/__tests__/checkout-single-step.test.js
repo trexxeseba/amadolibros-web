@@ -103,7 +103,7 @@ test('carrito.astro: transferencia permite copiar, abrir banco y copiar todo', (
 });
 
 test('carrito.astro: formulario y paso se restauran tras banco, WhatsApp o recarga', () => {
-  assert.match(carritoAstro, /amado-checkout-draft-v1/);
+  assert.match(carritoAstro, /amado-checkout-draft-v2/);
   assert.match(carritoAstro, /sessionStorage\.setItem\(CHECKOUT_DRAFT_KEY/);
   assert.match(carritoAstro, /restoredDraft\.step === 'transfer'/);
 });
