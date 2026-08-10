@@ -10,6 +10,7 @@ export const MAX_IDEMPOTENCY_KEY_LEN = 128;
 export const MAX_PRODUCT_ID_LEN      = 120;
 export const MAX_NAME_LEN            = 120;
 export const MAX_PHONE_LEN           = 40;
+export const MAX_EMAIL_LEN           = 254;
 export const MAX_ADDRESS_LEN         = 200;
 export const MAX_LOCALITY_LEN        = 120;
 export const MAX_DEPARTMENT_LEN      = 80;
@@ -37,6 +38,13 @@ function isValidTimeString(value) {
   if (typeof value !== 'string' || !/^\d{2}:\d{2}$/.test(value)) return false;
   const [hour, minute] = value.split(':').map(Number);
   return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+}
+
+export function normalizeBuyerEmail(value) {
+  if (typeof value !== 'string') return null;
+  const email = value.trim().toLowerCase();
+  if (email.length < 5 || email.length > MAX_EMAIL_LEN) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
 export function validateBody(body) {
@@ -75,6 +83,7 @@ export function validateBody(body) {
   if (body.buyer.name.trim().length > MAX_NAME_LEN) return 'Nombre demasiado largo.';
   if (!isNonEmptyString(body.buyer.phone)) return 'Teléfono del comprador requerido.';
   if (body.buyer.phone.trim().length > MAX_PHONE_LEN) return 'Teléfono demasiado largo.';
+  if (!normalizeBuyerEmail(body.buyer.email)) return 'Correo del comprador inválido.';
 
   if (body.delivery_type === 'shipping') {
     if (!isRecord(body.shipping)) return 'Falta shipping.';
@@ -357,6 +366,7 @@ export function generateFingerprint(body, consolidatedItems) {
     buyer: {
       name: body.buyer.name.trim(),
       phone: body.buyer.phone.trim(),
+      email: normalizeBuyerEmail(body.buyer.email),
     },
   };
 

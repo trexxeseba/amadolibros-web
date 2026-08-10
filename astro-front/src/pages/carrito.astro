@@ -186,6 +186,18 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
                 aria-describedby="err-buyer-phone">
               <span class="field-error" id="err-buyer-phone" role="alert" hidden></span>
             </div>
+            <div class="form-field">
+              <label for="buyer-email" class="form-label">Correo electrónico <span class="form-req" aria-hidden="true">*</span></label>
+              <input type="email" id="buyer-email" class="form-input"
+                placeholder="tu@email.com"
+                autocomplete="email"
+                inputmode="email"
+                maxlength="254"
+                required
+                aria-describedby="buyer-email-help err-buyer-email">
+              <span class="field-help" id="buyer-email-help">Ahí te enviamos la confirmación y el número de pedido.</span>
+              <span class="field-error" id="err-buyer-email" role="alert" hidden></span>
+            </div>
           </div>
         </section>
 
@@ -568,6 +580,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     display: block;
     font-size: 0.78rem;
     color: #b42318;
+    line-height: 1.4;
+  }
+
+  .field-help {
+    font-size: 0.75rem;
+    color: var(--ink-2);
     line-height: 1.4;
   }
 
@@ -1291,7 +1309,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     // sessionStorage sobrevive a recargas y al salto a una app bancaria, pero
     // se elimina al cerrar la pestaña. Así no guardamos PII indefinidamente.
     var draftFieldIds = [
-      'buyer-name', 'buyer-phone', 'delivery-address', 'delivery-barrio',
+      'buyer-name', 'buyer-phone', 'buyer-email', 'delivery-address', 'delivery-barrio',
       'delivery-departamento', 'delivery-notes',
     ];
 
@@ -1877,6 +1895,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var departamento = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
         var name         = ((document.getElementById('buyer-name')            || {}).value || '').trim();
         var phone        = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
+        var email        = ((document.getElementById('buyer-email')           || {}).value || '').trim();
 
         if (deliveryType === 'shipping') {
           if (!address) {
@@ -1923,6 +1942,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         }
         if (name)  lines.push('Nombre: ' + name);
         if (phone) lines.push('WhatsApp/Tel: ' + phone);
+        if (email) lines.push('Correo: ' + email);
 
         var msg = encodeURIComponent(lines.join('\n'));
         window.open('https://wa.me/59899841325?text=' + msg, '_blank', 'noopener,noreferrer');
@@ -2147,11 +2167,16 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       var notes = ((document.getElementById('delivery-notes') || {}).value || '').trim();
       var name = ((document.getElementById('buyer-name') || {}).value || '').trim();
       var phone = ((document.getElementById('buyer-phone') || {}).value || '').trim();
+      var email = ((document.getElementById('buyer-email') || {}).value || '').trim();
 
       clearCheckoutError();
       clearFieldErrors();
       if (!name) { showFieldError('buyer-name', 'Por favor ingresá tu nombre.'); return null; }
       if (!phone) { showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.'); return null; }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError('buyer-email', 'Ingresá un correo válido para recibir la confirmación.');
+        return null;
+      }
       if (deliveryType === 'shipping') {
         if (!address) { showFieldError('delivery-address', 'Por favor ingresá la dirección de entrega.'); return null; }
         if (!locality) { showFieldError('delivery-barrio', 'Por favor ingresá la localidad.'); return null; }
@@ -2184,7 +2209,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         cf_turnstile_response: token,
         items: paymentItemsPayload(cart),
         delivery_type: deliveryType,
-        buyer: { name: name, phone: phone },
+        buyer: { name: name, phone: phone, email: email },
       };
       if (deliveryType === 'pickup') payload.pickup_ack = true;
       if (deliveryType === 'shipping') {
@@ -2331,6 +2356,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         var prepNotes    = ((document.getElementById('delivery-notes')        || {}).value || '').trim();
         var prepName     = ((document.getElementById('buyer-name')            || {}).value || '').trim();
         var prepPhone    = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
+        var prepEmail    = ((document.getElementById('buyer-email')           || {}).value || '').trim();
 
         // Primer campo inválido gana — mismo orden que antes, ahora con
         // error inline debajo del campo en vez de un alert() bloqueante.
@@ -2340,6 +2366,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         }
         if (!prepPhone) {
           showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.');
+          return;
+        }
+        if (!prepEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prepEmail)) {
+          showFieldError('buyer-email', 'Ingresá un correo válido para recibir la confirmación.');
           return;
         }
         if (deliveryType === 'shipping') {
@@ -2409,7 +2439,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           cf_turnstile_response: cfTsResponse,
           items: paymentItemsPayload(cart),
           delivery_type: deliveryType,
-          buyer: { name: prepName, phone: prepPhone },
+          buyer: { name: prepName, phone: prepPhone, email: prepEmail },
         };
         if (deliveryType === 'pickup') payload.pickup_ack = true;
         if (deliveryType === 'shipping') {

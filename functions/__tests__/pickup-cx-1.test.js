@@ -72,7 +72,7 @@ const itemsOk = [{ product_id: 'MLU1', quantity: 1 }];
 const base = {
     idempotency_key: 'k'.repeat(20),
     items: itemsOk,
-    buyer: { name: 'Ada Lovelace', phone: '099111222' },
+    buyer: { name: 'Ada Lovelace', phone: '099111222', email: 'ada@example.com' },
     cf_turnstile_response: 'x',
 };
 const envio = {
