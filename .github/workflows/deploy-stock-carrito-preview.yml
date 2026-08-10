@@ -91,7 +91,7 @@ jobs:
             sleep 10
           done
           test "$ready" = "true"
-          curl -sS "$PREVIEW_URL/carrito" -o /tmp/cart.html
+          curl -sSL "$PREVIEW_URL/carrito" -o /tmp/cart.html
           grep -Fq 'data-online-checkout="enabled"' /tmp/cart.html
 
           curl -sS -X POST "$PREVIEW_URL/api/cart/validate" \
