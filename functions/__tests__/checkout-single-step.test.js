@@ -38,6 +38,7 @@ const cartJs = readFileSync(
 const REQUIRED_FIELD_IDS = [
   'buyer-name',
   'buyer-phone',
+  'buyer-email',
   'delivery-address',
   'delivery-barrio',
   'delivery-departamento',
@@ -103,7 +104,7 @@ test('carrito.astro: transferencia permite copiar, abrir banco y copiar todo', (
 });
 
 test('carrito.astro: formulario y paso se restauran tras banco, WhatsApp o recarga', () => {
-  assert.match(carritoAstro, /amado-checkout-draft-v1/);
+  assert.match(carritoAstro, /amado-checkout-draft-v2/);
   assert.match(carritoAstro, /sessionStorage\.setItem\(CHECKOUT_DRAFT_KEY/);
   assert.match(carritoAstro, /restoredDraft\.step === 'transfer'/);
 });
@@ -144,7 +145,10 @@ test('carrito.astro: con checkout OFF, WhatsApp sigue siendo la única acción d
 for (const fieldId of REQUIRED_FIELD_IDS) {
   test(`carrito.astro: el campo #${fieldId} tiene su span de error inline asociado`, () => {
     assert.match(carritoAstro, new RegExp(`id="err-${fieldId}"`));
-    assert.match(carritoAstro, new RegExp(`id="${fieldId}"[^>]*aria-describedby="err-${fieldId}"`));
+    assert.match(
+      carritoAstro,
+      new RegExp(`id="${fieldId}"[^>]*aria-describedby="[^"]*\\berr-${fieldId}\\b[^"]*"`),
+    );
   });
 }
 

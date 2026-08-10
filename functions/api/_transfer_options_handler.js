@@ -1,5 +1,6 @@
 import { calculateTransferTotals, MAX_BODY_BYTES } from './_orders_logic.js';
 import { resolveConfig } from './_env_config.js';
+import { orderEmailService as defaultOrderEmailService } from './_order_email.js';
 
 // Datos públicos de cobro, deliberadamente fuera del HTML estático. Se
 // entregan únicamente después de autenticar una orden abierta con su código
@@ -60,7 +61,10 @@ export const PAYER_CHANNELS = Object.freeze([
   Object.freeze({ id: 'other', name: 'Otro banco o billetera', url: null }),
 ]);
 
-export function createTransferOptionsHandler({ getNow = () => new Date() } = {}) {
+export function createTransferOptionsHandler({
+  getNow = () => new Date(),
+  orderEmails = defaultOrderEmailService,
+} = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
     if (request.method !== 'POST') {
@@ -115,7 +119,8 @@ export function createTransferOptionsHandler({ getNow = () => new Date() } = {})
     let order;
     try {
       order = await db.prepare(
-        'SELECT public_code,status,payment_status,expires_at,products_total_uyu,' +
+        'SELECT id,public_code,status,payment_status,expires_at,buyer_name,buyer_phone,buyer_email,' +
+        'delivery_type,address,locality,department,products_total_uyu,' +
         'pickup_discount_uyu,shipping_cost_uyu,payable_total_uyu,currency ' +
         'FROM orders WHERE public_code=? AND idempotency_key=?'
       ).bind(publicCode, idempotencyKey).first();
@@ -151,6 +156,22 @@ export function createTransferOptionsHandler({ getNow = () => new Date() } = {})
 
     const { transferProductsTotal, transferDiscount, transferPayableTotal } =
       calculateTransferTotals({ productsTotal, pickupDiscount, shippingCost });
+
+    const emailTask = Promise.resolve(orderEmails.sendTransferNotifications({
+      db,
+      env,
+      order,
+      payment: {
+        method: 'bank_transfer',
+        transfer_discount_uyu: transferDiscount,
+        total_uyu: transferPayableTotal,
+      },
+      now,
+    })).catch(error => {
+      console.error('[transfer-options] email task error', safeErrorName(error));
+    });
+    if (typeof context.waitUntil === 'function') context.waitUntil(emailTask);
+    else await emailTask;
 
     return json({
       payment: {

@@ -6,6 +6,7 @@ import {
   calculateTotals,
   generateFingerprint,
   generatePublicCode,
+  normalizeBuyerEmail,
   EXPIRY_MINUTES,
   MAX_BODY_BYTES,
 } from './_orders_logic.js';
@@ -159,7 +160,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       'INSERT INTO orders (' +
         'id, public_code, idempotency_key, request_fingerprint, ' +
         'status, payment_status, ' +
-        'buyer_name, buyer_phone, ' +
+        'buyer_name, buyer_phone, buyer_email, ' +
         'delivery_type, ' +
         'address, locality, department, ' +
         'requested_delivery_date, requested_delivery_from, requested_delivery_to, delivery_notes, ' +
@@ -168,7 +169,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       ') VALUES (' +
         '?, ?, ?, ?, ' +
         "'open', 'not_started', " +
-        '?, ?, ' +
+        '?, ?, ?, ' +
         '?, ' +
         '?, ?, ?, ' +
         '?, ?, ?, ?, ' +
@@ -182,6 +183,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       fingerprint,
       body.buyer.name.trim(),
       body.buyer.phone.trim(),
+      normalizeBuyerEmail(body.buyer.email),
       body.delivery_type,
       typeof shipping.address === 'string' ? shipping.address.trim() : null,
       typeof shipping.locality === 'string' ? shipping.locality.trim() : null,

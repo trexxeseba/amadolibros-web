@@ -104,6 +104,7 @@ function baseOrder(patch = {}) {
     payment_status:         'not_started',
     buyer_name:             'Ana Pérez',
     buyer_phone:            '099123456',
+    buyer_email:            'ana@example.com',
     delivery_type:'pickup', pickup_ack:true,
     address:                null,
     locality:               null,
@@ -161,11 +162,13 @@ function handler({
   getPayment = async () => basePayment(),
   getMerchantOrder = async () => ({ ok: false, code: 'NOT_FOUND' }),
   saleNotifier = async () => ({ ok: true }),
+  orderEmails = { sendPaidCustomer: async () => ({ ok: true }) },
 } = {}) {
   return createMpWebhookHandler({
     mpClient: { getPayment, getMerchantOrder },
     getNow: () => NOW,
     saleNotifier,
+    orderEmails,
   });
 }
 
@@ -731,6 +734,29 @@ test('email-1: pago aprobado en producción agenda una notificación con la orde
   assert.equal(calls[0].order.buyer_name, 'Ana Pérez');
   assert.equal(calls[0].payment.id, 123);
   assert.equal(calls[0].now.toISOString(), NOW.toISOString());
+});
+
+test('email-1b: pago aprobado en producción confirma al correo del cliente', async () => {
+  const calls = [];
+  const h = handler({
+    getPayment: async () => basePayment({ collector_id: PROD_COLLECTOR_ID, live_mode: true }),
+    orderEmails: {
+      sendPaidCustomer: async args => { calls.push(args); return { ok: true }; },
+    },
+  });
+  const res = await h({
+    request: makeReq({ host: 'www.amadolibros.com' }),
+    env: {
+      ...PRODUCTION_ENV_CONFIG,
+      MP_WEBHOOK_SECRET: TEST_SECRET,
+      MP_ACCESS_TOKEN: TEST_TOKEN,
+      ORDERS_DB: dbMock({ order: baseOrder() }),
+    },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].order.buyer_email, 'ana@example.com');
+  assert.equal(calls[0].payment.method, 'mercado_pago');
 });
 
 test('email-2: pago aprobado en preview no envía notificación interna', async () => {
