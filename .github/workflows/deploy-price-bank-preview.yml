@@ -95,13 +95,14 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const html = fs.readFileSync('/tmp/book.html', 'utf8');
-          const price = html.indexOf('class="price-main"');
-          const installments = html.indexOf('class="price-installment"');
-          const transfer = html.indexOf('class="price-transfer"');
+          const body = html.slice(html.indexOf('<body'));
+          const price = body.indexOf('class="price-main"');
+          const installments = body.indexOf('class="price-installment"');
+          const transfer = body.indexOf('class="price-transfer"');
           if (!(price >= 0 && price < installments && installments < transfer)) {
             throw new Error('La ficha no conserva precio → cuotas → transferencia.');
           }
-          if (!html.includes('🏷️') || !html.includes('🚚')) {
+          if (!body.includes('🏷️') || !body.includes('🚚')) {
             throw new Error('Faltan los iconos comerciales en la ficha elegible.');
           }
           NODE
@@ -109,7 +110,7 @@ jobs:
           curl -sSL "$PREVIEW_URL/carrito/" -o /tmp/cart.html
           grep -Fq 'data-online-checkout="enabled"' /tmp/cart.html
           grep -Fq 'id="btn-copy-all"' /tmp/cart.html
-          grep -Fq '>Copiar datos</button>' /tmp/cart.html
+          grep -Fq 'Copiar datos</button>' /tmp/cart.html
           ! grep -Fq '¿Desde qué banco o app pagás?' /tmp/cart.html
           ! grep -Fq 'Copiar y abrir mi banco' /tmp/cart.html
           ! grep -Fq 'id="payer-channel"' /tmp/cart.html
