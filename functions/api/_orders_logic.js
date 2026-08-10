@@ -1,6 +1,7 @@
 export const RETIRO_DISCOUNT         = 150;
 export const SHIPPING_COST           = 250;
 export const FREE_SHIPPING_THRESHOLD = 2000;
+export const TRANSFER_FACTOR         = 0.88;
 export const EXPIRY_MINUTES          = 60;
 export const MAX_BODY_BYTES          = 32 * 1024;
 export const MAX_ITEMS               = 20;
@@ -88,9 +89,15 @@ export function validateBody(body) {
     if (!isNonEmptyString(shipping.department)) return 'Departamento requerido.';
     if (shipping.department.trim().length > MAX_DEPARTMENT_LEN) return 'Departamento demasiado largo.';
 
-    if (!isValidDateString(shipping.requested_date)) return 'Fecha inválida (formato YYYY-MM-DD).';
-    if (!isValidTimeString(shipping.requested_from)) return 'Hora desde inválida (formato HH:MM).';
-    if (!isValidTimeString(shipping.requested_to)) return 'Hora hasta inválida (formato HH:MM).';
+    if (shipping.requested_date && !isValidDateString(shipping.requested_date)) {
+      return 'Fecha inválida (formato YYYY-MM-DD).';
+    }
+    if (shipping.requested_from && !isValidTimeString(shipping.requested_from)) {
+      return 'Hora desde inválida (formato HH:MM).';
+    }
+    if (shipping.requested_to && !isValidTimeString(shipping.requested_to)) {
+      return 'Hora hasta inválida (formato HH:MM).';
+    }
 
     if (shipping.notes !== undefined && shipping.notes !== null) {
       if (typeof shipping.notes !== 'string') return 'Notas inválidas.';
@@ -114,8 +121,10 @@ export function dateInTimeZone(now, timeZone = BUSINESS_TIME_ZONE) {
 
 export function validateShippingDate(requestedDate, requestedFrom, requestedTo, now) {
   const today = dateInTimeZone(now);
-  if (requestedDate < today) return 'La fecha solicitada ya pasó.';
-  if (requestedTo <= requestedFrom) return 'La hora de fin debe ser posterior a la hora de inicio.';
+  if (requestedDate && requestedDate < today) return 'La fecha solicitada ya pasó.';
+  if (requestedFrom && requestedTo && requestedTo <= requestedFrom) {
+    return 'La hora de fin debe ser posterior a la hora de inicio.';
+  }
   return null;
 }
 
@@ -208,6 +217,20 @@ export function calculateTotals(snapshotItems, deliveryType) {
   return { productsTotal, pickupDiscount, shippingCost, payableTotal };
 }
 
+// El 12 % se aplica únicamente a los libros. El costo de envío y el ahorro
+// por retiro conservan su valor nominal. Esta función recibe totales ya
+// calculados y validados por el servidor; nunca usa precios enviados por el
+// navegador.
+export function calculateTransferTotals({ productsTotal, pickupDiscount, shippingCost }) {
+  const transferProductsTotal = Math.round(productsTotal * TRANSFER_FACTOR);
+  const transferDiscount = productsTotal - transferProductsTotal;
+  const transferPayableTotal = Math.max(
+    0,
+    transferProductsTotal - pickupDiscount + shippingCost,
+  );
+  return { transferProductsTotal, transferDiscount, transferPayableTotal };
+}
+
 export function generateFingerprint(body, consolidatedItems) {
   const fingerprint = {
     items: consolidatedItems,
@@ -224,9 +247,9 @@ export function generateFingerprint(body, consolidatedItems) {
       address: body.shipping.address.trim(),
       locality: body.shipping.locality.trim(),
       department: body.shipping.department.trim(),
-      requested_date: body.shipping.requested_date,
-      requested_from: body.shipping.requested_from,
-      requested_to: body.shipping.requested_to,
+      requested_date: body.shipping.requested_date || '',
+      requested_from: body.shipping.requested_from || '',
+      requested_to: body.shipping.requested_to || '',
       notes: typeof body.shipping.notes === 'string' ? body.shipping.notes.trim() : '',
     };
   }

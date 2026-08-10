@@ -3,6 +3,7 @@
   if (window.AmadoCart) return;
 
   var STORAGE_KEY = 'amado-cart';
+  var CONTEXT_KEY = 'amado-cart-context-v1';
   var VERSION = 2; // v2: incorpora max_qty; carritos v1 sin max_qty se descartan
 
   function uuid() {
@@ -68,6 +69,62 @@
     document.dispatchEvent(new CustomEvent('amado:cart-updated', { detail: cart }));
   }
 
+  function rememberShoppingContext() {
+    if (window.location.pathname === '/carrito' || window.location.pathname === '/carrito/') return;
+    try {
+      sessionStorage.setItem(CONTEXT_KEY, JSON.stringify({
+        url: window.location.pathname + window.location.search + window.location.hash,
+        scroll_y: Math.max(0, Math.round(window.scrollY || 0)),
+        restore: false,
+      }));
+    } catch (_) {}
+  }
+
+  function readShoppingContext() {
+    try {
+      var value = JSON.parse(sessionStorage.getItem(CONTEXT_KEY) || 'null');
+      if (!value || typeof value.url !== 'string' || value.url.charAt(0) !== '/') return null;
+      if (/^\/carrito\/?(?:[?#]|$)/.test(value.url)) return null;
+      return value;
+    } catch (_) { return null; }
+  }
+
+  function returnToShoppingContext() {
+    var context = readShoppingContext();
+    if (!context) {
+      window.location.href = '/catalogo';
+      return;
+    }
+    context.restore = true;
+    try { sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(context)); } catch (_) {}
+    window.location.href = context.url;
+  }
+
+  window.AmadoCartContext = {
+    get: readShoppingContext,
+    remember: rememberShoppingContext,
+    returnToShopping: returnToShoppingContext,
+  };
+
+  // Al volver desde el carrito, restaura la búsqueda/ficha y la altura exacta
+  // donde el cliente estaba. requestAnimationFrame doble espera el primer
+  // layout para no quedar unos píxeles arriba en páginas con imágenes.
+  document.addEventListener('DOMContentLoaded', function () {
+    var context = readShoppingContext();
+    var current = window.location.pathname + window.location.search + window.location.hash;
+    if (!context || !context.restore || context.url !== current) return;
+    context.restore = false;
+    try { sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(context)); } catch (_) {}
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { window.scrollTo(0, context.scroll_y || 0); });
+    });
+  });
+
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest('a[href="/carrito"], a[href="/carrito/"]');
+    if (link) rememberShoppingContext();
+  }, true);
+
   var AmadoCart = {
     get: function () { return load(); },
 
@@ -129,6 +186,13 @@
 
     clear: function () { save(emptyCart()); },
 
+    rotateKey: function () {
+      var cart = load();
+      cart.idempotency_key = uuid();
+      save(cart);
+      return cart.idempotency_key;
+    },
+
     count: function () {
       return load().items.reduce(function (s, i) { return s + (i.quantity || 0); }, 0);
     },
@@ -154,6 +218,7 @@
 
     // En estado post-agregar: segundo clic navega al carrito
     if (btn.dataset.goCart) {
+      rememberShoppingContext();
       window.location.href = '/carrito';
       return;
     }

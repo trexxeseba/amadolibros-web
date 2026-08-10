@@ -107,6 +107,16 @@ test('fecha y horas imposibles o desordenadas devuelven 400', async()=>{
   for(const b of cases) assert.equal((await call(b)).response.status,400);
 });
 
+test('envío admite coordinar fecha y horario después del pago', async()=>{
+  const b=shipping('later');
+  delete b.shipping.requested_date;
+  delete b.shipping.requested_from;
+  delete b.shipping.requested_to;
+  const r=await call(b);
+  assert.equal(r.response.status,201);
+  assert.equal(r.data.order.delivery_type,'shipping');
+});
+
 test('batch fallido devuelve 500 sin commit', async()=>{
   const d=dbMock({batchError:Error('D1')}); const r=await call(pickup('fail'),d); assert.equal(r.response.status,500); assert.equal(d.committed.length,0);
 });

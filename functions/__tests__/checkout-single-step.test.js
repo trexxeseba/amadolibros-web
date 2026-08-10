@@ -30,6 +30,10 @@ const ordersGuardJs = readFileSync(
   path.join(ROOT, 'astro-front', 'public', 'orders-guard.js'),
   'utf8',
 );
+const cartJs = readFileSync(
+  path.join(ROOT, 'astro-front', 'public', 'cart.js'),
+  'utf8',
+);
 
 const REQUIRED_FIELD_IDS = [
   'buyer-name',
@@ -37,12 +41,9 @@ const REQUIRED_FIELD_IDS = [
   'delivery-address',
   'delivery-barrio',
   'delivery-departamento',
-  'delivery-date',
-  'delivery-from',
-  'delivery-to',
 ];
 
-// ── Una sola pantalla, un solo botón principal ──────────────────────────────
+// ── Dos medios claros, sin el antiguo segundo paso de Mercado Pago ──────────
 
 test('carrito.astro: el checkout de dos pasos (order-result / btn-pay-mp) ya no existe', () => {
   assert.doesNotMatch(carritoAstro, /id="order-result"/);
@@ -50,13 +51,15 @@ test('carrito.astro: el checkout de dos pasos (order-result / btn-pay-mp) ya no 
   assert.doesNotMatch(carritoAstro, /getElementById\('btn-pay-mp'\)/);
 });
 
-test('carrito.astro: exactamente un botón principal id="btn-prepare-order" en el markup', () => {
+test('carrito.astro: Mercado Pago conserva un único CTA id="btn-prepare-order"', () => {
   const matches = carritoAstro.match(/id="btn-prepare-order"/g) || [];
   assert.equal(matches.length, 1);
 });
 
-test('carrito.astro: el CTA principal dice "Continuar a Mercado Pago"', () => {
-  assert.match(carritoAstro, /Continuar a Mercado Pago/);
+test('carrito.astro: muestra transferencia destacada y Mercado Pago separado', () => {
+  assert.match(carritoAstro, /id="btn-transfer-order"[^>]*class="btn-transfer-primary"/);
+  assert.match(carritoAstro, /Comprar por transferencia/);
+  assert.match(carritoAstro, /Pagar con tarjeta o Mercado Pago/);
 });
 
 test('carrito.astro: un solo listener de click maneja todo el pago (no hay un segundo botón/handler de "pagar")', () => {
@@ -77,6 +80,53 @@ test('carrito.astro: el mismo click crea la orden y la preferencia, sin un segun
   const ordersIdx = handlerBlock.indexOf("fetch('/api/orders'");
   const prefsIdx  = handlerBlock.indexOf("fetch('/api/preferences'");
   assert.ok(ordersIdx < prefsIdx, '/api/orders debe llamarse antes que /api/preferences');
+});
+
+test('carrito.astro: transferencia crea orden y recién después pide cuentas autenticadas', () => {
+  const start = carritoAstro.indexOf('async function createTransferOrder');
+  const end = carritoAstro.indexOf('// ── Continuar a Mercado Pago', start);
+  const block = carritoAstro.slice(start, end);
+  assert.match(block, /fetch\('\/api\/orders'/);
+  assert.match(block, /fetchTransferOptions\(order\.public_code, transferIdempotencyKey\)/);
+  assert.match(carritoAstro, /fetch\('\/api\/transfer-options'/);
+});
+
+test('carrito.astro: no publica cuentas ni cédula en el HTML estático', () => {
+  assert.doesNotMatch(carritoAstro, /00065582200001|1960816881|8969114|2373466|57211|28688206/);
+});
+
+test('carrito.astro: transferencia permite copiar, abrir banco y copiar todo', () => {
+  assert.match(carritoAstro, /id="btn-copy-account"/);
+  assert.match(carritoAstro, /id="btn-copy-open-bank"/);
+  assert.match(carritoAstro, /id="btn-copy-all"/);
+  assert.match(carritoAstro, /navigator\.clipboard\.writeText/);
+});
+
+test('carrito.astro: formulario y paso se restauran tras banco, WhatsApp o recarga', () => {
+  assert.match(carritoAstro, /amado-checkout-draft-v1/);
+  assert.match(carritoAstro, /sessionStorage\.setItem\(CHECKOUT_DRAFT_KEY/);
+  assert.match(carritoAstro, /restoredDraft\.step === 'transfer'/);
+});
+
+test('carrito.astro: no pide fecha ni franja; se coordinan después por WhatsApp', () => {
+  assert.doesNotMatch(carritoAstro, /id="delivery-(?:date|from|to)"/);
+  assert.match(carritoAstro, /Después del pago coordinamos el día y el horario por WhatsApp/);
+});
+
+test('cart.js: volver del carrito conserva URL, búsqueda y scroll de origen', () => {
+  assert.match(cartJs, /amado-cart-context-v1/);
+  assert.match(cartJs, /window\.location\.pathname \+ window\.location\.search \+ window\.location\.hash/);
+  assert.match(cartJs, /scroll_y:\s*Math\.max/);
+  assert.match(cartJs, /window\.scrollTo\(0, context\.scroll_y/);
+  assert.match(carritoAstro, /AmadoCartContext\.returnToShopping/);
+});
+
+test('editar una orden de transferencia rota la idempotencia y obliga a revalidar', () => {
+  assert.match(cartJs, /rotateKey:\s*function/);
+  const start = carritoAstro.indexOf("btnEditOrder.addEventListener('click'");
+  const block = carritoAstro.slice(start, start + 900);
+  assert.match(block, /AmadoCart\.rotateKey\(\)/);
+  assert.match(block, /transferData = null/);
 });
 
 // ── WhatsApp subordinado, no competidor ─────────────────────────────────────

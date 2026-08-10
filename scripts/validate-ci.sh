@@ -76,7 +76,9 @@ find functions scripts worker-sync -type f -name '*.js' -print0 |
 # ── 2. Suite completa ─────────────────────────────────────────────────────
 step "Suite completa de tests"
 node --test worker-sync/__tests__/*.test.js
-node --test functions/__tests__/*.test.js
+# Node 22.12 (runner fijado en CI/deploy) todavía mantiene node:sqlite detrás
+# de este flag. En Node >=22.13 el flag es inocuo y conserva la misma suite.
+node --experimental-sqlite --test functions/__tests__/*.test.js
 node --test astro-front/src/lib/__tests__/*.test.js
 node --test functions/api/__tests__/*.test.js
 
@@ -103,6 +105,8 @@ CART_OFF=astro-front/dist/carrito/index.html
 test -f "$CART_OFF"
 grep -q 'data-online-checkout="disabled"' "$CART_OFF"
 ! has_rendered_element_with_id "$CART_OFF" 'btn-prepare-order'
+! has_rendered_element_with_id "$CART_OFF" 'btn-transfer-order'
+! has_rendered_element_with_id "$CART_OFF" 'transfer-payment-step'
 ! has_rendered_element_with_id "$CART_OFF" 'btn-pay-mp'
 ! has_rendered_element_with_id "$CART_OFF" 'cf-ts-container'
 has_rendered_element_with_id "$CART_OFF" 'btn-wa-order'
@@ -129,6 +133,8 @@ CART_ON=astro-front/dist/carrito/index.html
 test -f "$CART_ON"
 grep -q 'data-online-checkout="enabled"' "$CART_ON"
 has_rendered_element_with_id "$CART_ON" 'btn-prepare-order'
+has_rendered_element_with_id "$CART_ON" 'btn-transfer-order'
+has_rendered_element_with_id "$CART_ON" 'transfer-payment-step'
 has_rendered_element_with_id "$CART_ON" 'cf-ts-container'
 has_rendered_element_with_id "$CART_ON" 'btn-wa-order'
 grep -q "$PRODUCTION_TURNSTILE_SITE_KEY" "$CART_ON"

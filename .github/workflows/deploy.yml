@@ -186,6 +186,20 @@ jobs:
         working-directory: astro-front
         run: npm ci --no-audit --no-fund
 
+      - name: Apply production D1 migrations
+        # CHECKOUT-TRANSFER-UX necesita 0005 antes de publicar el frontend:
+        # la fecha y la franja dejan de ser obligatorias y pasan a coordinarse
+        # por WhatsApp. Wrangler crea un backup antes de aplicar migraciones y
+        # revierte la migración actual si alguna sentencia falla. El esquema
+        # anterior sigue siendo compatible durante esta ventana: simplemente
+        # continúa enviando fecha/franja hasta que Pages publique el build nuevo.
+        run: >
+          npx wrangler@3.114.17 d1 migrations apply
+          amadolibros-orders-production --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Load production Turnstile config
         id: ts_config
         # Misma fuente que ya validó el job `validate` — nunca un literal
