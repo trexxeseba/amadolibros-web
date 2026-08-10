@@ -81,13 +81,16 @@ jobs:
           # Cloudflare Pages recorta los alias de rama a 28 caracteres.
           PREVIEW_URL: https://agent-stock-carrito-1-previe.amadolibros-web.pages.dev
         run: |
+          ready=false
           for attempt in 1 2 3 4 5 6; do
             code=$(curl -sSL -o /tmp/cart-test.html -w '%{http_code}' "$PREVIEW_URL/stock-carrito-test.html" || true)
-            if [ "$code" = "200" ]; then break; fi
+            if [ "$code" = "200" ] && grep -Fq 'Probar un disponible + un agotado' /tmp/cart-test.html; then
+              ready=true
+              break
+            fi
             sleep 10
           done
-          test "$code" = "200"
-          grep -Fq 'Probar un disponible + un agotado' /tmp/cart-test.html
+          test "$ready" = "true"
           curl -sS "$PREVIEW_URL/carrito" -o /tmp/cart.html
           grep -Fq 'data-online-checkout="enabled"' /tmp/cart.html
 
