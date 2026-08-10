@@ -78,7 +78,8 @@ jobs:
 
       - name: Smoke Preview and cart validation contract
         env:
-          PREVIEW_URL: https://agent-stock-carrito-1-preview.amadolibros-web.pages.dev
+          # Cloudflare Pages recorta los alias de rama a 28 caracteres.
+          PREVIEW_URL: https://agent-stock-carrito-1-previe.amadolibros-web.pages.dev
         run: |
           for attempt in 1 2 3 4 5 6; do
             code=$(curl -sS -o /tmp/cart-test.html -w '%{http_code}' "$PREVIEW_URL/stock-carrito-test.html" || true)
