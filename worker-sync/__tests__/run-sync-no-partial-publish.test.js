@@ -126,6 +126,26 @@ test('un sync exitoso publica una vez y registra sync:last_ok', async () => {
   assert.deepEqual(deletes, ['sync:last_error']);
 });
 
+test('aviso de reposición corre después de publicar y su fallo no revierte el sync', async () => {
+  const { env } = fakeEnv();
+  const order = [];
+  const result = await runSync(env, { source: 'cron' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => ({
+      total: 1,
+      updated_at: '2026-08-10T12:00:00.000Z',
+      items: [{ id: 'MLU1', status: 'active', available_quantity: 1, price: 1000 }],
+    }),
+    publishToR2Fn: async () => { order.push('publish'); },
+    processStockWaitlistFn: async () => { order.push('notify'); throw new Error('Resend caído'); },
+    notifyHealthcheckFn: noHealthcheck,
+  });
+  assert.deepEqual(order, ['publish', 'notify']);
+  assert.equal(result.status, 'ok');
+  assert.equal(result.stock_notifications.status, 'error');
+  assert.match(result.stock_notifications.error, /Resend caído/);
+});
+
 test('si falla autenticación tampoco intenta publicar', async () => {
   const { env } = fakeEnv();
   let buildCalls = 0;

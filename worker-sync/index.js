@@ -46,6 +46,7 @@ import { getAccessToken } from './meli-auth.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
+import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -396,6 +397,7 @@ export async function runSync(env, options = {}, {
   buildCatalogFn = buildCatalog,
   publishToR2Fn = publishToR2,
   notifyHealthcheckFn = notifyHealthcheck,
+  processStockWaitlistFn = processStockWaitlist,
 } = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
@@ -429,6 +431,17 @@ export async function runSync(env, options = {}, {
     };
     await publishToR2Fn(env, catalog, syncMeta);
 
+    // STOCK-AVISO-2: sólo después de que R2 confirmó la publicación. Un fallo
+    // de correo queda registrado y reintentable, pero no convierte un catálogo
+    // ya publicado correctamente en un sync fallido.
+    let stockNotifications;
+    try {
+      stockNotifications = await processStockWaitlistFn(env, catalog);
+    } catch (error) {
+      console.error(`[Stock waitlist] Error: ${error?.message || 'Error'}`);
+      stockNotifications = { status: 'error', error: String(error?.message || 'Error').slice(0, 200) };
+    }
+
     // 4. Estado: éxito
     await kvPut(env, 'sync:last_ok', finishedAt);
     await kvDelete(env, 'sync:last_error');
@@ -443,6 +456,7 @@ export async function runSync(env, options = {}, {
       started_at:     startedAt,
       finished_at:    finishedAt,
       duration_ms:    durationMs,
+      stock_notifications: stockNotifications,
     };
 
   } catch (err) {
