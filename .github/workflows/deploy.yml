@@ -195,7 +195,7 @@ jobs:
         # continúa enviando fecha/franja hasta que Pages publique el build nuevo.
         run: >
           npx wrangler@3.114.17 d1 migrations apply
-          amadolibros-orders-production --remote
+          ORDERS_DB --env production --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

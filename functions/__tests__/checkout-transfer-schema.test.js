@@ -90,5 +90,8 @@ test('deploy productivo aplica migraciones D1 antes de publicar Pages', () => {
   assert.notEqual(migrationStep, -1, 'el deploy debe aplicar migraciones D1');
   assert.notEqual(pagesDeployStep, -1, 'el deploy debe publicar Pages');
   assert.ok(migrationStep < pagesDeployStep, 'D1 debe migrarse antes de publicar el frontend');
-  assert.match(productionDeploy, /amadolibros-orders-production --remote/);
+  assert.match(
+    productionDeploy,
+    /d1 migrations apply\s+ORDERS_DB --env production --remote/,
+  );
 });
