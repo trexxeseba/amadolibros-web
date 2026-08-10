@@ -78,8 +78,8 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
           ? `12 cuotas sin recargo de ${installment}`
           : '12 cuotas sin recargo'}
       </span>
-      <span class="bc-price-transfer">12% menos por transferencia: {transferPrice}</span>
-      {hasFreeShipping && <span class="bc-free-shipping">Envío gratis</span>}
+      <span class="bc-price-transfer"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: {transferPrice}</span>
+      {hasFreeShipping && <span class="bc-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</span>}
     </div>
 
     <div class="bc-actions">

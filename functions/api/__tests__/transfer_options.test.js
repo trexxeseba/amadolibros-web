@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   createTransferOptionsHandler,
   TRANSFER_ACCOUNTS,
-  PAYER_CHANNELS,
 } from '../_transfer_options_handler.js';
 
 const NOW = new Date('2026-08-09T15:00:00.000Z');
@@ -157,8 +156,9 @@ test('transfer: respuestas son no-store y noindex', async () => {
   assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow');
 });
 
-test('transfer: datos y canales públicos quedan centralizados fuera del HTML', () => {
+test('transfer: sólo conserva las cuentas de destino; no devuelve bancos de origen ni enlaces', async () => {
   assert.equal(TRANSFER_ACCOUNTS.length, 5);
-  assert.equal(PAYER_CHANNELS.length, 5);
-  assert.equal(PAYER_CHANNELS.every(channel => channel.id === 'other' || channel.url?.startsWith('https://')), true);
+  const { data } = await call();
+  assert.equal(Object.hasOwn(data, 'payer_channels'), false);
+  assert.equal(JSON.stringify(data).includes('https://'), false);
 });

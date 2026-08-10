@@ -299,16 +299,8 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
           <div id="transfer-account-detail" class="transfer-account-detail" aria-live="polite"></div>
 
-          <div class="payer-channel-field">
-            <label for="payer-channel" class="form-label">¿Desde qué banco o app pagás?</label>
-            <select id="payer-channel" class="form-input"></select>
-            <p class="payer-channel-help">Lo recordamos sólo en esta pestaña para ahorrarte pasos.</p>
-          </div>
-
           <div class="transfer-actions">
-            <button type="button" id="btn-copy-account" class="btn-copy-account">Copiar número</button>
-            <button type="button" id="btn-copy-open-bank" class="btn-open-bank">Copiar y abrir mi banco</button>
-            <button type="button" id="btn-copy-all" class="btn-copy-all">Copiar todos los datos</button>
+            <button type="button" id="btn-copy-all" class="btn-copy-all">Copiar datos</button>
           </div>
 
           <p id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></p>
@@ -1057,13 +1049,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
   :global(.transfer-account-detail p) { color: var(--ink-2); font-size: .8rem; margin: 0; }
   :global(.transfer-account-detail p + p) { margin-top: .35rem; }
   :global(.transfer-account-number) { color: var(--ink); display: block; font: 750 1.18rem/1.3 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing: .025em; margin-top: .15rem; overflow-wrap: anywhere; }
-  .payer-channel-field { margin-bottom: .85rem; }
-  .payer-channel-help { color: var(--ink-2); font-size: .72rem; margin: .35rem 0 0; }
   .transfer-actions { display: grid; gap: .55rem; }
   .transfer-actions button { border-radius: var(--r); cursor: pointer; min-height: 48px; padding: .72rem 1rem; font: 700 .84rem/1.2 var(--font-ui); }
-  .btn-copy-account { background: #177a43; border: 1px solid #177a43; color: #fff; }
-  .btn-open-bank { background: var(--ink); border: 1px solid var(--ink); color: #fff; }
-  .btn-copy-all { background: transparent; border: 1px solid var(--border); color: var(--ink); }
+  .btn-copy-all { background: #177a43; border: 1px solid #177a43; color: #fff; }
   .copy-feedback { color: #176f3e; font-size: .78rem; font-weight: 650; min-height: 1.2rem; margin: .5rem 0 0; }
   .transfer-finish { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; }
   .transfer-finish > p:first-child { color: var(--ink); font-size: .86rem; margin: 0 0 .75rem; }
@@ -1257,7 +1245,6 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var transferStepEl       = document.getElementById('transfer-payment-step');
     var transferAccountsEl   = document.getElementById('transfer-accounts');
     var transferDetailEl     = document.getElementById('transfer-account-detail');
-    var payerChannelEl       = document.getElementById('payer-channel');
     var copyFeedbackEl       = document.getElementById('copy-feedback');
     var btnTransfer          = document.getElementById('btn-transfer-order');
     var transferData         = null;
@@ -1352,7 +1339,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     }
 
     // ── Persistencia de la etapa y los datos mínimos ─────────────────────
-    // sessionStorage sobrevive a recargas y al salto a una app bancaria, pero
+    // sessionStorage sobrevive a recargas y al salto a WhatsApp, pero
     // se elimina al cerrar la pestaña. Así no guardamos PII indefinidamente.
     var draftFieldIds = [
       'buyer-name', 'buyer-phone', 'buyer-email', 'delivery-address', 'delivery-barrio',
@@ -1391,7 +1378,6 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           step: transferStepEl && !transferStepEl.hidden ? 'transfer' : 'edit',
           transfer_auth: transferAuth,
           selected_account_id: selectedAccountId,
-          payer_channel_id: payerChannelEl ? payerChannelEl.value : '',
           scroll_y: Math.max(0, Math.round(window.scrollY || 0)),
         }));
       } catch (_) {}
@@ -2029,14 +2015,6 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       return transferData.accounts[0] || null;
     }
 
-    function selectedPayerChannel() {
-      if (!transferData || !Array.isArray(transferData.payer_channels) || !payerChannelEl) return null;
-      for (var i = 0; i < transferData.payer_channels.length; i++) {
-        if (transferData.payer_channels[i].id === payerChannelEl.value) return transferData.payer_channels[i];
-      }
-      return null;
-    }
-
     function setCopyFeedback(message) {
       if (!copyFeedbackEl) return;
       copyFeedbackEl.textContent = message;
@@ -2119,20 +2097,6 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       renderTransferAccountDetail();
     }
 
-    function renderPayerChannels(preferredId) {
-      if (!transferData || !payerChannelEl) return;
-      while (payerChannelEl.firstChild) payerChannelEl.removeChild(payerChannelEl.firstChild);
-      for (var i = 0; i < transferData.payer_channels.length; i++) {
-        var channel = transferData.payer_channels[i];
-        var option = document.createElement('option');
-        option.value = channel.id;
-        option.textContent = channel.name;
-        payerChannelEl.appendChild(option);
-      }
-      payerChannelEl.value = preferredId || 'brou';
-      if (!payerChannelEl.value && payerChannelEl.options.length) payerChannelEl.selectedIndex = 0;
-    }
-
     function buildTransferWhatsAppHref() {
       if (!transferData || !transferData.payment || !window.AmadoCart) return '#';
       var payment = transferData.payment;
@@ -2159,7 +2123,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       return 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n'));
     }
 
-    function renderTransferPayment(preferredPayerId) {
+    function renderTransferPayment() {
       if (!transferData || !transferData.payment) return;
       var payment = transferData.payment;
       document.getElementById('transfer-order-code').textContent = payment.public_code;
@@ -2167,16 +2131,15 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       document.getElementById('transfer-saving').textContent = '− ' + fmt.format(payment.transfer_discount_uyu);
       document.getElementById('transfer-final-total').textContent = fmt.format(payment.transfer_total_uyu);
       renderTransferAccounts();
-      renderPayerChannels(preferredPayerId);
       var wa = document.getElementById('btn-transfer-whatsapp');
       if (wa) wa.href = buildTransferWhatsAppHref();
     }
 
-    function showTransferStep(preferredPayerId, scrollY) {
+    function showTransferStep(scrollY) {
       if (checkoutEditStepEl) checkoutEditStepEl.hidden = true;
       if (transferStepEl) transferStepEl.hidden = false;
       if (cartPageEl) cartPageEl.dataset.overlaySuppressed = 'true';
-      renderTransferPayment(preferredPayerId);
+      renderTransferPayment();
       saveDraft();
       requestAnimationFrame(function () {
         if (Number.isFinite(scrollY)) window.scrollTo(0, scrollY);
@@ -2302,7 +2265,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           if (!order) { resetTransferButton(); return; }
           btnTransfer.textContent = 'Cargando cuentas oficiales…';
           transferData = await fetchTransferOptions(order.public_code, transferIdempotencyKey);
-          showTransferStep('brou');
+          showTransferStep();
         } catch (error) {
           showCheckoutError(error.message || 'No pudimos preparar la transferencia. Intentá de nuevo.');
         } finally {
@@ -2327,40 +2290,6 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
-    if (payerChannelEl) {
-      payerChannelEl.addEventListener('change', function () { saveDraft(); });
-    }
-
-    var btnCopyAccount = document.getElementById('btn-copy-account');
-    if (btnCopyAccount) {
-      btnCopyAccount.addEventListener('click', function () {
-        var account = selectedTransferAccount();
-        if (!account) return;
-        copyText(account.account_number)
-          .then(function () { setCopyFeedback('Número copiado: ' + account.account_number); })
-          .catch(function () { setCopyFeedback('No se pudo copiar. Mantené apretado el número para copiarlo.'); });
-      });
-    }
-
-    var btnCopyOpenBank = document.getElementById('btn-copy-open-bank');
-    if (btnCopyOpenBank) {
-      btnCopyOpenBank.addEventListener('click', function () {
-        var account = selectedTransferAccount();
-        var channel = selectedPayerChannel();
-        if (!account || !channel) return;
-        var copyPromise = copyText(account.account_number);
-        if (channel.url) window.open(channel.url, '_blank', 'noopener,noreferrer');
-        copyPromise.then(function () {
-          setCopyFeedback(channel.url
-            ? 'Número copiado. Pegalo en tu banco para transferir.'
-            : 'Número copiado. Abrí tu app bancaria y pegalo.');
-          saveDraft();
-        }).catch(function () {
-          setCopyFeedback('Abrimos el canal elegido, pero no pudimos copiar el número automáticamente.');
-        });
-      });
-    }
-
     var btnCopyAll = document.getElementById('btn-copy-all');
     if (btnCopyAll) {
       btnCopyAll.addEventListener('click', function () {
@@ -2376,7 +2305,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           'Total exacto: ' + fmt.format(payment.transfer_total_uyu) + ' UYU',
         ].join('\n');
         copyText(text)
-          .then(function () { setCopyFeedback('Todos los datos quedaron copiados.'); })
+          .then(function () { setCopyFeedback('Datos copiados. Pegalos en tu banco para transferir.'); })
           .catch(function () { setCopyFeedback('No se pudieron copiar los datos automáticamente.'); });
       });
     }
@@ -2588,7 +2517,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         fetchTransferOptions(restoredDraft.transfer_auth.public_code, transferIdempotencyKey)
           .then(function (data) {
             transferData = data;
-            showTransferStep(restoredDraft.payer_channel_id, restoredDraft.scroll_y);
+            showTransferStep(restoredDraft.scroll_y);
           })
           .catch(function (error) {
             transferData = null;
