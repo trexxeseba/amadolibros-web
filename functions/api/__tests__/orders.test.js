@@ -89,7 +89,14 @@ test('precio del navegador se ignora y manda catálogo', async()=>{
 });
 
 test('stock, producto, estado y precio inválidos devuelven 422', async()=>{
-  for(const id of ['NOPE','P','X']) { const b=pickup(id); b.items=[{product_id:id,quantity:1}]; assert.equal((await call(b)).response.status,422); }
+  for(const id of ['NOPE','P','X']) {
+    const b=pickup(id); b.items=[{product_id:id,quantity:1}];
+    const result=await call(b);
+    assert.equal(result.response.status,422);
+    assert.equal(result.data.code,'CART_CHANGED');
+    assert.notEqual(result.data.error,'Productos con problemas.');
+    assert.equal(Array.isArray(result.data.issues),true);
+  }
   const b=pickup('stock'); b.items=[{product_id:'A',quantity:6}]; assert.equal((await call(b)).response.status,422);
 });
 
