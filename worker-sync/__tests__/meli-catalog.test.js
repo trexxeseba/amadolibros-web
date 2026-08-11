@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {
   buildCatalog,
   createDataQualitySummary,
+  enrichCatalogDescriptions,
+  extractBibliographicDetails,
   extractDimensions,
+  sanitizeDescription,
   slimItem,
 } from '../meli-catalog.js';
 import {
@@ -372,6 +375,76 @@ test('slimItem conserva la publicación cuando descarta sus medidas inválidas',
   assert.equal(item.dimensions, null);
   assert.equal(quality.omitted_dimension_fields, 1);
   assert.equal(quality.omitted_weight_fields, 1);
+});
+
+test('conserva atributos bibliográficos reales de ML y omite No aplica', () => {
+  const attributes = [
+    { id: 'LANGUAGE', value_name: 'Español' },
+    { id: 'BOOK_FORMAT', value_name: 'Tapa blanda' },
+    { id: 'EDITION', value_name: '2' },
+    { id: 'PUBLICATION_YEAR', value_name: '2024' },
+    { id: 'BOOK_GENRE', value_name: 'Novela' },
+    { id: 'TRANSLATOR', value_name: 'Ana Pérez' },
+    { id: 'ILLUSTRATOR', value_id: '-1', value_name: null },
+  ];
+
+  assert.deepEqual(extractBibliographicDetails(attributes), {
+    language: 'Español',
+    format: 'Tapa blanda',
+    edition: '2',
+    publication_year: '2024',
+    genre: 'Novela',
+    translator: 'Ana Pérez',
+  });
+  assert.deepEqual(slimItem({ id: 'MLU-BIB', attributes }).bibliographic,
+    extractBibliographicDetails(attributes));
+  assert.equal(extractBibliographicDetails([]), null);
+});
+
+test('descripciones ML usan caché y un cupo incremental sin bloquear faltantes', async () => {
+  const calls = [];
+  const items = [
+    { id: 'MLU1', status: 'active', available_quantity: 1 },
+    { id: 'MLU2', status: 'active', available_quantity: 1 },
+    { id: 'MLU3', status: 'active', available_quantity: 1 },
+  ];
+  const env = {
+    ML_DESCRIPTION_ENRICH_LIMIT: '1',
+    ML_DESCRIPTION_REFRESH_DAYS: '90',
+    CATALOG_R2: {
+      async get() {
+        return {
+          async text() {
+            return JSON.stringify({ items: [{
+              id: 'MLU1',
+              description: 'Descripción cacheada',
+              description_checked_at: '2026-08-01T00:00:00.000Z',
+            }] });
+          },
+        };
+      },
+    },
+  };
+
+  const summary = await enrichCatalogDescriptions(items, env, 'token', {
+    now: new Date('2026-08-11T00:00:00.000Z'),
+    mlGetDeps: {
+      fetchFn: async url => {
+        calls.push(String(url));
+        return Response.json({ plain_text: 'Descripción nueva\n\n\ncon detalle.' });
+      },
+    },
+  });
+
+  assert.equal(items[0].description, 'Descripción cacheada');
+  assert.equal(items[1].description, 'Descripción nueva\n\ncon detalle.');
+  assert.equal(items[2].description, undefined);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(summary, {
+    limit: 1, reused: 1, fetched: 1, failed: 0,
+    checked: 2, present: 2, pending: 1, refresh_days: 90,
+  });
+  assert.equal(sanitizeDescription('  Texto\u0000  válido  '), 'Texto válido');
 });
 
 test('slimItem conserva identidad de catálogo ML sin inventar señales ausentes', () => {

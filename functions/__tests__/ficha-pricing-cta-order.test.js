@@ -140,3 +140,55 @@ test('11. Responsive: no hay reglas que oculten o reordenen los CTA por media qu
     assert.match(html, /\.cta\{display:flex;flex-direction:column;gap:\.75rem;margin-top:1rem\}/);
     assert.doesNotMatch(html, /@media[^{]*\{[^}]*\.btn-(ml|wa|cart)/s);
 });
+
+test('12. Ver más muestra sólo atributos bibliográficos disponibles traídos de ML', () => {
+    const html = renderPage(book({
+        publisher: 'Editorial Sur',
+        pages: 312,
+        bibliographic: {
+            language: 'Español',
+            format: 'Tapa blanda',
+            edition: '2.ª edición',
+            publication_year: '2024',
+            genre: 'Novela histórica',
+            translator: 'Ana Pérez',
+        },
+    }), 'un-libro', false, '');
+
+    assert.match(html, /<details class="book-more">/);
+    assert.match(html, /<summary>Ver más sobre este libro<\/summary>/);
+    assert.match(html, /<dt>Editorial<\/dt><dd>Editorial Sur<\/dd>/);
+    assert.match(html, /<dt>Páginas<\/dt><dd>312<\/dd>/);
+    assert.match(html, /<dt>Idioma<\/dt><dd>Español<\/dd>/);
+    assert.match(html, /<dt>Formato<\/dt><dd>Tapa blanda<\/dd>/);
+    assert.match(html, /<dt>Edición<\/dt><dd>2\.ª edición<\/dd>/);
+    assert.match(html, /<dt>Año<\/dt><dd>2024<\/dd>/);
+    assert.match(html, /<dt>Género<\/dt><dd>Novela histórica<\/dd>/);
+    assert.match(html, /<dt>Traductor\/a<\/dt><dd>Ana Pérez<\/dd>/);
+    assert.doesNotMatch(html, /<dt>Colección<\/dt>/);
+});
+
+test('13. Ver más no aparece cuando ML no aporta ningún detalle útil', () => {
+    const html = renderPage(book({
+        author: null,
+        isbn: null,
+        publisher: null,
+        pages: null,
+        dimensions: null,
+        condition: null,
+        bibliographic: null,
+        available_quantity: 0,
+    }), 'un-libro', false, '');
+    assert.doesNotMatch(html, /Ver más sobre este libro/);
+});
+
+test('14. La descripción real de ML aparece en Ver más, preserva párrafos y se escapa', () => {
+    const html = renderPage(book({
+        author: null,
+        description: 'Primera línea.\n\nSegunda <línea> & detalle.',
+    }), 'un-libro', false, '');
+    assert.match(html, /<h2>Descripción<\/h2>/);
+    assert.match(html, /Primera línea\.\n\nSegunda &lt;línea&gt; &amp; detalle\./);
+    assert.match(html, /\.book-description p\{white-space:pre-line/);
+    assert.match(html, /"description":"Primera línea\.\\n\\nSegunda \\u003clínea> & detalle\."/);
+});
