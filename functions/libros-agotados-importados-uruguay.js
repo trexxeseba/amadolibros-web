@@ -53,6 +53,12 @@ export async function onRequest() {
   <meta property="og:title" content="${TITLE}">
   <meta property="og:description" content="${DESCRIPTION}">
   <meta property="og:url" content="${canonical}">
+  <meta property="og:image" content="${BASE}/images/logo-amado.webp">
+  <meta property="og:image:alt" content="Amado Libros, librería uruguaya">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${TITLE}">
+  <meta name="twitter:description" content="${DESCRIPTION}">
+  <meta name="twitter:image" content="${BASE}/images/logo-amado.webp">
   <script type="application/ld+json">${JSON.stringify(schema)}</script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}

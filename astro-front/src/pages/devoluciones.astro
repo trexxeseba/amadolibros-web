@@ -1,11 +1,30 @@
 ---
 import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+const returnPolicy = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': 'https://www.amadolibros.com/#organization',
+  name: 'Amado Libros',
+  url: 'https://www.amadolibros.com/',
+  hasMerchantReturnPolicy: {
+    '@type': 'MerchantReturnPolicy',
+    '@id': 'https://www.amadolibros.com/devoluciones#merchant-return-policy',
+    applicableCountry: 'UY',
+    returnPolicyCountry: 'UY',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 5,
+    returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+    merchantReturnLink: 'https://www.amadolibros.com/devoluciones',
+  },
+};
 ---
 <TrustPageLayout
   title="Devoluciones y reembolsos — Amado Libros"
   description="Política de devoluciones, derecho de retracto y reembolsos para compras online en Amado Libros."
   canonical="https://www.amadolibros.com/devoluciones"
   heading="Devoluciones y reembolsos"
+  updated="11 de agosto de 2026"
+  jsonLd={returnPolicy}
 >
   <h2>Derecho de retracto en compras a distancia</h2>
   <p>En las compras realizadas por internet podés dejar sin efecto la compra sin indicar motivo. Debés comunicarlo dentro de los <strong>5 días hábiles</strong> contados desde la contratación o desde la recepción del producto, a tu elección, conforme al artículo 16 de la Ley 17.250.</p>

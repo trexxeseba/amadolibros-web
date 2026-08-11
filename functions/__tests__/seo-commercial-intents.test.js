@@ -23,6 +23,8 @@ test('landing de agotados e importados es indexable, canónica y accionable', as
   assert.match(html, /Pedir búsqueda por WhatsApp/);
   assert.match(html, /"@type":"Service"/);
   assert.match(html, /disponibilidad real/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/www\.amadolibros\.com\/images\/logo-amado\.webp">/);
+  assert.match(html, /<meta name="twitter:card" content="summary_large_image">/);
 });
 
 test('home posiciona el diferencial y enlaza la landing desde el footer', () => {

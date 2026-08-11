@@ -798,6 +798,18 @@ export async function onRequest(ctx) {
   <meta name="description" content="${metaDescription}">
   <link rel="canonical" href="${escapeHtml(canonicalHref)}">
   <meta name="robots" content="${robotsMeta}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_UY">
+  <meta property="og:site_name" content="Amado Libros">
+  <meta property="og:title" content="${pageTitle}">
+  <meta property="og:description" content="${metaDescription}">
+  <meta property="og:url" content="${escapeHtml(canonicalHref)}">
+  <meta property="og:image" content="${BASE}/images/logo-amado.webp">
+  <meta property="og:image:alt" content="Amado Libros, librería uruguaya">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${pageTitle}">
+  <meta name="twitter:description" content="${metaDescription}">
+  <meta name="twitter:image" content="${BASE}/images/logo-amado.webp">
   ${faviconHeadHtml()}
   ${jsonLd}
   <style>

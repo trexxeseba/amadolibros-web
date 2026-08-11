@@ -247,6 +247,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
     const images       = normalizeImages(item, previewCoverSrc);
     const img          = images[0] || '';
+    const socialImage  = img || `${BASE}/images/logo-amado.webp`;
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
     const transferAmount = Math.round(price * 0.88);
@@ -302,7 +303,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             'priceCurrency':'UYU',
             'price':        String(price),
             'availability': 'https://schema.org/InStock',
-            'seller': { '@type': 'Organization', 'name': 'Amado Libros' },
+            'seller': { '@type': 'Organization', 'name': 'Amado Libros', 'url': BASE },
+            'hasMerchantReturnPolicy': {
+                '@id': `${BASE}/devoluciones#merchant-return-policy`,
+            },
         };
     }
     if (item.author) {
@@ -404,14 +408,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta property="og:url"         content="${canonicalUrl}">
   <meta property="og:title"       content="${safeTitle} | Amado Libros">
   <meta property="og:description" content="${metaDesc}">
-  <meta property="og:image"       content="${escapeHtml(img)}">
+  <meta property="og:image"       content="${escapeHtml(socialImage)}">
+  <meta property="og:image:alt"   content="Portada de ${safeTitle}">
   <meta property="og:locale"      content="es_UY">
   <meta property="og:site_name"   content="Amado Libros">
 
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="${safeTitle} | Amado Libros">
   <meta name="twitter:description" content="${metaDesc}">
-  <meta name="twitter:image"       content="${escapeHtml(img)}">
+  <meta name="twitter:image"       content="${escapeHtml(socialImage)}">
+  <meta name="twitter:image:alt"   content="Portada de ${safeTitle}">
 
   <script type="application/ld+json">${JSON.stringify(schemaProduct)}</script>
   <script type="application/ld+json">${JSON.stringify(schemaBreadcrumb)}</script>

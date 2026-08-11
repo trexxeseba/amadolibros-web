@@ -1,11 +1,53 @@
 ---
 import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+const shippingDestination = { '@type': 'DefinedRegion', addressCountry: 'UY' };
+const transitTime = {
+  '@type': 'ServicePeriod',
+  duration: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 3, unitCode: 'DAY' },
+  businessDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+};
+const shippingPolicy = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': 'https://www.amadolibros.com/#organization',
+  name: 'Amado Libros',
+  url: 'https://www.amadolibros.com/',
+  hasShippingService: {
+    '@type': 'ShippingService',
+    '@id': 'https://www.amadolibros.com/envios#shipping-service',
+    name: 'Envíos de Amado Libros en Uruguay',
+    fulfillmentType: 'https://schema.org/FulfillmentTypeDelivery',
+    handlingTime: {
+      '@type': 'ServicePeriod',
+      duration: { '@type': 'QuantitativeValue', minValue: 0, maxValue: 2, unitCode: 'DAY' },
+      businessDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    },
+    shippingConditions: [
+      {
+        '@type': 'ShippingConditions',
+        shippingDestination,
+        orderValue: { '@type': 'MonetaryAmount', minValue: 0, maxValue: 1499.99, currency: 'UYU' },
+        shippingRate: { '@type': 'MonetaryAmount', value: 250, currency: 'UYU' },
+        transitTime,
+      },
+      {
+        '@type': 'ShippingConditions',
+        shippingDestination,
+        orderValue: { '@type': 'MonetaryAmount', minValue: 1500, currency: 'UYU' },
+        shippingRate: { '@type': 'MonetaryAmount', value: 0, currency: 'UYU' },
+        transitTime,
+      },
+    ],
+  },
+};
 ---
 <TrustPageLayout
   title="Política de envíos y retiro — Amado Libros"
   description="Costos y condiciones de envío de Amado Libros para Montevideo y el interior de Uruguay, retiro y seguimiento."
   canonical="https://www.amadolibros.com/envios"
   heading="Envíos y retiro"
+  updated="11 de agosto de 2026"
+  jsonLd={shippingPolicy}
 >
   <h2>Cobertura y costo</h2>
   <ul>

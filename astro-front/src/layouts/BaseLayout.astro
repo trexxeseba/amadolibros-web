@@ -4,17 +4,24 @@ interface Props {
   description?: string;
   indexable?: boolean;
   canonical?: string;
+  image?: string;
+  imageAlt?: string;
+  jsonLd?: Record<string, unknown>;
 }
 const {
   title = 'Amado Libros — Librería uruguaya',
   description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
   indexable: indexableProp,
   canonical,
+  image = 'https://www.amadolibros.com/images/logo-amado.webp',
+  imageAlt = 'Amado Libros, librería uruguaya',
+  jsonLd,
 } = Astro.props;
 
 const indexable  = indexableProp !== undefined ? indexableProp : import.meta.env.PUBLIC_INDEXABLE === 'true';
 const gaId       = import.meta.env.PUBLIC_GA_ID;
 const enableGA4  = indexable && !!gaId;
+const socialUrl  = canonical || 'https://www.amadolibros.com/';
 ---
 <!doctype html>
 <html lang="es">
@@ -32,6 +39,20 @@ const enableGA4  = indexable && !!gaId;
   <title>{title}</title>
   <meta name="description" content={description}>
   {canonical && <link rel="canonical" href={canonical}>}
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_UY">
+  <meta property="og:site_name" content="Amado Libros">
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={socialUrl}>
+  <meta property="og:image" content={image}>
+  <meta property="og:image:alt" content={imageAlt}>
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  <meta name="twitter:image" content={image}>
+  <meta name="twitter:image:alt" content={imageAlt}>
+  {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>}
   {enableGA4 && (
     <>
       <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>

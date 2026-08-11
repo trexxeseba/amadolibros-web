@@ -267,6 +267,15 @@ test('19c. cada página limpia tiene title, H1, descripción y schema propios', 
   assert.match(html, /"url":"https:\/\/www\.amadolibros\.com\/catalogo\?page=2"/);
 });
 
+test('19d. el catálogo expone Open Graph y Twitter completos', async () => {
+  const { html } = await render(BASE_URL);
+  assert.match(html, /<meta property="og:title" content="Comprar libros disponibles y por encargo \| Amado Libros">/);
+  assert.match(html, /<meta property="og:url" content="https:\/\/www\.amadolibros\.com\/catalogo">/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/www\.amadolibros\.com\/images\/logo-amado\.webp">/);
+  assert.match(html, /<meta name="twitter:card" content="summary_large_image">/);
+  assert.match(html, /<meta name="twitter:description"/);
+});
+
 // ── 6. Marcado y accesibilidad ──────────────────────────────────────────────
 
 test('20. la navegación son enlaces HTML reales, sin JavaScript', async () => {
