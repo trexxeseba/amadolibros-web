@@ -6,6 +6,7 @@ import {
   enrichCatalogDescriptions,
   extractBibliographicDetails,
   extractDimensions,
+  repairKnownTitle,
   sanitizeDescription,
   slimItem,
 } from '../meli-catalog.js';
@@ -399,6 +400,26 @@ test('conserva atributos bibliográficos reales de ML y omite No aplica', () => 
   assert.deepEqual(slimItem({ id: 'MLU-BIB', attributes }).bibliographic,
     extractBibliographicDetails(attributes));
   assert.equal(extractBibliographicDetails([]), null);
+});
+
+test('corrige sólo los ocho fragmentos mojibake verificados y se vuelve inerte al corregir ML', () => {
+  const cases = [
+    ['MLU636926011', 'Libro Ãâ¿dãâ³nde Se Esconde', 'Libro ¿Dónde Se Esconde'],
+    ['MLU640799107', 'Yo Juego, Ãâ¿y Tãâº?', 'Yo Juego, ¿Y Tú?'],
+    ['MLU643854765', 'Ãâ¡es Primavera!', '¡Es Primavera!'],
+    ['MLU657172162', 'Tu Ãâ¡ngel Custodio', 'Tu Ángel Custodio'],
+    ['MLU673139908', 'Libro Ãâ¡esto Es Todo', 'Libro ¡Esto Es Todo'],
+    ['MLU682128938', 'Ãâ¿y La Abuela?', '¿Y La Abuela?'],
+    ['MLU702548132', 'Ãâ¿que Haceis Aqui?', '¿Qué Haceis Aqui?'],
+    ['MLU710532848', 'Libro Â¡a Dibujar!', 'Libro ¡A Dibujar!'],
+  ];
+  for (const [id, broken, corrected] of cases) {
+    assert.equal(repairKnownTitle(id, broken), corrected);
+  }
+
+  assert.equal(repairKnownTitle('MLU636926011', 'Libro ¿Dónde Se Esconde'), 'Libro ¿Dónde Se Esconde');
+  assert.equal(repairKnownTitle('MLU-OTRO', 'PsicologÃ­a'), 'PsicologÃ­a');
+  assert.equal(repairKnownTitle('MLU-OTRO', null), null);
 });
 
 test('descripciones ML usan caché y un cupo incremental sin bloquear faltantes', async () => {
