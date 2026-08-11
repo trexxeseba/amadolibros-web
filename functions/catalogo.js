@@ -612,11 +612,15 @@ export async function onRequest(ctx) {
     const scopedMatches = strictMatches
         .filter(b => (categoria ? (categoryItems[b.id] || [])[0] === categoria : true))
         .filter(b => (subcategoria ? (categoryItems[b.id] || [])[1] === subcategoria : true));
-    const availableCount = scopedMatches.filter(b =>
+    // Los contadores de pestañas deben medir el mismo universo visible que
+    // la grilla. Si se calculan antes de deduplicar, “Todos 9” puede terminar
+    // mostrando “7 resultados”, contradicción directa para el comprador.
+    const dedupedScopedMatches = dedupeCatalogResults(scopedMatches);
+    const availableCount = dedupedScopedMatches.filter(b =>
         b.status === 'active' && Number(b.available_quantity) > 0
     ).length;
-    const orderCount = scopedMatches.filter(b => b.status === 'paused').length;
-    const availabilityMatches = scopedMatches.filter(b => {
+    const orderCount = dedupedScopedMatches.filter(b => b.status === 'paused').length;
+    const availabilityMatches = dedupedScopedMatches.filter(b => {
         if (disponibilidad === 'disponibles') {
             return b.status === 'active' && Number(b.available_quantity) > 0;
         }

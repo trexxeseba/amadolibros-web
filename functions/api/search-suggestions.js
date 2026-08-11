@@ -22,10 +22,11 @@ export function buildSuggestions(items, rawQuery, limit = 10) {
       const key = `${field.type}:${normalized}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      const exactWord = normalized.split(/[^a-z0-9]+/).includes(query);
       candidates.push({
         value,
         label: `${field.type}: ${value}`,
-        score: field.score + (normalized.startsWith(query) ? 0 : 1),
+        score: field.score + (normalized.startsWith(query) || exactWord ? 0 : 1),
       });
     }
   }
