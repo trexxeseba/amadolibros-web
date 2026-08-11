@@ -21,6 +21,18 @@ test('la portada incorpora descubrimiento por preguntas mobile-first', () => {
   assert.match(discovery, /@media \(min-width: 980px\)/);
 });
 
+test('la portada prioriza búsqueda, categorías y libros antes del descubrimiento asistido', () => {
+  const heroPosition = home.indexOf('<Hero />');
+  const categoriesPosition = home.indexOf('<CategoryAccess />');
+  const booksPosition = home.indexOf('<BestsellerSection />');
+  const discoveryPosition = home.indexOf('<BookDiscovery />');
+
+  assert.ok(heroPosition >= 0, 'falta el buscador principal');
+  assert.ok(categoriesPosition > heroPosition, 'las categorías deben seguir al buscador');
+  assert.ok(booksPosition > categoriesPosition, 'los libros deben seguir a las categorías');
+  assert.ok(discoveryPosition > booksPosition, 'las preguntas deben aparecer después de los libros');
+});
+
 test('las preguntas cubren diferenciales concretos y conducen al formulario', () => {
   for (const type of ['agotado', 'novedades-tecnicas', 'digital', 'antiguo', 'tapa', 'bibliografia']) {
     assert.match(discovery, new RegExp(`type: '${type}'`));
