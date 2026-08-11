@@ -167,6 +167,27 @@ test('13. ?page=1 explícito con q conserva q al redirigir', async () => {
   assert.equal(response.headers.get('Location'), '/catalogo?q=prueba');
 });
 
+test('13b. disponibilidad se conserva en la paginación y no crea páginas indexables', async () => {
+  const { html } = await render(`${BASE_URL}?disponibilidad=disponibles&page=2`);
+  assert.match(html, /<meta name="robots" content="noindex, follow">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/catalogo">/);
+  assert.match(html, /href="\/catalogo\?disponibilidad=disponibles&amp;page=3"/);
+});
+
+test('13c. un valor de disponibilidad inválido redirige a la URL limpia', async () => {
+  const { response } = await render(`${BASE_URL}?disponibilidad=agotados`);
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), '/catalogo');
+});
+
+test('13d. los tres filtros de disponibilidad son enlaces accesibles con conteos', async () => {
+  const { html } = await render(BASE_URL);
+  assert.match(html, /aria-label="Filtrar por disponibilidad"/);
+  assert.match(html, /aria-current="page">Todos <span>100<\/span>/);
+  assert.match(html, />Disponibles ahora <span>100<\/span>/);
+  assert.match(html, />Por encargo <span>0<\/span>/);
+});
+
 // ── 4. Integridad de la secuencia ───────────────────────────────────────────
 
 test('14. no hay ids duplicados entre páginas consecutivas', async () => {

@@ -27,7 +27,7 @@ import {
 } from '../_shared/brand.js';
 
 const WA = '59899841325';
-const FREE_SHIPPING_THRESHOLD_UYU = 2000;
+const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -612,7 +612,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     </div>
     ${!inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     <p class="shipping">${inStock
-      ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $2.000.'
+      ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
     } <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
