@@ -24,8 +24,8 @@ test('shipping policy matches checkout cost and free-shipping threshold', () => 
   const page = read('astro-front/src/pages/envios.astro');
   const logic = read('functions/api/_orders_logic.js');
   assert.match(page, /\$250 UYU/);
-  assert.match(page, /gratis desde \$2\.000 UYU/);
-  assert.match(logic, /FREE_SHIPPING_THRESHOLD = 2000/);
+  assert.match(page, /gratis desde \$1\.500 UYU/);
+  assert.match(logic, /FREE_SHIPPING_THRESHOLD = 1500/);
   assert.match(logic, /SHIPPING_COST\s+= 250/);
 });
 

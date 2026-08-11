@@ -16,6 +16,7 @@ const CATALOG = { items: [
   { id:'A', title:'Alpha', price:1000, available_quantity:5, status:'active', thumbnail:null },
   { id:'B', title:'Beta', price:1250, available_quantity:3, status:'active', thumbnail:null },
   { id:'G', title:'Gamma', price:800, available_quantity:5, status:'active', thumbnail:null },
+  { id:'T', title:'Umbral', price:500, available_quantity:5, status:'active', thumbnail:null },
   { id:'P', title:'Pausado', price:300, available_quantity:10, status:'paused', thumbnail:null },
   { id:'X', title:'Precio roto', price:'NaN', available_quantity:2, status:'active', thumbnail:null },
 ] };
@@ -58,8 +59,10 @@ async function call(body, db=dbMock(), opts={}, h=handler()){ const response=awa
 
 test('reglas comerciales: retiro, envío pago y umbral inclusivo', async()=>{
   let r=await call(pickup()); assert.equal(r.data.order.payable_total_uyu,3100);
-  r=await call(shipping()); assert.equal(r.data.order.payable_total_uyu,2050);
+  r=await call(shipping()); assert.equal(r.data.order.payable_total_uyu,1800);
+  r=await call(shipping('paid',{items:[{product_id:'G',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,250); assert.equal(r.data.order.payable_total_uyu,1050);
   r=await call(shipping('t',{items:[{product_id:'A',quantity:2}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,2000);
+  r=await call(shipping('threshold',{items:[{product_id:'A',quantity:1},{product_id:'T',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1500);
 });
 
 test('expira exactamente en 60 minutos y no expone UUID', async()=>{

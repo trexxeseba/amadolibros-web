@@ -19,7 +19,7 @@ test('pickup-cx-2: ninguna forma de entrega viene preseleccionada', () => {
 
 test('pickup-cx-2: los beneficios se anuncian dentro de su opción', () => {
   assert.match(carrito, /value="pickup"[\s\S]*?Ahorrás \$150 retirando aquí/);
-  assert.match(carrito, /value="shipping"[\s\S]*?Envío gratis en compras desde \$2\.000/);
+  assert.match(carrito, /value="shipping"[\s\S]*?Envío gratis en compras desde \$1\.500/);
 });
 
 test('pickup-cx-2: sin selección o sin productos comprables no muestra descuentos', () => {

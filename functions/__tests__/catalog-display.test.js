@@ -272,7 +272,7 @@ test('el catálogo marca con iconos el 12% y el envío gratis sólo desde el umb
   assert.doesNotMatch(paidHtml, /🚚<\/span> Envío gratis/);
 
   const originalPrice = CATALOG.items[0].price;
-  CATALOG.items[0].price = 2100;
+  CATALOG.items[0].price = 1500;
   try {
     const freeResponse = await catalogRequest(
       context('https://preview.example/catalogo?q=Alpha')
@@ -311,8 +311,8 @@ test('el catálogo indexable comunica el umbral real de envío gratis', async ()
   const html = await response.text();
   const description = html.match(/<meta name="description" content="([^"]+)">/)?.[1] || '';
 
-  assert.match(description, /envío gratis desde \$2\.000/);
-  assert.doesNotMatch(description, /envío gratis desde \$1\.500/);
+  assert.match(description, /envío gratis desde \$1\.500/);
+  assert.doesNotMatch(description, /envío gratis desde \$2\.000/);
 });
 
 test('la ficha pausada queda noindex, sin precio ni compra directa', async () => {

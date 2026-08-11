@@ -103,6 +103,9 @@ const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(request
         <div>
           <strong>¿No encontrás el libro?</strong>
           <span>Buscamos agotados, importados y ediciones difíciles.</span>
+          <a class="request-guide" href="/libros-agotados-importados-uruguay">
+            Cómo funciona nuestro servicio de encargos →
+          </a>
         </div>
         <a
           href={requestHref}
@@ -316,6 +319,28 @@ const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(request
   .request-box strong,
   .request-box span {
     display: block;
+  }
+
+  .request-box .request-guide {
+    display: inline-block;
+    min-height: 0;
+    margin-top: 0.45rem;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.45);
+    text-underline-offset: 0.18em;
+  }
+
+  .request-box .request-guide:hover {
+    background: transparent;
+    text-decoration-color: #fff;
   }
 
   .request-box strong {

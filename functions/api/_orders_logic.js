@@ -1,6 +1,6 @@
 export const RETIRO_DISCOUNT         = 150;
 export const SHIPPING_COST           = 250;
-export const FREE_SHIPPING_THRESHOLD = 2000;
+export const FREE_SHIPPING_THRESHOLD = 1500;
 export const TRANSFER_FACTOR         = 0.88;
 export const EXPIRY_MINUTES          = 60;
 export const MAX_BODY_BYTES          = 32 * 1024;

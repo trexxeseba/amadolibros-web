@@ -56,7 +56,7 @@ import { previewCoverUrl } from './_shared/preview-cover.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
-const FREE_SHIPPING_THRESHOLD_UYU = 2000;
+const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
 function escapeHtml(str) {
     if (str == null) return '';
@@ -217,9 +217,13 @@ async function fetchActiveCategories(ctx) {
     }
 }
 
-function filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, selectedCategory }) {
+function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory }) {
+    const availabilityInput = disponibilidad
+        ? `<input type="hidden" name="disponibilidad" value="${escapeHtml(disponibilidad)}">`
+        : '';
     if (!categories || categories.length === 0) {
         return `<form class="filters-bar" action="/catalogo" method="get">
+    ${availabilityInput}
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
     <button type="submit">Buscar</button>
   </form>`;
@@ -247,12 +251,19 @@ function filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, sele
         : '';
 
     const hasAnyFilter = Boolean(rawQ) || Boolean(categoria) || Boolean(subcategoria);
-    const clearHref = rawQ ? `/catalogo?q=${encodeURIComponent(rawQ)}` : '/catalogo';
+    const clearHref = catalogPath({
+        q: rawQ,
+        categoria: '',
+        subcategoria: '',
+        disponibilidad,
+        page: 1,
+    });
     const clearLink = hasAnyFilter && (categoria || subcategoria)
         ? `<a class="clear-filters" href="${escapeHtml(clearHref)}">Limpiar filtros ✕</a>`
         : '';
 
     return `<form class="filters-bar" action="/catalogo" method="get">
+    ${availabilityInput}
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
     <label class="cat-select-wrap">
       <span class="sr-only">Categoría</span>
@@ -264,6 +275,26 @@ function filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, sele
     <button type="submit">Buscar</button>
   </form>
   ${clearLink}`;
+}
+
+function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount }) {
+    const options = [
+        { value: '', label: 'Todos', count: availableCount + orderCount },
+        { value: 'disponibles', label: 'Disponibles ahora', count: availableCount },
+        { value: 'encargo', label: 'Por encargo', count: orderCount },
+    ];
+    const links = options.map(option => {
+        const current = option.value === disponibilidad;
+        const href = catalogPath({
+            q: rawQ,
+            categoria,
+            subcategoria,
+            disponibilidad: option.value,
+            page: 1,
+        });
+        return `<a class="availability-tab${current ? ' is-current' : ''}" href="${escapeHtml(href)}"${current ? ' aria-current="page"' : ''}>${option.label} <span>${option.count}</span></a>`;
+    }).join('');
+    return `<nav class="availability-tabs" aria-label="Filtrar por disponibilidad">${links}</nav>`;
 }
 
 const CAT_SELECT_STYLES = `
@@ -281,6 +312,17 @@ const CAT_SELECT_STYLES = `
                  background:#efe6db;border-radius:999px;font-size:.75rem;color:#4a3d30;font-weight:600}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
              clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .availability-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;
+                       margin:0 0 1rem}
+    .availability-tab{display:flex;align-items:center;justify-content:center;gap:.35rem;
+                      min-height:44px;padding:.55rem .65rem;border:1px solid #d1c8be;
+                      border-radius:.65rem;background:#fff;color:#4a3d30;font-size:.78rem;
+                      font-weight:700;text-align:center;text-decoration:none}
+    .availability-tab span{color:#7c6b59;font-size:.7rem;font-weight:600}
+    .availability-tab:hover{background:#f5efe6}
+    .availability-tab.is-current{border-color:#18120e;background:#18120e;color:#fff}
+    .availability-tab.is-current span{color:#e8ded3}
+    .availability-tab:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
     @media (max-width: 480px){
       .filters-bar{flex-direction:column}
       .filters-bar input[type=search],.cat-select-wrap select{width:100%}
@@ -321,11 +363,12 @@ function parsePageParam(raw) {
 // Forma canónica de una URL del catálogo: siempre el mismo orden de
 // parámetros y sin `page` cuando es la primera. Se usa para el canonical y
 // para cada enlace de paginación, así una misma vista tiene una sola URL.
-function catalogPath({ q, categoria, subcategoria, page }) {
+function catalogPath({ q, categoria, subcategoria, disponibilidad, page }) {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (categoria) params.set('categoria', categoria);
     if (subcategoria) params.set('subcategoria', subcategoria);
+    if (disponibilidad) params.set('disponibilidad', disponibilidad);
     if (page && page > 1) params.set('page', String(page));
     const qs = params.toString();
     return qs ? `/catalogo?${qs}` : '/catalogo';
@@ -412,6 +455,19 @@ export async function onRequest(ctx) {
     ensurePerf(ctx);
     const url  = new URL(ctx.request.url);
     const rawQ = url.searchParams.get('q')?.trim() ?? '';
+    const rawDisponibilidad = url.searchParams.get('disponibilidad')?.trim() ?? '';
+    const disponibilidad = ['disponibles', 'encargo'].includes(rawDisponibilidad)
+        ? rawDisponibilidad
+        : '';
+
+    if (rawDisponibilidad && !disponibilidad) {
+        const clean = new URL(url);
+        clean.searchParams.delete('disponibilidad');
+        return new Response(null, {
+            status: 301,
+            headers: { Location: `${clean.pathname}${clean.search}` },
+        });
+    }
 
     // Una sola URL por vista: `?page=1` y cualquier `page` inválido redirigen
     // a la forma limpia. Va antes de tocar R2 — no hace falta el catálogo
@@ -490,7 +546,7 @@ export async function onRequest(ctx) {
         return true;
     });
     const safeQ = escapeHtml(rawQ);
-    const hasFilter = Boolean(rawQ) || Boolean(categoria);
+    const hasFilter = Boolean(rawQ) || Boolean(categoria) || Boolean(disponibilidad);
 
     // ── Pipeline único de filtrado + orden — usado tanto para "Todos" (sin
     // filtro) como para búsqueda/categoría. CF-CATEGORÍAS-2D punto 4.1: la
@@ -517,9 +573,21 @@ export async function onRequest(ctx) {
         const fuzzy = eligibleItems.filter(b => fuzzyMatches(b, queryTokens));
         if (fuzzy.length > 0) { strictMatches = fuzzy; usedFuzzy = true; }
     }
-    const filtered = strictMatches
+    const scopedMatches = strictMatches
         .filter(b => (categoria ? (categoryItems[b.id] || [])[0] === categoria : true))
-        .filter(b => (subcategoria ? (categoryItems[b.id] || [])[1] === subcategoria : true))
+        .filter(b => (subcategoria ? (categoryItems[b.id] || [])[1] === subcategoria : true));
+    const availableCount = scopedMatches.filter(b =>
+        b.status === 'active' && Number(b.available_quantity) > 0
+    ).length;
+    const orderCount = scopedMatches.filter(b => b.status === 'paused').length;
+    const availabilityMatches = scopedMatches.filter(b => {
+        if (disponibilidad === 'disponibles') {
+            return b.status === 'active' && Number(b.available_quantity) > 0;
+        }
+        if (disponibilidad === 'encargo') return b.status === 'paused';
+        return true;
+    });
+    const filtered = availabilityMatches
         .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
             if (a.rank !== b.rank) return a.rank - b.rank;
@@ -645,12 +713,17 @@ export async function onRequest(ctx) {
     if (categoria) filterLabelParts.push(escapeHtml(selectedCategory.name));
     if (subcategoria) filterLabelParts.push(escapeHtml(selectedSubcategoryName));
     const filterLabel = filterLabelParts.join(' › ');
+    const availabilityLabel = disponibilidad === 'disponibles'
+        ? 'Disponibles ahora'
+        : disponibilidad === 'encargo'
+            ? 'Libros por encargo'
+            : '';
 
     const heading = rawQ && filterLabel
         ? `Resultados para &ldquo;${safeQ}&rdquo; en ${filterLabel}`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo;`
-            : filterLabel || (page > 1
+            : filterLabel || availabilityLabel || (page > 1
                 ? `Libros disponibles y por encargo — Página ${page}`
                 : 'Libros disponibles y por encargo');
     const pageTitle = rawQ && filterLabel
@@ -671,6 +744,7 @@ export async function onRequest(ctx) {
     if (rawQ) chips.push(`<span class="filter-chip">“${safeQ}”</span>`);
     if (categoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedCategory.name)}</span>`);
     if (subcategoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedSubcategoryName)}</span>`);
+    if (availabilityLabel) chips.push(`<span class="filter-chip">${availabilityLabel}</span>`);
     const chipsHtml = chips.length > 0 ? `<div class="active-filters">${chips.join('')}</div>` : '';
 
     // Sin filtro: página de índice, indexable, con metadatos/JSON-LD ricos
@@ -680,24 +754,24 @@ export async function onRequest(ctx) {
     const metaDescription = isIndex
         ? page > 1
             ? `Página ${page} de ${totalPages} del catálogo de Amado Libros: títulos disponibles y por encargo, con envíos a todo Uruguay.`
-            : `${activeItems.length} libros disponibles y ${pausedItems.length} por encargo en Uruguay; ediciones agotadas e importadas de Europa; envío gratis desde $2.000.`
+            : `${activeItems.length} libros disponibles y ${pausedItems.length} por encargo en Uruguay; ediciones agotadas e importadas de Europa; envío gratis desde $1.500.`
         : 'Resultados en Amado Libros.';
     // Las búsquedas internas no se indexan, pero sí se siguen: `follow` deja
     // que el crawler descubra las fichas enlazadas desde los resultados.
     const robotsMeta = isIndex
         ? 'index, follow'
-        : rawQ ? 'noindex, follow' : 'noindex';
+        : (rawQ || disponibilidad) ? 'noindex, follow' : 'noindex';
     // La secuencia limpia /catalogo?page=N tiene canonical propio. Las vistas
     // con búsqueda/categoría/subcategoría siguen noindex y canonicalizan al
     // catálogo limpio: no abrimos un segundo espacio SEO de filtros.
     const canonicalHref = isIndex
-        ? `${BASE}${catalogPath({ q: '', categoria: '', subcategoria: '', page })}`
+        ? `${BASE}${catalogPath({ q: '', categoria: '', subcategoria: '', disponibilidad: '', page })}`
         : `${BASE}/catalogo`;
     const paginationBlock = paginationHtml({
         page,
         totalPages,
         hrefFor: target => catalogPath({
-            q: rawQ, categoria, subcategoria, page: target,
+            q: rawQ, categoria, subcategoria, disponibilidad, page: target,
         }),
     });
     const jsonLd = isIndex
@@ -794,7 +868,8 @@ export async function onRequest(ctx) {
 <body>
 <div class="wrap">
   <nav><a href="/">← Amado Libros</a></nav>
-  ${filtersBarHtml({ categories, categoria, subcategoria, rawQ, safeQ, selectedCategory })}
+  ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
+  ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
   <h1>${heading}</h1>
   <p class="sub">${subText}</p>

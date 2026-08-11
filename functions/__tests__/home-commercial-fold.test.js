@@ -31,3 +31,8 @@ test('Hero: el CTA de encargos abre WhatsApp con los datos necesarios prellenado
   assert.match(heroAstro, /target="_blank"/);
   assert.match(heroAstro, /rel="noopener noreferrer"/);
 });
+
+test('Hero: enlaza la explicación indexable del servicio de encargos', () => {
+  assert.match(heroAstro, /href="\/libros-agotados-importados-uruguay"/);
+  assert.match(heroAstro, /Cómo funciona nuestro servicio de encargos/);
+});

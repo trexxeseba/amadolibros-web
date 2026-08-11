@@ -69,8 +69,8 @@ test('3. Precio web/tarjeta usa la jerarquía visual principal y transferencia l
 });
 
 test('3b. La ficha muestra envío gratis sólo cuando el precio llega al umbral', () => {
-    const free = renderPage(book({ price: 2100 }), 'un-libro', false, '');
-    const paid = renderPage(book({ price: 1990 }), 'un-libro', false, '');
+    const free = renderPage(book({ price: 1500 }), 'un-libro', false, '');
+    const paid = renderPage(book({ price: 1490 }), 'un-libro', false, '');
     assert.match(extractBlock(free, 'price-box'), /🚚<\/span> Envío gratis/);
     assert.doesNotMatch(extractBlock(paid, 'price-box'), /Envío gratis/);
 });
