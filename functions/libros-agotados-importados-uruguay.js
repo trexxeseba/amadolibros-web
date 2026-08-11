@@ -14,6 +14,7 @@ import {
     WA_FLOAT_STYLES,
     waHref,
 } from './_shared/brand.js';
+import { SEO_SPECIALTIES, specialtyPath } from './_shared/seo-specialties.js';
 
 const PATH = '/libros-agotados-importados-uruguay';
 const TITLE = 'Libros agotados e importados en Uruguay | Amado Libros';
@@ -89,6 +90,7 @@ export async function onRequest() {
     .card p{color:#6b6157;font-size:.92rem}
     .closing{margin-top:2.5rem;padding:1.5rem;background:#18120e;color:#fff;border-radius:1rem}
     .closing p{margin:.5rem 0 1rem;color:rgba(255,255,255,.72)}
+    .specialties{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.25rem}.specialties a{padding:.55rem .75rem;border:1px solid #e2dbd0;border-radius:999px;background:#fff;text-decoration:none;font-size:.82rem}
     @media(min-width:720px){.hero{grid-template-columns:1.45fr .75fr;align-items:center}.steps{grid-template-columns:repeat(3,1fr)}.types{grid-template-columns:repeat(2,1fr)}}
     ${FOOTER_STYLES}
     ${WA_FLOAT_STYLES}
@@ -135,6 +137,14 @@ export async function onRequest() {
         <article class="card"><h3>Textos académicos y profesionales</h3><p>Material especializado, manuales, libros universitarios y ediciones concretas identificadas por ISBN.</p></article>
         <article class="card"><h3>Idiomas, formatos y ediciones específicas</h3><p>Tapa dura o blanda, idioma original, editorial determinada o una edición que querés volver a encontrar.</p></article>
       </div>
+    </section>
+
+    <section class="section">
+      <h2>Libros técnicos importados por especialidad</h2>
+      <p class="lead">Explorá catálogo disponible y pedí búsquedas manuales de ediciones publicadas en España, Argentina y otros mercados.</p>
+      <nav class="specialties" aria-label="Especialidades profesionales">
+        ${SEO_SPECIALTIES.map(item => `<a href="${specialtyPath(item.id)}">${item.name}</a>`).join('')}
+      </nav>
     </section>
 
     <section class="closing">
