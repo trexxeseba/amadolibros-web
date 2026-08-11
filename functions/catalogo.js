@@ -680,7 +680,7 @@ export async function onRequest(ctx) {
     const metaDescription = isIndex
         ? page > 1
             ? `Página ${page} de ${totalPages} del catálogo de Amado Libros: títulos disponibles y por encargo, con envíos a todo Uruguay.`
-            : `${activeItems.length} libros disponibles y ${pausedItems.length} por encargo en Uruguay. Buscamos ediciones agotadas e importadas de Europa y otros mercados.`
+            : `${activeItems.length} libros disponibles y ${pausedItems.length} por encargo en Uruguay; ediciones agotadas e importadas de Europa; envío gratis desde $2.000.`
         : 'Resultados en Amado Libros.';
     // Las búsquedas internas no se indexan, pero sí se siguen: `follow` deja
     // que el crawler descubra las fichas enlazadas desde los resultados.
