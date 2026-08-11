@@ -650,14 +650,18 @@ export async function onRequest(ctx) {
         ? `Resultados para &ldquo;${safeQ}&rdquo; en ${filterLabel}`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo;`
-            : filterLabel || 'Catálogo completo';
+            : filterLabel || (page > 1
+                ? `Libros disponibles y por encargo — Página ${page}`
+                : 'Libros disponibles y por encargo');
     const pageTitle = rawQ && filterLabel
         ? `${safeQ} en ${filterLabel} — Amado Libros`
         : rawQ
             ? `Resultados para &ldquo;${safeQ}&rdquo; — Amado Libros`
             : filterLabel
                 ? `${filterLabel} — Amado Libros`
-                : 'Comprar libros online en Uruguay | Amado Libros';
+                : page > 1
+                    ? `Catálogo de libros — Página ${page} | Amado Libros`
+                    : 'Comprar libros disponibles y por encargo | Amado Libros';
     const emptyMessage = rawQ
         ? `Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''} o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.`
         : `Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.`;
@@ -674,7 +678,9 @@ export async function onRequest(ctx) {
     // contenido delgado/duplicado en resultados de búsqueda/categoría.
     const isIndex = !hasFilter;
     const metaDescription = isIndex
-        ? `${activeItems.length} libros para comprar online en Uruguay. 12% de descuento por transferencia y envío gratis desde $2.000. Envíos a todo el país.`
+        ? page > 1
+            ? `Página ${page} de ${totalPages} del catálogo de Amado Libros: títulos disponibles y por encargo, con envíos a todo Uruguay.`
+            : `${activeItems.length} libros disponibles y ${pausedItems.length} por encargo en Uruguay; ediciones agotadas e importadas de Europa; envío gratis desde $2.000.`
         : 'Resultados en Amado Libros.';
     // Las búsquedas internas no se indexan, pero sí se siguen: `follow` deja
     // que el crawler descubra las fichas enlazadas desde los resultados.
@@ -698,9 +704,11 @@ export async function onRequest(ctx) {
         ? `<script type="application/ld+json">${JSON.stringify({
             '@context':   'https://schema.org',
             '@type':      'CollectionPage',
-            'name':       'Catálogo de libros importados y por encargo en Uruguay',
-            'url':        `${BASE}/catalogo`,
-            'description':'Catálogo de Amado Libros con libros importados, libros por encargo y títulos difíciles de conseguir en Uruguay.',
+            'name':       page > 1
+                ? `Catálogo de libros importados y por encargo — Página ${page}`
+                : 'Catálogo de libros importados y por encargo en Uruguay',
+            'url':        canonicalHref,
+            'description': metaDescription,
             'isPartOf':   { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
             'publisher':  { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
           })}</script>`
@@ -795,7 +803,7 @@ export async function onRequest(ctx) {
     : `<p class="empty">${emptyMessage}</p>`
   }
   <footer>
-    <a href="/">Volver al catálogo</a> · <a href="/politicas">Políticas</a> ·
+    <a href="/">Inicio</a> · <a href="/libros-agotados-importados-uruguay">Libros agotados e importados</a> · <a href="/politicas">Políticas</a> ·
     &copy; 2026 Amado Libros
   </footer>
 </div>
