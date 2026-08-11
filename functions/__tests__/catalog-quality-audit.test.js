@@ -17,6 +17,8 @@ test('auditoría separa activos, cobertura e IDs concretos a corregir', () => {
       {
         id: 'MLU1', title: 'Libro válido', author: 'Autora', isbn: '9788491053705',
         publisher: 'Editorial Real', pages: 220, condition: 'new', price: 1500,
+        description: 'Sinopsis real',
+        bibliographic: { language: 'Español', format: 'Tapa blanda', publication_year: '2024' },
         permalink: 'https://example.com/1', pictures: ['https://example.com/1.jpg'],
         dimensions: { width: '15 cm', height: '21 cm', length: '2 cm', weight: '300 g' },
         status: 'active', available_quantity: 1,
@@ -39,6 +41,9 @@ test('auditoría separa activos, cobertura e IDs concretos a corregir', () => {
   assert.equal(report.coverage.title_encoding_clean.percent, 50);
   assert.equal(report.coverage.image_any.percent, 100);
   assert.equal(report.coverage.image_multiple.percent, 0);
+  assert.equal(report.coverage.description.percent, 50);
+  assert.equal(report.coverage.language.percent, 50);
+  assert.equal(report.coverage.edition.percent, 0);
   assert.equal(report.isbn.invalidWithValue, 1);
   assert.equal(report.schemaVersion, 2);
 });

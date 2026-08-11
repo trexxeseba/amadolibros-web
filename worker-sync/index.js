@@ -416,7 +416,10 @@ export async function runSync(env, options = {}, {
     // 2. Catálogo
     // El catálogo público conserva únicamente publicaciones activas. Los
     // pausados se generan por el flujo versionado y aislado de Preview.
-    const catalog = await buildCatalogFn(env, accessToken, { statuses: ['active'] });
+    const catalog = await buildCatalogFn(env, accessToken, {
+      statuses: ['active'],
+      enrichDescriptions: true,
+    });
 
     // 3. Publicar en R2 (staging → validación → promote)
     const finishedAt = new Date().toISOString();

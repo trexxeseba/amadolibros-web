@@ -103,7 +103,10 @@ test('runSync conserva el filtro público statuses active', async () => {
   });
 
   assert.equal(result.status, 'ok');
-  assert.deepEqual(receivedOptions, { statuses: ['active'] });
+  assert.deepEqual(receivedOptions, {
+    statuses: ['active'],
+    enrichDescriptions: true,
+  });
 });
 
 test('un sync exitoso publica una vez y registra sync:last_ok', async () => {

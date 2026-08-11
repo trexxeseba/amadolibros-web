@@ -43,6 +43,10 @@ function escapeHtml(str) {
         .replace(/'/g,  '&#39;');
 }
 
+function safeJson(value) {
+    return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
 
 function httpsImg(url) {
     return (url || '').replace('http://', 'https://');
@@ -259,6 +263,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const hasFreeShipping = inStock && price >= FREE_SHIPPING_THRESHOLD_UYU;
     const condition     = formatCondition(item.condition);
     const dimensions    = formatDimensions(item.dimensions);
+    const bibliographic = item.bibliographic && typeof item.bibliographic === 'object'
+        ? item.bibliographic
+        : {};
+    const description = item.description ? String(item.description).trim() : '';
+    const descriptionHtml = description
+        ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
+        : '';
     const waMsg         = encodeURIComponent(
         inStock
             ? `Hola! Me interesa: ${item.title}`
@@ -270,6 +281,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         detailRow('ISBN', item.isbn),
         detailRow('Editorial', normalizePublisher(item.publisher)),
         item.pages ? detailRow('Páginas', `${item.pages}`) : '',
+        detailRow('Idioma', bibliographic.language),
+        detailRow('Formato', bibliographic.format),
+        detailRow('Edición', bibliographic.edition),
+        detailRow('Año', bibliographic.publication_year),
+        detailRow('Género', bibliographic.genre),
+        detailRow('Colección', bibliographic.collection),
+        detailRow('Traductor/a', bibliographic.translator),
+        detailRow('Ilustrador/a', bibliographic.illustrator),
+        detailRow('Subtítulo', bibliographic.subtitle),
         detailRow('Medidas', dimensions),
         detailRow('Condición', condition),
         // CF-STOCK-1-UX-FIX: la fila "Disponibilidad" solo tiene sentido
@@ -280,6 +300,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             ? detailRow('Disponibilidad', `${stockQty} disponible${stockQty === 1 ? '' : 's'}`)
             : '',
     ].filter(Boolean).join('\n');
+    const moreDetailsHtml = detailRows || descriptionHtml
+        ? `<details class="book-more">
+      <summary>Ver más sobre este libro</summary>
+      ${descriptionHtml}
+      ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
+    </details>`
+        : '';
 
     const metaDesc = inStock
         ? (safeAuthor
@@ -293,7 +320,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@type':    ['Product', 'Book'],
         'name':     item.title,
         'image':    images.length ? images : img,
-        'description': item.author ? `${item.title} — ${item.author}` : item.title,
+        'description': description || (item.author ? `${item.title} — ${item.author}` : item.title),
         'sku':      item.id,
     };
     if (inStock) {
@@ -321,6 +348,27 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     }
     if (item.pages) {
         schemaProduct.numberOfPages = Number(item.pages);
+    }
+    if (bibliographic.language) {
+        schemaProduct.inLanguage = bibliographic.language;
+    }
+    if (bibliographic.format) {
+        schemaProduct.bookFormat = bibliographic.format;
+    }
+    if (bibliographic.edition) {
+        schemaProduct.bookEdition = bibliographic.edition;
+    }
+    if (bibliographic.publication_year) {
+        schemaProduct.datePublished = String(bibliographic.publication_year);
+    }
+    if (bibliographic.genre) {
+        schemaProduct.genre = bibliographic.genre;
+    }
+    if (bibliographic.translator) {
+        schemaProduct.translator = { '@type': 'Person', 'name': bibliographic.translator };
+    }
+    if (bibliographic.illustrator) {
+        schemaProduct.illustrator = { '@type': 'Person', 'name': bibliographic.illustrator };
     }
     if (schemaProduct.offers && item.condition === 'new') {
         schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
@@ -419,8 +467,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta name="twitter:image"       content="${escapeHtml(socialImage)}">
   <meta name="twitter:image:alt"   content="Portada de ${safeTitle}">
 
-  <script type="application/ld+json">${JSON.stringify(schemaProduct)}</script>
-  <script type="application/ld+json">${JSON.stringify(schemaBreadcrumb)}</script>
+  <script type="application/ld+json">${safeJson(schemaProduct)}</script>
+  <script type="application/ld+json">${safeJson(schemaBreadcrumb)}</script>
   <script src="/cart.js" defer></script>
 
   <style>
@@ -511,12 +559,23 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
            font-size:.75rem;font-weight:600;margin-bottom:.875rem}
     .in-stock{background:#dcfce7;color:#16a34a}
     .details{background:white;border:1px solid #e2e8f0;border-radius:.5rem;
-             margin:.25rem 0 .875rem;overflow:hidden}
+             margin:.65rem 0 0;overflow:hidden}
     .detail-row{display:grid;grid-template-columns:94px 1fr;gap:.75rem;
                 padding:.55rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.84rem}
     .detail-row:last-child{border-bottom:0}
     .detail-row dt{font-weight:700;color:#334155}
     .detail-row dd{color:#475569}
+    .book-more{margin:.25rem 0 .875rem;background:#fff;border:1px solid #e2e8f0;
+               border-radius:.5rem;overflow:hidden}
+    .book-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;
+                       padding:.65rem .8rem;font-size:.86rem;font-weight:750;color:#334155}
+    .book-more summary:hover{background:#f8fafc}
+    .book-more summary:focus-visible{outline:2px solid #3b82f6;outline-offset:-2px}
+    .book-more[open] summary{border-bottom:1px solid #e2e8f0}
+    .book-more .details{border:0;border-radius:0;margin:0}
+    .book-description{padding:.8rem;border-bottom:1px solid #e2e8f0}
+    .book-description h2{font-size:.9rem;margin:0 0 .35rem;color:#334155}
+    .book-description p{white-space:pre-line;font-size:.84rem;color:#475569;line-height:1.55}
     .price-box{background:#fff;border:1px solid #d8d1c7;border-radius:.65rem;
                padding:1rem 1.25rem;margin:.875rem 0}
     .price-main{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem}
@@ -611,12 +670,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <div class="info">
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
-    ${inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
+    ${inStock ? moreDetailsHtml : ''}
     ${priceHtml}
     <div class="cta">
       ${actionHtml}
     </div>
-    ${!inStock && detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
+    ${!inStock ? moreDetailsHtml : ''}
     <p class="shipping">${inStock
       ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'

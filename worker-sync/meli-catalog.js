@@ -16,7 +16,7 @@
  *     items: [{
  *       id, title, author, price, status, available_quantity,
  *       thumbnail, pictures, permalink, start_time,
- *       catalog_listing, catalog_product_id
+ *       catalog_listing, catalog_product_id, bibliographic
  *     }]
  *   }
  *
@@ -30,6 +30,10 @@
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
 const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
+const DEFAULT_DESCRIPTION_ENRICH_LIMIT = 100;
+const DEFAULT_DESCRIPTION_REFRESH_DAYS = 90;
+const DEFAULT_DESCRIPTION_SLEEP_MS = 100;
+const DESCRIPTION_MAX_CHARS = 5000;
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
   'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,catalog_listing,catalog_product_id';
 
@@ -55,6 +59,7 @@ export function createSyncRetryBudget(maxWaitMs = ML_SYNC_MAX_RETRY_WAIT_MS) {
  */
 export async function buildCatalog(env, accessToken, {
   statuses = ['active', 'paused'],
+  enrichDescriptions = false,
   retryBudget = createSyncRetryBudget(),
   mlGetDeps = {},
 } = {}) {
@@ -89,6 +94,15 @@ export async function buildCatalog(env, accessToken, {
   const catalogItems = rawItems
     .filter(raw => raw.status === 'active' || raw.status === 'paused')
     .map(raw => slimItem(raw, dataQuality));
+
+  if (enrichDescriptions) {
+    dataQuality.descriptions = await enrichCatalogDescriptions(
+      catalogItems,
+      env,
+      accessToken,
+      { retryBudget, mlGetDeps },
+    );
+  }
   const activeItems = catalogItems.filter(
     item => item.status === 'active' && Number(item.available_quantity) > 0
   );
@@ -226,6 +240,7 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     isbn:               extractIsbn(attrs),
     publisher:          extractPublisher(attrs),
     pages:              extractPages(attrs),
+    bibliographic:      extractBibliographicDetails(attrs),
     dimensions:         extractDimensions(attrs, dataQuality),
   };
 }
@@ -248,7 +263,10 @@ function getAttrValue(attrs, ids) {
   const upper = ids.map(s => s.toUpperCase());
   for (const attr of (attrs || [])) {
     if (!upper.includes(String(attr.id || '').toUpperCase())) continue;
-    if (attr.value_name) return attr.value_name;
+    // Mercado Libre representa "No aplica" con value_id=-1. No debe terminar
+    // como un dato visible en la ficha.
+    if (String(attr.value_id || '') === '-1' && !attr.value_name) continue;
+    if (attr.value_name) return String(attr.value_name).trim() || null;
     if (attr.value_struct && attr.value_struct.number != null) {
       const unit = attr.value_struct.unit ? ` ${attr.value_struct.unit}` : '';
       return `${attr.value_struct.number}${unit}`;
@@ -257,6 +275,31 @@ function getAttrValue(attrs, ids) {
     if (attr.value)    return String(attr.value);
   }
   return null;
+}
+
+const BIBLIOGRAPHIC_ATTRS = {
+  language: ['LANGUAGE'],
+  format: ['BOOK_FORMAT', 'FORMAT'],
+  edition: ['EDITION'],
+  publication_year: ['PUBLICATION_YEAR', 'PUBLISHING_YEAR', 'RELEASE_YEAR'],
+  genre: ['BOOK_GENRE', 'GENRE'],
+  collection: ['BOOK_COLLECTION', 'COLLECTION'],
+  translator: ['TRANSLATOR'],
+  illustrator: ['ILLUSTRATOR'],
+  subtitle: ['BOOK_SUBTITLE', 'SUBTITLE'],
+};
+
+/**
+ * Conserva únicamente atributos bibliográficos útiles ya presentes en ML.
+ * No genera texto ni completa faltantes con inferencias.
+ */
+export function extractBibliographicDetails(attrs) {
+  const details = Object.fromEntries(
+    Object.entries(BIBLIOGRAPHIC_ATTRS)
+      .map(([field, ids]) => [field, getAttrValue(attrs, ids)])
+      .filter(([, value]) => value != null && value !== ''),
+  );
+  return Object.keys(details).length ? details : null;
 }
 
 function extractIsbn(attrs) {
@@ -282,6 +325,126 @@ export function createDataQualitySummary() {
     omitted_dimension_fields: 0,
     omitted_weight_fields: 0,
     unknown_unit_fields: 0,
+  };
+}
+
+export function sanitizeDescription(value, maxChars = DESCRIPTION_MAX_CHARS) {
+  if (value == null) return null;
+  const clean = String(value)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (!clean) return null;
+  return clean.slice(0, Math.max(0, maxChars)).trim() || null;
+}
+
+function validCheckedAt(value, refreshDays, nowMs) {
+  const checkedMs = Date.parse(String(value || ''));
+  return Number.isFinite(checkedMs) && nowMs - checkedMs < refreshDays * 86400000;
+}
+
+async function readPreviousDescriptions(bucket) {
+  const previous = new Map();
+  if (!bucket || typeof bucket.get !== 'function') return previous;
+  try {
+    const object = await bucket.get('catalog.json');
+    if (!object) return previous;
+    const catalog = JSON.parse(await object.text());
+    for (const item of (catalog.items || [])) {
+      if (!item?.id || !item.description_checked_at) continue;
+      previous.set(item.id, {
+        description: sanitizeDescription(item.description),
+        description_checked_at: item.description_checked_at,
+      });
+    }
+  } catch (error) {
+    console.warn(`[Catalog] No se pudo reutilizar el caché de descripciones: ${error.message}`);
+  }
+  return previous;
+}
+
+/**
+ * ML expone /items/:id/description de a una publicación. Para no sumar miles
+ * de requests a cada sync, reutiliza el catálogo live y completa un cupo
+ * incremental. La descripción es opcional: un fallo nunca bloquea catálogo.
+ */
+export async function enrichCatalogDescriptions(items, env, accessToken, {
+  retryBudget = createSyncRetryBudget(),
+  mlGetDeps = {},
+  now = new Date(),
+} = {}) {
+  const limit = Math.max(0, parseInt(
+    env?.ML_DESCRIPTION_ENRICH_LIMIT || String(DEFAULT_DESCRIPTION_ENRICH_LIMIT),
+    10,
+  ) || 0);
+  const refreshDays = Math.max(1, parseInt(
+    env?.ML_DESCRIPTION_REFRESH_DAYS || String(DEFAULT_DESCRIPTION_REFRESH_DAYS),
+    10,
+  ) || DEFAULT_DESCRIPTION_REFRESH_DAYS);
+  const checkedAt = now.toISOString();
+  const previous = await readPreviousDescriptions(env?.CATALOG_R2);
+  const candidates = [];
+  let reused = 0;
+
+  for (const item of items) {
+    const cached = previous.get(item.id);
+    if (cached && validCheckedAt(cached.description_checked_at, refreshDays, now.getTime())) {
+      item.description = cached.description;
+      item.description_checked_at = cached.description_checked_at;
+      reused++;
+    } else if (item.status === 'active' && Number(item.available_quantity) > 0) {
+      candidates.push(item);
+    }
+  }
+
+  let fetched = 0;
+  let failed = 0;
+  const selected = candidates.slice(0, limit);
+  const interRequestSleepMs = Math.max(0, parseInt(
+    env?.ML_DESCRIPTION_SLEEP_MS || String(DEFAULT_DESCRIPTION_SLEEP_MS),
+    10,
+  ) || 0);
+  for (let index = 0; index < selected.length; index++) {
+    const item = selected[index];
+    try {
+      const payload = await mlGet(
+        `https://api.mercadolibre.com/items/${encodeURIComponent(item.id)}/description`,
+        accessToken,
+        { ...mlGetDeps, retryBudget },
+      );
+      item.description = sanitizeDescription(payload?.plain_text);
+      item.description_checked_at = checkedAt;
+      fetched++;
+    } catch (error) {
+      // Un 404 equivale a "sin descripción" y se cachea para no insistir a
+      // diario. Otros errores quedan pendientes para la próxima corrida.
+      if (/HTTP 404\b/.test(String(error?.message || ''))) {
+        item.description = null;
+        item.description_checked_at = checkedAt;
+        fetched++;
+      } else {
+        failed++;
+        console.warn(`[Catalog] Descripción ${item.id} pendiente: ${error.message}`);
+      }
+    }
+    if (index + 1 < selected.length && interRequestSleepMs > 0) {
+      await (mlGetDeps.sleepFn || sleep)(interRequestSleepMs);
+    }
+  }
+
+  const checked = items.filter(item => item.description_checked_at).length;
+  const present = items.filter(item => sanitizeDescription(item.description)).length;
+  return {
+    limit,
+    reused,
+    fetched,
+    failed,
+    checked,
+    present,
+    pending: Math.max(0, candidates.length - fetched),
+    refresh_days: refreshDays,
   };
 }
 
