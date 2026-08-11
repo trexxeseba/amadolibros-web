@@ -37,6 +37,21 @@ const DESCRIPTION_MAX_CHARS = 5000;
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
   'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,catalog_listing,catalog_product_id';
 
+// Excepciones verificadas el 2026-08-11 sobre el catálogo productivo. Se
+// reemplaza sólo la secuencia dañada y únicamente para el ID afectado. Si el
+// título se corrige en ML, el fragmento deja de coincidir y el override queda
+// automáticamente inerte.
+const KNOWN_TITLE_REPAIRS = new Map([
+  ['MLU636926011', ['Ãâ¿dãâ³nde', '¿Dónde']],
+  ['MLU640799107', ['Ãâ¿y Tãâº?', '¿Y Tú?']],
+  ['MLU643854765', ['Ãâ¡es', '¡Es']],
+  ['MLU657172162', ['Ãâ¡ngel', 'Ángel']],
+  ['MLU673139908', ['Ãâ¡esto', '¡Esto']],
+  ['MLU682128938', ['Ãâ¿y', '¿Y']],
+  ['MLU702548132', ['Ãâ¿que', '¿Qué']],
+  ['MLU710532848', ['Â¡a', '¡A']],
+]);
+
 export const ML_MAX_RETRIES = 6;
 export const ML_BASE_BACKOFF_MS = 1000;
 export const ML_MAX_BACKOFF_MS = 30000;
@@ -223,7 +238,7 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
   const attrs = raw.attributes || [];
   return {
     id:                 raw.id,
-    title:              raw.title        || null,
+    title:              repairKnownTitle(raw.id, raw.title),
     author:             extractAuthor(raw),
     price:              raw.price        ?? null,
     status:             raw.status       || null,
@@ -243,6 +258,16 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     bibliographic:      extractBibliographicDetails(attrs),
     dimensions:         extractDimensions(attrs, dataQuality),
   };
+}
+
+export function repairKnownTitle(id, title) {
+  if (!title) return null;
+  const repair = KNOWN_TITLE_REPAIRS.get(String(id || ''));
+  if (!repair) return title;
+  const [broken, corrected] = repair;
+  return String(title).includes(broken)
+    ? String(title).replace(broken, corrected)
+    : title;
 }
 
 /**
