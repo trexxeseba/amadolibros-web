@@ -84,6 +84,40 @@ function onlyDigits(value = '') {
     return String(value).replace(/\D/g, '');
 }
 
+function validIsbnKey(value = '') {
+    const digits = onlyDigits(value);
+    return digits.length === 10 || digits.length === 13 ? digits : '';
+}
+
+/**
+ * Evita repetir la misma obra/edición en la grilla pública sin confundir
+ * variantes reales. ISBN identifica edición y formato; el estado comercial
+ * mantiene separadas una oferta disponible y otra que solo puede encargarse.
+ * Cuando falta ISBN, solo agrupamos coincidencias exactas de título+autor.
+ * El array ya llega ordenado por relevancia/criterio comercial, por eso se
+ * conserva siempre el primer representante.
+ */
+export function dedupeCatalogResults(items) {
+    const seen = new Set();
+    return items.filter(item => {
+        const isbn = validIsbnKey(item.isbn);
+        const status = item.status === 'paused' ? 'paused' : 'active';
+        const condition = normalizeText(item.condition || 'unknown');
+        let key = '';
+        if (isbn) {
+            key = `isbn:${isbn}|${status}|${condition}`;
+        } else {
+            const title = normalizeText(item.title).replace(/[^a-z0-9]+/g, ' ').trim();
+            const author = normalizeText(item.author).replace(/[^a-z0-9]+/g, ' ').trim();
+            if (title && author) key = `title-author:${title}|${author}|${status}|${condition}`;
+        }
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
 function tokenMatches(queryToken, itemTokens) {
     return itemTokens.some(t => t === queryToken || t.startsWith(queryToken));
 }
@@ -178,7 +212,9 @@ function commercialTier(b) {
 }
 
 function httpsImg(url) {
-    return (url || '').replace('http://', 'https://');
+    return (url || '')
+        .replace('http://', 'https://')
+        .replace(/-I\.(jpg|jpeg|png|webp)(?=($|\?))/i, '-O.$1');
 }
 
 // CF-CATEGORÍAS-2 — artefacto compacto mlu->[categoryId,subcategoryId?],
@@ -224,7 +260,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
     if (!categories || categories.length === 0) {
         return `<form class="filters-bar" action="/catalogo" method="get">
     ${availabilityInput}
-    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros" autocomplete="off" data-search-autocomplete>
     <button type="submit">Buscar</button>
   </form>`;
     }
@@ -264,7 +300,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
 
     return `<form class="filters-bar" action="/catalogo" method="get">
     ${availabilityInput}
-    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros">
+    <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros" autocomplete="off" data-search-autocomplete>
     <label class="cat-select-wrap">
       <span class="sr-only">Categoría</span>
       <select name="categoria" id="cat-select" onchange="this.form.submit()">
@@ -587,7 +623,7 @@ export async function onRequest(ctx) {
         if (disponibilidad === 'encargo') return b.status === 'paused';
         return true;
     });
-    const filtered = availabilityMatches
+    const ranked = availabilityMatches
         .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
             if (a.rank !== b.rank) return a.rank - b.rank;
@@ -601,6 +637,7 @@ export async function onRequest(ctx) {
             return String(a.book.id).localeCompare(String(b.book.id));
         })
         .map(x => x.book);
+    const filtered = dedupeCatalogResults(ranked);
     recordPerf(ctx, 'search', searchStartedAt);
 
     const totalResults = filtered.length;
@@ -832,8 +869,8 @@ export async function onRequest(ctx) {
              transition:box-shadow .15s}
     .rc-card:hover{box-shadow:0 4px 16px rgba(24,18,14,.1)}
     .rc-card.is-order{border-color:#e8c9a0}
-    .rc-img{display:block;aspect-ratio:3/4;background:#ede9e1;overflow:hidden}
-    .rc-img img{width:100%;height:100%;object-fit:cover;display:block;
+    .rc-img{display:block;aspect-ratio:3/4;background:#ede9e1;overflow:hidden;padding:.35rem}
+    .rc-img img{width:100%;height:100%;object-fit:contain;display:block;
                 transition:transform .25s}
     .rc-card:hover .rc-img img{transform:scale(1.04)}
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;
@@ -894,6 +931,40 @@ export async function onRequest(ctx) {
     &copy; 2026 Amado Libros
   </footer>
 </div>
+<script>
+(() => {
+  const input = document.querySelector('[data-search-autocomplete]');
+  if (!input) return;
+  const list = document.createElement('datalist');
+  list.id = 'book-search-suggestions';
+  document.body.appendChild(list);
+  input.setAttribute('list', list.id);
+  let timer;
+  let controller;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { list.replaceChildren(); return; }
+    timer = setTimeout(async () => {
+      if (controller) controller.abort();
+      controller = new AbortController();
+      try {
+        const response = await fetch('/api/search-suggestions?q=' + encodeURIComponent(q), { signal: controller.signal });
+        if (!response.ok) return;
+        const data = await response.json();
+        list.replaceChildren(...(data.suggestions || []).map(suggestion => {
+          const option = document.createElement('option');
+          option.value = suggestion.value;
+          option.label = suggestion.label;
+          return option;
+        }));
+      } catch (error) {
+        if (error.name !== 'AbortError') list.replaceChildren();
+      }
+    }, 180);
+  });
+})();
+</script>
 </body>
 </html>`;
 

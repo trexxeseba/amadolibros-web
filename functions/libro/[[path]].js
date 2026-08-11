@@ -49,22 +49,33 @@ function safeJson(value) {
 
 
 function httpsImg(url) {
-    return (url || '').replace('http://', 'https://');
+    return (url || '')
+        .replace('http://', 'https://')
+        .replace(/-I\.(jpg|jpeg|png|webp)(?=($|\?))/i, '-O.$1');
 }
 
-function normalizeImages(item, previewCoverSrc = '') {
-    const urls = [];
+export function normalizeImages(item, previewCoverSrc = '') {
+    const NON_BOOK_IMAGE_ASSETS = new Set([
+        'D_768794-MLU78243849622_082024-O.jpg',
+        'D_823347-MLU78243898758_082024-O.jpg',
+    ]);
+    const pictures = [];
 
     if (Array.isArray(item.pictures)) {
         for (const picture of item.pictures) {
-            if (typeof picture === 'string') urls.push(picture);
+            if (typeof picture !== 'string') continue;
+            const normalized = httpsImg(picture);
+            const asset = normalized.split('/').pop()?.split('?')[0] || '';
+            if (!NON_BOOK_IMAGE_ASSETS.has(asset)) pictures.push(normalized);
         }
     }
 
-    if (item.thumbnail) urls.push(item.thumbnail);
-
-    const normalized = [...new Set(urls.map(httpsImg).filter(Boolean))].slice(0, 6);
+    // `thumbnail` es una versión -I de la primera portada y no una foto
+    // adicional. Solo se usa como fallback si ML no entregó pictures[].
+    if (pictures.length === 0 && item.thumbnail) pictures.push(httpsImg(item.thumbnail));
+    const normalized = [...new Set(pictures.filter(Boolean))].slice(0, 6);
     if (previewCoverSrc && normalized.length > 0) normalized[0] = previewCoverSrc;
+    if (previewCoverSrc && normalized.length === 0) normalized.push(previewCoverSrc);
     return normalized;
 }
 
