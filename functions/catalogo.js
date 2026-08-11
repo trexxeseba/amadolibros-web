@@ -935,40 +935,7 @@ export async function onRequest(ctx) {
     &copy; 2026 Amado Libros
   </footer>
 </div>
-<script>
-(() => {
-  const input = document.querySelector('[data-search-autocomplete]');
-  if (!input) return;
-  const list = document.createElement('datalist');
-  list.id = 'book-search-suggestions';
-  document.body.appendChild(list);
-  input.setAttribute('list', list.id);
-  let timer;
-  let controller;
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    const q = input.value.trim();
-    if (q.length < 2) { list.replaceChildren(); return; }
-    timer = setTimeout(async () => {
-      if (controller) controller.abort();
-      controller = new AbortController();
-      try {
-        const response = await fetch('/api/search-suggestions?q=' + encodeURIComponent(q), { signal: controller.signal });
-        if (!response.ok) return;
-        const data = await response.json();
-        list.replaceChildren(...(data.suggestions || []).map(suggestion => {
-          const option = document.createElement('option');
-          option.value = suggestion.value;
-          option.label = suggestion.label;
-          return option;
-        }));
-      } catch (error) {
-        if (error.name !== 'AbortError') list.replaceChildren();
-      }
-    }, 180);
-  });
-})();
-</script>
+<script src="/search-autocomplete.js" defer></script>
 </body>
 </html>`;
 
