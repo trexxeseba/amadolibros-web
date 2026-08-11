@@ -61,6 +61,7 @@ const ROUTES = [
   { path: '/', kind: 'html', canonical: `${BASE_URL}/`, robots: 'index, follow' },
   { path: '/catalogo', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'index, follow' },
   { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex, follow' },
+  { path: '/pedir-libro', kind: 'html', canonical: `${BASE_URL}/pedir-libro`, robots: 'index, follow' },
   { path: '/carrito/', kind: 'cart' },
   { path: '/robots.txt', kind: 'robots' },
   { path: '/sitemap.xml', kind: 'sitemap-index' },
@@ -267,7 +268,7 @@ function analyzeSitemapBody(body, kind) {
 
   if (kind === 'sitemap-pages') {
     const requiredPaths = [
-      '/', '/catalogo', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
+      '/', '/catalogo', '/pedir-libro', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
       '/devoluciones', '/terminos', '/privacidad', '/contacto',
     ];
     for (const path of requiredPaths) {

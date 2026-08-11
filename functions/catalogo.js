@@ -777,8 +777,16 @@ export async function onRequest(ctx) {
                     ? `Catálogo de libros — Página ${page} | Amado Libros`
                     : 'Comprar libros disponibles y por encargo | Amado Libros';
     const emptyMessage = rawQ
-        ? `Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''} o <a href="/">volvé al catálogo</a>.<br><br>¿No encontrás lo que buscás? <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busco: ${rawQ}`)}" target="_blank" rel="noopener noreferrer">Consultanos por WhatsApp</a> y te ayudamos.`
-        : `Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.`;
+        ? `<p>Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''}.</p>
+    <section class="manual-request" aria-label="Pedir una búsqueda manual">
+      <strong>Que no aparezca acá no significa que no podamos encontrarlo.</strong>
+      <span>Contanos lo que sabés. Una persona de Amado Libros hace la búsqueda y verifica la edición antes de ofrecerte una opción.</span>
+      <div class="manual-request-actions">
+        <a class="manual-request-primary" href="/pedir-libro?tipo=sin-resultados&amp;q=${encodeURIComponent(rawQ)}">Pedir que lo busquemos</a>
+        <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busqué “${rawQ}” y no apareció en el catálogo.`)}" target="_blank" rel="noopener noreferrer">Ir directo a WhatsApp</a>
+      </div>
+    </section>`
+        : `<p>Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.</p>`;
 
     // Chips de filtros activos — visibilidad clara de qué está aplicado.
     const chips = [];
@@ -910,6 +918,14 @@ export async function onRequest(ctx) {
     .rc-cta.rc-wa{color:#117a37;border-color:#b9dfc7;background:#effaf3}
     .rc-card:hover .rc-cta.rc-wa{background:#dcf5e5}
     .empty{padding:2rem 0;color:#64748b;font-size:.95rem}
+    .manual-request{max-width:720px;margin-top:1.35rem;padding:1.25rem;border:1px solid #ead8cc;border-radius:1rem;background:#fff7f3;color:#1e293b}
+    .manual-request strong,.manual-request span{display:block}
+    .manual-request strong{font-size:1.05rem;line-height:1.35}
+    .manual-request span{margin-top:.45rem;color:#64748b;font-size:.88rem}
+    .manual-request-actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1rem}
+    .manual-request-actions a{display:inline-flex;min-height:46px;align-items:center;justify-content:center;padding:.7rem 1rem;border-radius:.65rem;font-weight:800;text-decoration:none}
+    .manual-request-primary{background:#e49982;color:#fff}
+    .manual-request-actions .wa-link{border:1px solid #b9dfc7;background:#effaf3;color:#117a37}
     footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e2e8f0;
            font-size:.78rem;color:#94a3b8}
     footer a{color:#cbd5e1;text-decoration:none}
@@ -928,7 +944,7 @@ export async function onRequest(ctx) {
   <p class="sub">${subText}</p>
   ${totalResults > 0
     ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
-    : `<p class="empty">${emptyMessage}</p>`
+    : `<div class="empty">${emptyMessage}</div>`
   }
   <footer>
     <a href="/">Inicio</a> · <a href="/libros-agotados-importados-uruguay">Libros agotados e importados</a> · <a href="/politicas">Políticas</a> ·

@@ -4,6 +4,7 @@ import { urlsetXml, xmlResponse } from './_shared/sitemap.js';
 export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/`,
   `${BASE}/catalogo`,
+  `${BASE}/pedir-libro`,
   `${BASE}/libros-agotados-importados-uruguay`,
   `${BASE}/libros-maria-montessori-uruguay`,
   `${BASE}/politicas`,
