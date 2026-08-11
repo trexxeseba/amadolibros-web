@@ -18,3 +18,11 @@ test('autocompletado elimina sugerencias repetidas', () => {
   const repeated = buildSuggestions([...items, items[0]], 'kama');
   assert.equal(repeated.filter(item => item.value === items[0].title).length, 1);
 });
+
+test('una palabra exacta se prioriza sobre una coincidencia parcial', () => {
+  const suggestions = buildSuggestions([
+    { title: 'Cracking The Coding Interview - Gayle Laakmann' },
+    { title: 'Edipo Gay' },
+  ], 'gay');
+  assert.equal(suggestions[0].value, 'Edipo Gay');
+});
