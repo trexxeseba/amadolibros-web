@@ -1,7 +1,7 @@
 // Contrato del primer pantallazo comercial de la portada.
 //
 // Hero.astro no se puede importar directamente con node --test. Estas pruebas
-// estructurales fijan el mensaje comercial aprobado y el CTA de WhatsApp sin
+// estructurales fijan el mensaje comercial aprobado y el CTA guiado sin
 // depender de un navegador ni de servicios externos.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,13 +23,11 @@ test('Hero: muestra las cuatro ventajas comerciales sin prometer cuotas sin inte
   assert.doesNotMatch(heroAstro, /cuotas sin interés/i);
 });
 
-test('Hero: el CTA de encargos abre WhatsApp con los datos necesarios prellenados', () => {
-  assert.match(heroAstro, /https:\/\/wa\.me\/59899841325\?text=/);
-  assert.match(heroAstro, /encodeURIComponent\(requestText\)/);
-  assert.match(heroAstro, /título, autor, ISBN o una foto de la tapa/i);
-  assert.match(heroAstro, />\s*Pedir un libro por WhatsApp\s*</);
-  assert.match(heroAstro, /target="_blank"/);
-  assert.match(heroAstro, /rel="noopener noreferrer"/);
+test('Hero: el CTA de encargos inicia la búsqueda manual guiada', () => {
+  assert.match(heroAstro, /href="\/pedir-libro\?tipo=exacto"/);
+  assert.match(heroAstro, /Buscamos agotados, importados y ediciones difíciles/i);
+  assert.match(heroAstro, />\s*Contanos qué libro buscás\s*</);
+  assert.doesNotMatch(heroAstro, /https:\/\/wa\.me/);
 });
 
 test('Hero: enlaza la explicación indexable del servicio de encargos', () => {

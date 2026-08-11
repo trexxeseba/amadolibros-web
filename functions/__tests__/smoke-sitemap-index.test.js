@@ -39,7 +39,7 @@ test('el índice no admite pausados ni segmentos inesperados', () => {
 
 test('pages exige todas las páginas estáticas relevantes', () => {
   const pages = [
-    '/', '/catalogo', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
+    '/', '/catalogo', '/pedir-libro', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
     '/devoluciones', '/terminos', '/privacidad', '/contacto',
   ];
   const valid = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${pages.map(path => `<url>${loc(`${BASE}${path}`)}</url>`).join('')}</urlset>`);

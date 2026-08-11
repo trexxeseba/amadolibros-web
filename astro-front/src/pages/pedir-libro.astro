@@ -1,0 +1,430 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import WAFloat from '../components/WAFloat.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Búsqueda manual de libros por encargo',
+  serviceType: 'Búsqueda de libros agotados, importados y difíciles de conseguir',
+  areaServed: { '@type': 'Country', name: 'Uruguay' },
+  provider: {
+    '@type': 'BookStore',
+    name: 'Amado Libros',
+    url: 'https://www.amadolibros.com/',
+  },
+};
+---
+
+<BaseLayout
+  title="Pedí una búsqueda de libro | Amado Libros"
+  description="Contanos qué libro buscás. Revisamos manualmente títulos agotados, importados, digitales, técnicos y ediciones antiguas para clientes en Uruguay."
+  canonical="https://www.amadolibros.com/pedir-libro"
+  jsonLd={jsonLd}
+>
+  <Header />
+  <main class="request-page">
+    <div class="request-shell">
+      <nav class="breadcrumbs" aria-label="Migas de pan">
+        <a href="/">Inicio</a><span aria-hidden="true">›</span><span>Pedir una búsqueda</span>
+      </nav>
+
+      <section class="request-intro" aria-labelledby="request-title">
+        <p class="eyebrow">Búsqueda manual, persona a persona</p>
+        <h1 id="request-title">Contanos qué libro querés encontrar</h1>
+        <p>
+          No necesitás tener todos los datos. Con un título incompleto, autor, ISBN,
+          tema o foto de la tapa podemos empezar.
+        </p>
+        <ul aria-label="Cómo funciona">
+          <li><strong>1.</strong> Completás lo que sabés.</li>
+          <li><strong>2.</strong> Se abre WhatsApp con el pedido ordenado.</li>
+          <li><strong>3.</strong> Nuestro equipo hace la búsqueda y te responde.</li>
+        </ul>
+      </section>
+
+      <form id="manual-book-request" class="request-form">
+        <div class="field field-wide">
+          <label for="request-type">¿Qué tipo de búsqueda necesitás?</label>
+          <select id="request-type" name="request_type" required>
+            <option value="exacto">Un título, autor o ISBN concreto</option>
+            <option value="agotado">Un libro agotado o descatalogado</option>
+            <option value="novedades-tecnicas">Novedades de una especialidad</option>
+            <option value="digital">Una edición digital</option>
+            <option value="antiguo">Un libro antiguo, facsímil o reedición</option>
+            <option value="tapa">Sólo recuerdo la tapa o parte del título</option>
+            <option value="bibliografia">Bibliografía técnica o de estudio</option>
+            <option value="regalo">Recomendación para un regalo</option>
+          </select>
+        </div>
+
+        <div class="field field-wide">
+          <label for="main-query">¿Qué estás buscando?</label>
+          <input
+            id="main-query"
+            name="query"
+            type="text"
+            required
+            minlength="2"
+            maxlength="300"
+            placeholder="Título, tema, especialidad o lo que recuerdes"
+            autocomplete="off"
+          >
+          <small id="query-help">Escribí lo más concreto que puedas.</small>
+        </div>
+
+        <div class="field">
+          <label for="author-isbn">Autor, editorial o ISBN</label>
+          <input
+            id="author-isbn"
+            name="author_isbn"
+            type="text"
+            maxlength="180"
+            placeholder="Opcional"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="field">
+          <label for="book-format">Formato preferido</label>
+          <select id="book-format" name="format">
+            <option value="Me sirve cualquier formato">Me sirve cualquier formato</option>
+            <option value="Libro físico">Libro físico</option>
+            <option value="Edición digital">Edición digital</option>
+            <option value="Original antiguo">Original antiguo</option>
+            <option value="Facsímil o reedición">Facsímil o reedición</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="language">Idioma</label>
+          <select id="language" name="language">
+            <option value="Español">Español</option>
+            <option value="Puede ser otro idioma">Puede ser otro idioma</option>
+            <option value="Inglés">Inglés</option>
+            <option value="Portugués">Portugués</option>
+            <option value="Francés">Francés</option>
+            <option value="Italiano">Italiano</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="budget">Presupuesto aproximado en pesos</label>
+          <input
+            id="budget"
+            name="budget"
+            type="number"
+            min="0"
+            max="999999"
+            step="100"
+            inputmode="numeric"
+            placeholder="Opcional"
+          >
+        </div>
+
+        <div class="field field-wide">
+          <label for="details">Otros datos que nos puedan ayudar</label>
+          <textarea
+            id="details"
+            name="details"
+            rows="4"
+            maxlength="800"
+            placeholder="Año aproximado, país, edición, para qué lo necesitás o cualquier dato útil"
+          ></textarea>
+        </div>
+
+        <p id="photo-note" class="context-note" hidden>
+          Cuando se abra WhatsApp, mandanos la foto de la tapa en el siguiente mensaje.
+        </p>
+
+        <div class="form-actions field-wide">
+          <button type="submit">Enviar pedido por WhatsApp</button>
+          <a id="catalog-search-link" href="/catalogo">Buscar primero en el catálogo</a>
+        </div>
+
+        <p class="privacy-note field-wide">
+          Este formulario no guarda datos en la web. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarla manualmente.
+        </p>
+      </form>
+    </div>
+  </main>
+  <Footer />
+  <WAFloat />
+</BaseLayout>
+
+<script>
+  const WA_NUMBER = '59899841325';
+  const typeLabels = {
+    exacto: 'Título, autor o ISBN concreto',
+    agotado: 'Libro agotado o descatalogado',
+    'sin-resultados': 'No apareció en el catálogo',
+    'novedades-tecnicas': 'Novedades de una especialidad',
+    digital: 'Edición digital',
+    antiguo: 'Libro antiguo, facsímil o reedición',
+    tapa: 'Sólo recuerda la tapa o parte del título',
+    bibliografia: 'Bibliografía técnica o de estudio',
+    regalo: 'Recomendación para un regalo',
+  };
+  const queryHelp = {
+    digital: 'Indicá el título o tema y, si podés, el dispositivo donde lo leerías.',
+    antiguo: 'Aclarar si buscás un original, un facsímil o una reedición evita búsquedas equivocadas.',
+    'novedades-tecnicas': 'Indicá especialidad, tema y si es para estudiante, residente o profesional.',
+    bibliografia: 'Indicá tema, nivel, carrera, curso o finalidad profesional.',
+    regalo: 'Contanos para quién es, edad aproximada, intereses y presupuesto.',
+    tapa: 'Escribí cualquier palabra, color, dibujo o detalle que recuerdes.',
+  };
+
+  const form = document.querySelector('#manual-book-request');
+  const typeSelect = document.querySelector('#request-type');
+  const queryInput = document.querySelector('#main-query');
+  const queryHelpEl = document.querySelector('#query-help');
+  const photoNote = document.querySelector('#photo-note');
+  const catalogLink = document.querySelector('#catalog-search-link');
+  const params = new URLSearchParams(window.location.search);
+  const requestedType = params.get('tipo') || 'exacto';
+  const initialQuery = (params.get('q') || '').trim().slice(0, 300);
+  const normalizedType = requestedType === 'sin-resultados' ? 'exacto' : requestedType;
+
+  if ([...typeSelect.options].some(option => option.value === normalizedType)) {
+    typeSelect.value = normalizedType;
+  }
+  if (initialQuery) queryInput.value = initialQuery;
+
+  function effectiveType() {
+    return requestedType === 'sin-resultados' && typeSelect.value === 'exacto'
+      ? 'sin-resultados'
+      : typeSelect.value;
+  }
+
+  function updateContext() {
+    const type = effectiveType();
+    queryHelpEl.textContent = queryHelp[typeSelect.value] || 'Escribí lo más concreto que puedas.';
+    photoNote.hidden = typeSelect.value !== 'tapa';
+    const query = queryInput.value.trim();
+    catalogLink.href = query ? `/catalogo?q=${encodeURIComponent(query)}` : '/catalogo';
+  }
+
+  let started = false;
+  form.addEventListener('input', () => {
+    updateContext();
+    if (!started) {
+      started = true;
+      window.gtag?.('event', 'book_request_started', { request_type: effectiveType() });
+    }
+  });
+  typeSelect.addEventListener('change', () => {
+    updateContext();
+    window.gtag?.('event', 'book_request_type_selected', { request_type: effectiveType() });
+  });
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    const type = effectiveType();
+    const lines = [
+      'Hola Amado Libros, quiero pedir una búsqueda manual.',
+      '',
+      `Tipo de búsqueda: ${typeLabels[type] || typeLabels.exacto}`,
+      `Busco: ${String(data.get('query') || '').trim()}`,
+    ];
+    const authorIsbn = String(data.get('author_isbn') || '').trim();
+    const budget = String(data.get('budget') || '').trim();
+    const details = String(data.get('details') || '').trim();
+    if (authorIsbn) lines.push(`Autor, editorial o ISBN: ${authorIsbn}`);
+    lines.push(`Formato: ${data.get('format')}`);
+    lines.push(`Idioma: ${data.get('language')}`);
+    if (budget) lines.push(`Presupuesto aproximado: $${budget} UYU`);
+    if (details) lines.push(`Otros datos: ${details}`);
+    if (typeSelect.value === 'tapa') lines.push('Voy a mandar la foto de la tapa en el próximo mensaje.');
+    lines.push('', 'Quedo a la espera de las opciones que encuentren. Gracias.');
+
+    window.gtag?.('event', 'book_request_submitted', { request_type: type });
+    window.location.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+  });
+
+  updateContext();
+</script>
+
+<style>
+  .request-page {
+    padding: 0 1rem 3.5rem;
+    background:
+      radial-gradient(circle at 85% 8%, rgba(228, 153, 130, 0.13), transparent 32%),
+      var(--bg);
+  }
+
+  .request-shell {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    gap: 0.45rem;
+    padding: 1rem 0;
+    color: var(--ink-2);
+    font-size: 0.78rem;
+  }
+
+  .breadcrumbs a { color: var(--salmon-hover); }
+
+  .request-intro {
+    padding: clamp(1.4rem, 5vw, 3rem);
+    border: 1px solid var(--border);
+    border-radius: 1.15rem 1.15rem 0 0;
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .eyebrow {
+    color: var(--salmon);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .request-intro h1 {
+    max-width: 18ch;
+    margin-top: 0.45rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 7vw, 3.5rem);
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+  }
+
+  .request-intro > p:not(.eyebrow) {
+    max-width: 62ch;
+    margin-top: 0.9rem;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.94rem;
+  }
+
+  .request-intro ul {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 1.2rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .request-intro li {
+    display: flex;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.82rem;
+  }
+
+  .request-intro li strong { color: var(--salmon); }
+
+  .request-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: clamp(1.2rem, 4vw, 2.3rem);
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-radius: 0 0 1.15rem 1.15rem;
+    background: #fff;
+  }
+
+  .field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .field label {
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem 0.8rem;
+    border: 1px solid #d7cec3;
+    border-radius: 0.65rem;
+    outline: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 500 0.95rem/1.35 var(--font-ui);
+  }
+
+  .field textarea {
+    min-height: 118px;
+    resize: vertical;
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--salmon-hover);
+    box-shadow: 0 0 0 3px rgba(228, 153, 130, 0.16);
+  }
+
+  .field small,
+  .privacy-note,
+  .context-note {
+    color: var(--ink-2);
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
+  .context-note {
+    grid-column: 1 / -1;
+    padding: 0.75rem;
+    border-left: 3px solid var(--salmon);
+    background: #fff7f3;
+  }
+
+  .form-actions {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 0.35rem;
+  }
+
+  .form-actions button,
+  .form-actions a {
+    display: inline-flex;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    border-radius: 0.7rem;
+    font-size: 0.86rem;
+    font-weight: 800;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .form-actions button {
+    border: 0;
+    background: var(--wa);
+    color: #102516;
+  }
+
+  .form-actions button:hover { background: var(--wa-hover); }
+
+  .form-actions a {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  @media (min-width: 720px) {
+    .request-intro ul { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .request-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field-wide { grid-column: 1 / -1; }
+    .form-actions { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  }
+</style>

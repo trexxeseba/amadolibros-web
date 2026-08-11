@@ -1,7 +1,4 @@
 ---
-const requestText =
-  'Hola Amado Libros, estoy buscando un libro. Les paso título, autor, ISBN o una foto de la tapa:';
-const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(requestText)}`;
 ---
 
 <section class="hero-shell">
@@ -108,12 +105,10 @@ const requestHref = `https://wa.me/59899841325?text=${encodeURIComponent(request
           </a>
         </div>
         <a
-          href={requestHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Pedir un libro por WhatsApp"
+          href="/pedir-libro?tipo=exacto"
+          aria-label="Contar qué libro buscás"
         >
-          Pedir un libro por WhatsApp
+          Contanos qué libro buscás
         </a>
       </div>
     </aside>

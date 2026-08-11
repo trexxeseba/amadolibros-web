@@ -1,0 +1,173 @@
+---
+const questions = [
+  {
+    type: 'agotado',
+    title: '¿Buscás un libro agotado o descatalogado?',
+    text: 'Pasános el título, autor o ISBN y revisamos opciones reales.',
+  },
+  {
+    type: 'novedades-tecnicas',
+    title: '¿Querés novedades de oftalmología, cirugía u otra especialidad?',
+    text: 'Decinos el tema y el nivel; hacemos la búsqueda manual.',
+  },
+  {
+    type: 'digital',
+    title: '¿Necesitás una edición digital?',
+    text: 'Buscamos por título, idioma y dispositivo que usás.',
+  },
+  {
+    type: 'antiguo',
+    title: '¿Buscás un libro antiguo o de hace varios siglos?',
+    text: 'Aclaramos si querés un original, facsímil o reedición.',
+  },
+  {
+    type: 'tapa',
+    title: '¿Sólo recordás la tapa o una parte del título?',
+    text: 'Contanos lo que recordás y después nos mandás la foto.',
+  },
+  {
+    type: 'bibliografia',
+    title: '¿Necesitás bibliografía técnica para estudiar o trabajar?',
+    text: 'Indicá tema, nivel e idioma y te ayudamos a ubicarla.',
+  },
+];
+---
+
+<section class="discovery" aria-labelledby="discovery-title">
+  <div class="discovery-inner">
+    <div class="discovery-heading">
+      <p class="discovery-kicker">El buscador humano de libros difíciles</p>
+      <h2 id="discovery-title">¿Qué libro querés que encontremos?</h2>
+      <p>
+        Puede ser un ISBN, una foto, una edición digital o un libro de hace 400 años.
+        Contanos lo que sabés: una persona de Amado Libros hace la búsqueda.
+      </p>
+    </div>
+
+    <div class="question-grid">
+      {questions.map((question, index) => (
+        <a class="question-card" href={`/pedir-libro?tipo=${question.type}`}>
+          <span class="question-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          <strong>{question.title}</strong>
+          <span>{question.text}</span>
+          <b>Empezar búsqueda →</b>
+        </a>
+      ))}
+    </div>
+
+    <p class="discovery-note">
+      Sin respuestas automáticas: verificamos edición, disponibilidad, precio y plazo antes de ofrecerte una opción.
+    </p>
+  </div>
+</section>
+
+<style>
+  .discovery {
+    padding: clamp(2.8rem, 7vw, 5rem) 1.25rem;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .discovery-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .discovery-heading {
+    max-width: 760px;
+  }
+
+  .discovery-kicker {
+    color: var(--salmon-hover);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .discovery h2 {
+    margin-top: 0.45rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 6vw, 3.35rem);
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+  }
+
+  .discovery-heading > p:last-child {
+    max-width: 64ch;
+    margin-top: 0.85rem;
+    color: var(--ink-2);
+    font-size: 0.98rem;
+  }
+
+  .question-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    margin-top: 1.65rem;
+  }
+
+  .question-card {
+    position: relative;
+    display: flex;
+    min-height: 178px;
+    flex-direction: column;
+    padding: 1.2rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  }
+
+  .question-card:hover,
+  .question-card:focus-visible {
+    border-color: var(--salmon);
+    box-shadow: 0 10px 30px rgba(24, 18, 14, 0.08);
+    transform: translateY(-2px);
+    outline: none;
+  }
+
+  .question-number {
+    color: var(--salmon-hover);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .question-card strong {
+    max-width: 30ch;
+    margin-top: 0.6rem;
+    color: var(--ink);
+    font-size: 0.97rem;
+    line-height: 1.35;
+  }
+
+  .question-card > span:not(.question-number) {
+    margin-top: 0.45rem;
+    color: var(--ink-2);
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .question-card b {
+    margin-top: auto;
+    padding-top: 0.9rem;
+    color: var(--salmon-hover);
+    font-size: 0.78rem;
+  }
+
+  .discovery-note {
+    margin-top: 1rem;
+    color: var(--ink-2);
+    font-size: 0.76rem;
+  }
+
+  @media (min-width: 650px) {
+    .question-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (min-width: 980px) {
+    .question-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>
