@@ -230,6 +230,22 @@ test('19. el catálogo sin filtros sigue siendo index, follow en cualquier pági
   assert.match(html, /<meta name="robots" content="index, follow">/);
 });
 
+test('19b. la portada del catálogo comunica disponibles y encargos sin duplicar la home', async () => {
+  const { html } = await render(BASE_URL);
+  assert.match(html, /<title>Comprar libros disponibles y por encargo \| Amado Libros<\/title>/);
+  assert.match(html, /<h1>Libros disponibles y por encargo<\/h1>/);
+  assert.match(html, /100 libros disponibles y 0 por encargo en Uruguay/);
+  assert.match(html, /ediciones agotadas e importadas de Europa/);
+});
+
+test('19c. cada página limpia tiene title, H1, descripción y schema propios', async () => {
+  const { html } = await render(`${BASE_URL}?page=2`);
+  assert.match(html, /<title>Catálogo de libros — Página 2 \| Amado Libros<\/title>/);
+  assert.match(html, /<h1>Libros disponibles y por encargo — Página 2<\/h1>/);
+  assert.match(html, /Página 2 de 3 del catálogo de Amado Libros/);
+  assert.match(html, /"url":"https:\/\/www\.amadolibros\.com\/catalogo\?page=2"/);
+});
+
 // ── 6. Marcado y accesibilidad ──────────────────────────────────────────────
 
 test('20. la navegación son enlaces HTML reales, sin JavaScript', async () => {

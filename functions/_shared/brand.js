@@ -67,6 +67,7 @@ export const CONTACT = {
 
 
 export const FOOTER_LINKS = [
+    { href: '/libros-agotados-importados-uruguay', label: 'Libros por encargo' },
     { href: '/envios',       label: 'Envíos y retiro' },
     { href: '/devoluciones', label: 'Devoluciones y reembolsos' },
     { href: '/terminos',     label: 'Términos y cancelaciones' },
