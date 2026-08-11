@@ -10,11 +10,12 @@ interface Props {
   canonical: string;
   heading: string;
   updated?: string;
+  jsonLd?: Record<string, unknown>;
 }
 
-const { title, description, canonical, heading, updated = '29 de julio de 2026' } = Astro.props;
+const { title, description, canonical, heading, updated = '29 de julio de 2026', jsonLd } = Astro.props;
 ---
-<BaseLayout title={title} description={description} canonical={canonical}>
+<BaseLayout title={title} description={description} canonical={canonical} jsonLd={jsonLd}>
   <Header />
   <main class="trust-page">
     <article class="trust-card">
