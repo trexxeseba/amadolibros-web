@@ -294,6 +294,7 @@ ${headerHtml()}
 </main>
 ${footerHtml()}
 ${waFloatHtml(`Hola, busco un libro de ${category.name}.`)}
+<script src="/search-autocomplete.js" defer></script>
 </body>
 </html>`;
 }

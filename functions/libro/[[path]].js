@@ -262,7 +262,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
     const images       = normalizeImages(item, previewCoverSrc);
     const img          = images[0] || '';
-    const socialImage  = img || `${BASE}/images/logo-amado.webp`;
+    // Las redes sociales suelen bloquear imágenes servidas directamente por
+    // mlstatic. La portada social sale desde nuestro dominio y el proxy valida
+    // el MLU antes de obtenerla, para que WhatsApp/Facebook reciban HTTP 200.
+    const socialImage  = `${BASE}/book-cover/${encodeURIComponent(item.id)}/cover.jpg`;
     const price         = Number(item.price) || 0;
     const priceUY       = price.toLocaleString('es-UY');
     const transferAmount = Math.round(price * 0.88);
@@ -468,6 +471,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta property="og:title"       content="${safeTitle} | Amado Libros">
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:image"       content="${escapeHtml(socialImage)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(socialImage)}">
   <meta property="og:image:alt"   content="Portada de ${safeTitle}">
   <meta property="og:locale"      content="es_UY">
   <meta property="og:site_name"   content="Amado Libros">
@@ -481,6 +485,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <script type="application/ld+json">${safeJson(schemaProduct)}</script>
   <script type="application/ld+json">${safeJson(schemaBreadcrumb)}</script>
   <script src="/cart.js" defer></script>
+  <script src="/search-autocomplete.js" defer></script>
 
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
