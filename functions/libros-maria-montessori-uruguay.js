@@ -128,6 +128,7 @@ export async function onRequest(ctx) {
   <meta property="og:url"         content="${BASE}/libros-maria-montessori-uruguay">
   <meta property="og:title"       content="Libros de María Montessori en Uruguay | Amado Libros">
   <meta property="og:description" content="Libros de María Montessori disponibles en Uruguay. Consultá stock por WhatsApp, comprá online o pedí libros difíciles de ubicar.">
+  <script src="/analytics-events.js"></script>
   <meta property="og:image"       content="${BASE}/images/logo-amado.png">
   <meta property="og:locale"      content="es_UY">
 

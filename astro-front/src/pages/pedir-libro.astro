@@ -243,6 +243,10 @@ const jsonLd = {
     lines.push('', 'Quedo a la espera de las opciones que encuentren. Gracias.');
 
     window.gtag?.('event', 'book_request_submitted', { request_type: type });
+    window.AmadoAnalytics?.trackWhatsApp({
+      ctaLocation: 'book_request_form',
+      topic: type,
+    });
     window.location.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
   });
 

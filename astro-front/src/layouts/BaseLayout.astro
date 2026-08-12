@@ -3,6 +3,7 @@ interface Props {
   title?: string;
   description?: string;
   indexable?: boolean;
+  analytics?: boolean;
   canonical?: string;
   image?: string;
   imageAlt?: string;
@@ -12,6 +13,7 @@ const {
   title = 'Amado Libros — Librería uruguaya',
   description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
   indexable: indexableProp,
+  analytics: analyticsProp,
   canonical,
   image = 'https://www.amadolibros.com/images/logo-amado.webp',
   imageAlt = 'Amado Libros, librería uruguaya',
@@ -20,7 +22,7 @@ const {
 
 const indexable  = indexableProp !== undefined ? indexableProp : import.meta.env.PUBLIC_INDEXABLE === 'true';
 const gaId       = import.meta.env.PUBLIC_GA_ID;
-const enableGA4  = indexable && !!gaId;
+const enableGA4  = (analyticsProp !== undefined ? analyticsProp : indexable) && !!gaId;
 const socialUrl  = canonical || 'https://www.amadolibros.com/';
 ---
 <!doctype html>
@@ -59,9 +61,19 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
       <script is:inline define:vars={{ gaId }}>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
+        const measuredUrl = new URL(window.location.href);
+        const allowedParameters = new Set([
+          'utm_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term',
+          'utm_content', 'gclid', 'dclid', 'gbraid', 'wbraid',
+        ]);
+        Array.from(measuredUrl.searchParams.keys()).forEach((key) => {
+          if (!allowedParameters.has(key)) measuredUrl.searchParams.delete(key);
+        });
+        measuredUrl.hash = '';
         gtag('js', new Date());
-        gtag('config', gaId);
+        gtag('config', gaId, { page_location: measuredUrl.toString() });
       </script>
+      <script is:inline src="/analytics-events.js"></script>
     </>
   )}
   <!-- Astro build OK — lote 2-A -->
