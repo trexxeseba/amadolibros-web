@@ -46,6 +46,14 @@ const jsonLd = {
       </section>
 
       <form id="manual-book-request" class="request-form">
+        <aside class="request-guides field-wide" aria-labelledby="request-guides-title">
+          <strong id="request-guides-title">¿Querés verificar los datos antes de enviar?</strong>
+          <p>
+            Consultá <a href="/como-identificar-edicion-correcta-isbn">cómo distinguir una edición por ISBN</a>
+            o <a href="/libros-agotados-importados-uruguay">cómo funciona un encargo de libro agotado o importado</a>.
+          </p>
+        </aside>
+
         <div class="field field-wide">
           <label for="request-type">¿Qué tipo de búsqueda necesitás?</label>
           <select id="request-type" name="request_type" required>
@@ -335,6 +343,24 @@ const jsonLd = {
     border-top: 0;
     border-radius: 0 0 1.15rem 1.15rem;
     background: #fff;
+  }
+
+  .request-guides {
+    padding: 0.9rem 1rem;
+    border-left: 3px solid var(--salmon);
+    background: #fff7f3;
+    color: var(--ink-2);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+
+  .request-guides strong { color: var(--ink); }
+
+  .request-guides a {
+    color: var(--salmon-hover);
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
 
   .field {

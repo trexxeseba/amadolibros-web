@@ -1,0 +1,140 @@
+---
+const guides = [
+  {
+    eyebrow: 'Elegir la edición',
+    title: 'Cómo identificar la edición correcta por ISBN',
+    text: 'Compará ISBN, editorial, idioma y formato antes de comprar o encargar.',
+    href: '/como-identificar-edicion-correcta-isbn',
+    action: 'Leer la guía',
+  },
+  {
+    eyebrow: 'Conseguir un agotado',
+    title: 'Cómo funciona la búsqueda de libros por encargo',
+    text: 'Qué datos mandar, qué verificamos y cuándo confirmamos precio y plazo.',
+    href: '/libros-agotados-importados-uruguay',
+    action: 'Ver cómo trabajamos',
+  },
+  {
+    eyebrow: 'Conocer la librería',
+    title: 'Quiénes somos y cómo verificamos cada búsqueda',
+    text: 'Nuestro método para distinguir obras, ediciones y opciones disponibles.',
+    href: '/quienes-somos',
+    action: 'Conocer a Amado Libros',
+  },
+];
+---
+
+<section class="guides" aria-labelledby="guides-title">
+  <div class="guides-inner">
+    <div class="guides-heading">
+      <p class="guides-kicker">Información revisada por Amado Libros</p>
+      <h2 id="guides-title">Guías para encontrar y encargar el libro correcto</h2>
+      <p>Respuestas claras para evitar una edición equivocada y saber qué esperar de una búsqueda por encargo.</p>
+    </div>
+
+    <div class="guides-grid">
+      {guides.map(guide => (
+        <article class="guide-card">
+          <p>{guide.eyebrow}</p>
+          <h3><a href={guide.href}>{guide.title}</a></h3>
+          <span>{guide.text}</span>
+          <a class="guide-action" href={guide.href} aria-label={`${guide.action}: ${guide.title}`}>
+            {guide.action} →
+          </a>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .guides {
+    padding: clamp(2.8rem, 7vw, 5rem) 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .guides-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .guides-heading { max-width: 760px; }
+
+  .guides-kicker {
+    color: var(--salmon-hover);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .guides h2 {
+    margin-top: 0.45rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.85rem, 5vw, 3rem);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .guides-heading > p:last-child {
+    max-width: 64ch;
+    margin-top: 0.8rem;
+    color: var(--ink-2);
+  }
+
+  .guides-grid {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1.6rem;
+  }
+
+  .guide-card {
+    display: flex;
+    min-height: 230px;
+    flex-direction: column;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: #fff;
+  }
+
+  .guide-card > p {
+    color: var(--salmon-hover);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .guide-card h3 {
+    margin-top: 0.65rem;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1.25;
+  }
+
+  .guide-card h3 a:hover,
+  .guide-card h3 a:focus-visible { text-decoration: underline; text-underline-offset: 0.16em; }
+
+  .guide-card > span {
+    margin-top: 0.65rem;
+    color: var(--ink-2);
+    font-size: 0.85rem;
+  }
+
+  .guide-action {
+    margin-top: auto;
+    padding-top: 1rem;
+    color: var(--salmon-hover);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .guide-action:hover,
+  .guide-action:focus-visible { text-decoration: underline; text-underline-offset: 0.16em; }
+
+  @media (min-width: 760px) {
+    .guides-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>

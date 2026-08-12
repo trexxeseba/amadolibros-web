@@ -20,22 +20,67 @@ const PATH = '/libros-agotados-importados-uruguay';
 const TITLE = 'Libros agotados e importados en Uruguay | Amado Libros';
 const DESCRIPTION = 'Buscamos libros agotados, importados y difíciles de conseguir en Europa y otros mercados. Consultá por título, autor, ISBN o foto desde Uruguay.';
 const REQUEST_MESSAGE = 'Hola Amado Libros, busco un libro por encargo. Les paso título, autor, ISBN o una foto de la tapa:';
+const LAST_REVIEWED_ISO = '2026-08-12';
 
 export async function onRequest() {
     const canonical = `${BASE}${PATH}`;
     const requestHref = waHref(REQUEST_MESSAGE);
     const schema = {
         '@context': 'https://schema.org',
-        '@type': 'Service',
-        'name': 'Búsqueda de libros agotados e importados por encargo',
-        'description': DESCRIPTION,
-        'url': canonical,
-        'areaServed': { '@type': 'Country', 'name': 'Uruguay' },
-        'provider': {
-            '@type': 'BookStore',
-            'name': BRAND.name,
-            'url': BASE,
-        },
+        '@graph': [
+            {
+                '@type': ['Organization', 'BookStore'],
+                '@id': `${BASE}/#bookstore`,
+                'name': BRAND.name,
+                'url': `${BASE}/`,
+                'logo': `${BASE}/images/logo-amado.webp`,
+                'telephone': '+59899841325',
+                'email': 'adm@amadolibros.com',
+                'address': {
+                    '@type': 'PostalAddress',
+                    'streetAddress': 'Rincón 608',
+                    'addressLocality': 'Montevideo',
+                    'addressCountry': 'UY',
+                },
+            },
+            {
+                '@type': 'WebPage',
+                '@id': `${canonical}#webpage`,
+                'url': canonical,
+                'name': TITLE,
+                'description': DESCRIPTION,
+                'dateModified': LAST_REVIEWED_ISO,
+                'reviewedBy': { '@id': `${BASE}/#bookstore` },
+                'mainEntity': { '@id': `${canonical}#service` },
+                'inLanguage': 'es-UY',
+            },
+            {
+                '@type': 'Service',
+                '@id': `${canonical}#service`,
+                'name': 'Búsqueda de libros agotados e importados por encargo',
+                'description': DESCRIPTION,
+                'url': canonical,
+                'areaServed': { '@type': 'Country', 'name': 'Uruguay' },
+                'provider': { '@id': `${BASE}/#bookstore` },
+            },
+            {
+                '@type': 'BreadcrumbList',
+                'itemListElement': [
+                    {
+                        '@type': 'ListItem',
+                        'position': 1,
+                        'name': 'Inicio',
+                        'item': `${BASE}/`,
+                    },
+                    {
+                        '@type': 'ListItem',
+                        'position': 2,
+                        'name': 'Libros agotados e importados',
+                        'item': canonical,
+                    },
+                ],
+            },
+        ],
     };
 
     const html = `<!doctype html>
@@ -81,6 +126,7 @@ export async function onRequest() {
     .cta-primary{background:#25d366;color:#102516}
     .cta-secondary{border:1px solid #d2c7bb;background:#f8f5ef}
     .truth{padding:1rem;border-left:4px solid #e49982;background:#fff8f4;color:#6b4b3f;font-size:.9rem}
+    .reviewed{margin-top:.85rem;color:#756a61;font-size:.78rem}.reviewed a{color:#8f4436;font-weight:700;text-underline-offset:.15em}
     .section{padding:2.5rem 0 0}
     h2{font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.45rem,4vw,2rem);line-height:1.2}
     .steps,.types{display:grid;gap:1rem;margin-top:1.25rem}
@@ -118,7 +164,10 @@ export async function onRequest() {
           <a class="cta cta-secondary" href="/catalogo">Buscar en el catálogo</a>
         </div>
       </div>
-      <p class="truth"><strong>Información clara:</strong> un libro agotado no está disponible para entrega inmediata. La posibilidad de conseguirlo, su edición, precio y demora dependen del proveedor y se confirman en cada consulta.</p>
+      <div>
+        <p class="truth"><strong>Respuesta directa:</strong> sí, en muchos casos un libro agotado o fuera de plaza puede conseguirse por encargo desde Uruguay. No podemos asegurar disponibilidad antes de buscar: verificamos título o ISBN, edición, proveedor, precio y plazo para cada consulta.</p>
+        <p class="reviewed">Contenido revisado el 12 de agosto de 2026 por el <a href="/quienes-somos">equipo de Amado Libros</a>.</p>
+      </div>
     </section>
 
     <section class="section">
@@ -129,6 +178,7 @@ export async function onRequest() {
         <article class="card"><span class="step-number">3</span><h3>Vos decidís</h3><p>Te informamos precio, seña y plazo estimado. La gestión empieza únicamente después de tu confirmación.</p></article>
       </div>
       <p class="guide-link">¿No sabés si una publicación corresponde a la que necesitás? Consultá la <a href="/como-identificar-edicion-correcta-isbn">guía para identificar la edición correcta por ISBN</a>.</p>
+      <p class="guide-link">Conocé también <a href="/quienes-somos">quién revisa las búsquedas y cómo verificamos cada edición</a>.</p>
     </section>
 
     <section class="section">
