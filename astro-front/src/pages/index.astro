@@ -5,6 +5,7 @@ import BaseLayout          from '../layouts/BaseLayout.astro';
 import Header              from '../components/Header.astro';
 import Hero                from '../components/Hero.astro';
 import BookDiscovery       from '../components/BookDiscovery.astro';
+import GuideAccess         from '../components/GuideAccess.astro';
 import CategoryAccess      from '../components/CategoryAccess.astro';
 import BestsellerSection   from '../components/BestsellerSection.astro';
 import Footer              from '../components/Footer.astro';
@@ -14,11 +15,51 @@ import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
 import HowToBuy           from '../components/HowToBuy.astro';
 import ShippingPayments    from '../components/ShippingPayments.astro';
 import TrustStrip          from '../components/TrustStrip.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['Organization', 'BookStore'],
+      '@id': 'https://www.amadolibros.com/#bookstore',
+      name: 'Amado Libros',
+      url: 'https://www.amadolibros.com/',
+      logo: 'https://www.amadolibros.com/images/logo-amado.webp',
+      image: 'https://www.amadolibros.com/images/logo-amado.webp',
+      description: 'Librería online uruguaya, familiar y atendida por sus dueños. Vende libros disponibles y realiza búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
+      telephone: '+59899841325',
+      email: 'adm@amadolibros.com',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Rincón 608',
+        addressLocality: 'Montevideo',
+        addressCountry: 'UY',
+      },
+      areaServed: { '@type': 'Country', name: 'Uruguay' },
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer service',
+        telephone: '+59899841325',
+        email: 'adm@amadolibros.com',
+        availableLanguage: 'Spanish',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://www.amadolibros.com/#website',
+      url: 'https://www.amadolibros.com/',
+      name: 'Amado Libros',
+      publisher: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      inLanguage: 'es-UY',
+    },
+  ],
+};
 ---
 <BaseLayout
   title="Libros difíciles, agotados e importados | Amado Libros"
   canonical="https://www.amadolibros.com/"
   description="Conseguimos libros agotados, importados y difíciles de ubicar en Uruguay. Encargos desde Europa y otros mercados, con envíos a todo el país."
+  jsonLd={jsonLd}
 >
   <Header showSearch={false} showMobileDeliveryBanner={true} />
   <main>
@@ -26,6 +67,7 @@ import TrustStrip          from '../components/TrustStrip.astro';
     <CategoryAccess />
     <BestsellerSection />
     <BookDiscovery />
+    <GuideAccess />
     <HowToBuy />
     <ShippingPayments />
     <TrustStrip />
