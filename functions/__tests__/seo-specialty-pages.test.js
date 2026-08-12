@@ -73,6 +73,7 @@ test('cada landing muestra catálogo real filtrado y SEO regional verificable', 
     assert.match(html, /"@type":"CollectionPage"/);
     assert.match(html, /"@type":"ItemList"/);
     assert.match(html, /"@type":"Service"/);
+    assert.match(html, /<script src="\/analytics-events\.js"><\/script>/);
     assert.match(html, /"areaServed":\{"@type":"Country","name":"Uruguay"\}/);
     assert.match(html, /¿Consultás desde España o Latinoamérica\?/);
     assert.match(html, /eventual envío internacional se confirman caso a caso/);

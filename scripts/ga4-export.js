@@ -11,6 +11,33 @@ const ORGANIC_FILTER = {
   },
 };
 
+const AI_REFERRAL_SOURCES = [
+  'chatgpt.com',
+  'chat.openai.com',
+  'claude.ai',
+  'gemini.google.com',
+  'bard.google.com',
+  'perplexity.ai',
+  'copilot.microsoft.com',
+];
+
+const AI_REFERRAL_FILTER = {
+  filter: {
+    fieldName: 'sessionSource',
+    inListFilter: {
+      values: AI_REFERRAL_SOURCES,
+      caseSensitive: false,
+    },
+  },
+};
+
+const WHATSAPP_EVENT_FILTER = {
+  filter: {
+    fieldName: 'eventName',
+    stringFilter: { matchType: 'EXACT', value: 'whatsapp_click' },
+  },
+};
+
 const REPORTS = [
   {
     id: 'organic-summary',
@@ -64,6 +91,56 @@ const REPORTS = [
     id: 'event-inventory',
     dimensions: ['eventName'],
     metrics: ['eventCount', 'totalUsers'],
+  },
+  {
+    id: 'all-landing-pages',
+    dimensions: ['sessionSource', 'sessionMedium', 'landingPagePlusQueryString'],
+    metrics: [
+      'sessions',
+      'totalUsers',
+      'engagedSessions',
+      'engagementRate',
+      'keyEvents',
+      'sessionKeyEventRate',
+    ],
+  },
+  {
+    id: 'ai-referral-sources',
+    dimensions: ['sessionSource', 'sessionMedium'],
+    metrics: [
+      'sessions',
+      'totalUsers',
+      'engagedSessions',
+      'engagementRate',
+      'keyEvents',
+      'sessionKeyEventRate',
+    ],
+    filter: AI_REFERRAL_FILTER,
+  },
+  {
+    id: 'ai-referral-landing-pages',
+    dimensions: ['sessionSource', 'sessionMedium', 'landingPagePlusQueryString'],
+    metrics: [
+      'sessions',
+      'totalUsers',
+      'engagedSessions',
+      'engagementRate',
+      'keyEvents',
+      'sessionKeyEventRate',
+    ],
+    filter: AI_REFERRAL_FILTER,
+  },
+  {
+    id: 'whatsapp-intent',
+    dimensions: ['sessionSource', 'sessionMedium', 'landingPagePlusQueryString'],
+    metrics: ['sessions', 'totalUsers', 'eventCount'],
+    filter: WHATSAPP_EVENT_FILTER,
+  },
+  {
+    id: 'whatsapp-click-pages',
+    dimensions: ['pagePath'],
+    metrics: ['eventCount', 'totalUsers'],
+    filter: WHATSAPP_EVENT_FILTER,
   },
   {
     id: 'organic-ecommerce-events',
@@ -241,4 +318,11 @@ if (require.main === module) {
   });
 }
 
-module.exports = { REPORTS, assertDate, buildRequest, normalizeReport, toCsv };
+module.exports = {
+  AI_REFERRAL_SOURCES,
+  REPORTS,
+  assertDate,
+  buildRequest,
+  normalizeReport,
+  toCsv,
+};

@@ -20,6 +20,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
   title="Tu carrito — Amado Libros"
   description="Revisá los libros que querés pedir en Amado Libros."
   indexable={false}
+  analytics={true}
 >
   <Header />
 
@@ -1992,6 +1993,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (email) lines.push('Correo: ' + email);
 
         var msg = encodeURIComponent(lines.join('\n'));
+        if (window.AmadoAnalytics) {
+          window.AmadoAnalytics.trackWhatsApp({ ctaLocation: 'checkout_order' });
+        }
         window.open('https://wa.me/59899841325?text=' + msg, '_blank', 'noopener,noreferrer');
       });
     }
