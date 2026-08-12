@@ -1,6 +1,6 @@
 # Descubrimiento por IA y Google — dictamen y medición
 
-Fecha del dictamen: 2026-08-12  
+Fecha del dictamen: 2026-08-12
 Alcance de este lote: medición, auditoría de las cinco especialidades y criterios de decisión. No autoriza ni ejecuta un despliegue productivo.
 
 ## Dictamen ejecutivo
