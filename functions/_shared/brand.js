@@ -67,6 +67,7 @@ export const CONTACT = {
 
 
 export const FOOTER_LINKS = [
+    { href: '/quienes-somos', label: 'Quiénes somos y cómo trabajamos' },
     { href: '/pedir-libro', label: '¿No encontraste el libro?' },
     { href: '/libros-agotados-importados-uruguay', label: 'Libros por encargo' },
     { href: '/envios',       label: 'Envíos y retiro' },

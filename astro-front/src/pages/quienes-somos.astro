@@ -1,0 +1,163 @@
+---
+import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+
+const canonical = 'https://www.amadolibros.com/quienes-somos';
+const whatsapp = 'https://wa.me/59899841325?text=' + encodeURIComponent(
+  'Hola Amado Libros, quiero consultar por un libro. Tengo estos datos: '
+);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['Organization', 'BookStore'],
+      '@id': 'https://www.amadolibros.com/#bookstore',
+      name: 'Amado Libros',
+      url: 'https://www.amadolibros.com/',
+      logo: 'https://www.amadolibros.com/images/logo-amado.webp',
+      image: 'https://www.amadolibros.com/images/logo-amado.webp',
+      description: 'Librería online uruguaya, familiar y atendida por sus dueños. Vende libros disponibles y realiza búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
+      telephone: '+59899841325',
+      email: 'adm@amadolibros.com',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Rincón 608',
+        addressLocality: 'Montevideo',
+        addressCountry: 'UY',
+      },
+      areaServed: {
+        '@type': 'Country',
+        name: 'Uruguay',
+      },
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer service',
+        telephone: '+59899841325',
+        email: 'adm@amadolibros.com',
+        availableLanguage: 'Spanish',
+      },
+      knowsAbout: [
+        'Libros importados',
+        'Libros agotados y descatalogados',
+        'Identificación de ediciones por ISBN',
+        'Bibliografía técnica y profesional',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://www.amadolibros.com/#website',
+      url: 'https://www.amadolibros.com/',
+      name: 'Amado Libros',
+      publisher: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      inLanguage: 'es-UY',
+    },
+    {
+      '@type': 'AboutPage',
+      '@id': `${canonical}#webpage`,
+      url: canonical,
+      name: 'Quiénes somos y cómo trabajamos — Amado Libros',
+      description: 'Qué hace Amado Libros, cómo verifica una edición y cómo realiza búsquedas manuales de libros para clientes en Uruguay.',
+      isPartOf: { '@id': 'https://www.amadolibros.com/#website' },
+      about: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      mainEntity: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      reviewedBy: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      dateModified: '2026-08-12',
+      inLanguage: 'es-UY',
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Inicio',
+          item: 'https://www.amadolibros.com/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Quiénes somos y cómo trabajamos',
+          item: canonical,
+        },
+      ],
+    },
+  ],
+};
+---
+
+<TrustPageLayout
+  title="Quiénes somos y cómo trabajamos | Amado Libros"
+  description="Amado Libros es una librería online uruguaya, familiar y atendida por sus dueños. Conocé cómo buscamos y verificamos libros por título, autor, ISBN y edición."
+  canonical={canonical}
+  heading="Quiénes somos y cómo trabajamos"
+  updated="12 de agosto de 2026"
+  breadcrumbLabel="Quiénes somos"
+  breadcrumbHref={null}
+  jsonLd={jsonLd}
+>
+  <p class="trust-lead">
+    <strong>Amado Libros es una librería online uruguaya, familiar y atendida por sus dueños.</strong>
+    Vendemos libros disponibles en nuestro catálogo y buscamos manualmente títulos agotados,
+    importados o difíciles de conseguir para clientes en Uruguay.
+  </p>
+
+  <h2>Qué hacemos</h2>
+  <ul>
+    <li><strong>Catálogo disponible:</strong> publicamos libros que se pueden consultar y comprar desde el sitio.</li>
+    <li><strong>Búsqueda manual:</strong> si el libro no aparece, una persona revisa los datos y busca opciones.</li>
+    <li><strong>Identificación de la edición:</strong> usamos título, autor, editorial, ISBN, idioma, formato o una foto de la tapa para reducir errores.</li>
+    <li><strong>Encargos:</strong> antes de confirmar, informamos la opción encontrada y las condiciones disponibles para ese pedido.</li>
+  </ul>
+
+  <h2>Cómo verificamos un libro</h2>
+  <ol>
+    <li><strong>Recibimos la referencia.</strong> No es obligatorio tener el ISBN: podemos empezar con información incompleta.</li>
+    <li><strong>Separamos obra de edición.</strong> Comparamos autor, editorial, año, idioma, formato e ISBN cuando esos datos existen.</li>
+    <li><strong>Revisamos disponibilidad.</strong> Contrastamos el catálogo y las opciones de proveedores antes de responder.</li>
+    <li><strong>Te presentamos la opción.</strong> La disponibilidad, el precio y las condiciones se confirman para cada caso antes de asumir un compromiso.</li>
+  </ol>
+
+  <div class="trust-note">
+    <strong>Nuestro criterio:</strong> si no podemos verificar que una opción corresponde al libro o a la edición solicitada, lo aclaramos. No tratamos como equivalentes dos ediciones solamente porque compartan título.
+  </div>
+
+  <h2>Qué datos ayudan a encontrar la edición correcta</h2>
+  <p>
+    El dato más preciso suele ser el <strong>ISBN</strong>, pero también sirven el nombre completo
+    del autor, la editorial, el año aproximado, el idioma, el tipo de encuadernación o una foto.
+    En bibliografía técnica conviene agregar la especialidad, el nivel de estudio y para qué se necesita.
+  </p>
+
+  <h2>Quién revisa este contenido</h2>
+  <p>
+    Esta página fue revisada por el equipo de Amado Libros, el mismo que atiende las consultas y
+    realiza las búsquedas. La fecha visible indica la última revisión del procedimiento publicado.
+  </p>
+
+  <h2>Datos verificables y contacto</h2>
+  <ul>
+    <li><strong>Nombre comercial:</strong> Amado Libros.</li>
+    <li><strong>Actividad:</strong> librería online uruguaya.</li>
+    <li><strong>Domicilio comercial:</strong> Rincón 608, Ciudad Vieja, Montevideo, Uruguay.</li>
+    <li><strong>WhatsApp y teléfono:</strong> <a href="https://wa.me/59899841325">099 841 325</a>.</li>
+    <li><strong>Correo:</strong> <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a>.</li>
+    <li><strong>Información operativa:</strong> <a href="/contacto">contacto y horarios</a>, <a href="/envios">envíos y retiro</a> y <a href="/devoluciones">devoluciones</a>.</li>
+  </ul>
+
+  <p class="trust-note" data-cta-location="about_method">
+    <strong>¿Buscás un libro concreto?</strong><br>
+    Podés <a href="/pedir-libro">enviar un pedido de búsqueda ordenado</a> o
+    <a href={whatsapp} target="_blank" rel="noopener noreferrer">escribirnos por WhatsApp</a>.
+  </p>
+</TrustPageLayout>
+
+<style>
+  .trust-lead {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    margin-bottom: 1.5rem;
+  }
+
+  ol { padding-left: 1.25rem; }
+  li + li { margin-top: 0.6rem; }
+</style>

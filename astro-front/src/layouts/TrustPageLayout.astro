@@ -11,9 +11,20 @@ interface Props {
   heading: string;
   updated?: string;
   jsonLd?: Record<string, unknown>;
+  breadcrumbLabel?: string;
+  breadcrumbHref?: string | null;
 }
 
-const { title, description, canonical, heading, updated = '29 de julio de 2026', jsonLd } = Astro.props;
+const {
+  title,
+  description,
+  canonical,
+  heading,
+  updated = '29 de julio de 2026',
+  jsonLd,
+  breadcrumbLabel = 'Políticas',
+  breadcrumbHref = '/politicas',
+} = Astro.props;
 ---
 <BaseLayout title={title} description={description} canonical={canonical} jsonLd={jsonLd}>
   <Header />
@@ -22,7 +33,9 @@ const { title, description, canonical, heading, updated = '29 de julio de 2026',
       <nav class="trust-breadcrumb" aria-label="Migas de pan">
         <a href="/">Inicio</a>
         <span aria-hidden="true">/</span>
-        <a href="/politicas">Políticas</a>
+        {breadcrumbHref
+          ? <a href={breadcrumbHref}>{breadcrumbLabel}</a>
+          : <span>{breadcrumbLabel}</span>}
       </nav>
       <h1>{heading}</h1>
       <p class="trust-updated">Última actualización: {updated}</p>

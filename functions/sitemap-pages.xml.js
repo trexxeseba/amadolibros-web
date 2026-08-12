@@ -14,6 +14,7 @@ export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/terminos`,
   `${BASE}/privacidad`,
   `${BASE}/contacto`,
+  `${BASE}/quienes-somos`,
   ...SEO_SPECIALTIES.map(item => `${BASE}${specialtyPath(item.id)}`),
 ]);
 
