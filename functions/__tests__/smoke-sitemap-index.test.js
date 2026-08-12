@@ -42,7 +42,7 @@ test('pages exige todas las páginas estáticas relevantes', () => {
     '/', '/catalogo', '/pedir-libro', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
     '/devoluciones', '/terminos', '/privacidad', '/contacto',
   ];
-  const valid = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${pages.map(path => `<url>${loc(`${BASE}${path}`)}</url>`).join('')}</urlset>`);
+  const valid = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${pages.map((path, index) => `<url>${loc(`${BASE}${path}`)}${index === 0 ? '<lastmod>2026-08-12</lastmod>' : ''}</url>`).join('')}</urlset>`);
   assert.deepEqual(analyzeSitemapBody(valid, 'sitemap-pages'), { ok: true });
 
   const missing = valid.replace(`<url>${loc(`${BASE}/privacidad`)}</url>`, '');
@@ -58,9 +58,17 @@ test('categorías y libros activos deben ser urlsets no vacíos y del espacio co
   assert.deepEqual(analyzeSitemapBody(books, 'sitemap-books-active'), { ok: true });
 });
 
-test('rechaza señales SEO ficticias reintroducidas en sitemaps', () => {
+test('rechaza priority y changefreq ficticios reintroducidos en sitemaps', () => {
   const body = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libros/literatura`)}<priority>1.0</priority></url></urlset>`);
   const result = analyzeSitemapBody(body, 'sitemap-categories');
   assert.equal(result.ok, false);
-  assert.match(result.reason, /priority|changefreq|lastmod/);
+  assert.match(result.reason, /priority|changefreq/);
+});
+
+test('lastmod exige fecha válida y queda limitado a páginas con revisión fiable', () => {
+  const invalidDate = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/`)}<lastmod>2026-02-31</lastmod></url></urlset>`);
+  const categoryDate = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libros/literatura`)}<lastmod>2026-08-12</lastmod></url></urlset>`);
+
+  assert.match(analyzeSitemapBody(invalidDate, 'sitemap-pages').reason, /invalid lastmod/);
+  assert.match(analyzeSitemapBody(categoryDate, 'sitemap-categories').reason, /reliable static-page revision/);
 });

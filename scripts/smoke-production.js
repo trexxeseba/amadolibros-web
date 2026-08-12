@@ -234,12 +234,30 @@ function sitemapLocs(body) {
   return [...String(body || '').matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
 }
 
+function sitemapLastmods(body) {
+  return [...String(body || '').matchAll(/<lastmod>([^<]+)<\/lastmod>/gi)].map(match => match[1]);
+}
+
+function isValidSitemapDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 function analyzeSitemapBody(body, kind) {
   if (typeof body !== 'string' || !body.startsWith('<?xml')) {
     return { ok: false, reason: 'invalid XML declaration' };
   }
-  if (/<(?:priority|changefreq|lastmod)>/i.test(body)) {
-    return { ok: false, reason: 'sitemap reintroduced priority/changefreq/lastmod' };
+  if (/<(?:priority|changefreq)>/i.test(body)) {
+    return { ok: false, reason: 'sitemap reintroduced priority/changefreq' };
+  }
+
+  const lastmods = sitemapLastmods(body);
+  if (lastmods.length > 0 && kind !== 'sitemap-pages') {
+    return { ok: false, reason: 'lastmod requires a reliable static-page revision date' };
+  }
+  if (lastmods.some(value => !isValidSitemapDate(value))) {
+    return { ok: false, reason: 'sitemap contains invalid lastmod date' };
   }
 
   const locs = sitemapLocs(body);
