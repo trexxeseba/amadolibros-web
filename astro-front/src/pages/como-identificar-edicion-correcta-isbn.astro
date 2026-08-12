@@ -1,0 +1,317 @@
+---
+import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+
+const canonical = 'https://www.amadolibros.com/como-identificar-edicion-correcta-isbn';
+const whatsapp = 'https://wa.me/59899841325?text=' + encodeURIComponent(
+  'Hola Amado Libros, quiero verificar la edición correcta de un libro. Les paso el ISBN y los datos que tengo: '
+);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': ['Organization', 'BookStore'],
+      '@id': 'https://www.amadolibros.com/#bookstore',
+      name: 'Amado Libros',
+      url: 'https://www.amadolibros.com/',
+      logo: 'https://www.amadolibros.com/images/logo-amado.webp',
+    },
+    {
+      '@type': 'Article',
+      '@id': `${canonical}#article`,
+      url: canonical,
+      headline: 'Cómo identificar la edición correcta de un libro por ISBN',
+      description: 'Guía práctica para comparar ISBN, editorial, año, idioma y formato antes de comprar o encargar una edición concreta en Uruguay.',
+      datePublished: '2026-08-12',
+      dateModified: '2026-08-12',
+      inLanguage: 'es-UY',
+      author: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      publisher: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      reviewedBy: { '@id': 'https://www.amadolibros.com/#bookstore' },
+      mainEntityOfPage: canonical,
+      about: [
+        { '@type': 'Thing', name: 'ISBN' },
+        { '@type': 'Thing', name: 'Ediciones de libros' },
+      ],
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Inicio',
+          item: 'https://www.amadolibros.com/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Cómo identificar una edición por ISBN',
+          item: canonical,
+        },
+      ],
+    },
+  ],
+};
+---
+
+<TrustPageLayout
+  title="Cómo identificar la edición correcta por ISBN | Amado Libros"
+  description="Compará ISBN, editorial, año, idioma y formato para reconocer la edición correcta de un libro. Guía revisada por Amado Libros en Uruguay."
+  canonical={canonical}
+  heading="Cómo identificar la edición correcta de un libro por ISBN"
+  updated="12 de agosto de 2026"
+  breadcrumbLabel="Guía de ISBN"
+  breadcrumbHref={null}
+  jsonLd={jsonLd}
+>
+  <p class="trust-lead">
+    <strong>La forma más segura de reconocer una edición concreta es comparar el ISBN completo y confirmar editorial, idioma y formato.</strong>
+    El título y el autor identifican la obra, pero no necesariamente la edición que necesitás.
+  </p>
+
+  <div class="answer-box">
+    <strong>Respuesta corta:</strong> si dos ejemplares tienen distinto ISBN, no deben tratarse como el mismo producto editorial.
+    Puede haber cambiado la edición, la encuadernación, el idioma, el formato digital o el editor responsable.
+    Si el ISBN coincide, igualmente conviene revisar los demás datos porque una ficha de catálogo puede estar mal cargada.
+  </div>
+
+  <nav class="guide-index" aria-label="Contenido de la guía">
+    <strong>En esta guía</strong>
+    <a href="#que-es">Qué identifica el ISBN</a>
+    <a href="#pasos">Cómo verificarlo</a>
+    <a href="#cambia">Cuándo cambia</a>
+    <a href="#isbn-10">ISBN-10 e ISBN-13</a>
+    <a href="#sin-isbn">Si no tenés el ISBN</a>
+  </nav>
+
+  <h2 id="que-es">Qué identifica exactamente un ISBN</h2>
+  <p>
+    El ISBN es el número internacional normalizado que identifica una publicación monográfica.
+    Desde 2007 los ISBN nuevos tienen 13 dígitos. El número permite distinguir un título,
+    una edición y un formato publicados por un editor determinado.
+  </p>
+  <p>
+    <strong>No identifica un ejemplar físico individual</strong>, no garantiza que haya stock y no demuestra por sí solo
+    el estado de conservación de un libro usado. Tampoco es lo mismo que el código de barras: el código de barras es
+    la representación gráfica que puede contener el ISBN u otro identificador comercial.
+  </p>
+
+  <h2 id="pasos">Cómo verificar una edición, paso a paso</h2>
+  <ol class="checklist">
+    <li>
+      <strong>Buscá el ISBN en el propio libro.</strong> Suele estar en la página de créditos o legales,
+      y también puede aparecer cerca del código de barras de la contratapa.
+    </li>
+    <li>
+      <strong>Compará todos los dígitos.</strong> Para la comparación podés ignorar espacios y guiones,
+      pero no quitar, completar ni cambiar números.
+    </li>
+    <li>
+      <strong>Confirmá editorial y número de edición.</strong> Revisá además el año, el idioma,
+      el traductor o coordinador cuando sea relevante y cualquier indicación como “edición revisada”.
+    </li>
+    <li>
+      <strong>Confirmá el formato.</strong> Tapa dura, tapa blanda, EPUB, PDF y otros formatos pueden tener ISBN diferentes,
+      aunque el texto y la tapa se parezcan.
+    </li>
+    <li>
+      <strong>Resolvé las contradicciones antes de comprar.</strong> Si una publicación anuncia un ISBN pero muestra otra editorial,
+      edición o encuadernación, pedí una foto de la página de créditos o consultá al vendedor.
+    </li>
+  </ol>
+
+  <div class="trust-note">
+    <strong>Para bibliografía académica o profesional:</strong> no reemplaces una edición indicada por un docente,
+    una cátedra o una institución solamente porque el título coincide. Verificá el ISBN solicitado o confirmá
+    si aceptan otra edición.
+  </div>
+
+  <h2 id="cambia">Cuándo corresponde un ISBN diferente</h2>
+  <div class="table-wrap" tabindex="0" aria-label="Comparación de cambios que afectan el ISBN">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Cambio en la publicación</th>
+          <th scope="col">Qué esperar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nueva edición o revisión con cambios de contenido</td>
+          <td>ISBN diferente</td>
+        </tr>
+        <tr>
+          <td>Tapa dura, tapa blanda u otro formato físico</td>
+          <td>ISBN diferente</td>
+        </tr>
+        <tr>
+          <td>EPUB, PDF u otro formato digital comercializado por separado</td>
+          <td>ISBN diferente</td>
+        </tr>
+        <tr>
+          <td>Traducción a otro idioma</td>
+          <td>ISBN diferente</td>
+        </tr>
+        <tr>
+          <td>Cambio del editor responsable</td>
+          <td>ISBN diferente</td>
+        </tr>
+        <tr>
+          <td>Reimpresión sin cambios sustanciales</td>
+          <td>Puede conservar el ISBN</td>
+        </tr>
+        <tr>
+          <td>Cambio de precio</td>
+          <td>No requiere otro ISBN</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Por eso, “segunda edición” y “segunda reimpresión” no significan lo mismo. Una nueva edición supone cambios
+    relevantes en la publicación; una reimpresión puede limitarse a producir más ejemplares sin modificaciones sustanciales.
+  </p>
+
+  <h2 id="isbn-10">Qué hacer con un ISBN de 10 dígitos</h2>
+  <p>
+    Los ISBN tenían 10 dígitos hasta fines de 2006. Un libro anterior puede mostrar solamente ese número,
+    y una base de datos moderna puede mostrar su equivalente de 13 dígitos. No compares ambos formatos a simple vista
+    ni supongas que alcanza con agregar “978”: la conversión incluye un dígito de control calculado.
+  </p>
+  <p>
+    Para buscar, enviá cualquiera de los dos números tal como aparece. Si tenés acceso al libro,
+    una foto de la página de créditos ayuda a confirmar que ambos registros corresponden a la misma edición.
+  </p>
+
+  <h2 id="sin-isbn">Si no tenés el ISBN</h2>
+  <p>
+    Todavía se puede buscar la edición. Reuní la mayor cantidad posible de estos datos:
+  </p>
+  <ul>
+    <li>título y autor completos;</li>
+    <li>editorial o sello;</li>
+    <li>año aproximado y número de edición;</li>
+    <li>idioma, traductor o coordinador;</li>
+    <li>tapa dura o blanda, cantidad aproximada de páginas y tamaño;</li>
+    <li>foto de la tapa, contratapa o página de créditos.</li>
+  </ul>
+  <p>
+    En Amado Libros separamos primero la obra de la edición y luego contrastamos los datos disponibles.
+    Podés conocer <a href="/quienes-somos">nuestro método de búsqueda y verificación</a> o consultar
+    <a href="/libros-agotados-importados-uruguay">cómo funciona un encargo de libros agotados o importados</a>.
+  </p>
+
+  <h2>Fuentes oficiales consultadas</h2>
+  <ul class="sources">
+    <li>
+      <a href="https://www.bibna.gub.uy/isbn/" target="_blank" rel="noopener noreferrer">Agencia ISBN de la Biblioteca Nacional de Uruguay</a>:
+      definición, ubicación del número y casos que requieren un nuevo ISBN.
+    </li>
+    <li>
+      <a href="https://www.isbn-international.org/index.php/content/what-isbn/10" target="_blank" rel="noopener noreferrer">Agencia Internacional del ISBN</a>:
+      estructura del ISBN y alcance como identificador de edición y formato.
+    </li>
+  </ul>
+
+  <h2>Quién revisó esta guía</h2>
+  <p>
+    Contenido revisado por el equipo de Amado Libros, que atiende consultas y realiza búsquedas manuales
+    por título, autor, editorial, ISBN, idioma y formato. La fecha visible indica la última revisión.
+  </p>
+
+  <div class="closing-cta" data-cta-location="isbn_guide">
+    <strong>¿Querés confirmar una edición antes de encargarla?</strong>
+    <p>Mandanos el ISBN y los demás datos que tengas. Si hay una contradicción, la revisamos antes de presentarte una opción.</p>
+    <div class="cta-links">
+      <a class="cta-primary" href="/pedir-libro?tipo=exacto">Enviar pedido ordenado</a>
+      <a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar por WhatsApp</a>
+    </div>
+  </div>
+</TrustPageLayout>
+
+<style>
+  .trust-lead {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    margin-bottom: 1.25rem;
+  }
+
+  .answer-box {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--bg);
+    color: var(--ink-2);
+  }
+
+  .answer-box strong { color: var(--ink); }
+
+  .guide-index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 0.9rem;
+    margin: 1.5rem 0 2rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+
+  .guide-index strong { width: 100%; }
+  .checklist { padding-left: 1.25rem; }
+  .checklist li + li { margin-top: 0.75rem; }
+
+  .table-wrap {
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+  }
+
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th { background: var(--bg); color: var(--ink); }
+  tr:last-child td { border-bottom: 0; }
+  td:last-child { font-weight: 700; color: var(--ink); }
+
+  .sources { font-size: 0.92rem; }
+
+  .closing-cta {
+    margin-top: 2rem;
+    padding: 1.25rem;
+    border-radius: var(--r);
+    background: var(--ink);
+    color: white;
+  }
+
+  .closing-cta strong { color: white; }
+  .closing-cta p { margin: 0.5rem 0 1rem; color: rgba(255, 255, 255, 0.72); }
+  .cta-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; }
+  .closing-cta a { color: white; }
+  .closing-cta .cta-primary {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    padding: 0.65rem 0.9rem;
+    border-radius: 0.6rem;
+    background: var(--salmon);
+    color: var(--ink);
+    font-weight: 800;
+    text-decoration: none;
+  }
+</style>

@@ -69,6 +69,7 @@ export const CONTACT = {
 export const FOOTER_LINKS = [
     { href: '/quienes-somos', label: 'Quiénes somos y cómo trabajamos' },
     { href: '/pedir-libro', label: '¿No encontraste el libro?' },
+    { href: '/como-identificar-edicion-correcta-isbn', label: 'Guía para verificar un ISBN' },
     { href: '/libros-agotados-importados-uruguay', label: 'Libros por encargo' },
     { href: '/envios',       label: 'Envíos y retiro' },
     { href: '/devoluciones', label: 'Devoluciones y reembolsos' },

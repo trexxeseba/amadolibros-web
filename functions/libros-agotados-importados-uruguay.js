@@ -91,6 +91,7 @@ export async function onRequest() {
     .closing{margin-top:2.5rem;padding:1.5rem;background:#18120e;color:#fff;border-radius:1rem}
     .closing p{margin:.5rem 0 1rem;color:rgba(255,255,255,.72)}
     .specialties{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.25rem}.specialties a{padding:.55rem .75rem;border:1px solid #e2dbd0;border-radius:999px;background:#fff;text-decoration:none;font-size:.82rem}
+    .guide-link{margin-top:1rem;color:#6b6157}.guide-link a{color:#8f4436;font-weight:700;text-underline-offset:.15em}
     @media(min-width:720px){.hero{grid-template-columns:1.45fr .75fr;align-items:center}.steps{grid-template-columns:repeat(3,1fr)}.types{grid-template-columns:repeat(2,1fr)}}
     ${FOOTER_STYLES}
     ${WA_FLOAT_STYLES}
@@ -127,6 +128,7 @@ export async function onRequest() {
         <article class="card"><span class="step-number">2</span><h3>Buscamos y verificamos</h3><p>Revisamos disponibilidad en proveedores del exterior y comparamos edición, idioma, formato y estado.</p></article>
         <article class="card"><span class="step-number">3</span><h3>Vos decidís</h3><p>Te informamos precio, seña y plazo estimado. La gestión empieza únicamente después de tu confirmación.</p></article>
       </div>
+      <p class="guide-link">¿No sabés si una publicación corresponde a la que necesitás? Consultá la <a href="/como-identificar-edicion-correcta-isbn">guía para identificar la edición correcta por ISBN</a>.</p>
     </section>
 
     <section class="section">
