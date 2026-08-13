@@ -851,7 +851,7 @@ export async function onRequest(ctx) {
             'url':        canonicalHref,
             'description': metaDescription,
             'isPartOf':   { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
-            'publisher':  { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
+            'publisher':  { '@type': 'OnlineStore', 'name': 'Amado Libros', 'url': BASE },
           })}</script>`
         : '';
 
