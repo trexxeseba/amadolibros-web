@@ -58,6 +58,10 @@ function ctx({ appEnv = 'preview', coverBucket = bucket(), path = [], method = '
   };
 }
 
+test.beforeEach(() => {
+  delete globalThis.caches;
+});
+
 test('Preview resuelve una URL inmutable del mismo origen y memoiza el manifest', async () => {
   const coverBucket = bucket();
   const context = ctx({ coverBucket });
@@ -72,6 +76,26 @@ test('Producción resuelve la misma URL inmutable desde su binding separado', as
   const coverBucket = bucket();
   const result = await previewCoverUrl(ctx({ appEnv: 'production', coverBucket }), ID, 0, SOURCE);
   assert.equal(result, `https://cover-ui.example/preview-cover/${ID}/0/${HASH}.jpg`);
+  assert.deepEqual(coverBucket.reads, [PREVIEW_COVER_MANIFEST_KEY]);
+});
+
+test('la caché de borde reutiliza el manifest entre requests del mismo entorno', async () => {
+  const store = new Map();
+  globalThis.caches = {
+    default: {
+      async match(request) {
+        const response = store.get(request.url);
+        return response ? response.clone() : null;
+      },
+      async put(request, response) {
+        store.set(request.url, response.clone());
+      },
+    },
+  };
+  const coverBucket = bucket();
+  const first = await previewCoverUrl(ctx({ appEnv: 'production', coverBucket }), ID, 0, SOURCE);
+  const second = await previewCoverUrl(ctx({ appEnv: 'production', coverBucket }), ID, 0, SOURCE);
+  assert.equal(second, first);
   assert.deepEqual(coverBucket.reads, [PREVIEW_COVER_MANIFEST_KEY]);
 });
 

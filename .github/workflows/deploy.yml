@@ -266,6 +266,8 @@ jobs:
         run: |
           echo "## Performance controls" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> Control sintético desde el runner de GitHub; no representa Uruguay ni sustituye RUM de usuarios reales. Comparar rutas dentro del mismo run." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '| Ruta | Muestra | HTTP | TTFB externo | Total externo | Server-Timing |' >> "$GITHUB_STEP_SUMMARY"
           echo '|---|---:|---:|---:|---:|---|' >> "$GITHUB_STEP_SUMMARY"
           for path in /api/health /catalogo; do
