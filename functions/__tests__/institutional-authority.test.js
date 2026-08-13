@@ -18,8 +18,8 @@ test('la página institucional publica identidad, método y responsable visibles
   assert.match(page, /12 de agosto de 2026/);
 });
 
-test('la identidad estructurada conecta BookStore, WebSite y AboutPage', () => {
-  assert.match(page, /'@type': \['Organization', 'BookStore'\]/);
+test('la identidad estructurada conecta OnlineStore, WebSite y AboutPage', () => {
+  assert.match(page, /'@type': 'OnlineStore'/);
   assert.match(page, /'@type': 'WebSite'/);
   assert.match(page, /'@type': 'AboutPage'/);
   assert.match(page, /reviewedBy/);
