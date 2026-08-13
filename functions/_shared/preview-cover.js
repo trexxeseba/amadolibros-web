@@ -1,6 +1,8 @@
 import { perfNow, recordPerf } from './perf.js';
 
 const MANIFEST_KEY = 'covers/v1/manifest.json';
+const MANIFEST_EDGE_TTL_SECONDS = 300;
+const MANIFEST_CACHE_PATH = '/__amado-cache/cover-manifest-v1';
 const OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 const PRODUCT_ID_RE = /^MLU\d+$/;
 
@@ -33,19 +35,60 @@ async function readPreviewManifest(ctx) {
         ctx.data.__coverManifestPromise = (async () => {
             const totalStartedAt = perfNow();
             try {
+                const appEnv = ctx.env.APP_ENV;
+                const edgeCache = globalThis.caches?.default;
+                const cacheKey = new Request(new URL(
+                    `${MANIFEST_CACHE_PATH}?env=${encodeURIComponent(appEnv)}`,
+                    ctx.request.url,
+                ));
+                let body = null;
+                if (edgeCache && typeof edgeCache.match === 'function') {
+                    const cacheStartedAt = perfNow();
+                    const cached = await edgeCache.match(cacheKey);
+                    recordPerf(ctx, 'cover_manifest_cache', cacheStartedAt, {
+                        cache: cached ? 'hit' : 'miss',
+                    });
+                    if (cached) {
+                        const bodyStartedAt = perfNow();
+                        body = await cached.text();
+                        recordPerf(ctx, 'cover_manifest_body', bodyStartedAt, {
+                            bytes: new TextEncoder().encode(body).byteLength,
+                        });
+                    }
+                }
+
+                if (body !== null) {
+                    const parseStartedAt = perfNow();
+                    const parsed = JSON.parse(body);
+                    recordPerf(ctx, 'cover_manifest_parse', parseStartedAt);
+                    return validManifest(parsed) ? parsed : null;
+                }
+
                 const bindingStartedAt = perfNow();
                 const object = await bucket.get(MANIFEST_KEY);
                 recordPerf(ctx, 'cover_manifest_binding', bindingStartedAt);
                 if (!object || typeof object.text !== 'function') return null;
                 const bodyStartedAt = perfNow();
-                const body = await object.text();
+                body = await object.text();
                 recordPerf(ctx, 'cover_manifest_body', bodyStartedAt, {
                     bytes: new TextEncoder().encode(body).byteLength,
                 });
                 const parseStartedAt = perfNow();
                 const parsed = JSON.parse(body);
                 recordPerf(ctx, 'cover_manifest_parse', parseStartedAt);
-                return validManifest(parsed) ? parsed : null;
+                if (!validManifest(parsed)) return null;
+
+                if (edgeCache && typeof edgeCache.put === 'function') {
+                    const put = edgeCache.put(cacheKey, new Response(body, {
+                        headers: {
+                            'content-type': 'application/json; charset=utf-8',
+                            'cache-control': `public, max-age=${MANIFEST_EDGE_TTL_SECONDS}`,
+                        },
+                    }));
+                    if (typeof ctx.waitUntil === 'function') ctx.waitUntil(put);
+                    else await put;
+                }
+                return parsed;
             } catch {
                 return null;
             } finally {
