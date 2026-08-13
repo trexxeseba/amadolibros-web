@@ -258,5 +258,17 @@ export async function onRequest(context) {
         });
     }
 
-    return finish(await context.next());
+    // Producción también expone el tramo que antes quedaba fuera de los
+    // timers de cada ruta. Así `worker_total` se puede comparar contra el
+    // TTFB externo y `/api/health` funciona como control sin R2 ni SSR.
+    const middlewareBeforeMs = perfNow() - workerStartedAt;
+    const response = await context.next();
+    const newHeaders = new Headers(response.headers);
+    appendServerTiming(newHeaders, 'middleware_before', middlewareBeforeMs);
+    appendServerTiming(newHeaders, 'worker_total', perfNow() - workerStartedAt);
+    return finish(new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders,
+    }));
 }

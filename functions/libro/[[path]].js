@@ -16,6 +16,13 @@
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
+import {
+    ensurePerf,
+    perfNow,
+    perfSummary,
+    recordPerf,
+    serverTimingValue,
+} from '../_shared/perf.js';
 // GLOBAL-SHELL-1: shell global compartido con Astro (marca, favicon, footer
 // y burbuja de WhatsApp). Ver functions/_shared/brand.js.
 import {
@@ -803,6 +810,8 @@ export function canonicalProductRedirectUrl({
 // ---------------------------------------------------------------------------
 
 export async function onRequest(context) {
+    const requestStartedAt = perfNow();
+    ensurePerf(context);
     const pathParts = Array.isArray(context.params.path)
         ? context.params.path
         : [context.params.path].filter(Boolean);
@@ -818,16 +827,24 @@ export async function onRequest(context) {
     // Cargar catálogo (con edge cache)
     const catalog = await fetchCatalog(context);
     const activeCatalogAvailable = catalog && Array.isArray(catalog.items);
+    const activeLookupStartedAt = perfNow();
     let item = activeCatalogAvailable
         ? catalog.items.find(b => b.id === id)
         : null;
+    recordPerf(context, 'active_lookup', activeLookupStartedAt, {
+        found: Boolean(item),
+    });
     // CF-R2-2-BRIDGE: habilitado en Preview y producción — cada uno resuelve
     // contra su propio manifest (fetchPausedItem -> manifestUrlFor en
     // _shared/catalog.js). Si el manifest de ese entorno falta o es
     // inválido, fetchPausedItem devuelve null y el flujo sigue igual que
     // hoy (notFound), sin 500.
     if (!item && ['preview', 'production'].includes(context.env?.APP_ENV)) {
+        const pausedLookupStartedAt = perfNow();
         item = await fetchPausedItem(context, id);
+        recordPerf(context, 'paused_lookup', pausedLookupStartedAt, {
+            found: Boolean(item),
+        });
     }
     if (!item && !activeCatalogAvailable) {
         return new Response('Error al cargar el catálogo. Intentá de nuevo en unos segundos.', {
@@ -861,14 +878,40 @@ export async function onRequest(context) {
 
     const originalImages = normalizeImages(item);
     const coversEnabled = ['preview', 'production'].includes(context.env?.APP_ENV);
+    const coverResolveStartedAt = perfNow();
     const previewCoverSrc = coversEnabled && originalImages[0]
         ? await resolvePreviewCoverUrl(context, item.id, 0, originalImages[0])
         : null;
+    recordPerf(context, 'cover_resolve', coverResolveStartedAt, {
+        found: Boolean(previewCoverSrc),
+    });
 
-    return new Response(renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || ''), {
+    const renderStartedAt = perfNow();
+    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '');
+    recordPerf(context, 'render', renderStartedAt);
+
+    const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;
+    const serverTiming = serverTimingValue(context, [{
+        name: 'route_total',
+        duration_ms: totalDuration,
+    }]);
+    const cacheStatus = context.data.perf.cache.miss > 0 ? 'MISS' : 'HIT';
+    console.log(JSON.stringify(perfSummary(context, {
+        event: 'product_page_perf',
+        route: '/libro/:id/:slug',
+        availability: item.status === 'paused' ? 'paused' : 'active',
+        cover_r2: Boolean(previewCoverSrc),
+        total_ms: totalDuration,
+    })));
+
+    return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': 'public, max-age=3600',
+            'server-timing': serverTiming,
+            'x-cache-status': cacheStatus,
+            'x-perf-cache-hits': String(context.data.perf.cache.hit),
+            'x-perf-cache-misses': String(context.data.perf.cache.miss),
         },
     });
 }

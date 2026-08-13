@@ -1,3 +1,5 @@
+import { perfNow, recordPerf } from './perf.js';
+
 const MANIFEST_KEY = 'covers/v1/manifest.json';
 const OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 const PRODUCT_ID_RE = /^MLU\d+$/;
@@ -29,13 +31,25 @@ async function readPreviewManifest(ctx) {
     if (!ctx.data || typeof ctx.data !== 'object') ctx.data = {};
     if (!ctx.data.__coverManifestPromise) {
         ctx.data.__coverManifestPromise = (async () => {
+            const totalStartedAt = perfNow();
             try {
+                const bindingStartedAt = perfNow();
                 const object = await bucket.get(MANIFEST_KEY);
+                recordPerf(ctx, 'cover_manifest_binding', bindingStartedAt);
                 if (!object || typeof object.text !== 'function') return null;
-                const parsed = JSON.parse(await object.text());
+                const bodyStartedAt = perfNow();
+                const body = await object.text();
+                recordPerf(ctx, 'cover_manifest_body', bodyStartedAt, {
+                    bytes: new TextEncoder().encode(body).byteLength,
+                });
+                const parseStartedAt = perfNow();
+                const parsed = JSON.parse(body);
+                recordPerf(ctx, 'cover_manifest_parse', parseStartedAt);
                 return validManifest(parsed) ? parsed : null;
             } catch {
                 return null;
+            } finally {
+                recordPerf(ctx, 'cover_manifest_total', totalStartedAt);
             }
         })();
     }

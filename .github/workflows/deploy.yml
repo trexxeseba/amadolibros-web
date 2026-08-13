@@ -261,6 +261,32 @@ jobs:
           SMOKE_EXPECT_CHECKOUT: 'enabled'
         run: node scripts/smoke-production.js
 
+      - name: Capture first and repeated production timings
+        id: perf_control
+        run: |
+          echo "## Performance controls" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '| Ruta | Muestra | HTTP | TTFB externo | Total externo | Server-Timing |' >> "$GITHUB_STEP_SUMMARY"
+          echo '|---|---:|---:|---:|---:|---|' >> "$GITHUB_STEP_SUMMARY"
+          for path in /api/health /catalogo; do
+            # Son dos solicitudes consecutivas desde el mismo runner. La primera
+            # no se etiqueta "cold": Cloudflare no garantiza que el isolate o la
+            # caché de borde estén fríos solo porque sea la primera de este job.
+            for sample in first repeat; do
+              headers="/tmp/perf-${path//\//-}-${sample}.headers"
+              if metrics="$(curl -sS --max-time 60 -o /dev/null -D "$headers" \
+                -w '%{http_code}|%{time_starttransfer}|%{time_total}' \
+                "https://www.amadolibros.com$path")"; then
+                IFS='|' read -r code ttfb total <<< "$metrics"
+                timing="$(tr -d '\r' < "$headers" | sed -n 's/^server-timing:[[:space:]]*//Ip' | tail -1)"
+                timing="${timing//|/\\|}"
+                echo "| \`$path\` | $sample | $code | ${ttfb}s | ${total}s | \`${timing:-ausente}\` |" >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "| \`$path\` | $sample | error | — | — | \`curl falló\` |" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            done
+          done
+
       - name: Verify production R2 covers
         id: cover_r2_smoke
         run: |
@@ -322,5 +348,6 @@ jobs:
           echo "| **home.json** | ${{ steps.home_json.outcome == 'success' && '✅ fresh' || '⚠️ fallback (committed copy)' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Smoke test** | ${{ steps.smoke.outcome == 'success' && '✅ passed' || steps.smoke.outcome == 'skipped' && '— not run' || '❌ failed' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **R2 covers** | ${{ steps.cover_r2_smoke.outcome == 'success' && '✅ passed' || steps.cover_r2_smoke.outcome == 'skipped' && '— not run' || '❌ failed' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Performance controls** | ${{ steps.perf_control.outcome == 'success' && '✅ captured' || steps.perf_control.outcome == 'skipped' && '— not run' || '⚠️ unavailable' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Attempts** | ${{ steps.smoke.outputs.attempts_used || '—' }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **URL** | https://www.amadolibros.com |" >> "$GITHUB_STEP_SUMMARY"

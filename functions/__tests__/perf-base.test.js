@@ -71,3 +71,20 @@ test('ASSET-CACHE-1 aplica la misma regla exacta a assets hash en Producción', 
   );
   assert.equal(response.headers.has('x-robots-tag'), false);
 });
+
+test('PERF-BASE mide el worker completo en HTML y API de Producción', async () => {
+  for (const pathname of ['/catalogo', '/api/health']) {
+    const response = await middlewareRequest({
+      request: new Request(`https://www.amadolibros.com${pathname}`),
+      async next() {
+        return new Response('dynamic', {
+          headers: { 'server-timing': 'route_total;dur=12.34' },
+        });
+      },
+    });
+    const timing = response.headers.get('server-timing');
+    assert.match(timing, /route_total;dur=12.34/, pathname);
+    assert.match(timing, /middleware_before;dur=/, pathname);
+    assert.match(timing, /worker_total;dur=/, pathname);
+  }
+});
