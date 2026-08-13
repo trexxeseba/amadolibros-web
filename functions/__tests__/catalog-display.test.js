@@ -169,12 +169,13 @@ test('COVER-R2 Preview: card y ficha usan la copia validada del mismo origen', a
   assert.match(timing, /catalog_parse;dur=/);
   assert.match(timing, /active_lookup;dur=/);
   assert.match(timing, /cover_manifest_binding;dur=/);
+  assert.match(timing, /cover_manifest_cache;dur=/);
   assert.match(timing, /cover_manifest_body;dur=/);
   assert.match(timing, /cover_manifest_parse;dur=/);
   assert.match(timing, /cover_resolve;dur=/);
   assert.match(timing, /render;dur=/);
   assert.match(timing, /route_total;dur=/);
-  assert.equal(bookResponse.headers.get('x-cache-status'), 'HIT');
+  assert.equal(bookResponse.headers.get('x-cache-status'), 'MISS');
 });
 
 test('COVER-R2 Producción: card y ficha usan el binding productivo', async () => {
