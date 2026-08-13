@@ -1,6 +1,8 @@
 name: SEO baseline public audit
 
 on:
+  schedule:
+    - cron: '23 9 * * 1'
   pull_request:
     branches:
       - main
@@ -34,6 +36,7 @@ jobs:
 
       - name: Syntax check
         run: |
+          node --check scripts/seo/catalog-quality-audit.mjs
           node --check scripts/seo/link-graph-audit.mjs
           node --check scripts/seo/duplication-report.mjs
           node --check scripts/seo/gsc-export.mjs
@@ -50,16 +53,25 @@ jobs:
           SEO_OUTPUT_DIR: artifacts/seo
         run: node scripts/seo/duplication-report.mjs
 
+      - name: Run catalog quality audit
+        env:
+          SEO_OUTPUT_DIR: artifacts/seo
+        run: node scripts/seo/catalog-quality-audit.mjs
+
       - name: Validate generated reports
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const link = JSON.parse(fs.readFileSync('artifacts/seo/link-graph-audit-2026-08-08.json', 'utf8'));
           const dup = JSON.parse(fs.readFileSync('artifacts/seo/duplication-report-2026-08-08.json', 'utf8'));
+          const qualityFile = fs.readdirSync('artifacts/seo').find(name => name.startsWith('catalog-quality-audit-'));
+          if (!qualityFile) throw new Error('falta auditoría de calidad del catálogo');
+          const quality = JSON.parse(fs.readFileSync(`artifacts/seo/${qualityFile}`, 'utf8'));
           if (!(link?.totals?.sitemapBooks > 0)) throw new Error('link graph sin sitemapBooks');
           if (!(link?.totals?.linkedBooks >= 0)) throw new Error('link graph sin linkedBooks');
           if (!(dup?.inventory?.activeCatalogItems > 0)) throw new Error('duplication report sin activos');
-          console.log({ link: link.totals, duplicates: dup.summaries, inventory: dup.inventory });
+          if (!(quality?.inventory?.activeWithStock > 0)) throw new Error('quality report sin activos');
+          console.log({ link: link.totals, duplicates: dup.summaries, quality: quality.coverage, inventory: dup.inventory });
           NODE
 
       - name: Upload reproducible baseline
