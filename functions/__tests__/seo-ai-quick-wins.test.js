@@ -12,7 +12,7 @@ test('la portada identifica a Amado Libros y enlaza las páginas de autoridad', 
   const home = read('astro-front/src/pages/index.astro');
   const guides = read('astro-front/src/components/GuideAccess.astro');
 
-  assert.match(home, /'@type': \['Organization', 'BookStore'\]/);
+  assert.match(home, /'@type': 'OnlineStore'/);
   assert.match(home, /'@type': 'WebSite'/);
   assert.match(home, /jsonLd=\{jsonLd\}/);
   assert.match(home, /<GuideAccess \/>/);
