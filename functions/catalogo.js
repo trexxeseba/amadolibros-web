@@ -230,11 +230,18 @@ async function fetchActiveCategories(ctx) {
     // fetchActiveIndex/fetchPausedIndex en _shared/catalog.js.
     try {
         const url = new URL('/data/active-categories.json', ctx.request.url).toString();
+        const readStartedAt = perfNow();
         const cache = caches.default;
         const cacheKey = new Request(url);
+        const cacheStartedAt = perfNow();
         let response = await cache.match(cacheKey);
+        recordPerf(ctx, 'categories_cache', cacheStartedAt, {
+            cache: response ? 'hit' : 'miss',
+        });
         if (!response) {
+            const originStartedAt = perfNow();
             const fetched = await fetch(url);
+            recordPerf(ctx, 'categories_origin', originStartedAt);
             if (!fetched.ok) return null;
             response = new Response(fetched.body, {
                 status: fetched.status,
@@ -247,7 +254,18 @@ async function fetchActiveCategories(ctx) {
                 ctx.waitUntil(cache.put(cacheKey, response.clone()));
             }
         }
-        return await response.json();
+        const bodyStartedAt = perfNow();
+        const body = await response.arrayBuffer();
+        recordPerf(ctx, 'categories_body', bodyStartedAt, {
+            bytes: body.byteLength,
+        });
+        recordPerf(ctx, 'categories_read', readStartedAt, {
+            bytes: body.byteLength,
+        });
+        const parseStartedAt = perfNow();
+        const parsed = JSON.parse(new TextDecoder().decode(body));
+        recordPerf(ctx, 'categories_parse', parseStartedAt);
+        return parsed;
     } catch {
         return null;
     }
