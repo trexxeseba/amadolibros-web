@@ -77,6 +77,9 @@ test.beforeEach(() => {
   globalThis.caches = {
     default: {
       async match(request) {
+        if (request.url.endsWith('/data/active-categories.json')) {
+          return Response.json({ schema_version: 1, categories: [], items: {} });
+        }
         if (request.url === CATALOG_URL) return Response.json(CATALOG);
         if (request.url === PAUSED_MANIFEST_URL) {
           return Response.json({
@@ -162,6 +165,16 @@ test('COVER-R2 Preview: card y ficha usan la copia validada del mismo origen', a
     bookHtml,
     new RegExp(`/preview-cover/MLU1/0/${PREVIEW_COVER_HASH}\\.jpg`),
   );
+  const timing = bookResponse.headers.get('server-timing');
+  assert.match(timing, /catalog_parse;dur=/);
+  assert.match(timing, /active_lookup;dur=/);
+  assert.match(timing, /cover_manifest_binding;dur=/);
+  assert.match(timing, /cover_manifest_body;dur=/);
+  assert.match(timing, /cover_manifest_parse;dur=/);
+  assert.match(timing, /cover_resolve;dur=/);
+  assert.match(timing, /render;dur=/);
+  assert.match(timing, /route_total;dur=/);
+  assert.equal(bookResponse.headers.get('x-cache-status'), 'HIT');
 });
 
 test('COVER-R2 Producción: card y ficha usan el binding productivo', async () => {
@@ -244,6 +257,7 @@ test('la búsqueda Preview usa el índice activo compacto y conserva el precio',
   assert.match(html, /Precio web\/tarjeta:/);
   assert.equal(requests.includes(CATALOG_URL), false);
   assert.match(response.headers.get('server-timing'), /active_index_parse/);
+  assert.match(response.headers.get('server-timing'), /categories_parse/);
   assert.match(response.headers.get('server-timing'), /search;dur=/);
   assert.match(response.headers.get('server-timing'), /render;dur=/);
   assert.match(response.headers.get('server-timing'), /total;dur=/);
@@ -448,6 +462,9 @@ function installProductionCatalogMock() {
     default: {
       async match(request) {
         requestedUrls.push(request.url);
+        if (request.url.endsWith('/data/active-categories.json')) {
+          return Response.json({ schema_version: 1, categories: [], items: {} });
+        }
         if (request.url === CATALOG_URL) {
           return Response.json({ total: 1, items: [PROD_ACTIVE] });
         }
