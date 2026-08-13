@@ -10,7 +10,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': ['Organization', 'BookStore'],
+      '@type': 'OnlineStore',
       '@id': 'https://www.amadolibros.com/#bookstore',
       name: 'Amado Libros',
       url: 'https://www.amadolibros.com/',
@@ -23,12 +23,6 @@ const jsonLd = {
         'https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea',
         'https://www.instagram.com/amadolibros.uy/',
       ],
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: 'Rincón 608',
-        addressLocality: 'Montevideo',
-        addressCountry: 'UY',
-      },
       areaServed: {
         '@type': 'Country',
         name: 'Uruguay',
@@ -144,7 +138,7 @@ const jsonLd = {
   <ul>
     <li><strong>Nombre comercial:</strong> Amado Libros.</li>
     <li><strong>Actividad:</strong> librería online uruguaya.</li>
-    <li><strong>Domicilio comercial:</strong> Rincón 608, Ciudad Vieja, Montevideo, Uruguay.</li>
+    <li><strong>Punto de retiro coordinado:</strong> Rincón 608, Ciudad Vieja, Montevideo, Uruguay. No es un local de venta al público; el retiro se realiza después de nuestra confirmación por WhatsApp.</li>
     <li><strong>WhatsApp y teléfono:</strong> <a href="https://wa.me/59899841325">099 841 325</a>.</li>
     <li><strong>Correo:</strong> <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a>.</li>
     <li><strong>Información operativa:</strong> <a href="/contacto">contacto y horarios</a>, <a href="/envios">envíos y retiro</a> y <a href="/devoluciones">devoluciones</a>.</li>
