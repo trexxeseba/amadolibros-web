@@ -20,7 +20,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': ['Organization', 'BookStore'],
+      '@type': 'OnlineStore',
       '@id': 'https://www.amadolibros.com/#bookstore',
       name: 'Amado Libros',
       url: 'https://www.amadolibros.com/',
@@ -33,12 +33,6 @@ const jsonLd = {
         'https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea',
         'https://www.instagram.com/amadolibros.uy/',
       ],
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: 'Rincón 608',
-        addressLocality: 'Montevideo',
-        addressCountry: 'UY',
-      },
       areaServed: { '@type': 'Country', name: 'Uruguay' },
       contactPoint: {
         '@type': 'ContactPoint',

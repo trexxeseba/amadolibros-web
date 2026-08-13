@@ -57,7 +57,7 @@ export async function onRequest(ctx) {
         'url':         `${BASE}/libros-maria-montessori-uruguay`,
         'description': 'Selección de libros de María Montessori disponibles en Uruguay. Pedagogía Montessori, educación, infancia y crianza. Envíos a Montevideo y al interior.',
         'isPartOf':    { '@type': 'WebSite', 'name': 'Amado Libros', 'url': BASE },
-        'publisher':   { '@type': 'BookStore', 'name': 'Amado Libros', 'url': BASE },
+        'publisher':   { '@type': 'OnlineStore', 'name': 'Amado Libros', 'url': BASE },
     };
 
     const schemaItemList = {

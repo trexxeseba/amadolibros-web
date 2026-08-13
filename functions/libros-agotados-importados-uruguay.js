@@ -29,19 +29,13 @@ export async function onRequest() {
         '@context': 'https://schema.org',
         '@graph': [
             {
-                '@type': ['Organization', 'BookStore'],
+                '@type': 'OnlineStore',
                 '@id': `${BASE}/#bookstore`,
                 'name': BRAND.name,
                 'url': `${BASE}/`,
                 'logo': `${BASE}/images/logo-amado.webp`,
                 'telephone': '+59899841325',
                 'email': 'adm@amadolibros.com',
-                'address': {
-                    '@type': 'PostalAddress',
-                    'streetAddress': 'Rincón 608',
-                    'addressLocality': 'Montevideo',
-                    'addressCountry': 'UY',
-                },
             },
             {
                 '@type': 'WebPage',
