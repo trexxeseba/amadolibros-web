@@ -63,6 +63,18 @@ export const SEO_SPECIALTIES = Object.freeze([
     topics: ['instalaciones eléctricas', 'circuitos y medidas', 'máquinas eléctricas', 'automatización industrial', 'protecciones y tableros', 'seguridad y normativa'],
     keywords: ['electrotecnia', 'instalaciones electricas', 'maquinas electricas', 'circuitos electricos', 'electricidad industrial', 'automatizacion industrial', 'tableros electricos', 'alta tension'],
   },
+  {
+    id: 'psicologia',
+    name: 'Psicología',
+    title: 'Libros de Psicología para Estudiar y Ejercer | Amado',
+    h1: 'Libros de psicología para estudiantes y profesionales',
+    description: 'Libros de psicología clínica, psicoanálisis, psicoterapia, evaluación y neuropsicología. Catálogo en Uruguay y búsqueda de bibliografía por encargo.',
+    audience: 'estudiantes universitarios, docentes, psicólogos, psicoterapeutas y otros profesionales de la salud mental',
+    intro: 'Reunimos libros de psicología disponibles en Uruguay y buscamos por encargo bibliografía académica y profesional publicada en España, Argentina y otros mercados. Trabajamos con autor, ISBN, editorial, edición y nivel de estudio para distinguir manuales introductorios, textos clínicos y obras especializadas sin recomendar un título solamente por su popularidad.',
+    topics: ['psicología clínica y psicopatología', 'psicoanálisis', 'psicoterapia', 'evaluación y psicodiagnóstico', 'neuropsicología', 'psicología cognitiva y conductual'],
+    keywords: ['psicologia', 'psicologico', 'psicologica', 'psicoanalisis', 'psicoterapia', 'psicopatologia', 'neuropsicologia', 'psicodiagnostico', 'evaluacion psicologica', 'terapia cognitiva'],
+    excludeKeywords: ['psicologia de ventas', 'psicologia del dinero'],
+  },
 ]);
 
 export const SEO_SPECIALTY_IDS = new Set(SEO_SPECIALTIES.map(item => item.id));
