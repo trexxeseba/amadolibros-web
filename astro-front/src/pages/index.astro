@@ -29,6 +29,10 @@ const jsonLd = {
       description: 'Librería online uruguaya, familiar y atendida por sus dueños. Vende libros disponibles y realiza búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
       telephone: '+59899841325',
       email: 'adm@amadolibros.com',
+      sameAs: [
+        'https://www.mercadolibre.com.uy/tienda/amado-libros-libreria-en-linea',
+        'https://www.instagram.com/amadolibros.uy/',
+      ],
       address: {
         '@type': 'PostalAddress',
         streetAddress: 'Rincón 608',
@@ -51,6 +55,14 @@ const jsonLd = {
       name: 'Amado Libros',
       publisher: { '@id': 'https://www.amadolibros.com/#bookstore' },
       inLanguage: 'es-UY',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://www.amadolibros.com/catalogo?q={search_term_string}',
+        },
+        'query-input': 'required name=search_term_string',
+      },
     },
   ],
 };

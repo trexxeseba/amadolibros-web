@@ -24,7 +24,9 @@ test('la identidad estructurada conecta BookStore, WebSite y AboutPage', () => {
   assert.match(page, /'@type': 'AboutPage'/);
   assert.match(page, /reviewedBy/);
   assert.match(page, /Rincón 608/);
-  assert.doesNotMatch(page, /sameAs:/, 'no debe inventar perfiles externos no verificados');
+  assert.match(page, /sameAs:/);
+  assert.match(page, /https:\/\/www\.mercadolibre\.com\.uy\/tienda\/amado-libros-libreria-en-linea/);
+  assert.match(page, /https:\/\/www\.instagram\.com\/amadolibros\.uy\//);
 });
 
 test('la página es descubrible desde el footer global y el sitemap', () => {

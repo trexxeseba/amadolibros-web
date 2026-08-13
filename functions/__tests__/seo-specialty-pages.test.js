@@ -18,6 +18,7 @@ const ITEMS = [
   { id: 'MLU4', title: 'Agricultura: cultivos, suelos y riego', author: 'Autora Agrícola', price: 1800, available_quantity: 1, status: 'active', thumbnail: 'https://img.example/4.jpg' },
   { id: 'MLU5', title: 'Electrotecnia y máquinas eléctricas', author: 'Autor Técnico', isbn: '9780000000002', price: 2700, available_quantity: 1, status: 'active', thumbnail: 'https://img.example/5.jpg' },
   { id: 'MLU7', title: 'Máquinas eléctricas: Electrotecnia', author: 'Autor Técnico', isbn: '9780000000002', price: 2800, available_quantity: 1, status: 'active', thumbnail: 'https://img.example/7.jpg' },
+  { id: 'MLU8', title: 'Manual de psicología clínica y psicodiagnóstico', author: 'Autora Clínica', isbn: '9780000000003', price: 2400, available_quantity: 1, status: 'active', thumbnail: 'https://img.example/8.jpg' },
   { id: 'MLU6', title: 'Cirugía agotada', price: 999, available_quantity: 0, status: 'paused' },
 ];
 
@@ -43,13 +44,13 @@ test.beforeEach(() => {
   };
 });
 
-test('publica cinco especialidades fuertes, diferenciadas y sin páginas por país', () => {
-  assert.equal(SEO_SPECIALTIES.length, 5);
-  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.id)).size, 5);
-  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.title)).size, 5);
-  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.h1)).size, 5);
-  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.description)).size, 5);
-  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.intro)).size, 5);
+test('publica seis especialidades fuertes, diferenciadas y sin páginas por país', () => {
+  assert.equal(SEO_SPECIALTIES.length, 6);
+  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.id)).size, 6);
+  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.title)).size, 6);
+  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.h1)).size, 6);
+  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.description)).size, 6);
+  assert.equal(new Set(SEO_SPECIALTIES.map(item => item.intro)).size, 6);
   for (const item of SEO_SPECIALTIES) {
     assert.ok(item.title.length <= 60, item.id);
     assert.ok(item.description.length >= 135, item.id);
@@ -95,6 +96,9 @@ test('el filtro exige palabras completas y evita coincidencias por fragmentos', 
   assert.equal(isSpecialtyMatch({ title: 'Las experiencias de Tiresias y el hombre griego' }, agriculture), false);
   const medicine = SEO_SPECIALTIES.find(item => item.id === 'medicina');
   assert.equal(isSpecialtyMatch({ title: 'Dosificación de medicamentos en el caballo' }, medicine), false);
+  const psychology = SEO_SPECIALTIES.find(item => item.id === 'psicologia');
+  assert.equal(isSpecialtyMatch({ title: 'Manual de psicología clínica' }, psychology), true);
+  assert.equal(isSpecialtyMatch({ title: 'La psicología del dinero' }, psychology), false);
 });
 
 test('preview, parámetros y slugs no autorizados no crean URLs indexables', async () => {
@@ -109,7 +113,7 @@ test('preview, parámetros y slugs no autorizados no crean URLs indexables', asy
   assert.match(await unknown.text(), /noindex, nofollow/);
 });
 
-test('sitemap y landing de encargos enlazan las cinco especialidades', async () => {
+test('sitemap y landing de encargos enlazan las seis especialidades', async () => {
   const { onRequest: renderPillar } = await import('../libros-agotados-importados-uruguay.js');
   const pillar = await (await renderPillar()).text();
   for (const specialty of SEO_SPECIALTIES) {
