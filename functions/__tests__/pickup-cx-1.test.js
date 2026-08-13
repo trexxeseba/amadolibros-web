@@ -34,13 +34,12 @@ test('1. ningún archivo público publica la dirección exacta del retiro', () =
     }
 });
 
-test('2. /contacto conserva el domicilio comercial pero no como instrucción de retiro', () => {
+test('2. /contacto presenta Rincón 608 únicamente como punto de retiro coordinado', () => {
     const c = read('astro-front/src/pages/contacto.astro');
-    // El domicilio legal es una obligación distinta y se mantiene.
-    assert.match(c, /Domicilio comercial:<\/strong> Rincón 608/);
-    // Pero ya no se presenta como el lugar al que ir a retirar.
-    assert.doesNotMatch(c, /Dirección y retiro/);
-    assert.match(c, /Pick up:<\/strong> a pasos de Plaza Matriz/);
+    assert.doesNotMatch(c, /Domicilio comercial:<\/strong> Rincón 608/);
+    assert.match(c, /Punto de retiro coordinado:<\/strong> Rincón 608/);
+    assert.match(c, /No es un local de venta al público/);
+    assert.match(c, /confirmación por WhatsApp/);
 });
 
 test('3. el horario público de retiro es único: 8 a 17 h', () => {
