@@ -225,7 +225,7 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
         'url': canonical,
         'description': category.description,
         'isPartOf': { '@type': 'WebSite', 'name': BRAND.name, 'url': BASE },
-        'publisher': { '@type': 'OnlineStore', 'name': BRAND.name, 'url': BASE },
+        'publisher': { '@type': 'OnlineStore', '@id': `${BASE}/#bookstore`, 'name': BRAND.name, 'url': `${BASE}/` },
         'mainEntity': {
             '@type': 'ItemList',
             'numberOfItems': items.length,
