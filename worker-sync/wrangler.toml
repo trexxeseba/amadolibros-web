@@ -23,6 +23,9 @@ ML_DESCRIPTION_ENRICH_LIMIT = "100"
 ML_DESCRIPTION_REFRESH_DAYS = "90"
 ML_DESCRIPTION_SLEEP_MS = "100"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
+INDEXNOW_ENABLED = "true"
+# Clave pública verificada por el archivo homónimo en astro-front/public.
+INDEXNOW_KEY = "944e65e97fd0a8c242c495ccf458d3c3"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
