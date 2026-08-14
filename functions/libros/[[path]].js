@@ -225,7 +225,7 @@ function renderPage({ category, items, isPreview, hasUnexpectedParameters, navig
         'url': canonical,
         'description': category.description,
         'isPartOf': { '@type': 'WebSite', 'name': BRAND.name, 'url': BASE },
-        'publisher': { '@type': 'OnlineStore', 'name': BRAND.name, 'url': BASE },
+        'publisher': { '@type': 'OnlineStore', '@id': `${BASE}/#bookstore`, 'name': BRAND.name, 'url': `${BASE}/` },
         'mainEntity': {
             '@type': 'ItemList',
             'numberOfItems': items.length,
