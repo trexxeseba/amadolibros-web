@@ -60,6 +60,7 @@ test('renderiza contenido visible, canonical, schema y enlaces rastreables', () 
   assert.match(html, /rel="canonical" href="https:\/\/www\.amadolibros\.com\/libros-jacques-lacan-uruguay"/);
   assert.match(html, /"@type":"CollectionPage"/);
   assert.match(html, /"@type":"ItemList"/);
+  assert.match(html, /"publisher":\{"@id":"https:\/\/www\.amadolibros\.com\/#bookstore"\}/);
   assert.match(html, /href="\/libro\/MLU9\/libro-mlu9"/);
   assert.match(html, /Quiénes somos y cómo trabajamos/);
 });
