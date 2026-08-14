@@ -76,7 +76,7 @@ export function renderAuthorPage(author, items) {
       'url': canonicalUrl,
       'description': metaDescription,
       'isPartOf': { '@id': `${BASE}/#website` },
-      'publisher': { '@id': `${BASE}/#store` },
+      'publisher': { '@id': `${BASE}/#bookstore` },
       'about': { '@type': 'Person', 'name': author.name },
     },
     {
