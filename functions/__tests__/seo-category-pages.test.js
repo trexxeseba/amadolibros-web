@@ -27,7 +27,7 @@ const CATEGORY_DATA = {
     categories: SEO_CATEGORIES.map((category, index) => ({
         id: category.id,
         name: category.name,
-        count: 1,
+        count: category.id === 'psicologia' ? 791 : 1,
         subcategories: [],
     })),
     items: Object.fromEntries(ITEMS.map((item, index) => [
@@ -102,6 +102,7 @@ test('la landing filtra productos por la categoría solicitada', async () => {
     assert.doesNotMatch(html, /Libro de prueba Infantil y juvenil/);
     assert.match(html, /<section class="books-grid"/);
     assert.match(html, /href="https:\/\/www\.amadolibros\.com\/libro\/MLU6\//);
+    assert.match(html, /<strong>1 título disponible ahora\.<\/strong> Los 791 títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo\./);
 });
 
 test('una categoría inventada responde 404 real, noindex y sin canonical', async () => {
@@ -137,6 +138,8 @@ test('la portada enlaza las ocho landings limpias y no filtros con parámetros',
 
     assert.match(source, /href={`\/libros\/\$\{encodeURIComponent\(cat\.id\)\}`}/);
     assert.doesNotMatch(source, /href={`\/catalogo\?categoria=/);
+    assert.match(source, /\{cat\.count\} títulos/);
+    assert.match(source, />Disponibles y por encargo<\/span>/);
     for (const category of SEO_CATEGORIES) {
         assert.ok(source.includes(`'${category.id}'`), category.id);
     }
