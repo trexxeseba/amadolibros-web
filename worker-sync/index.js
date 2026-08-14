@@ -8,6 +8,8 @@
  *   fetch(request)   — POST /trigger con header Authorization: Bearer <SYNC_SECRET>
  *                      para disparar sync manualmente.
  *                    — GET /status con el mismo header para auditar KV + R2.
+ *                    — GET /bing-webmaster/summary consulta Bing Webmaster
+ *                      en modo solo lectura con el mismo header.
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *                    — POST /publish-preview-catalog escribe únicamente el catálogo
  *                      separado de STOCK-1 (prefijo stock1-preview/*) cuando la
@@ -49,6 +51,7 @@ import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
+import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -87,6 +90,11 @@ export default {
       return json(await readStatus(env));
     }
 
+    if (request.method === 'GET' && url.pathname === '/bing-webmaster/summary') {
+      const result = await getBingWebmasterReadOnlySummary(env);
+      return json(result, result.status === 'error' ? 502 : 200);
+    }
+
     if (request.method === 'POST' && url.pathname === '/measure') {
       const result = await runMeasure(env);
       return json(result, result.status === 'measured' ? 200 : 500);
@@ -109,7 +117,7 @@ export default {
     }
 
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
-      return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
+      return json({ error: 'Not found. Use POST /measure, POST /trigger, GET /status or GET /bing-webmaster/summary.' }, 404);
     }
 
     const mode = url.searchParams.get('mode') || 'async';
