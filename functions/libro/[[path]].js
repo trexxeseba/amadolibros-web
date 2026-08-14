@@ -16,6 +16,7 @@
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
+import { authorPathForName } from '../_shared/seo-authors.js';
 import {
     ensurePerf,
     perfNow,
@@ -289,8 +290,12 @@ function renderRelatedBooks(relatedBooks, author) {
     </li>`;
     }).join('\n');
 
+    const authorPath = authorPathForName(author);
+    const heading = authorPath
+        ? `Otros libros de <a href="${escapeHtml(authorPath)}">${escapeHtml(author)}</a>`
+        : `Otros libros de ${escapeHtml(author)}`;
     return `<section class="related-books" aria-labelledby="related-books-title">
-    <h2 id="related-books-title">Otros libros de ${escapeHtml(author)}</h2>
+    <h2 id="related-books-title">${heading}</h2>
     <ul class="related-books-grid">${cards}</ul>
   </section>`;
 }
@@ -421,7 +426,18 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             'priceCurrency':'UYU',
             'price':        String(price),
             'availability': 'https://schema.org/InStock',
-            'seller': { '@type': 'Organization', 'name': 'Amado Libros', 'url': BASE },
+            'seller': {
+                '@type': 'OnlineStore',
+                '@id': `${BASE}/#bookstore`,
+                'name': 'Amado Libros',
+                'url': `${BASE}/`,
+            },
+            'shippingDetails': {
+                '@type': 'OfferShippingDetails',
+                'hasShippingService': {
+                    '@id': `${BASE}/envios#shipping-service`,
+                },
+            },
             'hasMerchantReturnPolicy': {
                 '@id': `${BASE}/devoluciones#merchant-return-policy`,
             },

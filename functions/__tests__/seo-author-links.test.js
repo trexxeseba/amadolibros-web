@@ -52,11 +52,20 @@ test('renderiza enlaces SSR canónicos, portadas diferidas y ningún enlace prop
     const html = renderPage(current, 'psicogeometria', false, '', '', related);
 
     assert.match(html, /<section class="related-books"/);
-    assert.match(html, /Otros libros de María Montessori/);
+    assert.match(html, /Otros libros de <a href="\/libros-maria-montessori-uruguay">María Montessori<\/a>/);
     assert.match(html, /href="\/libro\/MLU2\/la-mente-absorbente-del-nino"/);
     assert.match(html, /href="\/libro\/MLU3\/el-nino-en-la-familia"/);
     assert.match(html, /loading="lazy" width="120" height="180"/);
     assert.doesNotMatch(html, /href="\/libro\/MLU1\//);
+});
+
+test('no inventa una página de autor para nombres fuera del piloto', () => {
+    const current = book('MLU1', 'Autor Especial');
+    const related = [book('MLU2', 'Autor Especial')];
+    const html = renderPage(current, 'libro', false, '', '', related);
+
+    assert.match(html, /Otros libros de Autor Especial/);
+    assert.doesNotMatch(html, /href="\/libros-autor-especial/);
 });
 
 test('escapa autor y títulos antes de insertarlos en HTML', () => {

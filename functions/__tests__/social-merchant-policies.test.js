@@ -46,6 +46,9 @@ test('BaseLayout completa Open Graph y Twitter para las páginas Astro', () => {
 
 test('la política global de envíos modela exactamente el umbral de $1.500', () => {
   const page = read('astro-front/src/pages/envios.astro');
+  assert.match(page, /'@type': 'OnlineStore'/);
+  assert.match(page, /'@id': 'https:\/\/www\.amadolibros\.com\/#bookstore'/);
+  assert.doesNotMatch(page, /#organization/);
   assert.match(page, /'@type': 'ShippingService'/);
   assert.match(page, /maxValue: 1499\.99/);
   assert.match(page, /minValue: 1500/);
@@ -56,6 +59,9 @@ test('la política global de envíos modela exactamente el umbral de $1.500', ()
 
 test('la política global de devoluciones refleja la página visible', () => {
   const page = read('astro-front/src/pages/devoluciones.astro');
+  assert.match(page, /'@type': 'OnlineStore'/);
+  assert.match(page, /'@id': 'https:\/\/www\.amadolibros\.com\/#bookstore'/);
+  assert.doesNotMatch(page, /#organization/);
   assert.match(page, /'@type': 'MerchantReturnPolicy'/);
   assert.match(page, /merchantReturnDays: 5/);
   assert.match(page, /ReturnFeesCustomerResponsibility/);
@@ -68,9 +74,16 @@ test('las ofertas activas referencian la política global y las pausadas no crea
     '@id': 'https://www.amadolibros.com/devoluciones#merchant-return-policy',
   });
   assert.deepEqual(active.offers.seller, {
-    '@type': 'Organization',
+    '@type': 'OnlineStore',
+    '@id': 'https://www.amadolibros.com/#bookstore',
     name: 'Amado Libros',
-    url: 'https://www.amadolibros.com',
+    url: 'https://www.amadolibros.com/',
+  });
+  assert.deepEqual(active.offers.shippingDetails, {
+    '@type': 'OfferShippingDetails',
+    hasShippingService: {
+      '@id': 'https://www.amadolibros.com/envios#shipping-service',
+    },
   });
 
   const paused = productSchemaFromHtml(renderPage(

@@ -1,6 +1,7 @@
 import { BASE } from './_shared/catalog.js';
 import { urlsetXml, xmlResponse } from './_shared/sitemap.js';
 import { SEO_SPECIALTIES, specialtyPath } from './_shared/seo-specialties.js';
+import { SEO_AUTHORS } from './_shared/seo-authors.js';
 
 export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/`,
@@ -8,7 +9,7 @@ export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/pedir-libro`,
   `${BASE}/como-identificar-edicion-correcta-isbn`,
   `${BASE}/libros-agotados-importados-uruguay`,
-  `${BASE}/libros-maria-montessori-uruguay`,
+  ...SEO_AUTHORS.map(author => `${BASE}${author.path}`),
   `${BASE}/politicas`,
   `${BASE}/envios`,
   `${BASE}/devoluciones`,
@@ -25,6 +26,7 @@ const SIGNIFICANT_PAGE_UPDATES = Object.freeze({
   [`${BASE}/como-identificar-edicion-correcta-isbn`]: '2026-08-12',
   [`${BASE}/libros-agotados-importados-uruguay`]: '2026-08-12',
   [`${BASE}/quienes-somos`]: '2026-08-12',
+  ...Object.fromEntries(SEO_AUTHORS.map(author => [`${BASE}${author.path}`, '2026-08-14'])),
 });
 
 export const STATIC_SITEMAP_ENTRIES = Object.freeze(
