@@ -27,6 +27,8 @@
  *   - MIN_ACTIVE_ITEMS: abortar si R2 quedaría con muy pocos items activos
  */
 
+import { applyVerifiedBookEnrichments } from './verified-book-enrichments.js';
+
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
 const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
@@ -118,6 +120,7 @@ export async function buildCatalog(env, accessToken, {
       { retryBudget, mlGetDeps },
     );
   }
+  dataQuality.verified_book_enrichments = applyVerifiedBookEnrichments(catalogItems);
   const activeItems = catalogItems.filter(
     item => item.status === 'active' && Number(item.available_quantity) > 0
   );
