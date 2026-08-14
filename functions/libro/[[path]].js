@@ -226,6 +226,75 @@ ${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="
 })();<\/script>`;
 }
 
+const GENERIC_AUTHOR_KEYS = new Set([
+    'anónimo',
+    'anonimo',
+    'autor',
+    'autores',
+    'autor no especificado',
+    'no aplica',
+    'n/a',
+    's/a',
+    'sin autor',
+    'varios',
+    'varios autores',
+    'vv aa',
+    'vv. aa.',
+]);
+
+function authorKey(author) {
+    return String(author || '').trim().toLocaleLowerCase('es').replace(/\s+/g, ' ');
+}
+
+/**
+ * SEO-AUTOR: el catálogo activo ya está en memoria cuando se renderiza una
+ * ficha. Reutilizarlo evita otra lectura de R2 y permite crear enlaces HTML
+ * rastreables hacia otros títulos del mismo autor.
+ */
+export function selectRelatedBooks(catalogItems, item, limit = 4) {
+    if (!Array.isArray(catalogItems) || !item) return [];
+
+    const currentAuthor = authorKey(item.author);
+    const requestedLimit = Math.min(4, Math.max(0, Number(limit) || 0));
+    if (!currentAuthor || GENERIC_AUTHOR_KEYS.has(currentAuthor) || requestedLimit === 0) return [];
+
+    const seen = new Set([String(item.id || '')]);
+    const related = [];
+    for (const candidate of catalogItems) {
+        const candidateId = String(candidate?.id || '');
+        if (!candidateId || seen.has(candidateId)) continue;
+        if (!candidate?.title || candidate.status !== 'active') continue;
+        if ((Number(candidate.available_quantity) || 0) <= 0) continue;
+        if (authorKey(candidate.author) !== currentAuthor) continue;
+
+        seen.add(candidateId);
+        related.push(candidate);
+        if (related.length === requestedLimit) break;
+    }
+    return related;
+}
+
+function renderRelatedBooks(relatedBooks, author) {
+    if (!Array.isArray(relatedBooks) || relatedBooks.length === 0) return '';
+
+    const cards = relatedBooks.map((book) => {
+        const title = escapeHtml(book.title);
+        const href = `/libro/${encodeURIComponent(book.id)}/${slugify(book.title)}`;
+        const image = normalizeImages(book)[0] || '';
+        return `<li class="related-book">
+      <a class="related-book-link" href="${escapeHtml(href)}">
+        ${image ? `<img class="related-book-cover" src="${escapeHtml(image)}" alt="Portada de ${title}" loading="lazy" width="120" height="180">` : ''}
+        <span class="related-book-title">${title}</span>
+      </a>
+    </li>`;
+    }).join('\n');
+
+    return `<section class="related-books" aria-labelledby="related-books-title">
+    <h2 id="related-books-title">Otros libros de ${escapeHtml(author)}</h2>
+    <ul class="related-books-grid">${cards}</ul>
+  </section>`;
+}
+
 // ---------------------------------------------------------------------------
 // Respuestas de error
 // ---------------------------------------------------------------------------
@@ -263,7 +332,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '') {
+export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
@@ -296,6 +365,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             ? `Hola! Me interesa: ${item.title}`
             : buildPausedWaMessage(item)
     );
+    const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author);
 
     const detailRows = [
         safeAuthor ? detailRow('Autor', item.author) : '',
@@ -652,6 +722,20 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     @media(max-width:520px){.waitlist-row{flex-direction:column}.btn-waitlist{width:100%}}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
+    .related-books{grid-column:1/-1;border-top:1px solid #e2e8f0;padding-top:1.25rem}
+    .related-books h2{font-size:1.05rem;line-height:1.35;color:#0f172a;margin-bottom:.85rem}
+    .related-books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+                        gap:.8rem;list-style:none}
+    .related-book{min-width:0}
+    .related-book-link{height:100%;display:flex;flex-direction:column;gap:.55rem;
+                       padding:.65rem;background:#fff;border:1px solid #e2e8f0;
+                       border-radius:.55rem;color:#334155;text-decoration:none}
+    .related-book-link:hover{border-color:#94a3b8;color:#0f172a}
+    .related-book-link:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
+    .related-book-cover{display:block;width:100%;aspect-ratio:2/3;height:auto;max-height:180px;
+                        object-fit:contain;background:#f8fafc;border-radius:.3rem}
+    .related-book-title{font-size:.82rem;font-weight:700;line-height:1.35}
+    @media(min-width:760px){.related-books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
     ${FOOTER_STYLES}
     ${WA_FLOAT_STYLES}
   </style>
@@ -704,6 +788,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
     } <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
+  ${relatedBooksHtml}
 </main>
 
 ${footerHtml()}
@@ -886,8 +971,12 @@ export async function onRequest(context) {
         found: Boolean(previewCoverSrc),
     });
 
+    const relatedBooks = activeCatalogAvailable
+        ? selectRelatedBooks(catalog.items, item)
+        : [];
+
     const renderStartedAt = perfNow();
-    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '');
+    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks);
     recordPerf(context, 'render', renderStartedAt);
 
     const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;
