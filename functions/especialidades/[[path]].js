@@ -88,7 +88,7 @@ export async function onRequest(ctx) {
     url: canonical,
     inLanguage: 'es',
     isPartOf: { '@type': 'WebSite', name: BRAND.name, url: BASE },
-    publisher: { '@type': 'OnlineStore', name: BRAND.name, url: BASE },
+    publisher: { '@type': 'OnlineStore', '@id': `${BASE}/#bookstore`, name: BRAND.name, url: `${BASE}/` },
   };
   const itemListSchema = {
     '@context': 'https://schema.org',
@@ -110,7 +110,7 @@ export async function onRequest(ctx) {
     url: canonical,
     areaServed: { '@type': 'Country', name: 'Uruguay' },
     serviceType: 'Búsqueda e importación de libros por encargo',
-    provider: { '@type': 'OnlineStore', name: BRAND.name, url: BASE },
+    provider: { '@type': 'OnlineStore', '@id': `${BASE}/#bookstore`, name: BRAND.name, url: `${BASE}/` },
   };
   const breadcrumbSchema = {
     '@context': 'https://schema.org',

@@ -21,7 +21,8 @@
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
  *   2. Descargar catálogo completo (meli-catalog.js — scroll + batch details)
  *   3. Escribir catalog.json y meta.json en R2 (r2-publish.js)
- *   4. Guardar estado mínimo en KV (sync:last_ok / sync:last_error)
+ *   4. Notificar a IndexNow únicamente URLs indexables que cambiaron
+ *   5. Guardar estado mínimo en KV (sync:last_ok / sync:last_error)
  *
  * KV keys escritas por este Worker:
  *   auth:refresh_token       — compartido con Pages (se actualiza en meli-auth.js)
@@ -47,6 +48,7 @@ import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
+import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -398,6 +400,8 @@ export async function runSync(env, options = {}, {
   publishToR2Fn = publishToR2,
   notifyHealthcheckFn = notifyHealthcheck,
   processStockWaitlistFn = processStockWaitlist,
+  readPreviousPublicCatalogFn = readPreviousPublicCatalog,
+  submitIndexNowFn = submitIndexNow,
 } = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
@@ -432,7 +436,31 @@ export async function runSync(env, options = {}, {
       status:         'ok',
       source,
     };
+    const previousCatalog = await readPreviousPublicCatalogFn(env);
     await publishToR2Fn(env, catalog, syncMeta);
+
+    // IndexNow corre únicamente después de confirmar el promote de R2. Es una
+    // señal de descubrimiento: su caída nunca invalida el catálogo publicado.
+    let indexNow;
+    try {
+      indexNow = await submitIndexNowFn(env, previousCatalog, catalog);
+    } catch (error) {
+      console.error(`[IndexNow] Error: ${error?.message || 'Error'}`);
+      indexNow = { status: 'error', reason: 'unexpected-error' };
+    }
+    if (indexNow.status === 'sent') {
+      await kvPut(env, 'indexnow:last_result', JSON.stringify({
+        at: finishedAt,
+        ...indexNow,
+      }));
+      await kvDelete(env, 'indexnow:last_error');
+    } else if (indexNow.status === 'error') {
+      await kvPut(env, 'indexnow:last_error', JSON.stringify({
+        at: finishedAt,
+        status: indexNow.http_status || null,
+        reason: indexNow.reason || 'http-error',
+      }));
+    }
 
     // STOCK-AVISO-2: sólo después de que R2 confirmó la publicación. Un fallo
     // de correo queda registrado y reintentable, pero no convierte un catálogo
@@ -459,6 +487,7 @@ export async function runSync(env, options = {}, {
       started_at:     startedAt,
       finished_at:    finishedAt,
       duration_ms:    durationMs,
+      indexnow:       indexNow,
       stock_notifications: stockNotifications,
     };
 
@@ -495,10 +524,12 @@ async function safeNotifyHealthcheck(notifyFn, env, kind) {
 // ── Status ───────────────────────────────────────────────────────────────────
 
 async function readStatus(env) {
-  const [lastStarted, lastOk, lastError, meta, catalogHead] = await Promise.all([
+  const [lastStarted, lastOk, lastError, indexNowResult, indexNowError, meta, catalogHead] = await Promise.all([
     kvGet(env, 'sync:last_started'),
     kvGet(env, 'sync:last_ok'),
     kvGet(env, 'sync:last_error'),
+    kvGet(env, 'indexnow:last_result'),
+    kvGet(env, 'indexnow:last_error'),
     readR2Json(env, 'meta.json'),
     readR2Head(env, 'catalog.json'),
   ]);
@@ -510,6 +541,10 @@ async function readStatus(env) {
       last_started: lastStarted,
       last_ok:      lastOk,
       last_error:   lastError,
+    },
+    indexnow: {
+      last_result: parseJsonOrValue(indexNowResult),
+      last_error: parseJsonOrValue(indexNowError),
     },
     r2: {
       meta,
@@ -580,6 +615,15 @@ function dateToIso(value) {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString();
   return String(value);
+}
+
+function parseJsonOrValue(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }
 
 function json(body, status = 200) {

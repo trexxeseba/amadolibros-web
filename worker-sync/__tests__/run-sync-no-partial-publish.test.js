@@ -140,14 +140,46 @@ test('aviso de reposición corre después de publicar y su fallo no revierte el 
       items: [{ id: 'MLU1', status: 'active', available_quantity: 1, price: 1000 }],
     }),
     publishToR2Fn: async () => { order.push('publish'); },
+    readPreviousPublicCatalogFn: async () => ({ items: [] }),
+    submitIndexNowFn: async () => { order.push('indexnow'); return { status: 'sent' }; },
     processStockWaitlistFn: async () => { order.push('notify'); throw new Error('Resend caído'); },
     notifyHealthcheckFn: noHealthcheck,
   });
-  assert.deepEqual(order, ['publish', 'notify']);
+  assert.deepEqual(order, ['publish', 'indexnow', 'notify']);
   assert.equal(result.status, 'ok');
   assert.equal(result.stock_notifications.status, 'error');
   assert.match(result.stock_notifications.error, /Resend caído/);
 });
+
+test('un fallo inesperado de IndexNow no revierte un catálogo ya publicado', async () => {
+  const { env } = fakeEnv();
+  const result = await runSync(env, { source: 'cron' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => ({
+      total: 1,
+      updated_at: '2026-08-14T12:00:00.000Z',
+      items: [itemForSync()],
+    }),
+    publishToR2Fn: async () => {},
+    readPreviousPublicCatalogFn: async () => ({ items: [] }),
+    submitIndexNowFn: async () => { throw new Error('IndexNow caído'); },
+    processStockWaitlistFn: async () => ({ status: 'ok' }),
+    notifyHealthcheckFn: noHealthcheck,
+  });
+
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.indexnow, { status: 'error', reason: 'unexpected-error' });
+});
+
+function itemForSync() {
+  return {
+    id: 'MLU1',
+    title: 'Libro',
+    status: 'active',
+    available_quantity: 1,
+    price: 1000,
+  };
+}
 
 test('si falla autenticación tampoco intenta publicar', async () => {
   const { env } = fakeEnv();
