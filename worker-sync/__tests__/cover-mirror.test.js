@@ -164,6 +164,31 @@ test('prioriza faltantes, después URL cambiada y al final revalidaciones vencid
   assert.deepEqual(batch.selected.map(row => row.product_id), ['MLU100001', 'MLU100002', 'MLU100003']);
 });
 
+test('completa portadas principales de distintos libros antes que galerías secundarias', () => {
+  const catalog = {
+    items: [
+      item('MLU100001', {
+        pictures: [
+          'https://http2.mlstatic.com/D_MLU100001_MAIN-O.jpg',
+          'https://http2.mlstatic.com/D_MLU100001_SECOND-O.jpg',
+        ],
+      }),
+      item('MLU100002', {
+        pictures: [
+          'https://http2.mlstatic.com/D_MLU100002_MAIN-O.jpg',
+          'https://http2.mlstatic.com/D_MLU100002_SECOND-O.jpg',
+        ],
+      }),
+    ],
+  };
+
+  const batch = selectCoverBatch(catalog, { schema_version: 1, entries: {} }, { limit: 2 });
+  assert.deepEqual(
+    batch.selected.map(row => `${row.product_id}:${row.position}`),
+    ['MLU100001:0', 'MLU100002:0'],
+  );
+});
+
 test('vuelve a seleccionar una copia reciente de baja resolución al activar Images', () => {
   const now = Date.parse('2026-08-16T12:00:00Z');
   const catalog = { items: [item()] };
