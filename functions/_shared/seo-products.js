@@ -66,4 +66,3 @@ export const INDEXABLE_PAUSED_PRODUCT_PATHS = Object.freeze(
     .filter(item => item.indexWhenPaused && item.sitemapPath)
     .map(item => item.sitemapPath),
 );
-
