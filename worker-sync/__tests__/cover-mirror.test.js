@@ -49,6 +49,10 @@ function item(id = 'MLU123456', patch = {}) {
     id,
     status: 'active',
     available_quantity: 1,
+    price: 1000,
+    currency: 'UYU',
+    domain_id: 'MLU-BOOKS',
+    permalink: `https://articulo.mercadolibre.com.uy/${id}`,
     pictures: [SOURCE.replace('123-O', `${id}-O`)],
     thumbnail: '',
     ...patch,
@@ -193,6 +197,24 @@ test('si la mejora IA falla mantiene la portada original y registra el motivo', 
   assert.equal(entry.current.width, 400);
   assert.match(entry.last_transform_error.message, /temporalmente no disponible/);
   assert.equal(bucket.objects.has(entry.current.object_key), true);
+});
+
+test('no consume Images para un producto que Merchant excluye', async () => {
+  const bucket = new MockR2();
+  const images = imagesBinding();
+  const result = await syncCoverMirror(
+    { COVER_R2: bucket, IMAGES: images },
+    { items: [item('MLU999999', { domain_id: 'MLU-COMPUTER_COMPONENTS' })] },
+    {
+      now: () => new Date('2026-08-16T12:00:00Z'),
+      fetchFn: async () => new Response(pngBytes(400, 600), { headers: { 'content-type': 'image/png' } }),
+    },
+  );
+  assert.equal(result.failed, 0);
+  assert.equal(result.ai_upscaled, 0);
+  assert.equal(result.quality_pending, 0);
+  assert.equal(images.observed.transform, undefined);
+  assert.equal(bucket.manifest().entries['MLU999999:0'].current.width, 400);
 });
 
 test('una descarga fallida conserva la última copia y registra el error', async () => {

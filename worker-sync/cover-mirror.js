@@ -1,3 +1,5 @@
+import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
+
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 export const DEFAULT_COVER_BATCH_SIZE = 250;
 export const COVER_REFRESH_MS = 30 * 24 * 60 * 60 * 1000;
@@ -77,13 +79,21 @@ export function selectCoverBatch(catalog, manifest, {
   limit = DEFAULT_COVER_BATCH_SIZE,
   nowMs = Date.now(),
   aiUpscaleEnabled = false,
+  aiUpscaleProductIds = null,
 } = {}) {
   const candidates = (Array.isArray(catalog?.items) ? catalog.items : [])
     .map(primaryCoverCandidate)
     .filter(Boolean)
     .map(candidate => {
       const entry = manifest?.entries?.[`${candidate.product_id}:0`] || null;
-      return { ...candidate, entry, priority: candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) };
+      const aiUpscaleEligible = aiUpscaleEnabled &&
+        (!aiUpscaleProductIds || aiUpscaleProductIds.has(candidate.product_id));
+      return {
+        ...candidate,
+        entry,
+        aiUpscaleEligible,
+        priority: candidatePriority(candidate, entry, nowMs, aiUpscaleEligible),
+      };
     })
     .filter(candidate => candidate.priority !== null)
     .sort((a, b) => {
@@ -285,7 +295,8 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
   let finalStored = originalStored;
   let transformInfo = null;
   let transformError = null;
-  const shouldUpscale = Boolean(imagesBinding?.input) && Math.min(source.image.width, source.image.height) < TARGET_SHORT_EDGE;
+  const shouldUpscale = candidate.aiUpscaleEligible && Boolean(imagesBinding?.input) &&
+    Math.min(source.image.width, source.image.height) < TARGET_SHORT_EDGE;
   if (shouldUpscale) {
     try {
       const transformed = await aiUpscaleCover(imagesBinding, source.bytes, source.image);
@@ -366,12 +377,30 @@ export async function syncCoverMirror(env, catalog, {
   const nowIso = nowDate.toISOString();
   const manifest = await readManifest(bucket, nowIso);
   const aiUpscaleEnabled = Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
-  const batch = selectCoverBatch(catalog, manifest, { limit, nowMs: nowDate.getTime(), aiUpscaleEnabled });
+  // El plan gratuito admite 5.000 transformaciones únicas mensuales. Se
+  // mejora únicamente el mismo universo deduplicado que recibe Merchant;
+  // las demás fichas igualmente conservan su copia original estable en R2.
+  const merchantItems = dedupeByGtinAndCondition(
+    (Array.isArray(catalog?.items) ? catalog.items : []).filter(isEligibleForFeed),
+  );
+  const aiUpscaleProductIds = new Set(merchantItems.map(item => String(item.id || '').toUpperCase()));
+  const batch = selectCoverBatch(catalog, manifest, {
+    limit,
+    nowMs: nowDate.getTime(),
+    aiUpscaleEnabled,
+    aiUpscaleProductIds,
+  });
   const nextManifest = { ...manifest, updated_at: nowIso, entries: { ...manifest.entries } };
   const results = await mapWithConcurrency(batch.selected, Math.max(1, Number(concurrency) || 1), async candidate => {
     const key = `${candidate.product_id}:0`;
     try {
-      const result = await processCover(bucket, candidate, nowIso, fetchFn, env?.IMAGES);
+      const result = await processCover(
+        bucket,
+        candidate,
+        nowIso,
+        fetchFn,
+        candidate.aiUpscaleEligible ? env?.IMAGES : null,
+      );
       nextManifest.entries[key] = result.entry;
       return { key, status: result.status, quality_status: result.quality_status };
     } catch (error) {
@@ -397,7 +426,9 @@ export async function syncCoverMirror(env, catalog, {
     Math.min(Number(entry.current.width) || 0, Number(entry.current.height) || 0) >= TARGET_SHORT_EDGE
   ).length;
   const qualityPending = aiUpscaleEnabled
-    ? Object.values(nextManifest.entries).filter(entry => needsAiUpscale(entry)).length
+    ? Object.values(nextManifest.entries).filter(entry =>
+        aiUpscaleProductIds.has(String(entry?.product_id || '').toUpperCase()) && needsAiUpscale(entry)
+      ).length
     : null;
   return {
     status: 'completed',
