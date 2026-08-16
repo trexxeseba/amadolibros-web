@@ -9,7 +9,7 @@ compatibility_date = "2024-09-23"
 
 # ── Cron: sincronización automática 1 vez por día — 07:15 UTC (04:15 Montevideo)
 [triggers]
-crons = ["15 7 * * *"]
+crons = ["15 7 * * *", "*/5 * * * *"]
 
 # ── Variables no sensibles ────────────────────────────────────────────────────
 [vars]
@@ -22,6 +22,10 @@ MIN_ACTIVE_ITEMS = "500"
 ML_DESCRIPTION_ENRICH_LIMIT = "100"
 ML_DESCRIPTION_REFRESH_DAYS = "90"
 ML_DESCRIPTION_SLEEP_MS = "100"
+# Copia incremental de portadas primarias. El cron de 5 minutos completa el
+# primer backfill y luego baja automáticamente a mantenimiento horario para
+# cambios y revalidaciones de copias de más de 30 días.
+COVER_MIRROR_BATCH_SIZE = "20"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 INDEXNOW_ENABLED = "true"
 # Clave pública verificada por el archivo homónimo en astro-front/public.
@@ -35,6 +39,10 @@ SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 [[r2_buckets]]
 binding     = "CATALOG_R2"
 bucket_name = "amadolibros-catalog"
+
+[[r2_buckets]]
+binding     = "COVER_R2"
+bucket_name = "amadolibros-images-production"
 
 # ── KV: compartido con Pages — solo para auth:refresh_token ──────────────────
 # NO escribir aquí catalog_index, item:*, catalog:full ni ningún esquema viejo.

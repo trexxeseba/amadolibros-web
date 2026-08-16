@@ -348,6 +348,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     // el MLU antes de obtenerla, para que WhatsApp/Facebook reciban HTTP 200.
     const socialImage  = `${BASE}/book-cover/${encodeURIComponent(item.id)}/cover.jpg`;
     const price         = Number(item.price) || 0;
+    const currency      = String(item.currency || item.currency_id || 'UYU').trim().toUpperCase() || 'UYU';
+    const checkoutCurrencySupported = currency === 'UYU';
     const priceUY       = price.toLocaleString('es-UY');
     const transferAmount = Math.round(price * 0.88);
     const transferPrice = transferAmount.toLocaleString('es-UY');
@@ -355,7 +357,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = item.status === 'active' && stockQty > 0;
-    const hasFreeShipping = inStock && price >= FREE_SHIPPING_THRESHOLD_UYU;
+    const sellableInCheckout = inStock && checkoutCurrencySupported;
+    const hasFreeShipping = sellableInCheckout && price >= FREE_SHIPPING_THRESHOLD_UYU;
     const condition     = formatCondition(item.condition);
     const dimensions    = formatDimensions(item.dimensions);
     const bibliographic = item.bibliographic && typeof item.bibliographic === 'object'
@@ -404,10 +407,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     </details>`
         : '';
 
-    const metaDesc = inStock
+    const metaDesc = sellableInCheckout
         ? (safeAuthor
             ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
             : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
+        : inStock
+          ? `Consultá precio y forma de pago de &quot;${safeTitle}&quot;, publicado en ${escapeHtml(currency)}, en Amado Libros.`
         : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
@@ -423,7 +428,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         schemaProduct.offers = {
             '@type':        'Offer',
             'url':          canonicalUrl,
-            'priceCurrency':'UYU',
+            'priceCurrency': currency,
             'price':        String(price),
             'availability': 'https://schema.org/InStock',
             'seller': {
@@ -483,7 +488,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         schemaProduct.offers.itemCondition = 'https://schema.org/UsedCondition';
     }
 
-    const priceHtml = inStock
+    const priceHtml = sellableInCheckout
         ? `<div class="price-box">
       <div class="price-main">
         <span class="price-main-label">Precio web/tarjeta:</span>
@@ -496,12 +501,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       </div>
       ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</div>' : ''}
     </div>`
+        : inStock
+          ? `<div class="order-box">
+      <strong>Precio publicado: ${escapeHtml(currency)} ${escapeHtml(priceUY)}</strong>
+      <span>Esta publicación no se convierte automáticamente a UYU. Consultanos para confirmar precio y forma de pago, o comprala directamente en MercadoLibre.</span>
+    </div>`
         : `<div class="order-box">
       <strong>¿Buscás este libro?</strong>
       <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>
     </div>`;
 
-    const actionHtml = inStock
+    const actionHtml = sellableInCheckout
         ? `<button
         type="button"
         class="btn btn-cart"
@@ -516,6 +526,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       </button>
       <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
         💬 Consultar por WhatsApp
+      </a>
+      <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
+        Comprar en MercadoLibre
+      </a>`
+        : inStock
+          ? `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+        Consultar precio y forma de pago
       </a>
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
         Comprar en MercadoLibre

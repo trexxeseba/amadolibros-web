@@ -69,8 +69,8 @@ assert_404_page() {
 }
 
 # ── 1. Sintaxis ───────────────────────────────────────────────────────────
-step "Sintaxis JS (functions, scripts, worker-sync)"
-find functions scripts worker-sync -type f -name '*.js' -print0 |
+step "Sintaxis JS/MJS (functions, scripts, worker-sync)"
+find functions scripts worker-sync -type f \( -name '*.js' -o -name '*.mjs' \) -print0 |
   xargs -0 -r -n1 node --check
 
 # ── 2. Suite completa ─────────────────────────────────────────────────────

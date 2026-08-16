@@ -22,9 +22,19 @@ test('mezcla new/used/sin condición/pausado/sin stock: solo activo+stock+new so
     item({ id: 'MLU4', condition: null }),
     item({ id: 'MLU5', condition: 'new', status: 'paused' }),
     item({ id: 'MLU6', condition: 'new', available_quantity: 0 }),
+    item({ id: 'MLU7', condition: 'new', currency: 'USD' }),
   ];
   const result = selectActiveItems(items, 40);
   assert.deepEqual(result.map(b => b.id), ['MLU1']);
+});
+
+test('moneda explícita no-UYU nunca entra a una tarjeta con precio y checkout en pesos', () => {
+  const result = selectActiveItems([
+    item({ id: 'MLU-UYU', currency: 'UYU' }),
+    item({ id: 'MLU-USD', currency: 'USD' }),
+    item({ id: 'MLU-LEGACY', currency: undefined }),
+  ]);
+  assert.deepEqual(new Set(result.map(row => row.id)), new Set(['MLU-UYU', 'MLU-LEGACY']));
 });
 
 test('el filtro de condición corre antes del corte a ACTIVE_COUNT, no después', () => {

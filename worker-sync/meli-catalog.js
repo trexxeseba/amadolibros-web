@@ -14,9 +14,9 @@
  *     total:      number,
  *     updated_at: ISO string,
  *     items: [{
- *       id, title, author, price, status, available_quantity,
+ *       id, title, author, price, currency, status, available_quantity,
  *       thumbnail, pictures, permalink, start_time,
- *       catalog_listing, catalog_product_id, bibliographic
+ *       category_id, domain_id, catalog_listing, catalog_product_id, bibliographic
  *     }]
  *   }
  *
@@ -37,7 +37,7 @@ const DEFAULT_DESCRIPTION_REFRESH_DAYS = 90;
 const DEFAULT_DESCRIPTION_SLEEP_MS = 100;
 const DESCRIPTION_MAX_CHARS = 5000;
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
-  'id,title,price,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,catalog_listing,catalog_product_id';
+  'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id';
 
 // Excepciones verificadas el 2026-08-11 sobre el catálogo productivo. Se
 // reemplaza sólo la secuencia dañada y únicamente para el ID afectado. Si el
@@ -244,6 +244,7 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     title:              repairKnownTitle(raw.id, raw.title),
     author:             extractAuthor(raw),
     price:              raw.price        ?? null,
+    currency:           normalizeUpperCode(raw.currency_id),
     status:             raw.status       || null,
     available_quantity: raw.available_quantity ?? 0,
     condition:          raw.condition    || null,
@@ -251,6 +252,8 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     pictures:           normalizePictures(raw.pictures),
     permalink:          raw.permalink    || null,
     start_time:         raw.start_time   || null,
+    category_id:        normalizeUpperCode(raw.category_id),
+    domain_id:          normalizeUpperCode(raw.domain_id),
     catalog_listing:    typeof raw.catalog_listing === 'boolean' ? raw.catalog_listing : null,
     catalog_product_id: typeof raw.catalog_product_id === 'string' && raw.catalog_product_id.trim()
       ? raw.catalog_product_id.trim()
@@ -261,6 +264,12 @@ export function slimItem(raw, dataQuality = createDataQualitySummary()) {
     bibliographic:      extractBibliographicDetails(attrs),
     dimensions:         extractDimensions(attrs, dataQuality),
   };
+}
+
+function normalizeUpperCode(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toUpperCase();
+  return normalized || null;
 }
 
 export function repairKnownTitle(id, title) {

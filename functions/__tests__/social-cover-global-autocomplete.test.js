@@ -48,6 +48,57 @@ test('el proxy entrega bytes de imagen con caché pública y admite HEAD', async
   }
 });
 
+test('el proxy prioriza la copia R2 y no consulta mlstatic cuando existe', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.caches = { default: { async match() { return null; }, async put() {} } };
+  const hash = 'a'.repeat(64);
+  const objectKey = `covers/v1/objects/${hash}.jpg`;
+  const manifest = {
+    schema_version: 1,
+    updated_at: '2026-08-16T12:00:00Z',
+    entries: {
+      [`${item.id}:0`]: {
+        product_id: item.id,
+        position: 0,
+        current: {
+          object_key: objectKey,
+          sha256: hash,
+          mime: 'image/jpeg',
+          source_url: item.pictures[0],
+        },
+      },
+    },
+  };
+  const bucket = {
+    async get(key) {
+      if (key === 'covers/v1/manifest.json') return { text: async () => JSON.stringify(manifest) };
+      if (key === objectKey) return { body: new Uint8Array([9, 8, 7]) };
+      return null;
+    },
+  };
+  globalThis.fetch = async input => {
+    const url = typeof input === 'string' ? input : input.url;
+    if (url === CATALOG_URL) return Response.json({ items: [item] });
+    throw new Error(`no debía consultar origen: ${url}`);
+  };
+  try {
+    const ctx = {
+      request: new Request(`https://www.amadolibros.com/book-cover/${item.id}/cover.jpg`),
+      params: { path: [item.id, 'cover.jpg'] },
+      env: { APP_ENV: 'production', COVER_R2: bucket },
+      data: {},
+      waitUntil() {},
+    };
+    const response = await coverRequest(ctx);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-cover-source'), 'r2-production');
+    assert.equal(response.headers.get('etag'), `"${hash}"`);
+    assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [9, 8, 7]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('el script compartido apunta a todos los buscadores del catálogo', () => {
   const script = readFileSync(new URL('../../astro-front/public/search-autocomplete.js', import.meta.url), 'utf8');
   assert.match(script, /form\[action="\/catalogo"\] input\[name="q"\]/);

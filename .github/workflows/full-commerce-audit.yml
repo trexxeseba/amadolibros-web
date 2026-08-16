@@ -1,0 +1,81 @@
+name: Full commerce production audit
+
+on:
+  schedule:
+    - cron: '41 8 * * 1'
+  workflow_dispatch:
+    inputs:
+      sample_only:
+        description: 'Auditar una muestra de 300 en lugar del universo completo'
+        type: boolean
+        required: true
+        default: false
+  workflow_run:
+    workflows: ['Deploy to Cloudflare Pages']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-commerce-production
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Select full or post-deploy sample scope
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SAMPLE_ONLY: ${{ inputs.sample_only }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_run" ] || [ "$SAMPLE_ONLY" = "true" ]; then
+            echo "image_limit=300" >> "$GITHUB_OUTPUT"
+            echo "page_limit=300" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_limit=0" >> "$GITHUB_OUTPUT"
+            echo "page_limit=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run live catalog, feed, cover and page audit
+        env:
+          COMMERCE_OUTPUT_DIR: artifacts/commerce
+          COMMERCE_IMAGE_LIMIT: ${{ steps.scope.outputs.image_limit }}
+          COMMERCE_PAGE_LIMIT: ${{ steps.scope.outputs.page_limit }}
+          COMMERCE_CONCURRENCY: '12'
+          COMMERCE_EXPECT_INDEXABLE: 'true'
+        run: node scripts/commerce/full-commerce-audit.mjs
+
+      - name: Upload complete report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-commerce-production-${{ github.run_id }}
+          path: artifacts/commerce/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Block on current critical failures
+        run: |
+          REPORT=$(find artifacts/commerce -name 'full-commerce-audit-*.json' -print -quit)
+          node -e '
+            const fs=require("node:fs");
+            const report=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+            if (report.critical > 0) {
+              throw new Error(`Auditoría comercial detectó ${report.critical} fallas actuales.`);
+            }
+          ' "$REPORT"

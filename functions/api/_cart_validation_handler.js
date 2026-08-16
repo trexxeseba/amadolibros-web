@@ -61,9 +61,10 @@ export function createCartValidationHandler({ fetchCatalog }) {
     }
 
     const items = validateCartAgainstCatalog(body.items, catalog.items);
+    const blockingStatuses = new Set(['sin_stock', 'no_existe', 'moneda_no_admitida']);
     return json({
       items,
-      has_blocking_items: items.some(item => item.status === 'sin_stock' || item.status === 'no_existe'),
+      has_blocking_items: items.some(item => blockingStatuses.has(item.status)),
       has_changes: items.some(item => item.status !== 'ok'),
     });
   };

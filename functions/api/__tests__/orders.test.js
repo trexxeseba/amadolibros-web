@@ -19,6 +19,7 @@ const CATALOG = { items: [
   { id:'T', title:'Umbral', price:500, available_quantity:5, status:'active', thumbnail:null },
   { id:'P', title:'Pausado', price:300, available_quantity:10, status:'paused', thumbnail:null },
   { id:'X', title:'Precio roto', price:'NaN', available_quantity:2, status:'active', thumbnail:null },
+  { id:'USD', title:'Precio en dólares', price:285, currency:'USD', available_quantity:2, status:'active', thumbnail:null },
 ] };
 
 function dbMock({ existing=null, batchError=null, race=null, lookupError=null, strict=false }={}) {
@@ -91,8 +92,8 @@ test('precio del navegador se ignora y manda catálogo', async()=>{
   const body={idempotency_key:'price',cf_turnstile_response:'ok-token',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup', pickup_ack:true,buyer:{name:'T',phone:'099',email:'t@example.com'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);
 });
 
-test('stock, producto, estado y precio inválidos devuelven 422', async()=>{
-  for(const id of ['NOPE','P','X']) {
+test('stock, producto, estado, moneda y precio inválidos devuelven 422', async()=>{
+  for(const id of ['NOPE','P','X','USD']) {
     const b=pickup(id); b.items=[{product_id:id,quantity:1}];
     const result=await call(b);
     assert.equal(result.response.status,422);

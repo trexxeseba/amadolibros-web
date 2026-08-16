@@ -6,6 +6,7 @@ const CATALOG = { items: [
   { id: 'MLU1', title: 'Disponible', author: 'Autora', price: 1000, available_quantity: 2, status: 'active' },
   { id: 'MLU2', title: 'Agotado', author: 'Autor', price: 900, available_quantity: 0, status: 'paused' },
   { id: 'MLU3', title: 'Una unidad', author: '', price: 750, available_quantity: 1, status: 'active' },
+  { id: 'MLU4', title: 'Precio en dólares', author: '', price: 285, currency: 'USD', available_quantity: 1, status: 'active' },
 ] };
 
 function context(body, { method = 'POST', type = 'application/json', length } = {}) {
@@ -40,6 +41,15 @@ test('devuelve estado individual y no bloquea los productos que siguen vendibles
   assert.equal(data.has_blocking_items, true);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow');
+});
+
+test('bloquea moneda no-UYU aunque el producto siga activo y con stock', async () => {
+  const { data } = await call({ items: [
+    { product_id: 'MLU4', quantity: 1, unit_price_uyu: 285 },
+  ] });
+  assert.equal(data.items[0].status, 'moneda_no_admitida');
+  assert.equal(data.items[0].currency, 'USD');
+  assert.equal(data.has_blocking_items, true);
 });
 
 test('actualiza precio y reduce cantidad al stock vigente sin perder la venta', async () => {
