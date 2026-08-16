@@ -67,7 +67,8 @@ test('deploy productivo exige manifest, ficha y bytes R2 antes de quedar verde',
   assert.match(deploy, /s\.with_valid_copy >= 20/);
   assert.match(deploy, /www\.amadolibros\.com\/libro\/\$SAMPLE_ID/);
   assert.match(deploy, /Ficha R2 productiva todavía propagándose/);
-  assert.match(deploy, /grep -Fq "\/preview-cover\/\$SAMPLE_ID\/0\/"/);
-  assert.match(deploy, /x-amado-cover-source: r2-production/i);
+  assert.match(deploy, /grep -Fq "\/book-cover\/\$SAMPLE_ID\/cover\.jpg"/);
+  assert.match(deploy, /\$IMAGE_PATH\?smoke=\$\{\{ github\.sha \}\}/);
+  assert.match(deploy, /x-cover-source: r2-production/i);
   assert.match(deploy, /steps\.cover_r2_smoke\.outcome/);
 });
