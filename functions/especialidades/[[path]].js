@@ -15,6 +15,11 @@ import {
   SEO_SPECIALTIES,
   specialtyPath,
 } from '../_shared/seo-specialties.js';
+import {
+  bookCoverUrl,
+  CARD_IMAGE_SIZES,
+  responsiveImage,
+} from '../_shared/cloudflare-images.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -45,14 +50,22 @@ function errorPage() {
   });
 }
 
-function bookCard(item) {
+function bookCard(item, useCloudflareImages) {
   const href = `/libro/${encodeURIComponent(item.id)}/${slugify(item.title)}`;
-  const image = secureImage(item);
+  const source = useCloudflareImages ? bookCoverUrl(item.id) : secureImage(item);
+  const image = responsiveImage(source, {
+    widths: [240, 360, 480],
+    defaultWidth: 360,
+    sizes: CARD_IMAGE_SIZES,
+  });
   const price = Number(item.price || 0);
   const formattedPrice = price > 0 ? price.toLocaleString('es-UY') : '';
+  const responsiveAttrs = image.srcset
+    ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
+    : '';
   return `<article class="book-card">
-    <a class="cover" href="${href}">${image
-      ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(item.title)}" loading="lazy" width="240" height="360">`
+    <a class="cover" href="${href}">${image.src
+      ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" width="240" height="360">`
       : '<span aria-hidden="true">Libro sin imagen</span>'}</a>
     <div class="book-info"><p class="stock">Disponible</p><h3><a href="${href}">${escapeHtml(item.title)}</a></h3>
     ${item.author ? `<p class="author">${escapeHtml(item.author)}</p>` : ''}
@@ -136,7 +149,7 @@ export async function onRequest(ctx) {
 <div class="actions"><a class="btn primary" href="${requestPath}">Pedir una búsqueda</a><a class="btn secondary" href="/catalogo?q=${encodeURIComponent(specialty.name)}">Buscar en el catálogo</a></div>
 <p class="truth"><strong>Información verificable:</strong> confirmamos título, autor, ISBN, editorial, edición, idioma, formato, precio y plazo. No prometemos disponibilidad ni presentamos una reimpresión como edición actualizada.</p></section>
 <section class="section"><h2>Libros de ${escapeHtml(specialty.name)} disponibles</h2><p class="section-intro">Estos resultados provienen del catálogo vigente de Amado Libros. Si no aparece la referencia exacta, podés pedir una búsqueda manual.</p>
-${items.length ? `<div class="books-grid">${items.map(bookCard).join('')}</div>` : `<div class="card"><h3>No hay coincidencias disponibles ahora</h3><p>La página sigue sirviendo para solicitar una edición concreta por encargo. Pasanos autor, ISBN, editorial o una foto de la tapa.</p></div>`}</section>
+${items.length ? `<div class="books-grid">${items.map(item => bookCard(item, isProduction)).join('')}</div>` : `<div class="card"><h3>No hay coincidencias disponibles ahora</h3><p>La página sigue sirviendo para solicitar una edición concreta por encargo. Pasanos autor, ISBN, editorial o una foto de la tapa.</p></div>`}</section>
 <section class="section"><h2>Áreas que podemos buscar</h2><div class="topic-grid">${specialty.topics.map(topic => `<article class="card"><h3>${escapeHtml(topic)}</h3><p>Buscamos por referencia bibliográfica y verificamos la edición antes de cotizar.</p></article>`).join('')}</div></section>
 <section class="international"><h2>¿Consultás desde España o Latinoamérica?</h2><p>Podés enviarnos el país, la ciudad y los datos del libro. La venta, el medio de pago y un eventual envío internacional se confirman caso a caso antes de asumir cualquier compromiso. Los precios visibles en el catálogo están expresados en pesos uruguayos.</p><div class="actions"><a class="btn secondary" href="${requestPath}">Enviar país y libro buscado</a></div></section>
 <section class="section"><h2>Cómo funciona la búsqueda</h2><div class="process-grid"><article class="card"><h3>1. Identificamos el libro</h3><p>Usamos título, autor, ISBN, editorial, edición o foto para evitar confusiones.</p></article><article class="card"><h3>2. Verificamos mercados</h3><p>Revisamos disponibilidad real en Uruguay, España, Argentina y otros orígenes pertinentes.</p></article><article class="card"><h3>3. Confirmamos antes de vender</h3><p>Informamos edición, formato, moneda, precio, plazo y destino posible antes de avanzar.</p></article></div></section>

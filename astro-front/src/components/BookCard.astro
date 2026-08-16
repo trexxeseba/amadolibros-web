@@ -1,4 +1,6 @@
 ---
+import { responsiveBookCover } from '../lib/cloudflare-images.js';
+
 // HOME-COMERCIAL-1: jerarquía de card aprobada — precio principal, cuotas
 // debajo, transferencia como beneficio secundario, envío gratis cuando
 // corresponde, "Agregar al carrito" como acción principal, WhatsApp como
@@ -35,13 +37,9 @@ function slugify(text: string): string {
     .substring(0, 60);
 }
 
-function httpsImg(url: string, suffix: string): string {
-  return (url || '').replace('http://', 'https://').replace('-I.jpg', suffix);
-}
-
-const img = (book.pictures && book.pictures[0])
-  ? httpsImg(book.pictures[0], '-O.jpg')
-  : httpsImg(book.thumbnail, '-V.jpg');
+// La home deja de entregar mlstatic directamente: usa la portada controlada
+// por Amado Libros (R2 primero) y Cloudflare elige el ancho/formato adecuado.
+const cover = responsiveBookCover(book.id);
 
 const fichaHref = `/libro/${book.id}/${slugify(book.title)}`;
 
@@ -61,7 +59,17 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
 
 <article class="bc-card">
   <a href={fichaHref} class="bc-img-link" tabindex="-1" aria-hidden="true">
-    <img src={img} alt="" loading="lazy" decoding="async" class="bc-img" />
+    <img
+      src={cover.src}
+      srcset={cover.srcset}
+      sizes={cover.sizes}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      width="280"
+      height="373"
+      class="bc-img"
+    />
   </a>
 
   <div class="bc-body">
@@ -90,7 +98,7 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
         data-id={book.id}
         data-title={book.title}
         data-price={book.price}
-        data-thumbnail={img}
+        data-thumbnail={cover.src}
         data-max-qty={book.available_quantity}
         aria-label={`Agregar "${book.title}" al carrito`}
       >

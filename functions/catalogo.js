@@ -53,6 +53,11 @@ import {
     serverTimingValue,
 } from './_shared/perf.js';
 import { previewCoverUrl } from './_shared/preview-cover.js';
+import {
+    bookCoverUrl,
+    CARD_IMAGE_SIZES,
+    responsiveImage,
+} from './_shared/cloudflare-images.js';
 
 const MAX_RESULTS = 48;
 const WA = 'https://wa.me/59899841325';
@@ -700,9 +705,15 @@ export async function onRequest(ctx) {
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
         const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
-        const img   = escapeHtml(
-            r2Covers[idx] || httpsImg(b.pictures?.[0] || b.thumbnail || '')
-        );
+        const fallbackImage = ctx.env?.APP_ENV === 'production'
+            ? bookCoverUrl(b.id)
+            : httpsImg(b.pictures?.[0] || b.thumbnail || '');
+        const image = responsiveImage(r2Covers[idx] || fallbackImage, {
+            widths: [240, 360, 480],
+            defaultWidth: 360,
+            sizes: CARD_IMAGE_SIZES,
+        });
+        const img = escapeHtml(image.src);
         const title = escapeHtml(b.title);
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
@@ -719,8 +730,11 @@ export async function onRequest(ctx) {
         const loading  = idx < 8 ? 'eager' : 'lazy';
         const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
         const orderWaHref = `${WA}?text=${encodeURIComponent(buildOrderWaMessage(b, href))}`;
+        const responsiveAttrs = image.srcset
+            ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
+            : '';
         const imgTag = img
-            ? `<img src="${img}" alt="${title}" loading="${loading}" decoding="async">`
+            ? `<img src="${img}"${responsiveAttrs} alt="${title}" loading="${loading}" decoding="async" width="280" height="373">`
             : `<div class="rc-no-img">📚</div>`;
 
         const badge = available
