@@ -1,0 +1,111 @@
+<section class="delivery-coordination" aria-labelledby="delivery-coordination-title">
+  <div class="delivery-coordination-inner">
+    <div class="delivery-coordination-icon" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none">
+        <path d="M3 19h17V9H3v10Zm17-7h5l4 5v2h-9v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="8" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="24" cy="22" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+    </div>
+
+    <div class="delivery-coordination-copy">
+      <p class="delivery-coordination-eyebrow">Entregas en Montevideo</p>
+      <h2 id="delivery-coordination-title">El cadete no llega de sorpresa.</h2>
+      <p>
+        Antes de enviar tu pedido, coordinamos contigo la hora o franja en la que podés recibirlo.
+        Si el cadete llega y no estás, no te preocupes: te contactamos para resolver cómo completar la entrega.
+      </p>
+    </div>
+
+    <a href="/envios">Ver cómo funcionan los envíos <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<style>
+  .delivery-coordination {
+    padding: 1rem 1.25rem;
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .delivery-coordination-inner {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.9rem 1rem;
+    align-items: center;
+  }
+
+  .delivery-coordination-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--salmon);
+  }
+
+  .delivery-coordination-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .delivery-coordination-copy {
+    min-width: 0;
+  }
+
+  .delivery-coordination-eyebrow {
+    margin: 0 0 0.15rem;
+    color: var(--salmon);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .delivery-coordination h2 {
+    margin: 0;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 3vw, 1.55rem);
+    line-height: 1.15;
+  }
+
+  .delivery-coordination-copy > p:last-child {
+    margin: 0.4rem 0 0;
+    max-width: 780px;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .delivery-coordination a {
+    grid-column: 2;
+    justify-self: start;
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    font-weight: 800;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (min-width: 820px) {
+    .delivery-coordination {
+      padding: 1.25rem 2rem;
+    }
+
+    .delivery-coordination-inner {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 1.25rem;
+    }
+
+    .delivery-coordination a {
+      grid-column: auto;
+      justify-self: end;
+    }
+  }
+</style>
