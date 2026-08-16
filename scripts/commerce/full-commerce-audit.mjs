@@ -261,11 +261,24 @@ export async function auditPages(urls, baseUrl, { limit = 0, concurrency = 12, e
     try {
       const response = await fetchWithRetries(target, { headers: { 'user-agent': 'AmadoLibros-Full-Commerce-Audit/1.0' } });
       const html = await response.text();
-      const inspection = inspectProductHtml(html, target, { expectIndexable });
+      // fetch sigue 301/302. La canónica debe coincidir con la URL final, no
+      // con el slug histórico que inició la solicitud. El origen sí debe
+      // permanecer dentro del Preview/Producción auditado.
+      const finalUrl = response.url || target;
+      const inspection = inspectProductHtml(html, finalUrl, { expectIndexable });
       const issues = [];
       if (response.status !== 200) issues.push(`HTTP_${response.status}`);
+      if (new URL(finalUrl).origin !== new URL(baseUrl).origin) issues.push('UNEXPECTED_REDIRECT_ORIGIN');
       issues.push(...inspection.issues);
-      return { url: target, status: response.status, ok: issues.length === 0, issues, ...inspection };
+      return {
+        requested_url: target,
+        url: finalUrl,
+        redirected: finalUrl !== target,
+        status: response.status,
+        ok: issues.length === 0,
+        issues,
+        ...inspection,
+      };
     } catch (error) {
       return { url: target, status: null, ok: false, issues: ['NETWORK_ERROR'], error: String(error?.message || error) };
     }
@@ -365,6 +378,12 @@ async function main() {
       inspected: report.pages.inspected,
       passed: report.pages.passed,
       failed: report.pages.failed,
+      failure_examples: report.pages.failures.slice(0, 10).map(row => ({
+        requested_url: row.requested_url,
+        url: row.url,
+        status: row.status,
+        issues: row.issues,
+      })),
     },
   }, null, 2));
   console.log(`Escrito: ${outputPath}`);
