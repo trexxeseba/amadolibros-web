@@ -55,6 +55,31 @@ function item(id = 'MLU123456', patch = {}) {
   };
 }
 
+function imagesBinding({ fail = false } = {}) {
+  const observed = {};
+  return {
+    observed,
+    input() {
+      const chain = {
+        transform(options) {
+          observed.transform = options;
+          return chain;
+        },
+        async output(options) {
+          observed.output = options;
+          if (fail) throw new Error('AI temporalmente no disponible');
+          return {
+            response: () => new Response(pngBytes(1024, 1536, 7), {
+              headers: { 'content-type': 'image/png' },
+            }),
+          };
+        },
+      };
+      return chain;
+    },
+  };
+}
+
 test('normaliza miniatura y excluye productos no activos o sin origen ML', () => {
   assert.equal(
     primaryCoverCandidate(item('MLU123456', { pictures: [], thumbnail: 'http://http2.mlstatic.com/D_X-I.jpg' })).source_url,
@@ -85,6 +110,27 @@ test('prioriza faltantes, después URL cambiada y al final revalidaciones vencid
   assert.deepEqual(batch.selected.map(row => row.product_id), ['MLU100001', 'MLU100002', 'MLU100003']);
 });
 
+test('vuelve a seleccionar una copia reciente de baja resolución al activar Images', () => {
+  const now = Date.parse('2026-08-16T12:00:00Z');
+  const catalog = { items: [item()] };
+  const manifest = {
+    schema_version: 1,
+    updated_at: '2026-08-16T11:00:00Z',
+    entries: {
+      'MLU123456:0': {
+        current: {
+          object_key: 'covers/v1/objects/low.png',
+          source_url: item().pictures[0],
+          mime: 'image/png', width: 400, height: 600,
+        },
+        last_validated_at: '2026-08-16T11:00:00Z',
+      },
+    },
+  };
+  assert.equal(selectCoverBatch(catalog, manifest, { nowMs: now }).selected.length, 0);
+  assert.equal(selectCoverBatch(catalog, manifest, { nowMs: now, aiUpscaleEnabled: true }).selected.length, 1);
+});
+
 test('copia bytes verificados a R2 y publica el manifest al final', async () => {
   const bucket = new MockR2();
   const result = await syncCoverMirror(
@@ -102,6 +148,50 @@ test('copia bytes verificados a R2 y publica el manifest al final', async () => 
   assert.match(entry.current.object_key, /^covers\/v1\/objects\/[a-f0-9]{64}\.png$/);
   assert.equal(entry.current.width, 600);
   assert.equal(entry.current.height, 900);
+  assert.equal(bucket.objects.has(entry.current.object_key), true);
+});
+
+test('Cloudflare Images mejora la copia R2 y conserva el original inmutable', async () => {
+  const bucket = new MockR2();
+  const images = imagesBinding();
+  const result = await syncCoverMirror(
+    { COVER_R2: bucket, IMAGES: images },
+    { items: [item()] },
+    {
+      now: () => new Date('2026-08-16T12:00:00Z'),
+      fetchFn: async () => new Response(pngBytes(400, 600), { headers: { 'content-type': 'image/png' } }),
+    },
+  );
+  assert.equal(result.failed, 0);
+  assert.equal(result.ai_upscaled, 1);
+  assert.equal(result.quality_pending, 0);
+  assert.deepEqual(images.observed.transform, { width: 1024, fit: 'scale-up', upscale: 'generate' });
+  assert.deepEqual(images.observed.output, { format: 'image/jpeg', quality: 90 });
+  const entry = bucket.manifest().entries['MLU123456:0'];
+  assert.equal(entry.current.width, 1024);
+  assert.equal(entry.current.height, 1536);
+  assert.equal(entry.current.transform.kind, 'cloudflare-ai-upscale');
+  assert.notEqual(entry.current.object_key, entry.current.original_object_key);
+  assert.equal(bucket.objects.has(entry.current.object_key), true);
+  assert.equal(bucket.objects.has(entry.current.original_object_key), true);
+});
+
+test('si la mejora IA falla mantiene la portada original y registra el motivo', async () => {
+  const bucket = new MockR2();
+  const result = await syncCoverMirror(
+    { COVER_R2: bucket, IMAGES: imagesBinding({ fail: true }) },
+    { items: [item()] },
+    {
+      now: () => new Date('2026-08-16T12:00:00Z'),
+      fetchFn: async () => new Response(pngBytes(400, 600), { headers: { 'content-type': 'image/png' } }),
+    },
+  );
+  assert.equal(result.failed, 0);
+  assert.equal(result.quality_pending, 1);
+  assert.equal(result.results[0].quality_status, 'original-retained');
+  const entry = bucket.manifest().entries['MLU123456:0'];
+  assert.equal(entry.current.width, 400);
+  assert.match(entry.last_transform_error.message, /temporalmente no disponible/);
   assert.equal(bucket.objects.has(entry.current.object_key), true);
 });
 

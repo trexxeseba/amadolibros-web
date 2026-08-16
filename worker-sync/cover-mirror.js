@@ -1,11 +1,14 @@
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 export const DEFAULT_COVER_BATCH_SIZE = 250;
 export const COVER_REFRESH_MS = 30 * 24 * 60 * 60 * 1000;
+export const COVER_AI_TRANSFORM_VERSION = 1;
 
 const ALLOWED_HOST = 'http2.mlstatic.com';
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
 const DEFAULT_CONCURRENCY = 6;
+const TARGET_SHORT_EDGE = 1024;
+const TRANSFORM_RETRY_MS = 24 * 60 * 60 * 1000;
 
 function emptyManifest(nowIso) {
   return { schema_version: 1, updated_at: nowIso, entries: {} };
@@ -49,24 +52,38 @@ async function readManifest(bucket, nowIso) {
   return parsed;
 }
 
-function candidatePriority(candidate, entry, nowMs) {
+function needsAiUpscale(entry) {
+  const current = entry?.current;
+  if (!current?.object_key) return false;
+  const shortEdge = Math.min(Number(current.width) || 0, Number(current.height) || 0);
+  if (shortEdge >= TARGET_SHORT_EDGE) return false;
+  return current.transform?.kind !== 'cloudflare-ai-upscale' ||
+    Number(current.transform?.version) !== COVER_AI_TRANSFORM_VERSION;
+}
+
+function candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) {
   if (!entry?.current?.object_key) return 0;
   if (entry.current.source_url !== candidate.source_url) return 1;
+  if (aiUpscaleEnabled && needsAiUpscale(entry)) {
+    const attempted = Date.parse(entry.last_transform_attempt_at || '');
+    if (!Number.isFinite(attempted) || nowMs - attempted >= TRANSFORM_RETRY_MS) return 2;
+  }
   const validated = Date.parse(entry.last_validated_at || '');
-  if (!Number.isFinite(validated) || nowMs - validated >= COVER_REFRESH_MS) return 2;
+  if (!Number.isFinite(validated) || nowMs - validated >= COVER_REFRESH_MS) return 3;
   return null;
 }
 
 export function selectCoverBatch(catalog, manifest, {
   limit = DEFAULT_COVER_BATCH_SIZE,
   nowMs = Date.now(),
+  aiUpscaleEnabled = false,
 } = {}) {
   const candidates = (Array.isArray(catalog?.items) ? catalog.items : [])
     .map(primaryCoverCandidate)
     .filter(Boolean)
     .map(candidate => {
       const entry = manifest?.entries?.[`${candidate.product_id}:0`] || null;
-      return { ...candidate, entry, priority: candidatePriority(candidate, entry, nowMs) };
+      return { ...candidate, entry, priority: candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) };
     })
     .filter(candidate => candidate.priority !== null)
     .sort((a, b) => {
@@ -165,6 +182,70 @@ async function sha256Hex(bytes) {
   return [...digest].map(value => value.toString(16).padStart(2, '0')).join('');
 }
 
+async function storeImmutable(bucket, bytes, image, nowIso, metadata = {}) {
+  const sha256 = await sha256Hex(bytes);
+  const objectKey = `covers/v1/objects/${sha256}.${image.ext}`;
+  const existing = await bucket.head(objectKey);
+  if (existing && Number(existing.size) !== bytes.byteLength) {
+    throw new Error('Objeto R2 existente con tamaño incoherente.');
+  }
+  if (!existing) {
+    await bucket.put(objectKey, bytes, {
+      httpMetadata: { contentType: image.mime, cacheControl: 'public, max-age=31536000, immutable' },
+      customMetadata: { sha256, importedAt: nowIso, sourceHost: ALLOWED_HOST, ...metadata },
+    });
+    const stored = await bucket.head(objectKey);
+    if (!stored || Number(stored.size) !== bytes.byteLength) {
+      throw new Error('Falló la verificación de escritura en R2.');
+    }
+  }
+  return { objectKey, sha256 };
+}
+
+async function readStoredOriginal(bucket, candidate) {
+  if (!needsAiUpscale(candidate.entry) || candidate.entry.current.source_url !== candidate.source_url) return null;
+  const current = candidate.entry.current;
+  const key = current.original_object_key || current.object_key;
+  const object = await bucket.get(key);
+  if (!object) return null;
+  let buffer;
+  if (typeof object.arrayBuffer === 'function') buffer = await object.arrayBuffer();
+  else if (object.body instanceof Uint8Array) buffer = object.body;
+  else if (object.body) buffer = await new Response(object.body).arrayBuffer();
+  else return null;
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_IMAGE_BYTES) return null;
+  const image = inspectCoverBytes(bytes, current.original_mime || current.mime);
+  return {
+    bytes,
+    image,
+    sourceValidators: candidate.entry.source_validators || { etag: null, last_modified: null },
+    originalObjectKey: key,
+  };
+}
+
+async function aiUpscaleCover(imagesBinding, bytes, image) {
+  if (!imagesBinding || typeof imagesBinding.input !== 'function' ||
+      Math.min(image.width, image.height) >= TARGET_SHORT_EDGE) {
+    return null;
+  }
+  const transform = image.width <= image.height
+    ? { width: TARGET_SHORT_EDGE, fit: 'scale-up', upscale: 'generate' }
+    : { height: TARGET_SHORT_EDGE, fit: 'scale-up', upscale: 'generate' };
+  const stream = new Response(bytes).body;
+  const output = await imagesBinding.input(stream)
+    .transform(transform)
+    .output({ format: 'image/jpeg', quality: 90 });
+  const response = output.response();
+  if (!response?.ok) throw new Error(`Cloudflare Images respondió HTTP ${response?.status || 500}.`);
+  const transformedBytes = await readLimitedBody(response);
+  const transformedImage = inspectCoverBytes(transformedBytes, response.headers.get('content-type'));
+  if (Math.min(transformedImage.width, transformedImage.height) < TARGET_SHORT_EDGE) {
+    throw new Error('Cloudflare Images no alcanzó el lado corto objetivo de 1024 px.');
+  }
+  return { bytes: transformedBytes, image: transformedImage, transform };
+}
+
 async function fetchCover(candidate, fetchFn) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -180,25 +261,52 @@ async function fetchCover(candidate, fetchFn) {
     if (!response.ok) throw new Error(`Origen respondió HTTP ${response.status}.`);
     const bytes = await readLimitedBody(response);
     const image = inspectCoverBytes(bytes, response.headers.get('content-type'));
-    return { response, bytes, image };
+    return {
+      bytes,
+      image,
+      sourceValidators: {
+        etag: response.headers.get('etag') || null,
+        last_modified: response.headers.get('last-modified') || null,
+      },
+      originalObjectKey: null,
+    };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function processCover(bucket, candidate, nowIso, fetchFn) {
-  const { response, bytes, image } = await fetchCover(candidate, fetchFn);
-  const sha256 = await sha256Hex(bytes);
-  const objectKey = `covers/v1/objects/${sha256}.${image.ext}`;
-  const existing = await bucket.head(objectKey);
-  if (existing && Number(existing.size) !== bytes.byteLength) throw new Error('Objeto R2 existente con tamaño incoherente.');
-  if (!existing) {
-    await bucket.put(objectKey, bytes, {
-      httpMetadata: { contentType: image.mime, cacheControl: 'public, max-age=31536000, immutable' },
-      customMetadata: { sha256, importedAt: nowIso, sourceHost: ALLOWED_HOST },
-    });
-    const stored = await bucket.head(objectKey);
-    if (!stored || Number(stored.size) !== bytes.byteLength) throw new Error('Falló la verificación de escritura en R2.');
+async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
+  const source = await readStoredOriginal(bucket, candidate) || await fetchCover(candidate, fetchFn);
+  const originalStored = source.originalObjectKey
+    ? { objectKey: source.originalObjectKey, sha256: candidate.entry.current.original_sha256 || candidate.entry.current.sha256 }
+    : await storeImmutable(bucket, source.bytes, source.image, nowIso);
+  let finalBytes = source.bytes;
+  let finalImage = source.image;
+  let finalStored = originalStored;
+  let transformInfo = null;
+  let transformError = null;
+  const shouldUpscale = Boolean(imagesBinding?.input) && Math.min(source.image.width, source.image.height) < TARGET_SHORT_EDGE;
+  if (shouldUpscale) {
+    try {
+      const transformed = await aiUpscaleCover(imagesBinding, source.bytes, source.image);
+      if (transformed) {
+        finalBytes = transformed.bytes;
+        finalImage = transformed.image;
+        finalStored = await storeImmutable(bucket, finalBytes, finalImage, nowIso, {
+          transformedBy: 'cloudflare-images-ai',
+          originalSha256: originalStored.sha256,
+        });
+        transformInfo = {
+          kind: 'cloudflare-ai-upscale',
+          version: COVER_AI_TRANSFORM_VERSION,
+          target_short_edge: TARGET_SHORT_EDGE,
+          original_width: source.image.width,
+          original_height: source.image.height,
+        };
+      }
+    } catch (error) {
+      transformError = String(error?.message || 'Error').slice(0, 240);
+    }
   }
   const previousKey = candidate.entry?.current?.object_key || null;
   return {
@@ -206,24 +314,28 @@ async function processCover(bucket, candidate, nowIso, fetchFn) {
       product_id: candidate.product_id,
       position: 0,
       current: {
-        object_key: objectKey,
-        sha256,
-        bytes: bytes.byteLength,
-        mime: image.mime,
-        width: image.width,
-        height: image.height,
+        object_key: finalStored.objectKey,
+        sha256: finalStored.sha256,
+        bytes: finalBytes.byteLength,
+        mime: finalImage.mime,
+        width: finalImage.width,
+        height: finalImage.height,
+        original_object_key: originalStored.objectKey,
+        original_sha256: originalStored.sha256,
+        original_mime: source.image.mime,
         source_url: candidate.source_url,
         imported_at: nowIso,
+        transform: transformInfo,
       },
-      previous_object_key: previousKey && previousKey !== objectKey ? previousKey : candidate.entry?.previous_object_key || null,
-      source_validators: {
-        etag: response.headers.get('etag') || null,
-        last_modified: response.headers.get('last-modified') || null,
-      },
+      previous_object_key: previousKey && previousKey !== finalStored.objectKey ? previousKey : candidate.entry?.previous_object_key || null,
+      source_validators: source.sourceValidators,
       last_validated_at: nowIso,
+      last_transform_attempt_at: shouldUpscale ? nowIso : candidate.entry?.last_transform_attempt_at || null,
+      last_transform_error: transformError ? { at: nowIso, message: transformError } : null,
       last_error: null,
     },
-    status: previousKey === objectKey ? 'revalidated' : 'imported',
+    status: previousKey === finalStored.objectKey ? 'revalidated' : 'imported',
+    quality_status: transformInfo ? 'ai-upscaled' : transformError ? 'original-retained' : 'native',
   };
 }
 
@@ -253,14 +365,15 @@ export async function syncCoverMirror(env, catalog, {
   const nowDate = now();
   const nowIso = nowDate.toISOString();
   const manifest = await readManifest(bucket, nowIso);
-  const batch = selectCoverBatch(catalog, manifest, { limit, nowMs: nowDate.getTime() });
+  const aiUpscaleEnabled = Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
+  const batch = selectCoverBatch(catalog, manifest, { limit, nowMs: nowDate.getTime(), aiUpscaleEnabled });
   const nextManifest = { ...manifest, updated_at: nowIso, entries: { ...manifest.entries } };
   const results = await mapWithConcurrency(batch.selected, Math.max(1, Number(concurrency) || 1), async candidate => {
     const key = `${candidate.product_id}:0`;
     try {
-      const result = await processCover(bucket, candidate, nowIso, fetchFn);
+      const result = await processCover(bucket, candidate, nowIso, fetchFn, env?.IMAGES);
       nextManifest.entries[key] = result.entry;
-      return { key, status: result.status };
+      return { key, status: result.status, quality_status: result.quality_status };
     } catch (error) {
       nextManifest.entries[key] = {
         ...(candidate.entry || { product_id: candidate.product_id, position: 0, current: null }),
@@ -278,6 +391,14 @@ export async function syncCoverMirror(env, catalog, {
   const validCopies = Object.values(nextManifest.entries).filter(entry => entry?.current?.object_key).length;
   const imported = results.filter(result => ['imported', 'revalidated'].includes(result.status)).length;
   const failed = results.filter(result => result.status === 'failed').length;
+  const aiUpscaled = Object.values(nextManifest.entries).filter(entry =>
+    entry?.current?.transform?.kind === 'cloudflare-ai-upscale' &&
+    Number(entry.current.transform.version) === COVER_AI_TRANSFORM_VERSION &&
+    Math.min(Number(entry.current.width) || 0, Number(entry.current.height) || 0) >= TARGET_SHORT_EDGE
+  ).length;
+  const qualityPending = aiUpscaleEnabled
+    ? Object.values(nextManifest.entries).filter(entry => needsAiUpscale(entry)).length
+    : null;
   return {
     status: 'completed',
     attempted: results.length,
@@ -288,6 +409,8 @@ export async function syncCoverMirror(env, catalog, {
     // de reintento de 5 minutos a una hora.
     pending: Math.max(0, batch.total_candidates - imported),
     valid_copies: validCopies,
+    ai_upscaled: aiUpscaled,
+    quality_pending: qualityPending,
     results,
   };
 }

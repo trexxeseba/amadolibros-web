@@ -44,6 +44,12 @@ bucket_name = "amadolibros-catalog"
 binding     = "COVER_R2"
 bucket_name = "amadolibros-images-production"
 
+# Cloudflare Images Free: una única variante de alta resolución por portada.
+# El Worker usa upscale=generate (IA) sólo cuando el lado corto es menor a
+# 1024 px y conserva el original en R2 si la transformación falla.
+[images]
+binding = "IMAGES"
+
 # ── KV: compartido con Pages — solo para auth:refresh_token ──────────────────
 # NO escribir aquí catalog_index, item:*, catalog:full ni ningún esquema viejo.
 [[kv_namespaces]]

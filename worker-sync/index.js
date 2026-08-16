@@ -565,6 +565,8 @@ export async function runCoverMirror(env, { limit = 250 } = {}, {
       failed: result.failed ?? null,
       pending: result.pending ?? null,
       valid_copies: result.valid_copies ?? null,
+      ai_upscaled: result.ai_upscaled ?? null,
+      quality_pending: result.quality_pending ?? null,
     }));
     if (result.status === 'completed' && result.pending === 0) {
       await kvPut(env, 'cover-mirror:backfill_complete', 'true');
