@@ -87,7 +87,9 @@ export function normalizeImages(item, previewCoverSrc = '') {
     // `thumbnail` es una versión -I de la primera portada y no una foto
     // adicional. Solo se usa como fallback si ML no entregó pictures[].
     if (pictures.length === 0 && item.thumbnail) pictures.push(httpsImg(item.thumbnail));
-    const normalized = [...new Set(pictures.filter(Boolean))].slice(0, 6);
+    // Mercado Libre suele entregar menos, pero se preserva la galería oficial
+    // completa con una guarda amplia y coherente con el proxy 0..15.
+    const normalized = [...new Set(pictures.filter(Boolean))].slice(0, 16);
     if (previewCoverSrc && normalized.length > 0) normalized[0] = previewCoverSrc;
     if (previewCoverSrc && normalized.length === 0) normalized.push(previewCoverSrc);
     return normalized;
@@ -381,10 +383,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
-    const images       = normalizeImages(item, previewCoverSrc);
-    if (!isPreview && images.length > 0 && !previewCoverSrc) {
-        images[0] = bookCoverUrl(item.id);
-    }
+    const sourceImages = normalizeImages(item, previewCoverSrc);
+    const images       = isPreview
+        ? sourceImages
+        : sourceImages.map((_, position) => bookCoverUrl(item.id, position));
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],

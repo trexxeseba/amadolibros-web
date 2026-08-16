@@ -1,6 +1,7 @@
 import { BASE } from './catalog.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
+const MAX_GALLERY_IMAGES = 16;
 const DEFAULT_WIDTHS = [240, 360, 480];
 
 function positiveInteger(value) {
@@ -18,13 +19,17 @@ function sameProductionZone(source) {
 }
 
 /**
- * Portada primaria controlada por Amado Libros. El endpoint prioriza R2 y
+ * Imagen de galería controlada por Amado Libros. El endpoint prioriza R2 y
  * conserva Mercado Libre únicamente como fallback mientras termina el mirror.
  */
-export function bookCoverUrl(productId) {
+export function bookCoverUrl(productId, position = 0) {
   const id = String(productId || '').toUpperCase();
   if (!PRODUCT_ID_RE.test(id)) return '';
-  return `${BASE}/book-cover/${encodeURIComponent(id)}/cover.jpg`;
+  const normalizedPosition = Number.isInteger(position) && position >= 0 && position < MAX_GALLERY_IMAGES
+    ? position
+    : 0;
+  const filename = normalizedPosition === 0 ? 'cover.jpg' : `cover-${normalizedPosition + 1}.jpg`;
+  return `${BASE}/book-cover/${encodeURIComponent(id)}/${filename}`;
 }
 
 /**

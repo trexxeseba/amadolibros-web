@@ -187,7 +187,7 @@ test('Ficha usa la portada R2 sólo como primera imagen y conserva las secundari
   assert.match(html, new RegExp(`data-thumbnail="${previewSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
 });
 
-test('Ficha productiva entrega la portada R2 con srcset de Cloudflare Images', () => {
+test('Ficha productiva entrega el proxy propio con srcset de Cloudflare Images', () => {
   const productionSrc = `https://www.amadolibros.com/preview-cover/${ID}/0/${HASH}.jpg`;
   const html = renderPage({
     id: ID,
@@ -203,5 +203,5 @@ test('Ficha productiva entrega la portada R2 con srcset de Cloudflare Images', (
   }, 'libro-responsivo', false, '', productionSrc);
   assert.match(html, /class="cover-main"[^>]+\/cdn-cgi\/image\/format=auto/);
   assert.match(html, /srcset="[^"]+320w,[^"]+480w,[^"]+768w,[^"]+1024w"/);
-  assert.match(html, /onerror=redirect\/preview-cover\/MLU123456789\/0\//);
+  assert.match(html, /onerror=redirect\/book-cover\/MLU123456789\/cover\.jpg/);
 });

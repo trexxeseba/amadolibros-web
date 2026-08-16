@@ -239,7 +239,11 @@ async function publishPausedCatalog(env, {
 
   try {
     const accessToken = await getAccessTokenFn(env);
-    const catalog = await buildCatalogFn(env, accessToken);
+    const catalog = await buildCatalogFn(env, accessToken, {
+      // Preview conserva su aislamiento: la caché compartida de galerías y
+      // el mirror R2 se actualizan únicamente desde la publicación real.
+      enrichCatalogPictures: scope === 'production',
+    });
     const summary = summarizeCatalog(catalog);
 
     if (summary.invalid > 0 || summary.duplicate_ids > 0 || summary.paused === 0) {
@@ -297,6 +301,22 @@ async function publishPausedCatalog(env, {
       },
     });
 
+    let coverMirror = null;
+    if (scope === 'production') {
+      try {
+        coverMirror = await syncCoverMirror(env, catalog, {
+          limit: Math.max(20, Number(env.COVER_MIRROR_BATCH_SIZE) || 100),
+          includePaused: true,
+        });
+      } catch (error) {
+        console.warn(`[${errorLabel} catalog] Mirror de galerías pendiente: ${error.message}`);
+        coverMirror = {
+          status: 'error',
+          error: String(error?.message || 'Error').slice(0, 240),
+        };
+      }
+    }
+
     const samplePaused = catalog.items.find(item => item.status === 'paused') || null;
     return {
       status: statusOk,
@@ -321,6 +341,7 @@ async function publishPausedCatalog(env, {
         index_gzip_bytes: artifacts.active_index.gzip_bytes,
       },
       data_quality: catalog.data_quality || null,
+      cover_mirror: coverMirror,
       sample_paused: samplePaused
         ? { id: samplePaused.id, title: samplePaused.title }
         : null,
@@ -449,6 +470,7 @@ export async function runSync(env, options = {}, {
     const catalog = await buildCatalogFn(env, accessToken, {
       statuses: ['active'],
       enrichDescriptions: true,
+      enrichCatalogPictures: true,
     });
 
     // 3. Publicar en R2 (staging → validación → promote)

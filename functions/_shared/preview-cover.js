@@ -10,7 +10,8 @@ function normalizeSourceUrl(raw) {
     if (typeof raw !== 'string' || raw.trim() === '') return null;
     try {
         const url = new URL(raw.trim());
-        if (url.hostname !== 'http2.mlstatic.com' ||
+        const hostname = url.hostname.toLowerCase();
+        if (!(hostname === 'mlstatic.com' || hostname.endsWith('.mlstatic.com')) ||
             !['http:', 'https:'].includes(url.protocol)) return null;
         url.protocol = 'https:';
         url.hash = '';

@@ -1,10 +1,15 @@
 const BASE = 'https://www.amadolibros.com';
 const PRODUCT_ID_RE = /^MLU\d+$/;
+const MAX_GALLERY_IMAGES = 16;
 
-export function bookCoverUrl(productId) {
+export function bookCoverUrl(productId, position = 0) {
   const id = String(productId || '').toUpperCase();
   if (!PRODUCT_ID_RE.test(id)) return '';
-  return `${BASE}/book-cover/${encodeURIComponent(id)}/cover.jpg`;
+  const normalizedPosition = Number.isInteger(position) && position >= 0 && position < MAX_GALLERY_IMAGES
+    ? position
+    : 0;
+  const filename = normalizedPosition === 0 ? 'cover.jpg' : `cover-${normalizedPosition + 1}.jpg`;
+  return `${BASE}/book-cover/${encodeURIComponent(id)}/${filename}`;
 }
 
 export function cloudflareImageUrl(source, width, quality = 85) {

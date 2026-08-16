@@ -35,6 +35,11 @@ const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
 const DEFAULT_DESCRIPTION_ENRICH_LIMIT = 100;
 const DEFAULT_DESCRIPTION_REFRESH_DAYS = 90;
 const DEFAULT_DESCRIPTION_SLEEP_MS = 100;
+const DEFAULT_GALLERY_ENRICH_LIMIT = 300;
+const DEFAULT_GALLERY_REFRESH_DAYS = 90;
+const DEFAULT_GALLERY_SLEEP_MS = 75;
+const CATALOG_GALLERY_CACHE_KEY = 'catalog-product-galleries/v1/cache.json';
+const MAX_GALLERY_IMAGES = 16;
 const DESCRIPTION_MAX_CHARS = 5000;
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
   'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id';
@@ -77,6 +82,7 @@ export function createSyncRetryBudget(maxWaitMs = ML_SYNC_MAX_RETRY_WAIT_MS) {
 export async function buildCatalog(env, accessToken, {
   statuses = ['active', 'paused'],
   enrichDescriptions = false,
+  enrichCatalogPictures = false,
   retryBudget = createSyncRetryBudget(),
   mlGetDeps = {},
 } = {}) {
@@ -114,6 +120,14 @@ export async function buildCatalog(env, accessToken, {
 
   if (enrichDescriptions) {
     dataQuality.descriptions = await enrichCatalogDescriptions(
+      catalogItems,
+      env,
+      accessToken,
+      { retryBudget, mlGetDeps },
+    );
+  }
+  if (enrichCatalogPictures) {
+    dataQuality.catalog_product_galleries = await enrichCatalogProductPictures(
       catalogItems,
       env,
       accessToken,
@@ -628,13 +642,14 @@ export function extractDimensions(attrs, dataQuality = createDataQualitySummary(
 }
 
 /**
- * Convierte el array pictures de ML a un array de URLs https, máximo 6.
+ * Convierte el array pictures de ML a URLs https. El tope 16 coincide con la
+ * guarda del proxy y evita truncar galerías especiales a las seis fotos que
+ * admitía históricamente la ficha.
  * Acepta objetos {secure_url, url} o strings directos.
  */
-function normalizePictures(pictures, max = 6) {
+export function normalizePictures(pictures, max = MAX_GALLERY_IMAGES) {
   if (!Array.isArray(pictures) || pictures.length === 0) return [];
-  return pictures
-    .slice(0, max)
+  const normalized = pictures
     .map(p => {
       let url = '';
       if (typeof p === 'string') {
@@ -645,7 +660,168 @@ function normalizePictures(pictures, max = 6) {
       return url.replace('http://', 'https://') || null;
     })
     .filter(Boolean);
+  return [...new Set(normalized)].slice(0, Math.max(0, Number(max) || 0));
 }
+
+function freshGalleryEntry(entry, refreshDays, nowMs) {
+  return Array.isArray(entry?.pictures) &&
+    validCheckedAt(entry.checked_at, refreshDays, nowMs);
+}
+
+function galleryPriorityIds(env) {
+  return new Set(String(env?.ML_CATALOG_GALLERY_PRIORITY_IDS || '')
+    .split(',')
+    .map(value => value.trim().toUpperCase())
+    .filter(value => /^MLU\d+$/.test(value)));
+}
+
+async function readCatalogGalleryCache(bucket) {
+  if (!bucket || typeof bucket.get !== 'function') {
+    return { schema_version: 1, updated_at: null, entries: {} };
+  }
+  try {
+    const object = await bucket.get(CATALOG_GALLERY_CACHE_KEY);
+    if (!object) return { schema_version: 1, updated_at: null, entries: {} };
+    const parsed = JSON.parse(await object.text());
+    if (parsed?.schema_version !== 1 || !parsed.entries ||
+        typeof parsed.entries !== 'object' || Array.isArray(parsed.entries)) {
+      throw new Error('esquema inválido');
+    }
+    return parsed;
+  } catch (error) {
+    console.warn(`[Catalog] No se pudo reutilizar la caché de galerías: ${error.message}`);
+    return { schema_version: 1, updated_at: null, entries: {} };
+  }
+}
+
+function mergeOfficialGallery(item, pictures) {
+  const merged = normalizePictures([
+    ...(Array.isArray(item?.pictures) ? item.pictures : []),
+    ...normalizePictures(pictures),
+  ]);
+  if (merged.length > 0) item.pictures = merged;
+}
+
+/**
+ * Las publicaciones de catálogo pueden exponer una sola foto en /items aunque
+ * la página de producto de ML tenga una galería completa. Reutiliza una caché
+ * R2 y consulta incrementalmente /products/:catalog_product_id para completar
+ * hasta dieciséis imágenes oficiales sin sumar miles de requests a cada sync.
+ */
+export async function enrichCatalogProductPictures(items, env, accessToken, {
+  retryBudget = createSyncRetryBudget(),
+  mlGetDeps = {},
+  now = new Date(),
+} = {}) {
+  const limit = Math.max(0, parseInt(
+    env?.ML_CATALOG_GALLERY_ENRICH_LIMIT || String(DEFAULT_GALLERY_ENRICH_LIMIT),
+    10,
+  ) || 0);
+  const refreshDays = Math.max(1, parseInt(
+    env?.ML_CATALOG_GALLERY_REFRESH_DAYS || String(DEFAULT_GALLERY_REFRESH_DAYS),
+    10,
+  ) || DEFAULT_GALLERY_REFRESH_DAYS);
+  const sleepMs = Math.max(0, parseInt(
+    env?.ML_CATALOG_GALLERY_SLEEP_MS || String(DEFAULT_GALLERY_SLEEP_MS),
+    10,
+  ) || 0);
+  const checkedAt = now.toISOString();
+  const cache = await readCatalogGalleryCache(env?.CATALOG_R2);
+  const groups = new Map();
+
+  for (const item of items) {
+    const productId = String(item?.catalog_product_id || '').trim().toUpperCase();
+    if (!/^MLU\d+$/.test(productId)) continue;
+    if (!groups.has(productId)) groups.set(productId, []);
+    groups.get(productId).push(item);
+  }
+
+  const priorityIds = galleryPriorityIds(env);
+  const candidates = [];
+  let reused = 0;
+  for (const [productId, productItems] of groups) {
+    const cached = cache.entries[productId];
+    if (freshGalleryEntry(cached, refreshDays, now.getTime())) {
+      for (const item of productItems) mergeOfficialGallery(item, cached.pictures);
+      reused++;
+      continue;
+    }
+    const newestStart = Math.max(...productItems.map(item => Date.parse(item.start_time || '') || 0));
+    const fewestPictures = Math.min(...productItems.map(item => normalizePictures(item.pictures).length));
+    candidates.push({ productId, productItems, newestStart, fewestPictures });
+  }
+
+  candidates.sort((a, b) => {
+    const priorityA = priorityIds.has(a.productId) ? 1 : 0;
+    const priorityB = priorityIds.has(b.productId) ? 1 : 0;
+    if (priorityA !== priorityB) return priorityB - priorityA;
+    if (a.fewestPictures !== b.fewestPictures) return a.fewestPictures - b.fewestPictures;
+    if (a.newestStart !== b.newestStart) return b.newestStart - a.newestStart;
+    return a.productId.localeCompare(b.productId);
+  });
+
+  let fetched = 0;
+  let failed = 0;
+  let galleriesWithMultipleImages = 0;
+  const selected = candidates.slice(0, limit);
+  for (let index = 0; index < selected.length; index++) {
+    const candidate = selected[index];
+    try {
+      const payload = await mlGet(
+        `https://api.mercadolibre.com/products/${encodeURIComponent(candidate.productId)}`,
+        accessToken,
+        { ...mlGetDeps, retryBudget },
+      );
+      const pictures = normalizePictures(payload?.pictures);
+      cache.entries[candidate.productId] = { pictures, checked_at: checkedAt };
+      for (const item of candidate.productItems) mergeOfficialGallery(item, pictures);
+      if (pictures.length > 1) galleriesWithMultipleImages++;
+      fetched++;
+    } catch (error) {
+      failed++;
+      const stale = cache.entries[candidate.productId];
+      if (Array.isArray(stale?.pictures)) {
+        for (const item of candidate.productItems) mergeOfficialGallery(item, stale.pictures);
+      }
+      console.warn(`[Catalog] Galería ${candidate.productId} pendiente: ${error.message}`);
+    }
+    if (index + 1 < selected.length && sleepMs > 0) {
+      await (mlGetDeps.sleepFn || sleep)(sleepMs);
+    }
+  }
+
+  let cacheWriteError = null;
+  if (fetched > 0 && env?.CATALOG_R2 && typeof env.CATALOG_R2.put === 'function') {
+    try {
+      cache.updated_at = checkedAt;
+      await env.CATALOG_R2.put(CATALOG_GALLERY_CACHE_KEY, JSON.stringify(cache), {
+        httpMetadata: {
+          contentType: 'application/json',
+          cacheControl: 'no-store',
+        },
+      });
+    } catch (error) {
+      // La caché acelera la siguiente corrida, pero nunca debe impedir que el
+      // catálogo enriquecido que ya está en memoria llegue a producción.
+      cacheWriteError = String(error?.message || 'Error').slice(0, 240);
+      console.warn(`[Catalog] No se pudo guardar la caché de galerías: ${cacheWriteError}`);
+    }
+  }
+
+  return {
+    limit,
+    products: groups.size,
+    reused,
+    fetched,
+    failed,
+    multiple_image_galleries: galleriesWithMultipleImages,
+    pending: Math.max(0, candidates.length - fetched),
+    refresh_days: refreshDays,
+    cache_write_error: cacheWriteError,
+  };
+}
+
+export const CATALOG_PRODUCT_GALLERY_CACHE_KEY = CATALOG_GALLERY_CACHE_KEY;
 
 // ─── HTTP helper ──────────────────────────────────────────────────────────────
 
