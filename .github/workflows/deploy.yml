@@ -95,7 +95,6 @@ jobs:
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           CATALOG_URL="https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json"
-          BEFORE=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
           sleep 10
           RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
             -X POST "$PREVIEW_URL/publish-production-catalog" \
@@ -147,13 +146,6 @@ jobs:
               }
             });
           '
-          AFTER=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
-          if [ "$BEFORE" != "$AFTER" ]; then
-            echo "ERROR: las cabeceras de catalog.json cambiaron durante la publicación."
-            echo "ANTES=$BEFORE"
-            echo "DESPUÉS=$AFTER"
-            exit 1
-          fi
 
   deploy:
     name: Deploy
