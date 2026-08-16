@@ -1,20 +1,28 @@
-name: GSC manual export
+name: GSC weekly and manual export
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/gsc-export.yml'
+  schedule:
+    - cron: '17 11 * * 1'
   workflow_dispatch:
     inputs:
       start_date:
-        description: Fecha inicial (YYYY-MM-DD)
-        required: true
-        default: '2026-05-11'
+        description: Fecha inicial opcional (YYYY-MM-DD). Vacío = últimos 28 días consolidados.
+        required: false
+        type: string
       end_date:
-        description: Fecha final (YYYY-MM-DD)
-        required: true
-        default: '2026-08-08'
+        description: Fecha final opcional (YYYY-MM-DD). Vacío = hace 3 días.
+        required: false
+        type: string
       site_url:
-        description: Propiedad exacta de Search Console (URL-prefix o sc-domain:...)
+        description: Propiedad exacta de Search Console
         required: true
-        default: 'https://www.amadolibros.com/'
+        default: 'sc-domain:amadolibros.com'
+        type: string
 
 permissions:
   contents: read
@@ -50,19 +58,40 @@ jobs:
           access_token_scopes: https://www.googleapis.com/auth/webmasters.readonly
           create_credentials_file: false
 
+      - name: Resolve report parameters
+        env:
+          INPUT_SITE_URL: ${{ inputs.site_url }}
+          INPUT_START_DATE: ${{ inputs.start_date }}
+          INPUT_END_DATE: ${{ inputs.end_date }}
+        run: |
+          site_url="${INPUT_SITE_URL:-sc-domain:amadolibros.com}"
+          if { [ -n "${INPUT_START_DATE:-}" ] && [ -z "${INPUT_END_DATE:-}" ]; } || { [ -z "${INPUT_START_DATE:-}" ] && [ -n "${INPUT_END_DATE:-}" ]; }; then
+            echo "::error::start_date y end_date deben indicarse juntos o dejarse ambos vacíos."
+            exit 1
+          fi
+          if [ -n "${INPUT_START_DATE:-}" ]; then
+            start_date="$INPUT_START_DATE"
+            end_date="$INPUT_END_DATE"
+          else
+            start_date="$(date -u -d '30 days ago' +%F)"
+            end_date="$(date -u -d '3 days ago' +%F)"
+          fi
+          {
+            echo "GSC_SITE_URL=$site_url"
+            echo "GSC_START_DATE=$start_date"
+            echo "GSC_END_DATE=$end_date"
+          } >> "$GITHUB_ENV"
+
       - name: Extract Search Analytics
         env:
           GSC_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
-          GSC_SITE_URL: ${{ inputs.site_url }}
-          GSC_START_DATE: ${{ inputs.start_date }}
-          GSC_END_DATE: ${{ inputs.end_date }}
           GSC_OUTPUT_DIR: artifacts/gsc
         run: node scripts/seo/gsc-export.mjs
 
       - name: Upload JSON and CSV
         uses: actions/upload-artifact@v4
         with:
-          name: gsc-${{ inputs.start_date }}-${{ inputs.end_date }}
+          name: gsc-${{ github.run_id }}
           path: artifacts/gsc/
           if-no-files-found: error
           retention-days: 30
@@ -70,9 +99,10 @@ jobs:
       - name: Write run summary
         if: always()
         run: |
-          echo "## GSC manual export" >> "$GITHUB_STEP_SUMMARY"
+          echo "## GSC export" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Property: ${{ inputs.site_url }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Period: ${{ inputs.start_date }} to ${{ inputs.end_date }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Property: ${GSC_SITE_URL:-not resolved}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Period: ${GSC_START_DATE:-not resolved} to ${GSC_END_DATE:-not resolved}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Reports: page + query" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deploy: not triggered by this workflow" >> "$GITHUB_STEP_SUMMARY"
