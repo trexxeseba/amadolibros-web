@@ -44,7 +44,7 @@ test('workflow prueba 20 copias, card, ficha, bytes y 404 productivo sin secret 
   assert.doesNotMatch(workflow, /COVER_PILOT_SECRET|SYNC_SECRET/);
 });
 
-test('COVER_R2 sólo es referenciado por los tres módulos runtime de lectura de portadas', () => {
+test('COVER_R2 sólo es referenciado por los cuatro módulos runtime de lectura de portadas', () => {
   const references = runtimeJsFiles(path.join(ROOT, 'functions'))
     .filter(file => readFileSync(file, 'utf8').includes('COVER_R2'))
     .map(file => path.relative(ROOT, file).replaceAll(path.sep, '/'))
@@ -53,6 +53,7 @@ test('COVER_R2 sólo es referenciado por los tres módulos runtime de lectura de
   assert.deepEqual(references, [
     'functions/_shared/preview-cover.js',
     'functions/book-cover/[[path]].js',
+    'functions/feed.xml.js',
     'functions/preview-cover/[[path]].js',
   ]);
 });
@@ -61,6 +62,7 @@ test('módulos COVER_R2 sólo leen con get; no escriben, borran ni enumeran', ()
   const sources = [
     'functions/_shared/preview-cover.js',
     'functions/book-cover/[[path]].js',
+    'functions/feed.xml.js',
     'functions/preview-cover/[[path]].js',
   ].map(file => readFileSync(path.join(ROOT, file), 'utf8')).join('\n');
 

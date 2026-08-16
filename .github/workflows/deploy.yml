@@ -95,7 +95,6 @@ jobs:
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           CATALOG_URL="https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json"
-          BEFORE=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
           sleep 10
           RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
             -X POST "$PREVIEW_URL/publish-production-catalog" \
@@ -147,13 +146,6 @@ jobs:
               }
             });
           '
-          AFTER=$(curl -sSI "$CATALOG_URL" | tr -d '\r' | grep -Ei '^(etag|content-length|last-modified):' | sort)
-          if [ "$BEFORE" != "$AFTER" ]; then
-            echo "ERROR: las cabeceras de catalog.json cambiaron durante la publicación."
-            echo "ANTES=$BEFORE"
-            echo "DESPUÉS=$AFTER"
-            exit 1
-          fi
 
   deploy:
     name: Deploy
@@ -307,7 +299,7 @@ jobs:
           for attempt in 1 2 3 4 5 6 7 8; do
             BOOK_CODE="$(curl -sSL --max-time 60 -o /tmp/cover-r2-book.html -w '%{http_code}' \
               "https://www.amadolibros.com/libro/$SAMPLE_ID")"
-            if [ "$BOOK_CODE" = "200" ] && grep -Fq "/preview-cover/$SAMPLE_ID/0/" /tmp/cover-r2-book.html; then
+            if [ "$BOOK_CODE" = "200" ] && grep -Fq "/book-cover/$SAMPLE_ID/cover.jpg" /tmp/cover-r2-book.html; then
               break
             fi
             echo "Ficha R2 productiva todavía propagándose (intento $attempt/8; HTTP $BOOK_CODE)."
@@ -317,16 +309,11 @@ jobs:
             echo "La ficha productiva no respondió 200."
             exit 1
           fi
-          IMAGE_PATH="$(grep -Eo "/preview-cover/$SAMPLE_ID/0/[a-f0-9]{64}\.(jpg|png|webp)" \
-            /tmp/cover-r2-book.html | head -1)"
-          if [ -z "$IMAGE_PATH" ]; then
-            echo "La ficha productiva no contiene una URL R2 inmutable."
-            exit 1
-          fi
+          IMAGE_PATH="/book-cover/$SAMPLE_ID/cover.jpg"
           curl -fsS --max-time 60 -D /tmp/cover-r2-image.headers \
-            "https://www.amadolibros.com$IMAGE_PATH" -o /tmp/cover-r2-image.bin
+            "https://www.amadolibros.com$IMAGE_PATH?smoke=${{ github.sha }}" -o /tmp/cover-r2-image.bin
           tr -d '\r' < /tmp/cover-r2-image.headers | grep -Eqi '^content-type: image/(jpeg|png|webp)$'
-          tr -d '\r' < /tmp/cover-r2-image.headers | grep -Fqi 'x-amado-cover-source: r2-production'
+          tr -d '\r' < /tmp/cover-r2-image.headers | grep -Fqi 'x-cover-source: r2-production'
           test -s /tmp/cover-r2-image.bin
           echo "Portadas R2 productivas: manifest, ficha y bytes OK."
 

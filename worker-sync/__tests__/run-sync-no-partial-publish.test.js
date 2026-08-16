@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runSync } from '../index.js';
+import {
+  configuredCoverMirrorBatchSize,
+  runCoverMirror,
+  runSync,
+} from '../index.js';
 import { buildCatalog } from '../meli-catalog.js';
 
 function fakeEnv({ putThrows = false } = {}) {
@@ -223,4 +227,72 @@ test('si falla publishToR2 el resultado final conserva ese error', async () => {
 
   assert.equal(result.status, 'error');
   assert.equal(result.error, 'R2 no publicó');
+});
+
+test('el lote del cron respeta COVER_MIRROR_BATCH_SIZE y sus límites seguros', () => {
+  assert.equal(configuredCoverMirrorBatchSize({ COVER_MIRROR_BATCH_SIZE: '100' }), 100);
+  assert.equal(configuredCoverMirrorBatchSize({ COVER_MIRROR_BATCH_SIZE: '5000' }), 1000);
+  assert.equal(configuredCoverMirrorBatchSize({ COVER_MIRROR_BATCH_SIZE: 'no-numero' }), 250);
+});
+
+test('runSync invalida el backfill viejo y persiste el resultado del catálogo nuevo', async () => {
+  const { env, puts, deletes } = fakeEnv();
+  env.COVER_R2 = {};
+  const catalog = {
+    total: 1,
+    updated_at: '2026-08-16T12:00:00.000Z',
+    items: [itemForSync()],
+  };
+  const result = await runSync(env, { source: 'manual-await' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => catalog,
+    publishToR2Fn: async () => {},
+    readPreviousPublicCatalogFn: async () => ({ items: [] }),
+    submitIndexNowFn: async () => ({ status: 'disabled' }),
+    processStockWaitlistFn: async () => ({ status: 'ok' }),
+    syncCoverMirrorFn: async () => ({ status: 'completed', attempted: 1, failed: 0, pending: 0, valid_copies: 1 }),
+    notifyHealthcheckFn: noHealthcheck,
+  });
+
+  assert.equal(result.status, 'ok');
+  assert.ok(deletes.includes('cover-mirror:backfill_complete'));
+  const marker = puts.find(entry => entry.key === 'cover-mirror:backfill_complete');
+  assert.equal(JSON.parse(marker.value).catalog_version, catalog.updated_at);
+  assert.ok(puts.some(entry => entry.key === 'cover-mirror:last_result'));
+});
+
+test('el cron sólo salta mantenimiento cuando la marca coincide con el catálogo actual', async () => {
+  const store = new Map();
+  const catalog = { updated_at: '2026-08-16T12:00:00.000Z', items: [] };
+  const env = {
+    CATALOG_R2: {
+      async get() { return { async text() { return JSON.stringify(catalog); } }; },
+    },
+    AMADO_KV: {
+      async get(key) { return store.get(key) || null; },
+      async put(key, value) { store.set(key, value); },
+      async delete(key) { store.delete(key); },
+    },
+  };
+  store.set('cover-mirror:backfill_complete', JSON.stringify({
+    completed: true,
+    catalog_version: catalog.updated_at,
+  }));
+  let calls = 0;
+  const syncCoverMirrorFn = async () => {
+    calls++;
+    return { status: 'completed', pending: 0 };
+  };
+
+  const skipped = await runCoverMirror(env, { maintenanceMinute: 25 }, { syncCoverMirrorFn });
+  assert.equal(skipped.status, 'skipped');
+  assert.equal(calls, 0);
+
+  store.set('cover-mirror:backfill_complete', JSON.stringify({
+    completed: true,
+    catalog_version: '2026-08-15T00:00:00.000Z',
+  }));
+  const executed = await runCoverMirror(env, { maintenanceMinute: 25 }, { syncCoverMirrorFn });
+  assert.equal(executed.status, 'completed');
+  assert.equal(calls, 1);
 });
