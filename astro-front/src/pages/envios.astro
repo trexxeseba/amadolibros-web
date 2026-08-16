@@ -58,6 +58,9 @@ const shippingPolicy = {
   </ul>
 
   <h2>Montevideo</h2>
+  <aside class="delivery-reassurance">
+    <strong>El cadete no llega de sorpresa.</strong> Antes de enviar tu pedido, coordinamos contigo la hora o franja en la que podés recibirlo. Si al llegar no estás, no te preocupes: te contactamos para resolver cómo completar la entrega.
+  </aside>
   <p>Los productos disponibles pueden entregarse en el día mediante cadetería. La entrega en aproximadamente 2 horas está sujeta a disponibilidad, zona, horario y confirmación por WhatsApp. La fecha y la franja elegidas en el checkout quedan sujetas a confirmación.</p>
 
   <h2>Interior del país</h2>
@@ -69,3 +72,21 @@ const shippingPolicy = {
   <h2>Demoras o incidencias</h2>
   <p>Los plazos son estimados. Si un envío presenta una demora o daño visible, contactanos por <a href="https://wa.me/59899841325">WhatsApp al 099 841 325</a> o por <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a> indicando el número de pedido.</p>
 </TrustPageLayout>
+
+<style>
+  .delivery-reassurance {
+    margin: 1rem 0;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(228, 153, 130, 0.65);
+    border-left: 5px solid var(--salmon);
+    border-radius: var(--r);
+    background: rgba(228, 153, 130, 0.1);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  .delivery-reassurance strong {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+</style>
