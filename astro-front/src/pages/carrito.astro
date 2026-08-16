@@ -1458,7 +1458,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
     // ── STOCK-CARRITO-1: disponibilidad vigente ────────────────────────
     function isUnavailableStatus(status) {
-      return status === 'sin_stock' || status === 'no_existe';
+      return status === 'sin_stock' || status === 'no_existe' || status === 'moneda_no_admitida';
     }
 
     function validationFor(item) {
@@ -1665,19 +1665,24 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         unavailableBox.className = 'cart-unavailable-box';
 
         var unavailableText = document.createElement('strong');
-        unavailableText.textContent = 'Vendimos todos los ejemplares de “' + item.title + '”. Si querés, lo buscamos para vos.';
+        var unsupportedCurrency = validation.status === 'moneda_no_admitida';
+        unavailableText.textContent = unsupportedCurrency
+          ? 'Esta publicación está en ' + (validation.currency || 'otra moneda') + ' y no puede pagarse en el checkout UYU.'
+          : 'Vendimos todos los ejemplares de “' + item.title + '”. Si querés, lo buscamos para vos.';
         unavailableBox.appendChild(unavailableText);
 
         var waText = 'Hola, vi que “' + item.title + '”';
         var currentAuthor = validation.author || '';
         if (currentAuthor) waText += ' de ' + currentAuthor;
-        waText += ' ya no está disponible. ¿Pueden buscarlo por encargo?';
+        waText += unsupportedCurrency
+          ? ' está publicada en ' + (validation.currency || 'otra moneda') + '. ¿Me confirman precio y forma de pago?'
+          : ' ya no está disponible. ¿Pueden buscarlo por encargo?';
         var waLink = document.createElement('a');
         waLink.className = 'cart-unavailable-wa';
         waLink.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waText);
         waLink.target = '_blank';
         waLink.rel = 'noopener noreferrer';
-        waLink.textContent = 'Buscarlo por encargo';
+        waLink.textContent = unsupportedCurrency ? 'Consultar precio' : 'Buscarlo por encargo';
         unavailableBox.appendChild(waLink);
 
         var unavailableRemove = document.createElement('button');

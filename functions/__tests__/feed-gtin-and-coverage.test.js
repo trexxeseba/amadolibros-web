@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {
     onRequest,
     isEligibleForFeed,
+    isBookProduct,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -16,6 +17,8 @@ import {
     normalizeIsbnToGtin,
     normalizePublisherForDescription,
     buildFeedDescription,
+    merchantImageLink,
+    truncateMerchantText,
     renderFeedItem,
     pickRepresentativeItem,
     dedupeByGtinAndCondition,
@@ -244,7 +247,41 @@ test('17. Precio, disponibilidad, link e imagen no quedan vacíos para un ítem 
     assert.match(xml, /<g:price>999 UYU<\/g:price>/);
     assert.match(xml, /<g:availability>in stock<\/g:availability>/);
     assert.match(xml, /<g:link>https:\/\/www\.amadolibros\.com\/libro\/MLU1\//);
-    assert.match(xml, /<g:image_link>https:\/\/x\.mlstatic\.com\/a-O\.jpg<\/g:image_link>/);
+    assert.match(xml, /<g:image_link>https:\/\/www\.amadolibros\.com\/book-cover\/MLU1\/cover\.jpg<\/g:image_link>/);
+    assert.doesNotMatch(xml, /mlstatic\.com/);
+});
+
+test('17b. La imagen Merchant siempre queda bajo dominio propio', () => {
+    assert.equal(
+        merchantImageLink(book({ id: 'MLU123456' })),
+        'https://www.amadolibros.com/book-cover/MLU123456/cover.jpg',
+    );
+    assert.equal(merchantImageLink(book({ id: 'otro' })), '');
+});
+
+test('17c. Excluye moneda explícita distinta de UYU sin apagar el catálogo legado', () => {
+    assert.equal(isEligibleForFeed(book({ currency: 'UYU' })), true);
+    assert.equal(isEligibleForFeed(book({ currency: null })), true);
+    assert.equal(isEligibleForFeed(book({ currency: 'USD' })), false);
+});
+
+test('17d. Un dominio no-libro es autoritativo y un legado necesita evidencia bibliográfica', () => {
+    assert.equal(isBookProduct(book({ domain_id: 'MLU-BOOKS' })), true);
+    assert.equal(isBookProduct(book({ domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991' })), false);
+    const ssd = book({
+        title: 'Disco Sólido SSD Kingston', domain_id: null,
+        author: null, isbn: null, pages: null, bibliographic: null,
+    });
+    assert.equal(isBookProduct(ssd), false);
+    assert.equal(isEligibleForFeed(ssd), false);
+});
+
+test('17e. Título Merchant nunca supera 150 caracteres y corta por palabra', () => {
+    const title = Array.from({ length: 40 }, () => 'palabra').join(' ');
+    const clipped = truncateMerchantText(title, 150);
+    assert.ok(clipped.length <= 150);
+    assert.doesNotMatch(clipped, /palab$/);
+    assert.ok(renderFeedItem(book({ title })).match(/<g:title>(.*?)<\/g:title>/)[1].length <= 150);
 });
 
 test('18. Los libros "por encargo" (pausados) continúan fuera del feed', () => {

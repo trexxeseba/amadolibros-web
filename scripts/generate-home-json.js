@@ -60,7 +60,11 @@ function fetchJSON(url) {
 // cortar a ACTIVE_COUNT, para no quedarse con menos de los disponibles.
 function selectActiveItems(items, count = ACTIVE_COUNT) {
     return items
-        .filter(b => b.status === 'active' && b.available_quantity > 0 && b.condition === 'new')
+        .filter(b => {
+            const currency = String(b.currency || b.currency_id || '').trim().toUpperCase();
+            return b.status === 'active' && b.available_quantity > 0 && b.condition === 'new' &&
+                (!currency || currency === 'UYU');
+        })
         .sort((a, b) => new Date(b.start_time || 0) - new Date(a.start_time || 0))
         .slice(0, count);
 }

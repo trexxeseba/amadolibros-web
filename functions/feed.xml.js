@@ -45,6 +45,7 @@
  * ESTRUCTURA DE catalog.json (R2) — sin cambios:
  *   { "items": [ { id, title, author, price, status, available_quantity,
  *                  thumbnail, pictures, permalink, start_time, condition,
+ *                  currency, category_id, domain_id,
  *                  isbn, publisher, pages, dimensions }, ... ] }
  *   Contiene únicamente activos (worker-sync/index.js runSync llama a
  *   buildCatalog con statuses:['active']). Los libros "por encargo"
@@ -70,10 +71,9 @@ export async function onRequest(context) {
         }
 
         // Universo elegible: activo + con stock + comprable (precio válido) +
-        // con ficha válida (id + permalink). Calculado siempre desde los
-        // datos actuales — nunca cortado a un número fijo. Los libros "por
-        // encargo" (pausados) ya no llegan en `items` (ver comentario de
-        // arriba), así que no hace falta filtrarlos acá explícitamente.
+        // ficha válida + moneda UYU + evidencia bibliográfica. El catálogo
+        // web puede seguir mostrando antigüedades u otros productos; el feed
+        // de Amado Libros se mantiene deliberadamente limitado a libros.
         const eligibleItems = items.filter(isEligibleForFeed);
 
         // Deduplicación controlada: una sola oferta por GTIN+condition (ver
@@ -132,10 +132,37 @@ export async function onRequest(context) {
  */
 export function isEligibleForFeed(item) {
     if (!item || !item.id || !item.permalink) return false;
+    if (!/^MLU\d+$/.test(String(item.id))) return false;
     if (item.status !== 'active') return false;
     if (!(Number(item.available_quantity) > 0)) return false;
     if (!(Number(item.price) > 0)) return false;
+    const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
+    // Catálogos anteriores a FULL-COMMERCE-AUDIT no conservan currency_id.
+    // Se tolera temporalmente el vacío para no apagar el feed durante el
+    // despliegue coordinado; una moneda explícita distinta de UYU se excluye.
+    if (currency && currency !== 'UYU') return false;
+    if (!isBookProduct(item)) return false;
     return true;
+}
+
+/**
+ * Merchant no debe recibir un SSD, un candelabro u otra antigüedad como si
+ * fuera un libro. Cuando ML ya informa domain_id, ese dato es autoritativo.
+ * Para el catálogo legado sin domain_id se exige evidencia bibliográfica
+ * fuerte; el título o publisher no bastan porque pueden ser engañosos.
+ */
+export function isBookProduct(item) {
+    const domain = String(item?.domain_id || '').trim().toUpperCase();
+    if (domain) return domain.endsWith('-BOOKS');
+
+    if (normalizeIsbnToGtin(item?.isbn).valid) return true;
+    if (String(item?.author || '').trim()) return true;
+    if (Number(item?.pages) > 0) return true;
+    const bibliographic = item?.bibliographic;
+    return Boolean(
+        bibliographic && typeof bibliographic === 'object' &&
+        Object.values(bibliographic).some(value => String(value || '').trim())
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -305,20 +332,35 @@ export function buildFeedDescription(item) {
     return sentence;
 }
 
+export function truncateMerchantText(value, maxChars) {
+    const text = String(value || '').trim();
+    if (text.length <= maxChars) return text;
+    const clipped = text.slice(0, maxChars + 1);
+    const boundary = clipped.lastIndexOf(' ');
+    return clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars).trim();
+}
+
+export function merchantImageLink(item) {
+    const id = String(item?.id || '').trim().toUpperCase();
+    return /^MLU\d+$/.test(id)
+        ? `${CANONICAL_BASE_URL}/book-cover/${encodeURIComponent(id)}/cover.jpg`
+        : '';
+}
+
 // ---------------------------------------------------------------------------
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
 export function renderFeedItem(item) {
     const stock = Number(item.available_quantity) || 0;
-    const currency = item.currency ?? 'UYU';
+    const currency = String(item.currency || item.currency_id || 'UYU').toUpperCase();
     const cond = item.condition ?? 'used';
     const availability = stock > 0 ? 'in stock' : 'out of stock';
     const price = `${item.price} ${currency}`;
 
-    const imageLink = item.thumbnail
-        ? item.thumbnail.replace('http://', 'https://').replace('-I.jpg', '-O.jpg')
-        : '';
+    // El feed nunca expone mlstatic.com: Google obtiene la portada desde el
+    // proxy/cache de Amado Libros, bajo un dominio que controlamos.
+    const imageLink = merchantImageLink(item);
 
     const isbnResult = normalizeIsbnToGtin(item.isbn);
     // GTIN válido: se omite identifier_exists (default = yes, según spec de
@@ -330,12 +372,13 @@ export function renderFeedItem(item) {
         ? ''
         : `\n        <g:identifier_exists>no</g:identifier_exists>`;
 
-    const description = buildFeedDescription(item);
+    const title = truncateMerchantText(item.title, 150);
+    const description = truncateMerchantText(buildFeedDescription(item), 5000);
 
     return `
     <item>
         <g:id>${escapeXml(item.id)}</g:id>
-        <g:title>${escapeXml(item.title || '')}</g:title>
+        <g:title>${escapeXml(title)}</g:title>
         <g:description>${escapeXml(description)}</g:description>
         <g:link>${escapeXml(`${CANONICAL_BASE_URL}/libro/${item.id}/${slugify(item.title || '')}`)}</g:link>
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>` : ''}

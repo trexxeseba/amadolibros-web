@@ -52,6 +52,7 @@ import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
+import { syncCoverMirror } from './cover-mirror.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -69,6 +70,15 @@ export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
   async scheduled(event, env, ctx) {
     console.log(`[Worker] Cron trigger: ${new Date().toISOString()}`);
+    if (event?.cron === '*/5 * * * *') {
+      // Backfill autónomo: cada 5 minutos hasta cubrir todo. Una vez completo,
+      // baja solo a una ejecución por hora para revalidar el ciclo de 30 días.
+      const complete = await kvGet(env, 'cover-mirror:backfill_complete');
+      const minute = new Date().getUTCMinutes();
+      if (complete === 'true' && minute !== 0) return;
+      ctx.waitUntil(runCoverMirror(env, { limit: 20 }));
+      return;
+    }
     ctx.waitUntil(runSync(env, { source: 'cron' }));
   },
 
@@ -98,6 +108,13 @@ export default {
     if (request.method === 'POST' && url.pathname === '/measure') {
       const result = await runMeasure(env);
       return json(result, result.status === 'measured' ? 200 : 500);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/cover-mirror') {
+      const requested = Number(url.searchParams.get('limit') || env.COVER_MIRROR_BATCH_SIZE || 250);
+      const limit = Math.min(1000, Math.max(1, Number.isFinite(requested) ? requested : 250));
+      const result = await runCoverMirror(env, { limit });
+      return json(result, result.status === 'completed' ? 200 : 500);
     }
 
     if (request.method === 'POST' && url.pathname === '/publish-preview-catalog') {
@@ -410,6 +427,7 @@ export async function runSync(env, options = {}, {
   processStockWaitlistFn = processStockWaitlist,
   readPreviousPublicCatalogFn = readPreviousPublicCatalog,
   submitIndexNowFn = submitIndexNow,
+  syncCoverMirrorFn = syncCoverMirror,
 } = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
@@ -446,6 +464,17 @@ export async function runSync(env, options = {}, {
     };
     const previousCatalog = await readPreviousPublicCatalogFn(env);
     await publishToR2Fn(env, catalog, syncMeta);
+
+    // Portadas propias: R2 es el origen duradero y Mercado Libre queda como
+    // respaldo durante el backfill. Un fallo de imagen nunca revierte un
+    // catálogo ya publicado, pero queda visible en el resultado del sync.
+    let coverMirror;
+    try {
+      coverMirror = await syncCoverMirrorFn(env, catalog);
+    } catch (error) {
+      console.error(`[Cover mirror] Error: ${error?.message || 'Error'}`);
+      coverMirror = { status: 'error', error: String(error?.message || 'Error').slice(0, 200) };
+    }
 
     // IndexNow corre únicamente después de confirmar el promote de R2. Es una
     // señal de descubrimiento: su caída nunca invalida el catálogo publicado.
@@ -497,6 +526,7 @@ export async function runSync(env, options = {}, {
       duration_ms:    durationMs,
       indexnow:       indexNow,
       stock_notifications: stockNotifications,
+      cover_mirror: coverMirror,
     };
 
   } catch (err) {
@@ -520,6 +550,35 @@ export async function runSync(env, options = {}, {
   }
 }
 
+export async function runCoverMirror(env, { limit = 250 } = {}, {
+  syncCoverMirrorFn = syncCoverMirror,
+} = {}) {
+  try {
+    const object = await env?.CATALOG_R2?.get?.('catalog.json');
+    if (!object) return { status: 'error', error: 'catalog.json no disponible.' };
+    const catalog = JSON.parse(await object.text());
+    const result = await syncCoverMirrorFn(env, catalog, { limit });
+    await kvPut(env, 'cover-mirror:last_result', JSON.stringify({
+      at: new Date().toISOString(),
+      status: result.status,
+      attempted: result.attempted ?? null,
+      failed: result.failed ?? null,
+      pending: result.pending ?? null,
+      valid_copies: result.valid_copies ?? null,
+      ai_upscaled: result.ai_upscaled ?? null,
+      quality_pending: result.quality_pending ?? null,
+    }));
+    if (result.status === 'completed' && result.pending === 0) {
+      await kvPut(env, 'cover-mirror:backfill_complete', 'true');
+    } else if (result.status === 'completed') {
+      await kvDelete(env, 'cover-mirror:backfill_complete');
+    }
+    return result;
+  } catch (error) {
+    return { status: 'error', error: String(error?.message || 'Error').slice(0, 240) };
+  }
+}
+
 async function safeNotifyHealthcheck(notifyFn, env, kind) {
   try {
     await notifyFn(env, kind);
@@ -532,14 +591,17 @@ async function safeNotifyHealthcheck(notifyFn, env, kind) {
 // ── Status ───────────────────────────────────────────────────────────────────
 
 async function readStatus(env) {
-  const [lastStarted, lastOk, lastError, indexNowResult, indexNowError, meta, catalogHead] = await Promise.all([
+  const [lastStarted, lastOk, lastError, indexNowResult, indexNowError, coverMirrorResult, coverMirrorComplete, meta, catalogHead, coverManifest] = await Promise.all([
     kvGet(env, 'sync:last_started'),
     kvGet(env, 'sync:last_ok'),
     kvGet(env, 'sync:last_error'),
     kvGet(env, 'indexnow:last_result'),
     kvGet(env, 'indexnow:last_error'),
+    kvGet(env, 'cover-mirror:last_result'),
+    kvGet(env, 'cover-mirror:backfill_complete'),
     readR2Json(env, 'meta.json'),
     readR2Head(env, 'catalog.json'),
+    readBucketHead(env?.COVER_R2, 'covers/v1/manifest.json'),
   ]);
 
   return {
@@ -554,11 +616,31 @@ async function readStatus(env) {
       last_result: parseJsonOrValue(indexNowResult),
       last_error: parseJsonOrValue(indexNowError),
     },
+    cover_mirror: {
+      last_result: parseJsonOrValue(coverMirrorResult),
+      backfill_complete: coverMirrorComplete === 'true',
+    },
     r2: {
       meta,
       catalog: catalogHead,
+      cover_manifest: coverManifest,
     },
   };
+}
+
+async function readBucketHead(bucket, key) {
+  try {
+    const object = await bucket?.head?.(key);
+    if (!object) return { exists: false };
+    return {
+      exists: true,
+      size: object.size ?? null,
+      uploaded: dateToIso(object.uploaded),
+      etag: object.etag || object.httpEtag || null,
+    };
+  } catch (error) {
+    return { exists: false, error: error.message };
+  }
 }
 
 async function readR2Json(env, key) {

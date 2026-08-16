@@ -75,7 +75,10 @@ jobs:
           BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
 
       - name: Wait for Worker propagation
-        if: ${{ inputs.run_trigger == true }}
+        # Un cambio de código que altera catálogo/feed debe reflejarse en R2
+        # inmediatamente después del deploy; no esperamos al cron del día
+        # siguiente. En ejecución manual se mantiene el interruptor explícito.
+        if: ${{ github.event_name == 'push' || inputs.run_trigger == true }}
         run: |
           if [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
             echo "ERROR: WORKER_SYNC_TRIGGER_URL no está configurada."
@@ -113,7 +116,7 @@ jobs:
           WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
 
       - name: Trigger catalog sync
-        if: ${{ inputs.run_trigger == true }}
+        if: ${{ github.event_name == 'push' || inputs.run_trigger == true }}
         run: |
           if [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
             echo "ERROR: WORKER_SYNC_TRIGGER_URL no está configurada."
@@ -155,7 +158,7 @@ jobs:
           WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
 
       - name: Read sync status
-        if: ${{ inputs.run_trigger == true }}
+        if: ${{ github.event_name == 'push' || inputs.run_trigger == true }}
         run: |
           if [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
             echo "ERROR: WORKER_SYNC_TRIGGER_URL no está configurada."

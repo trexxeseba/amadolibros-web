@@ -45,8 +45,9 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
       {
         code: 200,
         body: {
-          id: 'MLU1', title: 'Disponible', price: 1000, status: 'active',
+          id: 'MLU1', title: 'Disponible', price: 1000, currency_id: 'uyu', status: 'active',
           available_quantity: 2, attributes: [], pictures: [],
+          category_id: 'mlu1196', domain_id: 'mlu-books',
           catalog_listing: false, catalog_product_id: 'MLU-P1',
         },
       },
@@ -69,10 +70,16 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     assert.deepEqual(catalog.items.map(item => item.status), ['active', 'paused']);
     assert.equal(catalog.items[0].catalog_listing, false);
     assert.equal(catalog.items[0].catalog_product_id, 'MLU-P1');
+    assert.equal(catalog.items[0].currency, 'UYU');
+    assert.equal(catalog.items[0].category_id, 'MLU1196');
+    assert.equal(catalog.items[0].domain_id, 'MLU-BOOKS');
     assert.ok(urls.some(url => url.includes('status=active')));
     assert.ok(urls.some(url => url.includes('status=paused')));
     assert.ok(urls.some(url => url.includes('catalog_listing')));
     assert.ok(urls.some(url => url.includes('catalog_product_id')));
+    assert.ok(urls.some(url => url.includes('currency_id')));
+    assert.ok(urls.some(url => url.includes('category_id')));
+    assert.ok(urls.some(url => url.includes('domain_id')));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -284,6 +291,7 @@ test('índice pausado compacto y bloques usan una asignación determinista', () 
     updated_at: '2026-07-30T12:34:56.789Z',
     items: [
       { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 1 },
+      { id: 'MLU3', title: 'Activo USD', status: 'active', available_quantity: 1, currency: 'USD' },
       { id: 'MLU476064526', title: 'Los seis pilares', status: 'paused', pictures: [] },
       { id: 'MLU2', title: 'Otro pausado', status: 'paused', pictures: [] },
     ],
@@ -298,6 +306,7 @@ test('índice pausado compacto y bloques usan una asignación determinista', () 
   assert.equal(index.derived_fields.status, 'paused');
   const activeIndex = JSON.parse(artifacts.active_index.body);
   assert.equal(activeIndex.items.length, 1);
+  assert.equal(activeIndex.items[0][0], 'MLU1');
   assert.equal(
     activeIndex.fields.join(','),
     'id,title,author,isbn,image,price,available_quantity'

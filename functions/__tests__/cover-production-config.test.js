@@ -46,16 +46,10 @@ test('promoción usa buckets separados, verifica SHA y publica el manifest últi
   assert.ok(objectLoop > -1 && manifestPut > objectLoop, 'el manifest debe escribirse después de los objetos');
 });
 
-test('main promueve el bucket antes de desplegar Pages', () => {
-  assert.match(deploy, /name: Promote 20 validated covers to production R2/);
-  assert.match(deploy, /bash scripts\/promote-cover-r2-production\.sh/);
-  assert.match(deploy, /SOURCE_BUCKET: amadolibros-images-preview/);
-  assert.match(deploy, /TARGET_BUCKET: amadolibros-images-production/);
-  assert.ok(
-    deploy.indexOf('name: Promote 20 validated covers to production R2') <
-      deploy.indexOf('name: Deploy via Wrangler'),
-    'la promoción debe terminar antes del deploy productivo',
-  );
+test('main ya no pisa el manifest completo con el piloto de 20 portadas', () => {
+  assert.doesNotMatch(deploy, /Promote 20 validated covers to production R2/);
+  assert.doesNotMatch(deploy, /bash scripts\/promote-cover-r2-production\.sh/);
+  assert.match(deploy, /name: Deploy via Wrangler/);
 });
 
 test('runtime R2 admite sólo Preview/Producción y mantiene acceso de lectura', () => {

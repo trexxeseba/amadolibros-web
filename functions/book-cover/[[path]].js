@@ -1,4 +1,5 @@
 import { fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { findPreviewCover } from '../_shared/preview-cover.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
 
@@ -21,14 +22,30 @@ export function primaryCoverSource(item) {
   return largeMlImage(picture || item?.thumbnail || '');
 }
 
-function responseHeaders(source, contentType) {
+function responseHeaders(source, contentType, etag = null) {
   return {
     'content-type': contentType?.startsWith('image/') ? contentType : 'image/jpeg',
     'cache-control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000',
     'x-content-type-options': 'nosniff',
     'access-control-allow-origin': '*',
-    'x-cover-source': source ? 'mercadolibre' : 'fallback',
+    ...(etag ? { etag } : {}),
+    'x-cover-source': source,
   };
+}
+
+async function r2CoverResponse(ctx, cover) {
+  const bucket = ctx.env?.COVER_R2;
+  if (!cover || !bucket || typeof bucket.get !== 'function') return null;
+  const object = await bucket.get(cover.objectKey);
+  if (!object?.body) return null;
+  return new Response(object.body, {
+    status: 200,
+    headers: responseHeaders(
+      ctx.env?.APP_ENV === 'production' ? 'r2-production' : 'r2-preview',
+      cover.mime,
+      `"${cover.sha256}"`,
+    ),
+  });
 }
 
 export async function onRequest(ctx) {
@@ -54,20 +71,29 @@ export async function onRequest(ctx) {
   let item = Array.isArray(catalog?.items) ? catalog.items.find(candidate => candidate.id === id) : null;
   if (!item && ['preview', 'production'].includes(ctx.env?.APP_ENV)) item = await fetchPausedItem(ctx, id);
   const source = primaryCoverSource(item);
-  let imageResponse = source
-    ? await fetch(source, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; AmadoLibrosCover/1.0)' } }).catch(() => null)
-    : null;
+  const storedCover = await findPreviewCover(ctx, id, 0, source || null);
+  let response = await r2CoverResponse(ctx, storedCover);
 
-  if (!imageResponse?.ok || !String(imageResponse.headers.get('content-type') || '').startsWith('image/')) {
-    const fallbackUrl = new URL('/images/logo-amado.webp', ctx.request.url);
-    imageResponse = await fetch(fallbackUrl).catch(() => null);
+  if (!response && source) {
+    const imageResponse = await fetch(source, {
+      headers: { 'user-agent': 'Mozilla/5.0 (compatible; AmadoLibrosCover/1.0)' },
+    }).catch(() => null);
+    if (imageResponse?.ok && String(imageResponse.headers.get('content-type') || '').startsWith('image/')) {
+      response = new Response(imageResponse.body, {
+        status: 200,
+        headers: responseHeaders('mercadolibre', imageResponse.headers.get('content-type')),
+      });
+    }
   }
-  if (!imageResponse?.ok) return new Response('Not Found', { status: 404 });
 
-  const response = new Response(imageResponse.body, {
-    status: 200,
-    headers: responseHeaders(source, imageResponse.headers.get('content-type')),
-  });
+  // No se disfraza una portada rota con el logo: Merchant y el auditor deben
+  // poder detectar la falla real y reintentarla desde el mirror.
+  if (!response) {
+    return new Response('Not Found', {
+      status: 404,
+      headers: { 'cache-control': 'public, max-age=300', 'x-cover-source': 'missing' },
+    });
+  }
   if (typeof ctx.waitUntil === 'function') ctx.waitUntil(cache.put(cacheKey, response.clone()));
   return ctx.request.method === 'HEAD'
     ? new Response(null, { status: 200, headers: response.headers })

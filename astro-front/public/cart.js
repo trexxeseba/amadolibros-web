@@ -210,7 +210,8 @@
       for (var j = 0; j < cart.items.length; j++) {
         var item = cart.items[j];
         var current = byId[item.id];
-        if (!current || current.status === 'sin_stock' || current.status === 'no_existe') continue;
+        if (!current || current.status === 'sin_stock' || current.status === 'no_existe' ||
+            current.status === 'moneda_no_admitida') continue;
         var price = Math.round(Number(current.price_uyu));
         var available = Math.floor(Number(current.available_quantity));
         if (isFinite(price) && price > 0 && item.price !== price) {

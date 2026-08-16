@@ -124,6 +124,16 @@ test('9. Ficha sin stock ("por encargo"): no hay precio web/tarjeta ni botón de
     assert.match(html, /class="btn btn-wa"/);
 });
 
+test('9b. Moneda no-UYU se informa sin conversión inventada y queda fuera del carrito', () => {
+    const html = renderPage(book({ price: 285, currency: 'USD' }), 'producto-en-usd', false, '');
+    assert.match(html, /Precio publicado: USD 285/);
+    assert.match(html, /"priceCurrency":"USD"/);
+    assert.doesNotMatch(html, /data-action="add-to-cart"/);
+    assert.doesNotMatch(html, /Precio web\/tarjeta/);
+    assert.match(html, /Consultar precio y forma de pago/);
+    assert.match(html, /Comprar en MercadoLibre/);
+});
+
 test('10. No cambia el cálculo de precio, cuotas ni transferencia (solo texto/orden/estilo)', () => {
     const html = renderPage(book({ price: 999 }), 'un-libro', false, '');
     assert.match(html, /\$999 UYU/); // precio base sin redondeo especial

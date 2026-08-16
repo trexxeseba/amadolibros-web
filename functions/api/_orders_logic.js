@@ -185,6 +185,20 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
       continue;
     }
 
+    const currency = String(catalogItem.currency || catalogItem.currency_id || '').trim().toUpperCase();
+    if (currency && currency !== 'UYU') {
+      errors.push('Moneda no admitida para checkout: ' + item.product_id);
+      issues.push({
+        product_id: item.product_id,
+        status: 'moneda_no_admitida',
+        title: typeof catalogItem.title === 'string' ? catalogItem.title : '',
+        author: typeof catalogItem.author === 'string' ? catalogItem.author : '',
+        currency,
+        available_quantity: 0,
+      });
+      continue;
+    }
+
     const available = Number(catalogItem.available_quantity);
     if (!Number.isInteger(available) || available < 0) {
       errors.push('Stock inválido para: ' + item.product_id);
@@ -294,6 +308,18 @@ export function validateCartAgainstCatalog(requestItems, catalogItems) {
         status: 'sin_stock',
         title,
         author,
+        available_quantity: 0,
+      };
+    }
+
+    const currency = String(catalogItem.currency || catalogItem.currency_id || '').trim().toUpperCase();
+    if (currency && currency !== 'UYU') {
+      return {
+        product_id: productId,
+        status: 'moneda_no_admitida',
+        title,
+        author,
+        currency,
         available_quantity: 0,
       };
     }

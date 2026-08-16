@@ -54,7 +54,15 @@ export function buildPausedCatalogArtifacts(catalog, {
     .filter(item => item?.status === 'paused')
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
   const active = (Array.isArray(catalog?.items) ? catalog.items : [])
-    .filter(item => item?.status === 'active' && Number(item.available_quantity) > 0)
+    .filter(item => {
+      const currency = String(item?.currency || item?.currency_id || '').trim().toUpperCase();
+      return item?.status === 'active' &&
+        Number(item.available_quantity) > 0 &&
+        // Catálogos anteriores no incluían currency_id y eran UYU. Cuando la
+        // fuente sí declara moneda, solo UYU puede entrar en las grillas que
+        // ofrecen cuotas, transferencia y checkout en pesos.
+        (!currency || currency === 'UYU');
+    })
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
 
   if (paused.length === 0) throw new Error('No hay publicaciones pausadas para versionar.');
