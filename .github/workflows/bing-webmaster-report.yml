@@ -1,0 +1,178 @@
+name: Bing Webmaster read-only report
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bing-webmaster-report.yml'
+      - 'worker-sync/bing-webmaster.js'
+      - 'worker-sync/index.js'
+  schedule:
+    # Lunes 08:15 de Uruguay (UTC-3, sin cambio estacional).
+    - cron: '15 11 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bing-webmaster-read-only-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Read Bing Webmaster data
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Resolve protected report URL
+        id: endpoint
+        shell: bash
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SYNC_SECRET" ]; then
+            echo "ERROR: SYNC_SECRET no está configurado en production."
+            exit 1
+          fi
+          if [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
+            echo "ERROR: WORKER_SYNC_TRIGGER_URL no está configurada en production."
+            exit 1
+          fi
+
+          BASE_URL="${WORKER_SYNC_TRIGGER_URL%%/trigger*}"
+          if [[ "$BASE_URL" != https://* ]]; then
+            echo "ERROR: WORKER_SYNC_TRIGGER_URL debe usar HTTPS."
+            exit 1
+          fi
+
+          echo "report_url=${BASE_URL%/}/bing-webmaster/summary" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch read-only Bing summary
+        id: fetch
+        shell: bash
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          REPORT_URL: ${{ steps.endpoint.outputs.report_url }}
+        run: |
+          set -euo pipefail
+
+          HTTP_STATUS=$(curl --silent --show-error --max-time 90 \
+            --output bing-webmaster-summary.json \
+            --write-out '%{http_code}' \
+            --request GET "$REPORT_URL" \
+            --header "Authorization: Bearer $SYNC_SECRET" \
+            --header 'Accept: application/json')
+
+          echo "http_status=$HTTP_STATUS" >> "$GITHUB_OUTPUT"
+          echo "Bing report HTTP: $HTTP_STATUS"
+
+          if ! jq empty bing-webmaster-summary.json; then
+            echo "ERROR: el Worker no devolvió JSON válido."
+            exit 1
+          fi
+
+      - name: Build human-readable and CSV reports
+        if: steps.fetch.outputs.http_status == '200'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          jq -e '
+            .site_url == "https://www.amadolibros.com" and
+            .protocol == "rest-json" and
+            .read_only == true and
+            .limitations.submit_url_batch_enabled == false
+          ' bing-webmaster-summary.json >/dev/null
+
+          jq -e '
+            ([.. | objects | has("apikey")] | any | not) and
+            ([.. | strings | contains("apikey=")] | any | not)
+          ' bing-webmaster-summary.json >/dev/null
+
+          jq -r '
+            ["query", "date", "impressions", "clicks", "average_impression_position", "average_click_position"],
+            (.query_performance.rows[]? |
+              [.query, .date, .impressions, .clicks, .average_impression_position, .average_click_position]) |
+            @csv
+          ' bing-webmaster-summary.json > bing-query-performance.csv
+
+          jq -r '
+            ["url", "http_code", "issue_code", "inlinks"],
+            (.crawl_issues.rows[]? | [.url, .http_code, .issue_code, .inlinks]) |
+            @csv
+          ' bing-webmaster-summary.json > bing-crawl-issues.csv
+
+          STATUS=$(jq -r '.status' bing-webmaster-summary.json)
+          CHECKED_AT=$(jq -r '.checked_at' bing-webmaster-summary.json)
+          IMPRESSIONS=$(jq -r '.query_performance.totals.impressions // "no disponible"' bing-webmaster-summary.json)
+          CLICKS=$(jq -r '.query_performance.totals.clicks // "no disponible"' bing-webmaster-summary.json)
+          QUERIES=$(jq -r '.query_performance.total_rows // "no disponible"' bing-webmaster-summary.json)
+          ISSUES=$(jq -r '.crawl_issues.total // "no disponible"' bing-webmaster-summary.json)
+          DAILY_QUOTA=$(jq -r '.url_submission_quota.daily_quota // "no disponible"' bing-webmaster-summary.json)
+          MONTHLY_QUOTA=$(jq -r '.url_submission_quota.monthly_quota // "no disponible"' bing-webmaster-summary.json)
+
+          {
+            echo '# Bing Webmaster — Amado Libros'
+            echo
+            echo "- Estado: **$STATUS**"
+            echo "- Consultado: $CHECKED_AT"
+            echo '- Propiedad: https://www.amadolibros.com'
+            echo '- Acceso: solo lectura; envío de URLs deshabilitado'
+            echo
+            echo '## Rendimiento'
+            echo
+            echo "- Filas de consultas: $QUERIES"
+            echo "- Impresiones informadas: $IMPRESSIONS"
+            echo "- Clics informados: $CLICKS"
+            echo
+            echo '## Rastreo y cuota'
+            echo
+            echo "- Problemas de rastreo informados: $ISSUES"
+            echo "- Cuota diaria informativa: $DAILY_QUOTA"
+            echo "- Cuota mensual informativa: $MONTHLY_QUOTA"
+            echo
+            echo '> La API no reemplaza el Site Scan completo ni la investigación manual de palabras clave.'
+          } > bing-webmaster-report.md
+
+          cat bing-webmaster-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Explain failed Worker response
+        if: steps.fetch.outputs.http_status != '200'
+        shell: bash
+        run: |
+          {
+            echo '# Bing Webmaster — error de consulta'
+            echo
+            echo "El Worker respondió HTTP ${{ steps.fetch.outputs.http_status }}."
+            echo 'El JSON de diagnóstico queda adjunto como artefacto; no contiene secretos.'
+          } > bing-webmaster-report.md
+          cat bing-webmaster-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Bing report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bing-webmaster-${{ github.run_id }}
+          path: |
+            bing-webmaster-summary.json
+            bing-webmaster-report.md
+            bing-query-performance.csv
+            bing-crawl-issues.csv
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Require a complete Bing response
+        if: always()
+        shell: bash
+        env:
+          HTTP_STATUS: ${{ steps.fetch.outputs.http_status }}
+        run: |
+          set -euo pipefail
+          test "$HTTP_STATUS" = '200'
+          jq -e '.status == "ok"' bing-webmaster-summary.json >/dev/null
