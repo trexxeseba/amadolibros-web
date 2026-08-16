@@ -12,6 +12,7 @@ const DEFAULT_CONCURRENCY = 6;
 const MAX_GALLERY_IMAGES = 16;
 const TARGET_SHORT_EDGE = 1024;
 const TRANSFORM_RETRY_MS = 24 * 60 * 60 * 1000;
+const MANIFEST_WRITE_ATTEMPTS = 4;
 
 function emptyManifest(nowIso) {
   return { schema_version: 1, updated_at: nowIso, entries: {} };
@@ -64,12 +65,71 @@ function validManifest(value) {
     typeof value.entries === 'object' && !Array.isArray(value.entries);
 }
 
-async function readManifest(bucket, nowIso) {
+async function readManifestState(bucket, nowIso) {
   const object = await bucket.get(COVER_MANIFEST_KEY);
-  if (!object) return emptyManifest(nowIso);
+  if (!object) return { manifest: emptyManifest(nowIso), etag: null };
   const parsed = JSON.parse(await object.text());
   if (!validManifest(parsed)) throw new Error('Manifest de portadas R2 inválido.');
-  return parsed;
+  const etag = String(object.etag || object.httpEtag || '').replace(/^"|"$/g, '');
+  if (!etag) throw new Error('Manifest de portadas R2 sin ETag; no se puede actualizar de forma atómica.');
+  return { manifest: parsed, etag };
+}
+
+function timestamp(value) {
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mergeProcessedEntry(freshEntry, processed) {
+  const localEntry = processed.entry;
+  if (!freshEntry) return localEntry;
+
+  if (processed.status !== 'failed') {
+    // Si otra ejecución ya validó la misma entrada mientras esta corrida
+    // procesaba sus bytes, nunca hacemos retroceder el puntero `current`.
+    return timestamp(localEntry?.last_validated_at) > timestamp(freshEntry?.last_validated_at)
+      ? localEntry
+      : freshEntry;
+  }
+
+  // Un error sólo agrega diagnóstico. La última copia válida leída tras
+  // el conflicto gana siempre, incluso si el intento fallido partió de un
+  // manifest más viejo.
+  const merged = { ...freshEntry };
+  if (timestamp(localEntry?.last_error?.at) > timestamp(freshEntry?.last_error?.at)) {
+    merged.last_attempted_source_url = localEntry.last_attempted_source_url;
+    merged.last_error = localEntry.last_error;
+  }
+  return merged;
+}
+
+async function writeManifestAtomically(bucket, initialState, processedEntries, nowIso) {
+  let state = initialState;
+  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+    const nextManifest = {
+      ...state.manifest,
+      updated_at: timestamp(nowIso) > timestamp(state.manifest.updated_at)
+        ? nowIso
+        : state.manifest.updated_at,
+      entries: { ...state.manifest.entries },
+    };
+    for (const [key, processed] of processedEntries) {
+      nextManifest.entries[key] = mergeProcessedEntry(nextManifest.entries[key], processed);
+    }
+
+    const onlyIf = state.etag
+      ? { etagMatches: state.etag }
+      : { etagDoesNotMatch: '*' };
+    const result = await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(nextManifest), {
+      onlyIf,
+      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+    });
+    // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
+    // un éxito válido para mocks/implementaciones compatibles con put().
+    if (result !== null) return { manifest: nextManifest, retries: attempt };
+    state = await readManifestState(bucket, nowIso);
+  }
+  throw new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
 }
 
 function needsAiUpscale(entry) {
@@ -398,7 +458,8 @@ export async function syncCoverMirror(env, catalog, {
   }
   const nowDate = now();
   const nowIso = nowDate.toISOString();
-  const manifest = await readManifest(bucket, nowIso);
+  const manifestState = await readManifestState(bucket, nowIso);
+  const manifest = manifestState.manifest;
   const aiUpscaleEnabled = Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
   // La mejora generativa se reserva para la portada primaria del mismo
   // universo deduplicado que recibe Merchant. Las imágenes secundarias se
@@ -419,7 +480,7 @@ export async function syncCoverMirror(env, catalog, {
     includePaused,
     priorityCatalogProductIds,
   });
-  const nextManifest = { ...manifest, updated_at: nowIso, entries: { ...manifest.entries } };
+  const processedEntries = new Map();
   const results = await mapWithConcurrency(batch.selected, Math.max(1, Number(concurrency) || 1), async candidate => {
     const key = `${candidate.product_id}:${candidate.position}`;
     try {
@@ -430,32 +491,35 @@ export async function syncCoverMirror(env, catalog, {
         fetchFn,
         candidate.aiUpscaleEligible ? env?.IMAGES : null,
       );
-      nextManifest.entries[key] = result.entry;
+      processedEntries.set(key, { entry: result.entry, status: result.status });
       return { key, status: result.status, quality_status: result.quality_status };
     } catch (error) {
-      nextManifest.entries[key] = {
+      const entry = {
         ...(candidate.entry || { product_id: candidate.product_id, position: candidate.position, current: null }),
         last_attempted_source_url: candidate.source_url,
         last_error: { at: nowIso, message: String(error?.message || 'Error').slice(0, 240) },
       };
+      processedEntries.set(key, { entry, status: 'failed' });
       return { key, status: 'failed', error: String(error?.message || 'Error').slice(0, 160) };
     }
   });
+  let finalManifest = manifest;
+  let manifestRetries = 0;
   if (batch.selected.length > 0) {
-    await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(nextManifest), {
-      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-    });
+    const written = await writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+    finalManifest = written.manifest;
+    manifestRetries = written.retries;
   }
-  const validCopies = Object.values(nextManifest.entries).filter(entry => entry?.current?.object_key).length;
+  const validCopies = Object.values(finalManifest.entries).filter(entry => entry?.current?.object_key).length;
   const imported = results.filter(result => ['imported', 'revalidated'].includes(result.status)).length;
   const failed = results.filter(result => result.status === 'failed').length;
-  const aiUpscaled = Object.values(nextManifest.entries).filter(entry =>
+  const aiUpscaled = Object.values(finalManifest.entries).filter(entry =>
     entry?.current?.transform?.kind === 'cloudflare-ai-upscale' &&
     Number(entry.current.transform.version) === COVER_AI_TRANSFORM_VERSION &&
     Math.min(Number(entry.current.width) || 0, Number(entry.current.height) || 0) >= TARGET_SHORT_EDGE
   ).length;
   const qualityPending = aiUpscaleEnabled
-    ? Object.values(nextManifest.entries).filter(entry =>
+    ? Object.values(finalManifest.entries).filter(entry =>
         Number(entry?.position) === 0 &&
         aiUpscaleProductIds.has(String(entry?.product_id || '').toUpperCase()) && needsAiUpscale(entry)
       ).length
@@ -472,6 +536,7 @@ export async function syncCoverMirror(env, catalog, {
     valid_copies: validCopies,
     ai_upscaled: aiUpscaled,
     quality_pending: qualityPending,
+    manifest_retries: manifestRetries,
     results,
   };
 }

@@ -18,6 +18,7 @@ import {
     normalizePublisherForDescription,
     buildFeedDescription,
     merchantImageLink,
+    filterItemsWithReadyPrimaryCover,
     truncateMerchantText,
     renderFeedItem,
     pickRepresentativeItem,
@@ -31,7 +32,7 @@ function book(overrides = {}) {
         status: 'active', available_quantity: 1, condition: 'new',
         thumbnail: 'http://http2.mlstatic.com/D_1-I.jpg',
         permalink: 'https://articulo.mercadolibre.com.uy/MLU-1',
-        isbn: null, publisher: null,
+        isbn: null, publisher: null, currency: 'UYU', domain_id: 'MLU-BOOKS',
         ...overrides,
     };
 }
@@ -177,6 +178,11 @@ test('10. ISBN inválido (checksum incorrecto) nunca se publica como GTIN', () =
     assert.equal(result.hadValue, true);
 });
 
+test('10b. Un EAN-13 válido que no usa prefijo 978/979 no se confunde con ISBN', () => {
+    assert.equal(isValidIsbn13('4006381333931'), false);
+    assert.equal(normalizeIsbnToGtin('4006381333931').valid, false);
+});
+
 test('11. Producto con GTIN válido no lleva <g:identifier_exists>no</g:identifier_exists>', () => {
     const xml = renderFeedItem(book({ id: 'MLU1', isbn: '9788499809991' }));
     assert.doesNotMatch(xml, /identifier_exists/);
@@ -259,15 +265,25 @@ test('17b. La imagen Merchant siempre queda bajo dominio propio', () => {
     assert.equal(merchantImageLink(book({ id: 'otro' })), '');
 });
 
-test('17c. Excluye moneda explícita distinta de UYU sin apagar el catálogo legado', () => {
+test('17c. Exige moneda UYU explícita y no infiere precios ambiguos', () => {
     assert.equal(isEligibleForFeed(book({ currency: 'UYU' })), true);
-    assert.equal(isEligibleForFeed(book({ currency: null })), true);
+    assert.equal(isEligibleForFeed(book({ currency: null })), false);
     assert.equal(isEligibleForFeed(book({ currency: 'USD' })), false);
+    assert.throws(() => renderFeedItem(book({ currency: null })), /Moneda no publicable/);
 });
 
-test('17d. Un dominio no-libro es autoritativo y un legado necesita evidencia bibliográfica', () => {
+test('17d. Clasifica libros con señales fuertes sin aceptar una señal legado aislada', () => {
     assert.equal(isBookProduct(book({ domain_id: 'MLU-BOOKS' })), true);
-    assert.equal(isBookProduct(book({ domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991' })), false);
+    assert.equal(isBookProduct(book({
+        domain_id: 'MLU-BOOKS_AND_MAGAZINES', isbn: null, author: null, pages: null,
+    })), true);
+    assert.equal(isBookProduct(book({ domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991' })), true);
+    assert.equal(isBookProduct(book({
+        domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991', author: null,
+        pages: null, bibliographic: null,
+    })), false);
+    assert.equal(isBookProduct(book({ domain_id: null, isbn: null, author: 'Una autora', pages: null })), false);
+    assert.equal(isBookProduct(book({ domain_id: null, isbn: null, author: 'Una autora', pages: 240 })), true);
     const ssd = book({
         title: 'Disco Sólido SSD Kingston', domain_id: null,
         author: null, isbn: null, pages: null, bibliographic: null,
@@ -276,7 +292,35 @@ test('17d. Un dominio no-libro es autoritativo y un legado necesita evidencia bi
     assert.equal(isEligibleForFeed(ssd), false);
 });
 
-test('17e. Título Merchant nunca supera 150 caracteres y corta por palabra', () => {
+test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {
+    const ready = book({ id: 'MLU123456', thumbnail: 'http://http2.mlstatic.com/D_READY-I.jpg' });
+    const stale = book({ id: 'MLU123457', thumbnail: 'https://http2.mlstatic.com/D_NEW-I.jpg' });
+    const missing = book({ id: 'MLU123458', thumbnail: 'https://http2.mlstatic.com/D_MISSING-I.jpg' });
+    const sha = 'a'.repeat(64);
+    const manifest = {
+        schema_version: 1,
+        entries: {
+            'MLU123456:0': {
+                current: {
+                    object_key: `covers/v1/objects/${sha}.jpg`, sha256: sha,
+                    mime: 'image/jpeg', source_url: 'https://http2.mlstatic.com/D_READY-O.jpg',
+                },
+            },
+            'MLU123457:0': {
+                current: {
+                    object_key: `covers/v1/objects/${sha}.jpg`, sha256: sha,
+                    mime: 'image/jpeg', source_url: 'https://http2.mlstatic.com/D_OLD-O.jpg',
+                },
+            },
+        },
+    };
+    assert.deepEqual(
+        filterItemsWithReadyPrimaryCover([ready, stale, missing], manifest).map(item => item.id),
+        ['MLU123456'],
+    );
+});
+
+test('17f. Título Merchant nunca supera 150 caracteres y corta por palabra', () => {
     const title = Array.from({ length: 40 }, () => 'palabra').join(' ');
     const clipped = truncateMerchantText(title, 150);
     assert.ok(clipped.length <= 150);

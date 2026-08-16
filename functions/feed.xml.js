@@ -58,6 +58,8 @@ import { fetchCatalog } from './_shared/catalog.js';
 
 const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
+const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
+const COVER_OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 
 export async function onRequest(context) {
     try {
@@ -74,7 +76,12 @@ export async function onRequest(context) {
         // ficha válida + moneda UYU + evidencia bibliográfica. El catálogo
         // web puede seguir mostrando antigüedades u otros productos; el feed
         // de Amado Libros se mantiene deliberadamente limitado a libros.
-        const eligibleItems = items.filter(isEligibleForFeed);
+        const commerciallyEligibleItems = items.filter(isEligibleForFeed);
+        const coverManifest = await readMerchantCoverManifest(context);
+        const eligibleItems = coverManifest
+            ? filterItemsWithReadyPrimaryCover(commerciallyEligibleItems, coverManifest)
+            : commerciallyEligibleItems;
+        const pendingCovers = commerciallyEligibleItems.length - eligibleItems.length;
 
         // Deduplicación controlada: una sola oferta por GTIN+condition (ver
         // comentario de cabecera). Los ítems sin GTIN válido pasan todos,
@@ -107,7 +114,8 @@ export async function onRequest(context) {
         return new Response(feed, {
             headers: {
                 "content-type": "application/xml;charset=UTF-8",
-                "cache-control": "public, max-age=21600", // Cache 6 horas
+                "cache-control": `public, max-age=${pendingCovers > 0 ? 300 : 21600}`,
+                "x-amado-feed-cover-pending": String(pendingCovers),
             },
         });
 
@@ -137,32 +145,36 @@ export function isEligibleForFeed(item) {
     if (!(Number(item.available_quantity) > 0)) return false;
     if (!(Number(item.price) > 0)) return false;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
-    // Catálogos anteriores a FULL-COMMERCE-AUDIT no conservan currency_id.
-    // Se tolera temporalmente el vacío para no apagar el feed durante el
-    // despliegue coordinado; una moneda explícita distinta de UYU se excluye.
-    if (currency && currency !== 'UYU') return false;
+    // No se infiere moneda: un precio sin currency_id es ambiguo y Merchant
+    // no debe recibirlo como UYU por defecto.
+    if (currency !== 'UYU') return false;
     if (!isBookProduct(item)) return false;
     return true;
 }
 
 /**
  * Merchant no debe recibir un SSD, un candelabro u otra antigüedad como si
- * fuera un libro. Cuando ML ya informa domain_id, ese dato es autoritativo.
- * Para el catálogo legado sin domain_id se exige evidencia bibliográfica
- * fuerte; el título o publisher no bastan porque pueden ser engañosos.
+ * fuera un libro. El dominio BOOKS es una señal suficiente; un dominio de
+ * otra familia no invalida por sí solo un ISBN de libro acompañado por otra
+ * señal bibliográfica. Sin dominio se exige ISBN o dos señales independientes.
  */
 export function isBookProduct(item) {
     const domain = String(item?.domain_id || '').trim().toUpperCase();
-    if (domain) return domain.endsWith('-BOOKS');
-
-    if (normalizeIsbnToGtin(item?.isbn).valid) return true;
-    if (String(item?.author || '').trim()) return true;
-    if (Number(item?.pages) > 0) return true;
     const bibliographic = item?.bibliographic;
-    return Boolean(
+    const hasBibliographic = Boolean(
         bibliographic && typeof bibliographic === 'object' &&
         Object.values(bibliographic).some(value => String(value || '').trim())
     );
+    const hasIsbn = normalizeIsbnToGtin(item?.isbn).valid;
+    const supportingSignals = [
+        Boolean(String(item?.author || '').trim()),
+        Number(item?.pages) > 0,
+        hasBibliographic,
+    ].filter(Boolean).length;
+
+    if (/(?:^|[-_])BOOKS(?:$|[-_])/.test(domain)) return true;
+    if (domain) return hasIsbn && supportingSignals >= 1;
+    return hasIsbn || supportingSignals >= 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,9 +195,9 @@ export function cleanIsbnRaw(raw) {
         .replace(/[\s-]+/g, '');
 }
 
-/** Valida el dígito de control de un ISBN-13 (o EAN-13 de libro). */
+/** Valida un ISBN-13 real: prefijo Bookland 978/979 y dígito de control. */
 export function isValidIsbn13(digits) {
-    if (!/^\d{13}$/.test(digits)) return false;
+    if (!/^(978|979)\d{10}$/.test(digits)) return false;
     let sum = 0;
     for (let i = 0; i < 12; i++) sum += Number(digits[i]) * (i % 2 === 0 ? 1 : 3);
     const check = (10 - (sum % 10)) % 10;
@@ -347,13 +359,72 @@ export function merchantImageLink(item) {
         : '';
 }
 
+function primaryMerchantSource(item) {
+    const pictures = Array.isArray(item?.pictures) ? item.pictures : [];
+    const raw = pictures[0] || item?.thumbnail;
+    if (typeof raw !== 'string' || !raw.trim()) return '';
+    try {
+        const url = new URL(raw.trim());
+        const hostname = url.hostname.toLowerCase();
+        if (!['http:', 'https:'].includes(url.protocol) ||
+            !(hostname === 'mlstatic.com' || hostname.endsWith('.mlstatic.com'))) return '';
+        url.protocol = 'https:';
+        url.hash = '';
+        url.username = '';
+        url.password = '';
+        url.pathname = url.pathname.replace(/-I\.(jpg|jpeg|png|webp)$/i, '-O.$1');
+        return url.toString();
+    } catch {
+        return '';
+    }
+}
+
+function readyPrimaryCover(entry, sourceUrl) {
+    const current = entry?.current;
+    const match = COVER_OBJECT_KEY_RE.exec(String(current?.object_key || ''));
+    if (!match || current.sha256 !== match[1]) return false;
+    const expectedMime = `image/${match[2] === 'jpg' ? 'jpeg' : match[2]}`;
+    return current.mime === expectedMime && current.source_url === sourceUrl;
+}
+
+export function filterItemsWithReadyPrimaryCover(items, manifest) {
+    if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
+        typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) {
+        throw new Error('Manifest de portadas no válido para Merchant.');
+    }
+    return items.filter(item => {
+        const id = String(item?.id || '').trim().toUpperCase();
+        const sourceUrl = primaryMerchantSource(item);
+        return Boolean(sourceUrl && readyPrimaryCover(manifest.entries[`${id}:0`], sourceUrl));
+    });
+}
+
+async function readMerchantCoverManifest(context) {
+    if (context?.env?.APP_ENV !== 'production') return null;
+    const bucket = context?.env?.COVER_R2;
+    if (!bucket || typeof bucket.get !== 'function') {
+        throw new Error('COVER_R2 no está disponible en producción; se conserva el feed anterior.');
+    }
+    const object = await bucket.get(COVER_MANIFEST_KEY);
+    if (!object || typeof object.text !== 'function') {
+        throw new Error('Manifest de portadas no disponible; se conserva el feed anterior.');
+    }
+    const manifest = JSON.parse(await object.text());
+    if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
+        typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) {
+        throw new Error('Manifest de portadas inválido; se conserva el feed anterior.');
+    }
+    return manifest;
+}
+
 // ---------------------------------------------------------------------------
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
 export function renderFeedItem(item) {
     const stock = Number(item.available_quantity) || 0;
-    const currency = String(item.currency || item.currency_id || 'UYU').toUpperCase();
+    const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
+    if (currency !== 'UYU') throw new Error(`Moneda no publicable en Merchant para ${item.id || 'item sin id'}.`);
     const cond = item.condition ?? 'used';
     const availability = stock > 0 ? 'in stock' : 'out of stock';
     const price = `${item.price} ${currency}`;

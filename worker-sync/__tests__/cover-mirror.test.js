@@ -25,20 +25,40 @@ function pngBytes(width = 600, height = 900, salt = 0) {
 class MockR2 {
   constructor(manifest = null) {
     this.objects = new Map();
-    if (manifest) this.objects.set(COVER_MANIFEST_KEY, new TextEncoder().encode(JSON.stringify(manifest)));
+    this.versions = new Map();
+    this.conflictManifestOnce = null;
+    if (manifest) this.write(COVER_MANIFEST_KEY, new TextEncoder().encode(JSON.stringify(manifest)));
+  }
+  etag(key) {
+    return `etag-${this.versions.get(key) || 0}`;
+  }
+  write(key, bytes) {
+    this.objects.set(key, bytes.slice());
+    this.versions.set(key, (this.versions.get(key) || 0) + 1);
   }
   async get(key) {
     const bytes = this.objects.get(key);
     if (!bytes) return null;
-    return { body: bytes, text: async () => new TextDecoder().decode(bytes) };
+    return { body: bytes, etag: this.etag(key), text: async () => new TextDecoder().decode(bytes) };
   }
   async head(key) {
     const bytes = this.objects.get(key);
     return bytes ? { size: bytes.byteLength } : null;
   }
-  async put(key, body) {
+  async put(key, body, options = {}) {
+    if (key === COVER_MANIFEST_KEY && this.conflictManifestOnce) {
+      const manifest = this.conflictManifestOnce(this.objects.has(key) ? this.manifest() : null);
+      this.conflictManifestOnce = null;
+      this.write(key, new TextEncoder().encode(JSON.stringify(manifest)));
+      return null;
+    }
+    const current = this.objects.has(key) ? this.etag(key) : null;
+    const onlyIf = options.onlyIf || null;
+    if (onlyIf?.etagMatches && onlyIf.etagMatches !== current) return null;
+    if (onlyIf?.etagDoesNotMatch === '*' && current) return null;
     const bytes = typeof body === 'string' ? new TextEncoder().encode(body) : new Uint8Array(body);
-    this.objects.set(key, bytes.slice());
+    this.write(key, bytes);
+    return { etag: this.etag(key) };
   }
   manifest() {
     return JSON.parse(new TextDecoder().decode(this.objects.get(COVER_MANIFEST_KEY)));
@@ -269,5 +289,90 @@ test('una descarga fallida conserva la última copia y registra el error', async
   assert.equal(result.pending, 1);
   const entry = bucket.manifest().entries['MLU123456:0'];
   assert.equal(entry.current.object_key, 'covers/v1/objects/old.jpg');
+  assert.match(entry.last_error.message, /HTTP 403/);
+});
+
+test('reintenta el put condicional y fusiona entradas de dos corridas concurrentes', async () => {
+  const bucket = new MockR2();
+  bucket.conflictManifestOnce = () => ({
+    schema_version: 1,
+    updated_at: '2026-08-16T11:59:59.000Z',
+    entries: {
+      'MLU999999:0': {
+        product_id: 'MLU999999', position: 0,
+        current: {
+          object_key: `covers/v1/objects/${'b'.repeat(64)}.jpg`,
+          sha256: 'b'.repeat(64), mime: 'image/jpeg',
+          source_url: 'https://http2.mlstatic.com/D_CONCURRENT-O.jpg',
+        },
+        last_validated_at: '2026-08-16T11:59:59.000Z',
+      },
+    },
+  });
+
+  const result = await syncCoverMirror(
+    { COVER_R2: bucket },
+    { items: [item()] },
+    {
+      now: () => new Date('2026-08-16T12:00:00.000Z'),
+      fetchFn: async () => new Response(pngBytes(), { headers: { 'content-type': 'image/png' } }),
+    },
+  );
+
+  assert.equal(result.manifest_retries, 1);
+  assert.ok(bucket.manifest().entries['MLU123456:0'].current.object_key);
+  assert.equal(
+    bucket.manifest().entries['MLU999999:0'].current.object_key,
+    `covers/v1/objects/${'b'.repeat(64)}.jpg`,
+  );
+});
+
+test('un intento fallido concurrente no pisa una copia válida más nueva', async () => {
+  const previous = {
+    schema_version: 1,
+    updated_at: '2026-08-01T00:00:00.000Z',
+    entries: {
+      'MLU123456:0': {
+        product_id: 'MLU123456', position: 0,
+        current: {
+          object_key: `covers/v1/objects/${'a'.repeat(64)}.jpg`,
+          sha256: 'a'.repeat(64), mime: 'image/jpeg',
+          source_url: 'https://http2.mlstatic.com/D_OLD-O.jpg',
+        },
+        last_validated_at: '2026-08-01T00:00:00.000Z',
+      },
+    },
+  };
+  const bucket = new MockR2(previous);
+  bucket.conflictManifestOnce = manifest => ({
+    ...manifest,
+    updated_at: '2026-08-16T12:00:01.000Z',
+    entries: {
+      ...manifest.entries,
+      'MLU123456:0': {
+        ...manifest.entries['MLU123456:0'],
+        current: {
+          object_key: `covers/v1/objects/${'c'.repeat(64)}.jpg`,
+          sha256: 'c'.repeat(64), mime: 'image/jpeg',
+          source_url: item().pictures[0],
+        },
+        last_validated_at: '2026-08-16T12:00:01.000Z',
+      },
+    },
+  });
+
+  const result = await syncCoverMirror(
+    { COVER_R2: bucket },
+    { items: [item()] },
+    {
+      now: () => new Date('2026-08-16T12:00:00.000Z'),
+      fetchFn: async () => new Response('bloqueado', { status: 403 }),
+      limit: 1,
+    },
+  );
+
+  assert.equal(result.manifest_retries, 1);
+  const entry = bucket.manifest().entries['MLU123456:0'];
+  assert.equal(entry.current.object_key, `covers/v1/objects/${'c'.repeat(64)}.jpg`);
   assert.match(entry.last_error.message, /HTTP 403/);
 });
