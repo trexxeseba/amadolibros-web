@@ -80,6 +80,8 @@ test('cada landing muestra catálogo real filtrado y SEO regional verificable', 
     assert.match(html, /eventual envío internacional se confirman caso a caso/);
     assert.doesNotMatch(html, /hreflang/);
     assert.ok(html.includes(expectedItem.title), specialty.id);
+    assert.match(html, /\/cdn-cgi\/image\/format=auto[^\"]+\/book-cover\/MLU\d+\/cover\.jpg/);
+    assert.match(html, /srcset="[^"]+240w,[^"]+360w,[^"]+480w"/);
     assert.doesNotMatch(html, /Cirugía agotada/);
   }
 });

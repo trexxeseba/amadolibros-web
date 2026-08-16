@@ -8,6 +8,11 @@ import {
 } from './brand.js';
 import { slugify } from './slug.js';
 import { authorPageById, matchesAuthor } from './seo-authors.js';
+import {
+  bookCoverUrl,
+  CARD_IMAGE_SIZES,
+  responsiveImage,
+} from './cloudflare-images.js';
 
 const WA = '59899841325';
 
@@ -55,7 +60,7 @@ export function selectAuthorBooks(items, author) {
   });
 }
 
-export function renderAuthorPage(author, items) {
+export function renderAuthorPage(author, items, useCloudflareImages = true) {
   const canonicalUrl = `${BASE}${author.path}`;
   const pageTitle = `Libros de ${author.name} en Uruguay`;
   const metaDescription = `Libros de ${author.name} disponibles en Uruguay: ${author.focus}. Comprá online o consultá por encargos en Amado Libros.`;
@@ -99,11 +104,19 @@ export function renderAuthorPage(author, items) {
 
   const cards = items.map(item => {
     const href = `/libro/${encodeURIComponent(item.id)}/${slugify(item.title)}`;
-    const image = coverUrl(item);
+    const source = useCloudflareImages ? bookCoverUrl(item.id) : coverUrl(item);
+    const image = responsiveImage(source, {
+      widths: [240, 360, 480],
+      defaultWidth: 360,
+      sizes: CARD_IMAGE_SIZES,
+    });
     const price = Number(item.price) || 0;
+    const responsiveAttrs = image.srcset
+      ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
+      : '';
     return `<article class="book-card">
       <a class="cover-link" href="${escapeHtml(href)}">
-        ${image ? `<img src="${escapeHtml(image)}" alt="Portada de ${escapeHtml(item.title)}" loading="lazy" width="180" height="270">` : '<span class="cover-fallback" aria-hidden="true">📚</span>'}
+        ${image.src ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${escapeHtml(item.title)}" loading="lazy" decoding="async" width="180" height="270">` : '<span class="cover-fallback" aria-hidden="true">📚</span>'}
       </a>
       <div class="book-info">
         <h2><a href="${escapeHtml(href)}">${escapeHtml(item.title)}</a></h2>
@@ -165,7 +178,7 @@ export async function renderAuthorRoute(ctx, authorId) {
     return unavailable('No pudimos cargar el catálogo. Intentá nuevamente en unos minutos.');
   }
   const items = selectAuthorBooks(catalog.items, author);
-  return new Response(renderAuthorPage(author, items), {
+  return new Response(renderAuthorPage(author, items, ctx.env?.APP_ENV === 'production'), {
     headers: {
       'content-type': 'text/html;charset=UTF-8',
       'cache-control': 'public, max-age=3600',

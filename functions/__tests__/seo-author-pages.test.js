@@ -62,6 +62,8 @@ test('renderiza contenido visible, canonical, schema y enlaces rastreables', () 
   assert.match(html, /"@type":"ItemList"/);
   assert.match(html, /"publisher":\{"@id":"https:\/\/www\.amadolibros\.com\/#bookstore"\}/);
   assert.match(html, /href="\/libro\/MLU9\/libro-mlu9"/);
+  assert.match(html, /\/cdn-cgi\/image\/format=auto[^\"]+\/book-cover\/MLU9\/cover\.jpg/);
+  assert.match(html, /srcset="[^"]+240w,[^"]+360w,[^"]+480w"/);
   assert.match(html, /Quiénes somos y cómo trabajamos/);
 });
 

@@ -102,6 +102,8 @@ test('la landing filtra productos por la categoría solicitada', async () => {
     assert.doesNotMatch(html, /Libro de prueba Infantil y juvenil/);
     assert.match(html, /<section class="books-grid"/);
     assert.match(html, /href="https:\/\/www\.amadolibros\.com\/libro\/MLU6\//);
+    assert.match(html, /\/cdn-cgi\/image\/format=auto[^\"]+\/book-cover\/MLU6\/cover\.jpg/);
+    assert.match(html, /srcset="[^"]+240w,[^"]+360w,[^"]+480w"/);
     assert.match(html, /<strong>1 título disponible ahora\.<\/strong> Los 791 títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo\./);
 });
 

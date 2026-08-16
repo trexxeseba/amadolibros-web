@@ -186,3 +186,22 @@ test('Ficha usa la portada R2 sólo como primera imagen y conserva las secundari
   assert.match(html, /https:\/\/http2\.mlstatic\.com\/D_SECOND-O\.jpg/);
   assert.match(html, new RegExp(`data-thumbnail="${previewSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
 });
+
+test('Ficha productiva entrega la portada R2 con srcset de Cloudflare Images', () => {
+  const productionSrc = `https://www.amadolibros.com/preview-cover/${ID}/0/${HASH}.jpg`;
+  const html = renderPage({
+    id: ID,
+    title: 'Libro responsivo',
+    author: 'Autora',
+    price: 1200,
+    status: 'active',
+    available_quantity: 1,
+    condition: 'new',
+    pictures: [SOURCE],
+    thumbnail: '',
+    permalink: 'https://articulo.mercadolibre.com.uy/test',
+  }, 'libro-responsivo', false, '', productionSrc);
+  assert.match(html, /class="cover-main"[^>]+\/cdn-cgi\/image\/format=auto/);
+  assert.match(html, /srcset="[^"]+320w,[^"]+480w,[^"]+768w,[^"]+1024w"/);
+  assert.match(html, /onerror=redirect\/preview-cover\/MLU123456789\/0\//);
+});

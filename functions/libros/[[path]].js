@@ -15,6 +15,11 @@ import {
     WA_FLOAT_STYLES,
 } from '../_shared/brand.js';
 import { findSeoCategory, SEO_CATEGORIES } from '../_shared/seo-categories.js';
+import {
+    bookCoverUrl,
+    CARD_IMAGE_SIZES,
+    responsiveImage,
+} from '../_shared/cloudflare-images.js';
 
 const MAX_RESULTS = 48;
 const PAGE_PARAM_RE = /^[1-9][0-9]{0,6}$/;
@@ -164,15 +169,25 @@ function categoryNavHtml(currentId) {
 
 function cardHtml(item, index, navigationBase) {
     const href = `${navigationBase}/libro/${item.id}/${slugify(item.title)}`;
-    const image = httpsImg(item.pictures?.[0] || item.thumbnail || '');
+    const source = navigationBase === BASE
+        ? bookCoverUrl(item.id)
+        : httpsImg(item.pictures?.[0] || item.thumbnail || '');
+    const image = responsiveImage(source, {
+        widths: [240, 360, 480],
+        defaultWidth: 360,
+        sizes: CARD_IMAGE_SIZES,
+    });
     const title = escapeHtml(item.title);
     const author = item.author ? `<p class="book-author">${escapeHtml(item.author)}</p>` : '';
     const price = Number(item.price) || 0;
     const priceText = price.toLocaleString('es-UY');
     const transferText = Math.round(price * 0.88).toLocaleString('es-UY');
     const installmentText = Math.round(price / 12).toLocaleString('es-UY');
-    const imageHtml = image
-        ? `<img src="${escapeHtml(image)}" alt="Portada de ${title}" loading="${index < 6 ? 'eager' : 'lazy'}" decoding="async">`
+    const responsiveAttrs = image.srcset
+        ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
+        : '';
+    const imageHtml = image.src
+        ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="${index < 6 ? 'eager' : 'lazy'}" decoding="async" width="280" height="420">`
         : '<span class="book-placeholder" aria-hidden="true">📚</span>';
 
     return `<article class="book-card">

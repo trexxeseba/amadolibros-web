@@ -18,6 +18,12 @@ import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
 import {
+    bookCoverUrl,
+    cloudflareImageUrl,
+    PRODUCT_IMAGE_SIZES,
+    responsiveImage,
+} from '../_shared/cloudflare-images.js';
+import {
     ensurePerf,
     perfNow,
     perfSummary,
@@ -136,13 +142,30 @@ function detailRow(label, value) {
 function renderGallery(images, safeTitle) {
     if (!images.length) return '';
 
-    const mainImage = images[0];
+    const displayImages = images.map(source => {
+        const main = responsiveImage(source, {
+            widths: [320, 480, 768, 1024],
+            defaultWidth: 480,
+            sizes: PRODUCT_IMAGE_SIZES,
+        });
+        return {
+            src: main.src,
+            srcset: main.srcset,
+            sizes: main.sizes,
+            thumb: cloudflareImageUrl(source, { width: 96, quality: 82 }),
+            lightbox: cloudflareImageUrl(source, { width: 1024, quality: 88 }),
+        };
+    });
+    const mainImage = displayImages[0];
     const multi = images.length > 1;
-    const imagesJson = JSON.stringify(images).replace(/</g, '\\u003c');
+    const imagesJson = JSON.stringify(displayImages).replace(/</g, '\\u003c');
+    const mainResponsiveAttrs = mainImage.srcset
+        ? ` srcset="${escapeHtml(mainImage.srcset)}" sizes="${escapeHtml(mainImage.sizes)}"`
+        : '';
 
     const thumbsHtml = multi
         ? `<div class="thumbs" role="group" aria-label="Más imágenes del libro">
-${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} — imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}"><img src="${escapeHtml(url)}" alt="${safeTitle} — imagen ${i + 1}" loading="lazy" width="56" height="56"></button>`).join('\n')}
+${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} — imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}"><img src="${escapeHtml(image.thumb)}" alt="${safeTitle} — imagen ${i + 1}" loading="lazy" decoding="async" width="56" height="56"></button>`).join('\n')}
   </div>`
         : '';
 
@@ -153,13 +176,13 @@ ${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="
 
     return `<div class="cover">
   <button type="button" class="cover-btn" id="gMainBtn" data-current-index="0" aria-label="Ampliar imagen de ${safeTitle}">
-    <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager" width="260" data-title="${safeTitle}">
+    <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage.src)}"${mainResponsiveAttrs} alt="${safeTitle}" loading="eager" decoding="async" fetchpriority="high" width="360" height="540" data-title="${safeTitle}">
   </button>
   ${thumbsHtml}
   <div id="glb" class="lb" role="dialog" aria-modal="true" aria-label="Galería de imágenes" tabindex="-1" hidden>
     <div class="lb-inner">
       <button type="button" class="lb-close" id="glbClose" aria-label="Cerrar galería">&#10005;</button>
-      <img class="lb-img" id="glbImg" src="${escapeHtml(mainImage)}" alt="${safeTitle}" loading="eager">
+      <img class="lb-img" id="glbImg" src="${escapeHtml(mainImage.lightbox)}" alt="${safeTitle}" loading="eager" decoding="async">
       <p class="lb-counter" id="glbCounter" aria-live="polite" aria-atomic="true">Imagen 1 de ${images.length}</p>
       <div class="lb-nav">${navBtns}</div>
     </div>
@@ -178,7 +201,14 @@ ${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="
 
   function selectThumb(idx){
     cur=idx;
-    mainImg.src=imgs[idx];
+    mainImg.src=imgs[idx].src;
+    if(imgs[idx].srcset){
+      mainImg.srcset=imgs[idx].srcset;
+      mainImg.sizes=imgs[idx].sizes||'';
+    }else{
+      mainImg.removeAttribute('srcset');
+      mainImg.removeAttribute('sizes');
+    }
     mainImg.alt=title+' — imagen '+(idx+1);
     mainBtn.setAttribute('data-current-index',String(idx));
     thumbBtns.forEach(function(b,i){b.setAttribute('aria-current',i===idx?'true':'false');});
@@ -198,7 +228,7 @@ ${images.map((url, i) => `    <button type="button" class="thumb-btn" data-idx="
   }
 
   function updateLb(){
-    lbImg.src=imgs[cur];
+    lbImg.src=imgs[cur].lightbox;
     lbImg.alt=title+' — imagen '+(cur+1);
     if(lbCtr)lbCtr.textContent='Imagen '+(cur+1)+' de '+n;
   }
@@ -275,16 +305,26 @@ export function selectRelatedBooks(catalogItems, item, limit = 4) {
     return related;
 }
 
-function renderRelatedBooks(relatedBooks, author) {
+function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
     if (!Array.isArray(relatedBooks) || relatedBooks.length === 0) return '';
 
     const cards = relatedBooks.map((book) => {
         const title = escapeHtml(book.title);
         const href = `/libro/${encodeURIComponent(book.id)}/${slugify(book.title)}`;
-        const image = normalizeImages(book)[0] || '';
+        const source = useCloudflareImages
+            ? bookCoverUrl(book.id)
+            : normalizeImages(book)[0] || '';
+        const image = responsiveImage(source, {
+            widths: [120, 180, 240],
+            defaultWidth: 180,
+            sizes: '(max-width: 759px) calc(50vw - 40px), 180px',
+        });
+        const responsiveAttrs = image.srcset
+            ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
+            : '';
         return `<li class="related-book">
       <a class="related-book-link" href="${escapeHtml(href)}">
-        ${image ? `<img class="related-book-cover" src="${escapeHtml(image)}" alt="Portada de ${title}" loading="lazy" width="120" height="180">` : ''}
+        ${image.src ? `<img class="related-book-cover" src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="lazy" width="120" height="180" decoding="async">` : ''}
         <span class="related-book-title">${title}</span>
       </a>
     </li>`;
@@ -342,7 +382,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
     const images       = normalizeImages(item, previewCoverSrc);
+    if (!isPreview && images.length > 0 && !previewCoverSrc) {
+        images[0] = bookCoverUrl(item.id);
+    }
     const img          = images[0] || '';
+    const cartThumbnail = responsiveImage(img, {
+        widths: [240],
+        defaultWidth: 240,
+        sizes: '240px',
+    }).src;
     // Las redes sociales suelen bloquear imágenes servidas directamente por
     // mlstatic. La portada social sale desde nuestro dominio y el proxy valida
     // el MLU antes de obtenerla, para que WhatsApp/Facebook reciban HTTP 200.
@@ -373,7 +421,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             ? `Hola! Me interesa: ${item.title}`
             : buildPausedWaMessage(item)
     );
-    const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author);
+    const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author, !isPreview);
 
     const detailRows = [
         safeAuthor ? detailRow('Autor', item.author) : '',
@@ -519,7 +567,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         data-id="${escapeHtml(item.id)}"
         data-title="${escapeHtml(item.title)}"
         data-price="${price}"
-        data-thumbnail="${escapeHtml(images[0] || '')}"
+        data-thumbnail="${escapeHtml(cartThumbnail)}"
         data-max-qty="${stockQty}"
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
