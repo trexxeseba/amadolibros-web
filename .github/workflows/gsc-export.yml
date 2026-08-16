@@ -23,6 +23,11 @@ on:
         required: true
         default: 'sc-domain:amadolibros.com'
         type: string
+      inspection_sample_size:
+        description: Cantidad de fichas activas a inspeccionar (máximo 400)
+        required: true
+        default: 400
+        type: number
 
 permissions:
   contents: read
@@ -36,7 +41,7 @@ jobs:
   export:
     name: Extract Search Console data
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -86,9 +91,12 @@ jobs:
         env:
           GSC_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
           GSC_OUTPUT_DIR: artifacts/gsc
+          GSC_ACTIVE_SITEMAP_URL: https://www.amadolibros.com/sitemap-books-active.xml
+          GSC_INSPECTION_SAMPLE_SIZE: ${{ inputs.inspection_sample_size || 400 }}
         run: node scripts/seo/gsc-export.mjs
 
-      - name: Upload JSON and CSV
+      - name: Upload JSON, CSV and summary
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gsc-${{ github.run_id }}
@@ -99,10 +107,13 @@ jobs:
       - name: Write run summary
         if: always()
         run: |
-          echo "## GSC export" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/gsc/report-summary.md ]; then
+            cat artifacts/gsc/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## GSC export incompleto" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "No se generó el resumen; revisar el log de extracción." >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Property: ${GSC_SITE_URL:-not resolved}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Period: ${GSC_START_DATE:-not resolved} to ${GSC_END_DATE:-not resolved}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Reports: page + query" >> "$GITHUB_STEP_SUMMARY"
           echo "- Trigger: ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Deploy: not triggered by this workflow" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deploy: no se dispara desde este workflow" >> "$GITHUB_STEP_SUMMARY"
