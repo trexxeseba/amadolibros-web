@@ -315,4 +315,19 @@ test('pedido.astro: el vaciado depende del estado real leÃ­do de D1, no del parÃ
   assert.match(pedidoAstro, /fetch\('\/api\/orders\/status'/);
   const pollIdx = pedidoAstro.indexOf("fetch('/api/orders/status'");
   assert.ok(pollIdx > 0);
+  assert.match(pedidoAstro, /applyFinalState\(ps, data\)/);
+});
+
+test('pedido.astro: purchase usa el pedido autenticado y se emite antes de vaciar el carrito', () => {
+  const fnStart = pedidoAstro.indexOf('function applyFinalState');
+  const fnEnd = pedidoAstro.indexOf("paymentStatus === 'rejected'", fnStart);
+  const approved = pedidoAstro.slice(fnStart, fnEnd);
+  assert.match(approved, /trackCommerce\('purchase'/);
+  assert.match(approved, /transactionId: data\.order\.public_code \|\| code/);
+  assert.match(approved, /value: data\.order\.payable_total_uyu/);
+  assert.match(approved, /items: data\.items/);
+  assert.ok(
+    approved.indexOf("trackCommerce('purchase'") < approved.indexOf('AmadoCart.clear()'),
+    'purchase debe registrarse antes de limpiar el carrito',
+  );
 });

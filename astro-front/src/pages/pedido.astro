@@ -11,6 +11,7 @@ const WA_HREF =
   title="Estado del pedido — Amado Libros"
   description="Seguimiento de tu pedido en Amado Libros."
   indexable={false}
+  analytics={true}
 >
   <Header />
   <main class="pedido-page">
@@ -80,7 +81,7 @@ const WA_HREF =
 
       var TERMINAL_STATES = { approved: true, rejected: true, cancelled: true, refunded: true };
 
-      function applyFinalState(paymentStatus) {
+      function applyFinalState(paymentStatus, data) {
         if (paymentStatus === 'approved') {
           if (iconEl) iconEl.textContent = '✓';
           if (h1El)   h1El.textContent   = 'Pago confirmado';
@@ -91,6 +92,20 @@ const WA_HREF =
             leadEl.textContent = (data && data.order && data.order.delivery_type === 'pickup')
               ? 'Tu compra quedó confirmada y ya estamos preparando tu pedido. Esperá nuestro mensaje por WhatsApp: te avisaremos apenas esté pronto para retirar.'
               : 'Tu pedido está confirmado. Te contactaremos por WhatsApp para coordinar la entrega.';
+          }
+          // `purchase` se emite únicamente después de que D1 confirma el
+          // pago aprobado. El transaction_id evita duplicados en GA4 y el
+          // helper agrega una segunda guarda local ante recargas.
+          if (data && data.order && Array.isArray(data.items) &&
+              window.AmadoAnalytics &&
+              typeof window.AmadoAnalytics.trackCommerce === 'function') {
+            window.AmadoAnalytics.trackCommerce('purchase', {
+              transactionId: data.order.public_code || code,
+              value: data.order.payable_total_uyu,
+              shipping: data.order.shipping_cost_uyu,
+              paymentType: 'mercado_pago',
+              items: data.items,
+            });
           }
           // Único punto donde se vacía el carrito: recién acá hay
           // confirmación real de pago aprobado, leída de D1 vía
@@ -138,7 +153,7 @@ const WA_HREF =
             var ps = data.payment_status;
             if (ps && TERMINAL_STATES[ps]) {
               stopped = true;
-              applyFinalState(ps);
+              applyFinalState(ps, data);
             } else if (attempts >= MAX_ATTEMPTS) {
               stopped = true;
               onTimeout();

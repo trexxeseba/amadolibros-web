@@ -1486,6 +1486,36 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
+    function commerceItems(cart) {
+      return getSellableItems(cart).map(function (item) {
+        return {
+          item_id: item.id,
+          item_name: item.title,
+          price: item.price,
+          quantity: item.quantity,
+        };
+      });
+    }
+
+    function trackCommerce(eventName, order, paymentType, dedupePrefix) {
+      if (!window.AmadoAnalytics ||
+          typeof window.AmadoAnalytics.trackCommerce !== 'function' ||
+          !window.AmadoCart) return;
+      var cart = window.AmadoCart.get();
+      var items = commerceItems(cart);
+      if (!items.length) return;
+      var publicCode = order && order.public_code ? order.public_code : cart.idempotency_key;
+      window.AmadoAnalytics.trackCommerce(eventName, {
+        value: order && order.payable_total_uyu
+          ? order.payable_total_uyu
+          : items.reduce(function (sum, item) { return sum + item.price * item.quantity; }, 0),
+        shipping: order && order.shipping_cost_uyu,
+        paymentType: paymentType,
+        dedupeKey: dedupePrefix + '_' + publicCode,
+        items: items,
+      });
+    }
+
     function syncPaymentAvailability() {
       var cart = window.AmadoCart ? window.AmadoCart.get() : { items: [] };
       var canPay = cartValidationReady && !cartValidationFailed &&
@@ -1553,6 +1583,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
       renderCart();
       var remaining = getSellableItems(window.AmadoCart.get()).length;
+      if (options && options.initial && remaining > 0) {
+        trackCommerce('view_cart', null, '', 'view_cart');
+      }
       if (data.has_changes) {
         announce(remaining > 0
           ? 'Actualizamos la disponibilidad del carrito. Podés continuar con los libros disponibles.'
@@ -2272,6 +2305,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         try {
           var order = await createTransferOrder();
           if (!order) { resetTransferButton(); return; }
+          trackCommerce('begin_checkout', order, 'bank_transfer', 'begin_checkout_transfer');
           btnTransfer.textContent = 'Cargando cuentas oficiales…';
           transferData = await fetchTransferOptions(order.public_code, transferIdempotencyKey);
           showTransferStep();
@@ -2474,6 +2508,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             resetPrepareButton();
             return;
           }
+          trackCommerce('begin_checkout', orderData.order, 'mercado_pago', 'begin_checkout_mp');
         } catch (_fetchErr) {
           showCheckoutError('Error de conexión. Verificá tu internet e intentá de nuevo.');
           resetPrepareButton();

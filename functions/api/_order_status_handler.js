@@ -52,12 +52,44 @@ export function createOrderStatusHandler() {
     if (!db) return json({ error: 'Servicio no disponible.' }, 503);
 
     const order = await db
-      .prepare('SELECT payment_status,status FROM orders WHERE public_code=? AND idempotency_key=?')
+      .prepare(
+        'SELECT id,public_code,payment_status,status,delivery_type,products_total_uyu,' +
+        'pickup_discount_uyu,shipping_cost_uyu,payable_total_uyu,currency ' +
+        'FROM orders WHERE public_code=? AND idempotency_key=?'
+      )
       .bind(publicCode, idempotencyKey)
       .first();
 
     if (!order) return json({ error: 'No encontrado.' }, 404);
 
-    return json({ payment_status: order.payment_status, status: order.status });
+    const itemsResult = await db
+      .prepare(
+        'SELECT product_id,title,quantity,unit_price_uyu,line_total_uyu ' +
+        'FROM order_items WHERE order_id=? ORDER BY created_at,id'
+      )
+      .bind(order.id)
+      .all();
+    const items = Array.isArray(itemsResult?.results) ? itemsResult.results : [];
+
+    return json({
+      payment_status: order.payment_status,
+      status: order.status,
+      order: {
+        public_code: order.public_code,
+        delivery_type: order.delivery_type,
+        products_total_uyu: Number(order.products_total_uyu) || 0,
+        pickup_discount_uyu: Number(order.pickup_discount_uyu) || 0,
+        shipping_cost_uyu: Number(order.shipping_cost_uyu) || 0,
+        payable_total_uyu: Number(order.payable_total_uyu) || 0,
+        currency: order.currency === 'UYU' ? 'UYU' : '',
+      },
+      items: items.map(item => ({
+        product_id: String(item.product_id || ''),
+        title: String(item.title || '').slice(0, 200),
+        quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+        unit_price_uyu: Number(item.unit_price_uyu) || 0,
+        line_total_uyu: Number(item.line_total_uyu) || 0,
+      })),
+    });
   };
 }

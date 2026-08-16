@@ -17,6 +17,7 @@ import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
+import { PRODUCT_ID_REDIRECTS, PRODUCT_SEO_OVERRIDES } from '../_shared/seo-products.js';
 import {
     bookCoverUrl,
     cloudflareImageUrl,
@@ -383,6 +384,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
+    const seoOverride  = PRODUCT_SEO_OVERRIDES[item.id] || null;
+    const documentTitle = escapeHtml(seoOverride?.title || item.title);
+    const indexWhenPaused = seoOverride?.indexWhenPaused === true;
     const sourceImages = normalizeImages(item, previewCoverSrc);
     const images       = isPreview
         ? sourceImages
@@ -424,6 +428,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             : buildPausedWaMessage(item)
     );
     const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author, !isPreview);
+    const viewItemAnalytics = {
+        dedupeKey: `view_item_${item.id}`,
+        ...(sellableInCheckout ? { value: price } : {}),
+        items: [{
+            item_id: item.id,
+            item_name: item.title,
+            ...(sellableInCheckout ? { price } : {}),
+            quantity: 1,
+        }],
+    };
 
     const detailRows = [
         safeAuthor ? detailRow('Autor', item.author) : '',
@@ -457,13 +471,23 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     </details>`
         : '';
 
-    const metaDesc = sellableInCheckout
+    const defaultMetaDesc = sellableInCheckout
         ? (safeAuthor
             ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
             : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
         : inStock
           ? `Consultá precio y forma de pago de &quot;${safeTitle}&quot;, publicado en ${escapeHtml(currency)}, en Amado Libros.`
         : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
+    const metaDesc = seoOverride?.description
+        ? escapeHtml(seoOverride.description)
+        : defaultMetaDesc;
+    const seoOpportunityHtml = seoOverride?.heading && seoOverride?.copy
+        ? `<section class="seo-opportunity" aria-labelledby="seo-opportunity-heading">
+      <h2 id="seo-opportunity-heading">${escapeHtml(seoOverride.heading)}</h2>
+      <p>${escapeHtml(seoOverride.copy)}</p>
+      <a href="/catalogo?q=murdoku">Ver otros libros Murdoku</a>
+    </section>`
+        : '';
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
     const schemaProduct = {
@@ -620,15 +644,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${safeTitle} | Amado Libros</title>
+  <title>${documentTitle} | Amado Libros</title>
   <meta name="description" content="${metaDesc}">
-  <meta name="robots" content="${isPreview || !inStock ? 'noindex, follow' : 'index, follow'}">
+  <meta name="robots" content="${isPreview || (!inStock && !indexWhenPaused) ? 'noindex, follow' : 'index, follow'}">
   <link rel="canonical" href="${canonicalUrl}">
   ${faviconHeadHtml()}
 
   <meta property="og:type"        content="product">
   <meta property="og:url"         content="${canonicalUrl}">
-  <meta property="og:title"       content="${safeTitle} | Amado Libros">
+  <meta property="og:title"       content="${documentTitle} | Amado Libros">
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:image"       content="${escapeHtml(socialImage)}">
   <meta property="og:image:secure_url" content="${escapeHtml(socialImage)}">
@@ -637,7 +661,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta property="og:site_name"   content="Amado Libros">
 
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="${safeTitle} | Amado Libros">
+  <meta name="twitter:title"       content="${documentTitle} | Amado Libros">
   <meta name="twitter:description" content="${metaDesc}">
   <meta name="twitter:image"       content="${escapeHtml(socialImage)}">
   <meta name="twitter:image:alt"   content="Portada de ${safeTitle}">
@@ -805,6 +829,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     @media(max-width:520px){.waitlist-row{flex-direction:column}.btn-waitlist{width:100%}}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
+    .seo-opportunity{margin-top:1rem;padding:1rem;background:#fff7ed;
+                     border:1px solid #fdba74;border-radius:.65rem;color:#7c2d12}
+    .seo-opportunity h2{font-size:1rem;line-height:1.35;margin-bottom:.4rem;color:#431407}
+    .seo-opportunity p{font-size:.88rem;margin-bottom:.45rem}
+    .seo-opportunity a{font-size:.85rem;font-weight:700;color:#9a3412}
     .related-books{grid-column:1/-1;border-top:1px solid #e2e8f0;padding-top:1.25rem}
     .related-books h2{font-size:1.05rem;line-height:1.35;color:#0f172a;margin-bottom:.85rem}
     .related-books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
@@ -866,6 +895,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       ${actionHtml}
     </div>
     ${!inStock ? moreDetailsHtml : ''}
+    ${seoOpportunityHtml}
     <p class="shipping">${inStock
       ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
@@ -873,6 +903,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   </div>
   ${relatedBooksHtml}
 </main>
+
+<script>(function(){
+  if(window.AmadoAnalytics&&typeof window.AmadoAnalytics.trackCommerce==='function'){
+    window.AmadoAnalytics.trackCommerce('view_item',${safeJson(viewItemAnalytics)});
+  }
+}());<\/script>
 
 ${footerHtml()}
 ${waFloatHtml(`Hola, tengo una consulta sobre ${item.title}.`)}
@@ -990,6 +1026,15 @@ export async function onRequest(context) {
     // Validar formato ID
     if (!id || !/^MLU\d+$/.test(id)) {
         return notFound();
+    }
+
+    const productRedirect = PRODUCT_ID_REDIRECTS[id];
+    if (productRedirect) {
+        const currentUrl = new URL(context.request.url);
+        const destination = new URL(productRedirect.path, BASE);
+        destination.search = currentUrl.search;
+        destination.searchParams.delete('layout');
+        return Response.redirect(destination.toString(), 301);
     }
 
     // Cargar catálogo (con edge cache)

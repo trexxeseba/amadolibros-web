@@ -276,6 +276,21 @@
     var added = AmadoCart.add(item);
     if (added === false) return; // item inválido, sin feedback
 
+    // GA4 recomendado para Merchant/Ads: se registra únicamente cuando la
+    // cantidad realmente aumentó. `at_max` no es una incorporación nueva.
+    if (added === true && window.AmadoAnalytics &&
+        typeof window.AmadoAnalytics.trackCommerce === 'function') {
+      window.AmadoAnalytics.trackCommerce('add_to_cart', {
+        value: item.price,
+        items: [{
+          item_id: item.id,
+          item_name: item.title,
+          price: item.price,
+          quantity: 1,
+        }],
+      });
+    }
+
     var label = btn.querySelector('[data-cart-label]');
     if (!label) return;
     var orig = label.dataset.origText || label.textContent;
