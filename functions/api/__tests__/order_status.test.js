@@ -11,13 +11,16 @@ const PREVIEW_CONFIG = {
   CANONICAL_ORIGIN: 'https://feature.amadolibros-web.pages.dev',
 };
 
-function dbMock({ order = null } = {}) {
+function dbMock({ order = null, items = [] } = {}) {
   return {
     prepare(sql) {
       return {
         bind(..._args) {
           return {
             async first() { return order; },
+            async all() {
+              return { results: sql.includes('FROM order_items') ? items : [] };
+            },
           };
         },
       };
@@ -35,11 +38,13 @@ function makeReq({ method = 'POST', host = ALLOWED_HOST, body = undefined, ct = 
   });
 }
 
-function env(order = { payment_status: 'approved', status: 'paid' }, envPatch = {}) {
-  return { ...PREVIEW_CONFIG, ORDERS_DB: dbMock({ order }), ...envPatch };
+function env(order = { id: 'order-1', public_code: 'AL-001', payment_status: 'approved', status: 'paid' }, envPatch = {}, items = []) {
+  return { ...PREVIEW_CONFIG, ORDERS_DB: dbMock({ order, items }), ...envPatch };
 }
 
-async function call(reqOpts = {}, order = { payment_status: 'approved', status: 'paid' }, envPatch = {}) {
+async function call(reqOpts = {}, order = {
+  id: 'order-1', public_code: 'AL-001', payment_status: 'approved', status: 'paid',
+}, envPatch = {}) {
   const h   = createOrderStatusHandler();
   const req = makeReq(reqOpts);
   const res = await h({ request: req, env: env(order, envPatch) });
@@ -84,7 +89,7 @@ test('os-06: host no permitido → 400', async () => {
   assert.equal(res.status, 400);
 });
 
-test('os-07: respuesta solo expone payment_status y status', async () => {
+test('os-07: respuesta expone solo estado y datos comerciales seguros para GA4', async () => {
   const { res, data } = await call({ body: { public_code: 'AL-001', idempotency_key: 'key-1' } });
   assert.equal(res.status, 200);
   const keys = Object.keys(data);
@@ -94,7 +99,33 @@ test('os-07: respuesta solo expone payment_status y status', async () => {
   assert.ok(!keys.includes('payment_id'));
   assert.ok(!keys.includes('buyer_name'));
   assert.ok(!keys.includes('payable_total_uyu'));
-  assert.equal(keys.length, 2);
+  assert.deepEqual(keys.sort(), ['items', 'order', 'payment_status', 'status']);
+  assert.ok(!Object.hasOwn(data.order, 'id'));
+  assert.ok(!Object.hasOwn(data.order, 'idempotency_key'));
+  assert.ok(!Object.hasOwn(data.order, 'buyer_email'));
+});
+
+test('os-07b: devuelve totales e items autenticados para purchase de GA4', async () => {
+  const order = {
+    id: 'order-1', public_code: 'AL-001', payment_status: 'approved', status: 'paid',
+    delivery_type: 'shipping', products_total_uyu: 1100, pickup_discount_uyu: 0,
+    shipping_cost_uyu: 190, payable_total_uyu: 1290, currency: 'UYU',
+  };
+  const items = [{
+    product_id: 'MLU123', title: 'Libro', quantity: 1,
+    unit_price_uyu: 1100, line_total_uyu: 1100,
+  }];
+  const h = createOrderStatusHandler();
+  const req = makeReq({ body: { public_code: 'AL-001', idempotency_key: 'key-1' } });
+  const res = await h({ request: req, env: env(order, {}, items) });
+  const data = await res.json();
+  assert.equal(res.status, 200);
+  assert.deepEqual(data.order, {
+    public_code: 'AL-001', delivery_type: 'shipping', products_total_uyu: 1100,
+    pickup_discount_uyu: 0, shipping_cost_uyu: 190, payable_total_uyu: 1290,
+    currency: 'UYU',
+  });
+  assert.deepEqual(data.items, items);
 });
 
 test('os-08: Cache-Control: no-store siempre', async () => {

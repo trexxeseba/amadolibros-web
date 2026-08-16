@@ -56,6 +56,89 @@
     return normalized || fallback;
   }
 
+  var ECOMMERCE_EVENTS = new Set([
+    'view_item',
+    'add_to_cart',
+    'view_cart',
+    'begin_checkout',
+    'purchase',
+  ]);
+
+  function positiveNumber(value) {
+    var number = Number(value);
+    return isFinite(number) && number > 0
+      ? Math.round(number * 100) / 100
+      : null;
+  }
+
+  function commerceItem(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    var itemId = String(raw.item_id || raw.product_id || raw.id || '').trim().slice(0, 100);
+    if (!itemId) return null;
+    var item = {
+      item_id: itemId,
+      item_name: String(raw.item_name || raw.title || 'Libro').trim().slice(0, 200) || 'Libro',
+      item_brand: 'Amado Libros',
+      item_category: 'Libros',
+      quantity: Math.max(1, Math.floor(Number(raw.quantity) || 1)),
+    };
+    var price = positiveNumber(raw.price || raw.unit_price_uyu);
+    if (price !== null) item.price = price;
+    return item;
+  }
+
+  function storageHas(storage, key) {
+    try { return storage.getItem(key) === '1'; } catch (_error) { return false; }
+  }
+
+  function storageSet(storage, key) {
+    try { storage.setItem(key, '1'); } catch (_error) {}
+  }
+
+  function trackCommerce(eventName, options) {
+    options = options || {};
+    if (!ECOMMERCE_EVENTS.has(eventName)) return false;
+
+    var items = (Array.isArray(options.items) ? options.items : [])
+      .map(commerceItem)
+      .filter(Boolean);
+    if (!items.length) return false;
+
+    var params = { currency: 'UYU', items: items };
+    var value = positiveNumber(options.value);
+    if (value === null) {
+      value = items.reduce(function (sum, item) {
+        return sum + (item.price || 0) * item.quantity;
+      }, 0);
+      if (value <= 0) value = null;
+    }
+    if (value !== null) params.value = Math.round(value * 100) / 100;
+
+    var shipping = positiveNumber(options.shipping);
+    if (shipping !== null) params.shipping = shipping;
+
+    var paymentType = safeToken(options.paymentType, '');
+    if (paymentType) params.payment_type = paymentType;
+
+    var dedupeKey = safeToken(options.dedupeKey, '');
+    if (eventName === 'purchase') {
+      var transactionId = String(options.transactionId || '').trim().slice(0, 100);
+      if (!transactionId) return false;
+      params.transaction_id = transactionId;
+      dedupeKey = 'purchase_' + safeToken(transactionId, 'order');
+      if (storageHas(window.localStorage, 'amado_ga4_' + dedupeKey)) return false;
+    } else if (dedupeKey && storageHas(window.sessionStorage, 'amado_ga4_' + dedupeKey)) {
+      return false;
+    }
+
+    window.gtag('event', eventName, params);
+    if (dedupeKey) {
+      var storage = eventName === 'purchase' ? window.localStorage : window.sessionStorage;
+      storageSet(storage, 'amado_ga4_' + dedupeKey);
+    }
+    return true;
+  }
+
   function pageContext() {
     var path = window.location.pathname;
     var productMatch = path.match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
@@ -121,6 +204,7 @@
 
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
+    trackCommerce: trackCommerce,
   });
 
   document.addEventListener('click', function (event) {
