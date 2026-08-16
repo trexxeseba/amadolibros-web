@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildCatalog,
+  CATALOG_PRODUCT_GALLERY_CACHE_KEY,
   createDataQualitySummary,
+  enrichCatalogProductPictures,
   enrichCatalogDescriptions,
   extractBibliographicDetails,
   extractDimensions,
@@ -475,6 +477,95 @@ test('descripciones ML usan caché y un cupo incremental sin bloquear faltantes'
     checked: 2, present: 2, pending: 1, refresh_days: 90,
   });
   assert.equal(sanitizeDescription('  Texto\u0000  válido  '), 'Texto válido');
+});
+
+test('completa y cachea la galería oficial de catalog_product_id', async () => {
+  const objects = new Map();
+  const calls = [];
+  const bucket = {
+    async get(key) {
+      const body = objects.get(key);
+      return body == null ? null : { async text() { return body; } };
+    },
+    async put(key, body) { objects.set(key, body); },
+  };
+  const items = [{
+    id: 'MLU100',
+    title: 'Edición especial',
+    status: 'paused',
+    available_quantity: 0,
+    catalog_product_id: 'MLU63131903',
+    start_time: '2026-08-01T00:00:00.000Z',
+    pictures: ['https://http2.mlstatic.com/D_MAIN-O.jpg'],
+  }];
+  const env = {
+    CATALOG_R2: bucket,
+    ML_CATALOG_GALLERY_ENRICH_LIMIT: '1',
+    ML_CATALOG_GALLERY_REFRESH_DAYS: '90',
+    ML_CATALOG_GALLERY_SLEEP_MS: '0',
+    ML_CATALOG_GALLERY_PRIORITY_IDS: 'MLU63131903',
+  };
+
+  const summary = await enrichCatalogProductPictures(items, env, 'token', {
+    now: new Date('2026-08-16T00:00:00.000Z'),
+    mlGetDeps: {
+      fetchFn: async url => {
+        calls.push(String(url));
+        return Response.json({ pictures: [
+          { secure_url: 'https://http2.mlstatic.com/D_MAIN-O.jpg' },
+          { url: 'http://mlu-s2-p.mlstatic.com/D_COFRE-O.jpg' },
+          { url: 'https://http2.mlstatic.com/D_POSTER-O.jpg' },
+        ] });
+      },
+    },
+  });
+
+  assert.equal(calls[0], 'https://api.mercadolibre.com/products/MLU63131903');
+  assert.deepEqual(items[0].pictures, [
+    'https://http2.mlstatic.com/D_MAIN-O.jpg',
+    'https://mlu-s2-p.mlstatic.com/D_COFRE-O.jpg',
+    'https://http2.mlstatic.com/D_POSTER-O.jpg',
+  ]);
+  assert.equal(summary.fetched, 1);
+  assert.equal(summary.multiple_image_galleries, 1);
+  assert.ok(objects.has(CATALOG_PRODUCT_GALLERY_CACHE_KEY));
+
+  const reused = [{
+    ...items[0],
+    pictures: ['https://http2.mlstatic.com/D_MAIN-O.jpg'],
+  }];
+  const second = await enrichCatalogProductPictures(reused, env, 'token', {
+    now: new Date('2026-08-17T00:00:00.000Z'),
+    mlGetDeps: { fetchFn: async () => { throw new Error('no debe consultar ML'); } },
+  });
+  assert.equal(second.reused, 1);
+  assert.equal(second.fetched, 0);
+  assert.equal(reused[0].pictures.length, 3);
+
+  const uncached = [{
+    ...items[0],
+    catalog_product_id: 'MLU63131904',
+    pictures: ['https://http2.mlstatic.com/D_ONLY-O.jpg'],
+  }];
+  const cacheFailure = await enrichCatalogProductPictures(uncached, {
+    ...env,
+    CATALOG_R2: {
+      async get() { return null; },
+      async put() { throw new Error('R2 temporalmente indisponible'); },
+    },
+    ML_CATALOG_GALLERY_PRIORITY_IDS: 'MLU63131904',
+  }, 'token', {
+    now: new Date('2026-08-17T00:00:00.000Z'),
+    mlGetDeps: {
+      fetchFn: async () => Response.json({ pictures: [
+        { url: 'https://http2.mlstatic.com/D_ONLY-O.jpg' },
+        { url: 'https://http2.mlstatic.com/D_SECOND-O.jpg' },
+      ] }),
+    },
+  });
+  assert.equal(uncached[0].pictures.length, 2);
+  assert.equal(cacheFailure.fetched, 1);
+  assert.equal(cacheFailure.cache_write_error, 'R2 temporalmente indisponible');
 });
 
 test('slimItem conserva identidad de catálogo ML sin inventar señales ausentes', () => {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COVER_MANIFEST_KEY,
+  coverCandidates,
   primaryCoverCandidate,
   selectCoverBatch,
   syncCoverMirror,
@@ -91,6 +92,36 @@ test('normaliza miniatura y excluye productos no activos o sin origen ML', () =>
   );
   assert.equal(primaryCoverCandidate(item('MLU123456', { status: 'paused' })), null);
   assert.equal(primaryCoverCandidate(item('MLU123456', { pictures: ['https://example.com/x.jpg'] })), null);
+});
+
+test('genera candidatos para las seis posiciones oficiales de una galería', () => {
+  const candidates = coverCandidates(item('MLU123456', {
+    pictures: [
+      'https://http2.mlstatic.com/D_MAIN-O.jpg',
+      'https://mlu-s2-p.mlstatic.com/D_SECOND-O.jpg',
+    ],
+  }));
+  assert.deepEqual(candidates.map(candidate => candidate.position), [0, 1]);
+  assert.equal(candidates[1].source_url, 'https://mlu-s2-p.mlstatic.com/D_SECOND-O.jpg');
+});
+
+test('copia cada posición de la galería a R2 con entradas independientes', async () => {
+  const bucket = new MockR2();
+  const result = await syncCoverMirror(
+    { COVER_R2: bucket },
+    { items: [item('MLU123456', {
+      pictures: [
+        'https://http2.mlstatic.com/D_MAIN-O.jpg',
+        'https://mlu-s2-p.mlstatic.com/D_SECOND-O.jpg',
+      ],
+    })] },
+    {
+      fetchFn: async () => new Response(pngBytes(), { headers: { 'content-type': 'image/png' } }),
+    },
+  );
+  assert.equal(result.imported, 2);
+  assert.ok(bucket.manifest().entries['MLU123456:0'].current.object_key);
+  assert.ok(bucket.manifest().entries['MLU123456:1'].current.object_key);
 });
 
 test('prioriza faltantes, después URL cambiada y al final revalidaciones vencidas', () => {

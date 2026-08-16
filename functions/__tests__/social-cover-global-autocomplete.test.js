@@ -48,6 +48,42 @@ test('el proxy entrega bytes de imagen con caché pública y admite HEAD', async
   }
 });
 
+test('el proxy sirve posiciones secundarias desde subdominios oficiales de mlstatic', async () => {
+  const originalFetch = globalThis.fetch;
+  const galleryItem = {
+    ...item,
+    pictures: [
+      item.pictures[0],
+      'https://mlu-s2-p.mlstatic.com/D_SECOND-O.jpg',
+    ],
+  };
+  globalThis.caches = { default: { async match() { return null; }, async put() {} } };
+  globalThis.fetch = async input => {
+    const url = typeof input === 'string' ? input : input.url;
+    if (url === CATALOG_URL) return Response.json({ items: [galleryItem] });
+    if (url === galleryItem.pictures[1]) {
+      return new Response(new Uint8Array([4, 5, 6]), {
+        headers: { 'content-type': 'image/jpeg' },
+      });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    const response = await coverRequest({
+      request: new Request(`https://www.amadolibros.com/book-cover/${item.id}/cover-2.jpg`),
+      params: { path: [item.id, 'cover-2.jpg'] },
+      env: { APP_ENV: 'production' },
+      data: {},
+      waitUntil() {},
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-cover-source'), 'mercadolibre');
+    assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [4, 5, 6]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('el proxy prioriza la copia R2 y no consulta mlstatic cuando existe', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.caches = { default: { async match() { return null; }, async put() {} } };

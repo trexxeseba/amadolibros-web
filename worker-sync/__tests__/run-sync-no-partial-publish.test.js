@@ -106,6 +106,7 @@ test('runSync conserva el filtro público statuses active', async () => {
   assert.deepEqual(receivedOptions, {
     statuses: ['active'],
     enrichDescriptions: true,
+    enrichCatalogPictures: true,
   });
 });
 

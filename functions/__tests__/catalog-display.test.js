@@ -198,7 +198,7 @@ test('COVER-R2 Producción: card y ficha usan el binding productivo', async () =
   const bookHtml = await bookResponse.text();
   assert.match(
     bookHtml,
-    new RegExp(`/preview-cover/MLU1/0/${PREVIEW_COVER_HASH}\\.jpg`),
+    /\/book-cover\/MLU1\/cover\.jpg/,
   );
 });
 

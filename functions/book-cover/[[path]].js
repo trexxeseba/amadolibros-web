@@ -2,12 +2,15 @@ import { fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
+const COVER_FILE_RE = /^cover(?:-([2-6]))?\.jpg$/;
 
 function largeMlImage(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return '';
   try {
     const url = new URL(raw.trim());
-    if (url.hostname !== 'http2.mlstatic.com' || !['http:', 'https:'].includes(url.protocol)) return '';
+    const hostname = url.hostname.toLowerCase();
+    if (!(hostname === 'mlstatic.com' || hostname.endsWith('.mlstatic.com')) ||
+        !['http:', 'https:'].includes(url.protocol)) return '';
     url.protocol = 'https:';
     url.hash = '';
     url.pathname = url.pathname.replace(/-I\.(jpg|jpeg|png|webp)$/i, '-O.$1');
@@ -18,8 +21,16 @@ function largeMlImage(raw) {
 }
 
 export function primaryCoverSource(item) {
-  const picture = Array.isArray(item?.pictures) ? item.pictures.find(value => typeof value === 'string') : '';
-  return largeMlImage(picture || item?.thumbnail || '');
+  return coverSource(item, 0);
+}
+
+export function coverSource(item, position = 0) {
+  if (!Number.isInteger(position) || position < 0 || position > 5) return '';
+  const pictures = Array.isArray(item?.pictures)
+    ? item.pictures.filter(value => typeof value === 'string')
+    : [];
+  const picture = pictures[position] || (position === 0 ? item?.thumbnail : '');
+  return largeMlImage(picture || '');
 }
 
 function responseHeaders(source, contentType, etag = null) {
@@ -54,12 +65,15 @@ export async function onRequest(ctx) {
   }
   const parts = Array.isArray(ctx.params.path) ? ctx.params.path : [ctx.params.path].filter(Boolean);
   const id = String(parts[0] || '').toUpperCase();
-  if (!PRODUCT_ID_RE.test(id) || parts.length > 2) {
+  const coverMatch = COVER_FILE_RE.exec(String(parts[1] || ''));
+  const position = coverMatch ? Math.max(0, Number(coverMatch[1] || 1) - 1) : -1;
+  if (!PRODUCT_ID_RE.test(id) || parts.length !== 2 || position < 0) {
     return new Response('Not Found', { status: 404, headers: { 'cache-control': 'public,max-age=300' } });
   }
 
   const cache = caches.default;
-  const cacheKey = new Request(new URL(ctx.request.url).origin + `/book-cover/${id}/cover.jpg`);
+  const filename = position === 0 ? 'cover.jpg' : `cover-${position + 1}.jpg`;
+  const cacheKey = new Request(new URL(ctx.request.url).origin + `/book-cover/${id}/${filename}`);
   const cached = await cache.match(cacheKey);
   if (cached) {
     return ctx.request.method === 'HEAD'
@@ -70,8 +84,8 @@ export async function onRequest(ctx) {
   const catalog = await fetchCatalog(ctx);
   let item = Array.isArray(catalog?.items) ? catalog.items.find(candidate => candidate.id === id) : null;
   if (!item && ['preview', 'production'].includes(ctx.env?.APP_ENV)) item = await fetchPausedItem(ctx, id);
-  const source = primaryCoverSource(item);
-  const storedCover = await findPreviewCover(ctx, id, 0, source || null);
+  const source = coverSource(item, position);
+  const storedCover = await findPreviewCover(ctx, id, position, source || null);
   let response = await r2CoverResponse(ctx, storedCover);
 
   if (!response && source) {

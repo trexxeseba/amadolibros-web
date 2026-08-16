@@ -5,7 +5,7 @@ export const DEFAULT_COVER_BATCH_SIZE = 250;
 export const COVER_REFRESH_MS = 30 * 24 * 60 * 60 * 1000;
 export const COVER_AI_TRANSFORM_VERSION = 1;
 
-const ALLOWED_HOST = 'http2.mlstatic.com';
+const ALLOWED_HOST_SUFFIX = '.mlstatic.com';
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
 const DEFAULT_CONCURRENCY = 6;
@@ -20,7 +20,9 @@ function normalizedSource(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return null;
   try {
     const url = new URL(raw.trim());
-    if (!['http:', 'https:'].includes(url.protocol) || url.hostname !== ALLOWED_HOST) return null;
+    const hostname = url.hostname.toLowerCase();
+    if (!['http:', 'https:'].includes(url.protocol) ||
+        !(hostname === 'mlstatic.com' || hostname.endsWith(ALLOWED_HOST_SUFFIX))) return null;
     url.protocol = 'https:';
     url.hash = '';
     url.username = '';
@@ -33,12 +35,27 @@ function normalizedSource(raw) {
 }
 
 export function primaryCoverCandidate(item) {
-  if (!item || item.status !== 'active' || !(Number(item.available_quantity) > 0)) return null;
+  return coverCandidates(item)[0] || null;
+}
+
+export function coverCandidates(item, { includePaused = false } = {}) {
+  const isActive = item?.status === 'active' && Number(item.available_quantity) > 0;
+  const isPaused = includePaused && item?.status === 'paused';
+  if (!isActive && !isPaused) return [];
   const id = String(item.id || '').trim().toUpperCase();
-  if (!/^MLU\d+$/.test(id)) return null;
+  if (!/^MLU\d+$/.test(id)) return [];
   const pictures = Array.isArray(item.pictures) ? item.pictures : [];
-  const sourceUrl = [...pictures, item.thumbnail].map(normalizedSource).find(Boolean);
-  return sourceUrl ? { product_id: id, position: 0, source_url: sourceUrl } : null;
+  const sources = [...new Set(
+    (pictures.length > 0 ? pictures : [item.thumbnail])
+      .map(normalizedSource)
+      .filter(Boolean),
+  )].slice(0, 6);
+  return sources.map((sourceUrl, position) => ({
+    product_id: id,
+    position,
+    source_url: sourceUrl,
+    catalog_product_id: String(item.catalog_product_id || '').trim().toUpperCase() || null,
+  }));
 }
 
 function validManifest(value) {
@@ -80,28 +97,32 @@ export function selectCoverBatch(catalog, manifest, {
   nowMs = Date.now(),
   aiUpscaleEnabled = false,
   aiUpscaleProductIds = null,
+  includePaused = false,
+  priorityCatalogProductIds = null,
 } = {}) {
   const candidates = (Array.isArray(catalog?.items) ? catalog.items : [])
-    .map(primaryCoverCandidate)
-    .filter(Boolean)
+    .flatMap(item => coverCandidates(item, { includePaused }))
     .map(candidate => {
-      const entry = manifest?.entries?.[`${candidate.product_id}:0`] || null;
-      const aiUpscaleEligible = aiUpscaleEnabled &&
+      const entry = manifest?.entries?.[`${candidate.product_id}:${candidate.position}`] || null;
+      const aiUpscaleEligible = candidate.position === 0 && aiUpscaleEnabled &&
         (!aiUpscaleProductIds || aiUpscaleProductIds.has(candidate.product_id));
       return {
         ...candidate,
         entry,
         aiUpscaleEligible,
+        preferred: Boolean(priorityCatalogProductIds?.has(candidate.catalog_product_id)),
         priority: candidatePriority(candidate, entry, nowMs, aiUpscaleEligible),
       };
     })
     .filter(candidate => candidate.priority !== null)
     .sort((a, b) => {
+      if (a.preferred !== b.preferred) return a.preferred ? -1 : 1;
       if (a.priority !== b.priority) return a.priority - b.priority;
       const validatedA = Date.parse(a.entry?.last_validated_at || '') || 0;
       const validatedB = Date.parse(b.entry?.last_validated_at || '') || 0;
       if (validatedA !== validatedB) return validatedA - validatedB;
-      return a.product_id.localeCompare(b.product_id);
+      const productOrder = a.product_id.localeCompare(b.product_id);
+      return productOrder || a.position - b.position;
     });
   return {
     total_candidates: candidates.length,
@@ -202,7 +223,7 @@ async function storeImmutable(bucket, bytes, image, nowIso, metadata = {}) {
   if (!existing) {
     await bucket.put(objectKey, bytes, {
       httpMetadata: { contentType: image.mime, cacheControl: 'public, max-age=31536000, immutable' },
-      customMetadata: { sha256, importedAt: nowIso, sourceHost: ALLOWED_HOST, ...metadata },
+      customMetadata: { sha256, importedAt: nowIso, sourceHost: 'mlstatic.com', ...metadata },
     });
     const stored = await bucket.head(objectKey);
     if (!stored || Number(stored.size) !== bytes.byteLength) {
@@ -295,7 +316,7 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
   let finalStored = originalStored;
   let transformInfo = null;
   let transformError = null;
-  const shouldUpscale = candidate.aiUpscaleEligible && Boolean(imagesBinding?.input) &&
+  const shouldUpscale = candidate.position === 0 && candidate.aiUpscaleEligible && Boolean(imagesBinding?.input) &&
     Math.min(source.image.width, source.image.height) < TARGET_SHORT_EDGE;
   if (shouldUpscale) {
     try {
@@ -323,7 +344,7 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
   return {
     entry: {
       product_id: candidate.product_id,
-      position: 0,
+      position: candidate.position,
       current: {
         object_key: finalStored.objectKey,
         sha256: finalStored.sha256,
@@ -368,6 +389,7 @@ export async function syncCoverMirror(env, catalog, {
   now = () => new Date(),
   limit = Number(env?.COVER_MIRROR_BATCH_SIZE || DEFAULT_COVER_BATCH_SIZE),
   concurrency = DEFAULT_CONCURRENCY,
+  includePaused = false,
 } = {}) {
   const bucket = env?.COVER_R2;
   if (!bucket || typeof bucket.get !== 'function' || typeof bucket.put !== 'function' || typeof bucket.head !== 'function') {
@@ -377,22 +399,28 @@ export async function syncCoverMirror(env, catalog, {
   const nowIso = nowDate.toISOString();
   const manifest = await readManifest(bucket, nowIso);
   const aiUpscaleEnabled = Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
-  // El plan gratuito admite 5.000 transformaciones únicas mensuales. Se
-  // mejora únicamente el mismo universo deduplicado que recibe Merchant;
-  // las demás fichas igualmente conservan su copia original estable en R2.
+  // La mejora generativa se reserva para la portada primaria del mismo
+  // universo deduplicado que recibe Merchant. Las imágenes secundarias se
+  // copian sin alterarlas para no inventar texto ni accesorios del producto.
   const merchantItems = dedupeByGtinAndCondition(
     (Array.isArray(catalog?.items) ? catalog.items : []).filter(isEligibleForFeed),
   );
   const aiUpscaleProductIds = new Set(merchantItems.map(item => String(item.id || '').toUpperCase()));
+  const priorityCatalogProductIds = new Set(String(env?.ML_CATALOG_GALLERY_PRIORITY_IDS || '')
+    .split(',')
+    .map(value => value.trim().toUpperCase())
+    .filter(value => /^MLU\d+$/.test(value)));
   const batch = selectCoverBatch(catalog, manifest, {
     limit,
     nowMs: nowDate.getTime(),
     aiUpscaleEnabled,
     aiUpscaleProductIds,
+    includePaused,
+    priorityCatalogProductIds,
   });
   const nextManifest = { ...manifest, updated_at: nowIso, entries: { ...manifest.entries } };
   const results = await mapWithConcurrency(batch.selected, Math.max(1, Number(concurrency) || 1), async candidate => {
-    const key = `${candidate.product_id}:0`;
+    const key = `${candidate.product_id}:${candidate.position}`;
     try {
       const result = await processCover(
         bucket,
@@ -405,7 +433,7 @@ export async function syncCoverMirror(env, catalog, {
       return { key, status: result.status, quality_status: result.quality_status };
     } catch (error) {
       nextManifest.entries[key] = {
-        ...(candidate.entry || { product_id: candidate.product_id, position: 0, current: null }),
+        ...(candidate.entry || { product_id: candidate.product_id, position: candidate.position, current: null }),
         last_attempted_source_url: candidate.source_url,
         last_error: { at: nowIso, message: String(error?.message || 'Error').slice(0, 240) },
       };
@@ -427,6 +455,7 @@ export async function syncCoverMirror(env, catalog, {
   ).length;
   const qualityPending = aiUpscaleEnabled
     ? Object.values(nextManifest.entries).filter(entry =>
+        Number(entry?.position) === 0 &&
         aiUpscaleProductIds.has(String(entry?.product_id || '').toUpperCase()) && needsAiUpscale(entry)
       ).length
     : null;

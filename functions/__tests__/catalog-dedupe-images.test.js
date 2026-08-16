@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dedupeCatalogResults } from '../catalogo.js';
-import { normalizeImages } from '../libro/[[path]].js';
+import { normalizeImages, renderPage } from '../libro/[[path]].js';
 import { dedupeCategoryResults } from '../libros/[[path]].js';
 
 test('catálogo muestra una sola oferta por mismo ISBN, estado y condición', () => {
@@ -55,6 +55,25 @@ test('la portada primaria convierte miniatura -I en imagen grande -O', () => {
     normalizeImages({ thumbnail: 'http://http2.mlstatic.com/D_PORTADA-I.jpg' }),
     ['https://http2.mlstatic.com/D_PORTADA-O.jpg'],
   );
+});
+
+test('la ficha productiva sirve toda la galería desde Amado Libros', () => {
+  const html = renderPage({
+    id: 'MLU123456',
+    title: 'Libro con galería',
+    status: 'paused',
+    available_quantity: 0,
+    pictures: [
+      'https://http2.mlstatic.com/PORTADA-O.jpg',
+      'https://mlu-s2-p.mlstatic.com/INTERIOR-O.jpg',
+      'https://http2.mlstatic.com/POSTER-O.jpg',
+    ],
+  }, 'libro-con-galeria', false, '');
+
+  assert.match(html, /book-cover\/MLU123456\/cover\.jpg/);
+  assert.match(html, /book-cover\/MLU123456\/cover-2\.jpg/);
+  assert.match(html, /book-cover\/MLU123456\/cover-3\.jpg/);
+  assert.doesNotMatch(html, /mlu-s2-p\.mlstatic\.com/);
 });
 
 test('las landings de categoría tampoco repiten la misma edición', () => {

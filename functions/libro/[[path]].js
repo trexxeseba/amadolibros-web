@@ -381,10 +381,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
-    const images       = normalizeImages(item, previewCoverSrc);
-    if (!isPreview && images.length > 0 && !previewCoverSrc) {
-        images[0] = bookCoverUrl(item.id);
-    }
+    const sourceImages = normalizeImages(item, previewCoverSrc);
+    const images       = isPreview
+        ? sourceImages
+        : sourceImages.map((_, position) => bookCoverUrl(item.id, position));
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],

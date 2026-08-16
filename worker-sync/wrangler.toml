@@ -22,10 +22,17 @@ MIN_ACTIVE_ITEMS = "500"
 ML_DESCRIPTION_ENRICH_LIMIT = "100"
 ML_DESCRIPTION_REFRESH_DAYS = "90"
 ML_DESCRIPTION_SLEEP_MS = "100"
-# Copia incremental de portadas primarias. El cron de 5 minutos completa el
+# Galerías oficiales de productos de catálogo: se cachean en R2 y se
+# completan incrementalmente para no repetir miles de consultas en cada sync.
+# La edición especial de My Hero Academia se prioriza en la primera corrida.
+ML_CATALOG_GALLERY_ENRICH_LIMIT = "300"
+ML_CATALOG_GALLERY_REFRESH_DAYS = "90"
+ML_CATALOG_GALLERY_SLEEP_MS = "75"
+ML_CATALOG_GALLERY_PRIORITY_IDS = "MLU63131903"
+# Copia incremental de portadas y galerías. El cron de 5 minutos completa el
 # primer backfill y luego baja automáticamente a mantenimiento horario para
 # cambios y revalidaciones de copias de más de 30 días.
-COVER_MIRROR_BATCH_SIZE = "20"
+COVER_MIRROR_BATCH_SIZE = "100"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 INDEXNOW_ENABLED = "true"
 # Clave pública verificada por el archivo homónimo en astro-front/public.

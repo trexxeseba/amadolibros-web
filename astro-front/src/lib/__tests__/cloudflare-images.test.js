@@ -11,6 +11,7 @@ test('la home usa el proxy propio y tres variantes Cloudflare', () => {
   const source = bookCoverUrl('MLU987654');
   const cover = responsiveBookCover('MLU987654');
   assert.equal(source, 'https://www.amadolibros.com/book-cover/MLU987654/cover.jpg');
+  assert.equal(bookCoverUrl('MLU987654', 2), 'https://www.amadolibros.com/book-cover/MLU987654/cover-3.jpg');
   assert.match(cover.src, /\/cdn-cgi\/image\/.*width=360/);
   assert.deepEqual(
     [...cover.srcset.matchAll(/width=(\d+)/g)].map(match => Number(match[1])),
