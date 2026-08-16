@@ -72,3 +72,13 @@ test('deploy productivo exige manifest, ficha y bytes R2 antes de quedar verde',
   assert.match(deploy, /x-cover-source: r2-production/i);
   assert.match(deploy, /steps\.cover_r2_smoke\.outcome/);
 });
+
+test('publicación de catálogo pausado tolera una sincronización legítima concurrente', () => {
+  assert.match(deploy, /grep -q '"production_catalog_modified":false'/);
+  assert.doesNotMatch(deploy, /BEFORE=\$\(curl -sSI "\$CATALOG_URL"/);
+  assert.doesNotMatch(deploy, /AFTER=\$\(curl -sSI "\$CATALOG_URL"/);
+  assert.doesNotMatch(
+    deploy,
+    /las cabeceras de catalog\.json cambiaron durante la publicación/,
+  );
+});
