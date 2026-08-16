@@ -180,3 +180,23 @@ test('la configuración declara la API key únicamente como secret', () => {
   assert.match(source, /getBingWebmasterReadOnlySummary\(env\)/);
   assert.doesNotMatch(source, /SubmitUrlBatch/);
 });
+
+test('el workflow genera informes protegidos sin habilitar escrituras', () => {
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const workflow = readFileSync(
+    root + '/../.github/workflows/bing-webmaster-report.yml',
+    'utf8',
+  );
+
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /schedule:/);
+  assert.match(workflow, /name: production/);
+  assert.match(workflow, /secrets\.SYNC_SECRET/);
+  assert.match(workflow, /vars\.WORKER_SYNC_TRIGGER_URL/);
+  assert.match(workflow, /\/bing-webmaster\/summary/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /bing-query-performance\.csv/);
+  assert.match(workflow, /bing-crawl-issues\.csv/);
+  assert.doesNotMatch(workflow, /BING_WEBMASTER_API_KEY/);
+  assert.doesNotMatch(workflow, /SubmitUrlBatch/);
+});
