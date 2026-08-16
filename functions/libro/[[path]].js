@@ -18,6 +18,11 @@ import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
 import {
+    productSeoFor,
+    shouldIndexProduct,
+    verifiedDuplicateCanonicalTarget,
+} from '../_shared/product-seo.js';
+import {
     ensurePerf,
     perfNow,
     perfSummary,
@@ -340,6 +345,8 @@ function notFound() {
 export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
+    const seo          = productSeoFor(item.id);
+    const safeSeoTitle = escapeHtml(seo?.title || item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
     const images       = normalizeImages(item, previewCoverSrc);
     const img          = images[0] || '';
@@ -404,11 +411,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     </details>`
         : '';
 
-    const metaDesc = inStock
+    const metaDesc = seo?.description
+        ? escapeHtml(seo.description)
+        : inStock
         ? (safeAuthor
             ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
             : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
         : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
+    const robots = shouldIndexProduct(item, isPreview) ? 'index, follow' : 'noindex, follow';
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
     const schemaProduct = {
@@ -553,15 +563,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${safeTitle} | Amado Libros</title>
+  <title>${safeSeoTitle} | Amado Libros</title>
   <meta name="description" content="${metaDesc}">
-  <meta name="robots" content="${isPreview || !inStock ? 'noindex, follow' : 'index, follow'}">
+  <meta name="robots" content="${robots}">
   <link rel="canonical" href="${canonicalUrl}">
   ${faviconHeadHtml()}
 
   <meta property="og:type"        content="product">
   <meta property="og:url"         content="${canonicalUrl}">
-  <meta property="og:title"       content="${safeTitle} | Amado Libros">
+  <meta property="og:title"       content="${safeSeoTitle} | Amado Libros">
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:image"       content="${escapeHtml(socialImage)}">
   <meta property="og:image:secure_url" content="${escapeHtml(socialImage)}">
@@ -570,7 +580,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta property="og:site_name"   content="Amado Libros">
 
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="${safeTitle} | Amado Libros">
+  <meta name="twitter:title"       content="${safeSeoTitle} | Amado Libros">
   <meta name="twitter:description" content="${metaDesc}">
   <meta name="twitter:image"       content="${escapeHtml(socialImage)}">
   <meta name="twitter:image:alt"   content="Portada de ${safeTitle}">
@@ -955,11 +965,22 @@ export async function onRequest(context) {
     }
     if (!item) return notFound();
 
-    const slug = slugify(item.title);
     const isPreview = context.env?.APP_ENV === 'preview';
     const navigationBase = isPreview
         ? new URL(context.request.url).origin
         : BASE;
+
+    const duplicateTarget = verifiedDuplicateCanonicalTarget(item, catalog?.items);
+    if (duplicateTarget) {
+        const currentUrl = new URL(context.request.url);
+        currentUrl.searchParams.delete('layout');
+        return Response.redirect(
+            `${navigationBase}/libro/${duplicateTarget.id}/${slugify(duplicateTarget.title)}${currentUrl.search}`,
+            301,
+        );
+    }
+
+    const slug = slugify(item.title);
 
     // Una sola URL por entidad: slug faltante o incorrecto -> 301 canónico.
     const canonicalRedirect = canonicalProductRedirectUrl({
