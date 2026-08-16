@@ -127,7 +127,8 @@ test('9. Ficha sin stock ("por encargo"): no hay precio web/tarjeta ni botón de
 test('9b. Moneda no-UYU se informa sin conversión inventada y queda fuera del carrito', () => {
     const html = renderPage(book({ price: 285, currency: 'USD' }), 'producto-en-usd', false, '');
     assert.match(html, /Precio publicado: USD 285/);
-    assert.match(html, /"priceCurrency":"USD"/);
+    assert.doesNotMatch(html, /"priceCurrency":"USD"/);
+    assert.doesNotMatch(html, /"offers":/);
     assert.doesNotMatch(html, /data-action="add-to-cart"/);
     assert.doesNotMatch(html, /Precio web\/tarjeta/);
     assert.match(html, /Consultar precio y forma de pago/);

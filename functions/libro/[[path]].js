@@ -474,7 +474,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         'description': description || (item.author ? `${item.title} — ${item.author}` : item.title),
         'sku':      item.id,
     };
-    if (inStock) {
+    if (sellableInCheckout) {
         schemaProduct.offers = {
             '@type':        'Offer',
             'url':          canonicalUrl,

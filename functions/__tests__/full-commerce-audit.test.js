@@ -46,7 +46,9 @@ test('detecta precio cruzado, imagen externa y producto no-libro', () => {
     image: 'https://http2.mlstatic.com/D_X-O.jpg',
     price: '25650 UYU',
   }));
-  const result = auditFeed({ items: [catalogItem({ domain_id: 'MLU-COMPUTER_COMPONENTS' })] }, rows);
+  const result = auditFeed({ items: [catalogItem({
+    domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: null, author: null, pages: null,
+  })] }, rows);
   const codes = result.issues.map(row => row.code);
   assert.ok(codes.includes('FEED_NON_BOOK'));
   assert.ok(codes.includes('FEED_PRICE_MISMATCH'));

@@ -73,10 +73,11 @@ export default {
     if (event?.cron === '*/5 * * * *') {
       // Backfill autónomo: cada 5 minutos hasta cubrir todo. Una vez completo,
       // baja solo a una ejecución por hora para revalidar el ciclo de 30 días.
-      const complete = await kvGet(env, 'cover-mirror:backfill_complete');
       const minute = new Date().getUTCMinutes();
-      if (complete === 'true' && minute !== 0) return;
-      ctx.waitUntil(runCoverMirror(env, { limit: 20 }));
+      ctx.waitUntil(runCoverMirror(env, {
+        limit: configuredCoverMirrorBatchSize(env),
+        maintenanceMinute: minute,
+      }));
       return;
     }
     ctx.waitUntil(runSync(env, { source: 'cron' }));
@@ -492,7 +493,12 @@ export async function runSync(env, options = {}, {
     // catálogo ya publicado, pero queda visible en el resultado del sync.
     let coverMirror;
     try {
+      // Un catálogo nuevo invalida cualquier marca de backfill anterior. La
+      // marca versionada también protege contra una corrida vieja que termine
+      // después y vuelva a escribir su propio estado.
+      if (env?.COVER_R2) await kvDelete(env, 'cover-mirror:backfill_complete');
       coverMirror = await syncCoverMirrorFn(env, catalog);
+      await persistCoverMirrorState(env, coverMirror, catalog);
     } catch (error) {
       console.error(`[Cover mirror] Error: ${error?.message || 'Error'}`);
       coverMirror = { status: 'error', error: String(error?.message || 'Error').slice(0, 200) };
@@ -572,29 +578,67 @@ export async function runSync(env, options = {}, {
   }
 }
 
-export async function runCoverMirror(env, { limit = 250 } = {}, {
+export function configuredCoverMirrorBatchSize(env) {
+  const parsed = Number(env?.COVER_MIRROR_BATCH_SIZE || 250);
+  return Math.min(1000, Math.max(1, Number.isFinite(parsed) ? parsed : 250));
+}
+
+function catalogBackfillVersion(catalog) {
+  return String(catalog?.updated_at || catalog?.last_full_sync || '').trim() || null;
+}
+
+function parseBackfillMarker(value) {
+  if (!value) return null;
+  if (value === 'true') return { completed: true, catalog_version: null };
+  try {
+    const parsed = JSON.parse(value);
+    return parsed?.completed === true ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function persistCoverMirrorState(env, result, catalog) {
+  const catalogVersion = catalogBackfillVersion(catalog);
+  await kvPut(env, 'cover-mirror:last_result', JSON.stringify({
+    at: new Date().toISOString(),
+    status: result.status,
+    catalog_version: catalogVersion,
+    attempted: result.attempted ?? null,
+    failed: result.failed ?? null,
+    pending: result.pending ?? null,
+    valid_copies: result.valid_copies ?? null,
+    ai_upscaled: result.ai_upscaled ?? null,
+    quality_pending: result.quality_pending ?? null,
+    manifest_retries: result.manifest_retries ?? null,
+  }));
+  if (result.status === 'completed' && result.pending === 0) {
+    await kvPut(env, 'cover-mirror:backfill_complete', JSON.stringify({
+      completed: true,
+      catalog_version: catalogVersion,
+      at: new Date().toISOString(),
+    }));
+  } else if (result.status === 'completed') {
+    await kvDelete(env, 'cover-mirror:backfill_complete');
+  }
+}
+
+export async function runCoverMirror(env, { limit = 250, maintenanceMinute = null } = {}, {
   syncCoverMirrorFn = syncCoverMirror,
 } = {}) {
   try {
     const object = await env?.CATALOG_R2?.get?.('catalog.json');
     if (!object) return { status: 'error', error: 'catalog.json no disponible.' };
     const catalog = JSON.parse(await object.text());
-    const result = await syncCoverMirrorFn(env, catalog, { limit });
-    await kvPut(env, 'cover-mirror:last_result', JSON.stringify({
-      at: new Date().toISOString(),
-      status: result.status,
-      attempted: result.attempted ?? null,
-      failed: result.failed ?? null,
-      pending: result.pending ?? null,
-      valid_copies: result.valid_copies ?? null,
-      ai_upscaled: result.ai_upscaled ?? null,
-      quality_pending: result.quality_pending ?? null,
-    }));
-    if (result.status === 'completed' && result.pending === 0) {
-      await kvPut(env, 'cover-mirror:backfill_complete', 'true');
-    } else if (result.status === 'completed') {
-      await kvDelete(env, 'cover-mirror:backfill_complete');
+    if (maintenanceMinute !== null && Number(maintenanceMinute) !== 0) {
+      const marker = parseBackfillMarker(await kvGet(env, 'cover-mirror:backfill_complete'));
+      const currentVersion = catalogBackfillVersion(catalog);
+      if (marker?.catalog_version && marker.catalog_version === currentVersion) {
+        return { status: 'skipped', reason: 'hourly-maintenance', catalog_version: currentVersion };
+      }
     }
+    const result = await syncCoverMirrorFn(env, catalog, { limit });
+    await persistCoverMirrorState(env, result, catalog);
     return result;
   } catch (error) {
     return { status: 'error', error: String(error?.message || 'Error').slice(0, 240) };
@@ -626,6 +670,7 @@ async function readStatus(env) {
     readBucketHead(env?.COVER_R2, 'covers/v1/manifest.json'),
   ]);
 
+  const parsedCoverMirrorComplete = parseBackfillMarker(coverMirrorComplete);
   return {
     status: 'ok',
     checked_at: new Date().toISOString(),
@@ -640,7 +685,8 @@ async function readStatus(env) {
     },
     cover_mirror: {
       last_result: parseJsonOrValue(coverMirrorResult),
-      backfill_complete: coverMirrorComplete === 'true',
+      backfill_complete: parsedCoverMirrorComplete?.completed === true,
+      backfill_catalog_version: parsedCoverMirrorComplete?.catalog_version || null,
     },
     r2: {
       meta,
