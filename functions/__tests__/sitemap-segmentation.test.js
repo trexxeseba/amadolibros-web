@@ -37,11 +37,14 @@ test('segmento de libros activos excluye pausados, agotados e inválidos', () =>
       { id: 'MLU2', title: 'Libro Dos', status: 'paused', available_quantity: 0 },
       { id: 'MLU3', title: 'Libro Tres', status: 'active', available_quantity: 0 },
       { id: null, title: 'Sin ID', status: 'active', available_quantity: 1 },
+      { id: 'MLU704333012', title: 'Libro Reflexiones Sobre Vivir En Compasion', isbn: '9788412027082', status: 'active', available_quantity: 2 },
+      { id: 'MLU704333014', title: 'Libro Reflexiones Sobre Vivir En Compasion', isbn: '9788412027082', status: 'active', available_quantity: 2 },
     ],
   });
 
   assert.deepEqual(entries, [
     { loc: 'https://www.amadolibros.com/libro/MLU1/libro-uno' },
+    { loc: 'https://www.amadolibros.com/libro/MLU704333014/libro-reflexiones-sobre-vivir-en-compasion' },
   ]);
 });
 
