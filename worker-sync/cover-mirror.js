@@ -177,6 +177,14 @@ export function selectCoverBatch(catalog, manifest, {
     })
     .filter(candidate => candidate.priority !== null)
     .sort((a, b) => {
+      // Merchant solo necesita la posición 0 para publicar el producto.
+      // Completar galerías enteras por ID antes de pasar al siguiente libro
+      // dejaba miles de ofertas fuera del feed aunque el manifest creciera.
+      // Primero cubrimos una portada principal por producto; después usamos
+      // la capacidad restante para las imágenes secundarias de la galería.
+      const primaryA = a.position === 0;
+      const primaryB = b.position === 0;
+      if (primaryA !== primaryB) return primaryA ? -1 : 1;
       if (a.preferred !== b.preferred) return a.preferred ? -1 : 1;
       if (a.priority !== b.priority) return a.priority - b.priority;
       const validatedA = Date.parse(a.entry?.last_validated_at || '') || 0;

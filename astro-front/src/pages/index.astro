@@ -4,6 +4,7 @@
 import BaseLayout          from '../layouts/BaseLayout.astro';
 import Header              from '../components/Header.astro';
 import Hero                from '../components/Hero.astro';
+import DeliveryCoordination from '../components/DeliveryCoordination.astro';
 import BookDiscovery       from '../components/BookDiscovery.astro';
 import GuideAccess         from '../components/GuideAccess.astro';
 import CategoryAccess      from '../components/CategoryAccess.astro';
@@ -70,6 +71,7 @@ const jsonLd = {
   <Header showSearch={false} showMobileDeliveryBanner={true} />
   <main>
     <Hero />
+    <DeliveryCoordination />
     <CategoryAccess />
     <BestsellerSection />
     <BookDiscovery />
