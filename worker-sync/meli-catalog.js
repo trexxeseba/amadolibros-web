@@ -39,6 +39,7 @@ const DEFAULT_GALLERY_ENRICH_LIMIT = 300;
 const DEFAULT_GALLERY_REFRESH_DAYS = 90;
 const DEFAULT_GALLERY_SLEEP_MS = 75;
 const CATALOG_GALLERY_CACHE_KEY = 'catalog-product-galleries/v1/cache.json';
+const MAX_GALLERY_IMAGES = 16;
 const DESCRIPTION_MAX_CHARS = 5000;
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
   'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id';
@@ -641,10 +642,12 @@ export function extractDimensions(attrs, dataQuality = createDataQualitySummary(
 }
 
 /**
- * Convierte el array pictures de ML a un array de URLs https, máximo 6.
+ * Convierte el array pictures de ML a URLs https. El tope 16 coincide con la
+ * guarda del proxy y evita truncar galerías especiales a las seis fotos que
+ * admitía históricamente la ficha.
  * Acepta objetos {secure_url, url} o strings directos.
  */
-export function normalizePictures(pictures, max = 6) {
+export function normalizePictures(pictures, max = MAX_GALLERY_IMAGES) {
   if (!Array.isArray(pictures) || pictures.length === 0) return [];
   const normalized = pictures
     .map(p => {
@@ -703,7 +706,7 @@ function mergeOfficialGallery(item, pictures) {
  * Las publicaciones de catálogo pueden exponer una sola foto en /items aunque
  * la página de producto de ML tenga una galería completa. Reutiliza una caché
  * R2 y consulta incrementalmente /products/:catalog_product_id para completar
- * hasta seis imágenes oficiales sin sumar miles de requests a cada sync.
+ * hasta dieciséis imágenes oficiales sin sumar miles de requests a cada sync.
  */
 export async function enrichCatalogProductPictures(items, env, accessToken, {
   retryBudget = createSyncRetryBudget(),

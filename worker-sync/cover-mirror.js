@@ -9,6 +9,7 @@ const ALLOWED_HOST_SUFFIX = '.mlstatic.com';
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
 const DEFAULT_CONCURRENCY = 6;
+const MAX_GALLERY_IMAGES = 16;
 const TARGET_SHORT_EDGE = 1024;
 const TRANSFORM_RETRY_MS = 24 * 60 * 60 * 1000;
 
@@ -49,7 +50,7 @@ export function coverCandidates(item, { includePaused = false } = {}) {
     (pictures.length > 0 ? pictures : [item.thumbnail])
       .map(normalizedSource)
       .filter(Boolean),
-  )].slice(0, 6);
+  )].slice(0, MAX_GALLERY_IMAGES);
   return sources.map((sourceUrl, position) => ({
     product_id: id,
     position,

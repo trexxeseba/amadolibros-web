@@ -1,6 +1,7 @@
 import { BASE } from './catalog.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
+const MAX_GALLERY_IMAGES = 16;
 const DEFAULT_WIDTHS = [240, 360, 480];
 
 function positiveInteger(value) {
@@ -24,7 +25,7 @@ function sameProductionZone(source) {
 export function bookCoverUrl(productId, position = 0) {
   const id = String(productId || '').toUpperCase();
   if (!PRODUCT_ID_RE.test(id)) return '';
-  const normalizedPosition = Number.isInteger(position) && position >= 0 && position < 6
+  const normalizedPosition = Number.isInteger(position) && position >= 0 && position < MAX_GALLERY_IMAGES
     ? position
     : 0;
   const filename = normalizedPosition === 0 ? 'cover.jpg' : `cover-${normalizedPosition + 1}.jpg`;

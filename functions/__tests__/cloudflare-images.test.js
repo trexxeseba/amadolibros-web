@@ -16,8 +16,8 @@ test('construye una portada primaria controlada y rechaza IDs ajenos', () => {
     'https://www.amadolibros.com/book-cover/MLU123456/cover-2.jpg',
   );
   assert.equal(
-    bookCoverUrl('MLU123456', 5),
-    'https://www.amadolibros.com/book-cover/MLU123456/cover-6.jpg',
+    bookCoverUrl('MLU123456', 15),
+    'https://www.amadolibros.com/book-cover/MLU123456/cover-16.jpg',
   );
   assert.equal(bookCoverUrl('USD123'), '');
   assert.equal(bookCoverUrl('../MLU123'), '');

@@ -58,22 +58,21 @@ test('la portada primaria convierte miniatura -I en imagen grande -O', () => {
 });
 
 test('la ficha productiva sirve toda la galería desde Amado Libros', () => {
+  const pictures = Array.from({ length: 16 }, (_, index) =>
+    `https://http2.mlstatic.com/GALERIA_${index + 1}-O.jpg`);
   const html = renderPage({
     id: 'MLU123456',
     title: 'Libro con galería',
     status: 'paused',
     available_quantity: 0,
-    pictures: [
-      'https://http2.mlstatic.com/PORTADA-O.jpg',
-      'https://mlu-s2-p.mlstatic.com/INTERIOR-O.jpg',
-      'https://http2.mlstatic.com/POSTER-O.jpg',
-    ],
+    pictures,
   }, 'libro-con-galeria', false, '');
 
   assert.match(html, /book-cover\/MLU123456\/cover\.jpg/);
   assert.match(html, /book-cover\/MLU123456\/cover-2\.jpg/);
   assert.match(html, /book-cover\/MLU123456\/cover-3\.jpg/);
-  assert.doesNotMatch(html, /mlu-s2-p\.mlstatic\.com/);
+  assert.match(html, /book-cover\/MLU123456\/cover-16\.jpg/);
+  assert.doesNotMatch(html, /mlstatic\.com/);
 });
 
 test('las landings de categoría tampoco repiten la misma edición', () => {

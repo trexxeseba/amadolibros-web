@@ -94,15 +94,14 @@ test('normaliza miniatura y excluye productos no activos o sin origen ML', () =>
   assert.equal(primaryCoverCandidate(item('MLU123456', { pictures: ['https://example.com/x.jpg'] })), null);
 });
 
-test('genera candidatos para las seis posiciones oficiales de una galería', () => {
+test('genera candidatos para todas las posiciones oficiales de una galería', () => {
   const candidates = coverCandidates(item('MLU123456', {
-    pictures: [
-      'https://http2.mlstatic.com/D_MAIN-O.jpg',
-      'https://mlu-s2-p.mlstatic.com/D_SECOND-O.jpg',
-    ],
+    pictures: Array.from({ length: 18 }, (_, index) =>
+      `https://mlu-s2-p.mlstatic.com/D_GALLERY_${index + 1}-O.jpg`),
   }));
-  assert.deepEqual(candidates.map(candidate => candidate.position), [0, 1]);
-  assert.equal(candidates[1].source_url, 'https://mlu-s2-p.mlstatic.com/D_SECOND-O.jpg');
+  assert.equal(candidates.length, 16);
+  assert.deepEqual(candidates.map(candidate => candidate.position), Array.from({ length: 16 }, (_, index) => index));
+  assert.equal(candidates[15].source_url, 'https://mlu-s2-p.mlstatic.com/D_GALLERY_16-O.jpg');
 });
 
 test('copia cada posición de la galería a R2 con entradas independientes', async () => {

@@ -2,7 +2,8 @@ import { fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
-const COVER_FILE_RE = /^cover(?:-([2-6]))?\.jpg$/;
+const COVER_FILE_RE = /^cover(?:-([2-9]|1[0-6]))?\.jpg$/;
+const MAX_GALLERY_IMAGES = 16;
 
 function largeMlImage(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return '';
@@ -25,7 +26,7 @@ export function primaryCoverSource(item) {
 }
 
 export function coverSource(item, position = 0) {
-  if (!Number.isInteger(position) || position < 0 || position > 5) return '';
+  if (!Number.isInteger(position) || position < 0 || position >= MAX_GALLERY_IMAGES) return '';
   const pictures = Array.isArray(item?.pictures)
     ? item.pictures.filter(value => typeof value === 'string')
     : [];

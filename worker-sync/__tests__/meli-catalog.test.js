@@ -8,6 +8,7 @@ import {
   enrichCatalogDescriptions,
   extractBibliographicDetails,
   extractDimensions,
+  normalizePictures,
   repairKnownTitle,
   sanitizeDescription,
   slimItem,
@@ -566,6 +567,15 @@ test('completa y cachea la galería oficial de catalog_product_id', async () => 
   assert.equal(uncached[0].pictures.length, 2);
   assert.equal(cacheFailure.fetched, 1);
   assert.equal(cacheFailure.cache_write_error, 'R2 temporalmente indisponible');
+});
+
+test('preserva hasta dieciséis imágenes oficiales sin el antiguo corte en seis', () => {
+  const pictures = Array.from({ length: 18 }, (_, index) => ({
+    url: `https://http2.mlstatic.com/D_GALLERY_${index + 1}-O.jpg`,
+  }));
+  const normalized = normalizePictures(pictures);
+  assert.equal(normalized.length, 16);
+  assert.match(normalized.at(-1), /D_GALLERY_16-O\.jpg$/);
 });
 
 test('slimItem conserva identidad de catálogo ML sin inventar señales ausentes', () => {
