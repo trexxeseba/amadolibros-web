@@ -8,13 +8,6 @@ on:
       - '.github/workflows/gsc-export.yml'
       - 'scripts/seo/gsc-export.mjs'
       - 'scripts/seo/gsc-analysis.mjs'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/gsc-export.yml'
-      - 'scripts/seo/gsc-export.mjs'
-      - 'scripts/seo/gsc-analysis.mjs'
   schedule:
     - cron: '17 11 * * 1'
   workflow_dispatch:
