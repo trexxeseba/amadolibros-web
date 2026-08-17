@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 const PRODUCT_PATH = '/libro/';
+const MAX_INSPECTION_SAMPLE = 400;
 
 function number(value) {
   const parsed = Number(value);
@@ -22,6 +23,14 @@ function uniqueByPage(rows) {
     seen.add(row.page);
     return true;
   });
+}
+
+function targetSampleSize(value) {
+  return Math.max(1, Math.min(MAX_INSPECTION_SAMPLE, Math.trunc(number(value)) || MAX_INSPECTION_SAMPLE));
+}
+
+function uniqueProductUrls(urls = []) {
+  return [...new Set(urls.filter(isProductUrl))];
 }
 
 export function isProductUrl(url) {
@@ -119,10 +128,10 @@ export function buildInspectionSample({
   sitemapUrls = [],
   pageRows = [],
   ctrOpportunities = [],
-  size = 400,
+  size = MAX_INSPECTION_SAMPLE,
 } = {}) {
-  const targetSize = Math.max(1, Math.min(400, Math.trunc(number(size)) || 400));
-  const activeUrls = [...new Set(sitemapUrls.filter(isProductUrl))];
+  const targetSize = targetSampleSize(size);
+  const activeUrls = uniqueProductUrls(sitemapUrls);
   const activeSet = new Set(activeUrls);
   const normalizedPages = normalizePageRows(pageRows)
     .filter((row) => isProductUrl(row.page) && activeSet.has(row.page));
@@ -166,26 +175,105 @@ export function buildInspectionSample({
   return selected;
 }
 
-export function summarizeInspections(rows = []) {
-  const summary = {
-    requested: rows.length,
+/**
+ * Muestra comparable entre las dos poblaciones comerciales:
+ * - active: libros disponibles;
+ * - by_request: cohorte publicada en sitemap-books-paused.xml.
+ *
+ * La asignación es 50/50 cuando ambas cohortes tienen suficiente volumen. Si
+ * una no llega a su cupo, la otra completa el total. Dentro de cada cohorte se
+ * conserva la selección estable por URL de buildInspectionSample().
+ */
+export function buildCohortInspectionSample({
+  activeSitemapUrls = [],
+  pausedSitemapUrls = [],
+  pageRows = [],
+  ctrOpportunities = [],
+  size = MAX_INSPECTION_SAMPLE,
+} = {}) {
+  const targetSize = targetSampleSize(size);
+  const activeUrls = uniqueProductUrls(activeSitemapUrls);
+  const activeSet = new Set(activeUrls);
+  const pausedUrls = uniqueProductUrls(pausedSitemapUrls).filter((page) => !activeSet.has(page));
+
+  if (!activeUrls.length && !pausedUrls.length) return [];
+
+  let activeTarget = 0;
+  let pausedTarget = 0;
+  if (activeUrls.length && pausedUrls.length) {
+    activeTarget = Math.min(activeUrls.length, Math.floor(targetSize / 2));
+    pausedTarget = Math.min(pausedUrls.length, targetSize - activeTarget);
+  } else if (activeUrls.length) {
+    activeTarget = Math.min(activeUrls.length, targetSize);
+  } else {
+    pausedTarget = Math.min(pausedUrls.length, targetSize);
+  }
+
+  let remaining = targetSize - activeTarget - pausedTarget;
+  if (remaining > 0) {
+    const activeCapacity = activeUrls.length - activeTarget;
+    const activeFill = Math.min(activeCapacity, remaining);
+    activeTarget += activeFill;
+    remaining -= activeFill;
+  }
+  if (remaining > 0) {
+    const pausedCapacity = pausedUrls.length - pausedTarget;
+    const pausedFill = Math.min(pausedCapacity, remaining);
+    pausedTarget += pausedFill;
+  }
+
+  const sampleFor = (urls, cohort, cohortSize) => {
+    if (cohortSize <= 0) return [];
+    return buildInspectionSample({
+      sitemapUrls: urls,
+      pageRows,
+      ctrOpportunities,
+      size: cohortSize,
+    }).map((row) => ({ ...row, cohort }));
+  };
+
+  return [
+    ...sampleFor(activeUrls, 'active', activeTarget),
+    ...sampleFor(pausedUrls, 'by_request', pausedTarget),
+  ];
+}
+
+function emptyInspectionGroup() {
+  return {
+    requested: 0,
     completed: 0,
     errors: 0,
     verdicts: {},
     coverageStates: {},
+  };
+}
+
+function incrementInspectionGroup(group, row) {
+  group.requested += 1;
+  if (row.error) {
+    group.errors += 1;
+    return;
+  }
+  group.completed += 1;
+  const verdict = row.verdict || 'UNKNOWN';
+  const coverageState = row.coverageState || 'UNKNOWN';
+  group.verdicts[verdict] = (group.verdicts[verdict] || 0) + 1;
+  group.coverageStates[coverageState] = (group.coverageStates[coverageState] || 0) + 1;
+}
+
+export function summarizeInspections(rows = []) {
+  const summary = {
+    ...emptyInspectionGroup(),
     strata: {},
+    cohorts: {},
   };
   for (const row of rows) {
     summary.strata[row.stratum] = (summary.strata[row.stratum] || 0) + 1;
-    if (row.error) {
-      summary.errors += 1;
-      continue;
-    }
-    summary.completed += 1;
-    const verdict = row.verdict || 'UNKNOWN';
-    const coverageState = row.coverageState || 'UNKNOWN';
-    summary.verdicts[verdict] = (summary.verdicts[verdict] || 0) + 1;
-    summary.coverageStates[coverageState] = (summary.coverageStates[coverageState] || 0) + 1;
+    incrementInspectionGroup(summary, row);
+
+    const cohort = row.cohort || 'unsegmented';
+    if (!summary.cohorts[cohort]) summary.cohorts[cohort] = emptyInspectionGroup();
+    incrementInspectionGroup(summary.cohorts[cohort], row);
   }
   return summary;
 }
