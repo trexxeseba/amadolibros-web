@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - '.github/workflows/gsc-export.yml'
+      - 'scripts/seo/gsc-export.mjs'
+      - 'scripts/seo/gsc-analysis.mjs'
   schedule:
     - cron: '17 11 * * 1'
   workflow_dispatch:
@@ -24,7 +26,7 @@ on:
         default: 'sc-domain:amadolibros.com'
         type: string
       inspection_sample_size:
-        description: Cantidad de fichas activas a inspeccionar (máximo 400)
+        description: Cantidad total de fichas activas y por encargo a inspeccionar (máximo 400)
         required: true
         default: 400
         type: number
@@ -92,6 +94,7 @@ jobs:
           GSC_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
           GSC_OUTPUT_DIR: artifacts/gsc
           GSC_ACTIVE_SITEMAP_URL: https://www.amadolibros.com/sitemap-books-active.xml
+          GSC_PAUSED_SITEMAP_URL: https://www.amadolibros.com/sitemap-books-paused.xml
           GSC_INSPECTION_SAMPLE_SIZE: ${{ inputs.inspection_sample_size || 400 }}
         run: node scripts/seo/gsc-export.mjs
 

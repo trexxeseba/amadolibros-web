@@ -1,3 +1,5 @@
+import { isPausedProductInSeoCohort } from './paused-seo-cohort.js';
+
 const GOOGLE_COMMON_CRAWLERS_URL = 'https://developers.google.com/static/crawling/ipranges/common-crawlers.json';
 const GOOGLE_RANGES_KV_KEY = 'seo:crawl-logs-3:google-common-crawlers:v1';
 const FLAG_PREFIX = 'seo:crawl-logs-3:enabled:';
@@ -277,6 +279,36 @@ async function verifyGooglebot(request, env, nowMs, fetchFn) {
   return match == null ? -2 : (match ? 1 : 0);
 }
 
+function productIdFromRequest(request) {
+  try {
+    const match = new URL(request.url).pathname.match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
+    return match ? match[1].toUpperCase() : '';
+  } catch {
+    return '';
+  }
+}
+
+export function productLookupStateFromContext(context) {
+  const segments = Array.isArray(context?.data?.perf?.segments)
+    ? context.data.perf.segments
+    : [];
+  const activeLookup = segments.find((segment) => segment?.name === 'active_lookup');
+  if (activeLookup?.found === true) return 'active';
+  const pausedLookup = segments.find((segment) => segment?.name === 'paused_lookup');
+  if (pausedLookup?.found === true) return 'paused';
+  return 'unknown';
+}
+
+export function resolveProductCrawlSegment({ request, classification, productLookupState }) {
+  if (!classification.pattern.startsWith('libro')) return 'non_product';
+  if (productLookupState === 'active') return 'active';
+  if (productLookupState !== 'paused') return 'unknown_product';
+
+  const productId = productIdFromRequest(request);
+  if (!productId) return 'paused_unknown';
+  return isPausedProductInSeoCohort(productId) ? 'by_request' : 'paused_other';
+}
+
 async function ensureSchema(db) {
   if (!db || typeof db.prepare !== 'function') return false;
   if (!schemaReadyPromise) {
@@ -292,6 +324,19 @@ async function ensureSchema(db) {
         bytes_known_count INTEGER NOT NULL DEFAULT 0,
         duration_ms_sum REAL NOT NULL DEFAULT 0,
         PRIMARY KEY (date, pattern, status, verified, ua_googlebot)
+      )`).run();
+      await db.prepare(`CREATE TABLE IF NOT EXISTS crawl_stats_segmented (
+        date TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        segment TEXT NOT NULL,
+        status INTEGER NOT NULL,
+        verified INTEGER NOT NULL,
+        ua_googlebot INTEGER NOT NULL,
+        request_count INTEGER NOT NULL DEFAULT 0,
+        bytes_sum INTEGER NOT NULL DEFAULT 0,
+        bytes_known_count INTEGER NOT NULL DEFAULT 0,
+        duration_ms_sum REAL NOT NULL DEFAULT 0,
+        PRIMARY KEY (date, pattern, segment, status, verified, ua_googlebot)
       )`).run();
       return true;
     })().catch(error => {
@@ -317,7 +362,13 @@ export function isUsefulRatioDenominator({ classification, verified }) {
   return verified === 1 && classification.contentPage && !DENOMINATOR_EXCLUDED.has(classification.pattern);
 }
 
-export async function recordCrawlRequest({ request, response, env, durationMs = 0 }, deps = {}) {
+export async function recordCrawlRequest({
+  request,
+  response,
+  env,
+  durationMs = 0,
+  productLookupState = 'unknown',
+}, deps = {}) {
   const nowFn = deps.nowFn || Date.now;
   const fetchFn = deps.fetchFn || fetch;
   const randomFn = deps.randomFn || Math.random;
@@ -334,6 +385,11 @@ export async function recordCrawlRequest({ request, response, env, durationMs = 
   const ua = request.headers.get('user-agent') || '';
   const uaGooglebot = isGooglebotUa(ua) ? 1 : 0;
   const verified = await verifyGooglebot(request, env, nowMs, fetchFn);
+  const segment = resolveProductCrawlSegment({
+    request,
+    classification,
+    productLookupState,
+  });
   const { bytes, known } = knownContentLength(response);
   const date = new Date(nowMs).toISOString().slice(0, 10);
   const safeDuration = Number.isFinite(Number(durationMs)) ? Math.max(0, Number(durationMs)) : 0;
@@ -358,9 +414,30 @@ export async function recordCrawlRequest({ request, response, env, durationMs = 
         safeDuration,
       ).run();
 
+  await env.ORDERS_DB.prepare(`INSERT INTO crawl_stats_segmented
+    (date, pattern, segment, status, verified, ua_googlebot, request_count, bytes_sum, bytes_known_count, duration_ms_sum)
+    VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+    ON CONFLICT(date, pattern, segment, status, verified, ua_googlebot)
+    DO UPDATE SET
+      request_count = request_count + 1,
+      bytes_sum = bytes_sum + excluded.bytes_sum,
+      bytes_known_count = bytes_known_count + excluded.bytes_known_count,
+      duration_ms_sum = duration_ms_sum + excluded.duration_ms_sum`).bind(
+        date,
+        classification.pattern,
+        segment,
+        response.status,
+        verified,
+        uaGooglebot,
+        bytes,
+        known,
+        safeDuration,
+      ).run();
+
   return {
     recorded: true,
     pattern: classification.pattern,
+    segment,
     verified,
     uaGooglebot,
     usefulNumerator: isUsefulRatioNumerator({ classification, status: response.status, verified }),
@@ -372,8 +449,13 @@ export function scheduleCrawlAnalytics(context, response, durationMs = 0) {
   if (!context || typeof context.waitUntil !== 'function') return;
   if (!context.request || !context.env) return;
   context.waitUntil(
-    recordCrawlRequest({ request: context.request, response, env: context.env, durationMs })
-      .catch(error => console.warn('[SEO-CRAWL-LOGS-3] logging falló:', error?.message || error)),
+    recordCrawlRequest({
+      request: context.request,
+      response,
+      env: context.env,
+      durationMs,
+      productLookupState: productLookupStateFromContext(context),
+    }).catch(error => console.warn('[SEO-CRAWL-LOGS-3] logging falló:', error?.message || error)),
   );
 }
 
