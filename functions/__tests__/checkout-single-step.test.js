@@ -324,7 +324,7 @@ test('pedido.astro: purchase usa el pedido autenticado y se emite antes de vacia
   const approved = pedidoAstro.slice(fnStart, fnEnd);
   assert.match(approved, /trackCommerce\('purchase'/);
   assert.match(approved, /transactionId: data\.order\.public_code \|\| code/);
-  assert.match(approved, /value: data\.order\.payable_total_uyu/);
+  assert.match(approved, /value: Math\.max\(0, Number\(data\.order\.payable_total_uyu\)/);
   assert.match(approved, /items: data\.items/);
   assert.ok(
     approved.indexOf("trackCommerce('purchase'") < approved.indexOf('AmadoCart.clear()'),

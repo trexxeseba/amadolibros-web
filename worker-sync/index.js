@@ -53,6 +53,7 @@ import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
+import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -74,10 +75,16 @@ export default {
       // Backfill autónomo: cada 5 minutos hasta cubrir todo. Una vez completo,
       // baja solo a una ejecución por hora para revalidar el ciclo de 30 días.
       const minute = new Date().getUTCMinutes();
-      ctx.waitUntil(runCoverMirror(env, {
-        limit: configuredCoverMirrorBatchSize(env),
-        maintenanceMinute: minute,
-      }));
+      ctx.waitUntil(Promise.all([
+        runCoverMirror(env, {
+          limit: configuredCoverMirrorBatchSize(env),
+          maintenanceMinute: minute,
+        }),
+        processPendingGa4Purchases(env).catch(error => {
+          console.error('[GA4 purchase] Error de reintento', error?.name || 'Error');
+          return { status: 'error' };
+        }),
+      ]));
       return;
     }
     ctx.waitUntil(runSync(env, { source: 'cron' }));

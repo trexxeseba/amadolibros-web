@@ -225,6 +225,19 @@ jobs:
           printf '%s' "$RESEND_API_KEY" |
             npx wrangler@3.114.17 pages secret put RESEND_API_KEY --project-name amadolibros-web
 
+      - name: Sync GA4 Measurement Protocol secret to Cloudflare Pages
+        env:
+          GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$GA4_API_SECRET" ]; then
+            echo "::error::Falta el secret GA4_API_SECRET en el environment production de GitHub."
+            exit 1
+          fi
+          printf '%s' "$GA4_API_SECRET" |
+            npx wrangler@3.114.17 pages secret put GA4_API_SECRET --project-name amadolibros-web
+
       - name: Deploy via Wrangler
         run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:

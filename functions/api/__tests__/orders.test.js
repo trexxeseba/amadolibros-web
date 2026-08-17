@@ -1,7 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOrdersHandler } from '../_orders_handler.js';
-import { consolidateItems, dateInTimeZone, generateFingerprint, validateBody } from '../_orders_logic.js';
+import {
+  consolidateItems,
+  dateInTimeZone,
+  generateFingerprint,
+  normalizeAnalyticsAttribution,
+  validateBody,
+} from '../_orders_logic.js';
 import { verifyTurnstile } from '../_turnstile.js';
 
 const NOW = new Date('2026-07-19T16:00:00.000Z');
@@ -68,6 +74,19 @@ test('reglas comerciales: retiro, envío pago y umbral inclusivo', async()=>{
 
 test('expira exactamente en 60 minutos y no expone UUID', async()=>{
   const {response,data}=await call(pickup('exp')); assert.equal(response.status,201); assert.equal(data.order.expires_at,'2026-07-19T17:00:00.000Z'); assert.equal(Object.hasOwn(data.order,'id'),false);
+});
+
+test('guarda atribución GA4 anónima y descarta valores manipulados', async()=>{
+  const body = pickup('ga4');
+  body.analytics = { client_id:'123456789.987654321', session_id:1786921140 };
+  const result = await call(body);
+  const args = result.db.committed[0].stmt.args;
+  assert.equal(args[7], '123456789.987654321');
+  assert.equal(args[8], 1786921140);
+  assert.deepEqual(normalizeAnalyticsAttribution({ client_id:'correo@example.com', session_id:'x' }), {
+    clientId:null,
+    sessionId:null,
+  });
 });
 
 test('idempotencia idéntica responde antes de R2', async()=>{
