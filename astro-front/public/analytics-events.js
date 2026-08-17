@@ -120,6 +120,12 @@
     var paymentType = safeToken(options.paymentType, '');
     if (paymentType) params.payment_type = paymentType;
 
+    var availabilityType = safeToken(
+      options.availabilityType || (eventName === 'view_item' ? productAvailabilityType() : ''),
+      '',
+    );
+    if (availabilityType) params.availability_type = availabilityType;
+
     var dedupeKey = safeToken(options.dedupeKey, '');
     if (eventName === 'purchase') {
       var transactionId = String(options.transactionId || '').trim().slice(0, 100);
@@ -203,6 +209,12 @@
     };
   }
 
+  function productAvailabilityType() {
+    var context = pageContext();
+    if (context.pageType !== 'product') return '';
+    return document.querySelector('.badge.in-stock') ? 'active' : 'by_request';
+  }
+
   function ctaLocation(element) {
     var explicit = element && element.closest('[data-cta-location]');
     if (explicit) return safeToken(explicit.getAttribute('data-cta-location'), 'content');
@@ -238,8 +250,43 @@
     var topic = safeToken(options.topic || context.topic, '');
     if (topic) params.topic = topic;
     if (context.productId) params.product_id = context.productId;
+    var availabilityType = productAvailabilityType();
+    if (availabilityType) params.availability_type = availabilityType;
 
     window.gtag('event', 'whatsapp_click', params);
+  }
+
+  function trackStockWaitlistCreated() {
+    var context = pageContext();
+    if (context.pageType !== 'product' || !context.productId) return false;
+    window.gtag('event', 'stock_waitlist_created', {
+      page_type: 'product',
+      product_id: context.productId,
+      availability_type: 'by_request',
+    });
+    return true;
+  }
+
+  function attachWaitlistSuccessTracking() {
+    if (typeof document.getElementById !== 'function' || typeof window.MutationObserver !== 'function') return;
+    var form = document.getElementById('aviso-stock');
+    var status = document.getElementById('waitlist-status');
+    if (!form || !status) return;
+
+    var emitted = false;
+    var observer = new window.MutationObserver(function () {
+      if (emitted || !status.classList || !status.classList.contains('is-ok')) return;
+      var message = String(status.textContent || '').trim();
+      if (!message || /^Ya teníamos registrado/i.test(message)) return;
+      emitted = trackStockWaitlistCreated();
+    });
+    observer.observe(status, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
   }
 
   ensureGoogleTag();
@@ -247,8 +294,15 @@
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
+    trackStockWaitlistCreated: trackStockWaitlistCreated,
     getMeasurementContext: getMeasurementContext,
   });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachWaitlistSuccessTracking, { once: true });
+  } else {
+    attachWaitlistSuccessTracking();
+  }
 
   document.addEventListener('click', function (event) {
     var anchor = event.target && event.target.closest
