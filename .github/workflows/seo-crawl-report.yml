@@ -35,7 +35,7 @@ jobs:
           [[ "$START_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "start_date inválida"; exit 1; }
           [[ "$END_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "end_date inválida"; exit 1; }
 
-      - name: Query aggregated D1 rows
+      - name: Query aggregated D1 rows by cohort
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -44,7 +44,7 @@ jobs:
         run: |
           mkdir -p artifacts/seo
           npx wrangler@3.114.17 d1 execute ORDERS_DB --env production --remote --json \
-            --command "SELECT date, pattern, status, verified, ua_googlebot, request_count, bytes_sum, bytes_known_count, duration_ms_sum FROM crawl_stats WHERE date >= '$START_DATE' AND date <= '$END_DATE' ORDER BY date, pattern, status, verified, ua_googlebot" \
+            --command "SELECT date, pattern, segment, status, verified, ua_googlebot, request_count, bytes_sum, bytes_known_count, duration_ms_sum FROM crawl_stats_segmented WHERE date >= '$START_DATE' AND date <= '$END_DATE' ORDER BY date, pattern, segment, status, verified, ua_googlebot" \
             > artifacts/seo/crawl-stats-raw.json
 
       - name: Build useful crawl report
@@ -61,5 +61,6 @@ jobs:
             artifacts/seo/crawl-stats-raw.json
             artifacts/seo/crawl-summary.json
             artifacts/seo/crawl-daily.csv
+            artifacts/seo/crawl-segments.csv
           if-no-files-found: error
           retention-days: 30
