@@ -32,14 +32,14 @@ function item(overrides = {}) {
   };
 }
 
-test('la cohorte publicada contiene exactamente 500 ediciones únicas y auditables', () => {
-  assert.equal(PAUSED_SEO_COHORT.length, 500);
-  assert.equal(new Set(PAUSED_SEO_COHORT.map(entry => entry.id)).size, 500);
-  assert.equal(new Set(PAUSED_SEO_COHORT.map(entry => entry.isbn)).size, 500);
+test('la cohorte publicada contiene exactamente 3.000 ediciones únicas y auditables', () => {
+  assert.equal(PAUSED_SEO_COHORT.length, 3000);
+  assert.equal(new Set(PAUSED_SEO_COHORT.map(entry => entry.id)).size, 3000);
+  assert.equal(new Set(PAUSED_SEO_COHORT.map(entry => entry.isbn)).size, 3000);
   assert.ok(PAUSED_SEO_COHORT.every(entry => /^MLU\d+$/.test(entry.id)));
   assert.ok(PAUSED_SEO_COHORT.every(entry => /^(978|979)\d{10}$/.test(entry.isbn)));
   assert.equal(PAUSED_SEO_COHORT_META.historicalSelected, 130);
-  assert.equal(PAUSED_SEO_COHORT_META.qualityFillSelected, 370);
+  assert.equal(PAUSED_SEO_COHORT_META.qualityFillSelected, 2870);
   assert.equal(PAUSED_SEO_COHORT_META.fallbackSelected, 0);
   assert.equal(PAUSED_SEO_COHORT_META.historicalImpressions, 754);
   assert.equal(PAUSED_SEO_COHORT_META.historicalClicks, 52);
