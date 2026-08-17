@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createTransferOptionsHandler,
+  recordTransferPaymentInfoViewed,
   TRANSFER_ACCOUNTS,
 } from '../_transfer_options_handler.js';
 
@@ -62,10 +63,19 @@ function request(body = { public_code: 'AL-260809-TEST', idempotency_key: 'idem-
   });
 }
 
-async function call({ body, order, requestPatch, envPatch, dbOptions, orderEmails } = {}) {
+async function call({
+  body,
+  order,
+  requestPatch,
+  envPatch,
+  dbOptions,
+  orderEmails,
+  recordPaymentInfoViewed,
+} = {}) {
   const handler = createTransferOptionsHandler({
     getNow: () => NOW,
     orderEmails: orderEmails || { sendTransferNotifications: async () => ({}) },
+    recordPaymentInfoViewed: recordPaymentInfoViewed || (async () => ({ recorded: true })),
   });
   const response = await handler({
     request: request(body, requestPatch),
@@ -119,6 +129,72 @@ test('transfer: agenda confirmación al cliente y aviso interno con el total exa
   assert.equal(calls[0].payment.method, 'bank_transfer');
   assert.equal(calls[0].payment.transfer_discount_uyu, 240);
   assert.equal(calls[0].payment.total_uyu, 1610);
+});
+
+test('transfer: registra la señal de embudo con los totales exactos', async () => {
+  const calls = [];
+  const { response } = await call({
+    recordPaymentInfoViewed: async args => { calls.push(args); return { recorded: true }; },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].order.id, 'order-uuid');
+  assert.equal(calls[0].payment.method, 'bank_transfer');
+  assert.equal(calls[0].payment.list_total_uyu, 1850);
+  assert.equal(calls[0].payment.transfer_discount_uyu, 240);
+  assert.equal(calls[0].payment.transfer_total_uyu, 1610);
+});
+
+test('transfer: la persistencia es idempotente y no guarda PII ni cuentas', async () => {
+  const statements = [];
+  const db = {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          statements.push({ sql, args });
+          return {
+            async run() {
+              return { meta: { changes: 1 } };
+            },
+          };
+        },
+      };
+    },
+  };
+  const payment = {
+    list_total_uyu: 1850,
+    transfer_discount_uyu: 240,
+    transfer_total_uyu: 1610,
+  };
+
+  const result = await recordTransferPaymentInfoViewed({
+    db,
+    order: openOrder(),
+    payment,
+    now: NOW,
+  });
+
+  assert.equal(result.recorded, true);
+  assert.equal(statements.length, 1);
+  assert.match(statements[0].sql, /INSERT OR IGNORE INTO order_events/);
+  assert.match(statements[0].sql, /transfer_payment_info_viewed/);
+  assert.equal(statements[0].args[0], 'transfer-payment-info:order-uuid');
+  const persisted = JSON.stringify(statements[0].args);
+  assert.equal(persisted.includes('Ana Pérez'), false);
+  assert.equal(persisted.includes('099123456'), false);
+  assert.equal(persisted.includes('ana@example.com'), false);
+  assert.equal(persisted.includes('00065582200001'), false);
+  assert.match(persisted, /bank_transfer/);
+  assert.match(persisted, /1610/);
+});
+
+test('transfer: una falla de observabilidad no bloquea los datos de cobro', async () => {
+  const { response, data } = await call({
+    recordPaymentInfoViewed: async () => { throw new Error('D1 temporal'); },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(data.payment.transfer_total_uyu, 1610);
+  assert.equal(data.accounts.length, 5);
 });
 
 test('transfer: costo de envío no recibe 12% de descuento', async () => {
