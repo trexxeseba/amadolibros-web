@@ -1,5 +1,9 @@
 ---
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
+import {
+  buildBookWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
 
 // HOME-COMERCIAL-1: jerarquía de card aprobada — precio principal, cuotas
 // debajo, transferencia como beneficio secundario, envío gratis cuando
@@ -45,8 +49,13 @@ const fichaHref = `/libro/${book.id}/${slugify(book.title)}`;
 
 // Corregido (HOME-COMERCIAL-1): estas cards ya muestran solo libros
 // disponibles — el mensaje no debe preguntar si lo están.
-const waText = `Hola! Me interesa el libro "${book.title}". Tengo una consulta antes de comprar.`;
-const waHref = `https://wa.me/59899841325?text=${encodeURIComponent(waText)}`;
+const waText = buildBookWhatsAppMessage({
+  title: book.title,
+  author: book.author,
+  page: fichaHref,
+  available: true,
+});
+const waHref = whatsappHref(waText);
 
 const fmt = new Intl.NumberFormat('es-UY', {
   style: 'currency', currency: 'UYU', maximumFractionDigits: 0,

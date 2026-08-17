@@ -1,5 +1,16 @@
 ---
 import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
+const cancellationWhatsApp = whatsappHref(buildWhatsAppMessage({
+  greeting: 'Hola, necesito consultar por un pedido de Amado Libros 😊',
+  motive: 'Solicitar la cancelación de un pedido',
+  situation: 'Pedido realizado y pendiente de despacho',
+  page: '/terminos',
+  closing: 'Quisiera pasarles el número de pedido para saber si todavía puede cancelarse. Gracias.',
+}));
 ---
 <TrustPageLayout
   title="Términos, pagos y cancelaciones — Amado Libros"
@@ -17,7 +28,7 @@ import TrustPageLayout from '../layouts/TrustPageLayout.astro';
   <p>Los encargos del exterior tienen disponibilidad y plazos estimados sujetos a confirmación del proveedor y del transporte. Antes de iniciar la gestión informamos el precio, la seña requerida y el plazo estimado aplicable a ese pedido.</p>
 
   <h2>Cancelación antes del despacho</h2>
-  <p>Para solicitar la cancelación, escribinos cuanto antes por <a href="https://wa.me/59899841325">WhatsApp</a> o a <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a> con el número de pedido. Si el pedido todavía no fue despachado o entregado, detendremos la preparación y gestionaremos el reembolso.</p>
+  <p>Para solicitar la cancelación, escribinos cuanto antes por <a href={cancellationWhatsApp}>WhatsApp</a> o a <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a> con el número de pedido. Si el pedido todavía no fue despachado o entregado, detendremos la preparación y gestionaremos el reembolso.</p>
 
   <h2>Después del despacho</h2>
   <p>Si el pedido ya fue despachado, la solicitud se procesa conforme a la <a href="/devoluciones">política de devoluciones y derecho de retracto</a>. Los gastos de retorno se asignan según el motivo de la devolución y la normativa aplicable.</p>

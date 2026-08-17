@@ -21,6 +21,7 @@ const FOOTER_ASTRO = read('astro-front/src/components/Footer.astro');
 const FICHA        = read('functions/libro/[[path]].js');
 const CATALOGO     = read('functions/catalogo.js');
 const BASE_LAYOUT  = read('astro-front/src/layouts/BaseLayout.astro');
+const WHATSAPP_SHARED = read('shared/whatsapp-messages.js');
 
 // ── 1. Paridad de contenido con Footer.astro ────────────────────────────────
 
@@ -44,7 +45,9 @@ test('3. los datos de contacto coinciden con Footer.astro', () => {
     const flat = FOOTER_ASTRO.replace(/\s+/g, ' ');
     assert.ok(flat.includes(CONTACT.whatsappDisplay), 'teléfono visible');
     assert.ok(FOOTER_ASTRO.includes(CONTACT.email), 'email');
-    assert.ok(FOOTER_ASTRO.includes(CONTACT.whatsappNumber), 'número de WhatsApp');
+    assert.ok(WHATSAPP_SHARED.includes(CONTACT.whatsappNumber), 'número de WhatsApp');
+    assert.match(FOOTER_ASTRO, /whatsappHref\(buildWhatsAppMessage/,
+        'Footer.astro debe usar el generador canónico');
 });
 
 test('4. Footer.astro no incorpora links nuevos sin pasar por brand.js', () => {
@@ -84,7 +87,7 @@ test('6. el copyright es dinámico, no un año fijo', () => {
 
 test('7. la ficha ya no usa el footer mínimo', () => {
     assert.doesNotMatch(FICHA, /<a href="\/">Catálogo<\/a> ·/);
-    assert.match(FICHA, /\$\{footerHtml\(\)\}/);
+    assert.match(FICHA, /\$\{footerHtml\(undefined, canonicalUrl\)\}/);
 });
 
 // ── 3. Favicon ──────────────────────────────────────────────────────────────
@@ -170,7 +173,7 @@ test('15. el logo de la ficha existe, es el webp y tiene alt', () => {
 // ── 5. WhatsApp flotante ────────────────────────────────────────────────────
 
 test('16. la ficha incluye la burbuja flotante con mensaje contextual', () => {
-    assert.match(FICHA, /\$\{waFloatHtml\(`Hola, tengo una consulta sobre \$\{item\.title\}\.`\)\}/);
+    assert.match(FICHA, /\$\{waFloatHtml\(waMessage, canonicalUrl\)\}/);
 });
 
 test('17. el mensaje del flotante viaja codificado', () => {

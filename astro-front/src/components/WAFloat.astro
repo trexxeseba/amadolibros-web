@@ -1,6 +1,14 @@
 ---
-const WA_HREF =
-  'https://wa.me/59899841325?text=Hola%21%20Quisiera%20consultar%20sobre%20un%20libro';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
+
+const WA_HREF = whatsappHref(buildWhatsAppMessage({
+  motive: 'Consulta general',
+  page: Astro.url.pathname,
+  closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
+}));
 ---
 <a
   href={WA_HREF}

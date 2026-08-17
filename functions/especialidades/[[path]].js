@@ -20,6 +20,7 @@ import {
   CARD_IMAGE_SIZES,
   responsiveImage,
 } from '../_shared/cloudflare-images.js';
+import { buildWhatsAppMessage } from '../../shared/whatsapp-messages.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -90,7 +91,14 @@ export async function onRequest(ctx) {
     .filter(item => isSpecialtyMatch(item, specialty)))
     .slice(0, 24);
   const requestPath = `/pedir-libro?tipo=novedades-tecnicas&q=${encodeURIComponent(`Libros de ${specialty.name}`)}`;
-  const waMessage = `Hola Amado Libros, busco un libro de ${specialty.name}. Estoy en [país y ciudad]. Los datos del libro son:`;
+  const waMessage = buildWhatsAppMessage({
+    greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+    motive: 'Buscar un libro por encargo',
+    book: `Libro de ${specialty.name}`,
+    situation: 'Todavía no identifiqué la edición exacta',
+    page: canonical,
+    closing: 'Quisiera contarles qué libro necesito y saber si pueden conseguirlo. Gracias.',
+  });
   const related = SEO_SPECIALTIES.filter(item => item.id !== specialty.id);
 
   const collectionSchema = {
@@ -154,7 +162,7 @@ ${items.length ? `<div class="books-grid">${items.map(item => bookCard(item, isP
 <section class="international"><h2>¿Consultás desde España o Latinoamérica?</h2><p>Podés enviarnos el país, la ciudad y los datos del libro. La venta, el medio de pago y un eventual envío internacional se confirman caso a caso antes de asumir cualquier compromiso. Los precios visibles en el catálogo están expresados en pesos uruguayos.</p><div class="actions"><a class="btn secondary" href="${requestPath}">Enviar país y libro buscado</a></div></section>
 <section class="section"><h2>Cómo funciona la búsqueda</h2><div class="process-grid"><article class="card"><h3>1. Identificamos el libro</h3><p>Usamos título, autor, ISBN, editorial, edición o foto para evitar confusiones.</p></article><article class="card"><h3>2. Verificamos mercados</h3><p>Revisamos disponibilidad real en Uruguay, España, Argentina y otros orígenes pertinentes.</p></article><article class="card"><h3>3. Confirmamos antes de vender</h3><p>Informamos edición, formato, moneda, precio, plazo y destino posible antes de avanzar.</p></article></div></section>
 <section class="section"><h2>Otras especialidades</h2><nav class="links" aria-label="Otras especialidades">${related.map(item => `<a href="${specialtyPath(item.id)}">${escapeHtml(item.name)}</a>`).join('')}</nav></section>
-<section class="closing"><h2>¿Qué libro de ${escapeHtml(specialty.name)} necesitás?</h2><p>Mandanos la referencia y tu país. Una persona de Amado Libros revisa la búsqueda.</p><a class="btn secondary" href="${requestPath}">Pedir que lo busquemos</a></section></main>${footerHtml()}${waFloatHtml(waMessage)}</body></html>`;
+<section class="closing"><h2>¿Qué libro de ${escapeHtml(specialty.name)} necesitás?</h2><p>Mandanos la referencia y tu país. Una persona de Amado Libros revisa la búsqueda.</p><a class="btn secondary" href="${requestPath}">Pedir que lo busquemos</a></section></main>${footerHtml(undefined, canonical)}${waFloatHtml(waMessage, canonical)}</body></html>`;
 
   return new Response(html, {
     headers: { 'content-type': 'text/html;charset=UTF-8', 'cache-control': 'public,max-age=3600' },

@@ -98,8 +98,16 @@ test('5. Mercado Libre no usa el estilo visual principal (sin relleno amarillo d
 
 test('6. El enlace de WhatsApp sigue siendo válido (wa.me + mensaje codificado)', () => {
     const html = renderPage(book({ title: 'Un Libro & Su Título' }), 'un-libro', false, '');
-    assert.match(html, /href="https:\/\/wa\.me\/59899841325\?text=/);
-    assert.match(html, /Hola!%20Me%20interesa/);
+    const match = html.match(/href="https:\/\/wa\.me\/59899841325\?text=([^"]+)"/);
+    assert.ok(match, 'la ficha debe incluir un enlace wa.me con mensaje');
+    const message = decodeURIComponent(match[1]);
+    assert.match(message, /Hola, me interesa este libro que encontré en Amado Libros 😊/);
+    assert.match(message, /Motivo: Consultar disponibilidad y precio/);
+    assert.match(message, /Libro: Un Libro & Su Título/);
+    assert.match(message, /Autor: Autor De Prueba/);
+    assert.match(message, /Situación: Disponible/);
+    assert.match(message, /Página: https:\/\/www\.amadolibros\.com\/libro\/MLU1\/un-libro/);
+    assert.doesNotMatch(message, /Vengo desde la web|Referencia:|Código web:/i);
 });
 
 test('7. El enlace de Mercado Libre sigue siendo válido (permalink real, escapado)', () => {

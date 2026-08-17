@@ -36,7 +36,8 @@ test('el schema Article declara autor, revisión, fechas y breadcrumb', () => {
 test('la guía convierte y es descubrible desde el sitio completo', () => {
   const path = '/como-identificar-edicion-correcta-isbn';
   assert.match(page, /\/pedir-libro\?tipo=exacto/);
-  assert.match(page, /wa\.me\/59899841325/);
+  assert.match(page, /whatsappHref\(buildWhatsAppMessage/);
+  assert.match(page, /motive: 'Verificar la edición correcta de un libro'/);
   assert.ok(FOOTER_LINKS.some(link => link.href === path));
   assert.ok(STATIC_SITEMAP_PAGES.includes(`https://www.amadolibros.com${path}`));
   assert.match(read('astro-front/src/pages/quienes-somos.astro'), new RegExp(path));

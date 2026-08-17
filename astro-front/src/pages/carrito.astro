@@ -1704,15 +1704,30 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           : 'Vendimos todos los ejemplares de “' + item.title + '”. Si querés, lo buscamos para vos.';
         unavailableBox.appendChild(unavailableText);
 
-        var waText = 'Hola, vi que “' + item.title + '”';
         var currentAuthor = validation.author || '';
-        if (currentAuthor) waText += ' de ' + currentAuthor;
-        waText += unsupportedCurrency
-          ? ' está publicada en ' + (validation.currency || 'otra moneda') + '. ¿Me confirman precio y forma de pago?'
-          : ' ya no está disponible. ¿Pueden buscarlo por encargo?';
+        var wa = window.AmadoWhatsApp;
+        var waText = wa
+          ? wa.build({
+              greeting: 'Hola, me interesa este libro que encontré en Amado Libros 😊',
+              motive: unsupportedCurrency
+                ? 'Consultar precio y forma de pago'
+                : 'Consultar disponibilidad y precio',
+              book: item.title,
+              author: currentAuthor,
+              situation: unsupportedCurrency
+                ? 'Precio publicado en ' + (validation.currency || 'otra moneda')
+                : 'Por encargo',
+              page: window.location.href,
+              closing: unsupportedCurrency
+                ? 'Quisiera confirmar el precio en pesos uruguayos y la forma de pago. Gracias.'
+                : 'Quisiera saber si pueden conseguirlo y cuánto demoraría. Gracias.',
+            })
+          : 'Hola, me interesa el libro "' + item.title + '".';
         var waLink = document.createElement('a');
         waLink.className = 'cart-unavailable-wa';
-        waLink.href = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waText);
+        waLink.href = wa
+          ? wa.href(waText)
+          : 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(waText);
         waLink.target = '_blank';
         waLink.rel = 'noopener noreferrer';
         waLink.textContent = unsupportedCurrency ? 'Consultar precio' : 'Buscarlo por encargo';
@@ -2000,7 +2015,16 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
         var subtotal = getSellableSubtotal();
 
-        var lines = ['PEDIDO WEB', '', 'Hola Amado Libros! Quiero hacer este pedido:'];
+        var waContext = window.AmadoWhatsApp;
+        var lines = [
+          'Hola, quiero hacer este pedido en Amado Libros 😊',
+          '',
+          'Motivo: Completar un pedido del carrito',
+          'Situación: Productos seleccionados y datos de entrega prontos',
+          'Página: ' + (waContext ? waContext.absolutePage(window.location.href) : window.location.href),
+          '',
+          'Libros:',
+        ];
         lines.push('');
         for (var i = 0; i < sellableItems.length; i++) {
           var it = sellableItems[i];
@@ -2030,11 +2054,17 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (phone) lines.push('WhatsApp/Tel: ' + phone);
         if (email) lines.push('Correo: ' + email);
 
-        var msg = encodeURIComponent(lines.join('\n'));
+        var message = lines.join('\n');
         if (window.AmadoAnalytics) {
           window.AmadoAnalytics.trackWhatsApp({ ctaLocation: 'checkout_order' });
         }
-        window.open('https://wa.me/59899841325?text=' + msg, '_blank', 'noopener,noreferrer');
+        window.open(
+          waContext
+            ? waContext.href(message)
+            : 'https://wa.me/59899841325?text=' + encodeURIComponent(message),
+          '_blank',
+          'noopener,noreferrer'
+        );
       });
     }
 
@@ -2145,11 +2175,16 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       var account = selectedTransferAccount();
       var cart = window.AmadoCart.get();
       var sellableItems = getSellableItems(cart);
+      var waContext = window.AmadoWhatsApp;
       var lines = [
-        'COMPROBANTE DE TRANSFERENCIA',
+        'Hola, ya realicé una transferencia para mi pedido de Amado Libros 😊',
         '',
-        'Hola Amado Libros. Ya realicé la transferencia de mi pedido ' + payment.public_code + '.',
+        'Motivo: Enviar comprobante de transferencia',
+        'Situación: Transferencia realizada',
+        'Pedido: ' + payment.public_code,
+        'Página: ' + (waContext ? waContext.absolutePage(window.location.href) : window.location.href),
         '',
+        'Libros:',
       ];
       for (var i = 0; i < sellableItems.length; i++) {
         lines.push('• ' + sellableItems[i].title + ' (x' + sellableItems[i].quantity + ')');
@@ -2162,7 +2197,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (buyerName) lines.push('Nombre: ' + buyerName);
       lines.push('');
       lines.push('Adjunto el comprobante en este chat.');
-      return 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n'));
+      return waContext
+        ? waContext.href(lines.join('\n'))
+        : 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n'));
     }
 
     function renderTransferPayment() {

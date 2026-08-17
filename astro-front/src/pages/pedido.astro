@@ -3,9 +3,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
 
-const WA_HREF =
-  'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quer%C3%ADa%20consultar%20sobre%20mi%20pedido';
+const WA_HREF = whatsappHref(buildWhatsAppMessage({
+  greeting: 'Hola, hice un pedido en Amado Libros y quería consultarles 😊',
+  motive: 'Consultar el estado de mi pedido',
+  situation: 'Estoy revisando la confirmación del pedido',
+  page: '/pedido',
+  closing: '¿Podrían ayudarme a verificarlo? Gracias.',
+}));
 ---
 <BaseLayout
   title="Estado del pedido — Amado Libros"
@@ -27,6 +36,7 @@ const WA_HREF =
       <div class="pedido-ctas">
         <a id="btn-pedido-back" href="/carrito" class="btn-back" hidden>← Volver al carrito</a>
         <a
+          id="btn-pedido-wa"
           href={WA_HREF}
           target="_blank"
           rel="noopener noreferrer"
@@ -52,6 +62,24 @@ const WA_HREF =
       var subEl   = document.getElementById('pedido-sub');
       var codeEl  = document.getElementById('pedido-code');
       var backEl  = document.getElementById('btn-pedido-back');
+      var waEl    = document.getElementById('btn-pedido-wa');
+      var wa      = window.AmadoWhatsApp;
+
+      if (waEl && wa) {
+        var situation = result === 'success'
+          ? 'Pago aprobado'
+          : result === 'failure'
+            ? 'El pago no pudo confirmarse'
+            : 'Pago en proceso de verificación';
+        waEl.href = wa.href(wa.build({
+          greeting: 'Hola, hice un pedido en Amado Libros y quería consultarles 😊',
+          motive: 'Consultar el estado de mi pedido',
+          situation: situation,
+          order: code || '',
+          page: window.location.href,
+          closing: '¿Podrían ayudarme a verificarlo? Gracias.',
+        }));
+      }
 
       // ── Estado inicial según result de MP ──────────────────────────────────
       if (result === 'success' || result === 'pending') {

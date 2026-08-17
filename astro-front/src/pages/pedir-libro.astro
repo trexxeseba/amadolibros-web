@@ -234,11 +234,15 @@ const jsonLd = {
 
     const data = new FormData(form);
     const type = effectiveType();
+    const query = String(data.get('query') || '').trim();
+    const wa = window.AmadoWhatsApp;
     const lines = [
-      'Hola Amado Libros, quiero pedir una búsqueda manual.',
+      'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
       '',
-      `Tipo de búsqueda: ${typeLabels[type] || typeLabels.exacto}`,
-      `Busco: ${String(data.get('query') || '').trim()}`,
+      `Motivo: ${typeLabels[type] || typeLabels.exacto}`,
+      `Libro: ${query}`,
+      'Situación: Búsqueda manual por encargo',
+      `Página: ${wa ? wa.absolutePage(window.location.href) : window.location.href}`,
     ];
     const authorIsbn = String(data.get('author_isbn') || '').trim();
     const budget = String(data.get('budget') || '').trim();
@@ -249,14 +253,16 @@ const jsonLd = {
     if (budget) lines.push(`Presupuesto aproximado: $${budget} UYU`);
     if (details) lines.push(`Otros datos: ${details}`);
     if (typeSelect.value === 'tapa') lines.push('Voy a mandar la foto de la tapa en el próximo mensaje.');
-    lines.push('', 'Quedo a la espera de las opciones que encuentren. Gracias.');
+    lines.push('', 'Quisiera saber si pueden conseguirlo, el precio y cuánto demoraría. Gracias.');
 
     window.gtag?.('event', 'book_request_submitted', { request_type: type });
     window.AmadoAnalytics?.trackWhatsApp({
       ctaLocation: 'book_request_form',
       topic: type,
     });
-    window.location.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+    window.location.href = wa
+      ? wa.href(lines.join('\n'))
+      : `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
   });
 
   updateContext();

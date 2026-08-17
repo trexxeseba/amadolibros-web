@@ -173,12 +173,18 @@
   var input    = document.getElementById('so-input');
   var closeBtn = document.getElementById('so-close');
   var waBtn    = document.getElementById('so-wa-btn');
-  var WA_BASE  = 'https://wa.me/59899841325?text=';
 
   function buildWaUrl(q) {
-    return WA_BASE + encodeURIComponent(
-      'Hola, estoy buscando: "' + q + '". ¿Lo tienen o lo pueden conseguir?'
-    );
+    var wa = window.AmadoWhatsApp;
+    if (!wa) return '#';
+    return wa.href(wa.build({
+      greeting: 'Hola, me interesa este libro que encontré en Amado Libros 😊',
+      motive: 'Consultar disponibilidad y precio',
+      book: q,
+      situation: 'Consulta desde el buscador',
+      page: window.location.href,
+      closing: 'Quisiera saber si lo tienen o si pueden conseguirlo y cuánto demoraría. Gracias.',
+    }));
   }
 
   function openOverlay() {
