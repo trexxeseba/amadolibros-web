@@ -7,6 +7,8 @@ import {
   PRODUCT_ID_REDIRECTS,
   PRODUCT_SEO_OVERRIDES,
 } from '../_shared/seo-products.js';
+import { PAUSED_SEO_COHORT } from '../_shared/paused-seo-cohort.js';
+import { pausedBookSitemapEntries } from '../sitemap-books-paused.xml.js';
 import { STATIC_SITEMAP_PAGES } from '../sitemap-pages.xml.js';
 
 function book(overrides = {}) {
@@ -52,6 +54,22 @@ test('una ficha pausada común sigue noindex', () => {
   assert.match(html, /<meta name="robots" content="noindex, follow">/);
 });
 
+test('una ficha de la cohorte pausada queda indexable sin oferta ni compra directa', () => {
+  const cohortId = PAUSED_SEO_COHORT.find(item => item.id !== 'MLU1416777650').id;
+  const html = renderPage(book({
+    id: cohortId,
+    title: 'Libro difícil de conseguir',
+    author: 'Autora de Prueba',
+    status: 'paused',
+    available_quantity: 0,
+  }), 'libro-dificil-de-conseguir', false, '');
+
+  assert.match(html, /<meta name="robots" content="index, follow">/);
+  assert.match(html, /Buscamos &quot;Libro difícil de conseguir&quot; de Autora de Prueba por encargo en Uruguay/);
+  assert.doesNotMatch(html, /"offers"/);
+  assert.doesNotMatch(html, /data-action="add-to-cart"/);
+});
+
 test('el duplicado de Murdoku apunta a la URL histórica consolidada', () => {
   assert.deepEqual(PRODUCT_ID_REDIRECTS.MLU1416777648, {
     id: 'MLU1416777650',
@@ -59,11 +77,18 @@ test('el duplicado de Murdoku apunta a la URL histórica consolidada', () => {
   });
 });
 
-test('la excepción indexable de Murdoku está en sitemap-pages', () => {
+test('Murdoku sale de sitemap-pages y entra en la cohorte pausada', () => {
   assert.deepEqual(INDEXABLE_PAUSED_PRODUCT_PATHS, [
     '/libro/MLU1416777650/libro-murdoku-80-acertijos-de-logica-y-asesinatos-de-garand-',
   ]);
-  assert.ok(STATIC_SITEMAP_PAGES.includes(
-    'https://www.amadolibros.com/libro/MLU1416777650/libro-murdoku-80-acertijos-de-logica-y-asesinatos-de-garand-',
-  ));
+  assert.ok(!STATIC_SITEMAP_PAGES.some(value => value.includes('MLU1416777650')));
+  assert.ok(PAUSED_SEO_COHORT.some(value => value.id === 'MLU1416777650'));
+  const entries = pausedBookSitemapEntries({
+    items: [{
+      id: 'MLU1416777650',
+      title: 'Libro Murdoku 80 Acertijos De Lógica Y Asesinatos De Garand',
+      status: 'paused',
+    }],
+  });
+  assert.equal(entries.length, 1);
 });

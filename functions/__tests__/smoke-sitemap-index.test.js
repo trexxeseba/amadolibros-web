@@ -14,6 +14,7 @@ test('acepta el sitemap index segmentado de producción', () => {
     <sitemap>${loc(`${BASE}/sitemap-pages.xml`)}</sitemap>
     <sitemap>${loc(`${BASE}/sitemap-categories.xml`)}</sitemap>
     <sitemap>${loc(`${BASE}/sitemap-books-active.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-books-paused.xml`)}</sitemap>
   </sitemapindex>`);
   assert.deepEqual(analyzeSitemapBody(body, 'sitemap-index'), { ok: true });
 });
@@ -25,16 +26,17 @@ test('rechaza el sitemap raíz legacy tipo urlset', () => {
   assert.match(result.reason, /sitemapindex/);
 });
 
-test('el índice no admite pausados ni segmentos inesperados', () => {
+test('el índice admite la cohorte pausada pero rechaza segmentos inesperados', () => {
   const body = xml(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <sitemap>${loc(`${BASE}/sitemap-pages.xml`)}</sitemap>
     <sitemap>${loc(`${BASE}/sitemap-categories.xml`)}</sitemap>
     <sitemap>${loc(`${BASE}/sitemap-books-active.xml`)}</sitemap>
     <sitemap>${loc(`${BASE}/sitemap-books-paused.xml`)}</sitemap>
+    <sitemap>${loc(`${BASE}/sitemap-inventado.xml`)}</sitemap>
   </sitemapindex>`);
   const result = analyzeSitemapBody(body, 'sitemap-index');
   assert.equal(result.ok, false);
-  assert.match(result.reason, /segmentos|paused/);
+  assert.match(result.reason, /segmentos/);
 });
 
 test('pages exige todas las páginas estáticas relevantes', () => {
@@ -56,6 +58,7 @@ test('categorías y libros activos deben ser urlsets no vacíos y del espacio co
   const books = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libro/MLU1/libro-uno`)}</url></urlset>`);
   assert.deepEqual(analyzeSitemapBody(categories, 'sitemap-categories'), { ok: true });
   assert.deepEqual(analyzeSitemapBody(books, 'sitemap-books-active'), { ok: true });
+  assert.deepEqual(analyzeSitemapBody(books, 'sitemap-books-paused'), { ok: true });
 });
 
 test('rechaza priority y changefreq ficticios reintroducidos en sitemaps', () => {

@@ -5,14 +5,16 @@ import { SITEMAP_SEGMENTS, sitemapIndexXml, urlsetXml } from '../_shared/sitemap
 import { STATIC_SITEMAP_PAGES } from '../sitemap-pages.xml.js';
 import { categorySitemapEntries } from '../sitemap-categories.xml.js';
 import { activeBookSitemapEntries } from '../sitemap-books-active.xml.js';
+import { pausedBookSitemapEntries } from '../sitemap-books-paused.xml.js';
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
+import { PAUSED_SEO_COHORT } from '../_shared/paused-seo-cohort.js';
 
-test('sitemap.xml indexa sólo segmentos actualmente indexables', () => {
-  assert.equal(SITEMAP_SEGMENTS.length, 3);
+test('sitemap.xml separa activos y la cohorte controlada de pausados', () => {
+  assert.equal(SITEMAP_SEGMENTS.length, 4);
   assert.ok(SITEMAP_SEGMENTS.some(url => url.endsWith('/sitemap-pages.xml')));
   assert.ok(SITEMAP_SEGMENTS.some(url => url.endsWith('/sitemap-categories.xml')));
   assert.ok(SITEMAP_SEGMENTS.some(url => url.endsWith('/sitemap-books-active.xml')));
-  assert.ok(!SITEMAP_SEGMENTS.some(url => url.includes('paused')));
+  assert.ok(SITEMAP_SEGMENTS.some(url => url.endsWith('/sitemap-books-paused.xml')));
 
   const xml = sitemapIndexXml();
   assert.match(xml, /<sitemapindex /);
@@ -42,6 +44,21 @@ test('segmento de libros activos excluye pausados, agotados e inválidos', () =>
 
   assert.deepEqual(entries, [
     { loc: 'https://www.amadolibros.com/libro/MLU1/libro-uno' },
+  ]);
+});
+
+test('segmento pausado publica sólo IDs aprobados que siguen pausados', () => {
+  const approved = PAUSED_SEO_COHORT[0];
+  const entries = pausedBookSitemapEntries({
+    items: [
+      { id: approved.id, title: 'Libro aprobado', status: 'paused' },
+      { id: 'MLU999999999', title: 'Libro fuera de cohorte', status: 'paused' },
+      { id: PAUSED_SEO_COHORT[1].id, title: 'Volvió a estar activo', status: 'active' },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    { loc: `https://www.amadolibros.com/libro/${approved.id}/libro-aprobado` },
   ]);
 });
 
