@@ -1,0 +1,30 @@
+<section class="order-hub-access" aria-labelledby="order-hub-title">
+  <div class="order-hub-copy">
+    <p class="order-hub-eyebrow">Libros por encargo</p>
+    <h2 id="order-hub-title">Explorá títulos que podemos buscar y cotizar</h2>
+    <p>
+      Reunimos ediciones agotadas, importadas o difíciles de conseguir en una
+      colección navegable. La disponibilidad, el precio y el plazo se confirman
+      antes de iniciar cualquier encargo.
+    </p>
+  </div>
+  <a class="order-hub-link" href="/libros-por-encargo">
+    Ver libros por encargo <span aria-hidden="true">→</span>
+  </a>
+</section>
+
+<style>
+  .order-hub-access{
+    max-width:1180px;margin:1.25rem auto;padding:1.25rem;
+    display:flex;flex-direction:column;align-items:flex-start;gap:1rem;
+    background:#fff8f4;border:1px solid #ead5ca;border-radius:1rem;color:#18120e;
+  }
+  .order-hub-copy{max-width:760px}
+  .order-hub-eyebrow{margin:0 0 .3rem;color:#a94e3d;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  h2{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.35rem,4vw,1.9rem);line-height:1.2}
+  .order-hub-copy>p:last-child{margin:.55rem 0 0;color:#574d45;line-height:1.6}
+  .order-hub-link{display:inline-flex;min-height:46px;align-items:center;gap:.4rem;padding:.7rem 1rem;background:#18120e;color:#fff;border-radius:.65rem;text-decoration:none;font-weight:800}
+  .order-hub-link:hover{background:#342820}
+  .order-hub-link:focus-visible{outline:3px solid #e49982;outline-offset:3px}
+  @media(min-width:760px){.order-hub-access{flex-direction:row;align-items:center;justify-content:space-between;padding:1.5rem 1.75rem}.order-hub-link{flex:0 0 auto}}
+</style>
