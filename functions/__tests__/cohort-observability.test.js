@@ -6,11 +6,13 @@ import {
   productLookupStateFromContext,
   recordCrawlRequest,
   resetCrawlAnalyticsCachesForTest,
-  shouldCaptureCrawlRequest,
+  resolveProductCrawlSegment,
   classifyCrawlRequest,
 } from '../_shared/crawl-analytics.js';
 
 const BASE = 'https://www.amadolibros.com';
+const BY_REQUEST_ID = 'MLU1416777650';
+const PAUSED_OTHER_ID = 'MLU999999999';
 
 function analyticsRow(page, impressions = 20) {
   return {
@@ -57,14 +59,6 @@ function googleRangesResponse() {
   return new Response(JSON.stringify({
     prefixes: [{ ipv4Prefix: '66.249.64.0/19' }],
   }), { status: 200 });
-}
-
-function pausedSitemap(ids) {
-  const rows = ids.map((id) => `<url><loc>${BASE}/libro/${id}/libro-${id}</loc></url>`).join('');
-  return new Response(
-    `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</urlset>`,
-    { status: 200, headers: { 'content-type': 'application/xml' } },
-  );
 }
 
 test('GSC construye una muestra estable 200/200 entre activas y por encargo', async () => {
@@ -139,7 +133,23 @@ test('usa el resultado ya calculado por la ficha para distinguir catálogo activ
   assert.equal(productLookupStateFromContext({ data: {} }), 'unknown');
 });
 
-async function recordSegment({ id, productLookupState, pausedIds }) {
+test('la cohorte versionada clasifica por encargo sin una consulta de red', () => {
+  const byRequest = resolveProductCrawlSegment({
+    request: new Request(`${BASE}/libro/${BY_REQUEST_ID}/libro-en-cohorte`),
+    classification: classifyCrawlRequest(new Request(`${BASE}/libro/${BY_REQUEST_ID}/libro-en-cohorte`)),
+    productLookupState: 'paused',
+  });
+  const pausedOther = resolveProductCrawlSegment({
+    request: new Request(`${BASE}/libro/${PAUSED_OTHER_ID}/libro-fuera-de-cohorte`),
+    classification: classifyCrawlRequest(new Request(`${BASE}/libro/${PAUSED_OTHER_ID}/libro-fuera-de-cohorte`)),
+    productLookupState: 'paused',
+  });
+
+  assert.equal(byRequest, 'by_request');
+  assert.equal(pausedOther, 'paused_other');
+});
+
+async function recordSegment({ id, productLookupState }) {
   resetCrawlAnalyticsCachesForTest();
   const db = fakeDb();
   const env = {
@@ -147,7 +157,7 @@ async function recordSegment({ id, productLookupState, pausedIds }) {
     AMADO_KV: fakeKv({ 'seo:crawl-logs-3:enabled:production': 'true' }),
     ORDERS_DB: db,
   };
-  const sitemapFetches = [];
+  let fetchCount = 0;
   const result = await recordCrawlRequest({
     request: new Request(`${BASE}/libro/${id}/libro-de-prueba`, {
       headers: {
@@ -161,45 +171,39 @@ async function recordSegment({ id, productLookupState, pausedIds }) {
     productLookupState,
   }, {
     nowFn: () => Date.parse('2026-08-17T20:00:00Z'),
-    fetchFn: async (url, options = {}) => {
+    fetchFn: async (url) => {
+      fetchCount += 1;
       if (String(url).includes('common-crawlers.json')) return googleRangesResponse();
-      if (String(url).includes('sitemap-books-paused.xml')) {
-        sitemapFetches.push(options);
-        return pausedSitemap(pausedIds);
-      }
       throw new Error(`Fetch inesperado: ${url}`);
     },
   });
 
   const insert = db.calls.find((call) => /INSERT INTO crawl_stats_segmented/.test(call.sql));
   assert.ok(insert, 'debe persistir la dimensión segmentada');
-  return { result, insert, sitemapFetches };
+  return { result, insert, fetchCount };
 }
 
 test('Googlebot queda separado en active, by_request y paused_other sin guardar URL', async () => {
   const active = await recordSegment({
     id: 'MLU100',
     productLookupState: 'active',
-    pausedIds: ['MLU200'],
   });
   assert.equal(active.result.segment, 'active');
-  assert.equal(active.sitemapFetches.length, 0, 'una activa no necesita consultar el sitemap pausado');
+  assert.equal(active.fetchCount, 1, 'sólo verifica los rangos oficiales de Google');
 
   const byRequest = await recordSegment({
-    id: 'MLU200',
+    id: BY_REQUEST_ID,
     productLookupState: 'paused',
-    pausedIds: ['MLU200'],
   });
   assert.equal(byRequest.result.segment, 'by_request');
-  assert.equal(byRequest.sitemapFetches.length, 1);
-  assert.equal(new Headers(byRequest.sitemapFetches[0].headers).get('x-amado-internal-observability'), '1');
+  assert.equal(byRequest.fetchCount, 1, 'la cohorte no necesita red');
 
   const pausedOther = await recordSegment({
-    id: 'MLU300',
+    id: PAUSED_OTHER_ID,
     productLookupState: 'paused',
-    pausedIds: ['MLU200'],
   });
   assert.equal(pausedOther.result.segment, 'paused_other');
+  assert.equal(pausedOther.fetchCount, 1, 'la cohorte no necesita red');
 
   assert.deepEqual(byRequest.insert.args.slice(0, 6), [
     '2026-08-17', 'libro', 'by_request', 200, 1, 1,
@@ -208,14 +212,7 @@ test('Googlebot queda separado en active, by_request y paused_other sin guardar 
   assert.equal(persisted.includes('/libro/'), false);
   assert.equal(persisted.includes('66.249.66.1'), false);
   assert.equal(persisted.includes('Googlebot'), false);
-});
-
-test('la consulta interna del sitemap no vuelve a entrar al muestreo', () => {
-  const request = new Request(`${BASE}/sitemap-books-paused.xml`, {
-    headers: { 'x-amado-internal-observability': '1' },
-  });
-  const classification = classifyCrawlRequest(request);
-  assert.equal(shouldCaptureCrawlRequest(request, classification, () => 0), false);
+  assert.equal(persisted.includes(BY_REQUEST_ID), false);
 });
 
 test('el reporte agregado entrega KPIs separados por cohorte', async () => {
@@ -246,6 +243,7 @@ test('workflows y migración quedan conectados a las nuevas cohortes', () => {
   const crawlWorkflow = readFileSync('.github/workflows/seo-crawl-report.yml', 'utf8');
   const migration = readFileSync('migrations/0009_crawl_stats_segmented.sql', 'utf8');
   const gscExport = readFileSync('scripts/seo/gsc-export.mjs', 'utf8');
+  const crawlAnalytics = readFileSync('functions/_shared/crawl-analytics.js', 'utf8');
 
   assert.match(gscWorkflow, /GSC_PAUSED_SITEMAP_URL: https:\/\/www\.amadolibros\.com\/sitemap-books-paused\.xml/);
   assert.match(gscWorkflow, /scripts\/seo\/gsc-analysis\.mjs/);
@@ -255,4 +253,6 @@ test('workflows y migración quedan conectados a las nuevas cohortes', () => {
   assert.match(crawlWorkflow, /crawl-segments\.csv/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS crawl_stats_segmented/);
   assert.match(migration, /historical_unsegmented/);
+  assert.match(crawlAnalytics, /isPausedProductInSeoCohort/);
+  assert.doesNotMatch(crawlAnalytics, /fetchFn\(.*sitemap-books-paused/s);
 });
