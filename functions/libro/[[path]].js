@@ -44,6 +44,7 @@ import {
     buildBookWhatsAppMessage,
     whatsappHref,
 } from '../../shared/whatsapp-messages.js';
+import { isPausedProductInSeoCohort } from '../_shared/paused-seo-cohort.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
@@ -381,7 +382,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
     const seoOverride  = PRODUCT_SEO_OVERRIDES[item.id] || null;
     const documentTitle = escapeHtml(seoOverride?.title || item.title);
-    const indexWhenPaused = seoOverride?.indexWhenPaused === true;
+    const indexWhenPaused = seoOverride?.indexWhenPaused === true ||
+        isPausedProductInSeoCohort(item.id);
     const sourceImages = normalizeImages(item, previewCoverSrc);
     const images       = isPreview
         ? sourceImages
@@ -475,7 +477,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
         : inStock
           ? `Consultá precio y forma de pago de &quot;${safeTitle}&quot;, publicado en ${escapeHtml(currency)}, en Amado Libros.`
-        : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
+        : indexWhenPaused
+          ? (safeAuthor
+              ? `Buscamos &quot;${safeTitle}&quot; de ${safeAuthor} por encargo en Uruguay. Consultá disponibilidad, edición, precio y demora.`
+              : `Buscamos &quot;${safeTitle}&quot; por encargo en Uruguay. Consultá disponibilidad, edición, precio y demora.`)
+          : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
     const metaDesc = seoOverride?.description
         ? escapeHtml(seoOverride.description)
         : defaultMetaDesc;

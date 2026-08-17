@@ -69,6 +69,7 @@ const ROUTES = [
   { path: '/sitemap-pages.xml', kind: 'sitemap-pages' },
   { path: '/sitemap-categories.xml', kind: 'sitemap-categories' },
   { path: '/sitemap-books-active.xml', kind: 'sitemap-books-active' },
+  { path: '/sitemap-books-paused.xml', kind: 'sitemap-books-paused' },
   { path: '/api/health' },
   { path: '/api/status' },
 ];
@@ -270,12 +271,10 @@ function analyzeSitemapBody(body, kind) {
       BASE_URL + '/sitemap-pages.xml',
       BASE_URL + '/sitemap-categories.xml',
       BASE_URL + '/sitemap-books-active.xml',
+      BASE_URL + '/sitemap-books-paused.xml',
     ];
     for (const value of required) {
       if (!locs.includes(value)) return { ok: false, reason: 'sitemap index missing ' + value };
-    }
-    if (locs.some(value => value.includes('paused'))) {
-      return { ok: false, reason: 'paused sitemap must not be in root index yet' };
     }
     if (locs.length !== required.length) {
       return { ok: false, reason: 'sitemap index has unexpected segmentos' };
@@ -309,6 +308,16 @@ function analyzeSitemapBody(body, kind) {
     if (locs.length === 0) return { ok: false, reason: 'active books sitemap is empty' };
     if (!locs.every(value => value.startsWith(BASE_URL + '/libro/'))) {
       return { ok: false, reason: 'active books sitemap contains non-product URL' };
+    }
+    return { ok: true };
+  }
+
+  if (kind === 'sitemap-books-paused') {
+    if (locs.length === 0 || locs.length > 500) {
+      return { ok: false, reason: 'paused books sitemap must contain between 1 and 500 URLs' };
+    }
+    if (!locs.every(value => value.startsWith(BASE_URL + '/libro/'))) {
+      return { ok: false, reason: 'paused books sitemap contains non-product URL' };
     }
     return { ok: true };
   }

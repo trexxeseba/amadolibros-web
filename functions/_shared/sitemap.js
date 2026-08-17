@@ -4,6 +4,7 @@ export const SITEMAP_SEGMENTS = Object.freeze([
   `${BASE}/sitemap-pages.xml`,
   `${BASE}/sitemap-categories.xml`,
   `${BASE}/sitemap-books-active.xml`,
+  `${BASE}/sitemap-books-paused.xml`,
 ]);
 
 export function escapeXml(value) {
