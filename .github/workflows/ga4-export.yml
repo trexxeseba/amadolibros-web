@@ -1,6 +1,11 @@
 name: GA4 manual export
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/ga4-export.yml'
+      - 'scripts/ga4-admin-audit.mjs'
+      - 'functions/__tests__/ga4-admin-audit.test.js'
   workflow_dispatch:
     inputs:
       start_date:
@@ -72,6 +77,7 @@ jobs:
           fi
 
   export:
+    if: github.event_name == 'workflow_dispatch'
     name: Extract GA4 data
     runs-on: ubuntu-latest
     timeout-minutes: 10
