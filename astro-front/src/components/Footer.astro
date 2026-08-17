@@ -1,6 +1,14 @@
 ---
-const WA_HREF =
-  'https://wa.me/59899841325?text=Hola%20Amado%20Libros%2C%20quisiera%20consultar';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
+
+const WA_HREF = whatsappHref(buildWhatsAppMessage({
+  motive: 'Consulta general',
+  page: Astro.url.pathname,
+  closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
+}));
 const YEAR = new Date().getFullYear();
 ---
 <footer class="site-footer">

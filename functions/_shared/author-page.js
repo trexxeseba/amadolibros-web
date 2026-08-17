@@ -13,8 +13,10 @@ import {
   CARD_IMAGE_SIZES,
   responsiveImage,
 } from './cloudflare-images.js';
-
-const WA = '59899841325';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../shared/whatsapp-messages.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -64,7 +66,15 @@ export function renderAuthorPage(author, items, useCloudflareImages = true) {
   const canonicalUrl = `${BASE}${author.path}`;
   const pageTitle = `Libros de ${author.name} en Uruguay`;
   const metaDescription = `Libros de ${author.name} disponibles en Uruguay: ${author.focus}. Comprá online o consultá por encargos en Amado Libros.`;
-  const waMessage = `Hola, busco un libro de ${author.name}`;
+  const waMessage = buildWhatsAppMessage({
+    greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+    motive: 'Consultar por otro libro del autor',
+    book: `Otro título de ${author.name}`,
+    author: author.name,
+    situation: 'Todavía no identifiqué la edición exacta',
+    page: canonicalUrl,
+    closing: 'Quisiera contarles qué título necesito y saber si pueden conseguirlo. Gracias.',
+  });
 
   const itemListElements = items.slice(0, 50).map((item, index) => ({
     '@type': 'ListItem',
@@ -161,10 +171,10 @@ export function renderAuthorPage(author, items, useCloudflareImages = true) {
   </section>
   <p class="count">${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora</p>
   <section class="grid" aria-label="Libros disponibles de ${escapeHtml(author.name)}">${cards}</section>
-  <a class="wa-cta" href="https://wa.me/${WA}?text=${encodeURIComponent(waMessage)}" target="_blank" rel="noopener noreferrer">Consultar otro título por WhatsApp</a>
+  <a class="wa-cta" href="${escapeHtml(whatsappHref(waMessage))}" target="_blank" rel="noopener noreferrer">Consultar otro título por WhatsApp</a>
 </main>
-${footerHtml()}
-${waFloatHtml(waMessage)}
+${footerHtml(undefined, canonicalUrl)}
+${waFloatHtml(waMessage, canonicalUrl)}
 </body>
 </html>`;
 }

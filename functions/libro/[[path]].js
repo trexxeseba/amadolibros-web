@@ -40,8 +40,11 @@ import {
     waFloatHtml,
     WA_FLOAT_STYLES,
 } from '../_shared/brand.js';
+import {
+    buildBookWhatsAppMessage,
+    whatsappHref,
+} from '../../shared/whatsapp-messages.js';
 
-const WA = '59899841325';
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
 // ---------------------------------------------------------------------------
@@ -127,14 +130,6 @@ function formatDimensions(dimensions) {
     if (isValidDimensionValue(dimensions.weight)) rows.push(`Peso ${dimensions.weight}`);
 
     return rows.length ? rows.join(' · ') : null;
-}
-
-function buildPausedWaMessage(item) {
-    let msg = `Hola, me interesa conseguir “${item.title}”`;
-    if (item.author) msg += `, de ${item.author}`;
-    if (item.isbn) msg += ` (${item.isbn})`;
-    msg += '. ¿Podrían buscarlo por encargo?';
-    return msg;
 }
 
 function detailRow(label, value) {
@@ -422,11 +417,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const descriptionHtml = description
         ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
         : '';
-    const waMsg         = encodeURIComponent(
-        inStock
-            ? `Hola! Me interesa: ${item.title}`
-            : buildPausedWaMessage(item)
-    );
+    const waMessage = buildBookWhatsAppMessage({
+        title: item.title,
+        author: item.author,
+        page: canonicalUrl,
+        available: inStock,
+        unsupportedCurrency: inStock && !checkoutCurrencySupported,
+    });
+    const waLink = whatsappHref(waMessage);
     const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author, !isPreview);
     const viewItemAnalytics = {
         dedupeKey: `view_item_${item.id}`,
@@ -598,20 +596,20 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
-      <a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+      <a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
         💬 Consultar por WhatsApp
       </a>
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
         Comprar en MercadoLibre
       </a>`
         : inStock
-          ? `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+          ? `<a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
         Consultar precio y forma de pago
       </a>
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
         Comprar en MercadoLibre
       </a>`
-        : `<a class="btn btn-wa" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener noreferrer">
+        : `<a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
         Consultar si podemos conseguirlo
       </a>
       ${waitlistSiteKey ? `<form class="waitlist-form" id="aviso-stock" novalidate>
@@ -910,8 +908,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   }
 }());<\/script>
 
-${footerHtml()}
-${waFloatHtml(`Hola, tengo una consulta sobre ${item.title}.`)}
+${footerHtml(undefined, canonicalUrl)}
+${waFloatHtml(waMessage, canonicalUrl)}
 
 <script>(function(){
   function updateBadge(n){

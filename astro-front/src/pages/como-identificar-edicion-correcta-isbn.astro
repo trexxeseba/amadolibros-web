@@ -1,10 +1,18 @@
 ---
 import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
 
 const canonical = 'https://www.amadolibros.com/como-identificar-edicion-correcta-isbn';
-const whatsapp = 'https://wa.me/59899841325?text=' + encodeURIComponent(
-  'Hola Amado Libros, quiero verificar la edición correcta de un libro. Les paso el ISBN y los datos que tengo: '
-);
+const whatsapp = whatsappHref(buildWhatsAppMessage({
+  greeting: 'Hola, quiero verificar una edición con Amado Libros 😊',
+  motive: 'Verificar la edición correcta de un libro',
+  situation: 'Tengo el ISBN u otros datos bibliográficos',
+  page: canonical,
+  closing: 'Quisiera pasarles el ISBN y los datos que tengo para confirmar la edición. Gracias.',
+}));
 
 const jsonLd = {
   '@context': 'https://schema.org',

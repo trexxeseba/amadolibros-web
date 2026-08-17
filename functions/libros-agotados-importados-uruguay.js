@@ -15,15 +15,22 @@ import {
     waHref,
 } from './_shared/brand.js';
 import { SEO_SPECIALTIES, specialtyPath } from './_shared/seo-specialties.js';
+import { buildWhatsAppMessage } from '../shared/whatsapp-messages.js';
 
 const PATH = '/libros-agotados-importados-uruguay';
 const TITLE = 'Libros agotados e importados en Uruguay | Amado Libros';
 const DESCRIPTION = 'Buscamos libros agotados, importados y difíciles de conseguir en Europa y otros mercados. Consultá por título, autor, ISBN o foto desde Uruguay.';
-const REQUEST_MESSAGE = 'Hola Amado Libros, busco un libro por encargo. Les paso título, autor, ISBN o una foto de la tapa:';
 const LAST_REVIEWED_ISO = '2026-08-12';
 
 export async function onRequest() {
     const canonical = `${BASE}${PATH}`;
+    const REQUEST_MESSAGE = buildWhatsAppMessage({
+        greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+        motive: 'Solicitar una búsqueda por encargo',
+        situation: 'Libro agotado, importado o difícil de conseguir',
+        page: canonical,
+        closing: 'Quisiera pasarles el título, autor, ISBN o una foto de la tapa para que puedan buscarlo. Gracias.',
+    });
     const requestHref = waHref(REQUEST_MESSAGE);
     const schema = {
         '@context': 'https://schema.org',
@@ -199,8 +206,8 @@ export async function onRequest() {
       <a class="cta cta-primary" href="${requestHref}" target="_blank" rel="noopener noreferrer">Consultar por WhatsApp</a>
     </section>
   </main>
-  ${footerHtml()}
-  ${waFloatHtml(REQUEST_MESSAGE)}
+  ${footerHtml(undefined, canonical)}
+  ${waFloatHtml(REQUEST_MESSAGE, canonical)}
 </body>
 </html>`;
 

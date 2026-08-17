@@ -40,6 +40,11 @@ import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import {
+    buildBookWhatsAppMessage,
+    buildWhatsAppMessage,
+    whatsappHref,
+} from '../shared/whatsapp-messages.js';
+import {
     BASE,
     fetchActiveIndex,
     fetchCatalog,
@@ -60,7 +65,6 @@ import {
 } from './_shared/cloudflare-images.js';
 
 const MAX_RESULTS = 48;
-const WA = 'https://wa.me/59899841325';
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
 function escapeHtml(str) {
@@ -393,11 +397,12 @@ const CAT_SELECT_STYLES = `
 // URL de la ficha cuando existe. Nunca se muestra "pausado"/"paused" en el
 // texto visible.
 function buildOrderWaMessage(book, href) {
-    let msg = `Hola, quiero consultar por encargo el libro "${book.title}"`;
-    if (book.author) msg += `, de ${book.author}`;
-    msg += `. Referencia: ${book.id}.`;
-    if (href) msg += ` ${href}`;
-    return msg;
+    return buildBookWhatsAppMessage({
+        title: book.title,
+        author: book.author,
+        page: href,
+        available: false,
+    });
 }
 
 // ── CATALOGO-PAGINACION-1 ────────────────────────────────────────────────────
@@ -704,7 +709,8 @@ export async function onRequest(ctx) {
 
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
-        const href  = escapeHtml(`${previewBase}/libro/${b.id}/${slug}`);
+        const rawHref = `${previewBase}/libro/${b.id}/${slug}`;
+        const href  = escapeHtml(rawHref);
         const fallbackImage = ctx.env?.APP_ENV === 'production'
             ? bookCoverUrl(b.id)
             : httpsImg(b.pictures?.[0] || b.thumbnail || '');
@@ -728,8 +734,7 @@ export async function onRequest(ctx) {
         const installment = Math.round(price / 12).toLocaleString('es-UY');
         const hasFreeShipping = price >= FREE_SHIPPING_THRESHOLD_UYU;
         const loading  = idx < 8 ? 'eager' : 'lazy';
-        const waHref = `${WA}?text=${encodeURIComponent(`Hola Amado Libros, quiero consultar por encargo: ${b.title}`)}`;
-        const orderWaHref = `${WA}?text=${encodeURIComponent(buildOrderWaMessage(b, href))}`;
+        const orderWaHref = whatsappHref(buildOrderWaMessage(b, rawHref));
         const responsiveAttrs = image.srcset
             ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
             : '';
@@ -815,7 +820,14 @@ export async function onRequest(ctx) {
       <span>Contanos lo que sabés. Una persona de Amado Libros hace la búsqueda y verifica la edición antes de ofrecerte una opción.</span>
       <div class="manual-request-actions">
         <a class="manual-request-primary" href="/pedir-libro?tipo=sin-resultados&amp;q=${encodeURIComponent(rawQ)}">Pedir que lo busquemos</a>
-        <a class="wa-link" href="${WA}?text=${encodeURIComponent(`Hola Amado Libros, busqué “${rawQ}” y no apareció en el catálogo.`)}" target="_blank" rel="noopener noreferrer">Ir directo a WhatsApp</a>
+        <a class="wa-link" href="${escapeHtml(whatsappHref(buildWhatsAppMessage({
+            greeting: 'Hola, busqué un libro en Amado Libros y quisiera que me ayudaran 😊',
+            motive: 'Búsqueda sin resultados',
+            book: rawQ,
+            situation: 'No apareció en el catálogo',
+            page: url.toString(),
+            closing: 'Quisiera saber si pueden conseguirlo y cuánto demoraría. Gracias.',
+        })))}" target="_blank" rel="noopener noreferrer">Ir directo a WhatsApp</a>
       </div>
     </section>`
         : `<p>Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.</p>`;

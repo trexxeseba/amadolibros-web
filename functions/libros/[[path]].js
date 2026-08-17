@@ -20,6 +20,7 @@ import {
     CARD_IMAGE_SIZES,
     responsiveImage,
 } from '../_shared/cloudflare-images.js';
+import { buildWhatsAppMessage } from '../../shared/whatsapp-messages.js';
 
 const MAX_RESULTS = 48;
 const PAGE_PARAM_RE = /^[1-9][0-9]{0,6}$/;
@@ -273,6 +274,14 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
     const scopeText = Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
         ? `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> Los ${categoryUniverseCount} títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo.`
         : `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> También buscamos ediciones agotadas o difíciles de conseguir por encargo.`;
+    const waMessage = buildWhatsAppMessage({
+        greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+        motive: 'Consultar por un libro de esta categoría',
+        book: `Libro de ${category.name}`,
+        situation: 'Todavía no identifiqué el título exacto',
+        page: canonical,
+        closing: 'Quisiera contarles qué libro necesito y saber si pueden conseguirlo. Gracias.',
+    });
 
     return `<!doctype html>
 <html lang="es">
@@ -311,8 +320,8 @@ ${headerHtml()}
   ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
   ${categoryNavHtml(category.id)}
 </main>
-${footerHtml()}
-${waFloatHtml(`Hola, busco un libro de ${category.name}.`)}
+${footerHtml(undefined, canonical)}
+${waFloatHtml(waMessage, canonical)}
 <script src="/search-autocomplete.js" defer></script>
 </body>
 </html>`;

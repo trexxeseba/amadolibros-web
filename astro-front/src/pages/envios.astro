@@ -1,5 +1,16 @@
 ---
 import TrustPageLayout from '../layouts/TrustPageLayout.astro';
+import {
+  buildWhatsAppMessage,
+  whatsappHref,
+} from '../../../shared/whatsapp-messages.js';
+const shippingWhatsApp = whatsappHref(buildWhatsAppMessage({
+  greeting: 'Hola, tengo una consulta sobre una entrega de Amado Libros 😊',
+  motive: 'Consultar por una entrega o envío',
+  situation: 'Demora, seguimiento o incidencia con una entrega',
+  page: '/envios',
+  closing: 'Quisiera contarles qué ocurrió para que puedan ayudarme. Gracias.',
+}));
 const shippingDestination = { '@type': 'DefinedRegion', addressCountry: 'UY' };
 const transitTime = {
   '@type': 'ServicePeriod',
@@ -70,7 +81,7 @@ const shippingPolicy = {
   <p>Podés retirar tu pedido en nuestro <strong>pick up a pasos de Plaza Matriz</strong>, de lunes a viernes, de 8 a 17 h. El checkout descuenta $150 por retiro. <strong>Esperá nuestra confirmación por WhatsApp antes de venir:</strong> te avisamos apenas tu pedido esté pronto para retirar, y ahí te pasamos la dirección exacta.</p>
 
   <h2>Demoras o incidencias</h2>
-  <p>Los plazos son estimados. Si un envío presenta una demora o daño visible, contactanos por <a href="https://wa.me/59899841325">WhatsApp al 099 841 325</a> o por <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a> indicando el número de pedido.</p>
+  <p>Los plazos son estimados. Si un envío presenta una demora o daño visible, contactanos por <a href={shippingWhatsApp}>WhatsApp al 099 841 325</a> o por <a href="mailto:adm@amadolibros.com">adm@amadolibros.com</a> indicando el número de pedido.</p>
 </TrustPageLayout>
 
 <style>

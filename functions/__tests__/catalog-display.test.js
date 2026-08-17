@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { onRequest as catalogRequest } from '../catalogo.js';
 import { onRequest as bookRequest } from '../libro/[[path]].js';
 import {
+  buildBookWhatsAppMessage,
+  whatsappHref,
+} from '../../shared/whatsapp-messages.js';
+import {
   CATALOG_URL,
   PAUSED_MANIFEST_URL,
   PRODUCTION_MANIFEST_URL,
@@ -360,10 +364,13 @@ test('la ficha pausada queda noindex, sin precio ni compra directa', async () =>
   // formulario de aviso secundario.
   assert.ok(html.indexOf('Consultar si podemos conseguirlo') < html.indexOf('id="aviso-stock"'));
 
-  const expectedWaMsg = encodeURIComponent(
-    'Hola, me interesa conseguir “Alpha raro”, de Autor Dos. ¿Podrían buscarlo por encargo?'
-  );
-  assert.ok(html.includes(`https://wa.me/59899841325?text=${expectedWaMsg}`));
+  const expectedWaHref = whatsappHref(buildBookWhatsAppMessage({
+    title: 'Alpha raro',
+    author: 'Autor Dos',
+    page: 'https://www.amadolibros.com/libro/MLU2/alpha-raro',
+    available: false,
+  })).replace(/&/g, '&amp;');
+  assert.ok(html.includes(expectedWaHref));
 });
 
 test('CF-R2-2C: schema Book de una ficha pausada no incluye Offer', async () => {
