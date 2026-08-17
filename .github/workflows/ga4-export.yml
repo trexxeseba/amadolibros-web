@@ -48,16 +48,8 @@ jobs:
           workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
           service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
           token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/analytics.readonly
-          create_credentials_file: true
-
-      - name: Setup Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Enable required read APIs
-        run: |
-          gcloud services enable analyticsadmin.googleapis.com analyticsdata.googleapis.com \
-            --project=amado-libros-analytics --quiet
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
 
       - name: Inventory accessible GA4 properties
         env:
