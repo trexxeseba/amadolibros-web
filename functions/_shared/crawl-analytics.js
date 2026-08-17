@@ -1,9 +1,12 @@
 const GOOGLE_COMMON_CRAWLERS_URL = 'https://developers.google.com/static/crawling/ipranges/common-crawlers.json';
 const GOOGLE_RANGES_KV_KEY = 'seo:crawl-logs-3:google-common-crawlers:v1';
+const PAUSED_SITEMAP_URL = 'https://www.amadolibros.com/sitemap-books-paused.xml';
+const INTERNAL_OBSERVABILITY_HEADER = 'x-amado-internal-observability';
 const FLAG_PREFIX = 'seo:crawl-logs-3:enabled:';
 const FLAG_CACHE_MS = 60_000;
 const RANGE_FRESH_MS = 24 * 60 * 60 * 1000;
 const ISOLATE_RANGE_CACHE_MS = 60 * 60 * 1000;
+const PAUSED_SITEMAP_CACHE_MS = 5 * 60 * 1000;
 const SAMPLE_RATE = 0.01;
 
 export const USEFUL_CRAWL_RATIO_V1 = Object.freeze({
@@ -26,6 +29,7 @@ const STATIC_USEFUL_PATHS = new Set([
 
 let flagCache = new Map();
 let rangeCache = null;
+let pausedSitemapCache = null;
 let schemaReadyPromise = null;
 
 function appEnv(env) {
@@ -115,6 +119,7 @@ export function classifyCrawlRequest(request) {
 }
 
 export function shouldCaptureCrawlRequest(request, classification, randomFn = Math.random) {
+  if (request.headers.get(INTERNAL_OBSERVABILITY_HEADER) === '1') return false;
   const ua = request.headers.get('user-agent') || '';
   if (classification.pattern === 'asset') return false;
   if (classification.legacy) return true;
@@ -277,6 +282,79 @@ async function verifyGooglebot(request, env, nowMs, fetchFn) {
   return match == null ? -2 : (match ? 1 : 0);
 }
 
+function productIdFromRequest(request) {
+  try {
+    const match = new URL(request.url).pathname.match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
+    return match ? match[1].toUpperCase() : '';
+  } catch {
+    return '';
+  }
+}
+
+function pausedIdsFromSitemap(xml) {
+  const ids = new Set();
+  for (const match of String(xml || '').matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) {
+    try {
+      const idMatch = new URL(match[1].replaceAll('&amp;', '&')).pathname.match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
+      if (idMatch) ids.add(idMatch[1].toUpperCase());
+    } catch {
+      // Una URL inválida no invalida todo el sitemap; simplemente se omite.
+    }
+  }
+  return ids;
+}
+
+async function loadPausedSitemapIds(nowMs, fetchFn) {
+  if (pausedSitemapCache && pausedSitemapCache.expiresAt > nowMs) {
+    return pausedSitemapCache.ids;
+  }
+  try {
+    const response = await fetchFn(PAUSED_SITEMAP_URL, {
+      headers: {
+        accept: 'application/xml,text/xml',
+        [INTERNAL_OBSERVABILITY_HEADER]: '1',
+      },
+    });
+    if (!response.ok) throw new Error(`sitemap pausado HTTP ${response.status}`);
+    const ids = pausedIdsFromSitemap(await response.text());
+    if (!ids.size) throw new Error('sitemap pausado sin IDs');
+    pausedSitemapCache = { ids, expiresAt: nowMs + PAUSED_SITEMAP_CACHE_MS };
+    return ids;
+  } catch (error) {
+    console.warn('[SEO-CRAWL-LOGS-3] No se pudo clasificar la cohorte pausada:', error?.message || error);
+    return null;
+  }
+}
+
+export function productLookupStateFromContext(context) {
+  const segments = Array.isArray(context?.data?.perf?.segments)
+    ? context.data.perf.segments
+    : [];
+  const activeLookup = segments.find((segment) => segment?.name === 'active_lookup');
+  if (activeLookup?.found === true) return 'active';
+  const pausedLookup = segments.find((segment) => segment?.name === 'paused_lookup');
+  if (pausedLookup?.found === true) return 'paused';
+  return 'unknown';
+}
+
+async function resolveCrawlSegment({
+  request,
+  classification,
+  productLookupState,
+  nowMs,
+  fetchFn,
+}) {
+  if (!classification.pattern.startsWith('libro')) return 'non_product';
+  if (productLookupState === 'active') return 'active';
+  if (productLookupState !== 'paused') return 'unknown_product';
+
+  const productId = productIdFromRequest(request);
+  if (!productId) return 'paused_unknown';
+  const pausedIds = await loadPausedSitemapIds(nowMs, fetchFn);
+  if (!pausedIds) return 'paused_unknown';
+  return pausedIds.has(productId) ? 'by_request' : 'paused_other';
+}
+
 async function ensureSchema(db) {
   if (!db || typeof db.prepare !== 'function') return false;
   if (!schemaReadyPromise) {
@@ -292,6 +370,19 @@ async function ensureSchema(db) {
         bytes_known_count INTEGER NOT NULL DEFAULT 0,
         duration_ms_sum REAL NOT NULL DEFAULT 0,
         PRIMARY KEY (date, pattern, status, verified, ua_googlebot)
+      )`).run();
+      await db.prepare(`CREATE TABLE IF NOT EXISTS crawl_stats_segmented (
+        date TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        segment TEXT NOT NULL,
+        status INTEGER NOT NULL,
+        verified INTEGER NOT NULL,
+        ua_googlebot INTEGER NOT NULL,
+        request_count INTEGER NOT NULL DEFAULT 0,
+        bytes_sum INTEGER NOT NULL DEFAULT 0,
+        bytes_known_count INTEGER NOT NULL DEFAULT 0,
+        duration_ms_sum REAL NOT NULL DEFAULT 0,
+        PRIMARY KEY (date, pattern, segment, status, verified, ua_googlebot)
       )`).run();
       return true;
     })().catch(error => {
@@ -317,7 +408,13 @@ export function isUsefulRatioDenominator({ classification, verified }) {
   return verified === 1 && classification.contentPage && !DENOMINATOR_EXCLUDED.has(classification.pattern);
 }
 
-export async function recordCrawlRequest({ request, response, env, durationMs = 0 }, deps = {}) {
+export async function recordCrawlRequest({
+  request,
+  response,
+  env,
+  durationMs = 0,
+  productLookupState = 'unknown',
+}, deps = {}) {
   const nowFn = deps.nowFn || Date.now;
   const fetchFn = deps.fetchFn || fetch;
   const randomFn = deps.randomFn || Math.random;
@@ -334,6 +431,13 @@ export async function recordCrawlRequest({ request, response, env, durationMs = 
   const ua = request.headers.get('user-agent') || '';
   const uaGooglebot = isGooglebotUa(ua) ? 1 : 0;
   const verified = await verifyGooglebot(request, env, nowMs, fetchFn);
+  const segment = await resolveCrawlSegment({
+    request,
+    classification,
+    productLookupState,
+    nowMs,
+    fetchFn,
+  });
   const { bytes, known } = knownContentLength(response);
   const date = new Date(nowMs).toISOString().slice(0, 10);
   const safeDuration = Number.isFinite(Number(durationMs)) ? Math.max(0, Number(durationMs)) : 0;
@@ -358,9 +462,30 @@ export async function recordCrawlRequest({ request, response, env, durationMs = 
         safeDuration,
       ).run();
 
+  await env.ORDERS_DB.prepare(`INSERT INTO crawl_stats_segmented
+    (date, pattern, segment, status, verified, ua_googlebot, request_count, bytes_sum, bytes_known_count, duration_ms_sum)
+    VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+    ON CONFLICT(date, pattern, segment, status, verified, ua_googlebot)
+    DO UPDATE SET
+      request_count = request_count + 1,
+      bytes_sum = bytes_sum + excluded.bytes_sum,
+      bytes_known_count = bytes_known_count + excluded.bytes_known_count,
+      duration_ms_sum = duration_ms_sum + excluded.duration_ms_sum`).bind(
+        date,
+        classification.pattern,
+        segment,
+        response.status,
+        verified,
+        uaGooglebot,
+        bytes,
+        known,
+        safeDuration,
+      ).run();
+
   return {
     recorded: true,
     pattern: classification.pattern,
+    segment,
     verified,
     uaGooglebot,
     usefulNumerator: isUsefulRatioNumerator({ classification, status: response.status, verified }),
@@ -372,13 +497,19 @@ export function scheduleCrawlAnalytics(context, response, durationMs = 0) {
   if (!context || typeof context.waitUntil !== 'function') return;
   if (!context.request || !context.env) return;
   context.waitUntil(
-    recordCrawlRequest({ request: context.request, response, env: context.env, durationMs })
-      .catch(error => console.warn('[SEO-CRAWL-LOGS-3] logging falló:', error?.message || error)),
+    recordCrawlRequest({
+      request: context.request,
+      response,
+      env: context.env,
+      durationMs,
+      productLookupState: productLookupStateFromContext(context),
+    }).catch(error => console.warn('[SEO-CRAWL-LOGS-3] logging falló:', error?.message || error)),
   );
 }
 
 export function resetCrawlAnalyticsCachesForTest() {
   flagCache = new Map();
   rangeCache = null;
+  pausedSitemapCache = null;
   schemaReadyPromise = null;
 }
