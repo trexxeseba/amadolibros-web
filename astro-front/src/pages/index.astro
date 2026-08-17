@@ -1,4 +1,4 @@
-﻿---
+---
 // Lote 2-B — home con sección Novedades renderizada en build desde public/home.json.
 // Sin catálogo completo, sin GA4, sin lógica de negocio. noindex activo.
 import BaseLayout          from '../layouts/BaseLayout.astro';
@@ -8,6 +8,7 @@ import DeliveryCoordination from '../components/DeliveryCoordination.astro';
 import BookDiscovery       from '../components/BookDiscovery.astro';
 import GuideAccess         from '../components/GuideAccess.astro';
 import CategoryAccess      from '../components/CategoryAccess.astro';
+import OrderHubAccess      from '../components/OrderHubAccess.astro';
 import BestsellerSection   from '../components/BestsellerSection.astro';
 import Footer              from '../components/Footer.astro';
 import WAFloat             from '../components/WAFloat.astro';
@@ -73,6 +74,7 @@ const jsonLd = {
     <Hero />
     <DeliveryCoordination />
     <CategoryAccess />
+    <OrderHubAccess />
     <BestsellerSection />
     <BookDiscovery />
     <GuideAccess />
