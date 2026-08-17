@@ -80,7 +80,7 @@ node --test worker-sync/__tests__/*.test.js
 # de este flag. En Node >=22.13 el flag es inocuo y conserva la misma suite.
 node --experimental-sqlite --test functions/__tests__/*.test.js
 node --test astro-front/src/lib/__tests__/*.test.js
-node --test functions/api/__tests__/*.test.js
+node --experimental-sqlite --test functions/api/__tests__/*.test.js
 
 # ── 3. Dependencias de Astro ──────────────────────────────────────────────
 step "Instalar dependencias de astro-front"
