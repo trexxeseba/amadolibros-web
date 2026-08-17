@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
-  buildInspectionSample,
+  buildCohortInspectionSample,
   selectCtrOpportunities,
   summarizeInspections,
 } from './gsc-analysis.mjs';
@@ -11,6 +11,8 @@ const URL_INSPECTION_ENDPOINT = 'https://searchconsole.googleapis.com/v1/urlInsp
 const OUTPUT_DIR = process.env.GSC_OUTPUT_DIR || 'artifacts/gsc';
 const ACTIVE_SITEMAP_URL = process.env.GSC_ACTIVE_SITEMAP_URL
   || 'https://www.amadolibros.com/sitemap-books-active.xml';
+const PAUSED_SITEMAP_URL = process.env.GSC_PAUSED_SITEMAP_URL
+  || 'https://www.amadolibros.com/sitemap-books-paused.xml';
 const ROW_LIMIT = 25000;
 const INSPECTION_CONCURRENCY = 8;
 
@@ -74,6 +76,7 @@ function inspectionsToCsv(rows) {
   return rowsToCsv(
     [
       'page',
+      'cohort',
       'stratum',
       'verdict',
       'coverageState',
@@ -169,7 +172,7 @@ async function mapWithConcurrency(items, concurrency, mapper) {
   return results;
 }
 
-async function inspectUrl({ page, stratum }, { siteUrl, accessToken }) {
+async function inspectUrl({ page, stratum, cohort }, { siteUrl, accessToken }) {
   try {
     const response = await fetchWithRetry(URL_INSPECTION_ENDPOINT, {
       method: 'POST',
@@ -182,6 +185,7 @@ async function inspectUrl({ page, stratum }, { siteUrl, accessToken }) {
     const result = response.inspectionResult?.indexStatusResult || {};
     return {
       page,
+      cohort,
       stratum,
       verdict: result.verdict || '',
       coverageState: result.coverageState || '',
@@ -198,6 +202,7 @@ async function inspectUrl({ page, stratum }, { siteUrl, accessToken }) {
   } catch (error) {
     return {
       page,
+      cohort,
       stratum,
       verdict: '',
       coverageState: '',
@@ -214,7 +219,14 @@ async function inspectUrl({ page, stratum }, { siteUrl, accessToken }) {
   }
 }
 
-function reportSummaryMarkdown({ siteUrl, startDate, endDate, ctrReport, inspectionSummary }) {
+function reportSummaryMarkdown({
+  siteUrl,
+  startDate,
+  endDate,
+  ctrReport,
+  inspectionSummary,
+  sitemapCohorts,
+}) {
   const pass = inspectionSummary.verdicts.PASS || 0;
   const lines = [
     '## GSC: indexación y oportunidades CTR',
@@ -224,15 +236,30 @@ function reportSummaryMarkdown({ siteUrl, startDate, endDate, ctrReport, inspect
     `- Fichas con impresiones: ${ctrReport.benchmark.pageCount}`,
     `- CTR agregado de fichas: ${(ctrReport.benchmark.ctr * 100).toFixed(2)}%`,
     `- Oportunidades CTR seleccionadas: ${ctrReport.rows.length}`,
+    `- Sitemap activo: ${sitemapCohorts.activeUrlCount} URLs`,
+    `- Sitemap por encargo: ${sitemapCohorts.byRequestUrlCount} URLs`,
     `- URLs inspeccionadas: ${inspectionSummary.completed}/${inspectionSummary.requested}`,
     `- Veredicto PASS: ${pass}`,
     `- Errores de inspección: ${inspectionSummary.errors}`,
+    '',
+    '### Resultado por cohorte',
+    '',
+    '| Cohorte | Solicitadas | Completadas | PASS | Errores |',
+    '| --- | ---: | ---: | ---: | ---: |',
+  ];
+
+  for (const cohort of ['active', 'by_request']) {
+    const values = inspectionSummary.cohorts[cohort] || {};
+    lines.push(`| ${cohort} | ${values.requested || 0} | ${values.completed || 0} | ${values.verdicts?.PASS || 0} | ${values.errors || 0} |`);
+  }
+
+  lines.push(
     '',
     '### Primeras oportunidades CTR',
     '',
     '| URL | Impresiones | CTR | Posición | Clics potenciales |',
     '| --- | ---: | ---: | ---: | ---: |',
-  ];
+  );
   for (const row of ctrReport.rows.slice(0, 10)) {
     lines.push(`| ${row.page} | ${row.impressions} | ${(row.ctr * 100).toFixed(2)}% | ${row.position.toFixed(1)} | ${row.estimatedMissedClicks.toFixed(1)} |`);
   }
@@ -256,7 +283,7 @@ async function main() {
   await mkdir(OUTPUT_DIR, { recursive: true });
   const extractedAt = new Date().toISOString();
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     siteUrl,
     dateRange: { startDate, endDate },
     extractedAt,
@@ -310,19 +337,50 @@ async function main() {
     csv: 'ctr-opportunities.csv',
   });
 
-  process.stdout.write(`Descargando sitemap activo ${ACTIVE_SITEMAP_URL}... `);
-  const sitemapXml = await fetchWithRetry(ACTIVE_SITEMAP_URL, {}, 4, 'text');
-  const activeUrls = sitemapUrls(sitemapXml);
-  console.log(`${activeUrls.length} URLs.`);
+  process.stdout.write('Descargando sitemaps activo y por encargo... ');
+  const [activeSitemapXml, pausedSitemapXml] = await Promise.all([
+    fetchWithRetry(ACTIVE_SITEMAP_URL, {}, 4, 'text'),
+    fetchWithRetry(PAUSED_SITEMAP_URL, {}, 4, 'text'),
+  ]);
+  const activeUrls = sitemapUrls(activeSitemapXml);
+  const pausedUrls = sitemapUrls(pausedSitemapXml);
+  console.log(`${activeUrls.length} activas; ${pausedUrls.length} por encargo.`);
   if (!activeUrls.length) throw new Error('El sitemap activo no devolvió URLs.');
+  if (!pausedUrls.length) throw new Error('El sitemap por encargo no devolvió URLs.');
 
-  const inspectionSample = buildInspectionSample({
-    sitemapUrls: activeUrls,
+  const activeSet = new Set(activeUrls);
+  const overlap = pausedUrls.filter((page) => activeSet.has(page));
+  if (overlap.length) {
+    throw new Error(`Los sitemaps activo y por encargo se superponen en ${overlap.length} URLs.`);
+  }
+
+  const sitemapCohorts = {
+    schemaVersion: 1,
+    extractedAt,
+    activeSitemapUrl: ACTIVE_SITEMAP_URL,
+    byRequestSitemapUrl: PAUSED_SITEMAP_URL,
+    activeUrlCount: activeUrls.length,
+    byRequestUrlCount: pausedUrls.length,
+    overlapCount: overlap.length,
+  };
+  await writeFile(
+    path.join(OUTPUT_DIR, 'sitemap-cohorts.json'),
+    `${JSON.stringify(sitemapCohorts, null, 2)}\n`,
+  );
+  manifest.reports.push({
+    type: 'sitemap-cohorts',
+    rowCount: activeUrls.length + pausedUrls.length,
+    json: 'sitemap-cohorts.json',
+  });
+
+  const inspectionSample = buildCohortInspectionSample({
+    activeSitemapUrls: activeUrls,
+    pausedSitemapUrls: pausedUrls,
     pageRows: analyticsReports.get('page'),
     ctrOpportunities: ctrReport.rows,
     size: inspectionSampleSize,
   });
-  console.log(`Inspeccionando ${inspectionSample.length} fichas con concurrencia ${INSPECTION_CONCURRENCY}...`);
+  console.log(`Inspeccionando ${inspectionSample.length} fichas activas/por encargo con concurrencia ${INSPECTION_CONCURRENCY}...`);
   const inspections = await mapWithConcurrency(
     inspectionSample,
     INSPECTION_CONCURRENCY,
@@ -330,12 +388,15 @@ async function main() {
   );
   const inspectionSummary = summarizeInspections(inspections);
   const inspectionReport = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     siteUrl,
-    sitemapUrl: ACTIVE_SITEMAP_URL,
+    sitemapUrls: {
+      active: ACTIVE_SITEMAP_URL,
+      byRequest: PAUSED_SITEMAP_URL,
+    },
     extractedAt,
     sampleSize: inspectionSample.length,
-    sampleMethod: 'CTR/alta demanda + vistas en Search + activas sin impresiones; selección estable por URL',
+    sampleMethod: '50/50 activas y por encargo cuando hay volumen; dentro de cada cohorte: CTR/alta demanda + vistas en Search + sin impresiones; selección estable por URL',
     summary: inspectionSummary,
     rows: inspections,
   };
@@ -346,6 +407,7 @@ async function main() {
   manifest.reports.push({
     type: 'url-inspection-sample',
     rowCount: inspections.length,
+    cohorts: inspectionSummary.cohorts,
     json: 'url-inspection-sample.json',
     csv: 'url-inspection-sample.csv',
   });
@@ -356,6 +418,7 @@ async function main() {
     endDate,
     ctrReport,
     inspectionSummary,
+    sitemapCohorts,
   });
   await Promise.all([
     writeFile(path.join(OUTPUT_DIR, 'report-summary.md'), summaryMarkdown),
