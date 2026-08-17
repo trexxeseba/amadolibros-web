@@ -49,9 +49,46 @@ export const TRANSFER_ACCOUNTS = Object.freeze([
   }),
 ]);
 
+/**
+ * Señal de embudo first-party. No confirma un pago: registra únicamente que
+ * una orden autenticada llegó a recibir las opciones de transferencia.
+ *
+ * El id determinista + INSERT OR IGNORE evita duplicar la conversión si el
+ * comprador recarga, vuelve atrás o el navegador reintenta la solicitud.
+ * No se persisten cuentas bancarias ni datos personales del comprador.
+ */
+export async function recordTransferPaymentInfoViewed({ db, order, payment, now }) {
+  if (!db || !order?.id || !(now instanceof Date) || Number.isNaN(now.getTime())) {
+    return { recorded: false, reason: 'invalid_context' };
+  }
+
+  const payload = JSON.stringify({
+    method: 'bank_transfer',
+    delivery_type: order.delivery_type,
+    list_total_uyu: payment.list_total_uyu,
+    transfer_discount_uyu: payment.transfer_discount_uyu,
+    transfer_total_uyu: payment.transfer_total_uyu,
+  });
+  const result = await db.prepare(
+    "INSERT OR IGNORE INTO order_events " +
+    "(id,order_id,event_type,payload_json,created_at) VALUES (?,?,'transfer_payment_info_viewed',?,?)"
+  ).bind(
+    `transfer-payment-info:${order.id}`,
+    order.id,
+    payload,
+    now.toISOString(),
+  ).run();
+
+  return {
+    recorded: Number(result?.meta?.changes) > 0,
+    duplicate: Number(result?.meta?.changes) === 0,
+  };
+}
+
 export function createTransferOptionsHandler({
   getNow = () => new Date(),
   orderEmails = defaultOrderEmailService,
+  recordPaymentInfoViewed = recordTransferPaymentInfoViewed,
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -144,37 +181,43 @@ export function createTransferOptionsHandler({
 
     const { transferProductsTotal, transferDiscount, transferPayableTotal } =
       calculateTransferTotals({ productsTotal, pickupDiscount, shippingCost });
+    const payment = {
+      method: 'bank_transfer',
+      public_code: order.public_code,
+      currency: order.currency,
+      products_total_uyu: productsTotal,
+      transfer_products_total_uyu: transferProductsTotal,
+      transfer_discount_uyu: transferDiscount,
+      pickup_discount_uyu: pickupDiscount,
+      shipping_cost_uyu: shippingCost,
+      list_total_uyu: payableTotal,
+      transfer_total_uyu: transferPayableTotal,
+      expires_at: order.expires_at,
+    };
 
-    const emailTask = Promise.resolve(orderEmails.sendTransferNotifications({
-      db,
-      env,
-      order,
-      payment: {
-        method: 'bank_transfer',
-        transfer_discount_uyu: transferDiscount,
-        total_uyu: transferPayableTotal,
-      },
-      now,
-    })).catch(error => {
-      console.error('[transfer-options] email task error', safeErrorName(error));
+    // Observabilidad y correos son best-effort. Nunca bloquean ni retrasan la
+    // entrega de los datos de cobro a una orden ya autenticada.
+    const backgroundTask = Promise.all([
+      Promise.resolve().then(() => recordPaymentInfoViewed({ db, order, payment, now })),
+      Promise.resolve().then(() => orderEmails.sendTransferNotifications({
+        db,
+        env,
+        order,
+        payment: {
+          method: payment.method,
+          transfer_discount_uyu: payment.transfer_discount_uyu,
+          total_uyu: payment.transfer_total_uyu,
+        },
+        now,
+      })),
+    ]).catch(error => {
+      console.error('[transfer-options] background task error', safeErrorName(error));
     });
-    if (typeof context.waitUntil === 'function') context.waitUntil(emailTask);
-    else await emailTask;
+    if (typeof context.waitUntil === 'function') context.waitUntil(backgroundTask);
+    else await backgroundTask;
 
     return json({
-      payment: {
-        method: 'bank_transfer',
-        public_code: order.public_code,
-        currency: order.currency,
-        products_total_uyu: productsTotal,
-        transfer_products_total_uyu: transferProductsTotal,
-        transfer_discount_uyu: transferDiscount,
-        pickup_discount_uyu: pickupDiscount,
-        shipping_cost_uyu: shippingCost,
-        list_total_uyu: payableTotal,
-        transfer_total_uyu: transferPayableTotal,
-        expires_at: order.expires_at,
-      },
+      payment,
       accounts: TRANSFER_ACCOUNTS,
     });
   };

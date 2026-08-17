@@ -1,0 +1,118 @@
+name: Checkout funnel daily and manual report
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/checkout-funnel-report.yml'
+      - 'scripts/commerce/checkout-funnel-report.mjs'
+      - 'functions/api/_transfer_options_handler.js'
+  schedule:
+    - cron: '37 11 * * *'
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: Fecha inicial UTC opcional (YYYY-MM-DD). Vacío = últimos 30 días.
+        required: false
+        type: string
+      end_date:
+        description: Fecha final UTC opcional (YYYY-MM-DD). Vacío = hoy.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checkout-funnel-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Build checkout funnel from D1
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Resolve report dates
+        env:
+          INPUT_START_DATE: ${{ inputs.start_date }}
+          INPUT_END_DATE: ${{ inputs.end_date }}
+        run: |
+          if { [ -n "${INPUT_START_DATE:-}" ] && [ -z "${INPUT_END_DATE:-}" ]; } || { [ -z "${INPUT_START_DATE:-}" ] && [ -n "${INPUT_END_DATE:-}" ]; }; then
+            echo "::error::start_date y end_date deben indicarse juntos o dejarse ambos vacíos."
+            exit 1
+          fi
+          if [ -n "${INPUT_START_DATE:-}" ]; then
+            start_date="$INPUT_START_DATE"
+            end_date="$INPUT_END_DATE"
+          else
+            start_date="$(date -u -d '29 days ago' +%F)"
+            end_date="$(date -u +%F)"
+          fi
+          [[ "$start_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::start_date inválida"; exit 1; }
+          [[ "$end_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::end_date inválida"; exit 1; }
+          if [[ "$start_date" > "$end_date" ]]; then
+            echo "::error::start_date no puede ser posterior a end_date"
+            exit 1
+          fi
+          {
+            echo "CHECKOUT_FUNNEL_START_DATE=$start_date"
+            echo "CHECKOUT_FUNNEL_END_DATE=$end_date"
+          } >> "$GITHUB_ENV"
+
+      - name: Query aggregated non-PII checkout rows
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          mkdir -p artifacts/commerce
+          npx wrangler@3.114.17 d1 execute ORDERS_DB --env production --remote --json \
+            --command "WITH event_flags AS (SELECT order_id, MAX(CASE WHEN event_type='transfer_payment_info_viewed' THEN 1 ELSE 0 END) AS transfer_prepared, MAX(CASE WHEN event_type='preference_created' THEN 1 ELSE 0 END) AS mp_prepared FROM order_events WHERE event_type IN ('transfer_payment_info_viewed','preference_created') GROUP BY order_id) SELECT substr(o.created_at,1,10) AS date, o.delivery_type, COUNT(*) AS orders_created, COALESCE(SUM(o.payable_total_uyu),0) AS orders_value_uyu, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 OR COALESCE(f.mp_prepared,0)=1 THEN 1 ELSE 0 END) AS payment_selected_count, SUM(COALESCE(f.transfer_prepared,0)) AS transfer_prepared_count, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 THEN MAX(0, CAST(ROUND(o.products_total_uyu * 0.88) AS INTEGER) - o.pickup_discount_uyu + o.shipping_cost_uyu) ELSE 0 END) AS transfer_prepared_value_uyu, SUM(COALESCE(f.mp_prepared,0)) AS mp_prepared_count, SUM(CASE WHEN o.payment_status='approved' THEN 1 ELSE 0 END) AS checkout_approved_count, SUM(CASE WHEN o.payment_status='approved' THEN o.payable_total_uyu ELSE 0 END) AS checkout_approved_value_uyu, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 AND COALESCE(f.mp_prepared,0)=1 THEN 1 ELSE 0 END) AS both_methods_count FROM orders o LEFT JOIN event_flags f ON f.order_id=o.id WHERE substr(o.created_at,1,10) >= '$CHECKOUT_FUNNEL_START_DATE' AND substr(o.created_at,1,10) <= '$CHECKOUT_FUNNEL_END_DATE' GROUP BY substr(o.created_at,1,10), o.delivery_type ORDER BY date, o.delivery_type" \
+            > artifacts/commerce/checkout-funnel-raw.json
+
+      - name: Build funnel report
+        env:
+          CHECKOUT_FUNNEL_INPUT: artifacts/commerce/checkout-funnel-raw.json
+          CHECKOUT_FUNNEL_OUTPUT_DIR: artifacts/commerce
+        run: node scripts/commerce/checkout-funnel-report.mjs
+
+      - name: Validate report outputs
+        run: |
+          test -s artifacts/commerce/checkout-funnel-summary.json
+          test -s artifacts/commerce/checkout-funnel-daily.csv
+          test -s artifacts/commerce/checkout-funnel-delivery.csv
+          test -s artifacts/commerce/report-summary.md
+          node -e "const r=require('./artifacts/commerce/checkout-funnel-summary.json'); if(r.schemaVersion!==1||!r.total) process.exit(1)"
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkout-funnel-${{ env.CHECKOUT_FUNNEL_START_DATE }}-${{ env.CHECKOUT_FUNNEL_END_DATE }}
+          path: artifacts/commerce/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write run summary
+        if: always()
+        run: |
+          if [ -f artifacts/commerce/report-summary.md ]; then
+            cat artifacts/commerce/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Reporte de checkout incompleto" >> "$GITHUB_STEP_SUMMARY"
+            echo "No se generó el resumen; revisar la consulta D1 y el log." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Datos personales: no se consultan ni exportan" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deploy: no se dispara desde este workflow" >> "$GITHUB_STEP_SUMMARY"
