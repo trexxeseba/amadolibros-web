@@ -5,6 +5,7 @@ import {
 import { resolveConfig } from './_env_config.js';
 import { sendSaleNotification as defaultSendSaleNotification } from './_sale_notification.js';
 import { orderEmailService as defaultOrderEmailService } from './_order_email.js';
+import { sendGa4Purchase as defaultSendGa4Purchase } from './_ga4_measurement.js';
 
 const MAX_BODY_BYTES = 32768;
 
@@ -48,11 +49,11 @@ function normalizeStatus(mpStatus) {
   return null;
 }
 
-async function applyApproved(db, order, payment, now) {
+async function applyApproved(db, order, payment, now, queueAnalytics = false) {
   const eventId  = `mp:${payment.id}:approved`;
   const paidAt   = payment.date_approved || now.toISOString();
   const payload  = JSON.stringify({ payment_id: payment.id, amount: payment.transaction_amount });
-  return db.batch([
+  const statements = [
     db.prepare(
       "UPDATE orders SET payment_status='approved', status='paid', payment_id=?, paid_at=?, updated_at=? " +
       "WHERE id=? AND payment_status!='approved'"
@@ -60,7 +61,23 @@ async function applyApproved(db, order, payment, now) {
     db.prepare(
       "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'payment_approved',?,?)"
     ).bind(eventId, order.id, payload, now.toISOString()),
-  ]);
+  ];
+  if (queueAnalytics) {
+    statements.push(db.prepare(
+      "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'ga4_purchase',?,?)"
+    ).bind(
+      `ga4-purchase:${order.id}`,
+      order.id,
+      JSON.stringify({
+        status: 'pending',
+        transaction_id: order.public_code,
+        payment_id: String(payment.id),
+        queued_at: now.toISOString(),
+      }),
+      now.toISOString(),
+    ));
+  }
+  return db.batch(statements);
 }
 
 async function applyPending(db, order, payment, now) {
@@ -124,6 +141,7 @@ export function createMpWebhookHandler({
   getNow       = () => new Date(),
   saleNotifier = defaultSendSaleNotification,
   orderEmails  = defaultOrderEmailService,
+  purchaseAnalytics = { sendPurchase: defaultSendGa4Purchase },
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -223,7 +241,8 @@ export function createMpWebhookHandler({
         'SELECT id,public_code,status,payment_status,buyer_name,buyer_phone,buyer_email,delivery_type,' +
         'address,locality,department,requested_delivery_date,requested_delivery_from,' +
         'requested_delivery_to,delivery_notes,products_total_uyu,pickup_discount_uyu,' +
-        'shipping_cost_uyu,payable_total_uyu,currency,payment_preference_id ' +
+        'shipping_cost_uyu,payable_total_uyu,currency,payment_preference_id,' +
+        'payment_id,paid_at,ga_client_id,ga_session_id ' +
         'FROM orders WHERE public_code=?'
       )
       .bind(publicCode)
@@ -268,7 +287,7 @@ export function createMpWebhookHandler({
 
     const now = getNow();
     try {
-      if (normalized === 'approved')   await applyApproved(db, order, payment, now);
+      if (normalized === 'approved')   await applyApproved(db, order, payment, now, config.isProduction);
       else if (normalized === 'pending')   await applyPending(db, order, payment, now);
       else if (normalized === 'rejected')  await applyRejected(db, order, payment, now);
       else if (normalized === 'cancelled') await applyCancelled(db, order, payment, now);
@@ -289,6 +308,16 @@ export function createMpWebhookHandler({
           env,
           order,
           payment: { method: 'mercado_pago', total_uyu: order.payable_total_uyu },
+          now,
+        })),
+        Promise.resolve(purchaseAnalytics.sendPurchase({
+          db,
+          env,
+          order: {
+            ...order,
+            payment_id: String(payment.id),
+            paid_at: payment.date_approved || now.toISOString(),
+          },
           now,
         })),
       ]).catch(error => {

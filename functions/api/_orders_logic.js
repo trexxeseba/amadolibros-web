@@ -47,6 +47,17 @@ export function normalizeBuyerEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
+export function normalizeAnalyticsAttribution(value) {
+  if (!isRecord(value)) return { clientId: null, sessionId: null };
+  const rawClientId = typeof value.client_id === 'string' ? value.client_id.trim() : '';
+  const clientId = /^\d{1,20}\.\d{1,20}$/.test(rawClientId) ? rawClientId : null;
+  const rawSessionId = Number(value.session_id);
+  const sessionId = Number.isSafeInteger(rawSessionId) && rawSessionId > 0
+    ? rawSessionId
+    : null;
+  return { clientId, sessionId };
+}
+
 export function validateBody(body) {
   if (!isRecord(body)) return 'Body inválido.';
 

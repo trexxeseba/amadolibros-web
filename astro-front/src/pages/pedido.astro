@@ -101,7 +101,7 @@ const WA_HREF =
               typeof window.AmadoAnalytics.trackCommerce === 'function') {
             window.AmadoAnalytics.trackCommerce('purchase', {
               transactionId: data.order.public_code || code,
-              value: data.order.payable_total_uyu,
+              value: Math.max(0, Number(data.order.payable_total_uyu) - Number(data.order.shipping_cost_uyu || 0)),
               shipping: data.order.shipping_cost_uyu,
               paymentType: 'mercado_pago',
               items: data.items,

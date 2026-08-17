@@ -163,12 +163,14 @@ function handler({
   getMerchantOrder = async () => ({ ok: false, code: 'NOT_FOUND' }),
   saleNotifier = async () => ({ ok: true }),
   orderEmails = { sendPaidCustomer: async () => ({ ok: true }) },
+  purchaseAnalytics = { sendPurchase: async () => ({ ok: true }) },
 } = {}) {
   return createMpWebhookHandler({
     mpClient: { getPayment, getMerchantOrder },
     getNow: () => NOW,
     saleNotifier,
     orderEmails,
+    purchaseAnalytics,
   });
 }
 
@@ -757,6 +759,66 @@ test('email-1b: pago aprobado en producción confirma al correo del cliente', as
   assert.equal(calls.length, 1);
   assert.equal(calls[0].order.buyer_email, 'ana@example.com');
   assert.equal(calls[0].payment.method, 'mercado_pago');
+});
+
+test('ga4-1: pago aprobado en producción agenda purchase server-side', async () => {
+  const calls = [];
+  const h = handler({
+    getPayment: async () => basePayment({ collector_id: PROD_COLLECTOR_ID, live_mode: true }),
+    purchaseAnalytics: {
+      sendPurchase: async args => { calls.push(args); return { ok: true }; },
+    },
+  });
+  const db_ = dbMock({ order: baseOrder() });
+  const res = await h({
+    request: makeReq({ host: 'www.amadolibros.com' }),
+    env: {
+      ...PRODUCTION_ENV_CONFIG,
+      MP_WEBHOOK_SECRET: TEST_SECRET,
+      MP_ACCESS_TOKEN: TEST_TOKEN,
+      ORDERS_DB: db_,
+    },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].order.public_code, 'AL-TEST');
+  assert.equal(calls[0].order.paid_at, '2026-07-21T11:00:00.000Z');
+  assert.equal(db_.batches[0].length, 3, 'pago y outbox GA4 deben persistirse en el mismo batch');
+});
+
+test('ga4-2: preview no encola ni envía purchase a GA4', async () => {
+  let calls = 0;
+  const previewEnv = env({ db: { order: baseOrder() } });
+  const h = handler({
+    purchaseAnalytics: {
+      sendPurchase: async () => { calls += 1; return { ok: true }; },
+    },
+  });
+  const res = await h({ request: makeReq(), env: previewEnv });
+  assert.equal(res.status, 200);
+  assert.equal(calls, 0);
+  assert.equal(previewEnv.ORDERS_DB.batches[0].length, 2, 'preview no agrega el outbox GA4');
+});
+
+test('ga4-3: una falla de Google no revierte ni degrada el pago aprobado', async () => {
+  const db_ = dbMock({ order: baseOrder() });
+  const h = handler({
+    getPayment: async () => basePayment({ collector_id: PROD_COLLECTOR_ID, live_mode: true }),
+    purchaseAnalytics: {
+      sendPurchase: async () => ({ ok: false, retryable: true, code: 'GA4_HTTP_503' }),
+    },
+  });
+  const res = await h({
+    request: makeReq({ host: 'www.amadolibros.com' }),
+    env: {
+      ...PRODUCTION_ENV_CONFIG,
+      MP_WEBHOOK_SECRET: TEST_SECRET,
+      MP_ACCESS_TOKEN: TEST_TOKEN,
+      ORDERS_DB: db_,
+    },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(db_.batches[0].length, 3);
 });
 
 test('email-2: pago aprobado en preview no envía notificación interna', async () => {

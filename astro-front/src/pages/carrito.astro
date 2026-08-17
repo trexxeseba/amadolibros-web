@@ -2224,6 +2224,16 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       catch (_) { throw new Error('Error en la verificación. Recargá la página e intentá de nuevo.'); }
     }
 
+    async function attachAnalyticsContext(payload) {
+      try {
+        if (window.AmadoAnalytics && typeof window.AmadoAnalytics.getMeasurementContext === 'function') {
+          var context = await window.AmadoAnalytics.getMeasurementContext(1200);
+          if (context) payload.analytics = context;
+        }
+      } catch (_) {}
+      return payload;
+    }
+
     async function createTransferOrder() {
       var cart = window.AmadoCart.get();
       var deliveryType = getDeliveryType();
@@ -2283,6 +2293,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         payload.shipping = { address: address, locality: locality, department: department };
         if (notes) payload.shipping.notes = notes;
       }
+      await attachAnalyticsContext(payload);
 
       var response = await fetch('/api/orders', {
         method: 'POST',
@@ -2489,6 +2500,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           };
           if (prepNotes) payload.shipping.notes = prepNotes;
         }
+        await attachAnalyticsContext(payload);
 
         var orderData;
         try {

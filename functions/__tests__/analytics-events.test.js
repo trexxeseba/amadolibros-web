@@ -140,3 +140,34 @@ test('trackCommerce normaliza el producto y no duplica purchase al recargar', ()
   assert.equal(params.items[0].item_id, 'MLU123');
   assert.equal(params.items[0].price, 1100);
 });
+
+test('expone client_id y session_id anónimos para atribuir la compra server-side', async () => {
+  const window = {
+    location: {
+      hostname: 'www.amadolibros.com',
+      pathname: '/carrito',
+      href: 'https://www.amadolibros.com/carrito',
+    },
+    dataLayer: [],
+    setTimeout,
+    clearTimeout,
+    gtag(command, _measurementId, field, callback) {
+      if (command !== 'get') return;
+      callback(field === 'client_id' ? '123456789.987654321' : 1786921140);
+    },
+  };
+  const document = {
+    querySelector: () => ({}),
+    createElement: () => ({}),
+    head: { appendChild: () => {} },
+    addEventListener: () => {},
+  };
+  runInNewContext(analytics, {
+    document, window, URL, Set, Date, Object, String, Number, Math, Array, Promise,
+    isFinite, encodeURIComponent,
+  });
+  assert.deepEqual(
+    { ...await window.AmadoAnalytics.getMeasurementContext(500) },
+    { client_id: '123456789.987654321', session_id: 1786921140 },
+  );
+});

@@ -139,6 +139,48 @@
     return true;
   }
 
+  function getMeasurementContext(timeoutMs) {
+    timeoutMs = Math.max(100, Math.min(2000, Number(timeoutMs) || 1200));
+    return new Promise(function (resolve) {
+      if (typeof window.gtag !== 'function') {
+        resolve(null);
+        return;
+      }
+      var settled = false;
+      var values = {};
+      var remaining = 2;
+      var timer = window.setTimeout(function () { finish(); }, timeoutMs);
+
+      function finish() {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        var clientId = String(values.client_id || '').trim();
+        var sessionId = Number(values.session_id);
+        if (!/^\d{1,20}\.\d{1,20}$/.test(clientId)) {
+          resolve(null);
+          return;
+        }
+        var context = { client_id: clientId };
+        if (Number.isSafeInteger(sessionId) && sessionId > 0) context.session_id = sessionId;
+        resolve(context);
+      }
+
+      function receive(name, value) {
+        values[name] = value;
+        remaining -= 1;
+        if (remaining === 0) finish();
+      }
+
+      window.gtag('get', MEASUREMENT_ID, 'client_id', function (value) {
+        receive('client_id', value);
+      });
+      window.gtag('get', MEASUREMENT_ID, 'session_id', function (value) {
+        receive('session_id', value);
+      });
+    });
+  }
+
   function pageContext() {
     var path = window.location.pathname;
     var productMatch = path.match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
@@ -205,6 +247,7 @@
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
+    getMeasurementContext: getMeasurementContext,
   });
 
   document.addEventListener('click', function (event) {

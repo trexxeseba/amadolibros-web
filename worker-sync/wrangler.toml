@@ -38,6 +38,7 @@ INDEXNOW_ENABLED = "true"
 # Clave pública verificada por el archivo homónimo en astro-front/public.
 INDEXNOW_KEY = "944e65e97fd0a8c242c495ccf458d3c3"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
+GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
 # Binding name: CATALOG_R2
@@ -73,5 +74,6 @@ database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
 # CLIENT_SECRET  — secreto OAuth de la app MercadoLibre
 # SYNC_SECRET    — token para rutas internas, incluido GET /bing-webmaster/summary
 # BING_WEBMASTER_API_KEY — secret de la API de Bing Webmaster Tools (solo lectura)
+# GA4_API_SECRET — secret de Measurement Protocol del stream productivo
 # RESEND_API_KEY — envío automático al cliente cuando vuelve el stock
 # (No hay env REFRESH_TOKEN — el token rotativo vive en KV: auth:refresh_token)

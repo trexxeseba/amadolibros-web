@@ -74,6 +74,19 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
 
+      - name: Sync GA4 Measurement Protocol secret to Worker
+        run: |
+          if [ -z "$GA4_API_SECRET" ]; then
+            echo "ERROR: GA4_API_SECRET no está configurada en production."
+            exit 1
+          fi
+          cd worker-sync
+          printf '%s' "$GA4_API_SECRET" | npx wrangler@3 secret put GA4_API_SECRET
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
+
       - name: Wait for Worker propagation
         # Un cambio de código que altera catálogo/feed debe reflejarse en R2
         # inmediatamente después del deploy; no esperamos al cron del día
