@@ -61,6 +61,19 @@ test('categorías y libros activos deben ser urlsets no vacíos y del espacio co
   assert.deepEqual(analyzeSitemapBody(books, 'sitemap-books-paused'), { ok: true });
 });
 
+test('el sitemap pausado rechaza más de 3.000 URLs', () => {
+  const urls = Array.from(
+    { length: 3001 },
+    (_, index) => `<url>${loc(`${BASE}/libro/MLU${index + 1}/libro-${index + 1}`)}</url>`,
+  ).join('');
+  const result = analyzeSitemapBody(
+    xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`),
+    'sitemap-books-paused',
+  );
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /3000/);
+});
+
 test('rechaza priority y changefreq ficticios reintroducidos en sitemaps', () => {
   const body = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>${loc(`${BASE}/libros/literatura`)}<priority>1.0</priority></url></urlset>`);
   const result = analyzeSitemapBody(body, 'sitemap-categories');

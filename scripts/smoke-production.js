@@ -313,8 +313,8 @@ function analyzeSitemapBody(body, kind) {
   }
 
   if (kind === 'sitemap-books-paused') {
-    if (locs.length === 0 || locs.length > 500) {
-      return { ok: false, reason: 'paused books sitemap must contain between 1 and 500 URLs' };
+    if (locs.length === 0 || locs.length > 3000) {
+      return { ok: false, reason: 'paused books sitemap must contain between 1 and 3000 URLs' };
     }
     if (!locs.every(value => value.startsWith(BASE_URL + '/libro/'))) {
       return { ok: false, reason: 'paused books sitemap contains non-product URL' };

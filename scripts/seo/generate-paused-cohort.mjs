@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 import { normalizeIsbnToGtin } from '../../functions/feed.xml.js';
 
-const DEFAULT_LIMIT = 500;
+const DEFAULT_LIMIT = 3000;
 const BOOK_DOMAIN = 'MLU-BOOKS';
 const KNOWN_LANGUAGES = new Set([
   'aleman',
@@ -290,7 +290,7 @@ function cliOptions(argv) {
     else throw new Error(`Argumento desconocido: ${flag}`);
   }
   if (!result.catalog || !result.gsc || !result.output) {
-    throw new Error('Uso: --catalog snapshot.json --gsc search-analytics-page.json --output cohort.js [--limit 500]');
+    throw new Error('Uso: --catalog snapshot.json --gsc search-analytics-page.json --output cohort.js [--limit 3000]');
   }
   return result;
 }
