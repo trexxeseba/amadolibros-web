@@ -1,12 +1,11 @@
+import { isPausedProductInSeoCohort } from './paused-seo-cohort.js';
+
 const GOOGLE_COMMON_CRAWLERS_URL = 'https://developers.google.com/static/crawling/ipranges/common-crawlers.json';
 const GOOGLE_RANGES_KV_KEY = 'seo:crawl-logs-3:google-common-crawlers:v1';
-const PAUSED_SITEMAP_URL = 'https://www.amadolibros.com/sitemap-books-paused.xml';
-const INTERNAL_OBSERVABILITY_HEADER = 'x-amado-internal-observability';
 const FLAG_PREFIX = 'seo:crawl-logs-3:enabled:';
 const FLAG_CACHE_MS = 60_000;
 const RANGE_FRESH_MS = 24 * 60 * 60 * 1000;
 const ISOLATE_RANGE_CACHE_MS = 60 * 60 * 1000;
-const PAUSED_SITEMAP_CACHE_MS = 5 * 60 * 1000;
 const SAMPLE_RATE = 0.01;
 
 export const USEFUL_CRAWL_RATIO_V1 = Object.freeze({
@@ -29,7 +28,6 @@ const STATIC_USEFUL_PATHS = new Set([
 
 let flagCache = new Map();
 let rangeCache = null;
-let pausedSitemapCache = null;
 let schemaReadyPromise = null;
 
 function appEnv(env) {
@@ -119,7 +117,6 @@ export function classifyCrawlRequest(request) {
 }
 
 export function shouldCaptureCrawlRequest(request, classification, randomFn = Math.random) {
-  if (request.headers.get(INTERNAL_OBSERVABILITY_HEADER) === '1') return false;
   const ua = request.headers.get('user-agent') || '';
   if (classification.pattern === 'asset') return false;
   if (classification.legacy) return true;
@@ -291,41 +288,6 @@ function productIdFromRequest(request) {
   }
 }
 
-function pausedIdsFromSitemap(xml) {
-  const ids = new Set();
-  for (const match of String(xml || '').matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) {
-    try {
-      const idMatch = new URL(match[1].replaceAll('&amp;', '&')).pathname.match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
-      if (idMatch) ids.add(idMatch[1].toUpperCase());
-    } catch {
-      // Una URL inválida no invalida todo el sitemap; simplemente se omite.
-    }
-  }
-  return ids;
-}
-
-async function loadPausedSitemapIds(nowMs, fetchFn) {
-  if (pausedSitemapCache && pausedSitemapCache.expiresAt > nowMs) {
-    return pausedSitemapCache.ids;
-  }
-  try {
-    const response = await fetchFn(PAUSED_SITEMAP_URL, {
-      headers: {
-        accept: 'application/xml,text/xml',
-        [INTERNAL_OBSERVABILITY_HEADER]: '1',
-      },
-    });
-    if (!response.ok) throw new Error(`sitemap pausado HTTP ${response.status}`);
-    const ids = pausedIdsFromSitemap(await response.text());
-    if (!ids.size) throw new Error('sitemap pausado sin IDs');
-    pausedSitemapCache = { ids, expiresAt: nowMs + PAUSED_SITEMAP_CACHE_MS };
-    return ids;
-  } catch (error) {
-    console.warn('[SEO-CRAWL-LOGS-3] No se pudo clasificar la cohorte pausada:', error?.message || error);
-    return null;
-  }
-}
-
 export function productLookupStateFromContext(context) {
   const segments = Array.isArray(context?.data?.perf?.segments)
     ? context.data.perf.segments
@@ -337,22 +299,14 @@ export function productLookupStateFromContext(context) {
   return 'unknown';
 }
 
-async function resolveCrawlSegment({
-  request,
-  classification,
-  productLookupState,
-  nowMs,
-  fetchFn,
-}) {
+export function resolveProductCrawlSegment({ request, classification, productLookupState }) {
   if (!classification.pattern.startsWith('libro')) return 'non_product';
   if (productLookupState === 'active') return 'active';
   if (productLookupState !== 'paused') return 'unknown_product';
 
   const productId = productIdFromRequest(request);
   if (!productId) return 'paused_unknown';
-  const pausedIds = await loadPausedSitemapIds(nowMs, fetchFn);
-  if (!pausedIds) return 'paused_unknown';
-  return pausedIds.has(productId) ? 'by_request' : 'paused_other';
+  return isPausedProductInSeoCohort(productId) ? 'by_request' : 'paused_other';
 }
 
 async function ensureSchema(db) {
@@ -431,12 +385,10 @@ export async function recordCrawlRequest({
   const ua = request.headers.get('user-agent') || '';
   const uaGooglebot = isGooglebotUa(ua) ? 1 : 0;
   const verified = await verifyGooglebot(request, env, nowMs, fetchFn);
-  const segment = await resolveCrawlSegment({
+  const segment = resolveProductCrawlSegment({
     request,
     classification,
     productLookupState,
-    nowMs,
-    fetchFn,
   });
   const { bytes, known } = knownContentLength(response);
   const date = new Date(nowMs).toISOString().slice(0, 10);
@@ -510,6 +462,5 @@ export function scheduleCrawlAnalytics(context, response, durationMs = 0) {
 export function resetCrawlAnalyticsCachesForTest() {
   flagCache = new Map();
   rangeCache = null;
-  pausedSitemapCache = null;
   schemaReadyPromise = null;
 }
