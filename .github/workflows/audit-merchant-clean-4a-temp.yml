@@ -1,0 +1,129 @@
+name: Audit Merchant clean 4A temporary
+
+on:
+  push:
+    branches:
+      - agent/audit-merchant-clean-4a
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Authenticate Merchant API
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/content
+          create_credentials_file: false
+
+      - name: Audit actionable item issues
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          mkdir -p artifacts/merchant-clean-4a
+          node <<'NODE'
+          const fs=require('node:fs');
+          const API='https://merchantapi.googleapis.com';
+          const ACCOUNT='5330457716';
+          const TOKEN=process.env.TOKEN;
+          const parent=`accounts/${ACCOUNT}`;
+          const UA='AmadoLibros-MerchantClean4A/1.0';
+
+          async function api(url){
+            const r=await fetch(url,{headers:{Authorization:`Bearer ${TOKEN}`,Accept:'application/json','user-agent':UA},signal:AbortSignal.timeout(60000)});
+            const txt=await r.text(); const data=txt?JSON.parse(txt):{};
+            if(!r.ok) throw new Error(data?.error?.message||`HTTP ${r.status}`); return data;
+          }
+          async function list(endpoint,field,size=1000){
+            const out=[]; let token='';
+            for(let i=0;i<30;i++){
+              const u=new URL(endpoint);u.searchParams.set('pageSize',String(size));if(token)u.searchParams.set('pageToken',token);
+              const d=await api(u); if(Array.isArray(d[field]))out.push(...d[field]);token=String(d.nextPageToken||'');if(!token)return out;
+            }
+            throw new Error('paginación excedida');
+          }
+          function id(v){const s=String(v||'').toUpperCase().trim();return /^MLU\d+$/.test(s)?s:'';}
+          function bucketIssue(issue){
+            const text=[issue?.code,issue?.description,issue?.detail,issue?.attribute,issue?.resolution].filter(Boolean).join(' ').toLowerCase();
+            if(/price|precio/.test(text)) return 'price';
+            if(/utf|encoding|codific/.test(text)) return 'utf8';
+            if(/image|imagen/.test(text) && /small|resolution|low.res|too.small|peque|resoluci/.test(text)) return 'image_small_or_lowres';
+            if(/image|imagen/.test(text) && /broken|unavailable|fetch|crawl|download|invalid/.test(text)) return 'image_broken_or_fetch';
+            if(/crawl|landing|website|webpage|link/.test(text)) return 'landing_or_crawl';
+            return '';
+          }
+          function sourceBucket(source,byName){
+            const m=byName.get(String(source||''))||{};const input=String(m.input||'').toUpperCase();const display=String(m.displayName||'').toUpperCase();
+            if(input==='FILE'||display.includes('PRODUCTS SOURCE 3'))return 'FILE';
+            if(input==='AUTOFEED'||display==='AMADOLIBROS.COM')return 'AUTOFEED';
+            if(input==='API'||display.includes('CONTENT API'))return 'API';
+            return 'OTHER';
+          }
+          function uy(issue){const c=issue?.applicableCountries;return !Array.isArray(c)||!c.length||c.some(x=>String(x).toUpperCase()==='UY');}
+          function feedIds(xml){const s=new Set();for(const m of String(xml).matchAll(/<g:id>(MLU\d+)<\/g:id>/gi))s.add(m[1].toUpperCase());return s;}
+
+          (async()=>{
+            const [sources,products,feedXml]=await Promise.all([
+              list(`${API}/datasources/v1/${parent}/dataSources`,'dataSources',250),
+              list(`${API}/products/v1/${parent}/products`,'products',1000),
+              fetch('https://www.amadolibros.com/feed.xml',{headers:{'user-agent':UA}}).then(r=>r.text()),
+            ]);
+            const sourceMeta=sources.map(s=>({name:String(s.name||''),displayName:String(s.displayName||''),input:String(s.input||'')}));
+            const byName=new Map(sourceMeta.map(s=>[s.name,s]));
+            const liveFeed=feedIds(feedXml);
+            const rows=[];
+            for(const p of products){
+              const offerId=id(p.offerId); if(!offerId)continue;
+              const source=sourceBucket(p.dataSource,byName);
+              for(const issue of (p.productStatus?.itemLevelIssues||[])){
+                if(!uy(issue))continue;
+                const category=bucketIssue(issue); if(!category)continue;
+                rows.push({offerId,source,inLiveFeed:liveFeed.has(offerId),category,code:String(issue.code||''),context:String(issue.reportingContext||''),severity:String(issue.severity||''),attribute:String(issue.attribute||''),description:String(issue.description||issue.detail||'')});
+              }
+            }
+            const groups={};
+            for(const row of rows){
+              const key=`${row.category}|${row.code}|${row.source}`;
+              if(!groups[key])groups[key]={category:row.category,code:row.code,source:row.source,ids:new Set(),contexts:new Set(),severity:row.severity,description:row.description};
+              groups[key].ids.add(row.offerId);groups[key].contexts.add(row.context);
+            }
+            const summaryRows=Object.values(groups).map(g=>({...g,count:g.ids.size,ids:[...g.ids].sort(),contexts:[...g.contexts].filter(Boolean).sort()})).sort((a,b)=>b.count-a.count||a.category.localeCompare(b.category));
+            const byCategory={};
+            for(const r of rows){if(!byCategory[r.category])byCategory[r.category]=new Set();byCategory[r.category].add(r.offerId);}
+            const catCounts=Object.fromEntries(Object.entries(byCategory).map(([k,v])=>[k,v.size]));
+            const report={generatedAt:new Date().toISOString(),processedProducts:products.length,liveFeed:liveFeed.size,issueRows:rows.length,categoryCounts:catCounts,groups:summaryRows.map(g=>({...g,ids:g.ids.slice(0,100)})),rows};
+            fs.writeFileSync('artifacts/merchant-clean-4a/report.json',JSON.stringify(report,null,2));
+            const lines=['# MERCHANT-CLEAN-4A — IDs exactos de problemas corregibles','',`- Productos procesados: **${products.length}**`,`- Feed live: **${liveFeed.size}**`,`- Filas de issues accionables: **${rows.length}**`,'','## Totales únicos por categoría',''];
+            for(const [k,v] of Object.entries(catCounts).sort((a,b)=>b[1]-a[1]))lines.push(`- ${k}: **${v} offer_id**`);
+            lines.push('','## Desglose por código y fuente','', '| Categoría | Código | Fuente | IDs | Contextos | Ejemplos |','| --- | --- | --- | ---: | --- | --- |');
+            for(const g of summaryRows)lines.push(`| ${g.category} | ${g.code||'—'} | ${g.source} | ${g.count} | ${g.contexts.join(', ')||'—'} | ${g.ids.slice(0,8).join(', ')} |`);
+            fs.writeFileSync('artifacts/merchant-clean-4a/report-summary.md',lines.join('\n'));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: merchant-clean-4a-${{ github.run_id }}
+          path: artifacts/merchant-clean-4a/
+          retention-days: 30
+
+      - name: Comment issue 175
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 175 --repo "$GITHUB_REPOSITORY" --body-file artifacts/merchant-clean-4a/report-summary.md
