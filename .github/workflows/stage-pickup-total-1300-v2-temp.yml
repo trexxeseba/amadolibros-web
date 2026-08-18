@@ -1,0 +1,217 @@
+name: Stage correct pickup discount from 1300 total
+
+on:
+  push:
+    branches:
+      - agent/pickup-total-1300-stage2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Apply commercial rule
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def one(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: se esperaba 1 coincidencia y hubo {count}')
+              return text.replace(old, new, 1)
+
+          logic_path = Path('functions/api/_orders_logic.js')
+          logic = logic_path.read_text()
+          logic = one(
+              logic,
+              'export const RETIRO_DISCOUNT         = 150;\n',
+              'export const RETIRO_DISCOUNT         = 150;\n'
+              'export const PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300;\n',
+              'constante backend',
+          )
+          logic = one(
+              logic,
+              'export function calculateTotals(snapshotItems, deliveryType) {\n',
+              'export function qualifiesForPickupDiscount(productsTotal) {\n'
+              '  const total = Number(productsTotal);\n'
+              '  return Number.isFinite(total) &&\n'
+              '    total >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU;\n'
+              '}\n\n'
+              'export function calculateTotals(snapshotItems, deliveryType) {\n',
+              'helper backend',
+          )
+          logic = one(
+              logic,
+              "  if (deliveryType === 'pickup') {\n"
+              "    pickupDiscount = Math.min(RETIRO_DISCOUNT, productsTotal);\n"
+              "  } else {\n",
+              "  if (deliveryType === 'pickup') {\n"
+              "    if (qualifiesForPickupDiscount(productsTotal)) {\n"
+              "      pickupDiscount = Math.min(RETIRO_DISCOUNT, productsTotal);\n"
+              "    }\n"
+              "  } else {\n",
+              'regla backend',
+          )
+          logic_path.write_text(logic)
+
+          cart_path = Path('astro-front/src/pages/carrito.astro')
+          cart = cart_path.read_text()
+          cart = one(
+              cart,
+              '<span class="delivery-opt-badge">Ahorrás $150 retirando aquí</span>',
+              '<span class="delivery-opt-badge">Ahorrás $150 en compras desde $1.300</span>',
+              'copy checkout',
+          )
+          cart = one(
+              cart,
+              '    var RETIRO_DISCOUNT             = 150;\n',
+              '    var RETIRO_DISCOUNT             = 150;\n'
+              '    var PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300;\n',
+              'constante frontend',
+          )
+          subtotal_block = (
+              '    function getSellableSubtotal() {\n'
+              '      if (!window.AmadoCart) return 0;\n'
+              '      return getSellableItems(window.AmadoCart.get()).reduce(function (sum, item) {\n'
+              '        return sum + item.price * item.quantity;\n'
+              '      }, 0);\n'
+              '    }\n'
+          )
+          cart = one(
+              cart,
+              subtotal_block,
+              subtotal_block +
+              '\n'
+              '    function qualifiesForPickupDiscount(subtotal) {\n'
+              '      return Number(subtotal) >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU;\n'
+              '    }\n',
+              'helper frontend',
+          )
+          cart = one(
+              cart,
+              "      var subtotal     = getSellableSubtotal();\n"
+              "      var deliveryType = getDeliveryType();\n"
+              "      var isPickup     = deliveryType === 'pickup';\n",
+              "      var subtotal       = getSellableSubtotal();\n"
+              "      var deliveryType   = getDeliveryType();\n"
+              "      var isPickup       = deliveryType === 'pickup';\n"
+              "      var pickupEligible = qualifiesForPickupDiscount(subtotal);\n",
+              'estado frontend',
+          )
+          cart = one(
+              cart,
+              "      if (isPickup) {\n"
+              "        var total = Math.max(0, subtotal - RETIRO_DISCOUNT);\n"
+              "        if (discountLineEl)      discountLineEl.hidden      = false;\n",
+              "      if (isPickup) {\n"
+              "        var pickupDiscount = pickupEligible ? RETIRO_DISCOUNT : 0;\n"
+              "        var total = Math.max(0, subtotal - pickupDiscount);\n"
+              "        if (discountLineEl)      discountLineEl.hidden      = pickupDiscount === 0;\n",
+              'total visible',
+          )
+          cart_path.write_text(cart)
+
+          pickup_test_path = Path('functions/__tests__/pickup-cx-2.test.js')
+          pickup_test = pickup_test_path.read_text()
+          pickup_test = one(
+              pickup_test,
+              "test('pickup-cx-2: los beneficios se anuncian dentro de su opción', () => {\n"
+              "  assert.match(carrito, /value=\"pickup\"[\\s\\S]*?Ahorrás \\$150 retirando aquí/);\n"
+              "  assert.match(carrito, /value=\"shipping\"[\\s\\S]*?Envío gratis en compras desde \\$1\\.500/);\n"
+              "});\n",
+              "test('pickup-cx-2: el beneficio de retiro se aplica desde $1.300 de compra total', () => {\n"
+              "  assert.match(carrito, /value=\"pickup\"[\\s\\S]*?Ahorrás \\$150 en compras desde \\$1\\.300/);\n"
+              "  assert.match(carrito, /PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300/);\n"
+              "  assert.match(carrito, /Number\\(subtotal\\) >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU/);\n"
+              "  assert.match(carrito, /value=\"shipping\"[\\s\\S]*?Envío gratis en compras desde \\$1\\.500/);\n"
+              "});\n",
+              'test copy checkout',
+          )
+          pickup_test = one(
+              pickup_test,
+              "  assert.match(fn, /totalShippingLineEl\\.hidden\\s*=\\s*true/);\n"
+              "});\n",
+              "  assert.match(fn, /totalShippingLineEl\\.hidden\\s*=\\s*true/);\n"
+              "  assert.match(fn, /pickupDiscount = pickupEligible \\? RETIRO_DISCOUNT : 0/);\n"
+              "  assert.match(fn, /discountLineEl\\.hidden\\s*=\\s*pickupDiscount === 0/);\n"
+              "});\n",
+              'test cálculo visible',
+          )
+          pickup_test_path.write_text(pickup_test)
+
+          orders_path = Path('functions/api/__tests__/orders.test.js')
+          orders = orders_path.read_text()
+          orders = one(
+              orders,
+              '  consolidateItems,\n  dateInTimeZone,\n',
+              '  consolidateItems,\n  calculateTotals,\n  dateInTimeZone,\n  PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU,\n  qualifiesForPickupDiscount,\n',
+              'imports tests',
+          )
+          orders = one(
+              orders,
+              "test('reglas comerciales: retiro, envío pago y umbral inclusivo', async()=>{\n"
+              "  let r=await call(pickup()); assert.equal(r.data.order.payable_total_uyu,3100);\n"
+              "  r=await call(shipping()); assert.equal(r.data.order.payable_total_uyu,1800);\n"
+              "  r=await call(shipping('paid',{items:[{product_id:'G',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,250); assert.equal(r.data.order.payable_total_uyu,1050);\n"
+              "  r=await call(shipping('t',{items:[{product_id:'A',quantity:2}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,2000);\n"
+              "  r=await call(shipping('threshold',{items:[{product_id:'A',quantity:1},{product_id:'T',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1500);\n"
+              "});\n",
+              "test('reglas comerciales: retiro desde 1300 inclusive y envío conserva su umbral', async()=>{\n"
+              "  let r=await call(pickup()); assert.equal(r.data.order.pickup_discount_uyu,150); assert.equal(r.data.order.payable_total_uyu,3100);\n"
+              "  const below=pickup('pickup-below'); below.items=[{product_id:'A',quantity:1}];\n"
+              "  r=await call(below); assert.equal(r.data.order.pickup_discount_uyu,0); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1000);\n"
+              "  const exact=pickup('pickup-exact'); exact.items=[{product_id:'G',quantity:1},{product_id:'T',quantity:1}];\n"
+              "  r=await call(exact); assert.equal(r.data.order.products_total_uyu,1300); assert.equal(r.data.order.pickup_discount_uyu,150); assert.equal(r.data.order.payable_total_uyu,1150);\n"
+              "  r=await call(shipping()); assert.equal(r.data.order.payable_total_uyu,1800);\n"
+              "  r=await call(shipping('paid',{items:[{product_id:'G',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,250); assert.equal(r.data.order.payable_total_uyu,1050);\n"
+              "  r=await call(shipping('t',{items:[{product_id:'A',quantity:2}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,2000);\n"
+              "  r=await call(shipping('threshold',{items:[{product_id:'A',quantity:1},{product_id:'T',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1500);\n"
+              "});\n\n"
+              "test('retiro: el umbral usa el total de productos y es inclusivo', ()=>{\n"
+              "  assert.equal(PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU,1300);\n"
+              "  assert.equal(qualifiesForPickupDiscount(1299),false);\n"
+              "  assert.equal(qualifiesForPickupDiscount(1300),true);\n"
+              "  const below=[{unit_price_uyu:1299,line_total_uyu:1299}];\n"
+              "  assert.deepEqual(calculateTotals(below,'pickup'),{productsTotal:1299,pickupDiscount:0,shippingCost:0,payableTotal:1299});\n"
+              "  const exact=[{unit_price_uyu:800,line_total_uyu:800},{unit_price_uyu:500,line_total_uyu:500}];\n"
+              "  assert.deepEqual(calculateTotals(exact,'pickup'),{productsTotal:1300,pickupDiscount:150,shippingCost:0,payableTotal:1150});\n"
+              "});\n",
+              'tests comerciales',
+          )
+          orders = one(
+              orders,
+              "assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);",
+              "assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.pickup_discount_uyu,0); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1000);",
+              'precio navegador',
+          )
+          orders_path.write_text(orders)
+          PY
+
+      - name: Validate full project
+        run: |
+          node --check functions/api/_orders_logic.js
+          node --experimental-sqlite --test functions/api/__tests__/orders.test.js functions/__tests__/pickup-cx-2.test.js
+          bash scripts/validate-ci.sh
+
+      - name: Commit corrected files and remove workflow
+        run: |
+          rm .github/workflows/stage-pickup-total-1300-v2-temp.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m 'Aplicar ahorro de retiro desde 1300 de compra total'
+          git push origin HEAD:agent/pickup-total-1300-stage2
