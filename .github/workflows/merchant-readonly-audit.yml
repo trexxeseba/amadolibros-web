@@ -1,0 +1,104 @@
+name: Merchant Center read-only diagnostics
+
+on:
+  push:
+    branches:
+      - agent/merchant-readonly-diagnostics
+    paths:
+      - '.github/workflows/merchant-readonly-audit.yml'
+      - 'scripts/commerce/merchant-readonly-audit.mjs'
+      - 'functions/__tests__/merchant-readonly-audit.test.js'
+  pull_request:
+    paths:
+      - '.github/workflows/merchant-readonly-audit.yml'
+      - 'scripts/commerce/merchant-readonly-audit.mjs'
+      - 'functions/__tests__/merchant-readonly-audit.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: merchant-readonly-diagnostics-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Inspect Merchant account without writes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate audit code and read-only contract
+        run: |
+          node --check scripts/commerce/merchant-readonly-audit.mjs
+          node --test functions/__tests__/merchant-readonly-audit.test.js
+
+      - name: Authenticate with Google through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/content
+          create_credentials_file: false
+
+      - name: Run Merchant API audit
+        id: merchant_audit
+        continue-on-error: true
+        env:
+          MERCHANT_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          MERCHANT_ACCOUNT_ID: '5330457716'
+          MERCHANT_PUBLIC_FEED_URL: https://www.amadolibros.com/feed.xml
+          MERCHANT_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/commerce/merchant-readonly-audit.mjs
+
+      - name: Validate generated report
+        if: steps.merchant_audit.outcome == 'success'
+        run: |
+          test -s artifacts/merchant/merchant-readonly-report.json
+          test -s artifacts/merchant/report-summary.md
+          node -e "const r=require('./artifacts/merchant/merchant-readonly-report.json'); if(r.schemaVersion!==1||r.accountId!=='5330457716') process.exit(1)"
+
+      - name: Upload Merchant audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: merchant-readonly-${{ github.run_id }}
+          path: artifacts/merchant/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Write run summary
+        if: always()
+        run: |
+          if [ -f artifacts/merchant/report-summary.md ]; then
+            cat artifacts/merchant/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Merchant Center — auditoría incompleta' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se generó el reporte. Revisar autenticación Workload Identity, API Merchant habilitada y acceso de la cuenta de servicio a Merchant Center.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Cuenta: 5330457716' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Modo: solo lectura; llamadas Merchant API exclusivamente GET' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Deploy: no se ejecuta' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if API audit did not complete
+        if: steps.merchant_audit.outcome != 'success'
+        run: |
+          echo 'La auditoría no pudo completar los endpoints principales de Merchant API.'
+          exit 1
+
+# Ready-for-review: revalida todos los checks requeridos antes del merge.
