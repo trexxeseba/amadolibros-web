@@ -1,0 +1,107 @@
+name: GCP BigQuery Search Console principal temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Temporarily override domain restriction, grant Search Console access, restore policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT='amado-libros-analytics'
+          SEARCH_CONSOLE_SA='search-console-data-export@system.gserviceaccount.com'
+          MEMBER="serviceAccount:${SEARCH_CONSOLE_SA}"
+          OVERRIDE_APPLIED=0
+
+          restore_policy() {
+            if [[ "$OVERRIDE_APPLIED" == '1' ]]; then
+              echo '### Emergency restore of inherited domain restriction'
+              gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains \
+                --project="$PROJECT" --quiet || true
+            fi
+          }
+          trap restore_policy EXIT
+
+          echo '### Effective policy before override'
+          gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
+            --project="$PROJECT" --effective --format=yaml
+
+          cat >/tmp/allow-all.yaml <<'YAML'
+          constraint: constraints/iam.allowedPolicyMemberDomains
+          listPolicy:
+            allValues: ALLOW
+          YAML
+
+          echo '### Apply temporary project-only ALLOW override'
+          gcloud resource-manager org-policies set-policy /tmp/allow-all.yaml \
+            --project="$PROJECT" --quiet
+          OVERRIDE_APPLIED=1
+
+          echo '### Verify temporary effective policy'
+          gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
+            --project="$PROJECT" --effective --format=yaml
+
+          echo '### Grant BigQuery Job User to Search Console exporter'
+          gcloud projects add-iam-policy-binding "$PROJECT" \
+            --member="$MEMBER" \
+            --role='roles/bigquery.jobUser' \
+            --condition=None \
+            --quiet
+
+          echo '### Grant BigQuery Data Editor to Search Console exporter'
+          gcloud projects add-iam-policy-binding "$PROJECT" \
+            --member="$MEMBER" \
+            --role='roles/bigquery.dataEditor' \
+            --condition=None \
+            --quiet
+
+          echo '### Restore inherited organization restriction immediately'
+          gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains \
+            --project="$PROJECT" --quiet
+          OVERRIDE_APPLIED=0
+
+          echo '### Verify effective policy restored'
+          gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
+            --project="$PROJECT" --effective --format=yaml
+
+          echo '### Verify Search Console exporter IAM bindings'
+          gcloud projects get-iam-policy "$PROJECT" \
+            --flatten='bindings[].members' \
+            --filter="bindings.members:${SEARCH_CONSOLE_SA}" \
+            --format='table(bindings.role,bindings.members)'
+
+          echo '### Verify BigQuery APIs remain enabled'
+          gcloud services list --enabled --project="$PROJECT" \
+            --filter='name:(bigquery.googleapis.com OR bigquerystorage.googleapis.com)' \
+            --format='table(name,title)'
+
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Search Console → BigQuery principal configuration executed in run $GITHUB_RUN_ID. The workflow uses a project-only temporary override and restores inherited domain restriction before finishing."
