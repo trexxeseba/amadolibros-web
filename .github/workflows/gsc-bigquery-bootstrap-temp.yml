@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 jobs:
   bootstrap:
@@ -27,49 +28,61 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Enable BigQuery APIs
+      - name: Bootstrap prerequisites
+        id: bootstrap
+        shell: bash
         run: |
-          set -euo pipefail
-          gcloud services enable \
-            bigquery.googleapis.com \
-            bigquerystorage.googleapis.com \
-            --project=amado-libros-analytics
-
-      - name: Grant Search Console export roles
-        run: |
-          set -euo pipefail
-          MEMBER='serviceAccount:search-console-data-export@system.gserviceaccount.com'
+          set +e
           PROJECT='amado-libros-analytics'
-          gcloud projects add-iam-policy-binding "$PROJECT" \
-            --member="$MEMBER" \
-            --role='roles/bigquery.jobUser' \
-            --condition=None \
-            --quiet
-          gcloud projects add-iam-policy-binding "$PROJECT" \
-            --member="$MEMBER" \
-            --role='roles/bigquery.dataEditor' \
-            --condition=None \
-            --quiet
+          MEMBER='serviceAccount:search-console-data-export@system.gserviceaccount.com'
+          : > /tmp/gsc-bq-result.txt
 
-      - name: Verify prerequisites
+          run_cmd() {
+            local label="$1"
+            shift
+            echo "### $label" | tee -a /tmp/gsc-bq-result.txt
+            "$@" >> /tmp/gsc-bq-result.txt 2>&1
+            local code=$?
+            echo "exit_code=$code" | tee -a /tmp/gsc-bq-result.txt
+            echo >> /tmp/gsc-bq-result.txt
+            return $code
+          }
+
+          FAILED=0
+          run_cmd 'Enable BigQuery API' gcloud services enable bigquery.googleapis.com --project="$PROJECT" || FAILED=1
+          run_cmd 'Enable BigQuery Storage API' gcloud services enable bigquerystorage.googleapis.com --project="$PROJECT" || FAILED=1
+          run_cmd 'Grant BigQuery Job User' gcloud projects add-iam-policy-binding "$PROJECT" --member="$MEMBER" --role='roles/bigquery.jobUser' --condition=None --quiet || FAILED=1
+          run_cmd 'Grant BigQuery Data Editor' gcloud projects add-iam-policy-binding "$PROJECT" --member="$MEMBER" --role='roles/bigquery.dataEditor' --condition=None --quiet || FAILED=1
+
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          cat /tmp/gsc-bq-result.txt
+          exit "$FAILED"
+
+      - name: Comment result on tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          echo '=== ENABLED BIGQUERY SERVICES ==='
-          gcloud services list --enabled \
-            --project=amado-libros-analytics \
-            --filter='name:(bigquery.googleapis.com OR bigquerystorage.googleapis.com)' \
-            --format='value(name)'
-          echo '=== SEARCH CONSOLE PRINCIPAL ROLES ==='
-          gcloud projects get-iam-policy amado-libros-analytics \
-            --flatten='bindings[].members' \
-            --filter='bindings.members:search-console-data-export@system.gserviceaccount.com' \
-            --format='table(bindings.role,bindings.members)'
+          {
+            echo '## Resultado bootstrap GSC → BigQuery'
+            echo
+            if [ -f /tmp/gsc-bq-result.txt ]; then
+              echo '```text'
+              cat /tmp/gsc-bq-result.txt
+              echo '```'
+            else
+              echo 'La autenticación o setup falló antes de ejecutar los comandos de bootstrap.'
+            fi
+            echo
+            echo "Workflow conclusion source: commit $GITHUB_SHA"
+          } > /tmp/comment.md
+          gh issue comment 170 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
 
       - name: Summary
         if: always()
         run: |
           echo '## GSC BigQuery bootstrap' >> "$GITHUB_STEP_SUMMARY"
           echo '- Project: `amado-libros-analytics`' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Search Console export principal: `search-console-data-export@system.gserviceaccount.com`' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Search Console principal: `search-console-data-export@system.gserviceaccount.com`' >> "$GITHUB_STEP_SUMMARY"
           echo '- Required roles: `roles/bigquery.jobUser`, `roles/bigquery.dataEditor`' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Dataset is intentionally NOT pre-created: Search Console creates it on first export after destination configuration.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Search Console creates the dataset on the first export; this workflow does not pre-create it.' >> "$GITHUB_STEP_SUMMARY"
