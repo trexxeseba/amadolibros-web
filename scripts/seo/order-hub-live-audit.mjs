@@ -38,6 +38,19 @@ function uniqueBookIds(html) {
   return new Set(hrefs(html).map(bookId).filter(Boolean));
 }
 
+function sectionHtml(html, className) {
+  const escapedClass = String(className || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(html || '').match(new RegExp(`<section class="${escapedClass}"[\\s\\S]*?<\\/section>`, 'i'))?.[0] || '';
+}
+
+function primaryBookIds(html) {
+  return uniqueBookIds(sectionHtml(html, 'book-grid'));
+}
+
+function priorityBookIds(html) {
+  return uniqueBookIds(sectionHtml(html, 'priority-links'));
+}
+
 function pageLinks(html) {
   const pages = new Set([1]);
   for (const href of hrefs(html)) {
@@ -119,10 +132,20 @@ async function main() {
 
   const desktopBooks = uniqueBookIds(rootDesktop.html);
   const mobileBooks = uniqueBookIds(rootMobile.html);
+  const desktopPrimary = primaryBookIds(rootDesktop.html);
+  const mobilePrimary = primaryBookIds(rootMobile.html);
+  const desktopPriority = priorityBookIds(rootDesktop.html);
+  const mobilePriority = priorityBookIds(rootMobile.html);
   const desktopPages = pageLinks(rootDesktop.html);
   const mobilePages = pageLinks(rootMobile.html);
   if (setDifference(desktopBooks, mobileBooks).length || setDifference(mobileBooks, desktopBooks).length) {
     failures.push('Mobile y desktop no entregan las mismas fichas en el HTML SSR.');
+  }
+  if (setDifference(desktopPrimary, mobilePrimary).length || setDifference(mobilePrimary, desktopPrimary).length) {
+    failures.push('Mobile y desktop no entregan el mismo lote principal del hub.');
+  }
+  if (setDifference(desktopPriority, mobilePriority).length || setDifference(mobilePriority, desktopPriority).length) {
+    failures.push('Mobile y desktop no entregan los mismos enlaces prioritarios.');
   }
   if (setDifference(desktopPages, mobilePages).length || setDifference(mobilePages, desktopPages).length) {
     failures.push('Mobile y desktop no entregan los mismos enlaces de paginación.');
@@ -130,12 +153,24 @@ async function main() {
   for (let page = 1; page <= expectedPages; page += 1) {
     if (!desktopPages.has(page)) failures.push(`La portada del hub no enlaza la página ${page}.`);
   }
+  if (expectedPages > 1 && desktopPriority.size === 0) {
+    failures.push('La portada del hub no publica enlaces prioritarios a fichas con demanda GSC.');
+  }
+  const priorityOutsideSitemap = setDifference(desktopPriority, sitemapIds);
+  if (priorityOutsideSitemap.length) {
+    failures.push(`${priorityOutsideSitemap.length} enlaces prioritarios no pertenecen al sitemap pausado.`);
+  }
+  const priorityDuplicatedOnPageOne = [...desktopPriority].filter(id => desktopPrimary.has(id));
+  if (priorityDuplicatedOnPageOne.length) {
+    failures.push(`${priorityDuplicatedOnPageOne.length} enlaces prioritarios duplican fichas ya visibles en el primer lote.`);
+  }
 
   const pageNumbers = Array.from({ length: expectedPages }, (_, index) => index + 1);
   const pages = await mapConcurrent(pageNumbers, async page => {
     const pathname = page === 1 ? '/libros-por-encargo' : `/libros-por-encargo?page=${page}`;
     const result = page === 1 ? rootDesktop : await fetchHtml(pathname);
-    const ids = uniqueBookIds(result.html);
+    const ids = primaryBookIds(result.html);
+    const extraIds = setDifference(uniqueBookIds(result.html), ids);
     const expectedCanonical = `${PRODUCTION_ORIGIN}${pathname}`;
     const metaRobots = robots(result.html);
     const xRobots = String(result.headers['x-robots-tag'] || '').toLowerCase();
@@ -148,7 +183,10 @@ async function main() {
       failures.push(`${pathname} canonicalizó a ${canonical(result.html) || 'vacío'}.`);
     }
     if (ids.size !== expectedItems) {
-      failures.push(`${pathname} enlaza ${ids.size} fichas únicas; se esperaban ${expectedItems}.`);
+      failures.push(`${pathname} enlaza ${ids.size} fichas principales únicas; se esperaban ${expectedItems}.`);
+    }
+    if (page > 1 && extraIds.length) {
+      failures.push(`${pathname} agrega ${extraIds.length} enlaces de ficha fuera de su lote principal.`);
     }
     if (/"@type"\s*:\s*"Offer"|"offers"\s*:|priceCurrency/.test(result.html)) {
       failures.push(`${pathname} publica una oferta o precio para libros por encargo.`);
@@ -165,7 +203,8 @@ async function main() {
 
     return {
       page, pathname, status: result.status, canonical: canonical(result.html),
-      robots: metaRobots, xRobotsTag: xRobots, uniqueBookLinks: ids.size, ids: [...ids],
+      robots: metaRobots, xRobotsTag: xRobots, uniqueBookLinks: ids.size,
+      extraBookLinks: extraIds.length, ids: [...ids],
     };
   });
 
@@ -179,16 +218,16 @@ async function main() {
   }
   const missingFromHub = setDifference(sitemapIds, allIds);
   const outsideSitemap = setDifference(allIds, sitemapIds);
-  if (duplicateIds.size) failures.push(`${duplicateIds.size} fichas aparecen en más de una página del hub.`);
-  if (missingFromHub.length) failures.push(`${missingFromHub.length} fichas del sitemap pausado no tienen enlace desde el hub.`);
-  if (outsideSitemap.length) failures.push(`${outsideSitemap.length} fichas del hub no pertenecen al sitemap pausado.`);
+  if (duplicateIds.size) failures.push(`${duplicateIds.size} fichas aparecen en más de una página principal del hub.`);
+  if (missingFromHub.length) failures.push(`${missingFromHub.length} fichas del sitemap pausado no tienen enlace desde el grafo principal del hub.`);
+  if (outsideSitemap.length) failures.push(`${outsideSitemap.length} fichas del grafo principal no pertenecen al sitemap pausado.`);
 
   const invalidPage = await fetchHtml(`/libros-por-encargo?page=${expectedPages + 1}`);
   if (invalidPage.status !== 404) failures.push('Una página fuera de rango no devuelve 404.');
   if (!robots(invalidPage.html).includes('noindex')) failures.push('La página fuera de rango no declara noindex.');
 
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     baseUrl: BASE_URL,
     expectIndexable: EXPECT_INDEXABLE,
@@ -197,11 +236,15 @@ async function main() {
     expectedPages,
     pagesAudited: pages.length,
     linkedBooks: allIds.size,
+    priorityBookLinks: desktopPriority.size,
+    priorityBookIds: [...desktopPriority],
     missingFromHub,
     outsideSitemap,
     duplicateIds: [...duplicateIds].sort(),
     mobileParity: {
       books: desktopBooks.size === mobileBooks.size && setDifference(desktopBooks, mobileBooks).length === 0,
+      primary: desktopPrimary.size === mobilePrimary.size && setDifference(desktopPrimary, mobilePrimary).length === 0,
+      priority: desktopPriority.size === mobilePriority.size && setDifference(desktopPriority, mobilePriority).length === 0,
       pages: desktopPages.size === mobilePages.size && setDifference(desktopPages, mobilePages).length === 0,
     },
     invalidPageStatus: invalidPage.status,
@@ -216,6 +259,7 @@ async function main() {
     sitemapBooks: report.sitemapBooks,
     pages: report.pagesAudited,
     linkedBooks: report.linkedBooks,
+    priorityBookLinks: report.priorityBookLinks,
     failures: report.failures.length,
   }));
   console.log(`Escrito: ${outputPath}`);
