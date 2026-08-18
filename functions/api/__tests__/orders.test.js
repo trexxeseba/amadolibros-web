@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { createOrdersHandler } from '../_orders_handler.js';
 import {
   consolidateItems,
+  calculateTotals,
   dateInTimeZone,
+  PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU,
+  qualifiesForPickupDiscount,
   generateFingerprint,
   normalizeAnalyticsAttribution,
   validateBody,
@@ -64,12 +67,26 @@ function handler(fetchCatalog=async()=>CATALOG, now=NOW, verifyTurnstileToken=TS
 
 async function call(body, db=dbMock(), opts={}, h=handler()){ const response=await h(ctx(body,db,opts)); return {response,data:await response.json(),db}; }
 
-test('reglas comerciales: retiro, envío pago y umbral inclusivo', async()=>{
-  let r=await call(pickup()); assert.equal(r.data.order.payable_total_uyu,3100);
+test('reglas comerciales: retiro desde 1300 inclusive y envío conserva su umbral', async()=>{
+  let r=await call(pickup()); assert.equal(r.data.order.pickup_discount_uyu,150); assert.equal(r.data.order.payable_total_uyu,3100);
+  const below=pickup('pickup-below'); below.items=[{product_id:'A',quantity:1}];
+  r=await call(below); assert.equal(r.data.order.pickup_discount_uyu,0); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1000);
+  const exact=pickup('pickup-exact'); exact.items=[{product_id:'G',quantity:1},{product_id:'T',quantity:1}];
+  r=await call(exact); assert.equal(r.data.order.products_total_uyu,1300); assert.equal(r.data.order.pickup_discount_uyu,150); assert.equal(r.data.order.payable_total_uyu,1150);
   r=await call(shipping()); assert.equal(r.data.order.payable_total_uyu,1800);
   r=await call(shipping('paid',{items:[{product_id:'G',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,250); assert.equal(r.data.order.payable_total_uyu,1050);
   r=await call(shipping('t',{items:[{product_id:'A',quantity:2}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,2000);
   r=await call(shipping('threshold',{items:[{product_id:'A',quantity:1},{product_id:'T',quantity:1}]})); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1500);
+});
+
+test('retiro: el umbral usa el total de productos y es inclusivo', ()=>{
+  assert.equal(PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU,1300);
+  assert.equal(qualifiesForPickupDiscount(1299),false);
+  assert.equal(qualifiesForPickupDiscount(1300),true);
+  const below=[{unit_price_uyu:1299,line_total_uyu:1299}];
+  assert.deepEqual(calculateTotals(below,'pickup'),{productsTotal:1299,pickupDiscount:0,shippingCost:0,payableTotal:1299});
+  const exact=[{unit_price_uyu:800,line_total_uyu:800},{unit_price_uyu:500,line_total_uyu:500}];
+  assert.deepEqual(calculateTotals(exact,'pickup'),{productsTotal:1300,pickupDiscount:150,shippingCost:0,payableTotal:1150});
 });
 
 test('expira exactamente en 60 minutos y no expone UUID', async()=>{
@@ -108,7 +125,7 @@ test('notas integran fingerprint', async()=>{
 });
 
 test('precio del navegador se ignora y manda catálogo', async()=>{
-  const body={idempotency_key:'price',cf_turnstile_response:'ok-token',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup', pickup_ack:true,buyer:{name:'T',phone:'099',email:'t@example.com'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.payable_total_uyu,850);
+  const body={idempotency_key:'price',cf_turnstile_response:'ok-token',items:[{product_id:'A',quantity:1,price:99999,title:'falso'}],delivery_type:'pickup', pickup_ack:true,buyer:{name:'T',phone:'099',email:'t@example.com'}}; const r=await call(body); assert.equal(r.data.order.products_total_uyu,1000); assert.equal(r.data.order.pickup_discount_uyu,0); assert.equal(r.data.order.shipping_cost_uyu,0); assert.equal(r.data.order.payable_total_uyu,1000);
 });
 
 test('stock, producto, estado, moneda y precio inválidos devuelven 422', async()=>{

@@ -85,7 +85,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
               <span class="delivery-opt-content">
                 <strong class="delivery-opt-name">Pick up a pasos de Plaza Matriz</strong>
                 <span class="delivery-opt-meta">Lunes a viernes, de 8 a 17 h</span>
-                <span class="delivery-opt-badge">Ahorrás $150 retirando aquí</span>
+                <span class="delivery-opt-badge">Ahorrás $150 en compras desde $1.300</span>
               </span>
             </label>
           </div>
@@ -1216,6 +1216,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
     // ── Constantes ──────────────────────────────────────────────────────
     var RETIRO_DISCOUNT             = 150;
+    var PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300;
     var SHIPPING_COST               = 250;
     var FREE_SHIPPING_THRESHOLD_UYU = 1500;
     var CHECKOUT_DRAFT_KEY           = 'amado-checkout-draft-v2';
@@ -1480,6 +1481,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       }, 0);
     }
 
+    function qualifiesForPickupDiscount(subtotal) {
+      return Number(subtotal) >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU;
+    }
+
     function paymentItemsPayload(cart) {
       return getSellableItems(cart).map(function (item) {
         return { product_id: item.id, quantity: item.quantity };
@@ -1617,9 +1622,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     // ── Calcular y mostrar totales ───────────────────────────────────────
     function updateTotals() {
       if (!window.AmadoCart) return;
-      var subtotal     = getSellableSubtotal();
-      var deliveryType = getDeliveryType();
-      var isPickup     = deliveryType === 'pickup';
+      var subtotal       = getSellableSubtotal();
+      var deliveryType   = getDeliveryType();
+      var isPickup       = deliveryType === 'pickup';
+      var pickupEligible = qualifiesForPickupDiscount(subtotal);
 
       if (subtotalEl) subtotalEl.textContent = fmt.format(subtotal);
 
@@ -1636,8 +1642,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       }
 
       if (isPickup) {
-        var total = Math.max(0, subtotal - RETIRO_DISCOUNT);
-        if (discountLineEl)      discountLineEl.hidden      = false;
+        var pickupDiscount = pickupEligible ? RETIRO_DISCOUNT : 0;
+        var total = Math.max(0, subtotal - pickupDiscount);
+        if (discountLineEl)      discountLineEl.hidden      = pickupDiscount === 0;
         if (totalLineEl)         totalLineEl.hidden         = false;
         if (totalEl)             totalEl.textContent        = fmt.format(total);
         if (shippingNoteEl)      shippingNoteEl.hidden      = true;

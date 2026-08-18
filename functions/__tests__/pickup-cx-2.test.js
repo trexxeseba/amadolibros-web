@@ -17,8 +17,10 @@ test('pickup-cx-2: ninguna forma de entrega viene preseleccionada', () => {
   assert.match(carrito, /return checked \? checked\.value : '';/);
 });
 
-test('pickup-cx-2: los beneficios se anuncian dentro de su opción', () => {
-  assert.match(carrito, /value="pickup"[\s\S]*?Ahorrás \$150 retirando aquí/);
+test('pickup-cx-2: el beneficio de retiro se aplica desde $1.300 de compra total', () => {
+  assert.match(carrito, /value="pickup"[\s\S]*?Ahorrás \$150 en compras desde \$1\.300/);
+  assert.match(carrito, /PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300/);
+  assert.match(carrito, /Number\(subtotal\) >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU/);
   assert.match(carrito, /value="shipping"[\s\S]*?Envío gratis en compras desde \$1\.500/);
 });
 
@@ -31,6 +33,8 @@ test('pickup-cx-2: sin selección o sin productos comprables no muestra descuent
   assert.match(fn, /totalLineEl\.hidden\s*=\s*true/);
   assert.match(fn, /shippingCostLineEl\.hidden\s*=\s*true/);
   assert.match(fn, /totalShippingLineEl\.hidden\s*=\s*true/);
+  assert.match(fn, /pickupDiscount = pickupEligible \? RETIRO_DISCOUNT : 0/);
+  assert.match(fn, /discountLineEl\.hidden\s*=\s*pickupDiscount === 0/);
 });
 
 test('pickup-cx-2: elegir entrega recalcula y habilita el pago', () => {

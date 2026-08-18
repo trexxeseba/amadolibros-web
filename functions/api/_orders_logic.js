@@ -1,4 +1,5 @@
 export const RETIRO_DISCOUNT         = 150;
+export const PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300;
 export const SHIPPING_COST           = 250;
 export const FREE_SHIPPING_THRESHOLD = 1500;
 export const TRANSFER_FACTOR         = 0.88;
@@ -366,13 +367,21 @@ export function validateCartAgainstCatalog(requestItems, catalogItems) {
   });
 }
 
+export function qualifiesForPickupDiscount(productsTotal) {
+  const total = Number(productsTotal);
+  return Number.isFinite(total) &&
+    total >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU;
+}
+
 export function calculateTotals(snapshotItems, deliveryType) {
   const productsTotal = snapshotItems.reduce((sum, item) => sum + item.line_total_uyu, 0);
   let pickupDiscount = 0;
   let shippingCost = 0;
 
   if (deliveryType === 'pickup') {
-    pickupDiscount = Math.min(RETIRO_DISCOUNT, productsTotal);
+    if (qualifiesForPickupDiscount(productsTotal)) {
+      pickupDiscount = Math.min(RETIRO_DISCOUNT, productsTotal);
+    }
   } else {
     shippingCost = productsTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_COST : 0;
   }
