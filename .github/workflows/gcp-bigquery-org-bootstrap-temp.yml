@@ -1,0 +1,93 @@
+name: GCP BigQuery org bootstrap temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Grant exact admin roles and enable BigQuery APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          ORG='1036440070845'
+          PROJECT='amado-libros-analytics'
+          SA='ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com'
+          MEMBER="serviceAccount:${SA}"
+
+          echo '### Organization access before change'
+          gcloud organizations get-iam-policy "$ORG" \
+            --flatten='bindings[].members' \
+            --filter="bindings.members:${SA}" \
+            --format='table(bindings.role,bindings.members)'
+
+          echo '### Grant Organization Policy Administrator to ga4-reporter'
+          gcloud organizations add-iam-policy-binding "$ORG" \
+            --member="$MEMBER" \
+            --role='roles/orgpolicy.policyAdmin' \
+            --condition=None \
+            --quiet
+
+          echo '### Grant Service Usage Admin on project'
+          gcloud projects add-iam-policy-binding "$PROJECT" \
+            --member="$MEMBER" \
+            --role='roles/serviceusage.serviceUsageAdmin' \
+            --condition=None \
+            --quiet
+
+          echo '### Enable BigQuery APIs'
+          gcloud services enable \
+            bigquery.googleapis.com \
+            bigquerystorage.googleapis.com \
+            --project="$PROJECT" \
+            --quiet
+
+          echo '### Enabled services'
+          gcloud services list --enabled --project="$PROJECT" \
+            --filter='name:(bigquery.googleapis.com OR bigquerystorage.googleapis.com)' \
+            --format='table(name,title)'
+
+          echo '### Effective domain-restricted-sharing policy on project'
+          gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
+            --project="$PROJECT" \
+            --effective \
+            --format=yaml
+
+          echo '### Direct project override, if any'
+          gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
+            --project="$PROJECT" \
+            --format=yaml || true
+
+          echo '### Organization policy source'
+          gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
+            --organization="$ORG" \
+            --format=yaml || true
+
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Bootstrap GCP ejecutado en run $GITHUB_RUN_ID. Revisar resultado: Organization Policy Admin, Service Usage Admin, BigQuery APIs y política efectiva de domain-restricted sharing."
