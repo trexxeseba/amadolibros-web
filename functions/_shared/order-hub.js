@@ -3,6 +3,18 @@ import { slugify } from './slug.js';
 
 export const ORDER_HUB_PATH = '/libros-por-encargo';
 export const ORDER_HUB_PAGE_SIZE = 48;
+export const ORDER_HUB_PRIORITY_LINK_LIMIT = 24;
+
+function toHubBook(item) {
+  return Object.freeze({
+    id: String(item.id).toUpperCase(),
+    title: String(item.title),
+    author: item.author ? String(item.author) : '',
+    isbn: item.isbn ? String(item.isbn) : '',
+    thumbnail: item.thumbnail ? String(item.thumbnail) : '',
+    slug: slugify(item.title),
+  });
+}
 
 export function orderHubPath(page = 1) {
   const normalized = Number(page);
@@ -42,14 +54,34 @@ export function orderHubBooks(pausedIndex) {
   return PAUSED_SEO_COHORT
     .map(entry => byId.get(entry.id))
     .filter(item => item?.status === 'paused' && item.id && item.title)
-    .map(item => Object.freeze({
-      id: String(item.id).toUpperCase(),
-      title: String(item.title),
-      author: item.author ? String(item.author) : '',
-      isbn: item.isbn ? String(item.isbn) : '',
-      thumbnail: item.thumbnail ? String(item.thumbnail) : '',
-      slug: slugify(item.title),
-    }));
+    .map(toHubBook);
+}
+
+export function orderHubDemandBooks(pausedIndex, {
+  limit = ORDER_HUB_PRIORITY_LINK_LIMIT,
+  excludeIds = [],
+} = {}) {
+  const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
+  const byId = new Map(pausedItems.map(item => [String(item?.id || '').toUpperCase(), item]));
+  const excluded = new Set(
+    (Array.isArray(excludeIds) ? excludeIds : [])
+      .map(id => String(id || '').trim().toUpperCase())
+      .filter(Boolean),
+  );
+  const normalizedLimit = Math.min(
+    ORDER_HUB_PRIORITY_LINK_LIMIT,
+    Math.max(0, Math.floor(Number(limit) || 0)),
+  );
+  if (normalizedLimit === 0) return [];
+
+  return PAUSED_SEO_COHORT
+    .filter(entry => entry.source === 'gsc-demand' &&
+      ((Number(entry.impressions) || 0) > 0 || (Number(entry.clicks) || 0) > 0))
+    .map(entry => byId.get(entry.id))
+    .filter(item => item?.status === 'paused' && item.id && item.title)
+    .filter(item => !excluded.has(String(item.id).toUpperCase()))
+    .slice(0, normalizedLimit)
+    .map(toHubBook);
 }
 
 export function orderHubPageCount(booksOrCount) {
