@@ -84,11 +84,28 @@ jobs:
           COMMERCE_FAIL_ON_CRITICAL: 'true'
         run: node scripts/commerce/full-commerce-audit.mjs
 
+      - name: Audit by-request hub link graph
+        env:
+          SEO_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          SEO_EXPECT_INDEXABLE: 'false'
+          SEO_OUTPUT_DIR: artifacts/seo-order-hub-preview
+          SEO_CONCURRENCY: '8'
+        run: node scripts/seo/order-hub-live-audit.mjs
+
       - name: Upload Preview report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: commerce-preview-pr-${{ github.event.pull_request.number }}
           path: artifacts/commerce-preview/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload by-request SEO report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-hub-seo-preview-pr-${{ github.event.pull_request.number }}
+          path: artifacts/seo-order-hub-preview/
           if-no-files-found: error
           retention-days: 30
