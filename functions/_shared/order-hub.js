@@ -11,6 +11,15 @@ export function orderHubPath(page = 1) {
     : ORDER_HUB_PATH;
 }
 
+export function orderHubPageForProductId(productId) {
+  const normalizedId = String(productId || '').trim().toUpperCase();
+  if (!normalizedId) return null;
+  const cohortIndex = PAUSED_SEO_COHORT.findIndex(entry => entry.id === normalizedId);
+  return cohortIndex >= 0
+    ? Math.floor(cohortIndex / ORDER_HUB_PAGE_SIZE) + 1
+    : null;
+}
+
 export function parseOrderHubPage(rawValue) {
   if (rawValue == null || rawValue === '') {
     return { present: false, valid: true, page: 1 };
