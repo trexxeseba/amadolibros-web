@@ -21,6 +21,19 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Patch absolute product links in audit parser
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/audit/reconcile-six-universes.mjs')
+          s = p.read_text()
+          old = r'''matchAll(/href=["']\/libro\/(MLU\d+)(?:\/|["'])/gi)'''
+          new = r'''matchAll(/href=["'][^"']*\/libro\/(MLU\d+)(?:\/|["'])/gi)'''
+          if old not in s:
+              raise SystemExit('No se encontró el patrón esperado para parchear')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
       - name: Authenticate to Google Merchant API
         id: google_auth
         uses: google-github-actions/auth@v3
@@ -55,7 +68,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -s artifacts/reconcile-six-universes/report-summary.md ]; then
+            gh issue comment 171 --repo "$GITHUB_REPOSITORY" --body "## Segunda pasada corregida (URLs absolutas)" 
             gh issue comment 171 --repo "$GITHUB_REPOSITORY" --body-file artifacts/reconcile-six-universes/report-summary.md
           else
-            gh issue comment 171 --repo "$GITHUB_REPOSITORY" --body "La auditoría 0A no generó resumen. Revisar el run asociado al commit $GITHUB_SHA."
+            gh issue comment 171 --repo "$GITHUB_REPOSITORY" --body "La segunda pasada 0A no generó resumen. Revisar el run asociado al commit $GITHUB_SHA."
           fi
