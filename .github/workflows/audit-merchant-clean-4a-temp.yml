@@ -31,7 +31,7 @@ jobs:
           access_token_scopes: https://www.googleapis.com/auth/content
           create_credentials_file: false
 
-      - name: Audit actionable item issues
+      - name: Audit exact actionable item issues
         env:
           TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
@@ -42,7 +42,7 @@ jobs:
           const ACCOUNT='5330457716';
           const TOKEN=process.env.TOKEN;
           const parent=`accounts/${ACCOUNT}`;
-          const UA='AmadoLibros-MerchantClean4A/1.0';
+          const UA='AmadoLibros-MerchantClean4A/1.1';
 
           async function api(url){
             const r=await fetch(url,{headers:{Authorization:`Bearer ${TOKEN}`,Accept:'application/json','user-agent':UA},signal:AbortSignal.timeout(60000)});
@@ -58,13 +58,19 @@ jobs:
             throw new Error('paginación excedida');
           }
           function id(v){const s=String(v||'').toUpperCase().trim();return /^MLU\d+$/.test(s)?s:'';}
-          function bucketIssue(issue){
-            const text=[issue?.code,issue?.description,issue?.detail,issue?.attribute,issue?.resolution].filter(Boolean).join(' ').toLowerCase();
-            if(/price|precio/.test(text)) return 'price';
-            if(/utf|encoding|codific/.test(text)) return 'utf8';
-            if(/image|imagen/.test(text) && /small|resolution|low.res|too.small|peque|resoluci/.test(text)) return 'image_small_or_lowres';
-            if(/image|imagen/.test(text) && /broken|unavailable|fetch|crawl|download|invalid/.test(text)) return 'image_broken_or_fetch';
-            if(/crawl|landing|website|webpage|link/.test(text)) return 'landing_or_crawl';
+          function exactCategory(issue){
+            const code=String(issue?.code||'').toLowerCase();
+            const attr=String(issue?.attribute||'').toLowerCase();
+            if(code==='utf8_encoding_error') return 'utf8';
+            if(code==='landing_page_pending_crawl') return 'landing_pending_crawl';
+            if(code==='image_link_pending_crawl') return 'image_pending_crawl';
+            if(code==='image_link_internal_error_fallback') return 'image_internal_error';
+            if(code==='low_image_quality') return 'low_image_quality';
+            if(code==='image_too_small') return 'image_too_small';
+            if(code==='image_too_small_for_high_resolution') return 'image_too_small_highres';
+            if(code==='price_updated') return 'price_updated';
+            if(code.includes('price') || attr==='price') return 'price_missing_or_invalid';
+            if(code==='item_missing_required_attribute' && attr==='price') return 'price_missing_or_invalid';
             return '';
           }
           function sourceBucket(source,byName){
@@ -92,14 +98,14 @@ jobs:
               const source=sourceBucket(p.dataSource,byName);
               for(const issue of (p.productStatus?.itemLevelIssues||[])){
                 if(!uy(issue))continue;
-                const category=bucketIssue(issue); if(!category)continue;
+                const category=exactCategory(issue); if(!category)continue;
                 rows.push({offerId,source,inLiveFeed:liveFeed.has(offerId),category,code:String(issue.code||''),context:String(issue.reportingContext||''),severity:String(issue.severity||''),attribute:String(issue.attribute||''),description:String(issue.description||issue.detail||'')});
               }
             }
             const groups={};
             for(const row of rows){
-              const key=`${row.category}|${row.code}|${row.source}`;
-              if(!groups[key])groups[key]={category:row.category,code:row.code,source:row.source,ids:new Set(),contexts:new Set(),severity:row.severity,description:row.description};
+              const key=`${row.category}|${row.code}|${row.attribute}|${row.source}|${row.inLiveFeed?'live':'not_live'}`;
+              if(!groups[key])groups[key]={category:row.category,code:row.code,attribute:row.attribute,source:row.source,inLiveFeed:row.inLiveFeed,ids:new Set(),contexts:new Set(),severity:row.severity,description:row.description};
               groups[key].ids.add(row.offerId);groups[key].contexts.add(row.context);
             }
             const summaryRows=Object.values(groups).map(g=>({...g,count:g.ids.size,ids:[...g.ids].sort(),contexts:[...g.contexts].filter(Boolean).sort()})).sort((a,b)=>b.count-a.count||a.category.localeCompare(b.category));
@@ -108,10 +114,10 @@ jobs:
             const catCounts=Object.fromEntries(Object.entries(byCategory).map(([k,v])=>[k,v.size]));
             const report={generatedAt:new Date().toISOString(),processedProducts:products.length,liveFeed:liveFeed.size,issueRows:rows.length,categoryCounts:catCounts,groups:summaryRows.map(g=>({...g,ids:g.ids.slice(0,100)})),rows};
             fs.writeFileSync('artifacts/merchant-clean-4a/report.json',JSON.stringify(report,null,2));
-            const lines=['# MERCHANT-CLEAN-4A — IDs exactos de problemas corregibles','',`- Productos procesados: **${products.length}**`,`- Feed live: **${liveFeed.size}**`,`- Filas de issues accionables: **${rows.length}**`,'','## Totales únicos por categoría',''];
+            const lines=['# MERCHANT-CLEAN-4A — segunda pasada precisa','',`- Productos procesados: **${products.length}**`,`- Feed live: **${liveFeed.size}**`,`- Filas de issues exactos: **${rows.length}**`,'','## Totales únicos por código accionable',''];
             for(const [k,v] of Object.entries(catCounts).sort((a,b)=>b[1]-a[1]))lines.push(`- ${k}: **${v} offer_id**`);
-            lines.push('','## Desglose por código y fuente','', '| Categoría | Código | Fuente | IDs | Contextos | Ejemplos |','| --- | --- | --- | ---: | --- | --- |');
-            for(const g of summaryRows)lines.push(`| ${g.category} | ${g.code||'—'} | ${g.source} | ${g.count} | ${g.contexts.join(', ')||'—'} | ${g.ids.slice(0,8).join(', ')} |`);
+            lines.push('','## Desglose exacto','', '| Categoría | Código | Atributo | Fuente | En feed live | IDs | Contextos | Ejemplos |','| --- | --- | --- | --- | --- | ---: | --- | --- |');
+            for(const g of summaryRows)lines.push(`| ${g.category} | ${g.code||'—'} | ${g.attribute||'—'} | ${g.source} | ${g.inLiveFeed?'sí':'no'} | ${g.count} | ${g.contexts.join(', ')||'—'} | ${g.ids.slice(0,8).join(', ')} |`);
             fs.writeFileSync('artifacts/merchant-clean-4a/report-summary.md',lines.join('\n'));
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
