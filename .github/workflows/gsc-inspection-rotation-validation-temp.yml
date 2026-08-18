@@ -1,0 +1,64 @@
+name: GSC inspection rotation temporary validation
+
+on:
+  push:
+    branches:
+      - agent/gsc-url-inspection-rotation
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Run focused unit tests
+        run: node --test functions/__tests__/gsc-inspection-rotation.test.js
+
+      - name: Authenticate with Google
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/webmasters.readonly
+          create_credentials_file: false
+
+      - name: Run 80-URL live validation
+        env:
+          GSC_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GSC_SITE_URL: sc-domain:amadolibros.com
+          GSC_ROTATION_DATE: '2026-08-18'
+          GSC_ACTIVE_DAILY: '20'
+          GSC_BY_REQUEST_DAILY: '60'
+          GSC_INSPECTION_CONCURRENCY: '8'
+          GSC_INSPECTION_OUTPUT_DIR: artifacts/gsc-inspection-validation
+        run: node scripts/seo/gsc-inspection-rotation.mjs
+
+      - name: Comment validation on PR 178
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s artifacts/gsc-inspection-validation/report-summary.md ]; then
+            {
+              echo '## Validación live acotada — PR #178'
+              echo
+              cat artifacts/gsc-inspection-validation/report-summary.md
+            } > /tmp/comment.md
+            gh pr comment 178 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+          else
+            gh pr comment 178 --repo "$GITHUB_REPOSITORY" --body "La validación temporal no generó resumen; revisar run $GITHUB_RUN_ID."
+          fi
