@@ -6,8 +6,11 @@ import { createOrderHubHandler } from '../libros-por-encargo.js';
 import { pageSitemapEntries, STATIC_SITEMAP_PAGES } from '../sitemap-pages.xml.js';
 import {
   ORDER_HUB_PAGE_SIZE,
+  ORDER_HUB_PRIORITY_LINK_LIMIT,
   orderHubBooks,
+  orderHubDemandBooks,
   orderHubPageCount,
+  orderHubPageSlice,
   orderHubPaginationEntries,
   orderHubPath,
   parseOrderHubPage,
@@ -42,6 +45,11 @@ function uniqueBookIds(html) {
   );
 }
 
+function sectionBookIds(html, className) {
+  const section = html.match(new RegExp(`<section class="${className}"[\\s\\S]*?<\\/section>`))?.[0] || '';
+  return uniqueBookIds(section);
+}
+
 test('la cohorte del hub conserva orden estable y excluye activos o no aprobados', () => {
   const approved = PAUSED_SEO_COHORT.slice(0, 3);
   const index = {
@@ -60,6 +68,23 @@ test('la cohorte del hub conserva orden estable y excluye activos o no aprobados
   assert.equal(orderHubPath(3), '/libros-por-encargo?page=3');
 });
 
+test('la prioridad GSC enlaza 24 fichas con demanda real fuera del primer lote', () => {
+  const index = pausedIndex(160);
+  const books = orderHubBooks(index);
+  const firstPage = orderHubPageSlice(books, 1);
+  const firstPageIds = new Set(firstPage.map(book => book.id));
+  const priority = orderHubDemandBooks(index, { excludeIds: [...firstPageIds] });
+  const cohortById = new Map(PAUSED_SEO_COHORT.map(entry => [entry.id, entry]));
+
+  assert.equal(priority.length, ORDER_HUB_PRIORITY_LINK_LIMIT);
+  for (const book of priority) {
+    assert.equal(firstPageIds.has(book.id), false, `duplicado en página 1: ${book.id}`);
+    const entry = cohortById.get(book.id);
+    assert.equal(entry?.source, 'gsc-demand');
+    assert.ok((Number(entry?.impressions) || 0) > 0 || (Number(entry?.clicks) || 0) > 0);
+  }
+});
+
 test('el parser normaliza sólo page=1 y rechaza páginas ambiguas', () => {
   assert.deepEqual(parseOrderHubPage(null), { present: false, valid: true, page: 1 });
   assert.deepEqual(parseOrderHubPage('1'), { present: true, valid: true, page: 1 });
@@ -68,19 +93,39 @@ test('el parser normaliza sólo page=1 y rechaza páginas ambiguas', () => {
   assert.deepEqual(parseOrderHubPage('dos'), { present: true, valid: false, page: null });
 });
 
-test('producción entrega 48 fichas directas, canonical propio y sin Offer inventado', async () => {
-  const handler = createOrderHubHandler({ fetchPaused: async () => pausedIndex(120) });
+test('producción entrega 48 fichas principales, canonical propio y sin Offer inventado', async () => {
+  const index = pausedIndex(120);
+  const handler = createOrderHubHandler({ fetchPaused: async () => index });
   const response = await handler(context('/libros-por-encargo'));
   const html = await response.text();
 
   assert.equal(response.status, 200);
   assert.match(html, /<meta name="robots" content="index, follow">/);
   assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libros-por-encargo">/);
-  assert.equal(uniqueBookIds(html).size, 48);
+  assert.equal(sectionBookIds(html, 'book-grid').size, 48);
   assert.match(html, /href="\/libros-por-encargo\?page=2"/);
   assert.match(html, /href="\/libros-por-encargo\?page=3"/);
   assert.doesNotMatch(html, /"@type":"Offer"|priceCurrency|itemCondition/);
   assert.match(html, /Edición, disponibilidad, precio y plazo a confirmar/);
+});
+
+test('la raíz agrega enlaces prioritarios sin imágenes extra y páginas 2+ no los duplican', async () => {
+  const index = pausedIndex(160);
+  const books = orderHubBooks(index);
+  const firstPage = orderHubPageSlice(books, 1);
+  const expectedPriority = orderHubDemandBooks(index, { excludeIds: firstPage.map(book => book.id) });
+  const handler = createOrderHubHandler({ fetchPaused: async () => index });
+
+  const root = await handler(context('/libros-por-encargo'));
+  const rootHtml = await root.text();
+  const prioritySection = rootHtml.match(/<section class="priority-links"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.deepEqual([...sectionBookIds(rootHtml, 'priority-links')], expectedPriority.map(book => book.id));
+  assert.doesNotMatch(prioritySection, /<img\b/i);
+  assert.equal(uniqueBookIds(rootHtml).size, 48 + expectedPriority.length);
+
+  const pageTwo = await handler(context('/libros-por-encargo?page=2'));
+  const pageTwoHtml = await pageTwo.text();
+  assert.doesNotMatch(pageTwoHtml, /class="priority-links"/);
 });
 
 test('cada página paginada tiene canonical, prev, next y su propio lote estable', async () => {
@@ -116,7 +161,7 @@ test('page=1 redirige y páginas inválidas o fuera de rango devuelven 404 noind
 });
 
 test('Preview es noindex y entrega exactamente los mismos enlaces a mobile y desktop', async () => {
-  const index = pausedIndex(70);
+  const index = pausedIndex(100);
   const handler = createOrderHubHandler({ fetchPaused: async () => index });
   const desktop = await handler(context('/libros-por-encargo', 'preview', 'Mozilla/5.0 desktop'));
   const mobile = await handler(context('/libros-por-encargo', 'preview', 'Mozilla/5.0 Mobile Safari'));
@@ -125,7 +170,11 @@ test('Preview es noindex y entrega exactamente los mismos enlaces a mobile y des
 
   assert.match(desktopHtml, /<meta name="robots" content="noindex, nofollow">/);
   assert.deepEqual([...uniqueBookIds(mobileHtml)], [...uniqueBookIds(desktopHtml)]);
-  assert.equal(uniqueBookIds(desktopHtml).size, 48);
+  assert.equal(sectionBookIds(desktopHtml, 'book-grid').size, 48);
+  assert.deepEqual(
+    [...sectionBookIds(mobileHtml, 'priority-links')],
+    [...sectionBookIds(desktopHtml, 'priority-links')],
+  );
 });
 
 test('si el catálogo pausado falla, el hub devuelve 503 y nunca una página indexable vacía', async () => {
