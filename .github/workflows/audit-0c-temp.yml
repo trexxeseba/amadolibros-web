@@ -1,0 +1,114 @@
+name: Audit 0C legacy product temporary
+
+on:
+  push:
+    branches:
+      - agent/audit-0c-legacy-product
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Audit legacy product URLs
+        run: |
+          mkdir -p artifacts/audit-0c
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { performance } = require('node:perf_hooks');
+          const BASE = 'https://www.amadolibros.com';
+          const slugs = [
+            'solutions-intermediate-workbook-oxford-third-edition',
+            'donde-estas-carabas',
+            'adolescentes-y-problemas-de-aprendizaje',
+            'esperando-al-rey-peridis-novela-historica-medieval',
+            'libro-evaluar-para-aprender-conceptos-e-instrumentos',
+            'las-puertas-de-la-intuicion-cartas-de-oraculo-tarot-mancias',
+            'libro-la-salud-del-aparato-digestivo-segun-santa-hildegarda',
+            'libro-inicie-su-propia-corporacion-garrett-sutton',
+            'desde-hoy-en-adelante-roman-nuestro-mundo-tiene-arreglo',
+            'el-ego-es-tu-enemigo-ryan-holiday',
+            'diccionario-avanzado-primaria-equipo-pedagogico-ediciones-sm',
+            'que-hacemos-con-los-ninos-tdah',
+            'historia-nintendo-evolucion-consola-videojuegos-curiosidades',
+            'el-acuerdo-mary-balogh',
+            'gestionar-diversidades-aulas-instituciones-y-territorios',
+            'los-sembradores-siderales',
+            'tu-droga-adiccion-drogadiccion-puentes-guia',
+            'medieval-tarot-lo-scarabeo',
+            'nuestro-mejor-regalo-roman-jose-carlos',
+            'abundancia-de-pensamiento-palabra-y-obra-marta-salvat',
+            'planeta-adolescente-cao-marcelo-luis'
+          ];
+
+          async function inspect(slug) {
+            const url = `${BASE}/producto/${slug}/`;
+            const start = performance.now();
+            const res = await fetch(url, {
+              headers: { 'user-agent':'AmadoLibros-Audit0C/1.0', 'cache-control':'no-cache' },
+              redirect:'manual', signal: AbortSignal.timeout(30000)
+            });
+            const ttfb = Math.round(performance.now()-start);
+            const location = res.headers.get('location') || '';
+            const body = await res.text();
+            const robotsMeta = String(body).match(/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']+)["']/i)?.[1] || '';
+            const xRobots = res.headers.get('x-robots-tag') || '';
+            const canonical = String(body).match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)?.[1] || '';
+            const goodRedirect = res.status === 301 && /^https:\/\/www\.amadolibros\.com\/libro\/MLU\d+\//i.test(location);
+            const goodGone = res.status === 410 && (robotsMeta.toLowerCase().includes('noindex') || xRobots.toLowerCase().includes('noindex'));
+            return { slug, url, status:res.status, location, robotsMeta, xRobots, canonical, ttfbMs:ttfb, pass:goodRedirect || goodGone };
+          }
+          async function run() {
+            const rows=[];
+            let cursor=0;
+            async function worker(){ while(cursor<slugs.length){ const i=cursor++; try{ rows[i]=await inspect(slugs[i]); }catch(e){ rows[i]={slug:slugs[i],error:String(e?.message||e),pass:false}; } } }
+            await Promise.all(Array.from({length:6},worker));
+            const counts={redirect301:0,gone410:0,other:0,pass:0,fail:0};
+            for(const r of rows){ if(r.status===301) counts.redirect301++; else if(r.status===410) counts.gone410++; else counts.other++; if(r.pass) counts.pass++; else counts.fail++; }
+            fs.writeFileSync('artifacts/audit-0c/report.json', JSON.stringify({generatedAt:new Date().toISOString(),counts,rows},null,2));
+            const lines=[
+              '# Auditoría 0C — URLs legacy /producto', '',
+              `- URLs comprobadas: **${rows.length}**`,
+              `- 301 a ficha canónica actual: **${counts.redirect301}**`,
+              `- 410 Gone + noindex: **${counts.gone410}**`,
+              `- Otros estados: **${counts.other}**`,
+              `- PASS: **${counts.pass}/${rows.length}**`, '',
+              '| Legacy | HTTP | Destino / robots | TTFB |',
+              '| --- | ---: | --- | ---: |'
+            ];
+            for(const r of rows) lines.push(`| /producto/${r.slug}/ | ${r.status ?? 'ERR'} | ${r.location || r.robotsMeta || r.xRobots || r.error || '—'} | ${r.ttfbMs ?? '—'} ms |`);
+            fs.writeFileSync('artifacts/audit-0c/report-summary.md', lines.join('\n'));
+            if(counts.fail) process.exitCode=2;
+          }
+          run().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-0c-${{ github.run_id }}
+          path: artifacts/audit-0c/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Comment issue 173
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s artifacts/audit-0c/report-summary.md ]; then
+            gh issue comment 173 --repo "$GITHUB_REPOSITORY" --body-file artifacts/audit-0c/report-summary.md
+          else
+            gh issue comment 173 --repo "$GITHUB_REPOSITORY" --body "0C no generó resumen; revisar run $GITHUB_RUN_ID."
+          fi
