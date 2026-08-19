@@ -1,0 +1,71 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-ready-check
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Inspect Search Console BigQuery export
+        id: inspect
+        shell: bash
+        run: |
+          set +e
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          OUT=/tmp/gsc-bq.txt
+          : > "$OUT"
+          echo '### Dataset' >> "$OUT"
+          bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >> "$OUT" 2>&1
+          DS_RC=$?
+          echo >> "$OUT"
+          echo "dataset_rc=$DS_RC" >> "$OUT"
+          echo '### Tables' >> "$OUT"
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" >> "$OUT" 2>&1
+          LS_RC=$?
+          echo >> "$OUT"
+          echo "tables_rc=$LS_RC" >> "$OUT"
+          READY=0
+          if [[ $DS_RC -eq 0 && $LS_RC -eq 0 ]]; then
+            TABLES=$(bq --project_id="$PROJECT" ls --format=json "$PROJECT:$DATASET" 2>/dev/null | tr -d '\n')
+            echo "tables_json=$TABLES" >> "$OUT"
+            HAS_EXPORTLOG=$(printf '%s' "$TABLES" | grep -c 'ExportLog')
+            HAS_URL=$(printf '%s' "$TABLES" | grep -c 'searchdata_url_impression')
+            HAS_SITE=$(printf '%s' "$TABLES" | grep -c 'searchdata_site_impression')
+            echo "has_exportlog=$HAS_EXPORTLOG has_url=$HAS_URL has_site=$HAS_SITE" >> "$OUT"
+            if [[ $HAS_EXPORTLOG -gt 0 && $HAS_URL -gt 0 && $HAS_SITE -gt 0 ]]; then
+              echo '### Row counts' >> "$OUT"
+              bq --project_id="$PROJECT" query --use_legacy_sql=false --format=prettyjson \
+                "SELECT 'ExportLog' table_name, COUNT(*) rows FROM \`$PROJECT.$DATASET.ExportLog\` UNION ALL SELECT 'searchdata_url_impression', COUNT(*) FROM \`$PROJECT.$DATASET.searchdata_url_impression\` UNION ALL SELECT 'searchdata_site_impression', COUNT(*) FROM \`$PROJECT.$DATASET.searchdata_site_impression\`" >> "$OUT" 2>&1
+              Q_RC=$?
+              echo "query_rc=$Q_RC" >> "$OUT"
+              if [[ $Q_RC -eq 0 ]]; then READY=1; fi
+            fi
+          fi
+          echo "ready=$READY" >> "$OUT"
+          cat "$OUT"
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '## GSC BigQuery readiness'; echo; echo '```text'; cat /tmp/gsc-bq.txt 2>/dev/null || true; echo '```'; } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
