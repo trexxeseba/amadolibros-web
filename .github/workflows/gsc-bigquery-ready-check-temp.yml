@@ -1,0 +1,48 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check Search Console BigQuery export
+        shell: bash
+        run: |
+          set +e
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+
+          echo '### DATASET'
+          bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"
+          echo "dataset_exit=$?"
+
+          echo '### TABLES'
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET"
+          echo "tables_exit=$?"
+
+          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+            echo "### $T"
+            bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T"
+            echo "show_exit=$?"
+            bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) AS row_count FROM \`$PROJECT.$DATASET.$T\`"
+            echo "count_exit=$?"
+          done
+          exit 0
