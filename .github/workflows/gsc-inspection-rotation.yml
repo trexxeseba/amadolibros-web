@@ -1,0 +1,105 @@
+name: GSC URL Inspection rotation
+
+on:
+  schedule:
+    - cron: '17 12 * * *'
+  workflow_dispatch:
+    inputs:
+      rotation_date:
+        description: Fecha UTC opcional para fijar el bloque (YYYY-MM-DD). Vacío = hoy.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gsc-inspection-rotation
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    name: Inspect rotating active/by-request cohorts
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Authenticate with Google
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/webmasters.readonly
+          create_credentials_file: false
+
+      - name: Resolve rotation date
+        env:
+          INPUT_ROTATION_DATE: ${{ inputs.rotation_date }}
+        run: |
+          set -euo pipefail
+          rotation_date="${INPUT_ROTATION_DATE:-$(date -u +%F)}"
+          [[ "$rotation_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || {
+            echo "::error::rotation_date debe usar YYYY-MM-DD"
+            exit 1
+          }
+          echo "GSC_ROTATION_DATE=$rotation_date" >> "$GITHUB_ENV"
+
+      - name: Run rotating URL Inspection
+        env:
+          GSC_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GSC_SITE_URL: sc-domain:amadolibros.com
+          GSC_ACTIVE_SITEMAP_URL: https://www.amadolibros.com/sitemap-books-active.xml
+          GSC_BY_REQUEST_SITEMAP_URL: https://www.amadolibros.com/sitemap-books-paused.xml
+          GSC_ACTIVE_DAILY: '200'
+          GSC_BY_REQUEST_DAILY: '600'
+          GSC_INSPECTION_CONCURRENCY: '8'
+          GSC_INSPECTION_OUTPUT_DIR: artifacts/gsc-inspection-rotation
+        run: node scripts/seo/gsc-inspection-rotation.mjs
+
+      - name: Validate outputs
+        run: |
+          set -euo pipefail
+          test -s artifacts/gsc-inspection-rotation/report.json
+          test -s artifacts/gsc-inspection-rotation/inspection.csv
+          test -s artifacts/gsc-inspection-rotation/report-summary.md
+          node - <<'NODE'
+          const report = require('./artifacts/gsc-inspection-rotation/report.json');
+          if (report.schemaVersion !== 1) throw new Error('schemaVersion inválido');
+          if (!(report.quotaBudget.plannedRequests > 0 && report.quotaBudget.plannedRequests <= 800)) {
+            throw new Error(`Presupuesto de consultas inesperado: ${report.quotaBudget.plannedRequests}`);
+          }
+          if (report.quotaBudget.documentedPerSiteDailyLimit !== 2000) {
+            throw new Error('La guarda documentada de cuota cambió; revisar documentación antes de desplegar.');
+          }
+          NODE
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-inspection-rotation-${{ env.GSC_ROTATION_DATE }}-${{ github.run_id }}
+          path: artifacts/gsc-inspection-rotation/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write summary
+        if: always()
+        run: |
+          if [ -s artifacts/gsc-inspection-rotation/report-summary.md ]; then
+            cat artifacts/gsc-inspection-rotation/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## GSC URL Inspection rotation' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se generó el resumen; revisar el log.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Sólo lectura: no usa Indexing API ni solicita rastreo.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Deploy web: no se dispara desde este workflow.' >> "$GITHUB_STEP_SUMMARY"
