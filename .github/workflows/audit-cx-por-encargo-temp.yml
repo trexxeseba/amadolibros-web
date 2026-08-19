@@ -1,0 +1,124 @@
+name: Audit CX por encargo temporary
+
+on:
+  push:
+    branches:
+      - agent/audit-cx-por-encargo
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Audit top 10 GSC-demand by-request pages
+        run: |
+          mkdir -p artifacts/cx-por-encargo
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { PAUSED_SEO_COHORT } from './functions/_shared/paused-seo-cohort.js';
+
+          const BASE='https://www.amadolibros.com';
+          const demand=PAUSED_SEO_COHORT.filter(r=>r.source==='gsc-demand')
+            .sort((a,b)=>(Number(b.impressions)||0)-(Number(a.impressions)||0) || (Number(b.clicks)||0)-(Number(a.clicks)||0))
+            .slice(0,10);
+          const UA_DESKTOP='Mozilla/5.0 AmadoCXAuditDesktop/1.0';
+          const UA_MOBILE='Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 AmadoCXAuditMobile/1.0';
+
+          function sitemapMap(xml){
+            const map=new Map();
+            for(const m of String(xml).matchAll(/<loc>([^<]+)<\/loc>/gi)){
+              const url=m[1].replaceAll('&amp;','&');
+              const id=url.match(/\/libro\/(MLU\d+)\//i)?.[1]?.toUpperCase();
+              if(id) map.set(id,url);
+            }
+            return map;
+          }
+          function strip(html){
+            return String(html)
+              .replace(/<script[\s\S]*?<\/script>/gi,' ')
+              .replace(/<style[\s\S]*?<\/style>/gi,' ')
+              .replace(/<[^>]+>/g,' ')
+              .replace(/&nbsp;/gi,' ')
+              .replace(/&quot;/gi,'"')
+              .replace(/&amp;/gi,'&')
+              .replace(/\s+/g,' ')
+              .trim();
+          }
+          function robots(html){return String(html).match(/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']+)["']/i)?.[1]||'';}
+          function canonical(html){return String(html).match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)?.[1]||'';}
+          function score(row){
+            const keys=['clearOrder','priceExpectation','timeExpectation','primaryCta','shippingPolicy','trustSignal'];
+            return keys.filter(k=>row[k]).length;
+          }
+          async function fetchPage(url,ua){
+            const start=performance.now();
+            const res=await fetch(url,{headers:{'user-agent':ua,'cache-control':'no-cache'},redirect:'follow',signal:AbortSignal.timeout(30000)});
+            const ttfb=Math.round(performance.now()-start);
+            const html=await res.text();
+            return {res,html,text:strip(html),ttfb};
+          }
+          async function inspect(item,url){
+            try{
+              const [d,m]=await Promise.all([fetchPage(url,UA_DESKTOP),fetchPage(url,UA_MOBILE)]);
+              const text=d.text.toLowerCase();
+              const visibleFirst=text.slice(0,5000);
+              const timeRe=/(\b\d{1,2}\s*(?:a|–|-)\s*\d{1,2}\s*d[ií]as\b|\b\d{1,2}\s*d[ií]as\b|\b\d{1,2}\s*semanas?\b|plazo estimado|demora estimada|tiempo estimado)/i;
+              const clearOrder=/por encargo|podemos (?:intentar )?conseguirlo|buscarlo por encargo/i.test(visibleFirst);
+              const priceExpectation=/precio|cotiz|presupuesto/i.test(visibleFirst);
+              const timeExpectation=timeRe.test(visibleFirst);
+              const primaryCta=/consultar si podemos conseguirlo|consultar por whatsapp|pedir este libro|buscarlo por encargo/i.test(visibleFirst);
+              const shippingPolicy=/href=["']\/politicas#envios["']/i.test(d.html) || /pol[ií]tica de env[ií]os/i.test(visibleFirst);
+              const trustSignal=/amado libros|mercadolibre|env[ií]os a todo uruguay|montevideo/i.test(visibleFirst);
+              const waitlist=/id=["']aviso-stock["']/i.test(d.html);
+              const noPriceOffer=!/<div class=["']price-box["']/i.test(d.html) && !/"offers"\s*:/i.test(d.html);
+              const canonicalUrl=canonical(d.html);
+              const indexable=!/noindex/i.test(robots(d.html)) && !(d.res.headers.get('x-robots-tag')||'').toLowerCase().includes('noindex');
+              const mobileParity=d.text===m.text;
+              const row={
+                id:item.id,impressions:Number(item.impressions)||0,clicks:Number(item.clicks)||0,url,
+                status:d.res.status,indexable,canonical:canonicalUrl,ttfbMs:d.ttfb,
+                clearOrder,priceExpectation,timeExpectation,primaryCta,shippingPolicy,trustSignal,waitlist,noPriceOffer,mobileParity,
+              };
+              row.cxScore=score(row);
+              return row;
+            }catch(e){return {id:item.id,impressions:Number(item.impressions)||0,clicks:Number(item.clicks)||0,url,error:String(e?.message||e),cxScore:0};}
+          }
+
+          const sm=await fetch(`${BASE}/sitemap-books-paused.xml`,{headers:{'user-agent':'AmadoCXAudit/1.0'}}).then(r=>r.text());
+          const urls=sitemapMap(sm);
+          const rows=[];
+          for(const item of demand){
+            const id=String(item.id).toUpperCase();
+            rows.push(await inspect(item,urls.get(id)||`${BASE}/libro/${id}/`));
+          }
+          const ok=rows.filter(r=>!r.error);
+          const count=k=>ok.filter(r=>r[k]).length;
+          const summary={
+            generatedAt:new Date().toISOString(),sample:rows.length,completed:ok.length,
+            clearOrder:count('clearOrder'),priceExpectation:count('priceExpectation'),timeExpectation:count('timeExpectation'),
+            primaryCta:count('primaryCta'),shippingPolicy:count('shippingPolicy'),trustSignal:count('trustSignal'),
+            waitlist:count('waitlist'),noPriceOffer:count('noPriceOffer'),mobileParity:count('mobileParity'),
+            avgScore:ok.length?Math.round(ok.reduce((s,r)=>s+r.cxScore,0)*10/ok.length)/10:0,
+          };
+          fs.writeFileSync('artifacts/cx-por-encargo/report.json',JSON.stringify({summary,rows},null,2));
+          const lines=['# CX-POR-ENCARGO — auditoría live','',`- Fichas inspeccionadas: **${ok.length}/${rows.length}**`,`- Claridad “por encargo”: **${summary.clearOrder}/${ok.length}**`,`- Expectativa de precio/cotización: **${summary.priceExpectation}/${ok.length}**`,`- Plazo/tiempo visible concreto: **${summary.timeExpectation}/${ok.length}**`,`- CTA principal comprensible: **${summary.primaryCta}/${ok.length}**`,`- Política de envíos visible/enlazada: **${summary.shippingPolicy}/${ok.length}**`,`- Señal de confianza: **${summary.trustSignal}/${ok.length}**`,`- Sin precio/Offer ficticio: **${summary.noPriceOffer}/${ok.length}**`,`- Paridad SSR mobile/desktop: **${summary.mobileParity}/${ok.length}**`,`- Score CX medio (6 puntos): **${summary.avgScore}/6**`,'','## Detalle','', '| MLU | Imp. | Clics | Encargo | Precio | Plazo | CTA | Política | Confianza | Score |','| --- | ---: | ---: | --- | --- | --- | --- | --- | --- | ---: |'];
+          for(const r of rows) lines.push(`| ${r.id} | ${r.impressions} | ${r.clicks} | ${r.clearOrder?'✓':'✗'} | ${r.priceExpectation?'✓':'✗'} | ${r.timeExpectation?'✓':'✗'} | ${r.primaryCta?'✓':'✗'} | ${r.shippingPolicy?'✓':'✗'} | ${r.trustSignal?'✓':'✗'} | ${r.cxScore}/6 |`);
+          fs.writeFileSync('artifacts/cx-por-encargo/report-summary.md',lines.join('\n'));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cx-por-encargo-${{ github.run_id }}
+          path: artifacts/cx-por-encargo/
+          retention-days: 30
+      - name: Comment issue 180
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 180 --repo "$GITHUB_REPOSITORY" --body-file artifacts/cx-por-encargo/report-summary.md
