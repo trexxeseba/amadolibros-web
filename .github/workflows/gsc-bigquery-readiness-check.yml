@@ -1,0 +1,111 @@
+name: GSC BigQuery readiness check
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-readiness-check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check Search Console export tables
+        shell: bash
+        run: |
+          set +e
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          echo '### Dataset list probe'
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" > /tmp/tables.json 2>/tmp/tables.err
+          LS_RC=$?
+          if [ "$LS_RC" -ne 0 ]; then
+            echo "GSC_EXPORT_READY=false"
+            echo "DATASET_LIST_RC=$LS_RC"
+            sed -n '1,20p' /tmp/tables.err
+            exit 0
+          fi
+          cat /tmp/tables.json
+          python3 - <<'PY'
+          import json
+          p='/tmp/tables.json'
+          try:
+              rows=json.load(open(p))
+          except Exception as e:
+              print('PARSE_ERROR='+str(e))
+              print('GSC_EXPORT_READY=false')
+              raise SystemExit(0)
+          names=[]
+          for row in rows if isinstance(rows,list) else []:
+              ref=row.get('tableReference',{})
+              tid=ref.get('tableId') or row.get('id') or ''
+              if tid:
+                  names.append(str(tid))
+          print('TABLES=' + ','.join(sorted(names)))
+          required={'ExportLog','searchdata_url_impression','searchdata_site_impression'}
+          present=set(names)
+          print('REQUIRED_PRESENT=' + ','.join(sorted(required & present)))
+          print('REQUIRED_MISSING=' + ','.join(sorted(required - present)))
+          print('TABLE_SET_READY=' + ('true' if required <= present else 'false'))
+          PY
+          TABLE_SET_READY=$(python3 - <<'PY'
+          import json
+          try: rows=json.load(open('/tmp/tables.json'))
+          except Exception: print('false'); raise SystemExit
+          names={(r.get('tableReference',{}).get('tableId') or r.get('id') or '') for r in rows if isinstance(r,dict)}
+          req={'ExportLog','searchdata_url_impression','searchdata_site_impression'}
+          print('true' if req <= names else 'false')
+          PY
+          )
+          if [ "$TABLE_SET_READY" != 'true' ]; then
+            echo 'GSC_EXPORT_READY=false'
+            exit 0
+          fi
+          echo '### ExportLog row probe'
+          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv \
+            "SELECT COUNT(*) AS rows FROM \`$PROJECT.$DATASET.ExportLog\`" > /tmp/exportlog.csv 2>/tmp/exportlog.err
+          Q1=$?
+          cat /tmp/exportlog.csv 2>/dev/null
+          if [ "$Q1" -ne 0 ]; then
+            echo "EXPORTLOG_QUERY_RC=$Q1"
+            sed -n '1,20p' /tmp/exportlog.err
+            echo 'GSC_EXPORT_READY=false'
+            exit 0
+          fi
+          EXPORT_ROWS=$(tail -n 1 /tmp/exportlog.csv | tr -d '\r' | tr -d '"')
+          echo "EXPORTLOG_ROWS=$EXPORT_ROWS"
+          echo '### Impression table row probes'
+          READY_ROWS=0
+          for T in searchdata_url_impression searchdata_site_impression; do
+            bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv \
+              "SELECT COUNT(*) AS rows FROM \`$PROJECT.$DATASET.$T\`" > "/tmp/$T.csv" 2>"/tmp/$T.err"
+            RC=$?
+            if [ "$RC" -ne 0 ]; then
+              echo "$T QUERY_RC=$RC"
+              sed -n '1,10p' "/tmp/$T.err"
+              continue
+            fi
+            N=$(tail -n 1 "/tmp/$T.csv" | tr -d '\r' | tr -d '"')
+            echo "$T ROWS=$N"
+            if [[ "$N" =~ ^[0-9]+$ ]] && [ "$N" -gt 0 ]; then READY_ROWS=$((READY_ROWS+1)); fi
+          done
+          if [[ "$EXPORT_ROWS" =~ ^[0-9]+$ ]] && [ "$EXPORT_ROWS" -gt 0 ] && [ "$READY_ROWS" -ge 1 ]; then
+            echo 'GSC_EXPORT_READY=true'
+          else
+            echo 'GSC_EXPORT_READY=false'
+          fi
+          exit 0
