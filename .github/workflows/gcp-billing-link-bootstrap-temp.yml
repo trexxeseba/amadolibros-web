@@ -24,37 +24,20 @@ jobs:
           service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
           create_credentials_file: true
       - uses: google-github-actions/setup-gcloud@v2
-      - name: Grant billing-link permissions
+      - name: Check GSC BigQuery dataset
         shell: bash
         run: |
-          set -euo pipefail
-          ORG='1036440070845'
-          PROJECT='amado-libros-analytics'
-          SA='ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com'
-          MEMBER="serviceAccount:${SA}"
-
-          gcloud organizations add-iam-policy-binding "$ORG" \
-            --member="$MEMBER" \
-            --role='roles/billing.user' \
-            --condition=None \
-            --quiet
-
-          gcloud projects add-iam-policy-binding "$PROJECT" \
-            --member="$MEMBER" \
-            --role='roles/billing.projectManager' \
-            --condition=None \
-            --quiet
-
-          echo '### Verify billing-link roles'
-          gcloud organizations get-iam-policy "$ORG" \
-            --flatten='bindings[].members' \
-            --filter="bindings.members:${SA} AND bindings.role:billing" \
-            --format='table(bindings.role,bindings.members)'
-          gcloud projects get-iam-policy "$PROJECT" \
-            --flatten='bindings[].members' \
-            --filter="bindings.members:${SA} AND bindings.role:billing" \
-            --format='table(bindings.role,bindings.members)'
+          set +e
+          echo 'GSC_BIGQUERY_READY_CHECK' > /tmp/gsc-bq-check.txt
+          if bq --project_id=amado-libros-analytics show amado-libros-analytics:searchconsole >/tmp/dataset.txt 2>/tmp/dataset.err; then
+            echo 'dataset_present=true' >> /tmp/gsc-bq-check.txt
+            bq --project_id=amado-libros-analytics ls amado-libros-analytics:searchconsole >> /tmp/gsc-bq-check.txt 2>&1
+          else
+            echo 'dataset_present=false' >> /tmp/gsc-bq-check.txt
+            cat /tmp/dataset.err >> /tmp/gsc-bq-check.txt
+          fi
       - name: Comment tracking issue
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Permisos para vincular Cloud Billing preparados en run $GITHUB_RUN_ID: roles/billing.user en organización + roles/billing.projectManager en proyecto."
+        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/gsc-bq-check.txt
