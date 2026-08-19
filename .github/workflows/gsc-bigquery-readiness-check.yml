@@ -38,9 +38,10 @@ jobs:
           echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "bq_path=$(command -v bq || true)"
 
-          # Primero distingue dataset inexistente/permisos insuficientes de un
-          # dataset válido que todavía no recibió tablas de Search Console.
-          if ! bq --project_id="$PROJECT" show --format=prettyjson \
+          # --format es una opción global de bq: debe ir antes del subcomando.
+          # Así evitamos que `ls` entregue la tabla de texto que antes se
+          # intentaba interpretar erróneamente como JSON.
+          if ! bq --project_id="$PROJECT" --format=prettyjson show \
             "$PROJECT:$DATASET" > /tmp/dataset.json 2>/tmp/dataset.err; then
             echo 'status=NOT_READY'
             echo 'reason=dataset_unavailable'
@@ -51,7 +52,7 @@ jobs:
           fi
           echo 'dataset_present=true'
 
-          if ! bq --project_id="$PROJECT" ls --format=prettyjson \
+          if ! bq --project_id="$PROJECT" --format=prettyjson ls \
             "$PROJECT:$DATASET" > /tmp/tables.raw 2>/tmp/tables.err; then
             echo 'status=NOT_READY'
             echo 'reason=table_listing_failed'
@@ -77,6 +78,7 @@ jobs:
                   print('status=NOT_READY')
                   print('reason=table_listing_invalid_json')
                   print(f'parse_error={type(exc).__name__}')
+                  print('raw_prefix=' + raw[:160].replace('\n', ' '))
                   raise SystemExit(0)
 
           if not isinstance(rows, list):
@@ -134,7 +136,7 @@ jobs:
             local target_var="$2"
             local output="/tmp/${table}.csv"
             local error="/tmp/${table}.err"
-            if ! bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv \
+            if ! bq --project_id="$PROJECT" --format=csv query --use_legacy_sql=false \
               "SELECT COUNT(*) AS rows FROM \`$PROJECT.$DATASET.$table\`" \
               > "$output" 2> "$error"; then
               echo "${table}_query=failed"
