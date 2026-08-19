@@ -1,0 +1,57 @@
+name: GCP billing link temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Grant project billing manager and link billing
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT='amado-libros-analytics'
+          BILLING='01CCCC-7850D9-B736F3'
+          SA='ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com'
+          MEMBER="serviceAccount:${SA}"
+
+          echo '### Grant Project Billing Manager on project'
+          gcloud projects add-iam-policy-binding "$PROJECT" \
+            --member="$MEMBER" \
+            --role='roles/billing.projectManager' \
+            --condition=None \
+            --quiet
+
+          echo '### Billing account visibility'
+          gcloud billing accounts describe "$BILLING" --format=yaml || true
+
+          echo '### Attempt project -> billing link'
+          gcloud billing projects link "$PROJECT" \
+            --billing-account="$BILLING" \
+            --quiet
+
+          echo '### Verify billing enabled'
+          gcloud billing projects describe "$PROJECT" --format=yaml
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Intento de vínculo de `amado-libros-analytics` a Cloud Billing `01CCCC-7850D9-B736F3` ejecutado en run $GITHUB_RUN_ID."
