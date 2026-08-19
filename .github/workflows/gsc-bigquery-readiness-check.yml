@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/gsc-bigquery-readiness-check
+  pull_request:
+    paths:
+      - '.github/workflows/gsc-bigquery-readiness-check.yml'
   workflow_dispatch:
 
 permissions:
