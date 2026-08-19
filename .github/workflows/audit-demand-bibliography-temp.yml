@@ -53,7 +53,17 @@ jobs:
           name: demand-bibliography-${{ github.run_id }}
           path: artifacts/demand-bibliography/
           retention-days: 30
-      - name: Comment issue 182
+      - name: Comment summary and verified candidates
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh issue comment 182 --repo "$GITHUB_REPOSITORY" --body-file artifacts/demand-bibliography/summary.md
+        run: |
+          gh issue comment 182 --repo "$GITHUB_REPOSITORY" --body-file artifacts/demand-bibliography/summary.md
+          {
+            echo '## Verified candidates — exact ISBN, ≥2 sources';
+            echo;
+            echo '```json';
+            cat artifacts/demand-bibliography/verified-candidates.json;
+            echo;
+            echo '```';
+          } > /tmp/candidates.md
+          gh issue comment 182 --repo "$GITHUB_REPOSITORY" --body-file /tmp/candidates.md
