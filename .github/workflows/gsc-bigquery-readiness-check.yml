@@ -39,8 +39,6 @@ jobs:
           echo "bq_path=$(command -v bq || true)"
 
           # --format es una opción global de bq: debe ir antes del subcomando.
-          # Así evitamos que `ls` entregue la tabla de texto que antes se
-          # intentaba interpretar erróneamente como JSON.
           if ! bq --project_id="$PROJECT" --format=prettyjson show \
             "$PROJECT:$DATASET" > /tmp/dataset.json 2>/tmp/dataset.err; then
             echo 'status=NOT_READY'
@@ -62,13 +60,19 @@ jobs:
             exit 0
           fi
 
-          # bq puede devolver stdout vacío cuando el dataset existe pero no
-          # contiene tablas. Eso es NOT_READY normal, no un error de JSON.
+          # Con Workload Identity, bq imprime una advertencia de --scopes en
+          # stdout. Se elimina únicamente esa línea conocida antes de parsear.
+          # Si no queda contenido, el dataset existe pero todavía no tiene tablas.
           python3 - <<'PY'
           import json
           from pathlib import Path
 
-          raw = Path('/tmp/tables.raw').read_text(encoding='utf-8').strip()
+          source = Path('/tmp/tables.raw').read_text(encoding='utf-8')
+          lines = [
+              line for line in source.splitlines()
+              if not line.startswith('WARNING: `--scopes` flag')
+          ]
+          raw = '\n'.join(lines).strip()
           if not raw:
               rows = []
           else:
