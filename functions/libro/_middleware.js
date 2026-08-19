@@ -11,11 +11,17 @@ const JSON_LD_RE = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
 const ORDER_BOX_GENERIC_COPY = '<span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>';
 const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Demora estimada: 15 a 20 días desde la confirmación.</b> Salvo demoras del proveedor, courier o aduana.</span>
       <span>Antes de avanzar verificamos disponibilidad, edición y precio.</span>`;
+const ORDER_LEAD_TIME_STYLE_MARKER = '.order-box .order-lead-time{';
 
-function byRequestStyles() {
+function leadTimeStyles() {
   return `
     .order-box .order-lead-time{font-weight:650}
     .order-box .order-lead-time b{display:block;font-weight:850;color:#6b4218}
+  `;
+}
+
+function byRequestStyles() {
+  return `
     .order-hub-links{grid-column:1/-1;padding:1rem 1.1rem;background:#fff8f4;
                      border:1px solid #ecd1c6;border-radius:.65rem;color:#4b342b}
     .order-hub-links h2{font-size:1.05rem;line-height:1.35;color:#18120e;margin-bottom:.35rem}
@@ -56,20 +62,32 @@ function enrichBreadcrumbSchema(html) {
 
 export function enrichByRequestProductHtml(html, productId) {
   const source = String(html || '');
-  const hubPage = orderHubPageForProductId(productId);
-  if (!hubPage || source.includes('class="order-hub-links"')) return source;
+  const hasGenericOrderCopy = source.includes(ORDER_BOX_GENERIC_COPY);
+  const hasLeadTime = source.includes('class="order-lead-time"');
 
-  // La cohorte es estática durante el lote SEO, pero un título puede volver a
-  // stock antes de regenerarla. El HTML SSR es la última verdad comercial:
-  // jamás etiquetar como "por encargo" una ficha que ya muestra stock activo.
-  const isPausedPage = source.includes('class="order-box"') &&
+  // El copy exacto de la caja es la señal de una ficha pausada. Las fichas
+  // activas en moneda no-UYU también usan .order-box, pero tienen otro texto:
+  // nunca deben recibir el plazo de un encargo.
+  const isPausedPage = (hasGenericOrderCopy || hasLeadTime) &&
     !source.includes('class="badge in-stock"');
   if (!isPausedPage) return source;
 
-  // CX-POR-ENCARGO: la demora aprobada ya existe en la operación comercial.
-  // Se muestra sólo en fichas pausadas de la cohorte, sin convertirla en una
-  // promesa rígida ni alterar precio, disponibilidad, Offer o indexación.
-  let result = source.replace(ORDER_BOX_GENERIC_COPY, ORDER_BOX_LEAD_TIME_COPY);
+  // CX-POR-ENCARGO-ALL: el plazo aprobado es una condición operativa común,
+  // no una regla SEO. Se muestra en toda ficha pausada válida, aunque sea
+  // noindex, sin alterar precio, Offer, canonical, robots ni disponibilidad.
+  let result = hasGenericOrderCopy
+    ? source.replace(ORDER_BOX_GENERIC_COPY, ORDER_BOX_LEAD_TIME_COPY)
+    : source;
+  if (!result.includes(ORDER_LEAD_TIME_STYLE_MARKER)) {
+    result = result.replace('</style>', `${leadTimeStyles()}\n  </style>`);
+  }
+
+  const hubPage = orderHubPageForProductId(productId);
+  if (!hubPage || result.includes('class="order-hub-links"')) return result;
+
+  // La cohorte es estática durante el lote SEO, pero un título puede volver a
+  // stock antes de regenerarla. La guarda isPausedPage evita etiquetar como
+  // "por encargo" una ficha que ya volvió a estar disponible.
   result = result.replace(
     BREADCRUMB_RE,
     `<nav>\n  <a href="/">Inicio</a> ›\n  <a href="${ORDER_HUB_PATH}">Libros por encargo</a> ›\n  <span>`,
@@ -106,12 +124,10 @@ function productIdFromRequest(request) {
   }
 }
 
-function responseWithBody(response, body, changed) {
+function responseWithBody(response, body) {
   const headers = new Headers(response.headers);
-  if (changed) {
-    headers.delete('content-length');
-    headers.delete('etag');
-  }
+  headers.delete('content-length');
+  headers.delete('etag');
   return new Response(body, {
     status: response.status,
     statusText: response.statusText,
@@ -121,9 +137,7 @@ function responseWithBody(response, body, changed) {
 
 export async function onRequest(context) {
   const productId = productIdFromRequest(context.request);
-  if (!productId || orderHubPageForProductId(productId) == null) {
-    return context.next();
-  }
+  if (!productId) return context.next();
 
   const response = await context.next();
   const contentType = response.headers.get('content-type') || '';
@@ -131,7 +145,10 @@ export async function onRequest(context) {
     return response;
   }
 
-  const html = await response.text();
+  // Se inspecciona un clon: si la página no cambia (caso normal de fichas
+  // activas), se devuelve la Response original con cuerpo y validators intactos.
+  const html = await response.clone().text();
   const enriched = enrichByRequestProductHtml(html, productId);
-  return responseWithBody(response, enriched, enriched !== html);
+  if (enriched === html) return response;
+  return responseWithBody(response, enriched);
 }
