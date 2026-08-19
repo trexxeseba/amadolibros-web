@@ -40,6 +40,14 @@ function sourceKind(s){
   return input || 'OTHER';
 }
 const sourceMap=new Map(sources.map(s=>[sourceName(s),{id:txt(s.dataSourceId),name:sourceName(s),displayName:txt(s.displayName),input:txt(s.input),kind:sourceKind(s),fetchUri:safeUri(s)}]));
+const fileSource=[...sourceMap.values()].find(s=>s.kind==='FILE')||null;
+let latestFileUpload=null;
+let latestFileUploadError='';
+if(fileSource?.id){
+  try{
+    latestFileUpload=await request(`${API}/datasources/v1/accounts/${ACCOUNT}/dataSources/${fileSource.id}/fileUploads/latest`);
+  }catch(e){latestFileUploadError=String(e?.message||e);}
+}
 function productMlu(p){
   const blob=[p.offerId,p.name,p.legacyLocalId,p.product?.offerId,p.product?.title].map(txt).join(' ');
   return blob.match(/MLU\d+/i)?.[0]?.toUpperCase()||'';
@@ -70,8 +78,17 @@ const feedHasTarget=new RegExp(`<g:id>\\s*${TARGET}\\s*</g:id>`,'i').test(feedXm
 const targetFile=targetProducts.filter(p=>p.source?.kind==='FILE');
 const targetAuto=targetProducts.filter(p=>p.source?.kind==='AUTOFEED');
 const ready=feedHasTarget && targetFile.length>0 && targetFile.some(p=>p.stateUY==='active' || p.stateUY==='pending');
+const fileUpload={
+  processingState:txt(latestFileUpload?.processingState),
+  uploadTime:txt(latestFileUpload?.uploadTime),
+  itemsTotal:txt(latestFileUpload?.itemsTotal),
+  itemsCreated:txt(latestFileUpload?.itemsCreated),
+  itemsUpdated:txt(latestFileUpload?.itemsUpdated),
+  issues:(latestFileUpload?.issues||[]).map(i=>({title:txt(i.title),code:txt(i.code),severity:txt(i.severity),count:txt(i.count)})),
+  error:latestFileUploadError,
+};
 
-const summary={generatedAt:new Date().toISOString(),accountId:ACCOUNT,target:TARGET,feedHasTarget,ready,targetFileCount:targetFile.length,targetAutoCount:targetAuto.length,totalProcessed:products.length,byKind,unique:{auto:auto.size,file:file.size,overlap:overlap.length,autoOnly:autoOnly.length,fileOnly:fileOnly.length},sources:[...sourceMap.values()],targetProducts};
+const summary={generatedAt:new Date().toISOString(),accountId:ACCOUNT,target:TARGET,feedHasTarget,ready,targetFileCount:targetFile.length,targetAutoCount:targetAuto.length,totalProcessed:products.length,byKind,unique:{auto:auto.size,file:file.size,overlap:overlap.length,autoOnly:autoOnly.length,fileOnly:fileOnly.length},sources:[...sourceMap.values()],fileUpload,targetProducts};
 await mkdir(OUT,{recursive:true});
 await writeFile(path.join(OUT,'report.json'),JSON.stringify(summary,null,2));
 const md=[
@@ -82,6 +99,14 @@ const md=[
  `- Target procesado por AUTOFEED: **${targetAuto.length}**`,
  `- Readiness técnico del target: **${ready?'PASS':'NO PASS'}**`,
  `- Productos procesados API: **${products.length}**`,'',
+ '## Último procesamiento FILE','',
+ `- Estado: **${fileUpload.processingState||'—'}**`,
+ `- Upload time: **${fileUpload.uploadTime||'—'}**`,
+ `- Items total: **${fileUpload.itemsTotal||'—'}**`,
+ `- Creados: **${fileUpload.itemsCreated||'—'}**`,
+ `- Actualizados: **${fileUpload.itemsUpdated||'—'}**`,
+ `- Error de lectura: **${fileUpload.error||'ninguno'}**`,
+ `- Issues de archivo: **${fileUpload.issues.length}**`,'',
  '## Cobertura actual por fuente','',
  '| Métrica | Cantidad |','| --- | ---: |',
  `| AUTOFEED IDs únicos | ${auto.size} |`,
