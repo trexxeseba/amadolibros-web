@@ -84,3 +84,5 @@ jobs:
         run: |
           { echo '## GSC BigQuery readiness'; echo; echo '```text'; cat /tmp/gsc-bq.txt 2>/dev/null || echo 'check did not produce report'; echo '```'; } > /tmp/comment.md
           gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+# monitor-ping 2026-08-19T13:54:27Z
