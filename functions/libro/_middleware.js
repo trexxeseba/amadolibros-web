@@ -8,9 +8,14 @@ import {
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
 const JSON_LD_RE = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+const ORDER_BOX_GENERIC_COPY = '<span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>';
+const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Demora estimada: 15 a 20 días desde la confirmación.</b> Salvo demoras del proveedor, courier o aduana.</span>
+      <span>Antes de avanzar verificamos disponibilidad, edición y precio.</span>`;
 
 function byRequestStyles() {
   return `
+    .order-box .order-lead-time{font-weight:650}
+    .order-box .order-lead-time b{display:block;font-weight:850;color:#6b4218}
     .order-hub-links{grid-column:1/-1;padding:1rem 1.1rem;background:#fff8f4;
                      border:1px solid #ecd1c6;border-radius:.65rem;color:#4b342b}
     .order-hub-links h2{font-size:1.05rem;line-height:1.35;color:#18120e;margin-bottom:.35rem}
@@ -61,7 +66,11 @@ export function enrichByRequestProductHtml(html, productId) {
     !source.includes('class="badge in-stock"');
   if (!isPausedPage) return source;
 
-  let result = source.replace(
+  // CX-POR-ENCARGO: la demora aprobada ya existe en la operación comercial.
+  // Se muestra sólo en fichas pausadas de la cohorte, sin convertirla en una
+  // promesa rígida ni alterar precio, disponibilidad, Offer o indexación.
+  let result = source.replace(ORDER_BOX_GENERIC_COPY, ORDER_BOX_LEAD_TIME_COPY);
+  result = result.replace(
     BREADCRUMB_RE,
     `<nav>\n  <a href="/">Inicio</a> ›\n  <a href="${ORDER_HUB_PATH}">Libros por encargo</a> ›\n  <span>`,
   );
