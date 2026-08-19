@@ -65,19 +65,42 @@ jobs:
           gcloud resource-manager org-policies describe iam.allowedPolicyMemberDomains \
             --project="$PROJECT" --effective --format=yaml
 
-          echo '### Grant BigQuery Job User to Search Console exporter'
-          gcloud projects add-iam-policy-binding "$PROJECT" \
-            --member="$MEMBER" \
-            --role='roles/bigquery.jobUser' \
-            --condition=None \
-            --quiet
+          echo '### Wait for IAM backend propagation and grant BigQuery Job User'
+          JOB_GRANTED=0
+          for attempt in $(seq 1 10); do
+            echo "Attempt ${attempt}/10"
+            if gcloud projects add-iam-policy-binding "$PROJECT" \
+              --member="$MEMBER" \
+              --role='roles/bigquery.jobUser' \
+              --condition=None \
+              --quiet; then
+              JOB_GRANTED=1
+              break
+            fi
+            sleep 30
+          done
+          if [[ "$JOB_GRANTED" != '1' ]]; then
+            echo 'BigQuery Job User could not be granted after propagation window.' >&2
+            exit 1
+          fi
 
-          echo '### Grant BigQuery Data Editor to Search Console exporter'
-          gcloud projects add-iam-policy-binding "$PROJECT" \
-            --member="$MEMBER" \
-            --role='roles/bigquery.dataEditor' \
-            --condition=None \
-            --quiet
+          echo '### Grant BigQuery Data Editor'
+          DATA_GRANTED=0
+          for attempt in $(seq 1 5); do
+            if gcloud projects add-iam-policy-binding "$PROJECT" \
+              --member="$MEMBER" \
+              --role='roles/bigquery.dataEditor' \
+              --condition=None \
+              --quiet; then
+              DATA_GRANTED=1
+              break
+            fi
+            sleep 15
+          done
+          if [[ "$DATA_GRANTED" != '1' ]]; then
+            echo 'BigQuery Data Editor could not be granted.' >&2
+            exit 1
+          fi
 
           echo '### Restore inherited organization restriction immediately'
           gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains \
@@ -104,4 +127,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Search Console → BigQuery principal configuration executed in run $GITHUB_RUN_ID. The workflow uses a project-only temporary override and restores inherited domain restriction before finishing."
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Search Console → BigQuery principal configuration retry executed in run $GITHUB_RUN_ID. Project-only domain override is always restored by trap before workflow exit."
