@@ -1,0 +1,89 @@
+name: Check GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/check-gsc-bigquery-ready
+    paths:
+      - '.github/workflows/check-gsc-bigquery-ready-temp.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Inspect Search Console export dataset
+        id: inspect
+        shell: bash
+        run: |
+          set -u
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          OUT=/tmp/gsc-bq-status.txt
+          : > "$OUT"
+          echo '## GSC BigQuery readiness check' >> "$OUT"
+          echo >> "$OUT"
+          if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
+            echo 'READY=false' >> "$OUT"
+            echo '- Dataset searchconsole: missing or inaccessible' >> "$OUT"
+            echo '- Detail:' >> "$OUT"
+            sed 's/^/  /' /tmp/dataset.err >> "$OUT"
+            cat "$OUT"
+            exit 0
+          fi
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" >/tmp/tables.json
+          python3 - <<'PY' >/tmp/table_names.txt
+          import json
+          rows=json.load(open('/tmp/tables.json'))
+          for r in rows:
+              ref=r.get('tableReference',{})
+              name=ref.get('tableId')
+              if name: print(name)
+          PY
+          echo '- Tables:' >> "$OUT"
+          sed 's/^/  - /' /tmp/table_names.txt >> "$OUT"
+          has_export=0; has_url=0; has_site=0
+          grep -qx 'ExportLog' /tmp/table_names.txt && has_export=1
+          grep -qx 'searchdata_url_impression' /tmp/table_names.txt && has_url=1
+          grep -qx 'searchdata_site_impression' /tmp/table_names.txt && has_site=1
+          echo "- ExportLog present: $has_export" >> "$OUT"
+          echo "- searchdata_url_impression present: $has_url" >> "$OUT"
+          echo "- searchdata_site_impression present: $has_site" >> "$OUT"
+          ready=0
+          export_rows=0; url_rows=0; site_rows=0
+          if [[ $has_export -eq 1 ]]; then
+            export_rows=$(bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) c FROM \`$PROJECT.$DATASET.ExportLog\`" 2>/tmp/q1.err | tail -n1 | tr -d '\r' || echo 0)
+          fi
+          if [[ $has_url -eq 1 ]]; then
+            url_rows=$(bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) c FROM \`$PROJECT.$DATASET.searchdata_url_impression\`" 2>/tmp/q2.err | tail -n1 | tr -d '\r' || echo 0)
+          fi
+          if [[ $has_site -eq 1 ]]; then
+            site_rows=$(bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) c FROM \`$PROJECT.$DATASET.searchdata_site_impression\`" 2>/tmp/q3.err | tail -n1 | tr -d '\r' || echo 0)
+          fi
+          echo "- ExportLog rows: ${export_rows:-0}" >> "$OUT"
+          echo "- URL impression rows: ${url_rows:-0}" >> "$OUT"
+          echo "- Site impression rows: ${site_rows:-0}" >> "$OUT"
+          if [[ $has_export -eq 1 && $has_url -eq 1 && $has_site -eq 1 && ${export_rows:-0} =~ ^[0-9]+$ && ${url_rows:-0} =~ ^[0-9]+$ && ${site_rows:-0} =~ ^[0-9]+$ && ${export_rows:-0} -gt 0 && ${url_rows:-0} -gt 0 && ${site_rows:-0} -gt 0 ]]; then
+            ready=1
+          fi
+          echo "READY=$([[ $ready -eq 1 ]] && echo true || echo false)" >> "$OUT"
+          cat "$OUT"
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/gsc-bq-status.txt
