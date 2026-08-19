@@ -1,0 +1,52 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+    paths:
+      - '.github/workflows/gsc-bigquery-readiness-temp.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Inspect Search Console BigQuery export
+        shell: bash
+        run: |
+          set -u
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          echo '=== DATASET ==='
+          if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"; then
+            echo 'GSC_DATASET_PRESENT=false'
+            exit 0
+          fi
+          echo 'GSC_DATASET_PRESENT=true'
+          echo '=== TABLES ==='
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" || true
+          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+            echo "=== $T ==="
+            if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/${T}.json 2>/tmp/${T}.err; then
+              cat /tmp/${T}.json
+              echo "TABLE_${T}_PRESENT=true"
+              bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) AS row_count FROM \`$PROJECT.$DATASET.$T\`" || true
+            else
+              cat /tmp/${T}.err || true
+              echo "TABLE_${T}_PRESENT=false"
+            fi
+          done
