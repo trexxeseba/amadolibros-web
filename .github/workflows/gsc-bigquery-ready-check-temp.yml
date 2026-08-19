@@ -6,13 +6,11 @@ on:
       - agent/gsc-bigquery-ready-check-20260819-2008
     paths:
       - '.github/workflows/gsc-bigquery-ready-check-temp.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/gsc-bigquery-ready-check-temp.yml'
 
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 jobs:
   check:
@@ -31,26 +29,45 @@ jobs:
           access_token_scopes: https://www.googleapis.com/auth/bigquery.readonly
           create_credentials_file: false
       - name: Inspect Search Console BigQuery dataset
+        id: inspect
         env:
           TOKEN: ${{ steps.auth.outputs.access_token }}
         shell: bash
         run: |
           set -euo pipefail
           base='https://bigquery.googleapis.com/bigquery/v2/projects/amado-libros-analytics/datasets/searchconsole'
+          out=/tmp/gsc-bq-check.txt
+          : > "$out"
           code=$(curl -sS -o /tmp/dataset.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$base")
-          echo "DATASET_HTTP=$code"
-          if [ "$code" != "200" ]; then
-            cat /tmp/dataset.json
-            exit 0
+          echo "DATASET_HTTP=$code" | tee -a "$out"
+          if [ "$code" = "200" ]; then
+            curl -sS -H "Authorization: Bearer $TOKEN" "$base/tables?maxResults=1000" > /tmp/tables.json
+            echo 'TABLE_IDS_BEGIN' | tee -a "$out"
+            jq -r '.tables[]?.tableReference.tableId' /tmp/tables.json | sort | tee -a "$out"
+            echo 'TABLE_IDS_END' | tee -a "$out"
+            for t in ExportLog searchdata_url_impression searchdata_site_impression; do
+              tcode=$(curl -sS -o "/tmp/$t.json" -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$base/tables/$t")
+              echo "TABLE_${t}_HTTP=$tcode" | tee -a "$out"
+              if [ "$tcode" = "200" ]; then
+                jq -r '"TABLE_ID=" + .tableReference.tableId, "NUM_ROWS=" + (.numRows // "0"), "NUM_BYTES=" + (.numBytes // "0"), "LAST_MODIFIED_TIME=" + (.lastModifiedTime // "")' "/tmp/$t.json" | tee -a "$out"
+              fi
+            done
+          else
+            cat /tmp/dataset.json | tee -a "$out"
           fi
-          curl -sS -H "Authorization: Bearer $TOKEN" "$base/tables?maxResults=1000" > /tmp/tables.json
-          echo 'TABLE_IDS_BEGIN'
-          jq -r '.tables[]?.tableReference.tableId' /tmp/tables.json | sort
-          echo 'TABLE_IDS_END'
-          for t in ExportLog searchdata_url_impression searchdata_site_impression; do
-            code=$(curl -sS -o "/tmp/$t.json" -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$base/tables/$t")
-            echo "TABLE_$t_HTTP=$code"
-            if [ "$code" = "200" ]; then
-              jq -r '"TABLE_ID=" + .tableReference.tableId, "NUM_ROWS=" + (.numRows // "0"), "NUM_BYTES=" + (.numBytes // "0"), "LAST_MODIFIED_TIME=" + (.lastModifiedTime // "")' "/tmp/$t.json"
-            fi
-          done
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          {
+            echo "<!-- GSC-BQ-CHECK -->"
+            echo "## GSC BigQuery readiness check — $ts"
+            echo
+            echo '```text'
+            cat /tmp/gsc-bq-check.txt 2>/dev/null || echo 'CHECK_OUTPUT_MISSING'
+            echo '```'
+          } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
