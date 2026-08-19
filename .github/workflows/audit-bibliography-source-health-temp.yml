@@ -20,9 +20,14 @@ jobs:
           node-version: '22.12.0'
       - name: Probe public bibliography endpoints
         run: node scripts/seo/audit-bibliography-source-health.mjs | tee /tmp/probe.txt
+      - name: Inspect Library of Congress result shape
+        run: node scripts/seo/audit-loc-shape.mjs > /tmp/loc-shape.txt
       - name: Comment issue 182
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          { echo '## Source health probe'; echo; echo '```json'; cat /tmp/probe.txt; echo '```'; } > /tmp/comment.md
+          {
+            echo '## Source health probe'; echo; echo '```json'; cat /tmp/probe.txt; echo '```';
+            echo; echo '## Library of Congress result shape'; echo; echo '```json'; cat /tmp/loc-shape.txt; echo '```';
+          } > /tmp/comment.md
           gh issue comment 182 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
