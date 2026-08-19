@@ -1,0 +1,60 @@
+name: GCP billing link bootstrap temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Grant billing-link permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          ORG='1036440070845'
+          PROJECT='amado-libros-analytics'
+          SA='ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com'
+          MEMBER="serviceAccount:${SA}"
+
+          gcloud organizations add-iam-policy-binding "$ORG" \
+            --member="$MEMBER" \
+            --role='roles/billing.user' \
+            --condition=None \
+            --quiet
+
+          gcloud projects add-iam-policy-binding "$PROJECT" \
+            --member="$MEMBER" \
+            --role='roles/billing.projectManager' \
+            --condition=None \
+            --quiet
+
+          echo '### Verify billing-link roles'
+          gcloud organizations get-iam-policy "$ORG" \
+            --flatten='bindings[].members' \
+            --filter="bindings.members:${SA} AND bindings.role:billing" \
+            --format='table(bindings.role,bindings.members)'
+          gcloud projects get-iam-policy "$PROJECT" \
+            --flatten='bindings[].members' \
+            --filter="bindings.members:${SA} AND bindings.role:billing" \
+            --format='table(bindings.role,bindings.members)'
+      - name: Comment tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "Permisos para vincular Cloud Billing preparados en run $GITHUB_RUN_ID: roles/billing.user en organización + roles/billing.projectManager en proyecto."
