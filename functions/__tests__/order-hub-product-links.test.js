@@ -26,6 +26,9 @@ function productHtml({ preview = false, active = false } = {}) {
     '@type': ['Product', 'Book'],
     name: 'Libro de prueba',
   };
+  const orderCopy = active
+    ? '<span>Esta publicación no se convierte automáticamente a UYU. Consultanos para confirmar precio y forma de pago, o comprala directamente en MercadoLibre.</span>'
+    : '<span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>';
   return `<!doctype html><html><head>
     <meta name="robots" content="${preview ? 'noindex, follow' : 'index, follow'}">
     <link rel="canonical" href="https://www.amadolibros.com/libro/MLU1/libro-de-prueba">
@@ -40,7 +43,10 @@ function productHtml({ preview = false, active = false } = {}) {
     <main>
       <div class="info">
         ${active ? '<span class="badge in-stock">✓ En stock</span>' : ''}
-        <div class="order-box"><strong>${active ? 'Precio publicado' : '¿Buscás este libro?'}</strong></div>
+        <div class="order-box">
+          <strong>${active ? 'Precio publicado' : '¿Buscás este libro?'}</strong>
+          ${orderCopy}
+        </div>
       </div>
     </main>
   </body></html>`;
@@ -113,9 +119,19 @@ test('si el título volvió a stock, no se lo etiqueta ni enlaza como por encarg
   assert.equal(enrichByRequestProductHtml(original, productId), original);
 });
 
-test('una ficha fuera de la cohorte queda intacta', () => {
-  const original = productHtml();
-  assert.equal(enrichByRequestProductHtml(original, 'MLU999999999999'), original);
+test('una ficha pausada fuera de la cohorte recibe el plazo sin enlaces SEO', () => {
+  const html = enrichByRequestProductHtml(productHtml(), 'MLU999999999999');
+
+  assert.match(html, /Demora estimada: 15 a 20 días desde la confirmación\./);
+  assert.doesNotMatch(html, /class="order-hub-links"/);
+  assert.doesNotMatch(html, /href="\/libros-por-encargo/);
+
+  const schema = breadcrumbSchema(html);
+  assert.ok(schema);
+  assert.deepEqual(schema.itemListElement.map(item => [item.position, item.name]), [
+    [1, 'Inicio'],
+    [2, 'Libro de prueba'],
+  ]);
 });
 
 test('el middleware no agrega lecturas de catálogo o R2 al camino de la ficha', () => {
