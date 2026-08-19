@@ -1,0 +1,98 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-watch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check Search Console export tables
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          OUT=/tmp/gsc-bq-status.txt
+          : > "$OUT"
+          echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT"
+
+          if ! bq --project_id="$PROJECT" ls --format=json "$PROJECT:$DATASET" >/tmp/tables.json 2>/tmp/bqerr.txt; then
+            echo 'status=NOT_READY' >> "$OUT"
+            echo 'reason=dataset_missing_or_unreadable' >> "$OUT"
+            echo "detail=$(tr '\n' ' ' </tmp/bqerr.txt | head -c 500)" >> "$OUT"
+            exit 0
+          fi
+
+          python - <<'PY' >/tmp/table_names.txt
+          import json
+          rows=json.load(open('/tmp/tables.json'))
+          for r in rows:
+              ref=r.get('tableReference') or {}
+              t=ref.get('tableId')
+              if t: print(t)
+          PY
+
+          echo "tables=$(paste -sd, /tmp/table_names.txt)" >> "$OUT"
+          for t in ExportLog searchdata_url_impression searchdata_site_impression; do
+            if grep -Fxq "$t" /tmp/table_names.txt; then echo "$t=present" >> "$OUT"; else echo "$t=missing" >> "$OUT"; fi
+          done
+
+          present=0
+          for t in ExportLog searchdata_url_impression searchdata_site_impression; do grep -Fxq "$t" /tmp/table_names.txt && present=$((present+1)) || true; done
+          if [ "$present" -lt 3 ]; then
+            echo 'status=NOT_READY' >> "$OUT"
+            echo 'reason=expected_tables_missing' >> "$OUT"
+            exit 0
+          fi
+
+          set +e
+          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv --quiet \
+            "SELECT 'ExportLog' table_name, COUNT(*) row_count FROM \`${PROJECT}.${DATASET}.ExportLog\` UNION ALL SELECT 'searchdata_url_impression', COUNT(*) FROM \`${PROJECT}.${DATASET}.searchdata_url_impression\` UNION ALL SELECT 'searchdata_site_impression', COUNT(*) FROM \`${PROJECT}.${DATASET}.searchdata_site_impression\`" >/tmp/counts.csv 2>/tmp/queryerr.txt
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            echo 'status=NOT_READY' >> "$OUT"
+            echo 'reason=tables_present_but_query_failed' >> "$OUT"
+            echo "detail=$(tr '\n' ' ' </tmp/queryerr.txt | head -c 500)" >> "$OUT"
+            exit 0
+          fi
+          cat /tmp/counts.csv >> "$OUT"
+          usable=$(tail -n +2 /tmp/counts.csv | awk -F, '$2+0>0{n++} END{print n+0}')
+          if [ "$usable" -ge 2 ]; then
+            echo 'status=READY' >> "$OUT"
+            echo 'reason=export_tables_present_and_populated' >> "$OUT"
+          else
+            echo 'status=NOT_READY' >> "$OUT"
+            echo 'reason=tables_present_but_not_yet_populated' >> "$OUT"
+          fi
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f /tmp/gsc-bq-status.txt ]; then
+            { echo '```text'; cat /tmp/gsc-bq-status.txt; echo '```'; } >/tmp/comment.md
+          else
+            printf '%s\n' '```text' 'status=ERROR' 'reason=workflow_failed_before_check' '```' >/tmp/comment.md
+          fi
+          gh issue comment 186 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
