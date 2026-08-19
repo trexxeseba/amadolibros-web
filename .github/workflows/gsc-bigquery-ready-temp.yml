@@ -26,33 +26,61 @@ jobs:
           service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
           create_credentials_file: true
       - uses: google-github-actions/setup-gcloud@v2
+      - name: Ensure read-only BigQuery metadata access for checker
+        shell: bash
+        run: |
+          gcloud projects add-iam-policy-binding amado-libros-analytics \
+            --member='serviceAccount:ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com' \
+            --role='roles/bigquery.metadataViewer' \
+            --condition=None --quiet
       - name: Check Search Console dataset and tables
         shell: bash
         run: |
           set +e
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
-          echo '### Dataset metadata'
-          bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"
+          REPORT=/tmp/gsc-bq.txt
+          : > "$REPORT"
+          echo '### Dataset' >> "$REPORT"
+          DATASET_JSON=$(bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" 2>&1)
           DATASET_RC=$?
-          echo "dataset_rc=$DATASET_RC"
-          echo '### Tables'
-          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET"
+          if [ "$DATASET_RC" -ne 0 ]; then
+            echo 'dataset_present=false' >> "$REPORT"
+            echo "$DATASET_JSON" >> "$REPORT"
+          else
+            echo 'dataset_present=true' >> "$REPORT"
+            echo "$DATASET_JSON" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const x=JSON.parse(s); console.log('dataset_location='+(x.location||'')); console.log('dataset_modified='+(x.lastModifiedTime||''));})" >> "$REPORT" 2>/dev/null || true
+          fi
+          echo '### Tables' >> "$REPORT"
+          TABLES_JSON=$(bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" 2>&1)
           TABLE_RC=$?
-          echo "table_rc=$TABLE_RC"
-          echo '### Direct table checks'
+          if [ "$TABLE_RC" -ne 0 ]; then
+            echo 'tables_listable=false' >> "$REPORT"
+            echo "$TABLES_JSON" >> "$REPORT"
+          else
+            echo 'tables_listable=true' >> "$REPORT"
+            printf '%s' "$TABLES_JSON" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const xs=JSON.parse(s); for(const x of xs){console.log('table='+x.tableReference.tableId)}})" >> "$REPORT" 2>/dev/null || true
+          fi
+          READY=1
           for T in ExportLog searchdata_url_impression searchdata_site_impression; do
-            echo "--- $T ---"
-            bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T"
-            echo "show_rc=$?"
+            echo "### $T" >> "$REPORT"
+            TJ=$(bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" 2>&1)
+            RC=$?
+            if [ "$RC" -ne 0 ]; then
+              echo 'present=false' >> "$REPORT"
+              READY=0
+            else
+              echo 'present=true' >> "$REPORT"
+              printf '%s' "$TJ" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const x=JSON.parse(s); console.log('numRows='+(x.numRows??'')); console.log('numBytes='+(x.numBytes??'')); console.log('lastModifiedTime='+(x.lastModifiedTime??''));})" >> "$REPORT" 2>/dev/null || true
+            fi
           done
-          echo '### Row counts if query permission exists'
-          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv \
-            "SELECT 'ExportLog' table_name, COUNT(*) rows FROM \`$PROJECT.$DATASET.ExportLog\` UNION ALL SELECT 'searchdata_url_impression', COUNT(*) FROM \`$PROJECT.$DATASET.searchdata_url_impression\` UNION ALL SELECT 'searchdata_site_impression', COUNT(*) FROM \`$PROJECT.$DATASET.searchdata_site_impression\`"
-          echo "query_rc=$?"
-          exit 0
-      - name: Comment tracking issue
+          if [ "$DATASET_RC" -ne 0 ] || [ "$TABLE_RC" -ne 0 ]; then READY=0; fi
+          echo "READY=$READY" >> "$REPORT"
+          cat "$REPORT"
+      - name: Comment tracking issue with result
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "GSC BigQuery readiness check ejecutado en run $GITHUB_RUN_ID."
+        run: |
+          { echo '## GSC BigQuery readiness'; echo; echo '```text'; cat /tmp/gsc-bq.txt 2>/dev/null || echo 'check did not produce report'; echo '```'; } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
