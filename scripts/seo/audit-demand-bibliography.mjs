@@ -4,6 +4,7 @@ import { PAUSED_SEO_COHORT } from '../../functions/_shared/paused-seo-cohort.js'
 
 const OUT = process.env.OUT_DIR || 'artifacts/demand-bibliography';
 const CONCURRENCY = Math.max(1, Math.min(6, Number(process.env.CONCURRENCY || 4)));
+const GOOGLE_BOOKS_ACCESS_TOKEN = String(process.env.GOOGLE_BOOKS_ACCESS_TOKEN || '').trim();
 const UA = 'AmadoLibrosBibliographyAudit/1.0 (+https://www.amadolibros.com)';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -33,11 +34,11 @@ function formatKey(v) {
   return clean(v);
 }
 
-async function fetchJson(url, attempts = 3) {
+async function fetchJson(url, attempts = 3, extraHeaders = {}) {
   let last;
   for (let i = 1; i <= attempts; i++) {
     try {
-      const r = await fetch(url, { headers: { 'user-agent': UA, accept: 'application/json' }, signal: AbortSignal.timeout(20000) });
+      const r = await fetch(url, { headers: { 'user-agent': UA, accept: 'application/json', ...extraHeaders }, signal: AbortSignal.timeout(20000) });
       const text = await r.text();
       if (r.ok) return text ? JSON.parse(text) : {};
       last = new Error(`HTTP ${r.status}: ${text.slice(0, 250)}`);
@@ -72,10 +73,11 @@ async function fromMercadoLibre(id) {
 async function fromGoogleBooks(isbn) {
   try {
     const q = encodeURIComponent(`isbn:${isbn}`);
-    const x = await fetchJson(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&printType=books`);
+    const headers = GOOGLE_BOOKS_ACCESS_TOKEN ? { authorization: `Bearer ${GOOGLE_BOOKS_ACCESS_TOKEN}` } : {};
+    const x = await fetchJson(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&printType=books`, 3, headers);
     const exact = (x.items || []).map(v => v.volumeInfo || {}).find(v =>
       (v.industryIdentifiers || []).some(i => digits(i.identifier) === digits(isbn))
-    ) || (x.items || [])[0]?.volumeInfo;
+    );
     if (!exact) return { ok: true, found: false };
     return {
       ok: true, found: true,
@@ -179,6 +181,7 @@ const summary = Object.fromEntries(fieldNames.map(f => [f, {
 }]));
 const sourceHealth = {
   mercadoLibreOk: rows.filter(r => r.sources.mercadoLibre.ok).length,
+  googleBooksOk: rows.filter(r => r.sources.googleBooks.ok).length,
   googleBooksFound: rows.filter(r => r.sources.googleBooks.found).length,
   openLibraryFound: rows.filter(r => r.sources.openLibrary.found).length,
 };
@@ -188,15 +191,16 @@ for (const r of rows) {
   for (const f of fieldNames) if (r.verified[f].verified) fields[f] = r.verified[f].value;
   if (Object.keys(fields).length) candidates[r.isbn] = { id: r.id, impressions: r.impressions, clicks: r.clicks, ...fields };
 }
-const report = { generatedAt: new Date().toISOString(), sample: rows.length, sourceHealth, summary, candidateIsbns: Object.keys(candidates).length, rows };
+const report = { generatedAt: new Date().toISOString(), sample: rows.length, googleBooksAuthenticated: Boolean(GOOGLE_BOOKS_ACCESS_TOKEN), sourceHealth, summary, candidateIsbns: Object.keys(candidates).length, rows };
 await writeFile(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
 await writeFile(path.join(OUT, 'verified-candidates.json'), JSON.stringify(candidates, null, 2));
 
 const md = [
   '# SEO-DEMAND-130 — verificación bibliográfica', '',
   `- ISBN/fichas auditadas: **${rows.length}**`,
-  `- Mercado Libre público respondió: **${sourceHealth.mercadoLibreOk}/${rows.length}**`,
-  `- Google Books encontró edición: **${sourceHealth.googleBooksFound}/${rows.length}**`,
+  `- Google Books con OAuth del proyecto: **${GOOGLE_BOOKS_ACCESS_TOKEN ? 'sí' : 'no'}**`,
+  `- Google Books respondió OK: **${sourceHealth.googleBooksOk}/${rows.length}**`,
+  `- Google Books encontró edición exacta: **${sourceHealth.googleBooksFound}/${rows.length}**`,
   `- Open Library encontró edición: **${sourceHealth.openLibraryFound}/${rows.length}**`,
   `- ISBN con al menos un campo confirmado por ≥2 fuentes: **${Object.keys(candidates).length}/${rows.length}**`, '',
   '| Campo | Confirmado ≥2 fuentes | Con evidencia | Conflictos |',
