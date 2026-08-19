@@ -7,19 +7,44 @@ on:
 
 permissions:
   contents: read
+  id-token: write
   issues: write
 
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
-      - name: Verify 130 demand ISBNs across public sources
+
+      - name: Authenticate with Google Cloud for API enablement
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Enable Books API on analytics project
+        run: gcloud services enable books.googleapis.com --project=amado-libros-analytics --quiet
+
+      - name: Authenticate for Google Books
+        id: books_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Verify 130 demand ISBNs across independent sources
         env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.books_auth.outputs.access_token }}
           OUT_DIR: artifacts/demand-bibliography
           CONCURRENCY: '4'
         run: node scripts/seo/audit-demand-bibliography.mjs
