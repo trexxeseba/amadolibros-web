@@ -74,8 +74,8 @@ jobs:
               try:
                   rows = json.loads(raw)
               except Exception as exc:
-                  print(f'status=NOT_READY')
-                  print(f'reason=table_listing_invalid_json')
+                  print('status=NOT_READY')
+                  print('reason=table_listing_invalid_json')
                   print(f'parse_error={type(exc).__name__}')
                   raise SystemExit(0)
 
@@ -131,6 +131,7 @@ jobs:
 
           count_rows() {
             local table="$1"
+            local target_var="$2"
             local output="/tmp/${table}.csv"
             local error="/tmp/${table}.err"
             if ! bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv \
@@ -147,20 +148,20 @@ jobs:
               return 1
             fi
             echo "${table}_rows=$count"
-            printf '%s' "$count"
+            printf -v "$target_var" '%s' "$count"
           }
 
-          EXPORT_ROWS=$(count_rows ExportLog) || {
+          count_rows ExportLog EXPORT_ROWS || {
             echo 'status=NOT_READY'
             echo 'reason=exportlog_query_failed'
             exit 0
           }
-          URL_ROWS=$(count_rows searchdata_url_impression) || {
+          count_rows searchdata_url_impression URL_ROWS || {
             echo 'status=NOT_READY'
             echo 'reason=url_impression_query_failed'
             exit 0
           }
-          SITE_ROWS=$(count_rows searchdata_site_impression) || {
+          count_rows searchdata_site_impression SITE_ROWS || {
             echo 'status=NOT_READY'
             echo 'reason=site_impression_query_failed'
             exit 0
