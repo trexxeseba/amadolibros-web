@@ -6,7 +6,7 @@ on:
       - agent/audit-gsc-demand-bibliography
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
   issues: write
 
@@ -53,6 +53,20 @@ jobs:
           name: demand-bibliography-${{ github.run_id }}
           path: artifacts/demand-bibliography/
           retention-days: 30
+      - name: Persist verified candidate evidence on audit branch
+        run: |
+          mkdir -p audit-results
+          cp artifacts/demand-bibliography/verified-candidates.json audit-results/demand-bibliography-verified.json
+          cp artifacts/demand-bibliography/report.json audit-results/demand-bibliography-report.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/demand-bibliography-verified.json audit-results/demand-bibliography-report.json
+          if git diff --cached --quiet; then
+            echo 'No evidence changes to persist.'
+          else
+            git commit -m 'audit: persist demand bibliography evidence [skip ci]'
+            git push
+          fi
       - name: Comment summary and verified candidates
         env:
           GH_TOKEN: ${{ github.token }}
