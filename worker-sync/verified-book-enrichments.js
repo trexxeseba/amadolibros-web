@@ -1,3 +1,5 @@
+import { applyVerifiedDemandBibliography } from './verified-demand-bibliography.js';
+
 /**
  * Datos bibliográficos revisados manualmente para lotes pequeños de fichas.
  *
@@ -92,8 +94,10 @@ function digits(value) {
 }
 
 /**
- * Aplica el lote solo cuando el ID coincide y el ISBN no contradice la ficha.
- * Devuelve métricas para que el sync deje evidencia de lo aplicado/omitido.
+ * Aplica el lote manual solo cuando el ID coincide y el ISBN no contradice la
+ * ficha. Después completa, en modo fill-only, los campos confirmados para la
+ * cohorte de demanda. Devuelve métricas para que el sync deje evidencia de lo
+ * aplicado/omitido.
  */
 export function applyVerifiedBookEnrichments(items = []) {
   let applied = 0;
@@ -128,7 +132,13 @@ export function applyVerifiedBookEnrichments(items = []) {
     applied++;
   }
 
-  return { applied, skipped_isbn_mismatch: skippedIsbnMismatch };
+  const demandBibliography = applyVerifiedDemandBibliography(items);
+
+  return {
+    applied,
+    skipped_isbn_mismatch: skippedIsbnMismatch,
+    demand_bibliography: demandBibliography,
+  };
 }
 
 export const VERIFIED_BOOK_IDS = Object.freeze([...VERIFIED_BOOK_ENRICHMENTS.keys()]);
