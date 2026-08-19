@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 jobs:
   check:
@@ -31,22 +32,32 @@ jobs:
           set -u
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
-          echo '=== DATASET ==='
-          if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"; then
-            echo 'GSC_DATASET_PRESENT=false'
-            exit 0
-          fi
-          echo 'GSC_DATASET_PRESENT=true'
-          echo '=== TABLES ==='
-          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" || true
-          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
-            echo "=== $T ==="
-            if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/${T}.json 2>/tmp/${T}.err; then
-              cat /tmp/${T}.json
-              echo "TABLE_${T}_PRESENT=true"
-              bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) AS row_count FROM \`$PROJECT.$DATASET.$T\`" || true
+          REPORT=/tmp/gsc-readiness.txt
+          : > "$REPORT"
+          {
+            echo "checked_at=$(date -u +%FT%TZ)"
+            if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
+              echo 'GSC_DATASET_PRESENT=false'
+              cat /tmp/dataset.err
             else
-              cat /tmp/${T}.err || true
-              echo "TABLE_${T}_PRESENT=false"
+              echo 'GSC_DATASET_PRESENT=true'
+              echo 'TABLE_LIST:'
+              bq --project_id="$PROJECT" ls --format=csv "$PROJECT:$DATASET" || true
+              for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+                if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/${T}.json 2>/tmp/${T}.err; then
+                  echo "TABLE_${T}_PRESENT=true"
+                  echo -n "ROWS_${T}="
+                  bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv "SELECT COUNT(*) AS row_count FROM \`$PROJECT.$DATASET.$T\`" | tail -n 1 || true
+                else
+                  echo "TABLE_${T}_PRESENT=false"
+                fi
+              done
             fi
-          done
+          } | tee "$REPORT"
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '## GSC BigQuery readiness probe'; echo; echo '```text'; cat /tmp/gsc-readiness.txt 2>/dev/null || echo 'probe failed before report'; echo '```'; } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
