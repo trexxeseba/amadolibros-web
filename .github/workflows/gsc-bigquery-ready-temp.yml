@@ -1,0 +1,58 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+    paths:
+      - '.github/workflows/gsc-bigquery-ready-temp.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check Search Console dataset and tables
+        shell: bash
+        run: |
+          set +e
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          echo '### Dataset metadata'
+          bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"
+          DATASET_RC=$?
+          echo "dataset_rc=$DATASET_RC"
+          echo '### Tables'
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET"
+          TABLE_RC=$?
+          echo "table_rc=$TABLE_RC"
+          echo '### Direct table checks'
+          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+            echo "--- $T ---"
+            bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T"
+            echo "show_rc=$?"
+          done
+          echo '### Row counts if query permission exists'
+          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv \
+            "SELECT 'ExportLog' table_name, COUNT(*) rows FROM \`$PROJECT.$DATASET.ExportLog\` UNION ALL SELECT 'searchdata_url_impression', COUNT(*) FROM \`$PROJECT.$DATASET.searchdata_url_impression\` UNION ALL SELECT 'searchdata_site_impression', COUNT(*) FROM \`$PROJECT.$DATASET.searchdata_site_impression\`"
+          echo "query_rc=$?"
+          exit 0
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body "GSC BigQuery readiness check ejecutado en run $GITHUB_RUN_ID."
