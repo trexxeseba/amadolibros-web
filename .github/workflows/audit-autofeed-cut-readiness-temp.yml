@@ -1,0 +1,47 @@
+name: Audit AUTOFEED cut readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/audit-autofeed-cut-readiness
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Authenticate with Google through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/content
+          create_credentials_file: false
+      - name: Audit target and source overlap
+        env:
+          MERCHANT_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          MERCHANT_ACCOUNT_ID: '5330457716'
+          TARGET_OFFER_ID: MLU1183067570
+          OUT_DIR: artifacts/autofeed-cut
+        run: node scripts/commerce/autofeed-cut-readiness.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autofeed-cut-${{ github.run_id }}
+          path: artifacts/autofeed-cut/
+          retention-days: 30
+      - name: Comment issue 183
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 183 --repo "$GITHUB_REPOSITORY" --body-file artifacts/autofeed-cut/summary.md
