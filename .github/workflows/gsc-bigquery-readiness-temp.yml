@@ -1,0 +1,124 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-readiness
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Check Search Console BigQuery export
+        id: readiness
+        shell: bash
+        run: |
+          set -u
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          OUT='/tmp/gsc-bq-readiness.md'
+
+          {
+            echo '## GSC BigQuery readiness check'
+            echo
+            echo "- Project: \`$PROJECT\`"
+            echo "- Dataset: \`$DATASET\`"
+            echo "- Checked UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+          } > "$OUT"
+
+          if ! bq --project_id="$PROJECT" ls --format=json "$PROJECT:$DATASET" >/tmp/tables.json 2>/tmp/bq-error.txt; then
+            {
+              echo '- Dataset accessible: **NO**'
+              echo '- READY: **NO**'
+              echo
+              echo '```text'
+              cat /tmp/bq-error.txt
+              echo '```'
+            } >> "$OUT"
+            cat "$OUT"
+            exit 0
+          fi
+
+          echo '- Dataset accessible: **YES**' >> "$OUT"
+          mapfile -t TABLES < <(jq -r '.[].tableReference.tableId // empty' /tmp/tables.json | sort)
+          printf '%s\n' "${TABLES[@]}" >/tmp/table-names.txt
+
+          echo '- Tables:' >> "$OUT"
+          if [ "${#TABLES[@]}" -eq 0 ]; then
+            echo '  - _(none yet)_' >> "$OUT"
+          else
+            for t in "${TABLES[@]}"; do echo "  - \`$t\`" >> "$OUT"; done
+          fi
+
+          exact_exportlog=0
+          exact_url=0
+          exact_site=0
+          grep -qx 'ExportLog' /tmp/table-names.txt && exact_exportlog=1 || true
+          grep -qx 'searchdata_url_impression' /tmp/table-names.txt && exact_url=1 || true
+          grep -qx 'searchdata_site_impression' /tmp/table-names.txt && exact_site=1 || true
+
+          echo >> "$OUT"
+          echo '| Table | Present | Rows |' >> "$OUT"
+          echo '| --- | --- | ---: |' >> "$OUT"
+
+          total_impression_rows=0
+          for t in ExportLog searchdata_url_impression searchdata_site_impression; do
+            present='NO'
+            rows='—'
+            if grep -qx "$t" /tmp/table-names.txt; then
+              present='YES'
+              if meta=$(bq --project_id="$PROJECT" show --format=json "$PROJECT:$DATASET.$t" 2>/dev/null); then
+                rows=$(jq -r '.numRows // "0"' <<<"$meta")
+              fi
+            fi
+            echo "| \`$t\` | $present | $rows |" >> "$OUT"
+            if [ "$t" != 'ExportLog' ] && [[ "$rows" =~ ^[0-9]+$ ]]; then
+              total_impression_rows=$(( total_impression_rows + rows ))
+            fi
+          done
+
+          equivalent=$(grep -E '(^|_)(url|site).*impression|impression.*(url|site)' /tmp/table-names.txt | grep -vE '^searchdata_(url|site)_impression$' || true)
+          if [ -n "$equivalent" ]; then
+            echo >> "$OUT"
+            echo 'Equivalent-looking impression tables:' >> "$OUT"
+            while IFS= read -r t; do [ -n "$t" ] && echo "- \`$t\`" >> "$OUT"; done <<< "$equivalent"
+          fi
+
+          ready='NO'
+          if [ "$exact_exportlog" -eq 1 ] && [ "$exact_url" -eq 1 ] && [ "$exact_site" -eq 1 ] && [ "$total_impression_rows" -gt 0 ]; then
+            ready='YES'
+          fi
+
+          echo >> "$OUT"
+          echo "- READY: **$ready**" >> "$OUT"
+          if [ "$ready" = 'YES' ]; then
+            echo '- Usable: exact Search Console export tables are present and impression tables contain rows.' >> "$OUT"
+          else
+            echo '- Usable: not yet; waiting for all expected tables plus non-zero impression rows.' >> "$OUT"
+          fi
+
+          cat "$OUT"
+
+      - name: Comment tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/gsc-bq-readiness.md
