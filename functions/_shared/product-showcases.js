@@ -6,6 +6,12 @@ const PADRES_FUERTES = Object.freeze({
   h1: 'Padres fuertes, hijas felices',
   subtitle: '10 secretos que todo padre debería conocer',
   eyebrow: 'Guía práctica sobre el vínculo entre padres e hijas',
+  introHeading: '¿De qué trata Padres fuertes, hijas felices?',
+  highlightsHeading: 'Qué vas a encontrar',
+  audienceHeading: '¿Para quién es este libro?',
+  authorHeading: 'Sobre Meg Meeker',
+  editionHeading: 'Ficha de esta edición',
+  verifiedLabel: 'Edición identificada por ISBN',
   summary: Object.freeze([
     'Padres fuertes, hijas felices es una guía de Meg Meeker para padres que quieren construir una relación cercana, firme y confiable con sus hijas. Desde su experiencia como pediatra y consejera familiar, la autora analiza cómo la presencia cotidiana, el afecto, los límites y el ejemplo del padre pueden influir en la seguridad personal y el equilibrio emocional de una hija.',
     'El libro recorre situaciones concretas de la infancia, la adolescencia y el comienzo de la vida adulta. Aborda la comunicación, la autoestima, la presión social, las decisiones de riesgo y la forma en que una hija aprende a relacionarse con los demás. El foco no está en controlar cada paso, sino en ofrecer una referencia estable: escuchar, acompañar, sostener límites razonables y estar disponible cuando aparecen dudas o conflictos.',
