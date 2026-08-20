@@ -1,0 +1,74 @@
+name: GSC BigQuery readiness check
+
+on:
+  push:
+    branches:
+      - automation/gsc-bigquery-readiness
+    paths:
+      - '.github/workflows/gsc-bigquery-readiness-check.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with Google
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: amado-libros-analytics
+
+      - name: Check Search Console bulk export tables
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          echo '=== DATASET ==='
+          if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
+            echo 'NOT_READY: dataset searchconsole does not exist or is not readable'
+            cat /tmp/dataset.err || true
+            exit 3
+          fi
+
+          echo '=== TABLE LIST ==='
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" | tee /tmp/tables.json
+
+          ready=1
+          for table in ExportLog searchdata_url_impression searchdata_site_impression; do
+            echo "=== $table ==="
+            if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$table" >/tmp/${table}.json 2>/tmp/${table}.err; then
+              echo "$table exists=false"
+              cat /tmp/${table}.err || true
+              ready=0
+              continue
+            fi
+            rows=$(jq -r '.numRows // "0"' /tmp/${table}.json)
+            echo "$table exists=true numRows=$rows"
+            if [ "$rows" = "0" ]; then ready=0; fi
+            if [ "$table" != 'ExportLog' ]; then
+              bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
+                "SELECT COUNT(*) AS rows, CAST(MAX(data_date) AS STRING) AS max_data_date FROM \`${PROJECT}.${DATASET}.${table}\`" || true
+            fi
+          done
+
+          if [ "$ready" -eq 1 ]; then
+            echo 'GSC_BIGQUERY_READY=true'
+            exit 0
+          fi
+          echo 'GSC_BIGQUERY_READY=false'
+          exit 3
