@@ -36,7 +36,7 @@ jobs:
         id: check
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
           LOCATION='US'
@@ -48,24 +48,19 @@ jobs:
           echo "project=$PROJECT" >> "$OUT"
           echo "dataset=$DATASET" >> "$OUT"
 
-          if ! bq --project_id="$PROJECT" ls --format=json "$PROJECT:$DATASET" >/tmp/tables.json 2>/tmp/bqerr.txt; then
+          bq --project_id="$PROJECT" ls --format=csv "$PROJECT:$DATASET" >/tmp/tables.csv 2>/tmp/bqerr.txt
+          RC=$?
+          echo "list_rc=$RC" >> "$OUT"
+          if [ "$RC" -ne 0 ]; then
             echo 'dataset_access=ERROR' >> "$OUT"
             echo 'ready=false' >> "$OUT"
             echo 'error:' >> "$OUT"
-            cat /tmp/bqerr.txt >> "$OUT"
+            sed -n '1,12p' /tmp/bqerr.txt >> "$OUT"
             cat "$OUT"
             exit 0
           fi
 
-          node <<'NODE' >/tmp/table-names.txt
-          const fs=require('fs');
-          const rows=JSON.parse(fs.readFileSync('/tmp/tables.json','utf8')||'[]');
-          for (const r of rows) {
-            const name=r.tableReference?.tableId || r.id?.split('.').pop() || '';
-            if (name) console.log(name);
-          }
-          NODE
-
+          awk -F, 'NR>1 {gsub(/\r/,"",$1); gsub(/^"|"$/,"",$1); if($1!="") print $1}' /tmp/tables.csv >/tmp/table-names.txt
           echo 'tables:' >> "$OUT"
           sed 's/^/- /' /tmp/table-names.txt >> "$OUT"
 
@@ -75,10 +70,12 @@ jobs:
           SITE='searchdata_site_impression'
           ALTURL='searchdata_url_impression_by_hour'
 
-          has "$EXPORT" && export_present=true || export_present=false
-          has "$URL" && url_present=true || url_present=false
-          has "$SITE" && site_present=true || site_present=false
-          if [ "$url_present" = false ] && has "$ALTURL"; then URL="$ALTURL"; url_present=true; fi
+          has "$EXPORT"; [ $? -eq 0 ] && export_present=true || export_present=false
+          has "$URL"; [ $? -eq 0 ] && url_present=true || url_present=false
+          has "$SITE"; [ $? -eq 0 ] && site_present=true || site_present=false
+          if [ "$url_present" = false ]; then
+            has "$ALTURL"; [ $? -eq 0 ] && URL="$ALTURL" && url_present=true
+          fi
 
           echo "ExportLog_present=$export_present" >> "$OUT"
           echo "url_table=$URL" >> "$OUT"
@@ -88,22 +85,26 @@ jobs:
 
           count_table(){
             local t="$1"
-            bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --format=csv --quiet \
-              "SELECT COUNT(*) AS c FROM \`$PROJECT.$DATASET.$t\`" | tail -n 1 | tr -d '\r'
+            local raw
+            raw=$(bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --format=csv --quiet \
+              "SELECT COUNT(*) AS c FROM \`$PROJECT.$DATASET.$t\`" 2>/tmp/queryerr.txt)
+            local rc=$?
+            if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
+            echo "$raw" | tail -n 1 | tr -d '\r'
           }
 
           export_rows=0; url_rows=0; site_rows=0
-          if [ "$export_present" = true ]; then export_rows=$(count_table "$EXPORT" || echo 0); fi
-          if [ "$url_present" = true ]; then url_rows=$(count_table "$URL" || echo 0); fi
-          if [ "$site_present" = true ]; then site_rows=$(count_table "$SITE" || echo 0); fi
+          [ "$export_present" = true ] && export_rows=$(count_table "$EXPORT")
+          [ "$url_present" = true ] && url_rows=$(count_table "$URL")
+          [ "$site_present" = true ] && site_rows=$(count_table "$SITE")
 
-          echo "ExportLog_rows=$export_rows" >> "$OUT"
-          echo "url_rows=$url_rows" >> "$OUT"
-          echo "site_rows=$site_rows" >> "$OUT"
+          echo "ExportLog_rows=${export_rows:-0}" >> "$OUT"
+          echo "url_rows=${url_rows:-0}" >> "$OUT"
+          echo "site_rows=${site_rows:-0}" >> "$OUT"
 
           ready=false
           if [ "$export_present" = true ] && [ "$url_present" = true ] && [ "$site_present" = true ] \
-             && [ "${url_rows:-0}" -gt 0 ] && [ "${site_rows:-0}" -gt 0 ]; then
+             && [ "${url_rows:-0}" -gt 0 ] 2>/dev/null && [ "${site_rows:-0}" -gt 0 ] 2>/dev/null; then
             ready=true
           fi
           echo "ready=$ready" >> "$OUT"
