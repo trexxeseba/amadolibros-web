@@ -1,0 +1,112 @@
+name: GSC BigQuery domain restriction repair
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-domain-fix
+    paths:
+      - '.github/workflows/gsc-bigquery-domain-fix.yml'
+      - 'scripts/seo/gsc-bigquery-domain-fix.sh'
+      - 'functions/__tests__/gsc-bigquery-domain-fix.test.js'
+      - 'functions/__tests__/google-workload-identity.test.js'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: apply corrige; verify sólo comprueba; rollback elimina únicamente el override exacto de este lote
+        required: true
+        default: verify
+        type: choice
+        options:
+          - verify
+          - apply
+          - rollback
+      target_date:
+        description: Fecha de datos GSC a comprobar (YYYY-MM-DD)
+        required: true
+        default: '2026-08-18'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gsc-bigquery-domain-fix
+  cancel-in-progress: false
+
+env:
+  GSC_BQ_PROJECT_ID: amado-libros-analytics
+  GSC_BQ_PROJECT_NUMBER: '667747565315'
+  GSC_BQ_DATASET_ID: searchconsole
+  GSC_BQ_FIX_MODE: apply
+  GSC_BQ_OUTPUT_DIR: artifacts/gsc-bigquery-domain-fix
+
+jobs:
+  repair:
+    name: Repair and verify GSC BigQuery export policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: amado-libros-analytics
+
+      - name: Enable Organization Policy API in the analytics project
+        run: >-
+          gcloud services enable orgpolicy.googleapis.com
+          --project=amado-libros-analytics
+          --quiet
+
+      - name: Apply or verify the project-only correction
+        env:
+          INPUT_MODE: ${{ inputs.mode }}
+          INPUT_TARGET_DATE: ${{ inputs.target_date }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            export GSC_BQ_FIX_MODE="${INPUT_MODE:-verify}"
+            export GSC_BQ_TARGET_DATE="${INPUT_TARGET_DATE:-2026-08-18}"
+          else
+            export GSC_BQ_FIX_MODE=apply
+            export GSC_BQ_TARGET_DATE=2026-08-18
+          fi
+          bash scripts/seo/gsc-bigquery-domain-fix.sh
+
+      - name: Write run summary
+        if: always()
+        run: |
+          if [ -f artifacts/gsc-bigquery-domain-fix/summary.md ]; then
+            cat artifacts/gsc-bigquery-domain-fix/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## GSC BigQuery domain fix incompleto" >> "$GITHUB_STEP_SUMMARY"
+            echo "No se generó summary.md; revisar el paso de reparación." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "- Web deploy: no" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Worker deploy: no" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dataset deletion: no" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload policy, IAM and BigQuery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-bigquery-domain-fix-${{ github.run_id }}
+          path: artifacts/gsc-bigquery-domain-fix/
+          if-no-files-found: warn
+          retention-days: 30
