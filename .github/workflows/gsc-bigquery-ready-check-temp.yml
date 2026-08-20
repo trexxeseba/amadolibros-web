@@ -59,11 +59,7 @@ jobs:
           tables_http=$(cat /tmp/tables.code)
           echo "tables_http=$tables_http" >> "$OUT"
           if [ "$tables_http" = 200 ]; then
-            node - <<'NODE' >/tmp/table-names.txt
-            const fs=require('fs');
-            const x=JSON.parse(fs.readFileSync('/tmp/tables.json','utf8')||'{}');
-            for (const t of x.tables||[]) console.log(t.tableReference?.tableId||'');
-            NODE
+            jq -r '.tables[]?.tableReference.tableId // empty' /tmp/tables.json >/tmp/table-names.txt
           else
             : > /tmp/table-names.txt
           fi
@@ -77,7 +73,7 @@ jobs:
             local present=false
             if [ "$http" = 200 ]; then
               present=true
-              rows=$(node -e "const x=require('/tmp/$key.json'); console.log(Number(x.numRows||0))" 2>/dev/null)
+              rows=$(jq -r '.numRows // "0"' "/tmp/$key.json" 2>/dev/null)
               [ -z "$rows" ] && rows=0
             fi
             echo "${key}_http=$http" >> "$OUT"
