@@ -6,6 +6,9 @@ on:
       - agent/gsc-bigquery-monitor
     paths:
       - '.github/workflows/gsc-bigquery-check-temp.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/gsc-bigquery-check-temp.yml'
   workflow_dispatch:
 
 permissions:
