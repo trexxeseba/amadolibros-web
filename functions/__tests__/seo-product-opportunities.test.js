@@ -23,8 +23,8 @@ function book(overrides = {}) {
   };
 }
 
-test('las once oportunidades GSC tienen title y description curados', () => {
-  assert.equal(Object.keys(PRODUCT_SEO_OVERRIDES).length, 11);
+test('las doce oportunidades GSC tienen title y description curados', () => {
+  assert.equal(Object.keys(PRODUCT_SEO_OVERRIDES).length, 12);
   for (const [id, override] of Object.entries(PRODUCT_SEO_OVERRIDES)) {
     assert.match(id, /^MLU\d+$/);
     assert.ok(override.title.length >= 20 && override.title.length <= 70);
