@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 jobs:
   check:
@@ -31,6 +32,8 @@ jobs:
           set -u
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
+          OUT=/tmp/gsc-bq-check.txt
+          exec > >(tee "$OUT") 2>&1
 
           echo '### DATASET'
           if ! bq show --project_id="$PROJECT" --format=prettyjson "$PROJECT:$DATASET"; then
@@ -49,16 +52,16 @@ jobs:
           for t in ExportLog searchdata_url_impression searchdata_site_impression; do
             echo "### TABLE $t"
             if bq show --project_id="$PROJECT" --format=prettyjson "$PROJECT:$DATASET.$t" >/tmp/${t}.json 2>/tmp/${t}.err; then
-              cat /tmp/${t}.json
-              echo "HEAD $t"
+              echo "EXISTS $t"
               if bq head --project_id="$PROJECT" -n 1 "$PROJECT:$DATASET.$t"; then
                 if [[ "$t" == 'searchdata_url_impression' || "$t" == 'searchdata_site_impression' ]]; then
-                  rows=$(bq query --project_id="$PROJECT" --use_legacy_sql=false --format=csv --headless "SELECT COUNT(1) FROM \`$PROJECT.$DATASET.$t\` LIMIT 1" 2>/dev/null | tr -d '\r' | tail -n1)
+                  rows=$(bq query --project_id="$PROJECT" --use_legacy_sql=false --format=csv --headless "SELECT COUNT(1) FROM \`$PROJECT.$DATASET.$t\`" 2>/dev/null | tr -d '\r' | tail -n1)
                   echo "ROWCOUNT $t=$rows"
                   if [[ "$rows" =~ ^[1-9][0-9]*$ ]]; then ready=1; fi
                 fi
               fi
             else
+              echo "MISSING $t"
               cat /tmp/${t}.err || true
             fi
           done
@@ -68,3 +71,10 @@ jobs:
           else
             echo 'RESULT=NOT_READY_NO_IMPRESSION_ROWS'
           fi
+      - name: Report check to tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '## GSC BigQuery readiness check'; echo; echo '```'; tail -n 120 /tmp/gsc-bq-check.txt 2>/dev/null || echo 'check output unavailable'; echo '```'; } >/tmp/gsc-comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/gsc-comment.md
