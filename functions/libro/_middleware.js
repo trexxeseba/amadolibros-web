@@ -1,9 +1,14 @@
 import { BASE } from '../_shared/catalog.js';
 import {
+  buildAutomaticProductShowcase,
+  productItemFromProductHtml,
+} from '../_shared/automatic-product-showcase.js';
+import {
   ORDER_HUB_PATH,
   orderHubPageForProductId,
   orderHubPath,
 } from '../_shared/order-hub.js';
+import { isProductInShowcaseCohort } from '../_shared/showcase-cohort.js';
 import { PRODUCT_SHOWCASE_OVERRIDES } from '../_shared/product-showcases.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
@@ -13,6 +18,7 @@ const PRODUCT_H1_RE = /<h1>[\s\S]*?<\/h1>/;
 const JSON_LD_RE = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
 const CATALOG_PATH = '/catalogo';
 const ACTIVE_PAGE_MARKER = 'class="badge in-stock"';
+const RELATED_BOOKS_MARKER = '<section class="related-books"';
 const ORDER_BOX_GENERIC_COPY = '<span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>';
 const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Demora estimada: 15 a 20 días desde la confirmación.</b> Salvo demoras del proveedor, courier o aduana.</span>
       <span>Antes de avanzar verificamos disponibilidad, edición y precio.</span>`;
@@ -237,52 +243,53 @@ export function enrichByRequestProductHtml(html, productId) {
 }
 
 function renderProductShowcase(config) {
-  const paragraphs = config.summary
+  const paragraphs = (Array.isArray(config.summary) ? config.summary : [])
     .map(paragraph => `    <p>${escapeHtml(paragraph)}</p>`)
     .join('\n');
-  const highlights = config.highlights
+  const highlights = (Array.isArray(config.highlights) ? config.highlights : [])
     .map(item => `        <li>${escapeHtml(item)}</li>`)
     .join('\n');
-  const facts = config.editionFacts
+  const facts = (Array.isArray(config.editionFacts) ? config.editionFacts : [])
     .map(({ label, value }) => `<div class="showcase-fact"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
     .join('\n      ');
-  const links = config.links
+  const links = (Array.isArray(config.links) ? config.links : [])
     .map(({ href, label }) => `<a href="${escapeHtml(href)}">${escapeHtml(label)} →</a>`)
     .join('\n      ');
+  const linksHtml = links
+    ? `<div class="showcase-links">\n      ${links}\n    </div>`
+    : '';
 
   return `<section class="product-showcase" aria-labelledby="showcase-title">
   <div class="showcase-intro">
     <p class="showcase-eyebrow">${escapeHtml(config.eyebrow)}</p>
-    <h2 id="showcase-title">¿De qué trata ${escapeHtml(config.h1)}?</h2>
+    <h2 id="showcase-title">${escapeHtml(config.introHeading || `¿De qué trata ${config.h1}?`)}</h2>
 ${paragraphs}
   </div>
   <div class="showcase-grid">
     <section class="showcase-card" aria-labelledby="showcase-highlights-title">
-      <h3 id="showcase-highlights-title">Qué vas a encontrar</h3>
+      <h3 id="showcase-highlights-title">${escapeHtml(config.highlightsHeading || 'Datos destacados')}</h3>
       <ul>
 ${highlights}
       </ul>
     </section>
     <section class="showcase-card" aria-labelledby="showcase-audience-title">
-      <h3 id="showcase-audience-title">¿Para quién es este libro?</h3>
+      <h3 id="showcase-audience-title">${escapeHtml(config.audienceHeading || '¿Para quién es este libro?')}</h3>
       <p>${escapeHtml(config.audience)}</p>
     </section>
     <section class="showcase-card" aria-labelledby="showcase-author-title">
-      <h3 id="showcase-author-title">Sobre Meg Meeker</h3>
+      <h3 id="showcase-author-title">${escapeHtml(config.authorHeading || 'Sobre la autoría')}</h3>
       <p>${escapeHtml(config.authorBio)}</p>
     </section>
   </div>
   <section class="showcase-edition" aria-labelledby="showcase-edition-title">
     <div class="showcase-edition-head">
-      <h2 id="showcase-edition-title">Ficha de esta edición</h2>
-      <span class="showcase-verified">Edición identificada por ISBN</span>
+      <h2 id="showcase-edition-title">${escapeHtml(config.editionHeading || 'Ficha de esta edición')}</h2>
+      <span class="showcase-verified">${escapeHtml(config.verifiedLabel || 'Datos tomados de la publicación')}</span>
     </div>
     <dl class="showcase-facts">
       ${facts}
     </dl>
-    <div class="showcase-links">
-      ${links}
-    </div>
+    ${linksHtml}
   </section>
 </section>`;
 }
@@ -321,6 +328,75 @@ function enrichShowcaseSchema(html, productId, config) {
     schema.translator = { ...verified.translator };
     return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
   });
+}
+
+function enrichAutomaticShowcaseSchema(html, productId, config) {
+  return html.replace(JSON_LD_RE, (full, rawJson) => {
+    let schema;
+    try {
+      schema = JSON.parse(rawJson);
+    } catch {
+      return full;
+    }
+    const rawType = schema?.['@type'];
+    const types = Array.isArray(rawType) ? rawType : [rawType].filter(Boolean);
+    if (!types.includes('Book') || String(schema.sku || '').toUpperCase() !== productId) return full;
+
+    schema.description = config.schemaDescription;
+    return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
+  });
+}
+
+function replaceDescriptionMeta(html, config) {
+  const safeDescription = escapeHtml(config.metaDescription);
+  return html
+    .replace(
+      /<meta name="description" content="[^"]*">/,
+      `<meta name="description" content="${safeDescription}">`,
+    )
+    .replace(
+      /<meta property="og:description" content="[^"]*">/,
+      `<meta property="og:description" content="${safeDescription}">`,
+    )
+    .replace(
+      /<meta name="twitter:description" content="[^"]*">/,
+      `<meta name="twitter:description" content="${safeDescription}">`,
+    );
+}
+
+function insertShowcaseBeforeRelated(html, block) {
+  const index = html.indexOf(RELATED_BOOKS_MARKER);
+  if (index >= 0) return `${html.slice(0, index)}${block}\n  ${html.slice(index)}`;
+  return html.replace('</main>', `${block}\n</main>`);
+}
+
+export function enrichAutomaticProductShowcaseHtml(html, productId) {
+  const source = String(html || '');
+  const id = String(productId || '').toUpperCase();
+  if (!source.includes(ACTIVE_PAGE_MARKER) ||
+      source.includes(SHOWCASE_MARKER) ||
+      PRODUCT_SHOWCASE_OVERRIDES[id]) {
+    return source;
+  }
+
+  const item = productItemFromProductHtml(source, id);
+  const config = buildAutomaticProductShowcase(item);
+  if (!config) return source;
+
+  let result = source;
+  if (config.subtitle && !result.includes('class="book-subtitle"')) {
+    result = result.replace(
+      PRODUCT_H1_RE,
+      match => `${match}\n    <p class="book-subtitle">${escapeHtml(config.subtitle)}</p>`,
+    );
+  }
+  result = replaceDescriptionMeta(result, config);
+  result = enrichAutomaticShowcaseSchema(result, id, config);
+  result = insertShowcaseBeforeRelated(result, renderProductShowcase(config));
+  if (!result.includes(SHOWCASE_STYLE_MARKER)) {
+    result = result.replace('</style>', `${showcaseStyles()}\n  </style>`);
+  }
+  return result;
 }
 
 // FICHAS-VIDRIERA-1: capa editorial visible para un MLU/ISBN exacto. Usa la
@@ -411,7 +487,16 @@ export async function onRequest(context) {
   const html = await response.clone().text();
   const withCatalogBreadcrumb = enrichActiveCatalogBreadcrumbHtml(html);
   const withByRequestCx = enrichByRequestProductHtml(withCatalogBreadcrumb, productId);
-  const withShowcase = enrichProductShowcaseHtml(withByRequestCx, productId);
+
+  let withAutomaticShowcase = withByRequestCx;
+  if (withByRequestCx.includes(ACTIVE_PAGE_MARKER) && !PRODUCT_SHOWCASE_OVERRIDES[productId]) {
+    const selected = await isProductInShowcaseCohort(context, productId);
+    if (selected) {
+      withAutomaticShowcase = enrichAutomaticProductShowcaseHtml(withByRequestCx, productId);
+    }
+  }
+
+  const withShowcase = enrichProductShowcaseHtml(withAutomaticShowcase, productId);
   const enriched = normalizeProductSnippetSchemaHtml(withShowcase);
   if (enriched === html) return response;
   return responseWithBody(response, enriched);
