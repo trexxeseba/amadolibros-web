@@ -30,6 +30,7 @@ const GENERIC_AUTHOR_LABELS = new Set([
   'vv aa', 'vv. aa.', 'vv aa.', 'vv. aa', 'sin autor', 's a', 's/a',
 ]);
 
+const NAME_CONNECTORS = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
 const METADATA_PREFIX_RE = /^(?:de\s+|autor(?:a|es)?\s*:?|editorial\b|editado\s+por\b|tapa\s+(?:blanda|dura)\b|encuadernaci[oó]n\b|formato\b|idioma\b|en\s+(?:espa[nñ]ol|ingl[eé]s|portugu[eé]s|franc[eé]s|italiano|alem[aá]n)\b|colecci[oó]n\b|serie\b|biblioteca\b|(?:1[89]|20)\d{2}$|\d+[.ªºa]?\s*edici[oó]n\b)/iu;
 const COLLECTION_SUFFIX_RE = /^\d{1,4}\s+(?:biblioteca|colecci[oó]n|serie)\b/iu;
 const PAREN_METADATA_RE = /\s*\(([^()]*)\)\s*$/u;
@@ -88,6 +89,15 @@ function stripLabel(value) {
     .trim();
 }
 
+function looksLikePersonName(value) {
+  const source = clean(value).replace(/^de\s+/iu, '').trim();
+  const words = source.split(/\s+/u).filter(Boolean);
+  const significant = words.filter(word => !NAME_CONNECTORS.has(normalizedText(word)));
+  if (significant.length < 2 || significant.length > 7) return false;
+  return significant.every(word =>
+    /^[\p{Lu}][\p{L}.'’\-]*$/u.test(word) || /^[\p{Lu}]\.$/u.test(word));
+}
+
 function isAuthorMetadata(segment, item) {
   const key = normalizedText(segment);
   if (!key) return false;
@@ -97,12 +107,8 @@ function isAuthorMetadata(segment, item) {
   if (authors.has(key) || authors.has(withoutLabel)) return true;
 
   // Sólo se acepta un "de Nombre Apellido" no exacto cuando aparece como
-  // segmento separado y tiene aspecto de persona, no como parte del título.
-  if (/^de\s+[\p{L}. '-]{3,80}$/iu.test(clean(segment))) {
-    const words = withoutLabel.split(/\s+/u).filter(Boolean);
-    return words.length >= 2 && words.length <= 8;
-  }
-  return false;
+  // segmento separado y sus palabras tienen aspecto inequívoco de nombre.
+  return /^de\s+/iu.test(clean(segment)) && looksLikePersonName(segment);
 }
 
 function isMetadataSegment(segment, item) {
@@ -203,16 +209,23 @@ export function deriveBookDisplayTitle(item = {}) {
     }
   }
 
-  candidate = safeCandidate(rawTitle, candidate);
-  const displayTitle = normalizeWordCase(candidate);
+  const candidateBeforeSafety = clean(candidate);
+  const safe = safeCandidate(rawTitle, candidateBeforeSafety);
+  const rejectedRemoval = removedParts.length > 0 && safe === rawTitle && candidateBeforeSafety !== rawTitle;
+  const effectiveRemovedParts = rejectedRemoval ? [] : removedParts;
+  const displayTitle = rejectedRemoval ? rawTitle : normalizeWordCase(safe);
   const changed = displayTitle !== rawTitle;
 
   return Object.freeze({
     rawTitle,
     title: displayTitle,
     changed,
-    removedParts: Object.freeze(removedParts),
-    reason: removedParts.length ? 'metadata-suffix' : changed ? 'case-normalization' : 'unchanged',
+    removedParts: Object.freeze(effectiveRemovedParts),
+    reason: effectiveRemovedParts.length
+      ? 'metadata-suffix'
+      : changed
+        ? 'case-normalization'
+        : 'unchanged',
   });
 }
 
