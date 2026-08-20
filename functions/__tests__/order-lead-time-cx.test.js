@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  enrichActiveCatalogBreadcrumbHtml,
   enrichByRequestProductHtml,
   onRequest,
 } from '../libro/_middleware.js';
@@ -31,6 +32,14 @@ function productHtml({ inStock = false } = {}) {
   </main>
 </body>
 </html>`;
+}
+
+function breadcrumbSchema(html) {
+  for (const match of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+    const parsed = JSON.parse(match[1]);
+    if (parsed?.['@type'] === 'BreadcrumbList') return parsed;
+  }
+  return null;
 }
 
 function assertLeadTime(html) {
@@ -67,6 +76,37 @@ test('una ficha activa con caja de moneda extranjera no recibe plazo de encargo'
   assert.doesNotMatch(html, /15 a 20 días/);
 });
 
+test('QW3: una ficha activa enlaza Catálogo en HTML y BreadcrumbList', () => {
+  const html = enrichActiveCatalogBreadcrumbHtml(productHtml({ inStock: true }));
+
+  assert.match(html, /<a href="\/">Inicio<\/a> ›\s*<a href="\/catalogo">Catálogo<\/a> ›\s*<span>Libro de prueba<\/span>/);
+  assert.doesNotMatch(html, /Libros por encargo/);
+
+  const schema = breadcrumbSchema(html);
+  assert.ok(schema);
+  assert.deepEqual(schema.itemListElement.map(item => [item.position, item.name]), [
+    [1, 'Inicio'],
+    [2, 'Catálogo'],
+    [3, 'Libro de prueba'],
+  ]);
+  assert.equal(schema.itemListElement[1].item, 'https://www.amadolibros.com/catalogo');
+});
+
+test('QW3: una ficha pausada queda fuera del breadcrumb de Catálogo', () => {
+  const source = productHtml();
+  assert.equal(enrichActiveCatalogBreadcrumbHtml(source), source);
+});
+
+test('QW3: el breadcrumb activo es idempotente', () => {
+  const first = enrichActiveCatalogBreadcrumbHtml(productHtml({ inStock: true }));
+  const second = enrichActiveCatalogBreadcrumbHtml(first);
+
+  assert.equal(second, first);
+  assert.equal((second.match(/href="\/catalogo">Catálogo<\/a>/g) || []).length, 1);
+  const schema = breadcrumbSchema(second);
+  assert.equal(schema.itemListElement.filter(item => item.name === 'Catálogo').length, 1);
+});
+
 test('el enriquecimiento es idempotente dentro y fuera de la cohorte', () => {
   for (const productId of [COHORT_PRODUCT_ID, OUTSIDE_COHORT_PRODUCT_ID]) {
     const first = enrichByRequestProductHtml(productHtml(), productId);
@@ -100,20 +140,27 @@ test('el middleware transforma una ficha pausada fuera de cohorte y elimina vali
   assert.equal(response.headers.get('cache-control'), 'public, max-age=3600');
 });
 
-test('el middleware devuelve intacta la Response original de una ficha activa', async () => {
+test('QW3: el middleware transforma una ficha activa, conserva cache-control y descarta validators anteriores', async () => {
   const upstream = new Response(productHtml({ inStock: true }), {
     status: 200,
     headers: {
       'content-type': 'text/html;charset=UTF-8',
+      'content-length': '999',
       etag: '"activo"',
+      'cache-control': 'public, max-age=3600',
     },
   });
   const response = await onRequest({
     request: new Request(`https://www.amadolibros.com/libro/${OUTSIDE_COHORT_PRODUCT_ID}/libro`),
     next: async () => upstream,
   });
+  const html = await response.text();
 
-  assert.equal(response, upstream);
-  assert.equal(response.headers.get('etag'), '"activo"');
-  assert.doesNotMatch(await response.text(), /15 a 20 días/);
+  assert.notEqual(response, upstream);
+  assert.match(html, /href="\/catalogo">Catálogo<\/a>/);
+  assert.doesNotMatch(html, /15 a 20 días/);
+  assert.doesNotMatch(html, /Libros por encargo/);
+  assert.equal(response.headers.get('etag'), null);
+  assert.equal(response.headers.get('content-length'), null);
+  assert.equal(response.headers.get('cache-control'), 'public, max-age=3600');
 });
