@@ -6,6 +6,7 @@ const workflowPaths = [
   '.github/workflows/ga4-export.yml',
   '.github/workflows/gsc-export.yml',
   '.github/workflows/ai-measurement-baseline.yml',
+  '.github/workflows/gsc-bigquery-domain-fix.yml',
 ];
 
 const provider =
