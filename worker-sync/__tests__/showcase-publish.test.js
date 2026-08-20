@@ -107,7 +107,7 @@ test('no incorpora pausados ni repite la misma edición', () => {
   assert.equal(original.showcase_rank, undefined);
 });
 
-test('publica staging, valida readback y promueve cohorte + catálogo + meta', async () => {
+test('publica staging, valida readback y promueve catálogo + meta + cohorte como último puntero', async () => {
   const objects = new Map();
   const writes = [];
   const env = {
@@ -133,16 +133,16 @@ test('publica staging, valida readback y promueve cohorte + catálogo + meta', a
     'staging/catalog.json',
     'staging/meta.json',
     'staging/showcase-cohort.json',
-    'showcase/v1/cohort.json',
     'catalog.json',
     'meta.json',
+    'showcase/v1/cohort.json',
   ]);
   const cohort = JSON.parse(objects.get('showcase/v1/cohort.json'));
   const liveCatalog = JSON.parse(objects.get('catalog.json'));
   assert.equal(cohort.total, 1000);
   assert.equal(liveCatalog.data_quality.showcase_selection.selected_items, 1000);
   assert.equal(syncMeta.showcase_selection.selected_items, 1000);
-  assert.equal(writes[3].options.httpMetadata.cacheControl, 'public, max-age=3600');
+  assert.equal(writes[5].options.httpMetadata.cacheControl, 'public, max-age=3600');
 });
 
 test('si el readback de la cohorte falla no toca ningún archivo live', async () => {
