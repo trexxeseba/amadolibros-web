@@ -53,13 +53,20 @@ function rendered(item = book(), relatedBooks = []) {
   return renderPage(item, SLUG, false, '', '', relatedBooks);
 }
 
+function schemas(html) {
+  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map(match => JSON.parse(match[1]));
+}
+
 function productSchema(html) {
-  for (const match of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
-    const schema = JSON.parse(match[1]);
+  return schemas(html).find(schema => {
     const types = Array.isArray(schema['@type']) ? schema['@type'] : [schema['@type']];
-    if (types.includes('Book') && schema.sku === PRODUCT_ID) return schema;
-  }
-  return null;
+    return types.includes('Book') && schema.sku === PRODUCT_ID;
+  }) || null;
+}
+
+function breadcrumbSchema(html) {
+  return schemas(html).find(schema => schema['@type'] === 'BreadcrumbList') || null;
 }
 
 test('extrae del HTML SSR únicamente datos reales de la publicación', () => {
@@ -146,6 +153,64 @@ test('convierte una ficha activa en vidriera sin tocar precio, stock ni acciones
   assert.match(schema.description, /evaluación clínica/);
   assert.equal(schema.review, undefined);
   assert.equal(schema.aggregateRating, undefined);
+});
+
+test('limpia H1, title, snippet, breadcrumb y schema sin alterar el título comercial del carrito', () => {
+  const rawTitle = 'Manual De Emdr Y Procesos De Terapia Familiar, De Louise Shapiro. Editorial Ediciones Pléyades En Español';
+  const item = book({
+    title: rawTitle,
+    author: 'Francine Shapiro, Florence W. Kaslow y Louise Maxfield',
+    publisher: 'Ediciones Pléyades',
+    bibliographic: {
+      subtitle: null,
+      language: 'Español',
+      format: 'Tapa blanda',
+      edition: null,
+      publication_year: null,
+      genre: 'Psicoterapia familiar',
+      collection: null,
+      translator: null,
+    },
+  });
+  const canonical = `https://www.amadolibros.com/libro/${PRODUCT_ID}/${SLUG}`;
+  const html = enrichAutomaticProductShowcaseHtml(rendered(item), PRODUCT_ID);
+  const schema = productSchema(html);
+  const breadcrumb = breadcrumbSchema(html);
+
+  assert.match(html, /<h1>Manual de EMDR y Procesos de Terapia Familiar<\/h1>/);
+  assert.match(html, /<title>Manual de EMDR y Procesos de Terapia Familiar \| Amado Libros<\/title>/);
+  assert.match(html, /<meta property="og:title" content="Manual de EMDR y Procesos de Terapia Familiar \| Amado Libros">/);
+  assert.match(html, /<meta name="twitter:title" content="Manual de EMDR y Procesos de Terapia Familiar \| Amado Libros">/);
+  assert.match(html, /<meta name="description" content="Comprá Manual de EMDR y Procesos de Terapia Familiar de Francine Shapiro/);
+  assert.match(html, /<nav>[\s\S]*?<span>Manual de EMDR y Procesos de Terapia Familiar<\/span>/);
+  assert.match(html, new RegExp(`data-title="${rawTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
+  assert.match(html, new RegExp(`<link rel="canonical" href="${canonical}">`));
+
+  assert.equal(schema.name, 'Manual de EMDR y Procesos de Terapia Familiar');
+  assert.equal(schema.alternateName, rawTitle);
+  assert.equal(schema.offers.price, '1990');
+  assert.equal(schema.offers.availability, 'https://schema.org/InStock');
+  assert.equal(breadcrumb.itemListElement.at(-1).name, 'Manual de EMDR y Procesos de Terapia Familiar');
+});
+
+test('la limpieza no cambia el slug ni el enlace original de Mercado Libre', () => {
+  const rawTitle = 'Psicoterapia Centrada En La Transferenci: 213 Biblioteca De Psicología';
+  const html = enrichAutomaticProductShowcaseHtml(rendered(book({
+    title: rawTitle,
+    bibliographic: {
+      subtitle: null,
+      language: 'Español',
+      format: 'Tapa blanda',
+      edition: null,
+      publication_year: null,
+      genre: 'Psicología',
+      collection: 'Biblioteca De Psicología',
+    },
+  })), PRODUCT_ID);
+
+  assert.match(html, /<h1>Psicoterapia Centrada en la Transferenci<\/h1>/);
+  assert.match(html, new RegExp(`https://www\\.amadolibros\\.com/libro/${PRODUCT_ID}/${SLUG}`));
+  assert.match(html, /https:\/\/articulo\.mercadolibre\.com\.uy\/MLU-123456789/);
 });
 
 test('la vidriera aparece antes de los libros relacionados', () => {
