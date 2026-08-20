@@ -168,16 +168,10 @@ export async function publishToR2(env, catalog, syncMeta) {
   );
 
   // ── 3. Promote a live ──────────────────────────────────────────────────────
-  // La cohorte se publica antes del catálogo. Si un put posterior fallara, la
-  // cohorte contiene sólo IDs de libros activos que también existían en la foto
-  // anterior; Pages degrada de forma segura si algún ID no resuelve.
-  await env.CATALOG_R2.put(SHOWCASE_COHORT_LIVE_KEY, cohortBody, {
-    httpMetadata: {
-      contentType: 'application/json',
-      cacheControl: 'public, max-age=3600',
-    },
-  });
-
+  // Primero se publica la fotografía completa y recién al final la cohorte que
+  // la referencia. Si catálogo o meta fallan, Pages conserva la cohorte previa;
+  // si falla el último put, sólo queda el catálogo nuevo con la cohorte anterior,
+  // una degradación segura sin IDs adelantados ni fichas rotas.
   await env.CATALOG_R2.put('catalog.json', catalogBody, {
     httpMetadata: {
       contentType: 'application/json',
@@ -189,6 +183,15 @@ export async function publishToR2(env, catalog, syncMeta) {
     httpMetadata: {
       contentType: 'application/json',
       cacheControl: 'public, max-age=300',
+    },
+  });
+
+  // Puntero/allowlist último: nunca anuncia una edición antes de que el catálogo
+  // completo que la contiene haya quedado publicado.
+  await env.CATALOG_R2.put(SHOWCASE_COHORT_LIVE_KEY, cohortBody, {
+    httpMetadata: {
+      contentType: 'application/json',
+      cacheControl: 'public, max-age=3600',
     },
   });
 
