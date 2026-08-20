@@ -1,6 +1,7 @@
 import {
   assignShowcaseRanking,
   DEFAULT_SHOWCASE_LIMIT,
+  LEGACY_SHOWCASE_LIMIT,
 } from '../functions/_shared/showcase-ranking.js';
 import { PRODUCT_SHOWCASE_OVERRIDES } from '../functions/_shared/product-showcases.js';
 import { PRODUCT_SEO_OVERRIDES } from '../functions/_shared/seo-products.js';
@@ -10,12 +11,14 @@ import { VERIFIED_DEMAND_BOOK_IDS } from './verified-demand-bibliography.js';
 /**
  * worker-sync/r2-publish.js
  *
- * Escribe catalog.json, meta.json y la cohorte compacta de fichas vidriera en
+ * Escribe catalog.json, meta.json y cohortes compactas de fichas vidriera en
  * el bucket R2 amadolibros-catalog usando staging → validación → promote.
  */
 
-const SHOWCASE_COHORT_STAGING_KEY = 'staging/showcase-cohort.json';
-const SHOWCASE_COHORT_LIVE_KEY = 'showcase/v1/cohort.json';
+const SHOWCASE_V1_STAGING_KEY = 'staging/showcase-cohort-v1.json';
+const SHOWCASE_V2_STAGING_KEY = 'staging/showcase-cohort-v2.json';
+const SHOWCASE_V1_LIVE_KEY = 'showcase/v1/cohort.json';
+const SHOWCASE_V2_LIVE_KEY = 'showcase/v2/cohort.json';
 const SHOWCASE_PRIORITY_IDS = new Set([
   ...Object.keys(PRODUCT_SHOWCASE_OVERRIDES),
   ...Object.keys(PRODUCT_SEO_OVERRIDES),
@@ -23,12 +26,12 @@ const SHOWCASE_PRIORITY_IDS = new Set([
   ...VERIFIED_DEMAND_BOOK_IDS,
 ]);
 
-function validShowcasePayload(payload) {
+function validShowcasePayload(payload, { schemaVersion, limit }) {
   return payload &&
-    payload.schema_version === 1 &&
+    payload.schema_version === schemaVersion &&
     Number.isInteger(payload.total) &&
     payload.total >= 1 &&
-    payload.total <= DEFAULT_SHOWCASE_LIMIT &&
+    payload.total <= limit &&
     Array.isArray(payload.ids) &&
     payload.ids.length === payload.total &&
     new Set(payload.ids).size === payload.ids.length &&
@@ -36,11 +39,9 @@ function validShowcasePayload(payload) {
 }
 
 /**
- * Marca exactamente las mejores ediciones activas del catálogo y genera un
- * puntero liviano para Pages. La selección usa únicamente campos reales:
- * descripción, ISBN, autoría, editorial, páginas, bibliografía, imágenes,
- * identidad de catálogo y stock. Las oportunidades ya verificadas reciben un
- * bonus explícito, sin consultar conectores de publicidad.
+ * Marca las mejores ediciones activas y genera dos punteros livianos:
+ * - v2: hasta 3.000 fichas, consumida por Pages nuevo;
+ * - v1: primeras 1.000, compatible con Pages anterior y rollback inmediato.
  */
 export function prepareShowcaseCatalog(catalog, syncMeta = null) {
   if (!catalog || !Array.isArray(catalog.items)) {
@@ -64,16 +65,35 @@ export function prepareShowcaseCatalog(catalog, syncMeta = null) {
     .filter(item => Number.isInteger(item.showcase_rank))
     .sort((a, b) => a.showcase_rank - b.showcase_rank)
     .map(item => item.id);
-  const cohort = {
-    schema_version: 1,
+  const common = {
     generated_at: catalog.updated_at,
     catalog_version: catalog.updated_at,
+  };
+  const cohort = {
+    schema_version: 2,
+    ...common,
     total: ids.length,
     ids,
   };
+  const legacyIds = ids.slice(0, LEGACY_SHOWCASE_LIMIT);
+  const legacyCohort = {
+    schema_version: 1,
+    ...common,
+    total: legacyIds.length,
+    ids: legacyIds,
+  };
 
-  if (!validShowcasePayload(cohort)) {
-    throw new Error('[R2] La cohorte vidriera generada no cumple el contrato.');
+  if (!validShowcasePayload(cohort, {
+    schemaVersion: 2,
+    limit: DEFAULT_SHOWCASE_LIMIT,
+  })) {
+    throw new Error('[R2] La cohorte vidriera v2 generada no cumple el contrato.');
+  }
+  if (!validShowcasePayload(legacyCohort, {
+    schemaVersion: 1,
+    limit: LEGACY_SHOWCASE_LIMIT,
+  })) {
+    throw new Error('[R2] La cohorte vidriera v1 de compatibilidad no cumple el contrato.');
   }
 
   if (syncMeta && typeof syncMeta === 'object') {
@@ -81,20 +101,28 @@ export function prepareShowcaseCatalog(catalog, syncMeta = null) {
       schema_version: metrics.schema_version,
       limit: metrics.limit,
       selected_items: metrics.selected_items,
+      legacy_selected_items: legacyCohort.total,
       selected_with_description: metrics.selected_with_description,
       selected_with_isbn: metrics.selected_with_isbn,
       selected_with_multiple_images: metrics.selected_with_multiple_images,
+      selected_editorial: metrics.selected_editorial,
+      selected_descriptive: metrics.selected_descriptive,
+      selected_bibliographic: metrics.selected_bibliographic,
+      selected_title_cleaned: metrics.selected_title_cleaned,
+      selected_title_over_70_before: metrics.selected_title_over_70_before,
+      selected_title_over_70_after: metrics.selected_title_over_70_after,
     };
   }
 
-  return { cohort, metrics };
+  return { cohort, legacyCohort, metrics };
 }
 
 export async function publishToR2(env, catalog, syncMeta) {
-  const { cohort, metrics } = prepareShowcaseCatalog(catalog, syncMeta);
+  const { cohort, legacyCohort, metrics } = prepareShowcaseCatalog(catalog, syncMeta);
   const catalogBody = JSON.stringify(catalog);
   const metaBody = JSON.stringify(syncMeta);
   const cohortBody = JSON.stringify(cohort);
+  const legacyCohortBody = JSON.stringify(legacyCohort);
 
   // ── 1. Escribir staging ────────────────────────────────────────────────────
   await env.CATALOG_R2.put('staging/catalog.json', catalogBody, {
@@ -111,7 +139,14 @@ export async function publishToR2(env, catalog, syncMeta) {
     },
   });
 
-  await env.CATALOG_R2.put(SHOWCASE_COHORT_STAGING_KEY, cohortBody, {
+  await env.CATALOG_R2.put(SHOWCASE_V1_STAGING_KEY, legacyCohortBody, {
+    httpMetadata: {
+      contentType: 'application/json',
+      cacheControl: 'no-store',
+    },
+  });
+
+  await env.CATALOG_R2.put(SHOWCASE_V2_STAGING_KEY, cohortBody, {
     httpMetadata: {
       contentType: 'application/json',
       cacheControl: 'no-store',
@@ -121,26 +156,30 @@ export async function publishToR2(env, catalog, syncMeta) {
   console.log('[R2] Staging escrito. Validando readback...');
 
   // ── 2. Leer de vuelta y validar ────────────────────────────────────────────
-  const [stagingObj, stagingShowcaseObj] = await Promise.all([
+  const [stagingObj, stagingV1Obj, stagingV2Obj] = await Promise.all([
     env.CATALOG_R2.get('staging/catalog.json'),
-    env.CATALOG_R2.get(SHOWCASE_COHORT_STAGING_KEY),
+    env.CATALOG_R2.get(SHOWCASE_V1_STAGING_KEY),
+    env.CATALOG_R2.get(SHOWCASE_V2_STAGING_KEY),
   ]);
   if (!stagingObj) {
     throw new Error('[R2] Readback de staging/catalog.json devolvió null — R2 inconsistente. Abortando promote.');
   }
-  if (!stagingShowcaseObj) {
-    throw new Error('[R2] Readback de staging/showcase-cohort.json devolvió null. Abortando promote.');
+  if (!stagingV1Obj || !stagingV2Obj) {
+    throw new Error('[R2] Readback de cohortes vidriera devolvió null. Abortando promote.');
   }
 
   let parsed;
-  let parsedShowcase;
+  let parsedV1;
+  let parsedV2;
   try {
-    const [catalogText, showcaseText] = await Promise.all([
+    const [catalogText, v1Text, v2Text] = await Promise.all([
       stagingObj.text(),
-      stagingShowcaseObj.text(),
+      stagingV1Obj.text(),
+      stagingV2Obj.text(),
     ]);
     parsed = JSON.parse(catalogText);
-    parsedShowcase = JSON.parse(showcaseText);
+    parsedV1 = JSON.parse(v1Text);
+    parsedV2 = JSON.parse(v2Text);
   } catch (error) {
     throw new Error(`[R2] El staging no es JSON válido: ${error.message}`);
   }
@@ -153,9 +192,23 @@ export async function publishToR2(env, catalog, syncMeta) {
   if (Array.isArray(parsed.items) && typeof parsed.total === 'number' && parsed.items.length !== parsed.total) {
     errs.push(`items.length (${parsed.items.length}) !== total (${parsed.total})`);
   }
-  if (!validShowcasePayload(parsedShowcase)) errs.push('cohorte vidriera inválida');
-  if (validShowcasePayload(parsedShowcase) && parsedShowcase.total !== metrics.selected_items) {
-    errs.push(`cohorte.total (${parsedShowcase.total}) !== selected_items (${metrics.selected_items})`);
+  if (!validShowcasePayload(parsedV1, {
+    schemaVersion: 1,
+    limit: LEGACY_SHOWCASE_LIMIT,
+  })) errs.push('cohorte vidriera v1 inválida');
+  if (!validShowcasePayload(parsedV2, {
+    schemaVersion: 2,
+    limit: DEFAULT_SHOWCASE_LIMIT,
+  })) errs.push('cohorte vidriera v2 inválida');
+  if (parsedV2?.total !== metrics.selected_items) {
+    errs.push(`cohorte v2 total (${parsedV2?.total}) !== selected_items (${metrics.selected_items})`);
+  }
+  if (parsedV1?.total !== Math.min(metrics.selected_items, LEGACY_SHOWCASE_LIMIT)) {
+    errs.push(`cohorte v1 total (${parsedV1?.total}) no coincide con compatibilidad esperada`);
+  }
+  if (Array.isArray(parsedV1?.ids) && Array.isArray(parsedV2?.ids) &&
+      JSON.stringify(parsedV1.ids) !== JSON.stringify(parsedV2.ids.slice(0, parsedV1.ids.length))) {
+    errs.push('cohorte v1 no es prefijo exacto de v2');
   }
 
   if (errs.length > 0) {
@@ -164,14 +217,10 @@ export async function publishToR2(env, catalog, syncMeta) {
 
   console.log(
     `[R2] Validación OK: ${parsed.total} items; ` +
-    `${parsedShowcase.total} fichas vidriera; updated_at: ${parsed.updated_at}`,
+    `${parsedV2.total} fichas v2; ${parsedV1.total} fichas v1; updated_at: ${parsed.updated_at}`,
   );
 
   // ── 3. Promote a live ──────────────────────────────────────────────────────
-  // Primero se publica la fotografía completa y recién al final la cohorte que
-  // la referencia. Si catálogo o meta fallan, Pages conserva la cohorte previa;
-  // si falla el último put, sólo queda el catálogo nuevo con la cohorte anterior,
-  // una degradación segura sin IDs adelantados ni fichas rotas.
   await env.CATALOG_R2.put('catalog.json', catalogBody, {
     httpMetadata: {
       contentType: 'application/json',
@@ -186,19 +235,27 @@ export async function publishToR2(env, catalog, syncMeta) {
     },
   });
 
-  // Puntero/allowlist último: nunca anuncia una edición antes de que el catálogo
-  // completo que la contiene haya quedado publicado.
-  await env.CATALOG_R2.put(SHOWCASE_COHORT_LIVE_KEY, cohortBody, {
+  // Compatibilidad primero: Pages viejo y rollback siempre conservan 1.000.
+  await env.CATALOG_R2.put(SHOWCASE_V1_LIVE_KEY, legacyCohortBody, {
     httpMetadata: {
       contentType: 'application/json',
-      cacheControl: 'public, max-age=3600',
+      cacheControl: 'public, max-age=300',
+    },
+  });
+
+  // v2 último: nunca anuncia una edición antes de catálogo/meta ni deja sin
+  // fallback a Pages. Si este put falla, el sitio conserva la cohorte v1.
+  await env.CATALOG_R2.put(SHOWCASE_V2_LIVE_KEY, cohortBody, {
+    httpMetadata: {
+      contentType: 'application/json',
+      cacheControl: 'public, max-age=300',
     },
   });
 
   const bytes = new TextEncoder().encode(catalogBody).length;
   console.log(
     `[R2] Promote completado: ${catalog.total} items, ` +
-    `${cohort.total} fichas vidriera, ` +
+    `${cohort.total} fichas v2 (${legacyCohort.total} compatibles v1), ` +
     `${(bytes / 1024 / 1024).toFixed(2)} MB, updated_at: ${catalog.updated_at}`,
   );
 }
