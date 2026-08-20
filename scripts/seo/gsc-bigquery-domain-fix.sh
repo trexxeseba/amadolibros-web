@@ -38,7 +38,7 @@ echo "project_id=$PROJECT_ID"
 echo "project_number=$PROJECT_NUMBER"
 echo "mode=$MODE"
 echo "target_date=$TARGET_DATE"
-gcloud config list account project --format=yaml > "$OUTPUT_DIR/gcloud-context.yaml"
+gcloud config list --format=yaml > "$OUTPUT_DIR/gcloud-context.yaml"
 
 project_policy_exists=false
 if gcloud org-policies describe "$CONSTRAINT" \
