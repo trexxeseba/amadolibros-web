@@ -8,6 +8,8 @@ import {
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
 const JSON_LD_RE = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+const CATALOG_PATH = '/catalogo';
+const ACTIVE_PAGE_MARKER = 'class="badge in-stock"';
 const ORDER_BOX_GENERIC_COPY = '<span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>';
 const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Demora estimada: 15 a 20 días desde la confirmación.</b> Salvo demoras del proveedor, courier o aduana.</span>
       <span>Antes de avanzar verificamos disponibilidad, edición y precio.</span>`;
@@ -31,6 +33,52 @@ function byRequestStyles() {
     .order-hub-actions a:hover{text-decoration:underline}
     .order-hub-actions a:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
   `;
+}
+
+function enrichCatalogBreadcrumbSchema(html) {
+  return html.replace(JSON_LD_RE, (full, rawJson) => {
+    let schema;
+    try {
+      schema = JSON.parse(rawJson);
+    } catch {
+      return full;
+    }
+    if (schema?.['@type'] !== 'BreadcrumbList' || !Array.isArray(schema.itemListElement) || schema.itemListElement.length === 0) {
+      return full;
+    }
+    const current = schema.itemListElement.at(-1);
+    schema.itemListElement = [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${BASE}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Catálogo',
+        item: `${BASE}${CATALOG_PATH}`,
+      },
+      { ...current, position: 3 },
+    ];
+    const serialized = JSON.stringify(schema).replace(/</g, '\\u003c');
+    return `<script type="application/ld+json">${serialized}</script>`;
+  });
+}
+
+// SEO-ACTIVE-CATALOG-BREADCRUMB: las fichas realmente disponibles recuperan
+// un enlace HTML rastreable hacia /catalogo y el mismo nivel en BreadcrumbList.
+// No se aplica a pausadas: la cohorte SEO conserva su rama específica
+// Inicio → Libros por encargo → ficha, y las pausadas fuera de cohorte no se
+// mezclan en este lote.
+export function enrichActiveCatalogBreadcrumbHtml(html) {
+  const source = String(html || '');
+  if (!source.includes(ACTIVE_PAGE_MARKER)) return source;
+
+  let result = source;
+  if (!result.includes(`<a href="${CATALOG_PATH}">Catálogo</a>`)) {
+    result = result.replace(
+      BREADCRUMB_RE,
+      `<nav>\n  <a href="/">Inicio</a> ›\n  <a href="${CATALOG_PATH}">Catálogo</a> ›\n  <span>`,
+    );
+  }
+  return enrichCatalogBreadcrumbSchema(result);
 }
 
 function enrichBreadcrumbSchema(html) {
@@ -145,10 +193,12 @@ export async function onRequest(context) {
     return response;
   }
 
-  // Se inspecciona un clon: si la página no cambia (caso normal de fichas
-  // activas), se devuelve la Response original con cuerpo y validators intactos.
+  // Se inspecciona un clon. Si ninguna transformación aplica, se devuelve la
+  // Response original con body, ETag y headers intactos. Si el HTML cambia,
+  // responseWithBody descarta validators del contenido anterior.
   const html = await response.clone().text();
-  const enriched = enrichByRequestProductHtml(html, productId);
+  const withCatalogBreadcrumb = enrichActiveCatalogBreadcrumbHtml(html);
+  const enriched = enrichByRequestProductHtml(withCatalogBreadcrumb, productId);
   if (enriched === html) return response;
   return responseWithBody(response, enriched);
 }
