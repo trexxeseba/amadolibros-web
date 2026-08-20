@@ -108,14 +108,20 @@ test('add-to-cart sin mapping WooCommerce → MLU devuelve 410', async () => {
     }
 });
 
-test('paginaciones históricas /page, /tienda/page y /shop/page devuelven 410', async () => {
-    for (const path of [
-        '/page/1',
-        '/page/122/',
-        '/tienda/page/2',
-        '/tienda/page/43/',
-        '/shop/page/8/',
-    ]) {
+test('paginación histórica /tienda/page/N redirige al catálogo sin trasladar N', async () => {
+    for (const path of ['/tienda/page/2', '/tienda/page/43/']) {
+        const response = await legacyResponseForRequest(contextFor(path));
+        assert.equal(response.status, 301, path);
+        assert.equal(
+            response.headers.get('location'),
+            'https://www.amadolibros.com/catalogo',
+            path,
+        );
+    }
+});
+
+test('paginaciones históricas /page/N y /shop/page/N sin equivalencia mantienen 410', async () => {
+    for (const path of ['/page/1', '/page/122/', '/shop/page/8/']) {
         const response = await legacyResponseForRequest(contextFor(path));
         assert.equal(response.status, 410, path);
     }
@@ -214,6 +220,16 @@ test('legacy conserva el host aislado de Preview', async () => {
     const host = 'agent-seo-p3.amadolibros-web.pages.dev';
     const response = await legacyResponseForRequest(
         contextFor('/tienda/', host, { APP_ENV: 'preview' }),
+    );
+
+    assert.equal(response.status, 301);
+    assert.equal(response.headers.get('location'), `https://${host}/catalogo`);
+});
+
+test('paginación de tienda en Preview conserva el host aislado', async () => {
+    const host = 'agent-seo-p3.amadolibros-web.pages.dev';
+    const response = await legacyResponseForRequest(
+        contextFor('/tienda/page/43/', host, { APP_ENV: 'preview' }),
     );
 
     assert.equal(response.status, 301);
