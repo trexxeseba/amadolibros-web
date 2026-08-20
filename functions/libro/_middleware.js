@@ -10,6 +10,7 @@ import {
 } from '../_shared/order-hub.js';
 import { isProductInShowcaseCohort } from '../_shared/showcase-cohort.js';
 import { PRODUCT_SHOWCASE_OVERRIDES } from '../_shared/product-showcases.js';
+import { applyShowcaseTitleQuality } from '../_shared/showcase-title-quality.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
@@ -338,10 +339,21 @@ function enrichAutomaticShowcaseSchema(html, productId, config) {
     } catch {
       return full;
     }
+
+    if (schema?.['@type'] === 'BreadcrumbList' && Array.isArray(schema.itemListElement)) {
+      const current = schema.itemListElement.at(-1);
+      if (current) current.name = config.h1;
+      return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
+    }
+
     const rawType = schema?.['@type'];
     const types = Array.isArray(rawType) ? rawType : [rawType].filter(Boolean);
     if (!types.includes('Book') || String(schema.sku || '').toUpperCase() !== productId) return full;
 
+    if (config.titleChanged) {
+      schema.name = config.h1;
+      if (!schema.alternateName && config.rawTitle) schema.alternateName = config.rawTitle;
+    }
     schema.description = config.schemaDescription;
     return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
   });
@@ -364,6 +376,20 @@ function replaceDescriptionMeta(html, config) {
     );
 }
 
+function replaceTitleMeta(html, config) {
+  const safeTitle = escapeHtml(config.seoTitle || `${config.h1} | Amado Libros`);
+  return html
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${safeTitle}</title>`)
+    .replace(
+      /<meta property="og:title" content="[^"]*">/,
+      `<meta property="og:title" content="${safeTitle}">`,
+    )
+    .replace(
+      /<meta name="twitter:title" content="[^"]*">/,
+      `<meta name="twitter:title" content="${safeTitle}">`,
+    );
+}
+
 function insertShowcaseBeforeRelated(html, block) {
   const index = html.indexOf(RELATED_BOOKS_MARKER);
   if (index >= 0) return `${html.slice(0, index)}${block}\n  ${html.slice(index)}`;
@@ -380,16 +406,19 @@ export function enrichAutomaticProductShowcaseHtml(html, productId) {
   }
 
   const item = productItemFromProductHtml(source, id);
-  const config = buildAutomaticProductShowcase(item);
+  const baseConfig = buildAutomaticProductShowcase(item);
+  const config = applyShowcaseTitleQuality(baseConfig, item);
   if (!config) return source;
 
-  let result = source;
-  if (config.subtitle && !result.includes('class="book-subtitle"')) {
-    result = result.replace(
-      PRODUCT_H1_RE,
-      match => `${match}\n    <p class="book-subtitle">${escapeHtml(config.subtitle)}</p>`,
-    );
-  }
+  let result = source.replace(
+    PRODUCT_H1_RE,
+    `<h1>${escapeHtml(config.h1)}</h1>${config.subtitle ? `\n    <p class="book-subtitle">${escapeHtml(config.subtitle)}</p>` : ''}`,
+  );
+  result = result.replace(
+    PRODUCT_NAV_RE,
+    `$1${escapeHtml(config.h1)}$2`,
+  );
+  result = replaceTitleMeta(result, config);
   result = replaceDescriptionMeta(result, config);
   result = enrichAutomaticShowcaseSchema(result, id, config);
   result = insertShowcaseBeforeRelated(result, renderProductShowcase(config));
