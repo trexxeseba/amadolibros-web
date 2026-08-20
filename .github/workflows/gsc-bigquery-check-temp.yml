@@ -1,0 +1,53 @@
+name: GSC BigQuery readiness check temporary
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-monitor
+    paths:
+      - '.github/workflows/gsc-bigquery-check-temp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Inspect Search Console BigQuery export
+        shell: bash
+        run: |
+          set +e
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          echo '=== DATASET ==='
+          bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"
+          echo "dataset_exit=$?"
+          echo '=== TABLES ==='
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET"
+          echo "tables_exit=$?"
+          for TABLE in ExportLog searchdata_url_impression searchdata_site_impression; do
+            echo "=== TABLE $TABLE META ==="
+            bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$TABLE"
+            echo "meta_exit=$?"
+            echo "=== TABLE $TABLE HEAD ==="
+            bq --project_id="$PROJECT" head -n 5 "$PROJECT:$DATASET.$TABLE"
+            echo "head_exit=$?"
+          done
+          echo '=== ROW COUNTS / DATES ==='
+          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=prettyjson \
+            "SELECT 'searchdata_url_impression' AS table_name, COUNT(*) AS rows, MIN(data_date) AS min_date, MAX(data_date) AS max_date FROM \`$PROJECT.$DATASET.searchdata_url_impression\` UNION ALL SELECT 'searchdata_site_impression', COUNT(*), MIN(data_date), MAX(data_date) FROM \`$PROJECT.$DATASET.searchdata_site_impression\`"
+          echo "query_exit=$?"
+          exit 0
