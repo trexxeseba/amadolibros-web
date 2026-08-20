@@ -153,7 +153,15 @@ export async function legacyResponseForRequest(context, options = {}) {
         return goneFor(request, 'query_add_to_cart');
     }
 
-    if (/^\/(?:tienda|shop)\/page\/\d+$/.test(path) || /^\/page\/\d+$/.test(path)) {
+    // SEO-LEGACY-TIENDA-PAGINATION: Search Console todavía atribuye clics e
+    // impresiones de marca a /tienda/page/N. La tienda legacy sí tiene un
+    // reemplazo inequívoco en /catalogo, pero el número de página histórico no
+    // garantiza el mismo conjunto/orden de libros, por eso no se traslada N.
+    if (/^\/tienda\/page\/\d+$/.test(path)) {
+        return redirectFor(request, 'legacy_tienda_pagination_catalog', '/catalogo');
+    }
+
+    if (/^\/shop\/page\/\d+$/.test(path) || /^\/page\/\d+$/.test(path)) {
         return goneFor(request, 'legacy_pagination');
     }
 
