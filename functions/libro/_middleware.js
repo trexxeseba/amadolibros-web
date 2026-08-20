@@ -164,6 +164,36 @@ export function enrichByRequestProductHtml(html, productId) {
   return result;
 }
 
+// SEO-PRODUCT-SCHEMA-1: Google exige que Product tenga al menos una señal
+// elegible para fragmentos de producto (Offer, review o aggregateRating).
+// Las fichas sin oferta real no deben fingir precio, disponibilidad ni reseñas:
+// conservan toda la semántica bibliográfica como Book y dejan de declarar
+// Product hasta que exista una señal elegible real.
+export function normalizeProductSnippetSchemaHtml(html) {
+  const source = String(html || '');
+  return source.replace(JSON_LD_RE, (full, rawJson) => {
+    let schema;
+    try {
+      schema = JSON.parse(rawJson);
+    } catch {
+      return full;
+    }
+
+    const rawType = schema?.['@type'];
+    const types = Array.isArray(rawType) ? rawType : [rawType].filter(Boolean);
+    if (!types.includes('Product') || !types.includes('Book')) return full;
+
+    const hasEligibleProductSignal = Boolean(
+      schema.offers || schema.review || schema.aggregateRating,
+    );
+    if (hasEligibleProductSignal) return full;
+
+    schema['@type'] = 'Book';
+    const serialized = JSON.stringify(schema).replace(/</g, '\\u003c');
+    return `<script type="application/ld+json">${serialized}</script>`;
+  });
+}
+
 function productIdFromRequest(request) {
   try {
     return new URL(request.url).pathname.match(PRODUCT_PATH_RE)?.[1]?.toUpperCase() || null;
@@ -198,7 +228,8 @@ export async function onRequest(context) {
   // responseWithBody descarta validators del contenido anterior.
   const html = await response.clone().text();
   const withCatalogBreadcrumb = enrichActiveCatalogBreadcrumbHtml(html);
-  const enriched = enrichByRequestProductHtml(withCatalogBreadcrumb, productId);
+  const withByRequestCx = enrichByRequestProductHtml(withCatalogBreadcrumb, productId);
+  const enriched = normalizeProductSnippetSchemaHtml(withByRequestCx);
   if (enriched === html) return response;
   return responseWithBody(response, enriched);
 }
