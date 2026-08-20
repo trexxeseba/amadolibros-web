@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - agent/gsc-bigquery-readiness-check
-  pull_request:
-    paths:
-      - '.github/workflows/gsc-bigquery-readiness-check.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 jobs:
   check:
@@ -19,6 +17,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v3
         with:
@@ -26,157 +25,98 @@ jobs:
           workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
           service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
           create_credentials_file: true
+
       - uses: google-github-actions/setup-gcloud@v2
-      - name: Check Search Console export tables
+
+      - name: Probe BigQuery and comment result
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
-          REQUIRED_TABLES='ExportLog,searchdata_site_impression,searchdata_url_impression'
+          TOKEN="$(gcloud auth print-access-token)"
+          BASE="https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT}/datasets/${DATASET}"
+          OUT='/tmp/gsc-bq-check.txt'
+          : > "$OUT"
 
-          echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "bq_path=$(command -v bq || true)"
+          http_get() {
+            local url="$1" body="$2"
+            curl -sS -o "$body" -w '%{http_code}' \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H 'Accept: application/json' \
+              "$url"
+          }
 
-          # --format es una opción global de bq: debe ir antes del subcomando.
-          if ! bq --project_id="$PROJECT" --format=prettyjson show \
-            "$PROJECT:$DATASET" > /tmp/dataset.json 2>/tmp/dataset.err; then
-            echo 'status=NOT_READY'
-            echo 'reason=dataset_unavailable'
-            echo 'dataset_error_begin'
-            sed -n '1,20p' /tmp/dataset.err
-            echo 'dataset_error_end'
-            exit 0
-          fi
-          echo 'dataset_present=true'
+          checked_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          dataset_http="$(http_get "$BASE" /tmp/dataset.json)"
+          echo "checked_at=${checked_at}" | tee -a "$OUT"
+          echo "DATASET_HTTP=${dataset_http}" | tee -a "$OUT"
 
-          if ! bq --project_id="$PROJECT" --format=prettyjson ls \
-            "$PROJECT:$DATASET" > /tmp/tables.raw 2>/tmp/tables.err; then
-            echo 'status=NOT_READY'
-            echo 'reason=table_listing_failed'
-            echo 'table_listing_error_begin'
-            sed -n '1,20p' /tmp/tables.err
-            echo 'table_listing_error_end'
-            exit 0
-          fi
+          tables_http="$(http_get "${BASE}/tables?maxResults=1000" /tmp/tables.json)"
+          echo "TABLES_HTTP=${tables_http}" | tee -a "$OUT"
 
-          # Con Workload Identity, bq imprime una advertencia de --scopes en
-          # stdout. Se elimina únicamente esa línea conocida antes de parsear.
-          # Si no queda contenido, el dataset existe pero todavía no tiene tablas.
-          python3 - <<'PY'
+          if [ "$tables_http" = '200' ]; then
+            python3 - <<'PY' | tee -a "$OUT"
           import json
-          from pathlib import Path
-
-          source = Path('/tmp/tables.raw').read_text(encoding='utf-8')
-          lines = [
-              line for line in source.splitlines()
-              if not line.startswith('WARNING: `--scopes` flag')
-          ]
-          raw = '\n'.join(lines).strip()
-          if not raw:
-              rows = []
-          else:
-              try:
-                  rows = json.loads(raw)
-              except Exception as exc:
-                  print('status=NOT_READY')
-                  print('reason=table_listing_invalid_json')
-                  print(f'parse_error={type(exc).__name__}')
-                  print('raw_prefix=' + raw[:160].replace('\n', ' '))
-                  raise SystemExit(0)
-
-          if not isinstance(rows, list):
-              print('status=NOT_READY')
-              print('reason=table_listing_unexpected_shape')
-              raise SystemExit(0)
-
-          names = []
-          for row in rows:
-              if not isinstance(row, dict):
-                  continue
-              ref = row.get('tableReference') or {}
-              table_id = ref.get('tableId') or row.get('id') or ''
-              if table_id:
-                  names.append(str(table_id).split('.')[-1])
-
-          required = {
-              'ExportLog',
-              'searchdata_url_impression',
-              'searchdata_site_impression',
-          }
-          present = set(names)
-          missing = sorted(required - present)
-          Path('/tmp/table-state.env').write_text(
-              'TABLES=' + ','.join(sorted(present)) + '\n'
-              + 'REQUIRED_PRESENT=' + ','.join(sorted(required & present)) + '\n'
-              + 'REQUIRED_MISSING=' + ','.join(missing) + '\n'
-              + 'TABLE_SET_READY=' + ('true' if not missing else 'false') + '\n',
-              encoding='utf-8',
-          )
+          try:
+              data=json.load(open('/tmp/tables.json'))
+          except Exception:
+              data={}
+          ids=[]
+          for row in data.get('tables',[]) or []:
+              ref=row.get('tableReference') or {}
+              tid=ref.get('tableId')
+              if tid: ids.append(tid)
+          print('TABLE_IDS=' + ','.join(sorted(ids)))
           PY
-
-          if [ ! -s /tmp/table-state.env ]; then
-            echo 'status=NOT_READY'
-            echo 'reason=table_state_not_generated'
-            exit 0
-          fi
-          cat /tmp/table-state.env
-          # shellcheck disable=SC1091
-          source /tmp/table-state.env
-
-          if [ "$TABLE_SET_READY" != 'true' ]; then
-            echo 'status=NOT_READY'
-            if [ -z "$TABLES" ]; then
-              echo 'reason=tables_not_created_yet'
-            else
-              echo 'reason=required_tables_missing'
-            fi
-            echo "required_tables=$REQUIRED_TABLES"
-            exit 0
-          fi
-
-          count_rows() {
-            local table="$1"
-            local target_var="$2"
-            local output="/tmp/${table}.csv"
-            local error="/tmp/${table}.err"
-            if ! bq --project_id="$PROJECT" --format=csv query --use_legacy_sql=false \
-              "SELECT COUNT(*) AS rows FROM \`$PROJECT.$DATASET.$table\`" \
-              > "$output" 2> "$error"; then
-              echo "${table}_query=failed"
-              sed -n '1,10p' "$error"
-              return 1
-            fi
-            local count
-            count=$(tail -n 1 "$output" | tr -d '\r"')
-            if [[ ! "$count" =~ ^[0-9]+$ ]]; then
-              echo "${table}_query=invalid_count"
-              return 1
-            fi
-            echo "${table}_rows=$count"
-            printf -v "$target_var" '%s' "$count"
-          }
-
-          count_rows ExportLog EXPORT_ROWS || {
-            echo 'status=NOT_READY'
-            echo 'reason=exportlog_query_failed'
-            exit 0
-          }
-          count_rows searchdata_url_impression URL_ROWS || {
-            echo 'status=NOT_READY'
-            echo 'reason=url_impression_query_failed'
-            exit 0
-          }
-          count_rows searchdata_site_impression SITE_ROWS || {
-            echo 'status=NOT_READY'
-            echo 'reason=site_impression_query_failed'
-            exit 0
-          }
-
-          if [ "$EXPORT_ROWS" -gt 0 ] && { [ "$URL_ROWS" -gt 0 ] || [ "$SITE_ROWS" -gt 0 ]; }; then
-            echo 'status=READY'
-            echo 'reason=usable_export_data_present'
           else
-            echo 'status=NOT_READY'
-            echo 'reason=tables_present_without_usable_rows'
+            echo 'TABLE_IDS=' | tee -a "$OUT"
           fi
+
+          ready=0
+          export_rows=0
+          url_rows=0
+          site_rows=0
+          for table in ExportLog searchdata_url_impression searchdata_site_impression; do
+            safe="${table//[^A-Za-z0-9_]/_}"
+            code="$(http_get "${BASE}/tables/${table}" "/tmp/${safe}.json")"
+            echo "TABLE_${table}_HTTP=${code}" | tee -a "$OUT"
+            rows=0
+            if [ "$code" = '200' ]; then
+              rows="$(python3 - "$safe" <<'PY'
+          import json,sys
+          try:
+              x=json.load(open('/tmp/'+sys.argv[1]+'.json'))
+              v=x.get('numRows',0)
+              print(int(v))
+          except Exception:
+              print(0)
+          PY
+              )"
+            fi
+            echo "TABLE_${table}_ROWS=${rows}" | tee -a "$OUT"
+            case "$table" in
+              ExportLog) export_rows="$rows" ;;
+              searchdata_url_impression) url_rows="$rows" ;;
+              searchdata_site_impression) site_rows="$rows" ;;
+            esac
+          done
+
+          if [ "$dataset_http" = '200' ] && \
+             [ "$export_rows" -gt 0 ] && \
+             { [ "$url_rows" -gt 0 ] || [ "$site_rows" -gt 0 ]; }; then
+            ready=1
+          fi
+          echo "READY=${ready}" | tee -a "$OUT"
+
+          {
+            echo '<!-- GSC-BQ-CHECK -->'
+            echo "## GSC BigQuery readiness check — ${checked_at}"
+            echo
+            echo '```text'
+            cat "$OUT"
+            echo '```'
+          } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
