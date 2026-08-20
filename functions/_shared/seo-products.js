@@ -19,6 +19,10 @@ export const PRODUCT_SEO_OVERRIDES = Object.freeze({
     heading: 'Murdoku en Uruguay: verificamos la edición exacta',
     copy: 'Esta ficha corresponde a Murdoku: 80 acertijos de lógica y asesinatos, de Manuel Garand (ISBN 9791387869380). Si no está disponible, consultanos: verificamos esta edición exacta o la buscamos por encargo, con envíos en Montevideo y todo Uruguay.',
   }),
+  MLU633557235: Object.freeze({
+    title: 'Padres fuertes, hijas felices — Meg Meeker',
+    description: 'Conseguí Padres fuertes, hijas felices de Meg Meeker en Uruguay. ISBN 9788496836693. Consultá stock, 12% menos por transferencia y envíos a todo el país.',
+  }),
   MLU676002408: Object.freeze({
     title: 'Mientras dormíamos: El engaño maestro, de Giuseppe Nocera',
     description: 'Comprá Mientras dormíamos: El engaño maestro, de Giuseppe Nocera Costabile, en Amado Libros. Precio en UYU y envíos a todo Uruguay.',
