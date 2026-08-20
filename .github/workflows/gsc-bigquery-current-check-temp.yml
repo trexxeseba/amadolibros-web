@@ -1,0 +1,114 @@
+name: GSC BigQuery current readiness check
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-watch
+    paths:
+      - '.github/workflows/gsc-bigquery-current-check-temp.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check dataset and tables
+        shell: bash
+        run: |
+          set +e
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          OUT=/tmp/gsc-current.txt
+          : > "$OUT"
+          echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT"
+          echo "bq_path=$(command -v bq || echo missing)" >> "$OUT"
+
+          bq --project_id="$PROJECT" ls --format=json "$PROJECT:$DATASET" >/tmp/tables.json 2>/tmp/tables.err
+          rc=$?
+          echo "table_list_rc=$rc" >> "$OUT"
+          if [ "$rc" -ne 0 ]; then
+            echo 'status=NOT_READY' >> "$OUT"
+            echo 'reason=dataset_missing_or_unreadable' >> "$OUT"
+            echo "detail=$(tr '\n' ' ' </tmp/tables.err | head -c 800)" >> "$OUT"
+          else
+            python - <<'PY' >/tmp/names.txt 2>/tmp/parse.err
+import json
+with open('/tmp/tables.json') as f:
+    rows=json.load(f)
+for r in rows:
+    t=(r.get('tableReference') or {}).get('tableId')
+    if t:
+        print(t)
+PY
+            prc=$?
+            echo "table_parse_rc=$prc" >> "$OUT"
+            if [ "$prc" -ne 0 ]; then
+              echo 'status=NOT_READY' >> "$OUT"
+              echo 'reason=table_listing_unparseable' >> "$OUT"
+              echo "detail=$(tr '\n' ' ' </tmp/parse.err | head -c 800)" >> "$OUT"
+            else
+              echo "tables=$(paste -sd, /tmp/names.txt)" >> "$OUT"
+              missing=0
+              for t in ExportLog searchdata_url_impression searchdata_site_impression; do
+                if grep -Fxq "$t" /tmp/names.txt; then
+                  echo "$t.present=true" >> "$OUT"
+                else
+                  echo "$t.present=false" >> "$OUT"
+                  missing=$((missing+1))
+                fi
+              done
+
+              if [ "$missing" -gt 0 ]; then
+                echo 'status=NOT_READY' >> "$OUT"
+                echo 'reason=expected_tables_missing' >> "$OUT"
+              else
+                q="SELECT 'ExportLog' AS table_name, COUNT(*) AS row_count FROM \`${PROJECT}.${DATASET}.ExportLog\` UNION ALL SELECT 'searchdata_url_impression', COUNT(*) FROM \`${PROJECT}.${DATASET}.searchdata_url_impression\` UNION ALL SELECT 'searchdata_site_impression', COUNT(*) FROM \`${PROJECT}.${DATASET}.searchdata_site_impression\`"
+                bq --project_id="$PROJECT" query --use_legacy_sql=false --format=csv --quiet "$q" >/tmp/counts.csv 2>/tmp/query.err
+                qrc=$?
+                echo "query_rc=$qrc" >> "$OUT"
+                if [ "$qrc" -ne 0 ]; then
+                  echo 'status=NOT_READY' >> "$OUT"
+                  echo 'reason=tables_present_but_query_failed' >> "$OUT"
+                  echo "detail=$(tr '\n' ' ' </tmp/query.err | head -c 800)" >> "$OUT"
+                else
+                  cat /tmp/counts.csv >> "$OUT"
+                  url_count=$(awk -F, '$1=="searchdata_url_impression"{gsub(/\r/,"",$2); print $2}' /tmp/counts.csv)
+                  site_count=$(awk -F, '$1=="searchdata_site_impression"{gsub(/\r/,"",$2); print $2}' /tmp/counts.csv)
+                  log_count=$(awk -F, '$1=="ExportLog"{gsub(/\r/,"",$2); print $2}' /tmp/counts.csv)
+                  if [ "${url_count:-0}" -gt 0 ] && [ "${site_count:-0}" -gt 0 ] && [ "${log_count:-0}" -gt 0 ]; then
+                    echo 'status=READY' >> "$OUT"
+                    echo 'reason=export_tables_present_and_populated' >> "$OUT"
+                  else
+                    echo 'status=NOT_READY' >> "$OUT"
+                    echo 'reason=tables_present_but_not_yet_populated' >> "$OUT"
+                  fi
+                fi
+              fi
+            fi
+          fi
+          cat "$OUT"
+      - name: Comment temporary tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f /tmp/gsc-current.txt ]; then
+            { echo '```text'; cat /tmp/gsc-current.txt; echo '```'; } >/tmp/comment.md
+          else
+            printf '%s\n' '```text' 'status=ERROR' 'reason=workflow_failed_before_output' '```' >/tmp/comment.md
+          fi
+          gh issue comment 198 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
