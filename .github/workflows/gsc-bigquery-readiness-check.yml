@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 jobs:
   check:
@@ -33,42 +34,73 @@ jobs:
           project_id: amado-libros-analytics
 
       - name: Check Search Console bulk export tables
+        id: readiness
         shell: bash
         run: |
           set -euo pipefail
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
+          ready=1
+          : > /tmp/gsc-ready-summary.txt
+
           echo '=== DATASET ==='
           if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
-            echo 'NOT_READY: dataset searchconsole does not exist or is not readable'
-            cat /tmp/dataset.err || true
-            exit 3
+            echo 'dataset_exists=false' | tee -a /tmp/gsc-ready-summary.txt
+            ready=0
+          else
+            echo 'dataset_exists=true' | tee -a /tmp/gsc-ready-summary.txt
+            echo '=== TABLE LIST ==='
+            bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" | tee /tmp/tables.json
           fi
 
-          echo '=== TABLE LIST ==='
-          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" | tee /tmp/tables.json
-
-          ready=1
           for table in ExportLog searchdata_url_impression searchdata_site_impression; do
+            if [ "$ready" -eq 0 ] && [ ! -f /tmp/dataset.json ]; then
+              echo "$table exists=false numRows=0" | tee -a /tmp/gsc-ready-summary.txt
+              continue
+            fi
             echo "=== $table ==="
             if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$table" >/tmp/${table}.json 2>/tmp/${table}.err; then
-              echo "$table exists=false"
-              cat /tmp/${table}.err || true
+              echo "$table exists=false numRows=0" | tee -a /tmp/gsc-ready-summary.txt
               ready=0
               continue
             fi
             rows=$(jq -r '.numRows // "0"' /tmp/${table}.json)
-            echo "$table exists=true numRows=$rows"
+            echo "$table exists=true numRows=$rows" | tee -a /tmp/gsc-ready-summary.txt
             if [ "$rows" = "0" ]; then ready=0; fi
             if [ "$table" != 'ExportLog' ]; then
-              bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
-                "SELECT COUNT(*) AS rows, CAST(MAX(data_date) AS STRING) AS max_data_date FROM \`${PROJECT}.${DATASET}.${table}\`" || true
+              result=$(bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
+                "SELECT COUNT(*) AS rows, CAST(MAX(data_date) AS STRING) AS max_data_date FROM \`${PROJECT}.${DATASET}.${table}\`" 2>/tmp/query-${table}.err || true)
+              echo "$result"
+              max_date=$(printf '%s\n' "$result" | tail -n 1 | awk -F, '{print $2}' | tr -d '"')
+              echo "$table max_data_date=${max_date:-unknown}" | tee -a /tmp/gsc-ready-summary.txt
             fi
           done
 
           if [ "$ready" -eq 1 ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
             echo 'GSC_BIGQUERY_READY=true'
-            exit 0
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'GSC_BIGQUERY_READY=false'
           fi
-          echo 'GSC_BIGQUERY_READY=false'
-          exit 3
+
+      - name: Comment tracking issue only when export is usable
+        if: steps.readiness.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '<!-- AUTOMATION_GSC_BIGQUERY_READY -->'
+            echo '## Search Console → BigQuery listo'
+            echo
+            echo 'La exportación masiva de Search Console ya está presente y utilizable en `amado-libros-analytics.searchconsole`.'
+            echo
+            echo '```text'
+            cat /tmp/gsc-ready-summary.txt
+            echo '```'
+          } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Mark not-ready run without notifying
+        if: steps.readiness.outputs.ready != 'true'
+        run: exit 3
