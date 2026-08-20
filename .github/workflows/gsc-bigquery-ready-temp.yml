@@ -85,4 +85,4 @@ jobs:
           { echo '<!-- GSC-BQ-USABLE-CHECK -->'; echo '## GSC BigQuery usable-data check'; echo; echo '```text'; cat /tmp/gsc-bq.txt 2>/dev/null || echo 'check did not produce report'; echo '```'; } > /tmp/comment.md
           gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
 
-# usable-data-monitor-ping 2026-08-20T12:52:00Z
+# usable-data-monitor-ping 2026-08-20T14:54:08Z
