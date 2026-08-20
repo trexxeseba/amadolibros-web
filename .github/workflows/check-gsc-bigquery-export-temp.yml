@@ -1,0 +1,44 @@
+name: Check GSC BigQuery export temporary
+
+on:
+  push:
+    branches:
+      - agent/check-gsc-bigquery-export-temp
+    paths:
+      - '.github/workflows/check-gsc-bigquery-export-temp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Check Search Console export dataset and tables
+        shell: bash
+        run: |
+          set -u
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          echo '### DATASET'
+          bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" || true
+          echo '### TABLES'
+          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" || true
+          echo '### INFORMATION_SCHEMA'
+          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=prettyjson \
+            "SELECT table_name, row_count, TIMESTAMP_MILLIS(last_modified_time) AS last_modified FROM \`$PROJECT.$DATASET.__TABLES__\` ORDER BY table_name" || true
+          echo '### EXPORTLOG SAMPLE'
+          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=prettyjson \
+            "SELECT * FROM \`$PROJECT.$DATASET.ExportLog\` ORDER BY export_time DESC LIMIT 5" || true
