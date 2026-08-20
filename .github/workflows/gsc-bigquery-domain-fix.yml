@@ -68,6 +68,12 @@ jobs:
         with:
           project_id: amado-libros-analytics
 
+      - name: Enable Organization Policy API in the analytics project
+        run: >-
+          gcloud services enable orgpolicy.googleapis.com
+          --project=amado-libros-analytics
+          --quiet
+
       - name: Apply or verify the project-only correction
         env:
           INPUT_MODE: ${{ inputs.mode }}
