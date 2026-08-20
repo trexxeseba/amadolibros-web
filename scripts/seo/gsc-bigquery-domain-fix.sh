@@ -204,7 +204,8 @@ jq -r --arg member "$REPORTER_MEMBER" '
 
 DATASET_EXISTS=false
 if bq --project_id="$PROJECT_ID" show --format=prettyjson \
-  "$PROJECT_ID:$DATASET_ID" > "$OUTPUT_DIR/dataset.json" 2> "$OUTPUT_DIR/dataset.err"; then
+  "$PROJECT_ID:$DATASET_ID" 2> "$OUTPUT_DIR/dataset.err" \
+  | sed '/^WARNING:/d' > "$OUTPUT_DIR/dataset.json"; then
   DATASET_EXISTS=true
 fi
 
@@ -217,7 +218,8 @@ for table in "${TABLES[@]}"; do
   query_json="$OUTPUT_DIR/query-${table}.json"
   if [[ "$DATASET_EXISTS" == "true" ]] && \
     bq --project_id="$PROJECT_ID" show --format=prettyjson \
-      "$PROJECT_ID:$DATASET_ID.$table" > "$table_json" 2> "$OUTPUT_DIR/table-${table}.err"; then
+      "$PROJECT_ID:$DATASET_ID.$table" 2> "$OUTPUT_DIR/table-${table}.err" \
+      | sed '/^WARNING:/d' > "$table_json"; then
     num_rows="$(jq -r '.numRows // "0"' "$table_json")"
     target_rows="unknown"
     max_date="unknown"
@@ -226,7 +228,8 @@ for table in "${TABLES[@]}"; do
       --use_legacy_sql=false \
       --format=json \
       "SELECT COUNTIF(data_date = DATE('${TARGET_DATE}')) AS target_date_rows, CAST(MAX(data_date) AS STRING) AS max_data_date FROM \`${PROJECT_ID}.${DATASET_ID}.${table}\`" \
-      > "$query_json" 2> "$OUTPUT_DIR/query-${table}.err"; then
+      2> "$OUTPUT_DIR/query-${table}.err" \
+      | sed '/^WARNING:/d' > "$query_json"; then
       target_rows="$(jq -r '.[0].target_date_rows // "0"' "$query_json")"
       max_date="$(jq -r '.[0].max_data_date // "null"' "$query_json")"
     fi
