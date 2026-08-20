@@ -40,7 +40,7 @@ function normalizedText(value) {
 
 function isbn13Checksum(value) {
   const digits = String(value || '').replace(/\D/g, '');
-  if (!/^\d{13}$/.test(digits)) return false;
+  if (!/^(978|979)\d{10}$/.test(digits)) return false;
   const sum = [...digits.slice(0, 12)].reduce(
     (total, digit, index) => total + Number(digit) * (index % 2 === 0 ? 1 : 3),
     0,
@@ -112,14 +112,21 @@ function validCurrency(item) {
   return clean(item?.currency || item?.currency_id).toUpperCase() === 'UYU';
 }
 
+// Mismo contrato de libro que usa Merchant: un dominio BOOKS basta; con un
+// dominio de otra familia se exige ISBN válido + otra señal; sin dominio se
+// exige ISBN o dos señales bibliográficas independientes.
 function hasBookSignal(item) {
   const domain = clean(item?.domain_id).toUpperCase();
-  return domain.includes('BOOK') ||
-    Boolean(normalizeValidIsbn(item?.isbn)) ||
-    !isGenericAuthor(item?.author) ||
-    realPublisher(item?.publisher) ||
-    Boolean(positiveInteger(item?.pages)) ||
-    fieldCount(item?.bibliographic) > 0;
+  const hasIsbn = Boolean(normalizeValidIsbn(item?.isbn));
+  const supportingSignals = [
+    !isGenericAuthor(item?.author),
+    Boolean(positiveInteger(item?.pages)),
+    fieldCount(item?.bibliographic) > 0,
+  ].filter(Boolean).length;
+
+  if (/(?:^|[-_])BOOKS(?:$|[-_])/.test(domain)) return true;
+  if (domain) return hasIsbn && supportingSignals >= 1;
+  return hasIsbn || supportingSignals >= 2;
 }
 
 export function isShowcaseEligible(item) {
