@@ -6,6 +6,9 @@ on:
       - agent/gsc-bigquery-ready-check-20260820
     paths:
       - '.github/workflows/gsc-bigquery-ready-check-temp.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/gsc-bigquery-ready-check-temp.yml'
 
 permissions:
   contents: read
