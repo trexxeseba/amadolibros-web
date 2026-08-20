@@ -39,9 +39,7 @@ jobs:
           bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" || true
           echo '### TABLES'
           bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" || true
-          echo '### INFORMATION_SCHEMA'
-          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=prettyjson \
-            "SELECT table_id AS table_name, row_count, TIMESTAMP_MILLIS(last_modified_time) AS last_modified FROM \`$PROJECT.$DATASET.__TABLES__\` ORDER BY table_id" || true
-          echo '### EXPORTLOG SAMPLE'
-          bq --project_id="$PROJECT" query --use_legacy_sql=false --format=prettyjson \
-            "SELECT * FROM \`$PROJECT.$DATASET.ExportLog\` LIMIT 5" || true
+          for TABLE in ExportLog searchdata_site_impression searchdata_url_impression; do
+            echo "### SHOW $TABLE"
+            bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$TABLE" || true
+          done
