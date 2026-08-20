@@ -19,22 +19,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Authenticate with Google Cloud
+        id: auth
         uses: google-github-actions/auth@v3
         with:
           project_id: amado-libros-analytics
           workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
           service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
-          create_credentials_file: true
-          export_environment_variables: true
-      - uses: google-github-actions/setup-gcloud@v3
-        with:
-          project_id: amado-libros-analytics
-      - name: Check Search Console export tables
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          create_credentials_file: false
+      - name: Check Search Console export tables through BigQuery REST
         shell: bash
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           set +e
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
+          API='https://bigquery.googleapis.com/bigquery/v2'
           OUT=/tmp/gsc-ready.txt
           : > "$OUT"
           echo '### GSC BigQuery readiness' >> "$OUT"
@@ -43,50 +45,60 @@ jobs:
           echo "project=$PROJECT" >> "$OUT"
           echo "dataset=$DATASET" >> "$OUT"
 
-          bq --project_id="$PROJECT" ls --format=csv "$PROJECT:$DATASET" >/tmp/tables.csv 2>/tmp/list.err
-          rc=$?
-          echo "list_rc=$rc" >> "$OUT"
-          if [ "$rc" -ne 0 ]; then
-            echo 'ready=false' >> "$OUT"
-            echo 'list_error:' >> "$OUT"
-            sed -n '1,10p' /tmp/list.err >> "$OUT"
-            cat "$OUT"
-            exit 0
+          request(){
+            local url="$1" body="$2" codefile="$3"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Accept: application/json' \
+              -o "$body" -w '%{http_code}' "$url" > "$codefile"
+          }
+
+          request "$API/projects/$PROJECT/datasets/$DATASET" /tmp/dataset.json /tmp/dataset.code
+          dataset_http=$(cat /tmp/dataset.code)
+          echo "dataset_http=$dataset_http" >> "$OUT"
+
+          request "$API/projects/$PROJECT/datasets/$DATASET/tables?maxResults=1000" /tmp/tables.json /tmp/tables.code
+          tables_http=$(cat /tmp/tables.code)
+          echo "tables_http=$tables_http" >> "$OUT"
+          if [ "$tables_http" = 200 ]; then
+            node - <<'NODE' >/tmp/table-names.txt
+            const fs=require('fs');
+            const x=JSON.parse(fs.readFileSync('/tmp/tables.json','utf8')||'{}');
+            for (const t of x.tables||[]) console.log(t.tableReference?.tableId||'');
+            NODE
+          else
+            : > /tmp/table-names.txt
           fi
+          echo "table_ids=$(paste -sd, /tmp/table-names.txt)" >> "$OUT"
 
-          echo 'table_list:' >> "$OUT"
-          cat /tmp/tables.csv >> "$OUT"
+          check_table(){
+            local t="$1" key="$2"
+            request "$API/projects/$PROJECT/datasets/$DATASET/tables/$t" "/tmp/$key.json" "/tmp/$key.code"
+            local http=$(cat "/tmp/$key.code")
+            local rows=0
+            local present=false
+            if [ "$http" = 200 ]; then
+              present=true
+              rows=$(node -e "const x=require('/tmp/$key.json'); console.log(Number(x.numRows||0))" 2>/dev/null)
+              [ -z "$rows" ] && rows=0
+            fi
+            echo "${key}_http=$http" >> "$OUT"
+            echo "${key}_present=$present" >> "$OUT"
+            echo "${key}_rows=$rows" >> "$OUT"
+          }
 
-          grep -q 'ExportLog' /tmp/tables.csv; [ $? -eq 0 ] && export_present=true || export_present=false
-          grep -q 'searchdata_url_impression' /tmp/tables.csv; [ $? -eq 0 ] && url_present=true || url_present=false
-          grep -q 'searchdata_site_impression' /tmp/tables.csv; [ $? -eq 0 ] && site_present=true || site_present=false
-          echo "ExportLog_present=$export_present" >> "$OUT"
-          echo "url_present=$url_present" >> "$OUT"
-          echo "site_present=$site_present" >> "$OUT"
+          check_table 'ExportLog' 'ExportLog'
+          check_table 'searchdata_url_impression' 'url'
+          check_table 'searchdata_site_impression' 'site'
 
-          url_usable=false
-          site_usable=false
-          export_usable=false
-
-          if [ "$export_present" = true ]; then
-            bq --project_id="$PROJECT" --format=csv head -n 1 "$PROJECT:$DATASET.ExportLog" >/tmp/export.head 2>/tmp/export.err
-            [ $? -eq 0 ] && [ "$(wc -l </tmp/export.head)" -gt 1 ] && export_usable=true
-          fi
-          if [ "$url_present" = true ]; then
-            bq --project_id="$PROJECT" --format=csv head -n 1 "$PROJECT:$DATASET.searchdata_url_impression" >/tmp/url.head 2>/tmp/url.err
-            [ $? -eq 0 ] && [ "$(wc -l </tmp/url.head)" -gt 1 ] && url_usable=true
-          fi
-          if [ "$site_present" = true ]; then
-            bq --project_id="$PROJECT" --format=csv head -n 1 "$PROJECT:$DATASET.searchdata_site_impression" >/tmp/site.head 2>/tmp/site.err
-            [ $? -eq 0 ] && [ "$(wc -l </tmp/site.head)" -gt 1 ] && site_usable=true
-          fi
-
-          echo "ExportLog_usable=$export_usable" >> "$OUT"
-          echo "url_usable=$url_usable" >> "$OUT"
-          echo "site_usable=$site_usable" >> "$OUT"
+          export_present=$(grep '^ExportLog_present=' "$OUT" | cut -d= -f2)
+          url_present=$(grep '^url_present=' "$OUT" | cut -d= -f2)
+          site_present=$(grep '^site_present=' "$OUT" | cut -d= -f2)
+          url_rows=$(grep '^url_rows=' "$OUT" | cut -d= -f2)
+          site_rows=$(grep '^site_rows=' "$OUT" | cut -d= -f2)
 
           ready=false
-          if [ "$export_present" = true ] && [ "$url_present" = true ] && [ "$site_present" = true ] && [ "$url_usable" = true ] && [ "$site_usable" = true ]; then
+          if [ "$dataset_http" = 200 ] && [ "$tables_http" = 200 ] && \
+             [ "$export_present" = true ] && [ "$url_present" = true ] && [ "$site_present" = true ] && \
+             [ "${url_rows:-0}" -gt 0 ] 2>/dev/null && [ "${site_rows:-0}" -gt 0 ] 2>/dev/null; then
             ready=true
           fi
           echo "ready=$ready" >> "$OUT"
