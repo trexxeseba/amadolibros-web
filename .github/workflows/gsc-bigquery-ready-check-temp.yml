@@ -6,9 +6,6 @@ on:
       - agent/gsc-bigquery-ready-check-20260820
     paths:
       - '.github/workflows/gsc-bigquery-ready-check-temp.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/gsc-bigquery-ready-check-temp.yml'
 
 permissions:
   contents: read
@@ -33,78 +30,63 @@ jobs:
         with:
           project_id: amado-libros-analytics
       - name: Check Search Console export tables
-        id: check
         shell: bash
         run: |
           set +e
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
-          LOCATION='US'
           OUT=/tmp/gsc-ready.txt
           : > "$OUT"
-
           echo '### GSC BigQuery readiness' >> "$OUT"
-          echo >> "$OUT"
+          echo "run_id=$GITHUB_RUN_ID" >> "$OUT"
+          echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT"
           echo "project=$PROJECT" >> "$OUT"
           echo "dataset=$DATASET" >> "$OUT"
 
-          bq --project_id="$PROJECT" ls --format=csv "$PROJECT:$DATASET" >/tmp/tables.csv 2>/tmp/bqerr.txt
-          RC=$?
-          echo "list_rc=$RC" >> "$OUT"
-          if [ "$RC" -ne 0 ]; then
-            echo 'dataset_access=ERROR' >> "$OUT"
+          bq --project_id="$PROJECT" ls --format=csv "$PROJECT:$DATASET" >/tmp/tables.csv 2>/tmp/list.err
+          rc=$?
+          echo "list_rc=$rc" >> "$OUT"
+          if [ "$rc" -ne 0 ]; then
             echo 'ready=false' >> "$OUT"
-            echo 'error:' >> "$OUT"
-            sed -n '1,12p' /tmp/bqerr.txt >> "$OUT"
+            echo 'list_error:' >> "$OUT"
+            sed -n '1,10p' /tmp/list.err >> "$OUT"
             cat "$OUT"
             exit 0
           fi
 
-          awk -F, 'NR>1 {gsub(/\r/,"",$1); gsub(/^"|"$/,"",$1); if($1!="") print $1}' /tmp/tables.csv >/tmp/table-names.txt
-          echo 'tables:' >> "$OUT"
-          sed 's/^/- /' /tmp/table-names.txt >> "$OUT"
+          echo 'table_list:' >> "$OUT"
+          cat /tmp/tables.csv >> "$OUT"
 
-          has(){ grep -Fxq "$1" /tmp/table-names.txt; }
-          EXPORT='ExportLog'
-          URL='searchdata_url_impression'
-          SITE='searchdata_site_impression'
-          ALTURL='searchdata_url_impression_by_hour'
-
-          has "$EXPORT"; [ $? -eq 0 ] && export_present=true || export_present=false
-          has "$URL"; [ $? -eq 0 ] && url_present=true || url_present=false
-          has "$SITE"; [ $? -eq 0 ] && site_present=true || site_present=false
-          if [ "$url_present" = false ]; then
-            has "$ALTURL"; [ $? -eq 0 ] && URL="$ALTURL" && url_present=true
-          fi
-
+          grep -q 'ExportLog' /tmp/tables.csv; [ $? -eq 0 ] && export_present=true || export_present=false
+          grep -q 'searchdata_url_impression' /tmp/tables.csv; [ $? -eq 0 ] && url_present=true || url_present=false
+          grep -q 'searchdata_site_impression' /tmp/tables.csv; [ $? -eq 0 ] && site_present=true || site_present=false
           echo "ExportLog_present=$export_present" >> "$OUT"
-          echo "url_table=$URL" >> "$OUT"
           echo "url_present=$url_present" >> "$OUT"
-          echo "site_table=$SITE" >> "$OUT"
           echo "site_present=$site_present" >> "$OUT"
 
-          count_table(){
-            local t="$1"
-            local raw
-            raw=$(bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --format=csv --quiet \
-              "SELECT COUNT(*) AS c FROM \`$PROJECT.$DATASET.$t\`" 2>/tmp/queryerr.txt)
-            local rc=$?
-            if [ "$rc" -ne 0 ]; then echo 0; return 0; fi
-            echo "$raw" | tail -n 1 | tr -d '\r'
-          }
+          url_usable=false
+          site_usable=false
+          export_usable=false
 
-          export_rows=0; url_rows=0; site_rows=0
-          [ "$export_present" = true ] && export_rows=$(count_table "$EXPORT")
-          [ "$url_present" = true ] && url_rows=$(count_table "$URL")
-          [ "$site_present" = true ] && site_rows=$(count_table "$SITE")
+          if [ "$export_present" = true ]; then
+            bq --project_id="$PROJECT" --format=csv head -n 1 "$PROJECT:$DATASET.ExportLog" >/tmp/export.head 2>/tmp/export.err
+            [ $? -eq 0 ] && [ "$(wc -l </tmp/export.head)" -gt 1 ] && export_usable=true
+          fi
+          if [ "$url_present" = true ]; then
+            bq --project_id="$PROJECT" --format=csv head -n 1 "$PROJECT:$DATASET.searchdata_url_impression" >/tmp/url.head 2>/tmp/url.err
+            [ $? -eq 0 ] && [ "$(wc -l </tmp/url.head)" -gt 1 ] && url_usable=true
+          fi
+          if [ "$site_present" = true ]; then
+            bq --project_id="$PROJECT" --format=csv head -n 1 "$PROJECT:$DATASET.searchdata_site_impression" >/tmp/site.head 2>/tmp/site.err
+            [ $? -eq 0 ] && [ "$(wc -l </tmp/site.head)" -gt 1 ] && site_usable=true
+          fi
 
-          echo "ExportLog_rows=${export_rows:-0}" >> "$OUT"
-          echo "url_rows=${url_rows:-0}" >> "$OUT"
-          echo "site_rows=${site_rows:-0}" >> "$OUT"
+          echo "ExportLog_usable=$export_usable" >> "$OUT"
+          echo "url_usable=$url_usable" >> "$OUT"
+          echo "site_usable=$site_usable" >> "$OUT"
 
           ready=false
-          if [ "$export_present" = true ] && [ "$url_present" = true ] && [ "$site_present" = true ] \
-             && [ "${url_rows:-0}" -gt 0 ] 2>/dev/null && [ "${site_rows:-0}" -gt 0 ] 2>/dev/null; then
+          if [ "$export_present" = true ] && [ "$url_present" = true ] && [ "$site_present" = true ] && [ "$url_usable" = true ] && [ "$site_usable" = true ]; then
             ready=true
           fi
           echo "ready=$ready" >> "$OUT"
