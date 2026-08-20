@@ -160,7 +160,7 @@ function normalizeWordCase(title) {
 function safeCandidate(rawTitle, candidate) {
   const raw = clean(rawTitle);
   const value = clean(candidate).replace(/[|,;:.-]+$/u, '').trim();
-  if (value.length < 4) return raw;
+  if (value.length < 8) return raw;
   if (value.length < Math.min(12, Math.ceil(raw.length * 0.22))) return raw;
   return value;
 }
