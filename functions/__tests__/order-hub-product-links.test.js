@@ -134,7 +134,8 @@ test('una ficha pausada fuera de la cohorte recibe el plazo sin enlaces SEO', ()
   ]);
 });
 
-test('el middleware no agrega lecturas de catálogo o R2 al camino de la ficha', () => {
+test('el middleware evita el catálogo completo y usa sólo la cohorte compacta de IDs', () => {
   const source = readFileSync('functions/libro/_middleware.js', 'utf8');
   assert.doesNotMatch(source, /fetchPausedIndex|fetchPausedItem|fetchCatalog|R2_BASE/);
+  assert.match(source, /isProductInShowcaseCohort/);
 });

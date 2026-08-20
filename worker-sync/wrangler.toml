@@ -17,9 +17,10 @@ APP_ID          = "4741021817925208"
 USER_ID         = "440298103"
 # Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
 MIN_ACTIVE_ITEMS = "500"
-# Descripciones ML: endpoint individual. Se completa un cupo diario y se
-# reutiliza por 90 días para no convertir 7.000 ítems en 7.000 requests/día.
-ML_DESCRIPTION_ENRICH_LIMIT = "100"
+# Descripciones ML: endpoint individual. El primer lote vidriera acelera el
+# cupo de 100 a 300 por día, con la misma pausa y caché de 90 días. No intenta
+# hacer 1.000 requests en una sola corrida ni pone en riesgo el sync completo.
+ML_DESCRIPTION_ENRICH_LIMIT = "300"
 ML_DESCRIPTION_REFRESH_DAYS = "90"
 ML_DESCRIPTION_SLEEP_MS = "100"
 # Galerías oficiales de productos de catálogo: se cachean en R2 y se
