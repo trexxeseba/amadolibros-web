@@ -84,6 +84,14 @@ jobs:
           COMMERCE_FAIL_ON_CRITICAL: 'true'
         run: node scripts/commerce/full-commerce-audit.mjs
 
+      - name: Audit showcase product samples
+        env:
+          SHOWCASE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          SHOWCASE_EXPECT_INDEXABLE: 'false'
+          SHOWCASE_OUTPUT_DIR: artifacts/showcase-preview
+          SHOWCASE_CONCURRENCY: '5'
+        run: node scripts/seo/showcase-live-audit.mjs
+
       - name: Audit by-request hub link graph
         env:
           SEO_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -98,6 +106,15 @@ jobs:
         with:
           name: commerce-preview-pr-${{ github.event.pull_request.number }}
           path: artifacts/commerce-preview/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload showcase report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-preview-pr-${{ github.event.pull_request.number }}
+          path: artifacts/showcase-preview/
           if-no-files-found: error
           retention-days: 30
 
