@@ -23,7 +23,7 @@ test('el workflow de reparación corre en rama aislada y no despliega la web', (
   assert.match(source, /GSC_BQ_FIX_MODE: apply/);
 });
 
-test('autentica con WIF y sólo solicita cloud-platform', () => {
+test('autentica con WIF, habilita sólo la API necesaria y solicita cloud-platform', () => {
   const source = workflow();
 
   assert.match(source, /^  id-token: write$/m);
@@ -33,6 +33,8 @@ test('autentica con WIF y sólo solicita cloud-platform', () => {
   assert.match(source, /projects\/667747565315\/locations\/global\/workloadIdentityPools\/github-actions\/providers\/amadolibros-web/);
   assert.match(source, /service_account: ga4-reporter@amado-libros-analytics\.iam\.gserviceaccount\.com/);
   assert.match(source, /https:\/\/www\.googleapis\.com\/auth\/cloud-platform/);
+  assert.match(source, /gcloud services enable orgpolicy\.googleapis\.com/);
+  assert.match(source, /--project=amado-libros-analytics/);
   assert.doesNotMatch(source, /credentials_json:|SERVICE_ACCOUNT_JSON|private_key/);
 });
 
