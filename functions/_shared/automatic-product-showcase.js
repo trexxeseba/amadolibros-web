@@ -3,6 +3,8 @@
 
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
+const JSON_LD_RE = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+const DETAIL_ROW_RE = /<div class="detail-row"><dt>([\s\S]*?)<\/dt><dd>([\s\S]*?)<\/dd><\/div>/g;
 const PLACEHOLDER_PUBLISHERS = new Set([
   'amado libros',
   'amado libros uruguay',
@@ -20,6 +22,21 @@ function normalizedText(value) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('es');
+}
+
+function decodeHtml(value) {
+  return String(value ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_full, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_full, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function realPublisher(value) {
@@ -92,8 +109,8 @@ function formatDimensions(dimensions) {
 
 function formatCondition(value) {
   const condition = normalizedText(value);
-  if (condition === 'new') return 'Nuevo';
-  if (condition === 'used') return 'Usado';
+  if (condition === 'new' || condition.endsWith('/newcondition')) return 'Nuevo';
+  if (condition === 'used' || condition.endsWith('/usedcondition')) return 'Usado';
   if (condition === 'not_specified') return 'No especificada';
   return clean(value) || null;
 }
@@ -116,7 +133,7 @@ function buildEditionFacts(item) {
     ['Género/temática', clean(bibliography.genre) || null],
     ['Traducción', clean(bibliography.translator) || null],
     ['Ilustración', clean(bibliography.illustrator) || null],
-    ['Medidas', formatDimensions(item?.dimensions)],
+    ['Medidas', formatDimensions(item?.dimensions) || clean(item?.dimensions_text) || null],
     ['Condición', formatCondition(item?.condition)],
   ];
 
@@ -180,8 +197,13 @@ function buildHighlights(item, facts) {
       highlights.push(candidate);
     }
   }
-  if (highlights.length < 3) {
-    highlights.push('Disponible para compra inmediata en Amado Libros.');
+  while (highlights.length < 3) {
+    const fallback = [
+      'Disponible para compra inmediata en Amado Libros.',
+      'La ficha reúne los datos aportados por la publicación.',
+      'Podés consultar cualquier dato de edición antes de comprar.',
+    ][highlights.length] || 'Información comercial verificada al momento de la consulta.';
+    highlights.push(fallback);
   }
   return highlights.slice(0, 5);
 }
@@ -265,6 +287,106 @@ function buildMetaDescription(item) {
     `${identity}${edition} Consultá stock, 12% menos por transferencia, cuotas y envíos a todo el país.`,
     170,
   );
+}
+
+function schemaTypes(schema) {
+  const raw = schema?.['@type'];
+  return Array.isArray(raw) ? raw : [raw].filter(Boolean);
+}
+
+function personName(value) {
+  if (typeof value === 'string') return clean(value);
+  if (Array.isArray(value)) return value.map(personName).filter(Boolean).join(', ');
+  return clean(value?.name);
+}
+
+function organizationName(value) {
+  if (typeof value === 'string') return clean(value);
+  return clean(value?.name);
+}
+
+function detailMapFromHtml(html) {
+  const details = new Map();
+  for (const match of String(html || '').matchAll(DETAIL_ROW_RE)) {
+    details.set(normalizedText(decodeHtml(match[1])), decodeHtml(match[2]));
+  }
+  return details;
+}
+
+function detail(details, ...labels) {
+  for (const label of labels) {
+    const value = details.get(normalizedText(label));
+    if (value) return value;
+  }
+  return null;
+}
+
+function productSchemaFromHtml(html, productId) {
+  for (const match of String(html || '').matchAll(JSON_LD_RE)) {
+    try {
+      const schema = JSON.parse(match[1]);
+      if (schemaTypes(schema).includes('Book') && String(schema.sku || '').toUpperCase() === productId) {
+        return schema;
+      }
+    } catch {
+      // Otro bloque JSON-LD inválido no debe impedir leer la ficha.
+    }
+  }
+  return null;
+}
+
+function usableDescription(description, title, author) {
+  const value = clean(description);
+  if (!value) return null;
+  const key = normalizedText(value);
+  const generic = [
+    normalizedText(title),
+    normalizedText(author ? `${title} — ${author}` : title),
+    normalizedText(author ? `${title} - ${author}` : title),
+  ];
+  return generic.includes(key) ? null : value;
+}
+
+export function productItemFromProductHtml(html, productId) {
+  const id = String(productId || '').toUpperCase();
+  const schema = productSchemaFromHtml(html, id);
+  if (!schema) return null;
+
+  const details = detailMapFromHtml(html);
+  const title = clean(schema.name) || decodeHtml(String(html || '').match(/<h1>([\s\S]*?)<\/h1>/)?.[1]);
+  if (!title) return null;
+  const author = personName(schema.author) || detail(details, 'Autor', 'Autoría');
+  const images = Array.isArray(schema.image)
+    ? schema.image.filter(Boolean)
+    : [schema.image].filter(Boolean);
+  const offer = Array.isArray(schema.offers) ? schema.offers[0] : schema.offers;
+  const publisher = organizationName(schema.publisher) || detail(details, 'Editorial');
+  const pages = positiveInteger(schema.numberOfPages) || positiveInteger(detail(details, 'Páginas'));
+  const description = usableDescription(schema.description, title, author);
+
+  return {
+    id,
+    title,
+    author: author || null,
+    isbn: clean(schema.isbn) || detail(details, 'ISBN'),
+    publisher: publisher || null,
+    pages,
+    description,
+    pictures: images,
+    condition: detail(details, 'Condición') || offer?.itemCondition || null,
+    dimensions_text: detail(details, 'Medidas'),
+    bibliographic: {
+      subtitle: detail(details, 'Subtítulo'),
+      language: detail(details, 'Idioma') || clean(schema.inLanguage) || null,
+      format: detail(details, 'Formato') || clean(schema.bookFormat) || null,
+      edition: detail(details, 'Edición') || clean(schema.bookEdition) || null,
+      publication_year: detail(details, 'Año') || clean(schema.datePublished) || null,
+      genre: detail(details, 'Género', 'Género/temática') || clean(schema.genre) || null,
+      collection: detail(details, 'Colección'),
+      translator: detail(details, 'Traductor/a', 'Traducción') || personName(schema.translator) || null,
+      illustrator: detail(details, 'Ilustrador/a', 'Ilustración') || personName(schema.illustrator) || null,
+    },
+  };
 }
 
 export function buildAutomaticProductShowcase(item) {
