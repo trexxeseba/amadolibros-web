@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   assignShowcaseRanking,
+  DEFAULT_SHOWCASE_LIMIT,
   isShowcaseEligible,
+  LEGACY_SHOWCASE_LIMIT,
   normalizeValidIsbn,
   rankShowcaseItems,
   showcaseEditionKey,
@@ -33,7 +35,28 @@ test('normaliza ISBN válidos y rechaza checksums falsos', () => {
   assert.equal(normalizeValidIsbn('1234567890128'), null);
 });
 
-test('selecciona exactamente mil ediciones y asigna rango continuo', () => {
+test('el límite nuevo es 3000 y conserva el límite legado de 1000', () => {
+  assert.equal(DEFAULT_SHOWCASE_LIMIT, 3000);
+  assert.equal(LEGACY_SHOWCASE_LIMIT, 1000);
+});
+
+test('selecciona hasta 3000 ediciones por defecto y asigna rango continuo', () => {
+  const items = Array.from({ length: 3200 }, (_, index) => item(index));
+  const metrics = assignShowcaseRanking(items);
+  const selected = items.filter(entry => entry.showcase_rank);
+
+  assert.equal(metrics.schema_version, 2);
+  assert.equal(metrics.limit, 3000);
+  assert.equal(metrics.selected_items, 3000);
+  assert.equal(selected.length, 3000);
+  assert.deepEqual(
+    selected.map(entry => entry.showcase_rank).sort((a, b) => a - b),
+    Array.from({ length: 3000 }, (_, index) => index + 1),
+  );
+  assert.equal(items.filter(entry => entry.showcase_rank == null).length, 200);
+});
+
+test('permite generar explícitamente una selección legado de 1000', () => {
   const items = Array.from({ length: 1200 }, (_, index) => item(index));
   const metrics = assignShowcaseRanking(items, { limit: 1000 });
   const selected = items.filter(entry => entry.showcase_rank);
@@ -44,7 +67,6 @@ test('selecciona exactamente mil ediciones y asigna rango continuo', () => {
     selected.map(entry => entry.showcase_rank).sort((a, b) => a - b),
     Array.from({ length: 1000 }, (_, index) => index + 1),
   );
-  assert.equal(items.filter(entry => entry.showcase_rank == null).length, 200);
 });
 
 test('excluye pausados, sin stock, moneda no UYU y objetos sin señal de libro', () => {
@@ -131,14 +153,50 @@ test('clasifica el nivel de contenido sin inventarlo', () => {
   assert.equal(levels.get(item(3).id), 'bibliographic');
 });
 
+test('asigna display_title derivado sin mutar el título fuente y mide la limpieza', () => {
+  const rawTitle = 'Manual De Emdr Y Procesos De Terapia Familiar, De Louise Shapiro. Editorial Ediciones Pléyades En Español';
+  const dirty = item(1, {
+    title: rawTitle,
+    author: 'Francine Shapiro, Florence W. Kaslow y Louise Maxfield',
+    publisher: 'Ediciones Pléyades',
+    bibliographic: { language: 'Español', format: 'Tapa blanda' },
+  });
+  const cleanItem = item(2, { title: 'El arte de leer' });
+  const metrics = assignShowcaseRanking([dirty, cleanItem], { limit: 2 });
+
+  assert.equal(dirty.title, rawTitle);
+  assert.equal(dirty.showcase_display_title, 'Manual de EMDR y Procesos de Terapia Familiar');
+  assert.equal(dirty.showcase_title_changed, true);
+  assert.equal(cleanItem.showcase_display_title, 'El arte de leer');
+  assert.equal(metrics.selected_title_cleaned, 1);
+  assert.equal(metrics.selected_title_over_70_before, 1);
+  assert.equal(metrics.selected_title_over_70_after, 0);
+});
+
+test('expone distribución editorial, descriptiva y bibliográfica en data_quality', () => {
+  const values = [
+    item(1, { description: 'a'.repeat(500) }),
+    item(2, { description: 'a'.repeat(120) }),
+    item(3, { description: null }),
+  ];
+  const metrics = assignShowcaseRanking(values, { limit: 3 });
+
+  assert.equal(metrics.selected_editorial, 1);
+  assert.equal(metrics.selected_descriptive, 1);
+  assert.equal(metrics.selected_bibliographic, 1);
+  assert.equal(metrics.selected_items, 3);
+});
+
 test('una nueva corrida limpia marcas viejas antes de reasignar', () => {
   const items = [item(1), item(2), item(3)];
   assignShowcaseRanking(items, { limit: 3 });
   assert.ok(items.every(entry => entry.showcase_rank));
+  assert.ok(items.every(entry => entry.showcase_display_title));
 
   assignShowcaseRanking(items, { limit: 1, priorityIds: [items[2].id] });
   assert.equal(items.filter(entry => entry.showcase_rank).length, 1);
   assert.equal(items[2].showcase_rank, 1);
   assert.equal(items[0].showcase_rank, undefined);
   assert.equal(items[1].showcase_score, undefined);
+  assert.equal(items[0].showcase_display_title, undefined);
 });

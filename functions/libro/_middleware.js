@@ -10,6 +10,7 @@ import {
 } from '../_shared/order-hub.js';
 import { isProductInShowcaseCohort } from '../_shared/showcase-cohort.js';
 import { PRODUCT_SHOWCASE_OVERRIDES } from '../_shared/product-showcases.js';
+import { applyShowcaseTitleQuality } from '../_shared/showcase-title-quality.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
@@ -141,11 +142,6 @@ function enrichCatalogBreadcrumbSchema(html) {
   });
 }
 
-// SEO-ACTIVE-CATALOG-BREADCRUMB: las fichas realmente disponibles recuperan
-// un enlace HTML rastreable hacia /catalogo y el mismo nivel en BreadcrumbList.
-// No se aplica a pausadas: la cohorte SEO conserva su rama específica
-// Inicio → Libros por encargo → ficha, y las pausadas fuera de cohorte no se
-// mezclan en este lote.
 export function enrichActiveCatalogBreadcrumbHtml(html) {
   const source = String(html || '');
   if (!source.includes(ACTIVE_PAGE_MARKER)) return source;
@@ -190,17 +186,10 @@ export function enrichByRequestProductHtml(html, productId) {
   const source = String(html || '');
   const hasGenericOrderCopy = source.includes(ORDER_BOX_GENERIC_COPY);
   const hasLeadTime = source.includes('class="order-lead-time"');
-
-  // El copy exacto de la caja es la señal de una ficha pausada. Las fichas
-  // activas en moneda no-UYU también usan .order-box, pero tienen otro texto:
-  // nunca deben recibir el plazo de un encargo.
   const isPausedPage = (hasGenericOrderCopy || hasLeadTime) &&
     !source.includes('class="badge in-stock"');
   if (!isPausedPage) return source;
 
-  // CX-POR-ENCARGO-ALL: el plazo aprobado es una condición operativa común,
-  // no una regla SEO. Se muestra en toda ficha pausada válida, aunque sea
-  // noindex, sin alterar precio, Offer, canonical, robots ni disponibilidad.
   let result = hasGenericOrderCopy
     ? source.replace(ORDER_BOX_GENERIC_COPY, ORDER_BOX_LEAD_TIME_COPY)
     : source;
@@ -211,9 +200,6 @@ export function enrichByRequestProductHtml(html, productId) {
   const hubPage = orderHubPageForProductId(productId);
   if (!hubPage || result.includes('class="order-hub-links"')) return result;
 
-  // La cohorte es estática durante el lote SEO, pero un título puede volver a
-  // stock antes de regenerarla. La guarda isPausedPage evita etiquetar como
-  // "por encargo" una ficha que ya volvió a estar disponible.
   result = result.replace(
     BREADCRUMB_RE,
     `<nav>\n  <a href="/">Inicio</a> ›\n  <a href="${ORDER_HUB_PATH}">Libros por encargo</a> ›\n  <span>`,
@@ -338,10 +324,21 @@ function enrichAutomaticShowcaseSchema(html, productId, config) {
     } catch {
       return full;
     }
+
+    if (schema?.['@type'] === 'BreadcrumbList' && Array.isArray(schema.itemListElement)) {
+      const current = schema.itemListElement.at(-1);
+      if (current) current.name = config.h1;
+      return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
+    }
+
     const rawType = schema?.['@type'];
     const types = Array.isArray(rawType) ? rawType : [rawType].filter(Boolean);
     if (!types.includes('Book') || String(schema.sku || '').toUpperCase() !== productId) return full;
 
+    if (config.titleChanged) {
+      schema.name = config.h1;
+      if (!schema.alternateName && config.rawTitle) schema.alternateName = config.rawTitle;
+    }
     schema.description = config.schemaDescription;
     return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
   });
@@ -351,16 +348,30 @@ function replaceDescriptionMeta(html, config) {
   const safeDescription = escapeHtml(config.metaDescription);
   return html
     .replace(
-      /<meta name="description" content="[^"]*">/,
+      /<meta\s+name="description"\s+content="[^"]*">/,
       `<meta name="description" content="${safeDescription}">`,
     )
     .replace(
-      /<meta property="og:description" content="[^"]*">/,
+      /<meta\s+property="og:description"\s+content="[^"]*">/,
       `<meta property="og:description" content="${safeDescription}">`,
     )
     .replace(
-      /<meta name="twitter:description" content="[^"]*">/,
+      /<meta\s+name="twitter:description"\s+content="[^"]*">/,
       `<meta name="twitter:description" content="${safeDescription}">`,
+    );
+}
+
+function replaceTitleMeta(html, config) {
+  const safeTitle = escapeHtml(config.seoTitle || `${config.h1} | Amado Libros`);
+  return html
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${safeTitle}</title>`)
+    .replace(
+      /<meta\s+property="og:title"\s+content="[^"]*">/,
+      `<meta property="og:title" content="${safeTitle}">`,
+    )
+    .replace(
+      /<meta\s+name="twitter:title"\s+content="[^"]*">/,
+      `<meta name="twitter:title" content="${safeTitle}">`,
     );
 }
 
@@ -380,16 +391,19 @@ export function enrichAutomaticProductShowcaseHtml(html, productId) {
   }
 
   const item = productItemFromProductHtml(source, id);
-  const config = buildAutomaticProductShowcase(item);
+  const baseConfig = buildAutomaticProductShowcase(item);
+  const config = applyShowcaseTitleQuality(baseConfig, item);
   if (!config) return source;
 
-  let result = source;
-  if (config.subtitle && !result.includes('class="book-subtitle"')) {
-    result = result.replace(
-      PRODUCT_H1_RE,
-      match => `${match}\n    <p class="book-subtitle">${escapeHtml(config.subtitle)}</p>`,
-    );
-  }
+  let result = source.replace(
+    PRODUCT_H1_RE,
+    `<h1>${escapeHtml(config.h1)}</h1>${config.subtitle ? `\n    <p class="book-subtitle">${escapeHtml(config.subtitle)}</p>` : ''}`,
+  );
+  result = result.replace(
+    PRODUCT_NAV_RE,
+    `$1${escapeHtml(config.h1)}$2`,
+  );
+  result = replaceTitleMeta(result, config);
   result = replaceDescriptionMeta(result, config);
   result = enrichAutomaticShowcaseSchema(result, id, config);
   result = insertShowcaseBeforeRelated(result, renderProductShowcase(config));
@@ -399,9 +413,6 @@ export function enrichAutomaticProductShowcaseHtml(html, productId) {
   return result;
 }
 
-// FICHAS-VIDRIERA-1: capa editorial visible para un MLU/ISBN exacto. Usa la
-// publicación de Mercado Libre como fuente de precio, stock, condición,
-// imágenes y CTA, y agrega sólo contenido original + bibliografía verificada.
 export function enrichProductShowcaseHtml(html, productId) {
   const source = String(html || '');
   const config = PRODUCT_SHOWCASE_OVERRIDES[productId];
@@ -423,11 +434,6 @@ export function enrichProductShowcaseHtml(html, productId) {
   return result;
 }
 
-// SEO-PRODUCT-SCHEMA-1: Google exige que Product tenga al menos una señal
-// elegible para fragmentos de producto (Offer, review o aggregateRating).
-// Las fichas sin oferta real no deben fingir precio, disponibilidad ni reseñas:
-// conservan toda la semántica bibliográfica como Book y dejan de declarar
-// Product hasta que exista una señal elegible real.
 export function normalizeProductSnippetSchemaHtml(html) {
   const source = String(html || '');
   return source.replace(JSON_LD_RE, (full, rawJson) => {
@@ -481,9 +487,6 @@ export async function onRequest(context) {
     return response;
   }
 
-  // Se inspecciona un clon. Si ninguna transformación aplica, se devuelve la
-  // Response original con body, ETag y headers intactos. Si el HTML cambia,
-  // responseWithBody descarta validators del contenido anterior.
   const html = await response.clone().text();
   const withCatalogBreadcrumb = enrichActiveCatalogBreadcrumbHtml(html);
   const withByRequestCx = enrichByRequestProductHtml(withCatalogBreadcrumb, productId);

@@ -1,7 +1,10 @@
-// FICHAS-VIDRIERA-1000: selección comercial determinista de ediciones activas.
-// No inventa demanda ni contenido. Ordena únicamente señales reales del catálogo.
+// FICHAS-VIDRIERA-3000-QUALITY: selección comercial determinista de ediciones
+// activas. No inventa demanda ni contenido y deriva un título visible reversible.
 
-export const DEFAULT_SHOWCASE_LIMIT = 1000;
+import { deriveBookDisplayTitle } from './book-display-title.js';
+
+export const LEGACY_SHOWCASE_LIMIT = 1000;
+export const DEFAULT_SHOWCASE_LIMIT = 3000;
 
 const GENERIC_AUTHORS = new Set([
   'anónimo',
@@ -166,7 +169,8 @@ export function scoreShowcaseItem(item, { priorityIds = [] } = {}) {
   const bibliography = fieldCount(item?.bibliographic);
   const dimensions = fieldCount(item?.dimensions);
   const stock = Math.max(0, Number(item?.available_quantity) || 0);
-  const title = clean(item?.title);
+  const rawTitle = clean(item?.title);
+  const displayTitle = deriveBookDisplayTitle(item).title;
   let score = 0;
 
   if (priorities.has(clean(item.id).toUpperCase())) score += 2200;
@@ -193,13 +197,15 @@ export function scoreShowcaseItem(item, { priorityIds = [] } = {}) {
   if (normalizedText(item?.condition) === 'new') score += 40;
   score += Math.min(100, Math.round(Math.log2(stock + 1) * 25));
 
-  if (title.length >= 8 && title.length <= 150) score += 30;
-  if (/Ã|Â|â|�/.test(title)) score -= 250;
+  if (displayTitle.length >= 8 && displayTitle.length <= 90) score += 30;
+  if (rawTitle.length > 100 && displayTitle.length <= 70) score += 10;
+  if (/Ã|Â|â|�/.test(rawTitle)) score -= 250;
 
   return score;
 }
 
 function candidateFor(item, priorityIds) {
+  const display = deriveBookDisplayTitle(item);
   return {
     item,
     id: clean(item.id).toUpperCase(),
@@ -208,6 +214,10 @@ function candidateFor(item, priorityIds) {
     description: descriptionLength(item),
     pictures: pictureCount(item),
     startedAt: validDate(item.start_time),
+    displayTitle: display.title,
+    titleChanged: display.changed,
+    rawTitleLength: display.rawTitle.length,
+    displayTitleLength: display.title.length,
   };
 }
 
@@ -267,6 +277,8 @@ export function assignShowcaseRanking(items = [], options = {}) {
     delete item.showcase_rank;
     delete item.showcase_score;
     delete item.showcase_content_level;
+    delete item.showcase_display_title;
+    delete item.showcase_title_changed;
   }
 
   const ranked = rankShowcaseItems(items, options);
@@ -274,6 +286,8 @@ export function assignShowcaseRanking(items = [], options = {}) {
     candidate.item.showcase_rank = candidate.rank;
     candidate.item.showcase_score = candidate.score;
     candidate.item.showcase_content_level = candidate.contentLevel;
+    candidate.item.showcase_display_title = candidate.displayTitle;
+    candidate.item.showcase_title_changed = candidate.titleChanged;
   }
 
   const selectedWithDescription = ranked.selected
@@ -282,9 +296,21 @@ export function assignShowcaseRanking(items = [], options = {}) {
     .filter(candidate => Boolean(normalizeValidIsbn(candidate.item.isbn))).length;
   const selectedWithMultipleImages = ranked.selected
     .filter(candidate => candidate.pictures >= 2).length;
+  const selectedEditorial = ranked.selected
+    .filter(candidate => candidate.contentLevel === 'editorial').length;
+  const selectedDescriptive = ranked.selected
+    .filter(candidate => candidate.contentLevel === 'descriptive').length;
+  const selectedBibliographic = ranked.selected
+    .filter(candidate => candidate.contentLevel === 'bibliographic').length;
+  const selectedTitleCleaned = ranked.selected
+    .filter(candidate => candidate.titleChanged).length;
+  const selectedTitleOver70Before = ranked.selected
+    .filter(candidate => candidate.rawTitleLength > 70).length;
+  const selectedTitleOver70After = ranked.selected
+    .filter(candidate => candidate.displayTitleLength > 70).length;
 
   return {
-    schema_version: 1,
+    schema_version: 2,
     limit: Math.max(0, Math.floor(Number(options.limit ?? DEFAULT_SHOWCASE_LIMIT) || 0)),
     eligible_items: ranked.eligibleItems,
     unique_editions: ranked.uniqueEditions,
@@ -293,6 +319,12 @@ export function assignShowcaseRanking(items = [], options = {}) {
     selected_with_description: selectedWithDescription,
     selected_with_isbn: selectedWithIsbn,
     selected_with_multiple_images: selectedWithMultipleImages,
+    selected_editorial: selectedEditorial,
+    selected_descriptive: selectedDescriptive,
+    selected_bibliographic: selectedBibliographic,
+    selected_title_cleaned: selectedTitleCleaned,
+    selected_title_over_70_before: selectedTitleOver70Before,
+    selected_title_over_70_after: selectedTitleOver70After,
     highest_score: ranked.selected[0]?.score ?? null,
     lowest_score: ranked.selected.at(-1)?.score ?? null,
   };
