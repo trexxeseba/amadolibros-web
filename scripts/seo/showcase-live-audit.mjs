@@ -37,9 +37,14 @@ function section(html, className) {
   const marker = `<section class="${className}"`;
   const start = html.indexOf(marker);
   if (start < 0) return '';
-  const nextSection = html.indexOf('<section class="', start + marker.length);
+
+  // product-showcase contiene secciones anidadas. No se puede cortar en el
+  // siguiente <section>: se toma el bloque completo hasta relacionados o main.
+  const relatedBooks = html.indexOf('<section class="related-books"', start + marker.length);
   const mainEnd = html.indexOf('</main>', start + marker.length);
-  const end = [nextSection, mainEnd].filter(index => index > start).sort((a, b) => a - b)[0];
+  const end = [relatedBooks, mainEnd]
+    .filter(index => index > start)
+    .sort((a, b) => a - b)[0];
   return html.slice(start, end > start ? end : undefined);
 }
 
