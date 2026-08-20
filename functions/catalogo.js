@@ -514,6 +514,28 @@ const PAGINATION_STYLES = `
         outline-offset:2px}
 `;
 
+// OPS-CATALOG-DEGRADATION-1 (issue #85): catalog.json es imprescindible para
+// las vistas que no pueden resolverse sólo con el índice activo compacto
+// (ver catalogNeeded en onRequest). Si fetchCatalog() falla o devuelve una
+// estructura sin `items` como array, la respuesta correcta es un 503
+// temporal explícito — nunca una grilla vacía con HTTP 200 (falsea "no hay
+// libros" ante compradores y arriesga que Google indexe un catálogo vacío
+// como si fuera real) ni un 404/410 (la URL sigue siendo válida; la falla
+// es de origen, no de contenido). Mismas cabeceras que noindexPage() en
+// libros-por-encargo.js para el mismo tipo de falla en esa otra vista.
+function catalogUnavailableResponse() {
+    const html = `<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Catálogo no disponible — Amado Libros</title>${faviconHeadHtml()}</head><body style="font-family:system-ui,sans-serif;max-width:680px;margin:4rem auto;padding:1rem;line-height:1.6"><main><h1>El catálogo está actualizándose</h1><p>No pudimos cargar el catálogo en este momento. Es una falla temporal — probá de nuevo en unos minutos.</p><p><a href="/">Volver al inicio</a></p></main></body></html>`;
+    return new Response(html, {
+        status: 503,
+        headers: {
+            'content-type': 'text/html;charset=UTF-8',
+            'cache-control': 'no-store',
+            'x-robots-tag': 'noindex, nofollow',
+            'retry-after': '60',
+        },
+    });
+}
+
 export async function onRequest(ctx) {
     const requestStartedAt = perfNow();
     ensurePerf(ctx);
@@ -584,10 +606,27 @@ export async function onRequest(ctx) {
         needPausedIndex ? fetchPausedIndex(ctx) : Promise.resolve(null),
     ]);
     // El catálogo completo sólo se necesita para el índice sin compactar,
-    // producción o fallback de una versión compacta ausente/corrupta.
-    const catalog = !useCompactSearch || !Array.isArray(activeIndex?.items)
-        ? await fetchCatalog(ctx)
-        : null;
+    // producción o fallback de una versión compacta ausente/corrupta. Una
+    // búsqueda que ya resolvió por completo con el índice activo compacto
+    // (useCompactSearch true y activeIndex válido) nunca llega a pedirlo.
+    const catalogNeeded = !useCompactSearch || !Array.isArray(activeIndex?.items);
+    // fetchCatalog() ya devuelve null ante un `!ok` o un JSON no parseable
+    // (ver fetchJsonCached en _shared/catalog.js), pero no atrapa una
+    // excepción real del `fetch()` de origen (por ejemplo R2 inalcanzable).
+    // El try/catch acá — local a esta vista, sin tocar el helper compartido
+    // con fichas/feed/sitemap — trata ese caso igual que cualquier otra
+    // falla de catalog.json: degrada a 503, nunca deja crashear la request.
+    let catalog = null;
+    if (catalogNeeded) {
+        try {
+            catalog = await fetchCatalog(ctx);
+        } catch {
+            catalog = null;
+        }
+    }
+    if (catalogNeeded && !(catalog && Array.isArray(catalog.items))) {
+        return catalogUnavailableResponse();
+    }
     const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
     const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
     const previewBase = ctx.env?.APP_ENV === 'preview'
