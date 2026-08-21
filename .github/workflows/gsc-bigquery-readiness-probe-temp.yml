@@ -28,33 +28,32 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: amado-libros-analytics
-      - name: Probe tables and rows
+      - name: Probe tables and rows via BigQuery REST metadata
         shell: bash
         run: |
           set -euo pipefail
           P='amado-libros-analytics'; D='searchconsole'; O=/tmp/result.txt
           : > "$O"
           echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$O"
-          if bq --project_id="$P" show --format=prettyjson "$P:$D" >/tmp/dataset.json 2>/tmp/dataset.err; then
-            echo 'dataset_present=true' >> "$O"
-          else
-            echo 'dataset_present=false' >> "$O"
-          fi
+          TOKEN=$(gcloud auth print-access-token)
+          ds_code=$(curl -sS -o /tmp/dataset.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "https://bigquery.googleapis.com/bigquery/v2/projects/$P/datasets/$D")
+          if [ "$ds_code" = '200' ]; then echo 'dataset_present=true' >> "$O"; else echo 'dataset_present=false' >> "$O"; fi
+          ready=1
+          [ "$ds_code" = '200' ] || ready=0
           for T in ExportLog searchdata_url_impression searchdata_site_impression; do
-            if bq --project_id="$P" show --format=prettyjson "$P:$D.$T" >/tmp/$T.json 2>/tmp/$T.err; then
-              R=$(jq -r '.numRows // "0"' /tmp/$T.json)
+            code=$(curl -sS -o "/tmp/$T.json" -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "https://bigquery.googleapis.com/bigquery/v2/projects/$P/datasets/$D/tables/$T")
+            if [ "$code" = '200' ]; then
+              R=$(python -c "import json; print(json.load(open('/tmp/$T.json')).get('numRows','0'))")
               echo "$T.present=true" >> "$O"
               echo "$T.rows=$R" >> "$O"
+              [ "${R:-0}" -gt 0 ] || ready=0
             else
               echo "$T.present=false" >> "$O"
               echo "$T.rows=0" >> "$O"
+              ready=0
             fi
           done
-          if [ "$(grep -c '=true' "$O")" -ge 4 ] && awk -F= '/\.rows=/{if($2+0<=0)bad=1} END{exit bad?1:0}' "$O"; then
-            echo 'READY=1' >> "$O"
-          else
-            echo 'READY=0' >> "$O"
-          fi
+          echo "READY=$ready" >> "$O"
           cat "$O"
       - name: Comment issue 190 with probe result
         if: always()
