@@ -30,42 +30,49 @@ jobs:
       - name: Probe GSC export tables
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
           OUT=/tmp/gsc-bq-readiness.txt
-          {
-            echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "project=$PROJECT"
-            echo "dataset=$DATASET"
-            if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
-              echo 'dataset_exists=true'
-              echo 'tables_begin'
-              bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" > /tmp/tables.json
-              jq -r '.[].tableReference.tableId' /tmp/tables.json | sort
-              echo 'tables_end'
-              for T in ExportLog searchdata_url_impression searchdata_site_impression; do
-                if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/$T.json 2>/tmp/$T.err; then
-                  ROWS=$(jq -r '.numRows // "0"' /tmp/$T.json)
-                  echo "$T.exists=true"
-                  echo "$T.numRows=$ROWS"
-                  if [[ "$T" == 'ExportLog' ]]; then
-                    bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
-                      "SELECT COUNT(*) AS row_count FROM \`$PROJECT.$DATASET.$T\`" 2>/tmp/${T}-query.err | tail -n +2 | sed "s/^/$T.query_rows=/" || true
-                  else
-                    bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
-                      "SELECT COUNT(*) AS row_count, CAST(MAX(data_date) AS STRING) AS max_data_date FROM \`$PROJECT.$DATASET.$T\`" 2>/tmp/${T}-query.err | tail -n +2 | awk -F, -v t="$T" '{print t".query_rows="$1; print t".max_data_date="$2}' || true
-                  fi
-                else
-                  echo "$T.exists=false"
-                  echo "$T.numRows=0"
-                fi
-              done
+          : > "$OUT"
+          log(){ echo "$*" | tee -a "$OUT"; }
+
+          log "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          log "project=$PROJECT"
+          log "dataset=$DATASET"
+
+          if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" 2>/tmp/dataset.err | sed '/^WARNING:/d' >/tmp/dataset.json; then
+            log 'dataset_exists=true'
+          else
+            log 'dataset_exists=false'
+            sed 's/^/dataset_error=/' /tmp/dataset.err | tee -a "$OUT" || true
+            exit 0
+          fi
+
+          if bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" 2>/tmp/tables.err | sed '/^WARNING:/d' >/tmp/tables.json; then
+            IDS=$(jq -r '.[].tableReference.tableId' /tmp/tables.json 2>/dev/null | sort | paste -sd, -)
+            log "table_ids=$IDS"
+          else
+            log 'table_list_failed=true'
+            sed 's/^/table_list_error=/' /tmp/tables.err | tee -a "$OUT" || true
+          fi
+
+          READY=1
+          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+            if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" 2>/tmp/$T.err | sed '/^WARNING:/d' >/tmp/$T.json; then
+              ROWS=$(jq -r '.numRows // "0"' /tmp/$T.json)
+              MOD=$(jq -r '.lastModifiedTime // ""' /tmp/$T.json)
+              log "$T.exists=true"
+              log "$T.numRows=$ROWS"
+              log "$T.lastModifiedTime=$MOD"
+              if [[ "$ROWS" == "0" ]]; then READY=0; fi
             else
-              echo 'dataset_exists=false'
-              sed 's/^/dataset_error=/' /tmp/dataset.err || true
+              log "$T.exists=false"
+              log "$T.numRows=0"
+              READY=0
             fi
-          } | tee "$OUT"
+          done
+          log "ready=$READY"
       - name: Comment tracking issue
         if: always()
         env:
