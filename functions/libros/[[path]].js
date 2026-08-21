@@ -399,9 +399,19 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
     const pageTitle = page > 1 ? `${category.title} — Página ${page}` : category.title;
     const pageDescription = page > 1 ? `${category.description} Página ${page} de ${totalPages}.` : category.description;
     const pagination = paginationHtml({ categoryId: category.id, page, totalPages });
-    const scopeText = Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
-        ? `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> Los ${categoryUniverseCount} títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo.`
-        : `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> También buscamos ediciones agotadas o difíciles de conseguir por encargo.`;
+    // TAROT-HUB-MERCH-1: copy inequívoco para esoterismo-tarot — "314 título(s)
+    // informados en la portada" se podía leer como stock inmediato, que no es
+    // lo que dice. El número visible es siempre el de items.length (dinámico,
+    // nunca hardcodeado); el universo por-encargo mayor se nombra sin cifra
+    // propia, sólo cuando existe realmente. El resto de las categorías
+    // conserva el texto original, sin cambios.
+    const scopeText = category.id === TAROT_CATEGORY_ID
+        ? (Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
+            ? `<strong>${items.length} disponible${items.length === 1 ? '' : 's'} ahora</strong> · más títulos disponibles por encargo`
+            : `<strong>${items.length} disponible${items.length === 1 ? '' : 's'} ahora</strong>`)
+        : (Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
+            ? `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> Los ${categoryUniverseCount} títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo.`
+            : `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> También buscamos ediciones agotadas o difíciles de conseguir por encargo.`);
     const waMessage = buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
         motive: 'Consultar por un libro de esta categoría',
