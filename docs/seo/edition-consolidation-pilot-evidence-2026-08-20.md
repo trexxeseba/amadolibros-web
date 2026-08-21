@@ -2,7 +2,7 @@
 
 Fecha: 2026-08-20
 
-Este documento no autoriza redirects ni canonicals. Reúne evidencia histórica y de Search Console para decidir qué pares deben revalidarse contra el catálogo vigente antes de cualquier cambio indexable.
+Este documento no autoriza redirects ni canonicals. Reúne evidencia histórica, una re-ejecución estructural fresca y Search Console para decidir qué pares deben revalidarse antes de cualquier cambio indexable.
 
 ## Baseline estructural preservado (2026-08-08)
 
@@ -16,31 +16,56 @@ El artifact público `seo-baseline-public-2026-08-08` registró:
 
 Conclusión: compartir ISBN no basta para consolidar. La gran mayoría de los grupos por ISBN presentan diferencias de título/autor y deben rechazarse o pasar por revisión.
 
+## Revalidación estructural fresca (2026-08-20)
+
+El workflow `SEO baseline public audit` volvió a ejecutar el reporte contra el catálogo vigente. Artifact generado a `2026-08-20T23:47:33.733Z`:
+
+- 7.090 activos con stock;
+- 3.137 grupos con ISBN repetido;
+- 6.285 listings dentro de esos grupos;
+- 209 grupos `same_book` bajo la regla estricta histórica;
+- 2.928 grupos `isbn_inconsistent`;
+- active-index: 7.088 items; sólo 2 IDs aparecen únicamente en `catalog.json` y 0 únicamente en el índice.
+
+Los tres pares priorizados por GSC siguen activos con stock y continúan en grupos `same_book` bajo el baseline fresco.
+
 ## Evidencia GSC actual de canibalización útil para priorizar
 
 Ventana GSC: 2026-07-21 a 2026-08-17.
 
-### Candidatos fuertes: misma obra en baseline + query dividida entre dos URLs
+### Candidatos para revalidación
 
 1. `Headway Elementary 5th Edition Audio CD`
-   - ISBN histórico: `9780194527552`
+   - ISBN: `9780194527552`
    - MLU: `MLU648794507`, `MLU715787398`
-   - baseline: `same_book`
+   - baseline fresco: `same_book`
+   - títulos actuales idénticos: `Headway Elementary (5th.edition) - Audio Cd`
+   - autores actuales idénticos: `Soars, John`
+   - stock actual observado en el baseline: 2 / 2
    - query GSC `headway elementary 5th edition audio`: 2 impresiones, repartidas 1/1 entre ambas URLs, posición 8/8.
+   - estado: candidato fuerte para la siguiente revalidación del detector, todavía sin canonical aplicado.
 
-2. `Memento Mori - Recuerda Tu Muerte`
-   - ISBN histórico: `9798294067946`
-   - MLU: `MLU834746174`, `MLU1420573720`
-   - baseline: `same_book`
-   - query GSC `memento mori`: 2 impresiones, repartidas 1/1 entre ambas URLs.
-
-3. `Obesidad — Virginia Busnelli`
-   - ISBN histórico: `9789500217262`
+2. `Obesidad — Virginia Busnelli`
+   - ISBN: `9789500217262`
    - MLU: `MLU1067876690`, `MLU677997343`
-   - baseline: `same_book`
+   - baseline fresco: `same_book`
+   - títulos actuales idénticos: `Obesidad Virginia Busnelli Guía Médica Para Bajar De Peso`
+   - autores actuales idénticos: `Virginia Busnelli`
+   - stock actual observado en el baseline: 3 / 3
    - query GSC `obesidad virginia busnelli`: 2 impresiones, repartidas 1/1 entre ambas URLs.
+   - estado: candidato fuerte para la siguiente revalidación del detector, todavía sin canonical aplicado.
 
-Estos tres pares son buenos candidatos para la primera revalidación fresca porque combinan identidad estricta histórica y evidencia de que Google está repartiendo impresiones entre dos URLs.
+3. `Memento Mori - Recuerda Tu Muerte`
+   - ISBN: `9798294067946`
+   - MLU: `MLU834746174`, `MLU1420573720`
+   - baseline fresco: `same_book`
+   - títulos actuales idénticos;
+   - autor actual en ambos: `Varios autores`;
+   - stock actual observado en el baseline: 1 / 1;
+   - query GSC `memento mori`: 2 impresiones, repartidas 1/1 entre ambas URLs.
+   - estado: **manual_review**, no candidato automático. El autor es genérico y no aporta evidencia de identidad. El detector fue endurecido para emitir `author_generic` en este caso.
+
+Por tanto, el primer piloto automático ya no son tres pares: son **dos pares fuertes** (Headway y Obesidad). Memento queda como caso humano-verificado si se quisiera consolidar después.
 
 ## Contraejemplos que justifican el detector conservador
 
@@ -72,7 +97,8 @@ Si cualquiera falla, no se canonicaliza.
 
 ## Alcance recomendado del piloto
 
-- empezar por los 3 pares con evidencia GSC anterior;
-- ampliar hasta 20–30 pares sólo después de correr el detector contra el snapshot vigente y revisar manualmente la muestra;
+- empezar por Headway y Obesidad;
+- Memento sólo mediante revisión humana por autor genérico;
+- ampliar hasta 20–30 pares únicamente después de correr el detector contra el snapshot vigente y revisar manualmente la muestra;
 - canonical reversible primero;
 - 301 queda fuera de este lote y sigue reservado a pares humano-verificados.
