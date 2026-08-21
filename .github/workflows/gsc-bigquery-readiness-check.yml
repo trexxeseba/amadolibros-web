@@ -120,3 +120,5 @@ jobs:
             echo '```'
           } > /tmp/comment.md
           gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+# readiness probe refresh 2026-08-21T00:56Z
