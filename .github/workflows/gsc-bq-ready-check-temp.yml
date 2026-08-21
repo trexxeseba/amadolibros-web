@@ -8,7 +8,7 @@ on:
       - '.github/workflows/gsc-bq-ready-check-temp.yml'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -31,33 +31,46 @@ jobs:
       - name: Check Search Console export tables
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
-          echo '=== DATASET ==='
-          if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET"; then
-            echo 'READY=false'
-            exit 0
-          fi
-          echo '=== TABLES ==='
-          bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" || true
-          ready=true
-          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
-            echo "=== $T ==="
-            if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" > "/tmp/$T.json" 2>"/tmp/$T.err"; then
-              cat "/tmp/$T.json"
-              rows=$(python - <<PY
+          OUT='automation/gsc-bq-ready/latest.txt'
+          mkdir -p "$(dirname "$OUT")"
+          {
+            date -u +"CHECKED_AT=%Y-%m-%dT%H:%M:%SZ"
+            echo "PROJECT=$PROJECT"
+            echo "DATASET=$DATASET"
+            if ! bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
+              echo 'DATASET_EXISTS=false'
+              echo 'READY=false'
+            else
+              echo 'DATASET_EXISTS=true'
+              ready=true
+              for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+                if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" > "/tmp/$T.json" 2>"/tmp/$T.err"; then
+                  rows=$(python - <<PY
 import json
 p=json.load(open('/tmp/$T.json'))
 print(p.get('numRows','0'))
 PY
 )
-              echo "TABLE=$T ROWS=$rows"
-              if [ "${rows:-0}" = "0" ]; then ready=false; fi
-            else
-              cat "/tmp/$T.err" || true
-              echo "TABLE=$T MISSING=true"
-              ready=false
+                  echo "TABLE=$T EXISTS=true ROWS=$rows"
+                  if [ "${rows:-0}" = "0" ]; then ready=false; fi
+                else
+                  echo "TABLE=$T EXISTS=false ROWS=0"
+                  ready=false
+                fi
+              done
+              echo "READY=$ready"
             fi
-          done
-          echo "READY=$ready"
+          } > "$OUT"
+          cat "$OUT"
+      - name: Persist result on temporary branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add automation/gsc-bq-ready/latest.txt
+          git commit -m 'chore: record GSC BigQuery readiness' || exit 0
+          git push origin HEAD:agent/gsc-bq-ready-check
