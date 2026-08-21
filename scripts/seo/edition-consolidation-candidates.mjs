@@ -291,14 +291,12 @@ async function runCli() {
   };
 
   const output = stableReportJson(report);
-  if (outputPath) {
-    await fs.writeFile(outputPath, output, 'utf8');
-  } else {
-    process.stdout.write(output);
-  }
+  if (outputPath) await fs.writeFile(outputPath, output, 'utf8');
+  else process.stdout.write(output);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isDirectRun) {
   runCli().catch(error => {
     console.error(error?.stack || error);
     process.exitCode = 1;
