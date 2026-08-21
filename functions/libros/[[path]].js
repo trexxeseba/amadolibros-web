@@ -20,7 +20,24 @@ import {
     CARD_IMAGE_SIZES,
     responsiveImage,
 } from '../_shared/cloudflare-images.js';
-import { buildWhatsAppMessage } from '../../shared/whatsapp-messages.js';
+import { buildWhatsAppMessage, whatsappHref } from '../../shared/whatsapp-messages.js';
+// TAROT-HUB-MERCH-1: sólo se usa cuando category.id === 'esoterismo-tarot'.
+// Ninguna otra categoría de SEO_CATEGORIES se ve afectada por este import.
+import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
+import { buildTagLookup, buildTarotHubModules } from '../_shared/tarot-hub-modules.js';
+
+const TAROT_CATEGORY_ID = 'esoterismo-tarot';
+const tarotTagLookup = buildTagLookup(TAROT_MERCH_TAGS);
+// DEMAND-LEDGER-1 (PR #206) todavía no está mergeado a main: no hay
+// functions/_shared/demand-ledger.js en esta rama. "Lo más buscado" queda
+// implementado y probado (ver tarot-hub-modules.test.js) pero sin datos
+// reales hasta que ese lote se integre — devolver null es honesto, no un
+// placeholder. Reemplazar este no-op por un import real de
+// opportunityForProductId() cuando #206 esté en main — esa fila trae
+// impressions/clicks (lo que "Lo más buscado" realmente usa) además de
+// opportunity_score, que buildTarotHubModules() ignora a propósito: mide
+// oportunidad SEO/CTR, no volumen de búsqueda.
+const tarotDemandLedgerLookup = () => null;
 
 const MAX_RESULTS = 48;
 const PAGE_PARAM_RE = /^[1-9][0-9]{0,6}$/;
@@ -168,7 +185,32 @@ function categoryNavHtml(currentId) {
 </nav>`;
 }
 
-function cardHtml(item, index, navigationBase) {
+// TAROT-HUB-MERCH-1: etiquetas cortas de merchandising para las tarjetas de
+// los módulos "Clásicos" y "Lenormand y Kipper". Sólo texto/estilo — no
+// afectan precio, stock, carrito ni checkout. deck_family/bundle/
+// edition_style vienen ya resueltos por TAROT-MERCH-TAGS-1; nunca se infiere
+// nada acá.
+const TAROT_DECK_FAMILY_LABEL = {
+    rider_waite_smith: 'Rider-Waite-Smith',
+    marsella: 'Marsella',
+    thoth: 'Thoth',
+};
+const TAROT_PRIMARY_TYPE_LABEL = {
+    lenormand: 'Lenormand',
+    kipper: 'Kipper',
+};
+
+function tarotBadgesFor(tag) {
+    if (!tag) return [];
+    const badges = [];
+    if (TAROT_PRIMARY_TYPE_LABEL[tag.primary_type]) badges.push(TAROT_PRIMARY_TYPE_LABEL[tag.primary_type]);
+    if (TAROT_DECK_FAMILY_LABEL[tag.deck_family]) badges.push(TAROT_DECK_FAMILY_LABEL[tag.deck_family]);
+    if (tag.bundle === 'mazo_mas_guia') badges.push('+ Guía');
+    if (tag.edition_style === 'ilustrada_especial') badges.push('Edición especial');
+    return badges;
+}
+
+function cardHtml(item, index, navigationBase, { badges = [], forceLazy = false } = {}) {
     const href = `${navigationBase}/libro/${item.id}/${slugify(item.title)}`;
     const source = navigationBase === BASE
         ? bookCoverUrl(item.id)
@@ -187,14 +229,22 @@ function cardHtml(item, index, navigationBase) {
     const responsiveAttrs = image.srcset
         ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
         : '';
+    // "fuera del primer viewport" (TAROT-HUB-MERCH-1): la grilla "Ver todo"
+    // de esoterismo-tarot ya no es lo primero de la página cuando hay
+    // módulos merchandising arriba — forceLazy la saca del criterio index<6.
+    const eager = !forceLazy && index < 6;
     const imageHtml = image.src
-        ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="${index < 6 ? 'eager' : 'lazy'}" decoding="async" width="280" height="420">`
+        ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="${eager ? 'eager' : 'lazy'}" decoding="async" width="280" height="420">`
         : '<span class="book-placeholder" aria-hidden="true">📚</span>';
+    const badgesHtml = badges.length
+        ? `<div class="tarot-badges">${badges.map(b => `<span class="tarot-badge">${escapeHtml(b)}</span>`).join('')}</div>`
+        : '';
 
     return `<article class="book-card">
   <a class="book-image" href="${escapeHtml(href)}">${imageHtml}</a>
   <div class="book-body">
     <span class="stock-badge">Disponible</span>
+    ${badgesHtml}
     <h2><a href="${escapeHtml(href)}">${title}</a></h2>
     ${author}
     ${price > 0 ? `<div class="book-prices">
@@ -224,7 +274,83 @@ ${faviconHeadHtml()}
     });
 }
 
-function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages }) {
+// TAROT-HUB-MERCH-1 ---------------------------------------------------------
+
+const TAROT_MODULE_INTRO = {
+    'para-empezar': '¿Es tu primer tarot? Estos mazos tienen guía o instructivo pensado para quien recién empieza.',
+    oraculos: 'Mazos de oráculo disponibles ahora — un sistema distinto del tarot, con su propia lógica de lectura.',
+    clasicos: 'Las barajas clásicas del tarot: Rider-Waite-Smith, Marsella y Thoth, cuando el mazo lo indica.',
+    'lenormand-kipper': 'Lenormand y Kipper son sistemas de cartomancia propios, distintos entre sí y del tarot — se muestran juntos por temática, nunca mezclados en la clasificación.',
+    'para-profundizar': 'Libros para estudiar tarot y oráculos en profundidad — teoría, historia e interpretación, no mazos.',
+    novedades: 'Altas recientes en esta categoría.',
+    'mas-buscado': 'Fichas con más demanda real de búsqueda en esta categoría.',
+    'volvio-disponible': 'Títulos que volvieron a tener stock.',
+};
+
+function tarotModuleSectionHtml(module_, navigationBase, cardIndexRef) {
+    if (module_.entries.length === 0) return '';
+    const cards = module_.entries.map(({ item, tag }) => {
+        const badges = module_.kind === 'grid-badged' ? tarotBadgesFor(tag) : [];
+        const html = cardHtml(item, cardIndexRef.value, navigationBase, { badges });
+        cardIndexRef.value += 1;
+        return html;
+    }).join('\n');
+    const moreNote = module_.totalCount > module_.entries.length
+        ? `<p class="tarot-module-more">Mostrando ${module_.entries.length} de ${module_.totalCount} — el resto está en “Ver todo” más abajo.</p>`
+        : '';
+    return `<section class="tarot-module" id="tarot-${escapeHtml(module_.id)}" aria-labelledby="tarot-${escapeHtml(module_.id)}-title">
+    <h2 id="tarot-${escapeHtml(module_.id)}-title">${escapeHtml(module_.title)}</h2>
+    <p class="tarot-module-intro">${escapeHtml(TAROT_MODULE_INTRO[module_.id] || '')}</p>
+    <div class="tarot-module-grid">${cards}</div>
+    ${moreNote}
+  </section>`;
+}
+
+function tarotParaEmpezarHtml(module_, navigationBase, canonical, cardIndexRef) {
+    const waMessage = buildWhatsAppMessage({
+        greeting: 'Hola, estoy buscando mi primer tarot y quisiera que me ayudaran 😊',
+        motive: 'Elegir un primer mazo de tarot',
+        situation: 'Todavía no sé bien qué mazo conviene para empezar',
+        page: canonical,
+        closing: 'Muy pronto vamos a tener un selector para recomendarte el mazo ideal — mientras tanto, contanos qué buscás y te ayudamos por acá. Gracias.',
+    });
+    const cards = module_.entries.map(({ item, tag }) => {
+        const html = cardHtml(item, cardIndexRef.value, navigationBase, { badges: tarotBadgesFor(tag) });
+        cardIndexRef.value += 1;
+        return html;
+    }).join('\n');
+    return `<section class="tarot-module tarot-module-editorial" id="tarot-para-empezar" aria-labelledby="tarot-para-empezar-title">
+    <h2 id="tarot-para-empezar-title">Para empezar</h2>
+    <p class="tarot-module-intro">${escapeHtml(TAROT_MODULE_INTRO['para-empezar'])}</p>
+    ${module_.hasProducts ? `<div class="tarot-module-grid">${cards}</div>` : ''}
+    <a class="tarot-wa-cta" href="${escapeHtml(whatsappHref(waMessage))}" target="_blank" rel="noopener noreferrer">Contanos qué buscás por WhatsApp</a>
+  </section>`;
+}
+
+function tarotModulesHtml(modules, navigationBase, canonical) {
+    if (!modules || modules.length === 0) return '';
+    const cardIndexRef = { value: 0 };
+    const sections = modules.map(module_ => module_.id === 'para-empezar'
+        ? tarotParaEmpezarHtml(module_, navigationBase, canonical, cardIndexRef)
+        : tarotModuleSectionHtml(module_, navigationBase, cardIndexRef)).filter(Boolean);
+    return `<div class="tarot-modules">${sections.join('\n')}</div>`;
+}
+
+const TAROT_MODULE_STYLES = `.tarot-modules{display:flex;flex-direction:column;gap:1.75rem;margin-top:1.75rem}
+.tarot-module{background:#fff;border:1px solid #e2dbd0;border-radius:1rem;padding:1.1rem clamp(1rem,3vw,1.5rem)}
+.tarot-module h2{font-family:Georgia,serif;font-size:1.25rem;margin-bottom:.35rem}
+.tarot-module-intro{color:#6b6157;font-size:.85rem;max-width:70ch;margin-bottom:.9rem}
+.tarot-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem}
+.tarot-module-more{margin-top:.75rem;font-size:.78rem;color:#8a8074}
+.tarot-badges{display:flex;flex-wrap:wrap;gap:.3rem}
+.tarot-badge{padding:.14rem .5rem;border-radius:999px;background:#f0e6da;color:#6b4b2f;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+.tarot-module-editorial .tarot-wa-cta{display:inline-flex;margin-top:.9rem;padding:.65rem 1rem;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:800;font-size:.82rem}
+@media(min-width:640px){.tarot-module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:900px){.tarot-module-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}`;
+
+// ---------------------------------------------------------------------------
+
+function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages, tarotModules }) {
     const canonical = `${BASE}${categoryPath(category.id, page)}`;
     const offset = (page - 1) * MAX_RESULTS;
     const visibleItems = items.slice(offset, offset + MAX_RESULTS);
@@ -264,16 +390,31 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
         : totalPages > 1
             ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} libros disponibles`
             : `${items.length} libro${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'}`;
-    const cards = visibleItems.map((item, index) => cardHtml(item, index, navigationBase)).join('\n');
+    // TAROT-HUB-MERCH-1: cuando hay módulos merchandising arriba, esta
+    // grilla ya no es lo primero de la página — forceLazy evita eager-load
+    // de imágenes fuera del primer viewport.
+    const cards = visibleItems
+        .map((item, index) => cardHtml(item, index, navigationBase, { forceLazy: Boolean(tarotModules?.length) }))
+        .join('\n');
     const robots = isPreview || hasUnexpectedParameters || items.length === 0
         ? 'noindex, follow'
         : 'index, follow';
     const pageTitle = page > 1 ? `${category.title} — Página ${page}` : category.title;
     const pageDescription = page > 1 ? `${category.description} Página ${page} de ${totalPages}.` : category.description;
     const pagination = paginationHtml({ categoryId: category.id, page, totalPages });
-    const scopeText = Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
-        ? `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> Los ${categoryUniverseCount} títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo.`
-        : `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> También buscamos ediciones agotadas o difíciles de conseguir por encargo.`;
+    // TAROT-HUB-MERCH-1: copy inequívoco para esoterismo-tarot — "314 título(s)
+    // informados en la portada" se podía leer como stock inmediato, que no es
+    // lo que dice. El número visible es siempre el de items.length (dinámico,
+    // nunca hardcodeado); el universo por-encargo mayor se nombra sin cifra
+    // propia, sólo cuando existe realmente. El resto de las categorías
+    // conserva el texto original, sin cambios.
+    const scopeText = category.id === TAROT_CATEGORY_ID
+        ? (Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
+            ? `<strong>${items.length} disponible${items.length === 1 ? '' : 's'} ahora</strong> · más títulos disponibles por encargo`
+            : `<strong>${items.length} disponible${items.length === 1 ? '' : 's'} ahora</strong>`)
+        : (Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
+            ? `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> Los ${categoryUniverseCount} títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo.`
+            : `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> También buscamos ediciones agotadas o difíciles de conseguir por encargo.`);
     const waMessage = buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
         motive: 'Consultar por un libro de esta categoría',
@@ -302,7 +443,7 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
   <script type="application/ld+json">${safeJson(collectionSchema)}</script>
   <script type="application/ld+json">${safeJson(breadcrumbSchema)}</script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.category-header{position:sticky;top:0;z-index:40;background:rgba(18,14,11,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{max-width:1200px;height:72px;margin:auto;padding:0 1rem;display:grid;grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:1rem}.brand-link{display:flex;align-items:center;gap:.55rem;text-decoration:none}.brand-link img{width:44px;height:44px}.brand-link span{display:flex;flex-direction:column}.brand-link strong{font-size:.92rem}.brand-link small{color:rgba(255,255,255,.55);font-size:.7rem}.header-search{height:42px;display:flex;max-width:620px;width:100%;justify-self:center}.header-search input{min-width:0;flex:1;border:0;border-radius:999px 0 0 999px;padding:0 1rem;font:inherit}.header-search button{border:0;border-radius:0 999px 999px 0;padding:0 1rem;background:#e49982;color:#18120e;font-weight:800;cursor:pointer}.cart-link{min-height:42px;display:inline-flex;align-items:center;padding:0 .9rem;border:1px solid rgba(255,255,255,.2);border-radius:999px;text-decoration:none;font-size:.82rem}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.category-scope{margin-top:1rem;padding:.75rem .9rem;border-left:4px solid #e49982;background:#f8f5ef;border-radius:.35rem;color:#50463e;font-size:.88rem}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${PAGINATION_STYLES}${FOOTER_STYLES}${WA_FLOAT_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.header-inner{height:auto;min-height:68px;grid-template-columns:1fr auto;padding:.55rem .8rem}.brand-link small,.cart-link{display:none}.header-search{grid-column:1/-1;grid-row:2;margin-bottom:.2rem}.category-header{position:relative}}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.category-header{position:sticky;top:0;z-index:40;background:rgba(18,14,11,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{max-width:1200px;height:72px;margin:auto;padding:0 1rem;display:grid;grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:1rem}.brand-link{display:flex;align-items:center;gap:.55rem;text-decoration:none}.brand-link img{width:44px;height:44px}.brand-link span{display:flex;flex-direction:column}.brand-link strong{font-size:.92rem}.brand-link small{color:rgba(255,255,255,.55);font-size:.7rem}.header-search{height:42px;display:flex;max-width:620px;width:100%;justify-self:center}.header-search input{min-width:0;flex:1;border:0;border-radius:999px 0 0 999px;padding:0 1rem;font:inherit}.header-search button{border:0;border-radius:0 999px 999px 0;padding:0 1rem;background:#e49982;color:#18120e;font-weight:800;cursor:pointer}.cart-link{min-height:42px;display:inline-flex;align-items:center;padding:0 .9rem;border:1px solid rgba(255,255,255,.2);border-radius:999px;text-decoration:none;font-size:.82rem}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.category-scope{margin-top:1rem;padding:.75rem .9rem;border-left:4px solid #e49982;background:#f8f5ef;border-radius:.35rem;color:#50463e;font-size:.88rem}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${PAGINATION_STYLES}${FOOTER_STYLES}${WA_FLOAT_STYLES}${TAROT_MODULE_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.header-inner{height:auto;min-height:68px;grid-template-columns:1fr auto;padding:.55rem .8rem}.brand-link small,.cart-link{display:none}.header-search{grid-column:1/-1;grid-row:2;margin-bottom:.2rem}.category-header{position:relative}}
     .book-image{padding:.35rem}.book-image img{object-fit:contain}
   </style>
 </head>
@@ -316,7 +457,8 @@ ${headerHtml()}
     <p class="category-scope">${scopeText}</p>
     <div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>
   </section>
-  <div class="results-head"><h2>Libros disponibles</h2><p>${resultText}</p></div>
+  ${tarotModulesHtml(tarotModules, navigationBase, canonical)}
+  <div class="results-head"><h2>${tarotModules?.length ? 'Ver todo' : 'Libros disponibles'}</h2><p>${resultText}</p></div>
   ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
   ${categoryNavHtml(category.id)}
 </main>
@@ -392,6 +534,13 @@ export async function onRequest(ctx) {
     }
     const isPreview = ctx.env?.APP_ENV === 'preview';
     const navigationBase = isPreview ? requestUrl.origin : BASE;
+    // TAROT-HUB-MERCH-1: módulos merchandising sólo en la vista limpia
+    // (página 1, sin parámetros inesperados) de esoterismo-tarot, y sólo si
+    // hay algo que mostrar. Reutiliza `items` — ya calculado arriba, cero
+    // fetch adicional. Ninguna otra categoría pasa por este branch.
+    const tarotModules = category.id === TAROT_CATEGORY_ID && pageParam.page === 1 && !hasUnexpectedParameters && items.length > 0
+        ? buildTarotHubModules({ items, tagLookup: tarotTagLookup, demandLedgerLookup: tarotDemandLedgerLookup })
+        : null;
     const html = renderPage({
         category,
         categoryUniverseCount,
@@ -401,6 +550,7 @@ export async function onRequest(ctx) {
         navigationBase,
         page: pageParam.page,
         totalPages,
+        tarotModules,
     });
 
     return new Response(html, {
