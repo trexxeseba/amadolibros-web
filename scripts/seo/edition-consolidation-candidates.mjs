@@ -25,6 +25,14 @@ export function normalizeComparableText(value) {
     .trim();
 }
 
+function normalizeEditionIdentity(value) {
+  return normalizeComparableText(
+    String(value || '')
+      .replace(/ª/g, 'a')
+      .replace(/º/g, 'o'),
+  ).replace(/\b(\d+)\s+([ao])\b/g, '$1$2');
+}
+
 export function isGenericAuthor(value) {
   return GENERIC_AUTHORS.has(normalizeComparableText(value));
 }
@@ -53,7 +61,12 @@ function uniqueSorted(values) {
 }
 
 function analyzeOptionalIdentityField(group, field, reasons) {
-  const normalized = group.map(item => normalizeComparableText(item?.bibliographic?.[field]));
+  const normalized = group.map(item => {
+    const value = item?.bibliographic?.[field];
+    return field === 'edition'
+      ? normalizeEditionIdentity(value)
+      : normalizeComparableText(value);
+  });
   const values = uniqueSorted(normalized);
   const presentCount = normalized.filter(Boolean).length;
 
@@ -278,12 +291,14 @@ async function runCli() {
   };
 
   const output = stableReportJson(report);
-  if (outputPath) await fs.writeFile(outputPath, output, 'utf8');
-  else process.stdout.write(output);
+  if (outputPath) {
+    await fs.writeFile(outputPath, output, 'utf8');
+  } else {
+    process.stdout.write(output);
+  }
 }
 
-const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
-if (isDirectRun) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   runCli().catch(error => {
     console.error(error?.stack || error);
     process.exitCode = 1;
