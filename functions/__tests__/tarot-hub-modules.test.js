@@ -169,7 +169,9 @@ test('sin ninguna novedad real, el módulo no aparece', () => {
   assert.equal(modules.find(m => m.id === 'novedades'), undefined);
 });
 
-// ── Lo más buscado: sólo con señal real del Demand Ledger ────────────────
+// ── Lo más buscado: demanda real de Search Console (impressions/clicks),
+// NUNCA opportunity_score — ese campo mide oportunidad SEO/CTR, no volumen
+// de búsqueda, y queda reservado para priorización interna. ─────────────
 
 test('sin demandLedgerLookup (DEMAND-LEDGER-1 no mergeado todavía), lo-mas-buscado nunca aparece', () => {
   const modules = buildTarotHubModules({
@@ -180,27 +182,86 @@ test('sin demandLedgerLookup (DEMAND-LEDGER-1 no mergeado todavía), lo-mas-busc
   assert.equal(modules.find(m => m.id === 'mas-buscado'), undefined);
 });
 
-test('con demandLedgerLookup presente pero sin ningún score positivo, tampoco aparece (nunca placeholder)', () => {
+test('muchas impresiones (>= umbral) -> el producto aparece en lo-mas-buscado', () => {
   const modules = buildTarotHubModules({
     items: [item('MLU1')],
     tagLookup: lookupFrom([tag('MLU1')]),
-    demandLedgerLookup: () => ({ opportunity_score: null, score_reason: 'impresiones insuficientes' }),
+    demandLedgerLookup: () => ({ impressions: 50, clicks: 3 }),
+  });
+  const masBuscado = modules.find(m => m.id === 'mas-buscado');
+  assert.ok(masBuscado);
+  assert.equal(masBuscado.entries[0].item.id, 'MLU1');
+});
+
+test('pocas impresiones (< umbral) -> el producto NO aparece, sin importar los clicks', () => {
+  const modules = buildTarotHubModules({
+    items: [item('MLU1')],
+    tagLookup: lookupFrom([tag('MLU1')]),
+    demandLedgerLookup: () => ({ impressions: 9, clicks: 8 }), // 9 < 10, por debajo del umbral
   });
   assert.equal(modules.find(m => m.id === 'mas-buscado'), undefined);
 });
 
-test('con al menos un score positivo real, lo-mas-buscado aparece ordenado por score desc', () => {
-  const items = ['MLU1', 'MLU2'].map(id => item(id));
-  const tags = [tag('MLU1'), tag('MLU2')];
-  const demand = { MLU1: { opportunity_score: 1.2 }, MLU2: { opportunity_score: 5.6 } };
+test('sin evidencia de demanda (demandLedgerLookup devuelve null), tampoco aparece (nunca placeholder)', () => {
+  const modules = buildTarotHubModules({
+    items: [item('MLU1')],
+    tagLookup: lookupFrom([tag('MLU1')]),
+    demandLedgerLookup: () => null,
+  });
+  assert.equal(modules.find(m => m.id === 'mas-buscado'), undefined);
+});
+
+test('orden por impressions descendente', () => {
+  const items = ['MLU1', 'MLU2', 'MLU3'].map(id => item(id));
+  const tags = [tag('MLU1'), tag('MLU2'), tag('MLU3')];
+  const demand = {
+    MLU1: { impressions: 20, clicks: 1 },
+    MLU2: { impressions: 80, clicks: 1 },
+    MLU3: { impressions: 40, clicks: 1 },
+  };
   const modules = buildTarotHubModules({
     items, tagLookup: lookupFrom(tags),
     demandLedgerLookup: id => demand[id] || null,
   });
   const masBuscado = modules.find(m => m.id === 'mas-buscado');
+  assert.deepEqual(masBuscado.entries.map(e => e.item.id), ['MLU2', 'MLU3', 'MLU1']);
+});
+
+test('empate en impressions -> desempata por clicks descendente', () => {
+  const items = ['MLU1', 'MLU2'].map(id => item(id));
+  const tags = [tag('MLU1'), tag('MLU2')];
+  const demand = {
+    MLU1: { impressions: 30, clicks: 2 },
+    MLU2: { impressions: 30, clicks: 7 },
+  };
+  const modules = buildTarotHubModules({
+    items, tagLookup: lookupFrom(tags),
+    demandLedgerLookup: id => demand[id] || null,
+  });
+  const masBuscado = modules.find(m => m.id === 'mas-buscado');
+  assert.deepEqual(masBuscado.entries.map(e => e.item.id), ['MLU2', 'MLU1']);
+});
+
+test('opportunity_score alto con pocas impresiones NO convierte el producto en "más buscado"', () => {
+  const modules = buildTarotHubModules({
+    items: [item('MLU1')],
+    tagLookup: lookupFrom([tag('MLU1')]),
+    // opportunity_score alto es irrelevante acá: impressions=3 está muy por
+    // debajo del umbral de 10, así que el módulo debe quedar ausente.
+    demandLedgerLookup: () => ({ impressions: 3, clicks: 0, opportunity_score: 99.9 }),
+  });
+  assert.equal(modules.find(m => m.id === 'mas-buscado'), undefined);
+});
+
+test('con impressions suficientes, un opportunity_score bajo o null no impide que aparezca', () => {
+  const modules = buildTarotHubModules({
+    items: [item('MLU1')],
+    tagLookup: lookupFrom([tag('MLU1')]),
+    demandLedgerLookup: () => ({ impressions: 25, clicks: 1, opportunity_score: null }),
+  });
+  const masBuscado = modules.find(m => m.id === 'mas-buscado');
   assert.ok(masBuscado);
-  assert.equal(masBuscado.entries[0].item.id, 'MLU2'); // mayor score primero
-  assert.equal(masBuscado.entries[1].item.id, 'MLU1');
+  assert.equal(masBuscado.entries[0].item.id, 'MLU1');
 });
 
 // ── Volvió a estar disponible: sólo con evidencia histórica real ────────

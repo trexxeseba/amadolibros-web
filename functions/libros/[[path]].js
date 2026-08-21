@@ -33,7 +33,10 @@ const tarotTagLookup = buildTagLookup(TAROT_MERCH_TAGS);
 // implementado y probado (ver tarot-hub-modules.test.js) pero sin datos
 // reales hasta que ese lote se integre — devolver null es honesto, no un
 // placeholder. Reemplazar este no-op por un import real de
-// opportunityForProductId() cuando #206 esté en main.
+// opportunityForProductId() cuando #206 esté en main — esa fila trae
+// impressions/clicks (lo que "Lo más buscado" realmente usa) además de
+// opportunity_score, que buildTarotHubModules() ignora a propósito: mide
+// oportunidad SEO/CTR, no volumen de búsqueda.
 const tarotDemandLedgerLookup = () => null;
 
 const MAX_RESULTS = 48;

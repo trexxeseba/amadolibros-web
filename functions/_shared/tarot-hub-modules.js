@@ -19,6 +19,15 @@ const PARA_EMPEZAR_MIN = 3;
 const PARA_EMPEZAR_MAX = 6;
 const MODULE_DISPLAY_CAP = 12; // tope de tarjetas por módulo — nunca cargar el universo completo de una
 
+// "Lo más buscado" mide DEMANDA real de búsqueda (impresiones de Search
+// Console), no oportunidad SEO. opportunity_score del Demand Ledger es una
+// señal de priorización interna (CTR observado vs. esperado para esa
+// posición) — un producto puede tener opportunity_score alto con muy pocas
+// impresiones (justo lo que lo hace poco confiable como señal de "lo más
+// buscado"), o impresiones altas con opportunity_score bajo/null porque su
+// CTR ya es bueno. Por eso este módulo nunca lee opportunity_score.
+const MAS_BUSCADO_MIN_IMPRESSIONS = 10;
+
 /**
  * Arma un lookup id->fila de TAROT_MERCH_TAGS que también resuelve por
  * cualquiera de los MLU duplicados absorbidos en la deduplicación del
@@ -54,10 +63,20 @@ export function buildTarotHubModules({ items = [], tagLookup, demandLedgerLookup
   const paraProfundizar = tagged.filter(e => e.tag.format === 'libro');
   const novedades = tagged.filter(e => e.tag.is_new_arrival === true);
   const volvioDisponible = tagged.filter(e => e.tag.is_restocked === true);
+  // Demanda real: impressions como señal principal (umbral mínimo de
+  // evidencia antes de mostrar nada), clicks como desempate. Nunca
+  // opportunity_score — ver comentario de MAS_BUSCADO_MIN_IMPRESSIONS.
   const masBuscado = tagged
     .map(e => ({ ...e, demand: demandLedgerLookup(e.item.id) }))
-    .filter(e => e.demand && Number(e.demand.opportunity_score) > 0)
-    .sort((a, b) => b.demand.opportunity_score - a.demand.opportunity_score);
+    .filter(e => e.demand && Number(e.demand.impressions) >= MAS_BUSCADO_MIN_IMPRESSIONS)
+    .sort((a, b) => {
+      const impressionsA = Number(a.demand.impressions) || 0;
+      const impressionsB = Number(b.demand.impressions) || 0;
+      if (impressionsA !== impressionsB) return impressionsB - impressionsA;
+      const clicksA = Number(a.demand.clicks) || 0;
+      const clicksB = Number(b.demand.clicks) || 0;
+      return clicksB - clicksA;
+    });
 
   const modules = [];
 
