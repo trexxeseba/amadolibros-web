@@ -5,6 +5,16 @@ import { normalizeIsbnToGtin } from '../../functions/feed.xml.js';
 
 export const REPORT_SCHEMA_VERSION = 1;
 
+const GENERIC_AUTHORS = new Set([
+  'anonimo',
+  'anonymous',
+  'no aplica',
+  'sin autor',
+  'varios autores',
+  'various authors',
+  'vv aa',
+]);
+
 export function normalizeComparableText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -13,6 +23,10 @@ export function normalizeComparableText(value) {
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function isGenericAuthor(value) {
+  return GENERIC_AUTHORS.has(normalizeComparableText(value));
 }
 
 function normalizeCondition(value) {
@@ -64,6 +78,7 @@ function analyzeGroup(gtin, condition, group) {
 
   if (!allAuthorsPresent) reasons.push('author_missing');
   else if (authorValues.length !== 1) reasons.push('author_conflict');
+  else if (isGenericAuthor(authorValues[0])) reasons.push('author_generic');
 
   if (condition === 'unknown') reasons.push('condition_unknown');
 
