@@ -10,7 +10,9 @@ Un grupo sólo queda como `canonical_candidate` cuando todos sus miembros cumple
 - ISBN válido y normalizado al mismo GTIN;
 - misma condición (`new` o `used`);
 - título normalizado idéntico;
-- autor normalizado presente e idéntico.
+- autor normalizado presente, idéntico y no genérico.
+
+Autores como `Varios autores`, `VV. AA.`, `Anónimo`, `No aplica` o equivalentes ya no habilitan canonical automático aunque coincidan entre publicaciones: el grupo queda `manual_review` con motivo `author_generic`.
 
 Si falta autor o condición, el grupo queda `manual_review`. Si título o autor entran en conflicto, queda `do_not_consolidate`.
 
@@ -38,7 +40,17 @@ El reporte incluye estadísticas, grupos, representante propuesto, fuentes candi
 
 El baseline reproducido del 2026-08-08 encontró 3.164 grupos por ISBN, pero sólo 211 `same_book` bajo la regla estricta y 2.953 `isbn_inconsistent`. Compartir ISBN, por sí solo, no autoriza una consolidación.
 
-La evidencia de Search Console del 2026-07-21 al 2026-08-17 muestra además consultas repartidas entre dos URLs en algunos pares históricamente `same_book`, por ejemplo Headway Elementary 5th Edition Audio CD, Memento Mori y Obesidad de Virginia Busnelli. También muestra consultas repartidas sobre pares con el mismo ISBN pero identidad textual inconsistente, como Daat, Maase Bereshit y Estrategias de enseñanza; esos contraejemplos deben permanecer fuera de la automatización.
+El workflow público volvió a correr el 2026-08-20 sobre el catálogo vigente (generado a las 23:47:33Z) y midió:
+
+- 7.090 activos con stock;
+- 3.137 grupos con ISBN repetido;
+- 6.285 listings dentro de esos grupos;
+- 209 grupos `same_book` bajo la regla estricta histórica;
+- 2.928 grupos `isbn_inconsistent`.
+
+La evidencia de Search Console del 2026-07-21 al 2026-08-17 muestra además consultas repartidas entre dos URLs en algunos pares históricamente `same_book`, por ejemplo Headway Elementary 5th Edition Audio CD, Memento Mori y Obesidad de Virginia Busnelli. La revalidación fresca confirmó que los tres pares siguen activos con stock y permanecen `same_book` bajo el baseline histórico; sin embargo Memento Mori usa el autor genérico `Varios autores`, así que el detector nuevo debe degradarlo a `manual_review`, no a candidato automático.
+
+También hay consultas repartidas sobre pares con el mismo ISBN pero identidad textual inconsistente, como Daat, Maase Bereshit y Estrategias de enseñanza; esos contraejemplos deben permanecer fuera de la automatización.
 
 El detalle y los MLU están preservados en `docs/seo/edition-consolidation-pilot-evidence-2026-08-20.md`.
 
