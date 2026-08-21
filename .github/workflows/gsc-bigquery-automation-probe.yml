@@ -31,7 +31,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Check Search Console export tables and rows
-        id: check
         shell: bash
         run: |
           set -u
@@ -70,12 +69,25 @@ jobs:
           for T in ExportLog searchdata_url_impression searchdata_site_impression; do
             if bq show --project_id="$PROJECT" --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/${T}.json 2>/tmp/${T}.err; then
               echo "$T.present=true" >> "$OUT"
-              ROWS=$(jq -r '.numRows // empty' /tmp/${T}.json 2>/dev/null || true)
-              if [[ "$ROWS" =~ ^[0-9]+$ ]]; then
-                echo "$T.rows=$ROWS" >> "$OUT"
-                if [[ "$ROWS" -eq 0 ]]; then ready=0; fi
+              META=$(python3 - "$T" <<'PY'
+import json,sys
+p=f"/tmp/{sys.argv[1]}.json"
+try:
+    d=json.load(open(p))
+    print("numRows="+str(d.get("numRows","missing")))
+except Exception as e:
+    print("numRows=parse_error:"+str(e))
+PY
+)
+              echo "$T.$META" >> "$OUT"
+              if bq head --project_id="$PROJECT" --max_rows=1 --format=csv "$PROJECT:$DATASET.$T" >/tmp/${T}-head.csv 2>/tmp/${T}-head.err; then
+                LINES=$(wc -l </tmp/${T}-head.csv | tr -d ' ')
+                echo "$T.head_ok=true" >> "$OUT"
+                echo "$T.head_lines=$LINES" >> "$OUT"
+                if [[ "$LINES" -lt 2 ]]; then ready=0; fi
               else
-                echo "$T.rows=unknown" >> "$OUT"
+                echo "$T.head_ok=false" >> "$OUT"
+                sed -n '1,5p' /tmp/${T}-head.err >> "$OUT"
                 ready=0
               fi
             else
