@@ -48,7 +48,9 @@ El workflow público volvió a correr el 2026-08-20 sobre el catálogo vigente (
 - 209 grupos `same_book` bajo la regla estricta histórica;
 - 2.928 grupos `isbn_inconsistent`.
 
-La evidencia de Search Console del 2026-07-21 al 2026-08-17 muestra además consultas repartidas entre dos URLs en algunos pares históricamente `same_book`, por ejemplo Headway Elementary 5th Edition Audio CD, Memento Mori y Obesidad de Virginia Busnelli. La revalidación fresca confirmó que los tres pares siguen activos con stock y permanecen `same_book` bajo el baseline histórico; sin embargo Memento Mori usa el autor genérico `Varios autores`, así que el detector nuevo debe degradarlo a `manual_review`, no a candidato automático.
+La evidencia de Search Console del 2026-07-21 al 2026-08-17 muestra además consultas repartidas entre dos URLs en algunos pares históricamente `same_book`, por ejemplo Headway Elementary 5th Edition Audio CD, Memento Mori y Obesidad de Virginia Busnelli. La revalidación estructural fresca confirmó que los tres pares siguen activos con stock y permanecen `same_book` bajo el baseline histórico; sin embargo Memento Mori usa el autor genérico `Varios autores`, así que el detector nuevo debe degradarlo a `manual_review`, no a candidato automático.
+
+El baseline histórico no contiene `condition`; por eso ni Headway ni Obesidad quedan autorizados para canonical todavía. La siguiente revalidación debe ejecutarse con el detector nuevo sobre un snapshot completo que incluya condición y el resto de los atributos disponibles.
 
 También hay consultas repartidas sobre pares con el mismo ISBN pero identidad textual inconsistente, como Daat, Maase Bereshit y Estrategias de enseñanza; esos contraejemplos deben permanecer fuera de la automatización.
 
@@ -66,10 +68,11 @@ El detalle y los MLU están preservados en `docs/seo/edition-consolidation-pilot
 
 Antes de cualquier canonical:
 
-1. correr este detector sobre un snapshot fresco del catálogo;
-2. revisar manualmente un piloto pequeño;
-3. comprobar que el representante sigue 200, indexable y con canonical propio;
-4. aplicar primero canonical reversible;
-5. reservar 301 para pares humano-verificados.
+1. correr este detector sobre un snapshot fresco y completo del catálogo;
+2. confirmar `condition` y los demás atributos comerciales disponibles;
+3. revisar manualmente un piloto pequeño;
+4. comprobar que el representante sigue 200, indexable y con canonical propio;
+5. aplicar primero canonical reversible;
+6. reservar 301 para pares humano-verificados.
 
 Producción no se toca en este PR.
