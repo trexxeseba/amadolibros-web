@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { normalizeIsbnToGtin } from '../../functions/feed.xml.js';
 
-export const REPORT_SCHEMA_VERSION = 1;
+export const REPORT_SCHEMA_VERSION = 2;
 
 const GENERIC_AUTHORS = new Set([
   'anonimo',
@@ -34,6 +34,10 @@ function normalizeCondition(value) {
   return condition === 'new' || condition === 'used' ? condition : 'unknown';
 }
 
+function normalizeCatalogProductId(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function validCandidateItem(item) {
   return Boolean(
     item &&
@@ -42,6 +46,57 @@ function validCandidateItem(item) {
     item.status === 'active' &&
     Number(item.available_quantity) > 0
   );
+}
+
+function uniqueSorted(values) {
+  return [...new Set(values.filter(Boolean))].sort();
+}
+
+function analyzeOptionalIdentityField(group, field, reasons) {
+  const normalized = group.map(item => normalizeComparableText(item?.bibliographic?.[field]));
+  const values = uniqueSorted(normalized);
+  const presentCount = normalized.filter(Boolean).length;
+
+  if (values.length > 1) reasons.push(`${field}_conflict`);
+  else if (values.length === 1 && presentCount !== group.length) reasons.push(`${field}_partial`);
+
+  return values.length === 1 ? values[0] : null;
+}
+
+function analyzeCatalogIdentity(group, reasons) {
+  const rawIds = group.map(item => normalizeCatalogProductId(item.catalog_product_id));
+  const catalogProductIds = uniqueSorted(rawIds);
+  const listingValues = [...new Set(
+    group
+      .map(item => typeof item.catalog_listing === 'boolean' ? item.catalog_listing : null)
+      .filter(value => value !== null)
+  )].sort();
+  const presentCount = rawIds.filter(Boolean).length;
+
+  let originType = 'bibliographic_only';
+
+  if (catalogProductIds.length > 1) {
+    reasons.push('catalog_product_conflict');
+    originType = 'catalog_product_conflict';
+  } else if (catalogProductIds.length === 1) {
+    if (presentCount !== group.length) {
+      reasons.push('catalog_product_partial');
+      originType = 'catalog_product_partial';
+    } else if (listingValues.includes(true) && listingValues.includes(false)) {
+      originType = 'ml_common_plus_catalog';
+    } else {
+      originType = 'same_ml_catalog_product';
+    }
+  } else if (group.some(item => item.catalog_listing === true)) {
+    reasons.push('catalog_listing_without_product_id');
+    originType = 'catalog_listing_without_product_id';
+  }
+
+  return {
+    origin_type: originType,
+    catalog_product_ids: catalogProductIds,
+    catalog_listing_values: listingValues,
+  };
 }
 
 export function pickCanonicalRepresentative(group) {
@@ -66,8 +121,8 @@ export function pickCanonicalRepresentative(group) {
 function analyzeGroup(gtin, condition, group) {
   const normalizedTitles = group.map(item => normalizeComparableText(item.title));
   const normalizedAuthors = group.map(item => normalizeComparableText(item.author));
-  const titleValues = [...new Set(normalizedTitles.filter(Boolean))].sort();
-  const authorValues = [...new Set(normalizedAuthors.filter(Boolean))].sort();
+  const titleValues = uniqueSorted(normalizedTitles);
+  const authorValues = uniqueSorted(normalizedAuthors);
 
   const allTitlesPresent = normalizedTitles.every(Boolean);
   const allAuthorsPresent = normalizedAuthors.every(Boolean);
@@ -82,7 +137,22 @@ function analyzeGroup(gtin, condition, group) {
 
   if (condition === 'unknown') reasons.push('condition_unknown');
 
-  const hasIdentityConflict = reasons.includes('title_conflict') || reasons.includes('author_conflict');
+  const normalizedBibliographic = {
+    edition: analyzeOptionalIdentityField(group, 'edition', reasons),
+    language: analyzeOptionalIdentityField(group, 'language', reasons),
+    format: analyzeOptionalIdentityField(group, 'format', reasons),
+  };
+  const catalogIdentity = analyzeCatalogIdentity(group, reasons);
+
+  const hasIdentityConflict = reasons.some(reason => [
+    'title_conflict',
+    'author_conflict',
+    'edition_conflict',
+    'language_conflict',
+    'format_conflict',
+    'catalog_product_conflict',
+  ].includes(reason));
+
   const confidence = reasons.length === 0
     ? 'high'
     : hasIdentityConflict
@@ -105,11 +175,15 @@ function analyzeGroup(gtin, condition, group) {
         ? 'manual_review'
         : 'do_not_consolidate',
     reasons,
+    origin_type: catalogIdentity.origin_type,
+    catalog_product_ids: catalogIdentity.catalog_product_ids,
+    catalog_listing_values: catalogIdentity.catalog_listing_values,
     representative_id: representative?.id || null,
     source_ids: confidence === 'high' ? sourceIds : [],
     member_ids: sortedIds,
     normalized_title: titleValues.length === 1 ? titleValues[0] : null,
     normalized_author: authorValues.length === 1 && allAuthorsPresent ? authorValues[0] : null,
+    normalized_bibliographic: normalizedBibliographic,
   };
 }
 
@@ -145,6 +219,7 @@ export function analyzeEditionClusters(items) {
 
   clusters.sort((a, b) =>
     (confidenceOrder[a.confidence] - confidenceOrder[b.confidence]) ||
+    a.origin_type.localeCompare(b.origin_type) ||
     a.gtin.localeCompare(b.gtin) ||
     a.condition.localeCompare(b.condition)
   );
@@ -152,6 +227,10 @@ export function analyzeEditionClusters(items) {
   const high = clusters.filter(cluster => cluster.confidence === 'high');
   const review = clusters.filter(cluster => cluster.confidence === 'review');
   const reject = clusters.filter(cluster => cluster.confidence === 'reject');
+  const byOrigin = clusters.reduce((acc, cluster) => {
+    acc[cluster.origin_type] = (acc[cluster.origin_type] || 0) + 1;
+    return acc;
+  }, {});
 
   return {
     schema_version: REPORT_SCHEMA_VERSION,
@@ -164,6 +243,11 @@ export function analyzeEditionClusters(items) {
       review_groups: review.length,
       rejected_groups: reject.length,
       canonical_candidate_sources: high.reduce((sum, cluster) => sum + cluster.source_ids.length, 0),
+      origin_groups: byOrigin,
+      ml_common_plus_catalog_groups: byOrigin.ml_common_plus_catalog || 0,
+      same_ml_catalog_product_groups: byOrigin.same_ml_catalog_product || 0,
+      bibliographic_only_groups: byOrigin.bibliographic_only || 0,
+      catalog_product_conflict_groups: byOrigin.catalog_product_conflict || 0,
     },
     clusters,
   };
