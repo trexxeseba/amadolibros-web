@@ -8,8 +8,9 @@ on:
       - '.github/workflows/gsc-bq-ready-check-temp.yml'
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
+  issues: write
 
 jobs:
   check:
@@ -34,8 +35,7 @@ jobs:
           set -u
           PROJECT='amado-libros-analytics'
           DATASET='searchconsole'
-          OUT='automation/gsc-bq-ready/latest.txt'
-          mkdir -p "$(dirname "$OUT")"
+          OUT='/tmp/gsc-bq-ready.txt'
           {
             date -u +"CHECKED_AT=%Y-%m-%dT%H:%M:%SZ"
             echo "PROJECT=$PROJECT"
@@ -65,12 +65,10 @@ PY
             fi
           } > "$OUT"
           cat "$OUT"
-      - name: Persist result on temporary branch
-        shell: bash
+      - name: Report readiness to probe issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add automation/gsc-bq-ready/latest.txt
-          git commit -m 'chore: record GSC BigQuery readiness' || exit 0
-          git push origin HEAD:agent/gsc-bq-ready-check
+          { echo '## GSC BigQuery readiness'; echo; echo '```text'; cat /tmp/gsc-bq-ready.txt 2>/dev/null || echo 'CHECK_FAILED=true'; echo '```'; } > /tmp/comment.md
+          gh issue comment 190 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
