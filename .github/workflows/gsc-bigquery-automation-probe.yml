@@ -70,13 +70,12 @@ jobs:
           for T in ExportLog searchdata_url_impression searchdata_site_impression; do
             if bq show --project_id="$PROJECT" --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/${T}.json 2>/tmp/${T}.err; then
               echo "$T.present=true" >> "$OUT"
-              ROWS=$(bq query --project_id="$PROJECT" --use_legacy_sql=false --format=csv --quiet "SELECT COUNT(*) AS c FROM \`$PROJECT.$DATASET.$T\`" 2>/tmp/${T}-query.err | tail -n 1 | tr -d '\r' || true)
+              ROWS=$(jq -r '.numRows // empty' /tmp/${T}.json 2>/dev/null || true)
               if [[ "$ROWS" =~ ^[0-9]+$ ]]; then
                 echo "$T.rows=$ROWS" >> "$OUT"
                 if [[ "$ROWS" -eq 0 ]]; then ready=0; fi
               else
                 echo "$T.rows=unknown" >> "$OUT"
-                sed -n '1,5p' /tmp/${T}-query.err >> "$OUT"
                 ready=0
               fi
             else
