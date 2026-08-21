@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   analyzeEditionClusters,
+  isGenericAuthor,
   normalizeComparableText,
   pickCanonicalRepresentative,
   stableReportJson,
@@ -30,6 +31,13 @@ test('normaliza texto sin borrar palabras significativas', () => {
     normalizeComparableText('  María Montessori: Psicogeometría  '),
     'maria montessori psicogeometria',
   );
+});
+
+test('reconoce autores genéricos después de normalizar', () => {
+  for (const value of ['Varios autores', 'VV. AA.', 'Anónimo', 'No aplica', 'Various Authors']) {
+    assert.equal(isGenericAuthor(value), true, value);
+  }
+  assert.equal(isGenericAuthor('Virginia Busnelli'), false);
 });
 
 test('detecta como alta confianza mismo ISBN, título, autor y condición', () => {
@@ -98,6 +106,17 @@ test('autor faltante obliga a revisión humana aunque el resto coincida', () => 
   assert.equal(report.clusters[0].recommended_action, 'manual_review');
   assert.deepEqual(report.clusters[0].source_ids, []);
   assert.ok(report.clusters[0].reasons.includes('author_missing'));
+});
+
+test('autor genérico no habilita canonical automático', () => {
+  const report = analyzeEditionClusters([
+    item('MLU100', { author: 'Varios autores' }),
+    item('MLU101', { author: 'Varios autores' }),
+  ]);
+  assert.equal(report.clusters[0].confidence, 'review');
+  assert.equal(report.clusters[0].recommended_action, 'manual_review');
+  assert.deepEqual(report.clusters[0].source_ids, []);
+  assert.ok(report.clusters[0].reasons.includes('author_generic'));
 });
 
 test('condición desconocida no habilita canonical automático', () => {
