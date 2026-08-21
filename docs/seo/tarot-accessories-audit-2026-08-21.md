@@ -5,7 +5,7 @@ Alcance: sólo lectura sobre el catálogo real (activo + por encargo). No modifi
 
 ## Resultado
 
-**0 accesorios reales de tarot/esoterismo detectados en el catálogo actual.**
+**0 accesorios de tarot detectados con los criterios auditados en el catálogo actual.** (Conclusión operativa: no crear un módulo de Accesorios — ver sección final.)
 
 Verificado por **dos vías independientes**, con resultado idéntico:
 

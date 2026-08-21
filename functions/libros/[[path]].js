@@ -371,7 +371,7 @@ function tarotFinderHtml(dataset, canonical) {
     return `<section class="tarot-finder-cta" id="tarot-finder-cta" aria-labelledby="tarot-finder-cta-title" data-wa-base="${escapeHtml(waBase)}">
     <h2 id="tarot-finder-cta-title">Encontrá tu mazo</h2>
     <p>Respondé unas preguntas y te mostramos opciones disponibles ahora.</p>
-    <button type="button" id="tarot-finder-start" aria-haspopup="true">Empezar</button>
+    <button type="button" id="tarot-finder-start">Empezar</button>
     <noscript>
       <p class="tarot-finder-noscript">Este selector necesita JavaScript.
         <a href="${escapeHtml(whatsappHref(fallbackWaMessage))}" target="_blank" rel="noopener noreferrer">Contanos qué buscás por WhatsApp</a> y te ayudamos a elegir.</p>

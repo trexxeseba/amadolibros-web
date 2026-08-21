@@ -8,6 +8,14 @@
   // porque el navegador no puede importar ese módulo ES sin bundler. Si se
   // cambia un peso o una regla hard/soft, hay que cambiarla en los DOS
   // lugares. Mismos nombres de campos, mismo orden de desempate.
+  //
+  // TAROT-FINDER-1 fix de paridad: todas las funciones puras de acá abajo
+  // (sin DOM) se exponen también en window.__AmadoTarotFinderTestHooks,
+  // exclusivamente para que functions/__tests__/tarot-finder-client.test.js
+  // pueda ejecutar ESTE archivo real dentro de un harness de Node (con un
+  // DOM mínimo simulado) y comparar sus resultados byte a byte contra
+  // tarot-finder-scoring.js — no es una API pública, no se usa desde el
+  // propio flujo de la UI.
   var STEP_ORDER = ['system', 'intent', 'family', 'language', 'guide'];
   var MAX_RESULTS = 6;
   var SCORE = {
@@ -96,6 +104,77 @@
     return lines.join('\n');
   }
 
+  // ---- Máquina de estados (sin DOM) --------------------------------------
+  // Extraída aparte de init() a propósito: son las funciones que
+  // functions/__tests__/tarot-finder-client.test.js ejercita para probar el
+  // flujo real (FIX 1/2/3), no sólo el HTML estático.
+
+  function relevantSteps(answers) {
+    return STEP_ORDER.filter(function (s) { return s !== 'family' || answers.system === 'tarot'; });
+  }
+
+  function nextStepFrom(step, answers) {
+    var order = relevantSteps(answers);
+    var idx = order.indexOf(step);
+    return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : 'results';
+  }
+
+  // FIX 2: desde 'results' vuelve a la última pregunta aplicable (guide,
+  // salvo que algún día se agregue una pregunta después). Desde la primera
+  // pregunta real devuelve null -> sólo ahí "volver" puede cerrar.
+  function prevStepFrom(step, answers) {
+    var order = relevantSteps(answers);
+    if (step === 'results') return order[order.length - 1];
+    var idx = order.indexOf(step);
+    return idx > 0 ? order[idx - 1] : null;
+  }
+
+  function initialFinderState() {
+    return { step: 'system', answers: {}, systemExplainerOpen: false };
+  }
+
+  /**
+   * Reductor puro: (estado, campo, valor) -> nuevo estado. No muta el
+   * estado recibido.
+   *
+   * FIX 1: elegir "No estoy seguro/a" la PRIMERA vez en la pregunta de
+   * sistema no avanza — sólo abre el explicador (systemExplainerOpen).
+   * Sólo "Seguir sin preferencia" (mismo value='unsure', pero con el
+   * explicador ya abierto) confirma system='unsure' y avanza.
+   *
+   * FIX 3: cambiar `system` a cualquier valor que no sea 'tarot' elimina
+   * `answers.deckFamily` de inmediato — una tradición que ya no aplica
+   * nunca puede seguir restringiendo el ranking.
+   */
+  function applyChoice(state, field, value) {
+    var answers = {};
+    for (var k in state.answers) if (Object.prototype.hasOwnProperty.call(state.answers, k)) answers[k] = state.answers[k];
+
+    if (field === 'system' && value === 'unsure' && state.step === 'system' && !state.systemExplainerOpen) {
+      return { step: 'system', answers: answers, systemExplainerOpen: true };
+    }
+
+    if (field === 'system' && value !== 'tarot') {
+      delete answers.deckFamily;
+    }
+    answers[field] = value;
+
+    var nextState = { step: state.step, answers: answers, systemExplainerOpen: false };
+    nextState.step = nextStepFrom(state.step, answers);
+    return nextState;
+  }
+
+  /** FIX 2: "volver" desde el sub-estado del explicador de sistema vuelve a
+   * la vista simple de la misma pregunta, nunca cierra. */
+  function applyGoBack(state) {
+    if (state.step === 'system' && state.systemExplainerOpen) {
+      return { step: 'system', answers: state.answers, systemExplainerOpen: false };
+    }
+    var prev = prevStepFrom(state.step, state.answers);
+    if (prev === null) return null; // señal: cerrar el Finder
+    return { step: prev, answers: state.answers, systemExplainerOpen: false };
+  }
+
   var QUESTIONS = {
     system: {
       field: 'system',
@@ -106,7 +185,12 @@
         { value: 'lenormand', label: 'Lenormand' },
         { value: 'unsure', label: 'No estoy seguro/a' },
       ],
-      explainerWhen: 'unsure',
+      explainerOptions: [
+        { value: 'tarot', label: 'Tarot' },
+        { value: 'oraculo', label: 'Oráculo' },
+        { value: 'lenormand', label: 'Lenormand' },
+        { value: 'unsure', label: 'Seguir sin preferencia' },
+      ],
       explainer: [
         { title: 'Tarot', text: 'Sistema habitualmente estructurado en 78 cartas.' },
         { title: 'Oráculo', text: 'Cada mazo puede tener estructura y temática propias.' },
@@ -155,19 +239,16 @@
     },
   };
 
-  function relevantSteps(answers) {
-    return STEP_ORDER.filter(function (s) { return s !== 'family' || answers.system === 'tarot'; });
-  }
-  function nextStepFrom(step, answers) {
-    var order = relevantSteps(answers);
-    var idx = order.indexOf(step);
-    return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : 'results';
-  }
-  function prevStepFrom(step, answers) {
-    var order = relevantSteps(answers);
-    var idx = order.indexOf(step);
-    return idx > 0 ? order[idx - 1] : null; // null = volver al CTA cerrado
-  }
+  // Hooks de sólo-test (ver comentario de cabecera). No se llaman desde la
+  // UI real; existen para que un harness de Node ejecute este archivo tal
+  // cual se sirve y compare contra tarot-finder-scoring.js.
+  window.__AmadoTarotFinderTestHooks = {
+    STEP_ORDER: STEP_ORDER, MAX_RESULTS: MAX_RESULTS, SCORE: SCORE, QUESTIONS: QUESTIONS,
+    hasPreference: hasPreference, passesHard: passesHard, scoreCandidate: scoreCandidate,
+    rankCandidates: rankCandidates, explainMatch: explainMatch, buildNoResultsMessage: buildNoResultsMessage,
+    relevantSteps: relevantSteps, nextStepFrom: nextStepFrom, prevStepFrom: prevStepFrom,
+    initialFinderState: initialFinderState, applyChoice: applyChoice, applyGoBack: applyGoBack,
+  };
 
   function ready(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
@@ -193,7 +274,7 @@
     var state = null;
 
     startBtn.addEventListener('click', function () {
-      state = { step: 'system', answers: {} };
+      state = initialFinderState();
       startBtn.hidden = true;
       root.hidden = false;
       render();
@@ -204,20 +285,19 @@
     });
 
     function choose(field, value) {
-      state.answers[field] = value;
-      state.step = nextStepFrom(state.step, state.answers);
+      state = applyChoice(state, field, value);
       render();
     }
 
     function goBack() {
-      var prev = prevStepFrom(state.step, state.answers);
-      if (prev === null) { closeFinder(); return; }
-      state.step = prev;
+      var nextState = applyGoBack(state);
+      if (nextState === null) { closeFinder(); return; }
+      state = nextState;
       render();
     }
 
     function restart() {
-      state = { step: 'system', answers: {} };
+      state = initialFinderState();
       render();
     }
 
@@ -244,20 +324,24 @@
 
     function renderQuestion(step) {
       var q = QUESTIONS[step];
+      var explainerOpen = step === 'system' && state.systemExplainerOpen;
+      var options = explainerOpen ? q.explainerOptions : q.options;
       var selected = state.answers[q.field];
-      var isFirst = stepPosition(step) === 1;
+      // FIX 2/4: "Cerrar" sólo en la primera pregunta real y fuera del
+      // sub-estado del explicador — desde ahí "volver" nunca cierra.
+      var isFirst = stepPosition(step) === 1 && !explainerOpen;
       var html = '';
       html += '<p class="tf-progress">Pregunta ' + stepPosition(step) + ' de ' + stepTotal() + '</p>';
       html += '<div class="tf-question">';
       html += '<h3 tabindex="-1" id="tf-heading">' + escapeHtml(q.title) + '</h3>';
-      if (q.explainerWhen && selected === q.explainerWhen) {
+      if (explainerOpen) {
         html += '<div class="tf-explainer">' + q.explainer.map(function (e) {
           return '<div><strong>' + escapeHtml(e.title) + '</strong> — ' + escapeHtml(e.text) + '</div>';
         }).join('') + '</div>';
       }
       html += '<div class="tf-options" role="group" aria-label="' + escapeHtml(q.title) + '">';
-      html += q.options.map(function (opt) {
-        var pressed = selected === opt.value ? 'true' : 'false';
+      html += options.map(function (opt) {
+        var pressed = selected === opt.value && !(step === 'system' && opt.value === 'unsure' && explainerOpen) ? 'true' : 'false';
         return '<button type="button" class="tf-option" data-field="' + escapeHtml(q.field) + '" data-value="' + escapeHtml(opt.value) + '" aria-pressed="' + pressed + '">' + escapeHtml(opt.label) + '</button>';
       }).join('');
       html += '</div></div>';

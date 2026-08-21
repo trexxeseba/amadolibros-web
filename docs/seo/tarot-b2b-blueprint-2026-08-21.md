@@ -5,7 +5,7 @@ Alcance: **sólo diseño**. No se publica ninguna funcionalidad, no se crea ning
 
 ## Problema que resolvería
 
-Amado Libros vende hoy tarot/oráculos exclusivamente a compradores individuales. Existe una demanda distinta y no atendida: docentes de tarot, coordinadores de talleres, terapeutas que usan cartas en consulta, o instituciones que necesitan **el mismo mazo repetido N veces** (para que cada alumno tenga el suyo) más bibliografía de acompañamiento. Es un patrón de compra distinto (cantidad fija, decisión no impulsiva, cotización antes que compra) que el checkout individual actual no está pensado para resolver bien.
+El flujo web actual está orientado principalmente a compras individuales. Existe una posible necesidad B2B que conviene validar: docentes de tarot, coordinadores de talleres, terapeutas que usan cartas en consulta, o instituciones que podrían necesitar **el mismo mazo repetido N veces** (para que cada alumno tenga el suyo) más bibliografía de acompañamiento. Sería un patrón de compra distinto al individual (cantidad fija, decisión no impulsiva, cotización antes que compra) que el checkout actual no está pensado para resolver bien — pero esto es una hipótesis de diseño, no una demanda medida (ver sección de señales de evidencia más abajo).
 
 ## Entrada propuesta
 

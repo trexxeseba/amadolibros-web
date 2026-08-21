@@ -178,6 +178,11 @@ test('sin JS: el CTA "Empezar" es un <button> real (no depende de un href de JS)
     assert.match(body, /<noscript>[\s\S]*wa\.me\/59899841325[\s\S]*<\/noscript>/);
 });
 
+test('FIX 4: el botón "Empezar" no declara aria-haspopup — el Finder se expande inline, no abre popup/menú/diálogo', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    assert.doesNotMatch(body, /aria-haspopup/);
+});
+
 test('sin JS: el resto de módulos, WhatsApp flotante y footer están en el HTML servidor, no dependen de tarot-finder.js', async () => {
     const { html: body } = await html('esoterismo-tarot');
     assert.match(body, /class="wa-float"/, 'el flotante de WhatsApp ya viene renderizado por el servidor');
