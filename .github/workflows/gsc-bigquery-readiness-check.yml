@@ -104,3 +104,5 @@ jobs:
       - name: Mark not-ready run without notifying
         if: steps.readiness.outputs.ready != 'true'
         run: exit 3
+
+# automation probe 2026-08-21T07:09:38Z
