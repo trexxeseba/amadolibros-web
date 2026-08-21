@@ -1,0 +1,75 @@
+name: GSC BigQuery readiness temporary
+
+on:
+  push:
+    branches:
+      - agent/gcp-bigquery-org-bootstrap
+    paths:
+      - '.github/workflows/gsc-bigquery-readiness-temp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Probe GSC export tables
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          OUT=/tmp/gsc-bq-readiness.txt
+          {
+            echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "project=$PROJECT"
+            echo "dataset=$DATASET"
+            if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET" >/tmp/dataset.json 2>/tmp/dataset.err; then
+              echo 'dataset_exists=true'
+              echo 'tables_begin'
+              bq --project_id="$PROJECT" ls --format=prettyjson "$PROJECT:$DATASET" > /tmp/tables.json
+              jq -r '.[].tableReference.tableId' /tmp/tables.json | sort
+              echo 'tables_end'
+              for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+                if bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$DATASET.$T" >/tmp/$T.json 2>/tmp/$T.err; then
+                  ROWS=$(jq -r '.numRows // "0"' /tmp/$T.json)
+                  echo "$T.exists=true"
+                  echo "$T.numRows=$ROWS"
+                  if [[ "$T" == 'ExportLog' ]]; then
+                    bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
+                      "SELECT COUNT(*) AS row_count FROM \`$PROJECT.$DATASET.$T\`" 2>/tmp/${T}-query.err | tail -n +2 | sed "s/^/$T.query_rows=/" || true
+                  else
+                    bq --project_id="$PROJECT" query --quiet --use_legacy_sql=false --format=csv \
+                      "SELECT COUNT(*) AS row_count, CAST(MAX(data_date) AS STRING) AS max_data_date FROM \`$PROJECT.$DATASET.$T\`" 2>/tmp/${T}-query.err | tail -n +2 | awk -F, -v t="$T" '{print t".query_rows="$1; print t".max_data_date="$2}' || true
+                  fi
+                else
+                  echo "$T.exists=false"
+                  echo "$T.numRows=0"
+                fi
+              done
+            else
+              echo 'dataset_exists=false'
+              sed 's/^/dataset_error=/' /tmp/dataset.err || true
+            fi
+          } | tee "$OUT"
+      - name: Comment tracking issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '## GSC BigQuery readiness probe'; echo; echo '```text'; cat /tmp/gsc-bq-readiness.txt 2>/dev/null || echo 'probe did not produce output'; echo '```'; } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
