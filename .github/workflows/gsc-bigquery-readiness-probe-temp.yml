@@ -1,0 +1,65 @@
+name: GSC BigQuery readiness probe temporary
+
+on:
+  push:
+    branches:
+      - automation/gsc-bigquery-readiness
+    paths:
+      - '.github/workflows/gsc-bigquery-readiness-probe-temp.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+          export_environment_variables: true
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: amado-libros-analytics
+      - name: Probe tables and rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          P='amado-libros-analytics'; D='searchconsole'; O=/tmp/result.txt
+          : > "$O"
+          echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$O"
+          if bq --project_id="$P" show --format=prettyjson "$P:$D" >/tmp/dataset.json 2>/tmp/dataset.err; then
+            echo 'dataset_present=true' >> "$O"
+          else
+            echo 'dataset_present=false' >> "$O"
+          fi
+          for T in ExportLog searchdata_url_impression searchdata_site_impression; do
+            if bq --project_id="$P" show --format=prettyjson "$P:$D.$T" >/tmp/$T.json 2>/tmp/$T.err; then
+              R=$(jq -r '.numRows // "0"' /tmp/$T.json)
+              echo "$T.present=true" >> "$O"
+              echo "$T.rows=$R" >> "$O"
+            else
+              echo "$T.present=false" >> "$O"
+              echo "$T.rows=0" >> "$O"
+            fi
+          done
+          if [ "$(grep -c '=true' "$O")" -ge 4 ] && awk -F= '/\.rows=/{if($2+0<=0)bad=1} END{exit bad?1:0}' "$O"; then
+            echo 'READY=1' >> "$O"
+          else
+            echo 'READY=0' >> "$O"
+          fi
+          cat "$O"
+      - name: Comment issue 190 with probe result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '## GSC BigQuery readiness probe'; echo; echo '```text'; cat /tmp/result.txt 2>/dev/null || echo 'probe_failed=true'; echo '```'; } >/tmp/comment.md
+          gh issue comment 190 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
