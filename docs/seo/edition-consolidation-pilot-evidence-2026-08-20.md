@@ -27,7 +27,7 @@ El workflow `SEO baseline public audit` volvió a ejecutar el reporte contra el 
 - 2.928 grupos `isbn_inconsistent`;
 - active-index: 7.088 items; sólo 2 IDs aparecen únicamente en `catalog.json` y 0 únicamente en el índice.
 
-Los tres pares priorizados por GSC siguen activos con stock y continúan en grupos `same_book` bajo el baseline fresco.
+Los tres pares priorizados por GSC siguen activos con stock y continúan en grupos `same_book` bajo el baseline fresco. Este reporte histórico no incluye `condition`, por lo que **todavía no autoriza canonical automático**: la condición debe confirmarse con el detector nuevo sobre el snapshot completo antes de cualquier cambio indexable.
 
 ## Evidencia GSC actual de canibalización útil para priorizar
 
@@ -65,7 +65,7 @@ Ventana GSC: 2026-07-21 a 2026-08-17.
    - query GSC `memento mori`: 2 impresiones, repartidas 1/1 entre ambas URLs.
    - estado: **manual_review**, no candidato automático. El autor es genérico y no aporta evidencia de identidad. El detector fue endurecido para emitir `author_generic` en este caso.
 
-Por tanto, el primer piloto automático ya no son tres pares: son **dos pares fuertes** (Headway y Obesidad). Memento queda como caso humano-verificado si se quisiera consolidar después.
+Por tanto, el primer piloto automático potencial ya no son tres pares: son **dos pares fuertes para revalidar** (Headway y Obesidad). Memento queda como caso humano-verificado si se quisiera consolidar después. Ninguno se canonicaliza hasta que el detector nuevo confirme también `condition` y el resto de los gates.
 
 ## Contraejemplos que justifican el detector conservador
 
@@ -97,7 +97,7 @@ Si cualquiera falla, no se canonicaliza.
 
 ## Alcance recomendado del piloto
 
-- empezar por Headway y Obesidad;
+- empezar por Headway y Obesidad sólo si el detector completo confirma todos los gates;
 - Memento sólo mediante revisión humana por autor genérico;
 - ampliar hasta 20–30 pares únicamente después de correr el detector contra el snapshot vigente y revisar manualmente la muestra;
 - canonical reversible primero;
