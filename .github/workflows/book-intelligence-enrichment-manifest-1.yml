@@ -1,0 +1,131 @@
+name: FICHAS-VIDRIERA-2 enrichment manifest 1
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-enrichment-manifest-1
+    paths:
+      - '.github/workflows/book-intelligence-enrichment-manifest-1.yml'
+      - 'scripts/seo/book-intelligence-enrichment-manifest.mjs'
+      - 'scripts/seo/book-intelligence-enrichment-manifest-run.mjs'
+      - 'scripts/seo/book-intelligence-official-evidence-pilot-data.mjs'
+      - 'functions/__tests__/book-intelligence-enrichment-manifest.test.js'
+      - 'functions/_shared/book-intelligence-evidence.js'
+  pull_request:
+    paths:
+      - '.github/workflows/book-intelligence-enrichment-manifest-1.yml'
+      - 'scripts/seo/book-intelligence-enrichment-manifest.mjs'
+      - 'scripts/seo/book-intelligence-enrichment-manifest-run.mjs'
+      - 'scripts/seo/book-intelligence-official-evidence-pilot-data.mjs'
+      - 'functions/__tests__/book-intelligence-enrichment-manifest.test.js'
+      - 'functions/_shared/book-intelligence-evidence.js'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Cantidad de ISBN con demanda GSC a materializar
+        required: true
+        default: '12'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: book-intelligence-enrichment-manifest-1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  manifest:
+    name: Build safe enrichment manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate manifest contract without network
+        run: |
+          node --check scripts/seo/book-intelligence-enrichment-manifest.mjs
+          node --check scripts/seo/book-intelligence-enrichment-manifest-run.mjs
+          node --test functions/__tests__/book-intelligence-enrichment-manifest.test.js functions/__tests__/book-intelligence-official-evidence-pilot.test.js functions/__tests__/book-intelligence-evidence.test.js
+
+      - name: Authenticate Google Books through existing Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Build enrichment manifest
+        id: manifest_run
+        continue-on-error: true
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+          BOOK_INTELLIGENCE_OUTPUT_DIR: artifacts/book-intelligence/enrichment-manifest-1
+        run: node scripts/seo/book-intelligence-enrichment-manifest-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
+
+      - name: Validate generated manifest
+        if: steps.manifest_run.outcome == 'success'
+        env:
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+        run: |
+          test -s artifacts/book-intelligence/enrichment-manifest-1/enrichment-manifest.json
+          test -s artifacts/book-intelligence/enrichment-manifest-1/enrichment-manifest-report.json
+          test -s artifacts/book-intelligence/enrichment-manifest-1/report-summary.md
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const manifest = JSON.parse(fs.readFileSync('artifacts/book-intelligence/enrichment-manifest-1/enrichment-manifest.json', 'utf8'));
+          const expected = Number(process.env.BOOK_INTELLIGENCE_LIMIT || 12);
+          if (manifest.schema_version !== 1) process.exit(1);
+          if (manifest.counts.total !== expected || manifest.entries.length !== expected) process.exit(1);
+          if (manifest.counts.auto_publish + manifest.counts.review + manifest.counts.hold !== expected) process.exit(1);
+          if (manifest.counts.auto_publish < 1) process.exit(1);
+          for (const entry of manifest.entries) {
+            if (entry.decision === 'hold') {
+              if (entry.work.topic_seeds.length) process.exit(1);
+              if (Object.keys(entry.edition.auto_publishable_fields).length) process.exit(1);
+            }
+            const raw = JSON.stringify(entry).toLowerCase();
+            if (raw.includes('"description"') || raw.includes('"summary"') || raw.includes('"author_context"')) process.exit(1);
+          }
+          NODE
+
+      - name: Upload enrichment manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-intelligence-enrichment-manifest-1-${{ github.run_id }}
+          path: artifacts/book-intelligence/enrichment-manifest-1/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Write manifest summary
+        if: always()
+        run: |
+          if [ -f artifacts/book-intelligence/enrichment-manifest-1/report-summary.md ]; then
+            cat artifacts/book-intelligence/enrichment-manifest-1/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## ENRICHMENT-MANIFEST-1 incompleto' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Sin copy externo largo' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Sin renderer ni deploy' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Modo: read-only' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if manifest did not complete
+        if: steps.manifest_run.outcome != 'success'
+        run: |
+          echo 'ENRICHMENT-MANIFEST-1 no completó la corrida real.'
+          exit 1
