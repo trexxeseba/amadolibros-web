@@ -13,6 +13,19 @@ on:
       - 'functions/__tests__/book-intelligence-preview-r2-publish.test.js'
       - 'functions/__tests__/book-intelligence-enrichment-manifest.test.js'
       - 'functions/_shared/book-intelligence-evidence.js'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/fichas-vidriera-v2-enrichment-manifest-1
+    paths:
+      - '.github/workflows/book-intelligence-enrichment-r2-preview-1.yml'
+      - 'scripts/seo/publish-book-intelligence-preview-r2.sh'
+      - 'scripts/seo/book-intelligence-enrichment-manifest.mjs'
+      - 'scripts/seo/book-intelligence-enrichment-manifest-run.mjs'
+      - 'scripts/seo/book-intelligence-official-evidence-pilot-data.mjs'
+      - 'functions/__tests__/book-intelligence-preview-r2-publish.test.js'
+      - 'functions/__tests__/book-intelligence-enrichment-manifest.test.js'
+      - 'functions/_shared/book-intelligence-evidence.js'
   workflow_dispatch:
     inputs:
       limit:
@@ -26,13 +39,15 @@ permissions:
   id-token: write
 
 concurrency:
-  group: book-intelligence-enrichment-r2-preview-1
+  group: book-intelligence-enrichment-r2-preview-1-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   publish-preview:
     name: Build, publish and read back Preview manifest
-    if: github.ref_name == 'agent/fichas-vidriera-v2-enrichment-r2-preview-1'
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/fichas-vidriera-v2-enrichment-r2-preview-1') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'agent/fichas-vidriera-v2-enrichment-r2-preview-1' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
