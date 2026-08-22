@@ -44,6 +44,17 @@ function blocks(xml, tagName) {
   }));
 }
 
+function unprefixedBlocks(xml, tagName) {
+  const pattern = new RegExp(
+    `<${tagName}\\b([^>]*)>([\\s\\S]*?)<\\/${tagName}>`,
+    'gi',
+  );
+  return [...String(xml ?? '').matchAll(pattern)].map(match => ({
+    attributes: match[1] || '',
+    body: match[2] || '',
+  }));
+}
+
 function parseMarcRecord(xml) {
   const controlfields = [];
   for (const block of blocks(xml, 'controlfield')) {
@@ -199,9 +210,10 @@ export function parseLibraryOfCongressEvidence(xml, isbn) {
   const target = normalizeValidIsbn(isbn);
   if (!target) return [];
   const output = [];
-  for (const recordBlock of blocks(xml, 'record')) {
-    // El wrapper SRU es <zs:record>; `blocks(..., 'record')` sólo captura el
-    // MARCXML <record> sin prefijo, pero mantenemos la revalidación por 020$a.
+  // El response SRU envuelve cada MARCXML en <zs:record>. Sólo tomamos
+  // <record> sin prefijo para no confundir el wrapper protocolar con el
+  // registro bibliográfico real.
+  for (const recordBlock of unprefixedBlocks(xml, 'record')) {
     const record = parseMarcRecord(recordBlock.body);
     const identifiers = recordIsbns(record);
     if (!identifiers.includes(target)) continue;
