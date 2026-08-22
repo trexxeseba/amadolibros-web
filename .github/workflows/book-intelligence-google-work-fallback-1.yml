@@ -1,0 +1,123 @@
+name: FICHAS-VIDRIERA-2 Google work fallback 1
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-google-work-fallback-1
+    paths:
+      - '.github/workflows/book-intelligence-google-work-fallback-1.yml'
+      - 'scripts/seo/book-intelligence-google-work.mjs'
+      - 'scripts/seo/book-intelligence-google-work-fallback-run.mjs'
+      - 'functions/__tests__/book-intelligence-google-work.test.js'
+      - 'functions/__tests__/book-intelligence-google-work-fallback-run.test.js'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/book-display-title.js'
+  pull_request:
+    paths:
+      - '.github/workflows/book-intelligence-google-work-fallback-1.yml'
+      - 'scripts/seo/book-intelligence-google-work.mjs'
+      - 'scripts/seo/book-intelligence-google-work-fallback-run.mjs'
+      - 'functions/__tests__/book-intelligence-google-work.test.js'
+      - 'functions/__tests__/book-intelligence-google-work-fallback-run.test.js'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/book-display-title.js'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Cantidad de ISBN con demanda GSC a medir
+        required: true
+        default: '12'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: book-intelligence-google-work-fallback-1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fallback:
+    name: Google Books exact + work fallback
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate fallback without network
+        run: |
+          node --check scripts/seo/book-intelligence-google-work.mjs
+          node --check scripts/seo/book-intelligence-google-work-fallback-run.mjs
+          node --test functions/__tests__/book-intelligence-google-work.test.js functions/__tests__/book-intelligence-google-work-fallback-run.test.js functions/__tests__/book-intelligence-evidence.test.js
+
+      - name: Authenticate Google Books through existing Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Execute Google work fallback run
+        id: fallback_run
+        continue-on-error: true
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+          BOOK_INTELLIGENCE_OUTPUT_DIR: artifacts/book-intelligence/google-work-fallback-1
+        run: node scripts/seo/book-intelligence-google-work-fallback-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
+
+      - name: Validate generated report
+        if: steps.fallback_run.outcome == 'success'
+        env:
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+        run: |
+          test -s artifacts/book-intelligence/google-work-fallback-1/google-work-fallback-1-report.json
+          test -s artifacts/book-intelligence/google-work-fallback-1/report-summary.md
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/book-intelligence/google-work-fallback-1/google-work-fallback-1-report.json', 'utf8'));
+          if (report.schema_version !== 1) process.exit(1);
+          if (report.run !== 'FICHAS-VIDRIERA-2/GOOGLE-WORK-FALLBACK-1') process.exit(1);
+          if (report.cohort.selected !== Number(process.env.BOOK_INTELLIGENCE_LIMIT || 12)) process.exit(1);
+          if (report.sources.exact.http_successes < 1) process.exit(1);
+          NODE
+
+      - name: Upload fallback report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-intelligence-google-work-fallback-1-${{ github.run_id }}
+          path: artifacts/book-intelligence/google-work-fallback-1/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Write fallback summary
+        if: always()
+        run: |
+          if [ -f artifacts/book-intelligence/google-work-fallback-1/report-summary.md ]; then
+            cat artifacts/book-intelligence/google-work-fallback-1/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## GOOGLE-WORK-FALLBACK-1 incompleto' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Google Books: búsqueda exacta y, sólo ante 0 match, título+autor' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Datos de otra edición: sólo contenido de obra; nunca hechos físicos de la edición vendida' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Modo: sólo lectura; sin deploy' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if fallback run did not complete
+        if: steps.fallback_run.outcome != 'success'
+        run: |
+          echo 'GOOGLE-WORK-FALLBACK-1 no completó la corrida real.'
+          exit 1
