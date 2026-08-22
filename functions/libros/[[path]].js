@@ -5,7 +5,7 @@
  * _shared/seo-categories.js; cualquier otra ruta responde 404 real.
  */
 import { slugify } from '../_shared/slug.js';
-import { BASE, fetchActiveIndex, fetchCatalog } from '../_shared/catalog.js';
+import { BASE, fetchActiveIndex, fetchCatalog, fetchPausedIndex } from '../_shared/catalog.js';
 import {
     BRAND,
     faviconHeadHtml,
@@ -354,7 +354,7 @@ function tarotModulesHtml(modules, navigationBase, canonical, hasFinder) {
  * un <script type="application/json">, invisible para el HTML renderizado
  * y sin URL propia.
  */
-function tarotFinderHtml(dataset, canonical) {
+function tarotFinderHtml(dataset, fallbackDataset, canonical) {
     if (!dataset || dataset.length === 0) return '';
     const fallbackWaMessage = buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un mazo en Amado Libros 😊',
@@ -368,9 +368,12 @@ function tarotFinderHtml(dataset, canonical) {
     // helper (whatsappHref) que usa el resto del archivo, con texto vacío
     // para quedarse sólo con la base "https://wa.me/<numero>?text=".
     const waBase = whatsappHref('');
+    // TAROT-FINDER-UX-2: el segundo dataset (por encargo) es opcional — si
+    // viene vacío, igual se embebe un array vacío; tarot-finder.js ya
+    // maneja su ausencia con gracia (fallbackDataEl puede no existir).
     return `<section class="tarot-finder-cta" id="tarot-finder-cta" aria-labelledby="tarot-finder-cta-title" data-wa-base="${escapeHtml(waBase)}">
     <h2 id="tarot-finder-cta-title">Encontrá tu mazo</h2>
-    <p>Respondé unas preguntas y te mostramos opciones disponibles ahora.</p>
+    <p>Contanos qué buscás y te mostramos opciones disponibles ahora mismo.</p>
     <button type="button" id="tarot-finder-start">Empezar</button>
     <noscript>
       <p class="tarot-finder-noscript">Este selector necesita JavaScript.
@@ -378,7 +381,8 @@ function tarotFinderHtml(dataset, canonical) {
     </noscript>
     <div id="tarot-finder-app" hidden></div>
   </section>
-  <script type="application/json" id="tarot-finder-dataset">${safeJson(dataset)}</script>`;
+  <script type="application/json" id="tarot-finder-dataset">${safeJson(dataset)}</script>
+  <script type="application/json" id="tarot-finder-fallback-dataset">${safeJson(fallbackDataset || [])}</script>`;
 }
 
 const TAROT_FINDER_STYLES = `.tarot-finder-cta{background:#18120e;color:#fff;border-radius:1rem;padding:1.25rem clamp(1rem,3vw,1.75rem);margin-top:1.75rem}
@@ -386,37 +390,69 @@ const TAROT_FINDER_STYLES = `.tarot-finder-cta{background:#18120e;color:#fff;bor
 .tarot-finder-cta p{color:rgba(255,255,255,.75);font-size:.88rem;max-width:60ch;margin-bottom:1rem}
 .tarot-finder-cta .tarot-finder-noscript{color:rgba(255,255,255,.75);font-size:.85rem}
 .tarot-finder-cta .tarot-finder-noscript a{color:#e49982;font-weight:700}
-#tarot-finder-start{min-height:48px;padding:.75rem 1.5rem;border:0;border-radius:999px;background:#e49982;color:#18120e;font-weight:800;font-size:.92rem;cursor:pointer}
+#tarot-finder-start{min-height:48px;padding:.75rem 1.5rem;border:0;border-radius:999px;background:#e49982;color:#18120e;font-weight:800;font-size:.92rem;cursor:pointer;transition:transform .2s ease,opacity .2s ease}
 #tarot-finder-start:hover{background:#d98972}
+#tarot-finder-start:active{transform:scale(.97)}
 #tarot-finder-start:focus-visible{outline:3px solid #fff;outline-offset:2px}
-#tarot-finder-app:not([hidden]){margin-top:1.25rem;background:#fff;color:#18120e;border-radius:.85rem;padding:1.1rem clamp(1rem,3vw,1.5rem)}
+#tarot-finder-app:not([hidden]){margin-top:1.25rem;background:#fff;color:#18120e;border-radius:.85rem;padding:1.1rem clamp(1rem,3vw,1.5rem);overflow:hidden}
+/* Primera pantalla (apertura, TAROT-FINDER-UX-2): editorial, fondo oscuro
+   igual al resto del universo Tarot — se "escapa" del padding claro del
+   contenedor con márgenes negativos y reaplica su propio padding. */
+.tf-opening{margin:-1.1rem calc(-1 * clamp(1rem,3vw,1.5rem));padding:1.6rem clamp(1.15rem,4vw,2.1rem);background:#18120e;color:#fff;border-radius:.85rem}
+.tf-opening h3{font-family:Georgia,serif;font-size:clamp(1.3rem,4vw,1.7rem);line-height:1.2;margin-bottom:.6rem}
+.tf-opening-sub{color:rgba(255,255,255,.75);font-size:.86rem;max-width:60ch;margin-bottom:1.3rem}
+.tf-opening-grid{display:grid;grid-template-columns:1fr;gap:.6rem}
+.tf-opening-card{min-height:56px;text-align:left;padding:.9rem 1.1rem;border:1.5px solid rgba(255,255,255,.16);border-radius:.75rem;background:rgba(255,255,255,.05);color:#fff;font:inherit;font-size:.92rem;font-weight:600;cursor:pointer;
+  opacity:0;transform:translateY(6px);animation:tf-card-in .3s ease forwards;animation-delay:calc(var(--tf-i,0) * 55ms);
+  transition:transform .2s ease,opacity .2s ease,border-color .2s ease,background .2s ease}
+.tf-opening-card:hover{border-color:#e49982;background:rgba(228,153,130,.12)}
+.tf-opening-card:active{transform:scale(.98)}
+.tf-opening-card:focus-visible{outline:3px solid #e49982;outline-offset:2px}
+.tf-opening .tf-nav{margin-top:1.4rem}
+.tf-opening .tf-nav button{background:transparent;border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.8)}
+.tf-opening .tf-nav button:hover{border-color:#e49982;color:#fff}
 .tf-progress{font-size:.76rem;color:#6b6157;margin-bottom:.6rem}
 .tf-question h3{font-size:1.05rem;margin-bottom:.9rem;line-height:1.35}
 .tf-options{display:flex;flex-direction:column;gap:.55rem}
-.tf-option{min-height:48px;text-align:left;padding:.7rem 1rem;border:1.5px solid #e2dbd0;border-radius:.65rem;background:#fff;font:inherit;font-size:.88rem;cursor:pointer;color:#18120e}
+.tf-option{min-height:48px;text-align:left;padding:.7rem 1rem;border:1.5px solid #e2dbd0;border-radius:.65rem;background:#fff;font:inherit;font-size:.88rem;cursor:pointer;color:#18120e;transition:transform .2s ease,border-color .2s ease}
 .tf-option:hover{border-color:#e49982}
+.tf-option:active{transform:scale(.98)}
 .tf-option:focus-visible{outline:3px solid #a94e3d;outline-offset:1px}
-.tf-option[aria-pressed="true"]{border-color:#18120e;background:#f8f5ef;font-weight:700}
+.tf-option[aria-pressed="true"]{border-color:#18120e;background:#f8f5ef;font-weight:700;transform:scale(1.01)}
 .tf-nav{display:flex;justify-content:space-between;gap:.6rem;margin-top:1.1rem}
-.tf-nav button{min-height:44px;padding:0 1rem;border-radius:.6rem;border:1px solid #e2dbd0;background:#fff;font:inherit;font-size:.82rem;cursor:pointer}
+.tf-nav button{min-height:44px;padding:0 1rem;border-radius:.6rem;border:1px solid #e2dbd0;background:#fff;font:inherit;font-size:.82rem;cursor:pointer;transition:opacity .2s ease}
 .tf-nav button:disabled{opacity:.4;cursor:default}
 .tf-nav .tf-restart{margin-left:auto;color:#8a8074}
 .tf-explainer{background:#f8f5ef;border-radius:.6rem;padding:.8rem;margin-bottom:.9rem;font-size:.82rem;color:#50463e;display:flex;flex-direction:column;gap:.35rem}
 .tf-results h3{font-size:1.05rem;margin-bottom:.85rem}
+.tf-refine-cta{display:block;margin:0 0 .3rem;min-height:44px;padding:0 1.1rem;border:1px dashed #c9beae;border-radius:.6rem;background:transparent;color:#6b4b2f;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
+.tf-refine-cta:hover{border-color:#e49982;color:#a94e3d}
 .tf-results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin-bottom:1rem}
-.tf-result-card{border:1px solid #e2dbd0;border-radius:.7rem;overflow:hidden;display:flex;flex-direction:column}
+/* Entrada en cascada: cada tarjeta de resultado aparece con un pequeño
+   retraso proporcional a su posición (--tf-i, inyectado inline). */
+.tf-result-slot{opacity:0;transform:translateY(8px);animation:tf-card-in .3s ease forwards;animation-delay:calc(var(--tf-i,0) * 60ms)}
+.tf-result-card{border:1px solid #e2dbd0;border-radius:.7rem;overflow:hidden;display:flex;flex-direction:column;height:100%}
 .tf-result-card img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#f8f5ef}
 .tf-result-body{padding:.6rem;display:flex;flex-direction:column;gap:.35rem}
 .tf-result-badges{display:flex;flex-wrap:wrap;gap:.25rem}
 .tf-result-badges span{padding:.1rem .4rem;border-radius:999px;background:#f0e6da;color:#6b4b2f;font-size:.6rem;font-weight:800;text-transform:uppercase}
 .tf-result-card h4{font-size:.82rem;line-height:1.3}
 .tf-result-why{font-size:.72rem;color:#6b6157}
+.tf-near-miss-reason{font-size:.72rem;color:#a94e3d;font-weight:600}
 .tf-result-price{font-weight:800;font-size:.88rem}
 .tf-result-cta{margin-top:auto;text-align:center;padding:.5rem;border-radius:.5rem;background:#18120e;color:#fff;text-decoration:none;font-size:.78rem;font-weight:700}
 .tf-empty{background:#fff7e8;border:1px solid #efd2a6;border-radius:.65rem;padding:1rem;color:#6b4218}
 .tf-empty .tf-wa-cta{display:inline-flex;margin-top:.75rem;padding:.65rem 1rem;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:800;font-size:.82rem}
-@media(min-width:640px){.tf-results-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(min-width:900px){.tf-results-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}`;
+.tf-near-miss-sub{font-size:.85rem;color:#6b6157;margin-bottom:.9rem}
+.tf-near-miss-choice{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+.tf-reveal-alternatives{min-height:48px;padding:0 1.2rem;border:0;border-radius:999px;background:#18120e;color:#fff;font:inherit;font-size:.86rem;font-weight:800;cursor:pointer}
+.tf-reveal-alternatives:hover{background:#2b211a}
+.tf-wa-cta{display:inline-flex;padding:.65rem 1rem;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:800;font-size:.82rem}
+.tf-wa-cta-secondary{margin-top:.9rem}
+@media(min-width:640px){.tf-opening-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tf-results-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:900px){.tf-results-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@keyframes tf-card-in{to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.tf-opening-card,.tf-result-slot{animation:none;opacity:1;transform:none}#tarot-finder-start,.tf-option,.tf-opening-card,.tf-nav button{transition:none}#tarot-finder-start:active,.tf-option:active,.tf-opening-card:active{transform:none}.tf-option[aria-pressed="true"]{transform:none}}`;
 
 // ---------------------------------------------------------------------------
 
@@ -434,7 +470,7 @@ const TAROT_MODULE_STYLES = `.tarot-modules{display:flex;flex-direction:column;g
 
 // ---------------------------------------------------------------------------
 
-function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages, tarotModules, tarotFinderDataset }) {
+function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages, tarotModules, tarotFinderDataset, tarotFinderFallbackDataset }) {
     const canonical = `${BASE}${categoryPath(category.id, page)}`;
     const offset = (page - 1) * MAX_RESULTS;
     const visibleItems = items.slice(offset, offset + MAX_RESULTS);
@@ -541,7 +577,7 @@ ${headerHtml()}
     <p class="category-scope">${scopeText}</p>
     <div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>
   </section>
-  ${tarotFinderHtml(tarotFinderDataset, canonical)}
+  ${tarotFinderHtml(tarotFinderDataset, tarotFinderFallbackDataset, canonical)}
   ${tarotModulesHtml(tarotModules, navigationBase, canonical, Boolean(tarotFinderDataset?.length))}
   <div class="results-head"><h2>${tarotModules?.length ? 'Ver todo' : 'Libros disponibles'}</h2><p>${resultText}</p></div>
   ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
@@ -638,6 +674,27 @@ export async function onRequest(ctx) {
             hrefForItem: it => `${navigationBase}/libro/${it.id}/${slugify(it.title)}`,
         })
         : [];
+    // TAROT-FINDER-UX-2: pool "por encargo" para las alternativas cercanas
+    // cuando los filtros avanzados dan 0 resultados exactos — un mazo
+    // pausado que cumple todo lo pedido es la mejor alternativa posible
+    // (match real, sólo sin stock), nunca inventa precio/stock. Sólo se
+    // pide cuando ya hay Finder (mismo gate que tarotModules) — un fetch
+    // más, igual que fetchPausedIndex ya hace catalogo.js.
+    let tarotFinderFallbackDataset = [];
+    if (tarotModules) {
+        const pausedIndex = await fetchPausedIndex(ctx);
+        const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
+        const pausedCategoryItems = pausedItems.filter(item =>
+            (categoryData.items[item.id] || [])[0] === category.id
+        );
+        tarotFinderFallbackDataset = buildTarotFinderDataset({
+            items: pausedCategoryItems,
+            tagLookup: tarotTagLookup,
+            imageForId: id => bookCoverUrl(id),
+            hrefForItem: it => `${navigationBase}/libro/${it.id}/${slugify(it.title)}`,
+            status: 'paused',
+        });
+    }
     const html = renderPage({
         category,
         categoryUniverseCount,
@@ -649,6 +706,7 @@ export async function onRequest(ctx) {
         totalPages,
         tarotModules,
         tarotFinderDataset,
+        tarotFinderFallbackDataset,
     });
 
     return new Response(html, {

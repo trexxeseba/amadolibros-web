@@ -66,6 +66,26 @@ export const INTENT_LABEL = Object.freeze({
 });
 
 /**
+ * TAROT-FINDER-UX-2: apertura del selector — 7 intenciones de exploración
+ * (no de fortuna: "qué querés explorar hoy", nunca "qué te espera"). Cada
+ * opción mapea a un `answers.intent` YA existente en el motor de scoring de
+ * arriba — nunca se inventa una señal nueva para "claridad"/"decisión"/etc.
+ * porque el catálogo no tiene (ni debe tener) un atributo real de "sirve
+ * para tomar decisiones": forzar esa correspondencia sería la misma clase
+ * de afirmación predictiva que se pidió evitar. Esas cuatro opciones caen
+ * en 'sin_preferencia' — resultado igual de válido, sin inventar nada.
+ */
+export const OPENING_OPTIONS = Object.freeze([
+  { value: 'mirar_adelante', label: 'Quiero mirar hacia adelante', intent: 'sin_preferencia' },
+  { value: 'claridad', label: 'Necesito claridad', intent: 'sin_preferencia' },
+  { value: 'decision', label: 'Quiero destrabar una decisión', intent: 'sin_preferencia' },
+  { value: 'entender_situacion', label: 'Quiero entender una situación', intent: 'sin_preferencia' },
+  { value: 'aprender', label: 'Quiero aprender Tarot', intent: 'estudiar' },
+  { value: 'regalo', label: 'Busco un regalo', intent: 'regalo' },
+  { value: 'explorar', label: 'Solo quiero explorar', intent: 'sin_preferencia' },
+]);
+
+/**
  * Arma el texto para "no encontramos coincidencia exacta -> pedilo por
  * encargo", con las respuestas REALES del usuario, nunca inventadas. Sólo
  * incluye una línea por pregunta que el usuario efectivamente respondió con
@@ -193,4 +213,126 @@ export function explainMatch(candidate, answers = {}) {
   }
   const sentence = clauses.length ? `Coincide porque ${clauses.join(' ')}.` : '';
   return { badges, sentence };
+}
+
+// ---------------------------------------------------------------------------
+// TAROT-FINDER-UX-2: alternativas cercanas cuando los filtros avanzados dan
+// 0 resultados exactos. Nunca relaja una restricción hard en silencio — al
+// contrario, expone EXACTAMENTE cuál no se cumple, para que la persona
+// decida con información real. `pool` puede incluir candidatos con
+// status:'paused' (disponibles por encargo, sin precio/stock prometidos,
+// mismo criterio que GW2): un candidato pausado que SÍ cumple todo es la
+// mejor alternativa posible — un match real, sólo que no está en stock hoy.
+// ---------------------------------------------------------------------------
+
+/**
+ * Qué restricciones hard están activas en `answers` y si cada `candidate`
+ * las cumple. Sólo restricciones que el usuario efectivamente fijó (mismo
+ * criterio hasPreference que passesHardConstraints) — nunca se evalúa una
+ * restricción que nadie pidió.
+ */
+function hardConstraintChecks(candidate, answers = {}) {
+  const checks = [];
+  if (hasPreference(answers.system)) {
+    checks.push({ key: 'system', met: candidate.primary_type === answers.system });
+  }
+  if (hasPreference(answers.deckFamily)) {
+    checks.push({ key: 'deckFamily', met: candidate.deck_family === answers.deckFamily });
+  }
+  if (hasPreference(answers.language)) {
+    checks.push({ key: 'language', met: candidate.language === answers.language });
+  }
+  if (answers.guide === 'si') {
+    checks.push({ key: 'guide', met: candidate.bundle === 'mazo_mas_guia' });
+  }
+  return checks;
+}
+
+/**
+ * Candidatos que NO cumplen el 100% de las restricciones hard activas, pero
+ * están lo más cerca posible — se llama sólo cuando rankTarotFinderCandidates
+ * ya dio 0 resultados exactos con al menos una restricción hard activa.
+ * Orden: primero cualquier candidato "pausado" que cumple TODO (match real,
+ * disponible por encargo); después, por cantidad de restricciones violadas
+ * ascendente; desempate igual que rankTarotFinderCandidates (score de
+ * preferencias blandas, luego stock/precio/id). Nunca incluye un candidato
+ * que no comparte NINGUNA restricción activa con lo pedido — eso no es una
+ * alternativa cercana, es un libro cualquiera.
+ */
+export function findNearestTarotAlternatives(pool, answers = {}, { limit = 3 } = {}) {
+  if (!Array.isArray(pool)) throw new Error('pool debe ser un array.');
+  const checked = pool
+    .map(candidate => {
+      const checks = hardConstraintChecks(candidate, answers);
+      const violations = checks.filter(c => !c.met).map(c => c.key);
+      const { score } = scoreTarotFinderCandidate(candidate, answers);
+      return { candidate, checks, violations, score };
+    })
+    // Todo el pool ya es del universo tarot/oráculo/lenormand/kipper (viene
+    // de buildTarotFinderDataset) — "la alternativa más cercana disponible"
+    // sigue siendo válida aunque viole todas las restricciones activas, si
+    // no hay nada mejor; el ranking por violationCount ascendente ya se
+    // encarga de que lo más parecido aparezca primero. Un candidato activo
+    // que cumple TODO nunca debería llegar hasta acá (ya habría salido en
+    // rankTarotFinderCandidates), pero igual se excluye por si el llamador
+    // pasa un pool sin filtrar.
+    .filter(entry => entry.checks.length > 0 && (entry.violations.length > 0 || entry.candidate.status === 'paused'));
+
+  checked.sort((a, b) => {
+    const aExactPaused = a.violations.length === 0 && a.candidate.status === 'paused' ? 0 : 1;
+    const bExactPaused = b.violations.length === 0 && b.candidate.status === 'paused' ? 0 : 1;
+    if (aExactPaused !== bExactPaused) return aExactPaused - bExactPaused;
+    if (a.violations.length !== b.violations.length) return a.violations.length - b.violations.length;
+    if (b.score !== a.score) return b.score - a.score;
+    const stockDiff = (Number(b.candidate.stock) || 0) - (Number(a.candidate.stock) || 0);
+    if (stockDiff !== 0) return stockDiff;
+    const priceDiff = (Number(a.candidate.price) || 0) - (Number(b.candidate.price) || 0);
+    if (priceDiff !== 0) return priceDiff;
+    return String(a.candidate.id).localeCompare(String(b.candidate.id));
+  });
+
+  return checked.slice(0, Math.max(0, limit)).map(({ candidate, violations }) => ({ candidate, violations }));
+}
+
+const HARD_CONSTRAINT_MET_CLAUSE = {
+  system: (candidate) => SYSTEM_LABEL[candidate.primary_type] ? `es ${SYSTEM_LABEL[candidate.primary_type]}` : null,
+  deckFamily: (candidate) => DECK_FAMILY_LABEL[candidate.deck_family] ? `es ${DECK_FAMILY_LABEL[candidate.deck_family]}` : null,
+  language: (candidate) => LANGUAGE_LABEL[candidate.language] ? `está en ${LANGUAGE_LABEL[candidate.language]}` : null,
+  guide: (candidate) => candidate.bundle === 'mazo_mas_guia' ? 'incluye guía' : null,
+};
+const HARD_CONSTRAINT_UNMET_CLAUSE = {
+  system: (answers) => `no es ${SYSTEM_LABEL[answers.system] || answers.system}`,
+  deckFamily: (answers) => `no es ${DECK_FAMILY_LABEL[answers.deckFamily] || answers.deckFamily}`,
+  language: (answers) => `no está en ${LANGUAGE_LABEL[answers.language] || answers.language}`,
+  guide: () => 'no incluye guía',
+};
+
+/**
+ * Frase objetiva "qué cumple / qué no" para una alternativa cercana —
+ * mismo estilo que los ejemplos pedidos: "Está en español y es
+ * Rider-Waite-Smith, pero no incluye guía." Si el candidato es pausado y
+ * cumple todo, la frase es sobre disponibilidad, no sobre una restricción
+ * violada: "Cumple [lo pedido], disponible por encargo."
+ */
+export function explainNearMiss(candidate, answers = {}, violations = []) {
+  const checks = hardConstraintChecks(candidate, answers);
+  const metKeys = checks.filter(c => c.met).map(c => c.key);
+  const metClauses = metKeys.map(key => HARD_CONSTRAINT_MET_CLAUSE[key]?.(candidate)).filter(Boolean);
+
+  if (violations.length === 0 && candidate.status === 'paused') {
+    const summary = metClauses.length ? `Cumple ${metClauses.join(', ')}` : 'Cumple lo que buscás';
+    return `${summary}, disponible por encargo.`;
+  }
+
+  const unmetClauses = violations.map(key => HARD_CONSTRAINT_UNMET_CLAUSE[key]?.(answers)).filter(Boolean);
+  const metText = metClauses.length ? metClauses.join(' y ') : null;
+  const unmetText = unmetClauses.length ? unmetClauses.join(', ') : null;
+  if (metText && unmetText) return `${capitalize(metText)}, pero ${unmetText}.`;
+  if (unmetText) return `${capitalize(unmetText)}.`;
+  if (metText) return `${capitalize(metText)}.`;
+  return '';
+}
+
+function capitalize(text) {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }

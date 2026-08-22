@@ -35,8 +35,47 @@ test('incluye un candidato válido con exactamente los campos esperados, nada m�
   assert.equal(dataset.length, 1);
   assert.deepEqual(Object.keys(dataset[0]).sort(), [
     'bundle', 'deck_family', 'edition_style', 'href', 'id', 'image', 'language',
-    'level', 'price', 'primary_type', 'stock', 'title',
+    'level', 'price', 'primary_type', 'status', 'stock', 'title',
   ].sort());
+  assert.equal(dataset[0].status, 'active');
+});
+
+// ── TAROT-FINDER-UX-2: pool status='paused' para alternativas por encargo ──
+
+test('status=paused: incluye un candidato pausado SIN exigir stock/precio, con price/stock en null', () => {
+  const dataset = buildTarotFinderDataset({
+    items: [item('MLU1', { status: 'paused', available_quantity: 0, price: 0 })],
+    tagLookup: () => tag(),
+    imageForId,
+    hrefForItem,
+    status: 'paused',
+  });
+  assert.equal(dataset.length, 1);
+  assert.equal(dataset[0].status, 'paused');
+  assert.equal(dataset[0].price, null, 'nunca se inventa un precio para algo por encargo');
+  assert.equal(dataset[0].stock, null, 'nunca se inventa stock para algo por encargo');
+});
+
+test('status=paused: sigue excluyendo accesorios, libros sobre tarot y sistemas fuera de alcance', () => {
+  const dataset = buildTarotFinderDataset({
+    items: [item('MLU1', { status: 'paused' }), item('MLU2', { status: 'paused' })],
+    tagLookup: (id) => id === 'MLU1' ? tag({ format: 'libro' }) : tag({ primary_type: 'lenormand' }),
+    imageForId,
+    hrefForItem,
+    status: 'paused',
+  });
+  assert.deepEqual(dataset.map(d => d.id), ['MLU2']);
+});
+
+test('status=paused: no filtra por item.status del catálogo (una fila "paused" real igual entra)', () => {
+  const dataset = buildTarotFinderDataset({
+    items: [item('MLU1', { status: 'paused', available_quantity: 0, price: 0 })],
+    tagLookup: () => tag(),
+    imageForId,
+    hrefForItem,
+    status: 'paused',
+  });
+  assert.equal(dataset.length, 1);
 });
 
 // ── 14. Sólo activos con stock ────────────────────────────────────────────

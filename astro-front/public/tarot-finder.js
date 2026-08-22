@@ -9,15 +9,18 @@
   // cambia un peso o una regla hard/soft, hay que cambiarla en los DOS
   // lugares. Mismos nombres de campos, mismo orden de desempate.
   //
-  // TAROT-FINDER-1 fix de paridad: todas las funciones puras de acá abajo
-  // (sin DOM) se exponen también en window.__AmadoTarotFinderTestHooks,
-  // exclusivamente para que functions/__tests__/tarot-finder-client.test.js
-  // pueda ejecutar ESTE archivo real dentro de un harness de Node (con un
-  // DOM mínimo simulado) y comparar sus resultados byte a byte contra
-  // tarot-finder-scoring.js — no es una API pública, no se usa desde el
-  // propio flujo de la UI.
-  var STEP_ORDER = ['system', 'intent', 'family', 'language', 'guide'];
+  // TAROT-FINDER-UX-2: máquina de estados de "recomendador progresivo" —
+  // apertura (7 intenciones) -> resultados inmediatos -> "Afinar mi
+  // búsqueda" (filtros avanzados, opcional) -> si 0 exactos, alternativas
+  // cercanas explícitas. Todas las funciones puras de acá abajo (sin DOM)
+  // se exponen también en window.__AmadoTarotFinderTestHooks, exclusivamente
+  // para que functions/__tests__/tarot-finder-client.test.js pueda ejecutar
+  // ESTE archivo real dentro de un harness de Node y comparar sus
+  // resultados byte a byte contra tarot-finder-scoring.js — no es una API
+  // pública, no se usa desde el propio flujo de la UI.
+  var REFINE_ORDER = ['system', 'family', 'language', 'guide'];
   var MAX_RESULTS = 6;
+  var MAX_ALTERNATIVES = 3;
   var SCORE = {
     PRINCIPIANTE_PARA_PRIMER_MAZO: 30,
     GUIA_PARA_ESTUDIAR: 20,
@@ -30,6 +33,24 @@
   var DECK_FAMILY_LABEL = { rider_waite_smith: 'Rider-Waite-Smith', marsella: 'Tarot de Marsella', thoth: 'Thoth' };
   var LANGUAGE_LABEL = { espanol: 'Español', ingles: 'Inglés', multilingue: 'Multilingüe' };
   var INTENT_LABEL = { primer_mazo: 'primer mazo', estudiar: 'aprender/estudiar', experiencia: 'ya tiene experiencia', regalo: 'regalo', coleccionista: 'coleccionista' };
+
+  // TAROT-FINDER-UX-2: apertura del selector — nunca lenguaje predictivo
+  // ("esto va a ocurrir", "esta carta revela tu futuro"). Las 4 opciones
+  // reflexivas (mirar adelante/claridad/decisión/entender) y "explorar"
+  // caen en sin_preferencia a propósito: el catálogo no tiene (ni debe
+  // tener) un atributo real de "sirve para tomar decisiones" — inventar esa
+  // correspondencia sería la misma clase de afirmación predictiva que se
+  // pidió evitar. "Aprender Tarot" y "regalo" sí reutilizan una señal de
+  // scoring que YA existe (estudiar/regalo).
+  var OPENING_OPTIONS = [
+    { value: 'mirar_adelante', label: 'Quiero mirar hacia adelante', intent: 'sin_preferencia' },
+    { value: 'claridad', label: 'Necesito claridad', intent: 'sin_preferencia' },
+    { value: 'decision', label: 'Quiero destrabar una decisión', intent: 'sin_preferencia' },
+    { value: 'entender_situacion', label: 'Quiero entender una situación', intent: 'sin_preferencia' },
+    { value: 'aprender', label: 'Quiero aprender Tarot', intent: 'estudiar' },
+    { value: 'regalo', label: 'Busco un regalo', intent: 'regalo' },
+    { value: 'explorar', label: 'Solo quiero explorar', intent: 'sin_preferencia' },
+  ];
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -104,13 +125,93 @@
     return lines.join('\n');
   }
 
+  // ---- Alternativas cercanas (0 resultados exactos con filtros activos) --
+
+  function hardConstraintChecks(candidate, answers) {
+    var checks = [];
+    if (hasPreference(answers.system)) checks.push({ key: 'system', met: candidate.primary_type === answers.system });
+    if (hasPreference(answers.deckFamily)) checks.push({ key: 'deckFamily', met: candidate.deck_family === answers.deckFamily });
+    if (hasPreference(answers.language)) checks.push({ key: 'language', met: candidate.language === answers.language });
+    if (answers.guide === 'si') checks.push({ key: 'guide', met: candidate.bundle === 'mazo_mas_guia' });
+    return checks;
+  }
+
+  function findNearestAlternatives(pool, answers, limit) {
+    limit = limit || MAX_ALTERNATIVES;
+    var checked = [];
+    for (var i = 0; i < pool.length; i++) {
+      var candidate = pool[i];
+      var checks = hardConstraintChecks(candidate, answers);
+      if (checks.length === 0) continue;
+      var violations = [];
+      for (var j = 0; j < checks.length; j++) if (!checks[j].met) violations.push(checks[j].key);
+      if (!(violations.length > 0 || candidate.status === 'paused')) continue;
+      checked.push({ candidate: candidate, violations: violations, score: scoreCandidate(candidate, answers) });
+    }
+    checked.sort(function (a, b) {
+      var aExactPaused = (a.violations.length === 0 && a.candidate.status === 'paused') ? 0 : 1;
+      var bExactPaused = (b.violations.length === 0 && b.candidate.status === 'paused') ? 0 : 1;
+      if (aExactPaused !== bExactPaused) return aExactPaused - bExactPaused;
+      if (a.violations.length !== b.violations.length) return a.violations.length - b.violations.length;
+      if (b.score !== a.score) return b.score - a.score;
+      var stockDiff = (Number(b.candidate.stock) || 0) - (Number(a.candidate.stock) || 0);
+      if (stockDiff !== 0) return stockDiff;
+      var priceDiff = (Number(a.candidate.price) || 0) - (Number(b.candidate.price) || 0);
+      if (priceDiff !== 0) return priceDiff;
+      return String(a.candidate.id).localeCompare(String(b.candidate.id));
+    });
+    return checked.slice(0, Math.max(0, limit)).map(function (e) { return { candidate: e.candidate, violations: e.violations }; });
+  }
+
+  var MET_CLAUSE = {
+    system: function (c) { return SYSTEM_LABEL[c.primary_type] ? ('es ' + SYSTEM_LABEL[c.primary_type]) : null; },
+    deckFamily: function (c) { return DECK_FAMILY_LABEL[c.deck_family] ? ('es ' + DECK_FAMILY_LABEL[c.deck_family]) : null; },
+    language: function (c) { return LANGUAGE_LABEL[c.language] ? ('está en ' + LANGUAGE_LABEL[c.language]) : null; },
+    guide: function (c) { return c.bundle === 'mazo_mas_guia' ? 'incluye guía' : null; },
+  };
+  var UNMET_CLAUSE = {
+    system: function (a) { return 'no es ' + (SYSTEM_LABEL[a.system] || a.system); },
+    deckFamily: function (a) { return 'no es ' + (DECK_FAMILY_LABEL[a.deckFamily] || a.deckFamily); },
+    language: function (a) { return 'no está en ' + (LANGUAGE_LABEL[a.language] || a.language); },
+    guide: function () { return 'no incluye guía'; },
+  };
+
+  function capitalize(text) {
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+  }
+
+  function explainNearMiss(candidate, answers, violations) {
+    var checks = hardConstraintChecks(candidate, answers);
+    var metClauses = [];
+    for (var i = 0; i < checks.length; i++) {
+      if (!checks[i].met) continue;
+      var clause = MET_CLAUSE[checks[i].key] ? MET_CLAUSE[checks[i].key](candidate) : null;
+      if (clause) metClauses.push(clause);
+    }
+    if (violations.length === 0 && candidate.status === 'paused') {
+      var summary = metClauses.length ? ('Cumple ' + metClauses.join(', ')) : 'Cumple lo que buscás';
+      return summary + ', disponible por encargo.';
+    }
+    var unmetClauses = [];
+    for (var k = 0; k < violations.length; k++) {
+      var uc = UNMET_CLAUSE[violations[k]] ? UNMET_CLAUSE[violations[k]](answers) : null;
+      if (uc) unmetClauses.push(uc);
+    }
+    var metText = metClauses.length ? metClauses.join(' y ') : null;
+    var unmetText = unmetClauses.length ? unmetClauses.join(', ') : null;
+    if (metText && unmetText) return capitalize(metText) + ', pero ' + unmetText + '.';
+    if (unmetText) return capitalize(unmetText) + '.';
+    if (metText) return capitalize(metText) + '.';
+    return '';
+  }
+
   // ---- Máquina de estados (sin DOM) --------------------------------------
   // Extraída aparte de init() a propósito: son las funciones que
   // functions/__tests__/tarot-finder-client.test.js ejercita para probar el
-  // flujo real (FIX 1/2/3), no sólo el HTML estático.
+  // flujo real, no sólo el HTML estático.
 
   function relevantSteps(answers) {
-    return STEP_ORDER.filter(function (s) { return s !== 'family' || answers.system === 'tarot'; });
+    return REFINE_ORDER.filter(function (s) { return s !== 'family' || answers.system === 'tarot'; });
   }
 
   function nextStepFrom(step, answers) {
@@ -119,39 +220,52 @@
     return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : 'results';
   }
 
-  // FIX 2: desde 'results' vuelve a la última pregunta aplicable (guide,
-  // salvo que algún día se agregue una pregunta después). Desde la primera
-  // pregunta real devuelve null -> sólo ahí "volver" puede cerrar.
-  function prevStepFrom(step, answers) {
+  // "volver" desde 'results': si ya se entró a "Afinar mi búsqueda" vuelve a
+  // la última pregunta aplicable del refinamiento; si no, vuelve a
+  // 'opening'. Desde el primer paso del refinamiento ('system') vuelve a
+  // 'results' (no cierra: 'results' es la base, no una pregunta más).
+  function prevStepFrom(step, answers, refining) {
     var order = relevantSteps(answers);
-    if (step === 'results') return order[order.length - 1];
+    if (step === 'results') {
+      return refining ? order[order.length - 1] : 'opening';
+    }
     var idx = order.indexOf(step);
-    return idx > 0 ? order[idx - 1] : null;
+    if (idx > 0) return order[idx - 1];
+    return 'results';
   }
 
   function initialFinderState() {
-    return { step: 'system', answers: {}, systemExplainerOpen: false };
+    return { step: 'opening', answers: {}, systemExplainerOpen: false, refining: false, alternativesRevealed: false };
   }
 
   /**
    * Reductor puro: (estado, campo, valor) -> nuevo estado. No muta el
    * estado recibido.
    *
-   * FIX 1: elegir "No estoy seguro/a" la PRIMERA vez en la pregunta de
-   * sistema no avanza — sólo abre el explicador (systemExplainerOpen).
-   * Sólo "Seguir sin preferencia" (mismo value='unsure', pero con el
-   * explicador ya abierto) confirma system='unsure' y avanza.
+   * field='opening': confirma una de las 7 intenciones de apertura -> fija
+   * answers.intent (reutiliza el motor de scoring existente, nunca inventa
+   * una señal nueva) y va DIRECTO a 'results' — nunca obliga a completar
+   * sistema/tradición/idioma/guía antes.
    *
-   * FIX 3: cambiar `system` a cualquier valor que no sea 'tarot' elimina
-   * `answers.deckFamily` de inmediato — una tradición que ya no aplica
-   * nunca puede seguir restringiendo el ranking.
+   * Dentro del refinamiento (system/family/language/guide): mismas reglas
+   * que TAROT-FINDER-1 — "No estoy seguro/a" la primera vez en 'system'
+   * sólo abre el explicador; cambiar `system` a algo que no sea 'tarot'
+   * elimina `answers.deckFamily` de inmediato.
    */
   function applyChoice(state, field, value) {
     var answers = {};
     for (var k in state.answers) if (Object.prototype.hasOwnProperty.call(state.answers, k)) answers[k] = state.answers[k];
 
+    if (field === 'opening') {
+      var opt = null;
+      for (var i = 0; i < OPENING_OPTIONS.length; i++) if (OPENING_OPTIONS[i].value === value) { opt = OPENING_OPTIONS[i]; break; }
+      answers.intent = opt ? opt.intent : 'sin_preferencia';
+      answers.openingChoice = value;
+      return { step: 'results', answers: answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
+    }
+
     if (field === 'system' && value === 'unsure' && state.step === 'system' && !state.systemExplainerOpen) {
-      return { step: 'system', answers: answers, systemExplainerOpen: true };
+      return { step: 'system', answers: answers, systemExplainerOpen: true, refining: state.refining, alternativesRevealed: false };
     }
 
     if (field === 'system' && value !== 'tarot') {
@@ -159,26 +273,40 @@
     }
     answers[field] = value;
 
-    var nextState = { step: state.step, answers: answers, systemExplainerOpen: false };
+    var nextState = { step: state.step, answers: answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
     nextState.step = nextStepFrom(state.step, answers);
     return nextState;
   }
 
-  /** FIX 2: "volver" desde el sub-estado del explicador de sistema vuelve a
-   * la vista simple de la misma pregunta, nunca cierra. */
+  /** Entra (o vuelve a entrar) al refinamiento opcional desde 'results'. */
+  function applyStartRefine(state) {
+    var order = relevantSteps(state.answers);
+    return { step: order[0], answers: state.answers, systemExplainerOpen: false, refining: true, alternativesRevealed: false };
+  }
+
+  /** Revela las alternativas cercanas en la pantalla de 0 resultados exactos. */
+  function applyRevealAlternatives(state) {
+    return { step: state.step, answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: true };
+  }
+
+  /** "volver" desde el sub-estado del explicador de sistema vuelve a la
+   * vista simple de la misma pregunta, nunca cierra. */
   function applyGoBack(state) {
     if (state.step === 'system' && state.systemExplainerOpen) {
-      return { step: 'system', answers: state.answers, systemExplainerOpen: false };
+      return { step: 'system', answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
     }
-    var prev = prevStepFrom(state.step, state.answers);
-    if (prev === null) return null; // señal: cerrar el Finder
-    return { step: prev, answers: state.answers, systemExplainerOpen: false };
+    if (state.step === 'opening') return null; // señal: cerrar el Finder
+    if (state.step === 'results' && state.alternativesRevealed) {
+      return { step: 'results', answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
+    }
+    var prev = prevStepFrom(state.step, state.answers, state.refining);
+    return { step: prev, answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
   }
 
   var QUESTIONS = {
     system: {
       field: 'system',
-      title: '¿Qué estás buscando?',
+      title: '¿Buscás alguna tradición en particular?',
       options: [
         { value: 'tarot', label: 'Tarot' },
         { value: 'oraculo', label: 'Oráculo' },
@@ -197,21 +325,9 @@
         { title: 'Lenormand', text: 'Sistema distinto del Tarot, tradicionalmente de 36 cartas.' },
       ],
     },
-    intent: {
-      field: 'intent',
-      title: '¿Para qué lo querés?',
-      options: [
-        { value: 'primer_mazo', label: 'Es mi primer mazo' },
-        { value: 'estudiar', label: 'Quiero aprender/estudiar' },
-        { value: 'experiencia', label: 'Ya tengo experiencia' },
-        { value: 'regalo', label: 'Es para regalar' },
-        { value: 'coleccionista', label: 'Colecciono mazos' },
-        { value: 'sin_preferencia', label: 'No tengo preferencia' },
-      ],
-    },
     family: {
       field: 'deckFamily',
-      title: '¿Buscás alguna tradición en particular?',
+      title: '¿Preferís alguna edición en particular?',
       options: [
         { value: 'rider_waite_smith', label: 'Rider-Waite-Smith' },
         { value: 'marsella', label: 'Tarot de Marsella' },
@@ -243,11 +359,14 @@
   // UI real; existen para que un harness de Node ejecute este archivo tal
   // cual se sirve y compare contra tarot-finder-scoring.js.
   window.__AmadoTarotFinderTestHooks = {
-    STEP_ORDER: STEP_ORDER, MAX_RESULTS: MAX_RESULTS, SCORE: SCORE, QUESTIONS: QUESTIONS,
+    REFINE_ORDER: REFINE_ORDER, MAX_RESULTS: MAX_RESULTS, MAX_ALTERNATIVES: MAX_ALTERNATIVES,
+    SCORE: SCORE, QUESTIONS: QUESTIONS, OPENING_OPTIONS: OPENING_OPTIONS,
     hasPreference: hasPreference, passesHard: passesHard, scoreCandidate: scoreCandidate,
     rankCandidates: rankCandidates, explainMatch: explainMatch, buildNoResultsMessage: buildNoResultsMessage,
+    findNearestAlternatives: findNearestAlternatives, explainNearMiss: explainNearMiss,
     relevantSteps: relevantSteps, nextStepFrom: nextStepFrom, prevStepFrom: prevStepFrom,
     initialFinderState: initialFinderState, applyChoice: applyChoice, applyGoBack: applyGoBack,
+    applyStartRefine: applyStartRefine, applyRevealAlternatives: applyRevealAlternatives,
   };
 
   function ready(fn) {
@@ -262,6 +381,7 @@
     var root = document.getElementById('tarot-finder-app');
     var startBtn = document.getElementById('tarot-finder-start');
     var dataEl = document.getElementById('tarot-finder-dataset');
+    var fallbackDataEl = document.getElementById('tarot-finder-fallback-dataset');
     if (!section || !root || !startBtn || !dataEl) return;
 
     var waBase = section.getAttribute('data-wa-base') || '';
@@ -270,6 +390,16 @@
     var dataset;
     try { dataset = JSON.parse(dataEl.textContent || '[]'); } catch (_e) { dataset = []; }
     if (!Array.isArray(dataset) || dataset.length === 0) return;
+
+    var fallbackDataset = [];
+    if (fallbackDataEl) {
+      try { fallbackDataset = JSON.parse(fallbackDataEl.textContent || '[]'); } catch (_e2) { fallbackDataset = []; }
+      if (!Array.isArray(fallbackDataset)) fallbackDataset = [];
+    }
+    // El pool de alternativas incluye el propio dataset activo (por si un
+    // candidato activo casi-exacto no llegó a pasar rankCandidates) más el
+    // pool por encargo.
+    var alternativesPool = dataset.concat(fallbackDataset);
 
     var state = null;
 
@@ -301,6 +431,16 @@
       render();
     }
 
+    function startRefine() {
+      state = applyStartRefine(state);
+      render();
+    }
+
+    function revealAlternatives() {
+      state = applyRevealAlternatives(state);
+      render();
+    }
+
     function closeFinder() {
       root.hidden = true;
       root.innerHTML = '';
@@ -318,8 +458,31 @@
 
     function render() {
       if (!state) return;
-      if (state.step === 'results') renderResults();
+      if (state.step === 'opening') renderOpening();
+      else if (state.step === 'results') renderResults();
       else renderQuestion(state.step);
+    }
+
+    function renderOpening() {
+      var html = '<div class="tf-opening">';
+      html += '<h3 tabindex="-1" id="tf-heading">¿Qué mazo va con lo que estás buscando?</h3>';
+      html += '<p class="tf-opening-sub">Contanos qué querés explorar hoy — claridad, una decisión, mirar hacia adelante, aprender o simplemente descubrir— y te mostramos opciones disponibles ahora.</p>';
+      html += '<div class="tf-opening-grid" role="group" aria-label="¿Qué mazo va con lo que estás buscando?">';
+      html += OPENING_OPTIONS.map(function (opt, i) {
+        return '<button type="button" class="tf-opening-card" style="--tf-i:' + i + '" data-field="opening" data-value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + '</button>';
+      }).join('');
+      html += '</div>';
+      html += '<div class="tf-nav"><button type="button" class="tf-back">Cerrar</button></div>';
+      html += '</div>';
+      root.innerHTML = html;
+      bindNav();
+      var buttons = root.querySelectorAll('.tf-opening-card');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].addEventListener('click', (function (btn) {
+          return function () { choose(btn.getAttribute('data-field'), btn.getAttribute('data-value')); };
+        })(buttons[i]));
+      }
+      focusHeading();
     }
 
     function renderQuestion(step) {
@@ -327,11 +490,8 @@
       var explainerOpen = step === 'system' && state.systemExplainerOpen;
       var options = explainerOpen ? q.explainerOptions : q.options;
       var selected = state.answers[q.field];
-      // FIX 2/4: "Cerrar" sólo en la primera pregunta real y fuera del
-      // sub-estado del explicador — desde ahí "volver" nunca cierra.
-      var isFirst = stepPosition(step) === 1 && !explainerOpen;
       var html = '';
-      html += '<p class="tf-progress">Pregunta ' + stepPosition(step) + ' de ' + stepTotal() + '</p>';
+      html += '<p class="tf-progress">Filtro ' + stepPosition(step) + ' de ' + stepTotal() + '</p>';
       html += '<div class="tf-question">';
       html += '<h3 tabindex="-1" id="tf-heading">' + escapeHtml(q.title) + '</h3>';
       if (explainerOpen) {
@@ -346,7 +506,7 @@
       }).join('');
       html += '</div></div>';
       html += '<div class="tf-nav">';
-      html += '<button type="button" class="tf-back">' + (isFirst ? 'Cerrar' : '‹ Volver') + '</button>';
+      html += '<button type="button" class="tf-back">‹ Volver</button>';
       html += '<button type="button" class="tf-restart">Reiniciar</button>';
       html += '</div>';
       root.innerHTML = html;
@@ -360,10 +520,29 @@
       focusHeading();
     }
 
+    function resultCardHtml(candidate, answers) {
+      var ex = explainMatch(candidate, answers);
+      var priceText = Number(candidate.price || 0).toLocaleString('es-UY');
+      return '<article class="tf-result-card">' +
+        (candidate.image ? '<img src="' + escapeHtml(candidate.image) + '" alt="Portada de ' + escapeHtml(candidate.title) + '" loading="lazy" decoding="async">' : '') +
+        '<div class="tf-result-body">' +
+        (ex.badges.length ? '<div class="tf-result-badges">' + ex.badges.map(function (b) { return '<span>' + escapeHtml(b) + '</span>'; }).join('') + '</div>' : '') +
+        '<h4>' + escapeHtml(candidate.title) + '</h4>' +
+        (ex.sentence ? '<p class="tf-result-why">' + escapeHtml(ex.sentence) + '</p>' : '') +
+        '<p class="tf-result-price">$' + priceText + ' UYU</p>' +
+        '<a class="tf-result-cta" href="' + escapeHtml(candidate.href) + '">Ver mazo</a>' +
+        '</div></article>';
+    }
+
     function renderResults() {
       var ranked = rankCandidates(dataset, state.answers);
       var html = '<div class="tf-results">';
-      if (ranked.length === 0) {
+      if (ranked.length === 0 && state.refining) {
+        html += renderNearMiss();
+      } else if (ranked.length === 0) {
+        // Defensivo: con 0 restricciones hard activas esto no debería
+        // pasar nunca (el dataset ya se validó no vacío en init()), pero
+        // nunca termina en un mensaje seco sin salida.
         var message = buildNoResultsMessage(state.answers, pageUrl);
         var href = waBase + encodeURIComponent(message);
         html += '<h3 tabindex="-1" id="tf-heading">No encontramos ahora una coincidencia exacta.</h3>';
@@ -372,21 +551,11 @@
       } else {
         html += '<h3 tabindex="-1" id="tf-heading">Encontramos ' + ranked.length + ' opci' + (ranked.length === 1 ? 'ón' : 'ones') + ' que coincide' + (ranked.length === 1 ? '' : 'n') + ' con lo que buscás</h3>';
         html += '<div class="tf-results-grid">';
-        html += ranked.map(function (r) {
-          var candidate = r.candidate;
-          var ex = explainMatch(candidate, state.answers);
-          var priceText = Number(candidate.price || 0).toLocaleString('es-UY');
-          return '<article class="tf-result-card">' +
-            (candidate.image ? '<img src="' + escapeHtml(candidate.image) + '" alt="Portada de ' + escapeHtml(candidate.title) + '" loading="lazy" decoding="async">' : '') +
-            '<div class="tf-result-body">' +
-            (ex.badges.length ? '<div class="tf-result-badges">' + ex.badges.map(function (b) { return '<span>' + escapeHtml(b) + '</span>'; }).join('') + '</div>' : '') +
-            '<h4>' + escapeHtml(candidate.title) + '</h4>' +
-            (ex.sentence ? '<p class="tf-result-why">' + escapeHtml(ex.sentence) + '</p>' : '') +
-            '<p class="tf-result-price">$' + priceText + ' UYU</p>' +
-            '<a class="tf-result-cta" href="' + escapeHtml(candidate.href) + '">Ver mazo</a>' +
-            '</div></article>';
+        html += ranked.map(function (r, i) {
+          return '<div class="tf-result-slot" style="--tf-i:' + i + '">' + resultCardHtml(r.candidate, state.answers) + '</div>';
         }).join('');
         html += '</div>';
+        html += '<button type="button" class="tf-refine-cta">Afinar mi búsqueda</button>';
       }
       html += '<div class="tf-nav">';
       html += '<button type="button" class="tf-back">‹ Volver</button>';
@@ -394,7 +563,48 @@
       html += '</div></div>';
       root.innerHTML = html;
       bindNav();
+      var refineBtn = root.querySelector('.tf-refine-cta');
+      if (refineBtn) refineBtn.addEventListener('click', startRefine);
+      bindNearMissNav();
       focusHeading();
+    }
+
+    // Filtros avanzados con 0 resultados exactos: nunca "no encontramos"
+    // seco. Antes de revelar cualquier alternativa (que ya relaja algo),
+    // la persona elige explícitamente verlas o pedir la búsqueda manual.
+    function renderNearMiss() {
+      var html = '<h3 tabindex="-1" id="tf-heading">No tenemos ahora una opción que cumpla todo exactamente.</h3>';
+      html += '<p class="tf-near-miss-sub">Estas son las alternativas más cercanas.</p>';
+      var message = buildNoResultsMessage(state.answers, pageUrl);
+      var waHref = waBase + encodeURIComponent(message);
+      if (!state.alternativesRevealed) {
+        html += '<div class="tf-near-miss-choice">';
+        html += '<button type="button" class="tf-reveal-alternatives">Ver estas alternativas</button>';
+        html += '<a class="tf-wa-cta" href="' + escapeHtml(waHref) + '" target="_blank" rel="noopener noreferrer">Pedí que te lo busquemos</a>';
+        html += '</div>';
+        return html;
+      }
+      var alternatives = findNearestAlternatives(alternativesPool, state.answers);
+      if (alternatives.length === 0) {
+        html += '<div class="tf-empty"><p>No encontramos ninguna alternativa cercana disponible.</p>';
+        html += '<a class="tf-wa-cta" href="' + escapeHtml(waHref) + '" target="_blank" rel="noopener noreferrer">Pedí que te lo busquemos</a></div>';
+        return html;
+      }
+      html += '<div class="tf-results-grid tf-alternatives-grid">';
+      html += alternatives.map(function (alt, i) {
+        var card = resultCardHtml(alt.candidate, state.answers);
+        var reason = explainNearMiss(alt.candidate, state.answers, alt.violations);
+        card = card.replace('</div></article>', '<p class="tf-near-miss-reason">' + escapeHtml(reason) + '</p></div></article>');
+        return '<div class="tf-result-slot" style="--tf-i:' + i + '">' + card + '</div>';
+      }).join('');
+      html += '</div>';
+      html += '<a class="tf-wa-cta tf-wa-cta-secondary" href="' + escapeHtml(waHref) + '" target="_blank" rel="noopener noreferrer">Pedí que te lo busquemos igual</a>';
+      return html;
+    }
+
+    function bindNearMissNav() {
+      var revealBtn = root.querySelector('.tf-reveal-alternatives');
+      if (revealBtn) revealBtn.addEventListener('click', revealAlternatives);
     }
 
     function bindNav() {

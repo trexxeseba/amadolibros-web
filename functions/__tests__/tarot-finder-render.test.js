@@ -9,6 +9,7 @@ import {
     CATALOG_URL,
     PAUSED_MANIFEST_URL,
     PRODUCTION_MANIFEST_URL,
+    R2_BASE,
 } from '../_shared/catalog.js';
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
 import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
@@ -136,6 +137,83 @@ test('el dataset del Finder viaja embebido en un <script type="application/json"
     assert.match(body, /<script type="application\/json" id="tarot-finder-dataset">/);
     // Nunca un <link> ni un fetch a un endpoint /api/tarot-finder o similar.
     assert.doesNotMatch(body, /\/api\/tarot-finder/);
+});
+
+// ── TAROT-FINDER-UX-2: dataset de respaldo (por encargo) para alternativas ──
+
+test('el dataset de respaldo (por encargo, para alternativas cercanas) también viaja embebido, nunca en una URL propia', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    assert.match(body, /<script type="application\/json" id="tarot-finder-fallback-dataset">/);
+});
+
+test('la nueva apertura del Finder no promete más de lo debido (copy prudente, sin "preguntas")', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    assert.match(body, /Contanos qué buscás y te mostramos opciones disponibles ahora mismo\./);
+    assert.doesNotMatch(body, /Respondé unas preguntas/);
+});
+
+// MLU real y estable, tarot/mazo, ya clasificado como pausado en
+// TAROT_MERCH_TAGS — fixture del pool "por encargo" del dataset de respaldo.
+const REAL_PAUSED_TAROT_MLU = 'MLU1336883718';
+const realPausedTag = TAROT_MERCH_TAGS.find(row => row.id === REAL_PAUSED_TAROT_MLU);
+
+test('fixture: el MLU pausado real usado en estos tests sigue clasificado como mazo de tarot', () => {
+    assert.ok(realPausedTag, `${REAL_PAUSED_TAROT_MLU} ya no existe en TAROT_MERCH_TAGS — actualizar el fixture`);
+    assert.equal(realPausedTag.primary_type, 'tarot');
+    assert.equal(realPausedTag.format, 'mazo');
+});
+
+test('un mazo pausado real de esoterismo-tarot llega al dataset de respaldo con status=paused y sin precio/stock inventados', async () => {
+    const pausedManifestCurrent = {
+        version: 'v1',
+        index_key: 'stock1-preview/index.json',
+        block_prefix: 'stock1-preview/blocks',
+        block_count: 1,
+    };
+    globalThis.caches = {
+        default: {
+            async match(request) {
+                if (request.url.endsWith('/data/active-categories.json')) return Response.json(CATEGORY_DATA);
+                if (request.url === CATALOG_URL) return Response.json({ total: ITEMS.length, items: ITEMS });
+                if (request.url === PRODUCTION_MANIFEST_URL) {
+                    return Response.json({ schema_version: 1, current: pausedManifestCurrent, previous: null });
+                }
+                if (request.url === PAUSED_MANIFEST_URL) return Response.json({ schema_version: 0 });
+                if (request.url === `${R2_BASE}/${pausedManifestCurrent.index_key}`) {
+                    return Response.json({
+                        schema_version: 1,
+                        fields: ['id', 'title', 'author', 'isbn', 'image'],
+                        derived_fields: { slug: 'slugify-v1', status: 'paused', block: 'numeric-id-mod-block-count' },
+                        block_count: 1,
+                        items: [[REAL_PAUSED_TAROT_MLU, realPausedTag.title, realPausedTag.author || '', realPausedTag.isbn || '', '']],
+                    });
+                }
+                return null;
+            },
+            async put() {},
+        },
+    };
+    const genericCategoryData = {
+        ...CATEGORY_DATA,
+        items: { ...CATEGORY_DATA.items, [REAL_PAUSED_TAROT_MLU]: ['esoterismo-tarot'] },
+    };
+    globalThis.caches.default.match = (function (original) {
+        return async function (request) {
+            if (request.url.endsWith('/data/active-categories.json')) return Response.json(genericCategoryData);
+            return original(request);
+        };
+    })(globalThis.caches.default.match);
+
+    const response = await categoryRequest(context('esoterismo-tarot', 'production'));
+    const body = await response.text();
+    const match = body.match(/<script type="application\/json" id="tarot-finder-fallback-dataset">([\s\S]*?)<\/script>/);
+    assert.ok(match, 'no se encontró el <script> del dataset de respaldo');
+    const fallback = JSON.parse(match[1]);
+    const entry = fallback.find(d => d.id === REAL_PAUSED_TAROT_MLU);
+    assert.ok(entry, 'el mazo pausado real no llegó al dataset de respaldo');
+    assert.equal(entry.status, 'paused');
+    assert.equal(entry.price, null, 'nunca se inventa un precio para algo por encargo');
+    assert.equal(entry.stock, null, 'nunca se inventa stock para algo por encargo');
 });
 
 // ── Robots intactos en Preview ────────────────────────────────────────────

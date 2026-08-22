@@ -7,6 +7,9 @@ import assert from 'node:assert/strict';
 import {
   buildFinderNoResultsMessage,
   explainMatch,
+  explainNearMiss,
+  findNearestTarotAlternatives,
+  OPENING_OPTIONS,
   passesHardConstraints,
   rankTarotFinderCandidates,
   scoreTarotFinderCandidate,
@@ -282,4 +285,135 @@ test('17d. scoreTarotFinderCandidate con candidato vacío no lanza, score 0', ()
 test('17e. candidatos con campos parcialmente ausentes no rompen el ranking', () => {
   const broken = { id: 'X' }; // sin price/stock/primary_type/etc.
   assert.doesNotThrow(() => rankTarotFinderCandidates([broken], {}));
+});
+
+// ── TAROT-FINDER-UX-2: OPENING_OPTIONS (apertura del selector) ──────────
+
+test('OPENING_OPTIONS: 7 opciones, cada una con value/label/intent', () => {
+  assert.equal(OPENING_OPTIONS.length, 7);
+  for (const option of OPENING_OPTIONS) {
+    assert.ok(option.value);
+    assert.ok(option.label);
+    assert.ok('intent' in option);
+  }
+});
+
+test('OPENING_OPTIONS: "Quiero aprender Tarot" mapea al intent existente estudiar (reutiliza el motor, no inventa uno nuevo)', () => {
+  const learn = OPENING_OPTIONS.find(o => o.value === 'aprender');
+  assert.equal(learn.intent, 'estudiar');
+});
+
+test('OPENING_OPTIONS: "Busco un regalo" mapea al intent existente regalo', () => {
+  const gift = OPENING_OPTIONS.find(o => o.value === 'regalo');
+  assert.equal(gift.intent, 'regalo');
+});
+
+test('OPENING_OPTIONS: las 4 opciones reflexivas (mirar adelante/claridad/decisión/entender) y "explorar" no fabrican una señal que el catálogo no tiene — sin_preferencia', () => {
+  const reflective = ['mirar_adelante', 'claridad', 'decision', 'entender_situacion', 'explorar'];
+  for (const value of reflective) {
+    const option = OPENING_OPTIONS.find(o => o.value === value);
+    assert.equal(option.intent, 'sin_preferencia', value);
+  }
+});
+
+test('OPENING_OPTIONS: ningún label usa lenguaje predictivo ("va a ocurrir", "revela tu futuro")', () => {
+  for (const option of OPENING_OPTIONS) {
+    assert.doesNotMatch(option.label, /va a ocurrir|revela tu futuro|te espera|tu destino/i);
+  }
+});
+
+// ── TAROT-FINDER-UX-2: findNearestTarotAlternatives ──────────────────────
+
+test('findNearestTarotAlternatives: lanza explícito si pool no es array', () => {
+  assert.throws(() => findNearestTarotAlternatives('no-array', {}), /pool debe ser un array/);
+});
+
+test('findNearestTarotAlternatives: sin restricciones hard activas, no hay "alternativas" (no aplica el concepto)', () => {
+  const pool = [candidate({ id: 'A' }), candidate({ id: 'B' })];
+  assert.deepEqual(findNearestTarotAlternatives(pool, {}), []);
+});
+
+test('findNearestTarotAlternatives: prioriza un candidato PAUSADO que cumple TODO por sobre uno activo con una violación', () => {
+  const exactPaused = candidate({ id: 'P1', deck_family: 'rider_waite_smith', language: 'espanol', status: 'paused' });
+  const partialActive = candidate({ id: 'A1', deck_family: 'rider_waite_smith', language: 'ingles', status: 'active' });
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' };
+  const result = findNearestTarotAlternatives([exactPaused, partialActive], answers);
+  assert.equal(result[0].candidate.id, 'P1');
+  assert.deepEqual(result[0].violations, []);
+});
+
+test('findNearestTarotAlternatives: ordena por MENOS restricciones violadas primero', () => {
+  const oneViolation = candidate({ id: 'A', deck_family: 'rider_waite_smith', language: 'ingles' }); // falla language
+  const twoViolations = candidate({ id: 'B', deck_family: 'marsella', language: 'ingles' }); // falla deckFamily + language
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' };
+  const result = findNearestTarotAlternatives([twoViolations, oneViolation], answers);
+  assert.deepEqual(result.map(r => r.candidate.id), ['A', 'B']);
+});
+
+test('findNearestTarotAlternatives: un candidato que viola TODAS las restricciones activas igual aparece si es lo único disponible (todo el pool ya es tarot/oráculo/lenormand/kipper)', () => {
+  const sharesNothing = candidate({ id: 'Z', primary_type: 'lenormand', deck_family: null, language: 'ingles', bundle: 'desconocido' });
+  const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
+  const result = findNearestTarotAlternatives([sharesNothing], answers);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].violations.length, 4);
+});
+
+test('findNearestTarotAlternatives: un candidato que viola menos restricciones siempre se prioriza sobre uno que las viola todas', () => {
+  // Cumple deckFamily+language+guide, sólo falla system: 1 de 4 violadas.
+  const violatesOne = candidate({ id: 'A', primary_type: 'oraculo', deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'mazo_mas_guia' });
+  const violatesAll = candidate({ id: 'Z', primary_type: 'lenormand', deck_family: null, language: 'ingles', bundle: 'desconocido' });
+  const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
+  const result = findNearestTarotAlternatives([violatesAll, violatesOne], answers);
+  assert.deepEqual(result.map(r => r.candidate.id), ['A', 'Z']);
+});
+
+test('findNearestTarotAlternatives: nunca devuelve más de `limit` (default 3)', () => {
+  const answers = { language: 'espanol' };
+  const pool = Array.from({ length: 10 }, (_, i) => candidate({ id: `X${i}`, language: 'ingles' }));
+  assert.equal(findNearestTarotAlternatives(pool, answers).length, 3);
+  assert.equal(findNearestTarotAlternatives(pool, answers, { limit: 1 }).length, 1);
+});
+
+test('findNearestTarotAlternatives: determinismo — mismo input, mismo orden, sin importar el orden de entrada', () => {
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' };
+  const a = candidate({ id: 'A', deck_family: 'rider_waite_smith', language: 'ingles' });
+  const b = candidate({ id: 'B', deck_family: 'marsella', language: 'espanol' });
+  const forward = findNearestTarotAlternatives([a, b], answers).map(r => r.candidate.id);
+  const reversed = findNearestTarotAlternatives([b, a], answers).map(r => r.candidate.id);
+  assert.deepEqual(forward, reversed);
+});
+
+// ── TAROT-FINDER-UX-2: explainNearMiss ────────────────────────────────────
+
+test('explainNearMiss: "Está en español y es Rider-Waite-Smith, pero no incluye guía." (estilo del ejemplo pedido)', () => {
+  const c = candidate({ deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'desconocido' });
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
+  const text = explainNearMiss(c, answers, ['guide']);
+  assert.match(text, /español/i);
+  assert.match(text, /Rider-Waite-Smith/);
+  assert.match(text, /pero no incluye guía\.$/);
+});
+
+test('explainNearMiss: "Incluye guía y es Tarot, pero está en inglés." (estilo del ejemplo pedido)', () => {
+  const c = candidate({ primary_type: 'tarot', language: 'ingles', bundle: 'mazo_mas_guia' });
+  const answers = { system: 'tarot', language: 'espanol', guide: 'si' };
+  const text = explainNearMiss(c, answers, ['language']);
+  assert.match(text, /guía/i);
+  assert.match(text, /Tarot/);
+  assert.match(text, /pero no está en Español\.$/);
+});
+
+test('explainNearMiss: candidato pausado que cumple todo -> "Cumple ..., disponible por encargo." (estilo del ejemplo pedido)', () => {
+  const c = candidate({ deck_family: 'rider_waite_smith', status: 'paused' });
+  const answers = { deckFamily: 'rider_waite_smith' };
+  const text = explainNearMiss(c, answers, []);
+  assert.match(text, /^Cumple/);
+  assert.match(text, /disponible por encargo\.$/);
+});
+
+test('explainNearMiss: nunca miente — sólo menciona restricciones que answers realmente activó', () => {
+  const c = candidate({ deck_family: 'rider_waite_smith', language: 'ingles' });
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' }; // guide nunca se pidió
+  const text = explainNearMiss(c, answers, ['language']);
+  assert.doesNotMatch(text, /guía/i);
 });
