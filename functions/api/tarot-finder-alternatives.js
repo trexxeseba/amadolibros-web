@@ -12,7 +12,8 @@
  * Contrato:
  *  - Sólo parámetros de enum ya conocidos (intent/system/deckFamily/
  *    language/guide) — nunca texto libre. Cualquier valor fuera de esos
- *    enums es 400, no se intenta interpretar.
+ *    enums, parámetro desconocido o parámetro conocido repetido es 400;
+ *    nunca se intenta interpretar ni elegir silenciosamente un valor.
  *  - Reutiliza buildTarotFinderDataset (status='paused') y
  *    findNearestTarotAlternatives — el mismo motor canónico que ya usa el
  *    Finder, nunca una copia paralela.
@@ -61,14 +62,18 @@ function json(data, status = 200, extraHeaders = {}) {
 
 /**
  * Valida y arma `answers` desde la query string. Cualquier parámetro
- * presente que no matchee su enum es un error explícito — nunca se
- * ignora en silencio ni se intenta adivinar qué quiso decir.
+ * presente que no matchee su enum, o cualquier parámetro conocido repetido,
+ * es un error explícito — nunca se ignora ni se elige uno en silencio.
  */
 function parseAnswers(searchParams) {
     const answers = {};
     for (const key of Object.keys(VALID_PARAMS)) {
-        const value = searchParams.get(key);
-        if (value === null) continue;
+        const values = searchParams.getAll(key);
+        if (values.length === 0) continue;
+        if (values.length > 1) {
+            return { error: `Parámetro repetido: ${key}` };
+        }
+        const [value] = values;
         if (!VALID_PARAMS[key].has(value)) {
             return { error: `Parámetro inválido: ${key}` };
         }
