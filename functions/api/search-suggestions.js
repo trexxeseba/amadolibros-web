@@ -1,8 +1,4 @@
 import { fetchActiveIndex, fetchPausedIndex } from '../_shared/catalog.js';
-// GW1 (Radar de Demanda No Satisfecha): mismo registro que catalogo.js,
-// acá capturado mientras la persona todavía está tipeando (antes incluso
-// de que presione buscar) — señal más temprana, mismo destino agregado.
-import { recordUnmatchedQuery } from '../_shared/demand-radar.js';
 
 function normalize(value = '') {
   return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -49,17 +45,7 @@ export async function onRequest(ctx) {
     ...(Array.isArray(active?.items) ? active.items : []),
     ...(Array.isArray(paused?.items) ? paused.items : []),
   ];
-  const suggestions = buildSuggestions(items, query);
-  if (suggestions.length === 0 && typeof ctx.waitUntil === 'function') {
-    ctx.waitUntil(
-      recordUnmatchedQuery(ctx.env?.ORDERS_DB, {
-        rawQuery: query,
-        source: 'autocomplete',
-        appEnv: ctx.env?.APP_ENV,
-      }).catch(() => {}),
-    );
-  }
-  return Response.json({ suggestions }, {
+  return Response.json({ suggestions: buildSuggestions(items, query) }, {
     headers: { 'cache-control': 'public,max-age=300', 'x-robots-tag': 'noindex' },
   });
 }

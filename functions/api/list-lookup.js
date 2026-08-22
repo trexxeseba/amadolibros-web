@@ -12,7 +12,12 @@
  */
 
 import { fetchActiveIndex, fetchPausedIndex } from '../_shared/catalog.js';
-import { matchCatalogLine, normalizeQuery, recordUnmatchedQuery } from '../_shared/demand-radar.js';
+import {
+    matchCatalogLine,
+    normalizeQuery,
+    prepareCatalogCandidates,
+    recordUnmatchedQuery,
+} from '../_shared/demand-radar.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
 const MAX_LINES = 40;
@@ -27,10 +32,14 @@ const MAX_LINE_LENGTH = 200;
 const RATE_LIMIT_MAX_REQUESTS = 15;
 const RATE_LIMIT_WINDOW_SECONDS = 600;
 
-async function checkRateLimit(env, ip) {
+// AMADO_KV es el MISMO namespace en Preview y en producción (ver
+// wrangler.toml: mismo id en las tres secciones) — sin este prefijo, tráfico
+// de pruebas en Preview consumiría el cupo real de un visitante de
+// producción que comparte esa IP (NAT, red corporativa, VPN).
+async function checkRateLimit(env, envNamespace, ip) {
     if (!ip || !env?.AMADO_KV || typeof env.AMADO_KV.get !== 'function') return true;
     try {
-        const key = `list-lookup-rl:${ip}`;
+        const key = `list-lookup-rl:${envNamespace}:${ip}`;
         const raw = await env.AMADO_KV.get(key);
         const count = Number.parseInt(raw || '0', 10) || 0;
         if (count >= RATE_LIMIT_MAX_REQUESTS) return false;
@@ -65,7 +74,8 @@ export async function onRequest(context) {
         return json({ error: 'Content-Type debe ser application/json.' }, 415);
     }
     const ip = request.headers.get('CF-Connecting-IP') || '';
-    if (!(await checkRateLimit(env, ip))) {
+    const envNamespace = env?.APP_ENV || new URL(request.url).hostname || 'unknown';
+    if (!(await checkRateLimit(env, envNamespace, ip))) {
         return json({ error: 'Demasiadas consultas. Probá de nuevo en unos minutos.' }, 429);
     }
     const contentLength = Number.parseInt(request.headers.get('Content-Length') || '0', 10);
@@ -101,8 +111,12 @@ export async function onRequest(context) {
     const [active, paused] = await Promise.all([fetchActiveIndex(context), fetchPausedIndex(context)]);
     const activeItems = Array.isArray(active?.items) ? active.items : [];
     const pausedItems = Array.isArray(paused?.items) ? paused.items : [];
+    // Se prepara (tokeniza) el catálogo UNA vez por request, no una vez por
+    // línea — con hasta 40 líneas, retokenizar cada candidato en cada línea
+    // multiplicaría trabajo innecesario.
+    const preparedCandidates = prepareCatalogCandidates({ activeItems, pausedItems });
 
-    const results = lines.map(line => matchCatalogLine(line, { activeItems, pausedItems })).filter(Boolean);
+    const results = lines.map(line => matchCatalogLine(line, preparedCandidates)).filter(Boolean);
 
     // Dedup por normalizeQuery: pegar la misma línea dos veces en una lista
     // es una sola señal de demanda, no dos — no infla occurrence_count.

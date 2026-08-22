@@ -680,6 +680,13 @@ export async function onRequest(ctx) {
         const fuzzy = eligibleItems.filter(b => fuzzyMatches(b, queryTokens));
         if (fuzzy.length > 0) { strictMatches = fuzzy; usedFuzzy = true; }
     }
+    // GW1: si la búsqueda encuentra algo en TODO el catálogo elegible (antes
+    // de categoría/subcategoría/disponibilidad), no es demanda insatisfecha
+    // — es un libro real que el usuario dejó afuera con un filtro. Medir
+    // esto después de filtrar registraría como "no lo tenemos" un libro que
+    // sí está, sólo porque quedó fuera de la categoría o disponibilidad
+    // elegidas.
+    const globalQueryHasMatch = strictMatches.length > 0;
     const scopedMatches = strictMatches
         .filter(b => (categoria ? (categoryItems[b.id] || [])[0] === categoria : true))
         .filter(b => (subcategoria ? (categoryItems[b.id] || [])[1] === subcategoria : true));
@@ -716,11 +723,12 @@ export async function onRequest(ctx) {
     recordPerf(ctx, 'search', searchStartedAt);
 
     const totalResults = filtered.length;
-    // GW1: registra el término sólo cuando hubo una búsqueda real (rawQ) y
-    // dio 0 resultados — la señal de demanda más calificada que existe. Vía
-    // waitUntil y con try/catch: un fallo acá nunca debe demorar ni romper
-    // la respuesta de /catalogo.
-    if (rawQ && totalResults === 0 && typeof ctx.waitUntil === 'function') {
+    // GW1: registra el término sólo cuando hubo una búsqueda real (rawQ),
+    // dio 0 resultados EN LA VISTA ACTUAL, y tampoco existe en absoluto en
+    // el catálogo elegible completo (!globalQueryHasMatch) — la señal de
+    // demanda más calificada que existe. Vía waitUntil y con try/catch: un
+    // fallo acá nunca debe demorar ni romper la respuesta de /catalogo.
+    if (rawQ && totalResults === 0 && !globalQueryHasMatch && typeof ctx.waitUntil === 'function') {
         ctx.waitUntil(
             recordUnmatchedQuery(ctx.env?.ORDERS_DB, {
                 rawQuery: rawQ,

@@ -21,7 +21,7 @@ const jsonLd = {
 
 <BaseLayout
   title="Consultá tu lista de libros | Amado Libros"
-  description="Pegá tu lista de libros del liceo, la facultad o donde sea y te decimos al instante qué tenemos disponible, qué conseguimos por encargo y qué buscamos por vos."
+  description="Pegá tu lista de libros del liceo, la facultad o donde sea y te decimos al instante qué tenemos disponible, qué lo podemos buscar por encargo y qué buscamos por vos."
   canonical="https://www.amadolibros.com/lista-de-libros"
   jsonLd={jsonLd}
 >
@@ -37,7 +37,7 @@ const jsonLd = {
         <h1 id="list-title">Consultá tu lista de libros</h1>
         <p>
           Pegá los títulos, uno por línea (con autor si lo tenés, mejor). Te decimos
-          al instante qué tenemos disponible ahora, qué podemos conseguir por
+          al instante qué tenemos disponible ahora, qué lo podemos buscar por
           encargo, y para el resto armamos un pedido para buscarlo por vos.
         </p>
       </section>
@@ -78,12 +78,14 @@ const jsonLd = {
 <script>
   const STATUS_LABEL = {
     matched_active: 'Disponible ahora',
-    matched_by_encargo: 'Lo conseguimos por encargo',
+    matched_by_encargo: 'Lo podemos buscar por encargo',
+    needs_confirmation: 'Encontramos más de una coincidencia — confirmamos por WhatsApp',
     no_match: 'No lo identificamos — lo buscamos por vos',
   };
   const STATUS_CLASS = {
     matched_active: 'is-active',
     matched_by_encargo: 'is-encargo',
+    needs_confirmation: 'is-needs-confirmation',
     no_match: 'is-no-match',
   };
 
@@ -94,8 +96,12 @@ const jsonLd = {
   const resultsList = document.querySelector('#list-results-items');
   const whatsappCta = document.querySelector('#list-whatsapp-cta');
 
+  // Sin fallback de número hardcodeado: window.AmadoWhatsApp (cargado por
+  // BaseLayout) es la única fuente del número de WhatsApp. Si no está
+  // disponible, no hay CTA de WhatsApp — no duplicamos el número acá.
   function buildWhatsAppMessage(results) {
     const wa = window.AmadoWhatsApp;
+    if (!wa) return null;
     const lines = [
       'Hola, estoy consultando esta lista de libros en Amado Libros 😊',
       '',
@@ -106,10 +112,9 @@ const jsonLd = {
       const label = STATUS_LABEL[r.status] || 'Consultar';
       lines.push(`- ${r.query} — ${label}`);
     });
-    lines.push('', `Página: ${wa ? wa.absolutePage(window.location.href) : window.location.href}`);
+    lines.push('', `Página: ${wa.absolutePage(window.location.href)}`);
     lines.push('', 'Quisiera confirmar precios, tiempos de encargo y coordinar la compra. Gracias.');
-    const text = lines.join('\n');
-    return wa ? wa.href(text) : `https://wa.me/59899841325?text=${encodeURIComponent(text)}`;
+    return wa.href(lines.join('\n'));
   }
 
   async function checkList() {
@@ -136,7 +141,8 @@ const jsonLd = {
       resultsList.replaceChildren(...results.map(r => {
         const li = document.createElement('li');
         li.className = `list-result-item ${STATUS_CLASS[r.status] || ''}`;
-        const title = r.match ? r.match.title : r.query;
+        const candidateTitles = Array.isArray(r.candidates) ? r.candidates.map(c => c.title).join(' / ') : '';
+        const title = r.match ? r.match.title : (candidateTitles || r.query);
         const priceText = r.match && r.match.price ? ` — $${Number(r.match.price).toLocaleString('es-UY')} UYU` : '';
         li.innerHTML = `<span class="list-result-status">${STATUS_LABEL[r.status] || ''}</span>` +
           `<span class="list-result-title"></span>` +
@@ -146,12 +152,17 @@ const jsonLd = {
         return li;
       }));
       resultsSection.hidden = false;
-      whatsappCta.href = buildWhatsAppMessage(results);
+      const waUrl = buildWhatsAppMessage(results);
+      // Si window.AmadoWhatsApp no cargó, ocultamos el CTA en vez de armar
+      // un link con un número duplicado a mano.
+      whatsappCta.hidden = !waUrl;
+      if (waUrl) whatsappCta.href = waUrl;
       statusEl.textContent = '';
       window.gtag?.('event', 'book_list_check_completed', {
         line_count: results.length,
         matched_active: results.filter(r => r.status === 'matched_active').length,
         matched_by_encargo: results.filter(r => r.status === 'matched_by_encargo').length,
+        needs_confirmation: results.filter(r => r.status === 'needs_confirmation').length,
         no_match: results.filter(r => r.status === 'no_match').length,
       });
     } catch (error) {
@@ -323,6 +334,7 @@ const jsonLd = {
 
   .list-result-item.is-active .list-result-status { background: #dcfce7; color: #16a34a; }
   .list-result-item.is-encargo .list-result-status { background: #fff7e8; color: #a94e3d; }
+  .list-result-item.is-needs-confirmation .list-result-status { background: #fef3c7; color: #92400e; }
   .list-result-item.is-no-match .list-result-status { background: #f1f5f9; color: #64748b; }
 
   .list-result-title { color: var(--ink); font-weight: 600; }

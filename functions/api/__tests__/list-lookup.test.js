@@ -68,6 +68,21 @@ function createD1() {
     };
 }
 
+async function withDemandRadarSchema(db) {
+    await db.prepare(`
+    CREATE TABLE IF NOT EXISTS demand_radar_unmatched_queries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      normalized_query TEXT NOT NULL,
+      raw_query TEXT NOT NULL,
+      source TEXT NOT NULL CHECK (source IN ('catalogo_search','reading_list')),
+      occurrence_count INTEGER NOT NULL DEFAULT 1,
+      first_seen_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL,
+      UNIQUE (normalized_query, source)
+    )`).bind().run();
+    return db;
+}
+
 function request(body, { method = 'POST', contentType = 'application/json' } = {}) {
     const text = typeof body === 'string' ? body : JSON.stringify(body);
     const headers = {};
@@ -172,18 +187,7 @@ test('trunca a MAX_LINES=40 y descarta líneas de más de MAX_LINE_LENGTH', asyn
 // ── integración con el Radar de Demanda No Satisfecha (GW1) ──────────────
 
 test('línea sin match dispara recordUnmatchedQuery vía waitUntil (source: reading_list)', async () => {
-    const db = createD1();
-    await db.prepare(`
-    CREATE TABLE IF NOT EXISTS demand_radar_unmatched_queries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      normalized_query TEXT NOT NULL UNIQUE,
-      raw_query TEXT NOT NULL,
-      source TEXT NOT NULL CHECK (source IN ('catalogo_search','autocomplete','reading_list')),
-      occurrence_count INTEGER NOT NULL DEFAULT 1,
-      first_seen_at TEXT NOT NULL,
-      last_seen_at TEXT NOT NULL
-    )`).bind().run();
-
+    const db = await withDemandRadarSchema(createD1());
     const waitUntilCalls = [];
     const response = await listLookup(context(
         request({ lines: ['Un libro que definitivamente no tenemos'] }),
@@ -199,18 +203,7 @@ test('línea sin match dispara recordUnmatchedQuery vía waitUntil (source: read
 });
 
 test('la misma línea repetida dos veces en una lista sólo registra una vez en el radar (dedup)', async () => {
-    const db = createD1();
-    await db.prepare(`
-    CREATE TABLE IF NOT EXISTS demand_radar_unmatched_queries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      normalized_query TEXT NOT NULL UNIQUE,
-      raw_query TEXT NOT NULL,
-      source TEXT NOT NULL CHECK (source IN ('catalogo_search','autocomplete','reading_list')),
-      occurrence_count INTEGER NOT NULL DEFAULT 1,
-      first_seen_at TEXT NOT NULL,
-      last_seen_at TEXT NOT NULL
-    )`).bind().run();
-
+    const db = await withDemandRadarSchema(createD1());
     const waitUntilCalls = [];
     const response = await listLookup(context(
         request({ lines: ['Un libro que no tenemos', '  UN LIBRO QUE NO TENEMOS  '] }),
@@ -236,19 +229,19 @@ function fakeKv(initial = {}) {
     };
 }
 
-test('bajo el límite: permite la consulta y NO escala el 429', async () => {
+test('bajo el límite: permite la consulta y NO escala el 429 (clave incluye el namespace de entorno)', async () => {
     const kv = fakeKv();
     const req = request({ lines: ['Cien Años De Soledad'] });
     req.headers.set('CF-Connecting-IP', '203.0.113.5');
-    const ctx = context(req);
+    const ctx = context(req); // context() usa APP_ENV: 'preview'
     ctx.env.AMADO_KV = kv;
     const response = await listLookup(ctx);
     assert.equal(response.status, 200);
-    assert.equal(kv.store.get('list-lookup-rl:203.0.113.5'), '1');
+    assert.equal(kv.store.get('list-lookup-rl:preview:203.0.113.5'), '1');
 });
 
-test('al superar RATE_LIMIT_MAX_REQUESTS para la misma IP, responde 429', async () => {
-    const kv = fakeKv({ 'list-lookup-rl:203.0.113.9': '15' });
+test('al superar RATE_LIMIT_MAX_REQUESTS para la misma IP y el mismo entorno, responde 429', async () => {
+    const kv = fakeKv({ 'list-lookup-rl:preview:203.0.113.9': '15' });
     const req = request({ lines: ['Cien Años De Soledad'] });
     req.headers.set('CF-Connecting-IP', '203.0.113.9');
     const ctx = context(req);
@@ -258,13 +251,49 @@ test('al superar RATE_LIMIT_MAX_REQUESTS para la misma IP, responde 429', async 
 });
 
 test('IPs distintas tienen contadores independientes', async () => {
-    const kv = fakeKv({ 'list-lookup-rl:203.0.113.9': '15' });
+    const kv = fakeKv({ 'list-lookup-rl:preview:203.0.113.9': '15' });
     const req = request({ lines: ['Cien Años De Soledad'] });
     req.headers.set('CF-Connecting-IP', '203.0.113.10');
     const ctx = context(req);
     ctx.env.AMADO_KV = kv;
     const response = await listLookup(ctx);
     assert.equal(response.status, 200);
+});
+
+test('la misma IP en Preview y en producción NO comparte cupo — AMADO_KV es el mismo namespace, la clave lo separa', async () => {
+    // Preview ya consumió su cupo entero para esta IP...
+    const kv = fakeKv({ 'list-lookup-rl:preview:203.0.113.30': '15' });
+    const previewReq = request({ lines: ['Cien Años De Soledad'] });
+    previewReq.headers.set('CF-Connecting-IP', '203.0.113.30');
+    const previewCtx = context(previewReq);
+    previewCtx.env.AMADO_KV = kv;
+    const previewResponse = await listLookup(previewCtx);
+    assert.equal(previewResponse.status, 429, 'preview ya sin cupo');
+
+    // ...pero producción, misma IP, mismo AMADO_KV compartido, sigue con cupo.
+    const prodReq = request({ lines: ['Cien Años De Soledad'] });
+    prodReq.headers.set('CF-Connecting-IP', '203.0.113.30');
+    const prodCtx = context(prodReq);
+    prodCtx.env.APP_ENV = 'production';
+    prodCtx.env.AMADO_KV = kv;
+    const prodResponse = await listLookup(prodCtx);
+    assert.equal(prodResponse.status, 200, 'producción no paga el consumo de preview');
+});
+
+test('sin APP_ENV, usa el hostname de la request como namespace de fallback (nunca junta todo bajo una sola clave)', async () => {
+    const kv = fakeKv();
+    const req = new Request('https://pr-999.amadolibros-web.pages.dev/api/list-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines: ['Cien Años De Soledad'] }),
+    });
+    req.headers.set('CF-Connecting-IP', '203.0.113.40');
+    const ctx = context(req);
+    delete ctx.env.APP_ENV;
+    ctx.env.AMADO_KV = kv;
+    const response = await listLookup(ctx);
+    assert.equal(response.status, 200);
+    assert.equal(kv.store.get('list-lookup-rl:pr-999.amadolibros-web.pages.dev:203.0.113.40'), '1');
 });
 
 test('si AMADO_KV no está disponible (o falla), nunca bloquea al usuario real (fail open)', async () => {
@@ -291,22 +320,72 @@ test('sin header CF-Connecting-IP (ej. en tests locales), no aplica rate limit',
 });
 
 test('línea con match NO dispara ninguna escritura en el radar de demanda', async () => {
-    const db = createD1();
-    await db.prepare(`
-    CREATE TABLE IF NOT EXISTS demand_radar_unmatched_queries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      normalized_query TEXT NOT NULL UNIQUE,
-      raw_query TEXT NOT NULL,
-      source TEXT NOT NULL CHECK (source IN ('catalogo_search','autocomplete','reading_list')),
-      occurrence_count INTEGER NOT NULL DEFAULT 1,
-      first_seen_at TEXT NOT NULL,
-      last_seen_at TEXT NOT NULL
-    )`).bind().run();
-
+    const db = await withDemandRadarSchema(createD1());
     const waitUntilCalls = [];
     await listLookup(context(request({ lines: ['Cien Años De Soledad'] }), { db, waitUntilCalls }));
     await Promise.all(waitUntilCalls);
 
     const rows = db.sqlite.prepare('SELECT * FROM demand_radar_unmatched_queries').all();
     assert.equal(rows.length, 0);
+});
+
+// ── needs_confirmation: ambigüedad real, nunca una afirmación arbitraria ─
+
+test('dos obras activas distintas empatadas en precisión responden needs_confirmation, no un match arbitrario', async () => {
+    installCacheHits({
+        [PAUSED_MANIFEST_URL]: { schema_version: 1, current: MANIFEST_CURRENT, previous: null },
+        [`${R2_BASE}/${MANIFEST_CURRENT.active_index_key}`]: {
+            schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+            derived_fields: { slug: 'slugify-v1', status: 'active' },
+            items: [
+                ['MLU0010', 'Poemas', 'Autor Uno', '', '', 500, 1],
+                ['MLU0011', 'Poemas', 'Autor Dos', '', '', 600, 2],
+            ],
+        },
+        [`${R2_BASE}/${MANIFEST_CURRENT.index_key}`]: { ...PAUSED_INDEX, items: [] },
+    });
+    const response = await listLookup(context(request({ lines: ['Poemas'] })));
+    const data = await response.json();
+    assert.equal(data.results[0].status, 'needs_confirmation');
+    assert.equal(data.results[0].match, null);
+    assert.equal(data.results[0].candidates.length, 2);
+});
+
+test('una línea needs_confirmation NO dispara escritura en el radar de demanda (encontró algo, sólo es ambiguo)', async () => {
+    installCacheHits({
+        [PAUSED_MANIFEST_URL]: { schema_version: 1, current: MANIFEST_CURRENT, previous: null },
+        [`${R2_BASE}/${MANIFEST_CURRENT.active_index_key}`]: {
+            schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+            derived_fields: { slug: 'slugify-v1', status: 'active' },
+            items: [
+                ['MLU0010', 'Poemas', 'Autor Uno', '', '', 500, 1],
+                ['MLU0011', 'Poemas', 'Autor Dos', '', '', 600, 2],
+            ],
+        },
+        [`${R2_BASE}/${MANIFEST_CURRENT.index_key}`]: { ...PAUSED_INDEX, items: [] },
+    });
+    const db = await withDemandRadarSchema(createD1());
+    const waitUntilCalls = [];
+    await listLookup(context(request({ lines: ['Poemas'] }), { db, waitUntilCalls }));
+    await Promise.all(waitUntilCalls);
+    const rows = db.sqlite.prepare('SELECT * FROM demand_radar_unmatched_queries').all();
+    assert.equal(rows.length, 0);
+});
+
+// ── higiene de PII en 'reading_list' (extremo a extremo vía el endpoint) ─
+
+test('una línea sin match que contiene un email no se persiste en el radar (extremo a extremo)', async () => {
+    const db = await withDemandRadarSchema(createD1());
+    const waitUntilCalls = [];
+    const response = await listLookup(context(
+        request({ lines: ['contactame a juan@example.com'] }),
+        { db, waitUntilCalls },
+    ));
+    const data = await response.json();
+    assert.equal(data.results[0].status, 'no_match', 'la respuesta al usuario no cambia');
+    await Promise.all(waitUntilCalls);
+    const rows = db.sqlite.prepare('SELECT * FROM demand_radar_unmatched_queries').all();
+    assert.equal(rows.length, 0, 'pero no se persiste el email');
 });
