@@ -43,9 +43,9 @@ try {
 {missing
   ? <Fragment set:html="<!-- novedades: home.json no encontrado en build — sección omitida -->" />
   : (books.length > 0 && (
-      <section class="bs-section">
+      <section id="incorporaciones-recientes" class="bs-section" aria-labelledby="incorporaciones-recientes-title">
         <div class="bs-inner">
-          <h2 class="bs-heading">Incorporaciones recientes</h2>
+          <h2 id="incorporaciones-recientes-title" class="bs-heading">Incorporaciones recientes</h2>
           <div class="bs-grid">
             {books.map(book => <BookCard book={book} />)}
           </div>
@@ -59,6 +59,7 @@ try {
   .bs-section {
     background: var(--bg);
     border-top: 1px solid var(--border);
+    scroll-margin-top: 6rem;
   }
 
   .bs-inner {
