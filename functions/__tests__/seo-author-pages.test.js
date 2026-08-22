@@ -67,6 +67,31 @@ test('renderiza contenido visible, canonical, schema y enlaces rastreables', () 
   assert.match(html, /Quiénes somos y cómo trabajamos/);
 });
 
+test('Montessori se convierte en hub educativo sin enterrar los libros', () => {
+  const author = authorPageById('maria-montessori');
+  const html = renderAuthorPage(author, [book('MLU10', 'María Montessori')]);
+
+  assert.match(html, /href="\/catalogo\?categoria=educacion">Educación<\/a>/);
+  assert.match(html, /Educación · Pedagogía Montessori/);
+  assert.match(html, /Retrato histórico de María Montessori/);
+  assert.match(html, /id="quien-fue"/);
+  assert.match(html, /id="metodo-montessori"/);
+  assert.match(html, /id="que-desarrolla"/);
+  assert.match(html, /id="materiales-montessori"/);
+  assert.match(html, /id="montessori-uruguay"/);
+  assert.match(html, /Scuola Italiana di Montevideo/);
+  assert.match(html, /D’amore Montessori School/);
+  assert.match(html, /Escuela y Liceo Rural La Colmena/);
+  assert.match(html, /Instituto Maria Montessori Uruguay/);
+  assert.match(html, /Association Montessori Internationale/);
+  assert.match(html, /"@type":"Person"/);
+  assert.match(html, /"@type":"FAQPage"/);
+
+  const booksPosition = html.indexOf('id="libros"');
+  const editorialPosition = html.indexOf('id="quien-fue"');
+  assert.ok(booksPosition > -1 && editorialPosition > booksPosition, 'los libros deben aparecer antes que el contenido editorial largo');
+});
+
 test('incluye las cinco páginas de autores en el sitemap estático', () => {
   for (const author of SEO_AUTHORS) {
     assert.ok(STATIC_SITEMAP_PAGES.includes(`https://www.amadolibros.com${author.path}`));
