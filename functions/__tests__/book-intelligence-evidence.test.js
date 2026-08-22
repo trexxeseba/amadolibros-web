@@ -79,6 +79,25 @@ test('otro ISBN de la misma obra puede aportar contenido de obra pero no datos d
   assert.equal(result.edition_facts.publisher.value, null);
 });
 
+test('otra edición nunca se acepta sólo por título si falta el autor de la ficha', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({ isbn: null, author: '' }),
+    [evidence('publisher', { isbn: null, title: 'Padres fuertes, hijas felices', author: 'Otra persona' })],
+  );
+  assert.equal(result.tier, 'red');
+  assert.equal(result.work_source_count, 0);
+  assert.equal(result.generation_policy.can_generate_work_content, false);
+});
+
+test('otra edición con mismo título pero autor distinto no aporta contenido de obra', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({ isbn: null }),
+    [evidence('publisher', { isbn: null, author: 'Otra persona' })],
+  );
+  assert.equal(result.tier, 'red');
+  assert.equal(result.work_source_count, 0);
+});
+
 test('datos de edición sólo se vuelven auto-publicables con ISBN exacto y fuente fuerte', () => {
   const result = classifyBookIntelligenceEvidence(item(), [
     evidence('google_books', {
@@ -114,7 +133,7 @@ test('cinco temas explícitos en una fuente fuerte yellow habilitan generación 
   assert.equal(result.generation_policy.can_generate_five_topics, true);
 });
 
-test('sin ISBN puede clasificarse yellow a nivel obra, pero nunca publica datos de edición', () => {
+test('sin ISBN puede clasificarse yellow a nivel obra con título+autor, pero nunca publica datos de edición', () => {
   const result = classifyBookIntelligenceEvidence(item({ isbn: null }), [
     evidence('publisher', { isbn: null }),
   ]);
