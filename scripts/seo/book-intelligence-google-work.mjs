@@ -4,7 +4,9 @@
 //
 // Seguridad editorial:
 // - la búsqueda exige título + autor;
-// - el título consultado usa el display title conservador del repo;
+// - el título público del sitio NO se modifica; para investigación se permite
+//   una poda adicional sólo ante el autor exacto conocido o metadatos
+//   inequívocos;
 // - los resultados conservan su propio ISBN, nunca heredan el ISBN pedido;
 // - el motor canónico book-intelligence-evidence decide si título+autor
 //   representan realmente la misma obra;
@@ -21,6 +23,54 @@ const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
 
 function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function escapeRegExp(value) {
+  return String(value ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function trimResearchTitle(value) {
+  return clean(value).replace(/[\s|,;:.-]+$/u, '').trim();
+}
+
+function researchTitle(item = {}) {
+  const explicit = clean(item?.showcase_display_title);
+  if (explicit.length >= 3) return explicit;
+
+  const derived = deriveBookDisplayTitle(item);
+  if (derived.changed && derived.title.length >= 3) return derived.title;
+
+  const raw = clean(item?.title);
+  const author = clean(item?.author);
+  if (raw.length < 3) return raw;
+
+  // El limpiador público tiene una barrera de longitud deliberadamente
+  // conservadora. Para una query de investigación podemos cortar antes de un
+  // sufijo que nombra EXACTAMENTE al autor conocido, porque ese texto no forma
+  // parte del título de la obra y nunca se publica como resultado de esta poda.
+  if (author && !isGenericAuthor(author)) {
+    const authorPattern = escapeRegExp(author);
+    const authorSuffix = new RegExp(
+      `(?:\\s*[,|–—-]\\s*|\\s+)(?:de\\s+|autor(?:a|es)?\\s*:?\\s*)${authorPattern}(?=\\s*(?:[.,;|–—-]|$))`,
+      'iu',
+    );
+    const match = authorSuffix.exec(raw);
+    if (match?.index >= 3) {
+      const prefix = trimResearchTitle(raw.slice(0, match.index));
+      if (prefix.length >= 3) return prefix;
+    }
+  }
+
+  // Segunda salida, sólo con etiquetas inequívocas de catálogo. No corta en
+  // dos puntos ni guiones genéricos para no perder subtítulos legítimos.
+  const metadataSuffix = /\s*(?:,|\.)\s*(?:editorial\b|tapa\s+(?:blanda|dura)\b|encuadernaci[oó]n\b|formato\b|idioma\b|en\s+(?:espa[nñ]ol|ingl[eé]s|portugu[eé]s|franc[eé]s|italiano|alem[aá]n)\b)/iu;
+  const metadataMatch = metadataSuffix.exec(raw);
+  if (metadataMatch?.index >= 3) {
+    const prefix = trimResearchTitle(raw.slice(0, metadataMatch.index));
+    if (prefix.length >= 3) return prefix;
+  }
+
+  return raw;
 }
 
 function plainText(value) {
@@ -50,7 +100,7 @@ function identifiers(volumeInfo = {}) {
 }
 
 export function googleWorkIdentity(item = {}) {
-  const title = deriveBookDisplayTitle(item).title;
+  const title = researchTitle(item);
   const author = clean(item?.author);
   if (title.length < 3 || isGenericAuthor(author)) return null;
   return { title, author };
