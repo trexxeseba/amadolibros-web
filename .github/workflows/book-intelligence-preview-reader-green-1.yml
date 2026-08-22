@@ -8,6 +8,7 @@ on:
       - '.github/workflows/book-intelligence-preview-reader-green-1.yml'
       - 'functions/_middleware.js'
       - 'functions/_shared/book-intelligence-enrichment-preview.js'
+      - 'functions/api/book-intelligence-preview-diagnostic.js'
       - 'functions/__tests__/book-intelligence-enrichment-preview.test.js'
       - 'functions/__tests__/book-intelligence-preview-render.test.js'
   pull_request:
@@ -18,6 +19,7 @@ on:
       - '.github/workflows/book-intelligence-preview-reader-green-1.yml'
       - 'functions/_middleware.js'
       - 'functions/_shared/book-intelligence-enrichment-preview.js'
+      - 'functions/api/book-intelligence-preview-diagnostic.js'
       - 'functions/__tests__/book-intelligence-enrichment-preview.test.js'
       - 'functions/__tests__/book-intelligence-preview-render.test.js'
 
@@ -54,6 +56,7 @@ jobs:
         run: |
           node --check functions/_middleware.js
           node --check functions/_shared/book-intelligence-enrichment-preview.js
+          node --check functions/api/book-intelligence-preview-diagnostic.js
           node --test \
             functions/__tests__/book-intelligence-enrichment-preview.test.js \
             functions/__tests__/book-intelligence-preview-render.test.js
@@ -102,6 +105,22 @@ jobs:
           done
           exit 1
 
+      - name: Diagnose Preview R2 reader
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          CODE=$(curl -sS --max-time 30 -D /tmp/intel-diag.headers -o /tmp/intel-diag.json \
+            -w '%{http_code}' "$PREVIEW_URL/api/book-intelligence-preview-diagnostic")
+          echo "Diagnostic HTTP $CODE"
+          cat /tmp/intel-diag.json
+          echo
+          grep -iE '^(content-type|cache-control|x-robots-tag|server-timing):' /tmp/intel-diag.headers || true
+          [ "$CODE" = '200' ] || exit 1
+          STATUS=$(node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/intel-diag.json","utf8"));process.stdout.write(String(j.status||"missing"));')
+          echo "Reader status=$STATUS"
+          [ "$STATUS" = 'ok' ] || exit 1
+
       - name: GREEN-only live HTML gate
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -114,8 +133,13 @@ jobs:
 
           for id in $GREEN_IDS; do
             curl -sS -L --max-time 60 -D "/tmp/${id}.headers" -o "/tmp/${id}.html" "$PREVIEW_URL/libro/$id"
-            COUNT=$(grep -o 'data-book-intelligence-preview="v1"' "/tmp/${id}.html" | wc -l | tr -d ' ')
-            [ "$COUNT" = '1' ] || { echo "ERROR: $id esperaba 1 bloque GREEN, obtuvo $COUNT"; exit 1; }
+            COUNT=$( (grep -o 'data-book-intelligence-preview="v1"' "/tmp/${id}.html" || true) | wc -l | tr -d ' ')
+            if [ "$COUNT" != '1' ]; then
+              echo "ERROR: $id esperaba 1 bloque GREEN, obtuvo $COUNT"
+              grep -iE '^(HTTP/|content-type:|server-timing:|x-robots-tag:|cache-control:)' "/tmp/${id}.headers" || true
+              echo "Temas heading count=$( (grep -o 'Temas de esta obra' "/tmp/${id}.html" || true) | wc -l | tr -d ' ')"
+              exit 1
+            fi
             grep -Fq 'Temas de esta obra' "/tmp/${id}.html"
             grep -Fqi 'server-timing:' "/tmp/${id}.headers"
             grep -Fqi 'book_intel;dur=' "/tmp/${id}.headers"
