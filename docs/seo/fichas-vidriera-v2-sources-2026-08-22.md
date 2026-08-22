@@ -16,6 +16,10 @@ Endpoint oficial de búsqueda de volumes:
 
 `https://www.googleapis.com/books/v1/volumes?q=isbn:...`
 
+Documentación oficial usada para este contrato:
+
+`https://developers.google.com/books/docs/v1/using`
+
 La documentación oficial exige identificar las requests públicas con API key u OAuth. El cliente de este lote exige `GOOGLE_BOOKS_API_KEY` en modo de red real y nunca guarda esa key en la caché.
 
 Campos útiles cuando el volume contiene exactamente el ISBN pedido:
@@ -35,6 +39,10 @@ Una respuesta de búsqueda que no contiene el ISBN exacto en `industryIdentifier
 ### Open Library
 
 Uso previsto: segunda verificación de bajo volumen sobre la cohorte prioritaria, no backend masivo.
+
+Política/API consultada:
+
+`https://openlibrary.org/developers/api`
 
 Open Library declara expresamente que su Web API es para usos de bajo volumen y que para bulk deben usarse dumps. También pide caché y un `User-Agent` identificable con contacto cuando se realizan requests frecuentes.
 
