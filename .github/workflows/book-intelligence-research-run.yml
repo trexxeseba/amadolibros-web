@@ -10,6 +10,7 @@ on:
       - 'scripts/seo/book-intelligence-sources.mjs'
       - 'functions/_shared/book-intelligence-evidence.js'
       - 'functions/_shared/paused-seo-cohort.js'
+      - 'functions/__tests__/book-intelligence-evidence.test.js'
       - 'functions/__tests__/book-intelligence-research-run.test.js'
       - 'functions/__tests__/book-intelligence-sources.test.js'
   pull_request:
@@ -19,6 +20,7 @@ on:
       - 'scripts/seo/book-intelligence-sources.mjs'
       - 'functions/_shared/book-intelligence-evidence.js'
       - 'functions/_shared/paused-seo-cohort.js'
+      - 'functions/__tests__/book-intelligence-evidence.test.js'
       - 'functions/__tests__/book-intelligence-research-run.test.js'
       - 'functions/__tests__/book-intelligence-sources.test.js'
   workflow_dispatch:
@@ -56,7 +58,7 @@ jobs:
         run: |
           node --check scripts/seo/book-intelligence-research-run.mjs
           node --check scripts/seo/book-intelligence-sources.mjs
-          node --test functions/__tests__/book-intelligence-sources.test.js functions/__tests__/book-intelligence-research-run.test.js
+          node --test functions/__tests__/book-intelligence-evidence.test.js functions/__tests__/book-intelligence-sources.test.js functions/__tests__/book-intelligence-research-run.test.js
 
       - name: Authenticate Google Books through existing Workload Identity
         id: google_auth
