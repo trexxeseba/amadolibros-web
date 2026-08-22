@@ -198,6 +198,98 @@ test('línea sin match dispara recordUnmatchedQuery vía waitUntil (source: read
     assert.equal(rows[0].raw_query, 'Un libro que definitivamente no tenemos');
 });
 
+test('la misma línea repetida dos veces en una lista sólo registra una vez en el radar (dedup)', async () => {
+    const db = createD1();
+    await db.prepare(`
+    CREATE TABLE IF NOT EXISTS demand_radar_unmatched_queries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      normalized_query TEXT NOT NULL UNIQUE,
+      raw_query TEXT NOT NULL,
+      source TEXT NOT NULL CHECK (source IN ('catalogo_search','autocomplete','reading_list')),
+      occurrence_count INTEGER NOT NULL DEFAULT 1,
+      first_seen_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL
+    )`).bind().run();
+
+    const waitUntilCalls = [];
+    const response = await listLookup(context(
+        request({ lines: ['Un libro que no tenemos', '  UN LIBRO QUE NO TENEMOS  '] }),
+        { db, waitUntilCalls },
+    ));
+    const data = await response.json();
+    assert.equal(data.results.length, 2, 'ambas líneas aparecen en la respuesta al usuario');
+    await Promise.all(waitUntilCalls);
+
+    const rows = db.sqlite.prepare('SELECT * FROM demand_radar_unmatched_queries').all();
+    assert.equal(rows.length, 1, 'pero sólo generan una fila en el ledger');
+    assert.equal(rows[0].occurrence_count, 1, 'occurrence_count no se infla por el duplicado dentro del mismo POST');
+});
+
+// ── rate limit por IP (protege el ledger de contaminación barata) ────────
+
+function fakeKv(initial = {}) {
+    const store = new Map(Object.entries(initial));
+    return {
+        store,
+        async get(key) { return store.has(key) ? store.get(key) : null; },
+        async put(key, value) { store.set(key, value); },
+    };
+}
+
+test('bajo el límite: permite la consulta y NO escala el 429', async () => {
+    const kv = fakeKv();
+    const req = request({ lines: ['Cien Años De Soledad'] });
+    req.headers.set('CF-Connecting-IP', '203.0.113.5');
+    const ctx = context(req);
+    ctx.env.AMADO_KV = kv;
+    const response = await listLookup(ctx);
+    assert.equal(response.status, 200);
+    assert.equal(kv.store.get('list-lookup-rl:203.0.113.5'), '1');
+});
+
+test('al superar RATE_LIMIT_MAX_REQUESTS para la misma IP, responde 429', async () => {
+    const kv = fakeKv({ 'list-lookup-rl:203.0.113.9': '15' });
+    const req = request({ lines: ['Cien Años De Soledad'] });
+    req.headers.set('CF-Connecting-IP', '203.0.113.9');
+    const ctx = context(req);
+    ctx.env.AMADO_KV = kv;
+    const response = await listLookup(ctx);
+    assert.equal(response.status, 429);
+});
+
+test('IPs distintas tienen contadores independientes', async () => {
+    const kv = fakeKv({ 'list-lookup-rl:203.0.113.9': '15' });
+    const req = request({ lines: ['Cien Años De Soledad'] });
+    req.headers.set('CF-Connecting-IP', '203.0.113.10');
+    const ctx = context(req);
+    ctx.env.AMADO_KV = kv;
+    const response = await listLookup(ctx);
+    assert.equal(response.status, 200);
+});
+
+test('si AMADO_KV no está disponible (o falla), nunca bloquea al usuario real (fail open)', async () => {
+    const req = request({ lines: ['Cien Años De Soledad'] });
+    req.headers.set('CF-Connecting-IP', '203.0.113.20');
+    const ctx = context(req); // sin AMADO_KV en env
+    const response = await listLookup(ctx);
+    assert.equal(response.status, 200);
+
+    const brokenKv = { async get() { throw new Error('KV down'); }, async put() { throw new Error('KV down'); } };
+    const ctx2 = context(request({ lines: ['Cien Años De Soledad'] }), {});
+    ctx2.request.headers.set('CF-Connecting-IP', '203.0.113.21');
+    ctx2.env.AMADO_KV = brokenKv;
+    const response2 = await listLookup(ctx2);
+    assert.equal(response2.status, 200);
+});
+
+test('sin header CF-Connecting-IP (ej. en tests locales), no aplica rate limit', async () => {
+    const kv = fakeKv({ 'list-lookup-rl:': '999' });
+    const ctx = context(request({ lines: ['Cien Años De Soledad'] }));
+    ctx.env.AMADO_KV = kv;
+    const response = await listLookup(ctx);
+    assert.equal(response.status, 200);
+});
+
 test('línea con match NO dispara ninguna escritura en el radar de demanda', async () => {
     const db = createD1();
     await db.prepare(`
