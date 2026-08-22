@@ -55,6 +55,22 @@ function compatibleIdentityText(left, right) {
   return false;
 }
 
+/**
+ * Evidencia que NO coincide por ISBN exacto sólo puede representar la misma
+ * obra si tenemos ambas piezas de identidad: título y autor. Aceptar sólo el
+ * título cuando falta autor permitiría mezclar homónimos y contaminar el
+ * contenido semántico a escala.
+ */
+function sameWorkIdentityMatches(itemTitle, itemAuthor, recordTitle, recordAuthor) {
+  const titleA = normalizeEvidenceText(itemTitle);
+  const titleB = normalizeEvidenceText(recordTitle);
+  const authorA = normalizeEvidenceText(itemAuthor);
+  const authorB = normalizeEvidenceText(recordAuthor);
+  if (!titleA || !titleB || !authorA || !authorB) return false;
+  return compatibleIdentityText(itemTitle, recordTitle) &&
+    compatibleIdentityText(itemAuthor, recordAuthor);
+}
+
 function normalizedComparable(value) {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number') return String(value);
@@ -164,9 +180,7 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
   const workRecords = records.filter(record => {
     if (!hasSubstantiveWorkContent(record)) return false;
     if (itemIsbn && record.isbn === itemIsbn) return true;
-    return compatibleIdentityText(itemTitle, record.title) &&
-      compatibleIdentityText(itemAuthor, record.author) &&
-      Boolean(normalizeEvidenceText(record.title));
+    return sameWorkIdentityMatches(itemTitle, itemAuthor, record.title, record.author);
   });
 
   const independentWorkFamilies = new Set(
@@ -260,8 +274,8 @@ export function summarizeBookIntelligenceEvidence(results = []) {
   };
 
   for (const result of results) {
-    if (result?.tier in summary) summary[result.tier]++;
-    if (result?.availability in summary) summary[result.availability]++;
+    if (result?.tier && Object.prototype.hasOwnProperty.call(summary, result.tier)) summary[result.tier]++;
+    if (result?.availability && Object.prototype.hasOwnProperty.call(summary, result.availability)) summary[result.availability]++;
     if (result?.generation_policy?.can_auto_publish_work_content) summary.auto_publish_work_content++;
     if (result?.generation_policy?.can_generate_five_topics) summary.generate_five_topics++;
     summary.identity_conflicts += Array.isArray(result?.identity_conflicts) ? result.identity_conflicts.length : 0;
