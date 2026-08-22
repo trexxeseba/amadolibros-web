@@ -250,6 +250,68 @@ test('las alternativas NO se revelan solas — alternativesRevealed arranca fals
     assert.equal(revealed.step, 'results', 'revelar alternativas no cambia de paso, sólo el sub-estado');
 });
 
+// ── TAROT-FINDER-UX-2 fase 2 (gate de performance): carga bajo demanda ──
+
+test('applyRevealAlternatives arranca en alternativesLoading=true — nada se pinta hasta tener respuesta (o fallo)', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    const revealed = hooks.applyRevealAlternatives(state);
+    assert.equal(revealed.alternativesLoading, true);
+    assert.equal(revealed.pausedCandidates, null);
+});
+
+function reachResultsViaRefine(hooks) {
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    return state;
+}
+
+test('applyAlternativesFetched guarda los candidatos y apaga alternativesLoading, sin cambiar de paso', () => {
+    const hooks = loadClientHooks();
+    let state = reachResultsViaRefine(hooks);
+    state = hooks.applyRevealAlternatives(state);
+    const fetched = hooks.applyAlternativesFetched(state, [candidate({ id: 'P1', status: 'paused' })]);
+    assert.equal(fetched.alternativesLoading, false);
+    assert.equal(fetched.pausedCandidates.length, 1);
+    assert.equal(fetched.step, 'results');
+    assert.equal(fetched.alternativesRevealed, true);
+});
+
+test('applyAlternativesFetchFailed apaga alternativesLoading, deja pausedCandidates=[] y marca el fallo — fail-open, nunca rompe el Finder', () => {
+    const hooks = loadClientHooks();
+    let state = reachResultsViaRefine(hooks);
+    state = hooks.applyRevealAlternatives(state);
+    const failed = hooks.applyAlternativesFetchFailed(state);
+    assert.equal(failed.alternativesLoading, false);
+    // JSON.stringify: pausedCandidates es un array construido dentro del vm
+    // sandbox (otro "realm") — deepEqual compara prototipo de Array entre
+    // realms distintos, no sólo el contenido (mismo motivo documentado más
+    // abajo en las comparaciones de paridad cliente/servidor).
+    assert.equal(JSON.stringify(failed.pausedCandidates), '[]');
+    assert.equal(failed.pausedFetchFailed, true);
+    assert.equal(failed.alternativesRevealed, true, 'sigue mostrando la pantalla de alternativas, ahora sólo con las activas locales');
+});
+
+test('"Volver" desde alternativas en estado de carga también las oculta antes de salir de resultados', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyRevealAlternatives(state);
+    assert.equal(state.alternativesLoading, true);
+    const back = hooks.applyGoBack(state);
+    assert.equal(back.step, 'results');
+    assert.equal(back.alternativesRevealed, false);
+});
+
 test('explainNearMiss del cliente produce el mismo texto que explainNearMiss canónico', () => {
     const hooks = loadClientHooks();
     const c = candidate({ deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'desconocido' });
@@ -453,6 +515,16 @@ test('el archivo respeta prefers-reduced-motion (no se anima nada hardcodeado si
     assert.doesNotMatch(CLIENT_SOURCE, /requestAnimationFrame|setTimeout/);
 });
 
+// ── FIX 10 (post-Preview): subcopy de apertura consistente con los botones ──
+
+test('el subcopy de apertura ya NO promete "claridad/decisión/mirar hacia adelante" (esos botones ya no existen)', () => {
+    assert.doesNotMatch(CLIENT_SOURCE, /claridad, una decisión, mirar hacia adelante/);
+});
+
+test('el subcopy de apertura menciona las 6 intenciones reales', () => {
+    assert.match(CLIENT_SOURCE, /tu primer mazo, para aprender, regalar, coleccionar o simplemente explorar/);
+});
+
 // ── FIX 1 (post-Preview): un candidato pausado nunca muestra $0 ─────────
 
 test('resultCardHtml: un candidato ACTIVO muestra precio real y CTA "Ver mazo"', () => {
@@ -460,18 +532,18 @@ test('resultCardHtml: un candidato ACTIVO muestra precio real y CTA "Ver mazo"',
     const html = hooks.resultCardHtml(candidate({ price: 2500, status: 'active' }), {});
     assert.match(html, /\$2\.500 UYU/);
     assert.match(html, />Ver mazo</);
-    assert.doesNotMatch(html, /Consultar este mazo/);
+    assert.doesNotMatch(html, />Ver este mazo</);
     assert.doesNotMatch(html, /Lo podemos buscar por encargo/);
 });
 
-test('resultCardHtml: un candidato PAUSADO nunca muestra $0 — badge "Lo podemos buscar por encargo" y CTA "Consultar este mazo"', () => {
+test('resultCardHtml: un candidato PAUSADO nunca muestra $0 — badge "Lo podemos buscar por encargo" y CTA "Ver este mazo" (FIX 11: sigue yendo a la ficha, no abre un canal de consulta nuevo)', () => {
     const hooks = loadClientHooks();
     const html = hooks.resultCardHtml(candidate({ price: null, stock: null, status: 'paused' }), {});
     assert.doesNotMatch(html, /\$0/, 'nunca debe aparecer un precio inventado');
     assert.doesNotMatch(html, /UYU/, 'sin precio real, no hay cifra en UYU');
     assert.match(html, /Lo podemos buscar por encargo/);
-    assert.match(html, />Consultar este mazo</);
-    assert.doesNotMatch(html, />Ver mazo</);
+    assert.match(html, />Ver este mazo</);
+    assert.doesNotMatch(html, />Consultar este mazo</);
 });
 
 test('resultCardHtml: un candidato pausado con price=0/stock=0 explícitos (no null) tampoco muestra $0 — el status manda, no el valor numérico', () => {

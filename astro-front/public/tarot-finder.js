@@ -10,9 +10,10 @@
   // lugares. Mismos nombres de campos, mismo orden de desempate.
   //
   // TAROT-FINDER-UX-2: máquina de estados de "recomendador progresivo" —
-  // apertura (7 intenciones) -> resultados inmediatos -> "Afinar mi
+  // apertura (6 intenciones) -> resultados inmediatos -> "Afinar mi
   // búsqueda" (filtros avanzados, opcional) -> si 0 exactos, alternativas
-  // cercanas explícitas. Todas las funciones puras de acá abajo (sin DOM)
+  // cercanas cargadas bajo demanda (ver fetchPausedAlternatives). Todas
+  // las funciones puras de acá abajo (sin DOM)
   // se exponen también en window.__AmadoTarotFinderTestHooks, exclusivamente
   // para que functions/__tests__/tarot-finder-client.test.js pueda ejecutar
   // ESTE archivo real dentro de un harness de Node y comparar sus
@@ -223,17 +224,19 @@
 
   // FIX 1 (post-Preview): un candidato pausado NUNCA tiene precio/stock
   // reales (ver buildTarotFinderDataset con status='paused') — mostrar
-  // "$0 UYU" sería inventar un precio. En su lugar: badge/copy de encargo
-  // y un CTA que invita a consultar, no a "ver" como si ya estuviera
-  // disponible. Función pura (sin DOM) a propósito, igual que el resto de
-  // este bloque — se expone en los test hooks para probarla directamente.
+  // "$0 UYU" sería inventar un precio. En su lugar: badge/copy de encargo.
+  // El CTA sigue yendo a la ficha real del mazo (mismo href que uno
+  // activo) — dice "Ver este mazo", no "Consultar", porque no abre ningún
+  // canal de consulta nuevo, sólo lleva a la página del producto. Función
+  // pura (sin DOM) a propósito, igual que el resto de este bloque — se
+  // expone en los test hooks para probarla directamente.
   function resultCardHtml(candidate, answers) {
     var ex = explainMatch(candidate, answers);
     var isPaused = candidate.status === 'paused';
     var priceOrEncargoHtml = isPaused
       ? '<p class="tf-result-encargo">Lo podemos buscar por encargo</p>'
       : '<p class="tf-result-price">$' + Number(candidate.price || 0).toLocaleString('es-UY') + ' UYU</p>';
-    var ctaLabel = isPaused ? 'Consultar este mazo' : 'Ver mazo';
+    var ctaLabel = isPaused ? 'Ver este mazo' : 'Ver mazo';
     return '<article class="tf-result-card' + (isPaused ? ' tf-result-card-paused' : '') + '">' +
       (candidate.image ? '<img src="' + escapeHtml(candidate.image) + '" alt="Portada de ' + escapeHtml(candidate.title) + '" loading="lazy" decoding="async">' : '') +
       '<div class="tf-result-body">' +
@@ -274,15 +277,34 @@
     return 'results';
   }
 
+  // Helper de construcción de estado: rellena con defaults los campos no
+  // provistos, para que agregar un campo nuevo (como alternativesLoading,
+  // TAROT-FINDER-UX-2 fase 2) no obligue a tocar cada return de abajo.
+  function makeState(fields) {
+    return {
+      step: fields.step,
+      answers: fields.answers,
+      systemExplainerOpen: fields.systemExplainerOpen || false,
+      refining: fields.refining || false,
+      alternativesRevealed: fields.alternativesRevealed || false,
+      // TAROT-FINDER-UX-2 (gate de performance): el pool "por encargo" se
+      // pide bajo demanda (ver fetchPausedAlternatives en init()) — estos
+      // tres campos son el estado puro de ese pedido asíncrono.
+      alternativesLoading: fields.alternativesLoading || false,
+      pausedCandidates: fields.pausedCandidates !== undefined ? fields.pausedCandidates : null,
+      pausedFetchFailed: fields.pausedFetchFailed || false,
+    };
+  }
+
   function initialFinderState() {
-    return { step: 'opening', answers: {}, systemExplainerOpen: false, refining: false, alternativesRevealed: false };
+    return makeState({ step: 'opening', answers: {} });
   }
 
   /**
    * Reductor puro: (estado, campo, valor) -> nuevo estado. No muta el
    * estado recibido.
    *
-   * field='opening': confirma una de las 7 intenciones de apertura -> fija
+   * field='opening': confirma una de las 6 intenciones de apertura -> fija
    * answers.intent (reutiliza el motor de scoring existente, nunca inventa
    * una señal nueva) y va DIRECTO a 'results' — nunca obliga a completar
    * sistema/tradición/idioma/guía antes.
@@ -304,11 +326,11 @@
       // "Quiero aprender Tarot" fija system:'tarot' — es lo que ese botón
       // promete exactamente. Ninguna otra opción de apertura toca `system`.
       if (opt && opt.system) answers.system = opt.system;
-      return { step: 'results', answers: answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
+      return makeState({ step: 'results', answers: answers, refining: state.refining });
     }
 
     if (field === 'system' && value === 'unsure' && state.step === 'system' && !state.systemExplainerOpen) {
-      return { step: 'system', answers: answers, systemExplainerOpen: true, refining: state.refining, alternativesRevealed: false };
+      return makeState({ step: 'system', answers: answers, systemExplainerOpen: true, refining: state.refining });
     }
 
     if (field === 'system' && value !== 'tarot') {
@@ -316,34 +338,50 @@
     }
     answers[field] = value;
 
-    var nextState = { step: state.step, answers: answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
-    nextState.step = nextStepFrom(state.step, answers);
-    return nextState;
+    return makeState({ step: nextStepFrom(state.step, answers), answers: answers, refining: state.refining });
   }
 
   /** Entra (o vuelve a entrar) al refinamiento opcional desde 'results'. */
   function applyStartRefine(state) {
     var order = relevantSteps(state.answers);
-    return { step: order[0], answers: state.answers, systemExplainerOpen: false, refining: true, alternativesRevealed: false };
+    return makeState({ step: order[0], answers: state.answers, refining: true });
   }
 
-  /** Revela las alternativas cercanas en la pantalla de 0 resultados exactos. */
+  /** Revela las alternativas cercanas en la pantalla de 0 resultados
+   * exactos y dispara el pedido al pool "por encargo" — arranca en estado
+   * de carga de inmediato, nunca se revela nada hasta tener respuesta (o
+   * fallo, que cae a las alternativas activas locales). */
   function applyRevealAlternatives(state) {
-    return { step: state.step, answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: true };
+    return makeState({ step: state.step, answers: state.answers, refining: state.refining, alternativesRevealed: true, alternativesLoading: true });
+  }
+
+  /** Guarda el resultado (o el fallo) del pedido de alternativas pausadas —
+   * nunca cambia de paso, sólo resuelve el sub-estado de carga. */
+  function applyAlternativesFetched(state, pausedCandidates) {
+    return makeState({
+      step: state.step, answers: state.answers, refining: state.refining, alternativesRevealed: true,
+      pausedCandidates: pausedCandidates,
+    });
+  }
+  function applyAlternativesFetchFailed(state) {
+    return makeState({
+      step: state.step, answers: state.answers, refining: state.refining, alternativesRevealed: true,
+      pausedCandidates: [], pausedFetchFailed: true,
+    });
   }
 
   /** "volver" desde el sub-estado del explicador de sistema vuelve a la
    * vista simple de la misma pregunta, nunca cierra. */
   function applyGoBack(state) {
     if (state.step === 'system' && state.systemExplainerOpen) {
-      return { step: 'system', answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
+      return makeState({ step: 'system', answers: state.answers, refining: state.refining });
     }
     if (state.step === 'opening') return null; // señal: cerrar el Finder
     if (state.step === 'results' && state.alternativesRevealed) {
-      return { step: 'results', answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
+      return makeState({ step: 'results', answers: state.answers, refining: state.refining });
     }
     var prev = prevStepFrom(state.step, state.answers, state.refining);
-    return { step: prev, answers: state.answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
+    return makeState({ step: prev, answers: state.answers, refining: state.refining });
   }
 
   var QUESTIONS = {
@@ -410,6 +448,7 @@
     relevantSteps: relevantSteps, nextStepFrom: nextStepFrom, prevStepFrom: prevStepFrom,
     initialFinderState: initialFinderState, applyChoice: applyChoice, applyGoBack: applyGoBack,
     applyStartRefine: applyStartRefine, applyRevealAlternatives: applyRevealAlternatives,
+    applyAlternativesFetched: applyAlternativesFetched, applyAlternativesFetchFailed: applyAlternativesFetchFailed,
   };
 
   function ready(fn) {
@@ -424,7 +463,6 @@
     var root = document.getElementById('tarot-finder-app');
     var startBtn = document.getElementById('tarot-finder-start');
     var dataEl = document.getElementById('tarot-finder-dataset');
-    var fallbackDataEl = document.getElementById('tarot-finder-fallback-dataset');
     if (!section || !root || !startBtn || !dataEl) return;
 
     var waBase = section.getAttribute('data-wa-base') || '';
@@ -434,15 +472,28 @@
     try { dataset = JSON.parse(dataEl.textContent || '[]'); } catch (_e) { dataset = []; }
     if (!Array.isArray(dataset) || dataset.length === 0) return;
 
-    var fallbackDataset = [];
-    if (fallbackDataEl) {
-      try { fallbackDataset = JSON.parse(fallbackDataEl.textContent || '[]'); } catch (_e2) { fallbackDataset = []; }
-      if (!Array.isArray(fallbackDataset)) fallbackDataset = [];
+    // TAROT-FINDER-UX-2 (gate de performance): el pool "por encargo" ya NO
+    // viaja embebido en el HTML — medido, 409 candidatos agregaban ~186KB
+    // a CADA visita normal, para algo que la gran mayoría no usa. Se pide
+    // bajo demanda (fetchPausedAlternatives) sólo cuando la persona refina,
+    // obtiene 0 exactos y toca "Ver estas alternativas".
+    var ANSWER_PARAM_KEYS = ['intent', 'system', 'deckFamily', 'language', 'guide'];
+
+    function fetchPausedAlternatives(answers) {
+      var params = new URLSearchParams();
+      for (var i = 0; i < ANSWER_PARAM_KEYS.length; i++) {
+        var key = ANSWER_PARAM_KEYS[i];
+        if (answers[key]) params.set(key, answers[key]);
+      }
+      return fetch('/api/tarot-finder-alternatives?' + params.toString())
+        .then(function (res) {
+          if (!res.ok) throw new Error('tarot-finder-alternatives: HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          return Array.isArray(data && data.candidates) ? data.candidates : [];
+        });
     }
-    // El pool de alternativas incluye el propio dataset activo (por si un
-    // candidato activo casi-exacto no llegó a pasar rankCandidates) más el
-    // pool por encargo.
-    var alternativesPool = dataset.concat(fallbackDataset);
 
     var state = null;
 
@@ -481,7 +532,21 @@
 
     function revealAlternatives() {
       state = applyRevealAlternatives(state);
+      var loadingState = state; // identidad del objeto: detecta navegación durante el fetch
       render();
+      fetchPausedAlternatives(state.answers)
+        .then(function (candidates) {
+          if (state !== loadingState) return; // la persona ya se movió a otra pantalla
+          state = applyAlternativesFetched(state, candidates);
+          render();
+        })
+        .catch(function () {
+          if (state !== loadingState) return;
+          // Fail-open: el Finder nunca se rompe por esto — quedan las
+          // alternativas activas locales (si hay) y WhatsApp como salida.
+          state = applyAlternativesFetchFailed(state);
+          render();
+        });
     }
 
     function closeFinder() {
@@ -509,7 +574,7 @@
     function renderOpening() {
       var html = '<div class="tf-opening">';
       html += '<h3 tabindex="-1" id="tf-heading">¿Qué mazo va con lo que estás buscando?</h3>';
-      html += '<p class="tf-opening-sub">Contanos qué querés explorar hoy — claridad, una decisión, mirar hacia adelante, aprender o simplemente descubrir— y te mostramos opciones disponibles ahora.</p>';
+      html += '<p class="tf-opening-sub">Ya sea tu primer mazo, para aprender, regalar, coleccionar o simplemente explorar, te mostramos opciones disponibles ahora.</p>';
       html += '<div class="tf-opening-grid" role="group" aria-label="¿Qué mazo va con lo que estás buscando?">';
       html += OPENING_OPTIONS.map(function (opt, i) {
         return '<button type="button" class="tf-opening-card" style="--tf-i:' + i + '" data-field="opening" data-value="' + escapeHtml(opt.value) + '">' + escapeHtml(opt.label) + '</button>';
@@ -614,7 +679,19 @@
         html += '</div>';
         return html;
       }
-      var alternatives = findNearestAlternatives(alternativesPool, state.answers);
+      // TAROT-FINDER-UX-2 (gate de performance): estado corto mientras se
+      // pide el pool "por encargo" — no bloquea nada más de la página, sólo
+      // reemplaza este bloque hasta tener respuesta (o fallo).
+      if (state.alternativesLoading) {
+        html += '<p class="tf-loading">Buscando alternativas…</p>';
+        return html;
+      }
+      // El pool combina el dataset activo local (siempre disponible, sin
+      // red) con los hasta 3 pausados que trajo el fetch — si el fetch
+      // falló, pausedCandidates queda en [] y esto sigue funcionando sólo
+      // con lo activo (fail-open, ver applyAlternativesFetchFailed).
+      var combinedPool = dataset.concat(state.pausedCandidates || []);
+      var alternatives = findNearestAlternatives(combinedPool, state.answers);
       if (alternatives.length === 0) {
         html += '<div class="tf-empty"><p>No encontramos ninguna alternativa cercana disponible.</p>';
         html += '<a class="tf-wa-cta" href="' + escapeHtml(waHref) + '" target="_blank" rel="noopener noreferrer">Pedí que te lo busquemos</a></div>';

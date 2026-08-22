@@ -5,7 +5,7 @@
  * _shared/seo-categories.js; cualquier otra ruta responde 404 real.
  */
 import { slugify } from '../_shared/slug.js';
-import { BASE, fetchActiveIndex, fetchCatalog, fetchPausedIndex } from '../_shared/catalog.js';
+import { BASE, fetchActiveIndex, fetchCatalog } from '../_shared/catalog.js';
 import {
     BRAND,
     faviconHeadHtml,
@@ -135,7 +135,7 @@ export function dedupeCategoryResults(items) {
     });
 }
 
-async function fetchCategoryData(ctx) {
+export async function fetchCategoryData(ctx) {
     try {
         const url = new URL('/data/active-categories.json', ctx.request.url).toString();
         const cache = caches.default;
@@ -354,7 +354,7 @@ function tarotModulesHtml(modules, navigationBase, canonical, hasFinder) {
  * un <script type="application/json">, invisible para el HTML renderizado
  * y sin URL propia.
  */
-function tarotFinderHtml(dataset, fallbackDataset, canonical) {
+function tarotFinderHtml(dataset, canonical) {
     if (!dataset || dataset.length === 0) return '';
     const fallbackWaMessage = buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un mazo en Amado Libros 😊',
@@ -368,9 +368,11 @@ function tarotFinderHtml(dataset, fallbackDataset, canonical) {
     // helper (whatsappHref) que usa el resto del archivo, con texto vacío
     // para quedarse sólo con la base "https://wa.me/<numero>?text=".
     const waBase = whatsappHref('');
-    // TAROT-FINDER-UX-2: el segundo dataset (por encargo) es opcional — si
-    // viene vacío, igual se embebe un array vacío; tarot-finder.js ya
-    // maneja su ausencia con gracia (fallbackDataEl puede no existir).
+    // TAROT-FINDER-UX-2 (gate de performance): el pool "por encargo" ya NO
+    // viaja embebido acá — se pide bajo demanda a
+    // /api/tarot-finder-alternatives sólo cuando hace falta (ver ese
+    // archivo). El HTML inicial vuelve a transportar únicamente el dataset
+    // activo, igual que TAROT-FINDER-1.
     return `<section class="tarot-finder-cta" id="tarot-finder-cta" aria-labelledby="tarot-finder-cta-title" data-wa-base="${escapeHtml(waBase)}">
     <h2 id="tarot-finder-cta-title">Encontrá tu mazo</h2>
     <p>Contanos qué buscás y te mostramos opciones disponibles ahora mismo.</p>
@@ -381,8 +383,7 @@ function tarotFinderHtml(dataset, fallbackDataset, canonical) {
     </noscript>
     <div id="tarot-finder-app" hidden></div>
   </section>
-  <script type="application/json" id="tarot-finder-dataset">${safeJson(dataset)}</script>
-  <script type="application/json" id="tarot-finder-fallback-dataset">${safeJson(fallbackDataset || [])}</script>`;
+  <script type="application/json" id="tarot-finder-dataset">${safeJson(dataset)}</script>`;
 }
 
 const TAROT_FINDER_STYLES = `.tarot-finder-cta{background:#18120e;color:#fff;border-radius:1rem;padding:1.25rem clamp(1rem,3vw,1.75rem);margin-top:1.75rem}
@@ -446,6 +447,7 @@ const TAROT_FINDER_STYLES = `.tarot-finder-cta{background:#18120e;color:#fff;bor
 .tf-empty{background:#fff7e8;border:1px solid #efd2a6;border-radius:.65rem;padding:1rem;color:#6b4218}
 .tf-empty .tf-wa-cta{display:inline-flex;margin-top:.75rem;padding:.65rem 1rem;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:800;font-size:.82rem}
 .tf-near-miss-sub{font-size:.85rem;color:#6b6157;margin-bottom:.9rem}
+.tf-loading{font-size:.85rem;color:#6b6157}
 .tf-near-miss-choice{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
 .tf-reveal-alternatives{min-height:48px;padding:0 1.2rem;border:0;border-radius:999px;background:#18120e;color:#fff;font:inherit;font-size:.86rem;font-weight:800;cursor:pointer}
 .tf-reveal-alternatives:hover{background:#2b211a}
@@ -472,7 +474,7 @@ const TAROT_MODULE_STYLES = `.tarot-modules{display:flex;flex-direction:column;g
 
 // ---------------------------------------------------------------------------
 
-function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages, tarotModules, tarotFinderDataset, tarotFinderFallbackDataset }) {
+function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages, tarotModules, tarotFinderDataset }) {
     const canonical = `${BASE}${categoryPath(category.id, page)}`;
     const offset = (page - 1) * MAX_RESULTS;
     const visibleItems = items.slice(offset, offset + MAX_RESULTS);
@@ -579,7 +581,7 @@ ${headerHtml()}
     <p class="category-scope">${scopeText}</p>
     <div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>
   </section>
-  ${tarotFinderHtml(tarotFinderDataset, tarotFinderFallbackDataset, canonical)}
+  ${tarotFinderHtml(tarotFinderDataset, canonical)}
   ${tarotModulesHtml(tarotModules, navigationBase, canonical, Boolean(tarotFinderDataset?.length))}
   <div class="results-head"><h2>${tarotModules?.length ? 'Ver todo' : 'Libros disponibles'}</h2><p>${resultText}</p></div>
   ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
@@ -676,27 +678,13 @@ export async function onRequest(ctx) {
             hrefForItem: it => `${navigationBase}/libro/${it.id}/${slugify(it.title)}`,
         })
         : [];
-    // TAROT-FINDER-UX-2: pool "por encargo" para las alternativas cercanas
-    // cuando los filtros avanzados dan 0 resultados exactos — un mazo
-    // pausado que cumple todo lo pedido es la mejor alternativa posible
-    // (match real, sólo sin stock), nunca inventa precio/stock. Sólo se
-    // pide cuando ya hay Finder (mismo gate que tarotModules) — un fetch
-    // más, igual que fetchPausedIndex ya hace catalogo.js.
-    let tarotFinderFallbackDataset = [];
-    if (tarotModules) {
-        const pausedIndex = await fetchPausedIndex(ctx);
-        const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
-        const pausedCategoryItems = pausedItems.filter(item =>
-            (categoryData.items[item.id] || [])[0] === category.id
-        );
-        tarotFinderFallbackDataset = buildTarotFinderDataset({
-            items: pausedCategoryItems,
-            tagLookup: tarotTagLookup,
-            imageForId: id => bookCoverUrl(id),
-            hrefForItem: it => `${navigationBase}/libro/${it.id}/${slugify(it.title)}`,
-            status: 'paused',
-        });
-    }
+    // TAROT-FINDER-UX-2 (fix post-Preview, gate de performance): el pool
+    // "por encargo" YA NO viaja embebido acá — medido, 409 candidatos
+    // agregaban ~186KB JSON crudo (+70% del HTML comprimido) a CADA visita
+    // normal del hub, para una función que la mayoría no usa. Ahora se
+    // carga bajo demanda desde functions/api/tarot-finder-alternatives.js,
+    // sólo cuando la persona refina, obtiene 0 exactos y toca "Ver estas
+    // alternativas". Cero fetchPausedIndex() en la visita normal.
     const html = renderPage({
         category,
         categoryUniverseCount,
@@ -708,7 +696,6 @@ export async function onRequest(ctx) {
         totalPages,
         tarotModules,
         tarotFinderDataset,
-        tarotFinderFallbackDataset,
     });
 
     return new Response(html, {
