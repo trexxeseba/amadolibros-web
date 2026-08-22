@@ -1,0 +1,359 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import WAFloat from '../components/WAFloat.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: 'Consulta de disponibilidad por lista de libros',
+  serviceType: 'Verificación de stock y encargo para varios títulos a la vez',
+  areaServed: { '@type': 'Country', name: 'Uruguay' },
+  provider: {
+    '@type': 'OnlineStore',
+    '@id': 'https://www.amadolibros.com/#bookstore',
+    name: 'Amado Libros',
+    url: 'https://www.amadolibros.com/',
+  },
+};
+---
+
+<BaseLayout
+  title="Consultá tu lista de libros | Amado Libros"
+  description="Pegá tu lista de libros del liceo, la facultad o donde sea y te decimos al instante qué tenemos disponible, qué conseguimos por encargo y qué buscamos por vos."
+  canonical="https://www.amadolibros.com/lista-de-libros"
+  jsonLd={jsonLd}
+>
+  <Header />
+  <main class="list-page">
+    <div class="list-shell">
+      <nav class="breadcrumbs" aria-label="Migas de pan">
+        <a href="/">Inicio</a><span aria-hidden="true">›</span><span>Consultá tu lista</span>
+      </nav>
+
+      <section class="list-intro" aria-labelledby="list-title">
+        <p class="eyebrow">Para listas de liceo, facultad o lo que sea</p>
+        <h1 id="list-title">Consultá tu lista de libros</h1>
+        <p>
+          Pegá los títulos, uno por línea (con autor si lo tenés, mejor). Te decimos
+          al instante qué tenemos disponible ahora, qué podemos conseguir por
+          encargo, y para el resto armamos un pedido para buscarlo por vos.
+        </p>
+      </section>
+
+      <section class="list-form-section" aria-label="Verificar lista">
+        <label for="book-list">Tu lista (un título por línea)</label>
+        <textarea
+          id="book-list"
+          rows="8"
+          maxlength="4000"
+          placeholder={"Cien años de soledad\nEl principito - Saint-Exupéry\n9789871387861"}
+        ></textarea>
+        <div class="list-actions">
+          <button type="button" id="check-list-btn">Verificar</button>
+          <span id="list-status" role="status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <section id="list-results" class="list-results" hidden aria-labelledby="list-results-title">
+        <h2 id="list-results-title">Resultado</h2>
+        <ul id="list-results-items" class="list-results-items"></ul>
+        <a id="list-whatsapp-cta" class="list-whatsapp-cta" target="_blank" rel="noopener noreferrer">
+          Pedir esta lista por WhatsApp
+        </a>
+      </section>
+
+      <p class="privacy-note">
+        Verificamos tu lista contra nuestro catálogo real. Lo que no identifiquemos queda
+        anotado para que sepamos qué nos están pidiendo — nunca inventamos una coincidencia:
+        si no estamos seguros, te lo decimos y lo buscamos igual por vos.
+      </p>
+    </div>
+  </main>
+  <Footer />
+  <WAFloat />
+</BaseLayout>
+
+<script>
+  const STATUS_LABEL = {
+    matched_active: 'Disponible ahora',
+    matched_by_encargo: 'Lo conseguimos por encargo',
+    no_match: 'No lo identificamos — lo buscamos por vos',
+  };
+  const STATUS_CLASS = {
+    matched_active: 'is-active',
+    matched_by_encargo: 'is-encargo',
+    no_match: 'is-no-match',
+  };
+
+  const textarea = document.querySelector('#book-list');
+  const button = document.querySelector('#check-list-btn');
+  const statusEl = document.querySelector('#list-status');
+  const resultsSection = document.querySelector('#list-results');
+  const resultsList = document.querySelector('#list-results-items');
+  const whatsappCta = document.querySelector('#list-whatsapp-cta');
+
+  function buildWhatsAppMessage(results) {
+    const wa = window.AmadoWhatsApp;
+    const lines = [
+      'Hola, estoy consultando esta lista de libros en Amado Libros 😊',
+      '',
+      'Motivo: Consulta de disponibilidad por lista',
+      'Lista:',
+    ];
+    results.forEach(r => {
+      const label = STATUS_LABEL[r.status] || 'Consultar';
+      lines.push(`- ${r.query} — ${label}`);
+    });
+    lines.push('', `Página: ${wa ? wa.absolutePage(window.location.href) : window.location.href}`);
+    lines.push('', 'Quisiera confirmar precios, tiempos de encargo y coordinar la compra. Gracias.');
+    const text = lines.join('\n');
+    return wa ? wa.href(text) : `https://wa.me/59899841325?text=${encodeURIComponent(text)}`;
+  }
+
+  async function checkList() {
+    const rawLines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
+    if (rawLines.length === 0) {
+      statusEl.textContent = 'Escribí al menos un título.';
+      return;
+    }
+    button.disabled = true;
+    statusEl.textContent = 'Verificando…';
+    resultsSection.hidden = true;
+    window.gtag?.('event', 'book_list_check_started', { line_count: rawLines.length });
+
+    try {
+      const response = await fetch('/api/list-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines: rawLines }),
+      });
+      if (!response.ok) throw new Error('No pudimos verificar la lista.');
+      const data = await response.json();
+      const results = Array.isArray(data.results) ? data.results : [];
+
+      resultsList.replaceChildren(...results.map(r => {
+        const li = document.createElement('li');
+        li.className = `list-result-item ${STATUS_CLASS[r.status] || ''}`;
+        const title = r.match ? r.match.title : r.query;
+        const priceText = r.match && r.match.price ? ` — $${Number(r.match.price).toLocaleString('es-UY')} UYU` : '';
+        li.innerHTML = `<span class="list-result-status">${STATUS_LABEL[r.status] || ''}</span>` +
+          `<span class="list-result-title"></span>` +
+          `<span class="list-result-price"></span>`;
+        li.querySelector('.list-result-title').textContent = title;
+        li.querySelector('.list-result-price').textContent = priceText;
+        return li;
+      }));
+      resultsSection.hidden = false;
+      whatsappCta.href = buildWhatsAppMessage(results);
+      statusEl.textContent = '';
+      window.gtag?.('event', 'book_list_check_completed', {
+        line_count: results.length,
+        matched_active: results.filter(r => r.status === 'matched_active').length,
+        matched_by_encargo: results.filter(r => r.status === 'matched_by_encargo').length,
+        no_match: results.filter(r => r.status === 'no_match').length,
+      });
+    } catch (error) {
+      statusEl.textContent = 'No pudimos verificar la lista. Probá de nuevo en un momento.';
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  button.addEventListener('click', checkList);
+</script>
+
+<style>
+  .list-page {
+    padding: 0 1rem 3.5rem;
+    background:
+      radial-gradient(circle at 85% 8%, rgba(228, 153, 130, 0.13), transparent 32%),
+      var(--bg);
+  }
+
+  .list-shell {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    gap: 0.45rem;
+    padding: 1rem 0;
+    color: var(--ink-2);
+    font-size: 0.78rem;
+  }
+
+  .breadcrumbs a { color: var(--salmon-hover); }
+
+  .list-intro {
+    padding: clamp(1.4rem, 5vw, 3rem);
+    border: 1px solid var(--border);
+    border-radius: 1.15rem 1.15rem 0 0;
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .eyebrow {
+    color: var(--salmon);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .list-intro h1 {
+    max-width: 20ch;
+    margin-top: 0.45rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 7vw, 3.2rem);
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+  }
+
+  .list-intro > p:not(.eyebrow) {
+    max-width: 62ch;
+    margin-top: 0.9rem;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.94rem;
+  }
+
+  .list-form-section {
+    display: grid;
+    gap: 0.75rem;
+    padding: clamp(1.2rem, 4vw, 2.3rem);
+    border: 1px solid var(--border);
+    border-top: 0;
+    background: #fff;
+  }
+
+  .list-form-section label {
+    color: var(--ink);
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  #book-list {
+    width: 100%;
+    min-height: 180px;
+    padding: 0.85rem;
+    border: 1px solid #d7cec3;
+    border-radius: 0.65rem;
+    outline: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 500 0.92rem/1.5 var(--font-ui);
+    resize: vertical;
+  }
+
+  #book-list:focus {
+    border-color: var(--salmon-hover);
+    box-shadow: 0 0 0 3px rgba(228, 153, 130, 0.16);
+  }
+
+  .list-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  #check-list-btn {
+    min-height: 50px;
+    padding: 0.75rem 1.5rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--salmon);
+    color: #18120e;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  #check-list-btn:hover { background: var(--salmon-hover); }
+  #check-list-btn:disabled { opacity: 0.6; cursor: wait; }
+
+  #list-status {
+    font-size: 0.82rem;
+    color: var(--ink-2);
+  }
+
+  .list-results {
+    padding: clamp(1.2rem, 4vw, 2.3rem);
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-radius: 0 0 1.15rem 1.15rem;
+    background: #fff;
+  }
+
+  .list-results h2 {
+    font-size: 1.05rem;
+    margin-bottom: 0.9rem;
+    color: var(--ink);
+  }
+
+  .list-results-items {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0;
+    margin: 0 0 1.1rem;
+    list-style: none;
+  }
+
+  .list-result-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    font-size: 0.85rem;
+  }
+
+  .list-result-status {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .list-result-item.is-active .list-result-status { background: #dcfce7; color: #16a34a; }
+  .list-result-item.is-encargo .list-result-status { background: #fff7e8; color: #a94e3d; }
+  .list-result-item.is-no-match .list-result-status { background: #f1f5f9; color: #64748b; }
+
+  .list-result-title { color: var(--ink); font-weight: 600; }
+  .list-result-price { color: var(--ink-2); font-size: 0.8rem; white-space: nowrap; }
+
+  .list-whatsapp-cta {
+    display: inline-flex;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.7rem;
+    background: var(--wa);
+    color: #102516;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-decoration: none;
+    text-align: center;
+  }
+
+  .list-whatsapp-cta:hover { background: var(--wa-hover); }
+
+  .privacy-note {
+    margin-top: 1rem;
+    color: var(--ink-2);
+    font-size: 0.74rem;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 640px) {
+    .list-actions { flex-wrap: nowrap; }
+  }
+</style>

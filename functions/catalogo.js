@@ -58,6 +58,10 @@ import {
     serverTimingValue,
 } from './_shared/perf.js';
 import { previewCoverUrl } from './_shared/preview-cover.js';
+// GW1 (Radar de Demanda No Satisfecha): sólo cuando rawQ + 0 resultados.
+// No reemplaza ni toca el CTA de recuperación que ya existe más abajo —
+// agrega el registro que faltaba.
+import { recordUnmatchedQuery } from './_shared/demand-radar.js';
 import {
     bookCoverUrl,
     CARD_IMAGE_SIZES,
@@ -712,6 +716,19 @@ export async function onRequest(ctx) {
     recordPerf(ctx, 'search', searchStartedAt);
 
     const totalResults = filtered.length;
+    // GW1: registra el término sólo cuando hubo una búsqueda real (rawQ) y
+    // dio 0 resultados — la señal de demanda más calificada que existe. Vía
+    // waitUntil y con try/catch: un fallo acá nunca debe demorar ni romper
+    // la respuesta de /catalogo.
+    if (rawQ && totalResults === 0 && typeof ctx.waitUntil === 'function') {
+        ctx.waitUntil(
+            recordUnmatchedQuery(ctx.env?.ORDERS_DB, {
+                rawQuery: rawQ,
+                source: 'catalogo_search',
+                appEnv: ctx.env?.APP_ENV,
+            }).catch(() => {}),
+        );
+    }
     const totalPages   = Math.max(1, Math.ceil(totalResults / MAX_RESULTS));
     // Página inexistente: 404 real. No redirigimos a la última página porque
     // el tamaño del catálogo cambia y esa normalización convertiría una URL
