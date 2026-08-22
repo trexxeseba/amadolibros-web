@@ -3,7 +3,7 @@
 //
 // Reglas:
 // - nunca se ejecutan en el camino de una request de cliente;
-// - Google Books se consulta por ISBN exacto y requiere API key en modo real;
+// - Google Books se consulta por ISBN exacto y requiere API key u OAuth token;
 // - Open Library usa el Partner/Read API multi-request para reducir llamadas;
 // - todo resultado conserva `source` y se vuelve evidencia, no contenido final;
 // - la caché evita volver a pedir datos estables en cada corrida.
@@ -61,16 +61,18 @@ function googleBooksExactItems(payload, isbn) {
     .filter(item => normalizedIdentifiers(item?.volumeInfo).includes(target));
 }
 
-export function buildGoogleBooksUrl(isbn, { apiKey } = {}) {
+export function buildGoogleBooksUrl(isbn, { apiKey, accessToken } = {}) {
   const normalized = normalizeValidIsbn(isbn);
   if (!normalized) throw new Error('ISBN inválido para Google Books.');
-  if (!clean(apiKey)) throw new Error('GOOGLE_BOOKS_API_KEY es obligatorio para consultas reales.');
+  if (!clean(apiKey) && !clean(accessToken)) {
+    throw new Error('Google Books requiere API key u OAuth access token para consultas reales.');
+  }
   const url = new URL(GOOGLE_BOOKS_BASE);
   url.searchParams.set('q', `isbn:${normalized}`);
   url.searchParams.set('printType', 'books');
   url.searchParams.set('projection', 'full');
   url.searchParams.set('maxResults', '10');
-  url.searchParams.set('key', clean(apiKey));
+  if (clean(apiKey)) url.searchParams.set('key', clean(apiKey));
   return url.toString();
 }
 
@@ -288,11 +290,15 @@ async function fetchJson(url, {
 
 export async function fetchGoogleBooksEvidence(isbn, {
   apiKey,
+  accessToken,
   fetchImpl,
   timeoutMs,
 } = {}) {
-  const url = buildGoogleBooksUrl(isbn, { apiKey });
-  const payload = await fetchJson(url, { fetchImpl, timeoutMs });
+  const url = buildGoogleBooksUrl(isbn, { apiKey, accessToken });
+  const headers = clean(accessToken)
+    ? { authorization: `Bearer ${clean(accessToken)}` }
+    : {};
+  const payload = await fetchJson(url, { fetchImpl, timeoutMs, headers });
   return parseGoogleBooksEvidence(payload, isbn);
 }
 
