@@ -3,6 +3,7 @@ import { verifyTurnstile } from './_turnstile.js';
 const MAX_BODY_BYTES = 8 * 1024;
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
+const CONFIRMATION_MAX_SEND_ATTEMPTS = 3;
 const PAGES_PREVIEW_HOSTNAME_RE = /^[^.]+\.amadolibros-web\.pages\.dev$/;
 const previewSchemaPromises = new WeakMap();
 
@@ -19,6 +20,10 @@ CREATE TABLE IF NOT EXISTS stock_waitlist (
     CHECK (internal_notification_status IN ('pending','sent','failed','skipped')),
   internal_notification_id TEXT,
   internal_notification_error TEXT,
+  registration_confirmation_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (registration_confirmation_status IN ('pending','sent','failed','skipped')),
+  registration_confirmation_id TEXT,
+  registration_confirmation_error TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   restocked_at TEXT,
@@ -109,6 +114,29 @@ function resolveEmailConfig(env) {
   return { apiKey, from, to };
 }
 
+// La confirmación va al correo del cliente (no a la lista interna), así que
+// se exige el mismo gate exacto que usa worker-sync/stock-waitlist-notifier.js
+// para el aviso de reposición: CANONICAL_ORIGIN igual al dominio productivo.
+// Esto evita que un Preview con secretos compartidos (RESEND_API_KEY no tiene
+// forma de scoping por-ambiente verificable desde este repo) le mande un
+// correo real a un cliente real durante una prueba.
+function resolveConfirmationConfig(env) {
+  const apiKey = cleanString(env?.RESEND_API_KEY);
+  const from = cleanString(env?.SALES_NOTIFICATION_FROM);
+  const canonicalOrigin = cleanString(env?.CANONICAL_ORIGIN).replace(/\/$/, '');
+  if (!apiKey || !from || canonicalOrigin !== 'https://www.amadolibros.com') return null;
+  return { apiKey, from, canonicalOrigin };
+}
+
+function isAmadolibrosUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && (url.hostname === 'amadolibros.com' || url.hostname === 'www.amadolibros.com');
+  } catch {
+    return false;
+  }
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -190,12 +218,93 @@ async function recordNotificationResult(db, waitlistId, result, now) {
   ).bind(status, providerId, errorCode, now.toISOString(), waitlistId).run();
 }
 
+export function buildRegistrationConfirmationEmail({ product, url }) {
+  const subject = `Te avisaremos cuando vuelva «${product.title}»`;
+  const bodyText = 'Registramos tu solicitud. Cuando este libro vuelva a estar disponible te ' +
+    'enviaremos un correo. No es una reserva ni garantiza disponibilidad. Si vuelve a stock, ' +
+    'el precio será el vigente en ese momento.';
+  const text = [subject, '', bodyText, '', `Ver libro: ${url}`].join('\n');
+  const html = `<!doctype html>
+<html lang="es">
+  <body style="font-family:Arial,sans-serif;color:#222;line-height:1.5">
+    <h1 style="font-size:20px">Te avisaremos cuando vuelva «${escapeHtml(product.title)}»</h1>
+    <p>${escapeHtml(bodyText)}</p>
+    <p><a href="${escapeHtml(url)}" style="display:inline-block;padding:12px 18px;background:#a94e3d;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">Ver libro</a></p>
+  </body>
+</html>`;
+  return { subject, text, html };
+}
+
+async function sendRegistrationConfirmationOnce({ config, email, waitlistId, message, fetchFn }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EMAIL_TIMEOUT_MS);
+  try {
+    const response = await fetchFn(RESEND_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': `stock-waitlist-confirm/${waitlistId}`,
+      },
+      body: JSON.stringify({ from: config.from, to: [email], ...message }),
+      signal: controller.signal,
+    });
+    let data = null;
+    try { data = await response.json(); } catch { /* respuesta opcional */ }
+    if (response.ok && typeof data?.id === 'string' && data.id) return { ok: true, providerId: data.id };
+    return {
+      ok: false,
+      retryable: response.status === 429 || response.status >= 500,
+      code: `RESEND_HTTP_${response.status}`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      retryable: true,
+      code: error?.name === 'AbortError' ? 'RESEND_TIMEOUT' : 'RESEND_NETWORK_ERROR',
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Confirmación al cliente: envío inmediato y best-effort, igual en espíritu al
+// aviso interno (sendInternalNotification) pero con reintentos cortos ante
+// errores transitorios de Resend (429/5xx), como ya hace el worker de
+// reposición. Nunca toca internal_notification_status ni
+// customer_notification_status — solo registration_confirmation_status.
+async function sendRegistrationConfirmation({ env, product, email, sourceUrl, waitlistId, fetchFn, sleep }) {
+  const config = resolveConfirmationConfig(env);
+  if (!config) return { ok: false, skipped: true, code: 'EMAIL_CONFIG_MISSING' };
+  if (!isAmadolibrosUrl(sourceUrl)) return { ok: false, skipped: true, code: 'URL_NOT_ALLOWED' };
+
+  const message = buildRegistrationConfirmationEmail({ product, url: sourceUrl });
+  let result;
+  for (let attempt = 1; attempt <= CONFIRMATION_MAX_SEND_ATTEMPTS; attempt++) {
+    result = await sendRegistrationConfirmationOnce({ config, email, waitlistId, message, fetchFn });
+    if (result.ok || !result.retryable || attempt === CONFIRMATION_MAX_SEND_ATTEMPTS) break;
+    await sleep(250 * (2 ** (attempt - 1)));
+  }
+  return result;
+}
+
+async function recordRegistrationConfirmationResult(db, waitlistId, result, now) {
+  const status = result.ok ? 'sent' : result.skipped ? 'skipped' : 'failed';
+  const providerId = result.ok ? result.providerId : null;
+  const errorCode = result.ok ? null : cleanString(result.code).slice(0, 80) || 'RESEND_ERROR';
+  await db.prepare(
+    'UPDATE stock_waitlist SET registration_confirmation_status=?, registration_confirmation_id=?, ' +
+    'registration_confirmation_error=?, updated_at=? WHERE id=?'
+  ).bind(status, providerId, errorCode, now.toISOString(), waitlistId).run();
+}
+
 export function createStockWaitlistHandler({
   fetchCatalog,
   fetchPausedItem,
   verifyTurnstileToken = verifyTurnstile,
   fetchFn = globalThis.fetch,
   getNow = () => new Date(),
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -359,6 +468,28 @@ export function createStockWaitlistHandler({
     })();
     if (typeof context.waitUntil === 'function') context.waitUntil(notificationPromise);
     else await notificationPromise;
+
+    // Confirmación al cliente: solo en el registro realmente nuevo (changes>0
+    // de arriba ya filtró duplicados y doble-submit). Independiente del aviso
+    // interno — su falla nunca afecta al aviso interno ni viceversa.
+    const confirmationPromise = (async () => {
+      const result = await sendRegistrationConfirmation({
+        env,
+        product,
+        email,
+        sourceUrl,
+        waitlistId,
+        fetchFn,
+        sleep,
+      });
+      try {
+        await recordRegistrationConfirmationResult(db, waitlistId, result, getNow());
+      } catch (error) {
+        console.error('[stock-waitlist] confirmation state error', safeErrorName(error));
+      }
+    })();
+    if (typeof context.waitUntil === 'function') context.waitUntil(confirmationPromise);
+    else await confirmationPromise;
 
     return json({ ok: true, registered: true, already_registered: false }, 201);
   };

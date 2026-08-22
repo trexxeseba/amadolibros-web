@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildStockWaitlistEmail,
+  buildRegistrationConfirmationEmail,
   createStockWaitlistHandler,
 } from '../_stock_waitlist_handler.js';
 
@@ -34,9 +35,11 @@ function env(db, patch = {}) {
 function memoryDb({ duplicate = false } = {}) {
   const rows = new Map();
   const updates = [];
+  const confirmationUpdates = [];
   return {
     rows,
     updates,
+    confirmationUpdates,
     prepare(sql) {
       return {
         bind(...args) {
@@ -64,6 +67,10 @@ function memoryDb({ duplicate = false } = {}) {
               }
               if (sql.startsWith('UPDATE stock_waitlist SET internal_notification_status=')) {
                 updates.push(args);
+                return { meta: { changes: 1 } };
+              }
+              if (sql.startsWith('UPDATE stock_waitlist SET registration_confirmation_status=')) {
+                confirmationUpdates.push(args);
                 return { meta: { changes: 1 } };
               }
               throw new Error(`SQL inesperado: ${sql}`);
@@ -98,9 +105,11 @@ function makeHandler({
     fetchFn: async (...args) => {
       hooks.emailCalls = (hooks.emailCalls || 0) + 1;
       hooks.emailArgs = args;
+      hooks.emailCallArgs = (hooks.emailCallArgs || []).concat([args]);
       return fetchFn(...args);
     },
     getNow: () => NOW,
+    sleep: async () => {},
   });
 }
 
@@ -318,4 +327,174 @@ test('stock-1: el correo escapa HTML y no confía en un título del navegador', 
   assert.match(email.subject, /Libro <agotado>/);
   assert.match(email.html, /Libro &lt;agotado&gt;/);
   assert.doesNotMatch(email.html, /Libro <agotado>/);
+});
+
+// ── STOCK-AVISO-2: confirmación al cliente ──────────────────────────────────
+
+function prodEnvPatch(patch = {}) {
+  return {
+    APP_ENV: 'production',
+    ALLOWED_HOSTS: 'www.amadolibros.com',
+    CANONICAL_ORIGIN: 'https://www.amadolibros.com',
+    ...patch,
+  };
+}
+const PROD_REQUEST = { url: 'https://www.amadolibros.com/api/stock-waitlist' };
+
+test('STOCK-AVISO-2: un registro nuevo en producción envía la confirmación al cliente exactamente una vez', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const { response, data } = await call(
+    makeHandler({ hooks }),
+    db,
+    validBody(),
+    prodEnvPatch(),
+    PROD_REQUEST
+  );
+
+  assert.equal(response.status, 201);
+  assert.equal(data.already_registered, false);
+  assert.equal(hooks.emailCalls, 2, 'aviso interno + confirmación al cliente');
+  const confirmationCall = hooks.emailCallArgs.find(
+    args => args[1].headers['Idempotency-Key'].startsWith('stock-waitlist-confirm/')
+  );
+  assert.ok(confirmationCall, 'debe haber una llamada con el idempotency key de confirmación');
+  const confirmationBody = JSON.parse(confirmationCall[1].body);
+  assert.deepEqual(confirmationBody.to, ['cliente@example.com']);
+  assert.match(confirmationBody.subject, /Te avisaremos cuando vuelva/);
+  assert.match(confirmationBody.html, />Ver libro</);
+  assert.equal(db.confirmationUpdates.length, 1);
+  assert.equal(db.confirmationUpdates[0][0], 'sent');
+});
+
+test('STOCK-AVISO-2: en Preview no se envía confirmación real al cliente (CANONICAL_ORIGIN no productivo)', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const { response } = await call(handlerDefault(hooks), db, validBody());
+
+  assert.equal(response.status, 201);
+  // Solo el aviso interno debe llamar a Resend; la confirmación se salta.
+  assert.equal(hooks.emailCalls, 1);
+  assert.equal(db.confirmationUpdates.length, 1);
+  assert.equal(db.confirmationUpdates[0][0], 'skipped');
+});
+
+function handlerDefault(hooks) {
+  return makeHandler({ hooks });
+}
+
+test('STOCK-AVISO-2: el duplicado no repite la confirmación al cliente', async () => {
+  const db = memoryDb({ duplicate: true });
+  const hooks = {};
+  const { response, data } = await call(
+    makeHandler({ hooks }),
+    db,
+    validBody(),
+    prodEnvPatch(),
+    PROD_REQUEST
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(data.already_registered, true);
+  assert.equal(hooks.emailCalls || 0, 0);
+  assert.equal(db.confirmationUpdates.length, 0);
+});
+
+test('STOCK-AVISO-2: honeypot no dispara ninguna confirmación', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const { response } = await call(
+    makeHandler({ hooks }),
+    db,
+    validBody({ company: 'robot inc.' }),
+    prodEnvPatch(),
+    PROD_REQUEST
+  );
+
+  assert.equal(response.status, 201);
+  assert.equal(hooks.emailCalls || 0, 0);
+  assert.equal(db.confirmationUpdates.length, 0);
+});
+
+test('STOCK-AVISO-2: Turnstile inválido no dispara ninguna confirmación', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const handler = makeHandler({ hooks, verify: async () => ({ ok: false, code: 'TOKEN_INVALID' }) });
+  const { response } = await call(handler, db, validBody(), prodEnvPatch(), PROD_REQUEST);
+
+  assert.equal(response.status, 403);
+  assert.equal(hooks.emailCalls || 0, 0);
+  assert.equal(db.confirmationUpdates.length, 0);
+});
+
+test('STOCK-AVISO-2: libro ya disponible no registra ni confirma', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const { response } = await call(
+    makeHandler({ hooks }),
+    db,
+    validBody({ product_id: 'MLU100' }),
+    prodEnvPatch(),
+    PROD_REQUEST
+  );
+
+  assert.equal(response.status, 409);
+  assert.equal(db.rows.size, 0);
+  assert.equal(hooks.emailCalls || 0, 0);
+  assert.equal(db.confirmationUpdates.length, 0);
+});
+
+test('STOCK-AVISO-2: una falla persistente de Resend en la confirmación no pierde el registro y reintenta', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  let confirmationCalls = 0;
+  const handler = makeHandler({
+    hooks,
+    fetchFn: async (_url, init) => {
+      const isConfirmation = init.headers['Idempotency-Key'].startsWith('stock-waitlist-confirm/');
+      if (isConfirmation) {
+        confirmationCalls++;
+        return new Response('{}', { status: 503 });
+      }
+      return Response.json({ id: 'email-internal' });
+    },
+  });
+  const { response, data } = await call(handler, db, validBody(), prodEnvPatch(), PROD_REQUEST);
+
+  assert.equal(response.status, 201);
+  assert.equal(data.registered, true);
+  assert.equal(db.rows.size, 1, 'el registro en D1 se conserva pese a la falla de email');
+  assert.equal(confirmationCalls, 3, 'una falla 503 se reintenta hasta el máximo configurado');
+  assert.equal(db.confirmationUpdates[0][0], 'failed');
+  assert.equal(db.confirmationUpdates[0][2], 'RESEND_HTTP_503');
+});
+
+test('STOCK-AVISO-2: una URL fuera de amadolibros.com nunca se usa para confirmar', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const handler = makeHandler({ hooks });
+  const { response } = await call(
+    handler,
+    db,
+    validBody(),
+    prodEnvPatch(),
+    { url: 'https://evil.example.com/api/stock-waitlist' }
+  );
+
+  assert.equal(response.status, 201);
+  assert.equal(db.confirmationUpdates.length, 1);
+  assert.equal(db.confirmationUpdates[0][0], 'skipped');
+  // Solo el aviso interno debió llamar a Resend.
+  assert.equal(hooks.emailCalls, 1);
+});
+
+test('STOCK-AVISO-2: la confirmación escapa HTML y no confía en un título del navegador', () => {
+  const email = buildRegistrationConfirmationEmail({
+    product: PAUSED,
+    url: 'https://www.amadolibros.com/libro/MLU200',
+  });
+  assert.match(email.subject, /Te avisaremos cuando vuelva «Libro <agotado>»/);
+  assert.match(email.html, /Libro &lt;agotado&gt;/);
+  assert.doesNotMatch(email.html, /Libro <agotado>/);
+  assert.match(email.html, /No es una reserva ni garantiza disponibilidad/);
 });
