@@ -186,9 +186,9 @@ function consensusForField(records, field) {
  *
  * Un ISBN exacto con autor compatible tolera diferencias de título por idioma,
  * subtítulos o copy comercial del marketplace. En autores se tolera orden
- * "apellido, nombre", diacríticos y honoríficos. Esto evita falsos conflictos
- * observados en RESEARCH-RUN-1 sin relajar el gate ante identidades realmente
- * distintas.
+ * "apellido, nombre", diacríticos y honoríficos. Una fuente exacta sin autor
+ * y con título divergente sigue siendo conservadora por sí sola, pero deja de
+ * bloquear cuando otra fuente del mismo ISBN confirma un autor compatible.
  */
 export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
   const itemIsbn = normalizeValidIsbn(item?.isbn);
@@ -202,6 +202,10 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
     ? records.filter(record => record.isbn === itemIsbn)
     : [];
 
+  const hasExactCompatibleAuthor = Boolean(itemAuthor) && exactIsbnRecords.some(record =>
+    record.author && compatibleAuthorIdentity(itemAuthor, record.author),
+  );
+
   const identityConflicts = [];
   for (const record of exactIsbnRecords) {
     const titleComparable = Boolean(itemTitle && record.title);
@@ -212,7 +216,7 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
     if (authorMismatch) {
       identityConflicts.push({ source: record.source, field: 'author', value: record.author });
     }
-    if (titleMismatch && (!authorComparable || authorMismatch)) {
+    if (titleMismatch && (authorMismatch || (!authorComparable && !hasExactCompatibleAuthor))) {
       identityConflicts.push({ source: record.source, field: 'title', value: record.title });
     }
   }
