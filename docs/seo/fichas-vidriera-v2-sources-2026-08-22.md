@@ -20,7 +20,12 @@ Documentación oficial usada para este contrato:
 
 `https://developers.google.com/books/docs/v1/using`
 
-La documentación oficial exige identificar las requests públicas con API key u OAuth. El cliente de este lote exige `GOOGLE_BOOKS_API_KEY` en modo de red real y nunca guarda esa key en la caché.
+La documentación oficial permite identificar requests públicas con API key u OAuth 2.0 access token. El cliente admite ambos caminos:
+
+- `GOOGLE_BOOKS_API_KEY`; o
+- `accessToken`, enviado únicamente como `Authorization: Bearer ...` y nunca dentro de la URL.
+
+Amado Libros ya usa Workload Identity Federation para otros workflows Google. Antes de crear otro secreto, RESEARCH-RUN-1 debe intentar reutilizar ese mecanismo con un token OAuth adecuado para Books. Ninguna credencial se guarda en la caché.
 
 Campos útiles cuando el volume contiene exactamente el ISBN pedido:
 
@@ -66,7 +71,7 @@ La caché se guarda fuera del repositorio en:
 
 `scripts/seo/data/book-intelligence/`
 
-`.gitignore` impide versionarla. El artefacto de evidencia final sí podrá versionarse más adelante, pero nunca la API key ni secretos.
+`.gitignore` impide versionarla. El artefacto de evidencia final sí podrá versionarse más adelante, pero nunca API keys, access tokens ni otros secretos.
 
 ## Priorización
 
@@ -117,11 +122,12 @@ Esos records se pasan al clasificador de evidencia de #217 para obtener `green/y
 `FICHAS-VIDRIERA-2 / RESEARCH-RUN-1`:
 
 1. seleccionar una cohorte real desde GSC + catálogo;
-2. ejecutar Google Books con key segura y caché;
-3. usar Open Library sólo dentro del presupuesto permitido;
-4. medir cuántas fichas quedan green/yellow/red;
-5. decidir qué tercera fuente aumenta más la cobertura (editorial, distribuidor, bibliotecas o dump de Open Library);
-6. todavía sin publicar texto en la web.
+2. autenticar Google Books reutilizando WIF/OAuth si el proyecto lo admite; fallback a API key sólo si hace falta;
+3. ejecutar Google Books con caché;
+4. usar Open Library sólo dentro del presupuesto permitido;
+5. medir cuántas fichas quedan green/yellow/red;
+6. decidir qué tercera fuente aumenta más la cobertura (editorial, distribuidor, bibliotecas o dump de Open Library);
+7. todavía sin publicar texto en la web.
 
 ## Fuera de alcance
 
