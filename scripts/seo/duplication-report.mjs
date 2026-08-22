@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
 const R2_BASE = process.env.SEO_R2_BASE || 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
@@ -23,10 +24,81 @@ function normalizeIsbn(value) {
   return normalized.length === 10 || normalized.length === 13 ? normalized : '';
 }
 
+function normalizeCatalogProductId(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function titleAuthorKey(item) {
   const title = normalizeText(item.title);
   const author = normalizeText(item.author);
   return title ? `${title}||${author}` : '';
+}
+
+export function classifyMlCatalogOrigin(group) {
+  const items = Array.isArray(group) ? group : [];
+  const rawIds = items.map((item) => normalizeCatalogProductId(item?.catalog_product_id));
+  const ids = [...new Set(rawIds.filter(Boolean))].sort();
+  const presentCount = rawIds.filter(Boolean).length;
+  const listingValues = [...new Set(
+    items
+      .map((item) => typeof item?.catalog_listing === 'boolean' ? item.catalog_listing : null)
+      .filter((value) => value !== null),
+  )].sort();
+
+  let origin = 'bibliographic_only';
+  if (ids.length > 1) {
+    origin = 'catalog_product_conflict';
+  } else if (ids.length === 1) {
+    if (presentCount !== items.length) {
+      origin = 'catalog_product_partial';
+    } else if (listingValues.includes(true) && listingValues.includes(false)) {
+      origin = 'ml_common_plus_catalog';
+    } else {
+      origin = 'same_ml_catalog_product';
+    }
+  } else if (items.some((item) => item?.catalog_listing === true)) {
+    origin = 'catalog_listing_without_product_id';
+  }
+
+  return {
+    origin,
+    catalogProductIds: ids,
+    catalogListingValues: listingValues,
+  };
+}
+
+export function summarizeMlOrigins(groups) {
+  const summary = {
+    totalGroups: 0,
+    mlCommonPlusCatalogGroups: 0,
+    sameMlCatalogProductGroups: 0,
+    bibliographicOnlyGroups: 0,
+    catalogProductPartialGroups: 0,
+    catalogProductConflictGroups: 0,
+    catalogListingWithoutProductIdGroups: 0,
+  };
+
+  for (const group of Array.isArray(groups) ? groups : []) {
+    summary.totalGroups += 1;
+    const origin = group?.mlCatalogIdentity?.origin;
+    if (origin === 'ml_common_plus_catalog') summary.mlCommonPlusCatalogGroups += 1;
+    else if (origin === 'same_ml_catalog_product') summary.sameMlCatalogProductGroups += 1;
+    else if (origin === 'catalog_product_partial') summary.catalogProductPartialGroups += 1;
+    else if (origin === 'catalog_product_conflict') summary.catalogProductConflictGroups += 1;
+    else if (origin === 'catalog_listing_without_product_id') summary.catalogListingWithoutProductIdGroups += 1;
+    else summary.bibliographicOnlyGroups += 1;
+  }
+
+  summary.mlIdentityExplainedGroups =
+    summary.mlCommonPlusCatalogGroups + summary.sameMlCatalogProductGroups;
+  summary.mlIdentityExplainedPct = summary.totalGroups > 0
+    ? Math.round((summary.mlIdentityExplainedGroups / summary.totalGroups) * 10000) / 100
+    : 0;
+  summary.mlCommonPlusCatalogPct = summary.totalGroups > 0
+    ? Math.round((summary.mlCommonPlusCatalogGroups / summary.totalGroups) * 10000) / 100
+    : 0;
+
+  return summary;
 }
 
 async function fetchJson(url) {
@@ -55,7 +127,7 @@ function expandIndex(payload) {
   }).filter(Boolean);
 }
 
-function buildGroups(items, keyFn, kind) {
+export function buildGroups(items, keyFn, kind) {
   const buckets = new Map();
   for (const item of items) {
     const key = keyFn(item);
@@ -72,6 +144,7 @@ function buildGroups(items, keyFn, kind) {
       let classification;
       if (kind === 'title_author') classification = isbns.length > 1 ? 'isbn_inconsistent' : 'same_book';
       else classification = titleAuthors.length > 1 ? 'isbn_inconsistent' : 'same_book';
+      const mlCatalogIdentity = classifyMlCatalogOrigin(group);
 
       return {
         key,
@@ -80,6 +153,7 @@ function buildGroups(items, keyFn, kind) {
         count: group.length,
         isbns,
         titleAuthorKeys: titleAuthors,
+        mlCatalogIdentity,
         items: group.map((item) => ({
           id: item.id,
           title: item.title || null,
@@ -87,6 +161,14 @@ function buildGroups(items, keyFn, kind) {
           isbn: item.isbn || null,
           status: item.status || null,
           available_quantity: Number(item.available_quantity || 0),
+          condition: item.condition || null,
+          catalog_listing: typeof item.catalog_listing === 'boolean' ? item.catalog_listing : null,
+          catalog_product_id: item.catalog_product_id || null,
+          bibliographic: item.bibliographic ? {
+            edition: item.bibliographic.edition || null,
+            language: item.bibliographic.language || null,
+            format: item.bibliographic.format || null,
+          } : null,
         })),
       };
     })
@@ -101,10 +183,12 @@ function summarizeGroups(groups) {
     duplicateListings: groups.reduce((sum, group) => sum + group.count, 0),
     sameBookGroups: sameBook.length,
     isbnInconsistentGroups: inconsistent.length,
+    mlCatalogOrigins: summarizeMlOrigins(groups),
+    sameBookMlCatalogOrigins: summarizeMlOrigins(sameBook),
   };
 }
 
-async function main() {
+export async function main() {
   const generatedAt = new Date().toISOString();
   const [catalog, manifest] = await Promise.all([fetchJson(CATALOG_URL), fetchJson(MANIFEST_URL)]);
   const current = manifest?.current || {};
@@ -128,7 +212,7 @@ async function main() {
   const onlyIndex = [...activeIndexIds].filter((id) => !activeCatalogIds.has(id)).sort();
 
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt,
     sources: {
       catalogUrl: CATALOG_URL,
@@ -152,6 +236,7 @@ async function main() {
     methodology: {
       isbn: 'ISBN normalizado a 10/13 caracteres; grupos con 2+ listings. Mismo ISBN con más de un título+autor normalizado se marca isbn_inconsistent.',
       titleAuthor: 'Título y autor sin tildes, minúsculas, puntuación colapsada; grupos con 2+ listings. Más de un ISBN válido dentro del grupo se marca isbn_inconsistent.',
+      mlCatalogIdentity: 'Clasifica el origen observable con catalog_listing + catalog_product_id: común+catálogo, mismo producto de catálogo, conflicto, parcial o sólo evidencia bibliográfica. No autoriza canonical por sí solo.',
       scope: 'Solo listings activos con available_quantity > 0 para la clasificación de duplicados; el índice R2 se usa como control de paridad y contexto de inventario.',
     },
     summaries: {
@@ -171,7 +256,10 @@ async function main() {
   console.log(`Escrito: ${outputPath}`);
 }
 
-main().catch((error) => {
-  console.error(error.stack || error.message);
-  process.exitCode = 1;
-});
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error.stack || error.message);
+    process.exitCode = 1;
+  });
+}
