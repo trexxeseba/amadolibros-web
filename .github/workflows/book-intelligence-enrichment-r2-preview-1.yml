@@ -1,0 +1,107 @@
+name: FICHAS-VIDRIERA-2 enrichment R2 Preview 1
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-enrichment-r2-preview-1
+    paths:
+      - '.github/workflows/book-intelligence-enrichment-r2-preview-1.yml'
+      - 'scripts/seo/publish-book-intelligence-preview-r2.sh'
+      - 'scripts/seo/book-intelligence-enrichment-manifest.mjs'
+      - 'scripts/seo/book-intelligence-enrichment-manifest-run.mjs'
+      - 'scripts/seo/book-intelligence-official-evidence-pilot-data.mjs'
+      - 'functions/__tests__/book-intelligence-preview-r2-publish.test.js'
+      - 'functions/__tests__/book-intelligence-enrichment-manifest.test.js'
+      - 'functions/_shared/book-intelligence-evidence.js'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Cantidad de ISBN con demanda GSC a persistir en Preview
+        required: true
+        default: '12'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: book-intelligence-enrichment-r2-preview-1
+  cancel-in-progress: true
+
+jobs:
+  publish-preview:
+    name: Build, publish and read back Preview manifest
+    if: github.ref_name == 'agent/fichas-vidriera-v2-enrichment-r2-preview-1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: preview
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate Preview-only persistence contract
+        run: |
+          bash -n scripts/seo/publish-book-intelligence-preview-r2.sh
+          node --check scripts/seo/book-intelligence-enrichment-manifest.mjs
+          node --check scripts/seo/book-intelligence-enrichment-manifest-run.mjs
+          node --test \
+            functions/__tests__/book-intelligence-preview-r2-publish.test.js \
+            functions/__tests__/book-intelligence-enrichment-manifest.test.js \
+            functions/__tests__/book-intelligence-official-evidence-pilot.test.js \
+            functions/__tests__/book-intelligence-evidence.test.js
+
+      - name: Authenticate Google Books through existing Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Build fresh enrichment manifest
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+          BOOK_INTELLIGENCE_OUTPUT_DIR: artifacts/book-intelligence/enrichment-manifest-1
+        run: node scripts/seo/book-intelligence-enrichment-manifest-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
+
+      - name: Publish isolated R2 Preview namespace and verify readback
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BOOK_INTELLIGENCE_PREVIEW_BUCKET: amadolibros-catalog
+        run: bash scripts/seo/publish-book-intelligence-preview-r2.sh
+
+      - name: Upload exact persisted artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-intelligence-enrichment-r2-preview-1-${{ github.run_id }}
+          path: artifacts/book-intelligence/enrichment-manifest-1/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo '## FICHAS-VIDRIERA-2 — R2 Preview persistence' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Namespace: `book-intelligence/preview/v1/*`' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Bucket: `amadolibros-catalog` (prefijo aislado; no toca catalog.json ni showcase)' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Producción Pages no tiene binding `CATALOG_BUCKET`' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Sin deploy de Pages/Worker' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/book-intelligence/enrichment-manifest-1/report-summary.md ]; then
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            cat artifacts/book-intelligence/enrichment-manifest-1/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
