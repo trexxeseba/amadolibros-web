@@ -29,14 +29,19 @@ function fakeResponse(payload, { status = 200 } = {}) {
   };
 }
 
-test('Google Books URL exige API key y usa búsqueda exacta por ISBN', () => {
-  assert.throws(() => buildGoogleBooksUrl(ISBN), /GOOGLE_BOOKS_API_KEY/);
-  const url = new URL(buildGoogleBooksUrl(ISBN, { apiKey: 'test-key' }));
-  assert.equal(url.origin, 'https://www.googleapis.com');
-  assert.equal(url.pathname, '/books/v1/volumes');
-  assert.equal(url.searchParams.get('q'), `isbn:${ISBN}`);
-  assert.equal(url.searchParams.get('printType'), 'books');
-  assert.equal(url.searchParams.get('key'), 'test-key');
+test('Google Books exige API key u OAuth token y usa búsqueda exacta por ISBN', () => {
+  assert.throws(() => buildGoogleBooksUrl(ISBN), /API key u OAuth/);
+  const keyUrl = new URL(buildGoogleBooksUrl(ISBN, { apiKey: 'test-key' }));
+  assert.equal(keyUrl.origin, 'https://www.googleapis.com');
+  assert.equal(keyUrl.pathname, '/books/v1/volumes');
+  assert.equal(keyUrl.searchParams.get('q'), `isbn:${ISBN}`);
+  assert.equal(keyUrl.searchParams.get('printType'), 'books');
+  assert.equal(keyUrl.searchParams.get('key'), 'test-key');
+
+  const oauthUrl = new URL(buildGoogleBooksUrl(ISBN, { accessToken: 'token-from-wif' }));
+  assert.equal(oauthUrl.searchParams.get('q'), `isbn:${ISBN}`);
+  assert.equal(oauthUrl.searchParams.has('key'), false);
+  assert.equal(oauthUrl.toString().includes('token-from-wif'), false);
 });
 
 test('parseGoogleBooksEvidence sólo acepta volumes que contienen el ISBN exacto', () => {
@@ -166,7 +171,6 @@ test('Open Library budget es bajo por defecto y se divide en requests de máximo
     isbn: base[index % base.length],
   }));
   const plan = planBookSourceResearch(items, {}, { openLibraryBudget: 25 });
-  // Sólo hay dos ISBN únicos en el fixture.
   assert.equal(plan.open_library.length, 2);
   const synthetic = {
     open_library: Array.from({ length: 25 }, (_, i) => ({ id: `X${i}`, isbn: ISBN })),
@@ -175,7 +179,7 @@ test('Open Library budget es bajo por defecto y se divide en requests de máximo
   assert.deepEqual(chunks.map(chunk => chunk.length), [20, 5]);
 });
 
-test('fetchGoogleBooksEvidence usa fetch inyectable y parsea respuesta', async () => {
+test('fetchGoogleBooksEvidence con API key usa fetch inyectable y parsea respuesta', async () => {
   let requestedUrl = null;
   const records = await fetchGoogleBooksEvidence(ISBN, {
     apiKey: 'abc123',
@@ -196,6 +200,32 @@ test('fetchGoogleBooksEvidence usa fetch inyectable y parsea respuesta', async (
   assert.equal(new URL(requestedUrl).searchParams.get('key'), 'abc123');
   assert.equal(records.length, 1);
   assert.equal(records[0].source_id, 'G1');
+});
+
+test('fetchGoogleBooksEvidence con OAuth manda Bearer y nunca filtra token en URL', async () => {
+  let requestedUrl = null;
+  let requestedOptions = null;
+  const records = await fetchGoogleBooksEvidence(ISBN, {
+    accessToken: 'wif-access-token',
+    fetchImpl: async (url, options) => {
+      requestedUrl = String(url);
+      requestedOptions = options;
+      return fakeResponse({
+        items: [{
+          id: 'G2',
+          volumeInfo: {
+            title: 'Padres fuertes, hijas felices',
+            authors: ['Meg Meeker'],
+            industryIdentifiers: [{ type: 'ISBN_13', identifier: ISBN }],
+          },
+        }],
+      });
+    },
+  });
+  assert.equal(new URL(requestedUrl).searchParams.has('key'), false);
+  assert.equal(requestedUrl.includes('wif-access-token'), false);
+  assert.equal(requestedOptions.headers.authorization, 'Bearer wif-access-token');
+  assert.equal(records[0].source_id, 'G2');
 });
 
 test('fetchOpenLibraryBatchEvidence exige contacto identificable', async () => {
