@@ -1,0 +1,41 @@
+name: FICHAS-VIDRIERA-2 capture reader diagnostic
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-preview-reader-green-1
+    paths:
+      - '.github/workflows/book-intelligence-preview-reader-diagnostic-artifact.yml'
+      - 'functions/api/book-intelligence-preview-diagnostic.js'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Capture diagnostic
+        run: |
+          set -euo pipefail
+          URL='https://fv2-green-1.amadolibros-web.pages.dev/api/book-intelligence-preview-diagnostic'
+          for attempt in 1 2 3 4 5; do
+            CODE=$(curl -sS --max-time 30 -o diagnostic.json -w '%{http_code}' "$URL" || true)
+            if [ "$CODE" = '200' ]; then
+              cat diagnostic.json
+              break
+            fi
+            printf '{"status":"transport_http_%s"}\n' "$CODE" > diagnostic.json
+            sleep 5
+          done
+          test -s diagnostic.json
+
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-intelligence-preview-reader-diagnostic
+          path: diagnostic.json
+          if-no-files-found: error
+          retention-days: 1
