@@ -60,14 +60,93 @@ test('una referencia web débil sola no habilita generación', () => {
   assert.equal(result.generation_policy.can_generate_work_content, false);
 });
 
-test('mismo ISBN con título incompatible bloquea por conflicto de identidad', () => {
+test('mismo ISBN con título y autor incompatibles bloquea por conflicto de identidad', () => {
   const result = classifyBookIntelligenceEvidence(item(), [
-    evidence('google_books', { title: 'Un libro completamente distinto' }),
+    evidence('google_books', {
+      title: 'Un libro completamente distinto',
+      author: 'Otra persona',
+    }),
     evidence('open_library'),
   ]);
   assert.equal(result.tier, 'red');
   assert.equal(result.reason, 'identity_conflict');
   assert.equal(result.identity_conflicts.some(conflict => conflict.field === 'title'), true);
+  assert.equal(result.identity_conflicts.some(conflict => conflict.field === 'author'), true);
+});
+
+test('ISBN exacto tolera título localizado si el autor coincide', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({
+      title: 'Libro Colorea Y Descubre El Misterio Los Ositos Cariñosos',
+      author: 'Varone, Eugénie',
+    }),
+    [evidence('google_books', {
+      title: 'Coloriages mystères Bisounours',
+      author: 'Eugénie Varone',
+    })],
+  );
+  assert.equal(result.identity_conflicts.length, 0);
+  assert.equal(result.tier, 'yellow');
+  assert.equal(result.reason, 'single_strong_source');
+});
+
+test('fuente exacta incompleta deja de bloquear cuando otra fuente confirma el autor', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({
+      title: 'Libro Colorea Y Descubre El Misterio Los Ositos Cariñosos',
+      author: 'Varone, Eugénie',
+    }),
+    [
+      evidence('google_books', {
+        title: 'Coloriages mystères Bisounours',
+        author: '',
+      }),
+      evidence('publisher', {
+        title: 'Coloriages mystères - Bisounours',
+        author: 'Eugénie Varone',
+      }),
+    ],
+  );
+  assert.equal(result.identity_conflicts.length, 0);
+  assert.equal(result.tier, 'green');
+  assert.equal(result.reason, 'multi_source_exact_identity');
+});
+
+test('fuente exacta sin autor y título divergente permanece bloqueada si no hay corroboración', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({
+      title: 'Libro Colorea Y Descubre El Misterio Los Ositos Cariñosos',
+      author: 'Varone, Eugénie',
+    }),
+    [evidence('google_books', {
+      title: 'Coloriages mystères Bisounours',
+      author: '',
+    })],
+  );
+  assert.equal(result.tier, 'red');
+  assert.equal(result.reason, 'identity_conflict');
+  assert.equal(result.identity_conflicts.some(conflict => conflict.field === 'title'), true);
+});
+
+test('autor apellido-nombre y nombre-apellido se consideran la misma identidad', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({ title: 'El legado', author: 'Beder, German' }),
+    [evidence('google_books', { title: 'El legado', author: 'Germán Beder' })],
+  );
+  assert.equal(result.identity_conflicts.length, 0);
+  assert.equal(result.tier, 'yellow');
+});
+
+test('autor compuesto conserva identidad aunque cambie el orden de tokens', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({ title: 'La jubilación: una nueva oportunidad', author: 'Freire Arteta, Bartolomé' }),
+    [evidence('google_books', {
+      title: 'La jubilación: una nueva oportunidad',
+      author: 'Bartolomé Freire Arteta',
+    })],
+  );
+  assert.equal(result.identity_conflicts.length, 0);
+  assert.equal(result.tier, 'yellow');
 });
 
 test('otro ISBN de la misma obra puede aportar contenido de obra pero no datos de edición', () => {

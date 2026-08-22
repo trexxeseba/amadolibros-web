@@ -28,6 +28,11 @@ const EDITION_FIELDS = Object.freeze([
   'publication_year',
 ]);
 
+const AUTHOR_NOISE_TOKENS = new Set([
+  'dr', 'dra', 'doctor', 'doctora', 'phd', 'prof', 'profesor', 'profesora',
+  'lic', 'licenciado', 'licenciada', 'md',
+]);
+
 function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -55,6 +60,30 @@ function compatibleIdentityText(left, right) {
   return false;
 }
 
+function authorTokens(value) {
+  return normalizeEvidenceText(value)
+    .split(' ')
+    .filter(Boolean)
+    .filter(token => !AUTHOR_NOISE_TOKENS.has(token));
+}
+
+function compatibleAuthorIdentity(left, right) {
+  if (compatibleIdentityText(left, right)) return true;
+  const leftTokens = authorTokens(left);
+  const rightTokens = authorTokens(right);
+  if (!leftTokens.length || !rightTokens.length) return true;
+
+  const leftSet = new Set(leftTokens);
+  const rightSet = new Set(rightTokens);
+  const sameSet = leftSet.size === rightSet.size && [...leftSet].every(token => rightSet.has(token));
+  if (sameSet) return true;
+
+  const [shorter, longer] = leftSet.size <= rightSet.size
+    ? [leftSet, rightSet]
+    : [rightSet, leftSet];
+  return shorter.size >= 2 && [...shorter].every(token => longer.has(token));
+}
+
 /**
  * Evidencia que NO coincide por ISBN exacto sólo puede representar la misma
  * obra si tenemos ambas piezas de identidad: título y autor. Aceptar sólo el
@@ -68,7 +97,7 @@ function sameWorkIdentityMatches(itemTitle, itemAuthor, recordTitle, recordAutho
   const authorB = normalizeEvidenceText(recordAuthor);
   if (!titleA || !titleB || !authorA || !authorB) return false;
   return compatibleIdentityText(itemTitle, recordTitle) &&
-    compatibleIdentityText(itemAuthor, recordAuthor);
+    compatibleAuthorIdentity(itemAuthor, recordAuthor);
 }
 
 function normalizedComparable(value) {
@@ -153,7 +182,13 @@ function consensusForField(records, field) {
  * - el contenido de OBRA puede usar ISBN exacto o título+autor compatibles;
  * - dos familias de fuentes independientes permiten publicación automática;
  * - una sola fuente suficiente permite generar, pero no auto-publicar;
- * - una contradicción de identidad sobre el mismo ISBN bloquea el lote.
+ * - una contradicción de identidad material sobre el mismo ISBN bloquea el lote.
+ *
+ * Un ISBN exacto con autor compatible tolera diferencias de título por idioma,
+ * subtítulos o copy comercial del marketplace. En autores se tolera orden
+ * "apellido, nombre", diacríticos y honoríficos. Una fuente exacta sin autor
+ * y con título divergente sigue siendo conservadora por sí sola, pero deja de
+ * bloquear cuando otra fuente del mismo ISBN confirma un autor compatible.
  */
 export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
   const itemIsbn = normalizeValidIsbn(item?.isbn);
@@ -167,13 +202,22 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
     ? records.filter(record => record.isbn === itemIsbn)
     : [];
 
+  const hasExactCompatibleAuthor = Boolean(itemAuthor) && exactIsbnRecords.some(record =>
+    record.author && compatibleAuthorIdentity(itemAuthor, record.author),
+  );
+
   const identityConflicts = [];
   for (const record of exactIsbnRecords) {
-    if (record.title && !compatibleIdentityText(itemTitle, record.title)) {
-      identityConflicts.push({ source: record.source, field: 'title', value: record.title });
-    }
-    if (itemAuthor && record.author && !compatibleIdentityText(itemAuthor, record.author)) {
+    const titleComparable = Boolean(itemTitle && record.title);
+    const authorComparable = Boolean(itemAuthor && record.author);
+    const titleMismatch = titleComparable && !compatibleIdentityText(itemTitle, record.title);
+    const authorMismatch = authorComparable && !compatibleAuthorIdentity(itemAuthor, record.author);
+
+    if (authorMismatch) {
       identityConflicts.push({ source: record.source, field: 'author', value: record.author });
+    }
+    if (titleMismatch && (authorMismatch || (!authorComparable && !hasExactCompatibleAuthor))) {
+      identityConflicts.push({ source: record.source, field: 'title', value: record.title });
     }
   }
 
