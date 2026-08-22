@@ -90,6 +90,44 @@ test('ISBN exacto tolera título localizado si el autor coincide', () => {
   assert.equal(result.reason, 'single_strong_source');
 });
 
+test('fuente exacta incompleta deja de bloquear cuando otra fuente confirma el autor', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({
+      title: 'Libro Colorea Y Descubre El Misterio Los Ositos Cariñosos',
+      author: 'Varone, Eugénie',
+    }),
+    [
+      evidence('google_books', {
+        title: 'Coloriages mystères Bisounours',
+        author: '',
+      }),
+      evidence('publisher', {
+        title: 'Coloriages mystères - Bisounours',
+        author: 'Eugénie Varone',
+      }),
+    ],
+  );
+  assert.equal(result.identity_conflicts.length, 0);
+  assert.equal(result.tier, 'green');
+  assert.equal(result.reason, 'multi_source_exact_identity');
+});
+
+test('fuente exacta sin autor y título divergente permanece bloqueada si no hay corroboración', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({
+      title: 'Libro Colorea Y Descubre El Misterio Los Ositos Cariñosos',
+      author: 'Varone, Eugénie',
+    }),
+    [evidence('google_books', {
+      title: 'Coloriages mystères Bisounours',
+      author: '',
+    })],
+  );
+  assert.equal(result.tier, 'red');
+  assert.equal(result.reason, 'identity_conflict');
+  assert.equal(result.identity_conflicts.some(conflict => conflict.field === 'title'), true);
+});
+
 test('autor apellido-nombre y nombre-apellido se consideran la misma identidad', () => {
   const result = classifyBookIntelligenceEvidence(
     item({ title: 'El legado', author: 'Beder, German' }),
