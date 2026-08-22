@@ -1,0 +1,126 @@
+name: FICHAS-VIDRIERA-2 research run 1
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-research-run-1
+    paths:
+      - '.github/workflows/book-intelligence-research-run.yml'
+      - 'scripts/seo/book-intelligence-research-run.mjs'
+      - 'scripts/seo/book-intelligence-sources.mjs'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/paused-seo-cohort.js'
+      - 'functions/__tests__/book-intelligence-research-run.test.js'
+      - 'functions/__tests__/book-intelligence-sources.test.js'
+  pull_request:
+    paths:
+      - '.github/workflows/book-intelligence-research-run.yml'
+      - 'scripts/seo/book-intelligence-research-run.mjs'
+      - 'scripts/seo/book-intelligence-sources.mjs'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/paused-seo-cohort.js'
+      - 'functions/__tests__/book-intelligence-research-run.test.js'
+      - 'functions/__tests__/book-intelligence-sources.test.js'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Cantidad de ISBN con demanda GSC a investigar
+        required: true
+        default: '12'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: book-intelligence-research-run-1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  research:
+    name: WIF + Google Books + Open Library + evidence tiers
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate research code without network
+        run: |
+          node --check scripts/seo/book-intelligence-research-run.mjs
+          node --check scripts/seo/book-intelligence-sources.mjs
+          node --test functions/__tests__/book-intelligence-sources.test.js functions/__tests__/book-intelligence-research-run.test.js
+
+      - name: Authenticate Google Books through existing Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Execute controlled research run
+        id: research_run
+        continue-on-error: true
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+          BOOK_INTELLIGENCE_OUTPUT_DIR: artifacts/book-intelligence/research-run-1
+        run: node scripts/seo/book-intelligence-research-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
+
+      - name: Validate generated report
+        if: steps.research_run.outcome == 'success'
+        run: |
+          test -s artifacts/book-intelligence/research-run-1/research-run-1-report.json
+          test -s artifacts/book-intelligence/research-run-1/report-summary.md
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/book-intelligence/research-run-1/research-run-1-report.json', 'utf8'));
+          if (report.schema_version !== 1) process.exit(1);
+          if (report.run !== 'FICHAS-VIDRIERA-2/RESEARCH-RUN-1') process.exit(1);
+          if (report.cohort.selected !== Number(process.env.BOOK_INTELLIGENCE_LIMIT || 12)) process.exit(1);
+          if (report.execution.google_books_http_successes < 1) process.exit(1);
+          NODE
+        env:
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '12' }}
+
+      - name: Upload research report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-intelligence-research-run-1-${{ github.run_id }}
+          path: artifacts/book-intelligence/research-run-1/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Write research summary
+        if: always()
+        run: |
+          if [ -f artifacts/book-intelligence/research-run-1/report-summary.md ]; then
+            cat artifacts/book-intelligence/research-run-1/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## FICHAS-VIDRIERA-2 — RESEARCH-RUN-1 incompleto' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se generó reporte. Revisar WIF, scope Books y ejecución del runner.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Autenticación: WIF existente; sin API key nueva' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Modo: sólo lectura' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Deploy: no se ejecuta' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if research run did not complete
+        if: steps.research_run.outcome != 'success'
+        run: |
+          echo 'RESEARCH-RUN-1 no completó Google Books con WIF/OAuth. Revisar el reporte y los logs.'
+          exit 1
