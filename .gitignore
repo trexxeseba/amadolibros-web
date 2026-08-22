@@ -22,3 +22,7 @@ astro-front/.astro/
 # masiva (~17k registros): datos derivados, reproducibles desde R2 público,
 # no pertenecen al repositorio. Reglas, esquema y tests sí se versionan.
 scripts/categorize/data/
+
+# FICHAS-VIDRIERA-2 — caché local de investigación bibliográfica.
+# Puede regenerarse; nunca debe versionar API keys ni respuestas de trabajo.
+scripts/seo/data/book-intelligence/
