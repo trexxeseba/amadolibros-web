@@ -108,6 +108,13 @@ test('rechaza un parámetro no reconocido, aunque el resto sea válido', async (
     assert.equal(response.status, 400);
 });
 
+test('rechaza un parámetro conocido repetido en vez de elegir silenciosamente uno', async () => {
+    const response = await alternativesRequest(context(request('?system=tarot&system=oraculo')));
+    assert.equal(response.status, 400);
+    const data = await response.json();
+    assert.match(data.error || '', /repetido/i);
+});
+
 test('rechaza un valor fuera de enum para cada parámetro conocido', async () => {
     const cases = ['?intent=cualquier_cosa', '?system=vampiro', '?deckFamily=egipcio', '?language=klingon', '?guide=tal_vez'];
     for (const query of cases) {
