@@ -78,29 +78,50 @@ test('el estado inicial arranca en "opening", nunca en una pregunta de sistema/t
     assert.equal(JSON.stringify(state.answers), '{}');
 });
 
-test('primer clic (cualquier intención de apertura) va DIRECTO a resultados — nunca exige sistema/tradición/idioma/guía antes', () => {
+test('primer clic (cualquier intención de apertura) va DIRECTO a resultados — nunca exige tradición/idioma/guía antes, y `system` sólo se fija cuando la opción lo promete explícitamente', () => {
     const hooks = loadClientHooks();
     for (const option of hooks.OPENING_OPTIONS) {
         const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', option.value);
         assert.equal(state.step, 'results', `opción "${option.value}" no fue directo a resultados`);
-        assert.equal(state.answers.system, undefined);
+        assert.equal(state.answers.system, option.system, `opción "${option.value}"`);
         assert.equal(state.answers.deckFamily, undefined);
         assert.equal(state.answers.language, undefined);
         assert.equal(state.answers.guide, undefined);
     }
 });
 
-test('"Solo quiero explorar" -> resultados, con intent sin_preferencia (no fabrica una señal falsa)', () => {
+test('"Quiero explorar" -> resultados, con intent sin_preferencia (no fabrica una señal falsa)', () => {
     const hooks = loadClientHooks();
     const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
     assert.equal(state.step, 'results');
     assert.equal(state.answers.intent, 'sin_preferencia');
+    assert.equal(state.answers.system, undefined);
 });
 
-test('"Quiero aprender Tarot" mapea a intent=estudiar (señal real ya existente en el motor de scoring)', () => {
+test('"Quiero aprender Tarot" mapea a intent=estudiar Y fija system=tarot (fix post-Preview FIX 5 — es exactamente lo que promete)', () => {
     const hooks = loadClientHooks();
-    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'aprender');
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'aprender_tarot');
     assert.equal(state.answers.intent, 'estudiar');
+    assert.equal(state.answers.system, 'tarot');
+});
+
+test('"Es mi primer mazo" mapea a intent=primer_mazo', () => {
+    const hooks = loadClientHooks();
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'primer_mazo');
+    assert.equal(state.answers.intent, 'primer_mazo');
+    assert.equal(state.answers.system, undefined);
+});
+
+test('"Ya tengo experiencia" mapea a intent=experiencia', () => {
+    const hooks = loadClientHooks();
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'experiencia');
+    assert.equal(state.answers.intent, 'experiencia');
+});
+
+test('"Colecciono mazos" mapea a intent=coleccionista', () => {
+    const hooks = loadClientHooks();
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'coleccionista');
+    assert.equal(state.answers.intent, 'coleccionista');
 });
 
 test('"Busco un regalo" mapea a intent=regalo', () => {
@@ -130,7 +151,7 @@ test('applyStartRefine entra a la primera pregunta del refinamiento y marca refi
 
 test('sin clickear "Afinar mi búsqueda", results.refining nunca pasa a true por sí solo', () => {
     const hooks = loadClientHooks();
-    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'aprender');
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'aprender_tarot');
     assert.equal(state.step, 'results');
     assert.equal(state.refining, false);
 });
@@ -268,8 +289,10 @@ test('rankCandidates nunca devuelve más de 6, aunque haya más candidatos váli
 
 test('findNearestAlternatives nunca devuelve más de MAX_ALTERNATIVES (3)', () => {
     const hooks = loadClientHooks();
-    const pool = Array.from({ length: 10 }, (_, i) => candidate({ id: `MLU${i}`, language: 'ingles' }));
-    const alternatives = hooks.findNearestAlternatives(pool, { language: 'espanol' });
+    // Cada candidato cumple deckFamily pero no language — 1 de 2 blandas
+    // violadas, admisible (fix post-Preview: debe compartir al menos una).
+    const pool = Array.from({ length: 10 }, (_, i) => candidate({ id: `MLU${i}`, deck_family: 'rider_waite_smith', language: 'ingles' }));
+    const alternatives = hooks.findNearestAlternatives(pool, { deckFamily: 'rider_waite_smith', language: 'espanol' });
     assert.equal(alternatives.length, 3);
     assert.equal(hooks.MAX_ALTERNATIVES, 3);
 });
@@ -289,7 +312,7 @@ test('applyChoice/applyStartRefine producen el mismo estado final para la misma 
     const hooks = loadClientHooks();
     function run() {
         let s = hooks.initialFinderState();
-        s = hooks.applyChoice(s, 'opening', 'aprender');
+        s = hooks.applyChoice(s, 'opening', 'aprender_tarot');
         s = hooks.applyStartRefine(s);
         s = hooks.applyChoice(s, 'system', 'tarot');
         s = hooks.applyChoice(s, 'deckFamily', 'rider_waite_smith');
@@ -428,4 +451,38 @@ test('el archivo respeta prefers-reduced-motion (no se anima nada hardcodeado si
     // setTimeout/rAF manuales que prefers-reduced-motion no pueda cortar —
     // toda la animación vive en CSS (ver TAROT_FINDER_STYLES), no acá.
     assert.doesNotMatch(CLIENT_SOURCE, /requestAnimationFrame|setTimeout/);
+});
+
+// ── FIX 1 (post-Preview): un candidato pausado nunca muestra $0 ─────────
+
+test('resultCardHtml: un candidato ACTIVO muestra precio real y CTA "Ver mazo"', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ price: 2500, status: 'active' }), {});
+    assert.match(html, /\$2\.500 UYU/);
+    assert.match(html, />Ver mazo</);
+    assert.doesNotMatch(html, /Consultar este mazo/);
+    assert.doesNotMatch(html, /Lo podemos buscar por encargo/);
+});
+
+test('resultCardHtml: un candidato PAUSADO nunca muestra $0 — badge "Lo podemos buscar por encargo" y CTA "Consultar este mazo"', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ price: null, stock: null, status: 'paused' }), {});
+    assert.doesNotMatch(html, /\$0/, 'nunca debe aparecer un precio inventado');
+    assert.doesNotMatch(html, /UYU/, 'sin precio real, no hay cifra en UYU');
+    assert.match(html, /Lo podemos buscar por encargo/);
+    assert.match(html, />Consultar este mazo</);
+    assert.doesNotMatch(html, />Ver mazo</);
+});
+
+test('resultCardHtml: un candidato pausado con price=0/stock=0 explícitos (no null) tampoco muestra $0 — el status manda, no el valor numérico', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ price: 0, stock: 0, status: 'paused' }), {});
+    assert.doesNotMatch(html, /\$0/);
+    assert.match(html, /Lo podemos buscar por encargo/);
+});
+
+test('resultCardHtml: el copy nunca dice "disponible por encargo" (fix post-Preview: pausado no es disponibilidad confirmada)', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ status: 'paused' }), {});
+    assert.doesNotMatch(html, /disponible por encargo/i);
 });

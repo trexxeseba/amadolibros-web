@@ -34,22 +34,19 @@
   var LANGUAGE_LABEL = { espanol: 'Español', ingles: 'Inglés', multilingue: 'Multilingüe' };
   var INTENT_LABEL = { primer_mazo: 'primer mazo', estudiar: 'aprender/estudiar', experiencia: 'ya tiene experiencia', regalo: 'regalo', coleccionista: 'coleccionista' };
 
-  // TAROT-FINDER-UX-2: apertura del selector — nunca lenguaje predictivo
-  // ("esto va a ocurrir", "esta carta revela tu futuro"). Las 4 opciones
-  // reflexivas (mirar adelante/claridad/decisión/entender) y "explorar"
-  // caen en sin_preferencia a propósito: el catálogo no tiene (ni debe
-  // tener) un atributo real de "sirve para tomar decisiones" — inventar esa
-  // correspondencia sería la misma clase de afirmación predictiva que se
-  // pidió evitar. "Aprender Tarot" y "regalo" sí reutilizan una señal de
-  // scoring que YA existe (estudiar/regalo).
+  // TAROT-FINDER-UX-2 (fix post-Preview): apertura del selector — 6
+  // opciones, cada una mapeada a una señal REAL que ya existe en el motor
+  // de scoring. La versión anterior tenía 4 botones "reflexivos" que todos
+  // caían en sin_preferencia y producían el MISMO ranking — falsa
+  // personalización. "Quiero aprender Tarot" además fija system:'tarot',
+  // exactamente lo que ese botón promete.
   var OPENING_OPTIONS = [
-    { value: 'mirar_adelante', label: 'Quiero mirar hacia adelante', intent: 'sin_preferencia' },
-    { value: 'claridad', label: 'Necesito claridad', intent: 'sin_preferencia' },
-    { value: 'decision', label: 'Quiero destrabar una decisión', intent: 'sin_preferencia' },
-    { value: 'entender_situacion', label: 'Quiero entender una situación', intent: 'sin_preferencia' },
-    { value: 'aprender', label: 'Quiero aprender Tarot', intent: 'estudiar' },
+    { value: 'primer_mazo', label: 'Es mi primer mazo', intent: 'primer_mazo' },
+    { value: 'aprender_tarot', label: 'Quiero aprender Tarot', intent: 'estudiar', system: 'tarot' },
+    { value: 'experiencia', label: 'Ya tengo experiencia', intent: 'experiencia' },
     { value: 'regalo', label: 'Busco un regalo', intent: 'regalo' },
-    { value: 'explorar', label: 'Solo quiero explorar', intent: 'sin_preferencia' },
+    { value: 'coleccionista', label: 'Colecciono mazos', intent: 'coleccionista' },
+    { value: 'explorar', label: 'Quiero explorar', intent: 'sin_preferencia' },
   ];
 
   function escapeHtml(value) {
@@ -126,26 +123,45 @@
   }
 
   // ---- Alternativas cercanas (0 resultados exactos con filtros activos) --
+  // `system` NUNCA se relaja para una alternativa — sugerir un Oráculo
+  // cuando la persona pidió Tarot no es "una alternativa cercana". Sí puede
+  // flexibilizarse tradición/idioma/guía, pero debe cumplir al menos una de
+  // las que estén activas.
 
-  function hardConstraintChecks(candidate, answers) {
+  function systemMatches(candidate, answers) {
+    return hasPreference(answers.system) ? candidate.primary_type === answers.system : true;
+  }
+
+  function softConstraintChecks(candidate, answers) {
     var checks = [];
-    if (hasPreference(answers.system)) checks.push({ key: 'system', met: candidate.primary_type === answers.system });
     if (hasPreference(answers.deckFamily)) checks.push({ key: 'deckFamily', met: candidate.deck_family === answers.deckFamily });
     if (hasPreference(answers.language)) checks.push({ key: 'language', met: candidate.language === answers.language });
     if (answers.guide === 'si') checks.push({ key: 'guide', met: candidate.bundle === 'mazo_mas_guia' });
     return checks;
   }
 
+  function hardConstraintChecks(candidate, answers) {
+    var checks = [];
+    if (hasPreference(answers.system)) checks.push({ key: 'system', met: candidate.primary_type === answers.system });
+    return checks.concat(softConstraintChecks(candidate, answers));
+  }
+
   function findNearestAlternatives(pool, answers, limit) {
     limit = limit || MAX_ALTERNATIVES;
+    var anyConstraintActive = hasPreference(answers.system) || hasPreference(answers.deckFamily) ||
+      hasPreference(answers.language) || answers.guide === 'si';
+    if (!anyConstraintActive) return [];
+
     var checked = [];
     for (var i = 0; i < pool.length; i++) {
       var candidate = pool[i];
-      var checks = hardConstraintChecks(candidate, answers);
-      if (checks.length === 0) continue;
+      if (!systemMatches(candidate, answers)) continue;
+      var softChecks = softConstraintChecks(candidate, answers);
       var violations = [];
-      for (var j = 0; j < checks.length; j++) if (!checks[j].met) violations.push(checks[j].key);
-      if (!(violations.length > 0 || candidate.status === 'paused')) continue;
+      for (var j = 0; j < softChecks.length; j++) if (!softChecks[j].met) violations.push(softChecks[j].key);
+      // Sin restricciones blandas activas, cumplir `system` ya alcanza.
+      // Con restricciones blandas activas, hay que cumplir al menos una.
+      if (softChecks.length > 0 && violations.length >= softChecks.length) continue;
       checked.push({ candidate: candidate, violations: violations, score: scoreCandidate(candidate, answers) });
     }
     checked.sort(function (a, b) {
@@ -190,7 +206,7 @@
     }
     if (violations.length === 0 && candidate.status === 'paused') {
       var summary = metClauses.length ? ('Cumple ' + metClauses.join(', ')) : 'Cumple lo que buscás';
-      return summary + ', disponible por encargo.';
+      return summary + ', lo podemos buscar por encargo.';
     }
     var unmetClauses = [];
     for (var k = 0; k < violations.length; k++) {
@@ -203,6 +219,30 @@
     if (unmetText) return capitalize(unmetText) + '.';
     if (metText) return capitalize(metText) + '.';
     return '';
+  }
+
+  // FIX 1 (post-Preview): un candidato pausado NUNCA tiene precio/stock
+  // reales (ver buildTarotFinderDataset con status='paused') — mostrar
+  // "$0 UYU" sería inventar un precio. En su lugar: badge/copy de encargo
+  // y un CTA que invita a consultar, no a "ver" como si ya estuviera
+  // disponible. Función pura (sin DOM) a propósito, igual que el resto de
+  // este bloque — se expone en los test hooks para probarla directamente.
+  function resultCardHtml(candidate, answers) {
+    var ex = explainMatch(candidate, answers);
+    var isPaused = candidate.status === 'paused';
+    var priceOrEncargoHtml = isPaused
+      ? '<p class="tf-result-encargo">Lo podemos buscar por encargo</p>'
+      : '<p class="tf-result-price">$' + Number(candidate.price || 0).toLocaleString('es-UY') + ' UYU</p>';
+    var ctaLabel = isPaused ? 'Consultar este mazo' : 'Ver mazo';
+    return '<article class="tf-result-card' + (isPaused ? ' tf-result-card-paused' : '') + '">' +
+      (candidate.image ? '<img src="' + escapeHtml(candidate.image) + '" alt="Portada de ' + escapeHtml(candidate.title) + '" loading="lazy" decoding="async">' : '') +
+      '<div class="tf-result-body">' +
+      (ex.badges.length ? '<div class="tf-result-badges">' + ex.badges.map(function (b) { return '<span>' + escapeHtml(b) + '</span>'; }).join('') + '</div>' : '') +
+      '<h4>' + escapeHtml(candidate.title) + '</h4>' +
+      (ex.sentence ? '<p class="tf-result-why">' + escapeHtml(ex.sentence) + '</p>' : '') +
+      priceOrEncargoHtml +
+      '<a class="tf-result-cta" href="' + escapeHtml(candidate.href) + '">' + ctaLabel + '</a>' +
+      '</div></article>';
   }
 
   // ---- Máquina de estados (sin DOM) --------------------------------------
@@ -261,6 +301,9 @@
       for (var i = 0; i < OPENING_OPTIONS.length; i++) if (OPENING_OPTIONS[i].value === value) { opt = OPENING_OPTIONS[i]; break; }
       answers.intent = opt ? opt.intent : 'sin_preferencia';
       answers.openingChoice = value;
+      // "Quiero aprender Tarot" fija system:'tarot' — es lo que ese botón
+      // promete exactamente. Ninguna otra opción de apertura toca `system`.
+      if (opt && opt.system) answers.system = opt.system;
       return { step: 'results', answers: answers, systemExplainerOpen: false, refining: state.refining, alternativesRevealed: false };
     }
 
@@ -306,7 +349,7 @@
   var QUESTIONS = {
     system: {
       field: 'system',
-      title: '¿Buscás alguna tradición en particular?',
+      title: '¿Qué tipo de cartas buscás?',
       options: [
         { value: 'tarot', label: 'Tarot' },
         { value: 'oraculo', label: 'Oráculo' },
@@ -327,7 +370,7 @@
     },
     family: {
       field: 'deckFamily',
-      title: '¿Preferís alguna edición en particular?',
+      title: '¿Qué tradición de Tarot preferís?',
       options: [
         { value: 'rider_waite_smith', label: 'Rider-Waite-Smith' },
         { value: 'marsella', label: 'Tarot de Marsella' },
@@ -363,7 +406,7 @@
     SCORE: SCORE, QUESTIONS: QUESTIONS, OPENING_OPTIONS: OPENING_OPTIONS,
     hasPreference: hasPreference, passesHard: passesHard, scoreCandidate: scoreCandidate,
     rankCandidates: rankCandidates, explainMatch: explainMatch, buildNoResultsMessage: buildNoResultsMessage,
-    findNearestAlternatives: findNearestAlternatives, explainNearMiss: explainNearMiss,
+    findNearestAlternatives: findNearestAlternatives, explainNearMiss: explainNearMiss, resultCardHtml: resultCardHtml,
     relevantSteps: relevantSteps, nextStepFrom: nextStepFrom, prevStepFrom: prevStepFrom,
     initialFinderState: initialFinderState, applyChoice: applyChoice, applyGoBack: applyGoBack,
     applyStartRefine: applyStartRefine, applyRevealAlternatives: applyRevealAlternatives,
@@ -520,19 +563,6 @@
       focusHeading();
     }
 
-    function resultCardHtml(candidate, answers) {
-      var ex = explainMatch(candidate, answers);
-      var priceText = Number(candidate.price || 0).toLocaleString('es-UY');
-      return '<article class="tf-result-card">' +
-        (candidate.image ? '<img src="' + escapeHtml(candidate.image) + '" alt="Portada de ' + escapeHtml(candidate.title) + '" loading="lazy" decoding="async">' : '') +
-        '<div class="tf-result-body">' +
-        (ex.badges.length ? '<div class="tf-result-badges">' + ex.badges.map(function (b) { return '<span>' + escapeHtml(b) + '</span>'; }).join('') + '</div>' : '') +
-        '<h4>' + escapeHtml(candidate.title) + '</h4>' +
-        (ex.sentence ? '<p class="tf-result-why">' + escapeHtml(ex.sentence) + '</p>' : '') +
-        '<p class="tf-result-price">$' + priceText + ' UYU</p>' +
-        '<a class="tf-result-cta" href="' + escapeHtml(candidate.href) + '">Ver mazo</a>' +
-        '</div></article>';
-    }
 
     function renderResults() {
       var ranked = rankCandidates(dataset, state.answers);

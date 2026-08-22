@@ -66,23 +66,25 @@ export const INTENT_LABEL = Object.freeze({
 });
 
 /**
- * TAROT-FINDER-UX-2: apertura del selector — 7 intenciones de exploración
- * (no de fortuna: "qué querés explorar hoy", nunca "qué te espera"). Cada
- * opción mapea a un `answers.intent` YA existente en el motor de scoring de
- * arriba — nunca se inventa una señal nueva para "claridad"/"decisión"/etc.
- * porque el catálogo no tiene (ni debe tener) un atributo real de "sirve
- * para tomar decisiones": forzar esa correspondencia sería la misma clase
- * de afirmación predictiva que se pidió evitar. Esas cuatro opciones caen
- * en 'sin_preferencia' — resultado igual de válido, sin inventar nada.
+ * TAROT-FINDER-UX-2 (fix post-Preview): apertura del selector — 6 opciones,
+ * cada una mapeada a una señal REAL que ya existe en el motor de scoring de
+ * arriba. La versión anterior tenía 4 botones "reflexivos" (mirar hacia
+ * adelante/claridad/decisión/entender una situación) que todos caían en
+ * sin_preferencia y por lo tanto producían el MISMO ranking — cinco
+ * promesas de personalización distintas sin ninguna evidencia de catálogo
+ * detrás. Eso es falsa personalización, el mismo problema de fondo que el
+ * lenguaje predictivo: prometer algo que el sistema no puede distinguir.
+ * Ahora cada opción es una intención de compra real y afecta el ranking de
+ * verdad. "Quiero aprender Tarot" además fija `system: 'tarot'` — es
+ * exactamente lo que ese botón promete, no tendría sentido dejarlo abierto.
  */
 export const OPENING_OPTIONS = Object.freeze([
-  { value: 'mirar_adelante', label: 'Quiero mirar hacia adelante', intent: 'sin_preferencia' },
-  { value: 'claridad', label: 'Necesito claridad', intent: 'sin_preferencia' },
-  { value: 'decision', label: 'Quiero destrabar una decisión', intent: 'sin_preferencia' },
-  { value: 'entender_situacion', label: 'Quiero entender una situación', intent: 'sin_preferencia' },
-  { value: 'aprender', label: 'Quiero aprender Tarot', intent: 'estudiar' },
+  { value: 'primer_mazo', label: 'Es mi primer mazo', intent: 'primer_mazo' },
+  { value: 'aprender_tarot', label: 'Quiero aprender Tarot', intent: 'estudiar', system: 'tarot' },
+  { value: 'experiencia', label: 'Ya tengo experiencia', intent: 'experiencia' },
   { value: 'regalo', label: 'Busco un regalo', intent: 'regalo' },
-  { value: 'explorar', label: 'Solo quiero explorar', intent: 'sin_preferencia' },
+  { value: 'coleccionista', label: 'Colecciono mazos', intent: 'coleccionista' },
+  { value: 'explorar', label: 'Quiero explorar', intent: 'sin_preferencia' },
 ]);
 
 /**
@@ -220,22 +222,24 @@ export function explainMatch(candidate, answers = {}) {
 // 0 resultados exactos. Nunca relaja una restricción hard en silencio — al
 // contrario, expone EXACTAMENTE cuál no se cumple, para que la persona
 // decida con información real. `pool` puede incluir candidatos con
-// status:'paused' (disponibles por encargo, sin precio/stock prometidos,
+// status:'paused' (lo podemos buscar por encargo, sin precio/stock prometidos,
 // mismo criterio que GW2): un candidato pausado que SÍ cumple todo es la
 // mejor alternativa posible — un match real, sólo que no está en stock hoy.
 // ---------------------------------------------------------------------------
 
 /**
- * Qué restricciones hard están activas en `answers` y si cada `candidate`
- * las cumple. Sólo restricciones que el usuario efectivamente fijó (mismo
- * criterio hasPreference que passesHardConstraints) — nunca se evalúa una
- * restricción que nadie pidió.
+ * `system` NUNCA se relaja para una alternativa — sugerir un Oráculo cuando
+ * la persona pidió Tarot (o un Tarot cuando pidió Lenormand) no es "una
+ * alternativa cercana", es ofrecer otra cosa. Tradición/idioma/guía sí
+ * pueden flexibilizarse explícitamente: son las restricciones "blandas" de
+ * la alternativa (no del ranking principal, que sigue siendo 100% hard).
  */
-function hardConstraintChecks(candidate, answers = {}) {
+function systemMatches(candidate, answers) {
+  return hasPreference(answers.system) ? candidate.primary_type === answers.system : true;
+}
+
+function softConstraintChecks(candidate, answers = {}) {
   const checks = [];
-  if (hasPreference(answers.system)) {
-    checks.push({ key: 'system', met: candidate.primary_type === answers.system });
-  }
   if (hasPreference(answers.deckFamily)) {
     checks.push({ key: 'deckFamily', met: candidate.deck_family === answers.deckFamily });
   }
@@ -249,34 +253,63 @@ function hardConstraintChecks(candidate, answers = {}) {
 }
 
 /**
- * Candidatos que NO cumplen el 100% de las restricciones hard activas, pero
+ * Qué restricciones (incluido system) cumple un candidato — sólo para
+ * armar la frase explicativa (explainNearMiss); la decisión de qué entra
+ * como alternativa vive en findNearestTarotAlternatives.
+ */
+function hardConstraintChecks(candidate, answers = {}) {
+  const checks = [];
+  if (hasPreference(answers.system)) {
+    checks.push({ key: 'system', met: candidate.primary_type === answers.system });
+  }
+  return [...checks, ...softConstraintChecks(candidate, answers)];
+}
+
+/**
+ * Candidatos que NO cumplen el 100% de las restricciones activas, pero
  * están lo más cerca posible — se llama sólo cuando rankTarotFinderCandidates
- * ya dio 0 resultados exactos con al menos una restricción hard activa.
- * Orden: primero cualquier candidato "pausado" que cumple TODO (match real,
- * disponible por encargo); después, por cantidad de restricciones violadas
- * ascendente; desempate igual que rankTarotFinderCandidates (score de
- * preferencias blandas, luego stock/precio/id). Nunca incluye un candidato
- * que no comparte NINGUNA restricción activa con lo pedido — eso no es una
- * alternativa cercana, es un libro cualquiera.
+ * ya dio 0 resultados exactos con al menos una restricción activa.
+ *
+ * Reglas (no negociables):
+ *  1. `system`, si la persona lo eligió, NUNCA se relaja — un candidato que
+ *     no lo cumple queda afuera del todo, no es "casi" una alternativa.
+ *  2. Tradición/idioma/guía sí pueden flexibilizarse, pero debe cumplir AL
+ *     MENOS UNA de las que estén activas — violar TODAS las restricciones
+ *     blandas también descarta al candidato (ver `un libro cualquiera` más
+ *     abajo). Si `system` era la única restricción activa, alcanza con
+ *     cumplirla: ya es la alternativa más cercana posible por definición.
+ *  3. Orden: primero cualquier candidato "pausado" que cumple TODO (match
+ *     real, lo podemos buscar por encargo); después, por cantidad de
+ *     restricciones blandas violadas ascendente; desempate igual que
+ *     rankTarotFinderCandidates (score de preferencias, luego
+ *     stock/precio/id).
+ *  4. Si no queda ningún candidato admisible, devuelve [] — el llamador
+ *     debe ofrecer sólo el camino de WhatsApp, nunca inventar una
+ *     alternativa que no lo es.
  */
 export function findNearestTarotAlternatives(pool, answers = {}, { limit = 3 } = {}) {
   if (!Array.isArray(pool)) throw new Error('pool debe ser un array.');
+  const anyConstraintActive = hasPreference(answers.system) || hasPreference(answers.deckFamily) ||
+    hasPreference(answers.language) || answers.guide === 'si';
+  if (!anyConstraintActive) return [];
+
   const checked = pool
     .map(candidate => {
-      const checks = hardConstraintChecks(candidate, answers);
-      const violations = checks.filter(c => !c.met).map(c => c.key);
+      const softChecks = softConstraintChecks(candidate, answers);
+      const violations = softChecks.filter(c => !c.met).map(c => c.key);
       const { score } = scoreTarotFinderCandidate(candidate, answers);
-      return { candidate, checks, violations, score };
+      return { candidate, systemOk: systemMatches(candidate, answers), softChecks, violations, score };
     })
-    // Todo el pool ya es del universo tarot/oráculo/lenormand/kipper (viene
-    // de buildTarotFinderDataset) — "la alternativa más cercana disponible"
-    // sigue siendo válida aunque viole todas las restricciones activas, si
-    // no hay nada mejor; el ranking por violationCount ascendente ya se
-    // encarga de que lo más parecido aparezca primero. Un candidato activo
-    // que cumple TODO nunca debería llegar hasta acá (ya habría salido en
-    // rankTarotFinderCandidates), pero igual se excluye por si el llamador
-    // pasa un pool sin filtrar.
-    .filter(entry => entry.checks.length > 0 && (entry.violations.length > 0 || entry.candidate.status === 'paused'));
+    .filter(entry => {
+      if (!entry.systemOk) return false;
+      // Sin restricciones blandas activas, cumplir `system` (si estaba
+      // activo) ya es la alternativa más cercana posible.
+      if (entry.softChecks.length === 0) return true;
+      // Debe compartir al menos una restricción blanda real con lo pedido
+      // — violar TODAS no es "cercano", es un mazo cualquiera del mismo
+      // sistema.
+      return entry.violations.length < entry.softChecks.length;
+    });
 
   checked.sort((a, b) => {
     const aExactPaused = a.violations.length === 0 && a.candidate.status === 'paused' ? 0 : 1;
@@ -312,7 +345,8 @@ const HARD_CONSTRAINT_UNMET_CLAUSE = {
  * mismo estilo que los ejemplos pedidos: "Está en español y es
  * Rider-Waite-Smith, pero no incluye guía." Si el candidato es pausado y
  * cumple todo, la frase es sobre disponibilidad, no sobre una restricción
- * violada: "Cumple [lo pedido], disponible por encargo."
+ * violada: "Cumple [lo pedido], lo podemos buscar por encargo." — nunca
+ * "disponible por encargo": pausado no es disponibilidad confirmada.
  */
 export function explainNearMiss(candidate, answers = {}, violations = []) {
   const checks = hardConstraintChecks(candidate, answers);
@@ -321,7 +355,7 @@ export function explainNearMiss(candidate, answers = {}, violations = []) {
 
   if (violations.length === 0 && candidate.status === 'paused') {
     const summary = metClauses.length ? `Cumple ${metClauses.join(', ')}` : 'Cumple lo que buscás';
-    return `${summary}, disponible por encargo.`;
+    return `${summary}, lo podemos buscar por encargo.`;
   }
 
   const unmetClauses = violations.map(key => HARD_CONSTRAINT_UNMET_CLAUSE[key]?.(answers)).filter(Boolean);

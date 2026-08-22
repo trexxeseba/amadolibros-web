@@ -440,6 +440,8 @@ const TAROT_FINDER_STYLES = `.tarot-finder-cta{background:#18120e;color:#fff;bor
 .tf-result-why{font-size:.72rem;color:#6b6157}
 .tf-near-miss-reason{font-size:.72rem;color:#a94e3d;font-weight:600}
 .tf-result-price{font-weight:800;font-size:.88rem}
+.tf-result-encargo{font-weight:700;font-size:.78rem;color:#a94e3d}
+.tf-result-card-paused{border-color:#efd2a6}
 .tf-result-cta{margin-top:auto;text-align:center;padding:.5rem;border-radius:.5rem;background:#18120e;color:#fff;text-decoration:none;font-size:.78rem;font-weight:700}
 .tf-empty{background:#fff7e8;border:1px solid #efd2a6;border-radius:.65rem;padding:1rem;color:#6b4218}
 .tf-empty .tf-wa-cta{display:inline-flex;margin-top:.75rem;padding:.65rem 1rem;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:800;font-size:.82rem}

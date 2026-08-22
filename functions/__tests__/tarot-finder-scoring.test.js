@@ -9,6 +9,7 @@ import {
   explainMatch,
   explainNearMiss,
   findNearestTarotAlternatives,
+  INTENT_LABEL,
   OPENING_OPTIONS,
   passesHardConstraints,
   rankTarotFinderCandidates,
@@ -289,8 +290,8 @@ test('17e. candidatos con campos parcialmente ausentes no rompen el ranking', ()
 
 // ── TAROT-FINDER-UX-2: OPENING_OPTIONS (apertura del selector) ──────────
 
-test('OPENING_OPTIONS: 7 opciones, cada una con value/label/intent', () => {
-  assert.equal(OPENING_OPTIONS.length, 7);
+test('OPENING_OPTIONS: 6 opciones, cada una con value/label/intent', () => {
+  assert.equal(OPENING_OPTIONS.length, 6);
   for (const option of OPENING_OPTIONS) {
     assert.ok(option.value);
     assert.ok(option.label);
@@ -298,21 +299,49 @@ test('OPENING_OPTIONS: 7 opciones, cada una con value/label/intent', () => {
   }
 });
 
-test('OPENING_OPTIONS: "Quiero aprender Tarot" mapea al intent existente estudiar (reutiliza el motor, no inventa uno nuevo)', () => {
-  const learn = OPENING_OPTIONS.find(o => o.value === 'aprender');
-  assert.equal(learn.intent, 'estudiar');
-});
-
-test('OPENING_OPTIONS: "Busco un regalo" mapea al intent existente regalo', () => {
-  const gift = OPENING_OPTIONS.find(o => o.value === 'regalo');
-  assert.equal(gift.intent, 'regalo');
-});
-
-test('OPENING_OPTIONS: las 4 opciones reflexivas (mirar adelante/claridad/decisión/entender) y "explorar" no fabrican una señal que el catálogo no tiene — sin_preferencia', () => {
-  const reflective = ['mirar_adelante', 'claridad', 'decision', 'entender_situacion', 'explorar'];
-  for (const value of reflective) {
+test('OPENING_OPTIONS: cada opción mapea a una señal de scoring REAL que ya existía — nunca fabrica una nueva (fix post-Preview: falsa personalización)', () => {
+  const expected = {
+    primer_mazo: 'primer_mazo',
+    aprender_tarot: 'estudiar',
+    experiencia: 'experiencia',
+    regalo: 'regalo',
+    coleccionista: 'coleccionista',
+    explorar: 'sin_preferencia',
+  };
+  for (const [value, intent] of Object.entries(expected)) {
     const option = OPENING_OPTIONS.find(o => o.value === value);
-    assert.equal(option.intent, 'sin_preferencia', value);
+    assert.ok(option, `falta la opción ${value}`);
+    assert.equal(option.intent, intent, value);
+  }
+});
+
+test('OPENING_OPTIONS: cada intent mapeado corresponde a una entrada real de INTENT_LABEL o a sin_preferencia — nunca un valor inventado', () => {
+  for (const option of OPENING_OPTIONS) {
+    assert.ok(option.intent in INTENT_LABEL, `intent desconocido: ${option.intent}`);
+  }
+});
+
+test('OPENING_OPTIONS: dos opciones distintas NUNCA producen el mismo ranking cuando hay señal real que las distinga (fix post-Preview)', () => {
+  const primerMazoDeck = candidate({ id: 'A', level: 'principiante' });
+  const experienciaDeck = candidate({ id: 'B', level: 'avanzado_profesional' });
+  const pool = [primerMazoDeck, experienciaDeck];
+  const primerMazoAnswers = { intent: OPENING_OPTIONS.find(o => o.value === 'primer_mazo').intent };
+  const experienciaAnswers = { intent: OPENING_OPTIONS.find(o => o.value === 'experiencia').intent };
+  const rankedForPrimerMazo = rankTarotFinderCandidates(pool, primerMazoAnswers);
+  const rankedForExperiencia = rankTarotFinderCandidates(pool, experienciaAnswers);
+  assert.equal(rankedForPrimerMazo[0].candidate.id, 'A', 'primer_mazo debe priorizar el principiante');
+  assert.equal(rankedForExperiencia[0].candidate.id, 'B', 'experiencia debe priorizar el avanzado');
+});
+
+test('OPENING_OPTIONS: "Quiero aprender Tarot" fija system:"tarot" — es exactamente lo que promete (fix post-Preview)', () => {
+  const learn = OPENING_OPTIONS.find(o => o.value === 'aprender_tarot');
+  assert.equal(learn.system, 'tarot');
+});
+
+test('OPENING_OPTIONS: ninguna otra opción fija `system` — sólo "aprender Tarot" tiene evidencia real para hacerlo', () => {
+  for (const option of OPENING_OPTIONS) {
+    if (option.value === 'aprender_tarot') continue;
+    assert.ok(!('system' in option), `${option.value} no debería fijar system`);
   }
 });
 
@@ -343,33 +372,75 @@ test('findNearestTarotAlternatives: prioriza un candidato PAUSADO que cumple TOD
 });
 
 test('findNearestTarotAlternatives: ordena por MENOS restricciones violadas primero', () => {
-  const oneViolation = candidate({ id: 'A', deck_family: 'rider_waite_smith', language: 'ingles' }); // falla language
-  const twoViolations = candidate({ id: 'B', deck_family: 'marsella', language: 'ingles' }); // falla deckFamily + language
-  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' };
+  // 3 restricciones blandas activas (deckFamily/language/guide): A viola
+  // sólo language (1 de 3); B viola deckFamily+language pero cumple guide
+  // (2 de 3) — ambos comparten al menos una, ninguno queda excluido.
+  const oneViolation = candidate({ id: 'A', deck_family: 'rider_waite_smith', language: 'ingles', bundle: 'mazo_mas_guia' }); // falla language
+  const twoViolations = candidate({ id: 'B', deck_family: 'marsella', language: 'ingles', bundle: 'mazo_mas_guia' }); // falla deckFamily + language
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
   const result = findNearestTarotAlternatives([twoViolations, oneViolation], answers);
   assert.deepEqual(result.map(r => r.candidate.id), ['A', 'B']);
 });
 
-test('findNearestTarotAlternatives: un candidato que viola TODAS las restricciones activas igual aparece si es lo único disponible (todo el pool ya es tarot/oráculo/lenormand/kipper)', () => {
-  const sharesNothing = candidate({ id: 'Z', primary_type: 'lenormand', deck_family: null, language: 'ingles', bundle: 'desconocido' });
+// ── FIX 3 (post-Preview): `system` NUNCA se relaja para una alternativa ──
+
+test('CONTRAEJEMPLO: pedir Tarot nunca sugiere un Oráculo, aunque comparta tradición/idioma/guía con lo pedido', () => {
+  const wrongSystemButOtherwiseIdeal = candidate({
+    id: 'ORACULO', primary_type: 'oraculo', deck_family: 'rider_waite_smith',
+    language: 'espanol', bundle: 'mazo_mas_guia',
+  });
   const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
-  const result = findNearestTarotAlternatives([sharesNothing], answers);
-  assert.equal(result.length, 1);
-  assert.equal(result[0].violations.length, 4);
+  const result = findNearestTarotAlternatives([wrongSystemButOtherwiseIdeal], answers);
+  assert.deepEqual(result, [], 'un Oráculo nunca es "casi" un Tarot, sin importar cuánto más coincida');
 });
 
-test('findNearestTarotAlternatives: un candidato que viola menos restricciones siempre se prioriza sobre uno que las viola todas', () => {
-  // Cumple deckFamily+language+guide, sólo falla system: 1 de 4 violadas.
-  const violatesOne = candidate({ id: 'A', primary_type: 'oraculo', deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'mazo_mas_guia' });
-  const violatesAll = candidate({ id: 'Z', primary_type: 'lenormand', deck_family: null, language: 'ingles', bundle: 'desconocido' });
+test('CONTRAEJEMPLO: pedir Lenormand nunca sugiere un Tarot', () => {
+  const wrongSystemButOtherwiseIdeal = candidate({
+    id: 'TAROT1', primary_type: 'tarot', language: 'espanol', bundle: 'mazo_mas_guia',
+  });
+  const answers = { system: 'lenormand', language: 'espanol', guide: 'si' };
+  const result = findNearestTarotAlternatives([wrongSystemButOtherwiseIdeal], answers);
+  assert.deepEqual(result, []);
+});
+
+test('un candidato que viola TODAS las restricciones blandas activas (pero mantiene el sistema pedido) igual queda afuera — no es "cercano", es cualquier mazo del mismo sistema', () => {
+  const sharesOnlySystem = candidate({ id: 'Z', primary_type: 'tarot', deck_family: 'marsella', language: 'ingles', bundle: 'desconocido' });
   const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
-  const result = findNearestTarotAlternatives([violatesAll, violatesOne], answers);
-  assert.deepEqual(result.map(r => r.candidate.id), ['A', 'Z']);
+  const result = findNearestTarotAlternatives([sharesOnlySystem], answers);
+  assert.deepEqual(result, [], 'comparte el sistema pero viola deckFamily+language+guide — ninguna coincidencia real más allá del sistema');
+});
+
+test('si `system` era la ÚNICA restricción activa, cumplirlo ya alcanza para ser la alternativa más cercana', () => {
+  const sameSystemNoOtherSignal = candidate({ id: 'A', primary_type: 'tarot' });
+  const answers = { system: 'tarot' };
+  const result = findNearestTarotAlternatives([sameSystemNoOtherSignal], answers);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].candidate.id, 'A');
+});
+
+test('un candidato que viola menos restricciones blandas siempre se prioriza sobre uno que las viola todas (ambos con el mismo sistema pedido)', () => {
+  // Cumple deckFamily+language+guide, ningún violado — sería un match
+  // exacto de no ser porque acá simulamos que ya se descartó (ver
+  // rankTarotFinderCandidates); para esta prueba usamos un candidato que
+  // sólo cumple deckFamily (1 de 3 violadas) contra uno que las viola todas.
+  const violatesTwo = candidate({ id: 'A', primary_type: 'tarot', deck_family: 'rider_waite_smith', language: 'ingles', bundle: 'desconocido' });
+  const violatesAllSoft = candidate({ id: 'Z', primary_type: 'tarot', deck_family: 'marsella', language: 'ingles', bundle: 'desconocido' });
+  const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
+  const result = findNearestTarotAlternatives([violatesAllSoft, violatesTwo], answers);
+  assert.deepEqual(result.map(r => r.candidate.id), ['A']);
+  assert.deepEqual(result.find(r => r.candidate.id === 'Z'), undefined, 'viola las 3 restricciones blandas — queda afuera');
+});
+
+test('sin ninguna alternativa razonablemente cercana (todo viola sistema o todas las blandas), devuelve [] — el llamador sólo ofrece WhatsApp', () => {
+  const nothingClose = candidate({ id: 'Z', primary_type: 'oraculo', deck_family: null, language: 'ingles', bundle: 'desconocido' });
+  const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
+  assert.deepEqual(findNearestTarotAlternatives([nothingClose], answers), []);
 });
 
 test('findNearestTarotAlternatives: nunca devuelve más de `limit` (default 3)', () => {
-  const answers = { language: 'espanol' };
-  const pool = Array.from({ length: 10 }, (_, i) => candidate({ id: `X${i}`, language: 'ingles' }));
+  const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' };
+  // Cada candidato cumple deckFamily pero no language — 1 de 2 violadas, admisible.
+  const pool = Array.from({ length: 10 }, (_, i) => candidate({ id: `X${i}`, deck_family: 'rider_waite_smith', language: 'ingles' }));
   assert.equal(findNearestTarotAlternatives(pool, answers).length, 3);
   assert.equal(findNearestTarotAlternatives(pool, answers, { limit: 1 }).length, 1);
 });
@@ -403,12 +474,13 @@ test('explainNearMiss: "Incluye guía y es Tarot, pero está en inglés." (estil
   assert.match(text, /pero no está en Español\.$/);
 });
 
-test('explainNearMiss: candidato pausado que cumple todo -> "Cumple ..., disponible por encargo." (estilo del ejemplo pedido)', () => {
+test('explainNearMiss: candidato pausado que cumple todo -> "Cumple ..., lo podemos buscar por encargo." (fix post-Preview: pausado no es disponibilidad confirmada)', () => {
   const c = candidate({ deck_family: 'rider_waite_smith', status: 'paused' });
   const answers = { deckFamily: 'rider_waite_smith' };
   const text = explainNearMiss(c, answers, []);
   assert.match(text, /^Cumple/);
-  assert.match(text, /disponible por encargo\.$/);
+  assert.match(text, /lo podemos buscar por encargo\.$/);
+  assert.doesNotMatch(text, /disponible por encargo/);
 });
 
 test('explainNearMiss: nunca miente — sólo menciona restricciones que answers realmente activó', () => {
