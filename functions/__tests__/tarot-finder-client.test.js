@@ -1,14 +1,16 @@
-// TAROT-FINDER-1 — ejecuta el archivo REAL astro-front/public/tarot-finder.js
-// dentro de un contexto vm.Node con un DOM mínimo simulado (sin jsdom, sin
-// bundler) para probar:
-//  - el flujo de estado real (FIX 1: "No estoy seguro/a" abre el
-//    explicador sin avanzar; FIX 2: "volver" desde resultados va a la
-//    última pregunta aplicable, nunca cierra salvo desde la primera;
-//    FIX 3: cambiar de sistema limpia deckFamily);
-//  - paridad servidor/cliente (FIX 5): compara pesos, hard constraints,
-//    límite de resultados y desempate del script cliente contra
-//    functions/_shared/tarot-finder-scoring.js, la implementación
-//    canónica y testeada aparte.
+// TAROT-FINDER-UX-2 — ejecuta el archivo REAL astro-front/public/
+// tarot-finder.js dentro de un contexto vm.Node con un DOM mínimo simulado
+// (sin jsdom, sin bundler) para probar el recomendador progresivo:
+//  - primer clic en la apertura -> resultados inmediatos, sin exigir
+//    sistema/tradición/idioma/guía antes;
+//  - "Solo quiero explorar" -> resultados;
+//  - "Afinar mi búsqueda" es opcional y nunca se activa sola;
+//  - los hard constraints nunca se relajan en silencio;
+//  - 0 resultados exactos con filtros activos -> alternativas cercanas,
+//    reveladas sólo tras una elección explícita, con la explicación
+//    correcta de qué restricción falla cada una;
+//  - máximo 6 resultados, determinismo, "Volver";
+//  - paridad servidor/cliente contra functions/_shared/tarot-finder-scoring.js.
 //
 // window.__AmadoTarotFinderTestHooks es una superficie de sólo-test que
 // tarot-finder.js expone a propósito (ver comentario en ese archivo) —
@@ -57,170 +59,122 @@ function candidate(overrides = {}) {
         level: 'desconocido',
         edition_style: null,
         stock: 3,
+        status: 'active',
         ...overrides,
     };
 }
 
-// ── FIX 1: "No estoy seguro/a" abre el explicador sin avanzar ───────────
+// ── Primer clic en la apertura -> resultados inmediatos ─────────────────
 
-test('FIX 1: elegir "No estoy seguro/a" la primera vez permanece en la pregunta de sistema y abre el explicador', () => {
+test('el estado inicial arranca en "opening", nunca en una pregunta de sistema/tradición/idioma/guía', () => {
     const hooks = loadClientHooks();
-    const state0 = hooks.initialFinderState();
-    assert.equal(state0.step, 'system');
-    assert.equal(state0.systemExplainerOpen, false);
-
-    const state1 = hooks.applyChoice(state0, 'system', 'unsure');
-    assert.equal(state1.step, 'system', 'sigue en la pregunta de sistema, no avanzó a "intent"');
-    assert.equal(state1.systemExplainerOpen, true, 'el explicador queda abierto');
-    assert.equal(state1.answers.system, undefined, 'todavía no se confirmó ninguna respuesta de sistema');
+    const state = hooks.initialFinderState();
+    assert.equal(state.step, 'opening');
+    assert.equal(state.refining, false);
+    // JSON.stringify, no deepEqual: state.answers viene del "realm" del vm
+    // sandbox, con su propio Object — deepEqual compara prototipo/identidad
+    // de constructor entre realms distintos, no sólo estructura (mismo
+    // motivo documentado en las comparaciones de abajo).
+    assert.equal(JSON.stringify(state.answers), '{}');
 });
 
-test('FIX 1: con el explicador abierto, elegir Tarot/Oráculo/Lenormand confirma esa respuesta y avanza', () => {
+test('primer clic (cualquier intención de apertura) va DIRECTO a resultados — nunca exige tradición/idioma/guía antes, y `system` sólo se fija cuando la opción lo promete explícitamente', () => {
     const hooks = loadClientHooks();
-    let state = hooks.applyChoice(hooks.initialFinderState(), 'system', 'unsure'); // abre explicador
-    state = hooks.applyChoice(state, 'system', 'oraculo');
-    assert.equal(state.answers.system, 'oraculo');
-    assert.equal(state.step, 'intent');
-    assert.equal(state.systemExplainerOpen, false);
+    for (const option of hooks.OPENING_OPTIONS) {
+        const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', option.value);
+        assert.equal(state.step, 'results', `opción "${option.value}" no fue directo a resultados`);
+        assert.equal(state.answers.system, option.system, `opción "${option.value}"`);
+        assert.equal(state.answers.deckFamily, undefined);
+        assert.equal(state.answers.language, undefined);
+        assert.equal(state.answers.guide, undefined);
+    }
 });
 
-test('FIX 1: "Seguir sin preferencia" (mismo value=unsure, con el explicador ya abierto) confirma unsure y avanza', () => {
+test('"Quiero explorar" -> resultados, con intent sin_preferencia (no fabrica una señal falsa)', () => {
     const hooks = loadClientHooks();
-    let state = hooks.applyChoice(hooks.initialFinderState(), 'system', 'unsure'); // abre explicador
-    assert.equal(state.step, 'system');
-    state = hooks.applyChoice(state, 'system', 'unsure'); // "Seguir sin preferencia"
-    assert.equal(state.answers.system, 'unsure');
-    assert.equal(state.step, 'intent', 'ahora sí avanza');
-});
-
-test('FIX 1: elegir Tarot/Oráculo/Lenormand directamente (sin pasar por "no estoy seguro") avanza normal, sin explicador', () => {
-    const hooks = loadClientHooks();
-    const state = hooks.applyChoice(hooks.initialFinderState(), 'system', 'tarot');
-    assert.equal(state.answers.system, 'tarot');
-    assert.equal(state.step, 'intent');
-    assert.equal(state.systemExplainerOpen, false);
-});
-
-// ── FIX 2: "volver" desde resultados va a la última pregunta aplicable ──
-
-test('FIX 2: applyGoBack desde el sub-estado del explicador vuelve a la vista simple de la MISMA pregunta, no cierra', () => {
-    const hooks = loadClientHooks();
-    const explainerState = hooks.applyChoice(hooks.initialFinderState(), 'system', 'unsure');
-    const back = hooks.applyGoBack(explainerState);
-    assert.notEqual(back, null, 'no debe señalar "cerrar"');
-    assert.equal(back.step, 'system');
-    assert.equal(back.systemExplainerOpen, false);
-});
-
-test('FIX 2: applyGoBack desde la primera pregunta real (sin explicador) señala "cerrar" (null)', () => {
-    const hooks = loadClientHooks();
-    const result = hooks.applyGoBack(hooks.initialFinderState());
-    assert.equal(result, null);
-});
-
-test('FIX 2: prevStepFrom("results", answers) devuelve la última pregunta aplicable (guide), nunca cierra', () => {
-    const hooks = loadClientHooks();
-    assert.equal(hooks.prevStepFrom('results', { system: 'tarot' }), 'guide');
-    assert.equal(hooks.prevStepFrom('results', { system: 'oraculo' }), 'guide');
-});
-
-test('FIX 2: recorrido completo hasta resultados y "volver" aterriza en guide, no cierra ni salta preguntas', () => {
-    const hooks = loadClientHooks();
-    let state = hooks.initialFinderState();
-    state = hooks.applyChoice(state, 'system', 'tarot');
-    state = hooks.applyChoice(state, 'intent', 'sin_preferencia');
-    state = hooks.applyChoice(state, 'deckFamily', 'no_preference');
-    state = hooks.applyChoice(state, 'language', 'no_preference');
-    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
     assert.equal(state.step, 'results');
-
-    const back = hooks.applyGoBack(state);
-    assert.notEqual(back, null);
-    assert.equal(back.step, 'guide');
-    assert.equal(back.answers.system, 'tarot', 'las respuestas previas se conservan al volver');
+    assert.equal(state.answers.intent, 'sin_preferencia');
+    assert.equal(state.answers.system, undefined);
 });
 
-test('FIX 2: "cerrar" ocurre únicamente desde la primera pregunta (idx 0, sin explicador) — cualquier otro paso vuelve a la pregunta anterior', () => {
+test('"Quiero aprender Tarot" mapea a intent=estudiar Y fija system=tarot (fix post-Preview FIX 5 — es exactamente lo que promete)', () => {
     const hooks = loadClientHooks();
-    let state = hooks.applyChoice(hooks.initialFinderState(), 'system', 'tarot');
-    // en "intent" (segunda pregunta real): volver debe ir a "system", no cerrar
-    const back = hooks.applyGoBack(state);
-    assert.notEqual(back, null);
-    assert.equal(back.step, 'system');
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'aprender_tarot');
+    assert.equal(state.answers.intent, 'estudiar');
+    assert.equal(state.answers.system, 'tarot');
 });
 
-// ── FIX 3: cambiar de sistema limpia deckFamily ──────────────────────────
-
-test('FIX 3: Tarot -> Rider-Waite-Smith -> volver a "system" y elegir Oráculo elimina deckFamily', () => {
+test('"Es mi primer mazo" mapea a intent=primer_mazo', () => {
     const hooks = loadClientHooks();
-    let state = hooks.applyChoice(hooks.initialFinderState(), 'system', 'tarot');
-    state = hooks.applyChoice(state, 'intent', 'sin_preferencia');
-    state = hooks.applyChoice(state, 'deckFamily', 'rider_waite_smith');
-    assert.equal(state.answers.deckFamily, 'rider_waite_smith');
-
-    // el usuario vuelve dos preguntas (deckFamily -> intent -> system) y cambia el sistema
-    state = hooks.applyChoice(state, 'system', 'oraculo');
-    assert.equal(state.answers.deckFamily, undefined, 'deckFamily debe desaparecer: oráculo no tiene familias de tarot');
-    assert.equal(state.answers.system, 'oraculo');
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'primer_mazo');
+    assert.equal(state.answers.intent, 'primer_mazo');
+    assert.equal(state.answers.system, undefined);
 });
 
-test('FIX 3: Tarot -> Marsella -> Lenormand elimina deckFamily', () => {
+test('"Ya tengo experiencia" mapea a intent=experiencia', () => {
     const hooks = loadClientHooks();
-    let state = hooks.applyChoice(hooks.initialFinderState(), 'system', 'tarot');
-    state = hooks.applyChoice(state, 'deckFamily', 'marsella');
-    assert.equal(state.answers.deckFamily, 'marsella');
-    state = hooks.applyChoice(state, 'system', 'lenormand');
-    assert.equal(state.answers.deckFamily, undefined);
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'experiencia');
+    assert.equal(state.answers.intent, 'experiencia');
 });
 
-test('FIX 3: Tarot -> Thoth -> volver a "system" -> "no estoy seguro" (unsure) elimina deckFamily', () => {
+test('"Colecciono mazos" mapea a intent=coleccionista', () => {
     const hooks = loadClientHooks();
-    // Simula al usuario de vuelta en la pregunta de sistema (vía
-    // applyGoBack repetido en la app real) ya con tarot+thoth elegidos.
-    const stateAtSystem = { step: 'system', answers: { system: 'tarot', deckFamily: 'thoth' }, systemExplainerOpen: false };
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'coleccionista');
+    assert.equal(state.answers.intent, 'coleccionista');
+});
 
-    // Primer click en "No estoy seguro/a": sólo abre el explicador — la
-    // respuesta anterior (deckFamily) NO se toca todavía, nada se confirmó.
-    let state = hooks.applyChoice(stateAtSystem, 'system', 'unsure');
+test('"Busco un regalo" mapea a intent=regalo', () => {
+    const hooks = loadClientHooks();
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'regalo');
+    assert.equal(state.answers.intent, 'regalo');
+});
+
+test('con sólo la intención de apertura elegida, rankCandidates devuelve resultados sin ningún hard constraint activo', () => {
+    const hooks = loadClientHooks();
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    const dataset = [candidate({ id: 'A' }), candidate({ id: 'B', primary_type: 'oraculo' })];
+    const ranked = hooks.rankCandidates(dataset, state.answers);
+    assert.equal(ranked.length, 2, 'sin sistema/tradición/idioma/guía exigidos, ambos pasan');
+});
+
+// ── "Afinar mi búsqueda" es opcional — nunca se activa sola ─────────────
+
+test('applyStartRefine entra a la primera pregunta del refinamiento y marca refining=true', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    assert.equal(state.refining, false, 'refining sigue false hasta que la persona elige refinar');
+    state = hooks.applyStartRefine(state);
     assert.equal(state.step, 'system');
-    assert.equal(state.systemExplainerOpen, true);
-    assert.equal(state.answers.deckFamily, 'thoth', 'con el explicador recién abierto, todavía no se confirmó ningún cambio');
-
-    // "Seguir sin preferencia" confirma unsure recién acá.
-    state = hooks.applyChoice(state, 'system', 'unsure');
-    assert.equal(state.answers.system, 'unsure');
-    assert.equal(state.answers.deckFamily, undefined, 'deckFamily eliminado al confirmar unsure');
+    assert.equal(state.refining, true);
 });
 
-test('FIX 3: los tres casos siguen devolviendo candidatos válidos cuando existen (deckFamily ya no restringe indebidamente)', () => {
+test('sin clickear "Afinar mi búsqueda", results.refining nunca pasa a true por sí solo', () => {
     const hooks = loadClientHooks();
-    const dataset = [
-        candidate({ id: 'A', primary_type: 'oraculo' }),
-        candidate({ id: 'B', primary_type: 'lenormand' }),
-        candidate({ id: 'C', primary_type: 'tarot', deck_family: 'marsella' }), // no debería aparecer bajo answers sin deckFamily exigido si no matchea sistema
-    ];
-    const oraculoAnswers = { system: 'oraculo' }; // deckFamily ya fue eliminado por FIX 3
-    const ranked = hooks.rankCandidates(dataset, oraculoAnswers);
-    assert.deepEqual(ranked.map(r => r.candidate.id), ['A'], 'sin deckFamily colgado, el oráculo real aparece');
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'aprender_tarot');
+    assert.equal(state.step, 'results');
+    assert.equal(state.refining, false);
 });
 
-// ── FIX 5: paridad servidor/cliente — mismos pesos, mismas reglas ───────
-
-test('FIX 5: los pesos de score del cliente coinciden exactamente con los del módulo canónico', () => {
+test('dentro del refinamiento, cada pregunta sigue ofreciendo una opción neutra ("no tengo preferencia"/"no es importante") — nunca obliga a comprometerse', () => {
     const hooks = loadClientHooks();
-    // hooks.SCORE se construyó dentro del vm.context (otro "realm" de JS) —
-    // JSON.stringify compara estructura/valores, no identidad de prototipo
-    // (deepStrictEqual fallaría entre realms distintos aunque los datos
-    // sean idénticos; ver también los otros dos usos abajo).
-    assert.equal(JSON.stringify(hooks.SCORE), JSON.stringify(canonical.SCORE_WEIGHTS));
+    for (const step of ['family', 'language']) {
+        const q = hooks.QUESTIONS[step];
+        assert.ok(q.options.some(o => o.value === 'no_preference'), `${step} sin opción neutra`);
+    }
+    assert.ok(hooks.QUESTIONS.guide.options.some(o => o.value === 'no_importante'));
 });
 
-test('FIX 5: el límite de resultados del cliente coincide con el del módulo canónico (6)', () => {
+// ── Hard constraints nunca se relajan en silencio ─────────────────────────
+
+test('un candidato que no cumple un hard constraint activo NUNCA aparece en rankCandidates', () => {
     const hooks = loadClientHooks();
-    assert.equal(hooks.MAX_RESULTS, 6);
+    const dataset = [candidate({ id: 'A', primary_type: 'tarot' }), candidate({ id: 'B', primary_type: 'oraculo' })];
+    const ranked = hooks.rankCandidates(dataset, { system: 'tarot' });
+    assert.deepEqual(ranked.map(r => r.candidate.id), ['A']);
 });
 
-test('FIX 5: passesHard del cliente coincide con passesHardConstraints canónico en una batería de casos', () => {
+test('passesHard del cliente coincide con passesHardConstraints canónico en una batería de casos', () => {
     const hooks = loadClientHooks();
     const cases = [
         [candidate({ primary_type: 'tarot' }), { system: 'tarot' }],
@@ -237,7 +191,280 @@ test('FIX 5: passesHard del cliente coincide con passesHardConstraints canónico
     }
 });
 
-test('FIX 5: rankCandidates del cliente produce el MISMO orden y los mismos scores que rankTarotFinderCandidates canónico', () => {
+// ── FIX 3 (heredado de TAROT-FINDER-1): cambiar de sistema limpia deckFamily ──
+
+test('cambiar `system` a algo que no sea tarot elimina deckFamily de inmediato', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'rider_waite_smith');
+    assert.equal(state.answers.deckFamily, 'rider_waite_smith');
+    state = hooks.applyChoice(state, 'system', 'oraculo');
+    assert.equal(state.answers.deckFamily, undefined, 'oráculo no tiene familias de tarot');
+});
+
+test('"No estoy seguro/a" la primera vez en `system` sólo abre el explicador, no confirma ni avanza', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    const withExplainer = hooks.applyChoice(state, 'system', 'unsure');
+    assert.equal(withExplainer.step, 'system');
+    assert.equal(withExplainer.systemExplainerOpen, true);
+    assert.equal(withExplainer.answers.system, undefined);
+});
+
+// ── 0 resultados exactos -> alternativas cercanas, reveladas explícitamente ──
+
+test('0 resultados exactos con refining=true no termina en un mensaje seco: results.refining habilita la búsqueda de alternativas', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'espanol');
+    state = hooks.applyChoice(state, 'guide', 'si');
+    assert.equal(state.step, 'results');
+    assert.equal(state.refining, true);
+
+    const dataset = [candidate({ id: 'A', deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'desconocido' })];
+    const ranked = hooks.rankCandidates(dataset, state.answers);
+    assert.equal(ranked.length, 0, 'ningún candidato activo cumple thoth+español+guía exactamente');
+
+    const alternatives = hooks.findNearestAlternatives(dataset, state.answers);
+    assert.ok(alternatives.length > 0, 'debe haber al menos una alternativa cercana');
+});
+
+test('las alternativas NO se revelan solas — alternativesRevealed arranca false y sólo cambia con applyRevealAlternatives', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    assert.equal(state.alternativesRevealed, false);
+
+    const revealed = hooks.applyRevealAlternatives(state);
+    assert.equal(revealed.alternativesRevealed, true);
+    assert.equal(revealed.step, 'results', 'revelar alternativas no cambia de paso, sólo el sub-estado');
+});
+
+// ── TAROT-FINDER-UX-2 fase 2 (gate de performance): carga bajo demanda ──
+
+test('applyRevealAlternatives arranca en alternativesLoading=true — nada se pinta hasta tener respuesta (o fallo)', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    const revealed = hooks.applyRevealAlternatives(state);
+    assert.equal(revealed.alternativesLoading, true);
+    assert.equal(revealed.pausedCandidates, null);
+});
+
+function reachResultsViaRefine(hooks) {
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    return state;
+}
+
+test('applyAlternativesFetched guarda los candidatos y apaga alternativesLoading, sin cambiar de paso', () => {
+    const hooks = loadClientHooks();
+    let state = reachResultsViaRefine(hooks);
+    state = hooks.applyRevealAlternatives(state);
+    const fetched = hooks.applyAlternativesFetched(state, [candidate({ id: 'P1', status: 'paused' })]);
+    assert.equal(fetched.alternativesLoading, false);
+    assert.equal(fetched.pausedCandidates.length, 1);
+    assert.equal(fetched.step, 'results');
+    assert.equal(fetched.alternativesRevealed, true);
+});
+
+test('applyAlternativesFetchFailed apaga alternativesLoading, deja pausedCandidates=[] y marca el fallo — fail-open, nunca rompe el Finder', () => {
+    const hooks = loadClientHooks();
+    let state = reachResultsViaRefine(hooks);
+    state = hooks.applyRevealAlternatives(state);
+    const failed = hooks.applyAlternativesFetchFailed(state);
+    assert.equal(failed.alternativesLoading, false);
+    // JSON.stringify: pausedCandidates es un array construido dentro del vm
+    // sandbox (otro "realm") — deepEqual compara prototipo de Array entre
+    // realms distintos, no sólo el contenido (mismo motivo documentado más
+    // abajo en las comparaciones de paridad cliente/servidor).
+    assert.equal(JSON.stringify(failed.pausedCandidates), '[]');
+    assert.equal(failed.pausedFetchFailed, true);
+    assert.equal(failed.alternativesRevealed, true, 'sigue mostrando la pantalla de alternativas, ahora sólo con las activas locales');
+});
+
+test('"Volver" desde alternativas en estado de carga también las oculta antes de salir de resultados', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyRevealAlternatives(state);
+    assert.equal(state.alternativesLoading, true);
+    const back = hooks.applyGoBack(state);
+    assert.equal(back.step, 'results');
+    assert.equal(back.alternativesRevealed, false);
+});
+
+test('explainNearMiss del cliente produce el mismo texto que explainNearMiss canónico', () => {
+    const hooks = loadClientHooks();
+    const c = candidate({ deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'desconocido' });
+    const answers = { deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
+    const clientText = hooks.explainNearMiss(c, answers, ['guide']);
+    const serverText = canonical.explainNearMiss(c, answers, ['guide']);
+    assert.equal(clientText, serverText);
+    assert.match(clientText, /pero no incluye guía\.$/);
+});
+
+test('findNearestAlternatives del cliente produce el MISMO orden que findNearestTarotAlternatives canónico', () => {
+    const hooks = loadClientHooks();
+    const pool = [
+        candidate({ id: 'A', deck_family: 'marsella', language: 'ingles' }),
+        candidate({ id: 'B', deck_family: 'rider_waite_smith', language: 'ingles' }),
+        candidate({ id: 'P', deck_family: 'rider_waite_smith', language: 'espanol', status: 'paused' }),
+    ];
+    const answers = { deckFamily: 'rider_waite_smith', language: 'espanol' };
+    const clientResult = hooks.findNearestAlternatives(pool, answers).map(r => r.candidate.id);
+    const serverResult = canonical.findNearestTarotAlternatives(pool, answers).map(r => r.candidate.id);
+    // JSON.stringify: el array devuelto por hooks.* se construyó dentro del
+    // vm sandbox (otro "realm"), deepEqual compara prototipo de Array entre
+    // realms distintos, no sólo el contenido.
+    assert.equal(JSON.stringify(clientResult), JSON.stringify(serverResult));
+    assert.equal(clientResult[0], 'P', 'el pausado que cumple todo va primero');
+});
+
+// ── Máximo 6 resultados ────────────────────────────────────────────────────
+
+test('rankCandidates nunca devuelve más de 6, aunque haya más candidatos válidos', () => {
+    const hooks = loadClientHooks();
+    const dataset = Array.from({ length: 20 }, (_, i) => candidate({ id: `MLU${i}` }));
+    const ranked = hooks.rankCandidates(dataset, {});
+    assert.equal(ranked.length, 6);
+    assert.equal(hooks.MAX_RESULTS, 6);
+});
+
+test('findNearestAlternatives nunca devuelve más de MAX_ALTERNATIVES (3)', () => {
+    const hooks = loadClientHooks();
+    // Cada candidato cumple deckFamily pero no language — 1 de 2 blandas
+    // violadas, admisible (fix post-Preview: debe compartir al menos una).
+    const pool = Array.from({ length: 10 }, (_, i) => candidate({ id: `MLU${i}`, deck_family: 'rider_waite_smith', language: 'ingles' }));
+    const alternatives = hooks.findNearestAlternatives(pool, { deckFamily: 'rider_waite_smith', language: 'espanol' });
+    assert.equal(alternatives.length, 3);
+    assert.equal(hooks.MAX_ALTERNATIVES, 3);
+});
+
+// ── Determinismo ───────────────────────────────────────────────────────────
+
+test('rankCandidates es determinista: mismo input, mismo orden, sin importar el orden de entrada del dataset', () => {
+    const hooks = loadClientHooks();
+    const a = candidate({ id: 'A', stock: 5, price: 1000 });
+    const b = candidate({ id: 'B', stock: 5, price: 1000 });
+    const forward = hooks.rankCandidates([a, b], {}).map(r => r.candidate.id);
+    const reversed = hooks.rankCandidates([b, a], {}).map(r => r.candidate.id);
+    assert.deepEqual(forward, reversed);
+});
+
+test('applyChoice/applyStartRefine producen el mismo estado final para la misma secuencia de acciones, en llamadas separadas', () => {
+    const hooks = loadClientHooks();
+    function run() {
+        let s = hooks.initialFinderState();
+        s = hooks.applyChoice(s, 'opening', 'aprender_tarot');
+        s = hooks.applyStartRefine(s);
+        s = hooks.applyChoice(s, 'system', 'tarot');
+        s = hooks.applyChoice(s, 'deckFamily', 'rider_waite_smith');
+        return s;
+    }
+    assert.deepEqual(run(), run());
+});
+
+// ── "Volver" ────────────────────────────────────────────────────────────
+
+test('"Volver" desde la apertura (primera pantalla real) señala "cerrar" (null)', () => {
+    const hooks = loadClientHooks();
+    const result = hooks.applyGoBack(hooks.initialFinderState());
+    assert.equal(result, null);
+});
+
+test('"Volver" desde resultados SIN haber refinado nunca vuelve a "opening", no cierra', () => {
+    const hooks = loadClientHooks();
+    const state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    const back = hooks.applyGoBack(state);
+    assert.notEqual(back, null);
+    assert.equal(back.step, 'opening');
+});
+
+test('"Volver" desde resultados HABIENDO refinado va a la última pregunta del refinamiento (guide), no a "opening"', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'no_preference');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    assert.equal(state.step, 'results');
+
+    const back = hooks.applyGoBack(state);
+    assert.notEqual(back, null);
+    assert.equal(back.step, 'guide');
+    assert.equal(back.answers.system, 'tarot', 'las respuestas previas se conservan al volver');
+});
+
+test('"Volver" desde el primer paso del refinamiento (system) vuelve a resultados, no cierra', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    assert.equal(state.step, 'system');
+    const back = hooks.applyGoBack(state);
+    assert.notEqual(back, null);
+    assert.equal(back.step, 'results');
+});
+
+test('"Volver" desde la pantalla de alternativas reveladas oculta las alternativas antes de salir de resultados', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    state = hooks.applyChoice(state, 'system', 'tarot');
+    state = hooks.applyChoice(state, 'deckFamily', 'thoth');
+    state = hooks.applyChoice(state, 'language', 'no_preference');
+    state = hooks.applyChoice(state, 'guide', 'no_importante');
+    state = hooks.applyRevealAlternatives(state);
+    assert.equal(state.alternativesRevealed, true);
+
+    const back = hooks.applyGoBack(state);
+    assert.equal(back.step, 'results');
+    assert.equal(back.alternativesRevealed, false);
+});
+
+test('"Volver" desde el sub-estado del explicador de sistema vuelve a la vista simple de la MISMA pregunta, no cierra', () => {
+    const hooks = loadClientHooks();
+    let state = hooks.applyChoice(hooks.initialFinderState(), 'opening', 'explorar');
+    state = hooks.applyStartRefine(state);
+    const explainerState = hooks.applyChoice(state, 'system', 'unsure');
+    const back = hooks.applyGoBack(explainerState);
+    assert.notEqual(back, null);
+    assert.equal(back.step, 'system');
+    assert.equal(back.systemExplainerOpen, false);
+});
+
+// ── Paridad servidor/cliente ────────────────────────────────────────────
+
+test('los pesos de score del cliente coinciden exactamente con los del módulo canónico', () => {
+    const hooks = loadClientHooks();
+    assert.equal(JSON.stringify(hooks.SCORE), JSON.stringify(canonical.SCORE_WEIGHTS));
+});
+
+test('OPENING_OPTIONS del cliente coincide exactamente con el módulo canónico', () => {
+    const hooks = loadClientHooks();
+    assert.equal(JSON.stringify(hooks.OPENING_OPTIONS), JSON.stringify(canonical.OPENING_OPTIONS));
+});
+
+test('rankCandidates del cliente produce el MISMO orden y los mismos scores que rankTarotFinderCandidates canónico', () => {
     const hooks = loadClientHooks();
     const dataset = [
         candidate({ id: 'A', level: 'principiante', stock: 1, price: 3000 }),
@@ -260,15 +487,14 @@ test('FIX 5: rankCandidates del cliente produce el MISMO orden y los mismos scor
     }
 });
 
-test('FIX 5: explainMatch del cliente produce las mismas badges y sentence que explainMatch canónico', () => {
+test('explainMatch del cliente produce las mismas badges y sentence que explainMatch canónico', () => {
     const hooks = loadClientHooks();
     const c = candidate({ primary_type: 'tarot', deck_family: 'rider_waite_smith', language: 'espanol', bundle: 'mazo_mas_guia' });
     const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'espanol', guide: 'si' };
-    // JSON.stringify por la misma razón de realms distintos (ver arriba).
     assert.equal(JSON.stringify(hooks.explainMatch(c, answers)), JSON.stringify(canonical.explainMatch(c, answers)));
 });
 
-test('FIX 5: buildNoResultsMessage del cliente y buildFinderNoResultsMessage canónico producen el mismo texto', async () => {
+test('buildNoResultsMessage del cliente y buildFinderNoResultsMessage canónico producen el mismo texto', async () => {
     const hooks = loadClientHooks();
     const { buildWhatsAppMessage } = await import('../../shared/whatsapp-messages.js');
     const answers = { system: 'tarot', deckFamily: 'rider_waite_smith', language: 'ingles', guide: 'si', intent: 'experiencia' };
@@ -278,13 +504,57 @@ test('FIX 5: buildNoResultsMessage del cliente y buildFinderNoResultsMessage can
     assert.equal(clientMessage, serverMessage);
 });
 
-// ── FIX 4: sin aria-haspopup (verificado también en tarot-finder-render.test.js sobre el HTML SSR) ──
-
-test('FIX 4: el HTML de las preguntas nunca declara aria-haspopup (el Finder es inline, no un popup/menú/diálogo)', () => {
-    const hooks = loadClientHooks();
-    // No hay render() ejecutable sin DOM real acá (ver
-    // tarot-finder-render.test.js para la verificación end-to-end del
-    // botón "Empezar" en el HTML servidor); esta prueba deja constancia de
-    // que ningún string del propio archivo fuente contiene aria-haspopup.
+test('el HTML de las preguntas nunca declara aria-haspopup (el Finder es inline, no un popup/menú/diálogo)', () => {
     assert.doesNotMatch(CLIENT_SOURCE, /aria-haspopup/);
+});
+
+test('el archivo respeta prefers-reduced-motion (no se anima nada hardcodeado sin poder desactivarse) — verificado sobre el CSS servidor en tarot-finder-render.test.js', () => {
+    // Guard de humo: el propio script cliente no dispara animaciones vía
+    // setTimeout/rAF manuales que prefers-reduced-motion no pueda cortar —
+    // toda la animación vive en CSS (ver TAROT_FINDER_STYLES), no acá.
+    assert.doesNotMatch(CLIENT_SOURCE, /requestAnimationFrame|setTimeout/);
+});
+
+// ── FIX 10 (post-Preview): subcopy de apertura consistente con los botones ──
+
+test('el subcopy de apertura ya NO promete "claridad/decisión/mirar hacia adelante" (esos botones ya no existen)', () => {
+    assert.doesNotMatch(CLIENT_SOURCE, /claridad, una decisión, mirar hacia adelante/);
+});
+
+test('el subcopy de apertura menciona las 6 intenciones reales', () => {
+    assert.match(CLIENT_SOURCE, /tu primer mazo, para aprender, regalar, coleccionar o simplemente explorar/);
+});
+
+// ── FIX 1 (post-Preview): un candidato pausado nunca muestra $0 ─────────
+
+test('resultCardHtml: un candidato ACTIVO muestra precio real y CTA "Ver mazo"', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ price: 2500, status: 'active' }), {});
+    assert.match(html, /\$2\.500 UYU/);
+    assert.match(html, />Ver mazo</);
+    assert.doesNotMatch(html, />Ver este mazo</);
+    assert.doesNotMatch(html, /Lo podemos buscar por encargo/);
+});
+
+test('resultCardHtml: un candidato PAUSADO nunca muestra $0 — badge "Lo podemos buscar por encargo" y CTA "Ver este mazo" (FIX 11: sigue yendo a la ficha, no abre un canal de consulta nuevo)', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ price: null, stock: null, status: 'paused' }), {});
+    assert.doesNotMatch(html, /\$0/, 'nunca debe aparecer un precio inventado');
+    assert.doesNotMatch(html, /UYU/, 'sin precio real, no hay cifra en UYU');
+    assert.match(html, /Lo podemos buscar por encargo/);
+    assert.match(html, />Ver este mazo</);
+    assert.doesNotMatch(html, />Consultar este mazo</);
+});
+
+test('resultCardHtml: un candidato pausado con price=0/stock=0 explícitos (no null) tampoco muestra $0 — el status manda, no el valor numérico', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ price: 0, stock: 0, status: 'paused' }), {});
+    assert.doesNotMatch(html, /\$0/);
+    assert.match(html, /Lo podemos buscar por encargo/);
+});
+
+test('resultCardHtml: el copy nunca dice "disponible por encargo" (fix post-Preview: pausado no es disponibilidad confirmada)', () => {
+    const hooks = loadClientHooks();
+    const html = hooks.resultCardHtml(candidate({ status: 'paused' }), {});
+    assert.doesNotMatch(html, /disponible por encargo/i);
 });

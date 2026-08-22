@@ -9,6 +9,7 @@ import {
     CATALOG_URL,
     PAUSED_MANIFEST_URL,
     PRODUCTION_MANIFEST_URL,
+    R2_BASE,
 } from '../_shared/catalog.js';
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
 import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
@@ -137,6 +138,33 @@ test('el dataset del Finder viaja embebido en un <script type="application/json"
     // Nunca un <link> ni un fetch a un endpoint /api/tarot-finder o similar.
     assert.doesNotMatch(body, /\/api\/tarot-finder/);
 });
+
+// ── TAROT-FINDER-UX-2 fase 2 (gate de performance): SIN dataset de respaldo ──
+// Medido: el dataset "por encargo" embebido (409 candidatos) agregaba
+// ~186KB crudos y ~70% al HTML comprimido de CADA visita normal, para una
+// función que la mayoría no usa. Ahora vive en
+// functions/api/tarot-finder-alternatives.js, pedido bajo demanda — el
+// HTML inicial vuelve a transportar únicamente el dataset activo.
+
+test('el HTML inicial NUNCA embebe el dataset de respaldo (por encargo) — se carga bajo demanda desde /api/tarot-finder-alternatives', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    assert.doesNotMatch(body, /tarot-finder-fallback-dataset/, 'el pool por encargo ya no viaja embebido en absoluto');
+});
+
+test('la visita normal al hub no dispara ningún fetch de pausados (fetchPausedIndex) — sólo el índice activo/catálogo', async () => {
+    const requestedUrls = [];
+    const originalMatch = globalThis.caches.default.match;
+    globalThis.caches.default.match = async request => { requestedUrls.push(request.url); return originalMatch(request); };
+    await html('esoterismo-tarot');
+    assert.ok(!requestedUrls.some(u => u.includes('stock1-preview')), 'no debería pedirse el manifest/índice de pausados en la visita normal');
+});
+
+test('la nueva apertura del Finder no promete más de lo debido (copy prudente, sin "preguntas")', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    assert.match(body, /Contanos qué buscás y te mostramos opciones disponibles ahora mismo\./);
+    assert.doesNotMatch(body, /Respondé unas preguntas/);
+});
+
 
 // ── Robots intactos en Preview ────────────────────────────────────────────
 
