@@ -37,3 +37,8 @@ test('conserva el ACL, usa etag y verifica el binding exacto después de aplicar
   assert.match(script, /dataset-after\.json/);
   assert.match(script, /if ! binding_exists "\$OUTPUT_DIR\/dataset-after\.json"/);
 });
+
+test('descarta advertencias anteriores al JSON de bq show', () => {
+  assert.match(script, /sed -n '\/\^\[\[:space:\]\]\*\{\/\,\$p'/);
+  assert.match(script, /\.datasetReference\.datasetId == \$dataset/);
+});
