@@ -20,13 +20,17 @@ test('rechaza proyecto, número o dataset distintos', () => {
   assert.match(script, /DATASET_ID" != "searchconsole"/);
 });
 
-test('usa IAM de dataset y no agrega roles a nivel proyecto', () => {
-  assert.match(script, /get-iam-policy/);
-  assert.match(script, /add-iam-policy-binding/);
+test('usa la API IAM del dataset y no agrega roles a nivel proyecto', () => {
+  assert.match(script, /datasets\/\$\{DATASET_ID\}/);
+  assert.match(script, /:getIamPolicy/);
+  assert.match(script, /:setIamPolicy/);
   assert.doesNotMatch(script, /gcloud projects add-iam-policy-binding/);
+  assert.doesNotMatch(script, /bq .*add-iam-policy-binding/);
 });
 
-test('verifica el binding exacto después de aplicar', () => {
+test('conserva la política y verifica el binding exacto después de aplicar', () => {
+  assert.match(script, /\{policy: \.\}/);
+  assert.match(script, /set-policy-request\.json/);
   assert.match(script, /policy-after\.json/);
   assert.match(script, /if ! binding_exists "\$OUTPUT_DIR\/policy-after\.json"/);
 });
