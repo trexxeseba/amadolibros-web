@@ -114,6 +114,16 @@ test('la página de esoterismo-tarot con Finder tiene exactamente un <h1>', asyn
     assert.match(body, /<h1>Tarot, oráculos y libros de esoterismo en Uruguay<\/h1>/);
 });
 
+test('la guía de elección aparece después del Finder y antes de los escaparates de Tarot', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    const finderIndex = body.indexOf('id="tarot-finder-cta"');
+    const guideIndex = body.indexOf('class="buyer-guide"');
+    const modulesIndex = body.indexOf('class="tarot-modules"');
+    assert.ok(finderIndex > -1 && guideIndex > -1 && modulesIndex > -1);
+    assert.ok(finderIndex < guideIndex, 'el Finder debe abrir el recorrido');
+    assert.ok(guideIndex < modulesIndex, 'la guía debe orientar antes de los escaparates');
+});
+
 // ── Sin canonical ni URLs indexables nuevas ──────────────────────────────
 
 test('el Finder no introduce un canonical nuevo: sigue siendo exactamente /libros/esoterismo-tarot', async () => {
