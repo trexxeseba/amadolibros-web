@@ -18,7 +18,6 @@ const baseLayout = readFileSync(
 function makeHarness({ enabled = true, pathName = '/otro', headingText = '', draft = null, gapi = null } = {}) {
   const storage = new Map();
   const appendedScripts = [];
-  const clickListeners = [];
   const configNode = {
     getAttribute(name) {
       if (name === 'data-enabled') return enabled ? 'true' : 'false';
@@ -27,12 +26,6 @@ function makeHarness({ enabled = true, pathName = '/otro', headingText = '', dra
     },
   };
   const heading = { textContent: headingText };
-  const transferCode = { textContent: 'AL-TRANSFER-1' };
-  const transferButton = {
-    addEventListener(type, fn) {
-      if (type === 'click') clickListeners.push(fn);
-    },
-  };
 
   if (draft) storage.set('amado-checkout-draft-v2', JSON.stringify(draft));
 
@@ -45,8 +38,6 @@ function makeHarness({ enabled = true, pathName = '/otro', headingText = '', dra
     querySelector(selector) { return selector === 'meta[name="amado-gcr-config"]' ? configNode : null; },
     getElementById(id) {
       if (id === 'pedido-h1') return heading;
-      if (id === 'btn-transfer-whatsapp') return transferButton;
-      if (id === 'transfer-order-code') return transferCode;
       if (id === 'amado-gcr-platform') return appendedScripts.find((s) => s.id === id) || null;
       return null;
     },
@@ -80,7 +71,7 @@ function makeHarness({ enabled = true, pathName = '/otro', headingText = '', dra
     Math,
   });
   vm.runInContext(helperSource, context);
-  return { window, appendedScripts, storage, clickListeners, heading };
+  return { window, appendedScripts, storage, heading };
 }
 
 const validDraft = {
@@ -91,9 +82,9 @@ const validDraft = {
   },
 };
 
-test('BaseLayout limita Customer Reviews a /carrito y /pedido y lo deja detrás de flag', () => {
-  assert.match(baseLayout, /Astro\.url\.pathname === '\/carrito'/);
-  assert.match(baseLayout, /Astro\.url\.pathname === '\/pedido'/);
+test('BaseLayout carga Customer Reviews únicamente en /pedido y detrás de flag', () => {
+  assert.match(baseLayout, /const gcrPath = Astro\.url\.pathname === '\/pedido';/);
+  assert.doesNotMatch(baseLayout, /Astro\.url\.pathname === '\/carrito' \|\|/);
   assert.match(baseLayout, /PUBLIC_GCR_ENABLED === 'true'/);
   assert.match(baseLayout, /PUBLIC_GCR_MERCHANT_ID \|\| '5330457716'/);
   assert.match(baseLayout, /google-customer-reviews\.js/);
@@ -128,7 +119,7 @@ test('sin email válido: fail-open y 0 requests a Google', () => {
   assert.equal(h.appendedScripts.length, 0);
 });
 
-test('gapi existente: payload usa Merchant 5330457716, UY, CENTER_DIALOG y fecha ISO', () => {
+test('gapi existente: payload contiene todos los campos requeridos por Google', () => {
   let rendered = null;
   const gapi = {
     load(name, callback) {
@@ -164,23 +155,32 @@ test('una orden no muestra el opt-in dos veces en la misma sesión', () => {
   assert.equal(second.reason, 'already_shown');
 });
 
-test('/pedido sólo dispara automáticamente después de texto Pago confirmado', () => {
-  const pending = makeHarness({ enabled: true, pathName: '/pedido', headingText: 'Estamos verificando el pago…', draft: validDraft });
+test('/pedido sólo dispara automáticamente después de confirmación real del pago', () => {
+  const pending = makeHarness({
+    enabled: true,
+    pathName: '/pedido',
+    headingText: 'Estamos verificando el pago…',
+    draft: validDraft,
+  });
   assert.equal(pending.appendedScripts.length, 0);
 
-  const approved = makeHarness({ enabled: true, pathName: '/pedido', headingText: 'Pago confirmado', draft: validDraft });
+  const approved = makeHarness({
+    enabled: true,
+    pathName: '/pedido',
+    headingText: 'Pago confirmado',
+    draft: validDraft,
+  });
   assert.equal(approved.appendedScripts.length, 1);
 });
 
-test('/carrito engancha el opt-in al click final de comprobante de transferencia', () => {
+test('/carrito y transferencia quedan fuera de fase 1', () => {
   const h = makeHarness({ enabled: true, pathName: '/carrito', draft: validDraft });
   assert.equal(h.appendedScripts.length, 0);
-  assert.equal(h.clickListeners.length, 1);
-  h.clickListeners[0]();
-  assert.equal(h.appendedScripts.length, 1);
+  assert.doesNotMatch(helperSource, /btn-transfer-whatsapp/);
+  assert.doesNotMatch(helperSource, /transfer-order-code/);
 });
 
-test('fase 1 no inventa GTINs/product reviews: sólo store review hasta tener ISBN/GTIN confiable por item', () => {
+test('fase 1 no inventa GTINs/product reviews: sólo store review', () => {
   assert.doesNotMatch(helperSource, /products\s*:/);
   assert.doesNotMatch(helperSource, /gtin\s*:/);
 });
