@@ -15,6 +15,7 @@
 
 import { slugify } from '../_shared/slug.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { fixMojibake } from '../_shared/mojibake.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
 import { PRODUCT_ID_REDIRECTS, PRODUCT_SEO_OVERRIDES } from '../_shared/seo-products.js';
@@ -136,6 +137,28 @@ function formatDimensions(dimensions) {
 function detailRow(label, value) {
     if (value == null || value === '') return '';
     return `<div class="detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+}
+
+// MOJIBAKE-FIX-1: repara texto UTF-8 mal interpretado como Latin-1 (ej.
+// "SuperniÃ±a" -> "Superniña") sólo en los campos de texto visibles/SEO.
+// Nunca toca id, isbn, precio, stock ni disponibilidad, y se aplica sobre
+// una copia — el slug canónico (calculado por el caller con slugify(item.
+// title) ANTES de esta reparación) sigue derivando del título original,
+// así que la URL no cambia.
+function withDisplayTextRepaired(item) {
+    const bibliographic = item.bibliographic && typeof item.bibliographic === 'object' && !Array.isArray(item.bibliographic)
+        ? Object.fromEntries(Object.entries(item.bibliographic).map(
+            ([key, value]) => [key, typeof value === 'string' ? fixMojibake(value) : value],
+        ))
+        : item.bibliographic;
+    return {
+        ...item,
+        title: fixMojibake(item.title),
+        author: typeof item.author === 'string' ? fixMojibake(item.author) : item.author,
+        description: typeof item.description === 'string' ? fixMojibake(item.description) : item.description,
+        publisher: typeof item.publisher === 'string' ? fixMojibake(item.publisher) : item.publisher,
+        bibliographic,
+    };
 }
 
 function renderGallery(images, safeTitle) {
@@ -308,7 +331,9 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
     if (!Array.isArray(relatedBooks) || relatedBooks.length === 0) return '';
 
     const cards = relatedBooks.map((book) => {
-        const title = escapeHtml(book.title);
+        const title = escapeHtml(fixMojibake(book.title));
+        // El slug sigue derivando del título original (sin reparar) para no
+        // cambiar la URL canónica de los libros relacionados.
         const href = `/libro/${encodeURIComponent(book.id)}/${slugify(book.title)}`;
         const source = useCloudflareImages
             ? bookCoverUrl(book.id)
@@ -377,6 +402,10 @@ function notFound() {
 // ---------------------------------------------------------------------------
 
 export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
+    // `slug` ya fue calculado por el caller con el título original (sin
+    // reparar) — se preserva así para no cambiar la URL canónica. A partir
+    // de acá, `item` es una copia con el texto visible reparado.
+    item = withDisplayTextRepaired(item);
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     const safeAuthor   = item.author ? escapeHtml(item.author) : null;
