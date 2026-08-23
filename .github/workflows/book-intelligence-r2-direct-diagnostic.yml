@@ -1,0 +1,54 @@
+name: FICHAS-VIDRIERA-2 direct R2 diagnostic
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-preview-reader-green-1
+    paths:
+      - '.github/workflows/book-intelligence-r2-direct-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public pointer and immutable object
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev'
+          POINTER_KEY='book-intelligence/preview/v1/manifest.json'
+          curl -sS --max-time 30 -D pointer.headers -o pointer.json -w 'pointer_http=%{http_code}\n' "$BASE/$POINTER_KEY"
+          cat pointer.json
+          echo
+          OBJECT_KEY=$(node -e 'const p=require("./pointer.json"); process.stdout.write(p.current.object_key)')
+          EXPECTED_SHA=$(node -e 'const p=require("./pointer.json"); process.stdout.write(p.current.sha256)')
+          EXPECTED_BYTES=$(node -e 'const p=require("./pointer.json"); process.stdout.write(String(p.current.bytes))')
+          curl -sS --max-time 30 -D object.headers -o object.json -w 'object_http=%{http_code}\n' "$BASE/$OBJECT_KEY"
+          ACTUAL_SHA=$(sha256sum object.json | cut -d' ' -f1)
+          ACTUAL_BYTES=$(wc -c < object.json | tr -d ' ')
+          echo "object_key=$OBJECT_KEY"
+          echo "expected_sha=$EXPECTED_SHA"
+          echo "actual_sha=$ACTUAL_SHA"
+          echo "expected_bytes=$EXPECTED_BYTES"
+          echo "actual_bytes=$ACTUAL_BYTES"
+          echo '--- pointer headers ---'
+          grep -iE '^(HTTP/|content-type:|content-length:|cache-control:|cf-cache-status:|age:|etag:)' pointer.headers || true
+          echo '--- object headers ---'
+          grep -iE '^(HTTP/|content-type:|content-length:|cache-control:|cf-cache-status:|age:|etag:)' object.headers || true
+          [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ]
+          [ "$ACTUAL_BYTES" = "$EXPECTED_BYTES" ]
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const m = JSON.parse(fs.readFileSync('object.json','utf8'));
+          if (m.schema_version !== 1 || !Array.isArray(m.entries)) throw new Error('manifest shape');
+          const c=m.counts||{};
+          if (m.entries.length !== 12 || c.auto_publish !== 3 || c.review !== 4 || c.hold !== 5) throw new Error('manifest counts');
+          const forbidden = /"(?:description|summary|author_context)"\s*:/i;
+          if (forbidden.test(JSON.stringify(m))) throw new Error('forbidden keys');
+          console.log(`manifest_ok entries=${m.entries.length} auto_publish=${c.auto_publish} review=${c.review} hold=${c.hold}`);
+          NODE

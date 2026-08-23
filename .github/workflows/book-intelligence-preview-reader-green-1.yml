@@ -1,0 +1,192 @@
+name: FICHAS-VIDRIERA-2 Preview reader GREEN 1
+
+on:
+  push:
+    branches:
+      - agent/fichas-vidriera-v2-preview-reader-green-1
+    paths:
+      - '.github/workflows/book-intelligence-preview-reader-green-1.yml'
+      - 'functions/_middleware.js'
+      - 'functions/_shared/book-intelligence-enrichment-preview.js'
+      - 'functions/api/book-intelligence-preview-diagnostic.js'
+      - 'functions/__tests__/book-intelligence-enrichment-preview.test.js'
+      - 'functions/__tests__/book-intelligence-preview-render.test.js'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/fichas-vidriera-v2-enrichment-r2-preview-1
+    paths:
+      - '.github/workflows/book-intelligence-preview-reader-green-1.yml'
+      - 'functions/_middleware.js'
+      - 'functions/_shared/book-intelligence-enrichment-preview.js'
+      - 'functions/api/book-intelligence-preview-diagnostic.js'
+      - 'functions/__tests__/book-intelligence-enrichment-preview.test.js'
+      - 'functions/__tests__/book-intelligence-preview-render.test.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: book-intelligence-preview-reader-green-1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview-green:
+    name: Validate, deploy and audit GREEN Preview
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/fichas-vidriera-v2-preview-reader-green-1') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'agent/fichas-vidriera-v2-preview-reader-green-1' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment:
+      name: preview
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Targeted reader and renderer tests
+        run: |
+          node --check functions/_middleware.js
+          node --check functions/_shared/book-intelligence-enrichment-preview.js
+          node --check functions/api/book-intelligence-preview-diagnostic.js
+          node --test \
+            functions/__tests__/book-intelligence-enrichment-preview.test.js \
+            functions/__tests__/book-intelligence-preview-render.test.js
+
+      - name: Full repository validation
+        env:
+          CI: 'true'
+        run: bash scripts/validate-ci.sh
+
+      - name: Build protected Preview
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'false'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: npm run build
+
+      - name: Deploy isolated Pages Preview
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PREVIEW_BRANCH: fv2-green-1
+        run: |
+          OUTPUT=$(npx wrangler@3.114.17 pages deploy ./astro-front/dist \
+            --project-name amadolibros-web --branch "$PREVIEW_BRANCH")
+          echo "$OUTPUT"
+          PREVIEW_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' | tail -1)
+          if [ -z "$PREVIEW_URL" ]; then
+            echo 'ERROR: Wrangler no devolvió URL de Preview.'
+            exit 1
+          fi
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Preview propagation
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            CODE=$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL/libro/MLU616917519")
+            [ "$CODE" = '200' ] && exit 0
+            echo "Preview propagándose: intento $attempt/10, HTTP $CODE"
+            sleep 6
+          done
+          exit 1
+
+      - name: Diagnose Preview R2 reader
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          CODE=$(curl -sS --max-time 30 -D /tmp/intel-diag.headers -o /tmp/intel-diag.json \
+            -w '%{http_code}' "$PREVIEW_URL/api/book-intelligence-preview-diagnostic")
+          echo "Diagnostic HTTP $CODE"
+          cat /tmp/intel-diag.json
+          echo
+          grep -iE '^(content-type|cache-control|x-robots-tag|server-timing):' /tmp/intel-diag.headers || true
+          [ "$CODE" = '200' ] || exit 1
+          STATUS=$(node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/intel-diag.json","utf8"));process.stdout.write(String(j.status||"missing"));')
+          echo "Reader status=$STATUS"
+          [ "$STATUS" = 'ok' ] || exit 1
+
+      - name: GREEN-only live HTML gate
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          PRODUCTION_URL: https://www.amadolibros.com
+        run: |
+          set -euo pipefail
+          GREEN_IDS='MLU692066314 MLU616917519 MLU709076232'
+          REVIEW_IDS='MLU1416777650 MLU1224447122'
+          RED_IDS='MLU658066458'
+
+          for id in $GREEN_IDS; do
+            curl -sS -L --max-time 60 -D "/tmp/${id}.headers" -o "/tmp/${id}.html" "$PREVIEW_URL/libro/$id"
+            COUNT=$( (grep -o 'data-book-intelligence-preview="v1"' "/tmp/${id}.html" || true) | wc -l | tr -d ' ')
+            if [ "$COUNT" != '1' ]; then
+              echo "ERROR: $id esperaba 1 bloque GREEN, obtuvo $COUNT"
+              grep -iE '^(HTTP/|content-type:|server-timing:|x-robots-tag:|cache-control:)' "/tmp/${id}.headers" || true
+              echo "Temas heading count=$( (grep -o 'Temas de esta obra' "/tmp/${id}.html" || true) | wc -l | tr -d ' ')"
+              exit 1
+            fi
+            grep -Fq 'Temas de esta obra' "/tmp/${id}.html"
+            grep -Fqi 'server-timing:' "/tmp/${id}.headers"
+            grep -Fqi 'book_intel;dur=' "/tmp/${id}.headers"
+            grep -Fqi 'x-robots-tag: noindex, nofollow' "/tmp/${id}.headers"
+            echo "GREEN OK: $id"
+          done
+
+          for id in $REVIEW_IDS $RED_IDS; do
+            curl -sS -L --max-time 60 -o "/tmp/${id}.html" "$PREVIEW_URL/libro/$id"
+            if grep -Fq 'data-book-intelligence-preview="v1"' "/tmp/${id}.html"; then
+              echo "ERROR: $id no es auto_publish y recibió bloque visual."
+              exit 1
+            fi
+            echo "NON-GREEN OK: $id sin bloque"
+          done
+
+          for id in $GREEN_IDS; do
+            curl -sS -L --max-time 60 -o "/tmp/prod-${id}.html" "$PRODUCTION_URL/libro/$id"
+            if grep -Fq 'data-book-intelligence-preview="v1"' "/tmp/prod-${id}.html"; then
+              echo "ERROR: Producción expone el bloque de Preview para $id."
+              exit 1
+            fi
+          done
+          echo 'PRODUCTION ISOLATION OK'
+
+      - name: Measure reader overhead
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          PRODUCTION_URL: https://www.amadolibros.com
+        run: |
+          set -euo pipefail
+          ID='MLU616917519'
+          : > /tmp/preview.ttfb
+          : > /tmp/production.ttfb
+          for i in 1 2 3 4 5; do
+            curl -sS -L --max-time 60 -o /dev/null -w '%{time_starttransfer}\n' "$PREVIEW_URL/libro/$ID" >> /tmp/preview.ttfb
+            curl -sS -L --max-time 60 -o /dev/null -w '%{time_starttransfer}\n' "$PRODUCTION_URL/libro/$ID" >> /tmp/production.ttfb
+          done
+          PREVIEW_MEDIAN=$(sort -n /tmp/preview.ttfb | sed -n '3p')
+          PROD_MEDIAN=$(sort -n /tmp/production.ttfb | sed -n '3p')
+          echo "TTFB preview median=${PREVIEW_MEDIAN}s"
+          echo "TTFB production median=${PROD_MEDIAN}s"
+          echo "## FICHAS-VIDRIERA-2 GREEN Preview" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Preview: $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo '- GREEN visibles: 3/3' >> "$GITHUB_STEP_SUMMARY"
+          echo '- YELLOW/RED ocultos: 3/3 controles' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Producción: 0 bloques nuevos' >> "$GITHUB_STEP_SUMMARY"
+          echo "- TTFB mediana Preview (5): ${PREVIEW_MEDIAN}s" >> "$GITHUB_STEP_SUMMARY"
+          echo "- TTFB mediana Producción (5): ${PROD_MEDIAN}s" >> "$GITHUB_STEP_SUMMARY"
