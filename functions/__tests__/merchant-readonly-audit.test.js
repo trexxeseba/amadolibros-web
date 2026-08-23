@@ -5,7 +5,14 @@ import { readFileSync } from 'node:fs';
 import {
   aggregateDynamicRemarketingUy,
   buildDiagnosis,
+  buildReconciliationDiagnosis,
   countFeedItems,
+  endpointError,
+  listAll,
+  parseFeedOffers,
+  reconcileOffers,
+  requestJson,
+  rowsToCsv,
   summarizeDataSource,
   summarizeProducts,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -115,6 +122,223 @@ test('el diagnóstico diferencia hechos de hipótesis', () => {
   assert.ok(diagnosis.facts.some(row => row.includes('3745')));
   assert.ok(diagnosis.hypotheses.some(row => row.text.includes('683 ofertas')));
   assert.ok(diagnosis.hypotheses.some(row => row.text.includes('2 fuentes primarias')));
+});
+
+function buildDataSources() {
+  return [
+    {
+      name: 'accounts/533/dataSources/1',
+      input: 'AUTOFEED',
+      displayName: 'Autofeed sitio',
+      primaryProductDataSource: {},
+    },
+    {
+      name: 'accounts/533/dataSources/2',
+      input: 'FILE',
+      displayName: 'Feed subido',
+      primaryProductDataSource: {},
+    },
+    {
+      name: 'accounts/533/dataSources/3',
+      input: 'API',
+      displayName: 'Carga externa',
+      supplementalProductDataSource: {},
+    },
+  ].map(summarizeDataSource);
+}
+
+function buildReconciliationProducts() {
+  return [
+    {
+      name: 'accounts/533/products/1',
+      offerId: 'libro-1',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/1',
+      attributes: { price: { amountMicros: '500000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/1.jpg' },
+    },
+    {
+      name: 'accounts/533/products/2',
+      offerId: 'libro-1',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/2',
+      attributes: { price: { amountMicros: '500000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/1.jpg' },
+    },
+    {
+      name: 'accounts/533/products/3',
+      offerId: 'libro-2',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/1',
+      attributes: { imageLink: 'https://example.com/2.jpg' },
+    },
+    {
+      name: 'accounts/533/products/4',
+      offerId: 'libro-3',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/2',
+      attributes: { price: { amountMicros: '300000000', currencyCode: 'UYU' } },
+      productStatus: {
+        itemLevelIssues: [{ code: 'image_too_small', severity: 'DISAPPROVED', attribute: 'image_link' }],
+      },
+    },
+    {
+      name: 'accounts/533/products/5',
+      offerId: 'libro-4',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/3',
+      attributes: { price: { amountMicros: '100000000' }, imageLink: 'https://example.com/4.jpg' },
+    },
+    {
+      name: 'accounts/533/products/6',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/1',
+      attributes: { price: { amountMicros: '100000000' }, imageLink: 'https://example.com/6.jpg' },
+    },
+  ];
+}
+
+test('confirma solapamiento sólo cuando el mismo offer_id aparece en AUTOFEED y FILE', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  assert.equal(result.overlaps.length, 1);
+  assert.equal(result.overlaps[0].offerId, 'libro-1');
+  const inputs = result.overlaps[0].entries.map(entry => entry.sourceInput).sort();
+  assert.deepEqual(inputs, ['AUTOFEED', 'FILE']);
+});
+
+test('no marca como solapadas ofertas distintas de fuentes distintas', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const overlappingOfferIds = new Set(result.overlaps.map(overlap => overlap.offerId));
+  assert.equal(overlappingOfferIds.has('libro-4'), false);
+  assert.equal(overlappingOfferIds.has('libro-2'), false);
+  assert.equal(overlappingOfferIds.has('libro-3'), false);
+});
+
+test('detecta precio ausente por offer_id', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const offerIds = result.missingPrice.map(row => row.offerId);
+  assert.deepEqual(offerIds, ['libro-2']);
+});
+
+test('detecta imagen ausente o bloqueante por offer_id', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const offerIds = result.missingImage.map(row => row.offerId).sort();
+  assert.deepEqual(offerIds, ['libro-3']);
+  assert.deepEqual(result.missingImage[0].imageBlockingIssueCodes, ['image_too_small']);
+});
+
+test('identifica de forma consistente la fuente y su tipo por producto', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const byOffer = Object.fromEntries(result.rows.map(row => [`${row.offerId}:${row.dataSource}`, row]));
+  const autofeedRow = byOffer['libro-1:accounts/533/dataSources/1'];
+  assert.equal(autofeedRow.sourceInput, 'AUTOFEED');
+  assert.equal(autofeedRow.sourceType, 'primaryProductDataSource');
+  assert.equal(autofeedRow.dataSourceDisplayName, 'Autofeed sitio');
+  assert.equal(result.missingOfferId, 1);
+});
+
+test('los resultados de reconciliación no están hardcodeados a los snapshots históricos 47/18', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  assert.notEqual(result.missingPrice.length, 47);
+  assert.notEqual(result.missingImage.length, 18);
+  assert.equal(result.missingPrice.length, 1);
+  assert.equal(result.missingImage.length, 1);
+});
+
+test('parsea offer_id, precio e imagen desde el feed público sin depender de la API', () => {
+  const xml = `<?xml version="1.0"?><rss><channel>
+    <item><g:id>libro-1</g:id><g:price>500.00 UYU</g:price><g:image_link><![CDATA[https://example.com/1.jpg]]></g:image_link></item>
+    <item><g:id>libro-9</g:id></item>
+  </channel></rss>`;
+  const offers = parseFeedOffers(xml);
+  assert.equal(offers.length, 2);
+  assert.equal(offers[0].offerId, 'libro-1');
+  assert.equal(offers[0].hasPrice, true);
+  assert.equal(offers[0].hasImage, true);
+  assert.equal(offers[1].offerId, 'libro-9');
+  assert.equal(offers[1].hasPrice, false);
+  assert.equal(offers[1].hasImage, false);
+});
+
+test('listAll pagina usando nextPageToken hasta agotarlo y no filtra el token de acceso en la URL', async () => {
+  const originalFetch = global.fetch;
+  const calledUrls = [];
+  global.fetch = async url => {
+    calledUrls.push(String(url));
+    const parsed = new URL(String(url));
+    const pageToken = parsed.searchParams.get('pageToken');
+    const body = pageToken === 'page-2'
+      ? { products: [{ offerId: 'libro-b' }] }
+      : { products: [{ offerId: 'libro-a' }], nextPageToken: 'page-2' };
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  try {
+    const rows = await listAll({
+      endpoint: 'https://merchantapi.googleapis.com/products/v1/accounts/533/products',
+      arrayField: 'products',
+      pageSize: 1,
+      accessToken: 'super-secret-token',
+    });
+    assert.deepEqual(rows.map(row => row.offerId), ['libro-a', 'libro-b']);
+    assert.equal(calledUrls.length, 2);
+    assert.ok(calledUrls.every(url => !url.includes('super-secret-token')));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('los errores de la API se sanitizan y no exponen el token de acceso', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => new Response(
+    JSON.stringify({
+      error: {
+        message: 'PERMISSION_DENIED en la cuenta',
+        status: 'PERMISSION_DENIED',
+        details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'IAM_PERMISSION_DENIED' }],
+      },
+    }),
+    { status: 403 },
+  );
+  try {
+    await assert.rejects(
+      () => requestJson(new URL('https://merchantapi.googleapis.com/products/v1/accounts/533/products'), 'super-secret-token'),
+      error => {
+        const normalized = endpointError(error);
+        const serialized = JSON.stringify(normalized);
+        assert.equal(serialized.includes('super-secret-token'), false);
+        assert.equal(normalized.httpStatus, 403);
+        assert.equal(normalized.apiStatus, 'PERMISSION_DENIED');
+        return true;
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('el CSV protege contra formula injection en offer_id y evidencia', () => {
+  const csv = rowsToCsv(
+    [['offer_id', 'offerId'], ['evidence', 'evidence']],
+    [{ offerId: '=cmd|" /C calc"!A0', evidence: '+SUM(A1:A2)' }, { offerId: '-1+1', evidence: '@HYPERLINK("evil")' }],
+  );
+  const lines = csv.trim().split('\n');
+  assert.equal(lines[0], '"offer_id","evidence"');
+  assert.ok(lines[1].startsWith('"\'=cmd'));
+  assert.ok(lines[1].includes('"\'+SUM'));
+  assert.ok(lines[2].startsWith('"\'-1+1"'));
+  assert.ok(lines[2].includes('"\'@HYPERLINK'));
+});
+
+test('el diagnóstico de reconciliación separa hechos, hipótesis y limitaciones sin hardcodear snapshots', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const diagnosis = buildReconciliationDiagnosis(result);
+  assert.ok(diagnosis.facts.some(fact => fact.includes('1 offer_id') || fact.includes('Se identificaron 1')));
+  assert.ok(Array.isArray(diagnosis.limitations) && diagnosis.limitations.length > 0);
+  assert.ok(diagnosis.limitations.some(text => text.includes('productInputs')));
 });
 
 test('la implementación no contiene llamadas de escritura a Merchant API', () => {
