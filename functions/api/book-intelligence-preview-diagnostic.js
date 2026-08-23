@@ -7,11 +7,12 @@ import {
 import { R2_DEV_BASE } from '../_shared/r2-access.js';
 
 const TARGET_ID = 'MLU616917519';
+const DIAG_VERSION = 'fv2-reader-diag-2';
 const MAX_POINTER_BYTES = 16 * 1024;
 const MAX_OBJECT_BYTES = 512 * 1024;
 
 function json(body, status = 200) {
-  return new Response(JSON.stringify(body), {
+  return new Response(JSON.stringify({ diag_version: DIAG_VERSION, ...body }), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
@@ -30,15 +31,14 @@ async function fetchProbe(key) {
   } catch {
     return { status: 'fetch_error' };
   }
-  return {
-    status: `http_${response.status}`,
-    ok: response.ok,
-    response,
-  };
+  return { status: `http_${response.status}`, ok: response.ok, response };
 }
 
 function validPointerShape(pointer) {
-  if (!pointer || pointer.schema_version !== 1 || pointer.environment !== 'preview') return null;
+  if (!pointer || pointer.schema_version !== 1) return null;
+  // #228 persiste el entorno por namespace, no por un campo environment.
+  // Si una futura versión agrega el campo, sólo aceptamos preview.
+  if (pointer.environment != null && pointer.environment !== 'preview') return null;
   const objectKey = String(pointer.current?.object_key || '').trim();
   const match = BOOK_INTELLIGENCE_PREVIEW_OBJECT_RE.exec(objectKey);
   if (!match) return null;
@@ -55,11 +55,7 @@ function countsEqual(a, b) {
   }
   return true;
 }
-
-function bytesToHex(bytes) {
-  return [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join('');
-}
-
+function bytesToHex(bytes) { return [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join(''); }
 async function sha256Hex(bytes) {
   const cryptoApi = globalThis.crypto?.subtle;
   if (!cryptoApi) return null;
@@ -75,21 +71,13 @@ export async function onRequest(context) {
   if (!pointerProbe.ok) return json({ status: `pointer_${pointerProbe.status}` });
 
   let pointerText;
-  try {
-    pointerText = await pointerProbe.response.text();
-  } catch {
-    return json({ status: 'pointer_body_error' });
-  }
-  if (!pointerText || new TextEncoder().encode(pointerText).byteLength > MAX_POINTER_BYTES) {
-    return json({ status: 'pointer_size_invalid' });
-  }
+  try { pointerText = await pointerProbe.response.text(); }
+  catch { return json({ status: 'pointer_body_error' }); }
+  if (!pointerText || new TextEncoder().encode(pointerText).byteLength > MAX_POINTER_BYTES) return json({ status: 'pointer_size_invalid' });
 
   let pointer;
-  try {
-    pointer = JSON.parse(pointerText);
-  } catch {
-    return json({ status: 'pointer_json_invalid' });
-  }
+  try { pointer = JSON.parse(pointerText); }
+  catch { return json({ status: 'pointer_json_invalid' }); }
   const parsed = validPointerShape(pointer);
   if (!parsed) return json({ status: 'pointer_contract_invalid' });
 
@@ -98,52 +86,29 @@ export async function onRequest(context) {
   if (!objectProbe.ok) return json({ status: `object_${objectProbe.status}` });
 
   let objectBytes;
-  try {
-    objectBytes = await objectProbe.response.arrayBuffer();
-  } catch {
-    return json({ status: 'object_body_error' });
-  }
+  try { objectBytes = await objectProbe.response.arrayBuffer(); }
+  catch { return json({ status: 'object_body_error' }); }
   if (objectBytes.byteLength > MAX_OBJECT_BYTES) return json({ status: 'object_too_large' });
-  if (objectBytes.byteLength !== parsed.declaredBytes) {
-    return json({
-      status: 'object_size_mismatch',
-      declared_bytes: parsed.declaredBytes,
-      received_bytes: objectBytes.byteLength,
-    });
-  }
+  if (objectBytes.byteLength !== parsed.declaredBytes) return json({ status: 'object_size_mismatch', declared_bytes: parsed.declaredBytes, received_bytes: objectBytes.byteLength });
 
   const actualSha = await sha256Hex(objectBytes);
   if (!actualSha) return json({ status: 'crypto_unavailable' });
   if (actualSha !== parsed.declaredSha) return json({ status: 'object_sha_mismatch' });
 
   let manifest;
-  try {
-    manifest = JSON.parse(new TextDecoder().decode(objectBytes));
-  } catch {
-    return json({ status: 'object_json_invalid' });
-  }
-  if (!validatePreviewBookIntelligenceManifest(manifest)) {
-    return json({ status: 'manifest_invalid' });
-  }
-  if (!countsEqual(parsed.pointer.current?.counts, manifest.counts)) {
-    return json({ status: 'pointer_counts_mismatch' });
-  }
+  try { manifest = JSON.parse(new TextDecoder().decode(objectBytes)); }
+  catch { return json({ status: 'object_json_invalid' }); }
+  if (!validatePreviewBookIntelligenceManifest(manifest)) return json({ status: 'manifest_invalid' });
+  if (!countsEqual(parsed.pointer.current?.counts, manifest.counts)) return json({ status: 'pointer_counts_mismatch' });
 
   const directEntry = manifest.entries.find(row => row.product_id === TARGET_ID) || null;
-  if (!directEntry || directEntry.decision !== 'auto_publish') {
-    return json({ status: 'green_entry_missing' });
-  }
+  if (!directEntry || directEntry.decision !== 'auto_publish') return json({ status: 'green_entry_missing' });
 
-  // Segunda lectura por el reader canónico. Si falla acá, ya sabemos que todos
-  // los bytes/sha/schema anteriores son correctos y el problema está en la
-  // implementación compartida o en el segundo subrequest.
   try {
     const entry = await getPreviewBookIntelligenceEntry(context.env, TARGET_ID);
     if (!entry) return json({ status: 'canonical_second_read_failed', transport: 'r2dev_read_only' });
     return json({
-      status: 'ok',
-      transport: 'r2dev_read_only',
-      target: TARGET_ID,
+      status: 'ok', transport: 'r2dev_read_only', target: TARGET_ID,
       decision: entry.decision,
       topic_count: Array.isArray(entry.work?.topic_seeds) ? entry.work.topic_seeds.length : 0,
       edition_field_count: Object.keys(entry.edition?.auto_publishable_fields || {}).length,
