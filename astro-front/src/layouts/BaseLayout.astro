@@ -25,11 +25,11 @@ const gaId       = import.meta.env.PUBLIC_GA_ID;
 const enableGA4  = (analyticsProp !== undefined ? analyticsProp : indexable) && !!gaId;
 const socialUrl  = canonical || 'https://www.amadolibros.com/';
 
-// CUSTOMER-REVIEWS-1: Google Customer Reviews es exclusivo del cierre de
-// checkout. El helper local puede cargarse en carrito/pedido, pero la llamada
-// externa a Google queda además detrás de PUBLIC_GCR_ENABLED. El merchant ID
-// es público (no es un secreto) y corresponde al Merchant Center de Amado.
-const gcrPath = Astro.url.pathname === '/carrito' || Astro.url.pathname === '/pedido';
+// CUSTOMER-REVIEWS-1: Google exige el opt-in en la página de confirmación del
+// pedido. En Amado esa pantalla es /pedido; /carrito y el paso de transferencia
+// no son confirmaciones de pago. La llamada externa queda además detrás del
+// flag, así que mergear este lote con flag OFF no activa Google Customer Reviews.
+const gcrPath = Astro.url.pathname === '/pedido';
 const gcrEnabled = gcrPath && import.meta.env.PUBLIC_GCR_ENABLED === 'true';
 const gcrMerchantId = String(import.meta.env.PUBLIC_GCR_MERCHANT_ID || '5330457716').trim();
 ---
