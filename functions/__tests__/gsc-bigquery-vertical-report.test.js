@@ -52,7 +52,7 @@ test('calcula posición con sum_position / impressions + 1', () => {
     url: '/libros/esoterismo-tarot', query: 'tarot uruguay', isAnonymizedQuery: false,
     country: 'ury', device: 'MOBILE', clicks: 2, impressions: 10, sumPosition: 40
   }];
-  const report = analyzeWindow(rows, { days: 28, maxDate: '2026-08-22', minImpressions: 3 });
+  const report = analyzeWindow(rows, { days: 28, minDate: '2026-08-22', maxDate: '2026-08-22', minImpressions: 3 });
   assert.equal(report.summaryRows[0].average_position, 5);
   assert.equal(report.summaryRows[0].ctr, 0.2);
   assert.equal(report.queryRows.length, 1);
@@ -67,9 +67,25 @@ test('marca posible canibalización sólo con más de una URL para la misma quer
   const report = analyzeWindow([
     { ...base, url: '/libro/a' },
     { ...base, url: '/libro/b' }
-  ], { days: 28, maxDate: '2026-08-22', minImpressions: 3 });
+  ], { days: 28, minDate: '2026-08-22', maxDate: '2026-08-22', minImpressions: 3 });
   assert.equal(report.cannibalizationRows.length, 1);
   assert.equal(report.cannibalizationRows[0].url_count, 2);
+});
+
+test('distingue ventana solicitada de cobertura efectiva y retención', () => {
+  const report = analyzeWindow([], {
+    days: 90,
+    minDate: '2026-08-14',
+    maxDate: '2026-08-22',
+    minImpressions: 3
+  });
+  assert.equal(report.requestedStartDate, '2026-05-25');
+  assert.equal(report.startDate, '2026-08-14');
+  assert.equal(report.fullCalendarRangeAvailable, false);
+  assert.equal(report.observedDataDays, 0);
+  const source = analysis();
+  assert.match(source, /partitionExpirationDays/);
+  assert.match(source, /Advertencia de retención/);
 });
 
 test('genera ventanas 28/90, CSV seguro y artefactos auditables', () => {

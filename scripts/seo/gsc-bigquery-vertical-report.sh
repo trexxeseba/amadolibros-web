@@ -47,6 +47,7 @@ fi
 sed -n '/^[[:space:]]*{/,$p' "$RAW_METADATA" > "$OUTPUT_DIR/table-metadata.json"
 jq -e 'type == "object" and (.numRows != null)' "$OUTPUT_DIR/table-metadata.json" >/dev/null
 ROW_COUNT="$(jq -r '.numRows // "0"' "$OUTPUT_DIR/table-metadata.json")"
+PARTITION_EXPIRATION_MS="$(jq -r '.timePartitioning.expirationMs // "0"' "$OUTPUT_DIR/table-metadata.json")"
 
 if ! [[ "$ROW_COUNT" =~ ^[0-9]+$ ]] || [[ "$ROW_COUNT" -eq 0 ]]; then
   echo "ERROR: $TABLE no tiene filas disponibles." >&2
@@ -80,4 +81,5 @@ node scripts/seo/gsc-bigquery-vertical-analysis.mjs \
   --site "$SITE_URL" \
   --table "$TABLE" \
   --min-impressions "$MIN_IMPRESSIONS" \
-  --table-row-count "$ROW_COUNT"
+  --table-row-count "$ROW_COUNT" \
+  --partition-expiration-ms "$PARTITION_EXPIRATION_MS"

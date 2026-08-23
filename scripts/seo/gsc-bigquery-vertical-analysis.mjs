@@ -75,9 +75,11 @@ function sortMetrics(rows) {
   return rows.sort((a, b) => b.impressions - a.impressions || b.clicks - a.clicks || (a.average_position ?? Infinity) - (b.average_position ?? Infinity));
 }
 
-export function analyzeWindow(rows, { days, maxDate, minImpressions }) {
-  const startDate = dateMinus(maxDate, days - 1);
+export function analyzeWindow(rows, { days, minDate, maxDate, minImpressions }) {
+  const requestedStartDate = dateMinus(maxDate, days - 1);
+  const startDate = minDate && minDate > requestedStartDate ? minDate : requestedStartDate;
   const selected = rows.filter(row => row.dataDate >= startDate && row.dataDate <= maxDate);
+  const observedDataDays = new Set(selected.map(row => row.dataDate)).size;
   const summary = new Map();
   const queries = new Map();
   const pages = new Map();
@@ -147,7 +149,18 @@ export function analyzeWindow(rows, { days, maxDate, minImpressions }) {
       top_urls: row.urls.sort((a, b) => b.impressions - a.impressions).slice(0, 5).map(item => item.url).join(' | ')
     }))).slice(0, 500);
 
-  return { days, startDate, endDate: maxDate, summaryRows, queryRows, pageRows, cannibalizationRows };
+  return {
+    days,
+    requestedStartDate,
+    startDate,
+    endDate: maxDate,
+    observedDataDays,
+    fullCalendarRangeAvailable: startDate === requestedStartDate,
+    summaryRows,
+    queryRows,
+    pageRows,
+    cannibalizationRows
+  };
 }
 
 function safeCsv(value) {
@@ -177,7 +190,10 @@ async function writeReport(outputDir, window, availability) {
   }
   await writeFile(path.join(windowDir, 'metadata.json'), `${JSON.stringify({
     windowDays: window.days,
-    requestedRange: { startDate: window.startDate, endDate: window.endDate },
+    requestedRange: { startDate: window.requestedStartDate, endDate: window.endDate },
+    effectiveRange: { startDate: window.startDate, endDate: window.endDate },
+    observedDataDays: window.observedDataDays,
+    fullCalendarRangeAvailable: window.fullCalendarRangeAvailable,
     availableRange: availability
   }, null, 2)}\n`);
 }
@@ -211,12 +227,20 @@ export async function run(argv = process.argv.slice(2)) {
     maxDate: dates.at(-1),
     days: dates.length,
     tableRows: number(args['table-row-count']),
-    usableWebRows: rows.length
+    usableWebRows: rows.length,
+    partitionExpirationDays: number(args['partition-expiration-ms']) > 0
+      ? number(args['partition-expiration-ms']) / 86400000
+      : null
   };
   await mkdir(args.output, { recursive: true });
   await writeFile(path.join(args.output, 'availability.json'), `${JSON.stringify(availability, null, 2)}\n`);
 
-  const windows = [28, 90].map(days => analyzeWindow(rows, { days, maxDate: availability.maxDate, minImpressions }));
+  const windows = [28, 90].map(days => analyzeWindow(rows, {
+    days,
+    minDate: availability.minDate,
+    maxDate: availability.maxDate,
+    minImpressions
+  }));
   for (const window of windows) await writeReport(args.output, window, availability);
 
   const lines = [
@@ -226,12 +250,23 @@ export async function run(argv = process.argv.slice(2)) {
     `- Tabla: \`${args.table}\``,
     `- Datos disponibles: **${availability.minDate} a ${availability.maxDate}** (${availability.days} días; ${availability.usableWebRows} filas web de ${availability.tableRows} totales)`,
     '- Ventanas solicitadas: 28 y 90 días, recortadas automáticamente a los datos realmente disponibles.',
+    availability.partitionExpirationDays
+      ? `- Retención configurada de particiones: ${availability.partitionExpirationDays} días.`
+      : '- Retención configurada de particiones: no informada.',
     `- Oportunidades: posición 4–20 y al menos ${minImpressions} impresiones.`,
     '- Acceso BigQuery: metadatos + tabledata de sólo lectura; no crea query jobs.',
     ''
   ];
   for (const window of windows) {
-    lines.push(`## Ventana ${window.days} días`, '');
+    lines.push(`## Ventana solicitada: ${window.days} días`, '');
+    lines.push(`- Cobertura efectiva: ${window.startDate} a ${window.endDate} (${window.observedDataDays} fechas con datos).`);
+    if (!window.fullCalendarRangeAvailable) {
+      lines.push(`- Advertencia: todavía no hay ${window.days} días calendario disponibles; no comparar este corte como una ventana completa.`);
+    }
+    if (availability.partitionExpirationDays && window.days > availability.partitionExpirationDays) {
+      lines.push(`- Advertencia de retención: la política actual de ${availability.partitionExpirationDays} días impide conservar una ventana completa de ${window.days} días cuando madure el histórico.`);
+    }
+    lines.push('');
     if (!window.summaryRows.length) lines.push('- Sin filas clasificadas para Tarot o Biblias.');
     for (const row of window.summaryRows) {
       lines.push(`- ${row.vertical}: ${row.clicks} clics, ${row.impressions} impresiones, CTR ${(row.ctr * 100).toFixed(2)}%, posición media ${row.average_position.toFixed(1)}, ${row.urls} URLs, ${row.data_days} días con datos.`);
