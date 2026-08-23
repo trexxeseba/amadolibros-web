@@ -26,8 +26,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate read-only GSC report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate implementation
+        run: |
+          bash -n scripts/seo/gsc-bigquery-vertical-report.sh
+          node --check scripts/seo/gsc-bigquery-vertical-analysis.mjs
+          node --test functions/__tests__/gsc-bigquery-vertical-report.test.js
+
   report:
     name: Analyze Tarot and Bible demand
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -39,12 +61,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
-
-      - name: Validate read-only report
-        run: |
-          bash -n scripts/seo/gsc-bigquery-vertical-report.sh
-          node --check scripts/seo/gsc-bigquery-vertical-analysis.mjs
-          node --test functions/__tests__/gsc-bigquery-vertical-report.test.js
 
       - name: Authenticate with Google
         uses: google-github-actions/auth@v3
@@ -85,7 +101,7 @@ jobs:
             cat artifacts/gsc-bigquery-verticals/summary.md >> "$GITHUB_STEP_SUMMARY"
           else
             echo '## GSC BigQuery vertical report incompleto' >> "$GITHUB_STEP_SUMMARY"
-            echo 'No se generó summary.md; revisar permisos BigQuery y disponibilidad de tablas.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se generó summary.md; revisar bigquery.tables.getData y la disponibilidad de filas.' >> "$GITHUB_STEP_SUMMARY"
           fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '- Modo: sólo lectura (metadatos + tabledata; sin query jobs)' >> "$GITHUB_STEP_SUMMARY"

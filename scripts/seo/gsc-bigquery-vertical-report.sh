@@ -34,13 +34,17 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 RAW_ROWS="$(mktemp)"
-trap 'rm -f "$RAW_ROWS"' EXIT
+RAW_METADATA="$(mktemp)"
+trap 'rm -f "$RAW_ROWS" "$RAW_METADATA"' EXIT
 
 # `bq show` y `bq head` usan lectura de metadatos/tabledata. No crean jobs,
 # tablas ni vistas y permiten auditar el export sin bigquery.jobs.create.
-bq --project_id="$PROJECT_ID" show --format=json "$TABLE_REF" \
-  | sed -n '/^[[:space:]]*{/,$p' \
-  > "$OUTPUT_DIR/table-metadata.json"
+if ! bq --project_id="$PROJECT_ID" show --format=json "$TABLE_REF" > "$RAW_METADATA" 2>&1; then
+  echo "ERROR: no fue posible leer metadatos de $TABLE." >&2
+  sed -n '1,40p' "$RAW_METADATA" >&2
+  exit 7
+fi
+sed -n '/^[[:space:]]*{/,$p' "$RAW_METADATA" > "$OUTPUT_DIR/table-metadata.json"
 jq -e 'type == "object" and (.numRows != null)' "$OUTPUT_DIR/table-metadata.json" >/dev/null
 ROW_COUNT="$(jq -r '.numRows // "0"' "$OUTPUT_DIR/table-metadata.json")"
 
@@ -53,12 +57,15 @@ if [[ "$ROW_COUNT" -gt "$MAX_ROWS" ]]; then
   exit 5
 fi
 
-bq --project_id="$PROJECT_ID" head \
+if ! bq --project_id="$PROJECT_ID" head \
   --max_rows="$ROW_COUNT" \
   --format=json \
-  "$TABLE_REF" \
-  | sed -n '/^[[:space:]]*\[/,$p' \
-  > "$RAW_ROWS"
+  "$TABLE_REF" > "$RAW_METADATA" 2>&1; then
+  echo "ERROR: no fue posible leer filas de $TABLE; verificar bigquery.tables.getData." >&2
+  sed -n '1,40p' "$RAW_METADATA" >&2
+  exit 8
+fi
+sed -n '/^[[:space:]]*\[/,$p' "$RAW_METADATA" > "$RAW_ROWS"
 jq -e 'type == "array"' "$RAW_ROWS" >/dev/null
 
 FETCHED_ROWS="$(jq 'length' "$RAW_ROWS")"

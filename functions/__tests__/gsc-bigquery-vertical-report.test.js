@@ -18,6 +18,7 @@ test('el workflow corre en rama aislada y no despliega web o Worker', () => {
   assert.doesNotMatch(source, /wrangler|pages deploy|cloudflare\/pages-action|deploy-worker/i);
   assert.match(source, /contents: read/);
   assert.match(source, /create_credentials_file: true/);
+  assert.match(source, /if: github\.event_name == 'workflow_dispatch'/);
 });
 
 test('lee sólo la tabla oficial por URL sin crear query jobs', () => {
@@ -34,6 +35,7 @@ test('el contrato BigQuery es de sólo lectura y evita informes parciales', () =
   assert.match(source, /lectura incompleta/);
   assert.match(source, /sed -n '\/\^\[\[:space:\]\]\*\\\[/);
   assert.match(source, /jq -e 'type == "array"'/);
+  assert.match(source, /verificar bigquery\.tables\.getData/);
   assert.doesNotMatch(source, /\bbq\s+(?:rm|mk|load|cp|update|query)\b/i);
 });
 
