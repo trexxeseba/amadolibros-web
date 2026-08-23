@@ -1,0 +1,102 @@
+name: GSC BigQuery vertical opportunities
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-verticals-1
+    paths:
+      - '.github/workflows/gsc-bigquery-vertical-report.yml'
+      - 'scripts/seo/gsc-bigquery-vertical-report.sh'
+      - 'functions/__tests__/gsc-bigquery-vertical-report.test.js'
+  pull_request:
+    paths:
+      - '.github/workflows/gsc-bigquery-vertical-report.yml'
+      - 'scripts/seo/gsc-bigquery-vertical-report.sh'
+      - 'functions/__tests__/gsc-bigquery-vertical-report.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gsc-bigquery-verticals-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Analyze Tarot and Bible demand
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate read-only report
+        run: |
+          bash -n scripts/seo/gsc-bigquery-vertical-report.sh
+          node --test functions/__tests__/gsc-bigquery-vertical-report.test.js
+
+      - name: Authenticate with Google
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/bigquery.readonly
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: amado-libros-analytics
+
+      - name: Generate vertical opportunity reports
+        env:
+          GSC_BQ_PROJECT_ID: amado-libros-analytics
+          GSC_BQ_PROJECT_NUMBER: '667747565315'
+          GSC_BQ_DATASET_ID: searchconsole
+          GSC_BQ_LOCATION: US
+          GSC_BQ_SITE_URL: sc-domain:amadolibros.com
+          GSC_BQ_OUTPUT_DIR: artifacts/gsc-bigquery-verticals
+          GSC_BQ_MIN_IMPRESSIONS: '3'
+          GSC_BQ_MAX_BYTES_BILLED: '1000000000'
+        run: bash scripts/seo/gsc-bigquery-vertical-report.sh
+
+      - name: Validate artifacts
+        run: |
+          test -s artifacts/gsc-bigquery-verticals/availability.json
+          test -s artifacts/gsc-bigquery-verticals/summary.md
+          test -s artifacts/gsc-bigquery-verticals/28d/vertical-summary.json
+          test -s artifacts/gsc-bigquery-verticals/90d/vertical-summary.json
+
+      - name: Write run summary
+        if: always()
+        run: |
+          if [ -s artifacts/gsc-bigquery-verticals/summary.md ]; then
+            cat artifacts/gsc-bigquery-verticals/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## GSC BigQuery vertical report incompleto' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se generó summary.md; revisar permisos BigQuery y disponibilidad de tablas.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Modo: sólo lectura (SELECT)' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Deploy web/Worker: no' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-bigquery-verticals-${{ github.run_id }}
+          path: artifacts/gsc-bigquery-verticals/
+          if-no-files-found: warn
+          retention-days: 30
+
