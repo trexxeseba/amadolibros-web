@@ -97,8 +97,40 @@ test('usa la descripción real y todos los datos verificables', () => {
   assert.ok(showcase.editionFacts.some(fact => fact.label === 'ISBN' && fact.value === '9788496836693'));
   assert.ok(showcase.editionFacts.some(fact => fact.label === 'Medidas' && fact.value.includes('alto 23 cm')));
   assert.ok(showcase.links.some(link => link.href.includes('Ana%20P%C3%A9rez')));
+  assert.ok(showcase.links.some(link => link.label === '¿Buscás otro libro? Contanos qué buscás'));
+  assert.ok(!showcase.links.some(link => /verificar una edición por ISBN/i.test(link.label)));
   assert.match(showcase.metaDescription, /12% menos por transferencia/);
   assert.ok(showcase.metaDescription.length <= 170);
+});
+
+test('el cierre comercial pregunta por Tarot y esoterismo en fichas afines', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'El Evangelio de los Esenios 1',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Esoterismo',
+    },
+  }));
+
+  assert.ok(showcase.links.some(link =>
+    link.href === '/pedir-libro?tipo=exacto' &&
+    link.label === '¿Querés algo más de esoterismo? Contanos qué buscás'));
+  assert.ok(!showcase.links.some(link => /verificar.*ISBN/i.test(link.label)));
+});
+
+test('el cierre comercial distingue Biblias de esoterismo', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Biblia Reina-Valera 1960 letra grande',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Biblias y religión',
+    },
+  }));
+
+  assert.ok(showcase.links.some(link =>
+    link.href === '/pedir-libro?tipo=exacto' &&
+    link.label === '¿Querés otra Biblia o edición religiosa? Contanos qué buscás'));
+  assert.ok(!showcase.links.some(link => /esoterismo/i.test(link.label)));
 });
 
 test('sin descripción no inventa una sinopsis y lo declara con hechos', () => {

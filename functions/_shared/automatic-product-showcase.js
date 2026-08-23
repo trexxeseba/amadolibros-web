@@ -240,6 +240,32 @@ function authorCopy(item) {
   };
 }
 
+function contextualRequestLink(item) {
+  const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
+    ? item.bibliographic
+    : {};
+  const subject = normalizedText(`${item?.title || ''} ${bibliography.genre || ''}`);
+  const esotericism = /\b(tarot|oracul|esoter|lenormand|kipper|astrolog|cabala|kabbal|sufi|esenio)\w*/u;
+  const biblesAndReligion = /\b(biblia|reina valera|religion|religios|catolic|cristian|teolog|evangelio|testamento)\w*/u;
+
+  if (esotericism.test(subject)) {
+    return {
+      href: '/pedir-libro?tipo=exacto',
+      label: '¿Querés algo más de esoterismo? Contanos qué buscás',
+    };
+  }
+  if (biblesAndReligion.test(subject)) {
+    return {
+      href: '/pedir-libro?tipo=exacto',
+      label: '¿Querés otra Biblia o edición religiosa? Contanos qué buscás',
+    };
+  }
+  return {
+    href: '/pedir-libro?tipo=exacto',
+    label: '¿Buscás otro libro? Contanos qué buscás',
+  };
+}
+
 function buildLinks(item) {
   const links = [];
   const author = !isGenericAuthor(item?.author) ? clean(item.author) : null;
@@ -259,15 +285,7 @@ function buildLinks(item) {
       label: `Explorar libros de ${genre}`,
     });
   }
-  if (normalizeValidIsbn(item?.isbn)) {
-    links.push({
-      href: '/como-identificar-edicion-correcta-isbn',
-      label: 'Cómo verificar una edición por ISBN',
-    });
-  }
-  if (links.length === 0) {
-    links.push({ href: '/catalogo', label: 'Seguir explorando el catálogo' });
-  }
+  links.push(contextualRequestLink(item));
   return links.slice(0, 3);
 }
 
