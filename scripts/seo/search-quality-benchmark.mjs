@@ -23,12 +23,14 @@ function stripHtml(value='') {
 }
 function decodeEntities(value='') { return String(value).replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); }
 function extractResults(html) {
-  const cards=[]; const re=/<article\b[^>]*class="[^"]*book-card[^"]*"[^>]*>([\s\S]*?)<\/article>/gi; let match;
+  const cards=[];
+  const re=/<article\b[^>]*class="[^"]*rc-card[^"]*"[^>]*>([\s\S]*?)<\/article>/gi;
+  let match;
   while ((match=re.exec(html))) {
     const block=match[1];
     const href=block.match(/href="([^"]*\/libro\/[^"]+)"/i)?.[1]||null;
-    const title=decodeEntities(stripHtml(block.match(/<h2\b[^>]*>([\s\S]*?)<\/h2>/i)?.[1]||''));
-    const author=decodeEntities(stripHtml(block.match(/class="book-author"[^>]*>([\s\S]*?)<\/p>/i)?.[1]||''));
+    const title=decodeEntities(stripHtml(block.match(/class="rc-title"[^>]*>([\s\S]*?)<\/p>/i)?.[1]||''));
+    const author=decodeEntities(stripHtml(block.match(/class="rc-author"[^>]*>([\s\S]*?)<\/p>/i)?.[1]||''));
     if(title||href) cards.push({title,author,href});
   }
   return cards;
