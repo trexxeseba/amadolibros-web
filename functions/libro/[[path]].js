@@ -804,16 +804,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .edition-facts .details{border:0;border-radius:0;margin:0}
     .edition-facts-note{padding:.7rem .85rem;font-size:.76rem;color:#64748b;
                         background:#f8fafc;border-top:1px solid #e2e8f0}
-    .book-more{margin:.25rem 0 .875rem;background:#fff;border:1px solid #e2e8f0;
-               border-radius:.5rem;overflow:hidden}
-    .book-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;
-                       padding:.65rem .8rem;font-size:.86rem;font-weight:750;color:#334155}
-    .book-more summary:hover{background:#f8fafc}
-    .book-more summary:focus-visible{outline:2px solid #3b82f6;outline-offset:-2px}
-    .book-more[open] summary{border-bottom:1px solid #e2e8f0}
-    .book-more .details{border:0;border-radius:0;margin:0}
-    .book-description{padding:.8rem;border-bottom:1px solid #e2e8f0}
-    .book-description h2{font-size:.9rem;margin:0 0 .35rem;color:#334155}
+    .book-description{margin:1rem 0;padding:.85rem;background:#fff;
+                      border:1px solid #d8d1c7;border-radius:.65rem}
+    .book-description h2{font-size:1rem;line-height:1.35;margin:0 0 .45rem;color:#1e293b}
     .book-description p{white-space:pre-line;font-size:.84rem;color:#475569;line-height:1.55}
     .price-box{background:#fff;border:1px solid #d8d1c7;border-radius:.65rem;
                padding:1rem 1.25rem;margin:.875rem 0}
