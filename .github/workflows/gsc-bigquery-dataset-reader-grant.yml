@@ -8,6 +8,11 @@ on:
       - '.github/workflows/gsc-bigquery-dataset-reader-grant.yml'
       - 'scripts/seo/gsc-bigquery-dataset-reader-grant.sh'
       - 'functions/__tests__/gsc-bigquery-dataset-reader-grant.test.js'
+  pull_request:
+    paths:
+      - '.github/workflows/gsc-bigquery-dataset-reader-grant.yml'
+      - 'scripts/seo/gsc-bigquery-dataset-reader-grant.sh'
+      - 'functions/__tests__/gsc-bigquery-dataset-reader-grant.test.js'
   workflow_dispatch:
 
 permissions:
