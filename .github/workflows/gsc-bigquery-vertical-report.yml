@@ -7,11 +7,13 @@ on:
     paths:
       - '.github/workflows/gsc-bigquery-vertical-report.yml'
       - 'scripts/seo/gsc-bigquery-vertical-report.sh'
+      - 'scripts/seo/gsc-bigquery-vertical-analysis.mjs'
       - 'functions/__tests__/gsc-bigquery-vertical-report.test.js'
   pull_request:
     paths:
       - '.github/workflows/gsc-bigquery-vertical-report.yml'
       - 'scripts/seo/gsc-bigquery-vertical-report.sh'
+      - 'scripts/seo/gsc-bigquery-vertical-analysis.mjs'
       - 'functions/__tests__/gsc-bigquery-vertical-report.test.js'
   workflow_dispatch:
 
@@ -41,6 +43,7 @@ jobs:
       - name: Validate read-only report
         run: |
           bash -n scripts/seo/gsc-bigquery-vertical-report.sh
+          node --check scripts/seo/gsc-bigquery-vertical-analysis.mjs
           node --test functions/__tests__/gsc-bigquery-vertical-report.test.js
 
       - name: Authenticate with Google
@@ -64,11 +67,10 @@ jobs:
           GSC_BQ_PROJECT_ID: amado-libros-analytics
           GSC_BQ_PROJECT_NUMBER: '667747565315'
           GSC_BQ_DATASET_ID: searchconsole
-          GSC_BQ_LOCATION: US
           GSC_BQ_SITE_URL: sc-domain:amadolibros.com
           GSC_BQ_OUTPUT_DIR: artifacts/gsc-bigquery-verticals
           GSC_BQ_MIN_IMPRESSIONS: '3'
-          GSC_BQ_MAX_BYTES_BILLED: '1000000000'
+          GSC_BQ_MAX_ROWS: '250000'
         run: bash scripts/seo/gsc-bigquery-vertical-report.sh
 
       - name: Validate artifacts
@@ -88,7 +90,7 @@ jobs:
             echo 'No se generó summary.md; revisar permisos BigQuery y disponibilidad de tablas.' >> "$GITHUB_STEP_SUMMARY"
           fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Modo: sólo lectura (SELECT)' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Modo: sólo lectura (metadatos + tabledata; sin query jobs)' >> "$GITHUB_STEP_SUMMARY"
           echo '- Deploy web/Worker: no' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload reports
@@ -99,4 +101,3 @@ jobs:
           path: artifacts/gsc-bigquery-verticals/
           if-no-files-found: warn
           retention-days: 30
-
