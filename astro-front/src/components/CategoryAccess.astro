@@ -19,22 +19,36 @@ interface Category {
   id: string;
   name: string;
   count: number;
+  displayName?: string;
+  scope?: string;
+  featured?: boolean;
 }
 
 // Allowlist SEO: solo estas categorías tienen una landing limpia e
 // indexable. Mantener cerrada evita enlazar automáticamente categorías
 // débiles o catch-all a páginas que Google no debería indexar.
 const SEO_CATEGORY_IDS = [
-  'infantil-juvenil',
   'esoterismo-tarot',
+  'religion-espiritualidad',
+  'infantil-juvenil',
   'medicina-salud',
   'literatura-ficcion',
   'idiomas-aprendizaje',
   'psicologia',
   'desarrollo-personal',
-  'religion-espiritualidad',
 ];
 const seoOrder = new Map(SEO_CATEGORY_IDS.map((id, index) => [id, index]));
+
+const PRIORITY_CATEGORY_PRESENTATION = new Map([
+  ['esoterismo-tarot', {
+    displayName: 'Tarot y oráculos',
+    scope: 'Mazos, oráculos y libros de esoterismo',
+  }],
+  ['religion-espiritualidad', {
+    displayName: 'Biblias y religión',
+    scope: 'Reina-Valera, católicas y libros de religión',
+  }],
+]);
 
 let categories: Category[] = [];
 let missing = false;
@@ -44,7 +58,16 @@ try {
   const data = JSON.parse(raw) as { categories: Category[] };
   categories = (data.categories || [])
     .filter(c => seoOrder.has(c.id))
-    .sort((a, b) => seoOrder.get(a.id)! - seoOrder.get(b.id)!);
+    .sort((a, b) => seoOrder.get(a.id)! - seoOrder.get(b.id)!)
+    .map(category => {
+      const presentation = PRIORITY_CATEGORY_PRESENTATION.get(category.id);
+      return {
+        ...category,
+        displayName: presentation?.displayName || category.name,
+        scope: presentation?.scope || 'Disponibles y por encargo',
+        featured: Boolean(presentation),
+      };
+    });
 } catch (e: unknown) {
   missing = true;
   const msg = e instanceof Error ? e.message : String(e);
@@ -61,13 +84,14 @@ try {
           <div class="ca-row" role="list">
             {categories.map(cat => (
               <a
-                class="ca-chip"
+                class={`ca-chip${cat.featured ? ' ca-chip-featured' : ''}`}
                 href={`/libros/${encodeURIComponent(cat.id)}`}
+                data-priority-vertical={cat.featured ? cat.id : undefined}
                 role="listitem"
               >
-                <span class="ca-chip-name">{cat.name}</span>
+                <span class="ca-chip-name">{cat.displayName}</span>
                 <span class="ca-chip-count">{cat.count} títulos</span>
-                <span class="ca-chip-scope">Disponibles y por encargo</span>
+                <span class="ca-chip-scope">{cat.scope}</span>
               </a>
             ))}
             <a class="ca-chip ca-chip-all" href="/catalogo">
@@ -139,6 +163,15 @@ try {
     background: rgba(228, 153, 130, 0.12);
     border-color: var(--salmon);
     transform: translateY(-1px);
+  }
+
+  .ca-chip-featured {
+    background: rgba(228, 153, 130, 0.1);
+    border-color: rgba(228, 153, 130, 0.7);
+  }
+
+  .ca-chip-featured .ca-chip-name {
+    font-weight: 750;
   }
 
   .ca-chip-name {
