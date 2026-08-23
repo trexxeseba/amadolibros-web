@@ -174,8 +174,8 @@ test('12. Datos de esta edición muestra sólo atributos bibliográficos disponi
         },
     }), 'un-libro', false, '');
 
-    assert.match(html, /<details class="book-more">/);
-    assert.match(html, /<summary>Ver más sobre este libro<\/summary>/);
+    assert.match(html, /<section class="book-edition" aria-labelledby="edition-heading">/);
+    assert.match(html, /<h2 id="edition-heading">Datos de esta edición<\/h2>/);
     assert.match(html, /<dt>Editorial<\/dt><dd>Editorial Sur<\/dd>/);
     assert.match(html, /<dt>Páginas<\/dt><dd>312<\/dd>/);
     assert.match(html, /<dt>Idioma<\/dt><dd>Español<\/dd>/);
@@ -206,7 +206,7 @@ test('14. La descripción real de ML queda visible, preserva párrafos y se esca
         author: null,
         description: 'Primera línea.\n\nSegunda <línea> & detalle.',
     }), 'un-libro', false, '');
-    assert.match(html, /<h2>Descripción<\/h2>/);
+    assert.match(html, /<h2>Descripción de esta edición<\/h2>/);
     assert.match(html, /Primera línea\.\n\nSegunda &lt;línea&gt; &amp; detalle\./);
     assert.match(html, /\.book-description p\{white-space:pre-line/);
     assert.match(html, /"description":"Primera línea\.\\n\\nSegunda \\u003clínea> & detalle\."/);
