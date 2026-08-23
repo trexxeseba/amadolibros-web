@@ -70,7 +70,11 @@ export function validatePreviewBookIntelligenceManifest(manifest) {
 }
 function parsePointer(raw) {
   const pointer = JSON.parse(raw);
-  if (!pointer || pointer.schema_version !== 1 || pointer.environment !== 'preview') return null;
+  if (!pointer || pointer.schema_version !== 1) return null;
+  // El publisher de #228 no persistió `environment`; el aislamiento real vive
+  // en APP_ENV + el namespace preview/v1. Si una versión futura declara el
+  // campo, sólo aceptamos explícitamente "preview" y rechazamos cualquier otro.
+  if (pointer.environment != null && pointer.environment !== 'preview') return null;
   const key = clean(pointer.current?.object_key);
   const match = BOOK_INTELLIGENCE_PREVIEW_OBJECT_RE.exec(key);
   if (!match) return null;
