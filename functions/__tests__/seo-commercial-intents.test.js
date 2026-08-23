@@ -32,8 +32,8 @@ test('home posiciona el diferencial y enlaza la landing desde el footer', () => 
   const hero = read('astro-front/src/components/Hero.astro');
   const footer = read('astro-front/src/components/Footer.astro');
 
-  assert.match(home, /title="Libros difíciles, agotados e importados \| Amado Libros"/);
-  assert.match(home, /Encargos desde Europa y otros mercados/);
+  assert.match(home, /title="Librería online en Uruguay: Tarot, Biblias y más \| Amado Libros"/);
+  assert.match(home, /Biblias Reina-Valera, Biblias católicas/);
   assert.match(hero, /ediciones agotadas e importadas de Europa/);
   assert.match(footer, /href="\/libros-agotados-importados-uruguay"/);
 });

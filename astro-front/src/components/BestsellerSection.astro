@@ -43,7 +43,7 @@ try {
 {missing
   ? <Fragment set:html="<!-- novedades: home.json no encontrado en build — sección omitida -->" />
   : (books.length > 0 && (
-      <section class="bs-section">
+      <section id="incorporaciones-recientes" class="bs-section">
         <div class="bs-inner">
           <h2 class="bs-heading">Incorporaciones recientes</h2>
           <div class="bs-grid">
@@ -57,6 +57,7 @@ try {
 
 <style>
   .bs-section {
+    scroll-margin-top: 5rem;
     background: var(--bg);
     border-top: 1px solid var(--border);
   }

@@ -134,14 +134,15 @@ test('parámetros arbitrarios no crean otra landing indexable', async () => {
     assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libros\/psicologia">/);
 });
 
-test('la portada enlaza las ocho landings limpias y no filtros con parámetros', () => {
+test('la portada conserva las ocho landings limpias y usa filtros sólo para intenciones subordinadas', () => {
     const file = fileURLToPath(new URL('../../astro-front/src/components/CategoryAccess.astro', import.meta.url));
     const source = readFileSync(file, 'utf8');
 
     assert.match(source, /href={`\/libros\/\$\{encodeURIComponent\(cat\.id\)\}`}/);
-    assert.doesNotMatch(source, /href={`\/catalogo\?categoria=/);
-    assert.match(source, /\{cat\.count\} títulos/);
-    assert.match(source, />Disponibles y por encargo<\/span>/);
+    assert.match(source, /number\.format\(cat\.count\)/);
+    assert.match(source, /subcategoria=biblia/);
+    assert.match(source, /subcategoria=reina-valera/);
+    assert.doesNotMatch(source, /href="\/biblias"|href="\/reina-valera"/);
     for (const category of SEO_CATEGORIES) {
         assert.ok(source.includes(`'${category.id}'`), category.id);
     }
