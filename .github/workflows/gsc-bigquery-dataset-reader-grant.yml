@@ -1,0 +1,83 @@
+name: GSC BigQuery dataset reader grant
+
+on:
+  push:
+    branches:
+      - agent/gsc-bq-data-viewer-iam-1
+    paths:
+      - '.github/workflows/gsc-bigquery-dataset-reader-grant.yml'
+      - 'scripts/seo/gsc-bigquery-dataset-reader-grant.sh'
+      - 'functions/__tests__/gsc-bigquery-dataset-reader-grant.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gsc-bigquery-dataset-reader-grant
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate exact dataset grant
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Validate implementation
+        run: |
+          bash -n scripts/seo/gsc-bigquery-dataset-reader-grant.sh
+          node --test functions/__tests__/gsc-bigquery-dataset-reader-grant.test.js
+
+  apply:
+    name: Grant and verify dataset reader
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Authenticate with Google
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          create_credentials_file: true
+          export_environment_variables: true
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: amado-libros-analytics
+      - name: Apply exact dataset binding
+        env:
+          GSC_BQ_PROJECT_ID: amado-libros-analytics
+          GSC_BQ_PROJECT_NUMBER: '667747565315'
+          GSC_BQ_DATASET_ID: searchconsole
+          GSC_BQ_OUTPUT_DIR: artifacts/gsc-bigquery-dataset-reader-grant
+        run: bash scripts/seo/gsc-bigquery-dataset-reader-grant.sh
+      - name: Write run summary
+        if: always()
+        run: |
+          if [ -s artifacts/gsc-bigquery-dataset-reader-grant/summary.md ]; then
+            cat artifacts/gsc-bigquery-dataset-reader-grant/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Dataset grant incompleto' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se confirmó el binding; revisar permisos del principal ejecutor.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload IAM evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-bigquery-dataset-reader-grant-${{ github.run_id }}
+          path: artifacts/gsc-bigquery-dataset-reader-grant/
+          if-no-files-found: warn
+          retention-days: 30
