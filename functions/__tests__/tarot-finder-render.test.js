@@ -111,7 +111,7 @@ test('la página de esoterismo-tarot con Finder tiene exactamente un <h1>', asyn
     const { html: body } = await html('esoterismo-tarot');
     const h1Count = (body.match(/<h1[ >]/g) || []).length;
     assert.equal(h1Count, 1, 'el CTA "Encontrá tu mazo" usa <h2>, no <h1> — el único <h1> sigue siendo el de la categoría');
-    assert.match(body, /<h1>Libros de esoterismo y tarot en Uruguay<\/h1>/);
+    assert.match(body, /<h1>Tarot, oráculos y libros de esoterismo en Uruguay<\/h1>/);
 });
 
 // ── Sin canonical ni URLs indexables nuevas ──────────────────────────────
