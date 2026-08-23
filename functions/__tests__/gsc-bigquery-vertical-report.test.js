@@ -32,6 +32,8 @@ test('el contrato BigQuery es de sólo lectura y evita informes parciales', () =
   const source = shell();
   assert.match(source, /MAX_ROWS/);
   assert.match(source, /lectura incompleta/);
+  assert.match(source, /sed -n '\/\^\[\[:space:\]\]\*\\\[/);
+  assert.match(source, /jq -e 'type == "array"'/);
   assert.doesNotMatch(source, /\bbq\s+(?:rm|mk|load|cp|update|query)\b/i);
 });
 

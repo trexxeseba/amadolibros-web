@@ -38,7 +38,10 @@ trap 'rm -f "$RAW_ROWS"' EXIT
 
 # `bq show` y `bq head` usan lectura de metadatos/tabledata. No crean jobs,
 # tablas ni vistas y permiten auditar el export sin bigquery.jobs.create.
-bq --project_id="$PROJECT_ID" show --format=json "$TABLE_REF" > "$OUTPUT_DIR/table-metadata.json"
+bq --project_id="$PROJECT_ID" show --format=json "$TABLE_REF" \
+  | sed -n '/^[[:space:]]*{/,$p' \
+  > "$OUTPUT_DIR/table-metadata.json"
+jq -e 'type == "object" and (.numRows != null)' "$OUTPUT_DIR/table-metadata.json" >/dev/null
 ROW_COUNT="$(jq -r '.numRows // "0"' "$OUTPUT_DIR/table-metadata.json")"
 
 if ! [[ "$ROW_COUNT" =~ ^[0-9]+$ ]] || [[ "$ROW_COUNT" -eq 0 ]]; then
@@ -53,7 +56,10 @@ fi
 bq --project_id="$PROJECT_ID" head \
   --max_rows="$ROW_COUNT" \
   --format=json \
-  "$TABLE_REF" > "$RAW_ROWS"
+  "$TABLE_REF" \
+  | sed -n '/^[[:space:]]*\[/,$p' \
+  > "$RAW_ROWS"
+jq -e 'type == "array"' "$RAW_ROWS" >/dev/null
 
 FETCHED_ROWS="$(jq 'length' "$RAW_ROWS")"
 if [[ "$FETCHED_ROWS" -ne "$ROW_COUNT" ]]; then
