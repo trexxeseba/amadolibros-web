@@ -121,6 +121,21 @@ function normalizePublisher(publisher) {
     return s;
 }
 
+function comparableText(value) {
+    return String(value || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+export function meaningfulDescription(title, description) {
+    const text = String(description || '').trim();
+    if (!text) return '';
+    return comparableText(text) === comparableText(title) ? '' : text;
+}
+
 function formatDimensions(dimensions) {
     if (!dimensions || typeof dimensions !== 'object') return null;
 
@@ -415,9 +430,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const bibliographic = item.bibliographic && typeof item.bibliographic === 'object'
         ? item.bibliographic
         : {};
-    const description = item.description ? String(item.description).trim() : '';
+    const description = meaningfulDescription(item.title, item.description);
     const descriptionHtml = description
-        ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
+        ? `<section class="book-description" aria-labelledby="book-description-title">
+      <h2 id="book-description-title">Descripción de esta edición</h2>
+      <p>${escapeHtml(description)}</p>
+    </section>`
         : '';
     const waMessage = buildBookWhatsAppMessage({
         title: item.title,
@@ -428,6 +446,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     });
     const waLink = whatsappHref(waMessage);
     const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author, !isPreview);
+    const authorPagePath = item.author ? authorPathForName(item.author) : null;
+    const authorBylineHtml = item.author
+        ? `<p class="product-byline">de ${authorPagePath
+            ? `<a href="${escapeHtml(authorPagePath)}">${safeAuthor}</a>`
+            : safeAuthor}</p>`
+        : '';
     const viewItemAnalytics = {
         dedupeKey: `view_item_${item.id}`,
         ...(sellableInCheckout ? { value: price } : {}),
@@ -463,12 +487,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             ? detailRow('Disponibilidad', `${stockQty} disponible${stockQty === 1 ? '' : 's'}`)
             : '',
     ].filter(Boolean).join('\n');
-    const moreDetailsHtml = detailRows || descriptionHtml
-        ? `<details class="book-more">
-      <summary>Ver más sobre este libro</summary>
-      ${descriptionHtml}
-      ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
-    </details>`
+    const editionFactsHtml = detailRows
+        ? `<section class="edition-facts" aria-labelledby="edition-facts-title">
+      <h2 id="edition-facts-title">Datos de esta edición</h2>
+      <dl class="details">${detailRows}</dl>
+      <p class="edition-facts-note">Mostramos solamente los datos identificados para esta edición. Si necesitás confirmar otra característica, consultanos antes de comprar.</p>
+    </section>`
         : '';
 
     const defaultMetaDesc = sellableInCheckout
@@ -500,6 +524,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         'name':     item.title,
         'image':    images.length ? images : img,
         'description': description || (item.author ? `${item.title} — ${item.author}` : item.title),
+        'url':      canonicalUrl,
         'sku':      item.id,
     };
     if (sellableInCheckout) {
@@ -639,7 +664,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@type':    'BreadcrumbList',
         'itemListElement': [
             { '@type': 'ListItem', 'position': 1, 'name': 'Inicio', 'item': `${BASE}/` },
-            { '@type': 'ListItem', 'position': 2, 'name': item.title.substring(0, 80) },
+            { '@type': 'ListItem', 'position': 2, 'name': 'Catálogo', 'item': `${BASE}/catalogo` },
+            { '@type': 'ListItem', 'position': 3, 'name': item.title.substring(0, 80), 'item': canonicalUrl },
         ],
     };
 
@@ -756,7 +782,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .lb-close:focus-visible{outline:2px solid white;outline-offset:2px}
     @media(max-width:480px){.lb-img{max-height:60vh}}
     .info h1{font-size:1.25rem;font-weight:700;line-height:1.35;
-             margin-bottom:.75rem;color:#0f172a}
+             margin-bottom:.3rem;color:#0f172a}
+    .product-byline{font-size:.92rem;color:#475569;margin:0 0 .75rem}
+    .product-byline a{color:#334155;font-weight:700;text-decoration-thickness:1px;text-underline-offset:2px}
     .meta{font-size:.875rem;color:#475569;margin-bottom:.4rem}
     .meta strong{color:#1e293b}
     .badge{display:inline-block;padding:.2rem .7rem;border-radius:2rem;
@@ -769,6 +797,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .detail-row:last-child{border-bottom:0}
     .detail-row dt{font-weight:700;color:#334155}
     .detail-row dd{color:#475569}
+    .edition-facts{margin:1rem 0;background:#fff;border:1px solid #d8d1c7;
+                   border-radius:.65rem;overflow:hidden}
+    .edition-facts h2{font-size:1rem;line-height:1.35;padding:.8rem .85rem;
+                      color:#1e293b;border-bottom:1px solid #e2e8f0}
+    .edition-facts .details{border:0;border-radius:0;margin:0}
+    .edition-facts-note{padding:.7rem .85rem;font-size:.76rem;color:#64748b;
+                        background:#f8fafc;border-top:1px solid #e2e8f0}
     .book-more{margin:.25rem 0 .875rem;background:#fff;border:1px solid #e2e8f0;
                border-radius:.5rem;overflow:hidden}
     .book-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;
@@ -885,6 +920,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 
 <nav>
   <a href="/">Inicio</a> ›
+  <a href="/catalogo">Catálogo</a> ›
   <span>${safeTitle.substring(0, 70)}${item.title.length > 70 ? '…' : ''}</span>
 </nav>
 
@@ -892,16 +928,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   ${renderGallery(images, safeTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
+    ${authorBylineHtml}
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
-    ${inStock ? moreDetailsHtml : ''}
     ${priceHtml}
     <div class="cta">
       ${actionHtml}
     </div>
-    ${!inStock ? moreDetailsHtml : ''}
+    ${editionFactsHtml}
+    ${descriptionHtml}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
-      ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500.'
+      ? '🚚 Entregas rápidas en Montevideo, según zona, horario y disponibilidad · Envíos a todo Uruguay · Envío gratis desde $1.500.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
     } <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
