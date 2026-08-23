@@ -18,6 +18,7 @@ import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
 import { PRODUCT_ID_REDIRECTS, PRODUCT_SEO_OVERRIDES } from '../_shared/seo-products.js';
+import { applyCatalogImageOverride } from '../_shared/catalog-image-overrides.js';
 import {
     bookCoverUrl,
     cloudflareImageUrl,
@@ -1070,6 +1071,15 @@ export async function onRequest(context) {
         });
     }
     if (!item) return notFound();
+
+    // CATALOG-IMAGE-QUALITY-1: sólo afecta pictures[0] de los IDs listados
+    // explícitamente en catalog-image-overrides.js. No toca título, isbn,
+    // slug (se calcula igual, de item.title, sin cambios) ni el resto de la
+    // galería. En producción las imágenes reales salen de /book-cover/
+    // (ver coverSource() en functions/book-cover/[[path]].js, que aplica el
+    // mismo override); esto cubre además la vista Preview, que muestra
+    // pictures[] directamente sin pasar por ese endpoint.
+    item = applyCatalogImageOverride(item);
 
     const slug = slugify(item.title);
     const isPreview = context.env?.APP_ENV === 'preview';
