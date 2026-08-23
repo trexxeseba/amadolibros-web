@@ -23,7 +23,7 @@
 //   8. sin evidencia de materia — pero SIEMPRE con categoría pública:
 //      "otros-libros" si hay autor/ISBN, "otros-productos" si no.
 
-import { TYPES, isValidCategoryId, isValidSubcategoryId } from './taxonomy.js';
+import { TAXONOMY_VERSION, TYPES, isValidCategoryId, isValidSubcategoryId } from './taxonomy.js';
 import {
   MINED_AUTHOR_SIGNALS,
   KEYWORD_SIGNALS,
@@ -97,27 +97,24 @@ function containsPhrase(normalizedText, normalizedPhrase) {
   return ` ${normalizedText} `.includes(` ${normalizedPhrase} `);
 }
 
-function wordSetMatch(normalizedA, normalizedB) {
-  const wordsA = normalizedA.split(' ').filter(w => w.length >= 3);
-  const wordsB = normalizedB.split(' ').filter(w => w.length >= 3);
-  if (wordsA.length === 0 || wordsB.length === 0) return false;
-  const [shorter, longer] = wordsA.length <= wordsB.length ? [wordsA, wordsB] : [wordsB, wordsA];
-  // Encontrado en QA (CF-CATEGORÍAS-2D): un campo de autor de una sola
-  // palabra (ej. solo el apellido "Cabrera") no debe alcanzar para
-  // matchear contra una señal de varias palabras ("Ana Maria Cabrera") —
-  // un apellido común coincide con cualquier autor mineado que lo
-  // contenga. Una coincidencia de una sola palabra solo se acepta cuando
-  // AMBOS lados son de una sola palabra (nombres de pluma reales:
-  // "Quino", "Disney", "Cambridge").
-  if (shorter.length === 1 && longer.length > 1) return false;
-  const longerSet = new Set(longer);
-  return shorter.every(w => longerSet.has(w));
+function signalWordSetMatch(normalizedField, normalizedSignal) {
+  const fieldWords = normalizedField.split(' ').filter(w => w.length >= 3);
+  const signalWords = [...new Set(normalizedSignal.split(' ').filter(w => w.length >= 3))];
+  if (fieldWords.length === 0 || signalWords.length === 0) return false;
+  // La señal conocida debe estar contenida en el campo real, no al revés.
+  // Antes "José Rodríguez" coincidía con la señal mucho más específica
+  // "José María Rodríguez Olaizola" y enviaba libros de psicomotricidad a
+  // Religión. Se permiten extras en el campo (segundos nombres, coautores),
+  // pero nunca se acepta un campo incompleto como sustituto de la señal.
+  if (signalWords.length === 1 && fieldWords.length > 1) return false;
+  const fieldSet = new Set(fieldWords);
+  return signalWords.every(w => fieldSet.has(w));
 }
 
 function findAuthorMatch(normalizedAuthor) {
   if (!normalizedAuthor) return null;
   for (const [key, categoryId] of AUTHOR_INDEX) {
-    if (wordSetMatch(normalizedAuthor, key)) {
+    if (signalWordSetMatch(normalizedAuthor, key)) {
       return { categoryId, evidence: `autor coincide con lista conocida: "${key}"` };
     }
   }
@@ -127,7 +124,7 @@ function findAuthorMatch(normalizedAuthor) {
 function findPublisherMatch(normalizedPublisher) {
   if (!normalizedPublisher) return null;
   for (const [key, categoryId] of PUBLISHER_INDEX) {
-    if (wordSetMatch(normalizedPublisher, key)) {
+    if (signalWordSetMatch(normalizedPublisher, key)) {
       return { categoryId, evidence: `editorial coincide con lista conocida: "${key}"` };
     }
   }
@@ -196,7 +193,7 @@ function findGenericObjectSignal(normalizedTitle) {
 export function classify(record, manualCorrection = null) {
   const base = {
     mlu: record.mlu,
-    taxonomyVersion: 2,
+    taxonomyVersion: TAXONOMY_VERSION,
     rulesVersion: RULES_VERSION,
   };
 
@@ -274,34 +271,44 @@ export function classify(record, manualCorrection = null) {
   }
 
   if (authorMatch) {
-    const keywordMatchesForSecondary = findKeywordMatches(normalizedTitle, KEYWORD_SIGNALS)
+    const keywordMatches = findKeywordMatches(normalizedTitle, KEYWORD_SIGNALS);
+    const sameCategoryKeyword = keywordMatches.find(m => m.categoryId === authorMatch.categoryId);
+    const keywordMatchesForSecondary = keywordMatches
       .filter(m => m.categoryId !== authorMatch.categoryId)
       .map(m => m.categoryId);
     return {
       ...base,
       type: TYPES.BOOK,
       primaryCategoryId: authorMatch.categoryId,
-      subcategoryId: null,
+      subcategoryId: sameCategoryKeyword?.subcategoryId ?? null,
       secondaryCategoryIds: keywordMatchesForSecondary,
       tags: withTags(),
       confidence: CONFIDENCE.AUTHOR,
       method: 'rule',
-      evidence: [authorMatch.evidence],
+      evidence: [
+        authorMatch.evidence,
+        ...(sameCategoryKeyword ? [sameCategoryKeyword.evidence] : []),
+      ],
       needsReview: false,
     };
   }
 
   if (publisherMatch) {
+    const sameCategoryKeyword = findKeywordMatches(normalizedTitle, KEYWORD_SIGNALS)
+      .find(m => m.categoryId === publisherMatch.categoryId);
     return {
       ...base,
       type: TYPES.BOOK,
       primaryCategoryId: publisherMatch.categoryId,
-      subcategoryId: null,
+      subcategoryId: sameCategoryKeyword?.subcategoryId ?? null,
       secondaryCategoryIds: [],
       tags: withTags(),
       confidence: CONFIDENCE.PUBLISHER,
       method: 'rule',
-      evidence: [publisherMatch.evidence],
+      evidence: [
+        publisherMatch.evidence,
+        ...(sameCategoryKeyword ? [sameCategoryKeyword.evidence] : []),
+      ],
       needsReview: false,
     };
   }
