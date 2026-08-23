@@ -7,12 +7,24 @@ on:
     paths:
       - '.github/workflows/book-intelligence-preview-reader-diagnostic-artifact.yml'
       - 'functions/api/book-intelligence-preview-diagnostic.js'
+      - 'functions/_shared/book-intelligence-enrichment-preview.js'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/fichas-vidriera-v2-enrichment-r2-preview-1
+    paths:
+      - '.github/workflows/book-intelligence-preview-reader-diagnostic-artifact.yml'
+      - 'functions/api/book-intelligence-preview-diagnostic.js'
+      - 'functions/_shared/book-intelligence-enrichment-preview.js'
 
 permissions:
   contents: read
 
 jobs:
   capture:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/fichas-vidriera-v2-preview-reader-green-1') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'agent/fichas-vidriera-v2-preview-reader-green-1' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -20,8 +32,10 @@ jobs:
         run: |
           set -euo pipefail
           URL='https://fv2-green-1.amadolibros-web.pages.dev/api/book-intelligence-preview-diagnostic'
+          : > diagnostic.json
           for attempt in 1 2 3 4 5; do
             CODE=$(curl -sS --max-time 30 -o diagnostic.json -w '%{http_code}' "$URL" || true)
+            echo "attempt=$attempt http=$CODE"
             if [ "$CODE" = '200' ]; then
               cat diagnostic.json
               break
