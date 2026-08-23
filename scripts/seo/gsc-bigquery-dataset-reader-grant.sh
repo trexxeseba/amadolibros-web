@@ -29,7 +29,24 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 gcloud config list --format=yaml > "$OUTPUT_DIR/gcloud-context.yaml"
-bq --project_id="$PROJECT_ID" show --format=prettyjson "$DATASET_REF" > "$OUTPUT_DIR/dataset-before.json"
+
+show_dataset() {
+  local output_file="$1"
+  local raw_file
+  raw_file="$(mktemp)"
+  if ! bq --project_id="$PROJECT_ID" show --format=prettyjson "$DATASET_REF" > "$raw_file" 2>&1; then
+    cat "$raw_file" >&2
+    rm -f "$raw_file"
+    return 1
+  fi
+  sed -n '/^[[:space:]]*{/,$p' "$raw_file" > "$output_file"
+  rm -f "$raw_file"
+  jq -e --arg dataset "$DATASET_ID" '
+    type == "object" and .datasetReference.datasetId == $dataset
+  ' "$output_file" >/dev/null
+}
+
+show_dataset "$OUTPUT_DIR/dataset-before.json"
 ACCESS_TOKEN="$(gcloud auth print-access-token)"
 DATASET_URL="https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT_ID}/datasets/${DATASET_ID}"
 
@@ -56,7 +73,7 @@ else
   curl --fail-with-body --silent --show-error --request PATCH --header "Authorization: Bearer $ACCESS_TOKEN" --header 'Content-Type: application/json' --header "If-Match: $ETAG" --data-binary "@$OUTPUT_DIR/dataset-patch-request.json" "${DATASET_URL}?updateMode=UPDATE_ACL" > "$OUTPUT_DIR/dataset-patch-response.json"
 fi
 
-bq --project_id="$PROJECT_ID" show --format=prettyjson "$DATASET_REF" > "$OUTPUT_DIR/dataset-after.json"
+show_dataset "$OUTPUT_DIR/dataset-after.json"
 if ! binding_exists "$OUTPUT_DIR/dataset-after.json"; then
   echo "ERROR: no se confirmó el binding exacto en el dataset." >&2
   exit 6
