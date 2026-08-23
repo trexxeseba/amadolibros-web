@@ -57,9 +57,8 @@
     var department = draft && draft.values && draft.values['delivery-departamento'];
     department = String(department || '').trim().toLowerCase();
 
-    // Deliberadamente conservador: la encuesta nunca debería adelantarse a
-    // una entrega real. Pickup: próximo día hábil; Montevideo: 2 hábiles;
-    // resto del país: 5 hábiles.
+    // Conservador: la encuesta no debe llegar antes que el pedido.
+    // Pickup: próximo hábil; Montevideo: +2 hábiles; resto UY: +5.
     var days = deliveryType === 'pickup' ? 1 : (department === 'montevideo' ? 2 : 5);
     return formatIsoDate(addBusinessDays(new Date(), days));
   }
@@ -147,8 +146,9 @@
     if (!heading) return;
 
     var checkApproved = function () {
-      // Esta frase sólo se establece en pedido.astro después de que
-      // /api/orders/status devuelve payment_status=approved.
+      // pedido.astro sólo muestra este texto después de que /api/orders/status
+      // confirma payment_status=approved. El parámetro ?result= por sí solo
+      // nunca es suficiente para disparar Customer Reviews.
       if (String(heading.textContent || '').trim() !== 'Pago confirmado') return;
       var code = new URLSearchParams(global.location.search).get('code');
       requestForOrder(code);
@@ -164,22 +164,11 @@
     }
   }
 
-  function wireTransfer() {
-    var button = document.getElementById('btn-transfer-whatsapp');
-    if (!button) return;
-    button.addEventListener('click', function () {
-      // El flujo indica "Cuando termines: ... enviá el comprobante". Este click
-      // es el punto de finalización observable del checkout por transferencia.
-      var codeNode = document.getElementById('transfer-order-code');
-      requestForOrder(codeNode && codeNode.textContent);
-    }, true);
-  }
-
   function init() {
     var cfg = readConfig();
     if (!cfg.enabled) return;
-    if (global.location.pathname === '/pedido') wirePedido();
-    if (global.location.pathname === '/carrito') wireTransfer();
+    if (global.location.pathname !== '/pedido') return;
+    wirePedido();
   }
 
   global.AmadoGoogleCustomerReviews = {
