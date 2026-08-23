@@ -9,7 +9,7 @@ ROLE="roles/bigquery.dataViewer"
 OUTPUT_DIR="${GSC_BQ_OUTPUT_DIR:-artifacts/gsc-bigquery-dataset-reader-grant}"
 DATASET_REF="${PROJECT_ID}:${DATASET_ID}"
 
-for command in gcloud bq jq; do
+for command in gcloud bq curl jq; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "ERROR: falta el comando requerido: $command" >&2
     exit 2
@@ -29,7 +29,15 @@ fi
 mkdir -p "$OUTPUT_DIR"
 gcloud config list --format=yaml > "$OUTPUT_DIR/gcloud-context.yaml"
 bq --project_id="$PROJECT_ID" show --format=prettyjson "$DATASET_REF" > "$OUTPUT_DIR/dataset.json"
-bq --project_id="$PROJECT_ID" get-iam-policy --format=prettyjson "$DATASET_REF" > "$OUTPUT_DIR/policy-before.json"
+ACCESS_TOKEN="$(gcloud auth print-access-token)"
+POLICY_URL="https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT_ID}/datasets/${DATASET_ID}"
+
+get_policy() {
+  local output_file="$1"
+  curl --fail-with-body --silent --show-error --request POST --header "Authorization: Bearer $ACCESS_TOKEN" --header 'Content-Type: application/json' --data '{"options":{"requestedPolicyVersion":3}}' "${POLICY_URL}:getIamPolicy" > "$output_file"
+}
+
+get_policy "$OUTPUT_DIR/policy-before.json"
 
 binding_exists() {
   local file="$1"
@@ -41,27 +49,38 @@ binding_exists() {
 if binding_exists "$OUTPUT_DIR/policy-before.json"; then
   echo "El binding exacto ya existe; ejecución idempotente."
 else
-  bq --project_id="$PROJECT_ID" add-iam-policy-binding     --member="$MEMBER"     --role="$ROLE"     "$DATASET_REF" >/dev/null
+  jq --arg role "$ROLE" --arg member "$MEMBER" '
+    .bindings = (
+      [(.bindings // [])[] | select(.role != $role)] +
+      [{
+        role: $role,
+        members: (([(.bindings // [])[] | select(.role == $role) | .members[]?] + [$member]) | unique)
+      }]
+    )
+    | {policy: .}
+  ' "$OUTPUT_DIR/policy-before.json" > "$OUTPUT_DIR/set-policy-request.json"
+
+  curl --fail-with-body --silent --show-error --request POST --header "Authorization: Bearer $ACCESS_TOKEN" --header 'Content-Type: application/json' --data-binary "@$OUTPUT_DIR/set-policy-request.json" "${POLICY_URL}:setIamPolicy" > "$OUTPUT_DIR/set-policy-response.json"
 fi
 
-bq --project_id="$PROJECT_ID" get-iam-policy --format=prettyjson "$DATASET_REF" > "$OUTPUT_DIR/policy-after.json"
+get_policy "$OUTPUT_DIR/policy-after.json"
 if ! binding_exists "$OUTPUT_DIR/policy-after.json"; then
   echo "ERROR: no se confirmó el binding exacto en el dataset." >&2
   exit 5
 fi
 
-cat > "$OUTPUT_DIR/summary.md" <<EOF
-# GSC BigQuery dataset reader grant
-
-- Project: `$PROJECT_ID` (`$PROJECT_NUMBER`)
-- Dataset: `$DATASET_ID`
-- Member: `$MEMBER`
-- Role: `$ROLE`
-- Scope: dataset only
-- Web/Worker deploy: no
-- Production code change: no
-
-El binding exacto quedó confirmado en la política IAM del dataset.
-EOF
+{
+  echo "# GSC BigQuery dataset reader grant"
+  echo
+  echo "- Project: $PROJECT_ID ($PROJECT_NUMBER)"
+  echo "- Dataset: $DATASET_ID"
+  echo "- Member: $MEMBER"
+  echo "- Role: $ROLE"
+  echo "- Scope: dataset only"
+  echo "- Web/Worker deploy: no"
+  echo "- Production code change: no"
+  echo
+  echo "El binding exacto quedó confirmado en la política IAM del dataset."
+} > "$OUTPUT_DIR/summary.md"
 
 cat "$OUTPUT_DIR/summary.md"
