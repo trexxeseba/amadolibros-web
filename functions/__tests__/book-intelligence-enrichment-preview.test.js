@@ -32,7 +32,9 @@ function fetchForManifest(manifest, mutatePointer = value => value, mutateObject
   const objectBytes = Buffer.from(mutateObject(JSON.stringify(manifest)));
   const sha = sha256(objectBytes);
   const objectKey = `book-intelligence/preview/v1/objects/${sha}.json`;
-  const pointer = mutatePointer({ schema_version: 1, environment: 'preview', current: { object_key: objectKey, sha256: sha, bytes: objectBytes.length, counts: manifest.counts } });
+  // Replica el contrato persistido realmente por #228: el puntero no incluye
+  // `environment`; el entorno queda aislado por APP_ENV + namespace preview/v1.
+  const pointer = mutatePointer({ schema_version: 1, current: { object_key: objectKey, sha256: sha, bytes: objectBytes.length, counts: manifest.counts } });
   const urls = [];
   return {
     urls,
@@ -54,13 +56,19 @@ test('Producción corta antes de hacer fetch HTTP', async () => {
 test('Preview sin fetch disponible falla abierto', async () => {
   assert.equal(await getPreviewBookIntelligenceEntry(previewEnv, 'MLU616917519', { fetchImpl: null }), null);
 });
-test('lector usa exclusivamente R2_DEV_BASE y entrega sólo auto_publish', async () => {
+test('lector acepta el puntero real de #228 sin environment y entrega sólo auto_publish', async () => {
   const entries = [sampleEntry('auto_publish','MLU616917519'), sampleEntry('review','MLU1416777650'), sampleEntry('hold','MLU658066458')];
   const fixture = fetchForManifest(sampleManifest(entries));
   const green = await getPreviewBookIntelligenceEntry(previewEnv, 'MLU616917519', fixture);
   assert.equal(green?.decision, 'auto_publish');
   assert.equal(fixture.urls[0], `${R2_DEV_BASE}/${BOOK_INTELLIGENCE_PREVIEW_POINTER_KEY}`);
   assert.match(fixture.urls[1], new RegExp(`^${R2_DEV_BASE.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}/book-intelligence/preview/v1/objects/[a-f0-9]{64}\\.json$`));
+});
+test('si una versión futura declara environment, sólo preview es aceptado', async () => {
+  const valid = fetchForManifest(sampleManifest(), pointer => ({ ...pointer, environment: 'preview' }));
+  assert.equal((await getPreviewBookIntelligenceEntry(previewEnv,'MLU616917519',valid))?.decision, 'auto_publish');
+  const invalid = fetchForManifest(sampleManifest(), pointer => ({ ...pointer, environment: 'production' }));
+  assert.equal(await getPreviewBookIntelligenceEntry(previewEnv,'MLU616917519',invalid), null);
 });
 test('review y hold nunca se exponen', async () => {
   const manifest = sampleManifest([sampleEntry('auto_publish','MLU616917519'), sampleEntry('review','MLU1416777650'), sampleEntry('hold','MLU658066458')]);
