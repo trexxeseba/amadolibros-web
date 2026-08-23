@@ -71,7 +71,8 @@ test('la allowlist contiene exactamente las ocho categorías SEO aprobadas', () 
     assert.equal(SEO_CATEGORIES.length, 8);
     assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 8);
     for (const category of SEO_CATEGORIES) {
-        assert.match(category.title, /Uruguay \| Amado Libros$/);
+        assert.match(category.title, /Uruguay/);
+        assert.match(category.title, /\| Amado Libros$/);
         assert.ok(category.description.length >= 100);
         assert.ok(category.intro.length >= 100);
     }

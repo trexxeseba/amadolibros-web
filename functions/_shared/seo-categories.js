@@ -15,11 +15,35 @@ export const SEO_CATEGORIES = [
     },
     {
         id: 'esoterismo-tarot',
-        name: 'Esoterismo y tarot',
-        title: 'Libros de esoterismo y tarot en Uruguay | Amado Libros',
-        h1: 'Libros de esoterismo y tarot en Uruguay',
-        description: 'Libros de tarot, oráculos, astrología y esoterismo disponibles en Uruguay. Comprá online, consultá stock o pedí ediciones difíciles de conseguir.',
-        intro: 'Explorá libros de tarot, oráculos, astrología y otras tradiciones esotéricas. Reunimos opciones disponibles para comprar online y conseguimos ediciones especiales o agotadas por encargo.',
+        name: 'Tarot y oráculos',
+        title: 'Tarot y oráculos en Uruguay | Mazos y libros | Amado Libros',
+        h1: 'Tarot, oráculos y libros de esoterismo en Uruguay',
+        description: 'Mazos de tarot, oráculos y libros de esoterismo disponibles en Uruguay. Compará el tipo de producto, idioma y edición antes de comprar o pedir por encargo.',
+        intro: 'Encontrá mazos de tarot, oráculos y libros para estudiar cada sistema. La ficha de cada producto identifica la edición y sus características cuando esos datos están disponibles; también buscamos títulos y mazos difíciles de conseguir por encargo.',
+        about: ['Tarot', 'Cartas de oráculo', 'Libros de esoterismo'],
+        buyerGuide: {
+            title: 'Cómo elegir un tarot, un oráculo o un libro de estudio',
+            intro: 'Antes de comprar, identificá exactamente qué contiene la edición. No todos los productos de esta categoría son mazos ni todos usan el mismo sistema.',
+            points: [
+                {
+                    title: 'Tipo de producto',
+                    text: 'Comprobá si es un mazo, un libro o un conjunto de mazo más guía. La ficha sólo muestra esa clasificación cuando está identificada.',
+                },
+                {
+                    title: 'Sistema',
+                    text: 'Tarot, oráculo, Lenormand y Kipper son sistemas distintos. Elegí por el sistema indicado por la propia edición, no sólo por la imagen de tapa.',
+                },
+                {
+                    title: 'Idioma y guía',
+                    text: 'Revisá el idioma de las cartas y del manual, y si la edición informa que incluye guía o instructivo.',
+                },
+                {
+                    title: 'Edición física',
+                    text: 'Compará editorial, ISBN, formato y medidas cuando estén disponibles. Si falta un dato decisivo, consultanos antes de comprar.',
+                },
+            ],
+            serviceNote: 'Amado Libros ayuda a identificar y conseguir la edición correcta. No ofrece lecturas de tarot ni interpreta el contenido del mazo.',
+        },
     },
     {
         id: 'medicina-salud',
@@ -63,11 +87,35 @@ export const SEO_CATEGORIES = [
     },
     {
         id: 'religion-espiritualidad',
-        name: 'Religión y espiritualidad',
-        title: 'Libros de religión y espiritualidad en Uruguay | Amado Libros',
-        h1: 'Libros de religión y espiritualidad en Uruguay',
-        description: 'Biblias y libros de religión, teología y espiritualidad disponibles en Uruguay. Consultá ediciones, comprá online o pedí títulos difíciles de conseguir.',
-        intro: 'Consultá Biblias, libros de teología, tradición religiosa y espiritualidad. Indicamos las ediciones disponibles y buscamos por encargo versiones específicas o títulos difíciles de ubicar.',
+        name: 'Biblias, religión y espiritualidad',
+        title: 'Biblias y libros de religión en Uruguay | Amado Libros',
+        h1: 'Biblias y libros de religión en Uruguay',
+        description: 'Biblias Reina-Valera, Biblias católicas y libros de religión disponibles en Uruguay. Compará versión, letra, formato y encuadernación o consultá por encargos y pedidos para iglesias.',
+        intro: 'Elegí la edición por sus datos concretos: traducción o versión, tamaño de letra, formato, encuadernación, índices y materiales adicionales cuando estén identificados. También buscamos Biblias y libros de religión difíciles de conseguir por encargo.',
+        about: ['Biblia', 'Reina-Valera 1960', 'Biblia católica', 'Libros de religión'],
+        buyerGuide: {
+            title: 'Cómo elegir una Biblia por la edición',
+            intro: 'Dos Biblias pueden compartir el texto bíblico y ser productos físicos muy distintos. Para comprar correctamente, compará la edición concreta.',
+            points: [
+                {
+                    title: 'Traducción o versión',
+                    text: 'Identificá si buscás Reina-Valera 1960, otra revisión o una edición católica. Amado informa la versión declarada por la edición, sin recomendar una interpretación doctrinal.',
+                },
+                {
+                    title: 'Letra y tamaño',
+                    text: 'Letra grande, tamaño compacto y Biblia de estudio describen características diferentes. Revisá letra, medidas, peso y cantidad de páginas cuando estén informados.',
+                },
+                {
+                    title: 'Encuadernación y ayudas',
+                    text: 'Confirmá tapa, cierre, índice, concordancia y mapas sólo cuando la ficha de esa edición los declare. Si falta un atributo importante, consultanos.',
+                },
+                {
+                    title: 'Regalo o pedido institucional',
+                    text: 'Podemos preparar presentación, accesorios y lotes para iglesias o congregaciones. El cliente aporta cualquier texto religioso personalizado.',
+                },
+            ],
+            serviceNote: 'En determinadas Biblias con stock puede haber entrega express de aproximadamente 2 horas en Montevideo, según zona, horario y disponibilidad. El 12% menos por transferencia se aplica cuando corresponda.',
+        },
     },
 ];
 
