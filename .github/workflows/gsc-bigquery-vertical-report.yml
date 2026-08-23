@@ -52,8 +52,6 @@ jobs:
           project_id: amado-libros-analytics
           workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
           service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/bigquery.readonly
           create_credentials_file: true
           export_environment_variables: true
 

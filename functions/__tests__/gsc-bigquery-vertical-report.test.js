@@ -16,7 +16,8 @@ test('el workflow corre en rama aislada y no despliega web o Worker', () => {
   assert.match(source, /- agent\/gsc-bigquery-verticals-1/);
   assert.doesNotMatch(source, /branches:\s*\[?main\]?/);
   assert.doesNotMatch(source, /wrangler|pages deploy|cloudflare\/pages-action|deploy-worker/i);
-  assert.match(source, /bigquery\.readonly/);
+  assert.match(source, /contents: read/);
+  assert.match(source, /create_credentials_file: true/);
 });
 
 test('lee sólo la tabla oficial por URL sin crear query jobs', () => {
