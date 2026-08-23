@@ -160,7 +160,7 @@ test('11. Responsive: no hay reglas que oculten o reordenen los CTA por media qu
     assert.doesNotMatch(html, /@media[^{]*\{[^}]*\.btn-(ml|wa|cart)/s);
 });
 
-test('12. Ver más muestra sólo atributos bibliográficos disponibles traídos de ML', () => {
+test('12. Datos de esta edición muestra sólo atributos bibliográficos disponibles traídos de ML', () => {
     const html = renderPage(book({
         publisher: 'Editorial Sur',
         pages: 312,
@@ -187,7 +187,7 @@ test('12. Ver más muestra sólo atributos bibliográficos disponibles traídos 
     assert.doesNotMatch(html, /<dt>Colección<\/dt>/);
 });
 
-test('13. Ver más no aparece cuando ML no aporta ningún detalle útil', () => {
+test('13. Datos de esta edición no aparece cuando ML no aporta ningún detalle útil', () => {
     const html = renderPage(book({
         author: null,
         isbn: null,
@@ -198,10 +198,10 @@ test('13. Ver más no aparece cuando ML no aporta ningún detalle útil', () => 
         bibliographic: null,
         available_quantity: 0,
     }), 'un-libro', false, '');
-    assert.doesNotMatch(html, /Ver más sobre este libro/);
+    assert.doesNotMatch(html, /Datos de esta edición/);
 });
 
-test('14. La descripción real de ML aparece en Ver más, preserva párrafos y se escapa', () => {
+test('14. La descripción real de ML queda visible, preserva párrafos y se escapa', () => {
     const html = renderPage(book({
         author: null,
         description: 'Primera línea.\n\nSegunda <línea> & detalle.',
