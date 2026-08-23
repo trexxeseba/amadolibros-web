@@ -9,8 +9,10 @@ import {
   countFeedItems,
   endpointError,
   listAll,
+  OFFER_CSV_COLUMNS,
   parseFeedOffers,
   reconcileOffers,
+  reconciliationMarkdown,
   requestJson,
   rowsToCsv,
   summarizeDataSource,
@@ -147,88 +149,153 @@ function buildDataSources() {
   ].map(summarizeDataSource);
 }
 
+// Fixtures reproducen la forma real de Merchant API v1: los atributos
+// procesados de cada producto viajan bajo `productAttributes` (no bajo
+// `attributes`, que fue el bug que infló missingPrice/missingImage a
+// "todo el catálogo" en la corrida real del workflow 32643394006).
 function buildReconciliationProducts() {
   return [
     {
+      // libro-1 aparece en dos productos distintos (distinto feedLabel),
+      // uno resuelto a AUTOFEED y otro a FILE: señal de solapamiento.
       name: 'accounts/533/products/1',
       offerId: 'libro-1',
       channel: 'ONLINE',
+      feedLabel: 'AR',
       contentLanguage: 'es',
       dataSource: 'accounts/533/dataSources/1',
-      attributes: { price: { amountMicros: '500000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/1.jpg' },
+      productAttributes: { price: { amountMicros: '500000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/1.jpg' },
     },
     {
       name: 'accounts/533/products/2',
       offerId: 'libro-1',
       channel: 'ONLINE',
+      feedLabel: 'UY',
       contentLanguage: 'es',
       dataSource: 'accounts/533/dataSources/2',
-      attributes: { price: { amountMicros: '500000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/1.jpg' },
+      productAttributes: { price: { amountMicros: '500000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/1.jpg' },
     },
     {
+      // libro-2: sin productAttributes.price -> precio ausente.
       name: 'accounts/533/products/3',
       offerId: 'libro-2',
       channel: 'ONLINE',
       contentLanguage: 'es',
       dataSource: 'accounts/533/dataSources/1',
-      attributes: { imageLink: 'https://example.com/2.jpg' },
+      productAttributes: { imageLink: 'https://example.com/2.jpg' },
     },
     {
+      // libro-3: sin productAttributes.imageLink -> imagen ausente.
       name: 'accounts/533/products/4',
       offerId: 'libro-3',
       channel: 'ONLINE',
       contentLanguage: 'es',
       dataSource: 'accounts/533/dataSources/2',
-      attributes: { price: { amountMicros: '300000000', currencyCode: 'UYU' } },
-      productStatus: {
-        itemLevelIssues: [{ code: 'image_too_small', severity: 'DISAPPROVED', attribute: 'image_link' }],
-      },
+      productAttributes: { price: { amountMicros: '300000000', currencyCode: 'UYU' } },
     },
     {
+      // libro-4: fuente API (no AUTOFEED/FILE), precio e imagen completos -> caso "ok" de control.
       name: 'accounts/533/products/5',
       offerId: 'libro-4',
       channel: 'ONLINE',
       contentLanguage: 'es',
       dataSource: 'accounts/533/dataSources/3',
-      attributes: { price: { amountMicros: '100000000' }, imageLink: 'https://example.com/4.jpg' },
+      productAttributes: { price: { amountMicros: '100000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/4.jpg' },
     },
     {
+      // sin offerId -> queda fuera de la reconciliación por offer_id.
       name: 'accounts/533/products/6',
       channel: 'ONLINE',
       contentLanguage: 'es',
       dataSource: 'accounts/533/dataSources/1',
-      attributes: { price: { amountMicros: '100000000' }, imageLink: 'https://example.com/6.jpg' },
+      productAttributes: { price: { amountMicros: '100000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/6.jpg' },
+    },
+    {
+      // libro-5: monto presente pero sin moneda -> precio no utilizable.
+      name: 'accounts/533/products/7',
+      offerId: 'libro-5',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/1',
+      productAttributes: { price: { amountMicros: '250000000' }, imageLink: 'https://example.com/5.jpg' },
+    },
+    {
+      // libro-6: imagen presente pero con issue DISAPPROVED -> imagen bloqueada.
+      name: 'accounts/533/products/8',
+      offerId: 'libro-6',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/1',
+      productAttributes: { price: { amountMicros: '200000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/6b.jpg' },
+      productStatus: {
+        itemLevelIssues: [{ code: 'image_too_small', severity: 'DISAPPROVED', attribute: 'image_link' }],
+      },
+    },
+    {
+      // libro-7: imagen presente con advertencia NOT_IMPACTED -> no es ausente ni bloqueada.
+      name: 'accounts/533/products/9',
+      offerId: 'libro-7',
+      channel: 'ONLINE',
+      contentLanguage: 'es',
+      dataSource: 'accounts/533/dataSources/1',
+      productAttributes: { price: { amountMicros: '150000000', currencyCode: 'UYU' }, imageLink: 'https://example.com/7.jpg' },
+      productStatus: {
+        itemLevelIssues: [{ code: 'image_low_resolution', severity: 'NOT_IMPACTED', attribute: 'image_link' }],
+      },
     },
   ];
 }
 
-test('confirma solapamiento sólo cuando el mismo offer_id aparece en AUTOFEED y FILE', () => {
+test('lee precio e imagen desde productAttributes (la forma real de Merchant API v1, no attributes)', () => {
   const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
-  assert.equal(result.overlaps.length, 1);
-  assert.equal(result.overlaps[0].offerId, 'libro-1');
-  const inputs = result.overlaps[0].entries.map(entry => entry.sourceInput).sort();
+  const libro4 = result.rows.find(row => row.offerId === 'libro-4');
+  assert.equal(libro4.hasPrice, true);
+  assert.equal(libro4.hasImage, true);
+  assert.equal(libro4.imageStatus, 'ok');
+});
+
+test('detecta una señal de posible solapamiento AUTOFEED/FILE sin certificarla como confirmada', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  assert.equal(result.overlapSignals.length, 1);
+  assert.equal(result.overlapSignals[0].offerId, 'libro-1');
+  const inputs = result.overlapSignals[0].entries.map(entry => entry.sourceInput).sort();
   assert.deepEqual(inputs, ['AUTOFEED', 'FILE']);
+  const feedLabels = result.overlapSignals[0].entries.map(entry => entry.feedLabel).sort();
+  assert.deepEqual(feedLabels, ['AR', 'UY']);
 });
 
-test('no marca como solapadas ofertas distintas de fuentes distintas', () => {
+test('no marca como señal de solapamiento ofertas distintas o de una sola fuente', () => {
   const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
-  const overlappingOfferIds = new Set(result.overlaps.map(overlap => overlap.offerId));
-  assert.equal(overlappingOfferIds.has('libro-4'), false);
-  assert.equal(overlappingOfferIds.has('libro-2'), false);
-  assert.equal(overlappingOfferIds.has('libro-3'), false);
+  const signalOfferIds = new Set(result.overlapSignals.map(overlap => overlap.offerId));
+  for (const offerId of ['libro-2', 'libro-3', 'libro-4', 'libro-5', 'libro-6', 'libro-7']) {
+    assert.equal(signalOfferIds.has(offerId), false);
+  }
 });
 
-test('detecta precio ausente por offer_id', () => {
+test('detecta precio ausente por offer_id, incluyendo monto sin moneda', () => {
   const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
-  const offerIds = result.missingPrice.map(row => row.offerId);
-  assert.deepEqual(offerIds, ['libro-2']);
+  const offerIds = result.missingPrice.map(row => row.offerId).sort();
+  assert.deepEqual(offerIds, ['libro-2', 'libro-5']);
 });
 
-test('detecta imagen ausente o bloqueante por offer_id', () => {
+test('separa imagen ausente, bloqueada y advertencia (no bloqueante) por offer_id', () => {
   const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
-  const offerIds = result.missingImage.map(row => row.offerId).sort();
-  assert.deepEqual(offerIds, ['libro-3']);
-  assert.deepEqual(result.missingImage[0].imageBlockingIssueCodes, ['image_too_small']);
+  const missingOfferIds = result.missingImage.map(row => row.offerId).sort();
+  assert.deepEqual(missingOfferIds, ['libro-3', 'libro-6']);
+
+  const ausente = result.missingImage.find(row => row.offerId === 'libro-3');
+  assert.equal(ausente.imageStatus, 'ausente');
+  assert.deepEqual(ausente.imageBlockingIssueCodes, []);
+
+  const bloqueada = result.missingImage.find(row => row.offerId === 'libro-6');
+  assert.equal(bloqueada.imageStatus, 'bloqueada');
+  assert.deepEqual(bloqueada.imageBlockingIssueCodes, ['image_too_small']);
+
+  assert.equal(result.imageWarnings.length, 1);
+  assert.equal(result.imageWarnings[0].offerId, 'libro-7');
+  assert.equal(result.imageWarnings[0].imageStatus, 'advertencia');
+  assert.deepEqual(result.imageWarnings[0].imageWarningIssueCodes, ['image_low_resolution']);
+  assert.equal(missingOfferIds.includes('libro-7'), false);
 });
 
 test('identifica de forma consistente la fuente y su tipo por producto', () => {
@@ -245,8 +312,25 @@ test('los resultados de reconciliación no están hardcodeados a los snapshots h
   const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
   assert.notEqual(result.missingPrice.length, 47);
   assert.notEqual(result.missingImage.length, 18);
-  assert.equal(result.missingPrice.length, 1);
-  assert.equal(result.missingImage.length, 1);
+  assert.equal(result.missingPrice.length, 2);
+  assert.equal(result.missingImage.length, 2);
+});
+
+test('las filas de los CSV coinciden con los conteos del JSON y los subconjuntos no superan el total', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const totalCsv = rowsToCsv(OFFER_CSV_COLUMNS, result.rows);
+  const totalDataRows = totalCsv.trim().split('\n').length - 1;
+  assert.equal(totalDataRows, result.rows.length);
+
+  const missingPriceCsv = rowsToCsv(OFFER_CSV_COLUMNS, result.missingPrice);
+  assert.equal(missingPriceCsv.trim().split('\n').length - 1, result.missingPrice.length);
+
+  const missingImageCsv = rowsToCsv(OFFER_CSV_COLUMNS, result.missingImage);
+  assert.equal(missingImageCsv.trim().split('\n').length - 1, result.missingImage.length);
+
+  assert.ok(result.missingPrice.length <= result.rows.length);
+  assert.ok(result.missingImage.length <= result.rows.length);
+  assert.ok(result.uniqueOffers <= result.rows.length);
 });
 
 test('parsea offer_id, precio e imagen desde el feed público sin depender de la API', () => {
@@ -336,9 +420,46 @@ test('el CSV protege contra formula injection en offer_id y evidencia', () => {
 test('el diagnóstico de reconciliación separa hechos, hipótesis y limitaciones sin hardcodear snapshots', () => {
   const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
   const diagnosis = buildReconciliationDiagnosis(result);
-  assert.ok(diagnosis.facts.some(fact => fact.includes('1 offer_id') || fact.includes('Se identificaron 1')));
+  assert.ok(diagnosis.facts.some(fact => fact.includes('Se detectaron 1 offer_id')));
+  assert.ok(diagnosis.hypotheses.some(hypothesis => hypothesis.text.includes('revisión manual')));
   assert.ok(Array.isArray(diagnosis.limitations) && diagnosis.limitations.length > 0);
   assert.ok(diagnosis.limitations.some(text => text.includes('productInputs')));
+});
+
+test('el reporte de reconciliación nunca describe el solapamiento como "confirmado"', () => {
+  const result = reconcileOffers(buildReconciliationProducts(), buildDataSources(), []);
+  const diagnosis = buildReconciliationDiagnosis(result);
+  const combinedText = JSON.stringify({ diagnosis, overlapSignals: result.overlapSignals });
+  assert.equal(/solapamiento\s+confirmado/i.test(combinedText), false);
+});
+
+test('el resumen Markdown reporta el solapamiento como señal a investigar, no como confirmado', () => {
+  const dataSources = buildDataSources();
+  const result = reconcileOffers(buildReconciliationProducts(), dataSources, []);
+  const diagnosis = buildReconciliationDiagnosis(result);
+  const report = {
+    generatedAt: '2026-08-23T00:00:00.000Z',
+    accountId: '5330457716',
+    sourcesObserved: result.offersBySource.map(row => row.input),
+    uniqueOffers: result.uniqueOffers,
+    offersBySource: result.offersBySource,
+    overlapSignalCount: result.overlapSignals.length,
+    overlapSignals: result.overlapSignals,
+    missingPriceCount: result.missingPrice.length,
+    missingImageCount: result.missingImage.length,
+    imageWarningCount: result.imageWarnings.length,
+    feedOfferCount: result.feedOfferCount,
+    historicalSnapshots: {
+      missingPrice: 47,
+      missingImage: 18,
+      overlapSuspected: 'posible solapamiento AUTOFEED/FILE (referencia histórica, no confirmada previamente)',
+    },
+    diagnosis,
+  };
+  const markdown = reconciliationMarkdown(report);
+  assert.equal(/solapamiento\s+AUTOFEED\s*\/\s*FILE\s+confirmado/i.test(markdown), false);
+  assert.match(markdown, /señal de posible solapamiento/i);
+  assert.match(markdown, /no confirmada/i);
 });
 
 test('la implementación no contiene llamadas de escritura a Merchant API', () => {

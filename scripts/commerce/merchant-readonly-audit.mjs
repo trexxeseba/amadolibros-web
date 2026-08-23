@@ -286,7 +286,9 @@ export const OFFER_CSV_COLUMNS = [
   ['source_type', 'sourceType'],
   ['has_price', 'hasPrice'],
   ['has_image', 'hasImage'],
+  ['image_status', 'imageStatus'],
   ['image_blocking_issue_codes', 'imageBlockingIssueCodes'],
+  ['image_warning_issue_codes', 'imageWarningIssueCodes'],
   ['reporting_states', 'reportingStatesText'],
   ['present_in_public_feed', 'presentInPublicFeed'],
   ['evidence', 'evidence'],
@@ -323,29 +325,47 @@ export function parseFeedOffers(xml) {
   });
 }
 
+// Merchant API v1 devuelve los atributos procesados de cada producto bajo
+// `product.productAttributes` (no bajo `product.attributes`, que no existe
+// en la respuesta real). Se mantiene `product.attributes` sólo como
+// fallback defensivo si algún día cambia la forma de la respuesta.
+function productAttributesOf(product = {}) {
+  return product.productAttributes || product.attributes || {};
+}
+
 function hasUsablePrice(price) {
   if (!price || typeof price !== 'object') return false;
   const amount = price.amountMicros ?? price.value ?? price.amount ?? price.priceMicros;
-  if (amount == null || asText(amount) === '') return false;
+  const currency = asText(price.currencyCode || price.currency);
+  if (amount == null || asText(amount) === '' || currency === '') return false;
   const numeric = Number(amount);
   return Number.isFinite(numeric) && numeric > 0;
 }
 
 function productHasPrice(product = {}) {
-  const attrs = product.attributes || {};
+  const attrs = productAttributesOf(product);
   return hasUsablePrice(attrs.price) || hasUsablePrice(product.price);
 }
 
 function productImageLink(product = {}) {
-  const attrs = product.attributes || {};
+  const attrs = productAttributesOf(product);
   return asText(attrs.imageLink || product.imageLink) || null;
 }
 
 const IMAGE_ISSUE_PATTERN = /image/i;
+const IMAGE_BLOCKING_SEVERITIES = new Set(['DISAPPROVED']);
+const IMAGE_WARNING_SEVERITIES = new Set(['NOT_IMPACTED', 'DEMOTED']);
 
-function imageBlockingIssues(product = {}) {
+function imageIssuesOf(product = {}) {
   const issues = Array.isArray(product?.productStatus?.itemLevelIssues) ? product.productStatus.itemLevelIssues : [];
   return issues.filter(issue => IMAGE_ISSUE_PATTERN.test(asText(issue.code)) || IMAGE_ISSUE_PATTERN.test(asText(issue.attribute)));
+}
+
+function classifyImageIssues(issues) {
+  return {
+    blocking: issues.filter(issue => IMAGE_BLOCKING_SEVERITIES.has(upper(issue.severity))),
+    warning: issues.filter(issue => IMAGE_WARNING_SEVERITIES.has(upper(issue.severity))),
+  };
 }
 
 export function summarizeReportingStates(product = {}) {
@@ -382,16 +402,19 @@ export function buildOfferRow(product = {}, dataSourcesByName = new Map()) {
   const source = dataSourceName ? dataSourcesByName.get(dataSourceName) : null;
   const hasPrice = productHasPrice(product);
   const imageLink = productImageLink(product);
-  const blockingIssues = imageBlockingIssues(product);
+  const hasImage = Boolean(imageLink);
+  const { blocking: blockingIssues, warning: warningIssues } = classifyImageIssues(imageIssuesOf(product));
+  const imageStatus = !hasImage ? 'ausente' : blockingIssues.length ? 'bloqueada' : warningIssues.length ? 'advertencia' : 'ok';
   const reportingStates = summarizeReportingStates(product);
 
   const evidence = [
     offerId ? `offer_id=${offerId}` : 'offer_id ausente en el producto',
     dataSourceName ? `dataSource=${dataSourceName}` : 'dataSource ausente',
     source ? `input=${source.input || 'desconocido'} tipo=${source.type}` : 'fuente no resuelta contra dataSources.list',
-    hasPrice ? 'precio presente en attributes.price' : 'precio ausente o no numérico en attributes.price',
-    imageLink ? 'imageLink presente' : 'imageLink ausente',
-    blockingIssues.length ? `issues de imagen: ${blockingIssues.map(issue => asText(issue.code)).join(',')}` : 'sin issues de imagen reportados',
+    hasPrice ? 'precio presente en productAttributes.price (con moneda)' : 'precio ausente, no numérico o sin moneda en productAttributes.price',
+    `imagen: ${imageStatus}${imageLink ? '' : ' (sin imageLink)'}`,
+    blockingIssues.length ? `issues bloqueantes de imagen: ${blockingIssues.map(issue => asText(issue.code)).join(',')}` : 'sin issues bloqueantes de imagen',
+    warningIssues.length ? `advertencias de imagen (no bloqueantes): ${warningIssues.map(issue => asText(issue.code)).join(',')}` : 'sin advertencias de imagen',
   ].join('; ');
 
   return {
@@ -405,8 +428,10 @@ export function buildOfferRow(product = {}, dataSourcesByName = new Map()) {
     sourceInput: source?.input || null,
     sourceType: source?.type || null,
     hasPrice,
-    hasImage: Boolean(imageLink),
+    hasImage,
+    imageStatus,
     imageBlockingIssueCodes: blockingIssues.map(issue => asText(issue.code)).filter(Boolean),
+    imageWarningIssueCodes: warningIssues.map(issue => asText(issue.code)).filter(Boolean),
     reportingStates,
     reportingStatesText: reportingStatesText(reportingStates),
     presentInPublicFeed: false,
@@ -431,17 +456,25 @@ export function reconcileOffers(products = [], dataSources = [], feedOffers = []
     byOffer.set(row.offerId, bucket);
   }
 
-  const overlaps = [];
+  // products.list expone una sola fuente (la ganadora) por producto
+  // procesado; no permite ver todas las fuentes que compitieron por un
+  // mismo offer_id. Que un mismo offer_id resuelva a AUTOFEED en un
+  // producto y a FILE en otro (con distinto channel/feedLabel/
+  // contentLanguage) es una señal a investigar, no una prueba de
+  // solapamiento — por eso se reporta como "overlapSignals", nunca como
+  // "confirmado".
+  const overlapSignals = [];
   for (const [offerId, entries] of byOffer.entries()) {
     const inputs = new Set(entries.map(entry => upper(entry.sourceInput || '')).filter(Boolean));
     if (entries.length > 1 && inputs.has('AUTOFEED') && inputs.has('FILE')) {
-      overlaps.push({ offerId, entries });
+      overlapSignals.push({ offerId, entries });
     }
   }
-  overlaps.sort((a, b) => a.offerId.localeCompare(b.offerId));
+  overlapSignals.sort((a, b) => a.offerId.localeCompare(b.offerId));
 
   const missingPrice = rows.filter(row => row.offerId && !row.hasPrice);
-  const missingImage = rows.filter(row => row.offerId && (!row.hasImage || row.imageBlockingIssueCodes.length > 0));
+  const missingImage = rows.filter(row => row.offerId && (row.imageStatus === 'ausente' || row.imageStatus === 'bloqueada'));
+  const imageWarnings = rows.filter(row => row.offerId && row.imageStatus === 'advertencia');
   const missingOfferId = rows.filter(row => !row.offerId).length;
 
   const sourceCounts = new Map();
@@ -459,9 +492,10 @@ export function reconcileOffers(products = [], dataSources = [], feedOffers = []
     offersBySource: [...sourceCounts.entries()]
       .map(([input, count]) => ({ input, count }))
       .sort((a, b) => b.count - a.count || a.input.localeCompare(b.input)),
-    overlaps,
+    overlapSignals,
     missingPrice,
     missingImage,
+    imageWarnings,
     missingOfferId,
     feedOfferCount: feedOffers.length,
     feedOnlyOfferIds,
@@ -470,9 +504,10 @@ export function reconcileOffers(products = [], dataSources = [], feedOffers = []
 
 export function buildReconciliationDiagnosis({
   rows,
-  overlaps,
+  overlapSignals,
   missingPrice,
   missingImage,
+  imageWarnings,
   offersBySource,
   feedOfferCount,
   feedOnlyOfferIds,
@@ -482,19 +517,20 @@ export function buildReconciliationDiagnosis({
   const hypotheses = [];
   const limitations = [];
 
-  facts.push(`Se procesaron ${rows.length} productos de Merchant con datos de offer_id, precio e imagen tal como los devolvió la API.`);
-  facts.push(`Se identificaron ${overlaps.length} offer_id presentes simultáneamente en fuentes AUTOFEED y FILE, con evidencia por dataSource.`);
-  facts.push(`${missingPrice.length} productos no tienen un precio utilizable en attributes.price.`);
-  facts.push(`${missingImage.length} productos no tienen imageLink o registran issues de imagen bloqueantes.`);
+  facts.push(`Se procesaron ${rows.length} productos de Merchant con datos de offer_id, precio e imagen tal como los devolvió la API (productAttributes.price, productAttributes.imageLink).`);
+  facts.push(`Se detectaron ${overlapSignals.length} offer_id que aparecen en más de un producto procesado, con fuente resuelta a AUTOFEED en uno y a FILE en otro (distinta combinación de channel/feedLabel/contentLanguage); esto es una señal a investigar, no una confirmación de solapamiento.`);
+  facts.push(`${missingPrice.length} productos no tienen un precio utilizable (amountMicros > 0 con moneda) en productAttributes.price.`);
+  facts.push(`${missingImage.length} productos tienen imagen ausente o bloqueada (severidad DISAPPROVED en un issue de imagen).`);
+  if (imageWarnings.length) facts.push(`${imageWarnings.length} productos tienen advertencias de imagen no bloqueantes (severidad NOT_IMPACTED o DEMOTED); no se cuentan como imagen ausente ni bloqueada.`);
   if (feedOfferCount != null) facts.push(`El feed público expuso ${feedOfferCount} ofertas con g:id legible en esta lectura.`);
   if (missingOfferId) facts.push(`${missingOfferId} productos de la API no exponen offerId legible y quedaron fuera de la reconciliación por offer_id.`);
 
-  if (!overlaps.length) {
-    hypotheses.push({
-      confidence: 'medium',
-      text: 'No se confirmó solapamiento AUTOFEED/FILE por offer_id en esta lectura; esto no descarta duplicación bajo combinaciones de channel/feedLabel/contentLanguage no comparadas, ni duplicación oculta por la vista fusionada de products.list.',
-    });
-  }
+  hypotheses.push({
+    confidence: 'medium',
+    text: overlapSignals.length
+      ? `Los ${overlapSignals.length} offer_id señalados requieren revisión manual en Merchant Center: products.list no permite confirmar por GET que ambas fuentes compitieron realmente por el mismo offer_id, sólo que Merchant resolvió combinaciones distintas de channel/feedLabel/contentLanguage hacia AUTOFEED y hacia FILE.`
+      : 'No se detectó ninguna señal de offer_id compartido entre AUTOFEED y FILE en esta lectura; esto no descarta duplicación bajo combinaciones de channel/feedLabel/contentLanguage no comparadas, ni duplicación oculta por la vista fusionada de products.list.',
+  });
   const inputsSeen = new Set(offersBySource.map(row => upper(row.input)));
   if (!inputsSeen.has('AUTOFEED') || !inputsSeen.has('FILE')) {
     hypotheses.push({
@@ -509,9 +545,10 @@ export function buildReconciliationDiagnosis({
     });
   }
 
-  limitations.push('products.list devuelve la vista fusionada por offer_id que resultó ganadora en Merchant; no expone todas las fuentes que compitieron por un mismo offer_id, sólo la fuente resultante para cada combinación de channel/feedLabel/contentLanguage.');
+  limitations.push('products.list devuelve la vista fusionada por offer_id que resultó ganadora en Merchant; no expone todas las fuentes que compitieron por un mismo offer_id, sólo la fuente resultante para cada combinación de channel/feedLabel/contentLanguage. Por eso ninguna coincidencia de offer_id entre AUTOFEED y FILE constituye una confirmación de solapamiento — se reporta únicamente como señal a investigar.');
   limitations.push('Merchant API v1 no ofrece un endpoint GET de sólo lectura para listar productInputs individuales por fuente; esta reconciliación se basa exclusivamente en products.list y dataSources.list.');
-  limitations.push('La presencia de precio e imagen se evalúa sólo sobre los campos que la API devolvió en esta lectura (attributes.price, attributes.imageLink); no se asume ni se completa ningún valor no reportado por Merchant.');
+  limitations.push('La presencia de precio e imagen se evalúa sólo sobre los campos que la API devolvió en esta lectura (productAttributes.price con amountMicros y moneda, productAttributes.imageLink); no se asume ni se completa ningún valor no reportado por Merchant.');
+  limitations.push('Las advertencias de imagen (severidad NOT_IMPACTED o DEMOTED) se reportan por separado y no se cuentan como imagen ausente ni bloqueante.');
 
   return { facts, hypotheses, limitations };
 }
@@ -534,21 +571,26 @@ export function reconciliationMarkdown(report) {
   if (!report.offersBySource.length) lines.push('| — | 0 |');
   for (const row of report.offersBySource) lines.push(`| ${markdownEscape(row.input)} | ${row.count} |`);
 
-  lines.push('', '## Solapamiento AUTOFEED / FILE confirmado', '');
-  lines.push(`- Ofertas con el mismo offer_id presentes simultáneamente en AUTOFEED y FILE: ${report.overlapConfirmedCount}`);
-  if (report.overlapConfirmedCount) {
-    lines.push('', '| offer_id | fuentes involucradas |', '| --- | --- |');
-    for (const overlap of report.overlaps.slice(0, 50)) {
-      lines.push(`| ${markdownEscape(overlap.offerId)} | ${overlap.entries.map(entry => markdownEscape(entry.sourceInput || '—')).join(', ')} |`);
+  lines.push('', '## Señal de posible solapamiento AUTOFEED / FILE (no confirmada)', '');
+  lines.push(`- offer_id que aparecen con fuente resuelta a AUTOFEED en un producto y a FILE en otro: ${report.overlapSignalCount}`);
+  lines.push('- Esto es una señal a investigar manualmente en Merchant Center, no una confirmación: `products.list` sólo expone la fuente ganadora por combinación de channel/feedLabel/contentLanguage, no todas las fuentes que compitieron por el offer_id.');
+  if (report.overlapSignalCount) {
+    lines.push('', '| offer_id | fuente | channel | feed_label | content_language |', '| --- | --- | --- | --- | --- |');
+    for (const overlap of report.overlapSignals.slice(0, 50)) {
+      for (const entry of overlap.entries) {
+        lines.push(`| ${markdownEscape(overlap.offerId)} | ${markdownEscape(entry.sourceInput || '—')} | ${markdownEscape(entry.channel || '—')} | ${markdownEscape(entry.feedLabel || '—')} | ${markdownEscape(entry.contentLanguage || '—')} |`);
+      }
     }
   }
 
-  lines.push('', '## Precio ausente', '', `- Productos sin precio utilizable: ${report.missingPriceCount}`);
-  lines.push('', '## Imagen ausente o bloqueante', '', `- Productos sin imagen o con issues bloqueantes de imagen: ${report.missingImageCount}`);
+  lines.push('', '## Precio ausente', '', `- Productos sin precio utilizable (amountMicros > 0 con moneda): ${report.missingPriceCount}`);
+  lines.push('', '## Imagen ausente o bloqueante', '');
+  lines.push(`- Productos con imagen ausente o bloqueada (severidad DISAPPROVED): ${report.missingImageCount}`);
+  lines.push(`- Productos con advertencia de imagen no bloqueante (NOT_IMPACTED/DEMOTED, no cuentan como ausente/bloqueada): ${report.imageWarningCount}`);
 
   lines.push('', '## Comparación contra snapshots históricos', '');
   lines.push(`- Referencia histórica (no asumida como resultado): ${report.historicalSnapshots.missingPrice} sin precio, ${report.historicalSnapshots.missingImage} con imagen bloqueante, ${report.historicalSnapshots.overlapSuspected}.`);
-  lines.push(`- Observado en esta lectura: ${report.missingPriceCount} sin precio, ${report.missingImageCount} con imagen ausente/bloqueante, ${report.overlapConfirmedCount} solapamientos AUTOFEED/FILE confirmados.`);
+  lines.push(`- Observado en esta lectura: ${report.missingPriceCount} sin precio, ${report.missingImageCount} con imagen ausente/bloqueada, ${report.overlapSignalCount} señales de posible solapamiento AUTOFEED/FILE (no confirmadas).`);
   lines.push('- Los valores históricos son sólo referencia para comparar; esta lectura no los reutiliza ni los fuerza como resultado.');
 
   lines.push('', '## Hechos comprobados', '');
@@ -839,10 +881,11 @@ export async function main() {
     sourcesObserved: reconciliation.offersBySource.map(row => row.input),
     uniqueOffers: reconciliation.uniqueOffers,
     offersBySource: reconciliation.offersBySource,
-    overlapConfirmedCount: reconciliation.overlaps.length,
-    overlaps: reconciliation.overlaps,
+    overlapSignalCount: reconciliation.overlapSignals.length,
+    overlapSignals: reconciliation.overlapSignals,
     missingPriceCount: reconciliation.missingPrice.length,
     missingImageCount: reconciliation.missingImage.length,
+    imageWarningCount: reconciliation.imageWarnings.length,
     missingOfferId: reconciliation.missingOfferId,
     feedOfferCount: reconciliation.feedOfferCount,
     feedOnlyOfferIds: reconciliation.feedOnlyOfferIds,
@@ -854,7 +897,7 @@ export async function main() {
     diagnosis: reconciliationDiagnosis,
     rows: reconciliation.rows,
   };
-  const overlapEntries = reconciliation.overlaps.flatMap(overlap => overlap.entries);
+  const overlapEntries = reconciliation.overlapSignals.flatMap(overlap => overlap.entries);
 
   await mkdir(outputDir, { recursive: true });
   await Promise.all([
@@ -877,9 +920,10 @@ export async function main() {
     processedProducts: products?.processed ?? null,
     reconciliation: {
       uniqueOffers: reconciliation.uniqueOffers,
-      overlapConfirmedCount: reconciliation.overlaps.length,
+      overlapSignalCount: reconciliation.overlapSignals.length,
       missingPriceCount: reconciliation.missingPrice.length,
       missingImageCount: reconciliation.missingImage.length,
+      imageWarningCount: reconciliation.imageWarnings.length,
     },
     endpointFailures: endpoints.filter(row => !row.ok).map(row => row.name),
   }));
