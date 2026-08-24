@@ -65,4 +65,3 @@ test('omite pausados, ISBN inválidos y clasificaciones ajenas', () => {
   assert.equal(report.metrics.unique_isbn_editions, 0);
   assert.equal(report.metrics.listings_without_valid_isbn, 1);
 });
-

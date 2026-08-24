@@ -23,6 +23,12 @@ test('el gate acepta ficha y oferta completas', () => {
   assert.deepEqual(verifyBookEnrichmentFeed(feed, record, 'MLU724888358'), []);
 });
 
+test('Merchant busca el bloque del MLU exacto y no mezcla duplicados anteriores', () => {
+  const feed = `<item><g:id>MLU111111111</g:id><g:description>Otra edición</g:description></item>
+    <item><g:id>MLU724888358</g:id><g:description>La Biblia Palabra de Vida, edición Hispanoamérica de Editorial Verbo Divino.</g:description><g:gtin>9788490739808</g:gtin><g:price>1950 UYU</g:price><g:availability>in stock</g:availability><g:link>x</g:link><g:image_link>y</g:image_link></item>`;
+  assert.deepEqual(verifyBookEnrichmentFeed(feed, record, 'MLU724888358'), []);
+});
+
 test('el gate falla ante copy ausente, autor genérico o pérdida comercial', () => {
   const htmlFailures = verifyBookEnrichmentHtml('<p>Desconocido</p><p>MLU724888358</p>', record, 'MLU724888358');
   assert.ok(htmlFailures.includes('falta el encabezado editorial'));

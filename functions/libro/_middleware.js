@@ -603,7 +603,12 @@ export async function onRequest(context) {
 
   let withAutomaticShowcase = withByRequestCx;
   if (withByRequestCx.includes(ACTIVE_PAGE_MARKER) && !PRODUCT_SHOWCASE_OVERRIDES[productId]) {
-    const selected = await isProductInShowcaseCohort(context, productId);
+    // Una investigación por ISBN pertenece a la EDICIÓN y debe beneficiar a
+    // todas sus publicaciones compatibles, aunque un duplicado concreto no
+    // haya quedado dentro de la cohorte general de 3.000 fichas.
+    const extractedItem = productItemFromProductHtml(withByRequestCx, productId);
+    const hasVerifiedEnrichment = Boolean(getBookEnrichmentByIsbn(extractedItem?.isbn));
+    const selected = hasVerifiedEnrichment || await isProductInShowcaseCohort(context, productId);
     if (selected) {
       const classificationTags = await classificationTagsForProduct(context, productId);
       withAutomaticShowcase = enrichAutomaticProductShowcaseHtml(

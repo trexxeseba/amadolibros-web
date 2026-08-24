@@ -88,21 +88,39 @@ async function main() {
     const candidates = items
       .filter(item => item?.status === 'active' && normalizeValidIsbn(item?.isbn) === record.isbn)
       .sort((a, b) => (Number(b.available_quantity) || 0) - (Number(a.available_quantity) || 0));
-    const item = candidates[0];
-    if (!item) {
+    if (!candidates.length) {
       reports.push({ isbn: record.isbn, status: 'failed', failures: ['no hay publicación activa para la edición'] });
       continue;
     }
-    const page = await fetchText(`${BASE_URL}/libro/${item.id}`);
-    const failures = [
-      ...verifyBookEnrichmentHtml(page.text, record, item.id),
-      ...verifyBookEnrichmentFeed(feedResponse.text, record, item.id),
-    ];
+
+    // El contenido editorial debe llegar a TODOS los duplicados activos de la
+    // edición, no solamente al representante de la cohorte automática.
+    const pageChecks = [];
+    for (const item of candidates) {
+      const page = await fetchText(`${BASE_URL}/libro/${item.id}`);
+      pageChecks.push({
+        product_id: item.id,
+        url: page.finalUrl,
+        http_status: page.status,
+        failures: verifyBookEnrichmentHtml(page.text, record, item.id),
+      });
+    }
+
+    // Merchant consolida ofertas duplicadas por GTIN. Se verifica el MLU que
+    // efectivamente ganó en el feed, no se presupone que sea el de mayor stock.
+    const merchantItem = candidates.find(item => itemBlock(feedResponse.text, item.id));
+    const failures = pageChecks.flatMap(check =>
+      check.failures.map(failure => `${check.product_id}: ${failure}`));
+    if (!merchantItem) {
+      failures.push('ninguna publicación de la edición aparece en Merchant');
+    } else {
+      failures.push(...verifyBookEnrichmentFeed(feedResponse.text, record, merchantItem.id));
+    }
     reports.push({
       isbn: record.isbn,
-      product_id: item.id,
-      url: page.finalUrl,
-      http_status: page.status,
+      product_ids: candidates.map(item => item.id),
+      merchant_product_id: merchantItem?.id || null,
+      pages: pageChecks,
       status: failures.length ? 'failed' : 'verified',
       failures,
     });
@@ -119,7 +137,7 @@ async function main() {
   }, null, 2)}\n`);
 
   for (const report of reports) {
-    console.log(`  ${report.isbn} · ${report.product_id || 'sin MLU'} · ${report.status}`);
+    console.log(`  ${report.isbn} · ${(report.product_ids || []).join(', ') || 'sin MLU'} · ${report.status}`);
     for (const failure of report.failures) console.error(`    - ${failure}`);
   }
   if (failed.length) throw new Error(`${failed.length} edición(es) fallaron la verificación HTTP.`);

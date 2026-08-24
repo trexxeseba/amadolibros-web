@@ -8,7 +8,7 @@ import {
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
 import { buildAutomaticProductShowcase } from '../_shared/automatic-product-showcase.js';
-import { enrichAutomaticProductShowcaseHtml } from '../libro/_middleware.js';
+import { enrichAutomaticProductShowcaseHtml, onRequest as productMiddleware } from '../libro/_middleware.js';
 import { renderPage } from '../libro/[[path]].js';
 import { buildFeedDescription, renderFeedItem } from '../feed.xml.js';
 
@@ -129,6 +129,39 @@ test('la ficha SSR y su capa automática muestran enriquecimiento sin autor inve
   assert.equal(book.numberOfPages, 1600);
   assert.equal(book.inLanguage, 'es');
   assert.equal(book.bookFormat, 'https://schema.org/Paperback');
+});
+
+test('el middleware enriquece todos los duplicados del ISBN aunque no integren la cohorte general', async () => {
+  const duplicate = applyBookEnrichment({
+    ...RAW_ITEM,
+    id: 'MLU693791720',
+    isbn: '9780825456459',
+    title: 'Biblia Mujer Conforme Al Corazón De Dios Reina Valera 1960',
+  });
+  const baseHtml = renderPage(duplicate, 'biblia-mujer-conforme-al-corazon-de-dios', false, '', '', []);
+  const previousCaches = globalThis.caches;
+  globalThis.caches = {
+    default: {
+      match: async () => new Response(JSON.stringify({
+        items: { MLU693791720: ['religion-espiritualidad', 'reina-valera'] },
+      }), { headers: { 'content-type': 'application/json' } }),
+      put: async () => {},
+    },
+  };
+  try {
+    const response = await productMiddleware({
+      request: new Request('https://www.amadolibros.com/libro/MLU693791720/biblia-mujer'),
+      env: {},
+      next: async () => new Response(baseHtml, { headers: { 'content-type': 'text/html; charset=utf-8' } }),
+      waitUntil: () => {},
+    });
+    const html = await response.text();
+    assert.match(html, /Qué ofrece la Biblia de la mujer conforme al corazón de Dios/);
+    assert.match(html, /¿Para qué tipo de lectura sirve\?/);
+    assert.match(html, /Editorial Portavoz/);
+  } finally {
+    globalThis.caches = previousCaches;
+  }
 });
 
 test('Merchant recibe descripción enriquecida y conserva los atributos de oferta', () => {
