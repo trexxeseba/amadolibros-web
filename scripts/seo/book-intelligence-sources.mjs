@@ -201,7 +201,7 @@ export function parseOpenLibraryEvidence(payload, requestedIsbns) {
       output.push({
         source: 'open_library',
         source_id: clean(data.key || record?.key || firstArrayValue(record?.olids)) || null,
-        source_url: clean(record?.recordURL) || null,
+        source_url: clean(record?.recordURL) || `https://openlibrary.org/isbn/${isbn}`,
         isbn,
         title: clean(data.title || record?.title),
         author: authors.join(', '),

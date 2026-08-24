@@ -158,6 +158,9 @@ async function loadCache(filePath) {
         if (!Array.isArray(entry?.[source]?.records)) continue;
         entry[source].records = entry[source].records.map(record => ({
           ...record,
+          source_url: source === 'open_library' && !clean(record?.source_url)
+            ? `https://openlibrary.org/isbn/${normalizeValidIsbn(record?.isbn)}`
+            : record?.source_url ?? null,
           language: normalizeBookLanguage(record?.language),
           format: record?.source === 'google_books' && clean(record?.format).toUpperCase() === 'BOOK'
             ? null

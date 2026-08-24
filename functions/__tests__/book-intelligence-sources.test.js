@@ -155,6 +155,7 @@ test('parseOpenLibraryEvidence entiende el Books API multi-ISBN oficial', () => 
   assert.equal(records[0].isbn, ISBN);
   assert.equal(records[0].publisher, 'Ciudadela');
   assert.equal(records[0].pages, 304);
+  assert.equal(records[0].source_url, `https://openlibrary.org/isbn/${ISBN}`);
 });
 
 test('planner deduplica por ISBN y prioriza score/GSC antes de aplicar budgets', () => {

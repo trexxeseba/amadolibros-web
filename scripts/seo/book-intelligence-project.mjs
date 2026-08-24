@@ -34,8 +34,11 @@ function comparable(value, field = '') {
     .trim();
 }
 
-function httpsUrl(value) {
+function httpsUrl(value, { source, isbn } = {}) {
   const text = clean(value);
+  if (!text && source === 'open_library' && isbn) {
+    return `https://openlibrary.org/isbn/${isbn}`;
+  }
   if (!text) return null;
   try {
     const url = new URL(text);
@@ -154,7 +157,7 @@ export function projectVerifiedFacts({ manifest, cache, expected = 1000 } = {}) 
     for (const [field, value] of Object.entries(flatFacts)) {
       for (const record of assertFieldEvidence(records, isbn, field, value)) {
         const descriptor = sourceDescriptor(record);
-        const url = httpsUrl(record?.source_url);
+        const url = httpsUrl(record?.source_url, { source: record?.source, isbn });
         if (!url) throw new Error(`${isbn}.${field} tiene una URL de evidencia inválida.`);
         const key = `${descriptor.type}\u0000${descriptor.provider}\u0000${url}`;
         const current = provenanceByProvider.get(key) || {

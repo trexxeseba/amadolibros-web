@@ -94,6 +94,30 @@ test('dos catálogos secundarios coincidentes sí conservan procedencia por camp
   assert.equal(entries[0].provenance.find(source => source.provider === 'Google Books').url.startsWith('https://'), true);
 });
 
+test('la proyección recupera la URL canónica por ISBN de Open Library', () => {
+  const record = value => ({ isbn: ISBN, pages: 304, ...value });
+  const entries = projectVerifiedFacts({
+    manifest: manifest({ pages: 304 }),
+    cache: {
+      entries: {
+        [ISBN]: {
+          google_books: { records: [record({
+            source: 'google_books', source_url: 'https://books.google.com/books?id=1',
+          })] },
+          open_library: { records: [record({
+            source: 'open_library', source_url: null,
+          })] },
+        },
+      },
+    },
+    expected: 1,
+  });
+  assert.equal(
+    entries[0].provenance.find(source => source.provider === 'Open Library').url,
+    `https://openlibrary.org/isbn/${ISBN}`,
+  );
+});
+
 test('la proyección compara códigos de idioma antiguos con la etiqueta normalizada', () => {
   const entries = projectVerifiedFacts({
     manifest: manifest({ language: 'Español' }),
