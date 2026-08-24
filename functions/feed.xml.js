@@ -339,20 +339,38 @@ export function buildFeedDescription(item) {
         return enrichment.editorial.merchant_description;
     }
     const title = (item.title || '').trim();
-    if (item.description && item.description.trim() && item.description.trim() !== title) {
-        return item.description.trim();
+    const hasRealDescription = Boolean(
+        item.description && item.description.trim() && item.description.trim() !== title
+    );
+    let sentence;
+    if (hasRealDescription) {
+        sentence = item.description.trim();
+    } else {
+        const parts = [title ? `Libro "${title}"` : 'Libro'];
+        // FICHAS-QUALITY-GUARD-1: nunca 'de Desconocido' en g:description.
+        const feedAuthor = realAuthor(item.author);
+        if (feedAuthor) parts.push(`de ${feedAuthor}`);
+        const publisher = normalizePublisherForDescription(item.publisher);
+        if (publisher) parts.push(`publicado por ${publisher}`);
+        sentence = parts.join(', ');
     }
 
-    const parts = [title ? `Libro "${title}"` : 'Libro'];
-    // FICHAS-QUALITY-GUARD-1: nunca 'de Desconocido' en g:description.
-    const feedAuthor = realAuthor(item.author);
-    if (feedAuthor) parts.push(`de ${feedAuthor}`);
-    const publisher = normalizePublisherForDescription(item.publisher);
-    if (publisher) parts.push(`publicado por ${publisher}`);
+    const edition = [];
+    const isbn = normalizeIsbnToGtin(item.isbn);
+    if (isbn.valid) edition.push(`ISBN ${isbn.gtin}`);
+    if (Number(item.pages) > 0) edition.push(`${Number(item.pages)} páginas`);
+    const bibliography = item.bibliographic && typeof item.bibliographic === 'object'
+        ? item.bibliographic
+        : {};
+    if (String(bibliography.format || '').trim()) edition.push(String(bibliography.format).trim());
+    if (String(bibliography.language || '').trim()) edition.push(`idioma ${String(bibliography.language).trim()}`);
 
-    let sentence = parts.join(', ');
-    if (item.condition === 'new') sentence += '. Ejemplar nuevo.';
-    else if (item.condition === 'used') sentence += '. Ejemplar usado.';
+    if (edition.length) {
+        const separator = /[.!?]$/.test(sentence) ? ' ' : '. ';
+        sentence += `${separator}${edition.join(', ')}.`;
+    }
+    if (!hasRealDescription && item.condition === 'new') sentence += ' Ejemplar nuevo.';
+    else if (!hasRealDescription && item.condition === 'used') sentence += ' Ejemplar usado.';
     return sentence;
 }
 

@@ -9,7 +9,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 import { CATALOG_URL } from '../../functions/_shared/catalog.js';
-import { listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
+import {
+  applyBookEnrichment,
+  listBookEnrichments,
+} from '../../functions/_shared/book-enrichment-registry.js';
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
 
 const BASE_URL = String(process.env.BOOK_ENRICHMENT_BASE_URL || '').replace(/\/$/, '');
@@ -34,23 +37,98 @@ function itemBlock(feedXml, id) {
 }
 
 function containsGenericAuthor(value) {
-  return /(?:>|&quot;|["'])\s*(?:desconocido|unknown|sin autor|n\/a)\s*(?:<|&quot;|["'])/i.test(String(value || ''));
+  const source = String(value || '');
+  const generic = '(?:desconocido|unknown|sin autor|n\\/a)';
+  return [
+    new RegExp(`["']author["']\\s*:\\s*\\{[\\s\\S]{0,500}?["']name["']\\s*:\\s*["']\\s*${generic}\\s*["']`, 'i'),
+    new RegExp(`<dt[^>]*>\\s*Autor(?:ía)?\\s*</dt>\\s*<dd[^>]*>\\s*${generic}\\s*</dd>`, 'i'),
+    new RegExp(`(?:Más sobre|Ver otros libros de)\\s*${generic}(?:\\s|<|&|$)`, 'i'),
+    new RegExp(`<g:description[^>]*>[\\s\\S]{0,5000}?(?:^|[.,;:!?\\s])de\\s+${generic}(?:[.,;:!?\\s]|$)[\\s\\S]{0,5000}?</g:description>`, 'i'),
+  ].some(pattern => pattern.test(source));
 }
 
-export function verifyBookEnrichmentHtml(html, record, productId) {
+function merchantFactSignals(record, original) {
+  if (record?.decision !== 'auto_publish_facts') return [];
+  const enriched = applyBookEnrichment(original);
+  const signals = [];
+  const before = original?.bibliographic && typeof original.bibliographic === 'object'
+    ? original.bibliographic
+    : {};
+  const after = enriched?.bibliographic && typeof enriched.bibliographic === 'object'
+    ? enriched.bibliographic
+    : {};
+  if (!(Number(original?.pages) > 0) && Number(enriched?.pages) > 0) {
+    signals.push(`${Number(enriched.pages)} páginas`);
+  }
+  if (!clean(before.format) && clean(after.format)) signals.push(clean(after.format));
+  if (!clean(before.language) && clean(after.language)) signals.push(`idioma ${clean(after.language)}`);
+
+  // Autor y editorial sólo forman parte del fallback de Merchant cuando el
+  // catálogo no trae una descripción real. No se exige un dato que el propio
+  // generador, por contrato, no publica en esa oferta.
+  const title = clean(original?.title);
+  const hasRealDescription = Boolean(
+    clean(original?.description) && clean(original.description) !== title
+  );
+  if (!hasRealDescription) {
+    if (clean(original?.author) !== clean(enriched?.author) && clean(enriched?.author)) {
+      signals.push(`de ${clean(enriched.author)}`);
+    }
+    if (!clean(original?.publisher) && clean(enriched?.publisher)) {
+      signals.push(`publicado por ${clean(enriched.publisher)}`);
+    }
+  }
+  return [...new Set(signals)];
+}
+
+function changedFactSignals(record, original) {
+  if (record?.decision !== 'auto_publish_facts') return [];
+  const enriched = applyBookEnrichment(original);
+  const signals = [];
+  const scalar = (field, value) => {
+    if (clean(original?.[field]) !== clean(enriched?.[field]) && clean(value)) signals.push(clean(value));
+  };
+  scalar('author', enriched.author);
+  scalar('publisher', enriched.publisher);
+  scalar('pages', enriched.pages);
+  const before = original?.bibliographic && typeof original.bibliographic === 'object'
+    ? original.bibliographic
+    : {};
+  const after = enriched?.bibliographic && typeof enriched.bibliographic === 'object'
+    ? enriched.bibliographic
+    : {};
+  for (const field of ['language', 'format', 'edition', 'publication_year']) {
+    if (clean(before[field]) !== clean(after[field]) && clean(after[field])) signals.push(clean(after[field]));
+  }
+  const beforeSubjects = Array.isArray(before.subjects) ? before.subjects.map(clean).filter(Boolean) : [];
+  const afterSubjects = Array.isArray(after.subjects) ? after.subjects.map(clean).filter(Boolean) : [];
+  if (beforeSubjects.join('\u0000') !== afterSubjects.join('\u0000')) signals.push(...afterSubjects);
+  return [...new Set(signals)];
+}
+
+export function verifyBookEnrichmentHtml(html, record, productId, originalItem = null) {
   const text = clean(html);
   const failures = [];
-  if (!text.includes(record.editorial.heading)) failures.push('falta el encabezado editorial');
-  if (!text.includes(record.facts.publisher)) failures.push('falta la editorial verificada');
+  if (record?.decision === 'auto_publish') {
+    if (!text.includes(record.editorial.heading)) failures.push('falta el encabezado editorial');
+    if (record.facts.publisher && !text.includes(record.facts.publisher)) failures.push('falta la editorial verificada');
+    if (!text.includes(record.editorial.decision_heading)) failures.push('falta ayuda de decisión');
+  } else {
+    const signals = changedFactSignals(record, originalItem);
+    if (!signals.length) failures.push('la publicación elegida no recibe ningún hecho nuevo');
+    for (const signal of signals) {
+      if (!text.includes(signal)) failures.push(`falta el hecho verificado: ${signal}`);
+    }
+  }
   if (!text.includes(record.isbn)) failures.push('falta el ISBN exacto');
-  if (!text.includes(record.editorial.decision_heading)) failures.push('falta ayuda de decisión');
   if (!html.includes(`MLU${String(productId).replace(/\D/g, '')}`)) failures.push('falta el ID comercial');
   if (containsGenericAuthor(html)) failures.push('aparece autoría genérica');
   if (/casadellibro\.com/i.test(html)) failures.push('se expone una referencia comercial externa');
   return failures;
 }
 
-export function verifyBookEnrichmentFeed(feedXml, record, productId) {
+export function verifyBookEnrichmentFeed(feedXml, record, item) {
+  const productId = item?.id;
   const block = itemBlock(feedXml, productId);
   if (!block) return ['falta la oferta en Merchant'];
   const text = clean(block);
@@ -60,17 +138,54 @@ export function verifyBookEnrichmentFeed(feedXml, record, productId) {
   if (!block.includes('<g:availability>')) failures.push('Merchant perdió disponibilidad');
   if (!block.includes('<g:link>')) failures.push('Merchant perdió el enlace');
   if (!block.includes('<g:image_link>')) failures.push('Merchant perdió la imagen');
-  const descriptionSignal = clean(record.editorial.merchant_description).split(' ').slice(0, 7).join(' ');
-  if (!text.includes(descriptionSignal)) failures.push('Merchant no recibió la descripción enriquecida');
+  if (record?.decision === 'auto_publish') {
+    const descriptionSignal = clean(record?.editorial?.merchant_description)
+      .split(' ')
+      .slice(0, 12)
+      .join(' ');
+    if (descriptionSignal && !text.includes(descriptionSignal)) {
+      failures.push('Merchant no recibió la descripción editorial esperada');
+    }
+  } else {
+    for (const signal of merchantFactSignals(record, item)) {
+      if (!text.includes(signal)) failures.push(`Merchant no recibió el hecho verificado: ${signal}`);
+    }
+  }
   if (containsGenericAuthor(block)) failures.push('Merchant expone autoría genérica');
   return failures;
 }
 
+async function mapWithConcurrency(values, concurrency, worker) {
+  const output = new Array(values.length);
+  let next = 0;
+  async function consume() {
+    while (next < values.length) {
+      const index = next++;
+      output[index] = await worker(values[index], index);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length || 1) }, consume));
+  return output;
+}
+
 async function fetchText(url) {
-  const response = await fetch(url, { redirect: 'follow', headers: { accept: 'text/html,application/xml' } });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`${url} respondió HTTP ${response.status}`);
-  return { text, finalUrl: response.url, status: response.status };
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        redirect: 'follow',
+        headers: { accept: 'text/html,application/xml' },
+        signal: AbortSignal.timeout(30_000),
+      });
+      const text = await response.text();
+      if (!response.ok) throw new Error(`${url} respondió HTTP ${response.status}`);
+      return { text, finalUrl: response.url, status: response.status };
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, attempt * 500));
+    }
+  }
+  throw lastError;
 }
 
 async function main() {
@@ -83,6 +198,7 @@ async function main() {
   const catalog = await catalogResponse.json();
   const items = Array.isArray(catalog?.items) ? catalog.items : [];
   const reports = [];
+  const pageTasks = [];
 
   for (const record of listBookEnrichments()) {
     const candidates = items
@@ -93,38 +209,50 @@ async function main() {
       continue;
     }
 
-    // El contenido editorial debe llegar a TODOS los duplicados activos de la
-    // edición, no solamente al representante de la cohorte automática.
-    const pageChecks = [];
-    for (const item of candidates) {
-      const page = await fetchText(`${BASE_URL}/libro/${item.id}`);
-      pageChecks.push({
-        product_id: item.id,
-        url: page.finalUrl,
-        http_status: page.status,
-        failures: verifyBookEnrichmentHtml(page.text, record, item.id),
-      });
+    // Los 1.000 registros masivos se prueban todos, en una publicación donde
+    // el hecho realmente completa un vacío. La aplicación a duplicados queda
+    // cubierta exhaustivamente por el gate local de 1.000 ISBN.
+    const pageItem = record?.decision === 'auto_publish_facts'
+      ? candidates.find(item => changedFactSignals(record, item).length > 0)
+      : candidates[0];
+    const report = {
+      isbn: record.isbn,
+      product_ids: candidates.map(item => item.id),
+      merchant_product_id: null,
+      pages: [],
+      status: 'pending',
+      failures: [],
+    };
+    reports.push(report);
+    if (!pageItem) {
+      report.failures.push('ninguna publicación activa recibe un hecho nuevo');
+    } else {
+      pageTasks.push({ record, item: pageItem, report });
     }
 
     // Merchant consolida ofertas duplicadas por GTIN. Se verifica el MLU que
     // efectivamente ganó en el feed, no se presupone que sea el de mayor stock.
     const merchantItem = candidates.find(item => itemBlock(feedResponse.text, item.id));
-    const failures = pageChecks.flatMap(check =>
-      check.failures.map(failure => `${check.product_id}: ${failure}`));
     if (!merchantItem) {
-      failures.push('ninguna publicación de la edición aparece en Merchant');
+      report.failures.push('ninguna publicación de la edición aparece en Merchant');
     } else {
-      failures.push(...verifyBookEnrichmentFeed(feedResponse.text, record, merchantItem.id));
+      report.failures.push(...verifyBookEnrichmentFeed(feedResponse.text, record, merchantItem));
     }
-    reports.push({
-      isbn: record.isbn,
-      product_ids: candidates.map(item => item.id),
-      merchant_product_id: merchantItem?.id || null,
-      pages: pageChecks,
-      status: failures.length ? 'failed' : 'verified',
+    report.merchant_product_id = merchantItem?.id || null;
+  }
+
+  await mapWithConcurrency(pageTasks, 10, async ({ record, item, report }) => {
+    const page = await fetchText(`${BASE_URL}/libro/${item.id}`);
+    const failures = verifyBookEnrichmentHtml(page.text, record, item.id, item);
+    report.pages.push({
+      product_id: item.id,
+      url: page.finalUrl,
+      http_status: page.status,
       failures,
     });
-  }
+    report.failures.push(...failures.map(failure => `${item.id}: ${failure}`));
+  });
+  for (const report of reports) report.status = report.failures.length ? 'failed' : 'verified';
 
   const failed = reports.filter(report => report.status !== 'verified');
   mkdirSync(OUTPUT_DIR, { recursive: true });

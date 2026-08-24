@@ -87,6 +87,23 @@ test('extrae del HTML SSR únicamente datos reales de la publicación', () => {
   assert.match(item.dimensions_text, /Ancho 16 cm/);
 });
 
+test('temas verificados aparecen en datos, resumen y JSON-LD sin tocar el género', () => {
+  const source = rendered(book({
+    description: '',
+    bibliographic: {
+      ...book().bibliographic,
+      subjects: ['Evaluación psicológica', 'Entrevista clínica'],
+    },
+  }));
+  const item = productItemFromProductHtml(source, PRODUCT_ID);
+  assert.deepEqual(item.bibliographic.subjects, ['Evaluación psicológica', 'Entrevista clínica']);
+  const showcase = buildAutomaticProductShowcase(item);
+  assert.match(showcase.summary.join(' '), /temas bibliográficos registrados incluyen Evaluación psicológica, Entrevista clínica/);
+  assert.ok(showcase.editionFacts.some(fact => fact.label === 'Temas'));
+  assert.deepEqual(productSchema(source).keywords, ['Evaluación psicológica', 'Entrevista clínica']);
+  assert.equal(productSchema(source).genre, 'Psicología clínica');
+});
+
 test('usa la descripción real y todos los datos verificables', () => {
   const showcase = buildAutomaticProductShowcase(book());
 
@@ -175,7 +192,8 @@ test('sin descripción no inventa una sinopsis y lo declara con hechos', () => {
   const showcase = buildAutomaticProductShowcase(book({ description: null }));
 
   assert.equal(showcase.introHeading, 'Sobre Manual de prueba clínica');
-  assert.match(showcase.summary[0], /Esta ficha corresponde/);
+  assert.match(showcase.summary[0], /es una edición publicada por Editorial Real en 2024/);
+  assert.match(showcase.summary.join(' '), /ISBN .* identifica esta versión concreta/);
   assert.match(showcase.summary.join(' '), /ISBN 9788496836693/);
   assert.doesNotMatch(showcase.summary.join(' '), /presenta un recorrido sistemático/);
 });

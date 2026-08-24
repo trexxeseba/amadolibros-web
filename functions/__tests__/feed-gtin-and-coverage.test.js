@@ -227,7 +227,37 @@ test('15b. Descripción sin autor ni editorial sigue siendo válida y no vacía'
     assert.match(desc, /Ejemplar usado/);
 });
 
-test('15c. normalizePublisherForDescription descarta el placeholder del vendedor', () => {
+test('15c. Merchant incorpora hechos verificados de la edición sin inventar copy', () => {
+    const item = book({
+        id: 'MLU1',
+        title: 'Libro con ficha verificada',
+        isbn: '9788496836693',
+        pages: 304,
+        publisher: 'Ciudadela',
+        bibliographic: { format: 'Tapa blanda', language: 'Español' },
+        condition: 'new',
+    });
+    const desc = buildFeedDescription(item);
+    assert.match(desc, /ISBN 9788496836693/);
+    assert.match(desc, /304 páginas/);
+    assert.match(desc, /Tapa blanda/);
+    assert.match(desc, /idioma Español/);
+});
+
+test('15d. Merchant conserva la descripción real y le suma la edición verificada', () => {
+    const desc = buildFeedDescription(book({
+        title: 'Libro con descripción',
+        description: 'Una descripción editorial propia y útil que ya existía en el catálogo.',
+        isbn: '9788496836693',
+        pages: 304,
+    }));
+    assert.match(desc, /^Una descripción editorial propia/);
+    assert.match(desc, /ISBN 9788496836693/);
+    assert.match(desc, /304 páginas/);
+    assert.equal((desc.match(/Ejemplar nuevo/g) || []).length, 0);
+});
+
+test('15e. normalizePublisherForDescription descarta el placeholder del vendedor', () => {
     assert.equal(normalizePublisherForDescription('AMADO LIBROS'), null);
     assert.equal(normalizePublisherForDescription('  amado libros  '), null);
     assert.equal(normalizePublisherForDescription('Editorial Graó'), 'Editorial Graó');

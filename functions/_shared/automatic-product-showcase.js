@@ -131,6 +131,9 @@ function buildEditionFacts(item) {
     ['Formato', clean(bibliography.format) || null],
     ['Idioma', clean(bibliography.language) || null],
     ['Género/temática', clean(bibliography.genre) || null],
+    ['Temas', Array.isArray(bibliography.subjects)
+      ? bibliography.subjects.map(clean).filter(Boolean).join(' · ')
+      : null],
     ['Traducción', clean(bibliography.translator) || null],
     ['Ilustración', clean(bibliography.illustrator) || null],
     ['Medidas', formatDimensions(item?.dimensions) || clean(item?.dimensions_text) || null],
@@ -152,22 +155,30 @@ function buildFactualSummary(item, facts) {
     ? item.bibliographic
     : {};
   const format = clean(bibliography.format) || null;
+  const language = clean(bibliography.language) || null;
+  const year = clean(bibliography.publication_year) || null;
+  const subjects = Array.isArray(bibliography.subjects)
+    ? bibliography.subjects.map(clean).filter(Boolean).slice(0, 6)
+    : [];
 
-  const identity = `Esta ficha corresponde a «${title}»${author ? `, de ${author}` : ''}.`;
+  const identity = `«${title}»${author ? `, de ${author},` : ''}${publisher ? ` es una edición publicada por ${publisher}` : ' corresponde a esta edición disponible'}${year ? ` en ${year}` : ''}.`;
   const edition = [
-    isbn ? `ISBN ${isbn}` : null,
-    publisher ? `editorial ${publisher}` : null,
     pages ? `${pages} páginas` : null,
     format,
+    language ? `en ${language}` : null,
   ].filter(Boolean);
-  const detail = edition.length
-    ? `La publicación aporta estos datos de edición: ${edition.join(', ')}.`
-    : 'La publicación no aporta todavía una ficha bibliográfica completa; por eso no agregamos datos que no estén confirmados.';
-  const verification = facts.length >= 5
-    ? 'Podés revisar debajo los datos disponibles de esta edición antes de comprar y compararlos con el ejemplar que buscás.'
-    : 'Antes de comprar, consultanos cualquier dato de edición que necesites confirmar.';
+  const details = edition.length
+    ? `La edición tiene ${edition.join(', ')}.`
+    : null;
+  const identifier = isbn
+    ? `El ISBN ${isbn} identifica esta versión concreta para compararla con otras presentaciones.`
+    : null;
 
-  return [identity, `${detail} ${verification}`];
+  const topics = subjects.length
+    ? `Los temas bibliográficos registrados incluyen ${subjects.join(', ')}.`
+    : null;
+
+  return [identity, details, topics, identifier].filter(Boolean);
 }
 
 function buildHighlights(item, facts) {
@@ -180,6 +191,9 @@ function buildHighlights(item, facts) {
   ].filter(Boolean)).size;
   const highlights = [
     clean(bibliography.genre) ? `Género o temática registrada: ${clean(bibliography.genre)}.` : null,
+    Array.isArray(bibliography.subjects) && bibliography.subjects.length
+      ? `Temas bibliográficos: ${bibliography.subjects.map(clean).filter(Boolean).slice(0, 6).join(', ')}.`
+      : null,
     clean(bibliography.format) ? `Formato: ${clean(bibliography.format)}.` : null,
     clean(bibliography.edition) ? `Edición: ${clean(bibliography.edition)}.` : null,
     positiveInteger(item?.pages) ? `${positiveInteger(item.pages)} páginas.` : null,
@@ -395,6 +409,9 @@ export function productItemFromProductHtml(html, productId) {
       edition: detail(details, 'Edición') || clean(schema.bookEdition) || null,
       publication_year: detail(details, 'Año') || clean(schema.datePublished) || null,
       genre: detail(details, 'Género', 'Género/temática') || clean(schema.genre) || null,
+      subjects: detail(details, 'Temas')
+        ? detail(details, 'Temas').split('·').map(clean).filter(Boolean).slice(0, 6)
+        : Array.isArray(schema.keywords) ? schema.keywords.map(clean).filter(Boolean).slice(0, 6) : [],
       collection: detail(details, 'Colección'),
       translator: detail(details, 'Traductor/a', 'Traducción') || personName(schema.translator) || null,
       illustrator: detail(details, 'Ilustrador/a', 'Ilustración') || personName(schema.illustrator) || null,

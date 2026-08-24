@@ -454,6 +454,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         detailRow('Edición', bibliographic.edition),
         detailRow('Año', bibliographic.publication_year),
         detailRow('Género', bibliographic.genre),
+        detailRow('Temas', Array.isArray(bibliographic.subjects)
+            ? bibliographic.subjects.map(value => String(value || '').trim()).filter(Boolean).join(' · ')
+            : ''),
         detailRow('Colección', bibliographic.collection),
         detailRow('Traductor/a', bibliographic.translator),
         detailRow('Ilustrador/a', bibliographic.illustrator),
@@ -560,6 +563,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     }
     if (bibliographic.genre) {
         schemaProduct.genre = bibliographic.genre;
+    }
+    if (Array.isArray(bibliographic.subjects) && bibliographic.subjects.length) {
+        schemaProduct.keywords = bibliographic.subjects.map(value => String(value || '').trim()).filter(Boolean).slice(0, 6);
     }
     if (bibliographic.translator) {
         schemaProduct.translator = { '@type': 'Person', 'name': bibliographic.translator };

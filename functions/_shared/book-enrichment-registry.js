@@ -5,12 +5,14 @@
 // sólo puede aportar datos bibliográficos y copy editorial: precio, stock,
 // condición, imágenes, título comercial, id y URL permanecen en el catálogo.
 
-import { normalizeValidIsbn } from './showcase-ranking.js';
+import { BOOK_FACT_ENRICHMENTS } from './book-enrichment-facts-1000.js';
+import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
 const SOURCE_TYPES = new Set([
   'publisher',
   'national_library',
   'library_catalog',
+  'bibliographic_database',
   'commercial_reference',
 ]);
 
@@ -377,8 +379,41 @@ export function validateBookEnrichment(record) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return false;
   const isbn = normalizeValidIsbn(record.isbn);
   if (!isbn || isbn !== record.isbn || record.schema_version !== 1) return false;
-  if (record.decision !== 'auto_publish') return false;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(clean(record.verified_at))) return false;
+  if (record.decision === 'auto_publish_facts') {
+    if (record.sample_listing_id !== null && record.sample_listing_id !== undefined &&
+        !/^MLU\d+$/.test(clean(record.sample_listing_id).toUpperCase())) return false;
+    const facts = record.facts && typeof record.facts === 'object' && !Array.isArray(record.facts)
+      ? record.facts
+      : null;
+    if (!facts || Object.keys(facts).length < 1) return false;
+    if (Object.keys(facts).some(field => !['author', 'publisher', 'pages', 'bibliographic'].includes(field))) return false;
+    if (facts.bibliographic && Object.keys(facts.bibliographic)
+      .some(field => !['language', 'format', 'edition', 'publication_year', 'subjects'].includes(field))) return false;
+    if (!Array.isArray(record.provenance) || record.provenance.length < 1) return false;
+    const flatFields = [
+      facts.author ? 'author' : null,
+      facts.publisher ? 'publisher' : null,
+      Number(facts.pages) > 0 ? 'pages' : null,
+      ...Object.keys(facts.bibliographic || {}).map(field => field === 'subjects' ? 'topics' : field),
+    ].filter(Boolean);
+    if (!flatFields.length) return false;
+    for (const field of flatFields) {
+      const supporters = record.provenance.filter(source => source?.fields?.includes(field));
+      const hasOfficial = supporters.some(source => ['publisher', 'national_library'].includes(source?.type));
+      const independentProviders = new Set(supporters.map(source => clean(source?.provider)).filter(Boolean));
+      if (!hasOfficial && independentProviders.size < 2) return false;
+    }
+    return record.provenance.every(source =>
+      SOURCE_TYPES.has(source?.type) &&
+      source?.relationship === 'exact_edition' &&
+      normalizeValidIsbn(source?.isbn) === isbn &&
+      /^https:\/\//i.test(clean(source?.url)) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(clean(source?.verified_at)) &&
+      Array.isArray(source?.fields) && source.fields.length > 0,
+    );
+  }
+  if (record.decision !== 'auto_publish') return false;
   if (!Array.isArray(record.editorial?.paragraphs) || record.editorial.paragraphs.length < 1) return false;
   if (record.editorial.paragraphs.some(paragraph => clean(paragraph).length < 80)) return false;
   if (!Array.isArray(record.provenance) || record.provenance.length < 1) return false;
@@ -409,6 +444,15 @@ for (const record of BIBLE_ENRICHMENTS) {
   }
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
 }
+for (const record of BOOK_FACT_ENRICHMENTS) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
 
 export function getBookEnrichmentByIsbn(value) {
   const isbn = normalizeValidIsbn(value);
@@ -427,15 +471,21 @@ export function applyBookEnrichment(item) {
 
   // Lista blanca: únicamente campos editoriales. La expansión explícita
   // impide que una futura entrada del registro reemplace datos comerciales.
+  const editorialDescription = Array.isArray(enrichment?.editorial?.paragraphs)
+    ? enrichment.editorial.paragraphs.map(clean).filter(Boolean).join('\n\n')
+    : '';
   return {
     ...item,
-    description: enrichment.editorial.paragraphs.join('\n\n'),
-    publisher: facts.publisher || item.publisher,
-    pages: facts.pages || item.pages,
-    dimensions_text: facts.dimensions_text || item.dimensions_text,
+    author: facts.author && isGenericAuthor(item.author) ? facts.author : item.author,
+    description: editorialDescription || item.description,
+    // El enriquecimiento masivo completa ausencias: nunca reemplaza un dato
+    // bibliográfico que ya llegó confirmado en la publicación original.
+    publisher: item.publisher || facts.publisher,
+    pages: item.pages || facts.pages,
+    dimensions_text: item.dimensions_text || facts.dimensions_text,
     bibliographic: {
-      ...bibliography,
       ...(facts.bibliographic || {}),
+      ...bibliography,
     },
   };
 }
