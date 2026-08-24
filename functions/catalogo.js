@@ -37,6 +37,7 @@
  */
 
 import { slugify } from './_shared/slug.js';
+import { fixMojibake } from './_shared/mojibake.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import {
@@ -398,8 +399,8 @@ const CAT_SELECT_STYLES = `
 // texto visible.
 function buildOrderWaMessage(book, href) {
     return buildBookWhatsAppMessage({
-        title: book.title,
-        author: book.author,
+        title: fixMojibake(book.title),
+        author: book.author ? fixMojibake(book.author) : book.author,
         page: href,
         available: false,
     });
@@ -747,6 +748,10 @@ export async function onRequest(ctx) {
         : Array(limited.length).fill(null);
 
     const cards = limited.map((b, idx) => {
+        // El slug/href sigue derivando del título original (sin reparar):
+        // esta es la misma URL canónica que /libro/[[path]].js calcula con
+        // slugify(item.title), así que no cambia aunque el título tenga
+        // mojibake.
         const slug  = slugify(b.title);
         const rawHref = `${previewBase}/libro/${b.id}/${slug}`;
         const href  = escapeHtml(rawHref);
@@ -759,9 +764,9 @@ export async function onRequest(ctx) {
             sizes: CARD_IMAGE_SIZES,
         });
         const img = escapeHtml(image.src);
-        const title = escapeHtml(b.title);
+        const title = escapeHtml(fixMojibake(b.title));
         const author = b.author
-            ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
+            ? `<p class="rc-author">${escapeHtml(fixMojibake(b.author))}</p>`
             : '';
         const available = b.status === 'active' && Number(b.available_quantity) > 0;
         // Tratamiento "Disponible por encargo"/"Pedir este libro"
