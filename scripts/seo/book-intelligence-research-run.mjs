@@ -31,6 +31,7 @@ const DEFAULT_OUTPUT_DIR = 'artifacts/book-intelligence/isbn-1000';
 const DEFAULT_CACHE_PATH = 'artifacts/book-intelligence/isbn-1000/source-cache.json';
 const DEFAULT_OPEN_LIBRARY_CONTACT = 'https://www.amadolibros.com';
 const EDITION_FIELDS = Object.freeze([
+  'author',
   'publisher', 'pages', 'language', 'format', 'edition', 'publication_year',
 ]);
 
@@ -41,6 +42,11 @@ function clean(value) {
 function positiveInteger(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function nonNegativeInteger(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 function descriptionLength(item) {
@@ -76,7 +82,7 @@ export function selectResearchCohort({
   existingEnrichments = [],
   limit = DEFAULT_LIMIT,
 } = {}) {
-  const target = positiveInteger(limit, DEFAULT_LIMIT);
+  const requestedLimit = nonNegativeInteger(limit, DEFAULT_LIMIT);
   const alreadyEnriched = new Set(
     (Array.isArray(existingEnrichments) ? existingEnrichments : [])
       .map(record => normalizeValidIsbn(record?.isbn))
@@ -116,12 +122,12 @@ export function selectResearchCohort({
     a.isbn.localeCompare(b.isbn),
   );
 
-  if (candidates.length < target) {
-    throw new Error(`ISBN-1000 resolvio ${candidates.length}/${target} ediciones activas y vendibles.`);
+  if (requestedLimit > 0 && candidates.length < requestedLimit) {
+    throw new Error(`ISBN-1000 resolvio ${candidates.length}/${requestedLimit} ediciones activas y vendibles.`);
   }
 
   return {
-    selected: candidates.slice(0, target),
+    selected: requestedLimit > 0 ? candidates.slice(0, requestedLimit) : candidates,
     eligible_unique_isbns: candidates.length,
     excluded_already_enriched: alreadyEnriched.size,
   };
@@ -169,25 +175,39 @@ function sourceState(cache, isbn, source) {
   };
 }
 
-function verifiedFacts(classification) {
+function existingFact(item, field) {
+  const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
+    ? item.bibliographic
+    : {};
+  if (field === 'author') return isGenericAuthor(item?.author) ? null : clean(item?.author);
+  if (field === 'publisher') return clean(item?.publisher) || null;
+  if (field === 'pages') return Number(item?.pages) > 0 ? Number(item.pages) : null;
+  return clean(bibliography[field]) || null;
+}
+
+function verifiedFacts(classification, item = null) {
   return Object.fromEntries(EDITION_FIELDS.flatMap(field => {
     const publishable = classification?.edition_fields_auto_publishable?.[field];
     const value = classification?.edition_facts?.[field]?.value;
-    return publishable && value !== null && value !== undefined && clean(value)
+    // La proyección masiva completa ausencias. No sobreescribe un dato
+    // existente que difiera: ese caso necesita revisión humana por edición.
+    const current = item ? existingFact(item, field) : null;
+    return publishable && !current && value !== null && value !== undefined && clean(value)
       ? [[field, value]]
       : [];
   }));
 }
 
-export function publicationClass(classification) {
+export function publicationClass(classification, facts = verifiedFacts(classification)) {
   if ((classification?.identity_conflicts?.length || 0) > 0 ||
       (classification?.edition_fact_conflicts?.length || 0) > 0) return 'REVIEW';
-  if (classification?.generation_policy?.can_auto_publish_work_content) return 'GREEN_FULL';
-  if (Object.keys(verifiedFacts(classification)).length > 0) return 'GREEN_FACTS';
+  if (Object.keys(facts).length > 0 && classification?.generation_policy?.can_auto_publish_work_content) return 'GREEN_FULL';
+  if (Object.keys(facts).length > 0) return 'GREEN_FACTS';
   return 'NO_EVIDENCE';
 }
 
 export function buildResearchResult(item, classification, cache) {
+  const facts = verifiedFacts(classification, item);
   return {
     id: clean(item?.id).toUpperCase(),
     isbn: clean(item?.isbn),
@@ -200,8 +220,8 @@ export function buildResearchResult(item, classification, cache) {
     description_length: Number(item?.research?.description_length) || descriptionLength(item),
     tier: classification.tier,
     reason: classification.reason,
-    publication_class: publicationClass(classification),
-    verified_facts: verifiedFacts(classification),
+    publication_class: publicationClass(classification, facts),
+    verified_facts: facts,
     exact_isbn_source_count: classification.exact_isbn_source_count,
     independent_work_source_count: classification.independent_work_source_count,
     identity_conflicts: classification.identity_conflicts,
@@ -233,17 +253,22 @@ function classSummary(results) {
 }
 
 export function buildVerifiedFactsManifest(report) {
+  const publishable = report.results
+    .filter(result => ['GREEN_FULL', 'GREEN_FACTS'].includes(result.publication_class))
+    .filter(result => Object.keys(result.verified_facts || {}).length > 0)
+    .slice(0, report.cohort.requested);
   return {
     schema_version: 1,
     generated_at: report.generated_at,
     cohort: {
       requested: report.cohort.requested,
-      selected: report.cohort.selected,
+      researched: report.cohort.selected,
+      selected_updates: publishable.length,
       unique_isbn: true,
       scope: 'active_sellable_editions',
     },
     metrics: report.publication,
-    entries: report.results.map(result => ({
+    entries: publishable.map(result => ({
       isbn: result.isbn,
       representative_id: result.id,
       listing_ids: result.listing_ids,
@@ -271,7 +296,8 @@ export function researchMarkdown(report) {
     '# FICHAS-ENRICHMENT-1000-ISBN-1',
     '',
     `- Generado: ${report.generated_at}`,
-    `- Cohorte: ${report.cohort.selected}/${report.cohort.requested} ISBN unicos, activos y vendibles.`,
+    `- Meta: ${report.cohort.requested} ISBN con mejoras verificadas.`,
+    `- Investigados: ${report.cohort.selected} ISBN unicos, activos y vendibles.`,
     `- Elegibles antes del corte: ${report.cohort.eligible_unique_isbns}.`,
     `- Google Books: ${report.sources.google_books.matched}/${report.cohort.selected} matches exactos; ${report.sources.google_books.errors} errores.`,
     `- Open Library: ${report.sources.open_library.matched}/${report.cohort.selected} matches exactos; ${report.sources.open_library.errors} errores.`,
@@ -309,6 +335,7 @@ export async function mapWithConcurrency(values, concurrency, worker) {
 function cliOptions(argv) {
   const options = {
     limit: positiveInteger(process.env.BOOK_INTELLIGENCE_LIMIT, DEFAULT_LIMIT),
+    candidateLimit: nonNegativeInteger(process.env.BOOK_INTELLIGENCE_CANDIDATE_LIMIT, 0),
     outputDir: process.env.BOOK_INTELLIGENCE_OUTPUT_DIR || DEFAULT_OUTPUT_DIR,
     cachePath: process.env.BOOK_INTELLIGENCE_CACHE_PATH || DEFAULT_CACHE_PATH,
     catalogSource: process.env.BOOK_INTELLIGENCE_CATALOG_SOURCE || CATALOG_URL,
@@ -316,6 +343,7 @@ function cliOptions(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === '--limit') options.limit = positiveInteger(argv[++index], DEFAULT_LIMIT);
+    else if (flag === '--candidate-limit') options.candidateLimit = nonNegativeInteger(argv[++index], 0);
     else if (flag === '--output-dir') options.outputDir = argv[++index];
     else if (flag === '--cache') options.cachePath = argv[++index];
     else if (flag === '--catalog') options.catalogSource = argv[++index];
@@ -326,17 +354,22 @@ function cliOptions(argv) {
 
 export async function runResearch({
   limit = DEFAULT_LIMIT,
+  candidateLimit = nonNegativeInteger(process.env.BOOK_INTELLIGENCE_CANDIDATE_LIMIT, 0),
   outputDir = DEFAULT_OUTPUT_DIR,
   cachePath = DEFAULT_CACHE_PATH,
   catalogSource = CATALOG_URL,
   googleBooksAccessToken = process.env.GOOGLE_BOOKS_ACCESS_TOKEN,
   googleBooksApiKey = process.env.GOOGLE_BOOKS_API_KEY,
   openLibraryContact = process.env.OPEN_LIBRARY_CONTACT || DEFAULT_OPEN_LIBRARY_CONTACT,
-  googleConcurrency = positiveInteger(process.env.GOOGLE_BOOKS_CONCURRENCY, 8),
+  googleConcurrency = positiveInteger(process.env.GOOGLE_BOOKS_CONCURRENCY, 1),
+  googleBudget = positiveInteger(process.env.GOOGLE_BOOKS_BUDGET, 1000),
+  googleDelayMs = nonNegativeInteger(process.env.GOOGLE_BOOKS_DELAY_MS, 1100),
+  googleRetryAttempts = positiveInteger(process.env.GOOGLE_BOOKS_RETRY_ATTEMPTS, 2),
   openLibraryConcurrency = positiveInteger(process.env.OPEN_LIBRARY_CONCURRENCY, 2),
-  openLibraryBudget = positiveInteger(process.env.OPEN_LIBRARY_BUDGET, 250),
-  bneBudget = positiveInteger(process.env.BNE_BUDGET, 250),
-  bneDelayMs = positiveInteger(process.env.BNE_DELAY_MS, 250),
+  openLibraryBudget = positiveInteger(process.env.OPEN_LIBRARY_BUDGET, 4000),
+  bneBudget = positiveInteger(process.env.BNE_BUDGET, 4000),
+  bneConcurrency = positiveInteger(process.env.BNE_CONCURRENCY, 2),
+  bneDelayMs = nonNegativeInteger(process.env.BNE_DELAY_MS, 500),
 } = {}) {
   if (!clean(googleBooksAccessToken) && !clean(googleBooksApiKey)) {
     throw new Error('ISBN-1000 requiere GOOGLE_BOOKS_ACCESS_TOKEN o GOOGLE_BOOKS_API_KEY.');
@@ -346,64 +379,76 @@ export async function runResearch({
   const cohort = selectResearchCohort({
     catalogItems: catalog?.items,
     existingEnrichments: listBookEnrichments(),
-    limit,
+    // Cero significa “todos los elegibles”. La meta sigue siendo `limit`:
+    // investigamos más candidatos hasta obtener 1.000 actualizaciones reales.
+    limit: candidateLimit,
   });
   const selected = cohort.selected;
 
   let cache = await loadCache(cachePath);
   const plan = planBookSourceResearch(selected, cache, {
-    googleBooksBudget: selected.length,
+    googleBooksBudget: Math.min(selected.length, googleBudget),
     openLibraryBudget: Math.min(selected.length, openLibraryBudget),
     bneBudget: Math.min(selected.length, bneBudget),
   });
 
-  const googleAttempts = await mapWithConcurrency(plan.google_books, googleConcurrency, async entry => {
-    try {
-      const records = await fetchGoogleBooksEvidence(entry.isbn, {
-        accessToken: googleBooksAccessToken,
-        apiKey: googleBooksApiKey,
-      });
-      cache = mergeSourceCache(cache, entry.isbn, 'google_books', records);
-      return { isbn: entry.isbn, ok: true, records: records.length };
-    } catch (error) {
-      cache = mergeSourceCache(cache, entry.isbn, 'google_books', [], { error: error?.message || String(error) });
-      return { isbn: entry.isbn, ok: false, error: error?.message || String(error) };
-    }
-  });
+  let googleConsecutiveRateLimits = 0;
+  let googleCircuitOpen = false;
 
-  const openLibraryAttempts = (await mapWithConcurrency(
-    chunkOpenLibraryPlan(plan),
-    openLibraryConcurrency,
-    async chunk => {
+  // Las fuentes corren en paralelo entre sí, manteniendo sus límites internos.
+  // Así la BNE no espera a Google y el lote completo cabe en una sola Action.
+  const [googleAttempts, openLibraryAttempts, bneAttempts] = await Promise.all([
+    mapWithConcurrency(plan.google_books, googleConcurrency, async entry => {
+      if (googleCircuitOpen) {
+        return { isbn: entry.isbn, ok: false, skipped: true, error: 'Google Books circuit open after repeated HTTP 429' };
+      }
+      try {
+        const records = await fetchGoogleBooksEvidence(entry.isbn, {
+          accessToken: googleBooksAccessToken,
+          apiKey: googleBooksApiKey,
+          retryAttempts: googleRetryAttempts,
+        });
+        googleConsecutiveRateLimits = 0;
+        cache = mergeSourceCache(cache, entry.isbn, 'google_books', records);
+        return { isbn: entry.isbn, ok: true, records: records.length };
+      } catch (error) {
+        if (/HTTP 429/.test(error?.message || '')) {
+          googleConsecutiveRateLimits += 1;
+          if (googleConsecutiveRateLimits >= 20) googleCircuitOpen = true;
+        } else {
+          googleConsecutiveRateLimits = 0;
+        }
+        cache = mergeSourceCache(cache, entry.isbn, 'google_books', [], { error: error?.message || String(error) });
+        return { isbn: entry.isbn, ok: false, error: error?.message || String(error) };
+      } finally {
+        if (googleDelayMs > 0) await new Promise(resolve => setTimeout(resolve, googleDelayMs));
+      }
+    }),
+    mapWithConcurrency(chunkOpenLibraryPlan(plan), openLibraryConcurrency, async chunk => {
       const isbns = chunk.map(entry => entry.isbn);
       try {
         const records = await fetchOpenLibraryBatchEvidence(isbns, { contact: openLibraryContact });
-        return isbns.map(isbn => ({
-          isbn,
-          ok: true,
-          records: records.filter(record => record.isbn === isbn),
-        }));
+        return isbns.map(isbn => ({ isbn, ok: true, records: records.filter(record => record.isbn === isbn) }));
       } catch (error) {
         return isbns.map(isbn => ({ isbn, ok: false, records: [], error: error?.message || String(error) }));
       }
-    },
-  )).flat();
+    }).then(attempts => attempts.flat()),
+    mapWithConcurrency(plan.bne, bneConcurrency, async entry => {
+      try {
+        const records = await fetchBneEvidence(entry.isbn);
+        cache = mergeSourceCache(cache, entry.isbn, 'bne', records);
+        return { isbn: entry.isbn, ok: true, records: records.length };
+      } catch (error) {
+        cache = mergeSourceCache(cache, entry.isbn, 'bne', [], { error: error?.message || String(error) });
+        return { isbn: entry.isbn, ok: false, error: error?.message || String(error) };
+      } finally {
+        if (bneDelayMs > 0) await new Promise(resolve => setTimeout(resolve, bneDelayMs));
+      }
+    }),
+  ]);
   for (const attempt of openLibraryAttempts) {
     cache = mergeSourceCache(cache, attempt.isbn, 'open_library', attempt.records, { error: attempt.error });
   }
-
-  const bneAttempts = await mapWithConcurrency(plan.bne, 1, async entry => {
-    try {
-      const records = await fetchBneEvidence(entry.isbn);
-      cache = mergeSourceCache(cache, entry.isbn, 'bne', records);
-      return { isbn: entry.isbn, ok: true, records: records.length };
-    } catch (error) {
-      cache = mergeSourceCache(cache, entry.isbn, 'bne', [], { error: error?.message || String(error) });
-      return { isbn: entry.isbn, ok: false, error: error?.message || String(error) };
-    } finally {
-      await new Promise(resolve => setTimeout(resolve, bneDelayMs));
-    }
-  });
   await saveCache(cachePath, cache);
 
   const classifications = selected.map(item =>
@@ -457,9 +502,6 @@ export async function runResearch({
   await writeFile(path.join(outputDir, 'isbn-1000-manifest.json'), `${JSON.stringify(buildVerifiedFactsManifest(report), null, 2)}\n`);
   await writeFile(path.join(outputDir, 'report-summary.md'), researchMarkdown(report));
 
-  if (plan.google_books.length > 0 && !googleAttempts.some(attempt => attempt.ok)) {
-    throw new Error('Google Books no completo ninguna consulta HTTP.');
-  }
   return report;
 }
 
