@@ -76,6 +76,8 @@ test('falla si no existen suficientes ISBN vendibles para cumplir el contrato', 
 
 test('separa full, facts, review y sin evidencia', () => {
   assert.equal(publicationClass(classification({
+    edition_facts: { pages: { value: 320 } },
+    edition_fields_auto_publishable: { pages: true },
     generation_policy: { can_auto_publish_work_content: true },
   })), 'GREEN_FULL');
   assert.equal(publicationClass(classification({
@@ -86,6 +88,19 @@ test('separa full, facts, review y sin evidencia', () => {
     identity_conflicts: [{ field: 'title' }],
   })), 'REVIEW');
   assert.equal(publicationClass(classification()), 'NO_EVIDENCE');
+});
+
+test('sólo cuenta una mejora cuando completa un dato ausente', () => {
+  const result = buildResearchResult(
+    catalogItem('MLU1', ISBN_A, { pages: 320 }),
+    classification({
+      edition_facts: { pages: { value: 320 } },
+      edition_fields_auto_publishable: { pages: true },
+    }),
+    {},
+  );
+  assert.deepEqual(result.verified_facts, {});
+  assert.equal(result.publication_class, 'NO_EVIDENCE');
 });
 
 test('resultado publico conserva hechos pero nunca vuelca texto fuente', () => {
@@ -159,7 +174,8 @@ test('resumen declara 1.000 y deja claro que no despliega Produccion', () => {
     },
     publication: { GREEN_FULL: 20, GREEN_FACTS: 300, REVIEW: 10, NO_EVIDENCE: 670 },
   });
-  assert.match(markdown, /1000\/1000/);
+  assert.match(markdown, /Meta: 1000 ISBN/);
+  assert.match(markdown, /Investigados: 1000 ISBN/);
   assert.match(markdown, /GREEN_FACTS: 300/);
   assert.match(markdown, /no despliega Produccion/i);
 });
