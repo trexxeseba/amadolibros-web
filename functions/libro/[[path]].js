@@ -14,6 +14,8 @@
  */
 
 import { slugify } from '../_shared/slug.js';
+// FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
+import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
@@ -256,21 +258,9 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
 })();<\/script>`;
 }
 
-const GENERIC_AUTHOR_KEYS = new Set([
-    'anónimo',
-    'anonimo',
-    'autor',
-    'autores',
-    'autor no especificado',
-    'no aplica',
-    'n/a',
-    's/a',
-    'sin autor',
-    'varios',
-    'varios autores',
-    'vv aa',
-    'vv. aa.',
-]);
+// FICHAS-QUALITY-GUARD-1: la lista local de autores genéricos se eliminó.
+// Ahora se usa isGenericAuthor() de _shared/generic-author.js — una sola lista
+// para ficha, relacionados, WhatsApp, JSON-LD y feed.
 
 function authorKey(author) {
     return String(author || '').trim().toLocaleLowerCase('es').replace(/\s+/g, ' ');
@@ -286,7 +276,7 @@ export function selectRelatedBooks(catalogItems, item, limit = 4) {
 
     const currentAuthor = authorKey(item.author);
     const requestedLimit = Math.min(4, Math.max(0, Number(limit) || 0));
-    if (!currentAuthor || GENERIC_AUTHOR_KEYS.has(currentAuthor) || requestedLimit === 0) return [];
+    if (!currentAuthor || isGenericAuthor(currentAuthor) || requestedLimit === 0) return [];
 
     const seen = new Set([String(item.id || '')]);
     const related = [];
@@ -295,6 +285,7 @@ export function selectRelatedBooks(catalogItems, item, limit = 4) {
         if (!candidateId || seen.has(candidateId)) continue;
         if (!candidate?.title || candidate.status !== 'active') continue;
         if ((Number(candidate.available_quantity) || 0) <= 0) continue;
+        if (isGenericAuthor(candidate.author)) continue;
         if (authorKey(candidate.author) !== currentAuthor) continue;
 
         seen.add(candidateId);
@@ -308,7 +299,10 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
     if (!Array.isArray(relatedBooks) || relatedBooks.length === 0) return '';
 
     const cards = relatedBooks.map((book) => {
-        const title = escapeHtml(book.title);
+        // FICHAS-QUALITY-GUARD-1: se limpia sólo el fragmento explícito
+        // «de <autor genérico>» del texto VISIBLE (título de tarjeta y alt).
+        // El título comercial almacenado no se modifica.
+        const title = escapeHtml(stripGenericAuthorMention(book.title) || book.title);
         const href = `/libro/${encodeURIComponent(book.id)}/${slugify(book.title)}`;
         const source = useCloudflareImages
             ? bookCoverUrl(book.id)
@@ -329,10 +323,15 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
     </li>`;
     }).join('\n');
 
-    const authorPath = authorPathForName(author);
-    const heading = authorPath
-        ? `Otros libros de <a href="${escapeHtml(authorPath)}">${escapeHtml(author)}</a>`
-        : `Otros libros de ${escapeHtml(author)}`;
+    // FICHAS-QUALITY-GUARD-1: sin autoría real no se puede decir "Otros libros
+    // de X". El bloque conserva su valor de navegación con un heading neutro.
+    const realName = realAuthor(author);
+    const authorPath = realName ? authorPathForName(realName) : null;
+    const heading = !realName
+        ? 'Libros relacionados'
+        : authorPath
+            ? `Otros libros de <a href="${escapeHtml(authorPath)}">${escapeHtml(realName)}</a>`
+            : `Otros libros de ${escapeHtml(realName)}`;
     return `<section class="related-books" aria-labelledby="related-books-title">
     <h2 id="related-books-title">${heading}</h2>
     <ul class="related-books-grid">${cards}</ul>
@@ -379,7 +378,12 @@ function notFound() {
 export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
-    const safeAuthor   = item.author ? escapeHtml(item.author) : null;
+    // FICHAS-QUALITY-GUARD-1: 'Desconocido', 'Unknown', 'Varios autores'… no
+    // son autoría. displayAuthor queda null y TODA superficie que dependa de
+    // él (fila Autor, JSON-LD, WhatsApp, relacionados, meta description) omite
+    // el dato en vez de imprimir un nombre falso. Nunca se sustituye.
+    const displayAuthor = realAuthor(item.author);
+    const safeAuthor   = displayAuthor ? escapeHtml(displayAuthor) : null;
     const seoOverride  = PRODUCT_SEO_OVERRIDES[item.id] || null;
     const documentTitle = escapeHtml(seoOverride?.title || item.title);
     const indexWhenPaused = seoOverride?.indexWhenPaused === true ||
@@ -421,13 +425,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         : '';
     const waMessage = buildBookWhatsAppMessage({
         title: item.title,
-        author: item.author,
+        author: displayAuthor,
         page: canonicalUrl,
         available: inStock,
         unsupportedCurrency: inStock && !checkoutCurrencySupported,
     });
     const waLink = whatsappHref(waMessage);
-    const relatedBooksHtml = renderRelatedBooks(relatedBooks, item.author, !isPreview);
+    const relatedBooksHtml = renderRelatedBooks(relatedBooks, displayAuthor, !isPreview);
     const viewItemAnalytics = {
         dedupeKey: `view_item_${item.id}`,
         ...(sellableInCheckout ? { value: price } : {}),
@@ -440,7 +444,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     };
 
     const detailRows = [
-        safeAuthor ? detailRow('Autor', item.author) : '',
+        displayAuthor ? detailRow('Autor', displayAuthor) : '',
         detailRow('ISBN', item.isbn),
         detailRow('Editorial', normalizePublisher(item.publisher)),
         item.pages ? detailRow('Páginas', `${item.pages}`) : '',
@@ -499,7 +503,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@type':    ['Product', 'Book'],
         'name':     item.title,
         'image':    images.length ? images : img,
-        'description': description || (item.author ? `${item.title} — ${item.author}` : item.title),
+        'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
         'sku':      item.id,
     };
     if (sellableInCheckout) {
@@ -526,8 +530,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             },
         };
     }
-    if (item.author) {
-        schemaProduct.author = { '@type': 'Person', 'name': item.author };
+    // FICHAS-QUALITY-GUARD-1: sin autoría real no se declara `author` en el
+    // JSON-LD. Un Person llamado "Desconocido" es un dato estructurado falso.
+    if (displayAuthor) {
+        schemaProduct.author = { '@type': 'Person', 'name': displayAuthor };
     }
     if (item.isbn) {
         schemaProduct.isbn = String(item.isbn);
