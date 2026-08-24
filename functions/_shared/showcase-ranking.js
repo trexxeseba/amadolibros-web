@@ -6,20 +6,43 @@ import { deriveBookDisplayTitle } from './book-display-title.js';
 export const LEGACY_SHOWCASE_LIMIT = 1000;
 export const DEFAULT_SHOWCASE_LIMIT = 3000;
 
+// FICHAS-QUALITY-GUARD-1: un valor de esta lista NO es una autoría — es la
+// ausencia de autoría escrita de distintas maneras por el origen de datos.
+// Tratarlos como autor real producía copy sin sentido comercial en las fichas
+// enriquecidas ("Más sobre Desconocido", "Ver otros libros de Desconocido").
+// Nunca se sustituyen por una autoría inventada: el dato queda omitido hasta
+// que exista una fuente verificable.
 const GENERIC_AUTHORS = new Set([
   'anónimo',
   'anonimo',
   'autor',
   'autores',
+  'autor desconocido',
   'autor no especificado',
+  'autoria desconocida',
+  'autoría desconocida',
+  'desconocida',
+  'desconocido',
   'no aplica',
+  'no especificado',
+  'no especificada',
   'n/a',
+  'na',
   's/a',
+  's/d',
   'sin autor',
+  'sin datos',
+  'sin especificar',
+  'unknown',
+  'unknown author',
   'varios',
   'varios autores',
   'vv aa',
   'vv. aa.',
+  'vvaa',
+  'aa vv',
+  'aa. vv.',
+  'aavv',
 ]);
 
 const PLACEHOLDER_PUBLISHERS = new Set([

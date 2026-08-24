@@ -197,46 +197,33 @@ function buildHighlights(item, facts) {
       highlights.push(candidate);
     }
   }
-  while (highlights.length < 3) {
-    const fallback = [
-      'Disponible para compra inmediata en Amado Libros.',
-      'La ficha reúne los datos aportados por la publicación.',
-      'Podés consultar cualquier dato de edición antes de comprar.',
-    ][highlights.length] || 'Información comercial verificada al momento de la consulta.';
-    highlights.push(fallback);
-  }
+  // FICHAS-QUALITY-GUARD-1: antes se rellenaba hasta un mínimo de 3 con frases
+  // genéricas ("Disponible para compra inmediata…") que no son datos de la
+  // edición. Ese relleno se elimina: se devuelve sólo lo que la publicación
+  // realmente aporta, aunque sean menos de tres puntos o ninguno. Una lista
+  // vacía hace que la sección entera se omita.
   return highlights.slice(0, 5);
 }
 
-function audienceCopy(item) {
-  const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
-    ? item.bibliographic
-    : {};
-  const genre = clean(bibliography.genre);
-  const author = !isGenericAuthor(item?.author) ? clean(item.author) : null;
-  if (genre && author) {
-    return `Puede interesar a lectores de ${author} y a quienes buscan obras registradas dentro de ${genre}. La ficha permite verificar la edición concreta antes de comprar.`;
-  }
-  if (genre) {
-    return `Puede interesar a quienes buscan lecturas de ${genre}. La ficha reúne los datos disponibles para comprobar que se trata de la edición correcta.`;
-  }
-  if (author) {
-    return `Pensado para lectores de ${author} y para quienes buscan esta obra o una edición específica. Revisá ISBN, editorial y formato antes de confirmar la compra.`;
-  }
-  return 'Para quienes buscan esta obra y necesitan comprobar edición, ISBN, editorial, formato o condición antes de comprar.';
+// FICHAS-QUALITY-GUARD-1: el bloque de audiencia sólo puede construirse
+// recombinando autor y categoría — no aporta ningún hecho verificable sobre la
+// edición. Devolver null hace que la sección se omita por completo en la ficha
+// automática. Las fichas curadas a mano (functions/_shared/product-showcases.js)
+// siguen pudiendo declarar su propio `audience` real, que sí se renderiza.
+function audienceCopy() {
+  return null;
 }
 
+// FICHAS-QUALITY-GUARD-1: sin autoría verificable no hay nada honesto que
+// contar sobre el autor. Antes se emitía una sección con el nombre repetido
+// ("Más sobre Desconocido") o un párrafo de disculpa; ambas ocupaban espacio
+// comercial sin informar. Ahora la sección simplemente no existe.
 function authorCopy(item) {
   const author = !isGenericAuthor(item?.author) ? clean(item.author) : null;
-  if (author) {
-    return {
-      heading: `Más sobre ${author}`,
-      copy: `La autoría de esta publicación figura como ${author}. Desde esta ficha podés consultar otros títulos disponibles de la misma autoría y comparar ediciones en el catálogo de Amado Libros.`,
-    };
-  }
+  if (!author) return null;
   return {
-    heading: 'Sobre la autoría',
-    copy: 'La publicación no aporta una autoría suficientemente clara. No completamos ese dato por inferencia: podés consultarnos para verificarlo antes de comprar.',
+    heading: `Más sobre ${author}`,
+    copy: `La autoría de esta publicación figura como ${author}. Desde esta ficha podés consultar otros títulos disponibles de la misma autoría y comparar ediciones en el catálogo de Amado Libros.`,
   };
 }
 
@@ -444,11 +431,16 @@ export function buildAutomaticProductShowcase(item, { classificationTags = [] } 
       : `Sobre ${clean(item.title)}`,
     summary,
     highlightsHeading: 'Datos destacados',
+    // FICHAS-QUALITY-GUARD-1: sin datos reales de la edición, `highlights`
+    // queda vacío y el render omite la tarjeta en vez de rellenarla.
     highlights: buildHighlights(item, facts),
     audienceHeading: '¿Para quién puede ser útil?',
     audience: audienceCopy(item),
-    authorHeading: author.heading,
-    authorBio: author.copy,
+    // FICHAS-QUALITY-GUARD-1: `author` es null cuando la autoría es genérica o
+    // ausente; en ese caso no se emite encabezado ni copy y la tarjeta “Sobre
+    // la autoría” desaparece por completo.
+    authorHeading: author?.heading ?? null,
+    authorBio: author?.copy ?? null,
     editionHeading: 'Ficha de esta edición',
     verifiedLabel: normalizeValidIsbn(item.isbn)
       ? 'Edición identificada por ISBN'
