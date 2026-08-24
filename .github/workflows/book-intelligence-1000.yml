@@ -1,0 +1,124 @@
+name: FICHAS enrich 1000 ISBN
+
+on:
+  push:
+    branches:
+      - agent/fichas-enrichment-1000-isbn-1
+    paths:
+      - '.github/workflows/book-intelligence-1000.yml'
+      - 'scripts/seo/book-intelligence-*.mjs'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/__tests__/book-intelligence-*.test.js'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: ISBN unicos a investigar en esta corrida
+        required: true
+        default: '1000'
+        type: string
+      bne_budget:
+        description: Consultas BNE con throttling
+        required: true
+        default: '250'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: fichas-enrichment-1000-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  research:
+    name: Investigate 1000 unique ISBN editions
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate pipeline without network
+        run: |
+          node --check scripts/seo/book-intelligence-research-run.mjs
+          node --check scripts/seo/book-intelligence-sources.mjs
+          node --check scripts/seo/book-intelligence-bne.mjs
+          node --test \
+            functions/__tests__/book-intelligence-evidence.test.js \
+            functions/__tests__/book-intelligence-sources.test.js \
+            functions/__tests__/book-intelligence-bne.test.js \
+            functions/__tests__/book-intelligence-research-run.test.js
+
+      - name: Authenticate Google Books through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Execute resumable ISBN research
+        id: research
+        continue-on-error: true
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
+          BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '1000' }}
+          BNE_BUDGET: ${{ inputs.bne_budget || '250' }}
+          OPEN_LIBRARY_BUDGET: '250'
+          BOOK_INTELLIGENCE_OUTPUT_DIR: artifacts/book-intelligence/isbn-1000
+          BOOK_INTELLIGENCE_CACHE_PATH: artifacts/book-intelligence/isbn-1000/source-cache.json
+        run: node scripts/seo/book-intelligence-research-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
+
+      - name: Validate the 1000-ISBN artifact
+        if: steps.research.outcome == 'success'
+        env:
+          EXPECTED_LIMIT: ${{ inputs.limit || '1000' }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const file = 'artifacts/book-intelligence/isbn-1000/isbn-1000-manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const expected = Number(process.env.EXPECTED_LIMIT || 1000);
+          const entries = manifest.entries || [];
+          const isbns = new Set(entries.map(entry => entry.isbn));
+          const decisions = new Set(['GREEN_FULL', 'GREEN_FACTS', 'REVIEW', 'NO_EVIDENCE']);
+          if (entries.length !== expected || isbns.size !== expected) {
+            throw new Error(`Esperados ${expected} ISBN unicos; recibidos ${entries.length}/${isbns.size}`);
+          }
+          if (entries.some(entry => !decisions.has(entry.decision))) throw new Error('Decision invalida.');
+          const forbidden = /"(?:price|available_quantity|stock|slug|canonical|pictures|thumbnail)"\s*:/;
+          if (forbidden.test(JSON.stringify(manifest))) throw new Error('El manifiesto contiene datos comerciales prohibidos.');
+          NODE
+
+      - name: Upload report, manifest and resumable cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fichas-enrichment-1000-${{ github.run_id }}
+          path: artifacts/book-intelligence/isbn-1000/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f artifacts/book-intelligence/isbn-1000/report-summary.md ]; then
+            cat artifacts/book-intelligence/isbn-1000/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No se genero el reporte de 1.000 ISBN.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Fail if research did not complete
+        if: steps.research.outcome != 'success'
+        run: exit 1
