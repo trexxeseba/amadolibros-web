@@ -18,7 +18,11 @@ export const OPEN_LIBRARY_MAX_ISBNS_PER_REQUEST = 20;
 export const DEFAULT_OPEN_LIBRARY_BATCH_BUDGET = 25;
 
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
-const OPEN_LIBRARY_READ_BASE = 'https://openlibrary.org/api/volumes/brief/json';
+// Open Library recomienda hoy Search/ISBN para consultas nuevas. Para este
+// lote necesitamos resolver varias EDICIONES exactas por llamada: el Books
+// API con `jscmd=data` es el endpoint oficial que conserva esa capacidad.
+// Se usa sólo en batch offline y con caché; nunca durante una request web.
+const OPEN_LIBRARY_BOOKS_BASE = 'https://openlibrary.org/api/books';
 
 function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -114,13 +118,18 @@ export function buildOpenLibraryBatchUrl(isbns) {
   }
   const normalized = [...new Set(isbns.map(normalizeValidIsbn).filter(Boolean))];
   if (normalized.length === 0) throw new Error('No hay ISBN válidos para Open Library.');
-  const requests = normalized.map(isbn => `isbn:${isbn}`).join('|');
-  return `${OPEN_LIBRARY_READ_BASE}/${requests}`;
+  const url = new URL(OPEN_LIBRARY_BOOKS_BASE);
+  url.searchParams.set('bibkeys', normalized.map(isbn => `ISBN:${isbn}`).join(','));
+  url.searchParams.set('jscmd', 'data');
+  url.searchParams.set('format', 'json');
+  return url.toString();
 }
 
 function recordIsbns(record) {
   const raw = [
     ...(Array.isArray(record?.isbns) ? record.isbns : []),
+    ...(Array.isArray(record?.identifiers?.isbn_13) ? record.identifiers.isbn_13 : []),
+    ...(Array.isArray(record?.identifiers?.isbn_10) ? record.identifiers.isbn_10 : []),
     ...(Array.isArray(record?.data?.identifiers?.isbn_13) ? record.data.identifiers.isbn_13 : []),
     ...(Array.isArray(record?.data?.identifiers?.isbn_10) ? record.data.identifiers.isbn_10 : []),
   ];
@@ -149,6 +158,17 @@ function openLibraryRecords(payload) {
   if (Array.isArray(payload?.records)) return payload.records;
   if (payload?.records && typeof payload.records === 'object') return Object.values(payload.records);
   if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === 'object') {
+    return Object.entries(payload)
+      .filter(([key, value]) => /^ISBN:/i.test(key) && value && typeof value === 'object')
+      .map(([key, value]) => ({
+        ...value,
+        isbns: [...new Set([
+          ...(Array.isArray(value?.isbns) ? value.isbns : []),
+          key.slice(5),
+        ])],
+      }));
+  }
   return [];
 }
 
@@ -162,7 +182,7 @@ export function parseOpenLibraryEvidence(payload, requestedIsbns) {
   for (const record of openLibraryRecords(payload)) {
     const exactMatches = recordIsbns(record).filter(isbn => wanted.has(isbn));
     if (!exactMatches.length) continue;
-    const data = record?.data || {};
+    const data = record?.data || record || {};
     const authors = authorNames(data.authors);
     const topics = [
       ...(Array.isArray(data.subjects) ? data.subjects : []),
@@ -206,6 +226,9 @@ function cacheEntry(cache, isbn, source) {
 export function isSourceCacheFresh(cache, isbn, source, { now = Date.now() } = {}) {
   const entry = cacheEntry(cache, isbn, source);
   if (!entry?.fetched_at) return false;
+  // Un error HTTP nunca se congela durante 90/180/365 días. Así, un 429 o
+  // una caída transitoria vuelve al plan siguiente y el lote es reanudable.
+  if (clean(entry?.error)) return false;
   const fetchedAt = Date.parse(entry.fetched_at);
   if (!Number.isFinite(fetchedAt)) return false;
   const ttl = source === 'open_library'
@@ -292,7 +315,12 @@ async function fetchJson(url, {
       headers: { accept: 'application/json', ...headers },
       signal: controller.signal,
     });
-    if (!response?.ok) throw new Error(`HTTP ${response?.status || 0}`);
+    if (!response?.ok) {
+      const error = new Error(`HTTP ${response?.status || 0}`);
+      error.status = Number(response?.status) || 0;
+      error.retryAfter = clean(response?.headers?.get?.('retry-after')) || null;
+      throw error;
+    }
     return await response.json();
   } finally {
     clearTimeout(timer);
@@ -304,13 +332,30 @@ export async function fetchGoogleBooksEvidence(isbn, {
   accessToken,
   fetchImpl,
   timeoutMs,
+  retryAttempts = 5,
+  retryBaseDelayMs = 1200,
+  sleepImpl = delay => new Promise(resolve => setTimeout(resolve, delay)),
 } = {}) {
   const url = buildGoogleBooksUrl(isbn, { apiKey, accessToken });
   const headers = clean(accessToken)
     ? { authorization: `Bearer ${clean(accessToken)}` }
     : {};
-  const payload = await fetchJson(url, { fetchImpl, timeoutMs, headers });
-  return parseGoogleBooksEvidence(payload, isbn);
+  const attempts = Math.max(1, Number(retryAttempts) || 1);
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const payload = await fetchJson(url, { fetchImpl, timeoutMs, headers });
+      return parseGoogleBooksEvidence(payload, isbn);
+    } catch (error) {
+      const retryable = error?.status === 429 || error?.status === 503;
+      if (!retryable || attempt === attempts) throw error;
+      const retryAfterSeconds = Number(error?.retryAfter);
+      const delay = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        ? retryAfterSeconds * 1000
+        : Math.max(1, Number(retryBaseDelayMs) || 1200) * (2 ** (attempt - 1));
+      await sleepImpl(delay);
+    }
+  }
+  return [];
 }
 
 export async function fetchOpenLibraryBatchEvidence(isbns, {
