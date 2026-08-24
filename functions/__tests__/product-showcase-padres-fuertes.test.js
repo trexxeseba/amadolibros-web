@@ -84,6 +84,11 @@ test('enriquece la ficha visible sin tocar precio, carrito ni enlace de Mercado 
   assert.match(html, /Ciudadela Libros/);
   assert.match(html, /Mariano José Vázquez Alonso/);
   assert.match(html, /Strong Fathers, Strong Daughters/);
+  assert.match(html, /class="showcase-links"/);
+  assert.match(html, /class="showcase-help"/);
+  assert.match(html, /¿Buscás otro libro o una edición específica\?/);
+  assert.match(html, /Contanos qué buscás →/);
+  assert.doesNotMatch(html, /Cómo verificar una edición por ISBN/);
   assert.match(html, /data-action="add-to-cart"/);
   assert.match(html, /class="price-box">Precio/);
   assert.match(html, /Comprar en Mercado Libre/);

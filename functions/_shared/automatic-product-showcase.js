@@ -240,6 +240,35 @@ function authorCopy(item) {
   };
 }
 
+function contextualRequestHelp(item, classificationTags = []) {
+  const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
+    ? item.bibliographic
+    : {};
+  const genre = normalizedText(bibliography.genre);
+  const tags = new Set(classificationTags.map(normalizedText).filter(Boolean));
+  const query = new URLSearchParams({
+    tipo: 'exacto',
+    q: clean(item?.title),
+    origen: 'ficha',
+  });
+  if (clean(item?.id)) query.set('libro', clean(item.id));
+
+  let question = '¿Buscás otro libro o una edición específica?';
+  if (tags.has('biblia') || tags.has('reina-valera') ||
+      /\bbiblias?\b/u.test(genre) || /\breina[\s-]+valera\b/u.test(genre)) {
+    question = '¿Buscás otra Biblia o una edición específica?';
+  } else if (tags.has('esoterismo-tarot') ||
+             /\b(tarot|oracul\w*|esoter\w*)\b/u.test(genre)) {
+    question = '¿Buscás otro tarot, oráculo o libro de esoterismo?';
+  }
+
+  return {
+    question,
+    href: `/pedir-libro?${query.toString()}`,
+    label: 'Contanos qué buscás',
+  };
+}
+
 function buildLinks(item) {
   const links = [];
   const author = !isGenericAuthor(item?.author) ? clean(item.author) : null;
@@ -259,16 +288,13 @@ function buildLinks(item) {
       label: `Explorar libros de ${genre}`,
     });
   }
-  if (normalizeValidIsbn(item?.isbn)) {
+  if (links.length === 0) {
     links.push({
-      href: '/como-identificar-edicion-correcta-isbn',
-      label: 'Cómo verificar una edición por ISBN',
+      href: '/catalogo',
+      label: 'Seguir explorando el catálogo',
     });
   }
-  if (links.length === 0) {
-    links.push({ href: '/catalogo', label: 'Seguir explorando el catálogo' });
-  }
-  return links.slice(0, 3);
+  return links.slice(0, 2);
 }
 
 function shortenByWord(value, maxLength) {
@@ -389,7 +415,7 @@ export function productItemFromProductHtml(html, productId) {
   };
 }
 
-export function buildAutomaticProductShowcase(item) {
+export function buildAutomaticProductShowcase(item, { classificationTags = [] } = {}) {
   if (!item || typeof item !== 'object' || !clean(item.title)) return null;
   const facts = buildEditionFacts(item);
   const description = clean(item.description);
@@ -429,6 +455,7 @@ export function buildAutomaticProductShowcase(item) {
       : 'Datos tomados de la publicación',
     editionFacts: facts,
     links: buildLinks(item),
+    requestHelp: contextualRequestHelp(item, classificationTags),
     schemaDescription,
     metaDescription: buildMetaDescription(item),
   };

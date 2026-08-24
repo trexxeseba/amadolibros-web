@@ -97,8 +97,78 @@ test('usa la descripción real y todos los datos verificables', () => {
   assert.ok(showcase.editionFacts.some(fact => fact.label === 'ISBN' && fact.value === '9788496836693'));
   assert.ok(showcase.editionFacts.some(fact => fact.label === 'Medidas' && fact.value.includes('alto 23 cm')));
   assert.ok(showcase.links.some(link => link.href.includes('Ana%20P%C3%A9rez')));
+  assert.equal(showcase.requestHelp.question, '¿Buscás otro libro o una edición específica?');
+  assert.equal(showcase.requestHelp.label, 'Contanos qué buscás');
+  assert.match(showcase.requestHelp.href, /tipo=exacto/);
+  assert.match(showcase.requestHelp.href, /q=Manual\+de\+prueba\+cl%C3%ADnica/);
+  assert.match(showcase.requestHelp.href, /origen=ficha/);
+  assert.match(showcase.requestHelp.href, /libro=MLU123456789/);
+  assert.ok(!showcase.links.some(link => /verificar una edición por ISBN/i.test(link.label)));
   assert.match(showcase.metaDescription, /12% menos por transferencia/);
   assert.ok(showcase.metaDescription.length <= 170);
+});
+
+test('el cierre comercial pregunta por Tarot y esoterismo en fichas afines', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'El Evangelio de los Esenios 1',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Esoterismo',
+    },
+  }));
+
+  assert.equal(showcase.requestHelp.question, '¿Buscás otro tarot, oráculo o libro de esoterismo?');
+  assert.equal(showcase.requestHelp.label, 'Contanos qué buscás');
+  assert.ok(!showcase.links.some(link => /verificar.*ISBN/i.test(link.label)));
+});
+
+test('el cierre comercial distingue Biblias de esoterismo', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Biblia Reina-Valera 1960 letra grande',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Religión',
+    },
+  }), { classificationTags: ['religion-espiritualidad', 'biblia'] });
+
+  assert.equal(showcase.requestHelp.question, '¿Buscás otra Biblia o una edición específica?');
+  assert.ok(!showcase.links.some(link => /esoterismo/i.test(link.label)));
+});
+
+test('el cierre comercial reconoce la clasificación Reina-Valera', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Santa Biblia letra grande',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Religión',
+    },
+  }), { classificationTags: ['religion-espiritualidad', 'reina-valera'] });
+
+  assert.equal(showcase.requestHelp.question, '¿Buscás otra Biblia o una edición específica?');
+});
+
+test('el cierre comercial reconoce Esoterismo desde la clasificación real', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Una obra sin palabras temáticas en el título',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Religión',
+    },
+  }), { classificationTags: ['esoterismo-tarot'] });
+
+  assert.equal(showcase.requestHelp.question, '¿Buscás otro tarot, oráculo o libro de esoterismo?');
+});
+
+test('el cierre comercial usa la clasificación, no palabras sueltas del título', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Biblia práctica de psicología clínica',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Psicología clínica',
+    },
+  }));
+
+  assert.equal(showcase.requestHelp.question, '¿Buscás otro libro o una edición específica?');
 });
 
 test('sin descripción no inventa una sinopsis y lo declara con hechos', () => {
@@ -136,6 +206,10 @@ test('convierte una ficha activa en vidriera sin tocar precio, stock ni acciones
   assert.match(html, /¿Para quién puede ser útil\?/);
   assert.match(html, /Más sobre Ana Pérez/);
   assert.match(html, /Ficha de esta edición/);
+  assert.match(html, /class="showcase-help"/);
+  assert.match(html, /¿Buscás otro libro o una edición específica\?/);
+  assert.match(html, /Contanos qué buscás →/);
+  assert.doesNotMatch(html, /Cómo verificar una edición por ISBN/);
   assert.match(html, /Herramientas para la práctica/);
   assert.match(html, /Editorial Real/);
   assert.match(html, /data-action="add-to-cart"/);
@@ -153,6 +227,22 @@ test('convierte una ficha activa en vidriera sin tocar precio, stock ni acciones
   assert.match(schema.description, /evaluación clínica/);
   assert.equal(schema.review, undefined);
   assert.equal(schema.aggregateRating, undefined);
+});
+
+test('el renderer usa las clasificaciones públicas para contextualizar la ayuda', () => {
+  const source = rendered(book({
+    title: 'Santa Biblia de estudio',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Religión',
+    },
+  }));
+  const html = enrichAutomaticProductShowcaseHtml(source, PRODUCT_ID, {
+    classificationTags: ['religion-espiritualidad', 'biblia'],
+  });
+
+  assert.match(html, /¿Buscás otra Biblia o una edición específica\?/);
+  assert.doesNotMatch(html, /Cómo verificar una edición por ISBN/);
 });
 
 test('limpia H1, title, snippet, breadcrumb y schema sin alterar el título comercial del carrito', () => {
