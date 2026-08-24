@@ -16,7 +16,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { isGenericAuthor } from '../../functions/_shared/showcase-ranking.js';
 import { buildAutomaticProductShowcase } from '../../functions/_shared/automatic-product-showcase.js';
-import { SHOWCASE_COHORT_V2_URL } from '../../functions/_shared/showcase-cohort.js';
+import { SHOWCASE_COHORT_V2_URL, normalizeShowcaseCohort } from '../../functions/_shared/showcase-cohort.js';
 import { CATALOG_URL } from '../../functions/_shared/catalog.js';
 
 const OUTPUT_DIR = process.env.FICHAS_AUDIT_OUTPUT_DIR || 'artifacts/fichas-quality';
@@ -101,15 +101,26 @@ async function main() {
     fetchJson(CATALOG_URL),
   ]);
 
-  const ids = new Set(
-    (Array.isArray(cohorte?.items) ? cohorte.items : [])
-      .map(entry => String(entry?.id || entry).toUpperCase()),
-  );
+  // La cohorte publica { schema_version, total, ids: [...] } — NO `items`.
+  // Se reutiliza el normalizador oficial en vez de reimplementar el formato:
+  // así el audit no se desincroniza si el esquema cambia.
+  const normalizada = normalizeShowcaseCohort(cohorte);
+  if (!normalizada) {
+    throw new Error('La cohorte descargada no pasó normalizeShowcaseCohort(): esquema inesperado.');
+  }
+  console.log(`  cohorte ${normalizada.source}: ${normalizada.total} ids`);
+
   const items = (Array.isArray(catalogo?.items) ? catalogo.items : [])
-    .filter(item => ids.has(String(item?.id || '').toUpperCase()));
+    .filter(item => normalizada.ids.has(String(item?.id || '').toUpperCase()));
+  console.log(`  cruzados con catálogo activo: ${items.length}`);
 
   const filas = items.map(analizar).filter(Boolean);
-  if (filas.length === 0) throw new Error('La cohorte no produjo ninguna ficha analizable.');
+  if (filas.length === 0) {
+    throw new Error(
+      `La cohorte tiene ${normalizada.total} ids pero ninguno cruzó con el catálogo activo ` +
+      `(${(catalogo?.items || []).length} items). Probable desfasaje entre cohorte y catálogo.`,
+    );
+  }
 
   const cuenta = predicado => filas.filter(predicado).length;
   const metricas = {

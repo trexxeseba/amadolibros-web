@@ -206,3 +206,25 @@ test('8. ninguna frase de relleno aparece en la muestra auditada', () => {
     }
   }
 });
+
+// ── 9. El audit debe leer el formato REAL de la cohorte ───────────────────
+// Bug detectado en CI: fichas-quality-audit.mjs asumía `cohorte.items` y la
+// cohorte publica `ids`. Falló con "ninguna ficha analizable". Este test fija
+// el contrato para que el script no vuelva a desincronizarse del formato.
+
+test('9. la cohorte publica `ids` (no `items`) y normalizeShowcaseCohort la acepta', async () => {
+  const { normalizeShowcaseCohort } = await import('../_shared/showcase-cohort.js');
+  const payload = {
+    schema_version: 2,
+    total: 2,
+    ids: ['MLU724888358', 'MLU111111111'],
+    generated_at: '2026-08-24T00:00:00Z',
+  };
+  const normalizada = normalizeShowcaseCohort(payload);
+  assert.ok(normalizada, 'el formato real de la cohorte debe normalizar');
+  assert.equal(normalizada.total, 2);
+  assert.ok(normalizada.ids.has('MLU724888358'));
+  // Un payload con `items` en vez de `ids` NO es válido: es exactamente el
+  // formato que el script asumía por error.
+  assert.equal(normalizeShowcaseCohort({ schema_version: 2, total: 2, items: payload.ids }), null);
+});
