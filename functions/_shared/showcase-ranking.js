@@ -3,47 +3,17 @@
 
 import { deriveBookDisplayTitle } from './book-display-title.js';
 
+// FICHAS-QUALITY-GUARD-1: qué valores NO son una autoría se define en un solo
+// lugar. Antes esta lista vivía duplicada aquí, en functions/libro/[[path]].js
+// y en ningún lado para el feed y WhatsApp; las copias divergieron y por eso
+// 'Desconocido' llegó a producción. Se re-exporta para no romper a quienes ya
+// importaban isGenericAuthor desde este módulo.
+export { isGenericAuthor } from './generic-author.js';
+import { isGenericAuthor } from './generic-author.js';
+
 export const LEGACY_SHOWCASE_LIMIT = 1000;
 export const DEFAULT_SHOWCASE_LIMIT = 3000;
 
-// FICHAS-QUALITY-GUARD-1: un valor de esta lista NO es una autoría — es la
-// ausencia de autoría escrita de distintas maneras por el origen de datos.
-// Tratarlos como autor real producía copy sin sentido comercial en las fichas
-// enriquecidas ("Más sobre Desconocido", "Ver otros libros de Desconocido").
-// Nunca se sustituyen por una autoría inventada: el dato queda omitido hasta
-// que exista una fuente verificable.
-const GENERIC_AUTHORS = new Set([
-  'anónimo',
-  'anonimo',
-  'autor',
-  'autores',
-  'autor desconocido',
-  'autor no especificado',
-  'autoria desconocida',
-  'autoría desconocida',
-  'desconocida',
-  'desconocido',
-  'no aplica',
-  'no especificado',
-  'no especificada',
-  'n/a',
-  'na',
-  's/a',
-  's/d',
-  'sin autor',
-  'sin datos',
-  'sin especificar',
-  'unknown',
-  'unknown author',
-  'varios',
-  'varios autores',
-  'vv aa',
-  'vv. aa.',
-  'vvaa',
-  'aa vv',
-  'aa. vv.',
-  'aavv',
-]);
 
 const PLACEHOLDER_PUBLISHERS = new Set([
   'amado libros',
@@ -97,10 +67,6 @@ export function normalizeValidIsbn(value) {
   return `${base}${(10 - (sum % 10)) % 10}`;
 }
 
-export function isGenericAuthor(value) {
-  const key = normalizedText(value);
-  return !key || GENERIC_AUTHORS.has(key);
-}
 
 function realPublisher(value) {
   const key = normalizedText(value);
