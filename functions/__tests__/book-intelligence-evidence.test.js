@@ -74,6 +74,19 @@ test('mismo ISBN con título y autor incompatibles bloquea por conflicto de iden
   assert.equal(result.identity_conflicts.some(conflict => conflict.field === 'author'), true);
 });
 
+test('autor genérico no bloquea una autoría exacta de biblioteca nacional', () => {
+  const result = classifyBookIntelligenceEvidence(
+    item({ title: 'Principito Mi Libro De Texturas', author: 'Desconocido' }),
+    [evidence('national_library', {
+      title: 'El Principito: mi libro de texturas',
+      author: 'Saint-Exupéry, Antoine de',
+    })],
+  );
+  assert.deepEqual(result.identity_conflicts, []);
+  assert.equal(result.edition_fields_auto_publishable.author, true);
+  assert.equal(result.edition_facts.author.value, 'Saint-Exupéry, Antoine de');
+});
+
 test('ISBN exacto tolera título localizado si el autor coincide', () => {
   const result = classifyBookIntelligenceEvidence(
     item({
