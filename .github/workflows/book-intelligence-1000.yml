@@ -9,6 +9,12 @@ on:
       - 'scripts/seo/book-intelligence-*.mjs'
       - 'functions/_shared/book-intelligence-evidence.js'
       - 'functions/__tests__/book-intelligence-*.test.js'
+  pull_request:
+    paths:
+      - '.github/workflows/book-intelligence-1000.yml'
+      - 'scripts/seo/book-intelligence-*.mjs'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/__tests__/book-intelligence-*.test.js'
   workflow_dispatch:
     inputs:
       limit:
