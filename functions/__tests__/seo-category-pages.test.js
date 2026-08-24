@@ -155,6 +155,18 @@ test('las landings bíblicas incluyen guía factual y una promesa logística con
     assert.doesNotMatch(html, /entrega gratis en el día en Uruguay/i);
 });
 
+test('las landings bíblicas conservan el contrato responsive para celular', async () => {
+    const response = await categoryRequest(context('biblias'));
+    const html = await response.text();
+
+    assert.match(html, /<meta name="viewport" content="width=device-width,initial-scale=1">/);
+    assert.match(html, /\.books-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+    assert.match(html, /@media\(max-width:620px\)\{\.header-inner/);
+    assert.match(html, /\.header-search\{grid-column:1\/-1;grid-row:2/);
+    assert.match(html, /\.bible-guide-head\{flex-direction:column\}/);
+    assert.match(html, /\.bible-cross-link\{width:100%;justify-content:center\}/);
+});
+
 test('una categoría inventada responde 404 real, noindex y sin canonical', async () => {
     const response = await categoryRequest(context('categoria-inventada'));
     const html = await response.text();
