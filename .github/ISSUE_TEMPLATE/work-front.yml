@@ -1,0 +1,61 @@
+name: Frente de trabajo
+description: Registrar un frente antes de crear su rama.
+title: "[FRENTE] "
+labels: ["work-front"]
+body:
+  - type: input
+    id: outcome
+    attributes:
+      label: Resultado comprobable
+      description: Una sola misión y su criterio de aceptación.
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad
+      options: ["P0 Producción rota", "P1 ingresos/cliente", "P2 crecimiento", "P3 mantenimiento"]
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Responsable
+      placeholder: ChatGPT, Claude Code o persona responsable
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Problema y evidencia
+      description: URLs, productos, consultas, métricas o fallos reproducibles.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Alcance y exclusiones
+      description: Qué se toca y qué queda expresamente afuera.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencias, archivos críticos y colisiones
+    validations:
+      required: true
+  - type: input
+    id: next_action
+    attributes:
+      label: Próxima acción concreta
+    validations:
+      required: true
+  - type: checkboxes
+    id: limits
+    attributes:
+      label: Control de frentes
+      options:
+        - label: Confirmé que no se supera un frente principal y uno externo.
+          required: true
+        - label: No hay otra rama para esta misma misión.
+          required: true
