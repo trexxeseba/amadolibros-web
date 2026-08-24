@@ -1,0 +1,124 @@
+name: GSC BigQuery readiness check
+
+on:
+  push:
+    branches:
+      - agent/gsc-bigquery-readiness-check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          create_credentials_file: true
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Probe BigQuery and comment result
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PROJECT='amado-libros-analytics'
+          DATASET='searchconsole'
+          TOKEN="$(gcloud auth print-access-token)"
+          BASE="https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT}/datasets/${DATASET}"
+          OUT='/tmp/gsc-bq-check.txt'
+          : > "$OUT"
+
+          http_get() {
+            local url="$1" body="$2"
+            curl -sS -o "$body" -w '%{http_code}' \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H 'Accept: application/json' \
+              "$url"
+          }
+
+          checked_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          dataset_http="$(http_get "$BASE" /tmp/dataset.json)"
+          echo "checked_at=${checked_at}" | tee -a "$OUT"
+          echo "DATASET_HTTP=${dataset_http}" | tee -a "$OUT"
+
+          tables_http="$(http_get "${BASE}/tables?maxResults=1000" /tmp/tables.json)"
+          echo "TABLES_HTTP=${tables_http}" | tee -a "$OUT"
+
+          if [ "$tables_http" = '200' ]; then
+            python3 - <<'PY' | tee -a "$OUT"
+          import json
+          try:
+              data=json.load(open('/tmp/tables.json'))
+          except Exception:
+              data={}
+          ids=[]
+          for row in data.get('tables',[]) or []:
+              ref=row.get('tableReference') or {}
+              tid=ref.get('tableId')
+              if tid: ids.append(tid)
+          print('TABLE_IDS=' + ','.join(sorted(ids)))
+          PY
+          else
+            echo 'TABLE_IDS=' | tee -a "$OUT"
+          fi
+
+          ready=0
+          export_rows=0
+          url_rows=0
+          site_rows=0
+          for table in ExportLog searchdata_url_impression searchdata_site_impression; do
+            safe="${table//[^A-Za-z0-9_]/_}"
+            code="$(http_get "${BASE}/tables/${table}" "/tmp/${safe}.json")"
+            echo "TABLE_${table}_HTTP=${code}" | tee -a "$OUT"
+            rows=0
+            if [ "$code" = '200' ]; then
+              rows="$(python3 - "$safe" <<'PY'
+          import json,sys
+          try:
+              x=json.load(open('/tmp/'+sys.argv[1]+'.json'))
+              v=x.get('numRows',0)
+              print(int(v))
+          except Exception:
+              print(0)
+          PY
+              )"
+            fi
+            echo "TABLE_${table}_ROWS=${rows}" | tee -a "$OUT"
+            case "$table" in
+              ExportLog) export_rows="$rows" ;;
+              searchdata_url_impression) url_rows="$rows" ;;
+              searchdata_site_impression) site_rows="$rows" ;;
+            esac
+          done
+
+          if [ "$dataset_http" = '200' ] && \
+             [ "$export_rows" -gt 0 ] && \
+             { [ "$url_rows" -gt 0 ] || [ "$site_rows" -gt 0 ]; }; then
+            ready=1
+          fi
+          echo "READY=${ready}" | tee -a "$OUT"
+
+          {
+            echo '<!-- GSC-BQ-CHECK -->'
+            echo "## GSC BigQuery readiness check — ${checked_at}"
+            echo
+            echo '```text'
+            cat "$OUT"
+            echo '```'
+          } > /tmp/comment.md
+          gh issue comment 181 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+# readiness probe refresh 2026-08-21T00:56Z
