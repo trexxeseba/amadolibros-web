@@ -24,22 +24,33 @@ const ITEMS = SEO_CATEGORIES.map((category, index) => ({
 }));
 
 const CATEGORY_DATA = {
-    categories: SEO_CATEGORIES.map((category, index) => ({
-        id: category.id,
-        name: category.name,
-        count: category.id === 'psicologia' ? 791 : 1,
-        subcategories: [],
-    })),
+    categories: SEO_CATEGORIES
+        .filter(category => !category.classificationId && !category.classificationIds)
+        .map(category => ({
+            id: category.id,
+            name: category.name,
+            count: category.id === 'psicologia' ? 791 : category.id === 'religion-espiritualidad' ? 3 : 1,
+            subcategories: category.id === 'religion-espiritualidad'
+                ? [
+                    { id: 'biblia', name: 'Biblia', count: 1 },
+                    { id: 'reina-valera', name: 'Reina-Valera', count: 1 },
+                ]
+                : [],
+        })),
     items: Object.fromEntries(ITEMS.map((item, index) => [
         item.id,
-        [SEO_CATEGORIES[index].id],
+        SEO_CATEGORIES[index].classificationIds
+            ? ['religion-espiritualidad', SEO_CATEGORIES[index].classificationIds[0]]
+            : SEO_CATEGORIES[index].classificationId
+                ? ['religion-espiritualidad', SEO_CATEGORIES[index].classificationId]
+                : [SEO_CATEGORIES[index].id],
     ])),
 };
 
 function context(path, appEnv = 'production', search = '') {
     return {
         request: new Request(`https://${appEnv === 'preview' ? 'preview.example' : 'www.amadolibros.com'}/libros/${path}${search}`),
-        params: { path: path ? [path] : [] },
+        params: { path: path ? path.split('/') : [] },
         env: { APP_ENV: appEnv },
         data: {},
         waitUntil() {},
@@ -67,11 +78,11 @@ test.beforeEach(() => {
     };
 });
 
-test('la allowlist contiene exactamente las ocho categorías SEO aprobadas', () => {
-    assert.equal(SEO_CATEGORIES.length, 8);
-    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 8);
+test('la allowlist contiene las ocho categorías base y las dos landings bíblicas aprobadas', () => {
+    assert.equal(SEO_CATEGORIES.length, 10);
+    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 10);
     for (const category of SEO_CATEGORIES) {
-        assert.match(category.title, /Uruguay \| Amado Libros$/);
+        assert.match(category.title, /Uruguay.*\| Amado Libros$/);
         assert.ok(category.description.length >= 100);
         assert.ok(category.intro.length >= 100);
     }
@@ -107,6 +118,43 @@ test('la landing filtra productos por la categoría solicitada', async () => {
     assert.match(html, /<strong>1 título disponible ahora\.<\/strong> Los 791 títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo\./);
 });
 
+test('Biblias une Biblia y Reina-Valera, mientras Reina-Valera conserva su intención propia', async () => {
+    const biblesResponse = await categoryRequest(context('biblias'));
+    const biblesHtml = await biblesResponse.text();
+    const rvrResponse = await categoryRequest(context('biblias/reina-valera'));
+    const rvrHtml = await rvrResponse.text();
+
+    assert.match(biblesHtml, /Libro de prueba Biblias/);
+    assert.match(biblesHtml, /Libro de prueba Reina-Valera/);
+    assert.match(rvrHtml, /Libro de prueba Reina-Valera/);
+    assert.doesNotMatch(rvrHtml, /Libro de prueba Biblias</);
+    assert.match(rvrHtml, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libros\/biblias\/reina-valera">/);
+    assert.match(rvrHtml, /<a href="\/libros\/biblias">Biblias<\/a> › <span>Reina-Valera<\/span>/);
+});
+
+test('Religión excluye Biblias de su grilla y las enlaza como colecciones separadas', async () => {
+    const response = await categoryRequest(context('religion-espiritualidad'));
+    const html = await response.text();
+
+    assert.match(html, /Libro de prueba Religión y espiritualidad/);
+    assert.doesNotMatch(html, /Libro de prueba Biblias</);
+    assert.doesNotMatch(html, /Libro de prueba Reina-Valera/);
+    assert.match(html, /href="\/libros\/biblias"/);
+    assert.match(html, /href="\/libros\/biblias\/reina-valera"/);
+});
+
+test('las landings bíblicas incluyen guía factual y una promesa logística condicionada', async () => {
+    const response = await categoryRequest(context('biblias'));
+    const html = await response.text();
+
+    assert.match(html, /Cómo elegir una Biblia/);
+    assert.match(html, /Traducción o tradición/);
+    assert.match(html, /pueden entregarse en 2 horas en Montevideo, según zona y horario/);
+    assert.match(html, /envío es gratis en compras desde \$1\.500/);
+    assert.match(html, /No todas las ediciones califican para entrega rápida/);
+    assert.doesNotMatch(html, /entrega gratis en el día en Uruguay/i);
+});
+
 test('una categoría inventada responde 404 real, noindex y sin canonical', async () => {
     const response = await categoryRequest(context('categoria-inventada'));
     const html = await response.text();
@@ -134,7 +182,7 @@ test('parámetros arbitrarios no crean otra landing indexable', async () => {
     assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libros\/psicologia">/);
 });
 
-test('la portada enlaza las ocho landings limpias y no filtros con parámetros', () => {
+test('la portada enlaza las landings limpias, incluyendo Biblias y Reina-Valera, sin filtros', () => {
     const file = fileURLToPath(new URL('../../astro-front/src/components/CategoryAccess.astro', import.meta.url));
     const source = readFileSync(file, 'utf8');
 
@@ -142,12 +190,14 @@ test('la portada enlaza las ocho landings limpias y no filtros con parámetros',
     assert.doesNotMatch(source, /href={`\/catalogo\?categoria=/);
     assert.match(source, /\{cat\.count\} títulos/);
     assert.match(source, />Disponibles y por encargo<\/span>/);
-    for (const category of SEO_CATEGORIES) {
+    for (const category of SEO_CATEGORIES.filter(entry => !entry.classificationId && !entry.classificationIds)) {
         assert.ok(source.includes(`'${category.id}'`), category.id);
     }
+    assert.match(source, /href="\/libros\/biblias"/);
+    assert.match(source, /href="\/libros\/biblias\/reina-valera"/);
 });
 
-test('el sitemap de categorías publica las ocho landings SEO', async () => {
+test('el sitemap de categorías publica las diez landings SEO', async () => {
     const response = await categorySitemapRequest({
         request: new Request('https://www.amadolibros.com/sitemap-categories.xml'),
         env: { APP_ENV: 'production' },

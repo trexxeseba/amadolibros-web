@@ -63,6 +63,8 @@ const ROUTES = [
   { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex, follow' },
   { path: '/pedir-libro', kind: 'html', canonical: `${BASE_URL}/pedir-libro`, robots: 'index, follow' },
   { path: '/como-identificar-edicion-correcta-isbn', kind: 'html', canonical: `${BASE_URL}/como-identificar-edicion-correcta-isbn`, robots: 'index, follow' },
+  { path: '/libros/biblias', kind: 'html', canonical: `${BASE_URL}/libros/biblias`, robots: 'index, follow' },
+  { path: '/libros/biblias/reina-valera', kind: 'html', canonical: `${BASE_URL}/libros/biblias/reina-valera`, robots: 'index, follow' },
   { path: '/carrito/', kind: 'cart' },
   { path: '/robots.txt', kind: 'robots' },
   { path: '/sitemap.xml', kind: 'sitemap-index' },

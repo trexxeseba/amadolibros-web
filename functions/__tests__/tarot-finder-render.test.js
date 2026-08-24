@@ -56,24 +56,35 @@ const ITEMS = SEO_CATEGORIES.map((category, index) => {
 });
 
 const CATEGORY_DATA = {
-    categories: SEO_CATEGORIES.map(category => ({
-        id: category.id,
-        name: category.name,
-        count: 1,
-        subcategories: [],
-    })),
+    categories: SEO_CATEGORIES
+        .filter(category => !category.classificationId && !category.classificationIds)
+        .map(category => ({
+            id: category.id,
+            name: category.name,
+            count: 1,
+            subcategories: category.id === 'religion-espiritualidad'
+                ? [{ id: 'biblia', name: 'Biblia', count: 1 }, { id: 'reina-valera', name: 'Reina-Valera', count: 1 }]
+                : [],
+        })),
     // ITEMS[index] corresponde siempre a SEO_CATEGORIES[index] — mismo
     // orden de construcción arriba, así que el mapeo id->categoría es
     // directo por índice.
     items: Object.fromEntries(
-        ITEMS.map((item, index) => [item.id, [SEO_CATEGORIES[index].id]]),
+        ITEMS.map((item, index) => [
+            item.id,
+            SEO_CATEGORIES[index].classificationIds
+                ? ['religion-espiritualidad', SEO_CATEGORIES[index].classificationIds[0]]
+                : SEO_CATEGORIES[index].classificationId
+                    ? ['religion-espiritualidad', SEO_CATEGORIES[index].classificationId]
+                    : [SEO_CATEGORIES[index].id],
+        ]),
     ),
 };
 
 function context(path, appEnv = 'production', search = '') {
     return {
         request: new Request(`https://${appEnv === 'preview' ? 'preview.example' : 'www.amadolibros.com'}/libros/${path}${search}`),
-        params: { path: path ? [path] : [] },
+        params: { path: path ? path.split('/') : [] },
         env: { APP_ENV: appEnv },
         data: {},
         waitUntil() {},
@@ -240,8 +251,24 @@ test('si el universo de esoterismo-tarot no tiene ningún candidato clasificado,
         start_time: '2026-07-01T00:00:00Z',
     }));
     const genericCategoryData = {
-        categories: SEO_CATEGORIES.map(category => ({ id: category.id, name: category.name, count: 1, subcategories: [] })),
-        items: Object.fromEntries(genericItems.map((item, index) => [item.id, [SEO_CATEGORIES[index].id]])),
+        categories: SEO_CATEGORIES
+            .filter(category => !category.classificationId && !category.classificationIds)
+            .map(category => ({
+                id: category.id,
+                name: category.name,
+                count: 1,
+                subcategories: category.id === 'religion-espiritualidad'
+                    ? [{ id: 'biblia', name: 'Biblia', count: 1 }, { id: 'reina-valera', name: 'Reina-Valera', count: 1 }]
+                    : [],
+            })),
+        items: Object.fromEntries(genericItems.map((item, index) => [
+            item.id,
+            SEO_CATEGORIES[index].classificationIds
+                ? ['religion-espiritualidad', SEO_CATEGORIES[index].classificationIds[0]]
+                : SEO_CATEGORIES[index].classificationId
+                    ? ['religion-espiritualidad', SEO_CATEGORIES[index].classificationId]
+                    : [SEO_CATEGORIES[index].id],
+        ])),
     };
     globalThis.caches = {
         default: {
