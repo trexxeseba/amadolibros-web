@@ -1,0 +1,165 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  buildResearchResult,
+  buildVerifiedFactsManifest,
+  mapWithConcurrency,
+  publicationClass,
+  researchMarkdown,
+  selectResearchCohort,
+} from '../../scripts/seo/book-intelligence-research-run.mjs';
+
+const ISBN_A = '9788496836693';
+const ISBN_B = '9780194527552';
+const ISBN_C = '9788410301245';
+
+function catalogItem(id, isbn, overrides = {}) {
+  return {
+    id,
+    isbn,
+    title: `Titulo ${id}`,
+    author: `Autor ${id}`,
+    status: 'active',
+    available_quantity: 2,
+    price: 990,
+    currency_id: 'UYU',
+    condition: 'new',
+    domain_id: 'MLU-BOOKS',
+    description: '',
+    pictures: ['https://images.test/cover.jpg'],
+    ...overrides,
+  };
+}
+
+function classification(overrides = {}) {
+  return {
+    tier: 'red',
+    reason: 'insufficient_evidence',
+    exact_isbn_source_count: 0,
+    independent_work_source_count: 0,
+    identity_conflicts: [],
+    edition_fact_conflicts: [],
+    edition_facts: {},
+    edition_fields_auto_publishable: {},
+    generation_policy: { can_auto_publish_work_content: false },
+    ...overrides,
+  };
+}
+
+test('selecciona ISBN activos unicos, excluye enriquecidos y prioriza brechas', () => {
+  const result = selectResearchCohort({
+    catalogItems: [
+      catalogItem('MLU1', ISBN_A, { description: 'x'.repeat(900) }),
+      catalogItem('MLU2', ISBN_B, { available_quantity: 1 }),
+      catalogItem('MLU3', ISBN_B, { available_quantity: 8 }),
+      catalogItem('MLU4', ISBN_C, { available_quantity: 20 }),
+    ],
+    existingEnrichments: [{ isbn: ISBN_C }],
+    limit: 2,
+  });
+
+  assert.equal(result.selected.length, 2);
+  assert.equal(result.eligible_unique_isbns, 2);
+  assert.equal(result.excluded_already_enriched, 1);
+  assert.equal(result.selected[0].isbn, ISBN_B);
+  assert.equal(result.selected[0].id, 'MLU3');
+  assert.deepEqual(result.selected[0].listing_ids, ['MLU2', 'MLU3']);
+});
+
+test('falla si no existen suficientes ISBN vendibles para cumplir el contrato', () => {
+  assert.throws(() => selectResearchCohort({
+    catalogItems: [catalogItem('MLU1', ISBN_A)],
+    limit: 2,
+  }), /1\/2/);
+});
+
+test('separa full, facts, review y sin evidencia', () => {
+  assert.equal(publicationClass(classification({
+    generation_policy: { can_auto_publish_work_content: true },
+  })), 'GREEN_FULL');
+  assert.equal(publicationClass(classification({
+    edition_facts: { pages: { value: 320 } },
+    edition_fields_auto_publishable: { pages: true },
+  })), 'GREEN_FACTS');
+  assert.equal(publicationClass(classification({
+    identity_conflicts: [{ field: 'title' }],
+  })), 'REVIEW');
+  assert.equal(publicationClass(classification()), 'NO_EVIDENCE');
+});
+
+test('resultado publico conserva hechos pero nunca vuelca texto fuente', () => {
+  const item = catalogItem('MLU1', ISBN_A, {
+    listing_ids: ['MLU1'], listing_count: 1, total_stock: 2, priority_score: 10,
+  });
+  const cache = {
+    entries: {
+      [ISBN_A]: {
+        google_books: {
+          fetched_at: '2026-08-24T12:00:00.000Z', error: null,
+          records: [{ description: 'sinopsis externa que no debe salir' }],
+        },
+      },
+    },
+  };
+  const result = buildResearchResult(item, classification({
+    exact_isbn_source_count: 1,
+    edition_facts: { pages: { value: 320 } },
+    edition_fields_auto_publishable: { pages: true },
+  }), cache);
+
+  assert.deepEqual(result.verified_facts, { pages: 320 });
+  assert.equal(result.publication_class, 'GREEN_FACTS');
+  assert.equal(JSON.stringify(result).includes('sinopsis externa'), false);
+});
+
+test('manifiesto conserva las 4 decisiones y no incluye datos comerciales', () => {
+  const base = {
+    id: 'MLU1', isbn: ISBN_A, title: 'Libro', author: 'Autora',
+    listing_ids: ['MLU1'], publication_class: 'GREEN_FACTS', verified_facts: { pages: 320 },
+    exact_isbn_source_count: 2, identity_conflicts: [], edition_fact_conflicts: [],
+    sources: { google_books: { record_count: 1 }, open_library: { record_count: 1 }, bne: { record_count: 0 } },
+  };
+  const manifest = buildVerifiedFactsManifest({
+    generated_at: '2026-08-24T12:00:00.000Z',
+    cohort: { requested: 1, selected: 1 },
+    publication: { GREEN_FULL: 0, GREEN_FACTS: 1, REVIEW: 0, NO_EVIDENCE: 0 },
+    results: [base],
+  });
+  const serialized = JSON.stringify(manifest);
+  assert.equal(manifest.entries.length, 1);
+  assert.equal(manifest.entries[0].decision, 'GREEN_FACTS');
+  assert.equal(serialized.includes('price'), false);
+  assert.equal(serialized.includes('available_quantity'), false);
+  assert.equal(serialized.includes('canonical'), false);
+});
+
+test('concurrencia queda limitada aunque el lote sea grande', async () => {
+  let active = 0;
+  let maximum = 0;
+  const result = await mapWithConcurrency([1, 2, 3, 4, 5, 6], 2, async value => {
+    active++;
+    maximum = Math.max(maximum, active);
+    await new Promise(resolve => setTimeout(resolve, 2));
+    active--;
+    return value * 2;
+  });
+  assert.equal(maximum, 2);
+  assert.deepEqual(result, [2, 4, 6, 8, 10, 12]);
+});
+
+test('resumen declara 1.000 y deja claro que no despliega Produccion', () => {
+  const markdown = researchMarkdown({
+    generated_at: '2026-08-24T12:00:00.000Z',
+    cohort: { requested: 1000, selected: 1000, eligible_unique_isbns: 3500 },
+    sources: {
+      google_books: { matched: 400, errors: 0 },
+      open_library: { matched: 100, errors: 0 },
+      bne: { matched: 80, errors: 0 },
+    },
+    publication: { GREEN_FULL: 20, GREEN_FACTS: 300, REVIEW: 10, NO_EVIDENCE: 670 },
+  });
+  assert.match(markdown, /1000\/1000/);
+  assert.match(markdown, /GREEN_FACTS: 300/);
+  assert.match(markdown, /no despliega Produccion/i);
+});
