@@ -25,11 +25,12 @@ on:
       bne_budget:
         description: Consultas BNE con throttling
         required: true
-        default: '250'
+        default: '4000'
         type: string
 
 permissions:
   contents: read
+  actions: read
   id-token: write
 
 concurrency:
@@ -73,6 +74,30 @@ jobs:
           access_token_scopes: https://www.googleapis.com/auth/books
           create_credentials_file: false
 
+      - name: Restore the latest resumable source cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESEARCH_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          mkdir -p artifacts/book-intelligence/isbn-1000
+          previous_run="$(gh run list \
+            --workflow book-intelligence-1000.yml \
+            --branch "$RESEARCH_BRANCH" \
+            --status success \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId // empty')"
+          if [ -n "$previous_run" ] && [ "$previous_run" != "${{ github.run_id }}" ]; then
+            seed_dir="$(mktemp -d)"
+            gh run download "$previous_run" \
+              --pattern 'fichas-enrichment-1000-*' \
+              --dir "$seed_dir"
+            seed_cache="$(find "$seed_dir" -name source-cache.json -type f -print -quit)"
+            if [ -n "$seed_cache" ]; then
+              cp "$seed_cache" artifacts/book-intelligence/isbn-1000/source-cache.json
+            fi
+          fi
+
       - name: Execute resumable ISBN research
         id: research
         continue-on-error: true
@@ -80,8 +105,16 @@ jobs:
           GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
           OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
           BOOK_INTELLIGENCE_LIMIT: ${{ inputs.limit || '1000' }}
-          BNE_BUDGET: ${{ inputs.bne_budget || '250' }}
-          OPEN_LIBRARY_BUDGET: '250'
+          BOOK_INTELLIGENCE_CANDIDATE_LIMIT: '0'
+          GOOGLE_BOOKS_BUDGET: '1000'
+          GOOGLE_BOOKS_CONCURRENCY: '1'
+          GOOGLE_BOOKS_DELAY_MS: '1100'
+          GOOGLE_BOOKS_RETRY_ATTEMPTS: '2'
+          BNE_BUDGET: ${{ inputs.bne_budget || '4000' }}
+          BNE_CONCURRENCY: '2'
+          BNE_DELAY_MS: '500'
+          OPEN_LIBRARY_BUDGET: '4000'
+          OPEN_LIBRARY_CONCURRENCY: '2'
           BOOK_INTELLIGENCE_OUTPUT_DIR: artifacts/book-intelligence/isbn-1000
           BOOK_INTELLIGENCE_CACHE_PATH: artifacts/book-intelligence/isbn-1000/source-cache.json
         run: node scripts/seo/book-intelligence-research-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
@@ -99,10 +132,12 @@ jobs:
           const entries = manifest.entries || [];
           const isbns = new Set(entries.map(entry => entry.isbn));
           const decisions = new Set(['GREEN_FULL', 'GREEN_FACTS', 'REVIEW', 'NO_EVIDENCE']);
-          if (entries.length !== expected || isbns.size !== expected) {
-            throw new Error(`Esperados ${expected} ISBN unicos; recibidos ${entries.length}/${isbns.size}`);
+          if (entries.length !== expected || isbns.size !== expected || !manifest.metrics?.target_reached) {
+            throw new Error(`Meta no alcanzada: esperados ${expected} ISBN actualizados; recibidos ${entries.length}/${isbns.size}`);
           }
-          if (entries.some(entry => !decisions.has(entry.decision))) throw new Error('Decision invalida.');
+          if (entries.some(entry => !decisions.has(entry.decision) || !entry.facts || !Object.keys(entry.facts).length)) {
+            throw new Error('El manifiesto contiene una decisión sin mejora factual.');
+          }
           const forbidden = /"(?:price|available_quantity|stock|slug|canonical|pictures|thumbnail)"\s*:/;
           if (forbidden.test(JSON.stringify(manifest))) throw new Error('El manifiesto contiene datos comerciales prohibidos.');
           NODE
