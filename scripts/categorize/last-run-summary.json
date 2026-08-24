@@ -1,8 +1,8 @@
 {
-  "run_at": "2026-08-23T21:45:54.191Z",
+  "run_at": "2026-08-24T01:22:07.859Z",
   "taxonomy_version": 3,
-  "rules_version": 12,
-  "snapshot_fetched_at": "2026-08-23T21:23:32.964Z",
+  "rules_version": 13,
+  "snapshot_fetched_at": "2026-08-24T01:18:55.411Z",
   "mlu_unicos_procesados": 17203,
   "reused_from_previous_run": 0,
   "reclassified_this_run": 17191,
@@ -15,7 +15,7 @@
     "other": 106
   },
   "by_category": {
-    "otros-libros": 7125,
+    "otros-libros": 7132,
     "educacion": 478,
     "psicologia": 889,
     "infantil-juvenil": 1398,
@@ -30,7 +30,7 @@
     "cocina-gastronomia": 126,
     "arte-diseno-fotografia": 154,
     "idiomas-aprendizaje": 864,
-    "religion-espiritualidad": 525,
+    "religion-espiritualidad": 518,
     "historia": 433,
     "comics-manga": 244,
     "deportes": 77,
@@ -53,13 +53,13 @@
     "psicoanalisis": 212,
     "ingles": 725,
     "discos-vinilos": 312,
-    "biblia": 272,
+    "biblia": 241,
     "filosofia": 45,
     "anatomia": 75,
     "poesia": 12,
     "sociologia-antropologia": 11,
     "astrologia": 38,
-    "espiritualidad": 60,
+    "espiritualidad": 82,
     "otros-deportes": 55,
     "revistas": 42,
     "actividades-aprendizaje": 139,
@@ -77,7 +77,7 @@
     "fisica-quimica": 10,
     "sufismo": 5,
     "ciencia-ficcion-fantasia": 16,
-    "otras-tradiciones": 2,
+    "otras-tradiciones": 4,
     "objetos-coleccion": 47,
     "historia-argentina-uruguay": 2,
     "programacion": 1,
@@ -87,6 +87,6 @@
     "rule": 17191,
     "manual": 12
   },
-  "needs_review": 7606,
+  "needs_review": 7613,
   "validation_errors": []
 }

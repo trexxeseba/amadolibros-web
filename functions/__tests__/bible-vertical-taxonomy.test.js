@@ -34,7 +34,25 @@ test('casos comerciales conocidos sostienen las dos intenciones de landing', () 
 });
 
 test('falsos positivos de Religión no contaminan las landings bíblicas', () => {
-    for (const id of ['MLU652656116', 'MLU625778990', 'MLU628782805']) {
+    const ids = [
+        // Fuera de Religión por QA general.
+        'MLU652656116', 'MLU625778990', 'MLU628782805',
+        // BIBLES-RVR-GROWTH-1: obras sobre la Biblia, atlas, cursos,
+        // devocionales y evangelios no canónicos; no son ediciones bíblicas.
+        'MLU620933524', 'MLU632116117',
+        'MLU680701220',
+        'MLU683276890', 'MLU683328768',
+        'MLU683303056', 'MLU683315786',
+        'MLU641395963', 'MLU728898818',
+        'MLU641505355', 'MLU641492655',
+        'MLU692178266',
+        'MLU644976277',
+        'MLU721417672', 'MLU650445257',
+        'MLU728992876', 'MLU729005860',
+        'MLU1034177554',
+        'MLU1225098844', 'MLU1317659918',
+    ];
+    for (const id of ids) {
         assert.ok(!tagsFor(id).includes('biblia'), id);
         assert.ok(!tagsFor(id).includes('reina-valera'), id);
     }
