@@ -1,6 +1,11 @@
 name: GA4 manual export
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/ga4-export.yml'
+      - 'scripts/ga4-admin-audit.mjs'
+      - 'functions/__tests__/ga4-admin-audit.test.js'
   workflow_dispatch:
     inputs:
       start_date:
@@ -21,7 +26,58 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  admin-audit:
+    name: Inventory GA4 configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Authenticate with Google
+        id: google_auth_admin
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
+
+      - name: Inventory accessible GA4 properties
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google_auth_admin.outputs.access_token }}
+          GA4_ADMIN_OUTPUT_DIR: artifacts/ga4-admin-audit
+        run: node scripts/ga4-admin-audit.mjs
+
+      - name: Upload read-only audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ga4-admin-audit-${{ github.run_id }}
+          path: artifacts/ga4-admin-audit/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Write audit summary
+        if: always()
+        run: |
+          if [ -f artifacts/ga4-admin-audit/summary.md ]; then
+            cat artifacts/ga4-admin-audit/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## GA4 admin audit failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "No resources were modified." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   export:
+    if: github.event_name == 'workflow_dispatch'
     name: Extract GA4 data
     runs-on: ubuntu-latest
     timeout-minutes: 10
