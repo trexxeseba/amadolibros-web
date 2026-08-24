@@ -11,6 +11,7 @@ import {
 import { isProductInShowcaseCohort } from '../_shared/showcase-cohort.js';
 import { PRODUCT_SHOWCASE_OVERRIDES } from '../_shared/product-showcases.js';
 import { applyShowcaseTitleQuality } from '../_shared/showcase-title-quality.js';
+import { getBookEnrichmentByIsbn } from '../_shared/book-enrichment-registry.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
@@ -104,6 +105,11 @@ function showcaseStyles() {
     .showcase-links a{font-size:.84rem;font-weight:800;color:#8f4436;text-decoration:none}
     .showcase-links a:hover{text-decoration:underline}
     .showcase-links a:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
+    .showcase-sources{margin-top:.9rem;padding-top:.75rem;border-top:1px solid #eef2f7}
+    .showcase-sources summary{cursor:pointer;font-size:.8rem;font-weight:800;color:#64748b}
+    .showcase-source-links{display:flex;flex-wrap:wrap;gap:.45rem 1rem;margin-top:.55rem}
+    .showcase-source-links a{font-size:.8rem;font-weight:750;color:#8f4436;text-decoration:none}
+    .showcase-source-links a:hover{text-decoration:underline}
     .showcase-help{display:flex;align-items:center;justify-content:space-between;gap:1rem;
                    margin-top:1.15rem;padding:.85rem 1rem;background:#fff8f4;
                    border:1px solid #ecd1c6;border-radius:.65rem}
@@ -265,6 +271,18 @@ function renderProductShowcase(config, productId) {
   const linksHtml = links
     ? `<div class="showcase-links">\n      ${links}\n    </div>`
     : '';
+  const sourceLinks = (Array.isArray(config.sources) ? config.sources : [])
+    // La corroboración comercial queda en la trazabilidad interna, pero la
+    // ficha no deriva compradores hacia otros comercios. Sólo se muestran
+    // fuentes editoriales o bibliográficas primarias.
+    .filter(source => source?.type !== 'commercial_reference')
+    .filter(source => /^https:\/\//i.test(String(source?.url || '')))
+    .slice(0, 3)
+    .map(source => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.provider || 'Fuente bibliográfica')}</a>`)
+    .join('\n        ');
+  const sourcesHtml = sourceLinks
+    ? `<details class="showcase-sources"><summary>Fuentes bibliográficas consultadas</summary><div class="showcase-source-links">\n        ${sourceLinks}\n      </div></details>`
+    : '';
   const requestQuery = new URLSearchParams({
     tipo: 'exacto',
     q: String(config.h1 || ''),
@@ -325,6 +343,7 @@ ${gridHtml}  <section class="showcase-edition" aria-labelledby="showcase-edition
       ${facts}
     </dl>
     ${linksHtml}
+    ${sourcesHtml}
     ${requestHelpHtml}
   </section>
 </section>`;
@@ -390,6 +409,9 @@ function enrichAutomaticShowcaseSchema(html, productId, config) {
       if (!schema.alternateName && config.rawTitle) schema.alternateName = config.rawTitle;
     }
     schema.description = config.schemaDescription;
+    if (config.schemaVerified?.inLanguage) schema.inLanguage = config.schemaVerified.inLanguage;
+    if (config.schemaVerified?.bookFormat) schema.bookFormat = config.schemaVerified.bookFormat;
+    if (config.schemaVerified?.bookEdition) schema.bookEdition = config.schemaVerified.bookEdition;
     return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
   });
 }
@@ -441,7 +463,8 @@ export function enrichAutomaticProductShowcaseHtml(html, productId, options = {}
   }
 
   const item = productItemFromProductHtml(source, id);
-  const baseConfig = buildAutomaticProductShowcase(item, options);
+  const enrichment = getBookEnrichmentByIsbn(item?.isbn);
+  const baseConfig = buildAutomaticProductShowcase(item, { ...options, enrichment });
   const config = applyShowcaseTitleQuality(baseConfig, item);
   if (!config) return source;
 
