@@ -1,3 +1,4 @@
+import { isGenericAuthor } from '../functions/_shared/generic-author.js';
 export const WHATSAPP_NUMBER = '59899841325';
 export const SITE_BASE = 'https://www.amadolibros.com';
 
@@ -38,7 +39,10 @@ export function buildWhatsAppMessage({
 
   if (motive) lines.push(`Motivo: ${String(motive).trim()}`);
   if (book) lines.push(`Libro: ${String(book).trim()}`);
-  if (author) lines.push(`Autor: ${String(author).trim()}`);
+  // FICHAS-QUALITY-GUARD-1: 'Autor: Desconocido' en un mensaje de WhatsApp es
+  // ruido que el cliente lee. Se omite la línea si la autoría es genérica,
+  // aunque el llamador haya pasado el valor crudo del catálogo.
+  if (author && !isGenericAuthor(author)) lines.push(`Autor: ${String(author).trim()}`);
   if (situation) lines.push(`Situación: ${String(situation).trim()}`);
   if (price) lines.push(`Precio publicado: ${String(price).trim()}`);
   if (order) lines.push(`Pedido: ${String(order).trim()}`);

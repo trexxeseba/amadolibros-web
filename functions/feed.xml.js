@@ -55,6 +55,8 @@
 
 import { slugify } from './_shared/slug.js';
 import { fetchCatalog } from './_shared/catalog.js';
+// FICHAS-QUALITY-GUARD-1: misma definición de autoría genérica que la ficha.
+import { realAuthor } from './_shared/generic-author.js';
 
 const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
@@ -334,7 +336,9 @@ export function buildFeedDescription(item) {
     }
 
     const parts = [title ? `Libro "${title}"` : 'Libro'];
-    if (item.author) parts.push(`de ${item.author}`);
+    // FICHAS-QUALITY-GUARD-1: nunca 'de Desconocido' en g:description.
+    const feedAuthor = realAuthor(item.author);
+    if (feedAuthor) parts.push(`de ${feedAuthor}`);
     const publisher = normalizePublisherForDescription(item.publisher);
     if (publisher) parts.push(`publicado por ${publisher}`);
 

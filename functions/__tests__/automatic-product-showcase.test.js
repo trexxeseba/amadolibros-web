@@ -180,11 +180,14 @@ test('sin descripción no inventa una sinopsis y lo declara con hechos', () => {
   assert.doesNotMatch(showcase.summary.join(' '), /presenta un recorrido sistemático/);
 });
 
-test('sin autor confiable no inventa biografía', () => {
+// FICHAS-QUALITY-GUARD-1: antes se emitía una sección "Sobre la autoría" con
+// un párrafo de disculpa. Ocupaba espacio comercial sin informar nada, así que
+// ahora la sección se omite por completo.
+test('sin autor confiable no inventa biografía ni emite sección de autoría', () => {
   const showcase = buildAutomaticProductShowcase(book({ author: 'Varios autores' }));
 
-  assert.equal(showcase.authorHeading, 'Sobre la autoría');
-  assert.match(showcase.authorBio, /No completamos ese dato por inferencia/);
+  assert.equal(showcase.authorHeading, null);
+  assert.equal(showcase.authorBio, null);
   assert.ok(!showcase.links.some(link => link.label.includes('Varios autores')));
 });
 
@@ -203,7 +206,9 @@ test('convierte una ficha activa en vidriera sin tocar precio, stock ni acciones
   assert.match(html, /class="product-showcase"/);
   assert.match(html, /¿De qué trata Manual de prueba clínica\?/);
   assert.match(html, /Datos destacados/);
-  assert.match(html, /¿Para quién puede ser útil\?/);
+  // FICHAS-QUALITY-GUARD-1: el bloque de audiencia sólo recombinaba autor y
+  // categoría, sin aportar ningún hecho verificable — ya no se emite.
+  assert.doesNotMatch(html, /¿Para quién puede ser útil\?/);
   assert.match(html, /Más sobre Ana Pérez/);
   assert.match(html, /Ficha de esta edición/);
   assert.match(html, /class="showcase-help"/);

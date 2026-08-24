@@ -243,6 +243,12 @@ export function enrichByRequestProductHtml(html, productId) {
   return result;
 }
 
+// FICHAS-QUALITY-GUARD-1: helper local — una sección sólo se renderiza si
+// tiene texto real, no espacios en blanco.
+function hasText(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function renderProductShowcase(config, productId) {
   const paragraphs = (Array.isArray(config.summary) ? config.summary : [])
     .map(paragraph => `    <p>${escapeHtml(paragraph)}</p>`)
@@ -275,29 +281,42 @@ function renderProductShowcase(config, productId) {
       <a href="${escapeHtml(requestHelp.href)}">${escapeHtml(requestHelp.label)} →</a>
     </aside>`;
 
+  // FICHAS-QUALITY-GUARD-1: cada tarjeta se emite sólo si tiene contenido
+  // real. Una sección vacía o rellenada con frases genéricas ocupa espacio
+  // comercial sin informar; es preferible una ficha más corta y honesta.
+  const cards = [
+    highlights
+      ? `    <section class="showcase-card" aria-labelledby="showcase-highlights-title">
+      <h3 id="showcase-highlights-title">${escapeHtml(config.highlightsHeading || 'Datos destacados')}</h3>
+      <ul>
+${highlights}
+      </ul>
+    </section>`
+      : '',
+    hasText(config.audience)
+      ? `    <section class="showcase-card" aria-labelledby="showcase-audience-title">
+      <h3 id="showcase-audience-title">${escapeHtml(config.audienceHeading || '¿Para quién es este libro?')}</h3>
+      <p>${escapeHtml(config.audience)}</p>
+    </section>`
+      : '',
+    hasText(config.authorBio)
+      ? `    <section class="showcase-card" aria-labelledby="showcase-author-title">
+      <h3 id="showcase-author-title">${escapeHtml(config.authorHeading || 'Sobre la autoría')}</h3>
+      <p>${escapeHtml(config.authorBio)}</p>
+    </section>`
+      : '',
+  ].filter(Boolean);
+  const gridHtml = cards.length
+    ? `  <div class="showcase-grid">\n${cards.join('\n')}\n  </div>\n`
+    : '';
+
   return `<section class="product-showcase" aria-labelledby="showcase-title">
   <div class="showcase-intro">
     <p class="showcase-eyebrow">${escapeHtml(config.eyebrow)}</p>
     <h2 id="showcase-title">${escapeHtml(config.introHeading || `¿De qué trata ${config.h1}?`)}</h2>
 ${paragraphs}
   </div>
-  <div class="showcase-grid">
-    <section class="showcase-card" aria-labelledby="showcase-highlights-title">
-      <h3 id="showcase-highlights-title">${escapeHtml(config.highlightsHeading || 'Datos destacados')}</h3>
-      <ul>
-${highlights}
-      </ul>
-    </section>
-    <section class="showcase-card" aria-labelledby="showcase-audience-title">
-      <h3 id="showcase-audience-title">${escapeHtml(config.audienceHeading || '¿Para quién es este libro?')}</h3>
-      <p>${escapeHtml(config.audience)}</p>
-    </section>
-    <section class="showcase-card" aria-labelledby="showcase-author-title">
-      <h3 id="showcase-author-title">${escapeHtml(config.authorHeading || 'Sobre la autoría')}</h3>
-      <p>${escapeHtml(config.authorBio)}</p>
-    </section>
-  </div>
-  <section class="showcase-edition" aria-labelledby="showcase-edition-title">
+${gridHtml}  <section class="showcase-edition" aria-labelledby="showcase-edition-title">
     <div class="showcase-edition-head">
       <h2 id="showcase-edition-title">${escapeHtml(config.editionHeading || 'Ficha de esta edición')}</h2>
       <span class="showcase-verified">${escapeHtml(config.verifiedLabel || 'Datos tomados de la publicación')}</span>

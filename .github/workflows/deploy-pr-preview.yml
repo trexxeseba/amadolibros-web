@@ -92,6 +92,22 @@ jobs:
           SHOWCASE_CONCURRENCY: '5'
         run: node scripts/seo/showcase-live-audit.mjs
 
+      # FICHAS-QUALITY-GUARD-1: comprobación HTTP real contra el Preview.
+      # Los tests corren en memoria; esto mira lo que el servidor devuelve.
+      - name: Check generic author on ficha and feed
+        env:
+          FICHAS_CHECK_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          FICHAS_CHECK_OUTPUT_DIR: artifacts/fichas-quality
+        run: node scripts/seo/fichas-generic-author-live-check.mjs
+
+      # Auditoría de la cohorte real de fichas enriquecidas. El runner sí
+      # alcanza R2, a diferencia del entorno de desarrollo.
+      - name: Audit fichas quality cohort
+        env:
+          FICHAS_AUDIT_OUTPUT_DIR: artifacts/fichas-quality
+          FICHAS_AUDIT_SAMPLE: '30'
+        run: node scripts/seo/fichas-quality-audit.mjs
+
       - name: Audit by-request hub link graph
         env:
           SEO_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -99,6 +115,15 @@ jobs:
           SEO_OUTPUT_DIR: artifacts/seo-order-hub-preview
           SEO_CONCURRENCY: '8'
         run: node scripts/seo/order-hub-live-audit.mjs
+
+      - name: Upload fichas quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fichas-quality-pr-${{ github.event.pull_request.number }}
+          path: artifacts/fichas-quality/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Upload Preview report
         if: always()
