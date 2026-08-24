@@ -240,11 +240,12 @@ function authorCopy(item) {
   };
 }
 
-function contextualRequestHelp(item) {
+function contextualRequestHelp(item, classificationTags = []) {
   const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
     ? item.bibliographic
     : {};
   const genre = normalizedText(bibliography.genre);
+  const tags = new Set(classificationTags.map(normalizedText).filter(Boolean));
   const query = new URLSearchParams({
     tipo: 'exacto',
     q: clean(item?.title),
@@ -253,9 +254,11 @@ function contextualRequestHelp(item) {
   if (clean(item?.id)) query.set('libro', clean(item.id));
 
   let question = '¿Buscás otro libro o una edición específica?';
-  if (/\bbiblias?\b/u.test(genre) || /\breina[\s-]+valera\b/u.test(genre)) {
+  if (tags.has('biblia') || tags.has('reina-valera') ||
+      /\bbiblias?\b/u.test(genre) || /\breina[\s-]+valera\b/u.test(genre)) {
     question = '¿Buscás otra Biblia o una edición específica?';
-  } else if (/\b(tarot|oracul\w*|esoter\w*)\b/u.test(genre)) {
+  } else if (tags.has('esoterismo-tarot') ||
+             /\b(tarot|oracul\w*|esoter\w*)\b/u.test(genre)) {
     question = '¿Buscás otro tarot, oráculo o libro de esoterismo?';
   }
 
@@ -412,7 +415,7 @@ export function productItemFromProductHtml(html, productId) {
   };
 }
 
-export function buildAutomaticProductShowcase(item) {
+export function buildAutomaticProductShowcase(item, { classificationTags = [] } = {}) {
   if (!item || typeof item !== 'object' || !clean(item.title)) return null;
   const facts = buildEditionFacts(item);
   const description = clean(item.description);
@@ -452,7 +455,7 @@ export function buildAutomaticProductShowcase(item) {
       : 'Datos tomados de la publicación',
     editionFacts: facts,
     links: buildLinks(item),
-    requestHelp: contextualRequestHelp(item),
+    requestHelp: contextualRequestHelp(item, classificationTags),
     schemaDescription,
     metaDescription: buildMetaDescription(item),
   };

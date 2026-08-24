@@ -26,6 +26,12 @@ const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Demora estima
 const ORDER_LEAD_TIME_STYLE_MARKER = '.order-box .order-lead-time{';
 const SHOWCASE_MARKER = 'class="product-showcase"';
 const SHOWCASE_STYLE_MARKER = '.product-showcase{';
+const CATEGORY_TAGS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let categoryTagsMemory = {
+  expiresAt: 0,
+  items: null,
+};
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -406,7 +412,7 @@ function insertShowcaseBeforeRelated(html, block) {
   return html.replace('</main>', `${block}\n</main>`);
 }
 
-export function enrichAutomaticProductShowcaseHtml(html, productId) {
+export function enrichAutomaticProductShowcaseHtml(html, productId, options = {}) {
   const source = String(html || '');
   const id = String(productId || '').toUpperCase();
   if (!source.includes(ACTIVE_PAGE_MARKER) ||
@@ -416,7 +422,7 @@ export function enrichAutomaticProductShowcaseHtml(html, productId) {
   }
 
   const item = productItemFromProductHtml(source, id);
-  const baseConfig = buildAutomaticProductShowcase(item);
+  const baseConfig = buildAutomaticProductShowcase(item, options);
   const config = applyShowcaseTitleQuality(baseConfig, item);
   if (!config) return source;
 
@@ -502,6 +508,43 @@ function responseWithBody(response, body) {
   });
 }
 
+async function classificationTagsForProduct(context, productId) {
+  const now = Date.now();
+  if (categoryTagsMemory.items && categoryTagsMemory.expiresAt > now) {
+    return categoryTagsMemory.items[productId] || [];
+  }
+
+  try {
+    const url = new URL('/data/active-categories.json', context.request.url).toString();
+    const cache = caches.default;
+    const cacheKey = new Request(url);
+    let response = await cache.match(cacheKey);
+    if (!response) {
+      const fetched = await fetch(url);
+      if (!fetched.ok) return [];
+      response = new Response(fetched.body, {
+        status: fetched.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300',
+        },
+      });
+      if (typeof context?.waitUntil === 'function') {
+        context.waitUntil(cache.put(cacheKey, response.clone()));
+      }
+    }
+    const payload = await response.json();
+    if (!payload?.items || typeof payload.items !== 'object') return [];
+    categoryTagsMemory = {
+      expiresAt: now + CATEGORY_TAGS_CACHE_TTL_MS,
+      items: payload.items,
+    };
+    return payload.items[productId] || [];
+  } catch {
+    return [];
+  }
+}
+
 export async function onRequest(context) {
   const productId = productIdFromRequest(context.request);
   if (!productId) return context.next();
@@ -520,7 +563,12 @@ export async function onRequest(context) {
   if (withByRequestCx.includes(ACTIVE_PAGE_MARKER) && !PRODUCT_SHOWCASE_OVERRIDES[productId]) {
     const selected = await isProductInShowcaseCohort(context, productId);
     if (selected) {
-      withAutomaticShowcase = enrichAutomaticProductShowcaseHtml(withByRequestCx, productId);
+      const classificationTags = await classificationTagsForProduct(context, productId);
+      withAutomaticShowcase = enrichAutomaticProductShowcaseHtml(
+        withByRequestCx,
+        productId,
+        { classificationTags },
+      );
     }
   }
 

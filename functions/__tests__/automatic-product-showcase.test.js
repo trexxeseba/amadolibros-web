@@ -127,9 +127,9 @@ test('el cierre comercial distingue Biblias de esoterismo', () => {
     title: 'Biblia Reina-Valera 1960 letra grande',
     bibliographic: {
       ...book().bibliographic,
-      genre: 'Biblias y religión',
+      genre: 'Religión',
     },
-  }));
+  }), { classificationTags: ['religion-espiritualidad', 'biblia'] });
 
   assert.equal(showcase.requestHelp.question, '¿Buscás otra Biblia o una edición específica?');
   assert.ok(!showcase.links.some(link => /esoterismo/i.test(link.label)));
@@ -140,11 +140,23 @@ test('el cierre comercial reconoce la clasificación Reina-Valera', () => {
     title: 'Santa Biblia letra grande',
     bibliographic: {
       ...book().bibliographic,
-      genre: 'Reina-Valera',
+      genre: 'Religión',
     },
-  }));
+  }), { classificationTags: ['religion-espiritualidad', 'reina-valera'] });
 
   assert.equal(showcase.requestHelp.question, '¿Buscás otra Biblia o una edición específica?');
+});
+
+test('el cierre comercial reconoce Esoterismo desde la clasificación real', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Una obra sin palabras temáticas en el título',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Religión',
+    },
+  }), { classificationTags: ['esoterismo-tarot'] });
+
+  assert.equal(showcase.requestHelp.question, '¿Buscás otro tarot, oráculo o libro de esoterismo?');
 });
 
 test('el cierre comercial usa la clasificación, no palabras sueltas del título', () => {
@@ -215,6 +227,22 @@ test('convierte una ficha activa en vidriera sin tocar precio, stock ni acciones
   assert.match(schema.description, /evaluación clínica/);
   assert.equal(schema.review, undefined);
   assert.equal(schema.aggregateRating, undefined);
+});
+
+test('el renderer usa las clasificaciones públicas para contextualizar la ayuda', () => {
+  const source = rendered(book({
+    title: 'Santa Biblia de estudio',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Religión',
+    },
+  }));
+  const html = enrichAutomaticProductShowcaseHtml(source, PRODUCT_ID, {
+    classificationTags: ['religion-espiritualidad', 'biblia'],
+  });
+
+  assert.match(html, /¿Buscás otra Biblia o una edición específica\?/);
+  assert.doesNotMatch(html, /Cómo verificar una edición por ISBN/);
 });
 
 test('limpia H1, title, snippet, breadcrumb y schema sin alterar el título comercial del carrito', () => {
