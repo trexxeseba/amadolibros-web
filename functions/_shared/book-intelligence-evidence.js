@@ -5,7 +5,7 @@
 // nivel de confianza. Separa explícitamente dos conceptos que antes estaban
 // mezclados: disponibilidad comercial (active/paused) y calidad editorial.
 
-import { normalizeValidIsbn } from './showcase-ranking.js';
+import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
 export const BOOK_EVIDENCE_SOURCE_POLICY = Object.freeze({
   publisher: Object.freeze({ trust: 5, independentFamily: 'publisher', official: true }),
@@ -20,6 +20,7 @@ export const BOOK_EVIDENCE_SOURCE_POLICY = Object.freeze({
 });
 
 const EDITION_FIELDS = Object.freeze([
+  'author',
   'publisher',
   'pages',
   'language',
@@ -195,7 +196,10 @@ function consensusForField(records, field) {
 export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
   const itemIsbn = normalizeValidIsbn(item?.isbn);
   const itemTitle = clean(item?.title);
-  const itemAuthor = clean(item?.author);
+  // “Desconocido”, “Varios autores”, etc. son ausencia de autor, no una
+  // identidad contra la que debamos declarar conflicto. Este era el origen
+  // de 39 falsos REVIEW en la primera corrida real.
+  const itemAuthor = isGenericAuthor(item?.author) ? '' : clean(item?.author);
   const records = evidenceRecords
     .map(normalizeRecord)
     .filter(Boolean);
@@ -214,7 +218,10 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
     if (authorMismatch) {
       identityConflicts.push({ source: record.source, field: 'author', value: record.author });
     }
-    if (titleMismatch && (!authorComparable || authorMismatch)) {
+    // Un catálogo nacional con ISBN exacto puede corregir un título comercial
+    // abreviado cuando la publicación no trae autor real. En una fuente
+    // secundaria mantenemos el bloqueo conservador.
+    if (titleMismatch && (authorMismatch || (!authorComparable && !record._policy.official))) {
       identityConflicts.push({ source: record.source, field: 'title', value: record.title });
     }
   }
