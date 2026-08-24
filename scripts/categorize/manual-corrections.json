@@ -1,1 +1,110 @@
-[]
+[
+  {
+    "mlu": "MLU664395476",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "tags": ["Quirón"],
+    "note": "QA comercial 2026-08-23: Quirón corresponde a Esoterismo; Jesús es el nombre del autor, no una señal religiosa"
+  },
+  {
+    "mlu": "MLU665203500",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "tags": ["Quirón"],
+    "note": "QA comercial 2026-08-23: duplicado de la obra Quirón; mover a Esoterismo"
+  },
+  {
+    "mlu": "MLU625778990",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "tags": ["God of War", "Novela gráfica"],
+    "note": "QA bibliográfica 2026-08-23: ISBN 9788467949124; Norma Editorial, FNAC y Casa del Libro lo clasifican como cómic/novela gráfica"
+  },
+  {
+    "mlu": "MLU628782805",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "tags": ["God of War", "Novela gráfica"],
+    "note": "QA bibliográfica 2026-08-23: duplicado del ISBN 9788467949124; corresponde a Cómics y manga"
+  },
+  {
+    "mlu": "MLU635495483",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "tags": ["Self-Care", "Baraja"],
+    "note": "QA comercial 2026-08-23: Self-Care Cartas de sabiduría es una baraja/oráculo, no un libro religioso"
+  },
+  {
+    "mlu": "MLU671959666",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "tags": ["Self-Care", "Baraja"],
+    "note": "QA comercial 2026-08-23: duplicado del ISBN 9788411720267; corresponde a Tarot y oráculos"
+  },
+  {
+    "mlu": "MLU706814770",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "filosofia",
+    "secondaryCategoryIds": [],
+    "tags": ["Zen", "Arte marcial"],
+    "note": "QA comercial 2026-08-23: La espada de la vida es filosofía zen aplicada al arte marcial"
+  },
+  {
+    "mlu": "MLU706723758",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "filosofia",
+    "secondaryCategoryIds": [],
+    "tags": ["Zen", "Arte marcial"],
+    "note": "QA comercial 2026-08-23: duplicado del ISBN 9781695869912; corresponde a Filosofía"
+  },
+  {
+    "mlu": "MLU828407348",
+    "type": "book",
+    "primaryCategoryId": "naturaleza-animales",
+    "subcategoryId": "zoologia-animales",
+    "secondaryCategoryIds": [],
+    "tags": ["Animales", "Zoología"],
+    "note": "QA bibliográfica 2026-08-23: ISBN 9789876820868; librerías lo clasifican en Naturaleza/Zoología, no exclusivamente Caballos"
+  },
+  {
+    "mlu": "MLU833666198",
+    "type": "book",
+    "primaryCategoryId": "naturaleza-animales",
+    "subcategoryId": "zoologia-animales",
+    "secondaryCategoryIds": [],
+    "tags": ["Animales", "Zoología"],
+    "note": "QA bibliográfica 2026-08-23: duplicado del ISBN 9789876820868; corresponde a Naturaleza y animales > Zoología"
+  },
+  {
+    "mlu": "MLU711376292",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "otras-tradiciones",
+    "secondaryCategoryIds": [],
+    "tags": ["Rastafari", "Etiopía"],
+    "note": "QA bibliográfica 2026-08-23: Kebra Nagast es texto sagrado etíope/rastafari; separar de Biblias y catolicismo"
+  },
+  {
+    "mlu": "MLU711624600",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "otras-tradiciones",
+    "secondaryCategoryIds": [],
+    "tags": ["Rastafari", "Etiopía"],
+    "note": "QA bibliográfica 2026-08-23: duplicado de Kebra Nagast; va a Otras tradiciones religiosas"
+  }
+]

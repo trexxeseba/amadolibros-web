@@ -185,3 +185,181 @@ test('REVIEW_THRESHOLD está definido y es coherente con el umbral usado', () =>
   assert.equal(typeof REVIEW_THRESHOLD, 'number');
   assert.ok(REVIEW_THRESHOLD > 0 && REVIEW_THRESHOLD < 1);
 });
+
+test('QA religión: Messi "El Dios" va a Deportes > Fútbol, no a Religión', () => {
+  const result = classify({
+    mlu: 'MLU652656116',
+    title: 'Messi, por amor a la camiseta. El Dios',
+    author: 'Pasman, Juan Carlos',
+    publisher: '',
+    isbn: '9789507544255',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'deportes');
+  assert.equal(result.subcategoryId, 'futbol');
+});
+
+test('QA religión: Sabiduría de los psicópatas va a Psicología por autor verificado', () => {
+  const result = classify({
+    mlu: 'MLU707190270',
+    title: 'La Sabiduría de los Psicópatas',
+    author: 'Dutton, Kevin',
+    publisher: '',
+    isbn: '9788408294672',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'psicologia');
+});
+
+test('QA religión: Tolstói no entra por la palabra genérica sabiduría', () => {
+  const result = classify({
+    mlu: 'MLU1183119300',
+    title: 'Un Año de Sabiduría',
+    author: 'Tolstói, Lev',
+    publisher: '',
+    isbn: '9798242179523',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'filosofia-ciencias-sociales');
+});
+
+test('QA religión: Louise Hay va a Desarrollo personal, no por sabiduría a Religión', () => {
+  const result = classify({
+    mlu: 'MLU660545320',
+    title: '64 Cartas de Sabiduría',
+    author: 'Louise L. Hay',
+    publisher: '',
+    isbn: '9788484455349',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'desarrollo-personal');
+});
+
+test('QA religión: Solo por Hoy de NAWS va a Desarrollo personal', () => {
+  const result = classify({
+    mlu: 'MLU717742182',
+    title: 'Solo Por Hoy Adictos Recuperación Narcóticos Anónimos',
+    author: 'NAWS',
+    publisher: '',
+    isbn: '9781557762528',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'desarrollo-personal');
+});
+
+test('QA religión: Kebra Nagast se separa de Biblias como otra tradición religiosa', () => {
+  const result = classify({
+    mlu: 'MLU711624600',
+    title: 'Kebra Nagast',
+    author: 'Mazzoni, Lorenzo',
+    publisher: '',
+    isbn: '9781793013040',
+    status: 'active',
+  }, {
+    mlu: 'MLU711624600',
+    type: 'book',
+    primaryCategoryId: 'religion-espiritualidad',
+    subcategoryId: 'otras-tradiciones',
+    secondaryCategoryIds: [],
+    tags: ['Rastafari', 'Etiopía'],
+  });
+  assert.equal(result.primaryCategoryId, 'religion-espiritualidad');
+  assert.equal(result.subcategoryId, 'otras-tradiciones');
+});
+
+test('QA religión: Astrología Kabbalística va a Esoterismo > Cábala', () => {
+  const result = classify({
+    mlu: 'MLU707790092',
+    title: 'Astrología Kabbalística',
+    author: 'Rav Berg',
+    publisher: '',
+    isbn: '9781571893048',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'esoterismo-tarot');
+  assert.equal(result.subcategoryId, 'cabala-kabbalah');
+});
+
+test('QA Biblias: Reina-Valera obtiene su subcategoría incluso con autor reconocido', () => {
+  const result = classify({
+    mlu: 'MLU1201985260',
+    title: 'Santa Biblia Reina Valera 1960 Letra Grande Con Cierre',
+    author: 'Reina Valera',
+    publisher: '',
+    isbn: '9780000000000',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'religion-espiritualidad');
+  assert.equal(result.subcategoryId, 'reina-valera');
+});
+
+test('QA autores: un nombre parcial no suplanta una señal de autor más específica', () => {
+  const result = classify({
+    mlu: 'MLU614544321',
+    title: 'Práctica Psicomotriz en el Tratamiento Psíquico',
+    author: 'José Rodríguez',
+    publisher: '',
+    isbn: '9780000000001',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'psicologia');
+  assert.equal(result.subcategoryId, 'psicologia-clinica');
+});
+
+test('QA Sufismo: Idries Shah obtiene una sección propia, no Biblia', () => {
+  const result = classify({
+    mlu: 'MLU688184434',
+    title: 'La Sabiduría de los Idiotas Idries Shah',
+    author: 'IDRIES SHAH',
+    publisher: '',
+    isbn: '9781784799502',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'esoterismo-tarot');
+  assert.equal(result.subcategoryId, 'sufismo');
+});
+
+test('QA cómics: God of War no entra en Religión por la palabra dios', () => {
+  const result = classify({
+    mlu: 'MLU625778990',
+    title: 'God of War 2. El Dios Caído',
+    author: 'CHRIS ROBERSON',
+    publisher: 'Norma Editorial',
+    isbn: '9788467949124',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'comics-manga');
+});
+
+test('QA naturaleza: una obra zoológica puede quedar separada de Caballos', () => {
+  const result = classify({
+    mlu: 'MLU828407348',
+    title: 'Hermano Animal',
+    author: 'Karl König',
+    publisher: 'Antroposófica',
+    isbn: '9789876820868',
+    status: 'active',
+  }, {
+    mlu: 'MLU828407348',
+    type: 'book',
+    primaryCategoryId: 'naturaleza-animales',
+    subcategoryId: 'zoologia-animales',
+    secondaryCategoryIds: [],
+    tags: ['Animales', 'Zoología'],
+  });
+  assert.equal(result.primaryCategoryId, 'naturaleza-animales');
+  assert.equal(result.subcategoryId, 'zoologia-animales');
+});
+
+test('QA caballos: un título inequívocamente ecuestre obtiene su subcategoría', () => {
+  const result = classify({
+    mlu: 'MLU625770700',
+    title: '85 Ejercicios de Pista para el Caballo Jinete y Monitor Equitación',
+    author: 'Venamore, Sarah',
+    publisher: '',
+    isbn: '9788479027100',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'naturaleza-animales');
+  assert.equal(result.subcategoryId, 'caballos-equitacion');
+});
