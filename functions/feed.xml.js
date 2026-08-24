@@ -55,6 +55,9 @@
 
 import { slugify } from './_shared/slug.js';
 import { fetchCatalog } from './_shared/catalog.js';
+// MERCHANT-LOCAL-DELIVERY-1: entrega en el día en Montevideo, declarada con
+// los mismos importes que cobra el checkout real.
+import { shippingTags } from './_shared/merchant-delivery.js';
 
 const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
@@ -455,7 +458,7 @@ export function renderFeedItem(item) {
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
-        <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}
+        <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}${shippingTags(item)}
     </item>`;
 }
 
