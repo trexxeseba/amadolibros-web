@@ -88,7 +88,11 @@ test('parseGoogleBooksEvidence sólo acepta volumes que contienen el ISBN exacto
 
 test('Open Library batch URL agrupa ISBN y limita el tamaño por request', () => {
   const url = buildOpenLibraryBatchUrl([ISBN, ISBN_2]);
-  assert.equal(url.includes(`isbn:${ISBN}|isbn:${ISBN_2}`), true);
+  const parsed = new URL(url);
+  assert.equal(parsed.pathname, '/api/books');
+  assert.equal(parsed.searchParams.get('bibkeys'), `ISBN:${ISBN},ISBN:${ISBN_2}`);
+  assert.equal(parsed.searchParams.get('jscmd'), 'data');
+  assert.equal(parsed.searchParams.get('format'), 'json');
   const tooMany = Array.from({ length: OPEN_LIBRARY_MAX_ISBNS_PER_REQUEST + 1 }, () => ISBN);
   assert.throws(() => buildOpenLibraryBatchUrl(tooMany), /como máximo/);
 });
@@ -131,6 +135,25 @@ test('parseOpenLibraryEvidence conserva sólo matches exactos solicitados', () =
   assert.deepEqual(records[0].topics, ['Familia', 'Educación']);
 });
 
+test('parseOpenLibraryEvidence entiende el Books API multi-ISBN oficial', () => {
+  const records = parseOpenLibraryEvidence({
+    [`ISBN:${ISBN}`]: {
+      title: 'Padres fuertes, hijas felices',
+      authors: [{ name: 'Meg Meeker' }],
+      publishers: [{ name: 'Ciudadela' }],
+      number_of_pages: 304,
+      publish_date: '2008',
+      identifiers: { isbn_13: [ISBN] },
+      subjects: [{ name: 'Familia' }],
+      url: 'https://openlibrary.org/books/OL1M',
+    },
+  }, [ISBN]);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].isbn, ISBN);
+  assert.equal(records[0].publisher, 'Ciudadela');
+  assert.equal(records[0].pages, 304);
+});
+
 test('planner deduplica por ISBN y prioriza score/GSC antes de aplicar budgets', () => {
   const plan = planBookSourceResearch([
     { id: 'LOW', isbn: ISBN, priority_score: 1, gsc_impressions: 1 },
@@ -168,6 +191,15 @@ test('caché fresca evita requests y caché vencida vuelve al plan', () => {
   plan = planBookSourceResearch([{ id: 'A', isbn: ISBN }], cache, { now: later });
   assert.equal(plan.google_books.length, 1);
   assert.equal(plan.open_library.length, 1);
+});
+
+test('un error cacheado nunca se considera fresco y se reintenta', () => {
+  const now = Date.parse('2026-08-24T12:00:00Z');
+  const cache = mergeSourceCache(emptySourceCache(), ISBN, 'google_books', [], {
+    fetchedAt: new Date(now - 1000).toISOString(),
+    error: 'HTTP 429',
+  });
+  assert.equal(isSourceCacheFresh(cache, ISBN, 'google_books', { now }), false);
 });
 
 test('Open Library budget es bajo por defecto y se divide en requests de máximo 20', () => {
@@ -258,7 +290,7 @@ test('fetchOpenLibraryBatchEvidence identifica User-Agent y usa una llamada mult
       });
     },
   });
-  assert.equal(requestedUrl.includes('|'), true);
+  assert.equal(new URL(requestedUrl).searchParams.get('bibkeys'), `ISBN:${ISBN},ISBN:${ISBN_2}`);
   assert.equal(requestedOptions.headers['user-agent'], 'AmadoTest/1.0 (seo@example.test)');
   assert.equal(records.length, 2);
 });
@@ -268,6 +300,7 @@ test('errores HTTP no se convierten en evidencia silenciosa', async () => {
     () => fetchGoogleBooksEvidence(ISBN, {
       apiKey: 'abc',
       fetchImpl: async () => fakeResponse({}, { status: 503 }),
+      retryAttempts: 1,
     }),
     /HTTP 503/,
   );
