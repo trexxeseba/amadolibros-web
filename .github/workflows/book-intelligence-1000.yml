@@ -35,7 +35,9 @@ permissions:
 
 concurrency:
   group: fichas-enrichment-1000-${{ github.ref }}
-  cancel-in-progress: false
+  # Cada actualización del mismo PR invalida la corrida anterior. Mantenerla
+  # viva sólo gastaría cuota sobre un SHA que ya no puede mergearse.
+  cancel-in-progress: true
 
 jobs:
   research:
