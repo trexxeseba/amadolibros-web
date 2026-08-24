@@ -1,6 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
+import {
+  DUPLICATE_REVIEW_THRESHOLDS,
+  enrichStrictDuplicateGroup,
+  summarizeStrictReview,
+} from './duplicate-review.mjs';
 
 const R2_BASE = process.env.SEO_R2_BASE || 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
 const CATALOG_URL = process.env.SEO_CATALOG_URL || `${R2_BASE}/catalog.json`;
@@ -121,6 +126,10 @@ async function main() {
 
   const isbnGroups = buildGroups(activeItems, (item) => normalizeIsbn(item.isbn), 'isbn');
   const titleAuthorGroups = buildGroups(activeItems, titleAuthorKey, 'title_author');
+  const activeItemById = new Map(activeItems.map((item) => [item.id, item]));
+  const strictSameBookReview = isbnGroups
+    .filter((group) => group.classification === 'same_book')
+    .map((group) => enrichStrictDuplicateGroup(group, activeItemById));
 
   const activeCatalogIds = new Set(activeItems.map((item) => item.id).filter(Boolean));
   const activeIndexIds = new Set(activeIndexItems.map((item) => item.id).filter(Boolean));
@@ -128,7 +137,7 @@ async function main() {
   const onlyIndex = [...activeIndexIds].filter((id) => !activeCatalogIds.has(id)).sort();
 
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt,
     sources: {
       catalogUrl: CATALOG_URL,
@@ -153,14 +162,18 @@ async function main() {
       isbn: 'ISBN normalizado a 10/13 caracteres; grupos con 2+ listings. Mismo ISBN con más de un título+autor normalizado se marca isbn_inconsistent.',
       titleAuthor: 'Título y autor sin tildes, minúsculas, puntuación colapsada; grupos con 2+ listings. Más de un ISBN válido dentro del grupo se marca isbn_inconsistent.',
       scope: 'Solo listings activos con available_quantity > 0 para la clasificación de duplicados; el índice R2 se usa como control de paridad y contexto de inventario.',
+      strictReview: 'Segunda capa sólo para grupos ISBN clasificados same_book. condition distinta => no_consolidate; precio >20% o medidas muy distintas => review; evidencia incompleta => review; sólo evidencia alineada => green_candidate. Nunca autoriza 301 automático.',
+      strictReviewThresholds: DUPLICATE_REVIEW_THRESHOLDS,
     },
     summaries: {
       byIsbn: summarizeGroups(isbnGroups),
       byTitleAuthor: summarizeGroups(titleAuthorGroups),
+      strictSameBookReview: summarizeStrictReview(strictSameBookReview),
     },
     groups: {
       byIsbn: isbnGroups,
       byTitleAuthor: titleAuthorGroups,
+      strictSameBookReview,
     },
   };
 
