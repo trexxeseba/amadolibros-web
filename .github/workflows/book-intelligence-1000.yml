@@ -54,6 +54,22 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Detect completed 1000-ISBN publication
+        id: published
+        shell: bash
+        run: |
+          count="$(node --input-type=module - <<'NODE'
+          import { BOOK_FACT_ENRICHMENTS } from './functions/_shared/book-enrichment-facts-1000.js';
+          process.stdout.write(String(BOOK_FACT_ENRICHMENTS.length));
+          NODE
+          )"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" = "1000" ]; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Validate pipeline without network
         run: |
           node --check scripts/seo/book-intelligence-research-run.mjs
@@ -66,6 +82,7 @@ jobs:
             functions/__tests__/book-intelligence-research-run.test.js
 
       - name: Authenticate Google Books through Workload Identity
+        if: steps.published.outputs.complete != 'true'
         id: google_auth
         uses: google-github-actions/auth@v3
         with:
@@ -77,6 +94,7 @@ jobs:
           create_credentials_file: false
 
       - name: Restore the latest resumable source cache
+        if: steps.published.outputs.complete != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RESEARCH_BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -104,6 +122,7 @@ jobs:
           fi
 
       - name: Execute resumable ISBN research
+        if: steps.published.outputs.complete != 'true'
         id: research
         continue-on-error: true
         env:
@@ -125,7 +144,7 @@ jobs:
         run: node scripts/seo/book-intelligence-research-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
 
       - name: Validate the 1000-ISBN artifact
-        if: steps.research.outcome == 'success'
+        if: steps.published.outputs.complete != 'true' && steps.research.outcome == 'success'
         env:
           EXPECTED_LIMIT: ${{ inputs.limit || '1000' }}
         run: |
@@ -148,7 +167,7 @@ jobs:
           NODE
 
       - name: Upload report, manifest and resumable cache
-        if: always()
+        if: steps.published.outputs.complete != 'true' && always()
         uses: actions/upload-artifact@v4
         with:
           name: fichas-enrichment-1000-${{ github.run_id }}
@@ -157,7 +176,7 @@ jobs:
           retention-days: 30
 
       - name: Publish summary
-        if: always()
+        if: steps.published.outputs.complete != 'true' && always()
         run: |
           if [ -f artifacts/book-intelligence/isbn-1000/report-summary.md ]; then
             cat artifacts/book-intelligence/isbn-1000/report-summary.md >> "$GITHUB_STEP_SUMMARY"
@@ -166,5 +185,9 @@ jobs:
           fi
 
       - name: Fail if research did not complete
-        if: steps.research.outcome != 'success'
+        if: steps.published.outputs.complete != 'true' && steps.research.outcome != 'success'
         run: exit 1
+
+      - name: Validate published 1000-ISBN registry
+        if: steps.published.outputs.complete == 'true'
+        run: node --test functions/__tests__/book-enrichment-1000.test.js
