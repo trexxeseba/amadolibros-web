@@ -1,7 +1,7 @@
 /**
- * Landings SEO SSR para las ocho categorías principales.
+ * Landings SEO SSR para categorías y verticales autorizados.
  *
- * URLs autorizadas: /libros/:categoria. La allowlist vive en
+ * URLs autorizadas: /libros/:categoria y subverticales aprobados. La allowlist vive en
  * _shared/seo-categories.js; cualquier otra ruta responde 404 real.
  */
 import { slugify } from '../_shared/slug.js';
@@ -29,6 +29,7 @@ import { buildTagLookup, buildTarotHubModules } from '../_shared/tarot-hub-modul
 import { buildTarotFinderDataset } from '../_shared/tarot-finder-dataset.js';
 
 const TAROT_CATEGORY_ID = 'esoterismo-tarot';
+const BIBLE_CATEGORY_IDS = new Set(['biblias', 'biblias/reina-valera']);
 const tarotTagLookup = buildTagLookup(TAROT_MERCH_TAGS);
 // DEMAND-LEDGER-1 (PR #206) todavía no está mergeado a main: no hay
 // functions/_shared/demand-ledger.js en esta rama. "Lo más buscado" queda
@@ -185,6 +186,85 @@ function categoryNavHtml(currentId) {
         return `<a href="/libros/${category.id}"${current}>${escapeHtml(category.name)}</a>`;
     }).join('\n  ')}
 </nav>`;
+}
+
+function categoryBreadcrumbs(category, canonical) {
+    const entries = [{ name: 'Inicio', item: `${BASE}/` }];
+    if (category.parentId) {
+        entries.push({
+            name: category.parentName,
+            item: `${BASE}/libros/${category.parentId}`,
+        });
+    } else {
+        entries.push({ name: 'Libros', item: `${BASE}/catalogo` });
+    }
+    entries.push({ name: category.name, item: canonical });
+    return entries;
+}
+
+function categoryBreadcrumbHtml(category) {
+    const parent = category.parentId
+        ? `<a href="/libros/${escapeHtml(category.parentId)}">${escapeHtml(category.parentName)}</a> › `
+        : '<a href="/catalogo">Libros</a> › ';
+    return `<nav class="breadcrumbs" aria-label="Migas de pan"><a href="/">Inicio</a> › ${parent}<span>${escapeHtml(category.name)}</span></nav>`;
+}
+
+function bibleCommercialPromiseHtml() {
+    return `<aside class="bible-delivery" aria-label="Entrega y envío de Biblias">
+    <h2>¿La necesitás hoy?</h2>
+    <p>Algunas Biblias con stock pueden entregarse en 2 horas en Montevideo, según zona y horario. El envío es gratis en compras desde $1.500.</p>
+    <p class="bible-delivery-note">Confirmamos disponibilidad, dirección y plazo antes de coordinar. No todas las ediciones califican para entrega rápida.</p>
+  </aside>`;
+}
+
+function biblePathwaysHtml(category) {
+    if (category.id === 'religion-espiritualidad') {
+        return `<section class="bible-pathways" aria-labelledby="bible-pathways-title">
+    <h2 id="bible-pathways-title">¿Buscás una Biblia?</h2>
+    <p>Entrá a la colección completa o andá directo a las ediciones Reina-Valera. Son selecciones separadas de los demás libros de religión y espiritualidad.</p>
+    <div class="bible-pathway-grid">
+      <a href="/libros/biblias"><strong>Biblias en Uruguay</strong><span>Católicas, Reina-Valera, de estudio, letra grande, infantiles y para regalo.</span></a>
+      <a href="/libros/biblias/reina-valera"><strong>Biblias Reina-Valera</strong><span>Revisiones y formatos identificados dentro del catálogo disponible.</span></a>
+    </div>
+  </section>`;
+    }
+    if (!BIBLE_CATEGORY_IDS.has(category.id)) return '';
+
+    const isRvr = category.id === 'biblias/reina-valera';
+    const heading = isRvr ? 'Cómo elegir una Biblia Reina-Valera' : 'Cómo elegir una Biblia';
+    const intro = isRvr
+        ? 'Antes de decidir, compará la revisión exacta, el tamaño de letra, las ayudas de estudio y el formato de esta edición.'
+        : 'La mejor opción depende de la traducción, la legibilidad, el uso y el formato. Estos son los datos que conviene comprobar en cada ficha.';
+    const firstTitle = isRvr ? 'Revisión exacta' : 'Traducción o tradición';
+    const firstText = isRvr
+        ? 'RVR 1960 y otras revisiones no son intercambiables. Confirmá la que necesitás en el título y los datos de edición.'
+        : 'Reina-Valera, ediciones católicas y traducciones contemporáneas responden a preferencias y usos diferentes.';
+    const crossLink = isRvr
+        ? '<a class="bible-cross-link" href="/libros/biblias">Ver todas las Biblias disponibles</a>'
+        : '<a class="bible-cross-link" href="/libros/biblias/reina-valera">Ver Biblias Reina-Valera</a>';
+
+    return `<section class="bible-guide" aria-labelledby="bible-guide-title">
+    <div class="bible-guide-head">
+      <div><p class="bible-eyebrow">Guía de compra</p><h2 id="bible-guide-title">${escapeHtml(heading)}</h2><p>${escapeHtml(intro)}</p></div>
+      ${crossLink}
+    </div>
+    <div class="bible-guide-grid">
+      <article><h3>${escapeHtml(firstTitle)}</h3><p>${escapeHtml(firstText)}</p></article>
+      <article><h3>Lectura cómoda</h3><p>“Letra grande” cambia según la editorial. Revisá tipografía, tamaño físico, peso y si la edición tiene dos columnas.</p></article>
+      <article><h3>Estudio o lectura</h3><p>Notas, referencias, mapas, concordancia y espacio para escribir deben estar declarados por la edición; no los inferimos por la portada.</p></article>
+      <article><h3>Formato y uso</h3><p>Tapa dura, flexible, cierre, índice y tamaño portátil cambian la experiencia. Para regalo, verificá también estuche y terminación.</p></article>
+    </div>
+  </section>
+  ${bibleCommercialPromiseHtml()}`;
+}
+
+function classificationCount(categoryData, classificationId) {
+    for (const root of categoryData.categories || []) {
+        if (root.id === classificationId) return Number(root.count);
+        const child = (root.subcategories || []).find(entry => entry.id === classificationId);
+        if (child) return Number(child.count);
+    }
+    return 0;
 }
 
 // TAROT-HUB-MERCH-1: etiquetas cortas de merchandising para las tarjetas de
@@ -474,10 +554,10 @@ const TAROT_MODULE_STYLES = `.tarot-modules{display:flex;flex-direction:column;g
 
 // ---------------------------------------------------------------------------
 
-function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, totalPages, tarotModules, tarotFinderDataset }) {
+function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, tarotModules, tarotFinderDataset }) {
     const canonical = `${BASE}${categoryPath(category.id, page)}`;
-    const offset = (page - 1) * MAX_RESULTS;
-    const visibleItems = items.slice(offset, offset + MAX_RESULTS);
+    const offset = (page - 1) * pageSize;
+    const visibleItems = items.slice(offset, offset + pageSize);
     const itemList = visibleItems.slice(0, 20).map((item, index) => ({
         '@type': 'ListItem',
         'position': offset + index + 1,
@@ -490,7 +570,9 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
         'name': category.h1,
         'url': canonical,
         'description': category.description,
-        'isPartOf': { '@type': 'WebSite', 'name': BRAND.name, 'url': BASE },
+        'isPartOf': category.parentId
+            ? { '@type': 'CollectionPage', 'name': category.parentName, 'url': `${BASE}/libros/${category.parentId}` }
+            : { '@type': 'WebSite', 'name': BRAND.name, 'url': BASE },
         'publisher': { '@type': 'OnlineStore', '@id': `${BASE}/#bookstore`, 'name': BRAND.name, 'url': `${BASE}/` },
         'mainEntity': {
             '@type': 'ItemList',
@@ -498,14 +580,27 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
             'itemListElement': itemList,
         },
     };
+    if (category.kind === 'bibles') {
+        collectionSchema.about = [
+            { '@type': 'Thing', 'name': 'Biblia' },
+            { '@type': 'Thing', 'name': 'Reina-Valera' },
+            { '@type': 'Thing', 'name': 'Biblia de estudio' },
+        ];
+    } else if (category.kind === 'reina-valera') {
+        collectionSchema.about = [
+            { '@type': 'Thing', 'name': 'Reina-Valera' },
+            { '@type': 'Thing', 'name': 'Biblia en español' },
+        ];
+    }
     const breadcrumbSchema = {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        'itemListElement': [
-            { '@type': 'ListItem', 'position': 1, 'name': 'Inicio', 'item': `${BASE}/` },
-            { '@type': 'ListItem', 'position': 2, 'name': 'Libros', 'item': `${BASE}/catalogo` },
-            { '@type': 'ListItem', 'position': 3, 'name': category.name, 'item': canonical },
-        ],
+        'itemListElement': categoryBreadcrumbs(category, canonical).map((entry, index) => ({
+            '@type': 'ListItem',
+            'position': index + 1,
+            'name': entry.name,
+            'item': entry.item,
+        })),
     };
     const rangeFrom = items.length === 0 ? 0 : offset + 1;
     const rangeTo = offset + visibleItems.length;
@@ -567,13 +662,13 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
   <script type="application/ld+json">${safeJson(collectionSchema)}</script>
   <script type="application/ld+json">${safeJson(breadcrumbSchema)}</script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.category-header{position:sticky;top:0;z-index:40;background:rgba(18,14,11,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{max-width:1200px;height:72px;margin:auto;padding:0 1rem;display:grid;grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:1rem}.brand-link{display:flex;align-items:center;gap:.55rem;text-decoration:none}.brand-link img{width:44px;height:44px}.brand-link span{display:flex;flex-direction:column}.brand-link strong{font-size:.92rem}.brand-link small{color:rgba(255,255,255,.55);font-size:.7rem}.header-search{height:42px;display:flex;max-width:620px;width:100%;justify-self:center}.header-search input{min-width:0;flex:1;border:0;border-radius:999px 0 0 999px;padding:0 1rem;font:inherit}.header-search button{border:0;border-radius:0 999px 999px 0;padding:0 1rem;background:#e49982;color:#18120e;font-weight:800;cursor:pointer}.cart-link{min-height:42px;display:inline-flex;align-items:center;padding:0 .9rem;border:1px solid rgba(255,255,255,.2);border-radius:999px;text-decoration:none;font-size:.82rem}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.category-scope{margin-top:1rem;padding:.75rem .9rem;border-left:4px solid #e49982;background:#f8f5ef;border-radius:.35rem;color:#50463e;font-size:.88rem}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${PAGINATION_STYLES}${FOOTER_STYLES}${WA_FLOAT_STYLES}${TAROT_MODULE_STYLES}${TAROT_FINDER_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.header-inner{height:auto;min-height:68px;grid-template-columns:1fr auto;padding:.55rem .8rem}.brand-link small,.cart-link{display:none}.header-search{grid-column:1/-1;grid-row:2;margin-bottom:.2rem}.category-header{position:relative}}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.category-header{position:sticky;top:0;z-index:40;background:rgba(18,14,11,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{max-width:1200px;height:72px;margin:auto;padding:0 1rem;display:grid;grid-template-columns:auto minmax(220px,1fr) auto;align-items:center;gap:1rem}.brand-link{display:flex;align-items:center;gap:.55rem;text-decoration:none}.brand-link img{width:44px;height:44px}.brand-link span{display:flex;flex-direction:column}.brand-link strong{font-size:.92rem}.brand-link small{color:rgba(255,255,255,.55);font-size:.7rem}.header-search{height:42px;display:flex;max-width:620px;width:100%;justify-self:center}.header-search input{min-width:0;flex:1;border:0;border-radius:999px 0 0 999px;padding:0 1rem;font:inherit}.header-search button{border:0;border-radius:0 999px 999px 0;padding:0 1rem;background:#e49982;color:#18120e;font-weight:800;cursor:pointer}.cart-link{min-height:42px;display:inline-flex;align-items:center;padding:0 .9rem;border:1px solid rgba(255,255,255,.2);border-radius:999px;text-decoration:none;font-size:.82rem}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.category-scope{margin-top:1rem;padding:.75rem .9rem;border-left:4px solid #e49982;background:#f8f5ef;border-radius:.35rem;color:#50463e;font-size:.88rem}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.bible-pathways,.bible-guide,.bible-delivery{margin-top:1.25rem;border:1px solid #e2dbd0;border-radius:1rem;background:#fff;padding:clamp(1rem,3vw,1.5rem)}.bible-pathways h2,.bible-guide h2,.bible-delivery h2{font-family:Georgia,serif;font-size:1.35rem}.bible-pathways>p,.bible-guide-head p,.bible-delivery p{max-width:75ch;margin-top:.4rem;color:#5f554c}.bible-pathway-grid,.bible-guide-grid{display:grid;gap:.75rem;margin-top:1rem}.bible-pathway-grid a,.bible-guide-grid article{display:flex;flex-direction:column;gap:.25rem;border:1px solid #e2dbd0;border-radius:.75rem;background:#f8f5ef;padding:1rem;text-decoration:none}.bible-pathway-grid a:hover{border-color:#e49982}.bible-pathway-grid span,.bible-guide-grid p{color:#6b6157;font-size:.84rem}.bible-guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.bible-eyebrow{color:#a94e3d!important;font-size:.72rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.bible-cross-link{flex:none;display:inline-flex;min-height:44px;align-items:center;border-radius:999px;background:#18120e;color:#fff;padding:.6rem .9rem;text-decoration:none;font-size:.8rem;font-weight:800}.bible-delivery{background:#18120e;color:#fff;border-color:#18120e}.bible-delivery p{color:rgba(255,255,255,.78)}.bible-delivery .bible-delivery-note{font-size:.78rem;color:rgba(255,255,255,.6)}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${PAGINATION_STYLES}${FOOTER_STYLES}${WA_FLOAT_STYLES}${TAROT_MODULE_STYLES}${TAROT_FINDER_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}.bible-pathway-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bible-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.bible-guide-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.header-inner{height:auto;min-height:68px;grid-template-columns:1fr auto;padding:.55rem .8rem}.brand-link small,.cart-link{display:none}.header-search{grid-column:1/-1;grid-row:2;margin-bottom:.2rem}.category-header{position:relative}.bible-guide-head{flex-direction:column}.bible-cross-link{width:100%;justify-content:center}}
     .book-image{padding:.35rem}.book-image img{object-fit:contain}
   </style>
 </head>
 <body>
 ${headerHtml()}
-<nav class="breadcrumbs" aria-label="Migas de pan"><a href="/">Inicio</a> › <a href="/catalogo">Libros</a> › <span>${escapeHtml(category.name)}</span></nav>
+${categoryBreadcrumbHtml(category)}
 <main class="category-main">
   <section class="intro">
     <h1>${escapeHtml(category.h1)}</h1>
@@ -581,6 +676,7 @@ ${headerHtml()}
     <p class="category-scope">${scopeText}</p>
     <div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>
   </section>
+  ${biblePathwaysHtml(category)}
   ${tarotFinderHtml(tarotFinderDataset, canonical)}
   ${tarotModulesHtml(tarotModules, navigationBase, canonical, Boolean(tarotFinderDataset?.length))}
   <div class="results-head"><h2>${tarotModules?.length ? 'Ver todo' : 'Libros disponibles'}</h2><p>${resultText}</p></div>
@@ -599,11 +695,11 @@ export async function onRequest(ctx) {
     const pathParts = Array.isArray(ctx.params.path)
         ? ctx.params.path
         : [ctx.params.path].filter(Boolean);
-    if (pathParts.length !== 1) {
+    if (pathParts.length < 1 || pathParts.length > 2) {
         return errorPage(404, 'Categoría no encontrada', 'La categoría que buscás no existe.');
     }
 
-    const category = findSeoCategory(String(pathParts[0] || '').toLowerCase());
+    const category = findSeoCategory(pathParts.map(part => String(part).toLowerCase()).join('/'));
     if (!category) {
         return errorPage(404, 'Categoría no encontrada', 'La categoría que buscás no existe.');
     }
@@ -642,8 +738,14 @@ export async function onRequest(ctx) {
         );
     }
 
+    const classificationIds = category.classificationIds || [category.classificationId || category.id];
+    const excludedClassificationIds = category.excludedClassificationIds || [];
     const categoryItems = activeItems
-        .filter(item => (categoryData.items[item.id] || [])[0] === category.id)
+        .filter(item => {
+            const tags = categoryData.items[item.id] || [];
+            return classificationIds.some(id => tags.includes(id))
+                && !excludedClassificationIds.some(id => tags.includes(id));
+        })
         .sort((a, b) => {
             const stock = Number(b.available_quantity || 0) - Number(a.available_quantity || 0);
             if (stock) return stock;
@@ -651,10 +753,10 @@ export async function onRequest(ctx) {
             return price || String(a.id).localeCompare(String(b.id));
         });
     const items = dedupeCategoryResults(categoryItems);
-    const categoryUniverseCount = Number(
-        (categoryData.categories || []).find(entry => entry.id === category.id)?.count
-    );
-    const totalPages = Math.max(1, Math.ceil(items.length / MAX_RESULTS));
+    const categoryUniverseCount = classificationIds.reduce((total, id) => total + classificationCount(categoryData, id), 0)
+        - excludedClassificationIds.reduce((total, id) => total + classificationCount(categoryData, id), 0);
+    const pageSize = BIBLE_CATEGORY_IDS.has(category.id) ? 24 : MAX_RESULTS;
+    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
     if (pageParam.page > totalPages) {
         return errorPage(404, 'Página no encontrada', 'La página de esta categoría que buscás no existe.');
     }
@@ -693,6 +795,7 @@ export async function onRequest(ctx) {
         hasUnexpectedParameters,
         navigationBase,
         page: pageParam.page,
+        pageSize,
         totalPages,
         tarotModules,
         tarotFinderDataset,

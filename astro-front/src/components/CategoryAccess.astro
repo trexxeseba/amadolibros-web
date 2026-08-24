@@ -59,6 +59,16 @@ try {
         <div class="ca-inner">
           <h2 class="ca-heading">Explorá por categoría</h2>
           <div class="ca-row" role="list">
+            <a class="ca-chip ca-chip-priority" href="/libros/biblias" role="listitem">
+              <span class="ca-chip-name">Biblias</span>
+              <span class="ca-chip-count">Ediciones para comparar</span>
+              <span class="ca-chip-scope">Disponibles y por encargo</span>
+            </a>
+            <a class="ca-chip ca-chip-priority" href="/libros/biblias/reina-valera" role="listitem">
+              <span class="ca-chip-name">Biblias Reina-Valera</span>
+              <span class="ca-chip-count">Revisiones y formatos</span>
+              <span class="ca-chip-scope">Disponibles y por encargo</span>
+            </a>
             {categories.map(cat => (
               <a
                 class="ca-chip"
@@ -139,6 +149,11 @@ try {
     background: rgba(228, 153, 130, 0.12);
     border-color: var(--salmon);
     transform: translateY(-1px);
+  }
+
+  .ca-chip-priority {
+    background: rgba(228, 153, 130, 0.14);
+    border-color: var(--salmon);
   }
 
   .ca-chip-name {

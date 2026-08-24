@@ -13,7 +13,7 @@
 // aparecían repetidos en categorías distintas) se filtraron antes de esta
 // exportación porque no son una señal útil.
 
-export const RULES_VERSION = 12;
+export const RULES_VERSION = 13;
 
 export const MINED_AUTHOR_SIGNALS = {
   "esoterismo-tarot": {
@@ -778,10 +778,26 @@ export const KEYWORD_SIGNALS = {
     kw('angeles'), kw('alma'),
   ],
   'religion-espiritualidad': [
+    // Obras SOBRE la Biblia no son una edición bíblica. Estas señales
+    // específicas deben evaluarse antes que la palabra genérica "biblia".
+    // QA BIBLES-RVR-GROWTH-1: 20 publicaciones activas (12 ediciones tras
+    // dedupe) contaminaban la landing comercial de Biblias.
+    kw('evangelio de los esenios', 'espiritualidad'),
+    kw('como estudiar e interpretar la biblia', 'espiritualidad'),
+    kw('comprender las escrituras', 'espiritualidad'),
+    kw('atlas didactico de la biblia', 'espiritualidad'),
+    kw('mapas atlas didactico de la biblia', 'espiritualidad'),
+    kw('nuevos enigmas de la biblia', 'espiritualidad'),
+    kw('enigmas de la biblia', 'espiritualidad'),
+    kw('enigmas biblia', 'espiritualidad'),
+    kw('biblia libro por libro', 'espiritualidad'),
+    kw('buena noticia de cada dia', 'espiritualidad'),
+    kw('lucas evangelista', 'espiritualidad'),
+    kw('jesus maestro', 'espiritualidad'),
+    kw('biblia coran tanaj', 'otras-tradiciones'),
     kw('reina valera', 'reina-valera'), kw('rvr1960', 'reina-valera'),
     kw('rvr 1960', 'reina-valera'), kw('rv1960', 'reina-valera'),
     kw('rv 1960', 'reina-valera'), kw('biblia', 'biblia'),
-    kw('evangelio', 'biblia'),
     kw('nuevo testamento', 'biblia'), kw('antiguo testamento', 'biblia'),
     kw('catecismo', 'espiritualidad'), kw('teologia', 'espiritualidad'),
     kw('iglesia catolica', 'espiritualidad'),
@@ -790,7 +806,6 @@ export const KEYWORD_SIGNALS = {
     kw('jesus de nazaret', 'espiritualidad'),
     kw('vida de jesus', 'espiritualidad'),
     kw('mundo de jesus', 'espiritualidad'),
-    kw('jesus maestro', 'espiritualidad'),
     kw('fe cristiana', 'espiritualidad'),
     kw('vida cristiana', 'espiritualidad'),
     kw('cristianismo', 'espiritualidad'),
@@ -803,7 +818,6 @@ export const KEYWORD_SIGNALS = {
     kw('mundo jesus', 'espiritualidad'),
     kw('guia de lectura jesus', 'espiritualidad'),
     kw('sabiduria judia', 'espiritualidad'),
-    kw('lucas evangelista', 'espiritualidad'),
     kw('jesus esta vivo', 'espiritualidad'),
     kw('papa leon xiv', 'espiritualidad'),
     kw('santo rosario', 'espiritualidad'),

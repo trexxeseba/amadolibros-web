@@ -293,6 +293,67 @@ test('QA Biblias: Reina-Valera obtiene su subcategoría incluso con autor recono
   assert.equal(result.subcategoryId, 'reina-valera');
 });
 
+test('QA Biblias: obras sobre la Biblia no contaminan la subcategoría de ediciones bíblicas', () => {
+  const cases = [
+    ['Jesús Maestro De Meditacion Espiritual Evangelio Jalics', 'FRANZ JALICS', 'espiritualidad'],
+    ['El Evangelio De Los Esenios 1 Edmon Bordeaux Szekely', 'SZEKELY, EDMON B.', 'espiritualidad'],
+    ['La Buena Noticia De Cada Día 2024 Salmo Evangelio', 'EQUIPO BIBLICO VERBO', 'espiritualidad'],
+    ['Mapas Atlas Didáctico De La Biblia - Ed. San Pablo', 'Giacomo Perego', 'espiritualidad'],
+    ['Nuevos Enigmas De La Biblia', 'Ariel Álvarez Valdes', 'espiritualidad'],
+    ['La Biblia Libro Por Libro Maestro-jóvenes Y Adultos Libro 1', 'Casa Bautista De Publicaciones', 'espiritualidad'],
+    ['Lucas, Evangelista De La Ternura De Dios, De Casa De La Biblia', 'Francesc Ramis Darder', 'espiritualidad'],
+    ['Cómo Estudiar E Interpretar La Biblia', 'R.C. Sproul', 'espiritualidad'],
+    ['Comprender Las Escrituras: Curso Completo Estudio La Biblia', 'Scott Hahn', 'espiritualidad'],
+    ['Biblia Corán Tanaj Roberto Blatt Libros Historia Religiones', 'Roberto Blatt', 'otras-tradiciones'],
+  ];
+
+  for (const [title, author, expectedSubcategory] of cases) {
+    const result = classify({
+      mlu: `QA-${title}`,
+      title,
+      author,
+      publisher: '',
+      isbn: '9780000000000',
+      status: 'active',
+    });
+    assert.equal(result.primaryCategoryId, 'religion-espiritualidad', title);
+    assert.equal(result.subcategoryId, expectedSubcategory, title);
+  }
+});
+
+test('QA Biblias: evangelio por sí solo no equivale a una edición de la Biblia', () => {
+  const result = classify({
+    mlu: 'QA-EVANGELIO',
+    title: 'Evangelio gnóstico de Tomás',
+    author: 'Anónimo',
+    publisher: '',
+    isbn: '9780000000001',
+    status: 'active',
+  });
+  assert.notEqual(result.subcategoryId, 'biblia');
+  assert.notEqual(result.subcategoryId, 'reina-valera');
+});
+
+test('QA Biblias: Biblia y Nuevo Testamento reales conservan la subcategoría comercial', () => {
+  const cases = [
+    ['Biblia Letra Gigante Lenguaje Actual Con Deuterocanónico', 'biblia'],
+    ['Nuevo Testamento Edición Pastoral San Pablo', 'biblia'],
+    ['Santa Biblia Reina Valera 1960 Letra Grande Con Cierre', 'reina-valera'],
+  ];
+  for (const [title, expectedSubcategory] of cases) {
+    const result = classify({
+      mlu: `QA-POS-${title}`,
+      title,
+      author: '',
+      publisher: '',
+      isbn: '9780000000002',
+      status: 'active',
+    });
+    assert.equal(result.primaryCategoryId, 'religion-espiritualidad', title);
+    assert.equal(result.subcategoryId, expectedSubcategory, title);
+  }
+});
+
 test('QA autores: un nombre parcial no suplanta una señal de autor más específica', () => {
   const result = classify({
     mlu: 'MLU614544321',
