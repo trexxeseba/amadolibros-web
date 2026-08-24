@@ -100,6 +100,14 @@ jobs:
           FICHAS_CHECK_OUTPUT_DIR: artifacts/fichas-quality
         run: node scripts/seo/fichas-generic-author-live-check.mjs
 
+      # FICHAS-ENRICHMENT-BIBLIAS-1: cada ISBN versionado debe aparecer de
+      # verdad en su ficha y en Merchant; no alcanza con un test en memoria.
+      - name: Verify ISBN enrichments on ficha and Merchant
+        env:
+          BOOK_ENRICHMENT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          BOOK_ENRICHMENT_OUTPUT_DIR: artifacts/fichas-quality
+        run: node scripts/seo/book-enrichment-live-check.mjs
+
       # Auditoría de la cohorte real de fichas enriquecidas. El runner sí
       # alcanza R2, a diferencia del entorno de desarrollo.
       - name: Audit fichas quality cohort
