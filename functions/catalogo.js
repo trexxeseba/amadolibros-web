@@ -37,6 +37,7 @@
  */
 
 import { slugify } from './_shared/slug.js';
+import { applyCatalogImageOverride } from './_shared/catalog-image-overrides.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import {
@@ -729,7 +730,12 @@ export async function onRequest(ctx) {
 
     const page      = pageParam.page;
     const offset    = (page - 1) * MAX_RESULTS;
-    const limited   = filtered.slice(offset, offset + MAX_RESULTS);
+    // CATALOG-IMAGE-QUALITY-1: sólo afecta pictures[0] de los IDs listados
+    // explícitamente en catalog-image-overrides.js. En producción la imagen
+    // real sale de bookCoverUrl()/coverSource() (mismo override aplicado
+    // ahí); esto cubre además la vista Preview de estas tarjetas, que usa
+    // pictures[] directamente.
+    const limited   = filtered.slice(offset, offset + MAX_RESULTS).map(applyCatalogImageOverride);
     const rangeFrom = totalResults === 0 ? 0 : offset + 1;
     const rangeTo   = offset + limited.length;
 

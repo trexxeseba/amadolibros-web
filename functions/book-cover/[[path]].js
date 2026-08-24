@@ -1,5 +1,6 @@
 import { fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
+import { overrideImageForProduct } from '../_shared/catalog-image-overrides.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
 const COVER_FILE_RE = /^cover(?:-([2-9]|1[0-6]))?\.jpg$/;
@@ -27,6 +28,14 @@ export function primaryCoverSource(item) {
 
 export function coverSource(item, position = 0) {
   if (!Number.isInteger(position) || position < 0 || position >= MAX_GALLERY_IMAGES) return '';
+  // CATALOG-IMAGE-QUALITY-1: sólo la posición 0 (portada) puede tener un
+  // override explícito y verificado — nunca el resto de la galería. Sólo
+  // los IDs listados en catalog-image-overrides.js reciben esto; cualquier
+  // otro producto sigue su resolución normal por pictures[]/thumbnail.
+  if (position === 0) {
+    const override = overrideImageForProduct(item?.id);
+    if (override) return largeMlImage(override.imageUrl);
+  }
   const pictures = Array.isArray(item?.pictures)
     ? item.pictures.filter(value => typeof value === 'string')
     : [];
