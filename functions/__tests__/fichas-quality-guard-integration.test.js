@@ -114,11 +114,13 @@ test('3b. el feed conserva GTIN, precio, disponibilidad, link e imagen', () => {
   assert.match(xml, /<g:id>MLU724888358<\/g:id>/);
 });
 
-test('3c. buildFeedDescription omite «de <genérico>» pero conserva la editorial', () => {
+test('3c. buildFeedDescription omite autor genérico y usa datos de la edición verificada', () => {
   const d = buildFeedDescription(MLU724888358);
   assert.doesNotMatch(d, AUTOR_GENERICO_RE);
   assert.match(d, /Verbo Divino/);
-  assert.match(d, /Ejemplar nuevo/);
+  assert.match(d, /ISBN 9788490739808/);
+  assert.match(d, /1\.600 páginas/);
+  assert.match(d, /Lectio Divina/);
 });
 
 // ── 4. Control: un autor real se conserva en todas las superficies ────────

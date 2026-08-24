@@ -57,6 +57,10 @@ import { slugify } from './_shared/slug.js';
 import { fetchCatalog } from './_shared/catalog.js';
 // FICHAS-QUALITY-GUARD-1: misma definición de autoría genérica que la ficha.
 import { realAuthor } from './_shared/generic-author.js';
+import {
+    applyBookEnrichment,
+    getBookEnrichmentByIsbn,
+} from './_shared/book-enrichment-registry.js';
 
 const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
@@ -330,6 +334,10 @@ export function normalizePublisherForDescription(publisher) {
  * paso del algoritmo pedido.
  */
 export function buildFeedDescription(item) {
+    const enrichment = getBookEnrichmentByIsbn(item?.isbn);
+    if (enrichment?.editorial?.merchant_description) {
+        return enrichment.editorial.merchant_description;
+    }
     const title = (item.title || '').trim();
     if (item.description && item.description.trim() && item.description.trim() !== title) {
         return item.description.trim();
@@ -426,6 +434,7 @@ async function readMerchantCoverManifest(context) {
 // ---------------------------------------------------------------------------
 
 export function renderFeedItem(item) {
+    item = applyBookEnrichment(item);
     const stock = Number(item.available_quantity) || 0;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
     if (currency !== 'UYU') throw new Error(`Moneda no publicable en Merchant para ${item.id || 'item sin id'}.`);

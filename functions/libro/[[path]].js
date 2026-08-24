@@ -17,6 +17,7 @@ import { slugify } from '../_shared/slug.js';
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
 import { PRODUCT_ID_REDIRECTS, PRODUCT_SEO_OVERRIDES } from '../_shared/seo-products.js';
@@ -1077,6 +1078,10 @@ export async function onRequest(context) {
     }
     if (!item) return notFound();
 
+    // El enriquecimiento sólo agrega datos bibliográficos verificados. El
+    // título permanece intacto, por lo que el slug/canonical conserva la URL
+    // comercial existente.
+    item = applyBookEnrichment(item);
     const slug = slugify(item.title);
     const isPreview = context.env?.APP_ENV === 'preview';
     const navigationBase = isPreview

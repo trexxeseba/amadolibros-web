@@ -402,7 +402,10 @@ export function productItemFromProductHtml(html, productId) {
   };
 }
 
-export function buildAutomaticProductShowcase(item, { classificationTags = [] } = {}) {
+export function buildAutomaticProductShowcase(item, {
+  classificationTags = [],
+  enrichment = null,
+} = {}) {
   if (!item || typeof item !== 'object' || !clean(item.title)) return null;
   const facts = buildEditionFacts(item);
   const description = clean(item.description);
@@ -420,22 +423,25 @@ export function buildAutomaticProductShowcase(item, { classificationTags = [] } 
     (!isGenericAuthor(item.author) ? `De ${clean(item.author)}` : null);
   const schemaDescription = shortenByWord(summary.join(' '), 500);
 
+  const editorial = enrichment?.editorial || null;
+  const verifiedSchema = enrichment?.schema || null;
+
   return {
     h1: clean(item.title),
     subtitle,
-    eyebrow: descriptionParagraphs.length
+    eyebrow: editorial?.eyebrow || (descriptionParagraphs.length
       ? (clean(bibliography.genre) || 'Descripción y datos de la edición')
-      : 'Ficha ampliada de esta edición',
-    introHeading: descriptionParagraphs.length
+      : 'Ficha ampliada de esta edición'),
+    introHeading: editorial?.heading || (descriptionParagraphs.length
       ? `¿De qué trata ${clean(item.title)}?`
-      : `Sobre ${clean(item.title)}`,
-    summary,
-    highlightsHeading: 'Datos destacados',
+      : `Sobre ${clean(item.title)}`),
+    summary: editorial?.paragraphs || summary,
+    highlightsHeading: editorial?.highlights_heading || 'Datos destacados',
     // FICHAS-QUALITY-GUARD-1: sin datos reales de la edición, `highlights`
     // queda vacío y el render omite la tarjeta en vez de rellenarla.
-    highlights: buildHighlights(item, facts),
-    audienceHeading: '¿Para quién puede ser útil?',
-    audience: audienceCopy(item),
+    highlights: editorial?.highlights || buildHighlights(item, facts),
+    audienceHeading: editorial?.decision_heading || '¿Para quién puede ser útil?',
+    audience: editorial?.decision_copy || audienceCopy(item),
     // FICHAS-QUALITY-GUARD-1: `author` es null cuando la autoría es genérica o
     // ausente; en ese caso no se emite encabezado ni copy y la tarjeta “Sobre
     // la autoría” desaparece por completo.
@@ -446,9 +452,11 @@ export function buildAutomaticProductShowcase(item, { classificationTags = [] } 
       ? 'Edición identificada por ISBN'
       : 'Datos tomados de la publicación',
     editionFacts: facts,
-    links: buildLinks(item),
+    links: editorial?.links || buildLinks(item),
     requestHelp: contextualRequestHelp(item, classificationTags),
-    schemaDescription,
-    metaDescription: buildMetaDescription(item),
+    sources: enrichment?.provenance || [],
+    schemaDescription: editorial?.paragraphs?.join(' ') || schemaDescription,
+    schemaVerified: verifiedSchema,
+    metaDescription: editorial?.meta_description || buildMetaDescription(item),
   };
 }
