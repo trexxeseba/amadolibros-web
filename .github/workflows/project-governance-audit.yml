@@ -1,0 +1,32 @@
+name: Project governance audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 10 * * 1'
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Test governance rules
+        run: node --test scripts/__tests__/project-governance-audit.test.mjs
+      - name: Audit PRs, branches and critical collisions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOVERNANCE_OUTPUT_DIR: artifacts/governance
+        run: node scripts/ops/project-governance-audit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: project-governance-${{ github.run_id }}
+          path: artifacts/governance/
+          retention-days: 30
