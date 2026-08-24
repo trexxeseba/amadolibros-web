@@ -12,17 +12,20 @@ test('la home destaca la coordinación de la entrega inmediatamente después del
   assert.ok(page.indexOf('<DeliveryCoordination />') > page.indexOf('<Hero />'));
   assert.match(component, /El cadete no llega de sorpresa/);
   assert.match(component, /coordinamos contigo la hora o franja/);
-  assert.match(component, /Si el cadete llega y no estás, no te preocupes/);
+  assert.match(component, /Si necesitás cambiarla, avisános antes de que salga el cadete/);
+  assert.doesNotMatch(component, /Si el cadete llega y no estás, no te preocupes/i);
   assert.match(component, /href="\/envios"/);
 });
 
-test('envíos y el bloque comercial repiten la tranquilidad sin prometer reentrega gratuita', () => {
+test('envíos y el bloque comercial priorizan coordinación previa sin prometer resolución o reentrega', () => {
   const policy = read('astro-front/src/pages/envios.astro');
   const shipping = read('astro-front/src/components/ShippingPayments.astro');
   const combined = `${policy}\n${shipping}`;
 
   assert.match(policy, /class="delivery-reassurance"/);
-  assert.match(policy, /Si al llegar no estás, no te preocupes/);
+  assert.match(policy, /Si necesitás cambiarla, avisános antes de que salga el cadete/);
   assert.match(shipping, /Coordinamos la hora o franja antes de que salga el cadete/);
+  assert.match(shipping, /Coordinamos la entrega por WhatsApp antes de que salga el cadete/);
+  assert.doesNotMatch(combined, /no te preocupes: te contactamos para resolver cómo completar la entrega/i);
   assert.doesNotMatch(combined, /reentrega gratuita|segunda entrega gratis/i);
 });
