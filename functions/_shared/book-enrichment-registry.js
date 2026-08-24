@@ -206,6 +206,171 @@ const BIBLE_ENRICHMENTS = Object.freeze([
       }),
     ]),
   }),
+  Object.freeze({
+    schema_version: 1,
+    isbn: '9781087701417',
+    decision: 'auto_publish',
+    verified_at: '2026-08-24',
+    editorial: Object.freeze({
+      eyebrow: 'Biblia cronológica RVR60 · edición verificada',
+      heading: 'Cómo se lee la Biblia cronológica día por día',
+      paragraphs: Object.freeze([
+        'Esta Biblia Reina-Valera 1960 organiza el texto completo según la secuencia cronológica de los acontecimientos y corresponde al ISBN 9781087701417. Es una edición de B&H Español en símil piel, con 1.424 páginas, letra de 9 puntos y un formato aproximado de 17 × 22,9 cm.',
+        'El recorrido está distribuido en 52 semanas de lectura devocional y puede comenzarse en cualquier momento del año. Incluye introducciones, texto en una columna, margen para anotaciones y mapas a color para acompañar la comprensión del relato bíblico.',
+      ]),
+      highlights_heading: 'Características comprobadas',
+      highlights: Object.freeze([
+        'Texto Reina-Valera 1960 ordenado cronológicamente.',
+        '52 semanas de lectura devocional sin fechas fijas.',
+        '1.424 páginas con letra de 9 puntos.',
+        'Texto en una columna y margen para anotaciones.',
+        'Introducciones y mapas a color.',
+      ]),
+      decision_heading: '¿Para quién resulta útil?',
+      decision_copy: 'Es una alternativa para quien quiere seguir la historia bíblica en orden cronológico y sostener un plan de lectura semanal. Compará el ISBN 9781087701417 y la cubierta marrón en símil piel antes de comprar.',
+      meta_description: 'Biblia cronológica día por día RVR60, ISBN 9781087701417: 1.424 páginas, 52 semanas de lectura y mapas. Disponible en Uruguay.',
+      merchant_description: 'Biblia cronológica día por día RVR60 de B&H Español. ISBN 9781087701417, símil piel, 1.424 páginas y letra de 9 puntos. Incluye 52 semanas de lectura, margen para notas, introducciones y mapas a color.',
+      links: Object.freeze([
+        Object.freeze({ href: '/libros/biblias/reina-valera', label: 'Comparar Biblias Reina-Valera' }),
+        Object.freeze({ href: '/libros/biblias', label: 'Ver todas las Biblias disponibles' }),
+      ]),
+    }),
+    facts: Object.freeze({
+      publisher: 'B&H Español',
+      pages: 1424,
+      dimensions_text: '17 × 22,9 cm',
+      bibliographic: Object.freeze({
+        language: 'Español',
+        format: 'Símil piel',
+        edition: 'Reina-Valera 1960 · edición cronológica',
+      }),
+    }),
+    schema: Object.freeze({
+      inLanguage: 'es',
+      bookEdition: 'Reina-Valera 1960 · edición cronológica',
+    }),
+    provenance: Object.freeze([
+      Object.freeze({
+        type: 'publisher',
+        provider: 'B&H Español',
+        url: 'https://bhespanol.bhpublishinggroup.com/product/rvr-1960-biblia-cronologica-dia-por-dia-marron-simil-piel/',
+        relationship: 'exact_edition',
+        isbn: '9781087701417',
+        verified_at: '2026-08-24',
+        fields: Object.freeze(['description', 'publisher', 'pages', 'dimensions', 'format', 'bible_version', 'contents']),
+      }),
+    ]),
+  }),
+  Object.freeze({
+    schema_version: 1,
+    isbn: '9781430091899',
+    decision: 'auto_publish',
+    verified_at: '2026-08-24',
+    editorial: Object.freeze({
+      eyebrow: 'Biblia letra gigante RVR60 · edición verificada',
+      heading: 'Qué incluye esta RVR60 de letra gigante',
+      paragraphs: Object.freeze([
+        'Esta edición floreada en símil piel utiliza el texto Reina-Valera 1960 y corresponde al ISBN 9781430091899. Fue publicada por B&H Español en 2024, tiene 1.728 páginas, letra gigante de 14 puntos y un formato aproximado de 17,3 × 24,9 cm.',
+        'Además del tamaño de letra, incorpora referencias en cadena, concordancia temática, panorama histórico, plan de lectura anual, introducciones y bosquejos de cada libro, palabras de Cristo en rojo y mapas a color.',
+      ]),
+      highlights_heading: 'Características comprobadas',
+      highlights: Object.freeze([
+        'Texto Reina-Valera 1960 con letra gigante de 14 puntos.',
+        '1.728 páginas y cubierta floreada en símil piel.',
+        'Referencias en cadena y concordancia temática.',
+        'Plan de lectura anual e introducciones por libro.',
+        'Palabras de Cristo en rojo y mapas a color.',
+      ]),
+      decision_heading: '¿Cuándo elegir letra gigante?',
+      decision_copy: 'Puede convenir si priorizás una tipografía grande para lectura personal, enseñanza o lectura pública y querés conservar ayudas de referencia. Verificá el ISBN 9781430091899 y el diseño floreado para distinguir esta edición.',
+      meta_description: 'Biblia RVR60 letra gigante floreada, ISBN 9781430091899: 14 puntos, 1.728 páginas y símil piel. Disponible en Uruguay.',
+      merchant_description: 'Biblia RVR60 letra gigante floreada de B&H Español. ISBN 9781430091899, símil piel, 1.728 páginas y tipografía de 14 puntos. Incluye referencias, concordancia, plan anual, introducciones y mapas a color.',
+      links: Object.freeze([
+        Object.freeze({ href: '/libros/biblias/reina-valera', label: 'Comparar Biblias Reina-Valera' }),
+        Object.freeze({ href: '/libros/biblias', label: 'Ver todas las Biblias disponibles' }),
+      ]),
+    }),
+    facts: Object.freeze({
+      publisher: 'B&H Español',
+      pages: 1728,
+      dimensions_text: '17,3 × 24,9 cm',
+      bibliographic: Object.freeze({
+        language: 'Español',
+        format: 'Símil piel',
+        edition: 'Reina-Valera 1960 · edición 2024',
+      }),
+    }),
+    schema: Object.freeze({
+      inLanguage: 'es',
+      bookEdition: 'Reina-Valera 1960 · edición 2024',
+    }),
+    provenance: Object.freeze([
+      Object.freeze({
+        type: 'publisher',
+        provider: 'B&H Español',
+        url: 'https://bhespanol.bhpublishinggroup.com/product/rvr-1960-biblia-letra-gigante-floreada-simil-piel-edicion-2023/',
+        relationship: 'exact_edition',
+        isbn: '9781430091899',
+        verified_at: '2026-08-24',
+        fields: Object.freeze(['description', 'publisher', 'pages', 'dimensions', 'format', 'bible_version', 'text_size', 'contents']),
+      }),
+    ]),
+  }),
+  Object.freeze({
+    schema_version: 1,
+    isbn: '9781535998000',
+    decision: 'auto_publish',
+    verified_at: '2026-08-24',
+    editorial: Object.freeze({
+      eyebrow: 'Biblia devocional RVR60 · edición verificada',
+      heading: 'Qué propone la Biblia devocional Centrada en Cristo',
+      paragraphs: Object.freeze([
+        'Esta edición para mujeres utiliza el texto Reina-Valera 1960 y corresponde al ISBN 9781535998000. Fue publicada por B&H Español en símil piel floreado, tiene 1.792 páginas, letra de 9,5 puntos y un formato aproximado de 15,6 × 23,2 cm.',
+        'Su recorrido devocional conecta el relato de Cristo con los distintos libros de la Biblia. Incluye 365 devocionales escritos por mujeres hispanas, planes de lectura devocional y anual, concordancia, ilustraciones a color y cinta marcadora.',
+      ]),
+      highlights_heading: 'Características comprobadas',
+      highlights: Object.freeze([
+        'Texto Reina-Valera 1960 en edición devocional para mujeres.',
+        '365 devocionales y dos planes de lectura.',
+        '1.792 páginas con letra de 9,5 puntos.',
+        'Concordancia e ilustraciones a color.',
+        'Cubierta floreada en símil piel y cinta marcadora.',
+      ]),
+      decision_heading: '¿Qué experiencia de lectura ofrece?',
+      decision_copy: 'Está pensada para quien busca una RVR60 con un acompañamiento devocional diario y una perspectiva desarrollada por mujeres hispanas. Compará el ISBN 9781535998000 y la cubierta floreada antes de elegirla.',
+      meta_description: 'Biblia devocional Centrada en Cristo RVR60, ISBN 9781535998000: 365 devocionales y 1.792 páginas. Disponible en Uruguay.',
+      merchant_description: 'Biblia devocional para mujeres Centrada en Cristo RVR60 de B&H Español. ISBN 9781535998000, símil piel, 1.792 páginas y letra de 9,5 puntos. Incluye 365 devocionales, planes de lectura, concordancia e ilustraciones.',
+      links: Object.freeze([
+        Object.freeze({ href: '/libros/biblias/reina-valera', label: 'Comparar Biblias Reina-Valera' }),
+        Object.freeze({ href: '/libros/biblias', label: 'Ver todas las Biblias disponibles' }),
+      ]),
+    }),
+    facts: Object.freeze({
+      publisher: 'B&H Español',
+      pages: 1792,
+      dimensions_text: '15,6 × 23,2 cm',
+      bibliographic: Object.freeze({
+        language: 'Español',
+        format: 'Símil piel',
+        edition: 'Reina-Valera 1960 · edición devocional',
+      }),
+    }),
+    schema: Object.freeze({
+      inLanguage: 'es',
+      bookEdition: 'Reina-Valera 1960 · edición devocional',
+    }),
+    provenance: Object.freeze([
+      Object.freeze({
+        type: 'publisher',
+        provider: 'B&H Español',
+        url: 'https://bhespanol.bhpublishinggroup.com/product/rvr1960-centrada-en-cristo-floral-simil-piel/',
+        relationship: 'exact_edition',
+        isbn: '9781535998000',
+        verified_at: '2026-08-24',
+        fields: Object.freeze(['description', 'publisher', 'pages', 'dimensions', 'format', 'bible_version', 'text_size', 'contents']),
+      }),
+    ]),
+  }),
 ]);
 
 export function validateBookEnrichment(record) {

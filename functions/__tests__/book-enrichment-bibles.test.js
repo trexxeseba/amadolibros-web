@@ -32,7 +32,7 @@ const RAW_ITEM = Object.freeze({
 
 test('el registro sólo contiene entradas publicables con fuente oficial e ISBN exacto', () => {
   const entries = listBookEnrichments();
-  assert.ok(entries.length >= 3);
+  assert.ok(entries.length >= 6);
   for (const entry of entries) assert.equal(validateBookEnrichment(entry), true);
 });
 
@@ -46,6 +46,21 @@ test('el primer lote incluye dos Reina-Valera de alta prioridad con datos oficia
   assert.equal(fisher.facts.publisher, 'B&H Publishing Group');
   assert.equal(fisher.facts.pages, 1320);
   assert.match(fisher.editorial.decision_copy, /letra grande/i);
+});
+
+test('el lote suma tres Reina-Valera B&H con ISBN y edición exactos', () => {
+  const expected = [
+    ['9781087701417', 1424, /cronológica/i],
+    ['9781430091899', 1728, /14 puntos/i],
+    ['9781535998000', 1792, /365 devocionales/i],
+  ];
+  for (const [isbn, pages, signal] of expected) {
+    const entry = getBookEnrichmentByIsbn(isbn);
+    assert.equal(entry.facts.publisher, 'B&H Español');
+    assert.equal(entry.facts.pages, pages);
+    assert.match(entry.editorial.paragraphs.join(' '), signal);
+    assert.ok(entry.provenance.some(source => source.type === 'publisher' && source.isbn === isbn));
+  }
 });
 
 test('la edición 9788490739808 tiene procedencia editorial verificable', () => {
