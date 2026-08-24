@@ -43,7 +43,7 @@ function containsGenericAuthor(value) {
     new RegExp(`["']author["']\\s*:\\s*\\{[\\s\\S]{0,500}?["']name["']\\s*:\\s*["']\\s*${generic}\\s*["']`, 'i'),
     new RegExp(`<dt[^>]*>\\s*Autor(?:ía)?\\s*</dt>\\s*<dd[^>]*>\\s*${generic}\\s*</dd>`, 'i'),
     new RegExp(`(?:Más sobre|Ver otros libros de)\\s*${generic}(?:\\s|<|&|$)`, 'i'),
-    new RegExp(`(?:^|[.,;:!?\\s])de\\s+${generic}(?:[.,;:!?\\s]|$)`, 'i'),
+    new RegExp(`<g:description[^>]*>[\\s\\S]{0,5000}?(?:^|[.,;:!?\\s])de\\s+${generic}(?:[.,;:!?\\s]|$)[\\s\\S]{0,5000}?</g:description>`, 'i'),
   ].some(pattern => pattern.test(source));
 }
 

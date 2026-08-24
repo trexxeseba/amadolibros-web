@@ -53,7 +53,7 @@ test('el gate falla ante copy ausente, autor genérico o pérdida comercial', ()
 });
 
 test('N/A en una colección no se confunde con una autoría genérica', () => {
-  const html = `<h2>Qué contiene esta edición</h2><p>Editorial Verbo Divino · 9788490739808</p><h3>¿Esta es la edición que buscás?</h3><dl><dt>Autor</dt><dd>Beatriz Cazurro</dd><dt>Colección</dt><dd>N/A</dd></dl><div>MLU724888358</div>`;
+  const html = `<h2>Qué contiene esta edición</h2><p>Editorial Verbo Divino · 9788490739808</p><h3>¿Esta es la edición que buscás?</h3><dl><dt>Autor</dt><dd>Beatriz Cazurro</dd><dt>Colección</dt><dd>N/A</dd><dt>Género</dt><dd>N/A</dd></dl><a>Explorar libros de N/A</a><div>MLU724888358</div>`;
   assert.deepEqual(verifyBookEnrichmentHtml(html, record, 'MLU724888358'), []);
 });
 
@@ -61,6 +61,8 @@ test('el gate detecta autoría genérica en JSON-LD y enlaces contextuales', () 
   const base = '<h2>Qué contiene esta edición</h2><p>Editorial Verbo Divino · 9788490739808</p><h3>¿Esta es la edición que buscás?</h3><div>MLU724888358</div>';
   assert.ok(verifyBookEnrichmentHtml(`${base}<script type="application/ld+json">{"author":{"@type":"Person","name":"Unknown"}}</script>`, record, 'MLU724888358').includes('aparece autoría genérica'));
   assert.ok(verifyBookEnrichmentHtml(`${base}<a>Ver otros libros de Sin autor</a>`, record, 'MLU724888358').includes('aparece autoría genérica'));
+  const feed = `<item><g:id>MLU724888358</g:id><g:description>Libro de N/A. ISBN 9788490739808.</g:description><g:price>1 UYU</g:price><g:availability>in stock</g:availability><g:link>x</g:link><g:image_link>y</g:image_link></item>`;
+  assert.ok(verifyBookEnrichmentFeed(feed, { isbn: record.isbn, decision: 'auto_publish_facts' }, item).includes('Merchant expone autoría genérica'));
 });
 
 test('el gate acepta una mejora factual masiva sin exigir copy editorial', () => {
