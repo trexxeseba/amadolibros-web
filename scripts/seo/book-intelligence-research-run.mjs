@@ -10,6 +10,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { CATALOG_URL } from '../../functions/_shared/catalog.js';
+import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
 import { listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
 import {
   classifyBookIntelligenceEvidence,
@@ -32,7 +33,7 @@ const DEFAULT_CACHE_PATH = 'artifacts/book-intelligence/isbn-1000/source-cache.j
 const DEFAULT_OPEN_LIBRARY_CONTACT = 'https://www.amadolibros.com';
 const EDITION_FIELDS = Object.freeze([
   'author',
-  'publisher', 'pages', 'language', 'format', 'edition', 'publication_year',
+  'publisher', 'pages', 'language', 'format', 'edition', 'publication_year', 'topics',
 ]);
 
 function clean(value) {
@@ -114,6 +115,12 @@ export function selectResearchCohort({
       research: {
         cohort_source: 'active_sellable_unique_isbn',
         description_length: descriptionLength(representative),
+        // El gateway se aplica a todos los duplicados del ISBN. Una edición
+        // cuenta como mejora si completa el campo en al menos una de sus
+        // publicaciones, aunque el representante ya lo tuviera.
+        missing_fields: EDITION_FIELDS.filter(field =>
+          listings.some(listing => !existingFact(listing, field)),
+        ),
       },
     };
   }).sort((a, b) =>
@@ -145,7 +152,20 @@ async function readJson(source) {
 async function loadCache(filePath) {
   try {
     const parsed = JSON.parse(await readFile(filePath, 'utf8'));
-    return parsed?.entries && typeof parsed.entries === 'object' ? parsed : emptySourceCache();
+    if (!parsed?.entries || typeof parsed.entries !== 'object') return emptySourceCache();
+    for (const entry of Object.values(parsed.entries)) {
+      for (const source of ['google_books', 'open_library', 'bne']) {
+        if (!Array.isArray(entry?.[source]?.records)) continue;
+        entry[source].records = entry[source].records.map(record => ({
+          ...record,
+          language: normalizeBookLanguage(record?.language),
+          format: record?.source === 'google_books' && clean(record?.format).toUpperCase() === 'BOOK'
+            ? null
+            : record?.format ?? null,
+        }));
+      }
+    }
+    return parsed;
   } catch (error) {
     if (error?.code === 'ENOENT') return emptySourceCache();
     throw error;
@@ -182,27 +202,42 @@ function existingFact(item, field) {
   if (field === 'author') return isGenericAuthor(item?.author) ? null : clean(item?.author);
   if (field === 'publisher') return clean(item?.publisher) || null;
   if (field === 'pages') return Number(item?.pages) > 0 ? Number(item.pages) : null;
+  if (field === 'topics') {
+    return Array.isArray(bibliography.subjects) && bibliography.subjects.some(clean)
+      ? bibliography.subjects.map(clean).filter(Boolean)
+      : null;
+  }
   return clean(bibliography[field]) || null;
 }
 
 function verifiedFacts(classification, item = null) {
   return Object.fromEntries(EDITION_FIELDS.flatMap(field => {
-    const publishable = classification?.edition_fields_auto_publishable?.[field];
-    const value = classification?.edition_facts?.[field]?.value;
+    const publishable = field === 'topics'
+      ? classification?.work_fields_auto_publishable?.topics
+      : classification?.edition_fields_auto_publishable?.[field];
+    const value = field === 'topics'
+      ? classification?.work_facts?.topics
+      : classification?.edition_facts?.[field]?.value;
     // La proyección masiva completa ausencias. No sobreescribe un dato
     // existente que difiera: ese caso necesita revisión humana por edición.
-    const current = item ? existingFact(item, field) : null;
-    return publishable && !current && value !== null && value !== undefined && clean(value)
+    const trackedMissing = Array.isArray(item?.research?.missing_fields)
+      ? item.research.missing_fields.includes(field)
+      : item ? !existingFact(item, field) : true;
+    return publishable && trackedMissing && value !== null && value !== undefined && clean(value)
       ? [[field, value]]
       : [];
   }));
 }
 
 export function publicationClass(classification, facts = verifiedFacts(classification)) {
-  if ((classification?.identity_conflicts?.length || 0) > 0 ||
-      (classification?.edition_fact_conflicts?.length || 0) > 0) return 'REVIEW';
+  // Los conflictos quedan registrados y bloquean el campo conflictivo dentro
+  // del motor de evidencia, pero no deben descartar otros hechos independientes
+  // y comprobados del mismo ISBN (por ejemplo, temas oficiales de BNE aunque
+  // Google difiera en el título comercial). La publicación es campo por campo.
   if (Object.keys(facts).length > 0 && classification?.generation_policy?.can_auto_publish_work_content) return 'GREEN_FULL';
   if (Object.keys(facts).length > 0) return 'GREEN_FACTS';
+  if ((classification?.identity_conflicts?.length || 0) > 0 ||
+      (classification?.edition_fact_conflicts?.length || 0) > 0) return 'REVIEW';
   return 'NO_EVIDENCE';
 }
 

@@ -9,6 +9,7 @@
 // - sólo se usa offline/batch, nunca en una request de cliente.
 
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
+import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
 
 export const BNE_SRU_BASE = 'https://catalogo.bne.es/view/sru/34BNE_INST';
 export const BNE_MAX_RECORDS = 5;
@@ -158,7 +159,7 @@ function pageCount(record) {
 
 function languageValue(record) {
   const values = [...new Set(subfieldValues(record, '041', ['a', 'd', 'h']))];
-  return values.length ? values.join(', ') : null;
+  return normalizeBookLanguage(values.join(', '));
 }
 
 function summaryValue(record) {

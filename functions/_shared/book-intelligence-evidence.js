@@ -127,6 +127,25 @@ function hasSubstantiveWorkContent(record) {
     audience.length >= 40;
 }
 
+function autoPublishableTopics(workRecords) {
+  const byTopic = new Map();
+  for (const record of workRecords) {
+    for (const topic of record.topics || []) {
+      const key = normalizeEvidenceText(topic);
+      if (!key || key.length < 3) continue;
+      const current = byTopic.get(key) || { value: clean(topic), families: new Set(), official: false };
+      current.families.add(record._policy.independentFamily);
+      current.official ||= record._policy.official;
+      byTopic.set(key, current);
+    }
+  }
+  return [...byTopic.values()]
+    .filter(topic => topic.official || topic.families.size >= 2)
+    .sort((a, b) => Number(b.official) - Number(a.official) || b.families.size - a.families.size || a.value.localeCompare(b.value))
+    .slice(0, 6)
+    .map(topic => topic.value);
+}
+
 function normalizeRecord(record, index) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return null;
   const policy = sourcePolicy(record.source);
@@ -240,6 +259,7 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
       .filter(record => record._policy.trust >= 4)
       .map(record => record._policy.independentFamily),
   );
+  const verifiedTopics = autoPublishableTopics(workRecords);
 
   const editionFacts = {};
   const editionFactConflicts = [];
@@ -296,10 +316,16 @@ export function classifyBookIntelligenceEvidence(item, evidenceRecords = []) {
     edition_fact_conflicts: editionFactConflicts,
     edition_facts: editionFacts,
     edition_fields_auto_publishable: editionFieldsAutoPublishable,
+    work_facts: {
+      topics: verifiedTopics,
+    },
+    work_fields_auto_publishable: {
+      topics: verifiedTopics.length > 0,
+    },
     generation_policy: {
       can_generate_work_content: tier === 'green' || tier === 'yellow',
       can_auto_publish_work_content: tier === 'green',
-      can_generate_five_topics: tier === 'green' || (
+      can_generate_five_topics: verifiedTopics.length >= 5 || tier === 'green' || (
         tier === 'yellow' && workRecords.some(record => record.topics.length >= 5)
       ),
       can_generate_audience: tier === 'green' || workRecords.some(record => clean(record.audience).length >= 40),

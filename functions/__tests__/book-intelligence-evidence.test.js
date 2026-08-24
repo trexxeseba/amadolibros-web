@@ -181,6 +181,14 @@ test('fuente oficial exacta o dos familias coincidentes habilitan el campo', () 
   assert.equal(corroborated.edition_fields_auto_publishable.language, true);
 });
 
+test('temas de biblioteca nacional quedan publicables como hechos de obra', () => {
+  const result = classifyBookIntelligenceEvidence(item(), [evidence('national_library', {
+    topics: ['Familia', 'Educación', 'Crianza'],
+  })]);
+  assert.deepEqual(result.work_facts.topics, ['Crianza', 'Educación', 'Familia']);
+  assert.equal(result.work_fields_auto_publishable.topics, true);
+});
+
 test('conflicto de páginas se expone y ese campo deja de ser auto-publicable', () => {
   const result = classifyBookIntelligenceEvidence(item(), [
     evidence('google_books', { pages: 304 }),

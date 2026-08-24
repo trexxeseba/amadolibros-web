@@ -42,6 +42,8 @@ function classification(overrides = {}) {
     edition_fact_conflicts: [],
     edition_facts: {},
     edition_fields_auto_publishable: {},
+    work_facts: { topics: [] },
+    work_fields_auto_publishable: { topics: false },
     generation_policy: { can_auto_publish_work_content: false },
     ...overrides,
   };
@@ -67,6 +69,15 @@ test('selecciona ISBN activos unicos, excluye enriquecidos y prioriza brechas', 
   assert.deepEqual(result.selected[0].listing_ids, ['MLU2', 'MLU3']);
 });
 
+test('temas oficiales cuentan como mejora SEO cuando la edición no los tenía', () => {
+  const result = buildResearchResult(catalogItem('MLU1', ISBN_A), classification({
+    work_facts: { topics: ['Educación', 'Familia'] },
+    work_fields_auto_publishable: { topics: true },
+  }), {});
+  assert.deepEqual(result.verified_facts, { topics: ['Educación', 'Familia'] });
+  assert.equal(result.publication_class, 'GREEN_FACTS');
+});
+
 test('falla si no existen suficientes ISBN vendibles para cumplir el contrato', () => {
   assert.throws(() => selectResearchCohort({
     catalogItems: [catalogItem('MLU1', ISBN_A)],
@@ -87,6 +98,11 @@ test('separa full, facts, review y sin evidencia', () => {
   assert.equal(publicationClass(classification({
     identity_conflicts: [{ field: 'title' }],
   })), 'REVIEW');
+  assert.equal(publicationClass(classification({
+    identity_conflicts: [{ field: 'title' }],
+    edition_facts: { pages: { value: 320 } },
+    edition_fields_auto_publishable: { pages: true },
+  })), 'GREEN_FACTS');
   assert.equal(publicationClass(classification()), 'NO_EVIDENCE');
 });
 
@@ -101,6 +117,24 @@ test('sólo cuenta una mejora cuando completa un dato ausente', () => {
   );
   assert.deepEqual(result.verified_facts, {});
   assert.equal(result.publication_class, 'NO_EVIDENCE');
+});
+
+test('un ISBN cuenta cuando completa un duplicado aunque el representante ya tenga el dato', () => {
+  const cohort = selectResearchCohort({
+    catalogItems: [
+      catalogItem('MLU1', ISBN_A, { author: 'Meg Meeker', available_quantity: 9 }),
+      catalogItem('MLU2', ISBN_A, { author: 'Desconocido', available_quantity: 1 }),
+    ],
+    limit: 1,
+  });
+  assert.equal(cohort.selected[0].id, 'MLU1');
+  assert.equal(cohort.selected[0].research.missing_fields.includes('author'), true);
+  const result = buildResearchResult(cohort.selected[0], classification({
+    edition_facts: { author: { value: 'Meg Meeker' } },
+    edition_fields_auto_publishable: { author: true },
+  }), {});
+  assert.deepEqual(result.verified_facts, { author: 'Meg Meeker' });
+  assert.equal(result.publication_class, 'GREEN_FACTS');
 });
 
 test('resultado publico conserva hechos pero nunca vuelca texto fuente', () => {

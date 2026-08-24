@@ -82,10 +82,13 @@ jobs:
           RESEARCH_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           mkdir -p artifacts/book-intelligence/isbn-1000
+          # Una corrida puede cerrar roja porque todavía no llegó a 1.000 y,
+          # aun así, su caché es progreso válido. Restauramos la última
+          # completada, no sólo la última verde.
           previous_run="$(gh run list \
             --workflow book-intelligence-1000.yml \
             --branch "$RESEARCH_BRANCH" \
-            --status success \
+            --status completed \
             --limit 1 \
             --json databaseId \
             --jq '.[0].databaseId // empty')"

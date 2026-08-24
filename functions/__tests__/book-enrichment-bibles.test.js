@@ -7,6 +7,7 @@ import {
   listBookEnrichments,
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
+import { BOOK_FACT_ENRICHMENTS } from '../_shared/book-enrichment-facts-1000.js';
 import { buildAutomaticProductShowcase } from '../_shared/automatic-product-showcase.js';
 import { enrichAutomaticProductShowcaseHtml, onRequest as productMiddleware } from '../libro/_middleware.js';
 import { renderPage } from '../libro/[[path]].js';
@@ -34,6 +35,37 @@ test('el registro sólo contiene entradas publicables con fuente oficial e ISBN 
   const entries = listBookEnrichments();
   assert.ok(entries.length >= 6);
   for (const entry of entries) assert.equal(validateBookEnrichment(entry), true);
+});
+
+test('el gateway acepta hechos masivos sólo con procedencia suficiente por campo', () => {
+  const base = {
+    schema_version: 1,
+    isbn: '9788496836693',
+    decision: 'auto_publish_facts',
+    verified_at: '2026-08-24',
+    facts: { pages: 304, bibliographic: { publication_year: '2008' } },
+  };
+  const official = {
+    ...base,
+    provenance: [{
+      type: 'national_library',
+      provider: 'Biblioteca Nacional de España',
+      url: 'https://catalogo.bne.es/record/1',
+      relationship: 'exact_edition',
+      isbn: base.isbn,
+      verified_at: '2026-08-24',
+      fields: ['pages', 'publication_year'],
+    }],
+  };
+  assert.equal(validateBookEnrichment(official), true);
+  assert.equal(validateBookEnrichment({
+    ...base,
+    provenance: [{
+      ...official.provenance[0],
+      type: 'bibliographic_database',
+      provider: 'Google Books',
+    }],
+  }), false);
 });
 
 test('el primer lote incluye dos Reina-Valera de alta prioridad con datos oficiales', () => {
@@ -82,6 +114,36 @@ test('aplica sólo datos editoriales y preserva íntegros los datos comerciales'
   for (const field of ['id', 'title', 'author', 'isbn', 'price', 'currency', 'status', 'available_quantity', 'condition', 'pictures', 'thumbnail']) {
     assert.deepEqual(enriched[field], RAW_ITEM[field], `no debía cambiar ${field}`);
   }
+});
+
+test('los hechos automáticos nunca reemplazan datos bibliográficos ya presentes', () => {
+  const facts = BOOK_FACT_ENRICHMENTS[0];
+  if (!facts) return;
+  const original = {
+    id: facts.sample_listing_id || 'MLU999999999',
+    isbn: facts.isbn,
+    title: 'Título comercial confirmado',
+    author: 'Autor confirmado',
+    publisher: 'Editorial confirmada en Mercado Libre',
+    pages: 777,
+    price: 1990,
+    available_quantity: 3,
+    pictures: [{ url: 'https://example.com/portada.jpg' }],
+    bibliographic: {
+      language: 'Idioma confirmado',
+      format: 'Formato confirmado',
+      subjects: ['Tema confirmado'],
+    },
+  };
+
+  const enriched = applyBookEnrichment(original);
+  assert.equal(enriched.publisher, original.publisher);
+  assert.equal(enriched.pages, original.pages);
+  assert.deepEqual(enriched.bibliographic, original.bibliographic);
+  assert.equal(enriched.title, original.title);
+  assert.equal(enriched.price, original.price);
+  assert.equal(enriched.available_quantity, original.available_quantity);
+  assert.deepEqual(enriched.pictures, original.pictures);
 });
 
 test('un ISBN no investigado conserva exactamente el objeto original', () => {

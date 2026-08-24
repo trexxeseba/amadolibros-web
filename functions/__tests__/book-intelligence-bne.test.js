@@ -75,7 +75,7 @@ test('parser BNE revalida 020$a y extrae evidencia bibliográfica fuerte', () =>
   assert.equal(record.author, 'Meeker, Meg');
   assert.equal(record.publisher, 'Ciudadela Libros');
   assert.equal(record.pages, 304);
-  assert.equal(record.language, 'spa');
+  assert.equal(record.language, 'Español');
   assert.equal(record.publication_year, '2008');
   assert.equal(record.topics.length, 3);
   assert.equal(record.raw_quality.exact_isbn, true);

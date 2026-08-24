@@ -9,6 +9,7 @@
 // - la caché evita volver a pedir datos estables en cada corrida.
 
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
+import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
 
 export const SOURCE_CACHE_SCHEMA_VERSION = 1;
 export const GOOGLE_BOOKS_CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -16,6 +17,7 @@ export const OPEN_LIBRARY_CACHE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 export const BNE_CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
 export const OPEN_LIBRARY_MAX_ISBNS_PER_REQUEST = 20;
 export const DEFAULT_OPEN_LIBRARY_BATCH_BUDGET = 25;
+export const OPEN_LIBRARY_ADAPTER_VERSION = 2;
 
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
 // Open Library recomienda hoy Search/ISBN para consultas nuevas. Para este
@@ -99,9 +101,10 @@ export function parseGoogleBooksEvidence(payload, isbn) {
       description: plainText(info.description),
       publisher: clean(info.publisher) || null,
       pages: Number.isInteger(Number(info.pageCount)) && Number(info.pageCount) > 0 ? Number(info.pageCount) : null,
-      language: clean(info.language) || null,
+      language: normalizeBookLanguage(info.language),
       publication_year: yearFromDate(info.publishedDate),
-      format: clean(info.printType) || null,
+      // printType=BOOK describe el recurso, no su encuadernación física.
+      format: null,
       topics,
       raw_quality: {
         exact_isbn: true,
@@ -205,7 +208,7 @@ export function parseOpenLibraryEvidence(payload, requestedIsbns) {
         description: descriptionValue(data.description || record?.description),
         publisher: publisherName(data.publishers || record?.publishers),
         pages: Number.isInteger(pages) && pages > 0 ? pages : null,
-        language: languages.length ? languages.join(', ') : null,
+        language: normalizeBookLanguage(languages.join(', ')),
         publication_year: yearFromDate(publishDate),
         format: clean(data.physical_format || record?.physical_format) || null,
         topics,
@@ -229,6 +232,10 @@ export function isSourceCacheFresh(cache, isbn, source, { now = Date.now() } = {
   // Un error HTTP nunca se congela durante 90/180/365 días. Así, un 429 o
   // una caída transitoria vuelve al plan siguiente y el lote es reanudable.
   if (clean(entry?.error)) return false;
+  // v1 consultaba Read API y el parser no correspondía a su payload: 250
+  // falsos no-match quedaron cacheados. Sólo Open Library necesita invalidar
+  // esas entradas; Google y BNE conservan sus resultados válidos.
+  if (source === 'open_library' && entry.adapter_version !== OPEN_LIBRARY_ADAPTER_VERSION) return false;
   const fetchedAt = Date.parse(entry.fetched_at);
   if (!Number.isFinite(fetchedAt)) return false;
   const ttl = source === 'open_library'
@@ -396,6 +403,7 @@ export function mergeSourceCache(cache, isbn, source, records, {
   next.generated_at = fetchedAt;
   next.entries[normalized] ||= {};
   next.entries[normalized][source] = {
+    adapter_version: source === 'open_library' ? OPEN_LIBRARY_ADAPTER_VERSION : 1,
     fetched_at: fetchedAt,
     error: error ? clean(error) : null,
     records: Array.isArray(records) ? records : [],

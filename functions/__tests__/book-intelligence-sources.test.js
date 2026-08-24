@@ -5,6 +5,7 @@ import {
   BNE_CACHE_TTL_MS,
   GOOGLE_BOOKS_CACHE_TTL_MS,
   OPEN_LIBRARY_CACHE_TTL_MS,
+  OPEN_LIBRARY_ADAPTER_VERSION,
   OPEN_LIBRARY_MAX_ISBNS_PER_REQUEST,
   buildGoogleBooksUrl,
   buildOpenLibraryBatchUrl,
@@ -82,6 +83,8 @@ test('parseGoogleBooksEvidence sólo acepta volumes que contienen el ISBN exacto
   assert.equal(records[0].publisher, 'Ciudadela');
   assert.equal(records[0].pages, 304);
   assert.equal(records[0].publication_year, '2008');
+  assert.equal(records[0].language, 'Español');
+  assert.equal(records[0].format, null);
   assert.equal(records[0].description.includes('<p>'), false);
   assert.deepEqual(records[0].topics, ['Familia', 'Educación']);
 });
@@ -200,6 +203,27 @@ test('un error cacheado nunca se considera fresco y se reintenta', () => {
     error: 'HTTP 429',
   });
   assert.equal(isSourceCacheFresh(cache, ISBN, 'google_books', { now }), false);
+});
+
+test('invalida los falsos no-match del adaptador Open Library v1', () => {
+  const now = Date.parse('2026-08-24T12:00:00Z');
+  const stale = {
+    entries: {
+      [ISBN]: {
+        open_library: {
+          fetched_at: new Date(now - 1000).toISOString(),
+          error: null,
+          records: [],
+        },
+      },
+    },
+  };
+  assert.equal(isSourceCacheFresh(stale, ISBN, 'open_library', { now }), false);
+  const current = mergeSourceCache(emptySourceCache(), ISBN, 'open_library', [], {
+    fetchedAt: new Date(now - 1000).toISOString(),
+  });
+  assert.equal(current.entries[ISBN].open_library.adapter_version, OPEN_LIBRARY_ADAPTER_VERSION);
+  assert.equal(isSourceCacheFresh(current, ISBN, 'open_library', { now }), true);
 });
 
 test('Open Library budget es bajo por defecto y se divide en requests de máximo 20', () => {
