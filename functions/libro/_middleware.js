@@ -98,6 +98,14 @@ function showcaseStyles() {
     .showcase-links a{font-size:.84rem;font-weight:800;color:#8f4436;text-decoration:none}
     .showcase-links a:hover{text-decoration:underline}
     .showcase-links a:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
+    .showcase-help{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+                   margin-top:1.15rem;padding:.85rem 1rem;background:#fff8f4;
+                   border:1px solid #ecd1c6;border-radius:.65rem}
+    .showcase-help p{margin:0;font-size:.9rem;font-weight:750;color:#4b342b;line-height:1.45}
+    .showcase-help a{display:inline-flex;align-items:center;min-height:44px;flex:0 0 auto;
+                     font-size:.86rem;font-weight:850;color:#8f4436;text-decoration:none}
+    .showcase-help a:hover{text-decoration:underline}
+    .showcase-help a:focus-visible{outline:2px solid #a94e3d;outline-offset:3px}
     @media(max-width:760px){
       .showcase-grid{grid-template-columns:1fr}
       .showcase-card{border-right:0;border-bottom:1px solid #e2e8f0}
@@ -107,6 +115,7 @@ function showcaseStyles() {
       .showcase-facts{grid-template-columns:1fr}
       .showcase-fact,.showcase-fact:nth-child(odd){border-right:0;border-bottom:1px solid #eef2f7}
       .showcase-fact:last-child{border-bottom:0}
+      .showcase-help{align-items:flex-start;flex-direction:column;gap:.35rem}
     }
     @media(max-width:430px){
       .showcase-intro,.showcase-edition{padding:1.05rem}
@@ -228,7 +237,7 @@ export function enrichByRequestProductHtml(html, productId) {
   return result;
 }
 
-function renderProductShowcase(config) {
+function renderProductShowcase(config, productId) {
   const paragraphs = (Array.isArray(config.summary) ? config.summary : [])
     .map(paragraph => `    <p>${escapeHtml(paragraph)}</p>`)
     .join('\n');
@@ -244,6 +253,21 @@ function renderProductShowcase(config) {
   const linksHtml = links
     ? `<div class="showcase-links">\n      ${links}\n    </div>`
     : '';
+  const requestQuery = new URLSearchParams({
+    tipo: 'exacto',
+    q: String(config.h1 || ''),
+    origen: 'ficha',
+  });
+  if (productId) requestQuery.set('libro', productId);
+  const requestHelp = config.requestHelp || {
+    question: '¿Buscás otro libro o una edición específica?',
+    href: `/pedir-libro?${requestQuery.toString()}`,
+    label: 'Contanos qué buscás',
+  };
+  const requestHelpHtml = `<aside class="showcase-help" aria-label="Ayuda para encontrar otro libro">
+      <p>${escapeHtml(requestHelp.question)}</p>
+      <a href="${escapeHtml(requestHelp.href)}">${escapeHtml(requestHelp.label)} →</a>
+    </aside>`;
 
   return `<section class="product-showcase" aria-labelledby="showcase-title">
   <div class="showcase-intro">
@@ -276,6 +300,7 @@ ${highlights}
       ${facts}
     </dl>
     ${linksHtml}
+    ${requestHelpHtml}
   </section>
 </section>`;
 }
@@ -406,7 +431,7 @@ export function enrichAutomaticProductShowcaseHtml(html, productId) {
   result = replaceTitleMeta(result, config);
   result = replaceDescriptionMeta(result, config);
   result = enrichAutomaticShowcaseSchema(result, id, config);
-  result = insertShowcaseBeforeRelated(result, renderProductShowcase(config));
+  result = insertShowcaseBeforeRelated(result, renderProductShowcase(config, id));
   if (!result.includes(SHOWCASE_STYLE_MARKER)) {
     result = result.replace('</style>', `${showcaseStyles()}\n  </style>`);
   }
@@ -427,7 +452,7 @@ export function enrichProductShowcaseHtml(html, productId) {
     `$1${escapeHtml(config.h1)}$2`,
   );
   result = enrichShowcaseSchema(result, productId, config);
-  result = result.replace('</main>', `${renderProductShowcase(config)}\n</main>`);
+  result = result.replace('</main>', `${renderProductShowcase(config, productId)}\n</main>`);
   if (!result.includes(SHOWCASE_STYLE_MARKER)) {
     result = result.replace('</style>', `${showcaseStyles()}\n  </style>`);
   }

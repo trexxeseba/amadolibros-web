@@ -185,3 +185,242 @@ test('REVIEW_THRESHOLD está definido y es coherente con el umbral usado', () =>
   assert.equal(typeof REVIEW_THRESHOLD, 'number');
   assert.ok(REVIEW_THRESHOLD > 0 && REVIEW_THRESHOLD < 1);
 });
+
+test('QA religión: Messi "El Dios" va a Deportes > Fútbol, no a Religión', () => {
+  const result = classify({
+    mlu: 'MLU652656116',
+    title: 'Messi, por amor a la camiseta. El Dios',
+    author: 'Pasman, Juan Carlos',
+    publisher: '',
+    isbn: '9789507544255',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'deportes');
+  assert.equal(result.subcategoryId, 'futbol');
+});
+
+test('QA religión: Sabiduría de los psicópatas va a Psicología por autor verificado', () => {
+  const result = classify({
+    mlu: 'MLU707190270',
+    title: 'La Sabiduría de los Psicópatas',
+    author: 'Dutton, Kevin',
+    publisher: '',
+    isbn: '9788408294672',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'psicologia');
+});
+
+test('QA religión: Tolstói no entra por la palabra genérica sabiduría', () => {
+  const result = classify({
+    mlu: 'MLU1183119300',
+    title: 'Un Año de Sabiduría',
+    author: 'Tolstói, Lev',
+    publisher: '',
+    isbn: '9798242179523',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'filosofia-ciencias-sociales');
+});
+
+test('QA religión: Louise Hay va a Desarrollo personal, no por sabiduría a Religión', () => {
+  const result = classify({
+    mlu: 'MLU660545320',
+    title: '64 Cartas de Sabiduría',
+    author: 'Louise L. Hay',
+    publisher: '',
+    isbn: '9788484455349',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'desarrollo-personal');
+});
+
+test('QA religión: Solo por Hoy de NAWS va a Desarrollo personal', () => {
+  const result = classify({
+    mlu: 'MLU717742182',
+    title: 'Solo Por Hoy Adictos Recuperación Narcóticos Anónimos',
+    author: 'NAWS',
+    publisher: '',
+    isbn: '9781557762528',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'desarrollo-personal');
+});
+
+test('QA religión: Kebra Nagast se separa de Biblias como otra tradición religiosa', () => {
+  const result = classify({
+    mlu: 'MLU711624600',
+    title: 'Kebra Nagast',
+    author: 'Mazzoni, Lorenzo',
+    publisher: '',
+    isbn: '9781793013040',
+    status: 'active',
+  }, {
+    mlu: 'MLU711624600',
+    type: 'book',
+    primaryCategoryId: 'religion-espiritualidad',
+    subcategoryId: 'otras-tradiciones',
+    secondaryCategoryIds: [],
+    tags: ['Rastafari', 'Etiopía'],
+  });
+  assert.equal(result.primaryCategoryId, 'religion-espiritualidad');
+  assert.equal(result.subcategoryId, 'otras-tradiciones');
+});
+
+test('QA religión: Astrología Kabbalística va a Esoterismo > Cábala', () => {
+  const result = classify({
+    mlu: 'MLU707790092',
+    title: 'Astrología Kabbalística',
+    author: 'Rav Berg',
+    publisher: '',
+    isbn: '9781571893048',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'esoterismo-tarot');
+  assert.equal(result.subcategoryId, 'cabala-kabbalah');
+});
+
+test('QA Biblias: Reina-Valera obtiene su subcategoría incluso con autor reconocido', () => {
+  const result = classify({
+    mlu: 'MLU1201985260',
+    title: 'Santa Biblia Reina Valera 1960 Letra Grande Con Cierre',
+    author: 'Reina Valera',
+    publisher: '',
+    isbn: '9780000000000',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'religion-espiritualidad');
+  assert.equal(result.subcategoryId, 'reina-valera');
+});
+
+test('QA Biblias: obras sobre la Biblia no contaminan la subcategoría de ediciones bíblicas', () => {
+  const cases = [
+    ['Jesús Maestro De Meditacion Espiritual Evangelio Jalics', 'FRANZ JALICS', 'espiritualidad'],
+    ['El Evangelio De Los Esenios 1 Edmon Bordeaux Szekely', 'SZEKELY, EDMON B.', 'espiritualidad'],
+    ['La Buena Noticia De Cada Día 2024 Salmo Evangelio', 'EQUIPO BIBLICO VERBO', 'espiritualidad'],
+    ['Mapas Atlas Didáctico De La Biblia - Ed. San Pablo', 'Giacomo Perego', 'espiritualidad'],
+    ['Nuevos Enigmas De La Biblia', 'Ariel Álvarez Valdes', 'espiritualidad'],
+    ['La Biblia Libro Por Libro Maestro-jóvenes Y Adultos Libro 1', 'Casa Bautista De Publicaciones', 'espiritualidad'],
+    ['Lucas, Evangelista De La Ternura De Dios, De Casa De La Biblia', 'Francesc Ramis Darder', 'espiritualidad'],
+    ['Cómo Estudiar E Interpretar La Biblia', 'R.C. Sproul', 'espiritualidad'],
+    ['Comprender Las Escrituras: Curso Completo Estudio La Biblia', 'Scott Hahn', 'espiritualidad'],
+    ['Biblia Corán Tanaj Roberto Blatt Libros Historia Religiones', 'Roberto Blatt', 'otras-tradiciones'],
+  ];
+
+  for (const [title, author, expectedSubcategory] of cases) {
+    const result = classify({
+      mlu: `QA-${title}`,
+      title,
+      author,
+      publisher: '',
+      isbn: '9780000000000',
+      status: 'active',
+    });
+    assert.equal(result.primaryCategoryId, 'religion-espiritualidad', title);
+    assert.equal(result.subcategoryId, expectedSubcategory, title);
+  }
+});
+
+test('QA Biblias: evangelio por sí solo no equivale a una edición de la Biblia', () => {
+  const result = classify({
+    mlu: 'QA-EVANGELIO',
+    title: 'Evangelio gnóstico de Tomás',
+    author: 'Anónimo',
+    publisher: '',
+    isbn: '9780000000001',
+    status: 'active',
+  });
+  assert.notEqual(result.subcategoryId, 'biblia');
+  assert.notEqual(result.subcategoryId, 'reina-valera');
+});
+
+test('QA Biblias: Biblia y Nuevo Testamento reales conservan la subcategoría comercial', () => {
+  const cases = [
+    ['Biblia Letra Gigante Lenguaje Actual Con Deuterocanónico', 'biblia'],
+    ['Nuevo Testamento Edición Pastoral San Pablo', 'biblia'],
+    ['Santa Biblia Reina Valera 1960 Letra Grande Con Cierre', 'reina-valera'],
+  ];
+  for (const [title, expectedSubcategory] of cases) {
+    const result = classify({
+      mlu: `QA-POS-${title}`,
+      title,
+      author: '',
+      publisher: '',
+      isbn: '9780000000002',
+      status: 'active',
+    });
+    assert.equal(result.primaryCategoryId, 'religion-espiritualidad', title);
+    assert.equal(result.subcategoryId, expectedSubcategory, title);
+  }
+});
+
+test('QA autores: un nombre parcial no suplanta una señal de autor más específica', () => {
+  const result = classify({
+    mlu: 'MLU614544321',
+    title: 'Práctica Psicomotriz en el Tratamiento Psíquico',
+    author: 'José Rodríguez',
+    publisher: '',
+    isbn: '9780000000001',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'psicologia');
+  assert.equal(result.subcategoryId, 'psicologia-clinica');
+});
+
+test('QA Sufismo: Idries Shah obtiene una sección propia, no Biblia', () => {
+  const result = classify({
+    mlu: 'MLU688184434',
+    title: 'La Sabiduría de los Idiotas Idries Shah',
+    author: 'IDRIES SHAH',
+    publisher: '',
+    isbn: '9781784799502',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'esoterismo-tarot');
+  assert.equal(result.subcategoryId, 'sufismo');
+});
+
+test('QA cómics: God of War no entra en Religión por la palabra dios', () => {
+  const result = classify({
+    mlu: 'MLU625778990',
+    title: 'God of War 2. El Dios Caído',
+    author: 'CHRIS ROBERSON',
+    publisher: 'Norma Editorial',
+    isbn: '9788467949124',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'comics-manga');
+});
+
+test('QA naturaleza: una obra zoológica puede quedar separada de Caballos', () => {
+  const result = classify({
+    mlu: 'MLU828407348',
+    title: 'Hermano Animal',
+    author: 'Karl König',
+    publisher: 'Antroposófica',
+    isbn: '9789876820868',
+    status: 'active',
+  }, {
+    mlu: 'MLU828407348',
+    type: 'book',
+    primaryCategoryId: 'naturaleza-animales',
+    subcategoryId: 'zoologia-animales',
+    secondaryCategoryIds: [],
+    tags: ['Animales', 'Zoología'],
+  });
+  assert.equal(result.primaryCategoryId, 'naturaleza-animales');
+  assert.equal(result.subcategoryId, 'zoologia-animales');
+});
+
+test('QA caballos: un título inequívocamente ecuestre obtiene su subcategoría', () => {
+  const result = classify({
+    mlu: 'MLU625770700',
+    title: '85 Ejercicios de Pista para el Caballo Jinete y Monitor Equitación',
+    author: 'Venamore, Sarah',
+    publisher: '',
+    isbn: '9788479027100',
+    status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'naturaleza-animales');
+  assert.equal(result.subcategoryId, 'caballos-equitacion');
+});

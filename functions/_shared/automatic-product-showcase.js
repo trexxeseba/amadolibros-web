@@ -240,29 +240,29 @@ function authorCopy(item) {
   };
 }
 
-function contextualRequestLink(item) {
+function contextualRequestHelp(item) {
   const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
     ? item.bibliographic
     : {};
-  const subject = normalizedText(`${item?.title || ''} ${bibliography.genre || ''}`);
-  const esotericism = /\b(tarot|oracul|esoter|lenormand|kipper|astrolog|cabala|kabbal|sufi|esenio)\w*/u;
-  const biblesAndReligion = /\b(biblia|reina valera|religion|religios|catolic|cristian|teolog|evangelio|testamento)\w*/u;
+  const genre = normalizedText(bibliography.genre);
+  const query = new URLSearchParams({
+    tipo: 'exacto',
+    q: clean(item?.title),
+    origen: 'ficha',
+  });
+  if (clean(item?.id)) query.set('libro', clean(item.id));
 
-  if (esotericism.test(subject)) {
-    return {
-      href: '/pedir-libro?tipo=exacto',
-      label: '¿Querés algo más de esoterismo? Contanos qué buscás',
-    };
+  let question = '¿Buscás otro libro o una edición específica?';
+  if (/\bbiblias?\b/u.test(genre) || /\breina[\s-]+valera\b/u.test(genre)) {
+    question = '¿Buscás otra Biblia o una edición específica?';
+  } else if (/\b(tarot|oracul\w*|esoter\w*)\b/u.test(genre)) {
+    question = '¿Buscás otro tarot, oráculo o libro de esoterismo?';
   }
-  if (biblesAndReligion.test(subject)) {
-    return {
-      href: '/pedir-libro?tipo=exacto',
-      label: '¿Querés otra Biblia o edición religiosa? Contanos qué buscás',
-    };
-  }
+
   return {
-    href: '/pedir-libro?tipo=exacto',
-    label: '¿Buscás otro libro? Contanos qué buscás',
+    question,
+    href: `/pedir-libro?${query.toString()}`,
+    label: 'Contanos qué buscás',
   };
 }
 
@@ -285,8 +285,13 @@ function buildLinks(item) {
       label: `Explorar libros de ${genre}`,
     });
   }
-  links.push(contextualRequestLink(item));
-  return links.slice(0, 3);
+  if (links.length === 0) {
+    links.push({
+      href: '/catalogo',
+      label: 'Seguir explorando el catálogo',
+    });
+  }
+  return links.slice(0, 2);
 }
 
 function shortenByWord(value, maxLength) {
@@ -447,6 +452,7 @@ export function buildAutomaticProductShowcase(item) {
       : 'Datos tomados de la publicación',
     editionFacts: facts,
     links: buildLinks(item),
+    requestHelp: contextualRequestHelp(item),
     schemaDescription,
     metaDescription: buildMetaDescription(item),
   };

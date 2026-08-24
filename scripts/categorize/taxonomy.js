@@ -10,7 +10,7 @@
 // revistas, objetos de colección) — reemplaza la idea de "excluir del
 // catálogo": todo activo queda visible en alguna categoría.
 
-export const TAXONOMY_VERSION = 2;
+export const TAXONOMY_VERSION = 3;
 
 // subcategories: null si la categoría no tiene subdivisión (volumen
 // insuficiente para que valga la pena, o no aplica).
@@ -51,7 +51,9 @@ export const CATEGORIES = [
     id: 'religion-espiritualidad', name: 'Religión y espiritualidad',
     subcategories: [
       { id: 'biblia', name: 'Biblia' },
+      { id: 'reina-valera', name: 'Reina-Valera' },
       { id: 'espiritualidad', name: 'Espiritualidad' },
+      { id: 'otras-tradiciones', name: 'Otras tradiciones religiosas' },
     ],
   },
   {
@@ -59,6 +61,8 @@ export const CATEGORIES = [
     subcategories: [
       { id: 'tarot-oraculos', name: 'Tarot y oráculos' },
       { id: 'astrologia', name: 'Astrología' },
+      { id: 'cabala-kabbalah', name: 'Cábala y Kabbalah' },
+      { id: 'sufismo', name: 'Sufismo' },
     ],
   },
   {
@@ -101,6 +105,20 @@ export const CATEGORIES = [
       { id: 'biologia', name: 'Biología' },
       { id: 'fisica-quimica', name: 'Física y química' },
       { id: 'programacion', name: 'Programación' },
+    ],
+  },
+  {
+    id: 'naturaleza-animales', name: 'Naturaleza y animales',
+    subcategories: [
+      { id: 'zoologia-animales', name: 'Zoología y animales' },
+      { id: 'caballos-equitacion', name: 'Caballos y equitación' },
+    ],
+  },
+  {
+    id: 'deportes', name: 'Deportes',
+    subcategories: [
+      { id: 'futbol', name: 'Fútbol' },
+      { id: 'otros-deportes', name: 'Otros deportes' },
     ],
   },
   {

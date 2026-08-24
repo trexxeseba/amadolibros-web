@@ -74,6 +74,8 @@ export const CONTACT = {
 export const FOOTER_LINKS = [
     { href: '/quienes-somos', label: 'Quiénes somos y cómo trabajamos' },
     { href: '/pedir-libro', label: '¿No encontraste el libro?' },
+    { href: '/libros/biblias', label: 'Biblias en Uruguay' },
+    { href: '/libros/biblias/reina-valera', label: 'Biblias Reina-Valera' },
     { href: '/como-identificar-edicion-correcta-isbn', label: 'Guía para verificar un ISBN' },
     { href: '/libros-agotados-importados-uruguay', label: 'Libros por encargo' },
     { href: '/envios',       label: 'Envíos y retiro' },
