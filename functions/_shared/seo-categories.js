@@ -46,6 +46,43 @@ export const SEO_CATEGORIES = [
         },
     },
     {
+        id: 'esoterismo-tarot/mazos',
+        classificationId: 'tarot-oraculos',
+        parentId: 'esoterismo-tarot',
+        parentName: 'Tarot y oráculos',
+        kind: 'tarot-decks',
+        tarotFilter: 'verified-tarot-decks',
+        name: 'Mazos de tarot',
+        title: 'Mazos de Tarot Uruguay | Entrega hoy | Amado Libros',
+        h1: 'Mazos de tarot en Uruguay con entrega hoy en Montevideo',
+        description: 'Mazos de tarot disponibles en Uruguay con stock real, entrega en el día coordinada en Montevideo, envío a $250 y atención personalizada para elegir la edición correcta.',
+        intro: 'Compará mazos físicos de tarot disponibles ahora: sistema, idioma, cantidad de cartas, guía incluida y edición. Coordinamos entrega en el día en Montevideo según zona y horario, y te ayudamos personalmente a confirmar que sea el mazo que buscás.',
+        about: ['Mazo de tarot', 'Tarot Rider-Waite-Smith', 'Tarot de Marsella', 'Tarot Thoth'],
+        buyerGuide: {
+            title: 'Cómo elegir un mazo de tarot sin equivocarte de edición',
+            intro: 'La ilustración de la caja no alcanza para identificar un mazo. Antes de comprar, revisá el sistema, el contenido físico, el idioma y la edición exacta.',
+            points: [
+                {
+                    title: 'Sistema del mazo',
+                    text: 'Rider-Waite-Smith, Marsella y Thoth tienen estructuras e imágenes distintas. La ficha sólo declara el sistema cuando está verificado.',
+                },
+                {
+                    title: 'Cartas y contenido',
+                    text: 'Confirmá la cantidad de cartas y si el producto incluye libro, guía breve o solamente el mazo. No lo inferimos por la fotografía de portada.',
+                },
+                {
+                    title: 'Idioma',
+                    text: 'Revisá por separado el idioma de las cartas y el del manual. Algunas ediciones importadas combinan cartas sin texto con una guía en otro idioma.',
+                },
+                {
+                    title: 'Editorial e identificador',
+                    text: 'Usá editorial, ISBN, EAN o GTIN para distinguir reimpresiones y formatos. Si falta un dato decisivo, lo verificamos antes de la compra.',
+                },
+            ],
+            serviceNote: 'Te ayudamos a comparar ediciones y a encontrar un mazo específico. Amado Libros vende productos; no realiza lecturas ni interpretaciones de tarot.',
+        },
+    },
+    {
         id: 'medicina-salud',
         name: 'Medicina y salud',
         title: 'Libros de medicina y salud en Uruguay | Amado Libros',
@@ -113,10 +150,10 @@ export const SEO_CATEGORIES = [
         parentName: 'Biblias',
         kind: 'reina-valera',
         name: 'Reina-Valera',
-        title: 'Biblia Reina-Valera en Uruguay | RVR 1960 y ediciones | Amado Libros',
-        h1: 'Biblia Reina-Valera en Uruguay',
-        description: 'Biblias Reina-Valera disponibles en Uruguay: RVR 1960 y otras ediciones, letra grande, estudio y distintos formatos. Compará datos y consultá stock real.',
-        intro: 'Encontrá Biblias Reina-Valera y distinguí la revisión, el tamaño de letra, las ayudas de estudio y la encuadernación antes de comprar. Si buscás una edición exacta, la verificamos por ISBN.',
+        title: 'Biblia Reina Valera Uruguay | Entrega hoy | Amado Libros',
+        h1: 'Biblias Reina Valera en Uruguay con entrega hoy en Montevideo',
+        description: 'Biblias Reina Valera disponibles en Uruguay con stock real, entrega en el día coordinada en Montevideo, envío a $250 y atención personalizada para comparar ediciones.',
+        intro: 'Compará Biblias Reina Valera por revisión, tamaño de letra, ayudas de estudio, encuadernación e ISBN. Coordinamos entrega en el día en Montevideo según zona y horario, y verificamos personalmente la edición antes de la compra.',
     },
 ];
 

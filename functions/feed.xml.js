@@ -66,6 +66,8 @@ const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
 const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 const COVER_OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
+const MAX_GALLERY_IMAGES = 16;
+const MAX_ADDITIONAL_IMAGE_LINKS = 10;
 
 export async function onRequest(context) {
     try {
@@ -105,7 +107,7 @@ export async function onRequest(context) {
 
         let feedItems = '';
         for (const item of sortedItems) {
-            feedItems += renderFeedItem(item);
+            feedItems += renderFeedItem(item, coverManifest);
         }
 
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -382,16 +384,15 @@ export function truncateMerchantText(value, maxChars) {
     return clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars).trim();
 }
 
-export function merchantImageLink(item) {
+export function merchantImageLink(item, position = 0) {
     const id = String(item?.id || '').trim().toUpperCase();
-    return /^MLU\d+$/.test(id)
-        ? `${CANONICAL_BASE_URL}/book-cover/${encodeURIComponent(id)}/cover.jpg`
-        : '';
+    if (!/^MLU\d+$/.test(id) || !Number.isInteger(position) ||
+        position < 0 || position >= MAX_GALLERY_IMAGES) return '';
+    const filename = position === 0 ? 'cover.jpg' : `cover-${position + 1}.jpg`;
+    return `${CANONICAL_BASE_URL}/book-cover/${encodeURIComponent(id)}/${filename}`;
 }
 
-function primaryMerchantSource(item) {
-    const pictures = Array.isArray(item?.pictures) ? item.pictures : [];
-    const raw = pictures[0] || item?.thumbnail;
+function normalizeMerchantImageSource(raw) {
     if (typeof raw !== 'string' || !raw.trim()) return '';
     try {
         const url = new URL(raw.trim());
@@ -409,12 +410,45 @@ function primaryMerchantSource(item) {
     }
 }
 
-function readyPrimaryCover(entry, sourceUrl) {
+export function merchantImageSources(item) {
+    const pictures = Array.isArray(item?.pictures) ? item.pictures : [];
+    const candidates = pictures.length > 0 ? pictures : [item?.thumbnail];
+    return [...new Set(candidates.map(normalizeMerchantImageSource).filter(Boolean))]
+        .slice(0, MAX_GALLERY_IMAGES);
+}
+
+function readyCoverCurrent(entry, sourceUrl) {
     const current = entry?.current;
     const match = COVER_OBJECT_KEY_RE.exec(String(current?.object_key || ''));
-    if (!match || current.sha256 !== match[1]) return false;
+    if (!match || current.sha256 !== match[1]) return null;
     const expectedMime = `image/${match[2] === 'jpg' ? 'jpeg' : match[2]}`;
-    return current.mime === expectedMime && current.source_url === sourceUrl;
+    return current.mime === expectedMime && current.source_url === sourceUrl
+        ? current
+        : null;
+}
+
+export function additionalMerchantImageLinks(item, manifest, limit = MAX_ADDITIONAL_IMAGE_LINKS) {
+    if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
+        typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) return [];
+    const id = String(item?.id || '').trim().toUpperCase();
+    if (!/^MLU\d+$/.test(id)) return [];
+
+    const sources = merchantImageSources(item);
+    const primary = readyCoverCurrent(manifest.entries[`${id}:0`], sources[0]);
+    if (!primary) return [];
+
+    const seenHashes = new Set([primary.sha256]);
+    const links = [];
+    const safeLimit = Math.min(MAX_ADDITIONAL_IMAGE_LINKS, Math.max(0, Number(limit) || 0));
+    for (let position = 1; position < sources.length && links.length < safeLimit; position += 1) {
+        const current = readyCoverCurrent(manifest.entries[`${id}:${position}`], sources[position]);
+        if (!current || seenHashes.has(current.sha256)) continue;
+        const link = merchantImageLink(item, position);
+        if (!link) continue;
+        seenHashes.add(current.sha256);
+        links.push(link);
+    }
+    return links;
 }
 
 export function filterItemsWithReadyPrimaryCover(items, manifest) {
@@ -424,8 +458,8 @@ export function filterItemsWithReadyPrimaryCover(items, manifest) {
     }
     return items.filter(item => {
         const id = String(item?.id || '').trim().toUpperCase();
-        const sourceUrl = primaryMerchantSource(item);
-        return Boolean(sourceUrl && readyPrimaryCover(manifest.entries[`${id}:0`], sourceUrl));
+        const sourceUrl = merchantImageSources(item)[0];
+        return Boolean(sourceUrl && readyCoverCurrent(manifest.entries[`${id}:0`], sourceUrl));
     });
 }
 
@@ -451,7 +485,7 @@ async function readMerchantCoverManifest(context) {
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
-export function renderFeedItem(item) {
+export function renderFeedItem(item, coverManifest = null) {
     item = applyBookEnrichment(item);
     const stock = Number(item.available_quantity) || 0;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
@@ -463,6 +497,9 @@ export function renderFeedItem(item) {
     // El feed nunca expone mlstatic.com: Google obtiene la portada desde el
     // proxy/cache de Amado Libros, bajo un dominio que controlamos.
     const imageLink = merchantImageLink(item);
+    const additionalImageTags = additionalMerchantImageLinks(item, coverManifest)
+        .map(link => `\n        <g:additional_image_link>${escapeXml(link)}</g:additional_image_link>`)
+        .join('');
 
     const isbnResult = normalizeIsbnToGtin(item.isbn);
     // GTIN válido: se omite identifier_exists (default = yes, según spec de
@@ -483,7 +520,7 @@ export function renderFeedItem(item) {
         <g:title>${escapeXml(title)}</g:title>
         <g:description>${escapeXml(description)}</g:description>
         <g:link>${escapeXml(`${CANONICAL_BASE_URL}/libro/${item.id}/${slugify(item.title || '')}`)}</g:link>
-        ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>` : ''}
+        ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>${additionalImageTags}` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}

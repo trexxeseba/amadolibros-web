@@ -145,6 +145,65 @@ function buildEditionFacts(item) {
     .map(([label, value]) => ({ label, value: String(value) }));
 }
 
+const TAROT_PRIMARY_TYPE_LABEL = {
+  tarot: 'Tarot',
+  oraculo: 'Oráculo',
+  lenormand: 'Lenormand',
+  kipper: 'Kipper',
+  otro_sistema: 'Cartomancia',
+};
+const TAROT_DECK_FAMILY_LABEL = {
+  rider_waite_smith: 'Rider-Waite-Smith',
+  marsella: 'Marsella',
+  thoth: 'Thoth',
+};
+const TAROT_BUNDLE_LABEL = {
+  mazo_mas_guia: 'Mazo con guía o libro',
+  solo_mazo: 'Sólo mazo',
+};
+const TAROT_LANGUAGE_LABEL = {
+  espanol: 'Español',
+  ingles: 'Inglés',
+  multilingue: 'Multilingüe',
+};
+
+function buildVerticalFacts(classificationTags, tarotMerchTag) {
+  const tags = new Set(classificationTags.map(normalizedText).filter(Boolean));
+  const facts = [];
+  if (tags.has('reina-valera')) {
+    facts.push({ label: 'Tipo de producto', value: 'Biblia Reina Valera' });
+  } else if (tags.has('biblia')) {
+    facts.push({ label: 'Tipo de producto', value: 'Biblia' });
+  }
+
+  const tag = tarotMerchTag;
+  if (!tag || tag.needs_review === true) return facts;
+  const system = TAROT_PRIMARY_TYPE_LABEL[tag.primary_type];
+  if (system) {
+    const type = tag.format === 'mazo'
+      ? `Mazo de ${system.toLocaleLowerCase('es')}`
+      : tag.format === 'libro'
+        ? `Libro sobre ${system.toLocaleLowerCase('es')}`
+        : system;
+    facts.push({ label: 'Tipo de producto', value: type });
+  }
+  if (TAROT_DECK_FAMILY_LABEL[tag.deck_family]) {
+    facts.push({ label: 'Sistema del mazo', value: TAROT_DECK_FAMILY_LABEL[tag.deck_family] });
+  }
+  if (tag.format === 'mazo') {
+    facts.push({ label: 'Formato comercial', value: 'Mazo físico' });
+  } else if (tag.format === 'libro') {
+    facts.push({ label: 'Formato comercial', value: 'Libro' });
+  }
+  if (TAROT_BUNDLE_LABEL[tag.bundle]) {
+    facts.push({ label: 'Contenido informado', value: TAROT_BUNDLE_LABEL[tag.bundle] });
+  }
+  if (TAROT_LANGUAGE_LABEL[tag.language]) {
+    facts.push({ label: 'Idioma informado', value: TAROT_LANGUAGE_LABEL[tag.language] });
+  }
+  return facts;
+}
+
 function buildFactualSummary(item, facts) {
   const title = clean(item.title);
   const author = !isGenericAuthor(item.author) ? clean(item.author) : null;
@@ -270,13 +329,33 @@ function contextualRequestHelp(item, classificationTags = []) {
   };
 }
 
-function buildLinks(item) {
+function buildLinks(item, classificationTags = []) {
   const links = [];
+  const tags = new Set(classificationTags.map(normalizedText).filter(Boolean));
   const author = !isGenericAuthor(item?.author) ? clean(item.author) : null;
   const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
     ? item.bibliographic
     : {};
   const genre = clean(bibliography.genre);
+  const titleAndGenre = normalizedText(`${item?.title || ''} ${genre}`);
+
+  if (tags.has('reina-valera')) {
+    links.push(
+      { href: '/libros/biblias/reina-valera', label: 'Comparar Biblias Reina Valera' },
+      { href: '/libros/biblias', label: 'Ver todas las Biblias disponibles' },
+    );
+  } else if (tags.has('biblia')) {
+    links.push(
+      { href: '/libros/biblias', label: 'Ver todas las Biblias disponibles' },
+      { href: '/libros/biblias/reina-valera', label: 'Comparar Biblias Reina Valera' },
+    );
+  } else if (tags.has('esoterismo-tarot')) {
+    if (/\btarot\b/u.test(titleAndGenre)) {
+      links.push({ href: '/libros/esoterismo-tarot/mazos', label: 'Comparar mazos de tarot disponibles' });
+    }
+    links.push({ href: '/libros/esoterismo-tarot', label: 'Ver tarot, oráculos y libros de esoterismo' });
+  }
+
   if (author) {
     links.push({
       href: `/catalogo?q=${encodeURIComponent(author)}`,
@@ -295,7 +374,7 @@ function buildLinks(item) {
       label: 'Seguir explorando el catálogo',
     });
   }
-  return links.slice(0, 2);
+  return links.slice(0, 3);
 }
 
 function shortenByWord(value, maxLength) {
@@ -422,9 +501,14 @@ export function productItemFromProductHtml(html, productId) {
 export function buildAutomaticProductShowcase(item, {
   classificationTags = [],
   enrichment = null,
+  tarotMerchTag = null,
 } = {}) {
   if (!item || typeof item !== 'object' || !clean(item.title)) return null;
-  const facts = buildEditionFacts(item);
+  const verticalFacts = buildVerticalFacts(classificationTags, tarotMerchTag);
+  const facts = [...buildEditionFacts(item), ...verticalFacts]
+    .filter((fact, index, rows) => rows.findIndex(candidate =>
+      normalizedText(candidate.label) === normalizedText(fact.label) &&
+      normalizedText(candidate.value) === normalizedText(fact.value)) === index);
   const description = clean(item.description);
   const descriptionParagraphs = description.length >= 80
     ? sentenceGroups(item.description)
@@ -469,7 +553,15 @@ export function buildAutomaticProductShowcase(item, {
       ? 'Edición identificada por ISBN'
       : 'Datos tomados de la publicación',
     editionFacts: facts,
-    links: editorial?.links || buildLinks(item),
+    structuredProperties: verticalFacts.map(fact => ({
+      '@type': 'PropertyValue',
+      'name': fact.label,
+      'value': fact.value,
+    })),
+    schemaKind: tarotMerchTag?.format === 'mazo' && tarotMerchTag?.needs_review !== true
+      ? 'product'
+      : 'book',
+    links: editorial?.links || buildLinks(item, classificationTags),
     requestHelp: contextualRequestHelp(item, classificationTags),
     sources: enrichment?.provenance || [],
     schemaDescription: editorial?.paragraphs?.join(' ') || schemaDescription,

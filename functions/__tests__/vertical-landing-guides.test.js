@@ -16,7 +16,7 @@ import { editorialGuideHtml } from '../libros/[[path]].js';
 
 // ── Tarot: el reposicionamiento ────────────────────────────────────────────
 
-test('refuerza Tarot en la landing consolidada sin crear otra URL indexable', () => {
+test('conserva el hub general de Tarot y separa la intención comercial de mazos', () => {
   const category = findSeoCategory('esoterismo-tarot');
   assert.ok(category);
   assert.match(category.title, /Tarot y oráculos en Uruguay/);
@@ -32,6 +32,7 @@ test('refuerza Tarot en la landing consolidada sin crear otra URL indexable', ()
   assert.doesNotMatch(html, /href="/);
   assert.equal(SEO_CATEGORY_IDS.has('tarot'), false);
   assert.equal(SEO_CATEGORY_IDS.has('oraculos'), false);
+  assert.equal(SEO_CATEGORY_IDS.has('esoterismo-tarot/mazos'), true);
 });
 
 test('el título y la descripción de Tarot nombran el mazo, no sólo el libro', () => {
@@ -95,10 +96,10 @@ test('las categorías sin guía no reciben contenido genérico', () => {
   assert.equal(editorialGuideHtml(category), '');
 });
 
-test('sólo esoterismo-tarot declara buyerGuide en esta entrega', () => {
+test('las guías quedan limitadas al hub esotérico y a la vertical de mazos', () => {
   const conGuia = [...SEO_CATEGORY_IDS]
     .map(findSeoCategory)
     .filter(category => category?.buyerGuide)
     .map(category => category.id);
-  assert.deepEqual(conGuia, ['esoterismo-tarot']);
+  assert.deepEqual(conGuia, ['esoterismo-tarot', 'esoterismo-tarot/mazos']);
 });

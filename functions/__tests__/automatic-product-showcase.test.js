@@ -162,6 +162,8 @@ test('el cierre comercial reconoce la clasificación Reina-Valera', () => {
   }), { classificationTags: ['religion-espiritualidad', 'reina-valera'] });
 
   assert.equal(showcase.requestHelp.question, '¿Buscás otra Biblia o una edición específica?');
+  assert.ok(showcase.links.some(link => link.href === '/libros/biblias/reina-valera'));
+  assert.ok(showcase.links.some(link => link.href === '/libros/biblias'));
 });
 
 test('el cierre comercial reconoce Esoterismo desde la clasificación real', () => {
@@ -174,6 +176,84 @@ test('el cierre comercial reconoce Esoterismo desde la clasificación real', () 
   }), { classificationTags: ['esoterismo-tarot'] });
 
   assert.equal(showcase.requestHelp.question, '¿Buscás otro tarot, oráculo o libro de esoterismo?');
+});
+
+test('una ficha de tarot enlaza la vertical de mazos y el hub general', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Tarot Rider-Waite 78 cartas',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Tarot',
+    },
+  }), { classificationTags: ['esoterismo-tarot', 'tarot-oraculos'] });
+
+  assert.ok(showcase.links.some(link => link.href === '/libros/esoterismo-tarot/mazos'));
+  assert.ok(showcase.links.some(link => link.href === '/libros/esoterismo-tarot'));
+});
+
+test('un mazo de tarot verificado muestra sus datos comerciales sin inferir faltantes', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    title: 'Tarot Rider-Waite 78 cartas con guía',
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Tarot',
+      language: null,
+    },
+  }), {
+    classificationTags: ['esoterismo-tarot', 'tarot-oraculos'],
+    tarotMerchTag: {
+      primary_type: 'tarot',
+      deck_family: 'rider_waite_smith',
+      format: 'mazo',
+      bundle: 'mazo_mas_guia',
+      language: 'espanol',
+      needs_review: false,
+    },
+  });
+
+  assert.equal(showcase.schemaKind, 'product');
+  assert.ok(showcase.editionFacts.some(fact =>
+    fact.label === 'Tipo de producto' && fact.value === 'Mazo de tarot'));
+  assert.ok(showcase.editionFacts.some(fact =>
+    fact.label === 'Sistema del mazo' && fact.value === 'Rider-Waite-Smith'));
+  assert.ok(showcase.editionFacts.some(fact =>
+    fact.label === 'Contenido informado' && fact.value === 'Mazo con guía o libro'));
+  assert.ok(showcase.editionFacts.some(fact =>
+    fact.label === 'Idioma informado' && fact.value === 'Español'));
+  assert.ok(showcase.structuredProperties.every(property => property['@type'] === 'PropertyValue'));
+});
+
+test('una clasificación Reina Valera agrega el tipo de producto verificable', () => {
+  const showcase = buildAutomaticProductShowcase(book({ title: 'Santa Biblia letra grande' }), {
+    classificationTags: ['religion-espiritualidad', 'reina-valera'],
+  });
+  assert.ok(showcase.editionFacts.some(fact =>
+    fact.label === 'Tipo de producto' && fact.value === 'Biblia Reina Valera'));
+  assert.equal(showcase.schemaKind, 'book');
+});
+
+test('el JSON-LD de un mazo verificado deja de declararlo como Book', () => {
+  const tag = {
+    primary_type: 'tarot',
+    deck_family: 'rider_waite_smith',
+    format: 'mazo',
+    bundle: 'mazo_mas_guia',
+    language: 'espanol',
+    needs_review: false,
+  };
+  const html = enrichAutomaticProductShowcaseHtml(
+    rendered(book({ title: 'Tarot Rider-Waite 78 cartas con guía' })),
+    PRODUCT_ID,
+    { classificationTags: ['esoterismo-tarot', 'tarot-oraculos'], tarotMerchTag: tag },
+  );
+  const schema = schemas(html).find(candidate => candidate.sku === PRODUCT_ID);
+
+  assert.equal(schema['@type'], 'Product');
+  assert.equal(schema.gtin13, '9788496836693');
+  assert.equal('isbn' in schema, false);
+  assert.equal('bookFormat' in schema, false);
+  assert.ok(schema.additionalProperty.some(property =>
+    property.name === 'Sistema del mazo' && property.value === 'Rider-Waite-Smith'));
 });
 
 test('el cierre comercial usa la clasificación, no palabras sueltas del título', () => {

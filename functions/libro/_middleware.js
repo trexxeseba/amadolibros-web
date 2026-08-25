@@ -12,6 +12,8 @@ import { isProductInShowcaseCohort } from '../_shared/showcase-cohort.js';
 import { PRODUCT_SHOWCASE_OVERRIDES } from '../_shared/product-showcases.js';
 import { applyShowcaseTitleQuality } from '../_shared/showcase-title-quality.js';
 import { getBookEnrichmentByIsbn } from '../_shared/book-enrichment-registry.js';
+import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
+import { buildTagLookup } from '../_shared/tarot-hub-modules.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
@@ -33,6 +35,7 @@ let categoryTagsMemory = {
   expiresAt: 0,
   items: null,
 };
+const tarotTagForProduct = buildTagLookup(TAROT_MERCH_TAGS);
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -402,7 +405,18 @@ function enrichAutomaticShowcaseSchema(html, productId, config) {
 
     const rawType = schema?.['@type'];
     const types = Array.isArray(rawType) ? rawType : [rawType].filter(Boolean);
-    if (!types.includes('Book') || String(schema.sku || '').toUpperCase() !== productId) return full;
+    if ((!types.includes('Book') && !types.includes('Product')) ||
+        String(schema.sku || '').toUpperCase() !== productId) return full;
+
+    if (config.schemaKind === 'product') {
+      schema['@type'] = 'Product';
+      const identifier = String(schema.isbn || '').replace(/\D/g, '');
+      if (/^\d{13}$/.test(identifier)) schema.gtin13 = identifier;
+      delete schema.isbn;
+      delete schema.bookFormat;
+      delete schema.bookEdition;
+      delete schema.numberOfPages;
+    }
 
     if (config.titleChanged) {
       schema.name = config.h1;
@@ -410,8 +424,15 @@ function enrichAutomaticShowcaseSchema(html, productId, config) {
     }
     schema.description = config.schemaDescription;
     if (config.schemaVerified?.inLanguage) schema.inLanguage = config.schemaVerified.inLanguage;
-    if (config.schemaVerified?.bookFormat) schema.bookFormat = config.schemaVerified.bookFormat;
-    if (config.schemaVerified?.bookEdition) schema.bookEdition = config.schemaVerified.bookEdition;
+    if (config.schemaKind !== 'product' && config.schemaVerified?.bookFormat) {
+      schema.bookFormat = config.schemaVerified.bookFormat;
+    }
+    if (config.schemaKind !== 'product' && config.schemaVerified?.bookEdition) {
+      schema.bookEdition = config.schemaVerified.bookEdition;
+    }
+    if (Array.isArray(config.structuredProperties) && config.structuredProperties.length > 0) {
+      schema.additionalProperty = config.structuredProperties;
+    }
     return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
   });
 }
@@ -608,13 +629,16 @@ export async function onRequest(context) {
     // haya quedado dentro de la cohorte general de 3.000 fichas.
     const extractedItem = productItemFromProductHtml(withByRequestCx, productId);
     const hasVerifiedEnrichment = Boolean(getBookEnrichmentByIsbn(extractedItem?.isbn));
-    const selected = hasVerifiedEnrichment || await isProductInShowcaseCohort(context, productId);
+    const classificationTags = await classificationTagsForProduct(context, productId);
+    const isPriorityVertical = classificationTags.some(tag =>
+      ['biblia', 'reina-valera', 'esoterismo-tarot'].includes(String(tag || '')));
+    const selected = hasVerifiedEnrichment || isPriorityVertical ||
+      await isProductInShowcaseCohort(context, productId);
     if (selected) {
-      const classificationTags = await classificationTagsForProduct(context, productId);
       withAutomaticShowcase = enrichAutomaticProductShowcaseHtml(
         withByRequestCx,
         productId,
-        { classificationTags },
+        { classificationTags, tarotMerchTag: tarotTagForProduct(productId) },
       );
     }
   }

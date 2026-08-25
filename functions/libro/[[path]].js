@@ -914,7 +914,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
-      ? '🚚 Entrega en 2 horas en Montevideo · Envíos a todo Uruguay · Envío gratis desde $1.500.'
+      ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
     } <a href="/politicas#envios">Ver política de envíos</a>.</p>
   </div>
