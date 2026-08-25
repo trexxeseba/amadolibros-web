@@ -122,7 +122,18 @@ test('la página de esoterismo-tarot con Finder tiene exactamente un <h1>', asyn
     const { html: body } = await html('esoterismo-tarot');
     const h1Count = (body.match(/<h1[ >]/g) || []).length;
     assert.equal(h1Count, 1, 'el CTA "Encontrá tu mazo" usa <h2>, no <h1> — el único <h1> sigue siendo el de la categoría');
-    assert.match(body, /<h1>Libros de esoterismo y tarot en Uruguay<\/h1>/);
+    assert.match(body, /<h1>Tarot, oráculos y libros de esoterismo en Uruguay<\/h1>/);
+});
+
+// TAROT-SEARCH-GROWTH-1: orden del recorrido en la landing.
+test('la guía de elección aparece después del Finder y antes de los escaparates de Tarot', async () => {
+    const { html: body } = await html('esoterismo-tarot');
+    const finderIndex = body.indexOf('id="tarot-finder-cta"');
+    const guideIndex = body.indexOf('class="buyer-guide"');
+    const modulesIndex = body.indexOf('class="tarot-modules"');
+    assert.ok(finderIndex > -1 && guideIndex > -1 && modulesIndex > -1);
+    assert.ok(finderIndex < guideIndex, 'el Finder debe abrir el recorrido');
+    assert.ok(guideIndex < modulesIndex, 'la guía debe orientar antes de los escaparates');
 });
 
 // ── Sin canonical ni URLs indexables nuevas ──────────────────────────────
