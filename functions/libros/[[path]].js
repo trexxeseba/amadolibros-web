@@ -29,7 +29,9 @@ import { buildTagLookup, buildTarotHubModules } from '../_shared/tarot-hub-modul
 import { buildTarotFinderDataset } from '../_shared/tarot-finder-dataset.js';
 
 const TAROT_CATEGORY_ID = 'esoterismo-tarot';
+const TAROT_DECKS_CATEGORY_ID = 'esoterismo-tarot/mazos';
 const BIBLE_CATEGORY_IDS = new Set(['biblias', 'biblias/reina-valera']);
+const PRIORITY_LOCAL_INTENT_IDS = new Set(['biblias/reina-valera', TAROT_DECKS_CATEGORY_ID]);
 const tarotTagLookup = buildTagLookup(TAROT_MERCH_TAGS);
 // DEMAND-LEDGER-1 (PR #206) todavía no está mergeado a main: no hay
 // functions/_shared/demand-ledger.js en esta rama. "Lo más buscado" queda
@@ -212,9 +214,36 @@ function categoryBreadcrumbHtml(category) {
 function bibleCommercialPromiseHtml() {
     return `<aside class="bible-delivery" aria-label="Entrega y envío de Biblias">
     <h2>¿La necesitás hoy?</h2>
-    <p>Algunas Biblias con stock pueden entregarse en 2 horas en Montevideo, según zona y horario. El envío es gratis en compras desde $1.500.</p>
-    <p class="bible-delivery-note">Confirmamos disponibilidad, dirección y plazo antes de coordinar. No todas las ediciones califican para entrega rápida.</p>
+    <p>Las Biblias con stock pueden coordinarse para entrega en el día en Montevideo, según zona, horario y confirmación. El envío cuesta $250 y es gratis en compras desde $1.500.</p>
+    <p class="bible-delivery-note">Te confirmamos personalmente la edición, la disponibilidad, la dirección y el plazo antes de coordinar. La entrega rápida no se promete hasta verificar esos datos.</p>
   </aside>`;
+}
+
+function tarotPathwaysHtml(category) {
+    if (category.id === TAROT_CATEGORY_ID) {
+        return `<section class="bible-pathways" aria-labelledby="tarot-decks-path-title">
+    <h2 id="tarot-decks-path-title">¿Buscás específicamente un mazo de tarot?</h2>
+    <p>Entrá a la selección de mazos físicos verificados. Separamos los mazos de tarot de los oráculos y de los libros para que puedas comparar sistema, idioma, guía y edición.</p>
+    <div class="bible-pathway-grid">
+      <a href="/libros/${TAROT_DECKS_CATEGORY_ID}"><strong>Mazos de tarot disponibles</strong><span>Rider-Waite-Smith, Marsella, Thoth y otras ediciones identificadas.</span></a>
+      <a href="#tarot-finder"><strong>Ayuda para elegir</strong><span>Usá el buscador guiado si todavía no sabés qué sistema o formato necesitás.</span></a>
+    </div>
+  </section>`;
+    }
+    if (category.id !== TAROT_DECKS_CATEGORY_ID) return '';
+
+    return `<aside class="bible-delivery" aria-label="Entrega y envío de mazos de tarot">
+    <h2>¿Lo querés recibir hoy?</h2>
+    <p>Los mazos con stock pueden coordinarse para entrega en el día en Montevideo, según zona, horario y confirmación. El envío cuesta $250 y es gratis en compras desde $1.500.</p>
+    <p class="bible-delivery-note">Te ayudamos personalmente a confirmar sistema, idioma, contenido y edición antes de coordinar la entrega.</p>
+  </aside>`;
+}
+
+function commerceBenefitsHtml(category) {
+    if (PRIORITY_LOCAL_INTENT_IDS.has(category.id)) {
+        return '<div class="benefits"><span>Entrega hoy en Montevideo*</span><span>Envío $250</span><span>Gratis desde $1.500</span><span>Atención personalizada</span></div>';
+    }
+    return '<div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>';
 }
 
 function biblePathwaysHtml(category) {
@@ -644,7 +673,12 @@ function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnex
     // grilla ya no es lo primero de la página — forceLazy evita eager-load
     // de imágenes fuera del primer viewport.
     const cards = visibleItems
-        .map((item, index) => cardHtml(item, index, navigationBase, { forceLazy: Boolean(tarotModules?.length) }))
+        .map((item, index) => cardHtml(item, index, navigationBase, {
+            forceLazy: Boolean(tarotModules?.length),
+            badges: category.kind === 'tarot-decks'
+                ? tarotBadgesFor(tarotTagLookup(item.id))
+                : [],
+        }))
         .join('\n');
     const robots = isPreview || hasUnexpectedParameters || items.length === 0
         ? 'noindex, follow'
@@ -705,9 +739,10 @@ ${categoryBreadcrumbHtml(category)}
     <h1>${escapeHtml(category.h1)}</h1>
     <p>${escapeHtml(category.intro)}</p>
     <p class="category-scope">${scopeText}</p>
-    <div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>
+    ${commerceBenefitsHtml(category)}
   </section>
   ${biblePathwaysHtml(category)}
+  ${tarotPathwaysHtml(category)}
   ${tarotFinderHtml(tarotFinderDataset, canonical)}
   ${editorialGuideHtml(category)}
   ${tarotModulesHtml(tarotModules, navigationBase, canonical, Boolean(tarotFinderDataset?.length))}
@@ -775,8 +810,16 @@ export async function onRequest(ctx) {
     const categoryItems = activeItems
         .filter(item => {
             const tags = categoryData.items[item.id] || [];
-            return classificationIds.some(id => tags.includes(id))
+            const matchesClassification = classificationIds.some(id => tags.includes(id))
                 && !excludedClassificationIds.some(id => tags.includes(id));
+            if (!matchesClassification) return false;
+            if (category.tarotFilter === 'verified-tarot-decks') {
+                const tarotTag = tarotTagLookup(item.id);
+                return tarotTag?.primary_type === 'tarot'
+                    && tarotTag?.format === 'mazo'
+                    && tarotTag?.needs_review !== true;
+            }
+            return true;
         })
         .sort((a, b) => {
             const stock = Number(b.available_quantity || 0) - Number(a.available_quantity || 0);
