@@ -1,0 +1,231 @@
+<section class="commercial-section" aria-labelledby="commercial-heading">
+  <div class="commercial-panel">
+    <div class="commercial-heading">
+      <span>Comprar en Amado Libros</span>
+      <h2 id="commercial-heading">Claro, rápido y con atención personal.</h2>
+      <p>Te ayudamos a encontrar la edición correcta y coordinamos cada pedido con vos.</p>
+    </div>
+
+    <ul class="benefit-grid" role="list">
+      <li>
+        <span class="benefit-icon" aria-hidden="true">2h</span>
+        <span>
+          <strong>Biblias seleccionadas en aprox. 2 horas*</strong>
+          <small>En Montevideo, cuando hay stock apto para express.</small>
+        </span>
+      </li>
+      <li>
+        <span class="benefit-icon" aria-hidden="true">12</span>
+        <span>
+          <strong>Hasta 12 cuotas</strong>
+          <small>Con Mercado Pago.</small>
+        </span>
+      </li>
+      <li>
+        <span class="benefit-icon" aria-hidden="true">%</span>
+        <span>
+          <strong>12% menos por transferencia</strong>
+          <small>Cuando corresponda para ese producto.</small>
+        </span>
+      </li>
+      <li>
+        <span class="benefit-icon" aria-hidden="true">UY</span>
+        <span>
+          <strong>Envíos a todo Uruguay</strong>
+          <small>Envío gratis desde el importe vigente.</small>
+        </span>
+      </li>
+      <li>
+        <span class="benefit-icon" aria-hidden="true">+</span>
+        <span>
+          <strong>Libros por encargo</strong>
+          <small>Buscamos agotados, importados y ediciones difíciles.</small>
+        </span>
+      </li>
+      <li>
+        <span class="benefit-icon" aria-hidden="true">IG</span>
+        <span>
+          <strong>Pedidos para iglesias</strong>
+          <small>Lotes, presentación y personalización provista por la congregación.</small>
+        </span>
+      </li>
+    </ul>
+
+    <p class="delivery-disclaimer">
+      *La entrega express depende del título, stock, zona, horario y disponibilidad del servicio. La confirmamos antes de enviarlo.
+    </p>
+
+    <div class="request-box">
+      <div>
+        <strong>¿No encontrás el libro?</strong>
+        <span>Una persona de Amado Libros revisa tu pedido.</span>
+        <a class="request-guide" href="/libros-agotados-importados-uruguay">
+          Cómo funciona nuestro servicio de encargos →
+        </a>
+      </div>
+      <a class="request-button" href="/pedir-libro?tipo=exacto">
+        Contanos qué libro buscás
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .commercial-section {
+    padding: 2.5rem 1.25rem;
+    background: var(--bg);
+  }
+
+  .commercial-panel {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    border-radius: 1.15rem;
+    background: var(--ink);
+    color: #fff;
+    box-shadow: 0 18px 48px rgba(24, 18, 14, 0.16);
+  }
+
+  .commercial-heading > span {
+    color: var(--salmon);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .commercial-heading h2 {
+    max-width: 22ch;
+    margin-top: 0.35rem;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: clamp(1.55rem, 4.5vw, 2.15rem);
+    line-height: 1.12;
+  }
+
+  .commercial-heading p {
+    max-width: 54ch;
+    margin-top: 0.55rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .benefit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-top: 1.2rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .benefit-grid li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .benefit-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    color: var(--salmon);
+    font-size: 0.65rem;
+    font-weight: 850;
+  }
+
+  .benefit-grid strong,
+  .benefit-grid small {
+    display: block;
+  }
+
+  .benefit-grid strong {
+    color: #fff;
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .benefit-grid small {
+    margin-top: 0.18rem;
+    color: rgba(255, 255, 255, 0.67);
+    font-size: 0.66rem;
+    line-height: 1.3;
+  }
+
+  .delivery-disclaimer {
+    margin-top: 0.75rem;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.66rem;
+    line-height: 1.45;
+  }
+
+  .request-box {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .request-box strong,
+  .request-box span {
+    display: block;
+  }
+
+  .request-box strong { color: #fff; font-size: 0.95rem; }
+
+  .request-box span {
+    margin-top: 0.2rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.78rem;
+  }
+
+  .request-guide {
+    display: inline-block;
+    margin-top: 0.45rem;
+    color: #fff;
+    font-size: 0.73rem;
+    font-weight: 700;
+    text-underline-offset: 0.18em;
+  }
+
+  .request-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.75rem 1rem;
+    border-radius: 0.65rem;
+    background: var(--salmon);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .request-button:hover { background: var(--salmon-hover); }
+
+  @media (min-width: 700px) {
+    .commercial-section { padding: 3.5rem 2rem; }
+    .commercial-panel { padding: 2rem; }
+    .benefit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .request-box { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  }
+
+  @media (max-width: 390px) {
+    .benefit-grid { grid-template-columns: 1fr; }
+  }
+</style>
