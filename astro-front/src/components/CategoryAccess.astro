@@ -1,40 +1,35 @@
 ---
-// HOME — ACCESO A CATEGORÍAS
-// Acceso visual compacto a las categorías principales, conectado con el
-// filtro ?categoria= de /catalogo. Mismo patrón de BestsellerSection: lee
-// un JSON estático en build time (fs), sin JS cliente, sin llamada nueva
-// en runtime. No toca checkout, Mercado Pago ni fichas individuales.
-//
-// Fuente: astro-front/public/data/active-categories.json — el mismo
-// artefacto que consume functions/catalogo.js (scripts/categorize/
-// export-active-categories.js). No se regenera en cada deploy: se
-// actualiza cuando se vuelve a correr el pipeline de clasificación y se
-// commitea, igual que en el catálogo.
+// Accesos editoriales prioritarios de la portada. Los conteos salen del
+// mismo artefacto versionado que usa el catálogo. Se renderiza en build:
+// no agrega JavaScript ni solicitudes en el cliente.
 import fs from 'node:fs';
 import path from 'node:path';
 
 const CATEGORIES_JSON = path.resolve(process.cwd(), 'public/data/active-categories.json');
 
-interface Category {
+interface Subcategory {
   id: string;
   name: string;
   count: number;
 }
 
-// Allowlist SEO: solo estas categorías tienen una landing limpia e
-// indexable. Mantener cerrada evita enlazar automáticamente categorías
-// débiles o catch-all a páginas que Google no debería indexar.
+interface Category {
+  id: string;
+  name: string;
+  count: number;
+  subcategories?: Subcategory[];
+}
+
 const SEO_CATEGORY_IDS = [
-  'infantil-juvenil',
   'esoterismo-tarot',
+  'religion-espiritualidad',
+  'infantil-juvenil',
   'medicina-salud',
   'literatura-ficcion',
   'idiomas-aprendizaje',
   'psicologia',
   'desarrollo-personal',
-  'religion-espiritualidad',
 ];
-const seoOrder = new Map(SEO_CATEGORY_IDS.map((id, index) => [id, index]));
 
 let categories: Category[] = [];
 let missing = false;
@@ -42,188 +37,343 @@ let missing = false;
 try {
   const raw = fs.readFileSync(CATEGORIES_JSON, 'utf-8');
   const data = JSON.parse(raw) as { categories: Category[] };
-  categories = (data.categories || [])
-    .filter(c => seoOrder.has(c.id))
-    .sort((a, b) => seoOrder.get(a.id)! - seoOrder.get(b.id)!);
-} catch (e: unknown) {
+  categories = data.categories || [];
+} catch (error: unknown) {
   missing = true;
-  const msg = e instanceof Error ? e.message : String(e);
-  console.warn('[CategoryAccess] active-categories.json no disponible en build:', msg);
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn('[CategoryAccess] active-categories.json no disponible en build:', message);
 }
+
+const category = (id: string) => categories.find(entry => entry.id === id);
+const subcategoryCount = (categoryId: string, subcategoryId: string) =>
+  category(categoryId)?.subcategories?.find(entry => entry.id === subcategoryId)?.count || 0;
+
+const priorityAccesses = [
+  {
+    id: 'tarot',
+    eyebrow: 'Elegí tu mazo',
+    name: 'Tarot y oráculos',
+    description: 'Mazos, oráculos y libros para comparar.',
+    href: '/libros/esoterismo-tarot',
+    count: subcategoryCount('esoterismo-tarot', 'tarot-oraculos'),
+    icon: '✦',
+    tone: 'night',
+  },
+  {
+    id: 'biblias',
+    eyebrow: 'Ediciones y formatos',
+    name: 'Biblias',
+    description: 'Católicas y otras ediciones: letra, tamaño y encuadernación.',
+    href: '/libros/biblias',
+    count: subcategoryCount('religion-espiritualidad', 'biblia'),
+    icon: 'B',
+    tone: 'clay',
+  },
+  {
+    id: 'reina-valera',
+    eyebrow: 'Acceso directo',
+    name: 'Reina-Valera',
+    description: 'RVR 1960 y otras ediciones identificadas.',
+    href: '/libros/biblias/reina-valera',
+    count: subcategoryCount('religion-espiritualidad', 'reina-valera'),
+    icon: 'RV',
+    tone: 'gold',
+  },
+  {
+    id: 'psicologia',
+    eyebrow: 'Personas y vínculos',
+    name: 'Psicología',
+    description: 'Clínica, crianza, neurociencias y bienestar.',
+    href: '/libros/psicologia',
+    count: category('psicologia')?.count || 0,
+    icon: 'Ψ',
+    tone: 'sage',
+  },
+  {
+    id: 'infantil',
+    eyebrow: 'Para crecer leyendo',
+    name: 'Infantil y juvenil',
+    description: 'Historias, aprendizaje y libros para regalar.',
+    href: '/libros/infantil-juvenil',
+    count: category('infantil-juvenil')?.count || 0,
+    icon: 'A',
+    tone: 'sky',
+  },
+  {
+    id: 'recientes',
+    eyebrow: 'Lo que acaba de llegar',
+    name: 'Incorporaciones recientes',
+    description: 'Nuevos ingresos con stock publicados por fecha.',
+    href: '#incorporaciones-recientes',
+    count: 0,
+    icon: '+',
+    tone: 'rose',
+  },
+];
+
+const secondaryAccesses = [
+  {
+    name: 'Cábala y Kabbalah',
+    href: '/catalogo?categoria=esoterismo-tarot&subcategoria=cabala-kabbalah',
+    count: subcategoryCount('esoterismo-tarot', 'cabala-kabbalah'),
+  },
+  {
+    name: 'Sufismo',
+    href: '/catalogo?categoria=esoterismo-tarot&subcategoria=sufismo',
+    count: subcategoryCount('esoterismo-tarot', 'sufismo'),
+  },
+];
+
+const seoCategories = categories
+  .filter(entry => SEO_CATEGORY_IDS.includes(entry.id))
+  .filter(entry => !['esoterismo-tarot', 'infantil-juvenil', 'psicologia'].includes(entry.id));
+
+const number = new Intl.NumberFormat('es-UY');
 ---
 
 {missing
-  ? <Fragment set:html="<!-- acceso a categorías: active-categories.json no encontrado en build — sección omitida -->" />
-  : (categories.length > 0 && (
-      <section class="ca-section" aria-label="Categorías del catálogo">
-        <div class="ca-inner">
-          <h2 class="ca-heading">Explorá por categoría</h2>
-          <div class="ca-row" role="list">
-            <a class="ca-chip ca-chip-priority" href="/libros/biblias" role="listitem">
-              <span class="ca-chip-name">Biblias</span>
-              <span class="ca-chip-count">Ediciones para comparar</span>
-              <span class="ca-chip-scope">Disponibles y por encargo</span>
-            </a>
-            <a class="ca-chip ca-chip-priority" href="/libros/biblias/reina-valera" role="listitem">
-              <span class="ca-chip-name">Biblias Reina-Valera</span>
-              <span class="ca-chip-count">Revisiones y formatos</span>
-              <span class="ca-chip-scope">Disponibles y por encargo</span>
-            </a>
-            {categories.map(cat => (
-              <a
-                class="ca-chip"
-                href={`/libros/${encodeURIComponent(cat.id)}`}
-                role="listitem"
-              >
-                <span class="ca-chip-name">{cat.name}</span>
-                <span class="ca-chip-count">{cat.count} títulos</span>
-                <span class="ca-chip-scope">Disponibles y por encargo</span>
-              </a>
-            ))}
-            <a class="ca-chip ca-chip-all" href="/catalogo">
-              Ver todo el catálogo →
-            </a>
-          </div>
+  ? <Fragment set:html="<!-- accesos editoriales: active-categories.json no encontrado en build -->" />
+  : (
+    <section class="ca-panel" aria-labelledby="ca-heading">
+      <div class="ca-heading-row">
+        <div>
+          <span class="ca-kicker">Entrá por lo que estás buscando</span>
+          <h2 id="ca-heading">Encontrá más rápido tu próxima lectura</h2>
         </div>
-      </section>
-    ))
+        <a class="ca-all ca-all-desktop" href="/catalogo">Ver catálogo completo →</a>
+      </div>
+
+      <div class="ca-grid" role="list">
+        {priorityAccesses.map(entry => (
+          <a
+            class={`ca-card ca-card-${entry.tone}`}
+            href={entry.href}
+            data-home-access={entry.id}
+            role="listitem"
+          >
+            <span class="ca-icon" aria-hidden="true">{entry.icon}</span>
+            <span class="ca-card-copy">
+              <span class="ca-eyebrow">{entry.eyebrow}</span>
+              <strong>{entry.name}</strong>
+              <span class="ca-description">{entry.description}</span>
+              {entry.count > 0 && <small>{number.format(entry.count)} títulos disponibles y por encargo</small>}
+            </span>
+            <span class="ca-arrow" aria-hidden="true">→</span>
+          </a>
+        ))}
+      </div>
+
+      <div class="ca-secondary" aria-label="Más accesos del catálogo">
+        <span class="ca-secondary-label">También podés explorar:</span>
+        {secondaryAccesses.map(entry => (
+          <a href={entry.href}>
+            {entry.name}{entry.count > 0 ? ` · ${number.format(entry.count)}` : ''}
+          </a>
+        ))}
+        {seoCategories.map(cat => (
+          <a href={`/libros/${encodeURIComponent(cat.id)}`}>
+            {cat.name} · {number.format(cat.count)}
+          </a>
+        ))}
+      </div>
+
+      <a class="ca-all ca-all-mobile" href="/catalogo">Ver catálogo completo →</a>
+    </section>
+  )
 }
 
 <style>
-  .ca-section {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
+  .ca-panel {
+    padding: 1.1rem;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(58, 43, 34, 0.14);
+    border-radius: 1.25rem;
+    box-shadow: 0 18px 50px rgba(45, 32, 24, 0.09);
   }
 
-  .ca-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.75rem 1.5rem;
+  .ca-heading-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
   }
 
-  @media (min-width: 768px) {
-    .ca-inner { padding: 2.25rem 2rem; }
+  .ca-kicker {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--salmon-hover);
+    font-size: 0.64rem;
+    font-weight: 850;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
   }
 
-  .ca-heading {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(1.125rem, 2.4vw, 1.375rem);
+  .ca-heading-row h2 {
+    max-width: 20ch;
     color: var(--ink);
-    letter-spacing: -0.01em;
-    margin-bottom: 1rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 2.6vw, 1.75rem);
+    line-height: 1.08;
   }
 
-  /* Mobile (HOME-UX-MOBILE-1 punto 2): grilla compacta de 2 columnas
-     iguales, sin scroll horizontal — antes era una fila con scroll que
-     escondía categorías sin que fuera evidente que había que arrastrar.
-     Nombre arriba (puede ocupar 2 líneas), cantidad debajo y
-     visualmente secundaria. */
-  .ca-row {
+  .ca-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
+    gap: 0.55rem;
   }
 
-  .ca-chip {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.2rem;
-    min-height: 3.25rem;
-    padding: 0.75rem 0.9rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
+  .ca-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.55rem;
+    min-width: 0;
+    padding: 0.85rem 0.7rem;
+    overflow: hidden;
+    border: 1px solid rgba(51, 42, 35, 0.12);
+    border-radius: 0.85rem;
     color: var(--ink);
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    font-weight: 600;
     text-decoration: none;
-    white-space: normal;
-    overflow-wrap: break-word;
-    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
   }
 
-  .ca-chip:hover {
-    background: rgba(228, 153, 130, 0.12);
+  .ca-card:hover {
+    transform: translateY(-2px);
     border-color: var(--salmon);
-    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(45, 32, 24, 0.1);
   }
 
-  .ca-chip-priority {
-    background: rgba(228, 153, 130, 0.14);
-    border-color: var(--salmon);
-  }
+  .ca-card-night { background: linear-gradient(145deg, #282034, #463650); color: #fff; }
+  .ca-card-clay { background: linear-gradient(145deg, #f8e2d8, #f2caba); }
+  .ca-card-gold { background: linear-gradient(145deg, #f5e9c9, #ead49d); }
+  .ca-card-sage { background: linear-gradient(145deg, #e1eee3, #c8decf); }
+  .ca-card-sky { background: linear-gradient(145deg, #e1edf0, #c9dfe5); }
+  .ca-card-rose { background: linear-gradient(145deg, #f5dfe2, #edc7ce); }
 
-  .ca-chip-name {
-    line-height: 1.3;
-  }
-
-  .ca-chip-count {
-    color: var(--ink-2);
-    font-weight: 500;
-    font-size: 0.75rem;
-  }
-
-  .ca-chip-scope {
-    color: var(--ink-2);
-    font-weight: 500;
-    font-size: 0.68rem;
-    line-height: 1.2;
-  }
-
-  .ca-chip-all {
-    grid-column: 1 / -1;
+  .ca-icon {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    background: var(--ink);
-    border-color: var(--ink);
-    color: #fff;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 800;
+    opacity: 0.82;
   }
 
-  .ca-chip-all:hover {
-    background: var(--salmon-hover);
-    border-color: var(--salmon-hover);
+  .ca-card-copy,
+  .ca-card-copy > span,
+  .ca-card-copy strong,
+  .ca-card-copy small {
+    display: block;
   }
 
-  /* Desktop (>=700px): presentación anterior — pill de una línea, nombre
-     y cantidad lado a lado, grid de 3 columnas. Queda igual que antes de
-     este lote. */
+  .ca-eyebrow {
+    margin-bottom: 0.15rem;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    opacity: 0.68;
+  }
+
+  .ca-card strong {
+    font-size: 0.88rem;
+    line-height: 1.16;
+  }
+
+  .ca-description,
+  .ca-card small,
+  .ca-arrow {
+    display: none;
+  }
+
+  .ca-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.8rem;
+  }
+
+  .ca-secondary-label {
+    width: 100%;
+    color: var(--ink-2);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .ca-secondary a {
+    padding: 0.38rem 0.58rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.67rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .ca-secondary a:hover { border-color: var(--salmon); }
+
+  .ca-all {
+    color: var(--ink);
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .ca-all-desktop { display: none; }
+
+  .ca-all-mobile {
+    display: inline-flex;
+    margin-top: 0.85rem;
+    padding-bottom: 0.12rem;
+    border-bottom: 1.5px solid var(--salmon);
+  }
+
   @media (min-width: 700px) {
-    .ca-row {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .ca-panel { padding: 1.35rem; }
+    .ca-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ca-all-desktop { display: inline-flex; flex: 0 0 auto; }
+    .ca-all-mobile { display: none; }
+  }
+
+  @media (min-width: 1000px) {
+    .ca-card {
+      grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+      min-height: 7.2rem;
+      padding: 0.85rem;
     }
 
-    .ca-chip {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 0.4rem;
-      min-height: 0;
-      padding: 0.6rem 1rem;
-      border-radius: 999px;
+    .ca-icon { width: 2.25rem; height: 2.25rem; }
+    .ca-card strong { font-size: 0.94rem; }
+
+    .ca-description {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.68rem;
+      line-height: 1.3;
+      opacity: 0.78;
     }
 
-    .ca-chip-name {
-      grid-row: 1 / 3;
+    .ca-card small {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.58rem;
+      line-height: 1.25;
+      opacity: 0.62;
     }
 
-    .ca-chip-count,
-    .ca-chip-scope {
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .ca-chip-scope {
-      font-size: 0.62rem;
-    }
-
-    .ca-chip-all {
-      display: flex;
-      max-width: 260px;
-      margin: 0 auto;
+    .ca-arrow {
+      display: block;
+      align-self: end;
+      font-size: 1rem;
+      opacity: 0.65;
     }
   }
 </style>

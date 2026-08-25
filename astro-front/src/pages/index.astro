@@ -7,15 +7,14 @@ import Hero                from '../components/Hero.astro';
 import DeliveryCoordination from '../components/DeliveryCoordination.astro';
 import BookDiscovery       from '../components/BookDiscovery.astro';
 import GuideAccess         from '../components/GuideAccess.astro';
-import CategoryAccess      from '../components/CategoryAccess.astro';
 import OrderHubAccess      from '../components/OrderHubAccess.astro';
 import BestsellerSection   from '../components/BestsellerSection.astro';
+import CommercialBenefits from '../components/CommercialBenefits.astro';
 import Footer              from '../components/Footer.astro';
 import WAFloat             from '../components/WAFloat.astro';
 import SearchOverlay          from '../components/SearchOverlay.astro';
 import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
 import HowToBuy           from '../components/HowToBuy.astro';
-import ShippingPayments    from '../components/ShippingPayments.astro';
 import TrustStrip          from '../components/TrustStrip.astro';
 
 const jsonLd = {
@@ -28,7 +27,7 @@ const jsonLd = {
       url: 'https://www.amadolibros.com/',
       logo: 'https://www.amadolibros.com/images/logo-amado.webp',
       image: 'https://www.amadolibros.com/images/logo-amado.webp',
-      description: 'Librería online uruguaya, familiar y atendida por sus dueños. Vende libros disponibles y realiza búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
+      description: 'Librería online uruguaya especializada en Tarot, oráculos, Biblias, libros disponibles y búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
       telephone: '+59899841325',
       email: 'adm@amadolibros.com',
       sameAs: [
@@ -64,22 +63,21 @@ const jsonLd = {
 };
 ---
 <BaseLayout
-  title="Libros difíciles, agotados e importados | Amado Libros"
+  title="Librería online en Uruguay: Tarot, Biblias y más | Amado Libros"
   canonical="https://www.amadolibros.com/"
-  description="Conseguimos libros agotados, importados y difíciles de ubicar en Uruguay. Encargos desde Europa y otros mercados, con envíos a todo el país."
+  description="Comprá Tarot, oráculos, Biblias Reina-Valera, Biblias católicas y más libros en Uruguay. También buscamos ediciones agotadas, importadas o difíciles."
   jsonLd={jsonLd}
 >
   <Header showSearch={false} showMobileDeliveryBanner={true} />
   <main>
     <Hero />
-    <DeliveryCoordination />
-    <CategoryAccess />
-    <OrderHubAccess />
     <BestsellerSection />
     <BookDiscovery />
+    <OrderHubAccess />
     <GuideAccess />
+    <CommercialBenefits />
+    <DeliveryCoordination />
     <HowToBuy />
-    <ShippingPayments />
     <TrustStrip />
   </main>
   <Footer />

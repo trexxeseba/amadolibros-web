@@ -199,14 +199,15 @@ test('la portada enlaza las landings limpias, incluyendo Biblias y Reina-Valera,
     const source = readFileSync(file, 'utf8');
 
     assert.match(source, /href={`\/libros\/\$\{encodeURIComponent\(cat\.id\)\}`}/);
-    assert.doesNotMatch(source, /href={`\/catalogo\?categoria=/);
-    assert.match(source, /\{cat\.count\} títulos/);
-    assert.match(source, />Disponibles y por encargo<\/span>/);
+    assert.match(source, /number\.format\(cat\.count\)/);
+    assert.doesNotMatch(source, /subcategoria=biblia/);
+    assert.doesNotMatch(source, /subcategoria=reina-valera/);
+    assert.doesNotMatch(source, /href="\/biblias"|href="\/reina-valera"/);
     for (const category of SEO_CATEGORIES.filter(entry => !entry.classificationId && !entry.classificationIds)) {
         assert.ok(source.includes(`'${category.id}'`), category.id);
     }
-    assert.match(source, /href="\/libros\/biblias"/);
-    assert.match(source, /href="\/libros\/biblias\/reina-valera"/);
+    assert.match(source, /href: '\/libros\/biblias'/);
+    assert.match(source, /href: '\/libros\/biblias\/reina-valera'/);
 });
 
 test('el sitemap de categorías publica las diez landings SEO', async () => {
