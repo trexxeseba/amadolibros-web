@@ -25,13 +25,16 @@ export function primaryCoverSource(item) {
   return coverSource(item, 0);
 }
 
+export function coverSources(item) {
+  const pictures = Array.isArray(item?.pictures) ? item.pictures : [];
+  const candidates = pictures.length > 0 ? pictures : [item?.thumbnail];
+  return [...new Set(candidates.map(largeMlImage).filter(Boolean))]
+    .slice(0, MAX_GALLERY_IMAGES);
+}
+
 export function coverSource(item, position = 0) {
   if (!Number.isInteger(position) || position < 0 || position >= MAX_GALLERY_IMAGES) return '';
-  const pictures = Array.isArray(item?.pictures)
-    ? item.pictures.filter(value => typeof value === 'string')
-    : [];
-  const picture = pictures[position] || (position === 0 ? item?.thumbnail : '');
-  return largeMlImage(picture || '');
+  return coverSources(item)[position] || '';
 }
 
 function responseHeaders(source, contentType, etag = null) {

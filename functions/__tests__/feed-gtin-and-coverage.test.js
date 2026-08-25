@@ -18,6 +18,8 @@ import {
     normalizePublisherForDescription,
     buildFeedDescription,
     merchantImageLink,
+    merchantImageSources,
+    additionalMerchantImageLinks,
     filterItemsWithReadyPrimaryCover,
     truncateMerchantText,
     renderFeedItem,
@@ -293,6 +295,25 @@ test('17b. La imagen Merchant siempre queda bajo dominio propio', () => {
         'https://www.amadolibros.com/book-cover/MLU123456/cover.jpg',
     );
     assert.equal(merchantImageLink(book({ id: 'otro' })), '');
+    assert.equal(
+        merchantImageLink(book({ id: 'MLU123456' }), 1),
+        'https://www.amadolibros.com/book-cover/MLU123456/cover-2.jpg',
+    );
+});
+
+test('17b2. Merchant normaliza, compacta y deduplica las fuentes igual que el mirror R2', () => {
+    const sources = merchantImageSources(book({
+        pictures: [
+            'http://http2.mlstatic.com/D_A-I.jpg',
+            'https://http2.mlstatic.com/D_A-O.jpg',
+            'https://evil.example/cover.jpg',
+            'https://http2.mlstatic.com/D_B-I.jpg',
+        ],
+    }));
+    assert.deepEqual(sources, [
+        'https://http2.mlstatic.com/D_A-O.jpg',
+        'https://http2.mlstatic.com/D_B-O.jpg',
+    ]);
 });
 
 test('17c. Exige moneda UYU explícita y no infiere precios ambiguos', () => {
@@ -348,6 +369,75 @@ test('17e. Producción publica sólo portadas primarias válidas y vigentes en R
         filterItemsWithReadyPrimaryCover([ready, stale, missing], manifest).map(item => item.id),
         ['MLU123456'],
     );
+});
+
+test('17e2. Publica hasta diez imágenes adicionales reales, en orden y validadas por manifest', () => {
+    const pictures = Array.from({ length: 13 }, (_, index) =>
+        `https://http2.mlstatic.com/D_IMAGE_${index + 1}-I.jpg`);
+    const item = book({ id: 'MLU123456', pictures });
+    const entries = {};
+    for (let position = 0; position < pictures.length; position += 1) {
+        const sha = String(position + 1).padStart(64, 'a');
+        entries[`MLU123456:${position}`] = {
+            current: {
+                object_key: `covers/v1/objects/${sha}.jpg`,
+                sha256: sha,
+                mime: 'image/jpeg',
+                source_url: `https://http2.mlstatic.com/D_IMAGE_${position + 1}-O.jpg`,
+            },
+        };
+    }
+    const manifest = { schema_version: 1, entries };
+    const links = additionalMerchantImageLinks(item, manifest);
+    assert.equal(links.length, 10);
+    assert.equal(links[0], 'https://www.amadolibros.com/book-cover/MLU123456/cover-2.jpg');
+    assert.equal(links[9], 'https://www.amadolibros.com/book-cover/MLU123456/cover-11.jpg');
+
+    const xml = renderFeedItem(item, manifest);
+    assert.equal((xml.match(/<g:additional_image_link>/g) || []).length, 10);
+    assert.doesNotMatch(xml, /mlstatic\.com/);
+});
+
+test('17e3. Omite imágenes secundarias faltantes, obsoletas o duplicadas sin excluir la oferta', () => {
+    const item = book({
+        id: 'MLU123456',
+        pictures: [
+            'https://http2.mlstatic.com/D_MAIN-I.jpg',
+            'https://http2.mlstatic.com/D_STALE-I.jpg',
+            'https://http2.mlstatic.com/D_DUPLICATE-I.jpg',
+            'https://http2.mlstatic.com/D_READY-I.jpg',
+            'https://http2.mlstatic.com/D_MISSING-I.jpg',
+        ],
+    });
+    const primarySha = 'a'.repeat(64);
+    const readySha = 'b'.repeat(64);
+    const manifest = {
+        schema_version: 1,
+        entries: {
+            'MLU123456:0': { current: {
+                object_key: `covers/v1/objects/${primarySha}.jpg`, sha256: primarySha,
+                mime: 'image/jpeg', source_url: 'https://http2.mlstatic.com/D_MAIN-O.jpg',
+            } },
+            'MLU123456:1': { current: {
+                object_key: `covers/v1/objects/${readySha}.jpg`, sha256: readySha,
+                mime: 'image/jpeg', source_url: 'https://http2.mlstatic.com/D_OLD-O.jpg',
+            } },
+            'MLU123456:2': { current: {
+                object_key: `covers/v1/objects/${primarySha}.jpg`, sha256: primarySha,
+                mime: 'image/jpeg', source_url: 'https://http2.mlstatic.com/D_DUPLICATE-O.jpg',
+            } },
+            'MLU123456:3': { current: {
+                object_key: `covers/v1/objects/${readySha}.jpg`, sha256: readySha,
+                mime: 'image/jpeg', source_url: 'https://http2.mlstatic.com/D_READY-O.jpg',
+            } },
+        },
+    };
+    assert.deepEqual(additionalMerchantImageLinks(item, manifest), [
+        'https://www.amadolibros.com/book-cover/MLU123456/cover-4.jpg',
+    ]);
+    const xml = renderFeedItem(item, manifest);
+    assert.match(xml, /<g:image_link>/);
+    assert.equal((xml.match(/<g:additional_image_link>/g) || []).length, 1);
 });
 
 test('17f. Título Merchant nunca supera 150 caracteres y corta por palabra', () => {
