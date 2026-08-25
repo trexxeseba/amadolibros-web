@@ -14,6 +14,7 @@ import { applyShowcaseTitleQuality } from '../_shared/showcase-title-quality.js'
 import { getBookEnrichmentByIsbn } from '../_shared/book-enrichment-registry.js';
 import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
 import { buildTagLookup } from '../_shared/tarot-hub-modules.js';
+import { normalizeCategoryPaths } from '../_shared/category-paths.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
@@ -574,7 +575,7 @@ function responseWithBody(response, body) {
 async function classificationTagsForProduct(context, productId) {
   const now = Date.now();
   if (categoryTagsMemory.items && categoryTagsMemory.expiresAt > now) {
-    return categoryTagsMemory.items[productId] || [];
+    return normalizeCategoryPaths(categoryTagsMemory.items[productId]).flat();
   }
 
   try {
@@ -602,7 +603,7 @@ async function classificationTagsForProduct(context, productId) {
       expiresAt: now + CATEGORY_TAGS_CACHE_TTL_MS,
       items: payload.items,
     };
-    return payload.items[productId] || [];
+    return normalizeCategoryPaths(payload.items[productId]).flat();
   } catch {
     return [];
   }

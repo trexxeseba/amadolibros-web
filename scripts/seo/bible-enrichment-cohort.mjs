@@ -19,6 +19,7 @@ import { pathToFileURL } from 'node:url';
 import { CATALOG_URL } from '../../functions/_shared/catalog.js';
 import { listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
+import { normalizeCategoryPaths } from '../../functions/_shared/category-paths.js';
 
 const DEFAULT_CLASSIFICATIONS = 'astro-front/public/data/active-categories.json';
 const DEFAULT_OUTPUT = 'artifacts/fichas-enrichment/bible-cohort-current.json';
@@ -46,7 +47,7 @@ export function buildBibleEnrichmentCohort({ catalogItems, classifications, enri
       .filter(Boolean),
   );
   const activeListings = (Array.isArray(catalogItems) ? catalogItems : []).filter(item => {
-    const tags = Array.isArray(classifications?.[item?.id]) ? classifications[item.id] : [];
+    const tags = normalizeCategoryPaths(classifications?.[item?.id]).flat();
     return item?.status === 'active' && tags.some(tag => BIBLE_TAGS.has(tag));
   });
 
@@ -60,7 +61,7 @@ export function buildBibleEnrichmentCohort({ catalogItems, classifications, enri
 
   const editions = [...editionsByIsbn.entries()].map(([isbn, items]) => {
     const representative = bestRepresentative(items);
-    const tags = [...new Set(items.flatMap(item => classifications[item.id] || []))];
+    const tags = [...new Set(items.flatMap(item => normalizeCategoryPaths(classifications[item.id]).flat()))];
     const descriptionLength = Math.max(...items.map(item => clean(item.description).length));
     const enriched = enrichedIsbns.has(isbn);
     const status = enriched

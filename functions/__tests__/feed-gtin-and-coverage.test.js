@@ -23,6 +23,7 @@ import {
     filterItemsWithReadyPrimaryCover,
     truncateMerchantText,
     renderFeedItem,
+    merchantProductTypes,
     pickRepresentativeItem,
     dedupeByGtinAndCondition,
     escapeXml,
@@ -584,4 +585,23 @@ test('27. Ningún dato de una publicación descartada se mezcla con la seleccion
     const xml = renderFeedItem(winner);
     assert.match(xml, /Título Correcto Del Ganador/);
     assert.doesNotMatch(xml, /Título De Otra Publicación/);
+});
+
+test('28. Merchant publica product_type jerárquico para una o varias rutas curadas', () => {
+    const categoryData = {
+        categories: [
+            { id: 'psicologia', name: 'Psicología', subcategories: [{ id: 'psicomotricidad', name: 'Psicomotricidad' }] },
+            { id: 'educacion', name: 'Educación', subcategories: [{ id: 'pedagogia', name: 'Pedagogía' }] },
+        ],
+        items: { MLU1: [['psicologia', 'psicomotricidad'], ['educacion', 'pedagogia']] },
+    };
+
+    assert.deepEqual(merchantProductTypes('MLU1', categoryData), [
+        'Libros > Psicología > Psicomotricidad',
+        'Libros > Educación > Pedagogía',
+    ]);
+    const xml = renderFeedItem(book(), null, categoryData);
+    assert.match(xml, /<g:product_type>Libros &gt; Psicología &gt; Psicomotricidad<\/g:product_type>/);
+    assert.match(xml, /<g:product_type>Libros &gt; Educación &gt; Pedagogía<\/g:product_type>/);
+    assert.doesNotMatch(renderFeedItem(book()), /<g:product_type>/);
 });

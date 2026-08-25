@@ -89,8 +89,8 @@ test.beforeEach(() => {
 });
 
 test('la allowlist contiene las categorías base y las verticales comerciales aprobadas', () => {
-    assert.equal(SEO_CATEGORIES.length, 11);
-    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 11);
+    assert.equal(SEO_CATEGORIES.length, 14);
+    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 14);
     for (const category of SEO_CATEGORIES) {
         assert.match(category.title, /Uruguay.*\| Amado Libros$/);
         assert.ok(category.description.length >= 100);

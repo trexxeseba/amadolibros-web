@@ -10,7 +10,7 @@
 // revistas, objetos de colección) — reemplaza la idea de "excluir del
 // catálogo": todo activo queda visible en alguna categoría.
 
-export const TAXONOMY_VERSION = 3;
+export const TAXONOMY_VERSION = 4;
 
 // subcategories: null si la categoría no tiene subdivisión (volumen
 // insuficiente para que valga la pena, o no aplica).
@@ -39,9 +39,19 @@ export const CATEGORIES = [
     id: 'psicologia', name: 'Psicología',
     subcategories: [
       { id: 'psicoanalisis', name: 'Psicoanálisis' },
+      { id: 'psicoterapia', name: 'Psicoterapia' },
       { id: 'psicologia-clinica', name: 'Psicología clínica' },
       { id: 'psicologia-infantil', name: 'Psicología infantil' },
       { id: 'neuropsicologia', name: 'Neuropsicología' },
+      { id: 'autismo-neurodesarrollo', name: 'Autismo y neurodesarrollo' },
+      { id: 'psicomotricidad', name: 'Psicomotricidad' },
+    ],
+  },
+  {
+    id: 'familia-crianza', name: 'Familia, maternidad y crianza',
+    subcategories: [
+      { id: 'maternidad', name: 'Maternidad' },
+      { id: 'crianza', name: 'Crianza' },
     ],
   },
   {
@@ -77,6 +87,7 @@ export const CATEGORIES = [
     subcategories: [
       { id: 'filosofia', name: 'Filosofía' },
       { id: 'sociologia-antropologia', name: 'Sociología y antropología' },
+      { id: 'ciencia-politica', name: 'Ciencia política' },
     ],
   },
   {
@@ -86,6 +97,7 @@ export const CATEGORIES = [
       { id: 'enfermeria', name: 'Enfermería' },
       { id: 'nutricion', name: 'Nutrición' },
       { id: 'salud-mental', name: 'Salud mental' },
+      { id: 'dermatologia', name: 'Dermatología y cuidado de la piel' },
     ],
   },
   {
@@ -105,6 +117,7 @@ export const CATEGORIES = [
       { id: 'biologia', name: 'Biología' },
       { id: 'fisica-quimica', name: 'Física y química' },
       { id: 'programacion', name: 'Programación' },
+      { id: 'informatica-software', name: 'Informática y desarrollo de software' },
     ],
   },
   {

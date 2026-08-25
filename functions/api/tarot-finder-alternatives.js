@@ -33,6 +33,7 @@ import { buildTarotFinderDataset } from '../_shared/tarot-finder-dataset.js';
 import { findNearestTarotAlternatives } from '../_shared/tarot-finder-scoring.js';
 import { slugify } from '../_shared/slug.js';
 import { BASE } from '../_shared/catalog.js';
+import { matchesCategoryPath } from '../_shared/category-paths.js';
 import { fetchCategoryData } from '../libros/[[path]].js';
 
 const TAROT_CATEGORY_ID = 'esoterismo-tarot';
@@ -111,7 +112,7 @@ export async function onRequest(context) {
         const pausedIndex = await fetchPausedIndex(context);
         const pausedItems = Array.isArray(pausedIndex?.items) ? pausedIndex.items : [];
         const pausedCategoryItems = pausedItems.filter(item =>
-            (categoryData.items[item.id] || [])[0] === TAROT_CATEGORY_ID
+            matchesCategoryPath(categoryData.items[item.id], TAROT_CATEGORY_ID)
         );
 
         const isPreview = context.env?.APP_ENV === 'preview';

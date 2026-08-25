@@ -1,7 +1,7 @@
 // scripts/categorize/export-active-categories.js
 //
 // Genera el artefacto compacto que consume /catalogo en Preview — mlu ->
-// {categoryId, subcategoryId}, para el universo público completo (activos +
+// [[categoryId, subcategoryId?], ...], para el universo público completo (activos +
 // pausados; los cerrados/eliminados nunca entran al snapshot de origen, ver
 // fetch-catalog.js). Deliberadamente chico (no el classifications.json
 // completo de ~7MB). No modifica el dato original de MELI, no toca
@@ -30,17 +30,41 @@ function main() {
   const results = JSON.parse(readFileSync(CLASSIFICATIONS_PATH, 'utf8'));
   const summary = JSON.parse(readFileSync(SUMMARY_PATH, 'utf8'));
 
-  const items = {}; // mlu -> [categoryId, subcategoryId|null]
+  const items = {}; // schema v2: mlu -> [[categoryId, subcategoryId?], ...]
   const counts = {}; // categoryId -> count
   const subCounts = {}; // "categoryId/subcategoryId" -> count
 
   for (const r of results) {
     if ((r.status !== 'active' && r.status !== 'paused') || !r.primaryCategoryId) continue;
-    items[r.mlu] = r.subcategoryId ? [r.primaryCategoryId, r.subcategoryId] : [r.primaryCategoryId];
-    counts[r.primaryCategoryId] = (counts[r.primaryCategoryId] || 0) + 1;
-    if (r.subcategoryId) {
-      const key = `${r.primaryCategoryId}/${r.subcategoryId}`;
-      subCounts[key] = (subCounts[key] || 0) + 1;
+    const rawPaths = [
+      { categoryId: r.primaryCategoryId, subcategoryId: r.subcategoryId ?? null },
+      ...((r.secondaryCategoryPaths?.length
+        ? r.secondaryCategoryPaths
+        : (r.secondaryCategoryIds || []).map(categoryId => ({ categoryId, subcategoryId: null })))),
+    ];
+    const seenPaths = new Set();
+    const paths = [];
+    for (const pathEntry of rawPaths) {
+      const categoryId = pathEntry?.categoryId;
+      const subcategoryId = pathEntry?.subcategoryId ?? null;
+      if (!categoryId) continue;
+      const key = `${categoryId}/${subcategoryId || ''}`;
+      if (seenPaths.has(key)) continue;
+      seenPaths.add(key);
+      paths.push(subcategoryId ? [categoryId, subcategoryId] : [categoryId]);
+    }
+    items[r.mlu] = paths;
+
+    const seenCategories = new Set();
+    for (const [categoryId, subcategoryId] of paths) {
+      if (!seenCategories.has(categoryId)) {
+        counts[categoryId] = (counts[categoryId] || 0) + 1;
+        seenCategories.add(categoryId);
+      }
+      if (subcategoryId) {
+        const key = `${categoryId}/${subcategoryId}`;
+        subCounts[key] = (subCounts[key] || 0) + 1;
+      }
     }
   }
 
@@ -58,6 +82,7 @@ function main() {
     }));
 
   const out = {
+    schema_version: 2,
     generated_at: new Date().toISOString(),
     taxonomy_version: summary.taxonomy_version,
     rules_version: summary.rules_version,

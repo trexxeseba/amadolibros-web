@@ -96,10 +96,16 @@ test('las categorías sin guía no reciben contenido genérico', () => {
   assert.equal(editorialGuideHtml(category), '');
 });
 
-test('las guías quedan limitadas al hub esotérico y a la vertical de mazos', () => {
+test('las guías quedan limitadas a verticales con contenido editorial propio', () => {
   const conGuia = [...SEO_CATEGORY_IDS]
     .map(findSeoCategory)
     .filter(category => category?.buyerGuide)
     .map(category => category.id);
-  assert.deepEqual(conGuia, ['esoterismo-tarot', 'esoterismo-tarot/mazos']);
+  assert.deepEqual(conGuia, [
+    'esoterismo-tarot',
+    'esoterismo-tarot/mazos',
+    'psicologia/psicoanalisis',
+    'psicologia/psicomotricidad',
+    'psicologia/autismo',
+  ]);
 });

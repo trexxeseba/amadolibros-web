@@ -49,15 +49,109 @@ const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enric
 // título se corrige en ML, el fragmento deja de coincidir y el override queda
 // automáticamente inerte.
 const KNOWN_TITLE_REPAIRS = new Map([
-  ['MLU636926011', ['Ãâ¿dãâ³nde', '¿Dónde']],
-  ['MLU640799107', ['Ãâ¿y Tãâº?', '¿Y Tú?']],
-  ['MLU643854765', ['Ãâ¡es', '¡Es']],
-  ['MLU657172162', ['Ãâ¡ngel', 'Ángel']],
-  ['MLU673139908', ['Ãâ¡esto', '¡Esto']],
-  ['MLU682128938', ['Ãâ¿y', '¿Y']],
-  ['MLU702548132', ['Ãâ¿que', '¿Qué']],
-  ['MLU710532848', ['Â¡a', '¡A']],
+  ['MLU636926011', [['Ãâ¿dãâ³nde', '¿Dónde']]],
+  ['MLU640799107', [['Ãâ¿y Tãâº?', '¿Y Tú?']]],
+  ['MLU643854765', [['Ãâ¡es', '¡Es']]],
+  ['MLU657172162', [['Ãâ¡ngel', 'Ángel']]],
+  ['MLU673139908', [['Ãâ¡esto', '¡Esto']]],
+  ['MLU682128938', [['Ãâ¿y', '¿Y']]],
+  ['MLU702548132', [['Ãâ¿que', '¿Qué']]],
+  ['MLU710532848', [['Â¡a', '¡A']]],
+  ['MLU1045409526', [
+    ['Prãâ¡ctica', 'Práctica'],
+    ['Construcciãâ³n', 'Construcción'],
+    ['Terapãâ©uticas', 'Terapéuticas'],
+  ]],
 ]);
+
+// Mercado Libre convirtió algunos títulos dos veces y luego aplicó cambio
+// de mayúsculas/minúsculas. Las secuencias completas conservan información
+// suficiente para una reparación determinística.
+const SAFE_MOJIBAKE_SEQUENCES = new Map([
+  ['Ã', 'Á'], ['Ã‰', 'É'], ['Ã', 'Í'], ['Ã“', 'Ó'], ['Ãš', 'Ú'],
+  ['Ã¡', 'á'], ['Ã©', 'é'], ['Ã­', 'í'], ['Ã³', 'ó'], ['Ãº', 'ú'],
+  ['Ã±', 'ñ'], ['Ã¼', 'ü'], ['Â¿', '¿'], ['Â¡', '¡'],
+  ['ãâ±', 'ñ'],
+  ['ãâ³', 'ó'],
+  ['ãâ©', 'é'],
+  ['ãâ¡', 'á'],
+  ['ãâº', 'ú'],
+  ['ãâª', 'ª'],
+  ['ãâ¹', 'ó'],
+  ['âª', 'ª'],
+  ['ã', 'í'],
+]);
+
+// En un subconjunto del catálogo, el cambio de caja eliminó el tercer byte
+// diferenciador. Esos casos no se adivinan por letras sueltas: se corrigen
+// únicamente como palabras observadas y verificadas en el snapshot real.
+const COLLAPSED_MOJIBAKE_WORDS = new Map([
+  ['Aãâo', 'Año'], ['Aãâos', 'Años'], ['Allãâ', 'Allá'],
+  ['Bebãâ', 'Bebé'], ['Baãâo', 'Baño'], ['Bãâblicas', 'Bíblicas'],
+  ['Cãâbala', 'Cábala'], ['Cãârculo', 'Círculo'], ['Cartonãâ', 'Cartoné'],
+  ['Cayãâ', 'Cayó'], ['Clãânicas', 'Clínicas'], ['Creãâble', 'Creíble'],
+  ['Artãâstica', 'Artística'], ['Artãâstico', 'Artístico'],
+  ['Dãâa', 'Día'], ['Dãâas', 'Días'], ['Diseãâo', 'Diseño'],
+  ['Estãâ', 'Está'], ['Estimulaciãân', 'Estimulación'],
+  ['Guãâa', 'Guía'], ['Guãâas', 'Guías'], ['Hidroponãâa', 'Hidroponía'],
+  ['Lãâmites', 'Límites'], ['Mamãâ', 'Mamá'], ['Marãâa', 'María'],
+  ['Mãâscaras', 'Máscaras'], ['Niãâo', 'Niño'],
+  ['Niãâos', 'Niños'], ['Pequeãâos', 'Pequeños'], ['Poãâtica', 'Poética'],
+  ['Polãâtica', 'Política'], ['Poesãâa', 'Poesía'], ['Biografãâa', 'Biografía'],
+  ['Filosofãâa', 'Filosofía'], ['Economãâa', 'Economía'], ['Alegrãâa', 'Alegría'],
+  ['Ridãâcula', 'Ridícula'], ['Espaãâoles', 'Españoles'],
+  ['Raãâces', 'Raíces'], ['Sãândrome', 'Síndrome'],
+  ['Sabãâa', 'Sabía'], ['Sueãâo', 'Sueño'], ['Sueãâos', 'Sueños'],
+  ['Superpapãâ', 'Superpapá'], ['Teorãâa', 'Teoría'], ['Traguãâ', 'Tragué'],
+  ['trilogãâa', 'trilogía'], ['Vãânculos', 'Vínculos'], ['Vãârica', 'Vírica'],
+  ['Vacãâo', 'Vacío'], ['Ãâlamos', 'Álamos'], ['Ãâ¡davai', '¡Davai'],
+  ['Ãândice', 'Índice'], ['Garcãa', 'García'],
+]);
+
+const MOJIBAKE_MARKER_RE = /(?:Ã|Â|ãâ|â[¡©ª±¹³º¿]|�)/u;
+
+export function looksLikeMojibakeTitle(value) {
+  return MOJIBAKE_MARKER_RE.test(String(value || ''));
+}
+
+function mojibakeScore(value) {
+  return (String(value || '').match(/(?:Ã|Â|ãâ|â[¡©ª±¹³º¿]|�)/gu) || []).length;
+}
+
+function decodeUtf8MisreadAsLatin1(value) {
+  const characters = [...String(value)];
+  if (characters.some(character => character.codePointAt(0) > 255)) return value;
+  const bytes = Uint8Array.from(characters.map(character => character.codePointAt(0)));
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return value;
+  }
+}
+
+function repairGenericMojibake(value) {
+  let repaired = String(value);
+
+  // N.º comparte bytes dañados con la vocal «ú»; el contexto completo de
+  // palabra se resuelve antes que las sustituciones generales.
+  repaired = repaired.replace(/Nãâº(?=\s|\d|[.,:/+\-])/gu, 'Nº');
+  for (const [broken, corrected] of SAFE_MOJIBAKE_SEQUENCES) {
+    repaired = repaired.replaceAll(broken, corrected);
+  }
+  for (const [broken, corrected] of COLLAPSED_MOJIBAKE_WORDS) {
+    repaired = repaired.replaceAll(broken, corrected);
+  }
+
+  // La corrupción clásica (p. ej. PsicologÃ­a) sí permite reconstruir los
+  // bytes originales. Se acepta sólo si reduce marcadores y no introduce �.
+  for (let pass = 0; pass < 2; pass++) {
+    const decoded = decodeUtf8MisreadAsLatin1(repaired);
+    if (decoded === repaired || decoded.includes('�') || mojibakeScore(decoded) >= mojibakeScore(repaired)) break;
+    repaired = decoded;
+  }
+
+  return repaired.normalize('NFC');
+}
 
 export const ML_MAX_RETRIES = 6;
 export const ML_BASE_BACKOFF_MS = 1000;
@@ -288,12 +382,15 @@ function normalizeUpperCode(value) {
 
 export function repairKnownTitle(id, title) {
   if (!title) return null;
-  const repair = KNOWN_TITLE_REPAIRS.get(String(id || ''));
-  if (!repair) return title;
-  const [broken, corrected] = repair;
-  return String(title).includes(broken)
-    ? String(title).replace(broken, corrected)
-    : title;
+  let repaired = String(title);
+  for (const [broken, corrected] of KNOWN_TITLE_REPAIRS.get(String(id || '')) || []) {
+    repaired = repaired.replaceAll(broken, corrected);
+  }
+  repaired = repairGenericMojibake(repaired);
+  if (looksLikeMojibakeTitle(repaired)) {
+    throw new Error(`[Catalog] Título con codificación no resuelta en ${id || 'item sin id'}. Se conserva el catálogo anterior.`);
+  }
+  return repaired;
 }
 
 /**

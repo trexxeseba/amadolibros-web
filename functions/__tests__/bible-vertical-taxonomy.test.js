@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { normalizeCategoryPaths } from '../_shared/category-paths.js';
 
 const dataPath = fileURLToPath(new URL('../../astro-front/public/data/active-categories.json', import.meta.url));
 const data = JSON.parse(readFileSync(dataPath, 'utf8'));
 const religion = data.categories.find(category => category.id === 'religion-espiritualidad');
 const subcategory = id => religion?.subcategories?.find(entry => entry.id === id);
-const tagsFor = id => data.items[id] || [];
+const tagsFor = id => normalizeCategoryPaths(data.items[id]).flat();
 const idsWith = tag => Object.entries(data.items)
-    .filter(([, tags]) => tags.includes(tag))
+    .filter(([, paths]) => normalizeCategoryPaths(paths).flat().includes(tag))
     .map(([id]) => id);
 
 test('el artefacto publicado conserva Biblia y Reina-Valera como clasificaciones distintas', () => {
