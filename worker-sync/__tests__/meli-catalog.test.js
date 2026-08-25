@@ -414,7 +414,7 @@ test('conserva atributos bibliográficos reales de ML y omite No aplica', () => 
   assert.equal(extractBibliographicDetails([]), null);
 });
 
-test('corrige sólo los ocho fragmentos mojibake verificados y se vuelve inerte al corregir ML', () => {
+test('corrige fragmentos mojibake verificados, el patrón general y se vuelve inerte al corregir ML', () => {
   const cases = [
     ['MLU636926011', 'Libro Ãâ¿dãâ³nde Se Esconde', 'Libro ¿Dónde Se Esconde'],
     ['MLU640799107', 'Yo Juego, Ãâ¿y Tãâº?', 'Yo Juego, ¿Y Tú?'],
@@ -430,7 +430,23 @@ test('corrige sólo los ocho fragmentos mojibake verificados y se vuelve inerte 
   }
 
   assert.equal(repairKnownTitle('MLU636926011', 'Libro ¿Dónde Se Esconde'), 'Libro ¿Dónde Se Esconde');
-  assert.equal(repairKnownTitle('MLU-OTRO', 'PsicologÃ­a'), 'PsicologÃ­a');
+  assert.equal(repairKnownTitle('MLU-OTRO', 'PsicologÃ­a'), 'Psicología');
+  assert.equal(
+    repairKnownTitle(
+      'MLU1045409526',
+      'La Prãâ¡ctica De La Psicoterapia. La Construcciãâ³n De Narrativas Terapãâ©uticas',
+    ),
+    'La Práctica De La Psicoterapia. La Construcción De Narrativas Terapéuticas',
+  );
+  assert.equal(repairKnownTitle('MLU-OTRO', 'Educaciãâ³n Y Niãâos'), 'Educación Y Niños');
+  assert.equal(repairKnownTitle('MLU-OTRO', 'Los Nãâºmeros No Mienten'), 'Los Números No Mienten');
+  assert.equal(repairKnownTitle('MLU-OTRO', 'Garfield Nãâº 07'), 'Garfield Nº 07');
+  assert.equal(repairKnownTitle('MLU-OTRO', 'Estãâ©tica Cartonãâ©'), 'Estética Cartoné');
+  assert.equal(repairKnownTitle('MLU-PORTUGUES', 'Pânico'), 'Pânico');
+  assert.throws(
+    () => repairKnownTitle('MLU-NUEVO', 'Título Ãâroto'),
+    /codificación no resuelta/,
+  );
   assert.equal(repairKnownTitle('MLU-OTRO', null), null);
 });
 

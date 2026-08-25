@@ -63,6 +63,7 @@ import {
     CARD_IMAGE_SIZES,
     responsiveImage,
 } from './_shared/cloudflare-images.js';
+import { matchesCategoryPath } from './_shared/category-paths.js';
 
 const MAX_RESULTS = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -578,7 +579,7 @@ export async function onRequest(ctx) {
     const categoryFeaturesEnabled = ['preview', 'production'].includes(ctx.env?.APP_ENV);
     const categoryData = categoryFeaturesEnabled ? await fetchActiveCategories(ctx) : null;
     const categories = categoryData?.categories || [];
-    const categoryItems = categoryData?.items || {}; // mlu -> [categoryId, subcategoryId?]
+    const categoryItems = categoryData?.items || {}; // v1 [cat,sub?] o v2 [[cat,sub?],...]
     const validCategoryIds = new Set(categories.map(c => c.id));
     // Categoría inválida vuelve a "Todos" — nunca 404, nunca error.
     const categoria = rawCategoria && validCategoryIds.has(rawCategoria) ? rawCategoria : '';
@@ -677,8 +678,7 @@ export async function onRequest(ctx) {
         if (fuzzy.length > 0) { strictMatches = fuzzy; usedFuzzy = true; }
     }
     const scopedMatches = strictMatches
-        .filter(b => (categoria ? (categoryItems[b.id] || [])[0] === categoria : true))
-        .filter(b => (subcategoria ? (categoryItems[b.id] || [])[1] === subcategoria : true));
+        .filter(b => (categoria ? matchesCategoryPath(categoryItems[b.id], categoria, subcategoria) : true));
     // Los contadores de pestañas deben medir el mismo universo visible que
     // la grilla. Si se calculan antes de deduplicar, “Todos 9” puede terminar
     // mostrando “7 resultados”, contradicción directa para el comprador.

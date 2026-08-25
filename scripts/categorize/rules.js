@@ -13,7 +13,7 @@
 // aparecían repetidos en categorías distintas) se filtraron antes de esta
 // exportación porque no son una señal útil.
 
-export const RULES_VERSION = 13;
+export const RULES_VERSION = 14;
 
 export const MINED_AUTHOR_SIGNALS = {
   "esoterismo-tarot": {
@@ -383,7 +383,6 @@ export const MINED_AUTHOR_SIGNALS = {
       "Laura Stornini",
       "Lemoine Eugenie",
       "Mariela Bortolón",
-      "Martin, Robert C.",
       "Pepa Horno Goicoechea",
       "Rogers, Carl R.",
       "SHAPIRO, FORREST y otros",
@@ -692,6 +691,8 @@ export const MINED_AUTHOR_SIGNALS = {
       "Margulis, Lynn",
       "ROBERT SAPOLSKY",
       "Raymond Chang - Jason Overby",
+      "Martin, Robert C.",
+      "Robert C. Martin",
       "Raúl Rivas",
       "Ron Larson",
       "SANZ TIMON, JOSE MANUEL",
@@ -757,7 +758,9 @@ export const MINED_AUTHOR_SIGNALS = {
 // frecuencia de palabras sobre los 4.437 activos que habían quedado sin
 // categoría específica en la V1 (ver scripts/categorize/data/word_freq —
 // no versionado, generado ad-hoc para este lote).
-function kw(phrase, subcategoryId = null) { return { phrase, subcategoryId }; }
+function kw(phrase, subcategoryId = null, allowSecondary = false) {
+  return { phrase, subcategoryId, allowSecondary };
+}
 
 export const KEYWORD_SIGNALS = {
   'esoterismo-tarot': [
@@ -860,19 +863,21 @@ export const KEYWORD_SIGNALS = {
     kw('lenguaje'), kw('ingles', 'ingles'),
   ],
   'psicologia': [
-    kw('psicoanalisis', 'psicoanalisis'), kw('psicoanálisis', 'psicoanalisis'),
-    kw('practica psicomotriz', 'psicologia-clinica'),
+    kw('psicoanalisis', 'psicoanalisis', true), kw('psicoanálisis', 'psicoanalisis', true),
+    kw('practica psicomotriz', 'psicomotricidad', true),
     kw('tratamiento psiquico', 'psicologia-clinica'),
-    kw('psicomotricidad', 'psicologia-clinica'),
-    kw('psicoterapia', 'psicologia-clinica'),
-    kw('terapia cognitiva', 'psicologia-clinica'),
+    kw('psicomotricidad', 'psicomotricidad', true),
+    kw('psicoterapia', 'psicoterapia', true),
+    kw('terapia cognitiva', 'psicoterapia', true),
+    kw('terapia sistemica', 'psicoterapia', true),
     kw('psicologia clinica', 'psicologia-clinica'),
     kw('trastorno de ansiedad', 'psicologia-clinica'),
+    kw('trastorno del espectro autista', 'autismo-neurodesarrollo', true),
+    kw('espectro autista', 'autismo-neurodesarrollo', true),
+    kw('autismo', 'autismo-neurodesarrollo', true),
     kw('psicologia del desarrollo', 'neuropsicologia'),
     kw('psicologia', 'psicologia-clinica'), kw('lacan', 'psicoanalisis'),
     kw('freud', 'psicoanalisis'), kw('carl jung', 'psicoanalisis'),
-    kw('terapia', 'psicologia-clinica'),
-    kw('emociones'),
   ],
   'naturaleza-animales': [
     kw('zoologia', 'zoologia-animales'),
@@ -898,8 +903,10 @@ export const KEYWORD_SIGNALS = {
     kw('farmacologia'), kw('farmacología'), kw('clinica medica'),
     kw('manual clinico'), kw('enfermeria', 'enfermeria'),
     kw('nutricion clinica', 'nutricion'), kw('pediatria'), kw('cardiologia'),
+    kw('psoriasis', 'dermatologia', true), kw('dermatitis', 'dermatologia', true),
+    kw('eczema', 'dermatologia', true), kw('acne', 'dermatologia', true),
     kw('trastorno', 'salud-mental'), kw('trastornos', 'salud-mental'),
-    kw('autismo', 'salud-mental'), kw('embarazo'), kw('parteria'),
+    kw('parteria'),
     kw('ansiedad', 'salud-mental'), kw('tdah', 'salud-mental'),
     kw('depresion', 'salud-mental'), kw('depresión', 'salud-mental'),
     kw('abuso sexual', 'salud-mental'), kw('atlas', 'anatomia'),
@@ -918,6 +925,11 @@ export const KEYWORD_SIGNALS = {
     kw('liderazgo'),
   ],
   'ciencia-tecnologia': [
+    kw('clean code', 'informatica-software', true),
+    kw('codigo limpio', 'informatica-software', true),
+    kw('desarrollo de software', 'informatica-software', true),
+    kw('ingenieria de software', 'informatica-software', true),
+    kw('software', 'informatica-software', true),
     kw('programacion', 'programacion'), kw('programación', 'programacion'),
     kw('quimica organica', 'fisica-quimica'),
     kw('quimica general', 'fisica-quimica'),
@@ -948,14 +960,21 @@ export const KEYWORD_SIGNALS = {
     kw('taoismo', 'filosofia'), kw('chuang tse', 'filosofia'),
     kw('sociologia', 'sociologia-antropologia'),
     kw('antropologia', 'sociologia-antropologia'),
-    kw('ciencia politica', 'sociologia-antropologia'),
+    kw('ciencia politica', 'ciencia-politica', true),
+    kw('emociones politicas', 'ciencia-politica', true),
+    kw('emocion politica', 'ciencia-politica', true),
     kw('teoria critica', 'sociologia-antropologia'), kw('ensayo'),
+  ],
+  'familia-crianza': [
+    kw('maternidad', 'maternidad', true), kw('embarazo', 'maternidad', true),
+    kw('posparto', 'maternidad', true), kw('postparto', 'maternidad', true),
+    kw('lactancia', 'maternidad', true), kw('crianza', 'crianza', true),
   ],
   'educacion': [
     kw('pedagogia', 'pedagogia'), kw('pedagogía', 'pedagogia'),
     kw('didactica', 'pedagogia'), kw('nivel inicial', 'pedagogia'),
     kw('formacion docente', 'formacion-docente'), kw('montessori', 'pedagogia'),
-    kw('crianza', 'pedagogia'), kw('educacion', 'pedagogia'), kw('escuela', 'formacion-docente'),
+    kw('educacion', 'pedagogia'), kw('escuela', 'formacion-docente'),
     kw('aprendizaje', 'pedagogia'), kw('aprender'),
   ],
   'literatura-ficcion': [

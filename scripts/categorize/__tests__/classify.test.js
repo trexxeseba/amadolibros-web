@@ -153,6 +153,52 @@ test('categorías secundarias: un título que toca dos temas guarda la segunda c
   for (const sec of result.secondaryCategoryIds) assert.ok(CATEGORY_IDS.has(sec));
 });
 
+test('categorías secundarias conservan la ruta completa de cada clasificación', () => {
+  const result = classify({
+    mlu: 'MLU12b',
+    title: 'Psicología Del Embarazo',
+    author: '', publisher: '', isbn: '1', status: 'active',
+  });
+  assert.equal(result.primaryCategoryId, 'psicologia');
+  assert.equal(result.subcategoryId, 'psicologia-clinica');
+  assert.deepEqual(result.secondaryCategoryPaths, [
+    { categoryId: 'familia-crianza', subcategoryId: 'maternidad' },
+  ]);
+});
+
+test('curación solicitada: emociones políticas no entra en Psicología', () => {
+  const result = classify({ mlu: 'MLU669381182', title: 'Gestionar Las Emociones Políticas', author: '', publisher: '', isbn: '1', status: 'active' });
+  assert.equal(result.primaryCategoryId, 'filosofia-ciencias-sociales');
+  assert.equal(result.subcategoryId, 'ciencia-politica');
+});
+
+test('curación solicitada: psoriasis no entra en Psicología por la palabra terapia', () => {
+  const result = classify({ mlu: 'MLU725213570', title: 'Cura Natural De La Psoriasis. La Terapia Alternativa', author: '', publisher: '', isbn: '1', status: 'active' });
+  assert.equal(result.primaryCategoryId, 'medicina-salud');
+  assert.equal(result.subcategoryId, 'dermatologia');
+});
+
+test('curación solicitada: Robert C. Martin y Clean Code van a software', () => {
+  const result = classify({ mlu: 'MLU637272813', title: 'Código Limpio Clean Code Manual De Estilo Para El Desarrollo', author: 'Martin, Robert C.', publisher: '', isbn: '1', status: 'active' });
+  assert.equal(result.primaryCategoryId, 'ciencia-tecnologia');
+  assert.equal(result.subcategoryId, 'informatica-software');
+});
+
+test('psicoterapia, autismo, psicomotricidad, maternidad y crianza tienen destino propio', () => {
+  const cases = [
+    ['La Práctica De La Psicoterapia', 'psicologia', 'psicoterapia'],
+    ['Introducción Al Autismo', 'psicologia', 'autismo-neurodesarrollo'],
+    ['Manual De Psicomotricidad', 'psicologia', 'psicomotricidad'],
+    ['Guía De Maternidad Y Posparto', 'familia-crianza', 'maternidad'],
+    ['Manual De Crianza Respetuosa', 'familia-crianza', 'crianza'],
+  ];
+  for (const [title, categoryId, subcategoryId] of cases) {
+    const result = classify({ mlu: `MLU-${subcategoryId}`, title, author: '', publisher: '', isbn: '1', status: 'active' });
+    assert.equal(result.primaryCategoryId, categoryId, title);
+    assert.equal(result.subcategoryId, subcategoryId, title);
+  }
+});
+
 test('tags incluye el autor cuando está presente', () => {
   const record = { mlu: 'MLU13', title: 'Cualquier título', author: 'Judith Butler', publisher: '', isbn: '1', status: 'active' };
   const result = classify(record);
@@ -175,6 +221,18 @@ test('validateClassification detecta subcategoría que no pertenece a la categor
   const bad = { type: TYPES.BOOK, primaryCategoryId: 'derecho', subcategoryId: 'novela', secondaryCategoryIds: [] };
   const errors = validateClassification(bad);
   assert.ok(errors.some(e => e.includes('subcategoryId') || e.includes('no pertenece')));
+});
+
+test('validateClassification detecta una ruta secundaria inválida', () => {
+  const bad = {
+    type: TYPES.BOOK,
+    primaryCategoryId: 'psicologia',
+    subcategoryId: 'psicoterapia',
+    secondaryCategoryIds: ['educacion'],
+    secondaryCategoryPaths: [{ categoryId: 'educacion', subcategoryId: 'dermatologia' }],
+  };
+  const errors = validateClassification(bad);
+  assert.ok(errors.some(error => error.includes('secondaryCategoryPath')));
 });
 
 test('normalizeText quita acentos y normaliza espacios', () => {
@@ -364,7 +422,7 @@ test('QA autores: un nombre parcial no suplanta una señal de autor más especí
     status: 'active',
   });
   assert.equal(result.primaryCategoryId, 'psicologia');
-  assert.equal(result.subcategoryId, 'psicologia-clinica');
+  assert.equal(result.subcategoryId, 'psicomotricidad');
 });
 
 test('QA Sufismo: Idries Shah obtiene una sección propia, no Biblia', () => {

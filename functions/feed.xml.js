@@ -55,6 +55,7 @@
 
 import { slugify } from './_shared/slug.js';
 import { fetchCatalog } from './_shared/catalog.js';
+import { normalizeCategoryPaths } from './_shared/category-paths.js';
 // FICHAS-QUALITY-GUARD-1: misma definición de autoría genérica que la ficha.
 import { realAuthor } from './_shared/generic-author.js';
 import {
@@ -71,7 +72,10 @@ const MAX_ADDITIONAL_IMAGE_LINKS = 10;
 
 export async function onRequest(context) {
     try {
-        const catalog = await fetchCatalog(context);
+        const [catalog, categoryData] = await Promise.all([
+            fetchCatalog(context),
+            fetchMerchantCategoryData(context),
+        ]);
         const items = (catalog && Array.isArray(catalog.items)) ? catalog.items : [];
 
         if (items.length === 0) {
@@ -107,7 +111,7 @@ export async function onRequest(context) {
 
         let feedItems = '';
         for (const item of sortedItems) {
-            feedItems += renderFeedItem(item, coverManifest);
+            feedItems += renderFeedItem(item, coverManifest, categoryData);
         }
 
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -485,7 +489,7 @@ async function readMerchantCoverManifest(context) {
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
-export function renderFeedItem(item, coverManifest = null) {
+export function renderFeedItem(item, coverManifest = null, categoryData = null) {
     item = applyBookEnrichment(item);
     const stock = Number(item.available_quantity) || 0;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
@@ -513,6 +517,9 @@ export function renderFeedItem(item, coverManifest = null) {
 
     const title = truncateMerchantText(item.title, 150);
     const description = truncateMerchantText(buildFeedDescription(item), 5000);
+    const productTypeTags = merchantProductTypes(item.id, categoryData)
+        .map(productType => `\n        <g:product_type>${escapeXml(productType)}</g:product_type>`)
+        .join('');
 
     return `
     <item>
@@ -523,8 +530,54 @@ export function renderFeedItem(item, coverManifest = null) {
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>${additionalImageTags}` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
-        <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}
+        <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}${productTypeTags}
     </item>`;
+}
+
+export function merchantProductTypes(itemId, categoryData) {
+    const paths = normalizeCategoryPaths(categoryData?.items?.[itemId]);
+    if (paths.length === 0) return [];
+    const categories = Array.isArray(categoryData?.categories) ? categoryData.categories : [];
+    const values = [];
+    const seen = new Set();
+
+    for (const [categoryId, subcategoryId] of paths) {
+        const category = categories.find(entry => entry.id === categoryId);
+        if (!category?.name) continue;
+        const subcategory = subcategoryId
+            ? (category.subcategories || []).find(entry => entry.id === subcategoryId)
+            : null;
+        const value = ['Libros', category.name, subcategory?.name].filter(Boolean).join(' > ');
+        if (!seen.has(value)) {
+            seen.add(value);
+            values.push(value);
+        }
+    }
+    return values;
+}
+
+async function fetchMerchantCategoryData(context) {
+    try {
+        const url = new URL('/data/active-categories.json', context.request.url).toString();
+        const cache = caches.default;
+        const key = new Request(url);
+        let response = await cache.match(key);
+        if (!response) {
+            const fetched = await fetch(url);
+            if (!fetched.ok) return null;
+            response = new Response(fetched.body, {
+                status: fetched.status,
+                headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' },
+            });
+            if (typeof context?.waitUntil === 'function') context.waitUntil(cache.put(key, response.clone()));
+        }
+        const data = await response.json();
+        return data && typeof data.items === 'object' ? data : null;
+    } catch {
+        // product_type mejora Merchant, pero su ausencia transitoria no debe
+        // vaciar ni romper el feed de productos.
+        return null;
+    }
 }
 
 // ---------------------------------------------------------------------------

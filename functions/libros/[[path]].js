@@ -27,6 +27,7 @@ import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
 import { buildTagLookup, buildTarotHubModules } from '../_shared/tarot-hub-modules.js';
 // TAROT-FINDER-1: mismo alcance — sólo esoterismo-tarot.
 import { buildTarotFinderDataset } from '../_shared/tarot-finder-dataset.js';
+import { hasClassificationId } from '../_shared/category-paths.js';
 
 const TAROT_CATEGORY_ID = 'esoterismo-tarot';
 const TAROT_DECKS_CATEGORY_ID = 'esoterismo-tarot/mazos';
@@ -244,6 +245,19 @@ function commerceBenefitsHtml(category) {
         return '<div class="benefits"><span>Entrega hoy en Montevideo*</span><span>Envío $250</span><span>Gratis desde $1.500</span><span>Atención personalizada</span></div>';
     }
     return '<div class="benefits"><span>12% menos por transferencia</span><span>Hasta 12 cuotas</span><span>Envíos a todo Uruguay</span><span>Encargos del exterior</span></div>';
+}
+
+function psychologyPathwaysHtml(category) {
+    if (category.id !== 'psicologia') return '';
+    return `<section class="bible-pathways" aria-labelledby="psychology-pathways-title">
+    <h2 id="psychology-pathways-title">Explorá por especialidad</h2>
+    <p>Estas colecciones separan materias profesionales que antes quedaban mezcladas dentro de Psicología.</p>
+    <div class="bible-pathway-grid">
+      <a href="/libros/psicologia/psicoanalisis"><strong>Psicoanálisis</strong><span>Teoría, clínica, autores y escuelas psicoanalíticas.</span></a>
+      <a href="/libros/psicologia/psicomotricidad"><strong>Psicomotricidad</strong><span>Desarrollo, evaluación, formación e intervención.</span></a>
+      <a href="/libros/psicologia/autismo"><strong>Autismo y neurodesarrollo</strong><span>Bibliografía profesional, educativa y para familias.</span></a>
+    </div>
+  </section>`;
 }
 
 function biblePathwaysHtml(category) {
@@ -742,6 +756,7 @@ ${categoryBreadcrumbHtml(category)}
     ${commerceBenefitsHtml(category)}
   </section>
   ${biblePathwaysHtml(category)}
+  ${psychologyPathwaysHtml(category)}
   ${tarotPathwaysHtml(category)}
   ${tarotFinderHtml(tarotFinderDataset, canonical)}
   ${editorialGuideHtml(category)}
@@ -809,9 +824,9 @@ export async function onRequest(ctx) {
     const excludedClassificationIds = category.excludedClassificationIds || [];
     const categoryItems = activeItems
         .filter(item => {
-            const tags = categoryData.items[item.id] || [];
-            const matchesClassification = classificationIds.some(id => tags.includes(id))
-                && !excludedClassificationIds.some(id => tags.includes(id));
+            const paths = categoryData.items[item.id] || [];
+            const matchesClassification = classificationIds.some(id => hasClassificationId(paths, id))
+                && !excludedClassificationIds.some(id => hasClassificationId(paths, id));
             if (!matchesClassification) return false;
             if (category.tarotFilter === 'verified-tarot-decks') {
                 const tarotTag = tarotTagLookup(item.id);

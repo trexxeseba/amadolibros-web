@@ -106,5 +106,45 @@
     "secondaryCategoryIds": [],
     "tags": ["Rastafari", "Etiopía"],
     "note": "QA bibliográfica 2026-08-23: duplicado de Kebra Nagast; va a Otras tradiciones religiosas"
+  },
+  {
+    "mlu": "MLU669381182",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "ciencia-politica",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": ["Emociones políticas", "Sociedad", "Política"],
+    "note": "Curación comercial 2026-08-26: Gestionar las emociones políticas corresponde a Ciencia política; no debe aparecer en Psicología"
+  },
+  {
+    "mlu": "MLU1045409526",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": ["Psicoterapia", "Narrativas terapéuticas"],
+    "note": "Curación comercial 2026-08-26: obra profesional de psicoterapia; el título se repara en el sync antes de publicarse"
+  },
+  {
+    "mlu": "MLU725213570",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": "dermatologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": ["Psoriasis", "Terapias complementarias"],
+    "note": "Curación comercial 2026-08-26: psoriasis corresponde a Medicina y salud > Dermatología; no debe aparecer en Psicología"
+  },
+  {
+    "mlu": "MLU637272813",
+    "type": "book",
+    "primaryCategoryId": "ciencia-tecnologia",
+    "subcategoryId": "informatica-software",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": ["Programación", "Ingeniería de software", "Calidad de código"],
+    "note": "Curación comercial 2026-08-26: Clean Code corresponde a Informática y desarrollo de software; Robert C. Martin se retira de Psicología"
   }
 ]

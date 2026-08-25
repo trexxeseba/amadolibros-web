@@ -137,11 +137,11 @@ function findKeywordMatches(normalizedTitle, table) {
   const matches = [];
   const seenCategories = new Set();
   for (const categoryId of Object.keys(table)) {
-    for (const { phrase, subcategoryId } of table[categoryId]) {
+    for (const { phrase, subcategoryId, allowSecondary = false } of table[categoryId]) {
       const key = normalizeText(phrase);
       if (key && containsPhrase(normalizedTitle, key)) {
         if (!seenCategories.has(categoryId)) {
-          matches.push({ categoryId, subcategoryId, evidence: `título contiene frase distintiva: "${phrase}"` });
+          matches.push({ categoryId, subcategoryId, allowSecondary, evidence: `título contiene frase distintiva: "${phrase}"` });
           seenCategories.add(categoryId);
         }
         break; // una coincidencia por categoría alcanza — no acumular ruido
@@ -188,7 +188,7 @@ function findGenericObjectSignal(normalizedTitle) {
 
 /**
  * @param {{mlu:string, title:string, author?:string, publisher?:string, isbn?:string, status:string}} record
- * @param {object|null} manualCorrection {type, primaryCategoryId, subcategoryId, secondaryCategoryIds, tags, note}
+ * @param {object|null} manualCorrection {type, primaryCategoryId, subcategoryId, secondaryCategoryIds, secondaryCategoryPaths, tags, note}
  */
 export function classify(record, manualCorrection = null) {
   const base = {
@@ -204,6 +204,8 @@ export function classify(record, manualCorrection = null) {
       primaryCategoryId: manualCorrection.primaryCategoryId,
       subcategoryId: manualCorrection.subcategoryId ?? null,
       secondaryCategoryIds: manualCorrection.secondaryCategoryIds ?? [],
+      secondaryCategoryPaths: manualCorrection.secondaryCategoryPaths
+        ?? (manualCorrection.secondaryCategoryIds ?? []).map(categoryId => ({ categoryId, subcategoryId: null })),
       tags: manualCorrection.tags ?? [],
       confidence: CONFIDENCE.MANUAL,
       method: 'manual',
@@ -236,6 +238,7 @@ export function classify(record, manualCorrection = null) {
       primaryCategoryId: 'otros-productos',
       subcategoryId: typedObject.subcategoryId,
       secondaryCategoryIds: [],
+      secondaryCategoryPaths: [],
       tags: withTags(),
       confidence: CONFIDENCE.OBJECT_TYPED,
       method: 'rule',
@@ -258,6 +261,7 @@ export function classify(record, manualCorrection = null) {
         primaryCategoryId: 'otros-productos',
         subcategoryId: 'objetos-coleccion',
         secondaryCategoryIds: [],
+        secondaryCategoryPaths: [],
         tags: withTags(),
         confidence: CONFIDENCE.OBJECT,
         method: 'rule',
@@ -274,14 +278,17 @@ export function classify(record, manualCorrection = null) {
     const keywordMatches = findKeywordMatches(normalizedTitle, KEYWORD_SIGNALS);
     const sameCategoryKeyword = keywordMatches.find(m => m.categoryId === authorMatch.categoryId);
     const keywordMatchesForSecondary = keywordMatches
-      .filter(m => m.categoryId !== authorMatch.categoryId)
-      .map(m => m.categoryId);
+      .filter(m => m.categoryId !== authorMatch.categoryId && m.allowSecondary);
     return {
       ...base,
       type: TYPES.BOOK,
       primaryCategoryId: authorMatch.categoryId,
       subcategoryId: sameCategoryKeyword?.subcategoryId ?? null,
-      secondaryCategoryIds: keywordMatchesForSecondary,
+      secondaryCategoryIds: keywordMatchesForSecondary.map(m => m.categoryId),
+      secondaryCategoryPaths: keywordMatchesForSecondary.map(m => ({
+        categoryId: m.categoryId,
+        subcategoryId: m.subcategoryId ?? null,
+      })),
       tags: withTags(),
       confidence: CONFIDENCE.AUTHOR,
       method: 'rule',
@@ -302,6 +309,7 @@ export function classify(record, manualCorrection = null) {
       primaryCategoryId: publisherMatch.categoryId,
       subcategoryId: sameCategoryKeyword?.subcategoryId ?? null,
       secondaryCategoryIds: [],
+      secondaryCategoryPaths: [],
       tags: withTags(),
       confidence: CONFIDENCE.PUBLISHER,
       method: 'rule',
@@ -315,13 +323,18 @@ export function classify(record, manualCorrection = null) {
 
   const keywordMatches = findKeywordMatches(normalizedTitle, KEYWORD_SIGNALS);
   if (keywordMatches.length > 0) {
-    const [primary, ...rest] = keywordMatches;
+    const [primary, ...matchesAfterPrimary] = keywordMatches;
+    const rest = matchesAfterPrimary.filter(match => match.allowSecondary);
     return {
       ...base,
       type: TYPES.BOOK,
       primaryCategoryId: primary.categoryId,
       subcategoryId: primary.subcategoryId,
       secondaryCategoryIds: rest.map(m => m.categoryId),
+      secondaryCategoryPaths: rest.map(m => ({
+        categoryId: m.categoryId,
+        subcategoryId: m.subcategoryId ?? null,
+      })),
       tags: withTags(),
       confidence: CONFIDENCE.KEYWORD,
       method: 'rule',
@@ -332,13 +345,18 @@ export function classify(record, manualCorrection = null) {
 
   const weakMatches = findKeywordMatches(normalizedTitle, KEYWORD_SIGNALS_WEAK);
   if (weakMatches.length > 0) {
-    const [primary, ...rest] = weakMatches;
+    const [primary, ...matchesAfterPrimary] = weakMatches;
+    const rest = matchesAfterPrimary.filter(match => match.allowSecondary);
     return {
       ...base,
       type: TYPES.BOOK,
       primaryCategoryId: primary.categoryId,
       subcategoryId: primary.subcategoryId,
       secondaryCategoryIds: rest.map(m => m.categoryId),
+      secondaryCategoryPaths: rest.map(m => ({
+        categoryId: m.categoryId,
+        subcategoryId: m.subcategoryId ?? null,
+      })),
       tags: withTags(),
       confidence: CONFIDENCE.KEYWORD_WEAK,
       method: 'rule',
@@ -358,6 +376,7 @@ export function classify(record, manualCorrection = null) {
       primaryCategoryId: 'otros-libros',
       subcategoryId: null,
       secondaryCategoryIds: [],
+      secondaryCategoryPaths: [],
       tags: withTags(),
       confidence: CONFIDENCE.OBJECT_AMBIGUOUS,
       method: 'rule',
@@ -377,6 +396,7 @@ export function classify(record, manualCorrection = null) {
       primaryCategoryId: 'otros-libros',
       subcategoryId: null,
       secondaryCategoryIds: [],
+      secondaryCategoryPaths: [],
       tags: withTags(),
       confidence: CONFIDENCE.OTHER_BOOKS,
       method: 'rule',
@@ -394,6 +414,7 @@ export function classify(record, manualCorrection = null) {
     primaryCategoryId: 'otros-productos',
     subcategoryId: null,
     secondaryCategoryIds: [],
+    secondaryCategoryPaths: [],
     tags: withTags(),
     confidence: CONFIDENCE.OTHER_PRODUCTS,
     method: 'rule',
@@ -412,6 +433,15 @@ export function validateClassification(result) {
   }
   for (const secId of result.secondaryCategoryIds || []) {
     if (!isValidCategoryId(secId)) errors.push(`secondaryCategoryId inválido: ${secId}`);
+  }
+  for (const path of result.secondaryCategoryPaths || []) {
+    if (!path || !isValidCategoryId(path.categoryId)) {
+      errors.push(`secondaryCategoryPath inválido: ${JSON.stringify(path)}`);
+      continue;
+    }
+    if (!isValidSubcategoryId(path.categoryId, path.subcategoryId)) {
+      errors.push(`secondaryCategoryPath subcategoría inválida: ${path.categoryId}/${path.subcategoryId}`);
+    }
   }
   if (result.primaryCategoryId === null) {
     errors.push('primaryCategoryId nunca debe ser null — todo activo debe quedar visible en alguna categoría');

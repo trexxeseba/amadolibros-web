@@ -48,6 +48,7 @@ const CATALOG = {
 };
 
 const ACTIVE_CATEGORIES = {
+  schema_version: 2,
   generated_at: '2026-08-02T00:00:00.000Z',
   taxonomy_version: 2,
   rules_version: 8,
@@ -65,7 +66,7 @@ const ACTIVE_CATEGORIES = {
     { id: 'literatura-ficcion', name: 'Literatura y ficción', count: 2, subcategories: [] },
   ],
   items: {
-    MLU1: ['filosofia-ciencias-sociales'],
+    MLU1: [['filosofia-ciencias-sociales'], ['literatura-ficcion']],
     MLU2: ['esoterismo-tarot', 'tarot-oraculos'],
     MLU3: ['esoterismo-tarot', 'tarot-oraculos'],
     MLU5: ['otros-productos', 'discos-vinilos'],
@@ -145,6 +146,17 @@ test('categoría válida filtra solo esa categoría', async () => {
   assert.match(html, /Tarot Egipcio/);
   assert.doesNotMatch(html, /El Género En Disputa/);
   assert.doesNotMatch(html, /Sin categoría conocida/);
+});
+
+test('un libro con rutas V2 aparece en más de una categoría sin duplicarse', async () => {
+  const philosophy = await catalogRequest(context('https://preview.example/catalogo?categoria=filosofia-ciencias-sociales'));
+  const literature = await catalogRequest(context('https://preview.example/catalogo?categoria=literatura-ficcion'));
+  const philosophyHtml = await philosophy.text();
+  const literatureHtml = await literature.text();
+
+  assert.match(philosophyHtml, /El Género En Disputa/);
+  assert.match(literatureHtml, /El Género En Disputa/);
+  assert.equal((literatureHtml.match(/El Género En Disputa/g) || []).length, 1); // una sola card
 });
 
 test('subcategoría válida filtra dentro de la categoría', async () => {

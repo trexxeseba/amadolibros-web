@@ -23,6 +23,7 @@ import path from 'node:path';
 import { classify, validateClassification } from './classify.js';
 import { TAXONOMY_VERSION } from './taxonomy.js';
 import { RULES_VERSION } from './rules.js';
+import { repairKnownTitle } from '../../worker-sync/meli-catalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
@@ -79,7 +80,7 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
 
     const record = {
       mlu,
-      title: item.title,
+      title: repairKnownTitle(mlu, item.title),
       author: item.author,
       publisher: item.publisher,
       isbn: item.isbn,
@@ -109,7 +110,7 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
     }
     // needsReview también si la confianza queda por debajo del umbral, aunque
     // haya categoría — classify() ya lo marca; acá solo lo dejamos pasar.
-    results.push({ ...result, status: item.status, title: item.title });
+    results.push({ ...result, status: item.status, title: record.title });
   }
 
   mkdirSync(path.dirname(outputPath), { recursive: true });
