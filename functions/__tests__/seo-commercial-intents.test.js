@@ -34,6 +34,7 @@ test('home posiciona el diferencial y enlaza la landing desde el footer', () => 
 
   assert.match(home, /title="Librería online en Uruguay: Tarot, Biblias y más \| Amado Libros"/);
   assert.match(home, /Biblias Reina-Valera, Biblias católicas/);
-  assert.match(hero, /ediciones agotadas e importadas de Europa/);
+  assert.match(hero, /títulos importados disponibles en Uruguay/);
+  assert.match(hero, /ediciones agotadas o descatalogadas/);
   assert.match(footer, /href="\/libros-agotados-importados-uruguay"/);
 });

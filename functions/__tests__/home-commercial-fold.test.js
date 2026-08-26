@@ -22,12 +22,34 @@ const homeAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'pages', 'index.astro'),
   'utf8',
 );
+const headerAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'components', 'Header.astro'),
+  'utf8',
+);
+const categoryAccessAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'components', 'CategoryAccess.astro'),
+  'utf8',
+);
 
 test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
   assert.match(heroAstro, /<CategoryAccess \/>/);
   assert.match(heroAstro, /Título, autor o ISBN/);
+  assert.match(heroAstro, /Libros difíciles de encontrar\. Los conseguimos\./);
+  assert.match(heroAstro, /Miles de títulos importados disponibles en Uruguay/);
+  assert.match(heroAstro, /¿No aparece\?/);
+  assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
+  assert.doesNotMatch(heroAstro, /Librería uruguaya · compra online/);
+  assert.doesNotMatch(headerAstro, /class="brand-sub"/);
+  assert.doesNotMatch(categoryAccessAstro, /Entrá por lo que estás buscando/);
+  assert.match(categoryAccessAstro, /Encontrá más rápido tu próxima lectura/);
   assert.doesNotMatch(heroAstro, /Claro, rápido y con atención personal/);
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
+});
+
+test('en 390px el bloque de búsqueda ocupa el primer pantallazo antes de las categorías', () => {
+  assert.match(heroAstro, /@media \(max-width: 430px\)/);
+  assert.match(heroAstro, /min-height: calc\(100svh - 110px\)/);
+  assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
 });
 
 test('el bloque comercial conserva beneficios con condiciones explícitas', () => {

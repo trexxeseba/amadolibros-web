@@ -137,7 +137,6 @@ const number = new Intl.NumberFormat('es-UY');
     <section class="ca-panel" aria-labelledby="ca-heading">
       <div class="ca-heading-row">
         <div>
-          <span class="ca-kicker">Entrá por lo que estás buscando</span>
           <h2 id="ca-heading">Encontrá más rápido tu próxima lectura</h2>
         </div>
         <a class="ca-all ca-all-desktop" href="/catalogo">Ver catálogo completo →</a>
@@ -185,10 +184,9 @@ const number = new Intl.NumberFormat('es-UY');
 <style>
   .ca-panel {
     padding: 1.1rem;
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(58, 43, 34, 0.14);
-    border-radius: 1.25rem;
-    box-shadow: 0 18px 50px rgba(45, 32, 24, 0.09);
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid #ddd5ca;
+    border-radius: 0.65rem;
   }
 
   .ca-heading-row {
@@ -196,25 +194,16 @@ const number = new Intl.NumberFormat('es-UY');
     align-items: flex-end;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.85rem;
-  }
-
-  .ca-kicker {
-    display: block;
-    margin-bottom: 0.25rem;
-    color: var(--salmon-hover);
-    font-size: 0.64rem;
-    font-weight: 850;
-    letter-spacing: 0.085em;
-    text-transform: uppercase;
+    margin-bottom: 1rem;
   }
 
   .ca-heading-row h2 {
-    max-width: 20ch;
+    max-width: 18ch;
     color: var(--ink);
     font-family: var(--font-display);
-    font-size: clamp(1.3rem, 2.6vw, 1.75rem);
-    line-height: 1.08;
+    font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+    letter-spacing: -0.025em;
+    line-height: 1.04;
   }
 
   .ca-grid {
@@ -231,25 +220,26 @@ const number = new Intl.NumberFormat('es-UY');
     min-width: 0;
     padding: 0.85rem 0.7rem;
     overflow: hidden;
-    border: 1px solid rgba(51, 42, 35, 0.12);
-    border-radius: 0.85rem;
+    border: 1px solid #ded7ce;
+    border-radius: 0.45rem;
+    background: rgba(255, 255, 255, 0.68);
     color: var(--ink);
     text-decoration: none;
     transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
   }
 
   .ca-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--salmon);
-    box-shadow: 0 8px 20px rgba(45, 32, 24, 0.1);
+    transform: translateY(-1px);
+    border-color: var(--ca-accent, var(--salmon));
+    box-shadow: 0 7px 18px rgba(45, 32, 24, 0.07);
   }
 
-  .ca-card-night { background: linear-gradient(145deg, #282034, #463650); color: #fff; }
-  .ca-card-clay { background: linear-gradient(145deg, #f8e2d8, #f2caba); }
-  .ca-card-gold { background: linear-gradient(145deg, #f5e9c9, #ead49d); }
-  .ca-card-sage { background: linear-gradient(145deg, #e1eee3, #c8decf); }
-  .ca-card-sky { background: linear-gradient(145deg, #e1edf0, #c9dfe5); }
-  .ca-card-rose { background: linear-gradient(145deg, #f5dfe2, #edc7ce); }
+  .ca-card-night { --ca-accent: #4b3d52; }
+  .ca-card-clay { --ca-accent: #9a6554; }
+  .ca-card-gold { --ca-accent: #917536; }
+  .ca-card-sage { --ca-accent: #55705c; }
+  .ca-card-sky { --ca-accent: #4d7078; }
+  .ca-card-rose { --ca-accent: #845f68; }
 
   .ca-icon {
     display: inline-flex;
@@ -259,6 +249,7 @@ const number = new Intl.NumberFormat('es-UY');
     height: 2rem;
     border: 1px solid currentColor;
     border-radius: 999px;
+    color: var(--ca-accent);
     font-family: var(--font-display);
     font-size: 0.78rem;
     font-weight: 800;
@@ -310,8 +301,8 @@ const number = new Intl.NumberFormat('es-UY');
   .ca-secondary a {
     padding: 0.38rem 0.58rem;
     border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface);
+    border-radius: 0.35rem;
+    background: rgba(255, 255, 255, 0.62);
     color: var(--ink);
     font-size: 0.67rem;
     font-weight: 700;
@@ -337,7 +328,7 @@ const number = new Intl.NumberFormat('es-UY');
   }
 
   @media (min-width: 700px) {
-    .ca-panel { padding: 1.35rem; }
+    .ca-panel { padding: 1.5rem; }
     .ca-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .ca-all-desktop { display: inline-flex; flex: 0 0 auto; }
     .ca-all-mobile { display: none; }
@@ -372,6 +363,7 @@ const number = new Intl.NumberFormat('es-UY');
     .ca-arrow {
       display: block;
       align-self: end;
+      color: var(--ca-accent);
       font-size: 1rem;
       opacity: 0.65;
     }
