@@ -37,6 +37,36 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
       />
     </a>
 
+    {!showSearch && (
+      <div class="header-welcome">
+        <img
+          src="/images/amado-cat-reading-lounge-v1.webp"
+          alt=""
+          width="219"
+          height="180"
+          class="header-cat header-cat-lounge"
+          aria-hidden="true"
+        />
+        <span>Bienvenido a Amado Libros</span>
+        <img
+          src="/images/amado-cat-reading-seated-v1.webp"
+          alt=""
+          width="172"
+          height="180"
+          class="header-cat header-cat-seated"
+          aria-hidden="true"
+        />
+        <img
+          src="/images/amado-cat-welcome-v1.webp"
+          alt=""
+          width="136"
+          height="180"
+          class="header-cat header-cat-wave"
+          aria-hidden="true"
+        />
+      </div>
+    )}
+
     <!-- Buscador — abre overlay de búsqueda -->
     {showSearch && (
       <button
@@ -97,7 +127,7 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   }
 
   .header-inner.without-search {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
   }
 
   /* Marca */
@@ -117,6 +147,33 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
     width: 58px;
     flex-shrink: 0;
   }
+
+  .header-welcome {
+    min-width: 0;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.88);
+    font-family: var(--font-display);
+    font-size: clamp(0.875rem, 1.4vw, 1.05rem);
+    letter-spacing: 0.015em;
+    white-space: nowrap;
+  }
+
+  .header-cat {
+    display: block;
+    flex: 0 0 auto;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 7px rgba(236, 147, 122, 0.2));
+  }
+
+  .header-cat-lounge { height: 54px; }
+  .header-cat-seated { height: 57px; }
+  .header-cat-wave { height: 58px; }
 
   /* Buscador — pill compacta */
   .search-pill {
@@ -175,5 +232,25 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
     }
     .wa-btn { padding: 0.4rem 0.75rem; }
 
+  }
+
+  @media (max-width: 860px) {
+    .header-welcome {
+      justify-content: flex-end;
+      gap: 0.45rem;
+    }
+    .header-cat-lounge,
+    .header-cat-seated {
+      display: none;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .header-inner.without-search {
+      grid-template-columns: 1fr auto auto;
+    }
+    .header-welcome {
+      display: none;
+    }
   }
 </style>

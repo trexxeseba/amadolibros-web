@@ -71,6 +71,16 @@ test('la cinta superior muestra los cuatro beneficios comerciales aprobados', ()
   assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
 });
 
+test('el header de portada recibe con tres gatos sin competir con las acciones', () => {
+  assert.match(headerAstro, /Bienvenido a Amado Libros/);
+  assert.match(headerAstro, /amado-cat-reading-lounge-v1\.webp/);
+  assert.match(headerAstro, /amado-cat-reading-seated-v1\.webp/);
+  assert.match(headerAstro, /amado-cat-welcome-v1\.webp/);
+  assert.match(headerAstro, /!showSearch/);
+  assert.match(headerAstro, /@media \(max-width: 700px\)/);
+  assert.match(headerAstro, /\.header-welcome \{\s*display: none;/);
+});
+
 test('el buscador del hero abre una superficie blanca amplia con el texto preservado', () => {
   assert.match(heroAstro, /amado:openCatalogSearch/);
   assert.match(heroAstro, /detail: \{ query: input\.value\.trim\(\) \}/);
