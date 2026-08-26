@@ -203,6 +203,24 @@ function appendServerTiming(headers, name, duration) {
     );
 }
 
+const SECURITY_HEADERS = Object.freeze({
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+});
+
+function withSecurityHeaders(response) {
+    const headers = new Headers(response.headers);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+        headers.set(name, value);
+    }
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+    });
+}
+
 export async function onRequest(context) {
     const workerStartedAt = perfNow();
     const url = new URL(context.request.url);
@@ -210,10 +228,11 @@ export async function onRequest(context) {
     const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
 
     const finish = response => {
+        const securedResponse = withSecurityHeaders(response);
         if (!isHashedAstroAsset) {
-            scheduleCrawlAnalytics(context, response, perfNow() - workerStartedAt);
+            scheduleCrawlAnalytics(context, securedResponse, perfNow() - workerStartedAt);
         }
-        return response;
+        return securedResponse;
     };
 
     const legacyResponse = await legacyResponseForRequest(context);
@@ -259,11 +278,11 @@ export async function onRequest(context) {
         const response = await context.next();
         const newHeaders = new Headers(response.headers);
         newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
-        return new Response(response.body, {
+        return finish(new Response(response.body, {
             status: response.status,
             statusText: response.statusText,
             headers: newHeaders,
-        });
+        }));
     }
 
     // Producción también expone el tramo que antes quedaba fuera de los

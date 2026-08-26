@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { onRequest as middlewareRequest } from '../_middleware.js';
 
 const HEADERS_PATH = fileURLToPath(new URL('../../astro-front/public/_headers', import.meta.url));
 const content = readFileSync(HEADERS_PATH, 'utf8');
@@ -39,4 +40,39 @@ test('no se agrega Content-Security-Policy en este Bloque', () => {
 
 test('las reglas previas del archivo (historial del incidente de robots/no-store) siguen documentadas', () => {
   assert.match(content, /No agregar reglas de robots\/caché en este archivo/);
+});
+
+const expectedSecurityHeaders = {
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-frame-options': 'SAMEORIGIN',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+};
+
+async function throughFunctions(pathname) {
+  return middlewareRequest({
+    request: new Request(`https://www.amadolibros.com${pathname}`),
+    async next() {
+      return new Response('SSR');
+    },
+  });
+}
+
+test('Functions agrega los tres headers a catálogo, fichas, carrito y API sin CSP', async () => {
+  for (const pathname of ['/catalogo', '/libro/MLU1/prueba', '/carrito', '/api/health']) {
+    const response = await throughFunctions(pathname);
+    for (const [name, value] of Object.entries(expectedSecurityHeaders)) {
+      assert.equal(response.headers.get(name), value, `${pathname}: ${name}`);
+    }
+    assert.equal(response.headers.has('content-security-policy'), false, pathname);
+    assert.equal(response.headers.has('content-security-policy-report-only'), false, pathname);
+  }
+});
+
+test('Functions conserva los headers también en redirects tempranos', async () => {
+  const response = await throughFunctions('/tienda');
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('location'), 'https://www.amadolibros.com/catalogo');
+  for (const [name, value] of Object.entries(expectedSecurityHeaders)) {
+    assert.equal(response.headers.get(name), value, name);
+  }
 });
