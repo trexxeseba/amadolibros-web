@@ -65,24 +65,29 @@ test('en 390px el hero ocupa el primer pantallazo antes de las categorías', () 
   assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
 });
 
-test('la cinta superior muestra los cuatro beneficios comerciales aprobados', () => {
+test('la cinta superior prioriza un beneficio fijo y deja documentados los restantes', () => {
   assert.match(headerAstro, /<AnnouncementBar \/>/);
+  assert.match(announcementAstro, /Envío gratis desde \$1\.500/);
   assert.match(announcementAstro, /Hasta 12 cuotas con Mercado Pago/);
   assert.match(announcementAstro, /12% menos por transferencia/);
-  assert.match(announcementAstro, /Envío \$250 · gratis desde \$1\.500/);
   assert.match(announcementAstro, /Entrega coordinada en Montevideo/);
-  assert.match(announcementAstro, /prefers-reduced-motion/);
+  assert.match(announcementAstro, /height: 32px/);
+  assert.match(announcementAstro, /background: #1F1B18/);
+  assert.match(announcementAstro, /color: #FAF6EF/);
+  assert.doesNotMatch(announcementAstro, /@keyframes|animation:/);
   assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
 });
 
-test('el header de portada recibe con tres gatos sin competir con las acciones', () => {
-  assert.match(headerAstro, /Bienvenido a Amado Libros/);
-  assert.match(headerAstro, /amado-cat-reading-lounge-v1\.webp/);
-  assert.match(headerAstro, /amado-cat-reading-seated-v1\.webp/);
-  assert.match(headerAstro, /amado-cat-welcome-v1\.webp/);
-  assert.match(headerAstro, /!showSearch/);
-  assert.match(headerAstro, /@media \(max-width: 700px\)/);
-  assert.match(headerAstro, /\.header-welcome \{\s*display: none;/);
+test('el header de portada queda reducido a marca y carrito sin decoración ni WhatsApp duplicado', () => {
+  assert.match(headerAstro, /<CartIcon \/>/);
+  assert.match(headerAstro, /height: 56px/);
+  assert.match(headerAstro, /logo-amado\.webp/);
+  assert.doesNotMatch(headerAstro, /Bienvenido a Amado Libros/);
+  assert.doesNotMatch(headerAstro, /amado-cat-reading-lounge-v1\.webp/);
+  assert.doesNotMatch(headerAstro, /amado-cat-reading-seated-v1\.webp/);
+  assert.doesNotMatch(headerAstro, /amado-cat-welcome-v1\.webp/);
+  assert.doesNotMatch(headerAstro, /class="wa-btn"/);
+  assert.doesNotMatch(headerAstro, /whatsappHref|buildWhatsAppMessage/);
 });
 
 test('una portada de origen ausente no deja una imagen rota en la vidriera', () => {
