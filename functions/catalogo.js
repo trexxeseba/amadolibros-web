@@ -1030,7 +1030,7 @@ export async function onRequest(ctx) {
     : `<div class="empty">${emptyMessage}</div>`
   }
   <footer>
-    <a href="/">Inicio</a> · <a href="/libros-agotados-importados-uruguay">Libros agotados e importados</a> · <a href="/politicas">Políticas</a> ·
+    <a href="/">Inicio</a> · <a href="/libros-agotados-importados-uruguay">Libros agotados e importados</a> · <a href="/politicas/">Políticas</a> ·
     &copy; 2026 Amado Libros
   </footer>
 </div>

@@ -13,7 +13,7 @@ test('la home destaca la coordinación de la entrega inmediatamente después del
   assert.match(component, /El cadete no llega de sorpresa/);
   assert.match(component, /coordinamos contigo la hora o franja/);
   assert.match(component, /Si el cadete llega y no estás, no te preocupes/);
-  assert.match(component, /href="\/envios"/);
+  assert.match(component, /href="\/envios\/"/);
 });
 
 test('envíos y el bloque comercial repiten la tranquilidad sin prometer reentrega gratuita', () => {

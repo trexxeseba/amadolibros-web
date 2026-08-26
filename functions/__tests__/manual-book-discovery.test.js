@@ -38,7 +38,7 @@ test('las preguntas cubren diferenciales concretos y conducen al formulario', ()
   for (const type of ['agotado', 'novedades-tecnicas', 'digital', 'antiguo', 'tapa', 'bibliografia']) {
     assert.match(discovery, new RegExp(`type: '${type}'`));
   }
-  assert.match(discovery, /href={`\/pedir-libro\?tipo=\$\{question\.type\}`}/);
+  assert.match(discovery, /href={`\/pedir-libro\/\?tipo=\$\{question\.type\}`}/);
   assert.match(discovery, /una persona de Amado Libros hace la búsqueda/i);
 });
 
@@ -56,6 +56,6 @@ test('el pedido ordena los datos y termina en WhatsApp sin guardar información'
 test('el formulario recupera búsquedas sin resultado y conserva acceso desde el footer', () => {
   assert.match(requestPage, /params\.get\('q'\)/);
   assert.match(requestPage, /requestedType === 'sin-resultados'/);
-  assert.match(footer, /href="\/pedir-libro"/);
+  assert.match(footer, /href="\/pedir-libro\/"/);
   assert.match(footer, /¿No encontraste el libro\?/);
 });

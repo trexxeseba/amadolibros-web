@@ -53,7 +53,7 @@ test('3. los datos de contacto coinciden con Footer.astro', () => {
 test('4. Footer.astro no incorpora links nuevos sin pasar por brand.js', () => {
     const known = new Set([
         ...FOOTER_LINKS.map(l => l.href),
-        '/contacto', `mailto:${CONTACT.email}`,
+        '/contacto/', `mailto:${CONTACT.email}`,
     ]);
     const hrefs = [...FOOTER_ASTRO.matchAll(/href="(\/[^"]*|mailto:[^"]*)"/g)]
         .map(m => m[1]);
