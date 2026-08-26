@@ -295,7 +295,7 @@ function renderProductShowcase(config, productId) {
   if (productId) requestQuery.set('libro', productId);
   const requestHelp = config.requestHelp || {
     question: '¿Buscás otro libro o una edición específica?',
-    href: `/pedir-libro?${requestQuery.toString()}`,
+    href: `/pedir-libro/?${requestQuery.toString()}`,
     label: 'Contanos qué buscás',
   };
   const requestHelpHtml = `<aside class="showcase-help" aria-label="Ayuda para encontrar otro libro">

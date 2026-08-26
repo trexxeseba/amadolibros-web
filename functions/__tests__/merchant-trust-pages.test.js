@@ -9,7 +9,7 @@ test('merchant trust pages exist as Astro routes with canonical URLs', () => {
   for (const page of ['politicas', 'envios', 'devoluciones', 'terminos', 'privacidad', 'contacto']) {
     const path = `astro-front/src/pages/${page}.astro`;
     assert.equal(existsSync(new URL(path, root)), true, `${path} missing`);
-    assert.match(read(path), new RegExp(`canonical="https://www\\.amadolibros\\.com/${page}"`));
+    assert.match(read(path), new RegExp(`canonical="https://www\\.amadolibros\\.com/${page}/"`));
   }
 });
 
@@ -32,7 +32,7 @@ test('shipping policy matches checkout cost and free-shipping threshold', () => 
 test('footer and checkout expose trust links before purchase', () => {
   const footer = read('astro-front/src/components/Footer.astro');
   const cart = read('astro-front/src/pages/carrito.astro');
-  for (const href of ['/envios', '/devoluciones', '/terminos', '/privacidad', '/contacto']) {
+  for (const href of ['/envios/', '/devoluciones/', '/terminos/', '/privacidad/', '/contacto/']) {
     assert.match(footer, new RegExp(`href="${href}"`));
   }
   assert.match(cart, /href="\/terminos"/);

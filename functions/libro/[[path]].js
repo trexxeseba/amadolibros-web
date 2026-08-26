@@ -916,7 +916,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     <p class="shipping">${inStock
       ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
       : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
-    } <a href="/politicas#envios">Ver política de envíos</a>.</p>
+    } <a href="/politicas/#envios">Ver política de envíos</a>.</p>
   </div>
   ${relatedBooksHtml}
 </main>

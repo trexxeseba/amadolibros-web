@@ -110,8 +110,8 @@ test('el bloque comercial conserva beneficios con condiciones explícitas', () =
 });
 
 test('los CTA de encargos inician el formulario guiado y explican el servicio', () => {
-  assert.match(heroAstro, /href="\/pedir-libro\?tipo=exacto"/);
-  assert.match(commercialAstro, /href="\/pedir-libro\?tipo=exacto"/);
+  assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(commercialAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(commercialAstro, /Buscamos agotados, importados y ediciones difíciles/i);
   assert.match(commercialAstro, />\s*Contanos qué libro buscás\s*</);
   assert.match(commercialAstro, /href="\/libros-agotados-importados-uruguay"/);

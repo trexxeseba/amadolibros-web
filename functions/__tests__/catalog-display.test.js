@@ -322,7 +322,7 @@ test('una búsqueda sin coincidencias reales termina en cero resultados', async 
   assert.match(html, /No encontramos resultados/);
   assert.doesNotMatch(html, /class="rc-card/);
   assert.match(html, /Que no aparezca acá no significa que no podamos encontrarlo/);
-  assert.match(html, /href="\/pedir-libro\?tipo=sin-resultados&amp;q=zzzinexistente999"/);
+  assert.match(html, /href="\/pedir-libro\/\?tipo=sin-resultados&amp;q=zzzinexistente999"/);
   assert.match(html, />Pedir que lo busquemos</);
   assert.match(html, />Ir directo a WhatsApp</);
 });

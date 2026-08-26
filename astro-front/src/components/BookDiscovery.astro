@@ -46,7 +46,7 @@ const questions = [
 
     <div class="question-grid">
       {questions.map((question, index) => (
-        <a class="question-card" href={`/pedir-libro?tipo=${question.type}`}>
+        <a class="question-card" href={`/pedir-libro/?tipo=${question.type}`}>
           <span class="question-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
           <strong>{question.title}</strong>
           <span>{question.text}</span>

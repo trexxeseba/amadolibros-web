@@ -5,7 +5,7 @@ import {
   whatsappHref,
 } from '../../../shared/whatsapp-messages.js';
 
-const canonical = 'https://www.amadolibros.com/como-identificar-edicion-correcta-isbn';
+const canonical = 'https://www.amadolibros.com/como-identificar-edicion-correcta-isbn/';
 const whatsapp = whatsappHref(buildWhatsAppMessage({
   greeting: 'Hola, quiero verificar una edición con Amado Libros 😊',
   motive: 'Verificar la edición correcta de un libro',
@@ -207,7 +207,7 @@ const jsonLd = {
   </ul>
   <p>
     En Amado Libros separamos primero la obra de la edición y luego contrastamos los datos disponibles.
-    Podés conocer <a href="/quienes-somos">nuestro método de búsqueda y verificación</a> o consultar
+    Podés conocer <a href="/quienes-somos/">nuestro método de búsqueda y verificación</a> o consultar
     <a href="/libros-agotados-importados-uruguay">cómo funciona un encargo de libros agotados o importados</a>.
   </p>
 
@@ -233,7 +233,7 @@ const jsonLd = {
     <strong>¿Querés confirmar una edición antes de encargarla?</strong>
     <p>Mandanos el ISBN y los demás datos que tengas. Si hay una contradicción, la revisamos antes de presentarte una opción.</p>
     <div class="cta-links">
-      <a class="cta-primary" href="/pedir-libro?tipo=exacto">Enviar pedido ordenado</a>
+      <a class="cta-primary" href="/pedir-libro/?tipo=exacto">Enviar pedido ordenado</a>
       <a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar por WhatsApp</a>
     </div>
   </div>
