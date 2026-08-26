@@ -167,7 +167,7 @@ export async function onRequest() {
       </div>
       <div>
         <p class="truth"><strong>Respuesta directa:</strong> sí, en muchos casos un libro agotado o fuera de plaza puede conseguirse por encargo desde Uruguay. No podemos asegurar disponibilidad antes de buscar: verificamos título o ISBN, edición, proveedor, precio y plazo para cada consulta.</p>
-        <p class="reviewed">Contenido revisado el 12 de agosto de 2026 por el <a href="/quienes-somos">equipo de Amado Libros</a>.</p>
+        <p class="reviewed">Contenido revisado el 12 de agosto de 2026 por el <a href="/quienes-somos/">equipo de Amado Libros</a>.</p>
       </div>
     </section>
 
@@ -178,8 +178,8 @@ export async function onRequest() {
         <article class="card"><span class="step-number">2</span><h3>Buscamos y verificamos</h3><p>Revisamos disponibilidad en proveedores del exterior y comparamos edición, idioma, formato y estado.</p></article>
         <article class="card"><span class="step-number">3</span><h3>Vos decidís</h3><p>Te informamos precio, seña y plazo estimado. La gestión empieza únicamente después de tu confirmación.</p></article>
       </div>
-      <p class="guide-link">¿No sabés si una publicación corresponde a la que necesitás? Consultá la <a href="/como-identificar-edicion-correcta-isbn">guía para identificar la edición correcta por ISBN</a>.</p>
-      <p class="guide-link">Conocé también <a href="/quienes-somos">quién revisa las búsquedas y cómo verificamos cada edición</a>.</p>
+      <p class="guide-link">¿No sabés si una publicación corresponde a la que necesitás? Consultá la <a href="/como-identificar-edicion-correcta-isbn/">guía para identificar la edición correcta por ISBN</a>.</p>
+      <p class="guide-link">Conocé también <a href="/quienes-somos/">quién revisa las búsquedas y cómo verificamos cada edición</a>.</p>
     </section>
 
     <section class="section">

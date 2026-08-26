@@ -324,7 +324,7 @@ function contextualRequestHelp(item, classificationTags = []) {
 
   return {
     question,
-    href: `/pedir-libro?${query.toString()}`,
+    href: `/pedir-libro/?${query.toString()}`,
     label: 'Contanos qué buscás',
   };
 }

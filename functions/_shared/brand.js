@@ -71,17 +71,24 @@ export const CONTACT = {
 };
 
 
+// AUDITORIA-EXTERNA-25AGO2026 Bloque 3: las paginas estaticas de Astro se
+// compilan en formato "directory" (dist/<ruta>/index.html), y Produccion
+// responde 308 desde la variante sin barra hacia la variante con barra.
+// Enlaces, canonical y sitemap usan por eso el destino final con barra.
+// /libros/biblias, /libros/biblias/reina-valera y
+// /libros-agotados-importados-uruguay son rutas SSR (Functions), no paginas
+// estaticas de Astro: no les aplica este problema y se dejan como estaban.
 export const FOOTER_LINKS = [
-    { href: '/quienes-somos', label: 'Quiénes somos y cómo trabajamos' },
-    { href: '/pedir-libro', label: '¿No encontraste el libro?' },
+    { href: '/quienes-somos/', label: 'Quiénes somos y cómo trabajamos' },
+    { href: '/pedir-libro/', label: '¿No encontraste el libro?' },
     { href: '/libros/biblias', label: 'Biblias en Uruguay' },
     { href: '/libros/biblias/reina-valera', label: 'Biblias Reina-Valera' },
-    { href: '/como-identificar-edicion-correcta-isbn', label: 'Guía para verificar un ISBN' },
+    { href: '/como-identificar-edicion-correcta-isbn/', label: 'Guía para verificar un ISBN' },
     { href: '/libros-agotados-importados-uruguay', label: 'Libros por encargo' },
-    { href: '/envios',       label: 'Envíos y retiro' },
-    { href: '/devoluciones', label: 'Devoluciones y reembolsos' },
-    { href: '/terminos',     label: 'Términos y cancelaciones' },
-    { href: '/privacidad',   label: 'Privacidad' },
+    { href: '/envios/',       label: 'Envíos y retiro' },
+    { href: '/devoluciones/', label: 'Devoluciones y reembolsos' },
+    { href: '/terminos/',     label: 'Términos y cancelaciones' },
+    { href: '/privacidad/',   label: 'Privacidad' },
 ];
 
 /** Enlace de WhatsApp con mensaje propio, siempre codificado. */
@@ -180,7 +187,7 @@ export function footerHtml(year = new Date().getFullYear(), page = '/') {
         WhatsApp · ${CONTACT.whatsappDisplay}
       </a>
       <a class="footer-text-link" href="mailto:${CONTACT.email}">${CONTACT.email}</a>
-      <a class="footer-text-link" href="/contacto">${CONTACT.pickupLine}</a>
+      <a class="footer-text-link" href="/contacto/">${CONTACT.pickupLine}</a>
       <p class="footer-hours">${CONTACT.pickupHours}</p>
     </div>
   </div>

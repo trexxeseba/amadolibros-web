@@ -36,13 +36,13 @@ test('la landing de agotados publica respuesta directa, revisión y entidades co
   assert.match(page, /'@type': 'Service'/);
   assert.match(page, /'@type': 'BreadcrumbList'/);
   assert.match(page, /'reviewedBy'/);
-  assert.match(page, /href=\"\/quienes-somos\"/);
+  assert.match(page, /href=\"\/quienes-somos\/\"/);
 });
 
 test('el sitemap declara lastmod sólo para páginas con revisión significativa conocida', async () => {
   const home = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc === 'https://www.amadolibros.com/');
-  const guide = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc.endsWith('/como-identificar-edicion-correcta-isbn'));
-  const policies = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc.endsWith('/politicas'));
+  const guide = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc.endsWith('/como-identificar-edicion-correcta-isbn/'));
+  const policies = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc.endsWith('/politicas/'));
 
   assert.equal(home?.lastmod, '2026-08-12');
   assert.equal(guide?.lastmod, '2026-08-12');
@@ -50,6 +50,6 @@ test('el sitemap declara lastmod sólo para páginas con revisión significativa
 
   const response = await renderSitemap();
   const xml = await response.text();
-  assert.match(xml, /<loc>https:\/\/www\.amadolibros\.com\/como-identificar-edicion-correcta-isbn<\/loc>\s*<lastmod>2026-08-12<\/lastmod>/);
-  assert.doesNotMatch(xml, /<loc>https:\/\/www\.amadolibros\.com\/politicas<\/loc>\s*<lastmod>/);
+  assert.match(xml, /<loc>https:\/\/www\.amadolibros\.com\/como-identificar-edicion-correcta-isbn\/<\/loc>\s*<lastmod>2026-08-12<\/lastmod>/);
+  assert.doesNotMatch(xml, /<loc>https:\/\/www\.amadolibros\.com\/politicas\/<\/loc>\s*<lastmod>/);
 });

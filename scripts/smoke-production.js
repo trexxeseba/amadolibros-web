@@ -61,8 +61,8 @@ const ROUTES = [
   { path: '/', kind: 'html', canonical: `${BASE_URL}/`, robots: 'index, follow' },
   { path: '/catalogo', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'index, follow' },
   { path: '/catalogo?q=zzzinexistente999', kind: 'html', canonical: `${BASE_URL}/catalogo`, robots: 'noindex, follow' },
-  { path: '/pedir-libro', kind: 'html', canonical: `${BASE_URL}/pedir-libro`, robots: 'index, follow' },
-  { path: '/como-identificar-edicion-correcta-isbn', kind: 'html', canonical: `${BASE_URL}/como-identificar-edicion-correcta-isbn`, robots: 'index, follow' },
+  { path: '/pedir-libro/', kind: 'html', canonical: `${BASE_URL}/pedir-libro/`, robots: 'index, follow' },
+  { path: '/como-identificar-edicion-correcta-isbn/', kind: 'html', canonical: `${BASE_URL}/como-identificar-edicion-correcta-isbn/`, robots: 'index, follow' },
   { path: '/libros/biblias', kind: 'html', canonical: `${BASE_URL}/libros/biblias`, robots: 'index, follow' },
   { path: '/libros/biblias/reina-valera', kind: 'html', canonical: `${BASE_URL}/libros/biblias/reina-valera`, robots: 'index, follow' },
   { path: '/carrito/', kind: 'cart' },
@@ -288,8 +288,8 @@ function analyzeSitemapBody(body, kind) {
 
   if (kind === 'sitemap-pages') {
     const requiredPaths = [
-      '/', '/catalogo', '/pedir-libro', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
-      '/devoluciones', '/terminos', '/privacidad', '/contacto',
+      '/', '/catalogo', '/pedir-libro/', '/libros-maria-montessori-uruguay', '/politicas/', '/envios/',
+      '/devoluciones/', '/terminos/', '/privacidad/', '/contacto/',
     ];
     for (const path of requiredPaths) {
       const expected = BASE_URL + path;
