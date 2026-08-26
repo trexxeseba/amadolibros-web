@@ -326,3 +326,36 @@ test('26. sin resultados no hay paginación ni contador de rango', async () => {
   assert.match(html, /No encontramos resultados\./);
   assert.doesNotMatch(html, /<nav class="pg"/);
 });
+
+test('27. el catálogo grande ofrece 16 accesos HTML a tramos distribuidos', async () => {
+  CATALOG = buildCatalog(PAGE_SIZE * 400);
+  const { html } = await render(BASE_URL);
+  const block = html.slice(html.indexOf('<details class="pg-shortcuts">'), html.indexOf('</details>') + 10);
+  const targets = [...block.matchAll(/href="\/catalogo\?page=(\d+)"/g)].map(match => Number(match[1]));
+
+  // La página 1 se marca como actual; las otras 15 son enlaces reales.
+  assert.equal(targets.length, 15);
+  assert.deepEqual(targets, [...targets].sort((a, b) => a - b));
+  assert.equal(targets.at(-1), 400);
+  assert.match(block, /<span class="pg-shortcut is-current" aria-current="page">Página 1<\/span>/);
+  assert.doesNotMatch(block, /onclick=|javascript:/);
+});
+
+test('28. los accesos reducen la distancia máxima a un tramo del catálogo', async () => {
+  CATALOG = buildCatalog(PAGE_SIZE * 400);
+  const { html } = await render(BASE_URL);
+  const block = html.slice(html.indexOf('<details class="pg-shortcuts">'), html.indexOf('</details>') + 10);
+  const linked = [...block.matchAll(/(?:href="\/catalogo\?page=(\d+)"|aria-current="page">Página (\d+))/g)]
+    .map(match => Number(match[1] || match[2]))
+    .sort((a, b) => a - b);
+
+  assert.equal(linked.length, 16);
+  const largestGap = Math.max(...linked.slice(1).map((target, index) => target - linked[index]));
+  assert.ok(largestGap <= 27, `ningún tramo debe quedar separado por más de 27 páginas; dio ${largestGap}`);
+});
+
+test('29. búsquedas y filtros no duplican los accesos del catálogo limpio', async () => {
+  CATALOG = buildCatalog(PAGE_SIZE * 20);
+  const { html } = await render(`${BASE_URL}?q=prueba`);
+  assert.doesNotMatch(html, /<details class="pg-shortcuts">/);
+});

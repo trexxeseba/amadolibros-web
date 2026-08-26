@@ -457,13 +457,34 @@ function paginationWindow(page, totalPages) {
     return cells;
 }
 
+// Atajos editoriales para que el catálogo completo no dependa de recorrer
+// cientos de veces “Siguiente”. Repartimos 16 puntos de entrada de forma
+// uniforme entre la primera y la última página. En un catálogo de 400
+// páginas, cualquier tramo queda a no más de ~14 pasos de uno de estos
+// accesos, en vez de quedar a casi 200 desde un extremo.
+//
+// Los enlaces viven en un <details> visible y usable: en mobile ocupa una
+// sola línea hasta que la persona decide abrirlo, pero siguen siendo anchors
+// HTML server-side (sin JavaScript ni contenido exclusivo para crawlers).
+const CATALOG_SHORTCUT_COUNT = 16;
+
+function paginationShortcuts(totalPages) {
+    if (totalPages <= 9) return [];
+    const count = Math.min(CATALOG_SHORTCUT_COUNT, totalPages);
+    const pages = new Set();
+    for (let index = 0; index < count; index += 1) {
+        pages.add(1 + Math.round(index * (totalPages - 1) / (count - 1)));
+    }
+    return [...pages].sort((a, b) => a - b);
+}
+
 // Dos filas, pensadas para mobile primero:
 //   fila 1 → ‹ Anterior · Página N de M · Siguiente ›
 //   fila 2 → 1 … n-1 [n] n+1 … M
 // Todo son <a href> reales: la navegación funciona sin JavaScript. Los
 // extremos deshabilitados se renderizan como <span>, nunca como enlaces a
 // una página inexistente.
-function paginationHtml({ page, totalPages, hrefFor }) {
+function paginationHtml({ page, totalPages, hrefFor, showCatalogShortcuts = false }) {
     if (totalPages <= 1) return '';
 
     const prevControl = page > 1
@@ -484,6 +505,19 @@ function paginationHtml({ page, totalPages, hrefFor }) {
         return `<a class="pg-num" href="${escapeHtml(hrefFor(cell))}" aria-label="${label}">${cell}</a>`;
     }).join('');
 
+    const shortcutPages = showCatalogShortcuts ? paginationShortcuts(totalPages) : [];
+    const shortcuts = shortcutPages.length > 0
+        ? `<details class="pg-shortcuts">
+    <summary>Ir a otra parte del catálogo</summary>
+    <div class="pg-shortcut-links" aria-label="Accesos a tramos del catálogo">
+      ${shortcutPages.map(target => target === page
+            ? `<span class="pg-shortcut is-current" aria-current="page">Página ${target}</span>`
+            : `<a class="pg-shortcut" href="${escapeHtml(hrefFor(target))}">Página ${target}</a>`
+        ).join('')}
+    </div>
+  </details>`
+        : '';
+
     return `<nav class="pg" aria-label="Paginación de resultados">
   <div class="pg-row pg-main">
     ${prevControl}
@@ -491,6 +525,7 @@ function paginationHtml({ page, totalPages, hrefFor }) {
     ${nextControl}
   </div>
   <div class="pg-row pg-nums">${numbers}</div>
+  ${shortcuts}
 </nav>`;
 }
 
@@ -512,6 +547,18 @@ const PAGINATION_STYLES = `
     .pg-gap{border:0;background:none;color:#94a3b8;min-width:24px}
     .pg-status{flex:1;text-align:center;font-size:.8rem;color:#64748b}
     .pg-ctl:focus-visible,.pg-num:focus-visible{outline:2px solid #a94e3d;
+        outline-offset:2px}
+    .pg-shortcuts{margin-top:.25rem;border-top:1px solid #e2dbd0;padding-top:.65rem}
+    .pg-shortcuts summary{width:max-content;max-width:100%;margin:0 auto;cursor:pointer;
+        color:#4a3d30;font-size:.8rem;font-weight:700;list-style-position:inside}
+    .pg-shortcut-links{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem;
+        margin-top:.65rem}
+    .pg-shortcut{display:inline-flex;align-items:center;justify-content:center;
+        min-height:36px;padding:.35rem .6rem;border:1px solid #e2dbd0;border-radius:999px;
+        background:#fff;color:#4a3d30;font-size:.75rem;text-decoration:none}
+    .pg-shortcut:hover{background:#f5efe6}
+    .pg-shortcut.is-current{background:#18120e;color:#fff;border-color:#18120e}
+    .pg-shortcut:focus-visible,.pg-shortcuts summary:focus-visible{outline:2px solid #a94e3d;
         outline-offset:2px}
 `;
 
@@ -902,6 +949,7 @@ export async function onRequest(ctx) {
     const paginationBlock = paginationHtml({
         page,
         totalPages,
+        showCatalogShortcuts: isIndex,
         hrefFor: target => catalogPath({
             q: rawQ, categoria, subcategoria, disponibilidad, page: target,
         }),
