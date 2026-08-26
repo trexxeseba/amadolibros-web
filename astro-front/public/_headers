@@ -10,3 +10,20 @@
 # portada, /carrito y /pedido quedaran noindex + no-store en
 # www.amadolibros.com. No agregar reglas de robots/caché en este archivo
 # sin verificar antes que no se filtren a Producción.
+
+# AUDITORIA-EXTERNA-25AGO2026 Bloque 4 (Lote 3 del brief). Screaming Frog
+# reportó ausencia de estos tres encabezados en las páginas rastreadas
+# (382/381/369 URLs respectivamente). Regla global: no hay ningún assets
+# con caché existente en este archivo que pisar (ver historial arriba —
+# quedó reducido a comentarios tras el incidente de robots/no-store).
+#
+# Sin `preload` en HSTS a propósito: entra a una lista global de
+# navegadores y es difícil de revertir — el brief lo prohíbe explícitamente.
+# Sin Content-Security-Policy: requiere primero el inventario de orígenes
+# externos y una corrida en Report-Only antes de aplicarla — ver
+# reports/auditoria-YYYY-MM-DD/1.headers-cse-inventory.md. Aplicarla a
+# ciegas puede romper Mercado Pago, GA4 o Cloudflare Insights.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
