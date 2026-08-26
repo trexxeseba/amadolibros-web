@@ -554,7 +554,7 @@ const PAGINATION_STYLES = `
     .pg-shortcut-links{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem;
         margin-top:.65rem}
     .pg-shortcut{display:inline-flex;align-items:center;justify-content:center;
-        min-height:36px;padding:.35rem .6rem;border:1px solid #e2dbd0;border-radius:999px;
+        min-height:44px;padding:.35rem .6rem;border:1px solid #e2dbd0;border-radius:999px;
         background:#fff;color:#4a3d30;font-size:.75rem;text-decoration:none}
     .pg-shortcut:hover{background:#f5efe6}
     .pg-shortcut.is-current{background:#18120e;color:#fff;border-color:#18120e}

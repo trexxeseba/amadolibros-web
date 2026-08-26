@@ -371,3 +371,9 @@ test('30. una página intermedia conserva los 16 accesos al catálogo limpio', a
   assert.equal(links.at(-1), '/catalogo?page=400');
   assert.doesNotMatch(block, /q=|categoria=|subcategoria=|disponibilidad=/);
 });
+
+test('31. los accesos por tramo mantienen un área táctil de 44 px', async () => {
+  CATALOG = buildCatalog(PAGE_SIZE * 20);
+  const { html } = await render(BASE_URL);
+  assert.match(html, /\.pg-shortcut\{display:inline-flex;align-items:center;justify-content:center;\s*min-height:44px;/);
+});
