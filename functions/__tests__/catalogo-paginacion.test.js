@@ -359,3 +359,15 @@ test('29. búsquedas y filtros no duplican los accesos del catálogo limpio', as
   const { html } = await render(`${BASE_URL}?q=prueba`);
   assert.doesNotMatch(html, /<details class="pg-shortcuts">/);
 });
+
+test('30. una página intermedia conserva los 16 accesos al catálogo limpio', async () => {
+  CATALOG = buildCatalog(PAGE_SIZE * 400);
+  const { html } = await render(`${BASE_URL}?page=200`);
+  const block = html.slice(html.indexOf('<details class="pg-shortcuts">'), html.indexOf('</details>') + 10);
+  const links = [...block.matchAll(/<a class="pg-shortcut" href="([^"]+)">/g)].map(match => match[1]);
+
+  assert.equal(links.length, 16);
+  assert.equal(links[0], '/catalogo');
+  assert.equal(links.at(-1), '/catalogo?page=400');
+  assert.doesNotMatch(block, /q=|categoria=|subcategoria=|disponibilidad=/);
+});
