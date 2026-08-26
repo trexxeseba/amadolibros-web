@@ -1,5 +1,6 @@
 ---
 import CartIcon from './CartIcon.astro';
+import AnnouncementBar from './AnnouncementBar.astro';
 import {
   buildWhatsAppMessage,
   whatsappHref,
@@ -7,12 +8,10 @@ import {
 
 interface Props {
   showSearch?: boolean;
-  showMobileDeliveryBanner?: boolean;
 }
 
 const {
   showSearch = true,
-  showMobileDeliveryBanner = false,
 } = Astro.props;
 
 const currentPage = Astro.url.pathname;
@@ -21,15 +20,9 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   page: currentPage,
   closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
 }));
-const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
-  greeting: 'Hola, quiero consultar por una entrega de Amado Libros 😊',
-  motive: 'Coordinar una entrega en Montevideo',
-  situation: 'Entrega en aproximadamente 2 horas, sujeta a zona y horario',
-  page: currentPage,
-  closing: 'Quisiera confirmar si pueden entregarme hoy y coordinar el horario. Gracias.',
-}));
 ---
 <header class="site-header">
+  <AnnouncementBar />
   <div class:list={['header-inner', { 'without-search': !showSearch }]}>
 
     <!-- Marca — logo (gato+libro), sin duplicar el texto "Amado Libros"
@@ -42,8 +35,37 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
         height="57"
         class="brand-logo"
       />
-      <span class="brand-sub">Librería uruguaya</span>
     </a>
+
+    {!showSearch && (
+      <div class="header-welcome">
+        <img
+          src="/images/amado-cat-reading-lounge-v1.webp"
+          alt=""
+          width="219"
+          height="180"
+          class="header-cat header-cat-lounge"
+          aria-hidden="true"
+        />
+        <span>Bienvenido a Amado Libros</span>
+        <img
+          src="/images/amado-cat-reading-seated-v1.webp"
+          alt=""
+          width="172"
+          height="180"
+          class="header-cat header-cat-seated"
+          aria-hidden="true"
+        />
+        <img
+          src="/images/amado-cat-welcome-v1.webp"
+          alt=""
+          width="136"
+          height="180"
+          class="header-cat header-cat-wave"
+          aria-hidden="true"
+        />
+      </div>
+    )}
 
     <!-- Buscador — abre overlay de búsqueda -->
     {showSearch && (
@@ -80,19 +102,6 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
 
   </div>
 
-  {showMobileDeliveryBanner && (
-    <a
-      href={DELIVERY_WA_HREF}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="mobile-delivery-banner"
-      aria-label="Coordinar entrega en 2 horas en Montevideo por WhatsApp"
-    >
-      <span aria-hidden="true">⚡</span>
-      <strong>Montevideo: entrega en 2 horas*</strong>
-      <span class="mobile-delivery-cta">Coordinar →</span>
-    </a>
-  )}
 </header>
 
 <style>
@@ -118,11 +127,7 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
   }
 
   .header-inner.without-search {
-    grid-template-columns: 1fr auto auto;
-  }
-
-  .mobile-delivery-banner {
-    display: none;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
   }
 
   /* Marca */
@@ -143,13 +148,32 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
     flex-shrink: 0;
   }
 
-  .brand-sub {
-    font-size: 0.6875rem;
-    color: rgba(255, 255, 255, 0.38);
-    font-weight: 400;
-    display: none;
+  .header-welcome {
+    min-width: 0;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.88);
+    font-family: var(--font-display);
+    font-size: clamp(0.875rem, 1.4vw, 1.05rem);
+    letter-spacing: 0.015em;
+    white-space: nowrap;
   }
-  @media (min-width: 560px) { .brand-sub { display: block; } }
+
+  .header-cat {
+    display: block;
+    flex: 0 0 auto;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 7px rgba(236, 147, 122, 0.2));
+  }
+
+  .header-cat-lounge { height: 54px; }
+  .header-cat-seated { height: 57px; }
+  .header-cat-wave { height: 58px; }
 
   /* Buscador — pill compacta */
   .search-pill {
@@ -208,28 +232,25 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
     }
     .wa-btn { padding: 0.4rem 0.75rem; }
 
-    .mobile-delivery-banner {
-      min-height: 38px;
-      padding: 0.45rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+  }
+
+  @media (max-width: 860px) {
+    .header-welcome {
+      justify-content: flex-end;
       gap: 0.45rem;
-      background: #e49982;
-      color: #18120e;
-      border-top: 1px solid rgba(255, 255, 255, 0.16);
-      font-size: 0.73rem;
-      line-height: 1.2;
-      text-align: center;
     }
-
-    .mobile-delivery-banner strong {
-      font-weight: 800;
+    .header-cat-lounge,
+    .header-cat-seated {
+      display: none;
     }
+  }
 
-    .mobile-delivery-cta {
-      font-weight: 700;
-      white-space: nowrap;
+  @media (max-width: 700px) {
+    .header-inner.without-search {
+      grid-template-columns: 1fr auto auto;
+    }
+    .header-welcome {
+      display: none;
     }
   }
 </style>

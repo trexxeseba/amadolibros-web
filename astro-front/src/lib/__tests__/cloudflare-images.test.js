@@ -26,3 +26,11 @@ test('no anida transformaciones ni admite un ID que no sea MLU', () => {
   assert.equal(cloudflareImageUrl(transformed, 480), transformed);
   assert.equal(bookCoverUrl('MLA1'), '');
 });
+
+test('Preview usa la portada del mismo origen sin depender de /cdn-cgi/image', () => {
+  const cover = responsiveBookCover('MLU987654', { optimize: false });
+  assert.equal(cover.source, '/book-cover/MLU987654/cover.jpg');
+  assert.equal(cover.src, '/book-cover/MLU987654/cover.jpg');
+  assert.equal(cover.srcset, '');
+  assert.equal(cover.sizes, '');
+});

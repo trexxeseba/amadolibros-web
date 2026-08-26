@@ -23,9 +23,20 @@ export function cloudflareImageUrl(source, width, quality = 85) {
   return `${BASE}/cdn-cgi/image/${options}${sourceUrl.pathname}${sourceUrl.search}`;
 }
 
-export function responsiveBookCover(productId) {
+export function responsiveBookCover(productId, { optimize = true } = {}) {
   const source = bookCoverUrl(productId);
   const widths = [240, 360, 480];
+  if (!source) return { source: '', src: '', srcset: '', sizes: '' };
+  if (!optimize) {
+    const sourceUrl = new URL(source);
+    const localSource = `${sourceUrl.pathname}${sourceUrl.search}`;
+    return {
+      source: localSource,
+      src: localSource,
+      srcset: '',
+      sizes: '',
+    };
+  }
   return {
     source,
     src: cloudflareImageUrl(source, 360),

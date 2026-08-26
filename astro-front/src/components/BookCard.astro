@@ -43,7 +43,11 @@ function slugify(text: string): string {
 
 // La home deja de entregar mlstatic directamente: usa la portada controlada
 // por Amado Libros (R2 primero) y Cloudflare elige el ancho/formato adecuado.
-const cover = responsiveBookCover(book.id);
+// Cloudflare Pages Preview no expone /cdn-cgi/image y no debe incrustar la
+// variante optimizada del dominio productivo. En Preview usamos el proxy de
+// portada del mismo origen; Producción conserva Image Resizing y srcset.
+const isIndexableProduction = import.meta.env.PUBLIC_INDEXABLE === 'true';
+const cover = responsiveBookCover(book.id, { optimize: isIndexableProduction });
 
 const fichaHref = `/libro/${book.id}/${slugify(book.title)}`;
 
@@ -70,14 +74,15 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
   <a href={fichaHref} class="bc-img-link" tabindex="-1" aria-hidden="true">
     <img
       src={cover.src}
-      srcset={cover.srcset}
-      sizes={cover.sizes}
+      srcset={cover.srcset || undefined}
+      sizes={cover.sizes || undefined}
       alt=""
       loading="lazy"
       decoding="async"
       width="280"
       height="373"
       class="bc-img"
+      onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('bc-img-fallback')"
     />
   </a>
 
@@ -155,6 +160,11 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
     height: 100%;
     object-fit: cover;
     transition: transform 0.25s;
+  }
+  .bc-img-fallback {
+    object-fit: contain;
+    padding: clamp(2.25rem, 18%, 4rem);
+    background: #f3efe8;
   }
   .bc-card:hover .bc-img {
     transform: scale(1.04);

@@ -5,36 +5,39 @@ import CategoryAccess from './CategoryAccess.astro';
 <section class="hero-shell">
   <div class="hero">
     <div class="hero-content">
-      <span class="hero-badge">Librería uruguaya · compra online</span>
+      <h1 class="hero-h1">
+        Libros difíciles de encontrar.
+        <span>Los conseguimos.</span>
+      </h1>
 
-      <h1 class="hero-h1">Tarot, Biblias y libros difíciles de conseguir en Uruguay.</h1>
+      <div class="hero-details">
+        <p class="hero-lead">
+          Miles de títulos importados disponibles en Uruguay y un servicio de encargo para ediciones agotadas o descatalogadas.
+        </p>
 
-      <p class="hero-lead">
-        Buscá por título, autor o ISBN. También conseguimos ediciones agotadas e importadas de Europa y otros mercados.
-      </p>
+        <form class="hero-search" action="/catalogo" method="get" role="search">
+          <label class="sr-only" for="hero-search-input">Buscar por título, autor o ISBN</label>
+          <span class="hero-search-icon" aria-hidden="true">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+              <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+              <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input
+            id="hero-search-input"
+            type="search"
+            name="q"
+            placeholder="Título, autor o ISBN"
+            autocomplete="off"
+            enterkeyhint="search"
+          >
+          <button type="submit">Buscar</button>
+        </form>
 
-      <form class="hero-search" action="/catalogo" method="get" role="search">
-        <label class="sr-only" for="hero-search-input">Buscar por título, autor o ISBN</label>
-        <span class="hero-search-icon" aria-hidden="true">
-          <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
-            <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
-            <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </span>
-        <input
-          id="hero-search-input"
-          type="search"
-          name="q"
-          placeholder="Título, autor o ISBN"
-          autocomplete="off"
-          enterkeyhint="search"
-        >
-        <button type="submit">Buscar</button>
-      </form>
-
-      <div class="hero-help">
-        <span>¿No aparece en el catálogo?</span>
-        <a href="/pedir-libro?tipo=exacto">Pedinos una búsqueda manual →</a>
+        <div class="hero-help">
+          <span>¿No aparece?</span>
+          <a href="/pedir-libro?tipo=exacto">Pedinos una búsqueda manual →</a>
+        </div>
       </div>
     </div>
 
@@ -42,56 +45,73 @@ import CategoryAccess from './CategoryAccess.astro';
   </div>
 </section>
 
+<script is:inline>
+(function () {
+  var form = document.querySelector('.hero-search');
+  var input = document.getElementById('hero-search-input');
+  if (!form || !input) return;
+
+  function openExpandedSearch() {
+    document.dispatchEvent(new CustomEvent('amado:openCatalogSearch', {
+      detail: { query: input.value.trim() },
+    }));
+  }
+
+  input.addEventListener('focus', openExpandedSearch);
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    openExpandedSearch();
+  });
+})();
+</script>
+
 <style>
   .hero-shell {
-    background:
-      radial-gradient(circle at 12% 18%, rgba(228, 153, 130, 0.16), transparent 34%),
-      radial-gradient(circle at 90% 0%, rgba(218, 193, 135, 0.14), transparent 30%),
-      var(--bg);
+    background: var(--bg);
     border-bottom: 1px solid var(--border);
   }
 
   .hero {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
     display: grid;
-    gap: 1rem;
-    padding: 1.6rem 1rem 1.4rem;
+    padding: 0 1rem 1.8rem;
   }
 
   .hero-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0.5rem 0.25rem;
-  }
-
-  .hero-badge {
-    align-self: flex-start;
-    margin-bottom: 0.65rem;
-    color: var(--salmon-hover);
-    font-size: 0.67rem;
-    font-weight: 850;
-    letter-spacing: 0.085em;
-    text-transform: uppercase;
+    min-height: calc(100svh - 108px);
+    display: grid;
+    align-content: center;
+    gap: 1.5rem;
+    padding: 2.25rem 0.25rem 2.75rem;
   }
 
   .hero-h1 {
-    max-width: 13ch;
+    max-width: 12ch;
     color: var(--ink);
     font-family: var(--font-display);
-    font-size: clamp(2.15rem, 7vw, 4rem);
+    font-size: clamp(2.85rem, 13vw, 3.55rem);
     font-weight: 700;
-    letter-spacing: -0.038em;
-    line-height: 1.01;
+    letter-spacing: -0.045em;
+    line-height: 0.93;
+  }
+
+  .hero-h1 span {
+    display: block;
+    color: var(--salmon-hover);
   }
 
   .hero-lead {
-    max-width: 51ch;
-    margin-top: 0.9rem;
+    max-width: 49ch;
+    padding-top: 1rem;
+    border-top: 1px solid #cfc6ba;
     color: var(--ink-2);
-    font-size: clamp(0.94rem, 2vw, 1.07rem);
-    line-height: 1.5;
+    font-size: clamp(0.94rem, 1.8vw, 1.05rem);
+    line-height: 1.55;
+  }
+
+  .hero-details {
+    max-width: 650px;
   }
 
   .hero-search {
@@ -101,13 +121,13 @@ import CategoryAccess from './CategoryAccess.astro';
     gap: 0.65rem;
     width: 100%;
     max-width: 650px;
-    margin-top: 1.15rem;
+    margin-top: 1.25rem;
     padding: 0.4rem;
     padding-left: 1rem;
     background: var(--surface);
-    border: 1.5px solid #d8cfc4;
-    border-radius: 0.875rem;
-    box-shadow: 0 8px 28px rgba(24, 18, 14, 0.07);
+    border: 1px solid #d5ccc0;
+    border-radius: 0.55rem;
+    box-shadow: 0 5px 18px rgba(24, 18, 14, 0.055);
   }
 
   .hero-search:focus-within {
@@ -134,7 +154,7 @@ import CategoryAccess from './CategoryAccess.astro';
     min-height: 44px;
     padding: 0.7rem 1.35rem;
     border: 0;
-    border-radius: 0.65rem;
+    border-radius: 0.35rem;
     background: var(--salmon);
     color: #fff;
     font: 750 0.95rem/1 var(--font-ui);
@@ -149,7 +169,7 @@ import CategoryAccess from './CategoryAccess.astro';
     gap: 0.25rem 0.55rem;
     margin-top: 0.75rem;
     color: var(--ink-2);
-    font-size: 0.73rem;
+    font-size: 0.76rem;
   }
 
   .hero-help a {
@@ -160,17 +180,37 @@ import CategoryAccess from './CategoryAccess.astro';
   }
 
   @media (min-width: 700px) {
-    .hero { padding: 2.2rem 2rem; }
+    .hero { padding-right: 2rem; padding-left: 2rem; }
+
+    .hero-content {
+      min-height: 560px;
+      padding-top: 3.5rem;
+      padding-bottom: 3.5rem;
+    }
+
+    .hero-h1 {
+      font-size: clamp(4rem, 8vw, 5.4rem);
+    }
   }
 
   @media (min-width: 980px) {
-    .hero {
-      grid-template-columns: minmax(340px, 0.78fr) minmax(550px, 1.22fr);
-      gap: 2rem;
-      min-height: 590px;
+    .hero-content {
+      grid-template-columns: minmax(0, 1.42fr) minmax(340px, 0.58fr);
+      gap: 4.5rem;
+      min-height: 610px;
       align-items: center;
-      padding-top: 2.5rem;
-      padding-bottom: 2.5rem;
+      padding-top: 4rem;
+      padding-bottom: 4rem;
+    }
+
+    .hero-h1 {
+      max-width: 11ch;
+      font-size: clamp(4.8rem, 6.35vw, 5.75rem);
+    }
+
+    .hero-details {
+      align-self: end;
+      padding-bottom: 0.6rem;
     }
   }
 

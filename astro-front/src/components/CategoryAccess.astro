@@ -137,7 +137,6 @@ const number = new Intl.NumberFormat('es-UY');
     <section class="ca-panel" aria-labelledby="ca-heading">
       <div class="ca-heading-row">
         <div>
-          <span class="ca-kicker">Entrá por lo que estás buscando</span>
           <h2 id="ca-heading">Encontrá más rápido tu próxima lectura</h2>
         </div>
         <a class="ca-all ca-all-desktop" href="/catalogo">Ver catálogo completo →</a>
@@ -184,11 +183,9 @@ const number = new Intl.NumberFormat('es-UY');
 
 <style>
   .ca-panel {
-    padding: 1.1rem;
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(58, 43, 34, 0.14);
-    border-radius: 1.25rem;
-    box-shadow: 0 18px 50px rgba(45, 32, 24, 0.09);
+    padding: 2.2rem 0 0;
+    background: transparent;
+    border-top: 1px solid #cfc6ba;
   }
 
   .ca-heading-row {
@@ -196,31 +193,22 @@ const number = new Intl.NumberFormat('es-UY');
     align-items: flex-end;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.85rem;
-  }
-
-  .ca-kicker {
-    display: block;
-    margin-bottom: 0.25rem;
-    color: var(--salmon-hover);
-    font-size: 0.64rem;
-    font-weight: 850;
-    letter-spacing: 0.085em;
-    text-transform: uppercase;
+    margin-bottom: 1.4rem;
   }
 
   .ca-heading-row h2 {
-    max-width: 20ch;
+    max-width: 18ch;
     color: var(--ink);
     font-family: var(--font-display);
-    font-size: clamp(1.3rem, 2.6vw, 1.75rem);
-    line-height: 1.08;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    letter-spacing: -0.025em;
+    line-height: 1.04;
   }
 
   .ca-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    gap: 0.75rem;
   }
 
   .ca-card {
@@ -229,27 +217,28 @@ const number = new Intl.NumberFormat('es-UY');
     grid-template-columns: 2rem minmax(0, 1fr);
     gap: 0.55rem;
     min-width: 0;
-    padding: 0.85rem 0.7rem;
+    padding: 1rem 0.85rem;
     overflow: hidden;
-    border: 1px solid rgba(51, 42, 35, 0.12);
-    border-radius: 0.85rem;
+    border: 1px solid #ded7ce;
+    border-radius: 0.35rem;
+    background: rgba(255, 255, 255, 0.68);
     color: var(--ink);
     text-decoration: none;
     transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
   }
 
   .ca-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--salmon);
-    box-shadow: 0 8px 20px rgba(45, 32, 24, 0.1);
+    transform: translateY(-1px);
+    border-color: var(--ca-accent, var(--salmon));
+    box-shadow: 0 7px 18px rgba(45, 32, 24, 0.07);
   }
 
-  .ca-card-night { background: linear-gradient(145deg, #282034, #463650); color: #fff; }
-  .ca-card-clay { background: linear-gradient(145deg, #f8e2d8, #f2caba); }
-  .ca-card-gold { background: linear-gradient(145deg, #f5e9c9, #ead49d); }
-  .ca-card-sage { background: linear-gradient(145deg, #e1eee3, #c8decf); }
-  .ca-card-sky { background: linear-gradient(145deg, #e1edf0, #c9dfe5); }
-  .ca-card-rose { background: linear-gradient(145deg, #f5dfe2, #edc7ce); }
+  .ca-card-night { --ca-accent: #4b3d52; }
+  .ca-card-clay { --ca-accent: #9a6554; }
+  .ca-card-gold { --ca-accent: #917536; }
+  .ca-card-sage { --ca-accent: #55705c; }
+  .ca-card-sky { --ca-accent: #4d7078; }
+  .ca-card-rose { --ca-accent: #845f68; }
 
   .ca-icon {
     display: inline-flex;
@@ -259,6 +248,7 @@ const number = new Intl.NumberFormat('es-UY');
     height: 2rem;
     border: 1px solid currentColor;
     border-radius: 999px;
+    color: var(--ca-accent);
     font-family: var(--font-display);
     font-size: 0.78rem;
     font-weight: 800;
@@ -310,8 +300,8 @@ const number = new Intl.NumberFormat('es-UY');
   .ca-secondary a {
     padding: 0.38rem 0.58rem;
     border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface);
+    border-radius: 0.35rem;
+    background: rgba(255, 255, 255, 0.62);
     color: var(--ink);
     font-size: 0.67rem;
     font-weight: 700;
@@ -337,7 +327,7 @@ const number = new Intl.NumberFormat('es-UY');
   }
 
   @media (min-width: 700px) {
-    .ca-panel { padding: 1.35rem; }
+    .ca-panel { padding-top: 3rem; }
     .ca-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .ca-all-desktop { display: inline-flex; flex: 0 0 auto; }
     .ca-all-mobile { display: none; }
@@ -346,8 +336,8 @@ const number = new Intl.NumberFormat('es-UY');
   @media (min-width: 1000px) {
     .ca-card {
       grid-template-columns: 2.25rem minmax(0, 1fr) auto;
-      min-height: 7.2rem;
-      padding: 0.85rem;
+      min-height: 9.5rem;
+      padding: 1.15rem;
     }
 
     .ca-icon { width: 2.25rem; height: 2.25rem; }
@@ -372,6 +362,7 @@ const number = new Intl.NumberFormat('es-UY');
     .ca-arrow {
       display: block;
       align-self: end;
+      color: var(--ca-accent);
       font-size: 1rem;
       opacity: 0.65;
     }
