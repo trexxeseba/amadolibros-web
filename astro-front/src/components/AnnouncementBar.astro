@@ -1,0 +1,80 @@
+---
+const benefits = [
+  'Hasta 12 cuotas con Mercado Pago',
+  '12% menos por transferencia',
+  'Envío $250 · gratis desde $1.500',
+  'Entrega coordinada en Montevideo',
+];
+---
+
+<aside class="announcement-bar" aria-label="Beneficios de compra">
+  <div class="announcement-track">
+    <div class="announcement-set">
+      {benefits.map(benefit => (
+        <span class="announcement-item"><b aria-hidden="true">·</b>{benefit}</span>
+      ))}
+    </div>
+    <div class="announcement-set" aria-hidden="true">
+      {benefits.map(benefit => (
+        <span class="announcement-item"><b aria-hidden="true">·</b>{benefit}</span>
+      ))}
+    </div>
+  </div>
+</aside>
+
+<style>
+  .announcement-bar {
+    width: 100%;
+    min-height: 36px;
+    overflow: hidden;
+    background: var(--salmon);
+    color: var(--ink);
+    border-bottom: 1px solid rgba(24, 18, 14, 0.14);
+    font-size: 0.76rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .announcement-track {
+    display: flex;
+    align-items: center;
+    width: max-content;
+    min-height: 36px;
+    animation: amado-benefits-scroll 28s linear infinite;
+    will-change: transform;
+  }
+
+  .announcement-set {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 2rem;
+    padding-right: 1rem;
+  }
+
+  .announcement-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    white-space: nowrap;
+  }
+
+  .announcement-item b {
+    font-size: 1rem;
+    line-height: 0;
+  }
+
+  .announcement-bar:hover .announcement-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes amado-benefits-scroll {
+    to { transform: translateX(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .announcement-bar { overflow-x: auto; }
+    .announcement-track { animation: none; will-change: auto; }
+    .announcement-set[aria-hidden='true'] { display: none; }
+  }
+</style>

@@ -30,11 +30,16 @@ const categoryAccessAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'CategoryAccess.astro'),
   'utf8',
 );
+const announcementAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'components', 'AnnouncementBar.astro'),
+  'utf8',
+);
 
 test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
   assert.match(heroAstro, /<CategoryAccess \/>/);
   assert.match(heroAstro, /Título, autor o ISBN/);
-  assert.match(heroAstro, /Libros difíciles de encontrar\. Los conseguimos\./);
+  assert.match(heroAstro, /Libros difíciles de encontrar\./);
+  assert.match(heroAstro, /Los conseguimos\./);
   assert.match(heroAstro, /Miles de títulos importados disponibles en Uruguay/);
   assert.match(heroAstro, /¿No aparece\?/);
   assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
@@ -46,10 +51,20 @@ test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comerc
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
 });
 
-test('en 390px el bloque de búsqueda ocupa el primer pantallazo antes de las categorías', () => {
+test('en 390px el hero ocupa el primer pantallazo antes de las categorías', () => {
   assert.match(heroAstro, /@media \(max-width: 430px\)/);
-  assert.match(heroAstro, /min-height: calc\(100svh - 110px\)/);
+  assert.match(heroAstro, /min-height: calc\(100svh - 108px\)/);
   assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
+});
+
+test('la cinta superior muestra los cuatro beneficios comerciales aprobados', () => {
+  assert.match(headerAstro, /<AnnouncementBar \/>/);
+  assert.match(announcementAstro, /Hasta 12 cuotas con Mercado Pago/);
+  assert.match(announcementAstro, /12% menos por transferencia/);
+  assert.match(announcementAstro, /Envío \$250 · gratis desde \$1\.500/);
+  assert.match(announcementAstro, /Entrega coordinada en Montevideo/);
+  assert.match(announcementAstro, /prefers-reduced-motion/);
+  assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
 });
 
 test('el bloque comercial conserva beneficios con condiciones explícitas', () => {

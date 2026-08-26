@@ -183,10 +183,9 @@ const number = new Intl.NumberFormat('es-UY');
 
 <style>
   .ca-panel {
-    padding: 1.1rem;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid #ddd5ca;
-    border-radius: 0.65rem;
+    padding: 2.2rem 0 0;
+    background: transparent;
+    border-top: 1px solid #cfc6ba;
   }
 
   .ca-heading-row {
@@ -194,14 +193,14 @@ const number = new Intl.NumberFormat('es-UY');
     align-items: flex-end;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.4rem;
   }
 
   .ca-heading-row h2 {
     max-width: 18ch;
     color: var(--ink);
     font-family: var(--font-display);
-    font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+    font-size: clamp(2rem, 4.5vw, 3rem);
     letter-spacing: -0.025em;
     line-height: 1.04;
   }
@@ -209,7 +208,7 @@ const number = new Intl.NumberFormat('es-UY');
   .ca-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    gap: 0.75rem;
   }
 
   .ca-card {
@@ -218,10 +217,10 @@ const number = new Intl.NumberFormat('es-UY');
     grid-template-columns: 2rem minmax(0, 1fr);
     gap: 0.55rem;
     min-width: 0;
-    padding: 0.85rem 0.7rem;
+    padding: 1rem 0.85rem;
     overflow: hidden;
     border: 1px solid #ded7ce;
-    border-radius: 0.45rem;
+    border-radius: 0.35rem;
     background: rgba(255, 255, 255, 0.68);
     color: var(--ink);
     text-decoration: none;
@@ -328,7 +327,7 @@ const number = new Intl.NumberFormat('es-UY');
   }
 
   @media (min-width: 700px) {
-    .ca-panel { padding: 1.5rem; }
+    .ca-panel { padding-top: 3rem; }
     .ca-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .ca-all-desktop { display: inline-flex; flex: 0 0 auto; }
     .ca-all-mobile { display: none; }
@@ -337,8 +336,8 @@ const number = new Intl.NumberFormat('es-UY');
   @media (min-width: 1000px) {
     .ca-card {
       grid-template-columns: 2.25rem minmax(0, 1fr) auto;
-      min-height: 7.2rem;
-      padding: 0.85rem;
+      min-height: 9.5rem;
+      padding: 1.15rem;
     }
 
     .ca-icon { width: 2.25rem; height: 2.25rem; }

@@ -1,5 +1,6 @@
 ---
 import CartIcon from './CartIcon.astro';
+import AnnouncementBar from './AnnouncementBar.astro';
 import {
   buildWhatsAppMessage,
   whatsappHref,
@@ -7,12 +8,10 @@ import {
 
 interface Props {
   showSearch?: boolean;
-  showMobileDeliveryBanner?: boolean;
 }
 
 const {
   showSearch = true,
-  showMobileDeliveryBanner = false,
 } = Astro.props;
 
 const currentPage = Astro.url.pathname;
@@ -21,15 +20,9 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   page: currentPage,
   closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
 }));
-const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
-  greeting: 'Hola, quiero consultar por una entrega de Amado Libros 😊',
-  motive: 'Coordinar una entrega en Montevideo',
-  situation: 'Entrega en aproximadamente 2 horas, sujeta a zona y horario',
-  page: currentPage,
-  closing: 'Quisiera confirmar si pueden entregarme hoy y coordinar el horario. Gracias.',
-}));
 ---
 <header class="site-header">
+  <AnnouncementBar />
   <div class:list={['header-inner', { 'without-search': !showSearch }]}>
 
     <!-- Marca — logo (gato+libro), sin duplicar el texto "Amado Libros"
@@ -79,19 +72,6 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
 
   </div>
 
-  {showMobileDeliveryBanner && (
-    <a
-      href={DELIVERY_WA_HREF}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="mobile-delivery-banner"
-      aria-label="Coordinar entrega en 2 horas en Montevideo por WhatsApp"
-    >
-      <span aria-hidden="true">⚡</span>
-      <strong>Montevideo: entrega en 2 horas*</strong>
-      <span class="mobile-delivery-cta">Coordinar →</span>
-    </a>
-  )}
 </header>
 
 <style>
@@ -118,10 +98,6 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
 
   .header-inner.without-search {
     grid-template-columns: 1fr auto auto;
-  }
-
-  .mobile-delivery-banner {
-    display: none;
   }
 
   /* Marca */
@@ -199,28 +175,5 @@ const DELIVERY_WA_HREF = whatsappHref(buildWhatsAppMessage({
     }
     .wa-btn { padding: 0.4rem 0.75rem; }
 
-    .mobile-delivery-banner {
-      min-height: 38px;
-      padding: 0.45rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      background: #e49982;
-      color: #18120e;
-      border-top: 1px solid rgba(255, 255, 255, 0.16);
-      font-size: 0.73rem;
-      line-height: 1.2;
-      text-align: center;
-    }
-
-    .mobile-delivery-banner strong {
-      font-weight: 800;
-    }
-
-    .mobile-delivery-cta {
-      font-weight: 700;
-      white-space: nowrap;
-    }
   }
 </style>
