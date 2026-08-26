@@ -82,6 +82,7 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
       width="280"
       height="373"
       class="bc-img"
+      onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('bc-img-fallback')"
     />
   </a>
 
@@ -159,6 +160,11 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
     height: 100%;
     object-fit: cover;
     transition: transform 0.25s;
+  }
+  .bc-img-fallback {
+    object-fit: contain;
+    padding: clamp(2.25rem, 18%, 4rem);
+    background: #f3efe8;
   }
   .bc-card:hover .bc-img {
     transform: scale(1.04);

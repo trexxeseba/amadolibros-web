@@ -26,6 +26,10 @@ const headerAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'Header.astro'),
   'utf8',
 );
+const bookCardAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'components', 'BookCard.astro'),
+  'utf8',
+);
 const categoryAccessAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'CategoryAccess.astro'),
   'utf8',
@@ -79,6 +83,11 @@ test('el header de portada recibe con tres gatos sin competir con las acciones',
   assert.match(headerAstro, /!showSearch/);
   assert.match(headerAstro, /@media \(max-width: 700px\)/);
   assert.match(headerAstro, /\.header-welcome \{\s*display: none;/);
+});
+
+test('una portada de origen ausente no deja una imagen rota en la vidriera', () => {
+  assert.match(bookCardAstro, /this\.src='\/images\/logo-amado\.webp'/);
+  assert.match(bookCardAstro, /bc-img-fallback/);
 });
 
 test('el buscador del hero abre una superficie blanca amplia con el texto preservado', () => {
