@@ -34,6 +34,10 @@ const announcementAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'AnnouncementBar.astro'),
   'utf8',
 );
+const catalogSearchOverlayAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'components', 'CatalogSearchOverlay.astro'),
+  'utf8',
+);
 
 test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
   assert.match(heroAstro, /<CategoryAccess \/>/);
@@ -65,6 +69,15 @@ test('la cinta superior muestra los cuatro beneficios comerciales aprobados', ()
   assert.match(announcementAstro, /Entrega coordinada en Montevideo/);
   assert.match(announcementAstro, /prefers-reduced-motion/);
   assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
+});
+
+test('el buscador del hero abre una superficie blanca amplia con el texto preservado', () => {
+  assert.match(heroAstro, /amado:openCatalogSearch/);
+  assert.match(heroAstro, /detail: \{ query: input\.value\.trim\(\) \}/);
+  assert.match(catalogSearchOverlayAstro, /max-width: 820px/);
+  assert.match(catalogSearchOverlayAstro, /¿Qué libro estás buscando\?/);
+  assert.match(catalogSearchOverlayAstro, /typeof event\.detail\.query === 'string'/);
+  assert.match(catalogSearchOverlayAstro, /@media \(max-width: 599px\)/);
 });
 
 test('el bloque comercial conserva beneficios con condiciones explícitas', () => {

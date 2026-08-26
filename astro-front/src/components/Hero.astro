@@ -45,6 +45,26 @@ import CategoryAccess from './CategoryAccess.astro';
   </div>
 </section>
 
+<script is:inline>
+(function () {
+  var form = document.querySelector('.hero-search');
+  var input = document.getElementById('hero-search-input');
+  if (!form || !input) return;
+
+  function openExpandedSearch() {
+    document.dispatchEvent(new CustomEvent('amado:openCatalogSearch', {
+      detail: { query: input.value.trim() },
+    }));
+  }
+
+  input.addEventListener('focus', openExpandedSearch);
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    openExpandedSearch();
+  });
+})();
+</script>
+
 <style>
   .hero-shell {
     background: var(--bg);

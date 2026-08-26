@@ -8,7 +8,7 @@
   <div class="cso-panel">
 
     <div class="cso-hdr">
-      <span class="cso-title" id="cso-title">Buscar en el catálogo</span>
+      <span class="cso-title" id="cso-title">¿Qué libro estás buscando?</span>
       <button type="button" class="cso-close" id="cso-close" aria-label="Cerrar búsqueda">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
@@ -37,7 +37,9 @@
         />
         <button type="submit" class="cso-submit">Buscar</button>
       </form>
-      <p class="cso-hint">Buscás en el catálogo completo de Amado Libros.</p>
+      <p class="cso-hint">
+        Escribí un título, un autor o un ISBN. Desde dos letras te mostramos sugerencias del catálogo.
+      </p>
     </div>
 
   </div>
@@ -72,11 +74,11 @@
       padding: 2rem;
     }
     .cso-panel {
-      max-width: 540px;
+      max-width: 820px;
       height: auto;
       max-height: 80vh;
-      border-radius: var(--r-lg);
-      box-shadow: 0 8px 40px rgba(24, 18, 14, 0.2);
+      border-radius: 0.55rem;
+      box-shadow: 0 16px 60px rgba(24, 18, 14, 0.24);
     }
   }
 
@@ -84,15 +86,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.25rem 1.25rem 1rem;
+    padding: 1.5rem 1.75rem 1.25rem;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
 
   .cso-title {
-    font-family: var(--font-ui);
+    font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1rem;
+    font-size: clamp(1.45rem, 3vw, 2rem);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
     color: var(--ink);
   }
 
@@ -113,7 +117,8 @@
   .cso-close:hover { background: var(--bg); }
 
   .cso-body {
-    padding: 1.5rem 1.25rem;
+    min-height: 220px;
+    padding: 1.75rem;
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
@@ -122,20 +127,22 @@
 
   .cso-form {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.75rem;
   }
 
   /* font-size: 1rem (16px) — previene zoom automático en iOS */
   .cso-input {
+    min-width: 0;
+    flex: 1;
     width: 100%;
     font-family: var(--font-ui);
-    font-size: 1rem;
+    font-size: 1.12rem;
     color: var(--ink);
-    background: var(--bg);
+    background: var(--surface);
     border: 1.5px solid var(--border);
-    border-radius: var(--r);
-    padding: 0.9375rem 1rem;
+    border-radius: 0.35rem;
+    padding: 1.15rem 1.2rem;
     outline: none;
     transition: border-color 0.15s;
     -webkit-appearance: none;
@@ -145,15 +152,16 @@
   .cso-input::placeholder { color: var(--ink-2); opacity: 0.65; }
 
   .cso-submit {
-    width: 100%;
-    padding: 0.9375rem 1.5rem;
-    background: var(--ink);
-    color: var(--surface);
+    flex: 0 0 auto;
+    min-width: 140px;
+    padding: 1.15rem 1.75rem;
+    background: var(--salmon);
+    color: #fff;
     font-family: var(--font-ui);
     font-size: 1rem;
     font-weight: 700;
     border: none;
-    border-radius: var(--r);
+    border-radius: 0.35rem;
     cursor: pointer;
     transition: opacity 0.15s;
   }
@@ -164,6 +172,13 @@
     color: var(--ink-2);
     line-height: 1.55;
   }
+
+  @media (max-width: 599px) {
+    .cso-hdr { padding: 1.25rem 1rem; }
+    .cso-body { min-height: 0; padding: 1.25rem 1rem; }
+    .cso-form { flex-direction: column; }
+    .cso-submit { width: 100%; }
+  }
 </style>
 
 <script is:inline>
@@ -173,8 +188,9 @@
   var closeBtn = document.getElementById('cso-close');
   var form     = document.getElementById('cso-form');
 
-  function openOverlay() {
+  function openOverlay(query) {
     if (!overlay.hasAttribute('hidden')) return;
+    if (typeof query === 'string') input.value = query;
     overlay.removeAttribute('hidden');
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(function () {
@@ -189,7 +205,12 @@
   }
 
   // Abre via custom event disparado por Header
-  document.addEventListener('amado:openCatalogSearch', openOverlay);
+  document.addEventListener('amado:openCatalogSearch', function (event) {
+    var query = event.detail && typeof event.detail.query === 'string'
+      ? event.detail.query
+      : '';
+    openOverlay(query);
+  });
 
   // Cierre: botón X
   closeBtn.addEventListener('click', closeOverlay);
