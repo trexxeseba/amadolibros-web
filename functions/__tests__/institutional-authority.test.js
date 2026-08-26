@@ -31,5 +31,5 @@ test('la identidad estructurada conecta OnlineStore, WebSite y AboutPage', () =>
 
 test('la página es descubrible desde el footer global y el sitemap', () => {
   assert.ok(FOOTER_LINKS.some(link => link.href === '/quienes-somos/'));
-  assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/quienes-somos'));
+  assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/quienes-somos/'));
 });

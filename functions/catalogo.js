@@ -858,7 +858,7 @@ export async function onRequest(ctx) {
       <strong>Que no aparezca acá no significa que no podamos encontrarlo.</strong>
       <span>Contanos lo que sabés. Una persona de Amado Libros hace la búsqueda y verifica la edición antes de ofrecerte una opción.</span>
       <div class="manual-request-actions">
-        <a class="manual-request-primary" href="/pedir-libro?tipo=sin-resultados&amp;q=${encodeURIComponent(rawQ)}">Pedir que lo busquemos</a>
+        <a class="manual-request-primary" href="/pedir-libro/?tipo=sin-resultados&amp;q=${encodeURIComponent(rawQ)}">Pedir que lo busquemos</a>
         <a class="wa-link" href="${escapeHtml(whatsappHref(buildWhatsAppMessage({
             greeting: 'Hola, busqué un libro en Amado Libros y quisiera que me ayudaran 😊',
             motive: 'Búsqueda sin resultados',

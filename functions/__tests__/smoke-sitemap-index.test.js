@@ -41,13 +41,13 @@ test('el índice admite la cohorte pausada pero rechaza segmentos inesperados', 
 
 test('pages exige todas las páginas estáticas relevantes', () => {
   const pages = [
-    '/', '/catalogo', '/pedir-libro', '/libros-maria-montessori-uruguay', '/politicas', '/envios',
-    '/devoluciones', '/terminos', '/privacidad', '/contacto',
+    '/', '/catalogo', '/pedir-libro/', '/libros-maria-montessori-uruguay', '/politicas/', '/envios/',
+    '/devoluciones/', '/terminos/', '/privacidad/', '/contacto/',
   ];
   const valid = xml(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${pages.map((path, index) => `<url>${loc(`${BASE}${path}`)}${index === 0 ? '<lastmod>2026-08-12</lastmod>' : ''}</url>`).join('')}</urlset>`);
   assert.deepEqual(analyzeSitemapBody(valid, 'sitemap-pages'), { ok: true });
 
-  const missing = valid.replace(`<url>${loc(`${BASE}/privacidad`)}</url>`, '');
+  const missing = valid.replace(`<url>${loc(`${BASE}/privacidad/`)}</url>`, '');
   const result = analyzeSitemapBody(missing, 'sitemap-pages');
   assert.equal(result.ok, false);
   assert.match(result.reason, /privacidad/);

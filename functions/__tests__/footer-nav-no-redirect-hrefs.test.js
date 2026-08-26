@@ -1,37 +1,20 @@
 // AUDITORIA-EXTERNA-25AGO2026, Bloque 3.
 //
-// Las nueve paginas estaticas de Astro (como-identificar-edicion-correcta-isbn,
-// contacto, devoluciones, envios, pedir-libro, privacidad, quienes-somos,
-// terminos, politicas) se compilan en formato "directory"
-// (dist/<ruta>/index.html) — confirmado corriendo `npm run build` en
-// astro-front y leyendo el arbol emitido, no supuesto. Cloudflare Pages
-// responde 308 a la ruta sin barra final antes de servir el destino real.
-//
-// Este test no hace una peticion HTTP real — no hay forma de reproducir el
-// 308 de la plataforma Cloudflare Pages en un test unitario sin desplegar, y
-// el brief pide explicitamente no reabrir el frente de performance/red en
-// esta tanda. En su lugar valida la CAUSA RAIZ del 3xx directamente: que
-// ningun href="..." del footer/nav compartido apunte a una de esas nueve
-// rutas sin la barra final. Es la condicion necesaria y suficiente para que
-// Cloudflare no emita el redirect.
-//
-// Alcance deliberadamente acotado a chrome compartido (footer/nav), no a
-// cualquier link del sitio: functions/libro/[[path]].js y functions/catalogo.js
-// tienen ademas contenido no relacionado (JSON-LD de Merchant en el primero,
-// CTAs de busqueda manual en el segundo) que este test NO debe evaluar — ver
-// INFORME.md, "decisiones conservadoras", sobre por que esos otros links
-// quedan fuera de este Bloque.
+// Las nueve paginas estaticas se emiten como dist/<ruta>/index.html. La
+// comprobacion HTTP de Produccion confirmo que /ruta responde 308 y /ruta/
+// responde 200. Por eso la variante con barra es la unica URL que deben usar
+// la navegacion, el canonical y sitemap-pages.xml.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { STATIC_SITEMAP_PAGES } from '../sitemap-pages.xml.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 
-const DIRECTORY_FORMAT_ROUTES = Object.freeze([
+const STATIC_ROUTES = Object.freeze([
   'como-identificar-edicion-correcta-isbn',
   'contacto',
   'devoluciones',
@@ -43,86 +26,96 @@ const DIRECTORY_FORMAT_ROUTES = Object.freeze([
   'politicas',
 ]);
 
-// Cada entrada es un archivo de chrome compartido y, opcionalmente, el
-// nombre de un marcador de inicio/fin para acotar la busqueda a un bloque
-// especifico dentro de un archivo mas grande que tiene otro contenido ajeno
-// al footer/nav (JSON-LD, CTAs de busqueda). Sin marcador, se escanea el
-// archivo entero.
-const CHROME_SOURCES = Object.freeze([
-  { file: 'astro-front/src/components/Footer.astro' },
-  { file: 'astro-front/src/components/TrustStrip.astro' },
-  { file: 'astro-front/src/components/DeliveryCoordination.astro' },
-  { file: 'astro-front/src/components/BookDiscovery.astro' },
-  { file: 'functions/_shared/brand.js' },
-  { file: 'functions/libros-por-encargo.js' },
-  // catalogo.js: solo el <footer> minimo, no el CTA "Pedir que lo busquemos"
-  // (ese es contenido de busqueda, no nav — mismo criterio que se aplico a
-  // los CTAs ?tipo=exacto de Hero.astro/CommercialBenefits.astro, fuera de
-  // este Bloque).
-  { file: 'functions/catalogo.js', startMarker: '<footer>', endMarker: '</footer>' },
-  // libro/[[path]].js: solo la linea del footer de politicas, nunca el
-  // bloque JSON-LD (que usa @id con /envios y /devoluciones — identificadores
-  // de schema.org de Merchant, terreno explicitamente prohibido en este brief).
-  { file: 'functions/libro/[[path]].js', startMarker: 'Ver política de envíos', contextChars: 60 },
-]);
+const STATIC_PAGE_SOURCES = Object.freeze(
+  Object.fromEntries(STATIC_ROUTES.map(route => [route, `astro-front/src/pages/${route}.astro`])),
+);
 
-function extractHrefTargets(source) {
-  // Exige contexto real de atributo href, para no confundir un @id de
-  // JSON-LD (`'@id': \`${BASE}/envios#...\``) con un link navegable.
-  // matchEnd usa match[0].length real (no un offset fijo adivinado) para
-  // saber exactamente donde termina "href=\"/ruta" y poder mirar el
-  // caracter siguiente sin depender de cuantos caracteres tiene el prefijo.
-  const hits = [];
-  for (const match of source.matchAll(/href=["'`]\/?([a-z0-9-]+)/gi)) {
-    hits.push({ route: match[1], matchEnd: match.index + match[0].length });
+function sourceFiles(root, ignored = new Set()) {
+  const files = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const absolute = path.join(root, entry.name);
+    const relative = path.relative(repoRoot, absolute).replaceAll('\\', '/');
+    if (ignored.has(relative) || relative.includes('/__tests__/')) continue;
+    if (entry.isDirectory()) files.push(...sourceFiles(absolute, ignored));
+    else if (/\.(?:astro|js)$/.test(entry.name)) files.push(absolute);
   }
-  return hits;
+  return files;
 }
 
-function scopedSource(fullSource, entry) {
-  if (!entry.startMarker) return fullSource;
-  const start = fullSource.indexOf(entry.startMarker);
-  if (start === -1) throw new Error(`marcador de inicio no encontrado en ${entry.file}: "${entry.startMarker}"`);
-  if (entry.endMarker) {
-    const end = fullSource.indexOf(entry.endMarker, start);
-    if (end === -1) throw new Error(`marcador de fin no encontrado en ${entry.file}: "${entry.endMarker}"`);
-    return fullSource.slice(start, end + entry.endMarker.length);
+function hrefTargets(source) {
+  const targets = [];
+  for (const match of source.matchAll(/\bhref\s*(?:=|:)\s*\{?\s*(["'`])([^"'`]+)\1/g)) {
+    targets.push(match[2]);
   }
-  const span = entry.contextChars ?? 200;
-  return fullSource.slice(Math.max(0, start - span), start + span);
+  return targets;
 }
 
-test('ningun href del footer/nav compartido apunta a una ruta directory sin barra final', () => {
-  const hallazgos = [];
-  for (const entry of CHROME_SOURCES) {
-    const fullSource = readFileSync(path.join(repoRoot, entry.file), 'utf8');
-    const scoped = scopedSource(fullSource, entry);
-    for (const hit of extractHrefTargets(scoped)) {
-      if (!DIRECTORY_FORMAT_ROUTES.includes(hit.route)) continue;
-      // Con barra: el caracter inmediatamente despues de la ruta coincidente
-      // es '/'. Sin barra: termina el atributo (comilla) o sigue '?'/'#'.
-      const nextChar = scoped[hit.matchEnd];
-      if (nextChar === '/') continue; // ya tiene la barra final
-      const contexto = scoped.slice(Math.max(0, hit.matchEnd - hit.route.length - 15), hit.matchEnd + 25);
-      hallazgos.push(`${entry.file}: /${hit.route} sin barra final — "...${contexto}..."`);
+function slashlessStaticRoute(target) {
+  const internal = target.replace(/^https:\/\/www\.amadolibros\.com/, '');
+  if (!internal.startsWith('/') || internal.startsWith('//')) return null;
+  const pathname = internal.split(/[?#]/, 1)[0];
+  return STATIC_ROUTES.find(route => pathname === `/${route}`) || null;
+}
+
+test('navegacion desplegable fuera del checkout apunta directo a las nueve rutas finales', () => {
+  const ignored = new Set([
+    // Restriccion vinculante del frente: no tocar checkout. Sus seis href
+    // legales slashless quedan registrados en el test siguiente.
+    'astro-front/src/pages/carrito.astro',
+  ]);
+  const files = [
+    ...sourceFiles(path.join(repoRoot, 'astro-front', 'src'), ignored),
+    ...sourceFiles(path.join(repoRoot, 'functions'), ignored),
+  ];
+  const findings = [];
+  for (const file of files) {
+    const source = readFileSync(file, 'utf8');
+    for (const target of hrefTargets(source)) {
+      const route = slashlessStaticRoute(target);
+      if (route) findings.push(`${path.relative(repoRoot, file)}: ${target}`);
     }
   }
-  assert.deepEqual(hallazgos, [], `hrefs que producirian 308 en Cloudflare Pages:\n  ${hallazgos.join('\n  ')}`);
+  assert.deepEqual(findings, [], `hrefs que todavia producirian 308:\n  ${findings.join('\n  ')}`);
+
+  // Este enlace se construye primero como variable y despues se inserta en
+  // href. Se valida aparte porque el extractor ve la variable.
+  assert.match(
+    readFileSync(path.join(repoRoot, 'functions/especialidades/[[path]].js'), 'utf8'),
+    /const requestPath = `\/pedir-libro\/\?tipo=/,
+  );
 });
 
-test('el build de Astro sigue emitiendo estas nueve rutas en formato directory (documenta la causa raiz)', () => {
-  // No falla si cambia el formato de build — documenta el supuesto sobre el
-  // que se apoya el test anterior. Si el build pasara a formato "file"
-  // (dist/<ruta>.html), el 308 deja de existir y este archivo queda
-  // obsoleto: ese es el aviso que deja este test.
+test('los seis href legales del carrito quedan como residual explicito y acotado', () => {
+  const cart = readFileSync(path.join(repoRoot, 'astro-front/src/pages/carrito.astro'), 'utf8');
+  const residual = hrefTargets(cart).filter(target => slashlessStaticRoute(target));
+  assert.deepEqual(residual, [
+    '/terminos', '/envios', '/devoluciones',
+    '/terminos', '/envios', '/devoluciones',
+  ]);
+});
+
+test('canonical y sitemap usan la misma variante final con barra', () => {
+  for (const route of STATIC_ROUTES) {
+    const expected = `https://www.amadolibros.com/${route}/`;
+    const page = readFileSync(path.join(repoRoot, STATIC_PAGE_SOURCES[route]), 'utf8');
+    assert.ok(page.includes(expected), `canonical de ${route} no usa ${expected}`);
+    assert.ok(STATIC_SITEMAP_PAGES.includes(expected), `sitemap sin ${expected}`);
+    assert.ok(!STATIC_SITEMAP_PAGES.includes(expected.slice(0, -1)), `sitemap conserva variante 308: ${route}`);
+  }
+  const config = readFileSync(path.join(repoRoot, 'astro-front/astro.config.mjs'), 'utf8');
+  assert.match(config, /trailingSlash:\s*'always'/);
+});
+
+test('el build emite directorios y canonicals con barra para las nueve rutas', () => {
   const distDir = path.join(repoRoot, 'astro-front', 'dist');
   let existeDist = false;
-  try { existeDist = statSync(distDir).isDirectory(); } catch { /* no se corrio build en este entorno */ }
+  try { existeDist = statSync(distDir).isDirectory(); } catch { /* build aun no ejecutado */ }
   if (!existeDist) return;
-  for (const route of DIRECTORY_FORMAT_ROUTES) {
+
+  for (const route of STATIC_ROUTES) {
     const indexPath = path.join(distDir, route, 'index.html');
-    let emitidoComoDirectorio = false;
-    try { emitidoComoDirectorio = statSync(indexPath).isFile(); } catch { /* no emitido asi */ }
-    assert.ok(emitidoComoDirectorio, `se esperaba dist/${route}/index.html (formato directory) — si esto cambio, el fix del Bloque 3 puede haber quedado obsoleto`);
+    assert.ok(statSync(indexPath).isFile(), `falta dist/${route}/index.html`);
+    const html = readFileSync(indexPath, 'utf8');
+    assert.match(html, new RegExp(`<link rel="canonical" href="https://www\\.amadolibros\\.com/${route}/">`));
   }
 });

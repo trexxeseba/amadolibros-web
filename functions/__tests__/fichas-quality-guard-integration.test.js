@@ -185,6 +185,6 @@ test('6b. el CTA contextual de Biblias se preserva intacto', () => {
   const s = buildAutomaticProductShowcase(MLU724888358, { classificationTags: ['biblia'] });
   assert.equal(s.requestHelp.question, '¿Buscás otra Biblia o una edición específica?');
   assert.equal(s.requestHelp.label, 'Contanos qué buscás');
-  assert.match(s.requestHelp.href, /^\/pedir-libro\?/);
+  assert.match(s.requestHelp.href, /^\/pedir-libro\/\?/);
   assert.match(s.requestHelp.href, /libro=MLU724888358/);
 });

@@ -23,7 +23,7 @@ test('sitemap.xml separa activos y la cohorte controlada de pausados', () => {
 
 test('pages y categorías quedan separados para observabilidad', () => {
   assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/catalogo'));
-  assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/pedir-libro'));
+  assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/pedir-libro/'));
   assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/libros-agotados-importados-uruguay'));
   assert.ok(!STATIC_SITEMAP_PAGES.some(url => url.includes('/libros/')));
 

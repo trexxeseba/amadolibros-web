@@ -9,7 +9,7 @@ test('merchant trust pages exist as Astro routes with canonical URLs', () => {
   for (const page of ['politicas', 'envios', 'devoluciones', 'terminos', 'privacidad', 'contacto']) {
     const path = `astro-front/src/pages/${page}.astro`;
     assert.equal(existsSync(new URL(path, root)), true, `${path} missing`);
-    assert.match(read(path), new RegExp(`canonical="https://www\\.amadolibros\\.com/${page}"`));
+    assert.match(read(path), new RegExp(`canonical="https://www\\.amadolibros\\.com/${page}/"`));
   }
 });
 

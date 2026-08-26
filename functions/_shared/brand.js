@@ -72,11 +72,10 @@ export const CONTACT = {
 
 
 // AUDITORIA-EXTERNA-25AGO2026 Bloque 3: las paginas estaticas de Astro se
-// compilan en formato "directory" (dist/<ruta>/index.html), asi que Cloudflare
-// Pages responde 308 a la ruta sin barra final antes de servir el destino
-// real. Enlazar directo con la barra evita ese salto — verificado con
-// `npm run build` en astro-front, no con curl contra produccion (ver
-// INFORME.md). /libros/biblias, /libros/biblias/reina-valera y
+// compilan en formato "directory" (dist/<ruta>/index.html), y Produccion
+// responde 308 desde la variante sin barra hacia la variante con barra.
+// Enlaces, canonical y sitemap usan por eso el destino final con barra.
+// /libros/biblias, /libros/biblias/reina-valera y
 // /libros-agotados-importados-uruguay son rutas SSR (Functions), no paginas
 // estaticas de Astro: no les aplica este problema y se dejan como estaban.
 export const FOOTER_LINKS = [
