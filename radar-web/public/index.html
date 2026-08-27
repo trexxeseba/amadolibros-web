@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Radar Amado</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">AMADO LIBROS · INTERNO</p>
+      <h1>Radar Amado</h1>
+      <p class="subtitle">Ventas reales y posición de precio en Mercado Libre.</p>
+    </div>
+    <div id="statusPill" class="pill">Actualizando…</div>
+  </header>
+
+  <main>
+    <section class="metrics" aria-label="Resumen ventas">
+      <article><span>Órdenes observadas</span><strong id="ordersCount">—</strong></article>
+      <article><span>MLU vendidos</span><strong id="itemsCount">—</strong></article>
+      <article><span>Ventana</span><strong id="daysCount">7 días</strong></article>
+      <article><span>Cobertura</span><strong id="coverageText">—</strong></article>
+    </section>
+
+    <section class="panel competition-panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">PRECIO / COMPETENCIA</p>
+          <h2>Consultar publicación</h2>
+        </div>
+      </div>
+      <form id="competitionForm" class="search-row">
+        <input id="mluInput" name="item_id" autocomplete="off" spellcheck="false" placeholder="MLU646433323" aria-label="MLU">
+        <button type="submit">Analizar</button>
+      </form>
+      <p class="hint">Compara precio propio, ganador de catálogo y referencias de Mercado Libre. No muestra envío ni stock de otros vendedores.</p>
+      <div id="competitionResult" class="competition-result empty">Ingresá un MLU o elegí uno de la tabla de ventas.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">VENTAS MERCADO LIBRE</p>
+          <h2>Top observado · últimos 7 días</h2>
+        </div>
+        <button id="refreshSales" class="secondary">Actualizar</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>MLU</th><th>Unidades</th><th>Revenue</th><th>Última venta</th><th></th></tr></thead>
+          <tbody id="salesBody"><tr><td colspan="5" class="loading">Cargando datos reales…</td></tr></tbody>
+        </table>
+      </div>
+      <p id="salesFoot" class="hint"></p>
+    </section>
+  </main>
+
+  <footer>Radar Amado V1 · Sólo lectura · No modifica publicaciones ni precios.</footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
