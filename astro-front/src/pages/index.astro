@@ -1,20 +1,19 @@
 ---
-// Lote 2-B — home con sección Novedades renderizada en build desde public/home.json.
-// Sin catálogo completo, sin GA4, sin lógica de negocio. noindex activo.
-import BaseLayout          from '../layouts/BaseLayout.astro';
-import Header              from '../components/Header.astro';
-import Hero                from '../components/Hero.astro';
+import BaseLayout            from '../layouts/BaseLayout.astro';
+import Header                from '../components/Header.astro';
+import Hero                  from '../components/Hero.astro';
+import BestsellerSection     from '../components/BestsellerSection.astro';
+import CategoryAccess        from '../components/CategoryAccess.astro';
+import OrderHubAccess        from '../components/OrderHubAccess.astro';
+import AmadoLee              from '../components/AmadoLee.astro';
+import BookDiscovery         from '../components/BookDiscovery.astro';
+import CommercialBenefits   from '../components/CommercialBenefits.astro';
 import DeliveryCoordination from '../components/DeliveryCoordination.astro';
-import BookDiscovery       from '../components/BookDiscovery.astro';
-import GuideAccess         from '../components/GuideAccess.astro';
-import OrderHubAccess      from '../components/OrderHubAccess.astro';
-import BestsellerSection   from '../components/BestsellerSection.astro';
-import CommercialBenefits from '../components/CommercialBenefits.astro';
-import Footer              from '../components/Footer.astro';
-import SearchOverlay          from '../components/SearchOverlay.astro';
-import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
-import HowToBuy           from '../components/HowToBuy.astro';
-import TrustStrip          from '../components/TrustStrip.astro';
+import HowToBuy              from '../components/HowToBuy.astro';
+import TrustStrip            from '../components/TrustStrip.astro';
+import Footer                from '../components/Footer.astro';
+import SearchOverlay         from '../components/SearchOverlay.astro';
+import CatalogSearchOverlay from '../components/CatalogSearchOverlay.astro';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -26,7 +25,7 @@ const jsonLd = {
       url: 'https://www.amadolibros.com/',
       logo: 'https://www.amadolibros.com/images/logo-amado.webp',
       image: 'https://www.amadolibros.com/images/logo-amado.webp',
-      description: 'Librería online uruguaya especializada en Tarot, oráculos, Biblias, libros disponibles y búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
+      description: 'Librería online uruguaya de libros importados, disponibles y búsquedas humanas por encargo de ediciones agotadas o difíciles de conseguir.',
       telephone: '+59899841325',
       email: 'adm@amadolibros.com',
       sameAs: [
@@ -62,18 +61,23 @@ const jsonLd = {
 };
 ---
 <BaseLayout
-  title="Librería online en Uruguay: Tarot, Biblias y más | Amado Libros"
+  title="Amado Libros | Libros importados y difíciles de encontrar"
   canonical="https://www.amadolibros.com/"
-  description="Comprá Tarot, oráculos, Biblias Reina-Valera, Biblias católicas y más libros en Uruguay. También buscamos ediciones agotadas, importadas o difíciles."
+  description="Buscá libros importados disponibles en Uruguay. Si una edición no aparece, en Amado Libros la buscamos personalmente por encargo."
   jsonLd={jsonLd}
 >
   <Header showSearch={false} />
   <main>
     <Hero />
     <BestsellerSection />
-    <BookDiscovery />
+
+    <div id="temas" class="home-topics-shell">
+      <CategoryAccess />
+    </div>
+
     <OrderHubAccess />
-    <GuideAccess />
+    <AmadoLee />
+    <BookDiscovery />
     <CommercialBenefits />
     <DeliveryCoordination />
     <HowToBuy />
@@ -83,3 +87,27 @@ const jsonLd = {
   <SearchOverlay />
   <CatalogSearchOverlay />
 </BaseLayout>
+
+<style>
+  .home-topics-shell {
+    padding: clamp(3.2rem, 6vw, 6rem) max(1rem, calc((100vw - 1280px) / 2));
+    background: #fffaf4;
+    scroll-margin-top: 9rem;
+  }
+
+  .home-topics-shell :global(.ca-panel) {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .home-topics-shell :global(.ca-heading-row h2) {
+    max-width: 14ch;
+    font-size: clamp(2.7rem, 5.4vw, 4.8rem);
+    letter-spacing: -0.045em;
+    line-height: 0.96;
+  }
+
+  .home-topics-shell :global(.ca-card) {
+    border-radius: 0.7rem;
+  }
+</style>
