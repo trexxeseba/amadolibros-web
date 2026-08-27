@@ -27,14 +27,16 @@ test('landing de agotados e importados es indexable, canónica y accionable', as
   assert.match(html, /<meta name="twitter:card" content="summary_large_image">/);
 });
 
-test('home posiciona el diferencial y enlaza la landing desde el footer', () => {
+test('home posiciona libros importados y búsqueda humana por encargo', () => {
   const home = read('astro-front/src/pages/index.astro');
   const hero = read('astro-front/src/components/Hero.astro');
   const footer = read('astro-front/src/components/Footer.astro');
 
-  assert.match(home, /title="Librería online en Uruguay: Tarot, Biblias y más \| Amado Libros"/);
-  assert.match(home, /Biblias Reina-Valera, Biblias católicas/);
-  assert.match(hero, /títulos importados disponibles en Uruguay/);
-  assert.match(hero, /ediciones agotadas o descatalogadas/);
+  assert.match(home, /title="Amado Libros \| Libros importados y difíciles de encontrar"/);
+  assert.match(home, /Buscá libros importados disponibles en Uruguay/);
+  assert.match(home, /la buscamos personalmente por encargo/);
+  assert.match(hero, /Libros difíciles de encontrar\./);
+  assert.match(hero, /una persona de Amado Libros revisa opciones/);
+  assert.match(hero, /agotado o descatalogado/);
   assert.match(footer, /href="\/libros-agotados-importados-uruguay"/);
 });
