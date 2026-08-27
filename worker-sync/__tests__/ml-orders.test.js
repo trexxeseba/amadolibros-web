@@ -17,7 +17,7 @@ function response(body, { status = 200 } = {}) {
   };
 }
 
-test('buildSellerOrdersUrl usa seller, paid, date_closed, limit y offset', () => {
+test('buildSellerOrdersUrl usa seller, paid, date_closed, limit y offset por defecto', () => {
   const url = new URL(buildSellerOrdersUrl({
     sellerId: '440298103',
     dateFrom: '2026-06-01T00:00:00Z',
@@ -32,6 +32,24 @@ test('buildSellerOrdersUrl usa seller, paid, date_closed, limit y offset', () =>
   assert.equal(url.searchParams.get('order.date_closed.to'), '2026-08-27T12:00:00.000Z');
   assert.equal(url.searchParams.get('offset'), '50');
   assert.equal(url.searchParams.get('limit'), '50');
+});
+
+test('buildSellerOrdersUrl permite mantenimiento por date_last_updated sin filtro de status', () => {
+  const url = new URL(buildSellerOrdersUrl({
+    sellerId: '440298103',
+    dateFrom: '2026-08-20T00:00:00Z',
+    dateTo: '2026-08-27T12:00:00Z',
+    status: null,
+    dateField: 'last_updated',
+  }));
+  assert.equal(url.searchParams.get('order.status'), null);
+  assert.equal(url.searchParams.get('order.date_last_updated.from'), '2026-08-20T00:00:00.000Z');
+  assert.equal(url.searchParams.get('order.date_last_updated.to'), '2026-08-27T12:00:00.000Z');
+  assert.equal(url.searchParams.get('order.date_closed.from'), null);
+});
+
+test('buildSellerOrdersUrl rechaza dateField no documentado', () => {
+  assert.throws(() => buildSellerOrdersUrl({ sellerId: '1', dateFrom: '2026-08-20', dateTo: '2026-08-27', dateField: 'hacked' }), /dateField inválido/);
 });
 
 test('fetchSellerOrdersPage acepta HTTP 206 Partial Content como éxito', async () => {
@@ -103,6 +121,19 @@ test('normalizeMlOrderItems conserva sólo datos de producto y omite PII', () =>
   assert.equal(JSON.stringify(rows).includes('099'), false);
 });
 
+test('normalizeMlOrderItems conserva estado no-paid para corregir una venta anterior', () => {
+  const [row] = normalizeMlOrderItems([{
+    id: 9002,
+    status: 'cancelled',
+    date_created: '2026-08-20T10:00:00Z',
+    date_closed: '2026-08-20T10:05:00Z',
+    date_last_updated: '2026-08-26T10:00:00Z',
+    order_items: [{ item: { id: 'MLU123' }, quantity: 1, unit_price: 1000, currency_id: 'UYU' }],
+  }]);
+  assert.equal(row.order_status, 'cancelled');
+  assert.equal(row.item_id, 'MLU123');
+});
+
 test('normalizeMlOrderItems agrega líneas duplicadas del mismo MLU dentro de una orden', () => {
   const rows = normalizeMlOrderItems([{
     id: 1, status: 'paid', date_created: '2026-08-20T00:00:00Z', date_closed: '2026-08-20T01:00:00Z',
@@ -124,11 +155,12 @@ test('normalizeMlOrderItems usa date_created como fallback de commercial_date', 
   assert.equal(row.commercial_date, '2026-08-20T00:00:00Z');
 });
 
-test('summarizeNormalizedSales agrega unidades/revenue por MLU', () => {
+test('summarizeNormalizedSales agrega unidades/revenue por MLU y excluye no-paid', () => {
   const summary = summarizeNormalizedSales([
-    { item_id: 'MLU1', quantity: 2, unit_price: 100, commercial_date: '2026-08-20' },
-    { item_id: 'MLU1', quantity: 1, unit_price: 120, commercial_date: '2026-08-21' },
-    { item_id: 'MLU2', quantity: 1, unit_price: 50, commercial_date: '2026-08-20' },
+    { item_id: 'MLU1', quantity: 2, unit_price: 100, commercial_date: '2026-08-20', order_status: 'paid' },
+    { item_id: 'MLU1', quantity: 1, unit_price: 120, commercial_date: '2026-08-21', order_status: 'paid' },
+    { item_id: 'MLU1', quantity: 9, unit_price: 999, commercial_date: '2026-08-22', order_status: 'cancelled' },
+    { item_id: 'MLU2', quantity: 1, unit_price: 50, commercial_date: '2026-08-20', order_status: 'paid' },
   ]);
   assert.deepEqual(summary[0], { item_id: 'MLU1', units: 3, revenue: 320, last_sale_at: '2026-08-21' });
 });
