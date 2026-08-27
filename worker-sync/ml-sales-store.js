@@ -104,9 +104,14 @@ export async function getMlSalesSyncState(env) {
   return row || null;
 }
 
+function timestampMs(value) {
+  if (Number.isFinite(value)) return Number(value);
+  return Date.parse(String(value || ''));
+}
+
 function sameUtcDay(a, b) {
-  const aMs = Date.parse(String(a || ''));
-  const bMs = Date.parse(String(b || ''));
+  const aMs = timestampMs(a);
+  const bMs = timestampMs(b);
   if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return false;
   return new Date(aMs).toISOString().slice(0, 10) === new Date(bMs).toISOString().slice(0, 10);
 }
@@ -119,9 +124,9 @@ function sameUtcDay(a, b) {
  */
 export function mlSalesWindowComplete(state, asOf, days) {
   if (!state || state.last_status !== 'ok') return false;
-  const asMs = Date.parse(String(asOf || ''));
-  const fromMs = Date.parse(String(state.coverage_from || ''));
-  const toMs = Date.parse(String(state.coverage_to || ''));
+  const asMs = timestampMs(asOf);
+  const fromMs = timestampMs(state.coverage_from);
+  const toMs = timestampMs(state.coverage_to);
   if (![asMs, fromMs, toMs].every(Number.isFinite)) return false;
   const requiredFrom = asMs - Number(days) * 86400000;
   return fromMs <= requiredFrom && (toMs >= asMs || sameUtcDay(toMs, asMs));
