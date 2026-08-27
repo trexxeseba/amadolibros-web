@@ -22,7 +22,7 @@ const DEFAULT_BACKFILL_DAYS = 90;
 const DEFAULT_MAINTENANCE_DAYS = 7;
 const DASHBOARD_USER = 'radar';
 // Sólo se persiste SHA-256; la contraseña en claro no vive en GitHub.
-const DASHBOARD_PASSWORD_SHA256 = '813226330151d2f974377549abd5aac445f97789bfdaa3f774a73377396b3cc0';
+const DASHBOARD_PASSWORD_SHA256 = 'c71c8b17fa29a0e65af9eba67a744dc7d7b5099543300ff88821d30dd3de8983';
 
 function positiveInt(value, fallback, max = 365) {
   const parsed = Number.parseInt(value, 10);
