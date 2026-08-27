@@ -14,8 +14,6 @@ const {
   <AnnouncementBar />
   <div class:list={['header-inner', { 'without-search': !showSearch }]}>
 
-    <!-- Marca. Se conserva el logo actual: no existe una variante mobile
-         reducida en public/images y este lote no rediseña identidad. -->
     <a href="/" class="brand" aria-label="Amado Libros — inicio">
       <img
         src="/images/logo-amado.webp"
@@ -24,10 +22,17 @@ const {
         height="57"
         class="brand-logo"
       />
+      <span class="brand-copy" aria-hidden="true">
+        <strong>AMADO LIBROS</strong>
+        <small>Librería en línea</small>
+      </span>
     </a>
 
-    <!-- Buscador compacto para páginas internas. La portada mantiene su
-         buscador principal en el hero y por eso usa showSearch={false}. -->
+    <nav class="header-nav" aria-label="Navegación principal">
+      <a href="/catalogo">Catálogo</a>
+      <a href="/pedir-libro/?tipo=exacto">Pedir un libro</a>
+    </nav>
+
     {showSearch && (
       <button
         type="button"
@@ -43,7 +48,6 @@ const {
       </button>
     )}
 
-    <!-- Carrito: conserva su implementación actual, sin crear una isla nueva. -->
     <CartIcon />
 
   </div>
@@ -54,14 +58,14 @@ const {
     position: sticky;
     top: 0;
     z-index: 40;
-    background: var(--header-bg);
+    background: rgba(250, 246, 239, 0.97);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border);
   }
 
   .header-inner {
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
     padding: 0 1rem;
     height: 56px;
@@ -70,59 +74,125 @@ const {
     gap: 0.75rem;
   }
 
-  /* La marca empuja las acciones funcionales hacia la derecha tanto en la
-     portada (carrito) como en páginas internas (buscar + carrito). */
   .brand {
     display: flex;
     align-items: center;
+    gap: 0.6rem;
     flex-shrink: 0;
     margin-right: auto;
     transition: opacity 0.15s;
   }
-  .brand:hover { opacity: 0.8; }
+  .brand:hover { opacity: 0.78; }
 
   .brand-logo {
     display: block;
     width: auto;
-    height: 44px;
+    height: 40px;
     flex-shrink: 0;
   }
 
-  /* Buscador — pill compacta */
+  .brand-copy {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.05rem;
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .brand-copy strong {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.085em;
+  }
+
+  .brand-copy small {
+    color: var(--ink-2);
+    font-size: 0.56rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+  }
+
+  .header-nav {
+    display: none;
+    align-items: center;
+    gap: 0.2rem;
+    margin-right: 0.35rem;
+  }
+
+  .header-nav a {
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.4rem;
+    color: var(--ink-2);
+    font-size: 0.73rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .header-nav a:hover {
+    background: rgba(31, 27, 24, 0.05);
+    color: var(--ink);
+  }
+
   .search-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    min-height: 44px;
+    min-height: 40px;
     padding: 0.4rem 0.75rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--surface);
+    border: 1px solid #d8d0c5;
     border-radius: 999px;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--ink-2);
     font-family: var(--font-ui);
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     white-space: nowrap;
   }
   .search-pill:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.28);
-    color: #fff;
+    background: #fff;
+    border-color: #bfb4a7;
+    color: var(--ink);
   }
 
   .search-pill-label { display: none; }
-  @media (min-width: 400px) { .search-pill-label { display: inline; } }
 
-  @media (min-width: 768px) {
+  .site-header :global(.cart-icon-btn) {
+    min-width: 40px;
+    min-height: 40px;
+    color: var(--ink-2);
+    border-color: #d8d0c5;
+    background: var(--surface);
+  }
+
+  .site-header :global(.cart-icon-btn:hover) {
+    background: #fff;
+    border-color: #bfb4a7;
+    color: var(--ink);
+  }
+
+  @media (min-width: 520px) {
+    .brand-copy { display: flex; }
+  }
+
+  @media (min-width: 700px) {
+    .search-pill-label { display: inline; }
+  }
+
+  @media (min-width: 820px) {
+    .header-nav { display: flex; }
+  }
+
+  @media (min-width: 1100px) {
     .header-inner {
-      padding: 0 1.5rem;
+      padding: 0 2rem;
     }
 
     .brand-logo {
-      height: 48px;
+      height: 42px;
     }
   }
 </style>
