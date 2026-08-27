@@ -153,6 +153,10 @@ const jsonLd = {
           <a id="catalog-search-link" href="/catalogo">Buscar primero en el catálogo</a>
         </div>
 
+        <p class="field-wide multi-title-note">
+          ¿Tenés varios títulos? <a href="/lista-de-libros">Consultá una lista completa</a>
+        </p>
+
         <p class="privacy-note field-wide">
           Este formulario no guarda datos en la web. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarla manualmente.
         </p>
@@ -411,10 +415,18 @@ const jsonLd = {
 
   .field small,
   .privacy-note,
-  .context-note {
+  .context-note,
+  .multi-title-note {
     color: var(--ink-2);
     font-size: 0.72rem;
     line-height: 1.45;
+  }
+
+  .multi-title-note a {
+    color: var(--salmon-hover);
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
 
   .context-note {

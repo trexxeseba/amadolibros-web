@@ -58,6 +58,10 @@ import {
     serverTimingValue,
 } from './_shared/perf.js';
 import { previewCoverUrl } from './_shared/preview-cover.js';
+// GW1 (Radar de Demanda No Satisfecha): sólo cuando rawQ + 0 resultados.
+// No reemplaza ni toca el CTA de recuperación que ya existe más abajo —
+// agrega el registro que faltaba.
+import { recordUnmatchedQuery } from './_shared/demand-radar.js';
 import {
     bookCoverUrl,
     CARD_IMAGE_SIZES,
@@ -677,6 +681,13 @@ export async function onRequest(ctx) {
         const fuzzy = eligibleItems.filter(b => fuzzyMatches(b, queryTokens));
         if (fuzzy.length > 0) { strictMatches = fuzzy; usedFuzzy = true; }
     }
+    // GW1: si la búsqueda encuentra algo en TODO el catálogo elegible (antes
+    // de categoría/subcategoría/disponibilidad), no es demanda insatisfecha
+    // — es un libro real que el usuario dejó afuera con un filtro. Medir
+    // esto después de filtrar registraría como "no lo tenemos" un libro que
+    // sí está, sólo porque quedó fuera de la categoría o disponibilidad
+    // elegidas.
+    const globalQueryHasMatch = strictMatches.length > 0;
     const scopedMatches = strictMatches
         .filter(b => (categoria ? matchesCategoryPath(categoryItems[b.id], categoria, subcategoria) : true));
     // Los contadores de pestañas deben medir el mismo universo visible que
@@ -712,6 +723,20 @@ export async function onRequest(ctx) {
     recordPerf(ctx, 'search', searchStartedAt);
 
     const totalResults = filtered.length;
+    // GW1: registra el término sólo cuando hubo una búsqueda real (rawQ),
+    // dio 0 resultados EN LA VISTA ACTUAL, y tampoco existe en absoluto en
+    // el catálogo elegible completo (!globalQueryHasMatch) — la señal de
+    // demanda más calificada que existe. Vía waitUntil y con try/catch: un
+    // fallo acá nunca debe demorar ni romper la respuesta de /catalogo.
+    if (rawQ && totalResults === 0 && !globalQueryHasMatch && typeof ctx.waitUntil === 'function') {
+        ctx.waitUntil(
+            recordUnmatchedQuery(ctx.env?.ORDERS_DB, {
+                rawQuery: rawQ,
+                source: 'catalogo_search',
+                appEnv: ctx.env?.APP_ENV,
+            }).catch(() => {}),
+        );
+    }
     const totalPages   = Math.max(1, Math.ceil(totalResults / MAX_RESULTS));
     // Página inexistente: 404 real. No redirigimos a la última página porque
     // el tamaño del catálogo cambia y esa normalización convertiría una URL
