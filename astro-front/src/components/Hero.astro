@@ -1,12 +1,55 @@
 ---
-// HOME-ARTE-2: hero compacto mobile-first; no agregar imágenes hasta medir LCP.
-import CategoryAccess from './CategoryAccess.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pickRecentBooks } from '../lib/pick-recent-books.js';
+import { responsiveBookCover } from '../lib/cloudflare-images.js';
+
+interface Book {
+  id: string;
+  title: string;
+  author?: string;
+  price: number;
+  status: string;
+  available_quantity: number;
+  condition?: string | null;
+  start_time?: string;
+}
+
+const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
+const isIndexableProduction = import.meta.env.PUBLIC_INDEXABLE === 'true';
+
+function slugify(text: string): string {
+  return (text || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 60);
+}
+
+let visualBooks: Array<Book & {
+  href: string;
+  cover: ReturnType<typeof responsiveBookCover>;
+}> = [];
+
+try {
+  const raw = fs.readFileSync(HOME_JSON, 'utf-8');
+  const data = JSON.parse(raw) as { items: Book[] };
+  visualBooks = pickRecentBooks(data.items || [], 7).map(book => ({
+    ...book,
+    href: `/libro/${book.id}/${slugify(book.title)}`,
+    cover: responsiveBookCover(book.id, { optimize: isIndexableProduction }),
+  }));
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn('[Hero] home.json no disponible para la escena editorial:', message);
+}
 ---
 
 <section class="hero-shell">
-  <div class="hero">
-    <div class="hero-content">
-      <p class="hero-kicker">Libros importados y búsquedas por encargo</p>
+  <div class="hero-scene">
+    <div class="hero-copy">
+      <p class="hero-kicker">Una librería online con gente detrás</p>
 
       <h1 class="hero-h1">
         Libros difíciles de encontrar.
@@ -14,7 +57,7 @@ import CategoryAccess from './CategoryAccess.astro';
       </h1>
 
       <p class="hero-lead">
-        Buscá en nuestro catálogo. Tenemos títulos importados disponibles en Uruguay. Si no aparece, revisamos opciones para ayudarte a encontrarlo, incluidas ediciones agotadas o descatalogadas.
+        Buscá entre los libros disponibles. Si no aparece el que querés, una persona de Amado Libros revisa opciones para conseguirlo por encargo.
       </p>
 
       <form class="hero-search" action="/catalogo" method="get" role="search">
@@ -33,25 +76,57 @@ import CategoryAccess from './CategoryAccess.astro';
           autocomplete="off"
           enterkeyhint="search"
         >
-        <button type="submit">Buscar libro</button>
+        <button type="submit">Buscar</button>
       </form>
 
       <a class="hero-request" href="/pedir-libro/?tipo=exacto">
+        <span class="hero-request-icon" aria-hidden="true">↗</span>
         <span class="hero-request-copy">
           <strong>¿No aparece en el catálogo?</strong>
-          <small>La búsqueda por encargo la revisamos personalmente.</small>
+          <small>Contanos cuál es. Lo buscamos personalmente, incluso si está agotado o descatalogado.</small>
         </span>
-        <span class="hero-request-action">Pedir una búsqueda →</span>
+        <span class="hero-request-action">Pedir una búsqueda</span>
       </a>
 
       <ul class="hero-benefits" aria-label="Beneficios de compra">
         <li>Hasta 12 cuotas con Mercado Pago</li>
         <li>12% menos por transferencia</li>
-        <li>Entrega coordinada en Montevideo</li>
+        <li>Envíos a todo Uruguay</li>
       </ul>
     </div>
 
-    <CategoryAccess />
+    <div class="hero-visual" aria-label="Algunos libros recién incorporados">
+      <div class="hero-orbit" aria-hidden="true"></div>
+      <p class="hero-visual-word" aria-hidden="true">AMADO</p>
+
+      {visualBooks.map((book, index) => (
+        <a
+          class={`hero-book hero-book-${index + 1}`}
+          href={book.href}
+          style={`--book-index:${index};`}
+          aria-label={`Ver ${book.title}`}
+        >
+          <img
+            src={book.cover.src}
+            srcset={book.cover.srcset || undefined}
+            sizes="(max-width: 700px) 26vw, (max-width: 1100px) 18vw, 190px"
+            alt={book.title}
+            loading={index < 3 ? 'eager' : 'lazy'}
+            fetchpriority={index === 0 ? 'high' : 'auto'}
+            decoding="async"
+            width="360"
+            height="480"
+            onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('hero-book-fallback')"
+          />
+          <span>{book.title}</span>
+        </a>
+      ))}
+
+      <a class="hero-visual-caption" href="#incorporaciones-recientes">
+        <span>Recién llegados</span>
+        <strong>Ver libros</strong>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -77,54 +152,91 @@ import CategoryAccess from './CategoryAccess.astro';
 
 <style>
   .hero-shell {
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    background: #171512;
+    color: #fffaf4;
   }
 
-  .hero {
-    max-width: 1240px;
+  .hero-scene {
+    position: relative;
+    z-index: 1;
+    max-width: 1380px;
+    min-height: 660px;
     margin: 0 auto;
-    padding: 0 1rem 1.8rem;
+    padding: 3rem 1rem 3.4rem;
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+    align-items: center;
+    gap: clamp(1.5rem, 4vw, 5rem);
   }
 
-  .hero-content {
-    max-width: 760px;
-    padding: 1.65rem 0.25rem 2rem;
+  .hero-scene::before,
+  .hero-scene::after {
+    content: '';
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(2px);
+    pointer-events: none;
+  }
+
+  .hero-scene::before {
+    width: 520px;
+    height: 520px;
+    top: -300px;
+    left: -190px;
+    background: #ff6d43;
+    opacity: 0.23;
+  }
+
+  .hero-scene::after {
+    width: 420px;
+    height: 420px;
+    right: -180px;
+    bottom: -250px;
+    background: #3f755c;
+    opacity: 0.28;
+  }
+
+  .hero-copy {
+    position: relative;
+    z-index: 4;
+    max-width: 690px;
   }
 
   .hero-kicker {
-    margin-bottom: 0.65rem;
-    color: var(--ink-2);
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.055em;
+    margin-bottom: 0.9rem;
+    color: #ff8b69;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.11em;
     line-height: 1.25;
     text-transform: uppercase;
   }
 
   .hero-h1 {
-    max-width: 14ch;
-    color: var(--ink);
+    max-width: 11.2ch;
+    color: #fffaf4;
     font-family: var(--font-display);
-    font-size: clamp(2.125rem, 9vw, 2.4rem);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    line-height: 1.08;
+    font-size: clamp(3rem, 6.2vw, 5.35rem);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 0.94;
   }
 
   .hero-h1 span {
     display: block;
-    color: inherit;
+    color: #ff805c;
     font-style: italic;
-    font-weight: 400;
+    font-weight: 700;
   }
 
   .hero-lead {
-    max-width: 52ch;
-    margin-top: 0.9rem;
-    color: var(--ink-2);
-    font-size: 0.9rem;
-    line-height: 1.5;
+    max-width: 56ch;
+    margin-top: 1.35rem;
+    color: rgba(255, 250, 244, 0.76);
+    font-size: clamp(0.98rem, 1.4vw, 1.1rem);
+    line-height: 1.55;
   }
 
   .hero-search {
@@ -132,185 +244,325 @@ import CategoryAccess from './CategoryAccess.astro';
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.55rem;
-    width: 100%;
-    margin-top: 1rem;
-    padding: 0.35rem;
-    padding-left: 0.85rem;
-    background: var(--surface);
-    border: 1px solid #d5ccc0;
-    border-radius: 0.55rem;
-    box-shadow: 0 5px 18px rgba(24, 18, 14, 0.055);
+    width: min(100%, 650px);
+    margin-top: 1.45rem;
+    padding: 0.4rem;
+    padding-left: 0.95rem;
+    background: #fffdf9;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 999px;
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.2);
   }
 
   .hero-search:focus-within {
-    border-color: var(--salmon);
-    box-shadow: 0 0 0 4px rgba(228, 153, 130, 0.14);
+    border-color: #ff805c;
+    box-shadow: 0 0 0 4px rgba(255, 109, 67, 0.22), 0 20px 55px rgba(0, 0, 0, 0.2);
   }
 
-  .hero-search-icon { display: flex; color: var(--ink); }
+  .hero-search-icon { display: flex; color: #1c1916; }
 
   .hero-search input {
     min-width: 0;
     width: 100%;
-    padding: 0.68rem 0;
+    padding: 0.75rem 0;
     border: 0;
     outline: 0;
     background: transparent;
-    color: var(--ink);
-    font: 500 0.95rem/1.2 var(--font-ui);
+    color: #1c1916;
+    font: 550 0.98rem/1.2 var(--font-ui);
   }
 
-  .hero-search input::placeholder { color: #8a8178; opacity: 1; }
+  .hero-search input::placeholder { color: #81776f; opacity: 1; }
 
   .hero-search button {
-    min-height: 44px;
-    padding: 0.7rem 1rem;
+    min-height: 46px;
+    padding: 0.75rem 1.35rem;
     border: 0;
-    border-radius: 0.35rem;
-    background: var(--salmon);
-    color: #fff;
-    font: 750 0.82rem/1 var(--font-ui);
+    border-radius: 999px;
+    background: #ff6d43;
+    color: #1c1916;
+    font: 850 0.84rem/1 var(--font-ui);
     cursor: pointer;
     white-space: nowrap;
+    transition: transform 0.16s ease, background 0.16s ease;
   }
 
-  .hero-search button:hover { background: var(--salmon-hover); }
+  .hero-search button:hover {
+    background: #ff8b69;
+    transform: translateY(-1px);
+  }
 
   .hero-request {
+    width: min(100%, 650px);
+    margin-top: 0.75rem;
+    padding: 0.85rem 0.95rem;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 0.75rem;
-    margin-top: 0.65rem;
-    padding: 0.75rem 0.85rem;
-    border: 1px solid #d9c6ba;
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.42);
-    color: var(--ink);
-    text-decoration: none;
+    gap: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.07);
+    color: #fffaf4;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
   }
 
   .hero-request:hover {
-    border-color: var(--salmon);
-    background: rgba(255, 255, 255, 0.72);
+    border-color: #ff805c;
+    background: rgba(255, 109, 67, 0.13);
+    transform: translateY(-1px);
+  }
+
+  .hero-request-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #ff6d43;
+    color: #1c1916;
+    font-size: 1rem;
+    font-weight: 900;
   }
 
   .hero-request-copy strong,
-  .hero-request-copy small {
-    display: block;
-  }
+  .hero-request-copy small { display: block; }
 
   .hero-request-copy strong {
-    font-size: 0.78rem;
-    line-height: 1.25;
+    font-size: 0.84rem;
+    line-height: 1.2;
   }
 
   .hero-request-copy small {
-    margin-top: 0.12rem;
-    color: var(--ink-2);
-    font-size: 0.68rem;
-    line-height: 1.3;
+    max-width: 50ch;
+    margin-top: 0.18rem;
+    color: rgba(255, 250, 244, 0.68);
+    font-size: 0.7rem;
+    line-height: 1.35;
   }
 
   .hero-request-action {
-    color: var(--salmon-hover);
+    color: #ff9c7f;
     font-size: 0.72rem;
     font-weight: 850;
-    line-height: 1.2;
     text-align: right;
+    white-space: nowrap;
   }
 
   .hero-benefits {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 0.5rem;
-    margin-top: 0.8rem;
+    gap: 0.45rem 1rem;
+    margin-top: 1rem;
     padding: 0;
+    color: rgba(255, 250, 244, 0.62);
     list-style: none;
   }
 
   .hero-benefits li {
-    padding: 0.36rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 0.35rem;
-    background: rgba(255, 255, 255, 0.45);
-    color: var(--ink-2);
-    font-size: 0.64rem;
+    position: relative;
+    padding-left: 0.8rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    line-height: 1.2;
   }
 
-  @media (max-width: 430px) {
+  .hero-benefits li::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ff805c;
+    transform: translateY(-50%);
+  }
+
+  .hero-visual {
+    position: relative;
+    z-index: 3;
+    min-height: 570px;
+    isolation: isolate;
+  }
+
+  .hero-orbit {
+    position: absolute;
+    inset: 8% 4% 9% 5%;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 50%;
+    transform: rotate(-10deg);
+  }
+
+  .hero-orbit::before,
+  .hero-orbit::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 128, 92, 0.24);
+  }
+
+  .hero-orbit::before { inset: 10%; }
+  .hero-orbit::after { inset: 24%; }
+
+  .hero-visual-word {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: -1;
+    color: rgba(255, 255, 255, 0.035);
+    font-family: var(--font-ui);
+    font-size: clamp(5rem, 10vw, 9rem);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    transform: translate(-50%, -50%) rotate(-12deg);
+  }
+
+  .hero-book {
+    position: absolute;
+    display: block;
+    width: clamp(105px, 13vw, 176px);
+    color: #fffaf4;
+    text-decoration: none;
+    transform-origin: center;
+    animation: hero-book-float 7s ease-in-out infinite alternate;
+    animation-delay: calc(var(--book-index) * -0.9s);
+    transition: filter 0.2s ease, z-index 0s, transform 0.25s ease;
+  }
+
+  .hero-book img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 0.32rem;
+    box-shadow: 0 22px 42px rgba(0, 0, 0, 0.38);
+  }
+
+  .hero-book span {
+    display: block;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    color: rgba(255, 250, 244, 0.76);
+    font-size: 0.61rem;
+    font-weight: 750;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .hero-book:hover {
+    z-index: 12;
+    filter: brightness(1.07);
+  }
+
+  .hero-book:hover span { opacity: 1; transform: translateY(0); }
+  .hero-book-fallback { object-fit: contain !important; padding: 1.5rem; background: #fffaf4; }
+
+  .hero-book-1 { top: 4%; left: 34%; transform: rotate(5deg); }
+  .hero-book-2 { top: 17%; right: 2%; transform: rotate(11deg); }
+  .hero-book-3 { top: 35%; left: 4%; transform: rotate(-12deg); }
+  .hero-book-4 { top: 48%; left: 41%; transform: rotate(3deg); }
+  .hero-book-5 { right: 7%; bottom: 4%; transform: rotate(-7deg); }
+  .hero-book-6 { top: 1%; left: 4%; width: clamp(86px, 10vw, 132px); transform: rotate(-7deg); }
+  .hero-book-7 { right: 29%; bottom: -1%; width: clamp(78px, 9vw, 120px); transform: rotate(10deg); }
+
+  .hero-visual-caption {
+    position: absolute;
+    right: 2%;
+    bottom: 2%;
+    z-index: 15;
+    width: 126px;
+    height: 126px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 50%;
+    background: #ff6d43;
+    color: #1c1916;
+    transform: rotate(7deg);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .hero-visual-caption:hover { background: #ff9c7f; transform: rotate(0deg) scale(1.03); }
+  .hero-visual-caption span { font-size: 0.62rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero-visual-caption strong { font-family: var(--font-display); font-size: 1.1rem; line-height: 1; }
+
+  @keyframes hero-book-float {
+    from { translate: 0 -5px; }
+    to { translate: 0 9px; }
+  }
+
+  @media (max-width: 979px) {
+    .hero-scene {
+      min-height: 0;
+      grid-template-columns: 1fr;
+      gap: 1.4rem;
+      padding-top: 2.4rem;
+    }
+
+    .hero-copy { max-width: 760px; }
+    .hero-h1 { max-width: 11ch; font-size: clamp(2.8rem, 9vw, 4.7rem); }
+    .hero-visual { min-height: 430px; max-width: 700px; width: 100%; margin: 0 auto; }
+    .hero-book { width: clamp(90px, 19vw, 150px); }
+    .hero-book-6 { width: clamp(72px, 15vw, 115px); }
+    .hero-book-7 { width: clamp(68px, 14vw, 105px); }
+  }
+
+  @media (max-width: 620px) {
+    .hero-scene { padding: 1.75rem 0.85rem 2rem; gap: 1.1rem; }
+    .hero-kicker { margin-bottom: 0.7rem; font-size: 0.64rem; }
+    .hero-h1 { max-width: 10.5ch; font-size: clamp(2.55rem, 12vw, 3.55rem); line-height: 0.96; }
+    .hero-lead { margin-top: 1rem; font-size: 0.92rem; }
+
     .hero-search {
       grid-template-columns: auto minmax(0, 1fr);
+      border-radius: 0.75rem;
       padding: 0.45rem 0.65rem;
     }
 
     .hero-search button {
       grid-column: 1 / -1;
       width: 100%;
+      border-radius: 0.55rem;
     }
 
     .hero-request {
-      grid-template-columns: 1fr;
-      gap: 0.35rem;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.65rem;
     }
 
-    .hero-request-action { text-align: left; }
+    .hero-request-action {
+      grid-column: 2;
+      text-align: left;
+    }
+
+    .hero-benefits { gap: 0.42rem 0.75rem; }
+    .hero-visual { min-height: 290px; }
+    .hero-orbit { inset: 5% 2% 8%; }
+    .hero-visual-word { font-size: 4.4rem; }
+    .hero-book { width: clamp(72px, 23vw, 105px); }
+    .hero-book span { display: none; }
+    .hero-book-1 { top: 2%; left: 37%; }
+    .hero-book-2 { top: 12%; right: 1%; }
+    .hero-book-3 { top: 31%; left: 2%; }
+    .hero-book-4 { top: 43%; left: 38%; }
+    .hero-book-5 { right: 4%; bottom: 0; }
+    .hero-book-6 { top: 1%; left: 4%; width: 66px; }
+    .hero-book-7 { display: none; }
+    .hero-visual-caption { right: 33%; bottom: 3%; width: 88px; height: 88px; padding: 0.7rem; }
+    .hero-visual-caption span { font-size: 0.48rem; }
+    .hero-visual-caption strong { font-size: 0.82rem; }
   }
 
-  @media (min-width: 700px) {
-    .hero {
-      padding-right: 2rem;
-      padding-left: 2rem;
-    }
-
-    .hero-content {
-      padding-top: 3.25rem;
-      padding-bottom: 3rem;
-    }
-
-    .hero-kicker { font-size: 0.72rem; }
-
-    .hero-h1 {
-      max-width: 14ch;
-      font-size: clamp(2.75rem, 5.5vw, 3.5rem);
-      letter-spacing: -0.015em;
-      line-height: 1.05;
-    }
-
-    .hero-lead {
-      margin-top: 1.2rem;
-      font-size: 1rem;
-    }
-
-    .hero-search { margin-top: 1.3rem; }
-    .hero-search button { padding-right: 1.35rem; padding-left: 1.35rem; font-size: 0.9rem; }
-
-    .hero-request-copy strong { font-size: 0.85rem; }
-    .hero-request-copy small { font-size: 0.72rem; }
-    .hero-request-action { font-size: 0.76rem; }
-  }
-
-  @media (min-width: 980px) {
-    .hero-content {
-      max-width: 920px;
-      padding-top: 4rem;
-      padding-bottom: 3.75rem;
-    }
-
-    .hero-h1 { max-width: 14ch; }
-
-    .hero-lead { max-width: 58ch; }
-    .hero-search,
-    .hero-request { max-width: 720px; }
-  }
-
-  @media (min-width: 1024px) {
-    .hero-h1 { font-size: 3.5rem; }
-  }
-
-  @media (min-width: 1200px) {
-    .hero { padding-left: 0; padding-right: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-book { animation: none; }
+    .hero-search button,
+    .hero-request,
+    .hero-visual-caption { transition: none; }
   }
 </style>
