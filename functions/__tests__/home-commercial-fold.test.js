@@ -64,11 +64,13 @@ test('el primer pantallazo prioriza catálogo y búsqueda humana por encargo', (
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
 });
 
-test('en mobile el hero es compacto y no fuerza una pantalla completa antes de categorías', () => {
+test('la escala del hero respeta 34 px en 375 mobile y 56 px en desktop', () => {
   assert.match(heroAstro, /@media \(max-width: 430px\)/);
   assert.match(heroAstro, /font-size: clamp\(2\.125rem, 9vw, 2\.4rem\)/);
+  assert.match(heroAstro, /@media \(min-width: 700px\)[\s\S]*?\.hero-h1\s*\{[\s\S]*?font-size:\s*3\.5rem/);
   assert.match(heroAstro, /padding: 1\.65rem 0\.25rem 2rem/);
   assert.doesNotMatch(heroAstro, /100svh|100vh/);
+  assert.doesNotMatch(heroAstro, /font-size:\s*clamp\(4\.5rem|font-size:\s*5\.4rem/);
   assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
 });
 
