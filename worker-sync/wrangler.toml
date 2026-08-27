@@ -65,7 +65,8 @@ binding = "IMAGES"
 binding = "AMADO_KV"
 id      = "6ea0ff4682d647118442a24fe384abc4"
 
-# D1 productiva: únicamente lee y actualiza solicitudes de aviso de stock.
+# D1 productiva: lee/actualiza solicitudes de aviso de stock (stock_waitlist)
+# y persiste las alertas operativas de RADAR AMADO (radar_alerts).
 [[d1_databases]]
 binding = "ORDERS_DB"
 database_name = "amadolibros-orders-production"

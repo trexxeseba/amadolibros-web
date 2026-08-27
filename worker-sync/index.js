@@ -18,6 +18,9 @@
  *                      productivo separado (prefijo catalog/*, nunca
  *                      stock1-preview/*) cuando PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED
  *                      lo habilita. No toca catalog.json ni meta.json.
+ *                    — GET /radar/summary devuelve las alertas operativas
+ *                      vigentes (RADAR AMADO) persistidas en D1, agrupadas
+ *                      por tipo y ordenadas por prioridad. Sólo lectura.
  *
  * Flujo de runSync():
  *   1. Obtener ML access token (meli-auth.js — KV lock + retry)
@@ -25,6 +28,11 @@
  *   3. Escribir catalog.json y meta.json en R2 (r2-publish.js)
  *   4. Notificar a IndexNow únicamente URLs indexables que cambiaron
  *   5. Guardar estado mínimo en KV (sync:last_ok / sync:last_error)
+ *   6. RADAR AMADO (radar.js + radar-store.js): recalcula alertas
+ *      operativas (stock, pausados, ISBN, waitlist) y las persiste de
+ *      forma idempotente en D1 (tabla radar_alerts). Sólo lectura +
+ *      análisis: nunca cambia precio ni reactiva/pausa publicaciones. Un
+ *      fallo acá nunca revierte un catálogo ya publicado.
  *
  * KV keys escritas por este Worker:
  *   auth:refresh_token       — compartido con Pages (se actualiza en meli-auth.js)
@@ -46,7 +54,7 @@
  */
 
 import { getAccessToken } from './meli-auth.js';
-import { buildCatalog   } from './meli-catalog.js';
+import { buildCatalog, fetchPausedItemsForRadar } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
@@ -54,6 +62,13 @@ import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
+import { buildRadarAlerts } from './radar.js';
+import {
+  getWaitlistCounts,
+  persistRadarAlerts,
+  fetchOpenRadarAlerts,
+  summarizeRadarAlerts,
+} from './radar-store.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -106,6 +121,11 @@ export default {
 
     if (request.method === 'GET' && url.pathname === '/status') {
       return json(await readStatus(env));
+    }
+
+    if (request.method === 'GET' && url.pathname === '/radar/summary') {
+      const alerts = await fetchOpenRadarAlerts(env);
+      return json(summarizeRadarAlerts(alerts));
     }
 
     if (request.method === 'GET' && url.pathname === '/bing-webmaster/summary') {
@@ -457,6 +477,10 @@ export async function runSync(env, options = {}, {
   readPreviousPublicCatalogFn = readPreviousPublicCatalog,
   submitIndexNowFn = submitIndexNow,
   syncCoverMirrorFn = syncCoverMirror,
+  fetchPausedItemsForRadarFn = fetchPausedItemsForRadar,
+  getWaitlistCountsFn = getWaitlistCounts,
+  buildRadarAlertsFn = buildRadarAlerts,
+  persistRadarAlertsFn = persistRadarAlerts,
 } = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
@@ -545,6 +569,25 @@ export async function runSync(env, options = {}, {
       stockNotifications = { status: 'error', error: String(error?.message || 'Error').slice(0, 200) };
     }
 
+    // RADAR AMADO — recalcula alertas operativas sobre el catálogo recién
+    // publicado. Sólo lectura + análisis: un fallo acá (por ejemplo, el
+    // fetch aislado de pausados) nunca revierte el catálogo ya publicado ni
+    // borra las alertas persistidas en corridas anteriores.
+    let radar;
+    try {
+      const pausedItems = await fetchPausedItemsForRadarFn(env, accessToken);
+      const waitlistCounts = await getWaitlistCountsFn(env);
+      const alerts = buildRadarAlertsFn({
+        activeItems: catalog.items,
+        pausedItems,
+        waitlistCounts,
+      });
+      radar = await persistRadarAlertsFn(env, alerts, { now: finishedAt });
+    } catch (error) {
+      console.error(`[Radar] Error: ${error?.message || 'Error'}`);
+      radar = { status: 'error', error: String(error?.message || 'Error').slice(0, 200) };
+    }
+
     // 4. Estado: éxito
     await kvPut(env, 'sync:last_ok', finishedAt);
     await kvDelete(env, 'sync:last_error');
@@ -562,6 +605,7 @@ export async function runSync(env, options = {}, {
       indexnow:       indexNow,
       stock_notifications: stockNotifications,
       cover_mirror: coverMirror,
+      radar,
     };
 
   } catch (err) {

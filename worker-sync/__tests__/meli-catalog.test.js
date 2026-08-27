@@ -8,6 +8,7 @@ import {
   enrichCatalogDescriptions,
   extractBibliographicDetails,
   extractDimensions,
+  fetchPausedItemsForRadar,
   normalizePictures,
   repairKnownTitle,
   sanitizeDescription,
@@ -752,4 +753,69 @@ test('CF-R2-2-BRIDGE: producción tampoco cambia su manifest si falla la verific
   assert.equal(result.published, false);
   assert.equal(writtenKeys.includes(PRODUCTION_MANIFEST_KEY), false);
   assert.ok(writtenKeys.some(key => key.includes('/versions/')));
+});
+
+test('fetchPausedItemsForRadar: exige USER_ID y no llega a hacer fetch si falta', async () => {
+  await assert.rejects(
+    () => fetchPausedItemsForRadar({}, 'token'),
+    /USER_ID no configurado/,
+  );
+});
+
+test('fetchPausedItemsForRadar: trae únicamente pausados, sin la guarda de mínimo de activos ni enriquecimiento', async () => {
+  const urls = [];
+  const fetchFn = async url => {
+    urls.push(String(url));
+    if (String(url).includes('/items/search')) {
+      const status = new URL(String(url)).searchParams.get('status');
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async json() {
+          return { results: status === 'paused' ? ['MLU2', 'MLU3'] : [], scroll_id: null };
+        },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      async json() {
+        return [
+          { code: 200, body: { id: 'MLU2', title: 'Pausado A', status: 'paused', available_quantity: 0, attributes: [], pictures: [] } },
+          { code: 200, body: { id: 'MLU3', title: 'Pausado B', status: 'paused', available_quantity: 2, attributes: [], pictures: [] } },
+        ];
+      },
+    };
+  };
+
+  const items = await fetchPausedItemsForRadar({ USER_ID: '123' }, 'token', {
+    mlGetDeps: { fetchFn, sleepFn: async () => {} },
+  });
+
+  assert.deepEqual(items.map(item => item.id), ['MLU2', 'MLU3']);
+  assert.ok(items.every(item => item.status === 'paused'));
+  assert.ok(urls.every(url => url.includes('status=paused') || url.includes('/items?ids=')));
+  assert.ok(!urls.some(url => url.includes('status=active')));
+  assert.ok(!urls.some(url => url.includes('/description')));
+});
+
+test('fetchPausedItemsForRadar: sin publicaciones pausadas devuelve un array vacío', async () => {
+  const fetchFn = async url => {
+    if (String(url).includes('/items/search')) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async json() { return { results: [], scroll_id: null }; },
+      };
+    }
+    throw new Error('No debería pedir detalles sin IDs');
+  };
+
+  const items = await fetchPausedItemsForRadar({ USER_ID: '123' }, 'token', {
+    mlGetDeps: { fetchFn, sleepFn: async () => {} },
+  });
+  assert.deepEqual(items, []);
 });
