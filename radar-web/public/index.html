@@ -4,61 +4,98 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#263b31">
   <title>Radar Amado</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">AMADO LIBROS · INTERNO</p>
+      <p class="eyebrow">AMADO LIBROS · PANEL INTERNO</p>
       <h1>Radar Amado</h1>
-      <p class="subtitle">Ventas reales y posición de precio en Mercado Libre.</p>
+      <p class="subtitle">Ventas y posición de precio en Mercado Libre.</p>
     </div>
-    <div id="statusPill" class="pill">Actualizando…</div>
+    <div class="header-status">
+      <span class="readonly-badge">Sólo lectura</span>
+      <div id="statusPill" class="pill">Actualizando…</div>
+    </div>
   </header>
 
   <main>
     <section class="metrics" aria-label="Resumen ventas">
       <article><span>Órdenes observadas</span><strong id="ordersCount">—</strong></article>
-      <article><span>MLU vendidos</span><strong id="itemsCount">—</strong></article>
-      <article><span>Ventana</span><strong id="daysCount">7 días</strong></article>
-      <article><span>Cobertura</span><strong id="coverageText">—</strong></article>
+      <article><span>Productos vendidos</span><strong id="itemsCount">—</strong></article>
+      <article><span>Unidades mostradas</span><strong id="unitsCount">—</strong></article>
+      <article><span>Facturación mostrada</span><strong id="revenueCount">—</strong></article>
+      <article><span>Cobertura 7 días</span><strong id="coverageText">—</strong></article>
     </section>
 
-    <section class="panel competition-panel">
+    <section class="panel">
+      <div class="panel-head sales-head">
+        <div>
+          <p class="eyebrow">VENTAS MERCADO LIBRE</p>
+          <h2>Qué se está vendiendo</h2>
+          <p class="hint no-margin">Datos observados de los últimos 7 días.</p>
+        </div>
+        <button id="refreshSales" class="secondary">Actualizar</button>
+      </div>
+
+      <div class="table-tools">
+        <label class="search-field">
+          <span>Buscar</span>
+          <input id="salesSearch" autocomplete="off" placeholder="Título, ISBN o MLU">
+        </label>
+        <label class="sort-field">
+          <span>Ordenar</span>
+          <select id="salesSort">
+            <option value="units">Más unidades</option>
+            <option value="revenue">Más facturación</option>
+            <option value="recent">Venta más reciente</option>
+            <option value="stock">Menor stock propio</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>MLU / ISBN</th>
+              <th>Stock</th>
+              <th>Precio</th>
+              <th>Unidades</th>
+              <th>Revenue</th>
+              <th>Última venta</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="salesBody"><tr><td colspan="8" class="loading">Cargando datos reales…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="panel-foot">
+        <p id="salesFoot" class="hint"></p>
+        <p id="catalogFoot" class="hint"></p>
+      </div>
+    </section>
+
+    <section id="competitionPanel" class="panel competition-panel">
       <div class="panel-head">
         <div>
           <p class="eyebrow">PRECIO / COMPETENCIA</p>
-          <h2>Consultar publicación</h2>
+          <h2>Analizar publicación</h2>
+          <p class="hint no-margin">Comparación sólo cuando Mercado Libre expone una referencia válida.</p>
         </div>
       </div>
       <form id="competitionForm" class="search-row">
         <input id="mluInput" name="item_id" autocomplete="off" spellcheck="false" placeholder="MLU646433323" aria-label="MLU">
-        <button type="submit">Analizar</button>
+        <button type="submit">Analizar precio</button>
       </form>
-      <p class="hint">Compara precio propio, ganador de catálogo y referencias de Mercado Libre. No muestra envío ni stock de otros vendedores.</p>
-      <div id="competitionResult" class="competition-result empty">Ingresá un MLU o elegí uno de la tabla de ventas.</div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">VENTAS MERCADO LIBRE</p>
-          <h2>Top observado · últimos 7 días</h2>
-        </div>
-        <button id="refreshSales" class="secondary">Actualizar</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>MLU</th><th>Unidades</th><th>Revenue</th><th>Última venta</th><th></th></tr></thead>
-          <tbody id="salesBody"><tr><td colspan="5" class="loading">Cargando datos reales…</td></tr></tbody>
-        </table>
-      </div>
-      <p id="salesFoot" class="hint"></p>
+      <div id="competitionResult" class="competition-result empty">Ingresá un MLU o elegí “Analizar precio” desde la tabla.</div>
     </section>
   </main>
 
-  <footer>Radar Amado V1 · Sólo lectura · No modifica publicaciones ni precios.</footer>
+  <footer>Radar Amado V1.1 · privado · no modifica publicaciones, stock ni precios.</footer>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
