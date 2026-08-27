@@ -1,15 +1,31 @@
 ---
-// HOME-ARTE-1: la barra deja de rotar beneficios y prioriza una sola promesa
-// comercial en el primer pantallazo. Los otros tres claims quedan declarados
-// para reubicarlos en el bloque comercial del Lote 3:
-// - Hasta 12 cuotas con Mercado Pago
-// - 12% menos por transferencia
-// - Entrega coordinada en Montevideo
+interface Props {
+  editorial?: boolean;
+}
+
+const { editorial = false } = Astro.props;
+
+const messages = [
+  'Envío gratis desde $1.500',
+  'Envíos en el día en Montevideo',
+  'Libros importados y búsquedas por encargo',
+];
 ---
 
-<aside class="announcement-bar" aria-label="Beneficio de envío">
-  <span>Envío gratis desde $1.500</span>
-</aside>
+{editorial ? (
+  <aside class="announcement-bar announcement-editorial" aria-label="Beneficios de Amado Libros">
+    <div class="announcement-track">
+      {messages.map(message => <span>{message}</span>)}
+      <span aria-hidden="true">Envío gratis desde $1.500</span>
+      <span aria-hidden="true">Envíos en el día en Montevideo</span>
+      <span aria-hidden="true">Libros importados y búsquedas por encargo</span>
+    </div>
+  </aside>
+) : (
+  <aside class="announcement-bar" aria-label="Beneficio de envío">
+    <span>Envío gratis desde $1.500</span>
+  </aside>
+)}
 
 <style>
   .announcement-bar {
@@ -20,13 +36,62 @@
     justify-content: center;
     padding: 0 1rem;
     overflow: hidden;
-    background: #1F1B18;
-    color: #FAF6EF;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: #1f1b18;
+    color: #faf6ef;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 750;
     line-height: 1;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .announcement-editorial {
+    height: 34px;
+    justify-content: flex-start;
+    padding: 0;
+    background: #ff6d43;
+    color: #181511;
+    border-bottom: 0;
+  }
+
+  .announcement-track {
+    display: flex;
+    align-items: center;
+    width: max-content;
+    min-width: max-content;
+    animation: amado-editorial-ticker 32s linear infinite;
+  }
+
+  .announcement-track span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 2.2rem;
+    font-size: 0.71rem;
+    font-weight: 850;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+  }
+
+  .announcement-track span::after {
+    content: '✦';
+    margin-left: 2.2rem;
+    font-size: 0.58rem;
+  }
+
+  @keyframes amado-editorial-ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .announcement-editorial {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .announcement-editorial::-webkit-scrollbar { display: none; }
+    .announcement-track { animation: none; }
   }
 </style>
