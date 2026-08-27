@@ -1,5 +1,5 @@
 const USER = 'radar';
-const PASSWORD_SHA256 = '813226330151d2f974377549abd5aac445f97789bfdaa3f774a73377396b3cc0';
+const PASSWORD_SHA256 = 'c71c8b17fa29a0e65af9eba67a744dc7d7b5099543300ff88821d30dd3de8983';
 const API_ORIGIN = 'https://radar-api-amadolibros-sync.undiaes.workers.dev';
 
 async function sha256Hex(value){
