@@ -4,6 +4,7 @@
 import BaseLayout          from '../layouts/BaseLayout.astro';
 import Header              from '../components/Header.astro';
 import Hero                from '../components/Hero.astro';
+import CategoryAccess      from '../components/CategoryAccess.astro';
 import DeliveryCoordination from '../components/DeliveryCoordination.astro';
 import BookDiscovery       from '../components/BookDiscovery.astro';
 import GuideAccess         from '../components/GuideAccess.astro';
@@ -70,6 +71,8 @@ const jsonLd = {
   <Header showSearch={false} />
   <main>
     <Hero />
+    <TrustStrip />
+    <CategoryAccess />
     <BestsellerSection />
     <BookDiscovery />
     <OrderHubAccess />
@@ -77,7 +80,6 @@ const jsonLd = {
     <CommercialBenefits />
     <DeliveryCoordination />
     <HowToBuy />
-    <TrustStrip />
   </main>
   <Footer />
   <SearchOverlay />
