@@ -29,7 +29,7 @@ test('runMlSalesSync apagado por defecto no toca OAuth ni ML', async () => {
   assert.equal(called, false);
 });
 
-test('runMlSalesSync hace backfill, normaliza, persiste y guarda cobertura', async () => {
+test('runMlSalesSync hace backfill paid por date_closed, persiste y guarda cobertura', async () => {
   const writes = [];
   const states = [];
   const env = { ML_SALES_SYNC_ENABLED: 'true', USER_ID: '440298103' };
@@ -40,6 +40,7 @@ test('runMlSalesSync hace backfill, normaliza, persiste y guarda cobertura', asy
     fetchSellerOrdersFn: async (_token, options) => {
       assert.equal(options.sellerId, '440298103');
       assert.equal(options.status, 'paid');
+      assert.equal(options.dateField, 'closed');
       return { orders: [{ id: 1 }], pages: 1 };
     },
     normalizeMlOrderItemsFn: (_orders, { observedAt }) => [{ order_id: '1', item_id: 'MLU1', quantity: 2, unit_price: 100, observed_at: observedAt }],
@@ -49,6 +50,8 @@ test('runMlSalesSync hace backfill, normaliza, persiste y guarda cobertura', asy
   });
   assert.equal(result.status, 'ok');
   assert.equal(result.mode, 'backfill');
+  assert.equal(result.query_status, 'paid');
+  assert.equal(result.query_date_field, 'closed');
   assert.equal(result.fetched_orders, 1);
   assert.equal(result.rows_upserted, 1);
   assert.equal(writes[0].item_id, 'MLU1');
@@ -56,19 +59,24 @@ test('runMlSalesSync hace backfill, normaliza, persiste y guarda cobertura', asy
   assert.equal(states[0].coverageFrom, '2026-05-29T12:00:00.000Z');
 });
 
-test('runMlSalesSync preserva coverage_from anterior en mantenimiento', async () => {
+test('mantenimiento consulta date_last_updated sin filtro de estado y preserva coverage_from', async () => {
   const states = [];
+  const requests = [];
   const env = { ML_SALES_SYNC_ENABLED: 'true', USER_ID: '440298103', ML_SALES_MAINTENANCE_DAYS: '7' };
   const result = await runMlSalesSync(env, {}, {
     getMlSalesSyncStateFn: async () => ({ coverage_from: '2026-05-01T00:00:00Z', coverage_to: '2026-08-20T00:00:00Z', last_status: 'ok' }),
     getAccessTokenFn: async () => 'token',
-    fetchSellerOrdersFn: async () => ({ orders: [], pages: 1 }),
+    fetchSellerOrdersFn: async (_token, options) => { requests.push(options); return { orders: [], pages: 1 }; },
     normalizeMlOrderItemsFn: () => [],
     upsertMlOrderItemsFn: async () => ({ written: 0 }),
     writeMlSalesSyncStateFn: async (_env, state) => states.push(state),
     now: () => new Date('2026-08-27T12:00:00Z'),
   });
   assert.equal(result.mode, 'maintenance');
+  assert.equal(result.query_status, null);
+  assert.equal(result.query_date_field, 'last_updated');
+  assert.equal(requests[0].status, null);
+  assert.equal(requests[0].dateField, 'last_updated');
   assert.equal(states[0].coverageFrom, '2026-05-01T00:00:00Z');
   assert.equal(states[0].coverageTo, '2026-08-27T12:00:00.000Z');
 });
