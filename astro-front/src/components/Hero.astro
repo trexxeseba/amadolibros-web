@@ -107,14 +107,16 @@ import CategoryAccess from './CategoryAccess.astro';
     color: var(--ink);
     font-family: var(--font-display);
     font-size: clamp(2.125rem, 9vw, 2.4rem);
-    font-weight: 700;
-    letter-spacing: -0.035em;
-    line-height: 1.02;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.08;
   }
 
   .hero-h1 span {
     display: block;
-    color: var(--salmon-hover);
+    color: inherit;
+    font-style: italic;
+    font-weight: 400;
   }
 
   .hero-lead {
@@ -272,8 +274,9 @@ import CategoryAccess from './CategoryAccess.astro';
 
     .hero-h1 {
       max-width: 14ch;
-      font-size: 3.5rem;
-      line-height: 0.98;
+      font-size: clamp(2.75rem, 5.5vw, 3.5rem);
+      letter-spacing: -0.015em;
+      line-height: 1.05;
     }
 
     .hero-lead {
@@ -296,14 +299,15 @@ import CategoryAccess from './CategoryAccess.astro';
       padding-bottom: 3.75rem;
     }
 
-    .hero-h1 {
-      max-width: 14ch;
-      font-size: 3.5rem;
-    }
+    .hero-h1 { max-width: 14ch; }
 
     .hero-lead { max-width: 58ch; }
     .hero-search,
     .hero-request { max-width: 720px; }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-h1 { font-size: 3.5rem; }
   }
 
   @media (min-width: 1200px) {
