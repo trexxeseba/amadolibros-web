@@ -27,6 +27,7 @@
       <article><span>Productos vendidos</span><strong id="itemsCount">—</strong></article>
       <article><span>Unidades mostradas</span><strong id="unitsCount">—</strong></article>
       <article><span>Facturación mostrada</span><strong id="revenueCount">—</strong></article>
+      <article><span>Vendidos con stock ≤2</span><strong id="lowStockCount">—</strong></article>
       <article><span>Cobertura 7 días</span><strong id="coverageText">—</strong></article>
     </section>
 
@@ -38,6 +39,11 @@
           <p class="hint no-margin">Datos observados de los últimos 7 días.</p>
         </div>
         <button id="refreshSales" class="secondary">Actualizar</button>
+      </div>
+
+      <div class="quick-filters" aria-label="Filtros rápidos">
+        <button type="button" class="quick-filter active" data-filter="all">Todos</button>
+        <button type="button" class="quick-filter" data-filter="low-stock">Vendidos + stock ≤2</button>
       </div>
 
       <div class="table-tools">
@@ -95,7 +101,7 @@
     </section>
   </main>
 
-  <footer>Radar Amado V1.1 · privado · no modifica publicaciones, stock ni precios.</footer>
+  <footer>Radar Amado V1.2 · privado · no modifica publicaciones, stock ni precios.</footer>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
