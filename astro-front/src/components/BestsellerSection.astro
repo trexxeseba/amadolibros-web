@@ -1,12 +1,11 @@
 ---
 import fs from 'node:fs';
 import path from 'node:path';
-import BookCard from './BookCard.astro';
 import { pickRecentBooks } from '../lib/pick-recent-books.js';
+import { responsiveBookCover } from '../lib/cloudflare-images.js';
 
-// home.json lives at <repo-root>/public/home.json.
-// process.cwd() during `astro build` = astro-front/, so '../public/home.json' resolves correctly.
 const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
+const isIndexableProduction = import.meta.env.PUBLIC_INDEXABLE === 'true';
 
 interface Book {
   id: string;
@@ -21,115 +20,326 @@ interface Book {
   condition?: string | null;
 }
 
-let books: Book[] = [];
+function slugify(text: string): string {
+  return (text || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 60);
+}
+
+const money = new Intl.NumberFormat('es-UY', {
+  style: 'currency',
+  currency: 'UYU',
+  maximumFractionDigits: 0,
+});
+
+let books: Array<Book & {
+  href: string;
+  cover: ReturnType<typeof responsiveBookCover>;
+  displayPrice: string;
+}> = [];
 let missing = false;
 
 try {
   const raw = fs.readFileSync(HOME_JSON, 'utf-8');
   const data = JSON.parse(raw) as { items: Book[] };
-  // HOME-RECENT-NEW-ONLY: pickRecentBooks (astro-front/src/lib/pick-recent-books.js)
-  // filtra activo+stock+condition==='new'+no-antigüedad, ordena por
-  // start_time desc, deduplica por autor+precio y corta a 8 — defensa
-  // adicional aunque home.json ya debería venir filtrado por
-  // generate-home-json.js. Ausente/null/distinto de 'new' => afuera.
-  books = pickRecentBooks(data.items || [], 8);
-} catch (e: unknown) {
+  books = pickRecentBooks(data.items || [], 8).map(book => ({
+    ...book,
+    href: `/libro/${book.id}/${slugify(book.title)}`,
+    cover: responsiveBookCover(book.id, { optimize: isIndexableProduction }),
+    displayPrice: money.format(book.price),
+  }));
+} catch (error: unknown) {
   missing = true;
-  const msg = e instanceof Error ? e.message : String(e);
-  console.warn('[BestsellerSection] home.json no disponible en build:', msg);
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn('[BestsellerSection] home.json no disponible en build:', message);
 }
 ---
 
 {missing
-  ? <Fragment set:html="<!-- novedades: home.json no encontrado en build — sección omitida -->" />
+  ? <Fragment set:html="<!-- incorporaciones: home.json no encontrado en build -->" />
   : (books.length > 0 && (
-      <section id="incorporaciones-recientes" class="bs-section">
-        <div class="bs-inner">
-          <h2 class="bs-heading">Incorporaciones recientes</h2>
-          <div class="bs-grid">
-            {books.map((book, index) => (
-              <BookCard
-                book={book}
-                loading={index < 2 ? 'eager' : 'lazy'}
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-              />
-            ))}
+      <section id="incorporaciones-recientes" class="editorial-shelf">
+        <div class="editorial-shelf-heading">
+          <div>
+            <p>Selección Amado</p>
+            <h2>Libros que acaban de llegar</h2>
           </div>
-          <a class="bs-see-all" href="/catalogo">Ver todo el catálogo →</a>
+          <div class="editorial-shelf-intro">
+            <p>Tapas, autores y temas distintos. Una librería para recorrer, no solamente una lista de productos.</p>
+            <a href="/catalogo">Ver todo el catálogo <span aria-hidden="true">→</span></a>
+          </div>
         </div>
+
+        <div class="editorial-rail" role="list" aria-label="Incorporaciones recientes">
+          {books.map((book, index) => (
+            <article class="editorial-book" role="listitem" style={`--card-index:${index};`}>
+              <a class="editorial-cover" href={book.href} aria-label={`Ver ${book.title}`}>
+                <span class="editorial-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <img
+                  src={book.cover.src}
+                  srcset={book.cover.srcset || undefined}
+                  sizes="(max-width: 520px) 58vw, (max-width: 900px) 36vw, 250px"
+                  alt={book.title}
+                  loading="lazy"
+                  decoding="async"
+                  width="360"
+                  height="480"
+                  onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('editorial-cover-fallback')"
+                />
+              </a>
+
+              <div class="editorial-book-copy">
+                <p class="editorial-book-label">Recién incorporado</p>
+                <h3><a href={book.href}>{book.title}</a></h3>
+                {book.author && <p class="editorial-author">{book.author}</p>}
+                <div class="editorial-book-bottom">
+                  <strong>{book.displayPrice}</strong>
+                  <a href={book.href}>Ver libro <span aria-hidden="true">↗</span></a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p class="editorial-swipe">Deslizá para seguir viendo <span aria-hidden="true">→</span></p>
       </section>
     ))
 }
 
 <style>
-  .bs-section {
-    scroll-margin-top: 5rem;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
+  .editorial-shelf {
+    position: relative;
+    padding: clamp(3.4rem, 7vw, 6.5rem) max(1rem, calc((100vw - 1380px) / 2));
+    overflow: hidden;
+    background: #f3e7d5;
+    color: #1c1916;
+    border-bottom: 1px solid #d7c7b2;
   }
 
-  .bs-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem;
-  }
-
-  @media (min-width: 768px) {
-    .bs-inner { padding: 4rem 2rem; }
-  }
-
-  .bs-heading {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(1.375rem, 3vw, 1.875rem);
-    color: var(--ink);
-    letter-spacing: -0.01em;
-    margin-bottom: 1.75rem;
-  }
-
-  .bs-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  /* HOME-COMERCIAL-1 punto 2: mobile muestra 4 de las 8 (desktop mantiene
-     8) — display:none real, no ocupa espacio ni dejan huecos. Un acceso
-     claro a "Ver todo el catálogo" cubre el resto.
-     HOTFIX (HOME-UX-MOBILE-1): los hijos directos de .bs-grid son
-     <BookCard>, un componente aparte con su propio hash de scope de
-     Astro — el selector scopeado
-     ".bs-grid[data-astro-cid-X] > [data-astro-cid-X]:nth-child(n+5)"
-     nunca matcheaba nada (BookCard nunca lleva el hash de
-     BestsellerSection). :global() en la parte del hijo evita que Astro
-     le exija ese hash, y sigue alcanzando la raíz real de cada BookCard. */
-  @media (max-width: 639px) {
-    .bs-grid > :global(:nth-child(n + 5)) { display: none; }
-  }
-
-  @media (min-width: 640px) {
-    .bs-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  @media (min-width: 1024px) {
-    .bs-grid { grid-template-columns: repeat(4, 1fr); }
-  }
-
-  .bs-see-all {
-    display: inline-flex;
-    margin-top: 1.5rem;
-    color: var(--ink);
+  .editorial-shelf::before {
+    content: 'BOOKS';
+    position: absolute;
+    top: -0.45em;
+    right: -0.05em;
+    color: rgba(255, 109, 67, 0.11);
     font-family: var(--font-ui);
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-decoration: none;
-    border-bottom: 1.5px solid var(--salmon);
-    padding-bottom: 0.15rem;
-    transition: color 0.15s, border-color 0.15s;
+    font-size: clamp(7rem, 18vw, 18rem);
+    font-weight: 900;
+    letter-spacing: -0.07em;
+    line-height: 1;
+    pointer-events: none;
   }
 
-  .bs-see-all:hover {
-    color: var(--salmon-hover);
-    border-color: var(--salmon-hover);
+  .editorial-shelf-heading {
+    position: relative;
+    z-index: 2;
+    max-width: 1380px;
+    margin: 0 auto 2.4rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    align-items: end;
+    gap: 2rem;
+  }
+
+  .editorial-shelf-heading > div:first-child > p {
+    margin-bottom: 0.5rem;
+    color: #b64025;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .editorial-shelf h2 {
+    max-width: 11ch;
+    font-family: var(--font-display);
+    font-size: clamp(2.7rem, 5.6vw, 5rem);
+    letter-spacing: -0.045em;
+    line-height: 0.95;
+  }
+
+  .editorial-shelf-intro {
+    max-width: 44ch;
+    padding-bottom: 0.25rem;
+  }
+
+  .editorial-shelf-intro p {
+    color: #63594f;
+    font-size: 0.96rem;
+    line-height: 1.55;
+  }
+
+  .editorial-shelf-intro a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.9rem;
+    padding-bottom: 0.18rem;
+    border-bottom: 2px solid #ff6d43;
+    font-size: 0.8rem;
+    font-weight: 850;
+  }
+
+  .editorial-rail {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 280px);
+    gap: clamp(1rem, 2.2vw, 2rem);
+    overflow-x: auto;
+    padding: 0.4rem 0 1.3rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-color: #ff6d43 transparent;
+    scrollbar-width: thin;
+  }
+
+  .editorial-book {
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+
+  .editorial-cover {
+    position: relative;
+    display: block;
+    aspect-ratio: 3 / 4;
+    padding: 1rem;
+    overflow: hidden;
+    background: #1c1916;
+    box-shadow: 0 16px 34px rgba(65, 44, 28, 0.16);
+    transform: rotate(calc((var(--card-index) - 3) * 0.35deg));
+    transition: transform 0.24s ease, box-shadow 0.24s ease;
+  }
+
+  .editorial-book:nth-child(3n + 2) .editorial-cover { background: #ff6d43; }
+  .editorial-book:nth-child(3n + 3) .editorial-cover { background: #3f755c; }
+
+  .editorial-cover:hover {
+    z-index: 3;
+    box-shadow: 0 24px 48px rgba(65, 44, 28, 0.24);
+    transform: translateY(-6px) rotate(0deg);
+  }
+
+  .editorial-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    box-shadow: 0 14px 25px rgba(0, 0, 0, 0.25);
+  }
+
+  .editorial-cover-fallback {
+    object-fit: contain !important;
+    padding: 2rem;
+    background: #fffaf4;
+  }
+
+  .editorial-number {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    z-index: 2;
+    width: 2.1rem;
+    height: 2.1rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #fffaf4;
+    color: #1c1916;
+    font-size: 0.62rem;
+    font-weight: 900;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+  }
+
+  .editorial-book-copy { padding: 1rem 0.1rem 0; }
+
+  .editorial-book-label {
+    color: #b64025;
+    font-size: 0.6rem;
+    font-weight: 850;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+  }
+
+  .editorial-book h3 {
+    margin-top: 0.35rem;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+  }
+
+  .editorial-book h3 a:hover { color: #b64025; }
+
+  .editorial-author {
+    margin-top: 0.35rem;
+    overflow: hidden;
+    color: #6b6056;
+    font-size: 0.73rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .editorial-book-bottom {
+    margin-top: 0.85rem;
+    padding-top: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    border-top: 1px solid #d6c6b0;
+  }
+
+  .editorial-book-bottom strong { font-size: 0.9rem; }
+
+  .editorial-book-bottom a {
+    color: #b64025;
+    font-size: 0.7rem;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .editorial-swipe {
+    position: relative;
+    z-index: 2;
+    margin-top: 0.9rem;
+    color: #6c6258;
+    font-size: 0.65rem;
+    font-weight: 750;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  @supports (animation-timeline: view()) {
+    .editorial-book {
+      animation: editorial-card-enter both linear;
+      animation-timeline: view(inline);
+      animation-range: entry 0% cover 28%;
+    }
+
+    @keyframes editorial-card-enter {
+      from { opacity: 0.35; transform: scale(0.94); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  }
+
+  @media (max-width: 740px) {
+    .editorial-shelf-heading {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 1.7rem;
+    }
+
+    .editorial-shelf h2 { max-width: 10ch; }
+    .editorial-shelf-intro { max-width: 36ch; }
+    .editorial-rail { grid-auto-columns: minmax(205px, 66vw); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editorial-cover { transition: none; transform: none; }
+    .editorial-book { animation: none !important; }
   }
 </style>
