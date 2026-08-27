@@ -1,0 +1,133 @@
+name: RADAR WEB V1 deploy
+
+on:
+  push:
+    branches:
+      - radar/web-v1-competition-285
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-web-v1
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Validate shared suite
+        run: bash scripts/validate-ci.sh
+
+      - name: Upload isolated Radar API Worker version
+        working-directory: worker-sync
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@4.107.0 versions upload \
+            --preview-alias radar-api \
+            --keep-vars \
+            --message "RADAR WEB V1 API aislada — no production deploy"
+
+      - name: Smoke real — ventas y competencia, sólo lectura
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          set -euo pipefail
+          API_URL="https://radar-api-amadolibros-sync.undiaes.workers.dev"
+          mkdir -p artifacts/radar-web-v1
+          sleep 8
+
+          SALES=$(curl -sS --max-time 180 -w "\nHTTP_STATUS:%{http_code}" \
+            "$API_URL/dashboard/sales?days=7&pages=1" \
+            -H "Authorization: Bearer $SYNC_SECRET")
+          SALES_STATUS=$(echo "$SALES" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          SALES_BODY=$(echo "$SALES" | sed '/HTTP_STATUS:/d')
+          echo "$SALES_BODY" > artifacts/radar-web-v1/sales.json
+          echo "Sales HTTP: $SALES_STATUS"
+          echo "$SALES_BODY" | node -e '
+            let s=""; process.stdin.on("data",c=>s+=c); process.stdin.on("end",()=>{
+              const x=JSON.parse(s);
+              if(x.writes_to_ml!==false) throw new Error("sales no confirmó writes_to_ml=false");
+              if(x.pii_persisted!==false) throw new Error("sales no confirmó pii_persisted=false");
+              if(!Array.isArray(x.sample)) throw new Error("sales sample inválido");
+              console.log(`SALES_OK orders=${x.orders_observed} rows=${x.item_rows} partial=${x.partial}`);
+            });
+          '
+          [ "$SALES_STATUS" = "200" ]
+
+          : > artifacts/radar-web-v1/competition.ndjson
+          for MLU in MLU631885765 MLU1472001988 MLU1029309702 MLU1069010642 MLU646433323; do
+            COMP=$(curl -sS --max-time 120 -w "\nHTTP_STATUS:%{http_code}" \
+              "$API_URL/dashboard/competition?item_id=$MLU" \
+              -H "Authorization: Bearer $SYNC_SECRET")
+            COMP_STATUS=$(echo "$COMP" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+            COMP_BODY=$(echo "$COMP" | sed '/HTTP_STATUS:/d')
+            echo "$COMP_BODY" >> artifacts/radar-web-v1/competition.ndjson
+            echo "Competition $MLU HTTP: $COMP_STATUS"
+            if [ "$COMP_STATUS" = "200" ]; then
+              echo "$COMP_BODY" | node -e '
+                let s=""; process.stdin.on("data",c=>s+=c); process.stdin.on("end",()=>{
+                  const x=JSON.parse(s);
+                  if(x.writes_to_ml!==false) throw new Error("competition no confirmó writes_to_ml=false");
+                  if(!Array.isArray(x.excluded_fields)||!x.excluded_fields.includes("competitor_stock")||!x.excluded_fields.includes("competitor_shipping")) throw new Error("campos excluidos no confirmados");
+                  console.log(`COMP_OK ${x.item_id} own=${x.own_price} benchmark=${x.benchmark_price} gap=${x.gap_percent} action=${x.recommendation}`);
+                });
+              '
+            fi
+          done
+
+      - name: Deploy Radar on existing Cloudflare Pages project
+        id: pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          OUTPUT=$(npx wrangler@4.107.0 pages deploy ./radar-web/public \
+            --project-name amadolibros-web \
+            --branch radar-amado \
+            --commit-dirty=true)
+          echo "$OUTPUT"
+          RADAR_URL=$(echo "$OUTPUT" | sed -n 's/.*Deployment alias URL: \(https:\/\/[^[:space:]]*\.pages\.dev\).*/\1/p' | tail -1)
+          if [ -z "$RADAR_URL" ]; then
+            RADAR_URL=$(echo "$OUTPUT" | grep -Eo 'https://[^[:space:]]+\.pages\.dev' | tail -1)
+          fi
+          if [ -z "$RADAR_URL" ]; then
+            echo "ERROR: Wrangler no devolvió URL de Radar Pages."
+            exit 1
+          fi
+          echo "radar_url=$RADAR_URL" >> "$GITHUB_OUTPUT"
+          echo "RADAR_URL=$RADAR_URL"
+
+      - name: Verify private gate
+        env:
+          RADAR_URL: ${{ steps.pages.outputs.radar_url }}
+        run: |
+          sleep 8
+          CODE=$(curl -sS -o /tmp/radar-body -w '%{http_code}' --max-time 30 "$RADAR_URL/")
+          echo "Unauthenticated HTTP: $CODE"
+          if [ "$CODE" != "401" ]; then
+            echo "ERROR: Radar debe responder 401 sin credenciales."
+            cat /tmp/radar-body
+            exit 1
+          fi
+          echo "$RADAR_URL" > artifacts/radar-web-v1/pages-url.txt
+
+      - name: Upload Radar smoke artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-web-v1-${{ github.run_number }}
+          path: artifacts/radar-web-v1/
+          if-no-files-found: error
+          retention-days: 30
