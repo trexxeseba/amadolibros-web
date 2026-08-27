@@ -1,12 +1,12 @@
 ---
-// HOME-ARTE-2: hero compacto mobile-first; no agregar imágenes hasta medir LCP.
-import CategoryAccess from './CategoryAccess.astro';
+// Hero mobile-first enfocado en dos pasos: buscar en catálogo y, si no está,
+// iniciar una búsqueda humana por encargo. Sin imágenes para proteger LCP.
 ---
 
 <section class="hero-shell">
   <div class="hero">
     <div class="hero-content">
-      <p class="hero-kicker">Libros importados y búsquedas por encargo</p>
+      <p class="hero-kicker">Libros importados · búsqueda personal</p>
 
       <h1 class="hero-h1">
         Libros difíciles de encontrar.
@@ -14,7 +14,7 @@ import CategoryAccess from './CategoryAccess.astro';
       </h1>
 
       <p class="hero-lead">
-        Buscá en nuestro catálogo. Tenemos títulos importados disponibles en Uruguay. Si no aparece, revisamos opciones para ayudarte a encontrarlo, incluidas ediciones agotadas o descatalogadas.
+        Buscá entre nuestros libros disponibles. Si el que querés no aparece, lo buscamos por encargo, personalmente.
       </p>
 
       <form class="hero-search" action="/catalogo" method="get" role="search">
@@ -33,25 +33,22 @@ import CategoryAccess from './CategoryAccess.astro';
           autocomplete="off"
           enterkeyhint="search"
         >
-        <button type="submit">Buscar libro</button>
+        <button type="submit">Buscar</button>
       </form>
 
       <a class="hero-request" href="/pedir-libro/?tipo=exacto">
         <span class="hero-request-copy">
-          <strong>¿No aparece en el catálogo?</strong>
-          <small>La búsqueda por encargo la revisamos personalmente.</small>
+          <strong>¿No encontraste el libro que buscás?</strong>
+          <small>Contanos cuál es. Revisamos personalmente dónde conseguirlo, incluso si está agotado o descatalogado.</small>
         </span>
-        <span class="hero-request-action">Pedir una búsqueda →</span>
+        <span class="hero-request-action">Contanos qué libro buscás →</span>
       </a>
 
       <ul class="hero-benefits" aria-label="Beneficios de compra">
         <li>Hasta 12 cuotas con Mercado Pago</li>
         <li>12% menos por transferencia</li>
-        <li>Entrega coordinada en Montevideo</li>
       </ul>
     </div>
-
-    <CategoryAccess />
   </div>
 </section>
 
@@ -84,12 +81,13 @@ import CategoryAccess from './CategoryAccess.astro';
   .hero {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 1rem 1.8rem;
+    padding: 0 1rem;
   }
 
   .hero-content {
-    max-width: 760px;
-    padding: 1.65rem 0.25rem 2rem;
+    width: min(100%, 900px);
+    margin: 0 auto;
+    padding: 1.7rem 0.25rem 2rem;
   }
 
   .hero-kicker {
@@ -103,10 +101,10 @@ import CategoryAccess from './CategoryAccess.astro';
   }
 
   .hero-h1 {
-    max-width: 14ch;
+    max-width: 16ch;
     color: var(--ink);
     font-family: var(--font-display);
-    font-size: clamp(2.125rem, 9vw, 2.4rem);
+    font-size: clamp(2.05rem, 8.8vw, 2.35rem);
     font-weight: 600;
     letter-spacing: -0.01em;
     line-height: 1.08;
@@ -120,10 +118,10 @@ import CategoryAccess from './CategoryAccess.astro';
   }
 
   .hero-lead {
-    max-width: 52ch;
+    max-width: 58ch;
     margin-top: 0.9rem;
     color: var(--ink-2);
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     line-height: 1.5;
   }
 
@@ -132,7 +130,7 @@ import CategoryAccess from './CategoryAccess.astro';
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.55rem;
-    width: 100%;
+    width: min(100%, 760px);
     margin-top: 1rem;
     padding: 0.35rem;
     padding-left: 0.85rem;
@@ -164,12 +162,12 @@ import CategoryAccess from './CategoryAccess.astro';
 
   .hero-search button {
     min-height: 44px;
-    padding: 0.7rem 1rem;
+    padding: 0.7rem 1.1rem;
     border: 0;
     border-radius: 0.35rem;
     background: var(--salmon);
     color: #fff;
-    font: 750 0.82rem/1 var(--font-ui);
+    font: 750 0.84rem/1 var(--font-ui);
     cursor: pointer;
     white-space: nowrap;
   }
@@ -180,19 +178,21 @@ import CategoryAccess from './CategoryAccess.astro';
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 0.75rem;
-    margin-top: 0.65rem;
-    padding: 0.75rem 0.85rem;
+    gap: 1rem;
+    width: min(100%, 760px);
+    margin-top: 0.7rem;
+    padding: 0.9rem 1rem;
     border: 1px solid #d9c6ba;
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.42);
+    border-left: 3px solid var(--salmon);
+    border-radius: 0.55rem;
+    background: rgba(255, 255, 255, 0.55);
     color: var(--ink);
     text-decoration: none;
   }
 
   .hero-request:hover {
     border-color: var(--salmon);
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.82);
   }
 
   .hero-request-copy strong,
@@ -201,20 +201,21 @@ import CategoryAccess from './CategoryAccess.astro';
   }
 
   .hero-request-copy strong {
-    font-size: 0.78rem;
+    font-size: 0.84rem;
     line-height: 1.25;
   }
 
   .hero-request-copy small {
-    margin-top: 0.12rem;
+    max-width: 58ch;
+    margin-top: 0.18rem;
     color: var(--ink-2);
-    font-size: 0.68rem;
-    line-height: 1.3;
+    font-size: 0.72rem;
+    line-height: 1.35;
   }
 
   .hero-request-action {
     color: var(--salmon-hover);
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     font-weight: 850;
     line-height: 1.2;
     text-align: right;
@@ -230,17 +231,22 @@ import CategoryAccess from './CategoryAccess.astro';
   }
 
   .hero-benefits li {
-    padding: 0.36rem 0.5rem;
+    padding: 0.36rem 0.52rem;
     border: 1px solid var(--border);
     border-radius: 0.35rem;
     background: rgba(255, 255, 255, 0.45);
     color: var(--ink-2);
-    font-size: 0.64rem;
+    font-size: 0.65rem;
     font-weight: 700;
     line-height: 1.2;
   }
 
   @media (max-width: 430px) {
+    .hero-content {
+      padding-top: 1.4rem;
+      padding-bottom: 1.55rem;
+    }
+
     .hero-search {
       grid-template-columns: auto minmax(0, 1fr);
       padding: 0.45rem 0.65rem;
@@ -253,7 +259,8 @@ import CategoryAccess from './CategoryAccess.astro';
 
     .hero-request {
       grid-template-columns: 1fr;
-      gap: 0.35rem;
+      gap: 0.45rem;
+      padding: 0.8rem 0.85rem;
     }
 
     .hero-request-action { text-align: left; }
@@ -266,165 +273,44 @@ import CategoryAccess from './CategoryAccess.astro';
     }
 
     .hero-content {
-      padding-top: 2.8rem;
-      padding-bottom: 2.6rem;
+      padding-top: 2.65rem;
+      padding-bottom: 2.55rem;
     }
 
     .hero-kicker { font-size: 0.72rem; }
 
     .hero-h1 {
       max-width: 16ch;
-      font-size: clamp(2.75rem, 5vw, 3.35rem);
+      font-size: clamp(2.7rem, 4.8vw, 3.15rem);
       letter-spacing: -0.015em;
       line-height: 1.04;
     }
 
     .hero-lead {
-      margin-top: 1.1rem;
+      margin-top: 1.05rem;
       font-size: 1rem;
     }
 
-    .hero-search { margin-top: 1.25rem; }
-    .hero-search button { padding-right: 1.35rem; padding-left: 1.35rem; font-size: 0.9rem; }
+    .hero-search { margin-top: 1.2rem; }
+    .hero-search button { padding-right: 1.3rem; padding-left: 1.3rem; font-size: 0.88rem; }
 
-    .hero-request-copy strong { font-size: 0.85rem; }
-    .hero-request-copy small { font-size: 0.72rem; }
-    .hero-request-action { font-size: 0.76rem; }
-  }
-
-  @media (min-width: 980px) {
-    .hero-content {
-      max-width: 920px;
-      padding-top: 3.1rem;
-      padding-bottom: 3rem;
-    }
-
-    .hero-h1 { max-width: 16ch; }
-    .hero-lead { max-width: 58ch; }
-    .hero-search,
-    .hero-request { max-width: 720px; }
+    .hero-request-copy strong { font-size: 0.9rem; }
+    .hero-request-copy small { font-size: 0.76rem; }
+    .hero-request-action { font-size: 0.78rem; }
   }
 
   @media (min-width: 1100px) {
-    .hero {
-      padding-right: 2.5rem;
-      padding-left: 2.5rem;
-    }
-
     .hero-content {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 350px;
-      grid-template-rows: auto auto auto auto;
-      column-gap: 4rem;
-      max-width: none;
-      padding-top: 3.4rem;
-      padding-bottom: 3.1rem;
-      align-items: start;
-    }
-
-    .hero-kicker {
-      grid-column: 1;
-      grid-row: 1;
-      margin-bottom: 0.7rem;
+      width: min(100%, 960px);
+      padding-top: 3rem;
+      padding-bottom: 2.8rem;
     }
 
     .hero-h1 {
-      grid-column: 1;
-      grid-row: 2;
-      max-width: none;
-      font-size: 3.25rem;
-      line-height: 1.02;
+      max-width: 18ch;
+      font-size: 3.15rem;
     }
 
-    .hero-lead {
-      grid-column: 1;
-      grid-row: 3;
-      max-width: 60ch;
-      margin-top: 1.15rem;
-    }
-
-    .hero-search {
-      grid-column: 1;
-      grid-row: 4;
-      max-width: none;
-      margin-top: 1.35rem;
-    }
-
-    .hero-request {
-      grid-column: 2;
-      grid-row: 2 / span 2;
-      display: block;
-      align-self: stretch;
-      max-width: none;
-      margin: 0.15rem 0 0;
-      padding: 1.5rem 1.4rem 1.4rem;
-      border: 1px solid var(--border);
-      border-top: 3px solid var(--salmon);
-      border-radius: 0.75rem;
-      background: var(--surface);
-      box-shadow: 0 12px 30px rgba(31, 27, 24, 0.06);
-    }
-
-    .hero-request:hover {
-      background: var(--surface);
-      box-shadow: 0 15px 34px rgba(31, 27, 24, 0.09);
-    }
-
-    .hero-request-copy strong {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.015em;
-      line-height: 1.08;
-    }
-
-    .hero-request-copy small {
-      margin-top: 0.65rem;
-      font-size: 0.82rem;
-      line-height: 1.5;
-    }
-
-    .hero-request-action {
-      display: inline-flex;
-      margin-top: 1.1rem;
-      padding: 0.7rem 0.9rem;
-      border-radius: 0.4rem;
-      background: var(--salmon);
-      color: #fff;
-      font-size: 0.8rem;
-      text-align: left;
-    }
-
-    .hero-benefits {
-      grid-column: 2;
-      grid-row: 4;
-      display: grid;
-      gap: 0.42rem;
-      margin-top: 1rem;
-    }
-
-    .hero-benefits li {
-      position: relative;
-      padding: 0.25rem 0 0.25rem 1.15rem;
-      border: 0;
-      background: transparent;
-      font-size: 0.69rem;
-      line-height: 1.3;
-    }
-
-    .hero-benefits li::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0.62rem;
-      width: 5px;
-      height: 5px;
-      border-radius: 999px;
-      background: var(--salmon);
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .hero { padding-left: 2rem; padding-right: 2rem; }
+    .hero-lead { max-width: 62ch; }
   }
 </style>
