@@ -104,6 +104,50 @@ export async function getMlSalesSyncState(env) {
   return row || null;
 }
 
+function sameUtcDay(a, b) {
+  const aMs = Date.parse(String(a || ''));
+  const bMs = Date.parse(String(b || ''));
+  if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return false;
+  return new Date(aMs).toISOString().slice(0, 10) === new Date(bMs).toISOString().slice(0, 10);
+}
+
+/**
+ * Cobertura completa significa que la búsqueda de órdenes alcanzó el inicio
+ * de la ventana y llegó hasta el mismo día UTC de `asOf`. La tolerancia del
+ * mismo día evita declarar incompleta una consulta hecha minutos después del
+ * sync, pero `data_through` conserva el timestamp exacto de frescura.
+ */
+export function mlSalesWindowComplete(state, asOf, days) {
+  if (!state || state.last_status !== 'ok') return false;
+  const asMs = Date.parse(String(asOf || ''));
+  const fromMs = Date.parse(String(state.coverage_from || ''));
+  const toMs = Date.parse(String(state.coverage_to || ''));
+  if (![asMs, fromMs, toMs].every(Number.isFinite)) return false;
+  const requiredFrom = asMs - Number(days) * 86400000;
+  return fromMs <= requiredFrom && (toMs >= asMs || sameUtcDay(toMs, asMs));
+}
+
+function numericOrZero(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildWindow(row, state, asOf, days) {
+  const suffix = String(days);
+  const rowsInWindow = numericOrZero(row?.[`rows_${suffix}`]);
+  const complete = mlSalesWindowComplete(state, asOf, days);
+  const hasObservedSales = rowsInWindow > 0;
+  const canReportNumber = complete || hasObservedSales;
+  return {
+    units: canReportNumber ? numericOrZero(row?.[`units_${suffix}`]) : null,
+    orders: canReportNumber ? numericOrZero(row?.[`orders_${suffix}`]) : null,
+    revenue: canReportNumber ? numericOrZero(row?.[`revenue_${suffix}`]) : null,
+    complete,
+    observed_sale_rows: rowsInWindow,
+    data_through: state?.coverage_to || null,
+  };
+}
+
 export async function getMlSalesWindows(env, itemId, {
   asOf = new Date().toISOString(),
 } = {}) {
@@ -114,12 +158,15 @@ export async function getMlSalesWindows(env, itemId, {
       SUM(CASE WHEN julianday(commercial_date) > julianday(?) - 7  THEN quantity ELSE 0 END) AS units_7,
       COUNT(DISTINCT CASE WHEN julianday(commercial_date) > julianday(?) - 7  THEN order_id END) AS orders_7,
       SUM(CASE WHEN julianday(commercial_date) > julianday(?) - 7  THEN unit_price * quantity ELSE 0 END) AS revenue_7,
+      COUNT(CASE WHEN julianday(commercial_date) > julianday(?) - 7 THEN 1 END) AS rows_7,
       SUM(CASE WHEN julianday(commercial_date) > julianday(?) - 30 THEN quantity ELSE 0 END) AS units_30,
       COUNT(DISTINCT CASE WHEN julianday(commercial_date) > julianday(?) - 30 THEN order_id END) AS orders_30,
       SUM(CASE WHEN julianday(commercial_date) > julianday(?) - 30 THEN unit_price * quantity ELSE 0 END) AS revenue_30,
+      COUNT(CASE WHEN julianday(commercial_date) > julianday(?) - 30 THEN 1 END) AS rows_30,
       SUM(CASE WHEN julianday(commercial_date) > julianday(?) - 90 THEN quantity ELSE 0 END) AS units_90,
       COUNT(DISTINCT CASE WHEN julianday(commercial_date) > julianday(?) - 90 THEN order_id END) AS orders_90,
       SUM(CASE WHEN julianday(commercial_date) > julianday(?) - 90 THEN unit_price * quantity ELSE 0 END) AS revenue_90,
+      COUNT(CASE WHEN julianday(commercial_date) > julianday(?) - 90 THEN 1 END) AS rows_90,
       MAX(commercial_date) AS last_sale_at,
       COUNT(*) AS observed_rows
     FROM ml_order_items
@@ -127,9 +174,9 @@ export async function getMlSalesWindows(env, itemId, {
       AND order_status = 'paid'
       AND julianday(commercial_date) <= julianday(?)
   `).bind(
-    asOf, asOf, asOf,
-    asOf, asOf, asOf,
-    asOf, asOf, asOf,
+    asOf, asOf, asOf, asOf,
+    asOf, asOf, asOf, asOf,
+    asOf, asOf, asOf, asOf,
     itemId, asOf,
   ).first();
 
@@ -147,21 +194,9 @@ export async function getMlSalesWindows(env, itemId, {
     as_of: asOf,
     coverage,
     windows: {
-      '7': {
-        units: observedRows || state ? Number(row?.units_7) || 0 : null,
-        orders: observedRows || state ? Number(row?.orders_7) || 0 : null,
-        revenue: observedRows || state ? Number(row?.revenue_7) || 0 : null,
-      },
-      '30': {
-        units: observedRows || state ? Number(row?.units_30) || 0 : null,
-        orders: observedRows || state ? Number(row?.orders_30) || 0 : null,
-        revenue: observedRows || state ? Number(row?.revenue_30) || 0 : null,
-      },
-      '90': {
-        units: observedRows || state ? Number(row?.units_90) || 0 : null,
-        orders: observedRows || state ? Number(row?.orders_90) || 0 : null,
-        revenue: observedRows || state ? Number(row?.revenue_90) || 0 : null,
-      },
+      '7': buildWindow(row, state, asOf, 7),
+      '30': buildWindow(row, state, asOf, 30),
+      '90': buildWindow(row, state, asOf, 90),
     },
     last_sale_at: row?.last_sale_at || null,
     observed_rows: observedRows,
