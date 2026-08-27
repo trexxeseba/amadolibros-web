@@ -138,8 +138,11 @@ async function sha256Hex(value) {
   return [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-async function dashboardUnauthorized(request) {
+async function dashboardUnauthorized(request, env) {
   const header = request.headers.get('Authorization') || '';
+  // Camino interno de CI/diagnóstico: reutiliza el secreto existente y nunca
+  // necesita conocer la contraseña humana del dashboard.
+  if (env?.SYNC_SECRET && header === `Bearer ${env.SYNC_SECRET}`) return false;
   if (!header.startsWith('Basic ')) return true;
   try {
     const decoded = atob(header.slice(6));
@@ -205,7 +208,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/dashboard/')) {
-      if (await dashboardUnauthorized(request)) {
+      if (await dashboardUnauthorized(request, env)) {
         return json({ error: 'Unauthorized.' }, 401, { 'WWW-Authenticate': 'Basic realm="Radar Amado"' });
       }
       try {
