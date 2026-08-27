@@ -5,12 +5,17 @@ const date = value => value ? new Date(value).toLocaleString('es-UY',{dateStyle:
 const esc = value => String(value ?? '').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"})[ch]);
 
 let salesRows=[];
+let activeFilter='all';
 
 async function getJson(url){
   const r=await fetch(url,{cache:'no-store'});
   const data=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(data.error||`HTTP ${r.status}`);
   return data;
+}
+
+function isLowStockSold(row){
+  return row.stock!=null && Number(row.stock)<=2 && Number(row.units)>0;
 }
 
 function stockBadge(stock,status){
@@ -44,6 +49,7 @@ function renderSales(){
   const q=($('#salesSearch')?.value||'').trim().toLowerCase();
   const sort=$('#salesSort')?.value||'units';
   const filtered=salesRows.filter(row=>{
+    if(activeFilter==='low-stock' && !isLowStockSold(row)) return false;
     if(!q) return true;
     return [row.item_id,row.title,row.author,row.isbn].some(v=>String(v||'').toLowerCase().includes(q));
   });
@@ -57,7 +63,7 @@ function renderSales(){
     <td>${date(row.last_sale_at)}</td>
     <td><button class="table-action" data-mlu="${esc(row.item_id)}">Analizar precio</button></td>
   </tr>`).join('');
-  $('#salesBody').innerHTML=rows||'<tr><td colspan="8" class="loading">No hay resultados para esa búsqueda.</td></tr>';
+  $('#salesBody').innerHTML=rows||'<tr><td colspan="8" class="loading">No hay resultados para ese filtro.</td></tr>';
   document.querySelectorAll('[data-mlu]').forEach(btn=>btn.addEventListener('click',()=>{
     const mlu=btn.dataset.mlu;
     $('#mluInput').value=mlu;
@@ -74,10 +80,12 @@ async function loadSales(){
     salesRows=data.sample||[];
     const units=salesRows.reduce((sum,row)=>sum+(Number(row.units)||0),0);
     const revenue=salesRows.reduce((sum,row)=>sum+(Number(row.revenue)||0),0);
+    const lowStock=salesRows.filter(isLowStockSold).length;
     $('#ordersCount').textContent=data.orders_observed ?? '—';
     $('#itemsCount').textContent=salesRows.length;
     $('#unitsCount').textContent=units;
     $('#revenueCount').textContent=money(revenue,'UYU');
+    $('#lowStockCount').textContent=lowStock;
     $('#coverageText').textContent=data.partial?'Parcial':'Completa';
     $('#statusPill').textContent=`Actualizado ${date(data.checked_at)}`;
     $('#salesFoot').textContent=data.partial
@@ -135,4 +143,9 @@ $('#competitionForm').addEventListener('submit',e=>{e.preventDefault();const v=$
 $('#refreshSales').addEventListener('click',loadSales);
 $('#salesSearch').addEventListener('input',renderSales);
 $('#salesSort').addEventListener('change',renderSales);
+document.querySelectorAll('[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{
+  activeFilter=btn.dataset.filter||'all';
+  document.querySelectorAll('[data-filter]').forEach(other=>other.classList.toggle('active',other===btn));
+  renderSales();
+}));
 loadSales();
