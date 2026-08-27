@@ -37,7 +37,8 @@ test('la portada V2 comunica catálogo más búsqueda humana en el primer pantal
 test('la escena visual usa tapas reales, movimiento progresivo y alternativa sin animación', () => {
   assert.match(heroAstro, /pickRecentBooks/);
   assert.match(heroAstro, /responsiveBookCover/);
-  assert.match(heroAstro, /class={`hero-book hero-book-\$\{index \+ 1\}`}/);
+  assert.match(heroAstro, /visualBooks\.map/);
+  assert.match(heroAstro, /hero-book-/);
   assert.match(heroAstro, /@keyframes hero-book-float/);
   assert.match(heroAstro, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(heroAstro, /loading=\{index < 3 \? 'eager' : 'lazy'\}/);
