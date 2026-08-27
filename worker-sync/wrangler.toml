@@ -4,7 +4,9 @@
 # (auth:refresh_token) y R2 bucket (amadolibros-catalog).
 
 name = "amadolibros-sync"
-main = "index.js"
+# RADAR DATA 2: entrada compuesta que delega todo el comportamiento histórico
+# a index.js y añade únicamente rutas/ingesta read-only de ventas ML.
+main = "radar-data-worker.js"
 compatibility_date = "2024-09-23"
 
 # ── Cron: sincronización automática 1 vez por día — 07:15 UTC (04:15 Montevideo)
@@ -36,6 +38,11 @@ ML_CATALOG_GALLERY_PRIORITY_IDS = "MLU63131903"
 COVER_MIRROR_BATCH_SIZE = "100"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 INDEXNOW_ENABLED = "true"
+# RADAR DATA 2 permanece apagado aun si el código se fusionara. Habilitar sólo
+# después de aplicar la migración D1 y validar /sales/verify read-only.
+ML_SALES_SYNC_ENABLED = "false"
+ML_SALES_BACKFILL_DAYS = "90"
+ML_SALES_MAINTENANCE_DAYS = "7"
 # Clave pública verificada por el archivo homónimo en astro-front/public.
 INDEXNOW_KEY = "944e65e97fd0a8c242c495ccf458d3c3"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
@@ -65,7 +72,7 @@ binding = "IMAGES"
 binding = "AMADO_KV"
 id      = "6ea0ff4682d647118442a24fe384abc4"
 
-# D1 productiva: únicamente lee y actualiza solicitudes de aviso de stock.
+# D1 productiva: órdenes web + waitlist + telemetría operativa RADAR.
 [[d1_databases]]
 binding = "ORDERS_DB"
 database_name = "amadolibros-orders-production"
