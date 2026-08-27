@@ -76,11 +76,18 @@ export async function runMlSalesSync(env, { source = 'unknown' } = {}, {
     previousState = await getMlSalesSyncStateFn(env);
     window = salesSyncWindow(startedAt, previousState, env);
     const token = await getAccessTokenFn(env);
+
+    // Backfill: sólo órdenes actualmente pagas, por fecha de cierre comercial.
+    // Mantenimiento: todas las órdenes actualizadas, sin filtrar estado. Así
+    // una cancelación/cambio posterior reescribe su fila y deja de contarse.
+    const queryStatus = window.mode === 'backfill' ? 'paid' : null;
+    const queryDateField = window.mode === 'backfill' ? 'closed' : 'last_updated';
     const fetched = await fetchSellerOrdersFn(token, {
       sellerId,
       dateFrom: window.from,
       dateTo: window.to,
-      status: 'paid',
+      status: queryStatus,
+      dateField: queryDateField,
     });
     const observedAt = now().toISOString();
     const rows = normalizeMlOrderItemsFn(fetched.orders, { observedAt });
@@ -100,6 +107,8 @@ export async function runMlSalesSync(env, { source = 'unknown' } = {}, {
       status: 'ok',
       source,
       mode: window.mode,
+      query_date_field: queryDateField,
+      query_status: queryStatus,
       coverage_from: coverageFrom,
       coverage_to: coverageTo,
       fetched_orders: fetched.orders.length,
@@ -154,6 +163,7 @@ async function verifySalesLive(env, url) {
     dateFrom: isoDaysAgo(now, days),
     dateTo: now.toISOString(),
     status: 'paid',
+    dateField: 'closed',
     maxPages,
   });
   const rows = normalizeMlOrderItems(fetched.orders, { observedAt: now.toISOString() });
