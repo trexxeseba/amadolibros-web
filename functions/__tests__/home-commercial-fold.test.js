@@ -38,34 +38,43 @@ const announcementAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'AnnouncementBar.astro'),
   'utf8',
 );
+const trustStripAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'components', 'TrustStrip.astro'),
+  'utf8',
+);
 const catalogSearchOverlayAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'CatalogSearchOverlay.astro'),
   'utf8',
 );
 
-test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
-  assert.match(heroAstro, /<CategoryAccess \/>/);
+test('el primer pantallazo explica catálogo, búsqueda humana y confianza en ese orden', () => {
+  assert.match(heroAstro, /Libros importados · búsqueda personal/i);
   assert.match(heroAstro, /Título, autor o ISBN/);
   assert.match(heroAstro, /Libros difíciles de encontrar\./);
   assert.match(heroAstro, /Los conseguimos\./);
-  assert.match(heroAstro, /títulos importados disponibles en Uruguay/i);
-  assert.match(heroAstro, /¿No aparece en el catálogo\?/);
-  assert.match(heroAstro, /Pedir una búsqueda/);
-  assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
-  assert.doesNotMatch(heroAstro, /Librería uruguaya · compra online/);
+  assert.match(heroAstro, /Buscá entre nuestros libros disponibles\./i);
+  assert.match(heroAstro, /lo buscamos por encargo, personalmente/i);
+  assert.match(heroAstro, /¿No encontraste el libro que buscás\?/);
+  assert.match(heroAstro, /Revisamos personalmente dónde conseguirlo/i);
+  assert.match(heroAstro, /Contanos qué libro buscás/);
+  assert.doesNotMatch(heroAstro, /<CategoryAccess \/>/);
+  assert.doesNotMatch(heroAstro, /Entrega coordinada en Montevideo/);
   assert.doesNotMatch(headerAstro, /class="brand-sub"/);
-  assert.doesNotMatch(categoryAccessAstro, /Entrá por lo que estás buscando/);
   assert.match(categoryAccessAstro, /Encontrá más rápido tu próxima lectura/);
-  assert.doesNotMatch(heroAstro, /Claro, rápido y con atención personal/);
+  assert.match(trustStripAstro, /Compra segura con Mercado Pago/);
+  assert.ok(homeAstro.indexOf('<Hero />') < homeAstro.indexOf('<TrustStrip />'));
+  assert.ok(homeAstro.indexOf('<TrustStrip />') < homeAstro.indexOf('<CategoryAccess />'));
+  assert.ok(homeAstro.indexOf('<CategoryAccess />') < homeAstro.indexOf('<BestsellerSection />'));
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
 });
 
-test('en 390px el hero mantiene búsqueda y encargo utilizables antes de las categorías', () => {
+test('en 390px el hero mantiene búsqueda y encargo utilizables antes de categorías', () => {
   assert.match(heroAstro, /@media \(max-width: 430px\)/);
   assert.match(heroAstro, /\.hero-search button \{\s*grid-column: 1 \/ -1;\s*width: 100%;/);
   assert.match(heroAstro, /\.hero-request \{\s*grid-template-columns: 1fr;/);
   assert.doesNotMatch(heroAstro, /min-height:\s*calc\(100svh/);
-  assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
+  assert.ok(heroAstro.indexOf('class="hero-search"') < heroAstro.indexOf('class="hero-request"'));
+  assert.ok(homeAstro.indexOf('<Hero />') < homeAstro.indexOf('<CategoryAccess />'));
 });
 
 test('la cinta superior es estática y prioriza el beneficio de envío', () => {
