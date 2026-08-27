@@ -82,7 +82,7 @@ import CategoryAccess from './CategoryAccess.astro';
   }
 
   .hero {
-    max-width: 1240px;
+    max-width: 1280px;
     margin: 0 auto;
     padding: 0 1rem 1.8rem;
   }
@@ -144,7 +144,7 @@ import CategoryAccess from './CategoryAccess.astro';
 
   .hero-search:focus-within {
     border-color: var(--salmon);
-    box-shadow: 0 0 0 4px rgba(228, 153, 130, 0.14);
+    box-shadow: 0 0 0 4px rgba(180, 68, 42, 0.12);
   }
 
   .hero-search-icon { display: flex; color: var(--ink); }
@@ -266,25 +266,25 @@ import CategoryAccess from './CategoryAccess.astro';
     }
 
     .hero-content {
-      padding-top: 3.25rem;
-      padding-bottom: 3rem;
+      padding-top: 2.8rem;
+      padding-bottom: 2.6rem;
     }
 
     .hero-kicker { font-size: 0.72rem; }
 
     .hero-h1 {
-      max-width: 14ch;
-      font-size: clamp(2.75rem, 5.5vw, 3.5rem);
+      max-width: 16ch;
+      font-size: clamp(2.75rem, 5vw, 3.35rem);
       letter-spacing: -0.015em;
-      line-height: 1.05;
+      line-height: 1.04;
     }
 
     .hero-lead {
-      margin-top: 1.2rem;
+      margin-top: 1.1rem;
       font-size: 1rem;
     }
 
-    .hero-search { margin-top: 1.3rem; }
+    .hero-search { margin-top: 1.25rem; }
     .hero-search button { padding-right: 1.35rem; padding-left: 1.35rem; font-size: 0.9rem; }
 
     .hero-request-copy strong { font-size: 0.85rem; }
@@ -295,22 +295,136 @@ import CategoryAccess from './CategoryAccess.astro';
   @media (min-width: 980px) {
     .hero-content {
       max-width: 920px;
-      padding-top: 4rem;
-      padding-bottom: 3.75rem;
+      padding-top: 3.1rem;
+      padding-bottom: 3rem;
     }
 
-    .hero-h1 { max-width: 14ch; }
-
+    .hero-h1 { max-width: 16ch; }
     .hero-lead { max-width: 58ch; }
     .hero-search,
     .hero-request { max-width: 720px; }
   }
 
-  @media (min-width: 1024px) {
-    .hero-h1 { font-size: 3.5rem; }
+  @media (min-width: 1100px) {
+    .hero {
+      padding-right: 2.5rem;
+      padding-left: 2.5rem;
+    }
+
+    .hero-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      grid-template-rows: auto auto auto auto;
+      column-gap: 4rem;
+      max-width: none;
+      padding-top: 3.4rem;
+      padding-bottom: 3.1rem;
+      align-items: start;
+    }
+
+    .hero-kicker {
+      grid-column: 1;
+      grid-row: 1;
+      margin-bottom: 0.7rem;
+    }
+
+    .hero-h1 {
+      grid-column: 1;
+      grid-row: 2;
+      max-width: none;
+      font-size: 3.25rem;
+      line-height: 1.02;
+    }
+
+    .hero-lead {
+      grid-column: 1;
+      grid-row: 3;
+      max-width: 60ch;
+      margin-top: 1.15rem;
+    }
+
+    .hero-search {
+      grid-column: 1;
+      grid-row: 4;
+      max-width: none;
+      margin-top: 1.35rem;
+    }
+
+    .hero-request {
+      grid-column: 2;
+      grid-row: 2 / span 2;
+      display: block;
+      align-self: stretch;
+      max-width: none;
+      margin: 0.15rem 0 0;
+      padding: 1.5rem 1.4rem 1.4rem;
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--salmon);
+      border-radius: 0.75rem;
+      background: var(--surface);
+      box-shadow: 0 12px 30px rgba(31, 27, 24, 0.06);
+    }
+
+    .hero-request:hover {
+      background: var(--surface);
+      box-shadow: 0 15px 34px rgba(31, 27, 24, 0.09);
+    }
+
+    .hero-request-copy strong {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.08;
+    }
+
+    .hero-request-copy small {
+      margin-top: 0.65rem;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .hero-request-action {
+      display: inline-flex;
+      margin-top: 1.1rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 0.4rem;
+      background: var(--salmon);
+      color: #fff;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+
+    .hero-benefits {
+      grid-column: 2;
+      grid-row: 4;
+      display: grid;
+      gap: 0.42rem;
+      margin-top: 1rem;
+    }
+
+    .hero-benefits li {
+      position: relative;
+      padding: 0.25rem 0 0.25rem 1.15rem;
+      border: 0;
+      background: transparent;
+      font-size: 0.69rem;
+      line-height: 1.3;
+    }
+
+    .hero-benefits li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.62rem;
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--salmon);
+    }
   }
 
   @media (min-width: 1200px) {
-    .hero { padding-left: 0; padding-right: 0; }
+    .hero { padding-left: 2rem; padding-right: 2rem; }
   }
 </style>
