@@ -1,8 +1,6 @@
-// Contrato del primer pantallazo comercial de la portada.
-//
-// Hero.astro no se puede importar directamente con node --test. Estas pruebas
-// estructurales fijan el mensaje comercial aprobado y el CTA guiado sin
-// depender de un navegador ni de servicios externos.
+// Contrato del primer pantallazo comercial y editorial de la portada V2.
+// Estas pruebas son estructurales: fijan mensaje, rutas, jerarquía mobile y
+// guardrails de movimiento sin depender de navegador ni servicios externos.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,96 +8,120 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const heroAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'Hero.astro'),
-  'utf8',
-);
-const commercialAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'CommercialBenefits.astro'),
-  'utf8',
-);
-const homeAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'pages', 'index.astro'),
-  'utf8',
-);
-const headerAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'Header.astro'),
-  'utf8',
-);
-const bookCardAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'BookCard.astro'),
-  'utf8',
-);
-const categoryAccessAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'CategoryAccess.astro'),
-  'utf8',
-);
-const announcementAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'AnnouncementBar.astro'),
-  'utf8',
-);
-const catalogSearchOverlayAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'CatalogSearchOverlay.astro'),
-  'utf8',
-);
+const read = relativePath => readFileSync(path.join(ROOT, relativePath), 'utf8');
 
-test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
-  assert.match(heroAstro, /<CategoryAccess \/>/);
-  assert.match(heroAstro, /Título, autor o ISBN/);
+const heroAstro = read('astro-front/src/components/Hero.astro');
+const commercialAstro = read('astro-front/src/components/CommercialBenefits.astro');
+const homeAstro = read('astro-front/src/pages/index.astro');
+const headerAstro = read('astro-front/src/components/Header.astro');
+const announcementAstro = read('astro-front/src/components/AnnouncementBar.astro');
+const bookCardAstro = read('astro-front/src/components/BookCard.astro');
+const categoryAccessAstro = read('astro-front/src/components/CategoryAccess.astro');
+const catalogSearchOverlayAstro = read('astro-front/src/components/CatalogSearchOverlay.astro');
+const amadoLeeAstro = read('astro-front/src/components/AmadoLee.astro');
+const recentAstro = read('astro-front/src/components/BestsellerSection.astro');
+
+test('la portada V2 comunica catálogo más búsqueda humana en el primer pantallazo', () => {
+  assert.match(heroAstro, /Una librería online con gente detrás/);
   assert.match(heroAstro, /Libros difíciles de encontrar\./);
   assert.match(heroAstro, /Los conseguimos\./);
-  assert.match(heroAstro, /títulos importados disponibles en Uruguay/i);
+  assert.match(heroAstro, /Título, autor o ISBN/);
+  assert.match(heroAstro, /una persona de Amado Libros revisa opciones/i);
   assert.match(heroAstro, /¿No aparece en el catálogo\?/);
   assert.match(heroAstro, /Pedir una búsqueda/);
-  assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
-  assert.doesNotMatch(heroAstro, /Librería uruguaya · compra online/);
-  assert.doesNotMatch(headerAstro, /class="brand-sub"/);
-  assert.doesNotMatch(categoryAccessAstro, /Entrá por lo que estás buscando/);
-  assert.match(categoryAccessAstro, /Encontrá más rápido tu próxima lectura/);
-  assert.doesNotMatch(heroAstro, /Claro, rápido y con atención personal/);
-  assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
+  assert.match(heroAstro, /agotado o descatalogado/);
+  assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.doesNotMatch(heroAstro, /automátic|gratuit/i);
 });
 
-test('en 390px el hero mantiene búsqueda y encargo utilizables antes de las categorías', () => {
-  assert.match(heroAstro, /@media \(max-width: 430px\)/);
+test('la escena visual usa tapas reales, movimiento progresivo y alternativa sin animación', () => {
+  assert.match(heroAstro, /pickRecentBooks/);
+  assert.match(heroAstro, /responsiveBookCover/);
+  assert.match(heroAstro, /class={`hero-book hero-book-\$\{index \+ 1\}`}/);
+  assert.match(heroAstro, /@keyframes hero-book-float/);
+  assert.match(heroAstro, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(heroAstro, /loading=\{index < 3 \? 'eager' : 'lazy'\}/);
+  assert.match(heroAstro, /fetchpriority=\{index === 0 \? 'high' : 'auto'\}/);
+  assert.doesNotMatch(heroAstro, /<video|youtube|vimeo/i);
+});
+
+test('en mobile la búsqueda y el encargo siguen antes de la escena de tapas', () => {
+  assert.match(heroAstro, /@media \(max-width: 620px\)/);
   assert.match(heroAstro, /\.hero-search button \{\s*grid-column: 1 \/ -1;\s*width: 100%;/);
-  assert.match(heroAstro, /\.hero-request \{\s*grid-template-columns: 1fr;/);
+  assert.match(heroAstro, /\.hero-request \{\s*grid-template-columns: auto minmax\(0, 1fr\);/);
+  assert.ok(heroAstro.indexOf('<div class="hero-copy">') < heroAstro.indexOf('<div class="hero-visual"'));
   assert.doesNotMatch(heroAstro, /min-height:\s*calc\(100svh/);
-  assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
 });
 
-test('la cinta superior es estática y prioriza el beneficio de envío', () => {
-  const visibleAnnouncement = announcementAstro.match(/<aside[\s\S]*?<\/aside>/)?.[0] || '';
-
-  assert.match(headerAstro, /<AnnouncementBar \/>/);
-  assert.match(visibleAnnouncement, /Envío gratis desde \$1\.500/);
-  assert.doesNotMatch(visibleAnnouncement, /Hasta 12 cuotas|12% menos por transferencia|Entrega coordinada/);
-  assert.doesNotMatch(announcementAstro, /<script\b|animation:/i);
-  assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
-});
-
-test('el header de portada queda compacto y reserva la búsqueda principal para el hero', () => {
-  assert.match(headerAstro, /logo-amado\.webp/);
-  assert.match(headerAstro, /showSearch = true/);
-  assert.match(headerAstro, /\{showSearch && \(/);
+test('la cabecera de home ofrece navegación editorial y grilla horizontal de temas', () => {
   assert.match(homeAstro, /<Header showSearch=\{false\} \/>/);
-  assert.match(headerAstro, /height: 56px/);
-  assert.doesNotMatch(headerAstro, /Bienvenido a Amado Libros/);
-  assert.doesNotMatch(headerAstro, /amado-cat-reading-lounge|amado-cat-reading-seated|amado-cat-welcome/);
+  assert.match(headerAstro, /const homeMode = !showSearch/);
+  assert.match(headerAstro, /<AnnouncementBar editorial=\{homeMode\} \/>/);
+  for (const label of ['Libros', 'Temas', 'Recomendados', 'Ideas', 'Pedir un libro', 'Nosotros']) {
+    assert.match(headerAstro, new RegExp(label));
+  }
+  for (const label of ['Literatura', 'Psicología', 'Medicina', 'Infantiles', 'Tarot y oráculos', 'Biblias', 'Idiomas']) {
+    assert.match(headerAstro, new RegExp(label));
+  }
+  assert.match(headerAstro, /<details class="editorial-menu">/);
+  assert.match(headerAstro, /class="subject-strip"/);
 });
 
-test('una portada de origen ausente no deja una imagen rota en la vidriera', () => {
+test('la cinta editorial combina beneficios reales sin alterar la barra interna', () => {
+  assert.match(announcementAstro, /editorial \?/);
+  assert.match(announcementAstro, /Envío gratis desde \$1\.500/);
+  assert.match(announcementAstro, /Envíos en el día en Montevideo/);
+  assert.match(announcementAstro, /Libros importados y búsquedas por encargo/);
+  assert.match(announcementAstro, /@keyframes amado-editorial-ticker/);
+  assert.match(announcementAstro, /prefers-reduced-motion/);
+  assert.match(announcementAstro, /aria-label="Beneficio de envío"/);
+});
+
+test('libros, temas e ideas forman el primer recorrido editorial', () => {
+  const heroPosition = homeAstro.indexOf('<Hero />');
+  const booksPosition = homeAstro.indexOf('<BestsellerSection />');
+  const topicsPosition = homeAstro.indexOf('<CategoryAccess />');
+  const ideasPosition = homeAstro.indexOf('<AmadoLee />');
+
+  assert.ok(heroPosition >= 0);
+  assert.ok(booksPosition > heroPosition);
+  assert.ok(topicsPosition > booksPosition);
+  assert.ok(ideasPosition > topicsPosition);
+  assert.match(homeAstro, /id="temas"/);
+  assert.match(categoryAccessAstro, /Encontrá más rápido tu próxima lectura/);
+});
+
+test('la selección reciente muestra tapas grandes con precio y enlace a ficha', () => {
+  assert.match(recentAstro, /Libros que acaban de llegar/);
+  assert.match(recentAstro, /class="editorial-rail"/);
+  assert.match(recentAstro, /responsiveBookCover/);
+  assert.match(recentAstro, /displayPrice/);
+  assert.match(recentAstro, /Ver libro/);
+  assert.match(recentAstro, /scroll-snap-type: x mandatory/);
+});
+
+test('Amado Lee usa contenido propio y enlaza guías existentes', () => {
+  assert.match(amadoLeeAstro, />Amado Lee</);
+  assert.match(amadoLeeAstro, /\/como-identificar-edicion-correcta-isbn/);
+  assert.match(amadoLeeAstro, /\/libros-agotados-importados-uruguay/);
+  assert.match(amadoLeeAstro, /\/quienes-somos/);
+  assert.match(amadoLeeAstro, /siempre enlazamos al artículo original/);
+  assert.doesNotMatch(amadoLeeAstro, /Letras Libres|El País|Babelia/);
+});
+
+test('una portada de origen ausente no deja una imagen rota', () => {
   assert.match(bookCardAstro, /this\.src='\/images\/logo-amado\.webp'/);
   assert.match(bookCardAstro, /bc-img-fallback/);
+  assert.match(heroAstro, /this\.src='\/images\/logo-amado\.webp'/);
+  assert.match(recentAstro, /this\.src='\/images\/logo-amado\.webp'/);
 });
 
-test('el buscador del hero abre una superficie blanca amplia con el texto preservado', () => {
+test('el buscador del hero conserva la superficie expandida existente', () => {
   assert.match(heroAstro, /amado:openCatalogSearch/);
   assert.match(heroAstro, /detail: \{ query: input\.value\.trim\(\) \}/);
   assert.match(catalogSearchOverlayAstro, /max-width: 820px/);
   assert.match(catalogSearchOverlayAstro, /¿Qué libro estás buscando\?/);
   assert.match(catalogSearchOverlayAstro, /typeof event\.detail\.query === 'string'/);
-  assert.match(catalogSearchOverlayAstro, /@media \(max-width: 599px\)/);
 });
 
 test('el bloque comercial conserva beneficios con condiciones explícitas', () => {
@@ -110,14 +132,4 @@ test('el bloque comercial conserva beneficios con condiciones explícitas', () =
   assert.match(commercialAstro, /Cuando corresponda para ese producto/);
   assert.match(commercialAstro, /Libros por encargo/);
   assert.doesNotMatch(commercialAstro, /cuotas sin interés|cuotas sin recargo/i);
-});
-
-test('los CTA de encargos inician el formulario guiado y explican el servicio', () => {
-  assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
-  assert.match(commercialAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
-  assert.match(commercialAstro, /Buscamos agotados, importados y ediciones difíciles/i);
-  assert.match(commercialAstro, />\s*Contanos qué libro buscás\s*</);
-  assert.match(commercialAstro, /href="\/libros-agotados-importados-uruguay"/);
-  assert.match(commercialAstro, /Cómo funciona nuestro servicio de encargos/);
-  assert.doesNotMatch(`${heroAstro}\n${commercialAstro}`, /https:\/\/wa\.me/);
 });
