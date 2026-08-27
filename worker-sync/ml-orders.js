@@ -10,6 +10,7 @@ import { createSyncRetryBudget, mlGet } from './meli-catalog.js';
 
 export const DEFAULT_ORDER_PAGE_LIMIT = 50;
 export const DEFAULT_MAX_ORDER_PAGES = 200;
+const DATE_FIELDS = new Set(['closed', 'last_updated', 'created']);
 
 function normalizedIso(value) {
   if (value instanceof Date) return value.toISOString();
@@ -23,20 +24,22 @@ export function buildSellerOrdersUrl({
   dateFrom,
   dateTo,
   status = 'paid',
+  dateField = 'closed',
   offset = 0,
   limit = DEFAULT_ORDER_PAGE_LIMIT,
 } = {}) {
   if (!sellerId) throw new Error('[ML sales] sellerId es requerido.');
   if (!dateFrom || !dateTo) throw new Error('[ML sales] dateFrom y dateTo son requeridos.');
+  if (!DATE_FIELDS.has(dateField)) throw new Error(`[ML sales] dateField inválido: ${dateField}`);
   const params = new URLSearchParams({
     seller: String(sellerId),
-    'order.status': String(status),
-    'order.date_closed.from': normalizedIso(dateFrom),
-    'order.date_closed.to': normalizedIso(dateTo),
+    [`order.date_${dateField}.from`]: normalizedIso(dateFrom),
+    [`order.date_${dateField}.to`]: normalizedIso(dateTo),
     sort: 'date_desc',
     offset: String(Math.max(0, Number(offset) || 0)),
     limit: String(Math.min(50, Math.max(1, Number(limit) || DEFAULT_ORDER_PAGE_LIMIT))),
   });
+  if (status) params.set('order.status', String(status));
   return `https://api.mercadolibre.com/orders/search?${params.toString()}`;
 }
 
@@ -55,6 +58,7 @@ export async function fetchSellerOrders(accessToken, {
   dateFrom,
   dateTo,
   status = 'paid',
+  dateField = 'closed',
   limit = DEFAULT_ORDER_PAGE_LIMIT,
   maxPages = DEFAULT_MAX_ORDER_PAGES,
   retryBudget = createSyncRetryBudget(),
@@ -71,6 +75,7 @@ export async function fetchSellerOrders(accessToken, {
       dateFrom,
       dateTo,
       status,
+      dateField,
       offset,
       limit,
       retryBudget,
@@ -113,6 +118,10 @@ function finiteMoney(value) {
  * Convierte órdenes a filas por order_id/item_id. Si una orden repite el
  * mismo item_id, agrega cantidades y calcula precio unitario ponderado para
  * conservar la clave idempotente (order_id, item_id).
+ *
+ * También normaliza órdenes que ya no estén `paid`: el mantenimiento consulta
+ * por `date_last_updated` sin filtro de estado para que una cancelación/cambio
+ * posterior reemplace la fila anterior y deje de contarse en los agregados.
  */
 export function normalizeMlOrderItems(orders, { observedAt = new Date().toISOString() } = {}) {
   const rows = new Map();
@@ -178,6 +187,7 @@ export function normalizeMlOrderItems(orders, { observedAt = new Date().toISOStr
 export function summarizeNormalizedSales(rows) {
   const byItem = new Map();
   for (const row of rows || []) {
+    if (row.order_status && row.order_status !== 'paid') continue;
     const current = byItem.get(row.item_id) || { item_id: row.item_id, units: 0, revenue: 0, last_sale_at: null };
     current.units += Number(row.quantity) || 0;
     current.revenue += (Number(row.unit_price) || 0) * (Number(row.quantity) || 0);
