@@ -48,8 +48,9 @@ test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comerc
   assert.match(heroAstro, /Título, autor o ISBN/);
   assert.match(heroAstro, /Libros difíciles de encontrar\./);
   assert.match(heroAstro, /Los conseguimos\./);
-  assert.match(heroAstro, /Miles de títulos importados disponibles en Uruguay/);
-  assert.match(heroAstro, /¿No aparece\?/);
+  assert.match(heroAstro, /títulos importados disponibles en Uruguay/i);
+  assert.match(heroAstro, /¿No aparece en el catálogo\?/);
+  assert.match(heroAstro, /Pedir una búsqueda/);
   assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
   assert.doesNotMatch(heroAstro, /Librería uruguaya · compra online/);
   assert.doesNotMatch(headerAstro, /class="brand-sub"/);
@@ -59,30 +60,32 @@ test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comerc
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
 });
 
-test('en 390px el hero ocupa el primer pantallazo antes de las categorías', () => {
+test('en 390px el hero mantiene búsqueda y encargo utilizables antes de las categorías', () => {
   assert.match(heroAstro, /@media \(max-width: 430px\)/);
-  assert.match(heroAstro, /min-height: calc\(100svh - 108px\)/);
+  assert.match(heroAstro, /\.hero-search button \{\s*grid-column: 1 \/ -1;\s*width: 100%;/);
+  assert.match(heroAstro, /\.hero-request \{\s*grid-template-columns: 1fr;/);
+  assert.doesNotMatch(heroAstro, /min-height:\s*calc\(100svh/);
   assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
 });
 
-test('la cinta superior muestra los cuatro beneficios comerciales aprobados', () => {
+test('la cinta superior es estática y prioriza el beneficio de envío', () => {
+  const visibleAnnouncement = announcementAstro.match(/<aside[\s\S]*?<\/aside>/)?.[0] || '';
+
   assert.match(headerAstro, /<AnnouncementBar \/>/);
-  assert.match(announcementAstro, /Hasta 12 cuotas con Mercado Pago/);
-  assert.match(announcementAstro, /12% menos por transferencia/);
-  assert.match(announcementAstro, /Envío \$250 · gratis desde \$1\.500/);
-  assert.match(announcementAstro, /Entrega coordinada en Montevideo/);
-  assert.match(announcementAstro, /prefers-reduced-motion/);
+  assert.match(visibleAnnouncement, /Envío gratis desde \$1\.500/);
+  assert.doesNotMatch(visibleAnnouncement, /Hasta 12 cuotas|12% menos por transferencia|Entrega coordinada/);
+  assert.doesNotMatch(announcementAstro, /<script\b|animation:/i);
   assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
 });
 
-test('el header de portada recibe con tres gatos sin competir con las acciones', () => {
-  assert.match(headerAstro, /Bienvenido a Amado Libros/);
-  assert.match(headerAstro, /amado-cat-reading-lounge-v1\.webp/);
-  assert.match(headerAstro, /amado-cat-reading-seated-v1\.webp/);
-  assert.match(headerAstro, /amado-cat-welcome-v1\.webp/);
-  assert.match(headerAstro, /!showSearch/);
-  assert.match(headerAstro, /@media \(max-width: 700px\)/);
-  assert.match(headerAstro, /\.header-welcome \{\s*display: none;/);
+test('el header de portada queda compacto y reserva la búsqueda principal para el hero', () => {
+  assert.match(headerAstro, /logo-amado\.webp/);
+  assert.match(headerAstro, /showSearch = true/);
+  assert.match(headerAstro, /\{showSearch && \(/);
+  assert.match(homeAstro, /<Header showSearch=\{false\} \/>/);
+  assert.match(headerAstro, /height: 56px/);
+  assert.doesNotMatch(headerAstro, /Bienvenido a Amado Libros/);
+  assert.doesNotMatch(headerAstro, /amado-cat-reading-lounge|amado-cat-reading-seated|amado-cat-welcome/);
 });
 
 test('una portada de origen ausente no deja una imagen rota en la vidriera', () => {
