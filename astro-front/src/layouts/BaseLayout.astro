@@ -89,16 +89,23 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
   <style is:global>
     /* ── Custom properties ─────────────────────────────────── */
     :root {
-      --bg:            #f8f5ef;
-      --surface:       #ffffff;
-      --ink:           #18120e;
-      --ink-2:         #6b6157;
-      --border:        #e2dbd0;
-      --salmon:        #e49982;
-      --salmon-hover:  #c86f5e;
-      --header-bg:     rgba(18, 14, 11, 0.97);
-      --wa:            #25d366;
-      --wa-hover:      #1db954;
+      /* HOME-ARTE-6 — Ruta A / Mostrador. Una sola fuente de verdad. */
+      --paper:         #FAF6EF;
+      --bg:            var(--paper);
+      --surface:       #FFFFFF;
+      --ink:           #1F1B18;
+      --ink-2:         #5A524B;
+      --border:        #E4DCCF;
+      --action:        #B4442A;
+      --error:         #A3231A;
+      --header-bg:     #1F1B18;
+      --wa:            #25D366;
+
+      /* Alias de compatibilidad: no crean colores nuevos. */
+      --salmon:        var(--action);
+      --salmon-hover:  var(--action);
+      --wa-hover:      var(--wa);
+
       --font-display:  'Playfair Display', Georgia, 'Times New Roman', serif;
       --font-ui:       'Inter', system-ui, -apple-system, sans-serif;
       --r:             0.75rem;
