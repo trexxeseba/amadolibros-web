@@ -1,0 +1,271 @@
+---
+const stories = [
+  {
+    number: '01',
+    eyebrow: 'Guía práctica',
+    title: 'Cómo reconocer la edición correcta de un libro',
+    description: 'ISBN, editorial, año, formato y otros datos que evitan comprar una edición distinta de la que necesitás.',
+    href: '/como-identificar-edicion-correcta-isbn',
+    tone: 'orange',
+  },
+  {
+    number: '02',
+    eyebrow: 'Nuestro oficio',
+    title: 'Qué hacemos cuando un libro no aparece',
+    description: 'Así funciona una búsqueda por encargo y por qué algunas ediciones requieren paciencia, comparación y trabajo humano.',
+    href: '/libros-agotados-importados-uruguay',
+    tone: 'green',
+  },
+  {
+    number: '03',
+    eyebrow: 'Detrás de la librería',
+    title: 'Una librería online con personas detrás',
+    description: 'Amado Libros nació para acercar a Uruguay libros importados, raros y difíciles de conseguir.',
+    href: '/quienes-somos',
+    tone: 'cream',
+  },
+];
+---
+
+<section id="amado-lee" class="amado-lee" aria-labelledby="amado-lee-title">
+  <div class="amado-lee-heading">
+    <div>
+      <p>Ideas, guías y lecturas</p>
+      <h2 id="amado-lee-title">Amado Lee</h2>
+    </div>
+    <p class="amado-lee-intro">
+      Una librería también puede ser un lugar para orientarse, descubrir autores y entender mejor qué libro estamos buscando.
+    </p>
+  </div>
+
+  <div class="amado-lee-grid">
+    {stories.map(story => (
+      <article class={`amado-story amado-story-${story.tone}`}>
+        <a href={story.href} aria-label={`Leer ${story.title}`}>
+          <span class="amado-story-number">{story.number}</span>
+          <span class="amado-story-arrow" aria-hidden="true">↗</span>
+          <div class="amado-story-copy">
+            <p>{story.eyebrow}</p>
+            <h3>{story.title}</h3>
+            <span>{story.description}</span>
+          </div>
+        </a>
+      </article>
+    ))}
+  </div>
+
+  <div class="amado-lee-note">
+    <strong>También recomendamos lecturas de otros medios.</strong>
+    <span>Las comentamos con palabras propias y siempre enlazamos al artículo original.</span>
+  </div>
+</section>
+
+<style>
+  .amado-lee {
+    padding: clamp(3.5rem, 7vw, 7rem) max(1rem, calc((100vw - 1380px) / 2));
+    overflow: hidden;
+    background: #171512;
+    color: #fffaf4;
+  }
+
+  .amado-lee-heading {
+    max-width: 1380px;
+    margin: 0 auto 2rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr);
+    align-items: end;
+    gap: 2rem;
+  }
+
+  .amado-lee-heading > div > p {
+    margin-bottom: 0.45rem;
+    color: #ff8b69;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .amado-lee h2 {
+    font-family: var(--font-display);
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    letter-spacing: -0.065em;
+    line-height: 0.82;
+  }
+
+  .amado-lee-intro {
+    max-width: 45ch;
+    color: rgba(255, 250, 244, 0.66);
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+
+  .amado-lee-grid {
+    max-width: 1380px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.2fr 0.9fr 0.9fr;
+    gap: 0.9rem;
+  }
+
+  .amado-story {
+    min-height: 420px;
+    overflow: hidden;
+    border-radius: 0.55rem;
+  }
+
+  .amado-story a {
+    position: relative;
+    height: 100%;
+    padding: 1.35rem;
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    transition: transform 0.24s ease;
+  }
+
+  .amado-story a::before {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    top: -155px;
+    right: -120px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    opacity: 0.18;
+    transition: transform 0.4s ease;
+  }
+
+  .amado-story a::after {
+    content: 'A';
+    position: absolute;
+    right: -0.04em;
+    bottom: -0.2em;
+    color: currentColor;
+    font-family: var(--font-display);
+    font-size: clamp(11rem, 19vw, 18rem);
+    font-weight: 700;
+    line-height: 0.8;
+    opacity: 0.08;
+    pointer-events: none;
+  }
+
+  .amado-story:hover a { transform: translateY(-5px); }
+  .amado-story:hover a::before { transform: scale(1.18) rotate(16deg); }
+
+  .amado-story-orange { background: #ff6d43; color: #1c1916; }
+  .amado-story-green { background: #3f755c; color: #fffaf4; }
+  .amado-story-cream { background: #f3e7d5; color: #1c1916; }
+
+  .amado-story-number {
+    width: 2.55rem;
+    height: 2.55rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.66rem;
+    font-weight: 900;
+  }
+
+  .amado-story-arrow {
+    position: absolute;
+    top: 1.45rem;
+    right: 1.45rem;
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+
+  .amado-story-copy {
+    position: relative;
+    z-index: 2;
+    max-width: 36ch;
+    margin-top: auto;
+  }
+
+  .amado-story-copy > p {
+    margin-bottom: 0.55rem;
+    font-size: 0.64rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .amado-story h3 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.4vw, 3rem);
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+  }
+
+  .amado-story-copy > span {
+    display: block;
+    margin-top: 0.8rem;
+    max-width: 47ch;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    opacity: 0.78;
+  }
+
+  .amado-lee-note {
+    max-width: 1380px;
+    margin: 1rem auto 0;
+    padding: 1rem 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.45rem;
+    color: rgba(255, 250, 244, 0.72);
+  }
+
+  .amado-lee-note strong {
+    color: #fffaf4;
+    font-size: 0.78rem;
+  }
+
+  .amado-lee-note span {
+    font-size: 0.72rem;
+    text-align: right;
+  }
+
+  @supports (animation-timeline: view()) {
+    .amado-story {
+      animation: amado-story-reveal both ease-out;
+      animation-timeline: view();
+      animation-range: entry 12% cover 36%;
+    }
+
+    .amado-story:nth-child(2) { animation-delay: 80ms; }
+    .amado-story:nth-child(3) { animation-delay: 160ms; }
+
+    @keyframes amado-story-reveal {
+      from { opacity: 0; transform: translateY(38px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+
+  @media (max-width: 900px) {
+    .amado-lee-grid { grid-template-columns: 1fr 1fr; }
+    .amado-story:first-child { grid-column: 1 / -1; }
+    .amado-story { min-height: 340px; }
+  }
+
+  @media (max-width: 650px) {
+    .amado-lee-heading { grid-template-columns: 1fr; gap: 1rem; }
+    .amado-lee h2 { font-size: clamp(3.8rem, 19vw, 6rem); }
+    .amado-lee-grid { grid-template-columns: 1fr; }
+    .amado-story:first-child { grid-column: auto; }
+    .amado-story { min-height: 310px; }
+    .amado-story h3 { font-size: 2.15rem; }
+    .amado-lee-note { align-items: flex-start; flex-direction: column; }
+    .amado-lee-note span { text-align: left; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .amado-story { animation: none !important; }
+    .amado-story a { transition: none; }
+  }
+</style>
