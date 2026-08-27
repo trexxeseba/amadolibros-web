@@ -64,14 +64,22 @@ test('el primer pantallazo prioriza catálogo y búsqueda humana por encargo', (
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
 });
 
-test('la escala del hero respeta 34 px en 375 mobile y 56 px en desktop', () => {
-  assert.match(heroAstro, /@media \(max-width: 430px\)/);
+test('la escala del hero respeta Ruta A en mobile y desktop', () => {
   assert.match(heroAstro, /font-size: clamp\(2\.125rem, 9vw, 2\.4rem\)/);
-  assert.match(heroAstro, /@media \(min-width: 700px\)[\s\S]*?\.hero-h1\s*\{[\s\S]*?font-size:\s*3\.5rem/);
+  assert.match(heroAstro, /font-weight:\s*600/);
+  assert.match(heroAstro, /letter-spacing:\s*-0\.01em/);
+  assert.match(heroAstro, /line-height:\s*1\.08/);
+  assert.match(heroAstro, /@media \(min-width: 700px\)[\s\S]*?\.hero-h1\s*\{[\s\S]*?letter-spacing:\s*-0\.015em;[\s\S]*?line-height:\s*1\.05/);
+  assert.match(heroAstro, /@media \(min-width: 1024px\)[\s\S]*?\.hero-h1\s*\{\s*font-size:\s*3\.5rem/);
   assert.match(heroAstro, /padding: 1\.65rem 0\.25rem 2rem/);
   assert.doesNotMatch(heroAstro, /100svh|100vh/);
   assert.doesNotMatch(heroAstro, /font-size:\s*clamp\(4\.5rem|font-size:\s*5\.4rem/);
   assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
+});
+
+test('el énfasis del titular usa itálica y no color de acción', () => {
+  assert.match(heroAstro, /\.hero-h1 span\s*\{[\s\S]*?color:\s*inherit;[\s\S]*?font-style:\s*italic;[\s\S]*?font-weight:\s*400/);
+  assert.doesNotMatch(heroAstro, /\.hero-h1 span\s*\{[^}]*var\(--salmon(?:-hover)?\)/);
 });
 
 test('el hero conserva visibles los tres beneficios que luego saldrán de la marquesina', () => {
