@@ -9,8 +9,17 @@ const waFloatAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'WAFloat.astro'),
   'utf8',
 );
+const homeAstro = readFileSync(
+  path.join(ROOT, 'astro-front', 'src', 'pages', 'index.astro'),
+  'utf8',
+);
 
-test('HOME-ARTE-3: el WhatsApp flotante reduce su huella visual en mobile', () => {
+test('HOME-ARTE-3: la home saca el WhatsApp flotante del primer viewport', () => {
+  assert.doesNotMatch(homeAstro, /import\s+WAFloat\s+from/);
+  assert.doesNotMatch(homeAstro, /<WAFloat\s*\/>/);
+});
+
+test('HOME-ARTE-3: donde se conserva, el flotante reduce su huella visual', () => {
   assert.match(waFloatAstro, /width:\s*44px/);
   assert.match(waFloatAstro, /height:\s*44px/);
   assert.match(waFloatAstro, /background:\s*var\(--surface\)/);
