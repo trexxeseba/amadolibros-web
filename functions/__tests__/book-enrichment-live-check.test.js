@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  classifyBookEnrichmentCoverage,
   verifyBookEnrichmentFeed,
   verifyBookEnrichmentHtml,
 } from '../../scripts/seo/book-enrichment-live-check.mjs';
@@ -109,4 +110,28 @@ test('Merchant exige cada hecho factual que su generador debe publicar', () => {
   const feed = `<item><g:id>MLU724888358</g:id><g:description>Libro. ISBN 9788490739808.</g:description><g:gtin>9788490739808</g:gtin><g:price>1950 UYU</g:price><g:availability>in stock</g:availability><g:link>x</g:link><g:image_link>y</g:image_link></item>`;
   const failures = verifyBookEnrichmentFeed(feed, factual, factualItem);
   assert.ok(failures.some(failure => failure.startsWith('Merchant no recibió el hecho verificado:')));
+});
+
+test('una edición real sin MLU activo queda como no aplicable y no como fallo', () => {
+  const inactiveEdition = { isbn: '9788434436442' };
+  const catalog = [
+    { id: 'MLU111111111', isbn: inactiveEdition.isbn, status: 'paused', available_quantity: 0 },
+    { id: 'MLU222222222', isbn: '9780000000000', status: 'active', available_quantity: 3 },
+  ];
+  assert.deepEqual(classifyBookEnrichmentCoverage(catalog, inactiveEdition), {
+    status: 'not_applicable',
+    reason: 'no_active_publication',
+    candidates: [],
+  });
+});
+
+test('si reaparece una oferta MLU activa el control estricto se reactiva automáticamente', () => {
+  const edition = { isbn: '9788434436442' };
+  const catalog = [
+    { id: 'MLU333333333', isbn: edition.isbn, status: 'active', available_quantity: 1 },
+  ];
+  const coverage = classifyBookEnrichmentCoverage(catalog, edition);
+  assert.equal(coverage.status, 'pending');
+  assert.equal(coverage.reason, null);
+  assert.deepEqual(coverage.candidates.map(candidate => candidate.id), ['MLU333333333']);
 });
