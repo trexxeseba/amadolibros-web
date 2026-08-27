@@ -1,8 +1,7 @@
-// Contrato del primer pantallazo comercial de la portada.
-//
-// Hero.astro no se puede importar directamente con node --test. Estas pruebas
-// estructurales fijan el mensaje comercial aprobado y el CTA guiado sin
-// depender de un navegador ni de servicios externos.
+// Contratos estructurales de la portada que no pertenecen al hero.
+// HOME-ARTE-1 es dueño de header/barra; HOME-ARTE-2 mantiene su contrato
+// de hero en un archivo separado para que ambos lotes puedan fusionarse sin
+// expectativas cruzadas.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,16 +9,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const heroAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'Hero.astro'),
-  'utf8',
-);
 const commercialAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'CommercialBenefits.astro'),
-  'utf8',
-);
-const homeAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'pages', 'index.astro'),
   'utf8',
 );
 const headerAstro = readFileSync(
@@ -30,73 +21,39 @@ const bookCardAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'BookCard.astro'),
   'utf8',
 );
-const categoryAccessAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'CategoryAccess.astro'),
-  'utf8',
-);
 const announcementAstro = readFileSync(
   path.join(ROOT, 'astro-front', 'src', 'components', 'AnnouncementBar.astro'),
   'utf8',
 );
-const catalogSearchOverlayAstro = readFileSync(
-  path.join(ROOT, 'astro-front', 'src', 'components', 'CatalogSearchOverlay.astro'),
-  'utf8',
-);
 
-test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
-  assert.match(heroAstro, /<CategoryAccess \/>/);
-  assert.match(heroAstro, /Título, autor o ISBN/);
-  assert.match(heroAstro, /Libros difíciles de encontrar\./);
-  assert.match(heroAstro, /Los conseguimos\./);
-  assert.match(heroAstro, /Miles de títulos importados disponibles en Uruguay/);
-  assert.match(heroAstro, /¿No aparece\?/);
-  assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
-  assert.doesNotMatch(heroAstro, /Librería uruguaya · compra online/);
-  assert.doesNotMatch(headerAstro, /class="brand-sub"/);
-  assert.doesNotMatch(categoryAccessAstro, /Entrá por lo que estás buscando/);
-  assert.match(categoryAccessAstro, /Encontrá más rápido tu próxima lectura/);
-  assert.doesNotMatch(heroAstro, /Claro, rápido y con atención personal/);
-  assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
-});
-
-test('en 390px el hero ocupa el primer pantallazo antes de las categorías', () => {
-  assert.match(heroAstro, /@media \(max-width: 430px\)/);
-  assert.match(heroAstro, /min-height: calc\(100svh - 108px\)/);
-  assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
-});
-
-test('la cinta superior muestra los cuatro beneficios comerciales aprobados', () => {
+test('HOME-ARTE-1: la cinta superior prioriza un beneficio fijo y deja documentados los restantes', () => {
   assert.match(headerAstro, /<AnnouncementBar \/>/);
+  assert.match(announcementAstro, /Envío gratis desde \$1\.500/);
   assert.match(announcementAstro, /Hasta 12 cuotas con Mercado Pago/);
   assert.match(announcementAstro, /12% menos por transferencia/);
-  assert.match(announcementAstro, /Envío \$250 · gratis desde \$1\.500/);
   assert.match(announcementAstro, /Entrega coordinada en Montevideo/);
-  assert.match(announcementAstro, /prefers-reduced-motion/);
+  assert.match(announcementAstro, /height: 32px/);
+  assert.match(announcementAstro, /background: #1F1B18/);
+  assert.match(announcementAstro, /color: #FAF6EF/);
+  assert.doesNotMatch(announcementAstro, /@keyframes|animation:/);
   assert.doesNotMatch(announcementAstro, /2 horas|entrega express/i);
 });
 
-test('el header de portada recibe con tres gatos sin competir con las acciones', () => {
-  assert.match(headerAstro, /Bienvenido a Amado Libros/);
-  assert.match(headerAstro, /amado-cat-reading-lounge-v1\.webp/);
-  assert.match(headerAstro, /amado-cat-reading-seated-v1\.webp/);
-  assert.match(headerAstro, /amado-cat-welcome-v1\.webp/);
-  assert.match(headerAstro, /!showSearch/);
-  assert.match(headerAstro, /@media \(max-width: 700px\)/);
-  assert.match(headerAstro, /\.header-welcome \{\s*display: none;/);
+test('HOME-ARTE-1: el header queda reducido a marca y carrito sin decoración ni WhatsApp duplicado', () => {
+  assert.match(headerAstro, /<CartIcon \/>/);
+  assert.match(headerAstro, /height: 56px/);
+  assert.match(headerAstro, /logo-amado\.webp/);
+  assert.doesNotMatch(headerAstro, /Bienvenido a Amado Libros/);
+  assert.doesNotMatch(headerAstro, /amado-cat-reading-lounge-v1\.webp/);
+  assert.doesNotMatch(headerAstro, /amado-cat-reading-seated-v1\.webp/);
+  assert.doesNotMatch(headerAstro, /amado-cat-welcome-v1\.webp/);
+  assert.doesNotMatch(headerAstro, /class="wa-btn"/);
+  assert.doesNotMatch(headerAstro, /whatsappHref|buildWhatsAppMessage/);
 });
 
 test('una portada de origen ausente no deja una imagen rota en la vidriera', () => {
   assert.match(bookCardAstro, /this\.src='\/images\/logo-amado\.webp'/);
   assert.match(bookCardAstro, /bc-img-fallback/);
-});
-
-test('el buscador del hero abre una superficie blanca amplia con el texto preservado', () => {
-  assert.match(heroAstro, /amado:openCatalogSearch/);
-  assert.match(heroAstro, /detail: \{ query: input\.value\.trim\(\) \}/);
-  assert.match(catalogSearchOverlayAstro, /max-width: 820px/);
-  assert.match(catalogSearchOverlayAstro, /¿Qué libro estás buscando\?/);
-  assert.match(catalogSearchOverlayAstro, /typeof event\.detail\.query === 'string'/);
-  assert.match(catalogSearchOverlayAstro, /@media \(max-width: 599px\)/);
 });
 
 test('el bloque comercial conserva beneficios con condiciones explícitas', () => {
@@ -109,12 +66,11 @@ test('el bloque comercial conserva beneficios con condiciones explícitas', () =
   assert.doesNotMatch(commercialAstro, /cuotas sin interés|cuotas sin recargo/i);
 });
 
-test('los CTA de encargos inician el formulario guiado y explican el servicio', () => {
-  assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
+test('el bloque comercial de encargos inicia el formulario y explica el servicio', () => {
   assert.match(commercialAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(commercialAstro, /Buscamos agotados, importados y ediciones difíciles/i);
   assert.match(commercialAstro, />\s*Contanos qué libro buscás\s*</);
   assert.match(commercialAstro, /href="\/libros-agotados-importados-uruguay"/);
   assert.match(commercialAstro, /Cómo funciona nuestro servicio de encargos/);
-  assert.doesNotMatch(`${heroAstro}\n${commercialAstro}`, /https:\/\/wa\.me/);
+  assert.doesNotMatch(commercialAstro, /https:\/\/wa\.me/);
 });
