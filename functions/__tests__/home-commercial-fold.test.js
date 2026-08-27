@@ -43,51 +43,26 @@ const catalogSearchOverlayAstro = readFileSync(
   'utf8',
 );
 
-test('el primer pantallazo prioriza catálogo y búsqueda humana por encargo', () => {
+test('el primer pantallazo prioriza búsqueda y categorías, no el bloque comercial', () => {
   assert.match(heroAstro, /<CategoryAccess \/>/);
-  assert.match(heroAstro, /Libros importados y búsquedas por encargo/);
+  assert.match(heroAstro, /Título, autor o ISBN/);
   assert.match(heroAstro, /Libros difíciles de encontrar\./);
   assert.match(heroAstro, /Los conseguimos\./);
-  assert.match(heroAstro, /Buscá en nuestro catálogo\./);
-  assert.match(heroAstro, /revisamos opciones para ayudarte a encontrarlo/);
-  assert.match(heroAstro, /Título, autor o ISBN/);
-  assert.match(heroAstro, />Buscar libro</);
-  assert.match(heroAstro, /¿No aparece en el catálogo\?/);
-  assert.match(heroAstro, /La búsqueda por encargo la revisamos personalmente\./);
-  assert.match(heroAstro, /Pedir una búsqueda →/);
-  assert.doesNotMatch(heroAstro, /16\.000|16000/);
-  assert.doesNotMatch(heroAstro, /automátic|gratuit/i);
+  assert.match(heroAstro, /Miles de títulos importados disponibles en Uruguay/);
+  assert.match(heroAstro, /¿No aparece\?/);
   assert.doesNotMatch(heroAstro, /Tarot, Biblias y libros difíciles/);
+  assert.doesNotMatch(heroAstro, /Librería uruguaya · compra online/);
   assert.doesNotMatch(headerAstro, /class="brand-sub"/);
   assert.doesNotMatch(categoryAccessAstro, /Entrá por lo que estás buscando/);
   assert.match(categoryAccessAstro, /Encontrá más rápido tu próxima lectura/);
+  assert.doesNotMatch(heroAstro, /Claro, rápido y con atención personal/);
   assert.ok(homeAstro.indexOf('<CommercialBenefits />') > homeAstro.indexOf('<BookDiscovery />'));
 });
 
-test('la escala del hero respeta Ruta A en mobile y desktop', () => {
-  assert.match(heroAstro, /font-size: clamp\(2\.125rem, 9vw, 2\.4rem\)/);
-  assert.match(heroAstro, /font-weight:\s*600/);
-  assert.match(heroAstro, /letter-spacing:\s*-0\.01em/);
-  assert.match(heroAstro, /line-height:\s*1\.08/);
-  assert.match(heroAstro, /@media \(min-width: 700px\)[\s\S]*?\.hero-h1\s*\{[\s\S]*?letter-spacing:\s*-0\.015em;[\s\S]*?line-height:\s*1\.05/);
-  assert.match(heroAstro, /@media \(min-width: 1024px\)[\s\S]*?\.hero-h1\s*\{\s*font-size:\s*3\.5rem/);
-  assert.match(heroAstro, /padding: 1\.65rem 0\.25rem 2rem/);
-  assert.doesNotMatch(heroAstro, /100svh|100vh/);
-  assert.doesNotMatch(heroAstro, /font-size:\s*clamp\(4\.5rem|font-size:\s*5\.4rem/);
+test('en 390px el hero ocupa el primer pantallazo antes de las categorías', () => {
+  assert.match(heroAstro, /@media \(max-width: 430px\)/);
+  assert.match(heroAstro, /min-height: calc\(100svh - 108px\)/);
   assert.ok(heroAstro.indexOf('<div class="hero-content">') < heroAstro.indexOf('<CategoryAccess />'));
-});
-
-test('el énfasis del titular usa itálica y no color de acción', () => {
-  assert.match(heroAstro, /\.hero-h1 span\s*\{[\s\S]*?color:\s*inherit;[\s\S]*?font-style:\s*italic;[\s\S]*?font-weight:\s*400/);
-  assert.doesNotMatch(heroAstro, /\.hero-h1 span\s*\{[^}]*var\(--salmon(?:-hover)?\)/);
-});
-
-test('el hero conserva visibles los tres beneficios que luego saldrán de la marquesina', () => {
-  assert.match(heroAstro, /Hasta 12 cuotas con Mercado Pago/);
-  assert.match(heroAstro, /12% menos por transferencia/);
-  assert.match(heroAstro, /Entrega coordinada en Montevideo/);
-  assert.match(heroAstro, /class="hero-benefits"/);
-  assert.doesNotMatch(heroAstro, /cuotas sin interés|cuotas sin recargo/i);
 });
 
 test('la cinta superior muestra los cuatro beneficios comerciales aprobados', () => {
@@ -136,8 +111,6 @@ test('el bloque comercial conserva beneficios con condiciones explícitas', () =
 
 test('los CTA de encargos inician el formulario guiado y explican el servicio', () => {
   assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
-  assert.match(heroAstro, /Pedir una búsqueda →/);
-  assert.match(heroAstro, /revisamos personalmente/);
   assert.match(commercialAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(commercialAstro, /Buscamos agotados, importados y ediciones difíciles/i);
   assert.match(commercialAstro, />\s*Contanos qué libro buscás\s*</);
