@@ -7,6 +7,7 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = relativePath => readFileSync(path.join(ROOT, relativePath), 'utf8');
 const home = read('astro-front/src/pages/index.astro');
+const hero = read('astro-front/src/components/Hero.astro');
 const discovery = read('astro-front/src/components/BookDiscovery.astro');
 const requestPage = read('astro-front/src/pages/pedir-libro.astro');
 const footer = read('astro-front/src/components/Footer.astro');
@@ -21,17 +22,18 @@ test('la portada incorpora descubrimiento por preguntas mobile-first', () => {
   assert.match(discovery, /@media \(min-width: 980px\)/);
 });
 
-test('la portada prioriza búsqueda con categorías integradas y libros antes del descubrimiento asistido', () => {
+test('la portada prioriza buscador, libros y temas antes del descubrimiento asistido', () => {
   const heroPosition = home.indexOf('<Hero />');
   const booksPosition = home.indexOf('<BestsellerSection />');
+  const topicsPosition = home.indexOf('<CategoryAccess />');
   const discoveryPosition = home.indexOf('<BookDiscovery />');
-  const hero = read('astro-front/src/components/Hero.astro');
 
   assert.ok(heroPosition >= 0, 'falta el buscador principal');
-  assert.match(hero, /import CategoryAccess/);
-  assert.match(hero, /<CategoryAccess \/>/);
-  assert.ok(booksPosition > heroPosition, 'los libros deben seguir al hero de búsqueda y categorías');
-  assert.ok(discoveryPosition > booksPosition, 'las preguntas deben aparecer después de los libros');
+  assert.match(hero, /Título, autor o ISBN/);
+  assert.match(hero, /Pedir una búsqueda/);
+  assert.ok(booksPosition > heroPosition, 'los libros deben seguir al hero');
+  assert.ok(topicsPosition > booksPosition, 'los temas deben seguir a la selección de libros');
+  assert.ok(discoveryPosition > topicsPosition, 'las preguntas deben aparecer después de libros y temas');
 });
 
 test('las preguntas cubren diferenciales concretos y conducen al formulario', () => {
