@@ -26,8 +26,8 @@ test('la portada productiva usa la dirección cultural V2 completa', () => {
   assert.doesNotMatch(homeAstro, /indexable=\{false\}|analytics=\{false\}/);
 });
 
-test('el primer pantallazo comunica búsqueda enfocada y encargo revisado por una persona', () => {
-  assert.match(heroAstro, /Librería online uruguaya · búsqueda enfocada/);
+test('el primer pantallazo comunica búsqueda por encargo y revisión humana', () => {
+  assert.match(heroAstro, /Librería online uruguaya · búsqueda por encargo/);
   assert.match(heroAstro, /Libros difíciles de encontrar\./);
   assert.match(heroAstro, /Los conseguimos\./);
   assert.match(heroAstro, /una persona revisa opciones y lo busca por encargo/);
