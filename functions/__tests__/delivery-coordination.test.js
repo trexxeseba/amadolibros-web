@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
-test('la home destaca la coordinación de la entrega inmediatamente después del hero', () => {
+test('la home destaca la coordinación de la entrega sin prometer una segunda visita', () => {
   const page = read('astro-front/src/pages/index.astro');
   const component = read('astro-front/src/components/DeliveryCoordination.astro');
 
@@ -12,7 +12,8 @@ test('la home destaca la coordinación de la entrega inmediatamente después del
   assert.ok(page.indexOf('<DeliveryCoordination />') > page.indexOf('<Hero />'));
   assert.match(component, /El cadete no llega de sorpresa/);
   assert.match(component, /coordinamos contigo la hora o franja/);
-  assert.match(component, /Si el cadete llega y no estás, no te preocupes/);
+  assert.match(component, /Si necesitás cambiarla, avisános antes de que salga el cadete/);
+  assert.doesNotMatch(component, /Si el cadete llega y no estás|completar la entrega|volvemos otro día/i);
   assert.match(component, /href="\/envios\/"/);
 });
 
