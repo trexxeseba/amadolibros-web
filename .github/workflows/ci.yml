@@ -35,18 +35,25 @@ jobs:
           cache: npm
           cache-dependency-path: astro-front/package-lock.json
 
-      # Diagnóstico temporal de HOME-V2. La primera división ubicó el fallo en
-      # A–F; esta segunda pasada lo reduce a A–C o D–F. Se elimina al terminar.
-      - name: Diagnose unit tests A–C
+      # Diagnóstico temporal de HOME-V2. El fallo ya quedó acotado a D–F;
+      # esta pasada identifica la letra exacta. Se elimina al terminar.
+      - name: Diagnose unit tests D
         run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "a" && tolower(substr($0,1,1)) <= "c" { print "functions/__tests__/" $0 }')
+          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '[dD]*.test.js' | sort)
           printf 'Running %s files\n' "${#files[@]}"
           ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
 
-      - name: Diagnose unit tests D–F
+      - name: Diagnose unit tests E
         if: always()
         run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "d" && tolower(substr($0,1,1)) <= "f" { print "functions/__tests__/" $0 }')
+          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '[eE]*.test.js' | sort)
+          printf 'Running %s files\n' "${#files[@]}"
+          ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
+
+      - name: Diagnose unit tests F
+        if: always()
+        run: |
+          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '[fF]*.test.js' | sort)
           printf 'Running %s files\n' "${#files[@]}"
           ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
 
