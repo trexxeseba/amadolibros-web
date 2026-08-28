@@ -35,33 +35,18 @@ jobs:
           cache: npm
           cache-dependency-path: astro-front/package-lock.json
 
-      # Diagnóstico temporal de HOME-V2. Dividimos la suite por nombre para
-      # localizar el contrato heredado que falla sin ocultarlo dentro del glob.
-      # Este bloque se elimina antes de considerar el PR listo.
-      - name: Diagnose unit tests A–F
+      # Diagnóstico temporal de HOME-V2. La primera división ubicó el fallo en
+      # A–F; esta segunda pasada lo reduce a A–C o D–F. Se elimina al terminar.
+      - name: Diagnose unit tests A–C
         run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "a" && tolower(substr($0,1,1)) <= "f" { print "functions/__tests__/" $0 }')
+          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "a" && tolower(substr($0,1,1)) <= "c" { print "functions/__tests__/" $0 }')
           printf 'Running %s files\n' "${#files[@]}"
           ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
 
-      - name: Diagnose unit tests G–L
+      - name: Diagnose unit tests D–F
         if: always()
         run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "g" && tolower(substr($0,1,1)) <= "l" { print "functions/__tests__/" $0 }')
-          printf 'Running %s files\n' "${#files[@]}"
-          ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
-
-      - name: Diagnose unit tests M–R
-        if: always()
-        run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "m" && tolower(substr($0,1,1)) <= "r" { print "functions/__tests__/" $0 }')
-          printf 'Running %s files\n' "${#files[@]}"
-          ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
-
-      - name: Diagnose unit tests S–Z
-        if: always()
-        run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "s" && tolower(substr($0,1,1)) <= "z" { print "functions/__tests__/" $0 }')
+          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '*.test.js' -printf '%f\n' | sort | awk 'tolower(substr($0,1,1)) >= "d" && tolower(substr($0,1,1)) <= "f" { print "functions/__tests__/" $0 }')
           printf 'Running %s files\n' "${#files[@]}"
           ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
 
