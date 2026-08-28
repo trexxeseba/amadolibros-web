@@ -20,8 +20,6 @@ jobs:
   validate:
     name: Syntax & Build
     runs-on: ubuntu-latest
-    # 15 min (antes 10): el validador compartido ahora corre dos builds
-    # completos (checkout OFF y ON) en vez de uno solo.
     timeout-minutes: 15
 
     steps:
@@ -37,19 +35,42 @@ jobs:
           cache: npm
           cache-dependency-path: astro-front/package-lock.json
 
-      # Único punto de verdad de la validación — el mismo script corre acá y
-      # en el job `validate` de deploy.yml (ver ese archivo). Cubre sintaxis,
-      # la suite completa, build con checkout OFF y build con checkout ON con
-      # la configuración pública de Turnstile de Producción. Ver
-      # scripts/validate-ci.sh para el detalle de cada paso.
+      # Diagnóstico temporal de HOME-V2: cada contrato modificado corre en un
+      # paso nombrado para identificar con precisión cualquier expectativa
+      # obsoleta. Se retira antes de considerar el PR listo.
+      - name: Diagnose — home commercial fold
+        run: node --experimental-sqlite --test functions/__tests__/home-commercial-fold.test.js
+
+      - name: Diagnose — manual book discovery
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/manual-book-discovery.test.js
+
+      - name: Diagnose — SEO commercial intents
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/seo-commercial-intents.test.js
+
+      - name: Diagnose — SEO AI quick wins
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/seo-ai-quick-wins.test.js
+
+      - name: Diagnose — delivery coordination
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/delivery-coordination.test.js
+
+      - name: Diagnose — V2 editorial assets
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/home-v2-editorial-assets.test.js
+
       - name: Validate (shared script — syntax, tests, both checkout builds)
+        if: always()
         run: bash scripts/validate-ci.sh
 
       - name: Check pull request diff
-        if: github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request'
         run: |
           git diff --check \
             "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
 
       - name: Confirm tracked files remain unchanged
+        if: always()
         run: git diff --exit-code
