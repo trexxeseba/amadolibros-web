@@ -23,7 +23,7 @@ export const STATIC_SITEMAP_PAGES = Object.freeze([
 ]);
 
 const SIGNIFICANT_PAGE_UPDATES = Object.freeze({
-  [`${BASE}/`]: '2026-08-12',
+  [`${BASE}/`]: '2026-08-27',
   [`${BASE}/pedir-libro/`]: '2026-08-12',
   [`${BASE}/como-identificar-edicion-correcta-isbn/`]: '2026-08-12',
   [`${BASE}/libros-agotados-importados-uruguay`]: '2026-08-12',
