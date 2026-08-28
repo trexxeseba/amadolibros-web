@@ -35,27 +35,35 @@ jobs:
           cache: npm
           cache-dependency-path: astro-front/package-lock.json
 
-      # Diagnóstico temporal de HOME-V2. El fallo ya quedó acotado a D–F;
-      # esta pasada identifica la letra exacta. Se elimina al terminar.
-      - name: Diagnose unit tests D
-        run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '[dD]*.test.js' | sort)
-          printf 'Running %s files\n' "${#files[@]}"
-          ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
+      # Diagnóstico temporal de HOME-V2. El fallo ya quedó acotado a los siete
+      # contratos con inicial F. Cada uno corre separado para identificar la
+      # expectativa obsoleta y retirar después este bloque.
+      - name: Diagnose — feed GTIN and coverage
+        run: node --experimental-sqlite --test functions/__tests__/feed-gtin-and-coverage.test.js
 
-      - name: Diagnose unit tests E
+      - name: Diagnose — ficha header search
         if: always()
-        run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '[eE]*.test.js' | sort)
-          printf 'Running %s files\n' "${#files[@]}"
-          ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
+        run: node --experimental-sqlite --test functions/__tests__/ficha-header-search.test.js
 
-      - name: Diagnose unit tests F
+      - name: Diagnose — ficha pricing CTA order
         if: always()
-        run: |
-          mapfile -t files < <(find functions/__tests__ -maxdepth 1 -type f -name '[fF]*.test.js' | sort)
-          printf 'Running %s files\n' "${#files[@]}"
-          ((${#files[@]} == 0)) || node --experimental-sqlite --test "${files[@]}"
+        run: node --experimental-sqlite --test functions/__tests__/ficha-pricing-cta-order.test.js
+
+      - name: Diagnose — fichas quality guard integration
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/fichas-quality-guard-integration.test.js
+
+      - name: Diagnose — fichas quality guard
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/fichas-quality-guard.test.js
+
+      - name: Diagnose — footer navigation
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/footer-nav-no-redirect-hrefs.test.js
+
+      - name: Diagnose — full commerce audit
+        if: always()
+        run: node --experimental-sqlite --test functions/__tests__/full-commerce-audit.test.js
 
       - name: Validate (shared script — syntax, tests, both checkout builds)
         if: always()
