@@ -1,0 +1,470 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { responsiveBookCover } from '../lib/cloudflare-images.js';
+
+interface Book {
+  id: string;
+  title: string;
+  author?: string;
+  price?: number;
+  status?: string;
+  available_quantity?: number;
+}
+
+const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
+let books: Book[] = [];
+
+try {
+  const raw = fs.readFileSync(HOME_JSON, 'utf-8');
+  const data = JSON.parse(raw) as { items?: Book[] };
+  books = (data.items || [])
+    .filter(book => /^MLU\d+$/.test(book.id || ''))
+    .filter(book => book.status === 'active' && Number(book.available_quantity || 0) > 0)
+    .slice(0, 10);
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn('[HomeV2Hero] home.json no disponible:', message);
+}
+
+const heroBooks = books.map((book, index) => ({
+  ...book,
+  cover: responsiveBookCover(book.id, { optimize: import.meta.env.PUBLIC_INDEXABLE === 'true' }),
+  position: index + 1,
+}));
+---
+
+<section class="v2-hero" aria-labelledby="v2-hero-title">
+  <div class="v2-hero-ambient v2-hero-ambient-a" aria-hidden="true"></div>
+  <div class="v2-hero-ambient v2-hero-ambient-b" aria-hidden="true"></div>
+
+  <div class="v2-hero-grid">
+    <div class="v2-hero-copy">
+      <p class="v2-kicker">Librería online uruguaya · búsqueda humana</p>
+      <h1 id="v2-hero-title">
+        Libros difíciles de encontrar.
+        <em>Los conseguimos.</em>
+      </h1>
+      <p class="v2-lead">
+        Buscá entre nuestros libros disponibles. Si no aparece el que querés,
+        una persona revisa opciones y lo busca por encargo.
+      </p>
+
+      <form class="v2-search" action="/catalogo" method="get" role="search">
+        <label class="sr-only" for="v2-search-input">Buscar por título, autor o ISBN</label>
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+          <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input
+          id="v2-search-input"
+          name="q"
+          type="search"
+          placeholder="Título, autor o ISBN"
+          autocomplete="off"
+          enterkeyhint="search"
+        />
+        <button type="submit">Buscar</button>
+      </form>
+
+      <div class="v2-human-door">
+        <div>
+          <span>¿No está en el catálogo?</span>
+          <strong>Contanos qué libro buscás.</strong>
+          <small>Revisamos personalmente dónde conseguirlo, incluso si está agotado o descatalogado.</small>
+        </div>
+        <a href="/pedir-libro/?tipo=exacto">Iniciar búsqueda <span aria-hidden="true">→</span></a>
+      </div>
+
+      <ul class="v2-trust" aria-label="Señales de confianza">
+        <li>Mercado Líder</li>
+        <li>Hasta 12 cuotas</li>
+        <li>Envíos a todo Uruguay</li>
+      </ul>
+    </div>
+
+    <div class="v2-visual" aria-label="Selección animada de libros disponibles">
+      <div class="v2-visual-label">
+        <span>Ahora en Amado</span>
+        <small>Tapas reales del catálogo</small>
+      </div>
+
+      <div class="v2-cover-stage" aria-hidden="true">
+        {heroBooks.length > 0 ? heroBooks.map((book, index) => (
+          <figure class={`v2-cover v2-cover-${(index % 10) + 1}`}>
+            <img
+              src={book.cover.src}
+              srcset={book.cover.srcset || undefined}
+              sizes="(max-width: 760px) 120px, 170px"
+              alt=""
+              width="280"
+              height="373"
+              loading={index < 2 ? 'eager' : 'lazy'}
+              decoding="async"
+              onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('v2-cover-fallback')"
+            />
+          </figure>
+        )) : (
+          <div class="v2-stage-fallback">
+            <img src="/images/logo-amado.webp" width="120" height="118" alt="" />
+            <span>Libros importados, agotados y por encargo</span>
+          </div>
+        )}
+      </div>
+
+      <div class="v2-visual-footer">
+        <span>Descubrí lo que acaba de llegar</span>
+        <a href="#v2-recomendados">Ver selección ↓</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+(function () {
+  var form = document.querySelector('.v2-search');
+  var input = document.getElementById('v2-search-input');
+  if (!form || !input) return;
+
+  function openSearch() {
+    document.dispatchEvent(new CustomEvent('amado:openCatalogSearch', {
+      detail: { query: input.value.trim() },
+    }));
+  }
+
+  input.addEventListener('focus', openSearch);
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    openSearch();
+  });
+})();
+</script>
+
+<style>
+  .v2-hero {
+    position: relative;
+    overflow: hidden;
+    background: #171310;
+    color: #fff9f1;
+    isolation: isolate;
+  }
+
+  .v2-hero-ambient {
+    position: absolute;
+    z-index: -1;
+    border-radius: 999px;
+    filter: blur(20px);
+    opacity: 0.72;
+    pointer-events: none;
+  }
+
+  .v2-hero-ambient-a {
+    width: 34rem;
+    height: 34rem;
+    top: -22rem;
+    left: -10rem;
+    background: #ef6844;
+  }
+
+  .v2-hero-ambient-b {
+    width: 25rem;
+    height: 25rem;
+    right: -12rem;
+    bottom: -15rem;
+    background: #8959c7;
+  }
+
+  .v2-hero-grid {
+    width: min(100% - 2rem, 1440px);
+    margin: 0 auto;
+    padding: 2.25rem 0 2rem;
+    display: grid;
+    gap: 2rem;
+  }
+
+  .v2-hero-copy { position: relative; z-index: 2; }
+
+  .v2-kicker {
+    margin-bottom: 0.75rem;
+    color: #ff8b68;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.09em;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 12ch;
+    font-family: var(--font-display);
+    font-size: clamp(2.65rem, 12vw, 4.3rem);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 0.94;
+  }
+
+  h1 em {
+    display: block;
+    margin-top: 0.12em;
+    color: #ff7651;
+    font-weight: 700;
+  }
+
+  .v2-lead {
+    max-width: 57ch;
+    margin-top: 1.15rem;
+    color: rgba(255, 249, 241, 0.78);
+    font-size: 0.96rem;
+    line-height: 1.55;
+  }
+
+  .v2-search {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+    max-width: 720px;
+    margin-top: 1.35rem;
+    padding: 0.38rem 0.42rem 0.38rem 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: #fffdf8;
+    color: #1b1714;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.27);
+  }
+
+  .v2-search:focus-within {
+    outline: 3px solid rgba(255, 118, 81, 0.35);
+    outline-offset: 3px;
+  }
+
+  .v2-search input {
+    min-width: 0;
+    width: 100%;
+    padding: 0.78rem 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #1b1714;
+    font: 600 0.94rem/1.2 var(--font-ui);
+  }
+
+  .v2-search input::placeholder { color: #756b62; opacity: 1; }
+
+  .v2-search button {
+    min-height: 46px;
+    padding: 0.75rem 1.2rem;
+    border: 0;
+    border-radius: 999px;
+    background: #ef6844;
+    color: #1b1714;
+    font: 850 0.79rem/1 var(--font-ui);
+    cursor: pointer;
+  }
+
+  .v2-search button:hover { background: #ff8b68; }
+
+  .v2-human-door {
+    max-width: 720px;
+    margin-top: 0.85rem;
+    padding: 0.95rem 1rem;
+    display: grid;
+    gap: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .v2-human-door span,
+  .v2-human-door strong,
+  .v2-human-door small { display: block; }
+
+  .v2-human-door > div > span {
+    color: #ff8b68;
+    font-size: 0.66rem;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .v2-human-door strong {
+    margin-top: 0.18rem;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.15;
+  }
+
+  .v2-human-door small {
+    max-width: 58ch;
+    margin-top: 0.3rem;
+    color: rgba(255, 249, 241, 0.7);
+    font-size: 0.72rem;
+    line-height: 1.42;
+  }
+
+  .v2-human-door > a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.65rem 0.9rem;
+    border-radius: 999px;
+    background: #fff9f1;
+    color: #1b1714;
+    font-size: 0.74rem;
+    font-weight: 850;
+    text-align: center;
+  }
+
+  .v2-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+    margin-top: 0.9rem;
+    padding: 0;
+    color: rgba(255, 249, 241, 0.68);
+    list-style: none;
+    font-size: 0.64rem;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+  }
+
+  .v2-trust li::before {
+    content: '✦';
+    margin-right: 0.4rem;
+    color: #ff7651;
+  }
+
+  .v2-visual {
+    position: relative;
+    min-height: 410px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 1.5rem;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(239, 104, 68, 0.32), transparent 30%),
+      radial-gradient(circle at 78% 70%, rgba(91, 191, 165, 0.28), transparent 34%),
+      linear-gradient(135deg, #2a211c 0%, #100e0d 100%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.34);
+  }
+
+  .v2-visual-label,
+  .v2-visual-footer {
+    position: absolute;
+    right: 1rem;
+    left: 1rem;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #fff9f1;
+  }
+
+  .v2-visual-label { top: 0.9rem; }
+  .v2-visual-footer { bottom: 0.85rem; }
+
+  .v2-visual-label span,
+  .v2-visual-footer span {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .v2-visual-label small,
+  .v2-visual-footer a {
+    color: rgba(255, 249, 241, 0.65);
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .v2-cover-stage {
+    position: absolute;
+    inset: 3.6rem 0 3.4rem;
+    overflow: hidden;
+    perspective: 900px;
+  }
+
+  .v2-cover {
+    position: absolute;
+    width: clamp(90px, 24vw, 150px);
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 0.35rem;
+    background: #f3eee6;
+    box-shadow: 0 22px 40px rgba(0, 0, 0, 0.4);
+    animation: v2-cover-float 7s ease-in-out infinite alternate;
+    transform-origin: center;
+  }
+
+  .v2-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .v2-cover img.v2-cover-fallback { object-fit: contain; padding: 1rem; }
+
+  .v2-cover-1 { left: -3%; top: 11%; transform: rotate(-10deg); animation-delay: -1s; }
+  .v2-cover-2 { left: 17%; top: 2%; transform: rotate(5deg) translateZ(30px); animation-delay: -4s; }
+  .v2-cover-3 { left: 40%; top: 16%; transform: rotate(-2deg) translateZ(60px); animation-delay: -2.2s; }
+  .v2-cover-4 { left: 65%; top: 0; transform: rotate(8deg) translateZ(20px); animation-delay: -5.3s; }
+  .v2-cover-5 { right: -5%; top: 22%; transform: rotate(-7deg); animation-delay: -3.3s; }
+  .v2-cover-6 { left: 8%; top: 58%; transform: rotate(6deg); animation-delay: -6s; }
+  .v2-cover-7 { left: 31%; top: 52%; transform: rotate(-8deg); animation-delay: -2.8s; }
+  .v2-cover-8 { left: 55%; top: 60%; transform: rotate(4deg); animation-delay: -4.6s; }
+  .v2-cover-9 { right: 5%; top: 56%; transform: rotate(-4deg); animation-delay: -1.8s; }
+  .v2-cover-10 { left: 73%; top: 34%; transform: rotate(10deg); animation-delay: -5.8s; }
+
+  @keyframes v2-cover-float {
+    from { translate: 0 -6px; }
+    to { translate: 0 8px; }
+  }
+
+  .v2-stage-fallback {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 1rem;
+    color: rgba(255, 249, 241, 0.75);
+    text-align: center;
+  }
+
+  .v2-stage-fallback img { width: 100px; border-radius: 1rem; }
+
+  @media (max-width: 520px) {
+    .v2-hero-grid { width: min(100% - 1.25rem, 1440px); padding-top: 1.65rem; }
+    h1 { font-size: clamp(2.55rem, 13vw, 3.35rem); }
+    .v2-search { grid-template-columns: auto minmax(0, 1fr); border-radius: 1rem; padding: 0.5rem 0.65rem; }
+    .v2-search button { grid-column: 1 / -1; width: 100%; }
+    .v2-human-door { padding: 0.85rem; }
+    .v2-visual { min-height: 320px; }
+    .v2-cover { width: 98px; }
+  }
+
+  @media (min-width: 760px) {
+    .v2-human-door { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+    .v2-human-door > a { min-width: 155px; }
+    .v2-visual { min-height: 500px; }
+  }
+
+  @media (min-width: 1040px) {
+    .v2-hero-grid {
+      min-height: 690px;
+      padding: 3.6rem 0;
+      grid-template-columns: minmax(0, 0.95fr) minmax(500px, 1.05fr);
+      align-items: center;
+      gap: 3.2rem;
+    }
+
+    h1 { font-size: clamp(4rem, 5.6vw, 6rem); }
+    .v2-lead { font-size: 1.05rem; }
+    .v2-visual { min-height: 570px; }
+    .v2-cover { width: clamp(120px, 11vw, 175px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .v2-cover { animation: none; }
+  }
+</style>
