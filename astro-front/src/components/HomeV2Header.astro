@@ -1,0 +1,249 @@
+---
+import CartIcon from './CartIcon.astro';
+---
+
+<div class="v2-topline" aria-label="Beneficios de compra">
+  <div class="v2-topline-track">
+    <span>Envío gratis desde $1.500</span>
+    <span aria-hidden="true">✦</span>
+    <span>Entrega en el día en Montevideo</span>
+    <span aria-hidden="true">✦</span>
+    <span>Libros difíciles y búsquedas por encargo</span>
+  </div>
+</div>
+
+<header class="v2-header">
+  <div class="v2-header-main">
+    <a class="v2-brand" href="/" aria-label="Amado Libros — inicio">
+      <img src="/images/logo-amado.webp" alt="" width="58" height="57" />
+      <span>
+        <strong>Amado Libros</strong>
+        <small>Librería en línea · Uruguay</small>
+      </span>
+    </a>
+
+    <nav class="v2-nav" aria-label="Navegación principal">
+      <a href="/catalogo">Libros</a>
+      <a href="#v2-temas">Temas</a>
+      <a href="#v2-recomendados">Recomendados</a>
+      <a href="#v2-ideas">Ideas</a>
+      <a class="v2-nav-highlight" href="/pedir-libro/?tipo=exacto">Pedir un libro</a>
+      <a href="#v2-nosotros">Nosotros</a>
+    </nav>
+
+    <div class="v2-actions">
+      <button
+        class="v2-search-trigger"
+        type="button"
+        aria-label="Buscar en el catálogo"
+        onclick="document.dispatchEvent(new CustomEvent('amado:openCatalogSearch'))"
+      >
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+          <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <CartIcon />
+    </div>
+  </div>
+
+  <nav class="v2-mobile-nav" aria-label="Accesos de portada">
+    <a href="/catalogo">Libros</a>
+    <a href="#v2-temas">Temas</a>
+    <a href="#v2-recomendados">Recomendados</a>
+    <a href="#v2-ideas">Ideas</a>
+    <a href="/pedir-libro/?tipo=exacto">Pedir un libro</a>
+  </nav>
+</header>
+
+<style>
+  .v2-topline {
+    position: relative;
+    z-index: 61;
+    overflow: hidden;
+    background: #ef6844;
+    color: #1b1714;
+    border-bottom: 1px solid rgba(27, 23, 20, 0.18);
+  }
+
+  .v2-topline-track {
+    min-height: 34px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0.45rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    white-space: nowrap;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.025em;
+  }
+
+  .v2-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: rgba(255, 252, 246, 0.96);
+    border-bottom: 1px solid #ded5c8;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .v2-header-main {
+    min-height: 72px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .v2-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    margin-right: auto;
+    color: #1b1714;
+  }
+
+  .v2-brand img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex: 0 0 auto;
+  }
+
+  .v2-brand span,
+  .v2-brand strong,
+  .v2-brand small { display: block; }
+
+  .v2-brand strong {
+    font-family: var(--font-display);
+    font-size: 1.04rem;
+    line-height: 1;
+  }
+
+  .v2-brand small {
+    margin-top: 0.18rem;
+    color: #6b625b;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .v2-nav {
+    display: none;
+    align-items: center;
+    gap: 0.1rem;
+  }
+
+  .v2-nav a {
+    padding: 0.58rem 0.68rem;
+    border-radius: 999px;
+    color: #332d28;
+    font-family: var(--font-display);
+    font-size: 0.94rem;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .v2-nav a:hover {
+    background: #f0e8dc;
+    color: #b4442a;
+  }
+
+  .v2-nav .v2-nav-highlight {
+    color: #b4442a;
+    font-family: var(--font-ui);
+    font-size: 0.73rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .v2-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .v2-search-trigger {
+    width: 44px;
+    height: 44px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid #d7cec2;
+    border-radius: 999px;
+    background: #fff;
+    color: #1b1714;
+    cursor: pointer;
+  }
+
+  .v2-search-trigger:hover { border-color: #b4442a; color: #b4442a; }
+
+  .v2-header :global(.cart-icon-btn) {
+    min-width: 44px;
+    min-height: 44px;
+    color: #1b1714;
+    background: #fff;
+    border-color: #d7cec2;
+  }
+
+  .v2-header :global(.cart-icon-btn:hover) {
+    color: #b4442a;
+    background: #fff;
+    border-color: #b4442a;
+  }
+
+  .v2-mobile-nav {
+    display: flex;
+    gap: 0.45rem;
+    padding: 0 1rem 0.7rem;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .v2-mobile-nav::-webkit-scrollbar { display: none; }
+
+  .v2-mobile-nav a {
+    flex: 0 0 auto;
+    padding: 0.48rem 0.7rem;
+    border: 1px solid #ded5c8;
+    border-radius: 999px;
+    background: #fff;
+    color: #332d28;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  @media (max-width: 520px) {
+    .v2-topline-track {
+      justify-content: flex-start;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .v2-topline-track::-webkit-scrollbar { display: none; }
+    .v2-brand small { display: none; }
+  }
+
+  @media (min-width: 960px) {
+    .v2-header-main { min-height: 88px; padding: 0 2rem; }
+    .v2-brand img { width: 54px; height: 54px; }
+    .v2-brand strong { font-size: 1.15rem; }
+    .v2-nav { display: flex; }
+    .v2-mobile-nav { display: none; }
+  }
+
+  @media (min-width: 1240px) {
+    .v2-nav { gap: 0.35rem; }
+    .v2-nav a { padding-right: 0.85rem; padding-left: 0.85rem; font-size: 1rem; }
+  }
+</style>
