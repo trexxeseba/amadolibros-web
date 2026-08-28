@@ -44,6 +44,11 @@ const RELACIONADOS_GENERICOS = [
   { id: 'MLU900000002', title: 'Nuevo Testamento, de Desconocido', author: 'Desconocido', status: 'active', available_quantity: 1 },
 ];
 
+const TITULO_CON_AUTOR_GENERICO = Object.freeze({
+  ...MLU724888358,
+  title: 'La Biblia Palabra de Vida — Verbo Divino, de Desconocido',
+});
+
 const AUTOR_REAL = Object.freeze({
   ...MLU724888358,
   id: 'MLU111111111',
@@ -86,6 +91,38 @@ test('2. la ausencia se verifica superficie por superficie', () => {
   assert.doesNotMatch(html, /Otros libros de/);
   assert.doesNotMatch(html, /class="related-books"/);
   assert.doesNotMatch(html, /De Desconocido/i);
+});
+
+test('2b. la galería y los metadatos de imagen limpian «De Desconocido» sin mutar el título comercial', () => {
+  const html = renderPage(
+    TITULO_CON_AUTOR_GENERICO,
+    'la-biblia-palabra-de-vida-verbo-divino-de-desconocido',
+    false,
+    '',
+    '',
+    [],
+  );
+
+  const imageAltTags = [...html.matchAll(/<img\\b[^>]*\\balt="([^"]*)"/gi)].map(match => match[1]);
+  assert.ok(imageAltTags.length >= 3, 'debe revisar portada principal, lightbox y logo');
+  for (const alt of imageAltTags) {
+    assert.doesNotMatch(alt, /de Desconocido/i, `alt contaminado: ${alt}`);
+  }
+
+  const socialAltTags = html.match(
+    /<meta (?:property="og:image:alt"|name="twitter:image:alt")[^>]*>/g,
+  ) || [];
+  assert.equal(socialAltTags.length, 2, 'debe cubrir Open Graph y Twitter');
+  for (const tag of socialAltTags) {
+    assert.doesNotMatch(tag, /de Desconocido/i, `meta de imagen contaminada: ${tag}`);
+  }
+
+  assert.equal(
+    TITULO_CON_AUTOR_GENERICO.title,
+    'La Biblia Palabra de Vida — Verbo Divino, de Desconocido',
+    'la limpieza visual no debe mutar el título comercial',
+  );
+  assert.match(html, /la-biblia-palabra-de-vida-verbo-divino-de-desconocido/);
 });
 
 test('2b. el mensaje de WhatsApp omite la línea Autor cuando la autoría es genérica', () => {
