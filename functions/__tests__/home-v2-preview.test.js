@@ -7,14 +7,14 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (relative) => readFileSync(path.join(ROOT, relative), 'utf8');
 
-const preview = read('astro-front/src/pages/preview-v2.astro');
+const preview = read('astro-front/src/pages/preview-v2/index.astro');
 const header = read('astro-front/src/components/HomeV2Header.astro');
 const hero = read('astro-front/src/components/HomeV2Hero.astro');
 const topics = read('astro-front/src/components/HomeV2Topics.astro');
 const shelf = read('astro-front/src/components/HomeV2Shelf.astro');
 const ideas = read('astro-front/src/components/HomeV2Ideas.astro');
 
-test('HOME-V2: la nueva dirección vive en una ruta de preview y no reemplaza producción', () => {
+test('HOME-V2: la nueva dirección vive en /preview-v2/ y no reemplaza producción', () => {
   assert.match(preview, /indexable=\{false\}/);
   assert.match(preview, /analytics=\{false\}/);
   assert.match(preview, /<HomeV2Header \/>/);
@@ -44,7 +44,7 @@ test('HOME-V2: el hero combina catálogo, búsqueda humana y movimiento accesibl
   assert.doesNotMatch(hero, /autoplay|<video/i);
 });
 
-test('HOME-V2: temas, tapas grandes, Amado Lee y servicio humano forman el primer recorrido', () => {
+test('HOME-V2: temas, tapas grandes, Amado Lee y servicio humano forman el recorrido', () => {
   assert.match(topics, /Todo empieza por una curiosidad\./);
   assert.match(topics, /Literatura y ficción/);
   assert.match(topics, /Libros agotados/);
