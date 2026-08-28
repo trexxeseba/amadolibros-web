@@ -8,13 +8,19 @@ on:
       - '.github/workflows/book-intelligence-1000.yml'
       - 'scripts/seo/book-intelligence-*.mjs'
       - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/book-enrichment-facts-*.js'
+      - 'functions/_shared/book-enrichment-registry.js'
       - 'functions/__tests__/book-intelligence-*.test.js'
+      - 'functions/__tests__/book-enrichment-*.test.js'
   pull_request:
     paths:
       - '.github/workflows/book-intelligence-1000.yml'
       - 'scripts/seo/book-intelligence-*.mjs'
       - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/book-enrichment-facts-*.js'
+      - 'functions/_shared/book-enrichment-registry.js'
       - 'functions/__tests__/book-intelligence-*.test.js'
+      - 'functions/__tests__/book-enrichment-*.test.js'
   workflow_dispatch:
     inputs:
       limit:
@@ -188,6 +194,14 @@ jobs:
         if: steps.published.outputs.complete != 'true' && steps.research.outcome != 'success'
         run: exit 1
 
-      - name: Validate published 1000-ISBN registry
+      - name: Validate published 1333-ISBN factual registry
         if: steps.published.outputs.complete == 'true'
-        run: node --test functions/__tests__/book-enrichment-1000.test.js
+        run: |
+          node --test \
+            functions/__tests__/book-enrichment-1000.test.js \
+            functions/__tests__/book-enrichment-333.test.js \
+            functions/__tests__/book-intelligence-coverage-audit.test.js
+
+      - name: Measure complete active catalog coverage
+        if: steps.published.outputs.complete == 'true'
+        run: node scripts/seo/book-intelligence-coverage-audit.mjs

@@ -69,6 +69,7 @@ const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 const COVER_OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 const MAX_GALLERY_IMAGES = 16;
 const MAX_ADDITIONAL_IMAGE_LINKS = 10;
+const MAX_MERCHANT_DESCRIPTION_CHARS = 5000;
 
 export async function onRequest(context) {
     try {
@@ -372,8 +373,18 @@ export function buildFeedDescription(item) {
     if (String(bibliography.language || '').trim()) edition.push(`idioma ${String(bibliography.language).trim()}`);
 
     if (edition.length) {
-        const separator = /[.!?]$/.test(sentence) ? ' ' : '. ';
-        sentence += `${separator}${edition.join(', ')}.`;
+        const editionText = `${edition.join(', ')}.`;
+        let separator = /[.!?]$/.test(sentence) ? ' ' : '. ';
+
+        // Merchant limita g:description a 5.000 caracteres. Si la descripción
+        // original ya ocupa todo el cupo, reservamos espacio al final para los
+        // hechos bibliográficos verificados en vez de cortarlos después.
+        if (sentence.length + separator.length + editionText.length > MAX_MERCHANT_DESCRIPTION_CHARS) {
+            separator = '. ';
+            const sentenceBudget = MAX_MERCHANT_DESCRIPTION_CHARS - separator.length - editionText.length;
+            sentence = truncateMerchantText(sentence, sentenceBudget).replace(/[.!?]+$/, '');
+        }
+        sentence += `${separator}${editionText}`;
     }
     if (!hasRealDescription && item.condition === 'new') sentence += ' Ejemplar nuevo.';
     else if (!hasRealDescription && item.condition === 'used') sentence += ' Ejemplar usado.';
@@ -516,7 +527,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null) 
         : `\n        <g:identifier_exists>no</g:identifier_exists>`;
 
     const title = truncateMerchantText(item.title, 150);
-    const description = truncateMerchantText(buildFeedDescription(item), 5000);
+    const description = truncateMerchantText(buildFeedDescription(item), MAX_MERCHANT_DESCRIPTION_CHARS);
     const productTypeTags = merchantProductTypes(item.id, categoryData)
         .map(productType => `\n        <g:product_type>${escapeXml(productType)}</g:product_type>`)
         .join('');

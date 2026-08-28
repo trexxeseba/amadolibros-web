@@ -6,6 +6,7 @@
 // condición, imágenes, título comercial, id y URL permanecen en el catálogo.
 
 import { BOOK_FACT_ENRICHMENTS } from './book-enrichment-facts-1000.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_333 } from './book-enrichment-facts-333.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
 const SOURCE_TYPES = new Set([
@@ -445,6 +446,15 @@ for (const record of BIBLE_ENRICHMENTS) {
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
 }
 for (const record of BOOK_FACT_ENRICHMENTS) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_333) {
   if (!validateBookEnrichment(record)) {
     throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
   }
