@@ -93,7 +93,7 @@ test('2. la ausencia se verifica superficie por superficie', () => {
   assert.doesNotMatch(html, /De Desconocido/i);
 });
 
-test('2b. la galería y los metadatos de imagen limpian «De Desconocido» sin mutar el título comercial', () => {
+test('2c. la galería y los metadatos de imagen limpian «De Desconocido» sin mutar el título comercial', () => {
   const html = renderPage(
     TITULO_CON_AUTOR_GENERICO,
     'la-biblia-palabra-de-vida-verbo-divino-de-desconocido',
@@ -103,7 +103,7 @@ test('2b. la galería y los metadatos de imagen limpian «De Desconocido» sin m
     [],
   );
 
-  const imageAltTags = [...html.matchAll(/<img\\b[^>]*\\balt="([^"]*)"/gi)].map(match => match[1]);
+  const imageAltTags = [...html.matchAll(/<img\b[^>]*\balt="([^"]*)"/gi)].map(match => match[1]);
   assert.ok(imageAltTags.length >= 3, 'debe revisar portada principal, lightbox y logo');
   for (const alt of imageAltTags) {
     assert.doesNotMatch(alt, /de Desconocido/i, `alt contaminado: ${alt}`);
