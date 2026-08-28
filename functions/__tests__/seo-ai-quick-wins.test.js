@@ -8,17 +8,18 @@ import { onRequest as renderSitemap, STATIC_SITEMAP_ENTRIES } from '../sitemap-p
 const root = (rel) => fileURLToPath(new URL('../../' + rel, import.meta.url));
 const read = (rel) => readFileSync(root(rel), 'utf8');
 
-test('la portada identifica a Amado Libros y enlaza las páginas de autoridad', () => {
+test('la portada identifica a Amado Libros y enlaza las páginas de autoridad desde Amado Lee', () => {
   const home = read('astro-front/src/pages/index.astro');
-  const guides = read('astro-front/src/components/GuideAccess.astro');
+  const ideas = read('astro-front/src/components/AmadoLee.astro');
 
   assert.match(home, /'@type': 'OnlineStore'/);
   assert.match(home, /'@type': 'WebSite'/);
   assert.match(home, /jsonLd=\{jsonLd\}/);
-  assert.match(home, /<GuideAccess \/>/);
-  assert.match(guides, /\/como-identificar-edicion-correcta-isbn/);
-  assert.match(guides, /\/libros-agotados-importados-uruguay/);
-  assert.match(guides, /\/quienes-somos/);
+  assert.match(home, /import AmadoLee/);
+  assert.match(home, /<AmadoLee \/>/);
+  assert.match(ideas, /\/como-identificar-edicion-correcta-isbn/);
+  assert.match(ideas, /\/libros-agotados-importados-uruguay/);
+  assert.match(ideas, /\/quienes-somos/);
 });
 
 test('el formulario de búsqueda ofrece ayuda contextual antes del envío', () => {
