@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { auditBookEnrichmentCoverage } from '../../scripts/seo/book-intelligence-coverage-audit.mjs';
+import {
+  auditBookEnrichmentCoverage,
+  expandCompactIndex,
+} from '../../scripts/seo/book-intelligence-coverage-audit.mjs';
 
 const COVERED = '9780008367695';
 const PENDING = '9788410515895';
@@ -47,4 +50,22 @@ test('la cobertura separa publicaciones, ISBN únicos, duplicados y fichas sin I
 
 test('la auditoría rechaza un catálogo sin items', () => {
   assert.throws(() => auditBookEnrichmentCoverage({}), /falta items/);
+});
+
+test('expande el índice activo compacto y conserva sus campos derivados', () => {
+  const items = expandCompactIndex({
+    fields: ['id', 'title', 'author', 'isbn', 'thumbnail', 'price', 'available_quantity'],
+    derived_fields: { status: 'active' },
+    items: [['MLU1', 'Libro', 'Autora', COVERED, '/cover.jpg', 1290, 2]],
+  });
+  assert.deepEqual(items, [{
+    id: 'MLU1',
+    title: 'Libro',
+    author: 'Autora',
+    isbn: COVERED,
+    thumbnail: '/cover.jpg',
+    price: 1290,
+    available_quantity: 2,
+    status: 'active',
+  }]);
 });

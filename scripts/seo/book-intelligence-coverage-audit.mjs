@@ -5,13 +5,28 @@
 
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 
-import { CATALOG_URL } from '../../functions/_shared/catalog.js';
+import { CATALOG_URL, PRODUCTION_MANIFEST_URL, R2_BASE } from '../../functions/_shared/catalog.js';
 import { listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
 
 function activeAndSellable(item) {
   return item?.status === 'active' && Number(item?.available_quantity) > 0;
+}
+
+export function expandCompactIndex(payload) {
+  if (!payload || !Array.isArray(payload.fields) || !Array.isArray(payload.items)) return [];
+  const derived = payload.derived_fields && typeof payload.derived_fields === 'object'
+    ? payload.derived_fields
+    : {};
+  return payload.items.map(row => {
+    if (!Array.isArray(row)) return null;
+    return {
+      ...derived,
+      ...Object.fromEntries(payload.fields.map((field, index) => [field, row[index] ?? null])),
+    };
+  }).filter(Boolean);
 }
 
 export function auditBookEnrichmentCoverage(catalog, {
@@ -73,13 +88,52 @@ export function auditBookEnrichmentCoverage(catalog, {
   };
 }
 
-async function main() {
-  const source = process.env.BOOK_ENRICHMENT_CATALOG_SOURCE || CATALOG_URL;
-  const response = await fetch(source, {
+async function fetchJson(url) {
+  const response = await fetch(url, {
     headers: { 'user-agent': 'AmadoLibros-B11-Coverage/1.0' },
   });
-  if (!response.ok) throw new Error(`catalog.json respondió HTTP ${response.status}.`);
-  const report = auditBookEnrichmentCoverage(await response.json(), { source });
+  if (!response.ok) throw new Error(`${url} respondió HTTP ${response.status}.`);
+  return response.json();
+}
+
+async function fetchActiveIndex(current) {
+  const selectedKey = current?.active_index_gzip_key || current?.active_index_key;
+  if (!selectedKey) throw new Error('El manifest productivo no declara active_index.');
+  const response = await fetch(`${R2_BASE}/${selectedKey}`, {
+    headers: {
+      'user-agent': 'AmadoLibros-B11-Coverage/1.0',
+      'accept-encoding': 'identity',
+    },
+  });
+  if (!response.ok) throw new Error(`active-index respondió HTTP ${response.status}.`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const payload = selectedKey.endsWith('.gz')
+    ? JSON.parse(gunzipSync(bytes).toString('utf8'))
+    : JSON.parse(bytes.toString('utf8'));
+  return { key: selectedKey, payload };
+}
+
+async function main() {
+  const catalogSource = process.env.BOOK_ENRICHMENT_CATALOG_SOURCE || CATALOG_URL;
+  const manifestSource = process.env.BOOK_ENRICHMENT_MANIFEST_SOURCE || PRODUCTION_MANIFEST_URL;
+  const [catalog, manifest] = await Promise.all([
+    fetchJson(catalogSource),
+    fetchJson(manifestSource),
+  ]);
+  const activeIndex = await fetchActiveIndex(manifest?.current);
+  const activeIndexItems = expandCompactIndex(activeIndex.payload);
+  const catalogActive = Array.isArray(catalog?.items) ? catalog.items.filter(activeAndSellable) : [];
+  const report = auditBookEnrichmentCoverage({
+    updated_at: manifest?.checked_at || catalog?.updated_at || null,
+    items: activeIndexItems,
+  }, { source: `${R2_BASE}/${activeIndex.key}` });
+  report.sources = {
+    catalog: catalogSource,
+    manifest: manifestSource,
+    active_index: `${R2_BASE}/${activeIndex.key}`,
+  };
+  report.inventory.catalog_json_active_sellable_listings = catalogActive.length;
+  report.inventory.active_index_minus_catalog_json = activeIndexItems.length - catalogActive.length;
   console.log(JSON.stringify(report, null, 2));
 }
 
