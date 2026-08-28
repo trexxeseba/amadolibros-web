@@ -35,46 +35,14 @@ jobs:
           cache: npm
           cache-dependency-path: astro-front/package-lock.json
 
-      # Diagnóstico temporal de HOME-V2. El fallo ya quedó acotado a los siete
-      # contratos con inicial F. Cada uno corre separado para identificar la
-      # expectativa obsoleta y retirar después este bloque.
-      - name: Diagnose — feed GTIN and coverage
-        run: node --experimental-sqlite --test functions/__tests__/feed-gtin-and-coverage.test.js
-
-      - name: Diagnose — ficha header search
-        if: always()
-        run: node --experimental-sqlite --test functions/__tests__/ficha-header-search.test.js
-
-      - name: Diagnose — ficha pricing CTA order
-        if: always()
-        run: node --experimental-sqlite --test functions/__tests__/ficha-pricing-cta-order.test.js
-
-      - name: Diagnose — fichas quality guard integration
-        if: always()
-        run: node --experimental-sqlite --test functions/__tests__/fichas-quality-guard-integration.test.js
-
-      - name: Diagnose — fichas quality guard
-        if: always()
-        run: node --experimental-sqlite --test functions/__tests__/fichas-quality-guard.test.js
-
-      - name: Diagnose — footer navigation
-        if: always()
-        run: node --experimental-sqlite --test functions/__tests__/footer-nav-no-redirect-hrefs.test.js
-
-      - name: Diagnose — full commerce audit
-        if: always()
-        run: node --experimental-sqlite --test functions/__tests__/full-commerce-audit.test.js
-
       - name: Validate (shared script — syntax, tests, both checkout builds)
-        if: always()
         run: bash scripts/validate-ci.sh
 
       - name: Check pull request diff
-        if: always() && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         run: |
           git diff --check \
             "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
 
       - name: Confirm tracked files remain unchanged
-        if: always()
         run: git diff --exit-code
