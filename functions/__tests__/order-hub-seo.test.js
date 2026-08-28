@@ -222,15 +222,17 @@ test('sitemap-pages publica la raíz y sólo las páginas vigentes 2..N', async 
   assert.ok(!locs.includes('https://www.amadolibros.com/libros-por-encargo?page=4'));
 });
 
-test('la home ofrece el pedido exacto y el hub mantiene la landing informativa', () => {
+test('la home V2 ofrece el pedido exacto y el hub mantiene la landing informativa', () => {
   const home = readFileSync('astro-front/src/pages/index.astro', 'utf8');
-  const access = readFileSync('astro-front/src/components/OrderHubAccess.astro', 'utf8');
+  const hero = readFileSync('astro-front/src/components/HomeV2Hero.astro', 'utf8');
+  const ideas = readFileSync('astro-front/src/components/HomeV2Ideas.astro', 'utf8');
   const hub = readFileSync('functions/libros-por-encargo.js', 'utf8');
 
-  assert.match(home, /import OrderHubAccess/);
-  assert.match(home, /<OrderHubAccess \/>/);
-  assert.match(access, /href="\/pedir-libro\/\?tipo=exacto"/);
-  assert.match(access, /disponibilidad, el precio y el plazo se confirman/i);
+  assert.match(home, /<HomeV2Hero \/>/);
+  assert.match(home, /<HomeV2Ideas \/>/);
+  assert.match(hero, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(ideas, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(ideas, /La disponibilidad, el precio y el plazo se confirman/i);
   assert.match(hub, /href="\/libros-agotados-importados-uruguay"/);
-  assert.doesNotMatch(access, /priceCurrency|"@type":\s*"Offer"/);
+  assert.doesNotMatch(`${hero}\n${ideas}`, /priceCurrency|"@type":\s*"Offer"/);
 });
