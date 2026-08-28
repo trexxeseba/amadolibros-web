@@ -1,20 +1,13 @@
 ---
-// Lote 2-B — home con sección Novedades renderizada en build desde public/home.json.
-// Sin catálogo completo, sin GA4, sin lógica de negocio. noindex activo.
-import BaseLayout          from '../layouts/BaseLayout.astro';
-import Header              from '../components/Header.astro';
-import Hero                from '../components/Hero.astro';
-import DeliveryCoordination from '../components/DeliveryCoordination.astro';
-import BookDiscovery       from '../components/BookDiscovery.astro';
-import GuideAccess         from '../components/GuideAccess.astro';
-import OrderHubAccess      from '../components/OrderHubAccess.astro';
-import BestsellerSection   from '../components/BestsellerSection.astro';
-import CommercialBenefits from '../components/CommercialBenefits.astro';
-import Footer              from '../components/Footer.astro';
-import SearchOverlay          from '../components/SearchOverlay.astro';
-import CatalogSearchOverlay  from '../components/CatalogSearchOverlay.astro';
-import HowToBuy           from '../components/HowToBuy.astro';
-import TrustStrip          from '../components/TrustStrip.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeV2Header from '../components/HomeV2Header.astro';
+import HomeV2Hero from '../components/HomeV2Hero.astro';
+import HomeV2Topics from '../components/HomeV2Topics.astro';
+import HomeV2Shelf from '../components/HomeV2Shelf.astro';
+import HomeV2Ideas from '../components/HomeV2Ideas.astro';
+import Footer from '../components/Footer.astro';
+import SearchOverlay from '../components/SearchOverlay.astro';
+import CatalogSearchOverlay from '../components/CatalogSearchOverlay.astro';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -26,7 +19,7 @@ const jsonLd = {
       url: 'https://www.amadolibros.com/',
       logo: 'https://www.amadolibros.com/images/logo-amado.webp',
       image: 'https://www.amadolibros.com/images/logo-amado.webp',
-      description: 'Librería online uruguaya especializada en Tarot, oráculos, Biblias, libros disponibles y búsquedas manuales de títulos agotados, importados o difíciles de conseguir.',
+      description: 'Librería online uruguaya especializada en libros importados, agotados, descatalogados y búsquedas por encargo.',
       telephone: '+59899841325',
       email: 'adm@amadolibros.com',
       sameAs: [
@@ -61,25 +54,35 @@ const jsonLd = {
   ],
 };
 ---
+
 <BaseLayout
-  title="Librería online en Uruguay: Tarot, Biblias y más | Amado Libros"
+  title="Libros difíciles de encontrar en Uruguay | Amado Libros"
   canonical="https://www.amadolibros.com/"
-  description="Comprá Tarot, oráculos, Biblias Reina-Valera, Biblias católicas y más libros en Uruguay. También buscamos ediciones agotadas, importadas o difíciles."
+  description="Comprá libros importados en Uruguay o pedinos una búsqueda enfocada por encargo para ediciones agotadas, descatalogadas o difíciles de conseguir."
   jsonLd={jsonLd}
 >
-  <Header showSearch={false} />
-  <main>
-    <Hero />
-    <BestsellerSection />
-    <BookDiscovery />
-    <OrderHubAccess />
-    <GuideAccess />
-    <CommercialBenefits />
-    <DeliveryCoordination />
-    <HowToBuy />
-    <TrustStrip />
+  <HomeV2Header />
+  <main class="home-v2-main">
+    <HomeV2Hero />
+    <HomeV2Topics />
+    <HomeV2Shelf />
+    <HomeV2Ideas />
   </main>
   <Footer />
   <SearchOverlay />
   <CatalogSearchOverlay />
 </BaseLayout>
+
+<style is:global>
+  body {
+    padding-bottom: 0 !important;
+    background: #fffaf3;
+  }
+
+  .home-v2-main { overflow: clip; }
+
+  ::selection {
+    background: #ef6844;
+    color: #1b1714;
+  }
+</style>
