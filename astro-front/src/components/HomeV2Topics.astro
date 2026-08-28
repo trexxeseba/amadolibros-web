@@ -1,0 +1,225 @@
+---
+const topics = [
+  {
+    title: 'Literatura y ficción',
+    eyebrow: 'Historias para quedarse',
+    href: '/libros/literatura-ficcion',
+    tone: 'coral',
+    mark: 'L',
+  },
+  {
+    title: 'Psicología',
+    eyebrow: 'Personas, vínculos y crianza',
+    href: '/libros/psicologia',
+    tone: 'lilac',
+    mark: 'Ψ',
+  },
+  {
+    title: 'Tarot y oráculos',
+    eyebrow: 'Mazos, símbolos y práctica',
+    href: '/libros/esoterismo-tarot',
+    tone: 'night',
+    mark: '✦',
+  },
+  {
+    title: 'Medicina y salud',
+    eyebrow: 'Formación y consulta',
+    href: '/libros/medicina-salud',
+    tone: 'mint',
+    mark: '+',
+  },
+  {
+    title: 'Infantiles y juveniles',
+    eyebrow: 'Para crecer leyendo',
+    href: '/libros/infantil-juvenil',
+    tone: 'yellow',
+    mark: 'A',
+  },
+  {
+    title: 'Biblias y espiritualidad',
+    eyebrow: 'Ediciones, formatos y estudio',
+    href: '/libros/biblias',
+    tone: 'sand',
+    mark: 'B',
+  },
+  {
+    title: 'Idiomas',
+    eyebrow: 'Aprender, enseñar y practicar',
+    href: '/libros/idiomas-aprendizaje',
+    tone: 'blue',
+    mark: 'Aa',
+  },
+  {
+    title: 'Libros agotados',
+    eyebrow: 'Lo que no aparece fácil',
+    href: '/libros-agotados-importados-uruguay',
+    tone: 'ink',
+    mark: '?',
+  },
+];
+---
+
+<section id="v2-temas" class="v2-topics" aria-labelledby="v2-topics-title">
+  <div class="v2-section-head">
+    <div>
+      <p>Temas</p>
+      <h2 id="v2-topics-title">Todo empieza por una curiosidad.</h2>
+    </div>
+    <a href="/catalogo">Ver todos los libros <span aria-hidden="true">→</span></a>
+  </div>
+
+  <div class="v2-topic-grid">
+    {topics.map((topic, index) => (
+      <a class={`v2-topic v2-topic-${topic.tone} v2-topic-${index + 1}`} href={topic.href}>
+        <span class="v2-topic-mark" aria-hidden="true">{topic.mark}</span>
+        <span class="v2-topic-copy">
+          <small>{topic.eyebrow}</small>
+          <strong>{topic.title}</strong>
+        </span>
+        <span class="v2-topic-arrow" aria-hidden="true">↗</span>
+      </a>
+    ))}
+  </div>
+</section>
+
+<style>
+  .v2-topics {
+    background: #fffaf3;
+    padding: 3.5rem 1rem 4rem;
+  }
+
+  .v2-section-head {
+    width: min(100%, 1360px);
+    margin: 0 auto 1.7rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .v2-section-head p {
+    margin-bottom: 0.35rem;
+    color: #b4442a;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .v2-section-head h2 {
+    max-width: 16ch;
+    color: #1b1714;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 4.1rem);
+    letter-spacing: -0.04em;
+    line-height: 0.98;
+  }
+
+  .v2-section-head > a {
+    display: none;
+    flex: 0 0 auto;
+    padding-bottom: 0.18rem;
+    border-bottom: 2px solid #ef6844;
+    color: #1b1714;
+    font-size: 0.75rem;
+    font-weight: 850;
+  }
+
+  .v2-topic-grid {
+    width: min(100%, 1360px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .v2-topic {
+    position: relative;
+    min-height: 160px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    border: 1px solid rgba(27, 23, 20, 0.12);
+    border-radius: 1rem;
+    color: #1b1714;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .v2-topic:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(37, 27, 20, 0.12);
+  }
+
+  .v2-topic-coral { background: #ff825f; }
+  .v2-topic-lilac { background: #c8b4f2; }
+  .v2-topic-night { background: #27202c; color: #fff8f0; }
+  .v2-topic-mint { background: #9bd7c8; }
+  .v2-topic-yellow { background: #f3d45f; }
+  .v2-topic-sand { background: #dfc49d; }
+  .v2-topic-blue { background: #93c9e8; }
+  .v2-topic-ink { background: #1b1714; color: #fff8f0; }
+
+  .v2-topic-mark {
+    width: 2.3rem;
+    height: 2.3rem;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .v2-topic-copy small,
+  .v2-topic-copy strong { display: block; }
+
+  .v2-topic-copy small {
+    margin-bottom: 0.28rem;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .v2-topic-copy strong {
+    max-width: 12ch;
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 3.5vw, 1.8rem);
+    line-height: 1.02;
+  }
+
+  .v2-topic-arrow {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.1rem;
+  }
+
+  @media (min-width: 700px) {
+    .v2-topics { padding: 5rem 2rem 5.5rem; }
+    .v2-section-head > a { display: inline-flex; }
+    .v2-topic-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .v2-topic { min-height: 220px; padding: 1.3rem; }
+    .v2-topic-1,
+    .v2-topic-8 { grid-column: span 2; }
+  }
+
+  @media (min-width: 1100px) {
+    .v2-topic-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .v2-topic { min-height: 245px; }
+    .v2-topic-1 { grid-column: span 2; grid-row: span 2; min-height: 505px; }
+    .v2-topic-2,
+    .v2-topic-3,
+    .v2-topic-4,
+    .v2-topic-5 { grid-column: span 2; }
+    .v2-topic-6,
+    .v2-topic-7 { grid-column: span 2; }
+    .v2-topic-8 { grid-column: span 2; }
+    .v2-topic-1 .v2-topic-copy strong { font-size: 2.7rem; }
+  }
+</style>

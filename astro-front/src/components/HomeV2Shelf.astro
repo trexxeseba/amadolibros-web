@@ -1,0 +1,287 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { responsiveBookCover } from '../lib/cloudflare-images.js';
+
+interface Book {
+  id: string;
+  title: string;
+  author?: string;
+  price?: number;
+  status?: string;
+  available_quantity?: number;
+  start_time?: string;
+}
+
+const HOME_JSON = path.resolve(process.cwd(), '../public/home.json');
+let books: Book[] = [];
+
+try {
+  const raw = fs.readFileSync(HOME_JSON, 'utf-8');
+  const data = JSON.parse(raw) as { items?: Book[] };
+  books = (data.items || [])
+    .filter(book => /^MLU\d+$/.test(book.id || ''))
+    .filter(book => book.status === 'active' && Number(book.available_quantity || 0) > 0)
+    .sort((a, b) => String(b.start_time || '').localeCompare(String(a.start_time || '')))
+    .slice(0, 7);
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn('[HomeV2Shelf] home.json no disponible:', message);
+}
+
+function slugify(text: string): string {
+  return (text || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 60);
+}
+
+const price = new Intl.NumberFormat('es-UY', {
+  style: 'currency',
+  currency: 'UYU',
+  maximumFractionDigits: 0,
+});
+
+const shelfBooks = books.map(book => ({
+  ...book,
+  href: `/libro/${book.id}/${slugify(book.title)}`,
+  cover: responsiveBookCover(book.id, { optimize: import.meta.env.PUBLIC_INDEXABLE === 'true' }),
+}));
+---
+
+<section id="v2-recomendados" class="v2-shelf" aria-labelledby="v2-shelf-title">
+  <div class="v2-shelf-head">
+    <div>
+      <p>Recién llegados</p>
+      <h2 id="v2-shelf-title">Tapas que piden que las mires.</h2>
+    </div>
+    <div class="v2-shelf-note">
+      <span>Selección real del catálogo</span>
+      <a href="/catalogo">Ver catálogo completo →</a>
+    </div>
+  </div>
+
+  {shelfBooks.length > 0 ? (
+    <div class="v2-book-strip" role="list">
+      {shelfBooks.map((book, index) => (
+        <article class={`v2-book v2-book-${index + 1}`} role="listitem">
+          <a class="v2-book-cover" href={book.href} aria-label={`Ver ${book.title}`}>
+            <img
+              src={book.cover.src}
+              srcset={book.cover.srcset || undefined}
+              sizes="(max-width: 699px) 58vw, (max-width: 1099px) 30vw, 240px"
+              alt={`Portada de ${book.title}`}
+              width="280"
+              height="373"
+              loading="lazy"
+              decoding="async"
+              onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('v2-book-fallback')"
+            />
+          </a>
+          <div class="v2-book-meta">
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <div>
+              <h3><a href={book.href}>{book.title}</a></h3>
+              {book.author && <p>{book.author}</p>}
+              {Number(book.price || 0) > 0 && <strong>{price.format(Number(book.price))}</strong>}
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <p class="v2-shelf-empty">La selección se completa al construir el catálogo.</p>
+  )}
+</section>
+
+<style>
+  .v2-shelf {
+    overflow: hidden;
+    padding: 4rem 0 4.5rem;
+    background: #1b1714;
+    color: #fffaf3;
+  }
+
+  .v2-shelf-head {
+    width: min(100% - 2rem, 1360px);
+    margin: 0 auto 2.2rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .v2-shelf-head > div:first-child > p {
+    margin-bottom: 0.35rem;
+    color: #ff7651;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .v2-shelf-head h2 {
+    max-width: 15ch;
+    font-family: var(--font-display);
+    font-size: clamp(2.1rem, 5vw, 4.4rem);
+    letter-spacing: -0.04em;
+    line-height: 0.96;
+  }
+
+  .v2-shelf-note {
+    display: none;
+    text-align: right;
+  }
+
+  .v2-shelf-note span,
+  .v2-shelf-note a { display: block; }
+
+  .v2-shelf-note span {
+    margin-bottom: 0.45rem;
+    color: rgba(255, 250, 243, 0.55);
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .v2-shelf-note a {
+    color: #fffaf3;
+    font-size: 0.76rem;
+    font-weight: 850;
+    text-decoration: underline;
+    text-decoration-color: #ff7651;
+    text-underline-offset: 0.25em;
+  }
+
+  .v2-book-strip {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(210px, 66vw);
+    gap: 1rem;
+    padding: 0 1rem 1rem;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: #ff7651 transparent;
+  }
+
+  .v2-book {
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+
+  .v2-book-cover {
+    position: relative;
+    display: block;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 0.45rem;
+    background: #f0e8dc;
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.36);
+    transform: rotate(var(--tilt, 0deg));
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+  }
+
+  .v2-book:hover .v2-book-cover {
+    transform: translateY(-8px) rotate(0deg);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .v2-book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .v2-book-cover img.v2-book-fallback {
+    object-fit: contain;
+    padding: 2rem;
+    background: #fffaf3;
+  }
+
+  .v2-book-1 { --tilt: -1.2deg; }
+  .v2-book-2 { --tilt: 1.6deg; }
+  .v2-book-3 { --tilt: -0.8deg; }
+  .v2-book-4 { --tilt: 1.1deg; }
+  .v2-book-5 { --tilt: -1.7deg; }
+  .v2-book-6 { --tilt: 0.7deg; }
+  .v2-book-7 { --tilt: -0.5deg; }
+
+  .v2-book-meta {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.7rem;
+    margin-top: 0.9rem;
+  }
+
+  .v2-book-meta > span {
+    color: #ff7651;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+  }
+
+  .v2-book-meta h3 {
+    font-size: 0.86rem;
+    line-height: 1.25;
+  }
+
+  .v2-book-meta p {
+    margin-top: 0.22rem;
+    color: rgba(255, 250, 243, 0.58);
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  .v2-book-meta strong {
+    display: block;
+    margin-top: 0.35rem;
+    color: #ffb49d;
+    font-size: 0.78rem;
+  }
+
+  .v2-shelf-empty {
+    width: min(100% - 2rem, 1360px);
+    margin: 0 auto;
+    color: rgba(255, 250, 243, 0.65);
+  }
+
+  @supports (animation-timeline: view()) {
+    .v2-book {
+      animation: v2-book-reveal linear both;
+      animation-timeline: view(inline);
+      animation-range: entry 5% cover 35%;
+    }
+
+    @keyframes v2-book-reveal {
+      from { opacity: 0.45; scale: 0.92; }
+      to { opacity: 1; scale: 1; }
+    }
+  }
+
+  @media (min-width: 700px) {
+    .v2-shelf { padding-top: 5.5rem; padding-bottom: 6rem; }
+    .v2-shelf-head { width: min(100% - 4rem, 1360px); }
+    .v2-shelf-note { display: block; }
+    .v2-book-strip {
+      grid-auto-columns: minmax(220px, 29vw);
+      gap: 1.35rem;
+      padding-right: 2rem;
+      padding-left: max(2rem, calc((100vw - 1360px) / 2));
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .v2-book-strip { grid-auto-columns: minmax(220px, 17vw); gap: 1.6rem; }
+    .v2-book-meta h3 { font-size: 0.9rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .v2-book-cover,
+    .v2-book { animation: none; transition: none; }
+    .v2-book:hover .v2-book-cover { transform: rotate(var(--tilt, 0deg)); }
+  }
+</style>
