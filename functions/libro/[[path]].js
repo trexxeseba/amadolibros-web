@@ -379,6 +379,10 @@ function notFound() {
 export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
+    // B11: los textos alternativos describen la portada sin arrastrar una
+    // autoría genérica del título comercial. El título almacenado, el slug,
+    // el canonical y la identidad de carrito permanecen intactos.
+    const safeImageTitle = escapeHtml(stripGenericAuthorMention(item.title) || item.title);
     // FICHAS-QUALITY-GUARD-1: 'Desconocido', 'Unknown', 'Varios autores'… no
     // son autoría. displayAuthor queda null y TODA superficie que dependa de
     // él (fila Autor, JSON-LD, WhatsApp, relacionados, meta description) omite
@@ -673,7 +677,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:image"       content="${escapeHtml(socialImage)}">
   <meta property="og:image:secure_url" content="${escapeHtml(socialImage)}">
-  <meta property="og:image:alt"   content="Portada de ${safeTitle}">
+  <meta property="og:image:alt"   content="Portada de ${safeImageTitle}">
   <meta property="og:locale"      content="es_UY">
   <meta property="og:site_name"   content="Amado Libros">
 
@@ -681,7 +685,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta name="twitter:title"       content="${documentTitle} | Amado Libros">
   <meta name="twitter:description" content="${metaDesc}">
   <meta name="twitter:image"       content="${escapeHtml(socialImage)}">
-  <meta name="twitter:image:alt"   content="Portada de ${safeTitle}">
+  <meta name="twitter:image:alt"   content="Portada de ${safeImageTitle}">
 
   <script type="application/ld+json">${safeJson(schemaProduct)}</script>
   <script type="application/ld+json">${safeJson(schemaBreadcrumb)}</script>
@@ -902,7 +906,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 </nav>
 
 <main>
-  ${renderGallery(images, safeTitle)}
+  ${renderGallery(images, safeImageTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
