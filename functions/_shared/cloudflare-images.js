@@ -68,8 +68,13 @@ export function responsiveImage(source, {
   quality = 85,
   fit = 'scale-down',
 } = {}) {
-  const normalizedWidths = [...new Set(widths.map(positiveInteger).filter(Boolean))]
-    .sort((a, b) => a - b);
+  const requestedWidths = widths.map(positiveInteger).filter(Boolean);
+  // La ficha pide [320, 480, 768, 1024]. En un móvil retina la portada de
+  // 260 CSS px necesita ~520 px físicos: 640 evita saltar directamente a 768.
+  const candidateWidths = requestedWidths.includes(480) && requestedWidths.includes(768)
+    ? [...requestedWidths, 640]
+    : requestedWidths;
+  const normalizedWidths = [...new Set(candidateWidths)].sort((a, b) => a - b);
   const fallbackWidth = positiveInteger(defaultWidth) || normalizedWidths.at(-1) || 480;
   const src = cloudflareImageUrl(source, { width: fallbackWidth, quality, fit });
   if (!sameProductionZone(source) || normalizedWidths.length === 0) {
