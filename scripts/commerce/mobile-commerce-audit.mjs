@@ -4,6 +4,7 @@ import { chromium } from 'playwright';
 
 const BASE_URL = new URL(process.env.BASE_URL || 'https://www.amadolibros.com/');
 const OUTPUT_DIR = process.env.MOBILE_AUDIT_OUTPUT_DIR || 'artifacts/mobile-commerce';
+const PRODUCT_PATH = String(process.env.MOBILE_AUDIT_PRODUCT_PATH || '').trim();
 const VIEWPORT = { width: 390, height: 844 };
 
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -23,6 +24,7 @@ const report = {
 
 let browser;
 let page;
+let homepageProductUrl = null;
 let productUrl = null;
 
 function absoluteUrl(value) {
@@ -160,13 +162,21 @@ try {
     const href = await productLink.getAttribute('href');
     if (!href) throw new Error('La portada no expone una ficha de producto navegable');
 
-    productUrl = absoluteUrl(href);
-    await fs.writeFile(path.join(OUTPUT_DIR, 'product-url.txt'), `${productUrl}\n`, 'utf8');
-    return pageSnapshot('01-portada');
+    homepageProductUrl = absoluteUrl(href);
+    productUrl = PRODUCT_PATH ? absoluteUrl(PRODUCT_PATH) : homepageProductUrl;
+    return {
+      homepageProductUrl,
+      auditedProductUrl: productUrl,
+      snapshot: await pageSnapshot('01-portada'),
+    };
   });
 
   await stage('Ficha mobile', async () => {
-    const response = await page.goto(productUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    let response = await page.goto(productUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    if ((!response || !response.ok()) && productUrl !== homepageProductUrl) {
+      productUrl = homepageProductUrl;
+      response = await page.goto(productUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    }
     await assertResponse(response, 'Ficha');
     await settle();
 
@@ -176,6 +186,7 @@ try {
     await addButton.click();
     await page.waitForTimeout(800);
 
+    await fs.writeFile(path.join(OUTPUT_DIR, 'product-url.txt'), `${productUrl}\n`, 'utf8');
     return pageSnapshot('02-ficha');
   });
 
@@ -205,11 +216,23 @@ try {
     await page.locator('#buyer-phone').fill('099000000');
     await page.locator('#buyer-email').fill('mobile-audit@example.com');
 
-    await controlMetrics('#btn-transfer-order', 'Comprar por transferencia');
-    await controlMetrics('#btn-prepare-order', 'Pagar con tarjeta o Mercado Pago');
+    let checkoutMode;
+    const transferButton = page.locator('#btn-transfer-order').first();
+    if (await transferButton.isVisible().catch(() => false)) {
+      checkoutMode = 'checkout-completo';
+      await controlMetrics('#btn-transfer-order', 'Comprar por transferencia');
+      await controlMetrics('#btn-prepare-order', 'Pagar con tarjeta o Mercado Pago');
+    } else {
+      checkoutMode = 'whatsapp-preview';
+      await controlMetrics(
+        'button:has-text("Enviar pedido por WhatsApp"), a:has-text("Enviar pedido por WhatsApp")',
+        'Enviar pedido por WhatsApp',
+      );
+    }
 
     return {
       itemCount,
+      checkoutMode,
       snapshot: await pageSnapshot('03-carrito-completo'),
     };
   });
