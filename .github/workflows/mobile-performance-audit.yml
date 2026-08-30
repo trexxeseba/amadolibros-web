@@ -42,10 +42,16 @@ jobs:
       - name: Install isolated audit runtime
         run: npm install --no-save --no-audit --no-fund lighthouse@12 playwright@1.55.0
 
-      - name: Install Chromium
+      - name: Locate system Chrome
+        shell: bash
         run: |
-          npx playwright install --with-deps chromium
-          echo "CHROME_PATH=$(node -e \"const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())\")" >> "$GITHUB_ENV"
+          CHROME_BIN=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
+          if [ -z "$CHROME_BIN" ]; then
+            echo "No se encontró Chrome/Chromium en el runner."
+            exit 1
+          fi
+          echo "CHROME_PATH=$CHROME_BIN" >> "$GITHUB_ENV"
+          "$CHROME_BIN" --version
 
       - name: Traverse the mobile purchase journey without placing an order
         id: mobile_ux
