@@ -91,7 +91,7 @@ async function assertResponse(response, label) {
 }
 
 async function controlMetrics(selector, label) {
-  const locator = page.locator(selector);
+  const locator = page.locator(selector).first();
   await locator.waitFor({ state: 'visible', timeout: 15_000 });
   await locator.scrollIntoViewIfNeeded();
   const box = await locator.boundingBox();
