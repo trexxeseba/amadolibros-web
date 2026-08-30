@@ -24,6 +24,7 @@ jobs:
 
     env:
       MOBILE_AUDIT_OUTPUT_DIR: artifacts/mobile-commerce
+      MOBILE_AUDIT_PRODUCT_PATH: /libro/MLU699238537/bridgerton-el-vizconde-que-me-amo-julia-quinn-especial
 
     steps:
       - uses: actions/checkout@v4
@@ -58,14 +59,20 @@ jobs:
           echo "BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
           echo "Audit target: $TARGET_URL"
 
-          for attempt in {1..12}; do
-            if curl --fail --silent --show-error --location --head "$TARGET_URL/" >/dev/null; then
+          for attempt in {1..24}; do
+            PRODUCT_HTML=$(curl --fail --silent --show-error --location \
+              "$TARGET_URL$MOBILE_AUDIT_PRODUCT_PATH" || true)
+
+            if printf '%s' "$PRODUCT_HTML" \
+              | grep -Fq 'sizes="(max-width: 291px) calc(100vw - 32px), 260px"'; then
+              echo "El Preview ya contiene la revisión que se va a medir."
               exit 0
             fi
+
             sleep 5
           done
 
-          echo "El destino no quedó accesible: $TARGET_URL"
+          echo "El destino no publicó todavía la revisión esperada: $TARGET_URL"
           exit 1
 
       - name: Traverse the mobile purchase journey without placing an order
