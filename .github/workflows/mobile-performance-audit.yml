@@ -1,0 +1,171 @@
+name: Mobile performance and purchase journey
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'audit/mobile-performance-ux-*'
+    paths:
+      - '.github/workflows/mobile-performance-audit.yml'
+      - 'scripts/commerce/mobile-commerce-audit.mjs'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/mobile-performance-audit.yml'
+      - 'scripts/commerce/mobile-commerce-audit.mjs'
+      - 'astro-front/**'
+      - 'functions/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    env:
+      BASE_URL: https://www.amadolibros.com
+      MOBILE_AUDIT_OUTPUT_DIR: artifacts/mobile-commerce
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Install isolated audit runtime
+        run: npm install --no-save --no-audit --no-fund lighthouse@12 playwright@1.55.0
+
+      - name: Install Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          echo "CHROME_PATH=$(node -e \"const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())\")" >> "$GITHUB_ENV"
+
+      - name: Traverse the mobile purchase journey without placing an order
+        id: mobile_ux
+        continue-on-error: true
+        run: node scripts/commerce/mobile-commerce-audit.mjs
+
+      - name: Run Lighthouse mobile on commercial routes
+        id: lighthouse
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/lighthouse
+
+          cat > artifacts/lighthouse/targets.tsv <<EOF
+          portada	${BASE_URL}/
+          catalogo	${BASE_URL}/catalogo
+          carrito	${BASE_URL}/carrito
+          EOF
+
+          if [ -s artifacts/mobile-commerce/product-url.txt ]; then
+            PRODUCT_URL=$(tr -d '\r\n' < artifacts/mobile-commerce/product-url.txt)
+            printf 'ficha\t%s\n' "$PRODUCT_URL" >> artifacts/lighthouse/targets.tsv
+          fi
+
+          while IFS=$'\t' read -r NAME URL; do
+            [ -n "$NAME" ] || continue
+            echo "Auditing $NAME: $URL"
+            npx lighthouse "$URL" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --form-factor=mobile \
+              --throttling-method=simulate \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="artifacts/lighthouse/${NAME}.json"
+          done < artifacts/lighthouse/targets.tsv
+
+      - name: Build readable performance summary
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          const dir = 'artifacts/lighthouse';
+          const rows = [];
+          const details = {};
+
+          if (fs.existsSync(dir)) {
+            for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.json')).sort()) {
+              const report = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+              const name = file.replace(/\.json$/, '');
+              const category = (key) => Math.round((report.categories?.[key]?.score ?? 0) * 100);
+              const audit = (key) => report.audits?.[key]?.displayValue ?? 'n/d';
+              const row = {
+                route: name,
+                performance: category('performance'),
+                accessibility: category('accessibility'),
+                bestPractices: category('best-practices'),
+                seo: category('seo'),
+                fcp: audit('first-contentful-paint'),
+                lcp: audit('largest-contentful-paint'),
+                tbt: audit('total-blocking-time'),
+                cls: audit('cumulative-layout-shift'),
+                speedIndex: audit('speed-index'),
+                totalBytes: audit('total-byte-weight'),
+              };
+              rows.push(row);
+              details[name] = row;
+            }
+          }
+
+          fs.mkdirSync('artifacts/mobile-commerce', { recursive: true });
+          fs.writeFileSync(
+            'artifacts/mobile-commerce/lighthouse-summary.json',
+            `${JSON.stringify({ generatedAt: new Date().toISOString(), rows, details }, null, 2)}\n`,
+          );
+
+          const lines = [
+            '# Performance mobile — Amado Libros',
+            '',
+            '| Ruta | Perf. | Acces. | Buenas prácticas | SEO | FCP | LCP | TBT | CLS | Peso |',
+            '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+            ...rows.map((row) =>
+              `| ${row.route} | ${row.performance} | ${row.accessibility} | ${row.bestPractices} | ${row.seo} | ${row.fcp} | ${row.lcp} | ${row.tbt} | ${row.cls} | ${row.totalBytes} |`,
+            ),
+            '',
+            `Recorrido UX: ${{ steps.mobile_ux.outcome }}`,
+            `Lighthouse: ${{ steps.lighthouse.outcome }}`,
+            '',
+          ];
+
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`);
+          fs.writeFileSync('artifacts/mobile-commerce/performance-summary.md', `${lines.join('\n')}\n`);
+          NODE
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-performance-${{ github.run_id }}
+          path: |
+            artifacts/mobile-commerce/
+            artifacts/lighthouse/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Block on failed measurement or critical journey failure
+        if: always()
+        env:
+          MOBILE_UX_OUTCOME: ${{ steps.mobile_ux.outcome }}
+          LIGHTHOUSE_OUTCOME: ${{ steps.lighthouse.outcome }}
+        run: |
+          if [ "$MOBILE_UX_OUTCOME" != "success" ]; then
+            echo "El recorrido mobile encontró una falla crítica."
+            exit 1
+          fi
+          if [ "$LIGHTHOUSE_OUTCOME" != "success" ]; then
+            echo "Lighthouse no completó todas las rutas comerciales."
+            exit 1
+          fi
