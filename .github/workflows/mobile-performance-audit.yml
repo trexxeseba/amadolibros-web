@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/mobile-performance-audit.yml'
       - 'scripts/commerce/mobile-commerce-audit.mjs'
+      - 'scripts/commerce/verify-responsive-cover.mjs'
       - 'astro-front/**'
       - 'functions/**'
 
@@ -25,6 +26,7 @@ jobs:
     env:
       MOBILE_AUDIT_OUTPUT_DIR: artifacts/mobile-commerce
       MOBILE_AUDIT_PRODUCT_PATH: /libro/MLU699238537/bridgerton-el-vizconde-que-me-amo-julia-quinn-especial
+      MOBILE_AUDIT_PRODUCT_ID: MLU699238537
 
     steps:
       - uses: actions/checkout@v4
@@ -52,28 +54,33 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             TARGET_URL="https://pr-${{ github.event.pull_request.number }}.amadolibros-web.pages.dev"
+            EXPECTED_HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+            for attempt in {1..24}; do
+              REVISION=$(curl --fail --silent --show-error --location \
+                "$TARGET_URL/preview-revision.json" || true)
+              if printf '%s' "$REVISION" | grep -Fq "$EXPECTED_HEAD_SHA"; then
+                echo "El Preview corresponde a $EXPECTED_HEAD_SHA."
+                break
+              fi
+              if [ "$attempt" = "24" ]; then
+                echo "El Preview no publicó la revisión esperada: $EXPECTED_HEAD_SHA"
+                exit 1
+              fi
+              sleep 5
+            done
           else
             TARGET_URL="https://www.amadolibros.com"
+            curl --fail --silent --show-error --location --head "$TARGET_URL/" >/dev/null
           fi
 
           echo "BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
           echo "Audit target: $TARGET_URL"
 
-          for attempt in {1..24}; do
-            PRODUCT_HTML=$(curl --fail --silent --show-error --location \
-              "$TARGET_URL$MOBILE_AUDIT_PRODUCT_PATH" || true)
-
-            if printf '%s' "$PRODUCT_HTML" \
-              | grep -Fq 'sizes="(max-width: 291px) calc(100vw - 32px), 260px"'; then
-              echo "El Preview ya contiene la revisión que se va a medir."
-              exit 0
-            fi
-
-            sleep 5
-          done
-
-          echo "El destino no publicó todavía la revisión esperada: $TARGET_URL"
-          exit 1
+      - name: Verify responsive cover selection and byte saving
+        id: responsive_cover
+        continue-on-error: true
+        run: node scripts/commerce/verify-responsive-cover.mjs
 
       - name: Traverse the mobile purchase journey without placing an order
         id: mobile_ux
@@ -149,16 +156,26 @@ jobs:
             }
           }
 
+          const coverPath = 'artifacts/mobile-commerce/responsive-cover-verification.json';
+          const cover = fs.existsSync(coverPath)
+            ? JSON.parse(fs.readFileSync(coverPath, 'utf8'))
+            : null;
+
           fs.mkdirSync('artifacts/mobile-commerce', { recursive: true });
           fs.writeFileSync(
             'artifacts/mobile-commerce/lighthouse-summary.json',
-            `${JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl: process.env.BASE_URL, rows, details }, null, 2)}\n`,
+            `${JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl: process.env.BASE_URL, rows, details, cover }, null, 2)}\n`,
           );
+
+          const coverLine = cover
+            ? `Portada responsive: Chrome eligió ${new URL(cover.browserSelection.currentSrc).pathname.includes('cdn-cgi') ? '640 px' : cover.browserSelection.currentSrc}; ahorro ${cover.comparison.bytesSaved} bytes (${cover.comparison.percentSaved} %).`
+            : 'Portada responsive: sin evidencia.';
 
           const lines = [
             '# Performance mobile — Amado Libros',
             '',
             `Destino medido: ${process.env.BASE_URL}`,
+            coverLine,
             '',
             '| Ruta | Perf. | Acces. | Buenas prácticas | SEO | FCP | LCP | TBT | CLS | Peso |',
             '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
@@ -166,6 +183,7 @@ jobs:
               `| ${row.route} | ${row.performance} | ${row.accessibility} | ${row.bestPractices} | ${row.seo} | ${row.fcp} | ${row.lcp} | ${row.tbt} | ${row.cls} | ${row.totalBytes} |`,
             ),
             '',
+            `Portada responsive: ${{ steps.responsive_cover.outcome }}`,
             `Recorrido UX: ${{ steps.mobile_ux.outcome }}`,
             `Lighthouse: ${{ steps.lighthouse.outcome }}`,
             '',
@@ -189,9 +207,14 @@ jobs:
       - name: Block on failed measurement or critical journey failure
         if: always()
         env:
+          RESPONSIVE_COVER_OUTCOME: ${{ steps.responsive_cover.outcome }}
           MOBILE_UX_OUTCOME: ${{ steps.mobile_ux.outcome }}
           LIGHTHOUSE_OUTCOME: ${{ steps.lighthouse.outcome }}
         run: |
+          if [ "$RESPONSIVE_COVER_OUTCOME" != "success" ]; then
+            echo "La portada responsive no demostró selección y ahorro reales."
+            exit 1
+          fi
           if [ "$MOBILE_UX_OUTCOME" != "success" ]; then
             echo "El recorrido mobile encontró una falla crítica."
             exit 1
