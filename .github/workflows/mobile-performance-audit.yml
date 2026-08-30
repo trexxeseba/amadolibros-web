@@ -23,7 +23,6 @@ jobs:
     timeout-minutes: 35
 
     env:
-      BASE_URL: https://www.amadolibros.com
       MOBILE_AUDIT_OUTPUT_DIR: artifacts/mobile-commerce
 
     steps:
@@ -46,6 +45,28 @@ jobs:
           fi
           echo "CHROME_PATH=$CHROME_BIN" >> "$GITHUB_ENV"
           "$CHROME_BIN" --version
+
+      - name: Resolve audited deployment
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TARGET_URL="https://pr-${{ github.event.pull_request.number }}.amadolibros-web.pages.dev"
+          else
+            TARGET_URL="https://www.amadolibros.com"
+          fi
+
+          echo "BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
+          echo "Audit target: $TARGET_URL"
+
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --location --head "$TARGET_URL/" >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "El destino no quedó accesible: $TARGET_URL"
+          exit 1
 
       - name: Traverse the mobile purchase journey without placing an order
         id: mobile_ux
@@ -114,6 +135,7 @@ jobs:
                 cls: audit('cumulative-layout-shift'),
                 speedIndex: audit('speed-index'),
                 totalBytes: audit('total-byte-weight'),
+                responsiveImageSavings: audit('uses-responsive-images'),
               };
               rows.push(row);
               details[name] = row;
@@ -123,11 +145,13 @@ jobs:
           fs.mkdirSync('artifacts/mobile-commerce', { recursive: true });
           fs.writeFileSync(
             'artifacts/mobile-commerce/lighthouse-summary.json',
-            `${JSON.stringify({ generatedAt: new Date().toISOString(), rows, details }, null, 2)}\n`,
+            `${JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl: process.env.BASE_URL, rows, details }, null, 2)}\n`,
           );
 
           const lines = [
             '# Performance mobile — Amado Libros',
+            '',
+            `Destino medido: ${process.env.BASE_URL}`,
             '',
             '| Ruta | Perf. | Acces. | Buenas prácticas | SEO | FCP | LCP | TBT | CLS | Peso |',
             '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
