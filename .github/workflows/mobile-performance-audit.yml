@@ -2,12 +2,6 @@ name: Mobile performance and purchase journey
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'audit/mobile-performance-ux-*'
-    paths:
-      - '.github/workflows/mobile-performance-audit.yml'
-      - 'scripts/commerce/mobile-commerce-audit.mjs'
   pull_request:
     branches: [main]
     paths:
