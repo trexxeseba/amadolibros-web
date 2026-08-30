@@ -153,6 +153,8 @@ try {
     await assertResponse(response, 'Portada');
     await settle();
 
+    await controlMetrics('.v2-search button[type="submit"]', 'Buscar — portada');
+
     const productLink = page.locator('a[href^="/libro/"]:visible').first();
     await productLink.waitFor({ state: 'visible', timeout: 20_000 });
     const href = await productLink.getAttribute('href');
@@ -160,7 +162,6 @@ try {
 
     productUrl = absoluteUrl(href);
     await fs.writeFile(path.join(OUTPUT_DIR, 'product-url.txt'), `${productUrl}\n`, 'utf8');
-    await controlMetrics('[data-action="add-to-cart"]:visible', 'Agregar al carrito — portada');
     return pageSnapshot('01-portada');
   });
 
