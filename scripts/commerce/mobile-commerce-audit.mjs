@@ -113,7 +113,10 @@ async function controlMetrics(selector, label) {
 }
 
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.CHROME_PATH || undefined,
+  });
   const context = await browser.newContext({
     viewport: VIEWPORT,
     deviceScaleFactor: 2,
