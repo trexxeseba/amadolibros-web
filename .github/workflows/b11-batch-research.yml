@@ -1,0 +1,148 @@
+name: B11 lote — investigar y commitear evidencia bibliográfica
+
+# Ejecuta la investigación real (Google Books, Open Library, BNE) para un
+# lote de N ISBN todavía no enriquecidos y deja el resultado *commiteado en
+# el repo* (no solo como artifact efímero), para que quede accesible desde
+# cualquier sesión que sólo tenga salida de red hacia GitHub.
+#
+# No publica nada: sólo genera functions/_shared/book-enrichment-facts-*.js
+# (mismo formato que los lotes de 1000/333 ISBN ya existentes) más la
+# evidencia cruda (manifest + source-cache) para trazabilidad. El wiring al
+# registry (functions/_shared/book-enrichment-registry.js) y la redacción
+# de sinopsis donde corresponda se hacen en un commit separado, revisado.
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Cantidad de ISBN nuevos a investigar en este lote
+        required: true
+        default: '200'
+        type: string
+      output_dir:
+        description: Directorio donde queda la evidencia (manifest/cache)
+        required: true
+        default: artifacts/book-intelligence/lote-01
+        type: string
+      facts_output:
+        description: Módulo final de hechos verificados a commitear
+        required: true
+        default: functions/_shared/book-enrichment-facts-lote-01.js
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: b11-batch-research-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  research-and-commit:
+    name: Research batch and commit verified facts
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      LIMIT: ${{ inputs.limit }}
+      OUTPUT_DIR: ${{ inputs.output_dir }}
+      FACTS_OUTPUT: ${{ inputs.facts_output }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate research pipeline without network
+        run: |
+          node --check scripts/seo/book-intelligence-research-run.mjs
+          node --check scripts/seo/book-intelligence-project.mjs
+
+      - name: Authenticate Google Books through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Research N exact ISBN editions
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
+          BOOK_INTELLIGENCE_LIMIT: ${{ env.LIMIT }}
+          BOOK_INTELLIGENCE_CANDIDATE_LIMIT: '0'
+          BOOK_INTELLIGENCE_OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
+          BOOK_INTELLIGENCE_CACHE_PATH: ${{ env.OUTPUT_DIR }}/source-cache.json
+          GOOGLE_BOOKS_BUDGET: '600'
+          GOOGLE_BOOKS_CONCURRENCY: '2'
+          GOOGLE_BOOKS_DELAY_MS: '1100'
+          GOOGLE_BOOKS_RETRY_ATTEMPTS: '3'
+          BNE_BUDGET: '1200'
+          BNE_CONCURRENCY: '3'
+          BNE_DELAY_MS: '500'
+          OPEN_LIBRARY_BUDGET: '1200'
+          OPEN_LIBRARY_CONCURRENCY: '2'
+        run: node scripts/seo/book-intelligence-research-run.mjs --limit "$LIMIT"
+
+      - name: Project verified facts module
+        run: |
+          set -euo pipefail
+          EXPECTED="$(node -e "console.log(require('./${OUTPUT_DIR}/isbn-1000-manifest.json').entries.length)")"
+          echo "Entradas con evidencia suficiente: $EXPECTED / $LIMIT solicitados."
+          echo "qualified_count=$EXPECTED" >> "$GITHUB_OUTPUT"
+          node scripts/seo/book-intelligence-project.mjs \
+            --manifest "$OUTPUT_DIR/isbn-1000-manifest.json" \
+            --cache "$OUTPUT_DIR/source-cache.json" \
+            --output "$FACTS_OUTPUT" \
+            --expected "$EXPECTED"
+        id: project
+
+      - name: Sanity-check generated module has no commercial data
+        run: |
+          set -euo pipefail
+          node --check "$FACTS_OUTPUT"
+          if grep -Eq '"(price|available_quantity|total_stock|permalink|canonical|pictures|thumbnail|condition)"\s*:' "$FACTS_OUTPUT"; then
+            echo "El módulo generado contiene datos comerciales prohibidos." >&2
+            exit 1
+          fi
+
+      - name: Publish job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# B11 lote — investigación bibliográfica"
+            echo
+            echo "- Solicitados: $LIMIT"
+            echo "- Con evidencia suficiente (publicables): ${{ steps.project.outputs.qualified_count || 'N/D' }}"
+            echo
+            if [ -f "$OUTPUT_DIR/report-summary.md" ]; then
+              cat "$OUTPUT_DIR/report-summary.md"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit evidence and verified facts module
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUTPUT_DIR" "$FACTS_OUTPUT"
+          if git diff --cached --quiet; then
+            echo "Sin cambios para commitear."
+            exit 0
+          fi
+          git commit -m "b11(lote): investigación real ${LIMIT} ISBN + hechos verificados
+
+Genera evidencia bibliográfica (Google Books, Open Library, BNE) y el
+módulo de hechos verificados para este lote. No modifica el registry ni
+publica nada; queda para wiring y redacción en un commit revisado aparte."
+          git push origin "HEAD:${{ github.ref_name }}"
