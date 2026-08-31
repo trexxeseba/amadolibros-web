@@ -339,6 +339,38 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
   </section>`;
 }
 
+function renderEditorialEnrichment(editorial) {
+    if (!editorial || typeof editorial !== 'object') return '';
+    const paragraphs = Array.isArray(editorial.paragraphs)
+        ? editorial.paragraphs.map(value => String(value || '').trim()).filter(Boolean)
+        : [];
+    if (!paragraphs.length || !editorial.heading) return '';
+
+    const highlights = Array.isArray(editorial.highlights)
+        ? editorial.highlights.map(value => String(value || '').trim()).filter(Boolean)
+        : [];
+    const links = Array.isArray(editorial.links)
+        ? editorial.links.filter(link =>
+            link && typeof link.href === 'string' && link.href.startsWith('/') && link.label
+          )
+        : [];
+
+    return `<section class="editorial-enrichment" aria-labelledby="editorial-enrichment-heading">
+      ${editorial.eyebrow ? `<p class="editorial-eyebrow">${escapeHtml(editorial.eyebrow)}</p>` : ''}
+      <h2 id="editorial-enrichment-heading">${escapeHtml(editorial.heading)}</h2>
+      ${paragraphs.map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('\n')}
+      ${highlights.length ? `<h3>${escapeHtml(editorial.highlights_heading || 'Características comprobadas')}</h3>
+      <ul>${highlights.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : ''}
+      ${editorial.decision_heading && editorial.decision_copy ? `<div class="editorial-decision">
+        <h3>${escapeHtml(editorial.decision_heading)}</h3>
+        <p>${escapeHtml(editorial.decision_copy)}</p>
+      </div>` : ''}
+      ${links.length ? `<div class="editorial-links">${links.map(link =>
+        `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)} →</a>`
+      ).join('')}</div>` : ''}
+    </section>`;
+}
+
 // ---------------------------------------------------------------------------
 // Respuestas de error
 // ---------------------------------------------------------------------------
@@ -389,8 +421,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     // el dato en vez de imprimir un nombre falso. Nunca se sustituye.
     const displayAuthor = realAuthor(item.author);
     const safeAuthor   = displayAuthor ? escapeHtml(displayAuthor) : null;
+    const editorial = item._amadoEditorial && typeof item._amadoEditorial === 'object'
+        ? item._amadoEditorial
+        : null;
+    const enrichmentSchema = item._amadoSchema && typeof item._amadoSchema === 'object'
+        ? item._amadoSchema
+        : null;
     const seoOverride  = PRODUCT_SEO_OVERRIDES[item.id] || null;
-    const documentTitle = escapeHtml(seoOverride?.title || item.title);
+    const documentTitle = escapeHtml(seoOverride?.title || editorial?.seo_title || item.title);
     const indexWhenPaused = seoOverride?.indexWhenPaused === true ||
         isPausedProductInSeoCohort(item.id);
     const sourceImages = normalizeImages(item, previewCoverSrc);
@@ -420,12 +458,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const sellableInCheckout = inStock && checkoutCurrencySupported;
     const hasFreeShipping = sellableInCheckout && price >= FREE_SHIPPING_THRESHOLD_UYU;
     const condition     = formatCondition(item.condition);
-    const dimensions    = formatDimensions(item.dimensions);
+    const dimensions    = item.dimensions_text || formatDimensions(item.dimensions);
     const bibliographic = item.bibliographic && typeof item.bibliographic === 'object'
         ? item.bibliographic
         : {};
+    const editorialHtml = renderEditorialEnrichment(editorial);
     const description = item.description ? String(item.description).trim() : '';
-    const descriptionHtml = description
+    const descriptionHtml = description && !editorial
         ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
         : '';
     const waMessage = buildBookWhatsAppMessage({
@@ -457,6 +496,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         detailRow('Formato', bibliographic.format),
         detailRow('Edición', bibliographic.edition),
         detailRow('Año', bibliographic.publication_year),
+        detailRow('Fecha de publicación', bibliographic.publication_date),
         detailRow('Género', bibliographic.genre),
         detailRow('Temas', Array.isArray(bibliographic.subjects)
             ? bibliographic.subjects.map(value => String(value || '').trim()).filter(Boolean).join(' · ')
@@ -496,7 +536,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
           : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
     const metaDesc = seoOverride?.description
         ? escapeHtml(seoOverride.description)
-        : defaultMetaDesc;
+        : editorial?.meta_description
+          ? escapeHtml(editorial.meta_description)
+          : defaultMetaDesc;
     const seoOpportunityHtml = seoOverride?.heading && seoOverride?.copy
         ? `<section class="seo-opportunity" aria-labelledby="seo-opportunity-heading">
       <h2 id="seo-opportunity-heading">${escapeHtml(seoOverride.heading)}</h2>
@@ -577,6 +619,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (bibliographic.illustrator) {
         schemaProduct.illustrator = { '@type': 'Person', 'name': bibliographic.illustrator };
     }
+    if (enrichmentSchema?.inLanguage) schemaProduct.inLanguage = enrichmentSchema.inLanguage;
+    if (enrichmentSchema?.bookFormat) schemaProduct.bookFormat = enrichmentSchema.bookFormat;
+    if (enrichmentSchema?.bookEdition) schemaProduct.bookEdition = enrichmentSchema.bookEdition;
+    if (enrichmentSchema?.datePublished) schemaProduct.datePublished = enrichmentSchema.datePublished;
+    if (enrichmentSchema?.genre) schemaProduct.genre = enrichmentSchema.genre;
     if (schemaProduct.offers && item.condition === 'new') {
         schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
     } else if (schemaProduct.offers && item.condition === 'used') {
@@ -848,6 +895,18 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .waitlist-status.is-ok{color:#16733a;font-weight:700}
     .waitlist-unavailable{font-size:.85rem;color:#64748b}
     @media(max-width:520px){.waitlist-row{flex-direction:column}.btn-waitlist{width:100%}}
+    .editorial-enrichment{margin-top:1.1rem;padding:1.15rem;background:#fff;
+                            border:1px solid #dbe3ec;border-radius:.7rem}
+    .editorial-enrichment h2{font-size:1.22rem;line-height:1.3;color:#0f172a;margin-bottom:.75rem}
+    .editorial-enrichment h3{font-size:1rem;line-height:1.35;color:#1e293b;margin:1rem 0 .45rem}
+    .editorial-enrichment p{font-size:.92rem;color:#334155;margin-top:.65rem}
+    .editorial-eyebrow{font-size:.76rem!important;font-weight:800;text-transform:uppercase;
+                       letter-spacing:.055em;color:#9a3412!important;margin:0 0 .4rem!important}
+    .editorial-enrichment ul{padding-left:1.15rem;margin-top:.45rem;color:#334155}
+    .editorial-enrichment li{margin:.3rem 0;font-size:.9rem}
+    .editorial-decision{margin-top:1rem;padding-top:.15rem;border-top:1px solid #e2e8f0}
+    .editorial-links{display:flex;flex-wrap:wrap;gap:.65rem 1rem;margin-top:1rem}
+    .editorial-links a{font-size:.86rem;font-weight:700;color:#9a3412}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
     .seo-opportunity{margin-top:1rem;padding:1rem;background:#fff7ed;
@@ -915,6 +974,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     <div class="cta">
       ${actionHtml}
     </div>
+    ${editorialHtml}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
