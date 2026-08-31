@@ -1,0 +1,239 @@
+name: B11 editorial real — preparar 2000 ISBN
+
+on:
+  push:
+    branches:
+      - b11/editorial-real-2000-1
+    paths:
+      - '.github/workflows/book-editorial-real-2000.yml'
+      - 'scripts/seo/book-editorial-cohort-2000.mjs'
+      - 'scripts/seo/book-intelligence-*.mjs'
+      - 'functions/_shared/book-intelligence-evidence.js'
+      - 'functions/_shared/book-enrichment-*.js'
+      - 'functions/__tests__/book-editorial-cohort-2000.test.js'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: ISBN únicos de la cohorte editorial
+        required: true
+        default: '2000'
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: editorial-real-2000-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-production-pilot:
+    name: Verify production editorial pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PRODUCT_URL: https://www.amadolibros.com/libro/MLU1453287196/grandes-clasicos-tomo-11-disney-pixar-para-colorear
+      FEED_URL: https://www.amadolibros.com/feed.xml
+
+    steps:
+      - name: Verify exact product page in Production
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 4 --retry-delay 3 --max-time 60 "$PRODUCT_URL" -o /tmp/product.html
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('/tmp/product.html', 'utf8');
+          const required = [
+            'Libro para colorear por números Disney Pixar | Tomo 11',
+            '100 ilustraciones misteriosas',
+            'Sistema de coloreado por números y códigos de color',
+            '¿Para quién está recomendado?',
+            'Hachette HEROES – Disney – Arteterapia',
+            'Jérémy Mariez',
+            'Servei Gráfic NJR',
+            '9791388034435',
+          ];
+          const missing = required.filter(value => !html.includes(value));
+          if (missing.length) throw new Error(`Producción no contiene: ${missing.join(' | ')}`);
+          const forbidden = [
+            'La publicación incluye 11 imágenes para revisar portada y edición',
+            'El ISBN 9791388034435 identifica esta versión concreta para compararla',
+          ];
+          const residual = forbidden.filter(value => html.includes(value));
+          if (residual.length) throw new Error(`Producción conserva relleno anterior: ${residual.join(' | ')}`);
+          console.log('Ficha editorial real verificada en Producción.');
+          NODE
+
+      - name: Verify exact Merchant offer in Production
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 4 --retry-delay 3 --max-time 90 "$FEED_URL" -o /tmp/feed.xml
+          node <<'NODE'
+          const fs = require('node:fs');
+          const xml = fs.readFileSync('/tmp/feed.xml', 'utf8');
+          const blocks = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+          const block = blocks.find(value => value.includes('<g:id>MLU1453287196</g:id>')) || '';
+          if (!block) throw new Error('Merchant no contiene MLU1453287196.');
+          const required = [
+            '<g:gtin>9791388034435</g:gtin>',
+            'Libro para colorear por números Disney y Pixar',
+            '100 ilustraciones misteriosas',
+            '<g:price>',
+            '<g:availability>in stock</g:availability>',
+            '<g:image_link>',
+          ];
+          const missing = required.filter(value => !block.includes(value));
+          if (missing.length) throw new Error(`Oferta Merchant incompleta: ${missing.join(' | ')}`);
+          console.log('Oferta Merchant editorial verificada en Producción.');
+          NODE
+
+  prepare-editorial-cohort:
+    name: Research and prepare 2000 editorial dossiers
+    needs: verify-production-pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OUTPUT_DIR: artifacts/book-intelligence/editorial-real-2000
+      CACHE_PATH: artifacts/book-intelligence/editorial-real-2000/source-cache.json
+      COHORT_LIMIT: ${{ inputs.limit || '2000' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate editorial cohort code without network
+        run: |
+          node --check scripts/seo/book-editorial-cohort-2000.mjs
+          node --test functions/__tests__/book-editorial-cohort-2000.test.js
+
+      - name: Authenticate Google Books through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Restore resumable source cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESEARCH_BRANCH: ${{ github.head_ref || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          previous_run="$(gh run list \
+            --workflow book-editorial-real-2000.yml \
+            --branch "$RESEARCH_BRANCH" \
+            --status completed \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId // empty')"
+          if [ -n "$previous_run" ] && [ "$previous_run" != "${{ github.run_id }}" ]; then
+            seed_dir="$(mktemp -d)"
+            gh run download "$previous_run" \
+              --pattern 'editorial-real-2000-*' \
+              --dir "$seed_dir" || true
+            seed_cache="$(find "$seed_dir" -name source-cache.json -type f -print -quit)"
+            if [ -n "$seed_cache" ]; then
+              cp "$seed_cache" "$CACHE_PATH"
+              echo "Caché retomada de la corrida $previous_run."
+            fi
+          fi
+
+      - name: Research 2000 exact ISBN editions
+        id: research
+        continue-on-error: true
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
+          BOOK_INTELLIGENCE_LIMIT: ${{ env.COHORT_LIMIT }}
+          BOOK_INTELLIGENCE_CANDIDATE_LIMIT: '0'
+          GOOGLE_BOOKS_BUDGET: '2000'
+          GOOGLE_BOOKS_CONCURRENCY: '2'
+          GOOGLE_BOOKS_DELAY_MS: '1100'
+          GOOGLE_BOOKS_RETRY_ATTEMPTS: '3'
+          BNE_BUDGET: '4000'
+          BNE_CONCURRENCY: '3'
+          BNE_DELAY_MS: '500'
+          OPEN_LIBRARY_BUDGET: '4000'
+          OPEN_LIBRARY_CONCURRENCY: '2'
+          BOOK_INTELLIGENCE_OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
+          BOOK_INTELLIGENCE_CACHE_PATH: ${{ env.CACHE_PATH }}
+        run: node scripts/seo/book-intelligence-research-run.mjs --limit "$BOOK_INTELLIGENCE_LIMIT"
+
+      - name: Guarantee a readable cache artifact
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$OUTPUT_DIR"
+          if [ ! -s "$CACHE_PATH" ]; then
+            printf '{"schema_version":1,"generated_at":"%s","entries":{}}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$CACHE_PATH"
+          fi
+
+      - name: Build 2000 research dossiers with editorial quality gates
+        if: always()
+        env:
+          BOOK_EDITORIAL_COHORT_LIMIT: ${{ env.COHORT_LIMIT }}
+          BOOK_EDITORIAL_OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
+          BOOK_EDITORIAL_CACHE_PATH: ${{ env.CACHE_PATH }}
+        run: node scripts/seo/book-editorial-cohort-2000.mjs
+
+      - name: Validate cohort contract
+        if: always()
+        env:
+          EXPECTED_LIMIT: ${{ env.COHORT_LIMIT }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync(
+            'artifacts/book-intelligence/editorial-real-2000/editorial-cohort-2000.json',
+            'utf8',
+          ));
+          const expected = Number(process.env.EXPECTED_LIMIT || 2000);
+          const isbns = new Set(report.dossiers.map(entry => entry.isbn));
+          if (report.dossiers.length !== expected || isbns.size !== expected) {
+            throw new Error(`Cohorte inválida: ${report.dossiers.length}/${isbns.size}; esperados ${expected}.`);
+          }
+          if (report.dossiers.some(entry => entry.publication_allowed !== false)) {
+            throw new Error('Un dossier habilitó publicación automática.');
+          }
+          if (report.summary.with_any_source < 1) {
+            throw new Error('La investigación no obtuvo ninguna fuente utilizable.');
+          }
+          const forbidden = /"(?:price|available_quantity|total_stock|permalink|canonical|pictures|thumbnail|condition)"\s*:/;
+          if (forbidden.test(JSON.stringify(report))) {
+            throw new Error('La cohorte contiene datos comerciales prohibidos.');
+          }
+          console.log(JSON.stringify(report.summary, null, 2));
+          NODE
+
+      - name: Publish job summary
+        if: always()
+        shell: bash
+        run: |
+          echo "Research outcome: ${{ steps.research.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$OUTPUT_DIR/editorial-cohort-2000-summary.md" ]; then
+            cat "$OUTPUT_DIR/editorial-cohort-2000-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload 2000-ISBN evidence and dossiers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-real-2000-${{ github.run_id }}
+          path: ${{ env.OUTPUT_DIR }}/
+          if-no-files-found: error
+          retention-days: 30
