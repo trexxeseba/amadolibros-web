@@ -1,6 +1,8 @@
 // Enriquecimientos editoriales reales: contenido útil para decidir, SEO y Merchant.
 // Cada afirmación debe quedar vinculada a la edición exacta o a la edición fuente
 // identificada expresamente. No contiene precio, stock, imágenes ni URL comercial.
+// `seo_title` repite el título comercial byte por byte: los términos SEO nuevos
+// entran en el cuerpo, subtítulos, meta description y Merchant, nunca en títulos.
 
 export const BOOK_EDITORIAL_UPGRADES = Object.freeze([
   Object.freeze({
@@ -11,7 +13,7 @@ export const BOOK_EDITORIAL_UPGRADES = Object.freeze([
     verified_at: '2026-08-31',
     editorial: Object.freeze({
       quality_level: 'editorial_real_v1',
-      seo_title: 'Libro para colorear por números Disney Pixar | Tomo 11',
+      seo_title: 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear',
       eyebrow: 'Libro para colorear por números · Disney y Pixar',
       heading: 'Qué contiene Grandes Clásicos tomo 11 de Disney y Pixar',
       paragraphs: Object.freeze([
