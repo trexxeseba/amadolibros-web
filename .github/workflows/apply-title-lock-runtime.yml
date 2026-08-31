@@ -1,0 +1,111 @@
+name: Apply per-listing title lock
+
+on:
+  push:
+    branches:
+      - b11/editorial-real-2000-batch-01
+    paths:
+      - '.github/workflows/apply-title-lock-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-title-lock-runtime
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b11/editorial-real-2000-batch-01
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Make editorial metadata incapable of changing any listing title
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('functions/_shared/book-enrichment-registry.js')
+          text = path.read_text(encoding='utf-8')
+
+          old_validation = "if (!clean(record.editorial.seo_title) || !clean(record.editorial.heading)) return false;"
+          new_validation = "if (!clean(record.editorial.heading)) return false;"
+          if old_validation in text:
+              text = text.replace(old_validation, new_validation, 1)
+          elif new_validation not in text:
+              raise SystemExit('No se encontró la guarda esperada de seo_title.')
+
+          old_projection = "_amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,"
+          new_projection = """_amadoEditorial: enrichment.decision === 'auto_publish' ? {
+      ...enrichment.editorial,
+      // TITLE-LOCK-2000: el título HTML se toma siempre de ESTA publicación.
+      // Un contenido compartido por ISBN no puede normalizar ni reemplazar
+      // títulos distintos de publicaciones duplicadas.
+      seo_title: item.title,
+    } : null,"""
+          if old_projection in text:
+              text = text.replace(old_projection, new_projection, 1)
+          elif new_projection not in text:
+              raise SystemExit('No se encontró la proyección editorial esperada.')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Prove title is preserved per listing even with the same ISBN
+        run: |
+          node --check functions/_shared/book-enrichment-registry.js
+          node --input-type=module <<'NODE'
+          import { applyBookEnrichment } from './functions/_shared/book-enrichment-registry.js';
+
+          const base = {
+            isbn: '9791388034435',
+            author: 'Desconocido',
+            publisher: null,
+            pages: null,
+            description: '',
+            price: 1590,
+            status: 'active',
+            available_quantity: 1,
+            condition: 'new',
+            pictures: ['https://example.com/cover.jpg'],
+          };
+          const a = applyBookEnrichment({
+            ...base,
+            id: 'MLU1453287196',
+            title: 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear',
+            canonical: '/libro/a',
+          });
+          const b = applyBookEnrichment({
+            ...base,
+            id: 'MLU999999999',
+            title: 'OTRO TITULO COMERCIAL DEL MISMO ISBN',
+            canonical: '/libro/b',
+          });
+
+          if (a.title !== 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear') throw new Error('Cambió título A.');
+          if (b.title !== 'OTRO TITULO COMERCIAL DEL MISMO ISBN') throw new Error('Cambió título B.');
+          if (a._amadoEditorial.seo_title !== a.title) throw new Error('HTML title A no coincide.');
+          if (b._amadoEditorial.seo_title !== b.title) throw new Error('HTML title B no coincide.');
+          if (a.canonical !== '/libro/a' || b.canonical !== '/libro/b') throw new Error('Cambió canonical.');
+          if (a.price !== 1590 || b.price !== 1590) throw new Error('Cambió precio.');
+          console.log('Título comercial y HTML preservados por publicación.');
+          NODE
+
+      - name: Commit the runtime lock
+        run: |
+          if git diff --quiet -- functions/_shared/book-enrichment-registry.js; then
+            echo 'El bloqueo ya estaba aplicado.'
+            exit 0
+          fi
+          git config user.name 'trexxeseba'
+          git config user.email 'undiaes@gmail.com'
+          git add functions/_shared/book-enrichment-registry.js
+          git commit -m 'B11: impedir cambios de título desde enriquecimientos por ISBN'
+          git push origin HEAD:b11/editorial-real-2000-batch-01
