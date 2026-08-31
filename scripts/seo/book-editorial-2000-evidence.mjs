@@ -231,8 +231,9 @@ export function buildEditorialEvidenceReport({
   cache,
   generatedAt = new Date().toISOString(),
 } = {}) {
-  assertEditorialBatchPlan(plan, DEFAULT_EDITORIAL_BATCH_LIMIT);
+  assertEditorialBatchPlan(plan, plan.requested);
   const byId = buildRepresentativeMap(catalogItems);
+  const classifications = [];
   const results = plan.entries.map(entry => {
     const representative = byId.get(entry.representative_id);
     if (!representative) {
@@ -241,6 +242,7 @@ export function buildEditorialEvidenceReport({
     const records = recordsFor(cache, entry.isbn)
       .filter(record => normalizeValidIsbn(record?.isbn) === entry.isbn);
     const classification = classifyBookIntelligenceEvidence(representative, records);
+    classifications.push(classification);
     const input = contentInput(records);
     const readiness = classifyEditorialInput({ classification, input });
 
@@ -295,7 +297,7 @@ export function buildEditorialEvidenceReport({
       titles_changed: 0,
     },
     readiness,
-    evidence_summary: summarizeBookIntelligenceEvidence(results.map(result => result.evidence)),
+    evidence_summary: summarizeBookIntelligenceEvidence(classifications),
     results,
   };
 }
