@@ -45,6 +45,7 @@ jobs:
       - name: Validate code and title-lock tests
         run: |
           node --check scripts/seo/book-editorial-2000-plan.mjs
+          node --check functions/_shared/book-enrichment-registry.js
           node --test functions/__tests__/book-editorial-2000-plan.test.js
 
       - name: Build the real 2000-ISBN cohort
@@ -53,7 +54,7 @@ jobs:
           BOOK_EDITORIAL_OUTPUT_DIR: artifacts/book-editorial/isbn-2000
         run: node scripts/seo/book-editorial-2000-plan.mjs
 
-      - name: Enforce the 2000-title contract
+      - name: Enforce all per-listing title fingerprints
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
@@ -67,35 +68,65 @@ jobs:
             'utf8',
           ));
           assertEditorialBatchPlan(plan, 2000);
-          if (plan.entries.some(entry =>
-            entry.commercial_title_sha256 !== titleFingerprint(entry.commercial_title)
-          )) {
-            throw new Error('Una huella de título no coincide.');
+
+          const snapshots = plan.entries.flatMap(entry => entry.title_snapshots);
+          if (snapshots.some(snapshot => snapshot.sha256 !== titleFingerprint(snapshot.title))) {
+            throw new Error('Una huella de título por MLU no coincide.');
           }
-          if (plan.title_policy.commercial_title !== 'immutable_byte_for_byte') {
-            throw new Error('La política de títulos no quedó bloqueada.');
+          if (plan.title_policy.commercial_title !== 'immutable_byte_for_byte_per_listing') {
+            throw new Error('La política de títulos por publicación no quedó bloqueada.');
           }
+          if (plan.title_policy.editorial_payload_title_fields !== 'forbidden') {
+            throw new Error('La salida editorial todavía podría definir títulos.');
+          }
+
           console.log(JSON.stringify({
-            selected: plan.selected_count,
+            selected_isbns: plan.selected_count,
+            protected_listings: snapshots.length,
+            title_variant_groups: plan.entries.filter(entry => entry.title_variant_count > 1).length,
             titles_changed: 0,
             policy: plan.title_policy,
           }, null, 2));
           NODE
 
-      - name: Confirm the pilot also keeps the exact commercial title
+      - name: Prove shared ISBN content cannot alter two different listing titles
         run: |
           node --input-type=module <<'NODE'
-          import { BOOK_EDITORIAL_UPGRADES } from './functions/_shared/book-editorial-upgrades.js';
-          const record = BOOK_EDITORIAL_UPGRADES.find(entry => entry.isbn === '9791388034435');
-          const expected = 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear';
-          if (!record) throw new Error('Falta el piloto editorial Disney.');
-          if (record.editorial.seo_title !== expected) {
-            throw new Error('El título HTML del piloto no repite exactamente el título comercial.');
-          }
-          if (!record.editorial.paragraphs.join(' ').includes('100 ilustraciones misteriosas')) {
-            throw new Error('El piloto perdió el contenido editorial real.');
-          }
-          console.log('Piloto: título exacto preservado y contenido editorial presente.');
+          import { applyBookEnrichment } from './functions/_shared/book-enrichment-registry.js';
+
+          const base = {
+            isbn: '9791388034435',
+            author: 'Desconocido',
+            publisher: null,
+            pages: null,
+            description: '',
+            price: 1590,
+            status: 'active',
+            available_quantity: 1,
+            condition: 'new',
+            pictures: ['https://example.com/cover.jpg'],
+          };
+          const a = applyBookEnrichment({
+            ...base,
+            id: 'MLU1453287196',
+            title: 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear',
+            canonical: '/libro/a',
+          });
+          const b = applyBookEnrichment({
+            ...base,
+            id: 'MLU999999999',
+            title: 'OTRO TITULO COMERCIAL DEL MISMO ISBN',
+            canonical: '/libro/b',
+          });
+
+          if (a.title !== 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear') throw new Error('Cambió título A.');
+          if (b.title !== 'OTRO TITULO COMERCIAL DEL MISMO ISBN') throw new Error('Cambió título B.');
+          if (a._amadoEditorial?.seo_title !== a.title) throw new Error('HTML title A no coincide con su MLU.');
+          if (b._amadoEditorial?.seo_title !== b.title) throw new Error('HTML title B no coincide con su MLU.');
+          if (a.canonical !== '/libro/a' || b.canonical !== '/libro/b') throw new Error('Cambió canonical.');
+          if (a.price !== 1590 || b.price !== 1590) throw new Error('Cambió precio.');
+          if (!a.description.includes('100 ilustraciones misteriosas')) throw new Error('Se perdió el contenido editorial real.');
+          console.log('Contenido compartido por ISBN; títulos, HTML title, canonical y precio preservados por MLU.');
           NODE
 
       - name: Verify the authorized pilot directly in Production
@@ -129,7 +160,7 @@ jobs:
           if (!block.includes('100 ilustraciones misteriosas')) {
             throw new Error('Merchant perdió el contenido específico del piloto.');
           }
-          console.log('Producción: ficha y Merchant verificados; título comercial intacto.');
+          console.log('Producción: H1 y Merchant title intactos; contenido editorial publicado.');
           NODE
 
       - name: Publish summary
