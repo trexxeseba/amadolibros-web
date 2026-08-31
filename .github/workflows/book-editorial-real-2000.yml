@@ -10,7 +10,9 @@ on:
       - 'scripts/seo/book-intelligence-*.mjs'
       - 'functions/_shared/book-intelligence-evidence.js'
       - 'functions/_shared/book-enrichment-*.js'
+      - 'functions/_shared/showcase-title-quality.js'
       - 'functions/__tests__/book-editorial-cohort-2000.test.js'
+      - 'functions/__tests__/editorial-showcase-boundary.test.js'
   workflow_dispatch:
     inputs:
       limit:
@@ -38,7 +40,7 @@ jobs:
       FEED_URL: https://www.amadolibros.com/feed.xml
 
     steps:
-      - name: Verify exact product page in Production
+      - name: Verify exact editorial content in Production
         shell: bash
         run: |
           set -euo pipefail
@@ -47,13 +49,12 @@ jobs:
           const fs = require('node:fs');
           const html = fs.readFileSync('/tmp/product.html', 'utf8');
           const required = [
-            'Libro para colorear por números Disney Pixar | Tomo 11',
             '100 ilustraciones misteriosas',
             'Sistema de coloreado por números y códigos de color',
             '¿Para quién está recomendado?',
             'Hachette HEROES – Disney – Arteterapia',
             'Jérémy Mariez',
-            'Servei Gráfic NJR',
+            'Servei Gràfic NJR',
             '9791388034435',
           ];
           const missing = required.filter(value => !html.includes(value));
@@ -64,7 +65,11 @@ jobs:
           ];
           const residual = forbidden.filter(value => html.includes(value));
           if (residual.length) throw new Error(`Producción conserva relleno anterior: ${residual.join(' | ')}`);
-          console.log('Ficha editorial real verificada en Producción.');
+          const canonical = html.match(/<link\s+rel="canonical"\s+href="([^"]*)"/i)?.[1] || '';
+          if (!canonical.endsWith('/libro/MLU1453287196/grandes-clasicos-tomo-11-disney-pixar-para-colorear')) {
+            throw new Error(`Canonical inesperado: ${canonical || 'ausente'}`);
+          }
+          console.log('Contenido editorial real verificado en Producción.');
           NODE
 
       - name: Verify exact Merchant offer in Production
@@ -110,10 +115,12 @@ jobs:
         with:
           node-version: '22.12.0'
 
-      - name: Validate editorial cohort code without network
+      - name: Validate editorial pipeline without network
         run: |
           node --check scripts/seo/book-editorial-cohort-2000.mjs
-          node --test functions/__tests__/book-editorial-cohort-2000.test.js
+          node --test \
+            functions/__tests__/book-editorial-cohort-2000.test.js \
+            functions/__tests__/editorial-showcase-boundary.test.js
 
       - name: Authenticate Google Books through Workload Identity
         id: google_auth
