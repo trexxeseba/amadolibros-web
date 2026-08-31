@@ -89,24 +89,30 @@ test('selecciona 2.000 ISBN y prioriza convertir fichas meramente bibliográfica
   assert.equal(result.excluded.already_editorial_real, 1);
 });
 
-test('excluye un ISBN cuando sus publicaciones activas no tienen el mismo título exacto', () => {
+test('un mismo ISBN puede conservar dos títulos distintos sin excluirse ni normalizarse', () => {
   const isbn = isbnFor(3000);
   const result = selectEditorialBatch({
     catalogItems: [
-      item(3000, { isbn, title: 'Título A' }),
-      item(3001, { isbn, title: 'Título A ' }),
+      item(3000, { isbn, title: 'Título comercial A' }),
+      item(3001, { isbn, title: 'Título comercial B' }),
       item(3002),
     ],
     enrichmentRecords: [],
-    limit: 1,
+    limit: 2,
   });
 
-  assert.equal(result.selected.length, 1);
-  assert.equal(result.selected[0].isbn, isbnFor(3002));
-  assert.equal(result.excluded.inconsistent_titles, 1);
+  const group = result.selected.find(entry => entry.isbn === isbn);
+  assert.ok(group);
+  assert.equal(group.title_variant_count, 2);
+  assert.deepEqual(
+    group.title_snapshots.map(snapshot => snapshot.title).sort(),
+    ['Título comercial A', 'Título comercial B'],
+  );
+  assert.equal(group.title_snapshots[0].sha256, titleFingerprint(group.title_snapshots[0].title));
+  assert.equal(group.title_snapshots[1].sha256, titleFingerprint(group.title_snapshots[1].title));
 });
 
-test('el plan conserva título, H1, HTML, Merchant, slug y canonical como inmutables', () => {
+test('el plan conserva por MLU título, H1, HTML, Merchant, slug y canonical', () => {
   const catalogItems = Array.from({ length: 2000 }, (_, index) => item(index + 1));
   const plan = buildEditorialBatchPlan({
     catalogItems,
@@ -117,51 +123,51 @@ test('el plan conserva título, H1, HTML, Merchant, slug y canonical como inmuta
 
   assert.equal(assertEditorialBatchPlan(plan, 2000), true);
   assert.equal(plan.selected_count, 2000);
-  assert.equal(plan.title_policy.commercial_title, 'immutable_byte_for_byte');
-  assert.equal(plan.title_policy.h1, 'must_equal_commercial_title');
-  assert.equal(plan.title_policy.html_title, 'must_equal_commercial_title');
-  assert.equal(plan.title_policy.merchant_title, 'must_equal_commercial_title');
-  assert.equal(plan.entries[0].commercial_title_sha256, titleFingerprint(plan.entries[0].commercial_title));
+  assert.equal(plan.title_policy.commercial_title, 'immutable_byte_for_byte_per_listing');
+  assert.equal(plan.title_policy.editorial_payload_title_fields, 'forbidden');
+  assert.equal(plan.title_policy.h1, 'from_current_listing_title');
+  assert.equal(plan.title_policy.html_title, 'from_current_listing_title');
+  assert.equal(plan.title_policy.merchant_title, 'from_current_listing_title');
+  const snapshot = plan.entries[0].title_snapshots[0];
+  assert.equal(snapshot.sha256, titleFingerprint(snapshot.title));
 });
 
-test('acepta copy editorial sólo cuando seo_title repite exactamente el título comercial', () => {
+test('acepta contenido editorial cuando no intenta definir ningún título', () => {
   const plan = buildEditorialBatchPlan({
     catalogItems: [item(1)],
     enrichmentRecords: [],
     limit: 1,
     generatedAt: '2026-08-31T12:00:00.000Z',
   });
-  const entry = plan.entries[0];
   const record = {
-    isbn: entry.isbn,
+    isbn: plan.entries[0].isbn,
     editorial: {
-      seo_title: entry.commercial_title,
       heading: 'Qué contiene esta edición',
-      paragraphs: ['Contenido editorial real.'],
+      paragraphs: ['Contenido editorial real y específico.'],
+      meta_description: 'Descripción específica.',
     },
   };
 
   assert.deepEqual(validateEditorialOutputTitleLock(plan, [record]), []);
 });
 
-test('bloquea cualquier reformulación del título o campo comercial dentro de la salida', () => {
+test('bloquea title, seo_title y cualquier otro campo comercial dentro de la salida', () => {
   const plan = buildEditorialBatchPlan({
     catalogItems: [item(1)],
     enrichmentRecords: [],
     limit: 1,
     generatedAt: '2026-08-31T12:00:00.000Z',
   });
-  const entry = plan.entries[0];
   const errors = validateEditorialOutputTitleLock(plan, [{
-    isbn: entry.isbn,
+    isbn: plan.entries[0].isbn,
     title: 'Título cambiado',
     canonical: '/otra-url',
     editorial: {
-      seo_title: `${entry.commercial_title} | Comprar Uruguay`,
+      seo_title: 'Título SEO cambiado',
     },
   }]);
 
   assert.ok(errors.some(error => error.includes('campo comercial prohibido: title')));
   assert.ok(errors.some(error => error.includes('campo comercial prohibido: canonical')));
-  assert.ok(errors.some(error => error.includes('intentó cambiar el título exacto')));
+  assert.ok(errors.some(error => error.includes('campo comercial prohibido: editorial.seo_title')));
 });
