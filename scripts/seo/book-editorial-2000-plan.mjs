@@ -4,10 +4,11 @@
 // Selecciona 2.000 ediciones activas para enriquecimiento editorial real.
 //
 // Contrato absoluto pedido por Seba:
-// - no modifica el título comercial;
-// - no modifica H1, <title>, título Merchant, slug ni canonical;
-// - una futura salida editorial sólo puede repetir el título exacto como
-//   `seo_title` mientras el renderer v1 lo exija; nunca puede reformularlo;
+// - el contenido se comparte por ISBN, pero cada publicación conserva su
+//   título comercial exacto, aunque otro MLU del mismo ISBN tenga otro título;
+// - la salida editorial no puede contener title, seo_title, H1, slug, canonical
+//   ni ningún dato comercial;
+// - el runtime toma el <title> de item.title para la publicación concreta;
 // - precio, stock, imágenes, condición y URL comercial quedan fuera del lote.
 
 import { createHash } from 'node:crypto';
@@ -25,13 +26,15 @@ import {
 
 export const DEFAULT_EDITORIAL_BATCH_LIMIT = 2000;
 export const DEFAULT_EDITORIAL_OUTPUT_DIR = 'artifacts/book-editorial/isbn-2000';
-export const TITLE_POLICY_VERSION = 1;
+export const TITLE_POLICY_VERSION = 2;
 
 const FORBIDDEN_OUTPUT_KEYS = new Set([
   'title',
+  'seo_title',
   'title_override',
   'merchant_title',
   'document_title',
+  'html_title',
   'h1',
   'slug',
   'canonical',
@@ -119,7 +122,7 @@ function candidateScore(listings, existingRecord) {
   return score;
 }
 
-function exactTitleSnapshots(listings) {
+function titleSnapshots(listings) {
   return [...listings]
     .map(item => ({
       product_id: clean(item?.id).toUpperCase(),
@@ -127,12 +130,6 @@ function exactTitleSnapshots(listings) {
       sha256: titleFingerprint(item?.title),
     }))
     .sort((a, b) => a.product_id.localeCompare(b.product_id));
-}
-
-function hasOneExactTitle(snapshots) {
-  return snapshots.length > 0 &&
-    snapshots.every(snapshot => snapshot.title.length > 0) &&
-    new Set(snapshots.map(snapshot => snapshot.title)).size === 1;
 }
 
 export function selectEditorialBatch({
@@ -158,7 +155,6 @@ export function selectEditorialBatch({
 
   const excluded = {
     already_editorial_real: 0,
-    inconsistent_titles: 0,
   };
   const candidates = [];
 
@@ -169,27 +165,26 @@ export function selectEditorialBatch({
       continue;
     }
 
-    const titleSnapshots = exactTitleSnapshots(listings);
-    // Mientras el renderer v1 use un seo_title por ISBN, sólo automatizamos
-    // grupos donde todas las publicaciones activas tienen el mismo título
-    // byte por byte. Los demás quedan para revisión, nunca se normalizan.
-    if (!hasOneExactTitle(titleSnapshots)) {
-      excluded.inconsistent_titles += 1;
-      continue;
-    }
+    const snapshots = titleSnapshots(listings);
+    if (!snapshots.length || snapshots.some(snapshot => !snapshot.product_id || !snapshot.title)) continue;
 
     const representative = [...listings].sort(representativeSort)[0];
+    const representativeSnapshot = snapshots.find(
+      snapshot => snapshot.product_id === clean(representative?.id).toUpperCase(),
+    ) || snapshots[0];
     const totalStock = listings.reduce(
       (sum, item) => sum + Math.max(0, Number(item?.available_quantity) || 0),
       0,
     );
-    const exactTitle = titleSnapshots[0].title;
 
     candidates.push({
       isbn,
       representative_id: clean(representative?.id).toUpperCase(),
-      listing_ids: titleSnapshots.map(snapshot => snapshot.product_id),
-      listing_count: titleSnapshots.length,
+      representative_title_snapshot: representativeSnapshot.title,
+      representative_title_sha256: representativeSnapshot.sha256,
+      listing_ids: snapshots.map(snapshot => snapshot.product_id),
+      listing_count: snapshots.length,
+      title_variant_count: new Set(snapshots.map(snapshot => snapshot.title)).size,
       total_stock: totalStock,
       priority_score: candidateScore(listings, existingRecord),
       current_level: existingRecord?.decision === 'auto_publish_facts'
@@ -197,9 +192,7 @@ export function selectEditorialBatch({
         : existingRecord?.decision === 'auto_publish'
           ? 'editorial_curated'
           : 'not_enriched',
-      commercial_title: exactTitle,
-      commercial_title_sha256: titleFingerprint(exactTitle),
-      title_snapshots: titleSnapshots,
+      title_snapshots: snapshots,
       author_snapshot: isGenericAuthor(representative?.author)
         ? null
         : clean(representative?.author),
@@ -215,9 +208,7 @@ export function selectEditorialBatch({
   );
 
   if (candidates.length < requested) {
-    throw new Error(
-      `Lote editorial: sólo hay ${candidates.length}/${requested} ISBN elegibles con título exacto estable.`,
-    );
+    throw new Error(`Lote editorial: sólo hay ${candidates.length}/${requested} ISBN elegibles.`);
   }
 
   return {
@@ -248,20 +239,13 @@ export function validateEditorialOutputTitleLock(cohort, records) {
   const errors = [];
 
   for (const record of Array.isArray(records) ? records : []) {
-    const entry = byIsbn.get(normalizeValidIsbn(record?.isbn));
-    if (!entry) {
+    const isbn = normalizeValidIsbn(record?.isbn);
+    if (!byIsbn.has(isbn)) {
       errors.push(`${record?.isbn || 'sin ISBN'} no pertenece al lote bloqueado.`);
       continue;
     }
     for (const fieldPath of walkObject(record)) {
-      errors.push(`${record.isbn} contiene campo comercial prohibido: ${fieldPath}.`);
-    }
-    const seoTitle = String(record?.editorial?.seo_title ?? '');
-    if (seoTitle !== entry.commercial_title) {
-      errors.push(`${record.isbn} intentó cambiar el título exacto.`);
-    }
-    if (titleFingerprint(seoTitle) !== entry.commercial_title_sha256) {
-      errors.push(`${record.isbn} no conserva la huella SHA-256 del título.`);
+      errors.push(`${isbn} contiene campo comercial prohibido: ${fieldPath}.`);
     }
   }
 
@@ -285,14 +269,15 @@ export function buildEditorialBatchPlan({
     excluded: selection.excluded,
     title_policy: {
       version: TITLE_POLICY_VERSION,
-      commercial_title: 'immutable_byte_for_byte',
-      h1: 'must_equal_commercial_title',
-      html_title: 'must_equal_commercial_title',
-      merchant_title: 'must_equal_commercial_title',
-      slug: 'immutable',
-      canonical: 'immutable',
+      commercial_title: 'immutable_byte_for_byte_per_listing',
+      editorial_payload_title_fields: 'forbidden',
+      h1: 'from_current_listing_title',
+      html_title: 'from_current_listing_title',
+      merchant_title: 'from_current_listing_title',
+      slug: 'from_current_listing_title_immutable',
+      canonical: 'from_current_listing_title_immutable',
       seo_terms_allowed_in: ['editorial_body', 'headings_below_h1', 'meta_description', 'merchant_description'],
-      seo_terms_forbidden_in: ['commercial_title', 'h1', 'html_title', 'merchant_title', 'slug', 'canonical'],
+      seo_terms_forbidden_in: ['commercial_title', 'seo_title', 'h1', 'html_title', 'merchant_title', 'slug', 'canonical'],
     },
     entries: selection.selected,
   };
@@ -309,18 +294,27 @@ export function assertEditorialBatchPlan(plan, expected = DEFAULT_EDITORIAL_BATC
   }
   for (const entry of entries) {
     if (!normalizeValidIsbn(entry.isbn)) throw new Error(`ISBN inválido: ${entry.isbn}.`);
-    if (!entry.commercial_title) throw new Error(`${entry.isbn} no tiene título bloqueado.`);
-    if (titleFingerprint(entry.commercial_title) !== entry.commercial_title_sha256) {
-      throw new Error(`${entry.isbn} tiene una huella de título inválida.`);
+    if (!Array.isArray(entry.title_snapshots) || entry.title_snapshots.length < 1) {
+      throw new Error(`${entry.isbn} no tiene snapshots de títulos.`);
     }
-    if (!Array.isArray(entry.title_snapshots) || !hasOneExactTitle(entry.title_snapshots)) {
-      throw new Error(`${entry.isbn} mezcla títulos comerciales.`);
+    if (new Set(entry.title_snapshots.map(snapshot => snapshot.product_id)).size !== entry.title_snapshots.length) {
+      throw new Error(`${entry.isbn} repite IDs en el bloqueo de títulos.`);
     }
-    if (entry.title_snapshots.some(snapshot =>
-      snapshot.title !== entry.commercial_title ||
-      snapshot.sha256 !== entry.commercial_title_sha256
-    )) {
-      throw new Error(`${entry.isbn} no conserva todos los títulos byte por byte.`);
+    for (const snapshot of entry.title_snapshots) {
+      if (!/^MLU\d+$/.test(snapshot.product_id) || !snapshot.title) {
+        throw new Error(`${entry.isbn} tiene un snapshot de título incompleto.`);
+      }
+      if (titleFingerprint(snapshot.title) !== snapshot.sha256) {
+        throw new Error(`${entry.isbn}/${snapshot.product_id} tiene una huella de título inválida.`);
+      }
+    }
+    const representative = entry.title_snapshots.find(
+      snapshot => snapshot.product_id === entry.representative_id,
+    );
+    if (!representative ||
+        representative.title !== entry.representative_title_snapshot ||
+        representative.sha256 !== entry.representative_title_sha256) {
+      throw new Error(`${entry.isbn} no conserva el título de su representante.`);
     }
   }
   return true;
@@ -340,22 +334,26 @@ function summaryMarkdown(plan) {
     ['bibliographic_only', 'editorial_curated', 'not_enriched']
       .map(level => [level, plan.entries.filter(entry => entry.current_level === level).length]),
   );
+  const variantGroups = plan.entries.filter(entry => entry.title_variant_count > 1).length;
+  const protectedListings = plan.entries.reduce((sum, entry) => sum + entry.listing_count, 0);
   return `${[
     '# B11 — lote editorial real de 2.000 ISBN',
     '',
     `- Generado: ${plan.generated_at}`,
     `- Seleccionados: ${plan.selected_count}/${plan.requested}.`,
     `- Elegibles antes del corte: ${plan.eligible_unique_isbns}.`,
+    `- Publicaciones con título protegido: ${protectedListings}.`,
+    `- ISBN con más de una variante de título protegida: ${variantGroups}.`,
     `- Bibliográficos a convertir: ${levels.bibliographic_only}.`,
     `- Curados a profundizar: ${levels.editorial_curated}.`,
     `- Todavía no enriquecidos: ${levels.not_enriched}.`,
     `- Excluidos por ya tener contenido editorial real: ${plan.excluded.already_editorial_real}.`,
-    `- Excluidos por títulos distintos dentro del mismo ISBN: ${plan.excluded.inconsistent_titles}.`,
     '',
     '## Regla de títulos',
     '',
-    '- Título comercial, H1, título HTML, título Merchant, slug y canonical quedan intactos.',
-    '- El lote falla si una futura salida editorial intenta reformular un título.',
+    '- Cada MLU conserva su título byte por byte, aunque comparta ISBN con otro título comercial.',
+    '- La salida editorial tiene prohibidos title, seo_title, H1, título Merchant, slug y canonical.',
+    '- El runtime obtiene H1 y título HTML de la publicación actual, no del registro compartido por ISBN.',
     '- Los términos SEO sólo pueden entrar en el cuerpo, subtítulos, metadescripción y descripción Merchant.',
     '',
   ].join('\n')}\n`;
@@ -380,12 +378,12 @@ async function main() {
       batch_id: plan.batch_id,
       generated_at: plan.generated_at,
       title_policy: plan.title_policy,
-      titles: plan.entries.map(entry => ({
+      titles: plan.entries.flatMap(entry => entry.title_snapshots.map(snapshot => ({
         isbn: entry.isbn,
-        commercial_title: entry.commercial_title,
-        sha256: entry.commercial_title_sha256,
-        product_ids: entry.listing_ids,
-      })),
+        product_id: snapshot.product_id,
+        title: snapshot.title,
+        sha256: snapshot.sha256,
+      }))),
     }, null, 2)}\n`),
     writeFile(path.join(outputDir, 'summary.md'), summaryMarkdown(plan)),
   ]);
@@ -394,6 +392,8 @@ async function main() {
     batch_id: plan.batch_id,
     selected: plan.selected_count,
     eligible: plan.eligible_unique_isbns,
+    protected_listings: plan.entries.reduce((sum, entry) => sum + entry.listing_count, 0),
+    title_variant_groups: plan.entries.filter(entry => entry.title_variant_count > 1).length,
     excluded: plan.excluded,
     output_dir: path.resolve(outputDir),
     titles_changed: 0,
