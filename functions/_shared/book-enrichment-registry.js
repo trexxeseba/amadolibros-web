@@ -7,6 +7,7 @@
 
 import { BOOK_FACT_ENRICHMENTS } from './book-enrichment-facts-1000.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_333 } from './book-enrichment-facts-333.js';
+import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
 const SOURCE_TYPES = new Set([
@@ -418,6 +419,44 @@ export function validateBookEnrichment(record) {
   if (!Array.isArray(record.editorial?.paragraphs) || record.editorial.paragraphs.length < 1) return false;
   if (record.editorial.paragraphs.some(paragraph => clean(paragraph).length < 80)) return false;
   if (!Array.isArray(record.provenance) || record.provenance.length < 1) return false;
+
+  const isEditorialReal = record.editorial?.quality_level === 'editorial_real_v1';
+  if (isEditorialReal) {
+    const editorialText = record.editorial.paragraphs.map(clean).join(' ');
+    if (record.editorial.paragraphs.length < 2 || editorialText.length < 450) return false;
+    if (!Array.isArray(record.editorial.highlights) || record.editorial.highlights.length < 5) return false;
+    if (record.editorial.highlights.some(value => clean(value).length < 25)) return false;
+    if (clean(record.editorial.decision_copy).length < 180) return false;
+    const metaLength = clean(record.editorial.meta_description).length;
+    if (metaLength < 80 || metaLength > 170) return false;
+    if (clean(record.editorial.merchant_description).length < 250) return false;
+    if (!clean(record.editorial.seo_title) || !clean(record.editorial.heading)) return false;
+
+    const exactEditionSources = record.provenance.filter(source =>
+      source?.relationship === 'exact_edition' &&
+      normalizeValidIsbn(source?.isbn) === isbn
+    );
+    const exactProviders = new Set(exactEditionSources.map(source => clean(source?.provider)).filter(Boolean));
+    const sourceEditionPublisher = record.provenance.some(source =>
+      source?.type === 'publisher' &&
+      source?.relationship === 'source_edition' &&
+      normalizeValidIsbn(source?.isbn) &&
+      /^https:\/\//i.test(clean(source?.url))
+    );
+    if (exactProviders.size < 2 || !sourceEditionPublisher) return false;
+
+    return record.provenance.every(source => {
+      if (!SOURCE_TYPES.has(source?.type)) return false;
+      if (!['exact_edition', 'source_edition'].includes(source?.relationship)) return false;
+      const sourceIsbn = normalizeValidIsbn(source?.isbn);
+      if (!sourceIsbn) return false;
+      if (source.relationship === 'exact_edition' && sourceIsbn !== isbn) return false;
+      if (!/^https:\/\//i.test(clean(source?.url))) return false;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(clean(source?.verified_at))) return false;
+      return Array.isArray(source?.fields) && source.fields.length > 0;
+    });
+  }
+
   const exactOfficial = record.provenance.some(source =>
     source?.type === 'publisher' &&
     source?.relationship === 'exact_edition' &&
@@ -464,6 +503,18 @@ for (const record of BOOK_FACT_ENRICHMENTS_333) {
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
 }
 
+// Una mejora editorial reemplaza el registro factual de la misma edición,
+// pero no crea una edición nueva ni altera la métrica de cobertura por ISBN.
+for (const record of BOOK_EDITORIAL_UPGRADES) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento editorial real inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (!ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`La mejora editorial debe corresponder a un ISBN ya investigado: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+
 export function getBookEnrichmentByIsbn(value) {
   const isbn = normalizeValidIsbn(value);
   return isbn ? ENRICHMENT_BY_ISBN.get(isbn) || null : null;
@@ -497,6 +548,13 @@ export function applyBookEnrichment(item) {
       ...(facts.bibliographic || {}),
       ...bibliography,
     },
+    // Metadatos internos para el render SSR. No contienen precio, stock,
+    // imágenes ni URL comercial y no se escriben de vuelta al catálogo.
+    _amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,
+    _amadoSchema: enrichment.schema || null,
+    _amadoEnrichmentLevel: enrichment.editorial?.quality_level === 'editorial_real_v1'
+      ? 'editorial_real'
+      : enrichment.decision === 'auto_publish' ? 'editorial_curated' : 'bibliographic',
   };
 }
 
