@@ -1,0 +1,33 @@
+name: Diagnostic editorial production HTML
+
+on:
+  push:
+    branches: [b11/editorial-real-2000-1]
+    paths: ['.github/workflows/editorial-production-diagnostic.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch and inspect exact production page
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://www.amadolibros.com/libro/MLU1453287196/grandes-clasicos-tomo-11-disney-pixar-para-colorear'
+          curl -fsSL --retry 4 --retry-delay 2 --max-time 60 "$URL" -o /tmp/product.html
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('/tmp/product.html', 'utf8');
+          const title = html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '(sin title)';
+          const meta = html.match(/<meta name="description" content="([^"]*)"/i)?.[1] || '(sin meta)';
+          const translator = html.match(/<dt>Traductor\/a<\/dt><dd>([^<]*)<\/dd>/i)?.[1] || '(sin traductor visible)';
+          console.log(JSON.stringify({ title, meta, translator, bytes: html.length }, null, 2));
+          for (const needle of ['Libro para colorear', '100 ilustraciones misteriosas', 'Servei', 'Jérémy Mariez']) {
+            const at = html.indexOf(needle);
+            console.log(`\n--- ${needle} @ ${at} ---`);
+            console.log(at >= 0 ? html.slice(Math.max(0, at - 180), at + 360) : 'NO ENCONTRADO');
+          }
+          NODE
