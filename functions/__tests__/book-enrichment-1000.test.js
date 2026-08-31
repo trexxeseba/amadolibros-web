@@ -8,12 +8,20 @@ import {
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
 
+const EDITORIAL_UPGRADE_ISBN = '9791388034435';
+
 test('el lote publicado contiene exactamente 1.000 ISBN únicos y verificables', () => {
   assert.equal(BOOK_FACT_ENRICHMENTS.length, 1000);
   assert.equal(new Set(BOOK_FACT_ENRICHMENTS.map(entry => entry.isbn)).size, 1000);
   for (const entry of BOOK_FACT_ENRICHMENTS) {
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
-    assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
+    const resolved = getBookEnrichmentByIsbn(entry.isbn);
+    if (entry.isbn === EDITORIAL_UPGRADE_ISBN) {
+      assert.equal(resolved.decision, 'auto_publish');
+      assert.equal(resolved.editorial.quality_level, 'editorial_real_v1');
+    } else {
+      assert.equal(resolved, entry);
+    }
   }
 });
 
@@ -41,7 +49,13 @@ test('las 1.000 proyecciones mejoran la ficha sin datos comerciales ni sinopsis 
     const enriched = applyBookEnrichment(original);
     assert.notEqual(enriched, original, entry.isbn);
     assert.equal(enriched.title, original.title, entry.isbn);
-    assert.equal(enriched.description, original.description, entry.isbn);
+    if (entry.isbn === EDITORIAL_UPGRADE_ISBN) {
+      assert.notEqual(enriched.description, original.description, entry.isbn);
+      assert.match(enriched.description, /coloreando números y zonas según un código de color/i);
+      assert.equal(enriched._amadoEnrichmentLevel, 'editorial_real');
+    } else {
+      assert.equal(enriched.description, original.description, entry.isbn);
+    }
     assert.equal(enriched.price, original.price, entry.isbn);
     assert.equal(enriched.available_quantity, original.available_quantity, entry.isbn);
     assert.equal(enriched.condition, original.condition, entry.isbn);
