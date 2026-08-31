@@ -18,13 +18,7 @@ test('la segunda cohorte contiene exactamente 333 ISBN nuevos y verificables', (
   for (const entry of BOOK_FACT_ENRICHMENTS_333) {
     assert.equal(firstCohort.has(entry.isbn), false, `ISBN repetido: ${entry.isbn}`);
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
-    const resolved = getBookEnrichmentByIsbn(entry.isbn);
-    if (entry.isbn === '9791388034435') {
-      assert.equal(resolved.decision, 'auto_publish');
-      assert.equal(resolved.editorial.quality_level, 'editorial_real_v1');
-    } else {
-      assert.equal(resolved, entry);
-    }
+    assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
   }
   assert.equal(listBookEnrichments().length, 1339);
 });
@@ -53,12 +47,7 @@ test('las 333 proyecciones no contienen datos comerciales ni sinopsis externas',
     const enriched = applyBookEnrichment(original);
     assert.notEqual(enriched, original, entry.isbn);
     assert.equal(enriched.title, original.title, entry.isbn);
-    if (entry.isbn === '9791388034435') {
-      assert.notEqual(enriched.description, original.description, entry.isbn);
-      assert.match(enriched.description, /coloreando números y zonas según un código de color/i);
-    } else {
-      assert.equal(enriched.description, original.description, entry.isbn);
-    }
+    assert.equal(enriched.description, original.description, entry.isbn);
     assert.equal(enriched.price, original.price, entry.isbn);
     assert.equal(enriched.available_quantity, original.available_quantity, entry.isbn);
     assert.equal(enriched.condition, original.condition, entry.isbn);
