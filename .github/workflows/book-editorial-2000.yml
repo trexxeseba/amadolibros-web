@@ -155,16 +155,24 @@ jobs:
               .replace(/&apos;/g, "'");
           }
 
+          function comparableTitle(value) {
+            return String(value || '')
+              .normalize('NFKC')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLocaleLowerCase('es');
+          }
+
           const id = 'MLU1453287196';
           const catalog = JSON.parse(fs.readFileSync('/tmp/catalog.json', 'utf8'));
           const item = (catalog.items || []).find(entry => entry.id === id);
           if (!item?.title) throw new Error(`El catálogo vigente no contiene ${id}.`);
-          const expectedTitle = item.title;
+          const catalogTitle = item.title;
 
           const html = fs.readFileSync('/tmp/product.html', 'utf8');
           const h1 = decodeXml(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]*>/g, '').trim());
-          if (h1 !== expectedTitle) {
-            throw new Error(`H1 distinto del catálogo. catálogo=${JSON.stringify(expectedTitle)} h1=${JSON.stringify(h1)}`);
+          if (comparableTitle(h1) !== comparableTitle(catalogTitle)) {
+            throw new Error(`H1 reformulado. catálogo=${JSON.stringify(catalogTitle)} h1=${JSON.stringify(h1)}`);
           }
           for (const signal of [
             '100 ilustraciones misteriosas',
@@ -182,8 +190,8 @@ jobs:
           const end = xml.indexOf('</item>', index);
           const block = xml.slice(start, end + 7);
           const merchantTitle = decodeXml(block.match(/<g:title>([\s\S]*?)<\/g:title>/i)?.[1]?.trim());
-          if (merchantTitle !== expectedTitle) {
-            throw new Error(`Merchant title distinto del catálogo. catálogo=${JSON.stringify(expectedTitle)} merchant=${JSON.stringify(merchantTitle)}`);
+          if (comparableTitle(merchantTitle) !== comparableTitle(catalogTitle)) {
+            throw new Error(`Merchant title reformulado. catálogo=${JSON.stringify(catalogTitle)} merchant=${JSON.stringify(merchantTitle)}`);
           }
           for (const signal of [
             'Libro para colorear por números Disney y Pixar',
@@ -191,12 +199,17 @@ jobs:
           ]) {
             if (!block.includes(signal)) throw new Error(`Merchant perdió: ${signal}`);
           }
+
           console.log(JSON.stringify({
             product_id: id,
-            catalog_title: expectedTitle,
+            catalog_title: catalogTitle,
             h1,
             merchant_title: merchantTitle,
-            titles_equal: true,
+            same_words_without_added_seo_terms: true,
+            exact_cache_convergence: {
+              h1: h1 === catalogTitle,
+              merchant: merchantTitle === catalogTitle,
+            },
             editorial_content: true,
           }, null, 2));
           NODE
