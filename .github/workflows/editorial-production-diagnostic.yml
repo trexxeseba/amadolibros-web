@@ -12,27 +12,29 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch and inspect exact production page
+      - name: Compare custom domain and direct production deployment
         shell: bash
         run: |
           set -euo pipefail
-          BASE='https://www.amadolibros.com/libro/MLU1453287196/grandes-clasicos-tomo-11-disney-pixar-para-colorear'
-          for MODE in normal bust; do
-            if [ "$MODE" = bust ]; then URL="$BASE?verify=$(date +%s)"; else URL="$BASE"; fi
+          PATHNAME='/libro/MLU1453287196/grandes-clasicos-tomo-11-disney-pixar-para-colorear'
+          CUSTOM="https://www.amadolibros.com$PATHNAME"
+          DIRECT="https://c7db6eb8.amadolibros-web.pages.dev$PATHNAME"
+          for MODE in custom direct; do
+            if [ "$MODE" = custom ]; then URL="$CUSTOM"; else URL="$DIRECT"; fi
             curl -fsSL -D "/tmp/${MODE}.headers" --retry 4 --retry-delay 2 --max-time 60 \
-              -H 'Cache-Control: no-cache' "$URL" -o "/tmp/${MODE}.html"
+              -H 'Cache-Control: no-cache' "$URL?verify=$(date +%s)-$MODE" -o "/tmp/${MODE}.html"
           done
           node <<'NODE'
           const fs = require('node:fs');
-          for (const mode of ['normal', 'bust']) {
+          for (const mode of ['custom', 'direct']) {
             const html = fs.readFileSync(`/tmp/${mode}.html`, 'utf8');
             const headers = fs.readFileSync(`/tmp/${mode}.headers`, 'utf8');
             const titles = [...html.matchAll(/<title>([\s\S]*?)<\/title>/gi)].map(match => match[1]);
             const metas = [...html.matchAll(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/gi)].map(match => match[1]);
             const ogTitles = [...html.matchAll(/<meta\s+property=["']og:title["']\s+content=["']([^"']*)["']/gi)].map(match => match[1]);
             const canonical = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']*)["']/i)?.[1] || null;
-            const translator = html.match(/<dt>Traductor\/a<\/dt><dd>([^<]*)<\/dd>/i)?.[1] || null;
-            console.log(JSON.stringify({ mode, titles, metas, ogTitles, canonical, translator, bytes: html.length }, null, 2));
-            console.log(headers.split(/\r?\n/).filter(line => /^(HTTP|age:|cache-control:|cf-cache-status:|etag:|server-timing:|x-cache-status:)/i.test(line)).join('\n'));
+            const bodyHasEditorial = html.includes('100 ilustraciones misteriosas') && html.includes('¿Para quién está recomendado?');
+            console.log(JSON.stringify({ mode, titles, metas, ogTitles, canonical, bodyHasEditorial, bytes: html.length }, null, 2));
+            console.log(headers.split(/\r?\n/).filter(line => /^(HTTP|age:|cache-control:|cf-cache-status:|etag:|server-timing:|x-cache-status:|location:)/i.test(line)).join('\n'));
           }
           NODE
