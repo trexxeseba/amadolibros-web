@@ -130,37 +130,75 @@ jobs:
           NODE
 
       - name: Verify the authorized pilot directly in Production
+        env:
+          AUDIT_NONCE: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          PRODUCT_URL='https://www.amadolibros.com/libro/MLU1453287196/grandes-clasicos-tomo-11-disney-pixar-para-colorear'
-          curl --fail --location --silent --show-error --retry 3 \
-            --output /tmp/product.html "$PRODUCT_URL"
-          grep -Fq '<h1>Grandes Clasicos Tomo 11 Disney Pixar para Colorear</h1>' /tmp/product.html
-          grep -Fq '100 ilustraciones misteriosas' /tmp/product.html
-          grep -Fq 'coloreando números y zonas según un código de color' /tmp/product.html
-          grep -Fq '¿Para quién está recomendado?' /tmp/product.html
+          CATALOG_URL='https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json'
+          PRODUCT_ID='MLU1453287196'
+          PRODUCT_URL="https://www.amadolibros.com/libro/${PRODUCT_ID}/grandes-clasicos-tomo-11-disney-pixar-para-colorear?audit=${AUDIT_NONCE}"
+          FEED_URL="https://www.amadolibros.com/feed.xml?audit=${AUDIT_NONCE}"
 
-          curl --fail --location --silent --show-error --retry 3 \
-            --output /tmp/feed.xml 'https://www.amadolibros.com/feed.xml'
+          curl --fail --location --silent --show-error --retry 3 --output /tmp/catalog.json "$CATALOG_URL"
+          curl --fail --location --silent --show-error --retry 3 --output /tmp/product.html "$PRODUCT_URL"
+          curl --fail --location --silent --show-error --retry 3 --output /tmp/feed.xml "$FEED_URL"
+
           node <<'NODE'
           const fs = require('node:fs');
+
+          function decodeXml(value) {
+            return String(value || '')
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&apos;/g, "'");
+          }
+
+          const id = 'MLU1453287196';
+          const catalog = JSON.parse(fs.readFileSync('/tmp/catalog.json', 'utf8'));
+          const item = (catalog.items || []).find(entry => entry.id === id);
+          if (!item?.title) throw new Error(`El catálogo vigente no contiene ${id}.`);
+          const expectedTitle = item.title;
+
+          const html = fs.readFileSync('/tmp/product.html', 'utf8');
+          const h1 = decodeXml(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]*>/g, '').trim());
+          if (h1 !== expectedTitle) {
+            throw new Error(`H1 distinto del catálogo. catálogo=${JSON.stringify(expectedTitle)} h1=${JSON.stringify(h1)}`);
+          }
+          for (const signal of [
+            '100 ilustraciones misteriosas',
+            'coloreando números y zonas según un código de color',
+            '¿Para quién está recomendado?',
+          ]) {
+            if (!html.includes(signal)) throw new Error(`La ficha perdió: ${signal}`);
+          }
+
           const xml = fs.readFileSync('/tmp/feed.xml', 'utf8');
-          const marker = '<g:id>MLU1453287196</g:id>';
+          const marker = `<g:id>${id}</g:id>`;
           const index = xml.indexOf(marker);
-          if (index < 0) throw new Error('Merchant no contiene MLU1453287196.');
+          if (index < 0) throw new Error(`Merchant no contiene ${id}.`);
           const start = xml.lastIndexOf('<item>', index);
           const end = xml.indexOf('</item>', index);
           const block = xml.slice(start, end + 7);
-          if (!block.includes('<g:title>Grandes Clasicos Tomo 11 Disney Pixar para Colorear</g:title>')) {
-            throw new Error('Merchant alteró el título comercial.');
+          const merchantTitle = decodeXml(block.match(/<g:title>([\s\S]*?)<\/g:title>/i)?.[1]?.trim());
+          if (merchantTitle !== expectedTitle) {
+            throw new Error(`Merchant title distinto del catálogo. catálogo=${JSON.stringify(expectedTitle)} merchant=${JSON.stringify(merchantTitle)}`);
           }
-          if (!block.includes('Libro para colorear por números Disney y Pixar')) {
-            throw new Error('Merchant no recibió la descripción editorial enriquecida.');
+          for (const signal of [
+            'Libro para colorear por números Disney y Pixar',
+            '100 ilustraciones misteriosas',
+          ]) {
+            if (!block.includes(signal)) throw new Error(`Merchant perdió: ${signal}`);
           }
-          if (!block.includes('100 ilustraciones misteriosas')) {
-            throw new Error('Merchant perdió el contenido específico del piloto.');
-          }
-          console.log('Producción: H1 y Merchant title intactos; contenido editorial publicado.');
+          console.log(JSON.stringify({
+            product_id: id,
+            catalog_title: expectedTitle,
+            h1,
+            merchant_title: merchantTitle,
+            titles_equal: true,
+            editorial_content: true,
+          }, null, 2));
           NODE
 
       - name: Publish summary
