@@ -43,13 +43,15 @@ jobs:
               raise SystemExit('No se encontró la guarda esperada de seo_title.')
 
           old_projection = "_amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,"
-          new_projection = """_amadoEditorial: enrichment.decision === 'auto_publish' ? {
-      ...enrichment.editorial,
-      // TITLE-LOCK-2000: el título HTML se toma siempre de ESTA publicación.
-      // Un contenido compartido por ISBN no puede normalizar ni reemplazar
-      // títulos distintos de publicaciones duplicadas.
-      seo_title: item.title,
-    } : null,"""
+          new_projection = (
+              "_amadoEditorial: enrichment.decision === 'auto_publish' ? {\n"
+              "      ...enrichment.editorial,\n"
+              "      // TITLE-LOCK-2000: el título HTML se toma siempre de ESTA publicación.\n"
+              "      // Un contenido compartido por ISBN no puede normalizar ni reemplazar\n"
+              "      // títulos distintos de publicaciones duplicadas.\n"
+              "      seo_title: item.title,\n"
+              "    } : null,"
+          )
           if old_projection in text:
               text = text.replace(old_projection, new_projection, 1)
           elif new_projection not in text:
