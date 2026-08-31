@@ -1,0 +1,182 @@
+name: B11 editorial evidence — 2000 ISBN
+
+on:
+  push:
+    branches:
+      - b11/editorial-real-2000-batch-01
+    paths:
+      - '.github/workflows/book-editorial-2000-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: book-editorial-evidence-2000
+  cancel-in-progress: false
+
+jobs:
+  research:
+    name: Research exact evidence for 2000 ISBN
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate pipeline before spending source quota
+        run: |
+          node --check scripts/seo/book-editorial-2000-plan.mjs
+          node --check scripts/seo/book-editorial-2000-evidence.mjs
+          node --check scripts/seo/book-intelligence-sources.mjs
+          node --check scripts/seo/book-intelligence-bne.mjs
+          node --test \
+            functions/__tests__/book-editorial-2000-plan.test.js \
+            functions/__tests__/book-editorial-2000-evidence.test.js \
+            functions/__tests__/book-intelligence-evidence.test.js \
+            functions/__tests__/book-intelligence-sources.test.js \
+            functions/__tests__/book-intelligence-bne.test.js
+
+      - name: Authenticate Google Books through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/books
+          create_credentials_file: false
+
+      - name: Restore the newest compatible evidence cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTPUT_DIR: artifacts/book-editorial/isbn-2000-evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          candidates_file="$(mktemp)"
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false) | select((.name | startswith("editorial-evidence-2000-")) or (.name | startswith("fichas-enrichment-1000-"))) | [.created_at, (.workflow_run.id | tostring), .name] | @tsv' \
+            | sort -r > "$candidates_file"
+
+          restored='false'
+          while IFS=$'\t' read -r created_at run_id artifact_name; do
+            [ -n "$run_id" ] || continue
+            seed_dir="$(mktemp -d)"
+            if gh run download "$run_id" --name "$artifact_name" --dir "$seed_dir" >/dev/null 2>&1; then
+              seed_cache="$(find "$seed_dir" -name source-cache.json -type f -print -quit)"
+              if [ -n "$seed_cache" ]; then
+                cp "$seed_cache" "$OUTPUT_DIR/source-cache.json"
+                echo "Caché restaurada desde $artifact_name ($created_at, run $run_id)."
+                restored='true'
+                break
+              fi
+            fi
+          done < "$candidates_file"
+
+          if [ "$restored" != 'true' ]; then
+            echo 'No había caché compatible; la corrida empieza desde cero.'
+          fi
+
+      - name: Execute resumable research for the protected 2000-ISBN cohort
+        id: research
+        continue-on-error: true
+        env:
+          GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
+          BOOK_EDITORIAL_EVIDENCE_LIMIT: '2000'
+          BOOK_EDITORIAL_EVIDENCE_OUTPUT_DIR: artifacts/book-editorial/isbn-2000-evidence
+          BOOK_EDITORIAL_EVIDENCE_CACHE_PATH: artifacts/book-editorial/isbn-2000-evidence/source-cache.json
+          GOOGLE_BOOKS_BUDGET: '2000'
+          GOOGLE_BOOKS_CONCURRENCY: '2'
+          GOOGLE_BOOKS_DELAY_MS: '900'
+          GOOGLE_BOOKS_RETRY_ATTEMPTS: '3'
+          OPEN_LIBRARY_BUDGET: '2000'
+          OPEN_LIBRARY_CONCURRENCY: '3'
+          BNE_BUDGET: '2000'
+          BNE_CONCURRENCY: '2'
+          BNE_DELAY_MS: '500'
+        run: node scripts/seo/book-editorial-2000-evidence.mjs
+
+      - name: Validate the 2000 evidence records and title locks
+        if: steps.research.outcome == 'success'
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import {
+            assertEvidenceReport,
+          } from './scripts/seo/book-editorial-2000-evidence.mjs';
+
+          const dir = 'artifacts/book-editorial/isbn-2000-evidence';
+          const report = JSON.parse(fs.readFileSync(`${dir}/evidence-report.json`, 'utf8'));
+          const editorialInput = JSON.parse(fs.readFileSync(`${dir}/editorial-input.json`, 'utf8'));
+          assertEvidenceReport(report, 2000);
+          if (report.cohort.titles_changed !== 0) throw new Error('La evidencia declara títulos modificados.');
+          if (editorialInput.title_fields_forbidden !== true) {
+            throw new Error('La salida para redacción no bloquea campos de título.');
+          }
+
+          const forbidden = new Set([
+            'title', 'seo_title', 'title_override', 'merchant_title', 'document_title',
+            'html_title', 'h1', 'slug', 'canonical', 'canonical_url', 'price',
+            'stock', 'available_quantity', 'pictures', 'thumbnail', 'condition', 'permalink',
+          ]);
+          function walk(value, currentPath = []) {
+            if (!value || typeof value !== 'object') return [];
+            if (Array.isArray(value)) return value.flatMap((entry, index) => walk(entry, [...currentPath, String(index)]));
+            return Object.entries(value).flatMap(([key, child]) => {
+              const nextPath = [...currentPath, key];
+              return [
+                ...(forbidden.has(key) ? [nextPath.join('.')] : []),
+                ...walk(child, nextPath),
+              ];
+            });
+          }
+
+          const violations = editorialInput.entries.flatMap(entry => walk(entry.editorial_input));
+          if (violations.length) {
+            throw new Error(`Campos comerciales dentro del insumo editorial: ${violations.slice(0, 10).join(', ')}`);
+          }
+
+          const total = Object.values(report.readiness).reduce((sum, value) => sum + Number(value || 0), 0);
+          if (total !== 2000) throw new Error(`Clasificación incompleta: ${total}/2000.`);
+          console.log(JSON.stringify({
+            selected_isbns: report.cohort.selected,
+            protected_listings: report.cohort.protected_listings,
+            title_variant_groups: report.cohort.title_variant_groups,
+            titles_changed: report.cohort.titles_changed,
+            readiness: report.readiness,
+            editorial_inputs: editorialInput.entries.length,
+          }, null, 2));
+          NODE
+
+      - name: Publish evidence summary
+        if: always()
+        run: |
+          if [ -f artifacts/book-editorial/isbn-2000-evidence/summary.md ]; then
+            cat artifacts/book-editorial/isbn-2000-evidence/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'La investigación no alcanzó a generar el resumen.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload report, editorial inputs and resumable cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-evidence-2000-${{ github.run_id }}
+          path: artifacts/book-editorial/isbn-2000-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Fail only after preserving all available evidence
+        if: steps.research.outcome != 'success'
+        run: exit 1
