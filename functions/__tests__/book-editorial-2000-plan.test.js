@@ -1,0 +1,167 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  assertEditorialBatchPlan,
+  buildEditorialBatchPlan,
+  selectEditorialBatch,
+  titleFingerprint,
+  validateEditorialOutputTitleLock,
+} from '../../scripts/seo/book-editorial-2000-plan.mjs';
+
+function isbnFor(index) {
+  const base = `978${String(index).padStart(9, '0')}`;
+  const sum = [...base].reduce(
+    (total, digit, position) => total + Number(digit) * (position % 2 === 0 ? 1 : 3),
+    0,
+  );
+  return `${base}${(10 - (sum % 10)) % 10}`;
+}
+
+function item(index, overrides = {}) {
+  return {
+    id: `MLU${1000000000 + index}`,
+    isbn: isbnFor(index),
+    title: `Título comercial exacto ${index}`,
+    author: 'Autora Real',
+    publisher: 'Editorial Real',
+    pages: 240,
+    description: '',
+    status: 'active',
+    available_quantity: 1,
+    price: 1490,
+    currency_id: 'UYU',
+    condition: 'new',
+    domain_id: 'MLU-BOOKS',
+    ...overrides,
+  };
+}
+
+function factualRecord(index) {
+  return {
+    schema_version: 1,
+    isbn: isbnFor(index),
+    decision: 'auto_publish_facts',
+    facts: { publisher: 'Editorial Real' },
+  };
+}
+
+function editorialRecord(index) {
+  return {
+    schema_version: 1,
+    isbn: isbnFor(index),
+    decision: 'auto_publish',
+    editorial: {
+      paragraphs: [
+        'Primer párrafo editorial suficientemente desarrollado para describir de forma concreta el contenido de la obra y su propuesta para el lector, sin alterar ningún dato comercial de la publicación.',
+        'Segundo párrafo editorial suficientemente desarrollado para explicar temas, estructura, enfoque, responsables y utilidad de la obra con información verificable y específica.',
+      ],
+      highlights: [
+        'Característica específica y comprobada número uno.',
+        'Característica específica y comprobada número dos.',
+        'Característica específica y comprobada número tres.',
+        'Característica específica y comprobada número cuatro.',
+        'Característica específica y comprobada número cinco.',
+      ],
+      decision_copy: 'Recomendación suficientemente específica para ayudar a decidir a qué lector puede servirle la obra, qué necesidad cubre y en qué casos conviene comparar otra edición antes de comprar.',
+      meta_description: 'Descripción editorial útil y específica para buscadores y lectores, sin modificar el título comercial original.',
+      merchant_description: 'Descripción editorial específica y suficientemente extensa para Google Merchant, construida con contenido comprobado de la obra y datos de edición verificables, sin reemplazar el título comercial ni alterar precio, stock, imágenes o canonical.',
+    },
+  };
+}
+
+test('selecciona 2.000 ISBN y prioriza convertir fichas meramente bibliográficas', () => {
+  const catalogItems = Array.from({ length: 2005 }, (_, index) => item(index + 1));
+  const enrichmentRecords = [
+    factualRecord(2005),
+    editorialRecord(2004),
+  ];
+
+  const result = selectEditorialBatch({
+    catalogItems,
+    enrichmentRecords,
+    limit: 2000,
+  });
+
+  assert.equal(result.selected.length, 2000);
+  assert.equal(result.selected[0].isbn, isbnFor(2005));
+  assert.equal(result.selected.some(entry => entry.isbn === isbnFor(2004)), false);
+  assert.equal(result.excluded.already_editorial_real, 1);
+});
+
+test('excluye un ISBN cuando sus publicaciones activas no tienen el mismo título exacto', () => {
+  const isbn = isbnFor(3000);
+  const result = selectEditorialBatch({
+    catalogItems: [
+      item(3000, { isbn, title: 'Título A' }),
+      item(3001, { isbn, title: 'Título A ' }),
+      item(3002),
+    ],
+    enrichmentRecords: [],
+    limit: 1,
+  });
+
+  assert.equal(result.selected.length, 1);
+  assert.equal(result.selected[0].isbn, isbnFor(3002));
+  assert.equal(result.excluded.inconsistent_titles, 1);
+});
+
+test('el plan conserva título, H1, HTML, Merchant, slug y canonical como inmutables', () => {
+  const catalogItems = Array.from({ length: 2000 }, (_, index) => item(index + 1));
+  const plan = buildEditorialBatchPlan({
+    catalogItems,
+    enrichmentRecords: [],
+    limit: 2000,
+    generatedAt: '2026-08-31T12:00:00.000Z',
+  });
+
+  assert.equal(assertEditorialBatchPlan(plan, 2000), true);
+  assert.equal(plan.selected_count, 2000);
+  assert.equal(plan.title_policy.commercial_title, 'immutable_byte_for_byte');
+  assert.equal(plan.title_policy.h1, 'must_equal_commercial_title');
+  assert.equal(plan.title_policy.html_title, 'must_equal_commercial_title');
+  assert.equal(plan.title_policy.merchant_title, 'must_equal_commercial_title');
+  assert.equal(plan.entries[0].commercial_title_sha256, titleFingerprint(plan.entries[0].commercial_title));
+});
+
+test('acepta copy editorial sólo cuando seo_title repite exactamente el título comercial', () => {
+  const plan = buildEditorialBatchPlan({
+    catalogItems: [item(1)],
+    enrichmentRecords: [],
+    limit: 1,
+    generatedAt: '2026-08-31T12:00:00.000Z',
+  });
+  const entry = plan.entries[0];
+  const record = {
+    isbn: entry.isbn,
+    editorial: {
+      seo_title: entry.commercial_title,
+      heading: 'Qué contiene esta edición',
+      paragraphs: ['Contenido editorial real.'],
+    },
+  };
+
+  assert.deepEqual(validateEditorialOutputTitleLock(plan, [record]), []);
+});
+
+test('bloquea cualquier reformulación del título o campo comercial dentro de la salida', () => {
+  const plan = buildEditorialBatchPlan({
+    catalogItems: [item(1)],
+    enrichmentRecords: [],
+    limit: 1,
+    generatedAt: '2026-08-31T12:00:00.000Z',
+  });
+  const entry = plan.entries[0];
+  const errors = validateEditorialOutputTitleLock(plan, [{
+    isbn: entry.isbn,
+    title: 'Título cambiado',
+    canonical: '/otra-url',
+    editorial: {
+      seo_title: `${entry.commercial_title} | Comprar Uruguay`,
+    },
+  }]);
+
+  assert.ok(errors.some(error => error.includes('campo comercial prohibido: title')));
+  assert.ok(errors.some(error => error.includes('campo comercial prohibido: canonical')));
+  assert.ok(errors.some(error => error.includes('intentó cambiar el título exacto')));
+});
