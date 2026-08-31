@@ -41,21 +41,15 @@ jobs:
               1,
           )
 
-          old = """  const results = plan.entries.map(entry => {
-    const representative = byId.get(entry.representative_id);"""
-          new = """  const classifications = [];
-  const results = plan.entries.map(entry => {
-    const representative = byId.get(entry.representative_id);"""
+          old = "  const results = plan.entries.map(entry => {\n    const representative = byId.get(entry.representative_id);"
+          new = "  const classifications = [];\n  const results = plan.entries.map(entry => {\n    const representative = byId.get(entry.representative_id);"
           if old in text:
               text = text.replace(old, new, 1)
           elif new not in text:
               raise SystemExit('No se encontró el inicio del mapeo de resultados.')
 
-          old = """    const classification = classifyBookIntelligenceEvidence(representative, records);
-    const input = contentInput(records);"""
-          new = """    const classification = classifyBookIntelligenceEvidence(representative, records);
-    classifications.push(classification);
-    const input = contentInput(records);"""
+          old = "    const classification = classifyBookIntelligenceEvidence(representative, records);\n    const input = contentInput(records);"
+          new = "    const classification = classifyBookIntelligenceEvidence(representative, records);\n    classifications.push(classification);\n    const input = contentInput(records);"
           if old in text:
               text = text.replace(old, new, 1)
           elif new not in text:
