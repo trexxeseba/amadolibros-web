@@ -1,0 +1,87 @@
+name: Apply editorial evidence fixes
+
+on:
+  push:
+    branches:
+      - b11/editorial-real-2000-batch-01
+    paths:
+      - '.github/workflows/apply-editorial-evidence-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-editorial-evidence-fix
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b11/editorial-real-2000-batch-01
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Fix evidence summary and variable cohort assertions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/seo/book-editorial-2000-evidence.mjs')
+          text = path.read_text(encoding='utf-8')
+
+          text = text.replace(
+              "  assertEditorialBatchPlan(plan, DEFAULT_EDITORIAL_BATCH_LIMIT);",
+              "  assertEditorialBatchPlan(plan, plan.requested);",
+              1,
+          )
+
+          old = """  const results = plan.entries.map(entry => {
+    const representative = byId.get(entry.representative_id);"""
+          new = """  const classifications = [];
+  const results = plan.entries.map(entry => {
+    const representative = byId.get(entry.representative_id);"""
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('No se encontró el inicio del mapeo de resultados.')
+
+          old = """    const classification = classifyBookIntelligenceEvidence(representative, records);
+    const input = contentInput(records);"""
+          new = """    const classification = classifyBookIntelligenceEvidence(representative, records);
+    classifications.push(classification);
+    const input = contentInput(records);"""
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('No se encontró la clasificación editorial.')
+
+          old = "    evidence_summary: summarizeBookIntelligenceEvidence(results.map(result => result.evidence)),"
+          new = "    evidence_summary: summarizeBookIntelligenceEvidence(classifications),"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('No se encontró el resumen de evidencia.')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate syntax
+        run: node --check scripts/seo/book-editorial-2000-evidence.mjs
+
+      - name: Commit fixes
+        run: |
+          if git diff --quiet -- scripts/seo/book-editorial-2000-evidence.mjs; then
+            echo 'Las correcciones ya estaban aplicadas.'
+            exit 0
+          fi
+          git config user.name 'trexxeseba'
+          git config user.email 'undiaes@gmail.com'
+          git add scripts/seo/book-editorial-2000-evidence.mjs
+          git commit -m 'B11: corregir reporte de evidencia editorial'
+          git push origin HEAD:b11/editorial-real-2000-batch-01
