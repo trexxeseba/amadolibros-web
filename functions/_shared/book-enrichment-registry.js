@@ -430,7 +430,7 @@ export function validateBookEnrichment(record) {
     const metaLength = clean(record.editorial.meta_description).length;
     if (metaLength < 80 || metaLength > 170) return false;
     if (clean(record.editorial.merchant_description).length < 250) return false;
-    if (!clean(record.editorial.seo_title) || !clean(record.editorial.heading)) return false;
+    if (!clean(record.editorial.heading)) return false;
 
     const exactEditionSources = record.provenance.filter(source =>
       source?.relationship === 'exact_edition' &&
@@ -550,7 +550,13 @@ export function applyBookEnrichment(item) {
     },
     // Metadatos internos para el render SSR. No contienen precio, stock,
     // imágenes ni URL comercial y no se escriben de vuelta al catálogo.
-    _amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,
+    _amadoEditorial: enrichment.decision === 'auto_publish' ? {
+      ...enrichment.editorial,
+      // TITLE-LOCK-2000: el título HTML se toma siempre de ESTA publicación.
+      // Un contenido compartido por ISBN no puede normalizar ni reemplazar
+      // títulos distintos de publicaciones duplicadas.
+      seo_title: item.title,
+    } : null,
     _amadoSchema: enrichment.schema || null,
     _amadoEnrichmentLevel: enrichment.editorial?.quality_level === 'editorial_real_v1'
       ? 'editorial_real'
