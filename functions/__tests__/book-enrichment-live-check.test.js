@@ -112,6 +112,33 @@ test('Merchant exige cada hecho factual que su generador debe publicar', () => {
   assert.ok(failures.some(failure => failure.startsWith('Merchant no recibió el hecho verificado:')));
 });
 
+test('auto_publish_facts no falla cuando el catálogo ya trae el mismo valor real (hecho redundante, no roto)', () => {
+  // Reproduce el caso real de PR #305 (B11.2 lote 01): el catálogo ya trae
+  // publication_year "2015" para esta publicación, igual al hecho
+  // verificado — no hay ningún dato nuevo que mostrar, y eso no es una
+  // falla mientras la ficha siga mostrando el ISBN, el ID comercial y no
+  // exponga autoría genérica.
+  const factual = {
+    isbn: '9780194501873',
+    decision: 'auto_publish_facts',
+    facts: { bibliographic: { publication_year: '2015' } },
+  };
+  const factualItem = {
+    id: 'MLU702882796',
+    isbn: factual.isbn,
+    title: 'Título original',
+    author: 'VV. AA.',
+    publisher: null,
+    pages: null,
+    bibliographic: { language: 'Inglés Internacional', publication_year: '2015', collection: 'No Se Aplica' },
+    description: '',
+  };
+  const html = '<div>MLU702882796 9780194501873 VV. AA. Inglés Internacional 2015 No Se Aplica</div>';
+  assert.deepEqual(verifyBookEnrichmentHtml(html, factual, factualItem.id, factualItem), []);
+  const feed = `<item><g:id>MLU702882796</g:id><g:description>Libro. ISBN 9780194501873.</g:description><g:gtin>9780194501873</g:gtin><g:price>1950 UYU</g:price><g:availability>in stock</g:availability><g:link>x</g:link><g:image_link>y</g:image_link></item>`;
+  assert.deepEqual(verifyBookEnrichmentFeed(feed, factual, factualItem), []);
+});
+
 test('una edición real sin MLU activo queda como no aplicable y no como fallo', () => {
   const inactiveEdition = { isbn: '9788434436442' };
   const catalog = [
