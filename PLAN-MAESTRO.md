@@ -83,7 +83,7 @@ enriquecidas.
 
 | Lote | Fichas | Rama | PR | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | 1–200 | `b11/enriquecimiento-lote-01` | pendiente | bloqueado (ver ESTADO-ACTUAL.md) |
+| 1 | 187 reales (no 200; ver ESTADO-ACTUAL.md) | `b11/enriquecimiento-lote-01-ci` | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (draft) | 187 ISBN verificados, sin sinopsis; tests locales en verde; no fusionar sin autorización |
 | 2 | 201–400 | `b11/enriquecimiento-lote-02` | pendiente | pendiente |
 | 3 | 401–600 | `b11/enriquecimiento-lote-03` | pendiente | pendiente |
 | 4 | 601–800 | `b11/enriquecimiento-lote-04` | pendiente | pendiente |
