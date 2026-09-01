@@ -1,0 +1,605 @@
+{
+  "schema_version": 1,
+  "entries": {
+    "9780008369491": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780061568183": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780156005999": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780190312305": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194037709": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194046701": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194053938": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194054553": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194111393": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194113465": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194114226": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9780194117913": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194202411": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194316002": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194419215": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9780194501873": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9780194511926": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194517904": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194517928": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194527675": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194598729": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194646864": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194730952": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9780194736589": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194798488": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194808026": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194808323": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194838993": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194908450": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194908603": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780194908665": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780198392439": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780199129683": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780199576449": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780230452947": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780230460195": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780230494596": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780230498181": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9780241558355": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780307275295": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780393045147": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780465023950": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780547577098": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780738700229": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780738767314": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780738778716": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780752884615": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780762474738": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780764367731": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780789902528": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780811216029": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780814628171": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780829744552": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780829763782": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780857628206": {
+      "status": "SIN_DATOS",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_sin_hechos_publicables"
+    },
+    "9780876122440": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780880794961": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780936388878": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780950080482": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9780989228626": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781087783505": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781090348418": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781292106465": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781292208169": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781292219554": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781292268729": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781292393230": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781292401133": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781316617021": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781316627686": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781316634851": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781337553865": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781337631495": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781337905732": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781382020114": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781405072588": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781408232361": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781409589648": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781414314785": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781430082149": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781456277161": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781472356680": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781481102988": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781496438317": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781496488992": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781503754041": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781503760493": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781503774827": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781503774834": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781532728594": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781557764256": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781572815612": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781572818804": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781572818835": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781572819207": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781572819948": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781629988214": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781638233398": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    },
+    "9781640951877": {
+      "status": "TERMINADO",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "identidad_confirmada_por_consenso"
+    },
+    "9781644732168": {
+      "status": "REVISAR",
+      "updated_at": "2026-09-01",
+      "batch": "b11-2-lote-01",
+      "reason": "sin_par_de_consenso"
+    }
+  }
+}

@@ -8,6 +8,7 @@
 import { BOOK_FACT_ENRICHMENTS } from './book-enrichment-facts-1000.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_333 } from './book-enrichment-facts-333.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_LOTE_01 } from './book-enrichment-facts-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_01 } from './book-enrichment-facts-b11-2-lote-01.js';
 import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
@@ -512,6 +513,17 @@ for (const record of BOOK_FACT_ENRICHMENTS_LOTE_01) {
   }
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
 }
+// B11.2: ISBN que B11.1 dejó en REVISAR, resueltos por consenso cruzado de
+// fuentes independientes (scripts/seo/b11-2-resolve-revisar.mjs).
+for (const record of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
 
 // Una mejora editorial reemplaza el registro factual de la misma edición,
 // pero no crea una edición nueva ni altera la métrica de cobertura por ISBN.
@@ -545,6 +557,17 @@ export function applyBookEnrichment(item) {
   const editorialDescription = Array.isArray(enrichment?.editorial?.paragraphs)
     ? enrichment.editorial.paragraphs.map(clean).filter(Boolean).join('\n\n')
     : '';
+  // El catálogo trae `bibliographic` con las claves siempre presentes
+  // (atributo de MercadoLibre), a menudo vacías. Un spread simple deja que
+  // esa clave vacía tape el hecho verificado; sólo el ítem gana cuando su
+  // propio valor es real, igual que ya hacen publisher/pages/dimensions.
+  const factsBibliography = facts.bibliographic || {};
+  const mergedBibliography = {};
+  for (const key of new Set([...Object.keys(factsBibliography), ...Object.keys(bibliography)])) {
+    const original = bibliography[key];
+    const hasRealValue = Array.isArray(original) ? original.length > 0 : clean(original) !== '';
+    mergedBibliography[key] = hasRealValue ? original : factsBibliography[key];
+  }
   return {
     ...item,
     author: facts.author && isGenericAuthor(item.author) ? facts.author : item.author,
@@ -554,10 +577,7 @@ export function applyBookEnrichment(item) {
     publisher: item.publisher || facts.publisher,
     pages: item.pages || facts.pages,
     dimensions_text: item.dimensions_text || facts.dimensions_text,
-    bibliographic: {
-      ...(facts.bibliographic || {}),
-      ...bibliography,
-    },
+    bibliographic: mergedBibliography,
     // Metadatos internos para el render SSR. No contienen precio, stock,
     // imágenes ni URL comercial y no se escriben de vuelta al catálogo.
     _amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,
