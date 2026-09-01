@@ -27,7 +27,8 @@ test('el lote 01 incorpora 187 ISBN nuevos con evidencia verificable', () => {
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
     assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
   }
-  assert.equal(listBookEnrichments().length, 1526);
+  // El total global sube con cada lote posterior (B11.2 agrega 12 más).
+  assert.equal(listBookEnrichments().length, 1538);
 });
 
 test('el lote 01 no contiene ni modifica títulos o datos comerciales', () => {
