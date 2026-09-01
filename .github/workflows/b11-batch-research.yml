@@ -83,14 +83,14 @@ jobs:
           BOOK_INTELLIGENCE_CANDIDATE_LIMIT: '0'
           BOOK_INTELLIGENCE_OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
           BOOK_INTELLIGENCE_CACHE_PATH: ${{ env.OUTPUT_DIR }}/source-cache.json
-          GOOGLE_BOOKS_BUDGET: '600'
-          GOOGLE_BOOKS_CONCURRENCY: '2'
-          GOOGLE_BOOKS_DELAY_MS: '1100'
-          GOOGLE_BOOKS_RETRY_ATTEMPTS: '3'
-          BNE_BUDGET: '1200'
+          GOOGLE_BOOKS_BUDGET: '1500'
+          GOOGLE_BOOKS_CONCURRENCY: '1'
+          GOOGLE_BOOKS_DELAY_MS: '2000'
+          GOOGLE_BOOKS_RETRY_ATTEMPTS: '4'
+          BNE_BUDGET: '2276'
           BNE_CONCURRENCY: '3'
           BNE_DELAY_MS: '500'
-          OPEN_LIBRARY_BUDGET: '1200'
+          OPEN_LIBRARY_BUDGET: '2276'
           OPEN_LIBRARY_CONCURRENCY: '2'
         run: node scripts/seo/book-intelligence-research-run.mjs --limit "$LIMIT"
 
