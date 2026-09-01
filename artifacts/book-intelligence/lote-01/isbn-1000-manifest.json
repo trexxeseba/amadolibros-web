@@ -1,0 +1,543 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-01T01:13:36.276Z",
+  "cohort": {
+    "requested": 200,
+    "researched": 2276,
+    "selected_updates": 19,
+    "unique_isbn": true,
+    "scope": "active_sellable_editions"
+  },
+  "metrics": {
+    "GREEN_FULL": 1,
+    "GREEN_FACTS": 18,
+    "REVIEW": 214,
+    "NO_EVIDENCE": 2043,
+    "updated_count": 19,
+    "remaining_to_1000": 981,
+    "target_reached": false
+  },
+  "entries": [
+    {
+      "isbn": "9788425427015",
+      "representative_id": "MLU661838331",
+      "listing_ids": [
+        "MLU661838331",
+        "MLU661851377"
+      ],
+      "title": "El Cristo Interior, De Melloni, Javier. Herder Editorial, Tapa Blanda En Español",
+      "author": "Melloni, Javier",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Herder",
+        "pages": 151,
+        "publication_year": "2010"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788408282822",
+      "representative_id": "MLU1247650322",
+      "listing_ids": [
+        "MLU1247650322",
+        "MLU1248458670"
+      ],
+      "title": "Autoayuda La Montaña Eres Tú Brianna Wiest Salud Mental",
+      "author": "Wiest, Brianna",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Booket",
+        "pages": 262
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788418056680",
+      "representative_id": "MLU1494471076",
+      "listing_ids": [
+        "MLU1494471076",
+        "MLU1494754542"
+      ],
+      "title": "Privacidad Digital Datos Carissa Véliz",
+      "author": "Carissa Véliz",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "DEBATE",
+        "topics": [
+          "Derecho a la intimidad",
+          "Protección de datos",
+          "Vigilancia electrónica"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788419868725",
+      "representative_id": "MLU1444239500",
+      "listing_ids": [
+        "MLU1444239500",
+        "MLU693791317"
+      ],
+      "title": "Libro El Principito (edicion Ilustrada Y Animada Por Minalima), De Saint-exupéry, Antoine De, Vol. 1. Editorial Salamandra Infantil Y Juvenil, Tapa Dura (2026)",
+      "author": "Saint-Exupéry, Antoine de",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Salamandra"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788425453977",
+      "representative_id": "MLU1256360600",
+      "listing_ids": [
+        "MLU1256360600",
+        "MLU1333217382"
+      ],
+      "title": "Realidad Y Juego D W Winnicott Psicoanalisis Infantil",
+      "author": "D.W. Winnicott",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Herder"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788446056720",
+      "representative_id": "MLU1428440432",
+      "listing_ids": [
+        "MLU1428440432",
+        "MLU1428479144"
+      ],
+      "title": "El Lobby Sionista: Una Historia A Ambos Lados Del Atlántico, De Pappé, Ilan. 1, Vol. 1. Editorial Akal, Tapa Blanda, Edición 1 En Español, 2025",
+      "author": "Pappé, Ilan",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Akal",
+        "pages": 634,
+        "topics": [
+          "Conflicto árabe-israelí",
+          "Grupos de presión",
+          "Sionismo — Estados Unidos — Historia",
+          "Sionismo — Gran Bretaña — Historia"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788467975819",
+      "representative_id": "MLU1098899178",
+      "listing_ids": [
+        "MLU1098899178",
+        "MLU661500949"
+      ],
+      "title": "Manga Jujutsu Kaisen Tomo 28 Gege Akutami",
+      "author": "Akutami, Gege",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Norma Editorial",
+        "pages": 190
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788491643333",
+      "representative_id": "MLU1494067032",
+      "listing_ids": [
+        "MLU1494067032",
+        "MLU1494476810"
+      ],
+      "title": "La Historia Del Mundo Como Nunca Antes Te La Habian Contado",
+      "author": "RUBIO, JAVIER",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 135,
+        "topics": [
+          "España — Historia — Obras ilustradas",
+          "Historia universal — Obras ilustradas",
+          "Libros ilustrados"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 2
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Academia Play"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "La historia como nunca antes te la habían contado"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788401039058",
+      "representative_id": "MLU1493865572",
+      "listing_ids": [
+        "MLU1493865572"
+      ],
+      "title": "Misterio Y Acertijos El Crimen Del Verano García Crimenes",
+      "author": "Modesto García",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Plaza & Janés"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788409729371",
+      "representative_id": "MLU1040409222",
+      "listing_ids": [
+        "MLU1040409222"
+      ],
+      "title": "Todos Caen | Novela Contemporánea Oscura Familia Pueblo",
+      "author": "Ale Lacour",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "La Mistral"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788410515895",
+      "representative_id": "MLU1494566774",
+      "listing_ids": [
+        "MLU1494566774"
+      ],
+      "title": "Manga Romance Yuri El Chico Que Me Gusta No Es Un Chico 1",
+      "author": "SUMIKO ARAI",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Panini España, S.A.",
+        "pages": 148,
+        "topics": [
+          "Cómics de amor",
+          "Mangas",
+          "Yuri"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788434440623",
+      "representative_id": "MLU1494548556",
+      "listing_ids": [
+        "MLU1494548556"
+      ],
+      "title": "Educación Infantil Crianza Consciente Estremera",
+      "author": "LAURA ESTREMERA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Ariel"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788408214359",
+      "representative_id": "MLU1494561402",
+      "listing_ids": [
+        "MLU1494561402"
+      ],
+      "title": "Todo Lo Que Sé Sobre El Amor Dolly Alderton Grande",
+      "author": "Dolly Alderton",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Editorial Planeta",
+        "topics": [
+          "Autoestima",
+          "Relaciones amorosas",
+          "Relaciones de pareja",
+          "Relaciones interpersonales"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788412308181",
+      "representative_id": "MLU1494547914",
+      "listing_ids": [
+        "MLU1494547914"
+      ],
+      "title": "Sobre Hombros De Gigantes Psicoterapia Parenti",
+      "author": "STEFANO PARENTI",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Pequeño Monasterio"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788412899733",
+      "representative_id": "MLU1494548722",
+      "listing_ids": [
+        "MLU1494548722"
+      ],
+      "title": "Tener Los Pies En La Tierra Trauma Complejo",
+      "author": "Bethany L. Brand, Ruth A. Lanius, Hugo J. Schielke, Francesca Shiavone",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Eleftheria, S.L.U.",
+        "pages": 295
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788419131829",
+      "representative_id": "MLU699238537",
+      "listing_ids": [
+        "MLU699238537"
+      ],
+      "title": "Bridgerton: El Vizconde Que Me Amó Julia Quinn Especial",
+      "author": "Julia Quinn",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Titania",
+        "pages": 380
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9791387512408",
+      "representative_id": "MLU1494548292",
+      "listing_ids": [
+        "MLU1494548292"
+      ],
+      "title": "Suspenso Romántico Nora Roberts Siete Anillos",
+      "author": "Nora Roberts",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Suma de letras"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788448843397",
+      "representative_id": "MLU686303046",
+      "listing_ids": [
+        "MLU642328865",
+        "MLU686303046"
+      ],
+      "title": "Libro: Mi Papá Es El Mejor Padre Del Mundo - Beascoa",
+      "author": "Ronda, Magela",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Beascoa",
+        "publication_year": "2015"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Ana Zurita"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Zurita, Ana"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788420683270",
+      "representative_id": "MLU721582606",
+      "listing_ids": [
+        "MLU721582606",
+        "MLU721595646"
+      ],
+      "title": "La Epopeya De Gilgamesh - Mito Mesopotámico Clásico Mitchell",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Alianza Editorial",
+        "publication_year": "2014"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    }
+  ]
+}
