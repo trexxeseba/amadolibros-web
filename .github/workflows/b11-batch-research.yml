@@ -140,9 +140,6 @@ jobs:
             echo "Sin cambios para commitear."
             exit 0
           fi
-          git commit -m "b11(lote): investigación real ${LIMIT} ISBN + hechos verificados
-
-Genera evidencia bibliográfica (Google Books, Open Library, BNE) y el
-módulo de hechos verificados para este lote. No modifica el registry ni
-publica nada; queda para wiring y redacción en un commit revisado aparte."
+          COMMIT_MSG=$'b11(lote): investigacion real '"${LIMIT}"$' ISBN + hechos verificados\n\nGenera evidencia bibliografica (Google Books, Open Library, BNE) y el\nmodulo de hechos verificados para este lote. No modifica el registry ni\npublica nada; queda para wiring y redaccion en un commit revisado aparte.'
+          git commit -m "$COMMIT_MSG"
           git push origin "HEAD:${{ github.ref_name }}"
