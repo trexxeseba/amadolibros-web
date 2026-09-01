@@ -257,6 +257,15 @@ async function main() {
     reports.push(report);
     if (!pageItem) {
       report.failures.push('ninguna publicación activa recibe un hecho nuevo');
+      if (record?.decision === 'auto_publish_facts') {
+        const sample = candidates[0];
+        const enrichedSample = applyBookEnrichment(sample);
+        report.failures.push(
+          `DEBUG facts=${JSON.stringify(record.facts)} original.author=${JSON.stringify(sample?.author)} ` +
+          `original.publisher=${JSON.stringify(sample?.publisher)} original.bibliographic=${JSON.stringify(sample?.bibliographic)} ` +
+          `enriched.bibliographic=${JSON.stringify(enrichedSample?.bibliographic)}`
+        );
+      }
     } else {
       pageTasks.push({ record, item: pageItem, report });
     }
