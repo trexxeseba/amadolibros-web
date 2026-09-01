@@ -110,7 +110,10 @@ enriquecidas.
 
 ## B11.2 — Pipeline continuo de enriquecimiento y resolución de conflictos
 
-Registrado el 2026-09-01. **Diseño únicamente — no ejecutado todavía.**
+Registrado el 2026-09-01, autorizado y en ejecución sobre el pool
+REVISAR. Lote 01: **12 TERMINADO, 1 SIN_DATOS, 87 REVISAR** —
+[PR #305](https://github.com/trexxeseba/amadolibros-web/pull/305)
+(draft, no fusionado). Detalle real en `ESTADO-ACTUAL.md`.
 Reemplaza la estructura fija de 10 lotes de 200 (que el Lote 1 ya mostró
 inviable: de 2.276 candidatos elegibles, solo 187 califican con las
 fuentes actuales) por un pipeline continuo dimensionado al rendimiento

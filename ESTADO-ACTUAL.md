@@ -87,6 +87,34 @@ anterior — pero el techo absoluto no cambia. Ver `PLAN-MAESTRO.md` para
 el rediseño (B11.2) que reemplaza el objetivo fijo de 2.000 por un
 pipeline continuo con estados persistentes sobre el universo real.
 
+## B11.2 — pipeline continuo, Lote 01 (pool REVISAR)
+
+Autorizado e iniciado 2026-09-01. [PR #305](https://github.com/trexxeseba/amadolibros-web/pull/305)
+(draft, no fusionado). Primer lote de 100 ISBN tomados del pool de 556
+`REVISAR`, sin tocar los 1.533 `SIN_DATOS`.
+
+- Regla aplicada: un ISBN pasa a `PUBLICABLE` cuando 2 fuentes
+  independientes (Google Books/Open Library/BNE) coinciden entre sí en
+  título normalizado + autor + editorial + año (un campo ausente en un
+  lado nunca cuenta como conflicto). Reutiliza evidencia ya investigada
+  por B11.1 — 0 llamadas de red nuevas.
+- Resultado real del lote 01: **12 TERMINADO** (integrados al
+  registry), **1 SIN_DATOS** (identidad confirmada, sin hechos con
+  evidencia suficiente para publicar), **87 siguen REVISAR**. Duración
+  del procesamiento: 0,1s.
+- Estado persistente commiteado en `artifacts/b11-2/state.json`
+  (acumulativo, retomable, nunca reprocesa un `TERMINADO`).
+- Registry: 1.538 (1.526 + 12).
+- Bug real encontrado y corregido durante la construcción del resolver:
+  las URLs `infoLink`/`selfLink` de Google Books a veces vienen en
+  `http://`, no `https://`, y `validateBookEnrichment` exige `https`.
+  Sin la normalización (ya usada en `book-intelligence-project.mjs`,
+  faltaba replicarla acá) el resolver daba 0 resueltos en vez de 12.
+- Tests: 6/6 focales de B11.2 + 1.046/1.046 suite completa +
+  `validate-ci.sh` OK + `git diff --check` limpio.
+- Pendientes de REVISAR tras este lote: 556 − 12 − 1 = 543 (444 sin
+  tocar aún + 87 reintentados sin éxito en este lote).
+
 ## PR #298 — CERRADO
 
 Registrado como definitivamente cerrado y fusionado. Ver detalle completo en
