@@ -1,18 +1,27 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-Última actualización: 2026-09-01 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras la 2ª corrida del Lote 1 con Google Books corregido.
+Última actualización: 2026-09-01 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras verificar el Lote 1 en Producción.
+
+## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
+
+- [PR #303](https://github.com/trexxeseba/amadolibros-web/pull/303) fusionado a `main` por trexxeseba (squash, commit `5b46f72`), 2026-09-01T16:55:06Z.
+- [PR #304](https://github.com/trexxeseba/amadolibros-web/pull/304) fusionado (infra de verificación manual contra cualquier `base_url`), commit `7be3b3931b`.
+- Deploy to Cloudflare Pages sobre `5b46f72`: `run 33534675172`, intento 2, **success** (el intento 1 falló solo en el job "Publish production paused/active catalog" por un `Recv failure: Connection reset by peer` transitorio de red; el job "Deploy" —build, Wrangler, smoke test— fue success desde el intento 1).
+- Full commerce production audit (dispatch manual, `sample_only=true`), `run 33544377442`: **result=pass, critical=0** — catálogo 7.128 items, feed Merchant 3.707 items (0 críticos/warnings), 300/300 imágenes válidas (`r2-production`), 300/300 páginas verificadas.
+- Book enrichment live check contra Producción (`https://www.amadolibros.com`), `run 33545168003`: **1.517 verified, 9 not_applicable, 0 failed** sobre el registry completo de 1.526 ISBN (incluidos los 187 del Lote 1). Los 9 `not_applicable` son ISBN del registry sin ninguna publicación MLU activa hoy — no es una falla, es la conservación correcta del dato para cuando vuelva a haber oferta.
+- Muestra de 12 ISBN del Lote 1 verificados individualmente contra Producción (mezcla de los 19 de la 1ª corrida y los 168 de la 2ª): `9788401039058`, `9788408214359`, `9788425427015`, `9788446056720`, `9788467975819`, `9780006551805`, `9780142410110`, `9780194053921`, `9780198338734`, `9780307951526`, `9780230490017`, `9780199640942` — los 12 con status `verified`, cada uno con sus propios MLU reales y sin mezcla de datos entre ISBN.
 
 ## Contadores acumulados
 
 | Métrica | Valor |
 | --- | --- |
 | Universo inicial del Lote 1 (ISBN elegibles investigados) | 2.276 |
-| Fichas enriquecidas correctamente (verificadas, integradas en PR #303) | **187** (18 `GREEN_FULL` + 169 `GREEN_FACTS`) |
+| Fichas enriquecidas correctamente (verificadas, en `main` y Producción) | **187** (18 `GREEN_FULL` + 169 `GREEN_FACTS`) |
 | Fichas pendientes totales | **2.089** |
 | — de las cuales SIN_DATOS (sin evidencia utilizable) | 1.533 |
 | — de las cuales REVISAR (evidencia con conflicto de identidad) | 556 |
-| PRs abiertos (lotes) | 1 — [PR #303](https://github.com/trexxeseba/amadolibros-web/pull/303) (draft, "no fusionar sin autorización de Seba") |
-| PRs fusionados (lotes) | 0 |
+| PRs abiertos (lotes) | 0 |
+| PRs fusionados (lotes) | 2 — [PR #303](https://github.com/trexxeseba/amadolibros-web/pull/303) (187 fichas), [PR #304](https://github.com/trexxeseba/amadolibros-web/pull/304) (infra de verificación) |
 
 Verificación: 187 + 2.089 = 2.276. 1.533 + 556 = 2.089. Los 556 REVISAR
 están **dentro** de los 2.089 pendientes, no se suman aparte.
