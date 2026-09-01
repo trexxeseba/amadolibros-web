@@ -1,6 +1,6 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-Última actualización: 2026-09-01 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras verificar el Lote 1 en Producción.
+Última actualización: 2026-09-01 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras verificar B11.2 Lote 01 en Producción.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -26,9 +26,13 @@
 Verificación: 187 + 2.089 = 2.276. 1.533 + 556 = 2.089. Los 556 REVISAR
 están **dentro** de los 2.089 pendientes, no se suman aparte.
 
-Total del catálogo (todos los lotes B11 hasta ahora): 1.339 ya enriquecidos
-antes del Lote 1 + 187 de este lote = **1.526 ISBN enriquecidos**. Universo
-addressable completo: 1.526 + 2.089 pendientes = **3.615 ISBN únicos**.
+Total del catálogo (todos los lotes B11 hasta ahora, incluido B11.2 Lote
+01): 1.339 ya enriquecidos antes del Lote 1 + 187 del Lote 1 + 12 de
+B11.2 Lote 01 = **1.538 ISBN enriquecidos**. Universo addressable
+completo: 1.538 + 2.077 pendientes (1.534 SIN_DATOS + 543 REVISAR) =
+**3.615 ISBN únicos** (sin cambios — el universo no crece, solo se
+reclasifican ISBN dentro de él). Ver la sección "B11.2 Lote 01" más abajo
+para el detalle y la evidencia de Producción.
 
 ## Corrección de Google Books (aplicada y verificada)
 
@@ -87,11 +91,10 @@ anterior — pero el techo absoluto no cambia. Ver `PLAN-MAESTRO.md` para
 el rediseño (B11.2) que reemplaza el objetivo fijo de 2.000 por un
 pipeline continuo con estados persistentes sobre el universo real.
 
-## B11.2 — pipeline continuo, Lote 01 (pool REVISAR)
+## B11.2 Lote 01 — TERMINADO (fusionado y verificado en Producción)
 
-Autorizado e iniciado 2026-09-01. [PR #305](https://github.com/trexxeseba/amadolibros-web/pull/305)
-(draft, no fusionado). Primer lote de 100 ISBN tomados del pool de 556
-`REVISAR`, sin tocar los 1.533 `SIN_DATOS`.
+Autorizado e iniciado 2026-09-01, sobre el pool de 556 `REVISAR` dejado
+por B11.1, sin tocar los 1.533 `SIN_DATOS`. Primer lote de 100 ISBN.
 
 - Regla aplicada: un ISBN pasa a `PUBLICABLE` cuando 2 fuentes
   independientes (Google Books/Open Library/BNE) coinciden entre sí en
@@ -104,16 +107,70 @@ Autorizado e iniciado 2026-09-01. [PR #305](https://github.com/trexxeseba/amadol
   del procesamiento: 0,1s.
 - Estado persistente commiteado en `artifacts/b11-2/state.json`
   (acumulativo, retomable, nunca reprocesa un `TERMINADO`).
-- Registry: 1.538 (1.526 + 12).
-- Bug real encontrado y corregido durante la construcción del resolver:
-  las URLs `infoLink`/`selfLink` de Google Books a veces vienen en
-  `http://`, no `https://`, y `validateBookEnrichment` exige `https`.
-  Sin la normalización (ya usada en `book-intelligence-project.mjs`,
-  faltaba replicarla acá) el resolver daba 0 resueltos en vez de 12.
-- Tests: 6/6 focales de B11.2 + 1.046/1.046 suite completa +
-  `validate-ci.sh` OK + `git diff --check` limpio.
-- Pendientes de REVISAR tras este lote: 556 − 12 − 1 = 543 (444 sin
-  tocar aún + 87 reintentados sin éxito en este lote).
+- [PR #305](https://github.com/trexxeseba/amadolibros-web/pull/305)
+  fusionado a `main` por trexxeseba (squash, commit `8d474bf`),
+  2026-09-01.
+- Dos bugs reales encontrados y corregidos durante la verificación
+  (ninguno tocó título/precio/stock/imágenes/datos comerciales, los
+  tres siguientes hallazgos son solo de la propia herramienta de
+  verificación/merge):
+  1. Las URLs `infoLink`/`selfLink` de Google Books a veces vienen en
+     `http://`, no `https://`, y `validateBookEnrichment` exige
+     `https`. Sin la normalización (ya usada en
+     `book-intelligence-project.mjs`, faltaba replicarla en el
+     resolver) el resolver daba 0 resueltos en vez de 12.
+  2. `applyBookEnrichment` mezclaba `bibliographic` con spread de
+     objeto: una clave ya presente en el ítem del catálogo (aunque
+     vacía, como suele traer MercadoLibre) tapaba el hecho verificado
+     en vez de sólo ganar cuando su propio valor es real —
+     inconsistente con el patrón que ya usan `publisher`/`pages`.
+     Corregido con test de regresión.
+  3. `book-enrichment-live-check.mjs` exigía que cada
+     `auto_publish_facts` introdujera al menos un campo visible nuevo
+     respecto al catálogo para considerarse "verificado". Con
+     evidencia real de CI se confirmó que no había corrupción de
+     datos: 8 de los 12 ISBN ya tenían en el catálogo el mismo valor
+     real que el hecho verificado (ej. `9780194501873`:
+     `publication_year "2015"` en ambos lados — hecho legítimamente
+     redundante), y el resto tenía un valor real distinto que el merge
+     correctamente no pisa (ej. catálogo con `"2222"`, un dato erróneo
+     del vendedor). Corregido: el gate ahora verifica que los hechos
+     que sí se aplicaron se rendericen bien, sin exigir novedad.
+- Deploy to Cloudflare Pages sobre `8d474bf`: `run 33558241703`,
+  **success** (el job "Publish production paused/active catalog" tardó
+  ~9 min pero terminó en verde; el resto —build, Wrangler, smoke
+  test— fue success desde el arranque).
+- Full commerce production audit (dispatch manual, `sample_only=true`),
+  `run 33559277806`: **result=pass, critical=0** — catálogo 7.128
+  items, feed Merchant 3.707 items (0 críticos/warnings), 300/300
+  imágenes válidas (`r2-production`), 300/300 páginas verificadas.
+- Book enrichment live check contra Producción
+  (`https://www.amadolibros.com`), `run 33559284981`: **1.529
+  verified, 9 not_applicable, 0 failed** sobre el registry completo de
+  **1.538** ISBN (1.529 + 9 = 1.538, exacto). Los 9 `not_applicable`
+  son los mismos ISBN sin publicación MLU activa ya vistos en la
+  verificación del Lote 1 — no es una falla nueva.
+- Los 12 ISBN de este lote verificados individualmente contra
+  Producción, todos `verified`, cada uno con sus propios MLU reales y
+  sin mezcla de datos entre ISBN: `9780194114226` (MLU637863473,
+  MLU674080904), `9780194419215` (MLU637824793, MLU1300310658,
+  MLU1299647170), `9780194501873` (MLU702908736, MLU702882796),
+  `9780194730952` (MLU675019228, MLU638287647), `9780230498181`
+  (MLU887472434, MLU653511723), `9781090348418` (MLU679894804),
+  `9781292268729` (MLU627781415), `9781292401133` (MLU628486908,
+  MLU636069230), `9781316627686` (MLU642033254, MLU658014430),
+  `9781456277161` (MLU684400158, MLU684374146), `9781557764256`
+  (MLU725474470, MLU730190378), `9781640951877` (MLU1467423248,
+  MLU1468208694).
+- Tests: 6/6 focales de B11.2 (+2 tests de regresión agregados durante
+  la verificación) + 1.048/1.048 suite completa + `validate-ci.sh` OK +
+  `git diff --check` limpio.
+- Pendientes de REVISAR tras este lote: 556 − 12 − 1 = **543** (444 sin
+  tocar aún + 87 reintentados sin éxito en este lote). SIN_DATOS:
+  1.533 + 1 = **1.534**. Verificación: 543 + 1.534 = 2.077 pendientes;
+  1.538 enriquecidos + 2.077 pendientes = 3.615 — el universo total no
+  cambia, sólo se movieron 12 ISBN de pendiente a enriquecido y 1 de
+  REVISAR a SIN_DATOS.
 
 ## PR #298 — CERRADO
 

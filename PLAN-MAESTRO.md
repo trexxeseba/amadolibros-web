@@ -83,7 +83,7 @@ enriquecidas.
 
 | Lote | Fichas | Rama | PR | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | Universo 2.276 → 187 enriquecidos, 2.089 pendientes (1.533 SIN_DATOS + 556 REVISAR) | `b11/enriquecimiento-lote-01-ci` | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (draft) | 187 ISBN verificados, sin sinopsis; tests y CI en verde; no fusionar sin autorización |
+| 1 | Universo 2.276 → 187 enriquecidos | `b11/enriquecimiento-lote-01-ci` | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) | **Fusionado y verificado en Producción** (commit `5b46f72`) |
 | 2 | 201–400 | `b11/enriquecimiento-lote-02` | pendiente | pendiente |
 | 3 | 401–600 | `b11/enriquecimiento-lote-03` | pendiente | pendiente |
 | 4 | 601–800 | `b11/enriquecimiento-lote-04` | pendiente | pendiente |
@@ -110,10 +110,11 @@ enriquecidas.
 
 ## B11.2 — Pipeline continuo de enriquecimiento y resolución de conflictos
 
-Registrado el 2026-09-01, autorizado y en ejecución sobre el pool
-REVISAR. Lote 01: **12 TERMINADO, 1 SIN_DATOS, 87 REVISAR** —
+Registrado el 2026-09-01, autorizado y ejecutado sobre el pool REVISAR.
+Lote 01: **12 TERMINADO, 1 SIN_DATOS, 87 REVISAR** —
 [PR #305](https://github.com/trexxeseba/amadolibros-web/pull/305)
-(draft, no fusionado). Detalle real en `ESTADO-ACTUAL.md`.
+**fusionado y verificado en Producción** (commit `8d474bf`). Detalle
+real en `ESTADO-ACTUAL.md`.
 Reemplaza la estructura fija de 10 lotes de 200 (que el Lote 1 ya mostró
 inviable: de 2.276 candidatos elegibles, solo 187 califican con las
 fuentes actuales) por un pipeline continuo dimensionado al rendimiento
