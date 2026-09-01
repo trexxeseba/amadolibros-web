@@ -83,7 +83,7 @@ enriquecidas.
 
 | Lote | Fichas | Rama | PR | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | 187 reales (no 200; ver ESTADO-ACTUAL.md) | `b11/enriquecimiento-lote-01-ci` | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (draft) | 187 ISBN verificados, sin sinopsis; tests locales en verde; no fusionar sin autorización |
+| 1 | Universo 2.276 → 187 enriquecidos, 2.089 pendientes (1.533 SIN_DATOS + 556 REVISAR) | `b11/enriquecimiento-lote-01-ci` | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (draft) | 187 ISBN verificados, sin sinopsis; tests y CI en verde; no fusionar sin autorización |
 | 2 | 201–400 | `b11/enriquecimiento-lote-02` | pendiente | pendiente |
 | 3 | 401–600 | `b11/enriquecimiento-lote-03` | pendiente | pendiente |
 | 4 | 601–800 | `b11/enriquecimiento-lote-04` | pendiente | pendiente |
@@ -107,5 +107,67 @@ enriquecidas.
    utilizadas, resultado de tests.
 6. No fusionar sin autorización explícita — salvo autorización previa
    expresa para fusión automática de lotes en verde.
+
+## B11.2 — Pipeline continuo de enriquecimiento y resolución de conflictos
+
+Registrado el 2026-09-01. **Diseño únicamente — no ejecutado todavía.**
+Reemplaza la estructura fija de 10 lotes de 200 (que el Lote 1 ya mostró
+inviable: de 2.276 candidatos elegibles, solo 187 califican con las
+fuentes actuales) por un pipeline continuo dimensionado al rendimiento
+real del catálogo.
+
+### Motivación
+
+El Lote 1 investigó su universo elegible completo (2.276 ISBN) en vez de
+una muestra de 200: 187 calificaron, 1.533 quedaron sin evidencia y 556
+quedaron con evidencia en conflicto. Repetir "lotes de 200" sobre el
+mismo universo ya investigado no agrega nada — hace falta un pipeline que
+sepa qué ISBN ya se investigó, en qué estado quedó, y que solo vuelva a
+tocar los que pueden cambiar de estado.
+
+### Diseño
+
+- **Unidad de trabajo:** lotes independientes de 100 ISBN (no 200).
+- **Estados persistentes por ISBN** (se guardan, no se recalculan desde
+  cero en cada corrida):
+  - `PUBLICABLE`: evidencia suficiente, sin conflicto — listo para
+    integrar al registry (equivalente a `GREEN_FULL`/`GREEN_FACTS` hoy).
+  - `REVISAR`: hay evidencia pero con conflicto de identidad (título,
+    autor, editorial o año no coinciden entre fuentes) — requiere
+    resolución antes de publicar.
+  - `SIN_DATOS`: ninguna fuente disponible tiene evidencia utilizable.
+  - `TERMINADO`: el ISBN ya se procesó de forma definitiva (publicado o
+    descartado) — **nunca se vuelve a consultar**.
+- **Resolución automática de conflictos:** cuando dos o más fuentes
+  coinciden en ISBN exacto + título normalizado + autor + editorial + año,
+  el conflicto se resuelve automáticamente y el ISBN pasa a `PUBLICABLE`.
+  Si no coinciden en esos cuatro campos, se queda en `REVISAR` para
+  revisión humana — nunca se fuerza una resolución sin ese acuerdo.
+- **Los `SIN_DATOS` salen del circuito automático**: no se reintentan en
+  cada corrida (evita repetir consultas ya fallidas contra BNE/Open
+  Library/Google Books); quedan disponibles para una fuente adicional
+  futura o revisión manual, pero no consumen presupuesto de investigación
+  de forma repetida.
+- **Ningún lote puede sobrescribir resultados anteriores**: cada corrida
+  fusiona sobre el estado persistente existente (la causa raíz del bug
+  encontrado y corregido en la 2ª corrida del Lote 1: acumular, nunca
+  pisar).
+- **Cada lote es retomable**: un lote interrumpido (timeout, error de
+  red, cuota agotada) puede continuarse desde el estado persistido sin
+  perder lo ya resuelto.
+- **Invariante comercial sin excepción:** títulos, H1, slugs, precios,
+  stock, imágenes y demás datos comerciales permanecen intactos en todos
+  los lotes de B11.2, igual que en B11.1.
+
+### Qué falta antes de ejecutar B11.2
+
+- Definir dónde vive el estado persistente por ISBN (¿archivo commiteado
+  por lote, como hoy, o un manifiesto único que se actualiza en cada
+  corrida?) y cómo se pasa de `REVISAR`/`SIN_DATOS` a `TERMINADO`.
+- Decidir si conseguir sinopsis real (campo `description`, ahora
+  disponible en un subconjunto de los matches de Google Books) es parte
+  de B11.2 o un tercer proyecto separado.
+- Autorización explícita de Seba para arrancar — **no se ejecuta nada de
+  esto todavía.**
 
 Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.
