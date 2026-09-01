@@ -12,6 +12,11 @@ name: B11 lote — investigar y commitear evidencia bibliográfica
 # de sinopsis donde corresponda se hacen en un commit separado, revisado.
 
 on:
+  push:
+    branches:
+      - b11/enriquecimiento-lote-01-ci
+    paths:
+      - .github/workflows/b11-batch-research.yml
   workflow_dispatch:
     inputs:
       limit:
@@ -43,9 +48,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      LIMIT: ${{ inputs.limit }}
-      OUTPUT_DIR: ${{ inputs.output_dir }}
-      FACTS_OUTPUT: ${{ inputs.facts_output }}
+      LIMIT: ${{ inputs.limit || '200' }}
+      OUTPUT_DIR: ${{ inputs.output_dir || 'artifacts/book-intelligence/lote-01' }}
+      FACTS_OUTPUT: ${{ inputs.facts_output || 'functions/_shared/book-enrichment-facts-lote-01.js' }}
 
     steps:
       - name: Checkout
