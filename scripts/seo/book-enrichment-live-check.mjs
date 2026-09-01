@@ -308,7 +308,11 @@ async function main() {
     if (report.status === 'not_applicable') {
       console.warn('    - edición enriquecida conservada; sin oferta activa para verificar en este Preview');
     }
-    for (const failure of report.failures) console.error(`    - ${failure}`);
+    // console.log en vez de console.error: en CI, stderr se pierde por
+    // buffering cuando el proceso termina justo después de escribir (visto
+    // en la corrida de PR #305 — las líneas de resumen por ISBN llegaban al
+    // log pero el detalle de cada fallo no).
+    for (const failure of report.failures) console.log(`    - ${failure}`);
   }
 
   if (failed.length) throw new Error(`${failed.length} edición(es) activas fallaron la verificación HTTP.`);
