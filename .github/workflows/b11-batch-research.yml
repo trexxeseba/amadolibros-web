@@ -100,11 +100,39 @@ jobs:
           EXPECTED="$(node -e "console.log(require('./${OUTPUT_DIR}/isbn-1000-manifest.json').entries.length)")"
           echo "Entradas con evidencia suficiente: $EXPECTED / $LIMIT solicitados."
           echo "qualified_count=$EXPECTED" >> "$GITHUB_OUTPUT"
+          # book-intelligence-project.mjs reescribe FACTS_OUTPUT desde cero con
+          # solo las entradas de esta corrida. Si el archivo ya traía hechos de
+          # una corrida anterior del mismo lote, se preservan aparte y se
+          # fusionan después: cada corrida acumula, nunca pisa la anterior.
+          PREVIOUS_FACTS=""
+          if [ -f "$FACTS_OUTPUT" ]; then
+            PREVIOUS_FACTS="$(mktemp)"
+            cp "$FACTS_OUTPUT" "$PREVIOUS_FACTS"
+          fi
+          export PREVIOUS_FACTS
           node scripts/seo/book-intelligence-project.mjs \
             --manifest "$OUTPUT_DIR/isbn-1000-manifest.json" \
             --cache "$OUTPUT_DIR/source-cache.json" \
             --output "$FACTS_OUTPUT" \
             --expected "$EXPECTED"
+          if [ -n "$PREVIOUS_FACTS" ]; then
+            node -e "
+              const fs = require('node:fs');
+              const path = require('node:path');
+              (async () => {
+                const projectMod = await import(path.resolve('scripts/seo/book-intelligence-project.mjs'));
+                const previousUrl = 'file://' + path.resolve(process.env.PREVIOUS_FACTS);
+                const currentUrl = 'file://' + path.resolve(process.env.FACTS_OUTPUT);
+                const previous = (await import(previousUrl)).BOOK_FACT_ENRICHMENTS;
+                const current = (await import(currentUrl)).BOOK_FACT_ENRICHMENTS;
+                const currentIsbns = new Set(current.map(entry => entry.isbn));
+                const carriedOver = previous.filter(entry => !currentIsbns.has(entry.isbn));
+                const merged = [...carriedOver, ...current].sort((a, b) => a.isbn.localeCompare(b.isbn));
+                fs.writeFileSync(process.env.FACTS_OUTPUT, projectMod.renderFactsModule(merged));
+                console.log(\`Fusionadas \${carriedOver.length} entradas previas + \${current.length} nuevas = \${merged.length} totales.\`);
+              })();
+            "
+          fi
         id: project
 
       - name: Sanity-check generated module has no commercial data

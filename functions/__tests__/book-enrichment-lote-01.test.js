@@ -11,20 +11,23 @@ import {
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
 
-test('el lote 01 incorpora 19 ISBN nuevos con evidencia verificable', () => {
+test('el lote 01 incorpora 187 ISBN nuevos con evidencia verificable', () => {
+  // Dos corridas acumuladas del workflow b11-batch-research.yml: 19 ISBN
+  // (Google Books sin cuota, solo BNE/Open Library) + 168 ISBN (Google
+  // Books corregido, presupuesto ampliado al universo elegible completo).
   const previous = new Set([
     ...BOOK_FACT_ENRICHMENTS_1000,
     ...BOOK_FACT_ENRICHMENTS_333,
   ].map(entry => entry.isbn));
 
-  assert.equal(BOOK_FACT_ENRICHMENTS_LOTE_01.length, 19);
-  assert.equal(new Set(BOOK_FACT_ENRICHMENTS_LOTE_01.map(entry => entry.isbn)).size, 19);
+  assert.equal(BOOK_FACT_ENRICHMENTS_LOTE_01.length, 187);
+  assert.equal(new Set(BOOK_FACT_ENRICHMENTS_LOTE_01.map(entry => entry.isbn)).size, 187);
   for (const entry of BOOK_FACT_ENRICHMENTS_LOTE_01) {
     assert.equal(previous.has(entry.isbn), false, `ISBN repetido: ${entry.isbn}`);
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
     assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
   }
-  assert.equal(listBookEnrichments().length, 1358);
+  assert.equal(listBookEnrichments().length, 1526);
 });
 
 test('el lote 01 no contiene ni modifica títulos o datos comerciales', () => {
