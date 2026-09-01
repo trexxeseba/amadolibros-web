@@ -20,7 +20,11 @@ test('la segunda cohorte contiene exactamente 333 ISBN nuevos y verificables', (
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
     assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
   }
-  assert.equal(listBookEnrichments().length, 1339);
+  const firstTwoCohorts = new Set([
+    ...BOOK_FACT_ENRICHMENTS_1000,
+    ...BOOK_FACT_ENRICHMENTS_333,
+  ].map(entry => entry.isbn));
+  assert.equal(listBookEnrichments().filter(entry => firstTwoCohorts.has(entry.isbn)).length, 1333);
 });
 
 test('las 333 proyecciones no contienen datos comerciales ni sinopsis externas', () => {

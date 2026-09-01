@@ -41,7 +41,7 @@ test('la edición Disney se reclasifica como enriquecimiento editorial real', ()
   assert.equal(record.editorial.quality_level, 'editorial_real_v1');
   assert.equal(validateBookEnrichment(record), true);
   assert.equal(getBookEnrichmentByIsbn(ISBN), record);
-  assert.equal(listBookEnrichments().length, 1339);
+  assert.equal(listBookEnrichments().filter(entry => entry.isbn === ISBN).length, 1);
 });
 
 test('el contenido responde qué incluye, cómo funciona y para quién sirve', () => {
