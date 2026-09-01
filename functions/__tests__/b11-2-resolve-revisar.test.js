@@ -89,6 +89,30 @@ test('buildFactsFromConsensus nunca publica un campo con evidencia insuficiente'
   assert.equal(facts.bibliographic.publication_year, '2020');
 });
 
+test('B11.2: applyBookEnrichment publica el hecho aunque el catálogo ya traiga la clave bibliográfica vacía', () => {
+  // El catálogo real (atributo de MercadoLibre) trae `bibliographic` con
+  // las claves siempre presentes, casi siempre vacías. Reproduce ese
+  // detalle exacto: fue la causa de que los 12 hechos de este lote
+  // aparecieran como "sin cambios" contra el Preview de PR #305 aunque el
+  // registro era válido — un objeto de fixture vacío (`{}`) no lo detectaba.
+  for (const entry of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_01) {
+    const original = {
+      id: entry.sample_listing_id || 'MLU999999999',
+      isbn: entry.isbn,
+      title: `Título original ${entry.isbn}`,
+      author: 'Desconocido',
+      publisher: '',
+      pages: null,
+      bibliographic: { language: '', format: '', edition: '', publication_year: '' },
+      status: 'active',
+    };
+    const enriched = applyBookEnrichment(original);
+    for (const [field, value] of Object.entries(entry.facts.bibliographic || {})) {
+      assert.equal(enriched.bibliographic[field], value, `${entry.isbn}.${field}`);
+    }
+  }
+});
+
 test('titlesCompatible/authorsCompatible siguen exportadas y estables (dependencia de B11.2)', () => {
   assert.equal(typeof titlesCompatible, 'function');
   assert.equal(typeof authorsCompatible, 'function');

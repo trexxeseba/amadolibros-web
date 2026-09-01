@@ -557,6 +557,17 @@ export function applyBookEnrichment(item) {
   const editorialDescription = Array.isArray(enrichment?.editorial?.paragraphs)
     ? enrichment.editorial.paragraphs.map(clean).filter(Boolean).join('\n\n')
     : '';
+  // El catálogo trae `bibliographic` con las claves siempre presentes
+  // (atributo de MercadoLibre), a menudo vacías. Un spread simple deja que
+  // esa clave vacía tape el hecho verificado; sólo el ítem gana cuando su
+  // propio valor es real, igual que ya hacen publisher/pages/dimensions.
+  const factsBibliography = facts.bibliographic || {};
+  const mergedBibliography = {};
+  for (const key of new Set([...Object.keys(factsBibliography), ...Object.keys(bibliography)])) {
+    const original = bibliography[key];
+    const hasRealValue = Array.isArray(original) ? original.length > 0 : clean(original) !== '';
+    mergedBibliography[key] = hasRealValue ? original : factsBibliography[key];
+  }
   return {
     ...item,
     author: facts.author && isGenericAuthor(item.author) ? facts.author : item.author,
@@ -566,10 +577,7 @@ export function applyBookEnrichment(item) {
     publisher: item.publisher || facts.publisher,
     pages: item.pages || facts.pages,
     dimensions_text: item.dimensions_text || facts.dimensions_text,
-    bibliographic: {
-      ...(facts.bibliographic || {}),
-      ...bibliography,
-    },
+    bibliographic: mergedBibliography,
     // Metadatos internos para el render SSR. No contienen precio, stock,
     // imágenes ni URL comercial y no se escriben de vuelta al catálogo.
     _amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,
