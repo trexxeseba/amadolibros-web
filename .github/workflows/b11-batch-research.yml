@@ -32,6 +32,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: b11-batch-research-${{ github.ref }}
@@ -82,14 +83,14 @@ jobs:
           BOOK_INTELLIGENCE_CANDIDATE_LIMIT: '0'
           BOOK_INTELLIGENCE_OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
           BOOK_INTELLIGENCE_CACHE_PATH: ${{ env.OUTPUT_DIR }}/source-cache.json
-          GOOGLE_BOOKS_BUDGET: '600'
-          GOOGLE_BOOKS_CONCURRENCY: '2'
-          GOOGLE_BOOKS_DELAY_MS: '1100'
-          GOOGLE_BOOKS_RETRY_ATTEMPTS: '3'
-          BNE_BUDGET: '1200'
+          GOOGLE_BOOKS_BUDGET: '1500'
+          GOOGLE_BOOKS_CONCURRENCY: '1'
+          GOOGLE_BOOKS_DELAY_MS: '2000'
+          GOOGLE_BOOKS_RETRY_ATTEMPTS: '4'
+          BNE_BUDGET: '2276'
           BNE_CONCURRENCY: '3'
           BNE_DELAY_MS: '500'
-          OPEN_LIBRARY_BUDGET: '1200'
+          OPEN_LIBRARY_BUDGET: '2276'
           OPEN_LIBRARY_CONCURRENCY: '2'
         run: node scripts/seo/book-intelligence-research-run.mjs --limit "$LIMIT"
 
@@ -99,11 +100,39 @@ jobs:
           EXPECTED="$(node -e "console.log(require('./${OUTPUT_DIR}/isbn-1000-manifest.json').entries.length)")"
           echo "Entradas con evidencia suficiente: $EXPECTED / $LIMIT solicitados."
           echo "qualified_count=$EXPECTED" >> "$GITHUB_OUTPUT"
+          # book-intelligence-project.mjs reescribe FACTS_OUTPUT desde cero con
+          # solo las entradas de esta corrida. Si el archivo ya traía hechos de
+          # una corrida anterior del mismo lote, se preservan aparte y se
+          # fusionan después: cada corrida acumula, nunca pisa la anterior.
+          PREVIOUS_FACTS=""
+          if [ -f "$FACTS_OUTPUT" ]; then
+            PREVIOUS_FACTS="$(mktemp)"
+            cp "$FACTS_OUTPUT" "$PREVIOUS_FACTS"
+          fi
+          export PREVIOUS_FACTS
           node scripts/seo/book-intelligence-project.mjs \
             --manifest "$OUTPUT_DIR/isbn-1000-manifest.json" \
             --cache "$OUTPUT_DIR/source-cache.json" \
             --output "$FACTS_OUTPUT" \
             --expected "$EXPECTED"
+          if [ -n "$PREVIOUS_FACTS" ]; then
+            node -e "
+              const fs = require('node:fs');
+              const path = require('node:path');
+              (async () => {
+                const projectMod = await import(path.resolve('scripts/seo/book-intelligence-project.mjs'));
+                const previousUrl = 'file://' + path.resolve(process.env.PREVIOUS_FACTS);
+                const currentUrl = 'file://' + path.resolve(process.env.FACTS_OUTPUT);
+                const previous = (await import(previousUrl)).BOOK_FACT_ENRICHMENTS;
+                const current = (await import(currentUrl)).BOOK_FACT_ENRICHMENTS;
+                const currentIsbns = new Set(current.map(entry => entry.isbn));
+                const carriedOver = previous.filter(entry => !currentIsbns.has(entry.isbn));
+                const merged = [...carriedOver, ...current].sort((a, b) => a.isbn.localeCompare(b.isbn));
+                fs.writeFileSync(process.env.FACTS_OUTPUT, projectMod.renderFactsModule(merged));
+                console.log(\`Fusionadas \${carriedOver.length} entradas previas + \${current.length} nuevas = \${merged.length} totales.\`);
+              })();
+            "
+          fi
         id: project
 
       - name: Sanity-check generated module has no commercial data
