@@ -387,11 +387,18 @@ para no mezclar la corrección del Lote 03 con la limpieza histórica.
 - `bash scripts/validate-ci.sh`: **Validación completa OK** (sintaxis, suite
   completa y los dos builds de Astro, checkout OFF y ON).
 - `git diff --check`: sin errores.
-- CI de GitHub Actions sobre el head con la corrección de `language`
-  (`023b026`): `Syntax & Build` **pass**, `Deploy and audit every PR Preview`
-  **pass**, `Investigate 1000 unique ISBN editions` **pass** y `Reproduce
-  public SEO baseline` **pass** (este último se sumó porque el diff toca
-  `scripts/seo/`).
+- CI de GitHub Actions sobre `023b026`, el head que trae la corrección de
+  `language` y todo el código del lote: los cuatro checks en verde —
+  `Syntax & Build`, `Deploy and audit every PR Preview`, `Investigate 1000
+  unique ISBN editions` y `Reproduce public SEO baseline` (este último se
+  sumó porque el diff toca `scripts/seo/`).
+- En un commit posterior de **sólo documentación** el job de preview falló
+  por muestreo de imágenes: 77 de 80 imágenes válidas, 3 sin responder desde
+  R2, con feed, catálogo y páginas en 0 críticos (80/80 páginas OK). Es un
+  fallo transitorio de red, no del cambio: la corrida inmediatamente anterior
+  con el mismo código dio 80/80, y el diff entre ambos commits es un único
+  archivo Markdown. La auditoría toma una muestra distinta de 80 imágenes en
+  cada corrida.
 - Book enrichment live check contra el Preview del PR
   (`https://pr-308.amadolibros-web.pages.dev`), dentro del job de preview:
   **1.594 ediciones activas verificadas en ficha y Merchant, 15 sin oferta
