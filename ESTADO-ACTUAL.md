@@ -284,8 +284,10 @@ habían sido intentados. No tocó el pool `SIN_DATOS`.
   esperable: la evidencia no cambia y cada ISBN se evalúa por separado. Se
   verificó además que un único lote de 356 y cuatro lotes secuenciales de
   100 producen clasificaciones idénticas, sin una sola diferencia.
-- Registry: **1.550 → 1.609**. Campos publicados: `publication_year` en 54
-  ISBN, `publisher` en 19, `language` en 8 y `author` en 4. Fuentes: Open
+- Registry: **1.550 → 1.609**. Campos publicados en el resultado final:
+  `publication_year` en 54 ISBN, `publisher` en 19, `author` en 4 y
+  `language` en **0** — los 8 `language` que generó la primera corrida se
+  retiraron con la corrección de MARC 041 descrita más abajo. Fuentes: Open
   Library en los 59, Biblioteca Nacional de España en 47, Google Books en
   34. Los 59 tienen `sample_listing_id` MLU real y procedencia en `https`.
 - Tasa de resolución: 16,6% (59/356), por encima del 12,0% de los lotes 01
