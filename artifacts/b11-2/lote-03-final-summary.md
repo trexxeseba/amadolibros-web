@@ -1,6 +1,6 @@
 # B11.2 — lote-03-final
 
-- Generado: 2026-09-02T19:05:32.884Z
+- Generado: 2026-09-02T20:36:18.346Z
 - Candidatos REVISAR disponibles antes de esta corrida: 356.
 - Procesados en este lote: 356.
 - Resueltos automáticamente (TERMINADO, integrados): 59.

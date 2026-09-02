@@ -134,7 +134,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Acantilado",
       "bibliographic": {
-        "language": "Español, dut",
         "publication_year": "2019"
       }
     },
@@ -147,7 +146,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788417346935",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -175,7 +173,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Ara Llibres",
       "bibliographic": {
-        "language": "Español, Catalán",
         "publication_year": "2021"
       }
     },
@@ -188,7 +185,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788417804985",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -521,7 +517,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Booket",
       "bibliographic": {
-        "language": "Español, Italiano",
         "publication_year": "2022"
       }
     },
@@ -534,7 +529,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788423362264",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -888,7 +882,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Desclée De Brouwer",
       "bibliographic": {
-        "language": "Español, Inglés",
         "publication_year": "2017"
       }
     },
@@ -901,7 +894,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788433029102",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -929,7 +921,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Desclée De Brouwer",
       "bibliographic": {
-        "language": "Español, Inglés",
         "publication_year": "2020"
       }
     },
@@ -942,7 +933,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788433031143",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -970,7 +960,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "ANAYA MULTIMEDIA",
       "bibliographic": {
-        "language": "Español, Inglés",
         "publication_year": "2021"
       }
     },
@@ -983,7 +972,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788441542969",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -1155,7 +1143,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Editorial Popular",
       "bibliographic": {
-        "language": "Español, Francés",
         "publication_year": "2017"
       }
     },
@@ -1168,7 +1155,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788478847440",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]
@@ -2049,7 +2035,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
     "facts": {
       "publisher": "Debolsillo",
       "bibliographic": {
-        "language": "Español, Inglés",
         "publication_year": "2010"
       }
     },
@@ -2062,7 +2047,6 @@ export const BOOK_FACT_ENRICHMENTS = Object.freeze([
         "isbn": "9788499083957",
         "verified_at": "2026-09-02",
         "fields": [
-          "language",
           "publication_year",
           "publisher"
         ]

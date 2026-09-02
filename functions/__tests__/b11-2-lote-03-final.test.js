@@ -85,6 +85,39 @@ test('B11.2 lote 03: los TERMINADO del estado son exactamente los ISBN integrado
   }
 });
 
+test('B11.2 lote 03 no publica ningún language derivado de la caché contaminada', () => {
+  // Los 8 valores que salían de MARC 041 con $a/$d/$h fusionados ("Español,
+  // Inglés" para libros enteramente en español) ya no se publican. El
+  // adaptador se corrigió para leer sólo 041$a, pero la caché de B11.1 es
+  // inmutable, así que el resolver además descarta cualquier language
+  // multivaluado que venga de ella.
+  const conLanguage = BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03
+    .filter(entry => entry.facts.bibliographic?.language);
+  assert.deepEqual(conLanguage.map(entry => entry.isbn), []);
+
+  // Ningún código crudo puede aparecer en un dato visible, venga del campo
+  // que venga.
+  const visible = JSON.stringify(BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03.map(entry => entry.facts));
+  for (const code of ['dut', 'eng', 'spa', 'fre', 'ger', 'ita', 'cat']) {
+    assert.equal(new RegExp(`"${code}"`, 'i').test(visible), false, code);
+  }
+});
+
+test('los 8 ISBN que perdieron el language conservan editorial y año', () => {
+  const afectados = [
+    '9788417346935', '9788417804985', '9788423362264', '9788433029102',
+    '9788433031143', '9788441542969', '9788478847440', '9788499083957',
+  ];
+  const porIsbn = new Map(BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03.map(entry => [entry.isbn, entry]));
+  for (const isbn of afectados) {
+    const entry = porIsbn.get(isbn);
+    assert.ok(entry, `${isbn} debe seguir integrado al registry`);
+    assert.equal(typeof entry.facts.publisher, 'string', isbn);
+    assert.match(entry.facts.bibliographic.publication_year, /^\d{4}$/, isbn);
+    assert.equal(entry.facts.bibliographic.language, undefined, isbn);
+  }
+});
+
 test('B11.2 lote 03 no contiene ni modifica títulos o datos comerciales', () => {
   const forbidden = /"(?:title|description|price|available_quantity|stock|slug|canonical|pictures|thumbnail|condition)"\s*:/;
   assert.equal(forbidden.test(JSON.stringify(BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03)), false);

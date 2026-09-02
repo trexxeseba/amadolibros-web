@@ -144,6 +144,27 @@ function httpsUrl(value, { source, isbn } = {}) {
   }
 }
 
+// La evidencia cacheada por B11.1 se generó con un adaptador de BNE que
+// fusionaba MARC 041 $a (idioma del texto de esta edición), $d (contenido
+// cantado o hablado) y $h (idioma de la obra original). Con esa mezcla una
+// traducción quedó registrada como "Español, Inglés" cuando el libro está
+// enteramente en español. El adaptador ya se corrigió para leer sólo $a,
+// pero la caché es inmutable y sigue conteniendo los valores mezclados.
+//
+// El defecto sólo puede manifestarse como un valor multivaluado: si $a y $h
+// coinciden, la mezcla colapsa a un único idioma y el dato es correcto igual.
+// Por eso alcanza con no publicar ningún `language` que traiga más de un
+// idioma. Es deliberadamente conservador: ante evidencia que no distingue el
+// idioma del texto del de la obra original, no se informa nada. Una edición
+// realmente bilingüe queda sin idioma hasta que se reprocese la evidencia con
+// el adaptador corregido, que es el resultado preferible frente a publicar un
+// idioma que el lector no va a encontrar en el libro.
+export function publishableLanguage(value) {
+  const normalized = normalizeBookLanguage(value);
+  if (!normalized) return false;
+  return !normalized.includes(',');
+}
+
 function sourceDescriptor(source) {
   if (source === 'bne') return { type: 'national_library', provider: 'Biblioteca Nacional de España', official: true };
   if (source === 'google_books') return { type: 'bibliographic_database', provider: 'Google Books', official: false };
@@ -183,7 +204,8 @@ export function buildFactsFromConsensus(isbn, verifiedAt, allRecords) {
   for (const field of EDITION_FIELDS) {
     const values = allRecords
       .map(record => ({ record, value: record[field] }))
-      .filter(({ value }) => value !== null && value !== undefined && clean(value));
+      .filter(({ value }) => value !== null && value !== undefined && clean(value))
+      .filter(({ value }) => field !== 'language' || publishableLanguage(value));
     if (!values.length) continue;
 
     const groups = new Map();
