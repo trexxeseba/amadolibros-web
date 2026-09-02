@@ -320,11 +320,70 @@ Verificado después de correr: los módulos y resúmenes de los lotes 01 y 02
 quedaron sin cambios, y de las 200 entradas previas de `state.json` no se
 perdió ni se alteró ninguna.
 
+### Corrección semántica de `language` (cambios solicitados en el PR #308)
+
+La revisión detectó un bloqueo semántico real: los 8 `bibliographic.language`
+que publicaba este lote mezclaban el idioma del texto con el idioma de la
+obra original. `scripts/seo/book-intelligence-bne.mjs` construía el campo
+fusionando MARC 041 `$a`, `$d` y `$h`, cuando según MARC 21 `$a` es el idioma
+del texto de esta edición, `$h` el de la obra original y `$d` el del
+contenido cantado o hablado. Una traducción `041 1#$aspa$heng` quedaba
+publicada como "Español, Inglés" siendo un libro enteramente en español.
+
+Se corrigió en tres capas:
+
+1. **Adaptador BNE**: `language` usa únicamente los `041$a` repetidos. No
+   mezcla `$h` ni usa `$d` para libros impresos. Además, un código sin
+   etiqueta conocida se descarta en vez de publicarse crudo — ése era el
+   origen de `"Español, dut"`.
+2. **Normalización**: `bookLanguageLabel()` traduce un código a etiqueta o
+   devuelve `null`, para que un adaptador pueda descartarlo. Se agregó el
+   neerlandés (`nl`/`nld`/`dut`), presente en la evidencia real.
+3. **Resolver**: la caché de B11.1 es inmutable y sigue conteniendo los
+   valores mezclados, así que no se editó a mano ni se sustituyeron los ocho
+   valores por "Español". Se aplicó una regla conservadora y reproducible:
+   **no se publica ningún `language` con más de un idioma**. El defecto sólo
+   puede manifestarse como valor multivaluado (si `$a` y `$h` coinciden, la
+   mezcla colapsa a un único idioma y el dato es correcto igual), así que la
+   regla cubre exactamente el problema sin listar ISBN a mano.
+
+`book-enrichment-facts-b11-2-lote-03.js` se **regeneró** con el resolver
+corregido, partiendo del estado previo a la corrida. Resultado: los mismos 59
+ISBN, **0 `language` publicados** (antes 8), y ningún otro campo cambió. Los
+8 ISBN afectados conservan `publisher` y `publication_year`, así que siguen
+siendo `TERMINADO` y los contadores no se mueven.
+
+### Contaminación previa: pendiente de auditar en un PR separado
+
+El mismo defecto dejó valores mezclados en módulos ya fusionados, que **este
+PR no toca a propósito**. Auditoría del estado actual:
+
+| Módulo | Con `language` | Multivaluados (sospechosos) |
+| --- | --- | --- |
+| `book-enrichment-facts-1000.js` | 13 | **13** |
+| `book-enrichment-facts-333.js` | 2 | **2** |
+| `book-enrichment-facts-lote-01.js` | 0 | 0 |
+| `book-enrichment-facts-b11-2-lote-01.js` | 0 | 0 |
+| `book-enrichment-facts-b11-2-lote-02.js` | 2 | **2** |
+| `book-enrichment-facts-b11-2-lote-03.js` | 0 | 0 |
+| **Total** | **17** | **17** |
+
+Los 17 valores que quedan publicados en el catálogo son multivaluados y los
+17 provienen de la Biblioteca Nacional de España, es decir que replican
+exactamente el defecto corregido. Incluyen otro código crudo (`"Español,
+dan"` en `9788418859694`). Los dos casos de B11.2 Lote 02 son
+`9788408039532` ("Español, Francés") y `9788415292494` ("Español, Inglés").
+
+**Siguiente PR técnico, separado:** auditar los 17 `bibliographic.language`
+existentes contra MARC 041`$a` y corregirlos o retirarlos. No se hace acá
+para no mezclar la corrección del Lote 03 con la limpieza histórica.
+
 ### Validación
 
-- Tests focales de B11.2 y de los lotes previos: **28/28**.
-- Suite completa: **1.538/1.538**, 0 fallos (la de Functions pasa de 1.052 a
-  1.058 con los 6 tests nuevos del Lote 03).
+- Tests focales de B11.2, del adaptador BNE y de los lotes previos:
+  **44/44**.
+- Suite completa: **1.547/1.547**, 0 fallos (la de Functions pasa de 1.052 a
+  1.067 con los tests nuevos del Lote 03 y las regresiones de `language`).
 - `bash scripts/validate-ci.sh`: **Validación completa OK** (sintaxis, suite
   completa y los dos builds de Astro, checkout OFF y ON).
 - `git diff --check`: sin errores.

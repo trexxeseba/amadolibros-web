@@ -215,6 +215,28 @@ tocar los que pueden cambiar de estado.
 - **Autorización:** concedida por Seba y ejercida en los lotes 01, 02 y 03
   final. Sigue siendo requisito explícito por lote.
 
+### MARC 041: qué subcampo describe el idioma de la edición
+
+`$a` es el idioma del texto de esta edición, `$h` el de la obra original y
+`$d` el del contenido cantado o hablado. Sólo `$a` describe lo que el lector
+recibe. Fusionarlos —como hacía el adaptador de BNE hasta el Lote 03—
+convierte una traducción (`041 1#$aspa$heng`) en un falso "Español, Inglés".
+Un `$a` repetido (`041 0#$aspa$aeng`) sí indica una edición realmente
+bilingüe. Además, un código sin etiqueta conocida se descarta en vez de
+publicarse crudo: es preferible no informar el idioma antes que mostrar
+`dut` en una ficha.
+
+Como la evidencia cacheada por B11.1 es inmutable y conserva los valores
+mezclados, el resolver aplica una regla conservadora: **no publica ningún
+`language` con más de un idioma**. El defecto sólo puede aparecer como valor
+multivaluado, así que la regla lo cubre sin necesidad de listar ISBN a mano.
+
+Queda pendiente un PR técnico separado para auditar los 17
+`bibliographic.language` que siguen publicados en módulos ya fusionados
+(13 en `facts-1000`, 2 en `facts-333`, 2 en B11.2 Lote 02): los 17 son
+multivaluados y provienen de BNE, o sea que replican el mismo defecto. Ver
+`ESTADO-ACTUAL.md` para el detalle por ISBN.
+
 ### Riesgo operativo del resolver: defaults que pisan el Lote 01
 
 `B11_2_FACTS_OUTPUT` y `B11_2_SUMMARY_PATH` tienen como default los
