@@ -2,14 +2,17 @@
 
 ## Estado vigente (2026-09-02)
 
-- **Fase activa: B11.2** — pipeline continuo con estados persistentes. La
+- **Fase activa: B11.2**, con el **circuito automático agotado**. La
   estructura original de 10 lotes de 200 fichas quedó **superada** y se
   conserva más abajo sólo como registro histórico.
-- **Lotes B11.2 terminados: 01 y 02**, ambos fusionados a `main` y
-  verificados en Producción.
-- **Ningún lote nuevo iniciado**: no hay rama, corrida ni PR de un Lote 03.
-- Contadores canónicos: registry **1.550**, pendientes **2.065**
-  (`REVISAR` **524** + `SIN_DATOS` **1.541**), universo **3.615**.
+- **Lotes B11.2 terminados: 01, 02 y 03 final.** Los lotes 01 y 02 están
+  fusionados y verificados en Producción; el Lote 03 final está en el
+  [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), en
+  Draft, **sin fusionar ni desplegar**.
+- **El pool `REVISAR` quedó agotado**: los 556 ISBN que dejó B11.1 ya
+  fueron procesados, no queda ninguno sin intentar.
+- Contadores canónicos (head del PR #308): registry **1.609**, pendientes
+  **2.006** (`REVISAR` **442** + `SIN_DATOS` **1.564**), universo **3.615**.
 - Los contadores en vivo, la evidencia de Producción y los bloqueos activos
   están en `ESTADO-ACTUAL.md`, que es la fuente de verdad operativa.
 
@@ -106,7 +109,7 @@ enriquecidas.
 | B11.1 | — | Infra de verificación manual contra cualquier `base_url` | [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) | **Fusionado** (commit `7be3b39`) |
 | B11.2 | 01 | 100 ISBN de `REVISAR` → 12 TERMINADO, 1 SIN_DATOS, 87 REVISAR | [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) | **Fusionado y verificado en Producción** (commit `8d474bf`) |
 | B11.2 | 02 | 100 ISBN de `REVISAR` → 12 TERMINADO, 7 SIN_DATOS, 81 REVISAR | [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) | **Fusionado y verificado en Producción** (commit `662c13c`) |
-| B11.2 | 03 | 356 candidatos `REVISAR` nunca intentados | — | **No iniciado** — sin rama, sin corrida, sin PR |
+| B11.2 | 03 final | 356 ISBN de `REVISAR` → 59 TERMINADO, 23 SIN_DATOS, 274 REVISAR | [#308](https://github.com/trexxeseba/amadolibros-web/pull/308) | **Ejecutado, en Draft** — sin fusionar ni verificar en Producción |
 
 ### Estructura original de 10 lotes (histórica, descartada)
 
@@ -141,8 +144,12 @@ Lote 01: **12 TERMINADO, 1 SIN_DATOS, 87 REVISAR** —
 **fusionado y verificado en Producción** (commit `8d474bf`). Lote 02:
 **12 TERMINADO, 7 SIN_DATOS, 81 REVISAR** —
 [PR #306](https://github.com/trexxeseba/amadolibros-web/pull/306)
-**fusionado y verificado en Producción** (commit `662c13c`). Registry
-acumulado: 1.550. Detalle real en `ESTADO-ACTUAL.md`.
+**fusionado y verificado en Producción** (commit `662c13c`). Lote 03 final:
+**59 TERMINADO, 23 SIN_DATOS, 274 REVISAR** sobre los 356 ISBN nunca
+intentados —
+[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), en Draft,
+sin fusionar. Registry acumulado: 1.609. Detalle real en
+`ESTADO-ACTUAL.md`.
 Reemplaza la estructura fija de 10 lotes de 200 (que el Lote 1 ya mostró
 inviable: de 2.276 candidatos elegibles, solo 187 califican con las
 fuentes actuales) por un pipeline continuo dimensionado al rendimiento
@@ -195,15 +202,30 @@ tocar los que pueden cambiar de estado.
 
 - **Dónde vive el estado persistente:** manifiesto único
   `artifacts/b11-2/state.json`, acumulativo y retomable, más un resumen por
-  lote (`artifacts/b11-2/lote-NN-summary.md`). Hoy contiene 200 entradas
-  (24 `TERMINADO`, 8 `SIN_DATOS`, 168 `REVISAR`).
+  lote (`artifacts/b11-2/lote-NN-summary.md`). Ya contiene las 556 entradas
+  del pool completo (83 `TERMINADO`, 31 `SIN_DATOS`, 442 `REVISAR`).
 - **Cómo se excluyen ISBN ya vistos:** cada corrida descarta todo ISBN con
   estado persistente previo, sin importar cuál sea. Filtrar sólo por
   `TERMINADO` fue un bug real detectado antes del Lote 02, que si no habría
   reprocesado los mismos 88 ISBN del Lote 01 sin avanzar.
-- **Autorización:** concedida por Seba y ejercida en los lotes 01 y 02.
-  Sigue siendo requisito explícito por lote: **no hay autorización abierta
-  para arrancar el Lote 03.**
+- **Tamaño de lote:** irrelevante para el resultado. Se comprobó que un
+  único lote de 356 y cuatro lotes secuenciales de 100 producen
+  clasificaciones idénticas — la evidencia es inmutable y cada ISBN se
+  evalúa por separado. Por eso el Lote 03 se corrió entero de una vez.
+- **Autorización:** concedida por Seba y ejercida en los lotes 01, 02 y 03
+  final. Sigue siendo requisito explícito por lote.
+
+### Riesgo operativo del resolver: defaults que pisan el Lote 01
+
+`B11_2_FACTS_OUTPUT` y `B11_2_SUMMARY_PATH` tienen como default los
+archivos del Lote 01, y el script los **reescribe completos** con los
+resultados de la corrida actual. Ejecutar el resolver sin definirlos borra
+del registry los ISBN del Lote 01. Toda corrida nueva debe pasar las cuatro
+variables explícitas (`B11_2_BATCH_SIZE`, `B11_2_BATCH_NAME`,
+`B11_2_FACTS_OUTPUT`, `B11_2_SUMMARY_PATH`) y, además, agregar el `import`
+del módulo nuevo en `functions/_shared/book-enrichment-registry.js`: el
+registry compone los lotes por nombre, así que un módulo no importado no
+entra aunque el archivo exista.
 
 ### Qué sigue pendiente de decidir
 
@@ -211,14 +233,20 @@ tocar los que pueden cambiar de estado.
   subconjunto de los matches de Google Books) es parte de B11.2 o un tercer
   proyecto separado. Ninguna de las fichas enriquecidas hasta hoy tiene
   sinopsis: el pipeline masivo sólo escribe hechos bibliográficos.
-- Qué hacer con los 1.541 `SIN_DATOS` y los 168 `REVISAR` ya intentados:
-  sin una fuente de evidencia nueva, reintentarlos da el mismo resultado.
+- Qué hacer con los 1.564 `SIN_DATOS` y los 442 `REVISAR` que quedaron sin
+  resolver: sin una fuente de evidencia nueva, reintentarlos da exactamente
+  el mismo resultado.
 
 ### Estado de ejecución
 
-Lotes 01 y 02 terminados, fusionados y verificados en Producción. **Ningún
-lote nuevo iniciado**: el Lote 03 no tiene rama, corrida ni PR, y queda a la
-espera de autorización explícita. Quedan 356 candidatos `REVISAR` nunca
-intentados.
+Lotes 01 y 02 terminados, fusionados y verificados en Producción. Lote 03
+final ejecutado y en el
+[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), en Draft,
+sin fusionar ni desplegar.
+
+**El circuito automático quedó agotado**: los 556 ISBN `REVISAR` de B11.1
+ya fueron procesados y no queda ninguno sin intentar. No hay un Lote 04
+posible con las fuentes actuales — cualquier avance adicional exige
+evidencia nueva, no otra corrida del resolver.
 
 Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.
