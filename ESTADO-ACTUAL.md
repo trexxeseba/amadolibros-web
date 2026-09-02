@@ -387,17 +387,20 @@ para no mezclar la corrección del Lote 03 con la limpieza histórica.
 - `bash scripts/validate-ci.sh`: **Validación completa OK** (sintaxis, suite
   completa y los dos builds de Astro, checkout OFF y ON).
 - `git diff --check`: sin errores.
-- CI de GitHub Actions sobre el head del PR #308: `Syntax & Build` **pass**,
-  `Deploy and audit every PR Preview` **pass** (2m49s), `Investigate 1000
-  unique ISBN editions` **pass**.
+- CI de GitHub Actions sobre el head con la corrección de `language`
+  (`023b026`): `Syntax & Build` **pass**, `Deploy and audit every PR Preview`
+  **pass**, `Investigate 1000 unique ISBN editions` **pass** y `Reproduce
+  public SEO baseline` **pass** (este último se sumó porque el diff toca
+  `scripts/seo/`).
 - Book enrichment live check contra el Preview del PR
   (`https://pr-308.amadolibros-web.pages.dev`), dentro del job de preview:
   **1.594 ediciones activas verificadas en ficha y Merchant, 15 sin oferta
   activa como no aplicables** — 1.594 + 15 = 1.550 + 59 = **1.609**, exacto.
   Los **59 ISBN del Lote 03 aparecen los 59 como `verified`**, cada uno con
-  sus propios MLU reales y sin mezcla de datos entre ISBN (por ejemplo
-  `9788416781614` con MLU640191639 y MLU640165647, o `9789876290098` con
-  MLU698424763).
+  sus propios MLU reales y sin mezcla de datos entre ISBN. Los 8 que
+  perdieron el `language` siguen verificados por sus otros hechos (por
+  ejemplo `9788417346935` con MLU612098974 y MLU655413122, o `9788433029102`
+  con MLU625756445 y MLU652705502).
 
 ### Pendiente
 
