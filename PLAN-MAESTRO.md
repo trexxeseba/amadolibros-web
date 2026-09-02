@@ -1,14 +1,33 @@
 # PLAN MAESTRO — B11: enriquecimiento editorial real del catálogo
 
+## Estado vigente (2026-09-02)
+
+- **Fase activa: B11.2** — pipeline continuo con estados persistentes. La
+  estructura original de 10 lotes de 200 fichas quedó **superada** y se
+  conserva más abajo sólo como registro histórico.
+- **Lotes B11.2 terminados: 01 y 02**, ambos fusionados a `main` y
+  verificados en Producción.
+- **Ningún lote nuevo iniciado**: no hay rama, corrida ni PR de un Lote 03.
+- Contadores canónicos: registry **1.550**, pendientes **2.065**
+  (`REVISAR` **524** + `SIN_DATOS` **1.541**), universo **3.615**.
+- Los contadores en vivo, la evidencia de Producción y los bloqueos activos
+  están en `ESTADO-ACTUAL.md`, que es la fuente de verdad operativa.
+
 ## Objetivo operativo
 
-Enriquecer 2.000 fichas reales del catálogo con información editorial
-verificable (sinopsis, descripción, temas, público, autoría, datos
-bibliográficos, FAQ específicas, metadatos SEO secundarios), organizado en
-**10 lotes consecutivos de 200 fichas**, cada uno en su propia rama y PR.
+Enriquecer fichas reales del catálogo con información editorial verificable
+(sinopsis, descripción, temas, público, autoría, datos bibliográficos, FAQ
+específicas, metadatos SEO secundarios).
 
-No es un piloto. El objetivo es 2.000 fichas efectivamente implementadas,
-probadas y presentadas en PRs — no un plan ni un lote testimonial.
+El objetivo original —2.000 fichas en **10 lotes consecutivos de 200**, cada
+uno en su propia rama y PR— se fijó antes de conocer el rendimiento real del
+catálogo. El Lote 1 lo desmintió: de 2.276 ISBN elegibles investigados sólo
+187 calificaron, un 8,2%. Desde B11.2 la meta ya no es un número fijo de
+fichas sino **agotar el universo real** de 3.615 ISBN hasta donde llegue la
+evidencia verificable, en lotes dimensionados a ese rendimiento efectivo.
+
+Lo que no cambió: no es un piloto. Cada lote se implementa, se prueba y se
+presenta en un PR — nada de lotes testimoniales ni de planes sin ejecución.
 
 ## Historial verificado
 
@@ -79,27 +98,33 @@ sobre `main`. Si una ficha no tiene información confiable suficiente:
 saltear y reemplazar por otra hasta completar 2.000 fichas efectivamente
 enriquecidas.
 
-## Estructura de los 10 lotes
+## Lotes ejecutados
 
-| Lote | Fichas | Rama | PR | Estado |
+| Fase | Lote | Alcance real | PR | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | Universo 2.276 → 187 enriquecidos | `b11/enriquecimiento-lote-01-ci` | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) | **Fusionado y verificado en Producción** (commit `5b46f72`) |
-| 2 | 201–400 | `b11/enriquecimiento-lote-02` | pendiente | pendiente |
-| 3 | 401–600 | `b11/enriquecimiento-lote-03` | pendiente | pendiente |
-| 4 | 601–800 | `b11/enriquecimiento-lote-04` | pendiente | pendiente |
-| 5 | 801–1000 | `b11/enriquecimiento-lote-05` | pendiente | pendiente |
-| 6 | 1001–1200 | `b11/enriquecimiento-lote-06` | pendiente | pendiente |
-| 7 | 1201–1400 | `b11/enriquecimiento-lote-07` | pendiente | pendiente |
-| 8 | 1401–1600 | `b11/enriquecimiento-lote-08` | pendiente | pendiente |
-| 9 | 1601–1800 | `b11/enriquecimiento-lote-09` | pendiente | pendiente |
-| 10 | 1801–2000 | `b11/enriquecimiento-lote-10` | pendiente | pendiente |
+| B11.1 | 1 | Universo 2.276 → 187 enriquecidos | [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) | **Fusionado y verificado en Producción** (commit `5b46f72`) |
+| B11.1 | — | Infra de verificación manual contra cualquier `base_url` | [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) | **Fusionado** (commit `7be3b39`) |
+| B11.2 | 01 | 100 ISBN de `REVISAR` → 12 TERMINADO, 1 SIN_DATOS, 87 REVISAR | [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) | **Fusionado y verificado en Producción** (commit `8d474bf`) |
+| B11.2 | 02 | 100 ISBN de `REVISAR` → 12 TERMINADO, 7 SIN_DATOS, 81 REVISAR | [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) | **Fusionado y verificado en Producción** (commit `662c13c`) |
+| B11.2 | 03 | 356 candidatos `REVISAR` nunca intentados | — | **No iniciado** — sin rama, sin corrida, sin PR |
+
+### Estructura original de 10 lotes (histórica, descartada)
+
+El plan inicial preveía 10 lotes fijos de 200 fichas
+(`b11/enriquecimiento-lote-01` … `-10`) hasta llegar a 2.000. Se descartó
+tras el Lote 1: el universo elegible completo (2.276 ISBN) ya fue
+investigado de una sola vez y sólo rindió 187 fichas, así que repartir el
+mismo universo en lotes de 200 no habría agregado nada. B11.2 lo reemplaza
+por lotes de 100 sobre estados persistentes.
 
 ## Flujo obligatorio por lote
 
 1. Rama nueva desde `main` actualizado.
-2. Selección de 200 ISBN priorizando: valor comercial/tráfico, fichas
-   pobres en contenido, ISBN identificable, datos bibliográficos
-   confiables reales. Descartar y reemplazar los que no califiquen.
+2. Selección de ISBN (100 por lote desde B11.2; eran 200 en el plan
+   original) priorizando: valor comercial/tráfico, fichas pobres en
+   contenido, ISBN identificable, datos bibliográficos confiables reales.
+   Descartar y reemplazar los que no califiquen, y excluir todo ISBN que
+   ya tenga estado persistente previo.
 3. Enriquecimiento editorial real (campos verificados únicamente).
 4. Tests completos + verificación de no-duplicación con la vidriera
    automática (`editorial-showcase-boundary.test.js` u equivalente).
@@ -166,15 +191,34 @@ tocar los que pueden cambiar de estado.
   stock, imágenes y demás datos comerciales permanecen intactos en todos
   los lotes de B11.2, igual que en B11.1.
 
-### Qué falta antes de ejecutar B11.2
+### Decisiones ya resueltas al ejecutar B11.2
 
-- Definir dónde vive el estado persistente por ISBN (¿archivo commiteado
-  por lote, como hoy, o un manifiesto único que se actualiza en cada
-  corrida?) y cómo se pasa de `REVISAR`/`SIN_DATOS` a `TERMINADO`.
-- Decidir si conseguir sinopsis real (campo `description`, ahora
-  disponible en un subconjunto de los matches de Google Books) es parte
-  de B11.2 o un tercer proyecto separado.
-- Autorización explícita de Seba para arrancar — **no se ejecuta nada de
-  esto todavía.**
+- **Dónde vive el estado persistente:** manifiesto único
+  `artifacts/b11-2/state.json`, acumulativo y retomable, más un resumen por
+  lote (`artifacts/b11-2/lote-NN-summary.md`). Hoy contiene 200 entradas
+  (24 `TERMINADO`, 8 `SIN_DATOS`, 168 `REVISAR`).
+- **Cómo se excluyen ISBN ya vistos:** cada corrida descarta todo ISBN con
+  estado persistente previo, sin importar cuál sea. Filtrar sólo por
+  `TERMINADO` fue un bug real detectado antes del Lote 02, que si no habría
+  reprocesado los mismos 88 ISBN del Lote 01 sin avanzar.
+- **Autorización:** concedida por Seba y ejercida en los lotes 01 y 02.
+  Sigue siendo requisito explícito por lote: **no hay autorización abierta
+  para arrancar el Lote 03.**
+
+### Qué sigue pendiente de decidir
+
+- Si conseguir sinopsis real (campo `description`, disponible en un
+  subconjunto de los matches de Google Books) es parte de B11.2 o un tercer
+  proyecto separado. Ninguna de las fichas enriquecidas hasta hoy tiene
+  sinopsis: el pipeline masivo sólo escribe hechos bibliográficos.
+- Qué hacer con los 1.541 `SIN_DATOS` y los 168 `REVISAR` ya intentados:
+  sin una fuente de evidencia nueva, reintentarlos da el mismo resultado.
+
+### Estado de ejecución
+
+Lotes 01 y 02 terminados, fusionados y verificados en Producción. **Ningún
+lote nuevo iniciado**: el Lote 03 no tiene rama, corrida ni PR, y queda a la
+espera de autorización explícita. Quedan 356 candidatos `REVISAR` nunca
+intentados.
 
 Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.

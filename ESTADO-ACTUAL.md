@@ -1,6 +1,31 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-Última actualización: 2026-09-02 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras verificar B11.2 Lote 02 en Producción.
+Última actualización: 2026-09-02 — cierre documental tras la verificación de
+B11.2 Lote 02 en Producción. Este documento y `PLAN-MAESTRO.md` se recuperan
+en `main` (vivían solo en la rama del PR #300, que nunca se fusionó) y quedan
+alineados con el estado real del repositorio.
+
+## Estado canónico (fuente de verdad)
+
+| Métrica | Valor |
+| --- | --- |
+| ISBN enriquecidos en el registry | **1.550** |
+| Pendientes totales | **2.065** |
+| — de los cuales `REVISAR` (evidencia con conflicto de identidad) | **524** |
+| — de los cuales `SIN_DATOS` (sin evidencia utilizable) | **1.541** |
+| Universo addressable | **3.615** ISBN únicos |
+| Fase activa | **B11.2** (pipeline continuo sobre el pool `REVISAR`) |
+| Lotes B11.2 terminados | **01 y 02** (fusionados y verificados en Producción) |
+| Lotes B11.2 en curso | **ninguno — no hay ningún lote nuevo iniciado** |
+
+Verificación aritmética: 524 + 1.541 = 2.065 pendientes; 1.550 + 2.065 =
+3.615. El universo no crece: cada lote sólo reclasifica ISBN dentro de él.
+
+Comprobación contra el repositorio (no son cifras declarativas):
+`listBookEnrichments()` de `functions/_shared/book-enrichment-registry.js`
+devuelve 1.550 ISBN, y `artifacts/b11-2/state.json` contiene 200 entradas
+con `TERMINADO` 24, `SIN_DATOS` 8 y `REVISAR` 168 — los 200 ISBN intentados
+por los lotes 01 y 02.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -11,29 +36,39 @@
 - Book enrichment live check contra Producción (`https://www.amadolibros.com`), `run 33545168003`: **1.517 verified, 9 not_applicable, 0 failed** sobre el registry completo de 1.526 ISBN (incluidos los 187 del Lote 1). Los 9 `not_applicable` son ISBN del registry sin ninguna publicación MLU activa hoy — no es una falla, es la conservación correcta del dato para cuando vuelva a haber oferta.
 - Muestra de 12 ISBN del Lote 1 verificados individualmente contra Producción (mezcla de los 19 de la 1ª corrida y los 168 de la 2ª): `9788401039058`, `9788408214359`, `9788425427015`, `9788446056720`, `9788467975819`, `9780006551805`, `9780142410110`, `9780194053921`, `9780198338734`, `9780307951526`, `9780230490017`, `9780199640942` — los 12 con status `verified`, cada uno con sus propios MLU reales y sin mezcla de datos entre ISBN.
 
-## Contadores acumulados
+## Contadores del Lote 1 (histórico, ya superado)
 
-| Métrica | Valor |
+Esta tabla es la foto al cierre de B11.1 y se conserva como registro. Los
+contadores vigentes son los de "Estado canónico" al principio del documento.
+
+| Métrica | Valor al cierre del Lote 1 |
 | --- | --- |
 | Universo inicial del Lote 1 (ISBN elegibles investigados) | 2.276 |
 | Fichas enriquecidas correctamente (verificadas, en `main` y Producción) | **187** (18 `GREEN_FULL` + 169 `GREEN_FACTS`) |
-| Fichas pendientes totales | **2.089** |
-| — de las cuales SIN_DATOS (sin evidencia utilizable) | 1.533 |
-| — de las cuales REVISAR (evidencia con conflicto de identidad) | 556 |
-| PRs abiertos (lotes) | 0 |
-| PRs fusionados (lotes) | 2 — [PR #303](https://github.com/trexxeseba/amadolibros-web/pull/303) (187 fichas), [PR #304](https://github.com/trexxeseba/amadolibros-web/pull/304) (infra de verificación) |
+| Fichas pendientes entonces | **2.089** |
+| — de las cuales SIN_DATOS | 1.533 |
+| — de las cuales REVISAR | 556 |
 
-Verificación: 187 + 2.089 = 2.276. 1.533 + 556 = 2.089. Los 556 REVISAR
-están **dentro** de los 2.089 pendientes, no se suman aparte.
+Verificación de esa foto: 187 + 2.089 = 2.276. 1.533 + 556 = 2.089. Los 556
+REVISAR estaban **dentro** de los 2.089 pendientes, no se sumaban aparte.
+B11.2 ya movió esos números: ver "Estado canónico".
 
-Total del catálogo (todos los lotes B11 hasta ahora, incluidos B11.2
-Lote 01 y Lote 02): 1.339 ya enriquecidos antes del Lote 1 + 187 del
-Lote 1 + 12 de B11.2 Lote 01 + 12 de B11.2 Lote 02 = **1.550 ISBN
-enriquecidos**. Universo addressable completo: 1.550 + 2.065 pendientes
-(1.541 SIN_DATOS + 524 REVISAR) = **3.615 ISBN únicos** (sin cambios —
-el universo no crece, solo se reclasifican ISBN dentro de él). Ver la
-sección "B11.2 Lote 02" más abajo para el detalle y la evidencia de
-Producción.
+## Composición del registry actual
+
+| Origen | ISBN |
+| --- | --- |
+| Enriquecidos antes del Lote 1 | 1.339 |
+| B11 Lote 1 | 187 |
+| B11.2 Lote 01 | 12 |
+| B11.2 Lote 02 | 12 |
+| **Total en el registry** | **1.550** |
+
+## Estado de PRs
+
+| Métrica | Valor |
+| --- | --- |
+| PRs de lote abiertos | 0 — ningún lote nuevo iniciado |
+| PRs de lote fusionados | 4 — [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (187 fichas), [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) (infra de verificación), [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) (B11.2 Lote 01), [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) (B11.2 Lote 02) |
 
 ## Corrección de Google Books (aplicada y verificada)
 
@@ -229,6 +264,20 @@ No tocó el pool SIN_DATOS.
   = 2.065 pendientes; 1.550 enriquecidos + 2.065 pendientes = 3.615 —
   el universo total no cambia, sólo se movieron 12 ISBN de pendiente a
   enriquecido y 7 de REVISAR a SIN_DATOS.
+
+## B11.2 Lote 03 — NO INICIADO
+
+No hay ningún lote nuevo en curso. Tras el Lote 02 no se creó rama, no se
+ejecutó ninguna corrida y no se abrió ningún PR de lote: el pipeline está
+detenido a la espera de autorización explícita.
+
+- Candidatos disponibles para un eventual Lote 03: **356** ISBN del pool
+  `REVISAR` nunca intentados (524 `REVISAR` totales − 87 del Lote 01 sin
+  resolver − 81 del Lote 02 sin resolver).
+- Reintentar los 168 `REVISAR` ya intentados no aporta nada mientras no
+  haya evidencia nueva: el resolver reutiliza evidencia inmutable, así que
+  daría exactamente el mismo resultado.
+- Los 1.541 `SIN_DATOS` siguen fuera del circuito automático por diseño.
 
 ## PR #298 — CERRADO
 
