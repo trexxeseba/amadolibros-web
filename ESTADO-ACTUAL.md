@@ -1,6 +1,6 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-Última actualización: 2026-09-01 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras verificar B11.2 Lote 01 en Producción.
+Última actualización: 2026-09-02 (sesión `session_014vUFN9BC9DEb3Nh1B477Ri`), tras verificar B11.2 Lote 02 en Producción.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -26,13 +26,14 @@
 Verificación: 187 + 2.089 = 2.276. 1.533 + 556 = 2.089. Los 556 REVISAR
 están **dentro** de los 2.089 pendientes, no se suman aparte.
 
-Total del catálogo (todos los lotes B11 hasta ahora, incluido B11.2 Lote
-01): 1.339 ya enriquecidos antes del Lote 1 + 187 del Lote 1 + 12 de
-B11.2 Lote 01 = **1.538 ISBN enriquecidos**. Universo addressable
-completo: 1.538 + 2.077 pendientes (1.534 SIN_DATOS + 543 REVISAR) =
-**3.615 ISBN únicos** (sin cambios — el universo no crece, solo se
-reclasifican ISBN dentro de él). Ver la sección "B11.2 Lote 01" más abajo
-para el detalle y la evidencia de Producción.
+Total del catálogo (todos los lotes B11 hasta ahora, incluidos B11.2
+Lote 01 y Lote 02): 1.339 ya enriquecidos antes del Lote 1 + 187 del
+Lote 1 + 12 de B11.2 Lote 01 + 12 de B11.2 Lote 02 = **1.550 ISBN
+enriquecidos**. Universo addressable completo: 1.550 + 2.065 pendientes
+(1.541 SIN_DATOS + 524 REVISAR) = **3.615 ISBN únicos** (sin cambios —
+el universo no crece, solo se reclasifican ISBN dentro de él). Ver la
+sección "B11.2 Lote 02" más abajo para el detalle y la evidencia de
+Producción.
 
 ## Corrección de Google Books (aplicada y verificada)
 
@@ -171,6 +172,63 @@ por B11.1, sin tocar los 1.533 `SIN_DATOS`. Primer lote de 100 ISBN.
   1.538 enriquecidos + 2.077 pendientes = 3.615 — el universo total no
   cambia, sólo se movieron 12 ISBN de pendiente a enriquecido y 1 de
   REVISAR a SIN_DATOS.
+
+## B11.2 Lote 02 — TERMINADO (fusionado y verificado en Producción)
+
+Autorizado explícitamente por Seba el 2026-09-02, sobre los **siguientes
+100 ISBN** del pool REVISAR que quedaron sin intentar tras el lote 01.
+No tocó el pool SIN_DATOS.
+
+- Bug real encontrado y corregido antes de correr este lote: el filtro
+  de candidatos de `scripts/seo/b11-2-resolve-revisar.mjs` sólo excluía
+  ISBN ya `TERMINADO`, no los que habían quedado `REVISAR` o
+  `SIN_DATOS` en el lote 01. Como el script reutiliza la misma
+  evidencia inmutable (sin nuevas consultas externas), reintentar esos
+  ISBN da exactamente el mismo resultado — sin el fix, este lote habría
+  repetido los mismos 87 `REVISAR` + 1 `SIN_DATOS` del lote 01 en vez
+  de avanzar. Corregido para excluir cualquier ISBN con un estado
+  persistente previo, sin importar su status. Verificado: candidatos
+  disponibles antes de la corrida = 456 (= 556 − 100 ya intentados en
+  el lote 01), exacto.
+- Resultado real del lote 02: **12 TERMINADO** (integrados al
+  registry), **7 SIN_DATOS**, **81 siguen REVISAR**. Duración del
+  procesamiento: 0,1s.
+- Estado persistente acumulado en `artifacts/b11-2/state.json`: **200**
+  ISBN (100 lote 01 + 100 lote 02), sin solapamiento — `TERMINADO` 24,
+  `SIN_DATOS` 8, `REVISAR` 168.
+- [PR #306](https://github.com/trexxeseba/amadolibros-web/pull/306)
+  fusionado a `main` por trexxeseba (squash, commit `662c13c`),
+  2026-09-02.
+- Deploy to Cloudflare Pages sobre `662c13c`: `run 33581187859`,
+  **success**.
+- Full commerce production audit (dispatch manual, `sample_only=true`),
+  `run 33634575851`: **result=pass, critical=0** — catálogo 7.115
+  items, feed Merchant 3.702 items (0 críticos/warnings), 300/300
+  imágenes válidas (`r2-production`), 300/300 páginas verificadas.
+- Book enrichment live check contra Producción
+  (`https://www.amadolibros.com`), `run 33634584205`: **1.535
+  verified, 15 not_applicable, 0 failed** sobre el registry completo de
+  **1.550** ISBN (1.535 + 15 = 1.550, exacto).
+- Los 12 ISBN de este lote verificados individualmente contra
+  Producción, todos `verified`, cada uno con sus propios MLU reales y
+  sin mezcla de datos entre ISBN: `9781711054490` (MLU1031375038,
+  MLU1033790258), `9786074485905` (MLU638995253, MLU676667854),
+  `9788408039532` (MLU619139873, MLU663111902), `9788408239321`
+  (MLU1494561902, MLU1494066700), `9788408249436` (MLU668636662,
+  MLU668440964), `9788408257363` (MLU625847761, MLU654868116),
+  `9788408262770` (MLU620296782, MLU649316004), `9788411323000`
+  (MLU698429827), `9788412364163` (MLU660119936, MLU660297658),
+  `9788412440843` (MLU692240645, MLU692279433), `9788415292494`
+  (MLU634314472, MLU654449602), `9788415577133` (MLU685273682,
+  MLU685118228).
+- Tests: suite completa **1.052/1.052** + `validate-ci.sh` OK +
+  `git diff --check` limpio.
+- Contadores tras este lote: REVISAR-status = 87 (lote 01, sin tocar) +
+  356 (nunca intentados, 456 − 100) + 81 (lote 02, sin resolver) =
+  **524**. SIN_DATOS: 1.534 + 7 = **1.541**. Verificación: 524 + 1.541
+  = 2.065 pendientes; 1.550 enriquecidos + 2.065 pendientes = 3.615 —
+  el universo total no cambia, sólo se movieron 12 ISBN de pendiente a
+  enriquecido y 7 de REVISAR a SIN_DATOS.
 
 ## PR #298 — CERRADO
 

@@ -113,8 +113,11 @@ enriquecidas.
 Registrado el 2026-09-01, autorizado y ejecutado sobre el pool REVISAR.
 Lote 01: **12 TERMINADO, 1 SIN_DATOS, 87 REVISAR** —
 [PR #305](https://github.com/trexxeseba/amadolibros-web/pull/305)
-**fusionado y verificado en Producción** (commit `8d474bf`). Detalle
-real en `ESTADO-ACTUAL.md`.
+**fusionado y verificado en Producción** (commit `8d474bf`). Lote 02:
+**12 TERMINADO, 7 SIN_DATOS, 81 REVISAR** —
+[PR #306](https://github.com/trexxeseba/amadolibros-web/pull/306)
+**fusionado y verificado en Producción** (commit `662c13c`). Registry
+acumulado: 1.550. Detalle real en `ESTADO-ACTUAL.md`.
 Reemplaza la estructura fija de 10 lotes de 200 (que el Lote 1 ya mostró
 inviable: de 2.276 candidatos elegibles, solo 187 califican con las
 fuentes actuales) por un pipeline continuo dimensionado al rendimiento
