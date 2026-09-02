@@ -270,12 +270,16 @@ async function main() {
   const state = loadState();
   const alreadyEnriched = new Set(listBookEnrichments().map(entry => entry.isbn));
 
+  // Sin llamadas de red nuevas, reintentar un ISBN ya evaluado en un lote
+  // anterior (REVISAR o SIN_DATOS) da exactamente el mismo resultado — la
+  // evidencia (report/cache) no cambió. Cada lote debe avanzar sobre ISBN
+  // sin ningún intento previo, no repetir los ya intentados.
   const revisarCandidates = report.results
     .filter(result => result.publication_class === 'REVIEW')
     .map(result => normalizeValidIsbn(result.isbn))
     .filter(Boolean)
     .filter(isbn => !alreadyEnriched.has(isbn))
-    .filter(isbn => state.entries[isbn]?.status !== 'TERMINADO')
+    .filter(isbn => !state.entries[isbn])
     .sort((a, b) => a.localeCompare(b));
 
   const batch = revisarCandidates.slice(0, BATCH_SIZE);
