@@ -320,12 +320,41 @@ Verificado después de correr: los módulos y resúmenes de los lotes 01 y 02
 quedaron sin cambios, y de las 200 entradas previas de `state.json` no se
 perdió ni se alteró ninguna.
 
+### Validación
+
+- Tests focales de B11.2 y de los lotes previos: **28/28**.
+- Suite completa: **1.538/1.538**, 0 fallos (la de Functions pasa de 1.052 a
+  1.058 con los 6 tests nuevos del Lote 03).
+- `bash scripts/validate-ci.sh`: **Validación completa OK** (sintaxis, suite
+  completa y los dos builds de Astro, checkout OFF y ON).
+- `git diff --check`: sin errores.
+- CI de GitHub Actions sobre el head del PR #308: `Syntax & Build` **pass**,
+  `Deploy and audit every PR Preview` **pass** (2m49s), `Investigate 1000
+  unique ISBN editions` **pass**.
+- Book enrichment live check contra el Preview del PR
+  (`https://pr-308.amadolibros-web.pages.dev`), dentro del job de preview:
+  **1.594 ediciones activas verificadas en ficha y Merchant, 15 sin oferta
+  activa como no aplicables** — 1.594 + 15 = 1.550 + 59 = **1.609**, exacto.
+  Los **59 ISBN del Lote 03 aparecen los 59 como `verified`**, cada uno con
+  sus propios MLU reales y sin mezcla de datos entre ISBN (por ejemplo
+  `9788416781614` con MLU640191639 y MLU640165647, o `9789876290098` con
+  MLU698424763).
+
 ### Pendiente
 
 El [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) está en
-Draft, **sin fusionar y sin desplegar**. Falta la verificación en Producción
+Draft, **sin fusionar y sin desplegar**. La verificación contra Producción
 que sí tuvieron los lotes 01 y 02 (deploy, full commerce audit y book
-enrichment live check), que sólo puede hacerse después de fusionar.
+enrichment live check contra `www.amadolibros.com`) sólo puede hacerse
+después de fusionar. Lo ya verificado arriba es contra el Preview del PR.
+
+### Anomalía menor registrada
+
+Tres tests fijaban el total del registry en 1.550 como literal
+(`b11-2-lote-02.test.js`, `b11-2-resolve-revisar.test.js` y
+`book-enrichment-lote-01.test.js`), así que cada lote nuevo los rompe hasta
+que se actualizan a mano. Se actualizaron a 1.609. No es un fallo del lote,
+pero conviene saber que ese literal hay que tocarlo en cada corrida.
 
 ## PR #298 — CERRADO
 
