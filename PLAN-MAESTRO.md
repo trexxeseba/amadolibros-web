@@ -1,20 +1,24 @@
 # PLAN MAESTRO — B11: enriquecimiento editorial real del catálogo
 
-## Estado vigente (2026-09-02)
+## Estado vigente (2026-09-03) — B11 TERMINADO
 
-- **Fase activa: B11.2**, con el **circuito automático agotado**. La
-  estructura original de 10 lotes de 200 fichas quedó **superada** y se
+- **B11 está cerrado.** Los tres lotes de B11.2 (01, 02 y 03 final) están
+  **fusionados a `main` y verificados en Producción**. El
+  [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) se
+  fusionó el 2026-09-03 (squash, commit `ebe83ff`).
+- **El circuito automático quedó agotado**: los 556 ISBN `REVISAR` que dejó
+  B11.1 ya fueron procesados, no queda ninguno sin intentar y no hay un
+  Lote 04 posible con las fuentes actuales.
+- Contadores canónicos (en `main` y Producción): registry **1.609**,
+  pendientes **2.006** (`REVISAR` **442** + `SIN_DATOS` **1.564**), universo
+  **3.615**.
+- La estructura original de 10 lotes de 200 fichas quedó **superada** y se
   conserva más abajo sólo como registro histórico.
-- **Lotes B11.2 terminados: 01, 02 y 03 final.** Los lotes 01 y 02 están
-  fusionados y verificados en Producción; el Lote 03 final está en el
-  [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), en
-  Draft, **sin fusionar ni desplegar**.
-- **El pool `REVISAR` quedó agotado**: los 556 ISBN que dejó B11.1 ya
-  fueron procesados, no queda ninguno sin intentar.
-- Contadores canónicos (head del PR #308): registry **1.609**, pendientes
-  **2.006** (`REVISAR` **442** + `SIN_DATOS` **1.564**), universo **3.615**.
-- Los contadores en vivo, la evidencia de Producción y los bloqueos activos
-  están en `ESTADO-ACTUAL.md`, que es la fuente de verdad operativa.
+- Los contadores en vivo y la evidencia de Producción están en
+  `ESTADO-ACTUAL.md`, que es la fuente de verdad operativa.
+- **Lo que sigue, en orden:** 1) PR técnico de limpieza de los 17
+  `bibliographic.language` históricos multivaluados; 2) definición de B12.
+  Ninguno de los dos está iniciado.
 
 ## Objetivo operativo
 
@@ -109,7 +113,7 @@ enriquecidas.
 | B11.1 | — | Infra de verificación manual contra cualquier `base_url` | [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) | **Fusionado** (commit `7be3b39`) |
 | B11.2 | 01 | 100 ISBN de `REVISAR` → 12 TERMINADO, 1 SIN_DATOS, 87 REVISAR | [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) | **Fusionado y verificado en Producción** (commit `8d474bf`) |
 | B11.2 | 02 | 100 ISBN de `REVISAR` → 12 TERMINADO, 7 SIN_DATOS, 81 REVISAR | [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) | **Fusionado y verificado en Producción** (commit `662c13c`) |
-| B11.2 | 03 final | 356 ISBN de `REVISAR` → 59 TERMINADO, 23 SIN_DATOS, 274 REVISAR | [#308](https://github.com/trexxeseba/amadolibros-web/pull/308) | **Ejecutado, en Draft** — sin fusionar ni verificar en Producción |
+| B11.2 | 03 final | 356 ISBN de `REVISAR` → 59 TERMINADO, 23 SIN_DATOS, 274 REVISAR | [#308](https://github.com/trexxeseba/amadolibros-web/pull/308) | **Fusionado y verificado en Producción** (commit `ebe83ff`) |
 
 ### Estructura original de 10 lotes (histórica, descartada)
 
@@ -147,9 +151,9 @@ Lote 01: **12 TERMINADO, 1 SIN_DATOS, 87 REVISAR** —
 **fusionado y verificado en Producción** (commit `662c13c`). Lote 03 final:
 **59 TERMINADO, 23 SIN_DATOS, 274 REVISAR** sobre los 356 ISBN nunca
 intentados —
-[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), en Draft,
-sin fusionar. Registry acumulado: 1.609. Detalle real en
-`ESTADO-ACTUAL.md`.
+[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308)
+**fusionado y verificado en Producción** (commit `ebe83ff`). Registry
+acumulado: 1.609. Detalle real en `ESTADO-ACTUAL.md`.
 Reemplaza la estructura fija de 10 lotes de 200 (que el Lote 1 ya mostró
 inviable: de 2.276 candidatos elegibles, solo 187 califican con las
 fuentes actuales) por un pipeline continuo dimensionado al rendimiento
@@ -259,16 +263,21 @@ entra aunque el archivo exista.
   resolver: sin una fuente de evidencia nueva, reintentarlos da exactamente
   el mismo resultado.
 
-### Estado de ejecución
+### Estado de ejecución — B11 CERRADO
 
-Lotes 01 y 02 terminados, fusionados y verificados en Producción. Lote 03
-final ejecutado y en el
-[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), en Draft,
-sin fusionar ni desplegar.
+Los tres lotes de B11.2 (01, 02 y 03 final) están terminados, fusionados a
+`main` y verificados en Producción. Con el
+[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) fusionado
+(commit `ebe83ff`, deploy `run 33698641329`, auditoría post-deploy
+`run 33699289571` en pass y live check de Producción con los 59 ISBN del
+lote en `verified`), **B11 queda cerrado**.
 
 **El circuito automático quedó agotado**: los 556 ISBN `REVISAR` de B11.1
 ya fueron procesados y no queda ninguno sin intentar. No hay un Lote 04
 posible con las fuentes actuales — cualquier avance adicional exige
 evidencia nueva, no otra corrida del resolver.
+
+Trabajo heredado, en orden y sin iniciar: 1) PR técnico de limpieza de los
+17 `bibliographic.language` históricos; 2) B12.
 
 Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.
