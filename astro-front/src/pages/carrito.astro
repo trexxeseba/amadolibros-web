@@ -216,6 +216,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
                 <span class="checkout-sticky-total-label">Total</span>
                 <strong id="checkout-sticky-total-value">$&nbsp;0</strong>
               </div>
+              <p id="cart-delivery-hint" class="cart-delivery-hint" role="status" aria-live="polite" hidden>Elegí envío o retiro para continuar.</p>
               <button type="button" id="btn-transfer-order" class="btn-transfer-primary" aria-describedby="checkout-error">
                 <span>Comprar por transferencia</span>
                 <strong>12% menos</strong>
@@ -1026,6 +1027,21 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     color: #267a42;
   }
 
+  /* V1.1: aviso de guía junto a los CTA de pago — ni error (rojo) ni éxito
+     (verde): informa una decisión pendiente, no un fallo. grid-column
+     span queda siempre declarado; en el flujo normal (flex, desktop) la
+     propiedad no tiene efecto y no rompe nada. */
+  .cart-delivery-hint {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    border-radius: var(--r);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    grid-column: 1 / -1;
+  }
+
   /* ── Paso de transferencia ─────────────────────────── */
   .transfer-step[hidden] { display: none; }
   .transfer-step { background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--r) + 2px); padding: 1.25rem; }
@@ -1241,6 +1257,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var totalShippingLineEl  = document.getElementById('cart-total-shipping-line');
     var totalShippingEl      = document.getElementById('cart-total-shipping');
     var stickyTotalEl        = document.getElementById('checkout-sticky-total-value');
+    var deliveryHintEl       = document.getElementById('cart-delivery-hint');
     var checkoutErrorEl      = document.getElementById('checkout-error');
     var cartPageEl           = document.querySelector('.cart-page');
     var checkoutEditStepEl   = document.getElementById('checkout-edit-step');
@@ -1521,14 +1538,24 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
+    // V1.1: elegir entrega ya NO es requisito para habilitar el CTA — sólo
+    // los bloqueos técnicos reales (stock/validación en curso o fallida,
+    // carrito sin ítems pagables) lo dejan disabled. Sin entrega elegida el
+    // botón queda interactuable a propósito: al click, requireDeliveryType()
+    // (ya probado) muestra el aviso, hace foco+scroll y corta el flujo antes
+    // de crear ninguna orden. El aviso persistente sólo se muestra cuando
+    // la entrega es lo ÚNICO que falta, para no confundirlo con un bloqueo
+    // técnico real (que ya tiene su propio mensaje vía showCheckoutError).
     function syncPaymentAvailability() {
       var cart = window.AmadoCart ? window.AmadoCart.get() : { items: [] };
-      var canPay = cartValidationReady && !cartValidationFailed &&
-        !validationRequest && getSellableItems(cart).length > 0 && !!getDeliveryType();
+      var technicallyReady = cartValidationReady && !cartValidationFailed &&
+        !validationRequest && getSellableItems(cart).length > 0;
+      var hasDelivery = !!getDeliveryType();
       var transferButton = document.getElementById('btn-transfer-order');
       var mercadoPagoButton = document.getElementById('btn-prepare-order');
-      if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !canPay;
-      if (mercadoPagoButton && !mercadoPagoButton.hasAttribute('aria-busy')) mercadoPagoButton.disabled = !canPay;
+      if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !technicallyReady;
+      if (mercadoPagoButton && !mercadoPagoButton.hasAttribute('aria-busy')) mercadoPagoButton.disabled = !technicallyReady;
+      if (deliveryHintEl) deliveryHintEl.hidden = !(technicallyReady && !hasDelivery);
     }
 
     function buildCartValidationPayload(cart) {
@@ -1636,7 +1663,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (transferNoteEl)      transferNoteEl.hidden      = true;
         if (shippingCostLineEl)  shippingCostLineEl.hidden  = true;
         if (totalShippingLineEl) totalShippingLineEl.hidden = true;
-        if (shippingMsgEl)       shippingMsgEl.hidden       = true;
+        if (shippingMsgEl)       { shippingMsgEl.hidden = true; shippingMsgEl.textContent = ''; }
         if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(subtotal);
         return;
       }
@@ -1651,7 +1678,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (transferNoteEl)      transferNoteEl.hidden      = false;
         if (shippingCostLineEl)  shippingCostLineEl.hidden  = true;
         if (totalShippingLineEl) totalShippingLineEl.hidden = true;
-        if (shippingMsgEl)       shippingMsgEl.hidden       = true;
+        if (shippingMsgEl)       { shippingMsgEl.hidden = true; shippingMsgEl.textContent = ''; }
         if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(total);
       } else {
         var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
@@ -1668,7 +1695,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           totalShippingLineEl.hidden = false;
           if (totalShippingEl) totalShippingEl.textContent = fmt.format(totalWithShipping);
         }
-        if (shippingMsgEl) shippingMsgEl.hidden = true;
+        if (shippingMsgEl) {
+          shippingMsgEl.hidden = false;
+          shippingMsgEl.textContent = shippingCost === 0
+            ? 'Tu envío es gratis'
+            : 'Te faltan ' + fmt.format(FREE_SHIPPING_THRESHOLD_UYU - subtotal) + ' para obtener envío gratis';
+        }
         if (stickyTotalEl) stickyTotalEl.textContent = fmt.format(totalWithShipping);
       }
     }

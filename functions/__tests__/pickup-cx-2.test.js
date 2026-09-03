@@ -37,8 +37,8 @@ test('pickup-cx-2: sin selección o sin productos comprables no muestra descuent
   assert.match(fn, /discountLineEl\.hidden\s*=\s*pickupDiscount === 0/);
 });
 
-test('pickup-cx-2: elegir entrega recalcula y habilita el pago', () => {
-  assert.match(carrito, /getSellableItems\(cart\)\.length > 0 && !!getDeliveryType\(\)/);
+test('pickup-cx-2: elegir entrega recalcula totales y el aviso de guía (V1.1: la entrega ya no bloquea el CTA, sólo oculta el aviso)', () => {
+  assert.match(carrito, /var hasDelivery = !!getDeliveryType\(\);/);
   const start = carrito.indexOf("radio.addEventListener('change', function () {");
   const listener = carrito.slice(start, start + 300);
   assert.match(listener, /updateTotals\(\)/);

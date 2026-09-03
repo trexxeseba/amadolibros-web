@@ -13,11 +13,19 @@
     if (element && typeof element.focus === 'function') element.focus();
   }
 
-  function checkoutError() {
+  // V1.1: si todavía no eligió envío/retiro, este guard no debe interceptar
+  // el click de los CTA de pago (transferencia/Mercado Pago) por nombre,
+  // teléfono o dirección — eso le tapa a carrito.astro su propio mensaje
+  // "Elegí envío o retiro para continuar". El botón de WhatsApp no cambia:
+  // sigue pidiendo nombre/teléfono primero, como siempre.
+  function checkoutError(buttonId) {
+    var delivery = document.querySelector('input[name="delivery"]:checked');
+    var isPaymentButton = buttonId === 'btn-transfer-order' || buttonId === 'btn-prepare-order';
+    if (!delivery && isPaymentButton) return null;
+
     if (!valueOf('buyer-name')) return { message: 'Por favor ingresá tu nombre.', field: 'buyer-name' };
     if (!valueOf('buyer-phone')) return { message: 'Por favor ingresá tu teléfono o WhatsApp.', field: 'buyer-phone' };
 
-    var delivery = document.querySelector('input[name="delivery"]:checked');
     if (!delivery || delivery.value !== 'shipping') return null;
 
     var required = [
@@ -62,7 +70,7 @@
   document.addEventListener('click', function (event) {
     var button = event.target.closest('#btn-wa-order, #btn-prepare-order, #btn-transfer-order');
     if (!button) return;
-    var validation = checkoutError();
+    var validation = checkoutError(button.id);
     if (!validation) return;
     event.preventDefault();
     event.stopImmediatePropagation();
