@@ -1,0 +1,156 @@
+name: Deploy V1.1 checkout Preview (checkout ON)
+
+# El Preview automático de todo PR (deploy-pr-preview.yml) compila
+# deliberadamente con PUBLIC_CHECKOUT_ENABLED=false — sirve para auditar
+# SEO/catálogo, no para revisar el checkout. No existe hoy ningún pipeline
+# que despliegue un Preview con el checkout visible para esta rama (ver
+# docs/environments.md, "Pendientes antes de activar cobros LIVE", punto 3).
+# Este workflow, gateado a una sola rama de trabajo, cubre exactamente ese
+# hueco para la revisión del rediseño V1.1 — mismo patrón ya usado en
+# deploy-price-bank-preview.yml. No toca el pipeline global de PR previews
+# ni el de Producción.
+
+on:
+  push:
+    branches:
+      - v1.1/checkout-guidance
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checkout-v11-preview
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Guard Preview ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Block every other branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/v1.1/checkout-guidance" ]; then
+            echo "Deploy bloqueado: rama incorrecta."
+            exit 1
+          fi
+
+  validate:
+    name: Validate exact branch code
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - name: Validate shared suite
+        run: bash scripts/validate-ci.sh
+
+  deploy-preview:
+    name: Deploy isolated Preview with checkout visible
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      # Config pública de Preview (docs/environments.md), NO la de
+      # Producción: site key y hosts permitidos son los del widget
+      # `amadolibros-orders-preview`, distinto del widget de Producción.
+      - name: Build protected Preview with checkout visible
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'true'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: npm run build
+
+      - name: Deploy branch to Cloudflare Pages Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch checkout-v11-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Smoke mínimo pero decisivo: si esto falla, la URL entregada a Seba
+      # NO es un checkout real navegable y no debe usarse para revisar nada
+      # de V1.1. Cubre exactamente el error que motivó este workflow: una
+      # Preview de checkout que en realidad muestra el fallback de
+      # WhatsApp porque se compiló con el flag equivocado.
+      - name: Smoke — el checkout online está realmente presente (no el fallback de WhatsApp)
+        env:
+          PREVIEW_URL: https://checkout-v11-preview.amadolibros-web.pages.dev
+        run: |
+          ready=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            code=$(curl -sSL -o /tmp/cart.html -w '%{http_code}' \
+              "$PREVIEW_URL/carrito/" || true)
+            if [ "$code" = "200" ]; then
+              ready=true
+              break
+            fi
+            echo "Preview propagándose: intento $attempt/8, HTTP $code."
+            sleep 10
+          done
+          test "$ready" = "true"
+
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('/tmp/cart.html', 'utf8');
+
+          const mustContain = [
+            'data-online-checkout="enabled"',
+            'Finalizar compra',
+            'Transferencia 12% menos',
+            'Mercado Pago hasta 12 cuotas',
+            '¿Cómo querés recibir tu pedido?',
+            'Tus datos',
+            '¿Cómo querés pagar?',
+            'name="payment-method" value="transfer"',
+            'name="payment-method" value="mercadopago"',
+            'id="btn-confirm-neutral"',
+            'id="btn-transfer-order"',
+            'id="btn-prepare-order"',
+            'class="checkout-summary"',
+            'id="cart-summary-total"',
+          ];
+          const missing = mustContain.filter((needle) => !html.includes(needle));
+          if (missing.length) {
+            throw new Error(
+              'El checkout online no está realmente presente en el HTML servido. Faltan: ' +
+              missing.join(' | ')
+            );
+          }
+
+          // El fallback de WhatsApp (class="btn-wa-order") sólo existe en el
+          // build con checkout OFF — si aparece acá, esta Preview no sirve
+          // para revisar el checkout online, sin importar qué diga el flag.
+          if (html.includes('class="btn-wa-order"')) {
+            throw new Error(
+              'El CTA de WhatsApp aparece como fallback principal — esta Preview NO tiene el checkout online activo de verdad.'
+            );
+          }
+          NODE
+
+      - name: Reportar URL de la Preview de checkout V1.1
+        run: |
+          echo "### Preview de checkout V1.1 (checkout ON)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://checkout-v11-preview.amadolibros-web.pages.dev/carrito/" >> "$GITHUB_STEP_SUMMARY"
