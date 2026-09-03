@@ -120,20 +120,63 @@ test('10. sólo un CTA visible a la vez: neutro, transferencia o Mercado Pago se
   assert.match(CARRITO, /id="btn-prepare-order" class="btn-checkout-primary" aria-describedby="checkout-error" hidden>/);
 
   const start = CARRITO.indexOf('function syncPaymentAvailability');
-  const fn = CARRITO.slice(start, start + 1400);
+  const fn = CARRITO.slice(start, start + 1600);
   assert.match(fn, /transferButton\.hidden = paymentMethod !== 'transfer'/);
   assert.match(fn, /mercadoPagoButton\.hidden = paymentMethod !== 'mercadopago'/);
   assert.match(fn, /neutralButton\.hidden = hasPaymentMethod/);
 });
 
-test('11. el CTA neutro no fusiona la lógica de pago: sólo exige entrega y medio, nunca llama a /api/orders', () => {
+test('11. el CTA neutro no fusiona la lógica de pago: delega en focusFirstMissingRequirement(), nunca llama a /api/orders', () => {
   const start = CARRITO.indexOf("btnConfirmNeutral.addEventListener('click'");
   assert.notEqual(start, -1);
   const block = CARRITO.slice(start, start + 400);
   assert.match(block, /if \(btnConfirmNeutral\.disabled\) return;/);
-  assert.match(block, /if \(!requireDeliveryType\(\)\) return;/);
-  assert.match(block, /requirePaymentMethod\(\);/);
+  assert.match(block, /focusFirstMissingRequirement\(\);/);
   assert.doesNotMatch(block, /fetch\(/);
+});
+
+// ── 4b. CTA neutro — corrección revisión ChatGPT #3: respeta el orden
+// completo del flujo (Entrega → Nombre → WhatsApp → Email → [envío:
+// Dirección/Barrio/Departamento] → Pago), no salta directo de Entrega a
+// Pago. No duplica la validación de submit real: es la única función que
+// decide a qué falta el CTA neutro debe llevar.
+
+test('11b. focusFirstMissingRequirement() sigue el orden completo, no salta directo de Entrega a Pago', () => {
+  const start = CARRITO.indexOf('function focusFirstMissingRequirement');
+  assert.notEqual(start, -1);
+  const end = CARRITO.indexOf('// ── Persistencia de la etapa', start);
+  const fn = CARRITO.slice(start, end);
+
+  const order = [
+    'requireDeliveryType()',
+    "showFieldError('buyer-name'",
+    "showFieldError('buyer-phone'",
+    "showFieldError('buyer-email'",
+    "showFieldError('delivery-address'",
+    "showFieldError('delivery-barrio'",
+    "showFieldError('delivery-departamento'",
+    'requirePaymentMethod()',
+  ];
+  let cursor = -1;
+  for (const token of order) {
+    const idx = fn.indexOf(token, cursor + 1);
+    assert.ok(idx > cursor, `"${token}" debe aparecer, y en este orden, dentro de focusFirstMissingRequirement()`);
+    cursor = idx;
+  }
+  // Los campos de envío sólo se piden si deliveryType === 'shipping'.
+  const shippingGateIdx = fn.indexOf("deliveryType === 'shipping'");
+  const addressIdx = fn.indexOf("showFieldError('delivery-address'");
+  assert.ok(shippingGateIdx !== -1 && shippingGateIdx < addressIdx);
+});
+
+test('11c. no duplica una segunda lógica de validación: createTransferOrder()/btnPrepare no llaman a focusFirstMissingRequirement()', () => {
+  const transferStart = CARRITO.indexOf('async function createTransferOrder');
+  const transferEnd = CARRITO.indexOf('if (btnTransfer) {', transferStart);
+  assert.doesNotMatch(CARRITO.slice(transferStart, transferEnd), /focusFirstMissingRequirement/);
+
+  const prepareStart = CARRITO.indexOf("btnPrepare.addEventListener('click'");
+  const prepareEnd = CARRITO.indexOf('refreshCartAvailability({ initial: true })', prepareStart);
+  assert.doesNotMatch(CARRITO.slice(prepareStart, prepareEnd), /focusFirstMissingRequirement/);
 });
 
 test('12. createTransferOrder() y el handler de Mercado Pago no cambiaron: cero referencias a payment-method', () => {
@@ -159,6 +202,52 @@ test('13. elegir medio de pago recalcula disponibilidad y guarda el borrador', (
 test('14. el medio de pago se persiste y restaura en el borrador de sessionStorage', () => {
   assert.match(CARRITO, /payment_method: getPaymentMethod\(\)/);
   assert.match(CARRITO, /draft\.payment_method/);
+});
+
+// ── 4c. Corrección revisión ChatGPT #2: congelar el medio de pago durante
+// submit. Antes los radios de payment-method seguían interactivos mientras
+// btnTransfer/btnPrepare estaban aria-busy — un cambio de medio a mitad de
+// un submit podía revelar el CTA alternativo. Ahora ambos radios se
+// deshabilitan al iniciar cada flujo y se rehabilitan en cada punto de
+// reset (éxito, error o cancelación) ya existente.
+
+test('14b. setPaymentMethodFrozen()/isPaymentMethodFrozen() existen y operan sobre ambos radios', () => {
+  const start = CARRITO.indexOf('function setPaymentMethodFrozen');
+  assert.notEqual(start, -1);
+  const block = CARRITO.slice(start, start + 400);
+  assert.match(block, /document\.querySelectorAll\('input\[name="payment-method"\]'\)\.forEach/);
+  assert.match(block, /radio\.disabled = frozen;/);
+  assert.match(block, /function isPaymentMethodFrozen\(\)/);
+});
+
+test('14c. createTransferOrder() congela el medio de pago al pasar a aria-busy (no antes, no en las validaciones previas)', () => {
+  const start = CARRITO.indexOf("btnTransfer.setAttribute('aria-busy', 'true');");
+  assert.notEqual(start, -1);
+  const block = CARRITO.slice(start, start + 200);
+  assert.match(block, /setPaymentMethodFrozen\(true\);/);
+});
+
+test('14d. el handler de Mercado Pago congela el medio de pago al pasar a aria-busy', () => {
+  const start = CARRITO.indexOf("btnPrepare.setAttribute('aria-busy', 'true');");
+  assert.notEqual(start, -1);
+  const block = CARRITO.slice(start, start + 200);
+  assert.match(block, /setPaymentMethodFrozen\(true\);/);
+});
+
+test('14e. resetTransferButton() y resetPrepareButton() descongelan el medio de pago en cada reset (éxito/error/cancelación)', () => {
+  const resetTransferStart = CARRITO.indexOf('function resetTransferButton');
+  const resetTransferBlock = CARRITO.slice(resetTransferStart, resetTransferStart + 300);
+  assert.match(resetTransferBlock, /setPaymentMethodFrozen\(false\);/);
+
+  const resetPrepareStart = CARRITO.indexOf('function resetPrepareButton');
+  const resetPrepareBlock = CARRITO.slice(resetPrepareStart, resetPrepareStart + 300);
+  assert.match(resetPrepareBlock, /setPaymentMethodFrozen\(false\);/);
+});
+
+test('14f. con el medio de pago congelado, syncPaymentAvailability() también bloquea el CTA neutro (no sólo lo oculta)', () => {
+  const start = CARRITO.indexOf('function syncPaymentAvailability');
+  const fn = CARRITO.slice(start, start + 1400);
+  assert.match(fn, /neutralButton\.disabled = !technicallyReady \|\| isPaymentMethodFrozen\(\);/);
 });
 
 // ── 5. Preview "Pagás $X" de transferencia — paridad real ────────────────
@@ -217,6 +306,64 @@ test('18. sin entrega elegida (o carrito vacío) el preview de transferencia que
   assert.match(block, /mpPreviewEl\.\s*\{ mpPreviewEl\.hidden = true; mpPreviewEl\.textContent = ''; \}|mpPreviewEl\.hidden = true;/);
 });
 
+// ── 5b. Corrección revisión ChatGPT #1: total consistente por medio de
+// pago. Antes el resumen y el sticky siempre mostraban el total normal,
+// incluso con transferencia elegida — dos importes distintos a la vez
+// (el preview de la card vs. el total del resumen). Ahora
+// cartSummaryTotalEl / checkout-sticky-total-value / totalEl /
+// totalShippingEl reflejan el monto real según getPaymentMethod().
+
+test('18b. rama de retiro: displayTotal usa transferPayable con transferencia elegida, y pinta resumen+sticky+total', () => {
+  const pickupBranch = CARRITO.slice(CARRITO.indexOf('if (isPickup) {'), CARRITO.indexOf('} else {'));
+  assert.match(pickupBranch, /var displayTotal = paymentMethod === 'transfer' \? transferPayable : total;/);
+  assert.match(pickupBranch, /totalEl\.textContent\s*=\s*fmt\.format\(displayTotal\)/);
+  assert.match(pickupBranch, /stickyTotalEl\.textContent\s*=\s*fmt\.format\(displayTotal\)/);
+  assert.match(pickupBranch, /cartSummaryTotalEl\.textContent\s*=\s*fmt\.format\(displayTotal\)/);
+  assert.match(pickupBranch, /transferDiscountLineEl\.hidden = paymentMethod !== 'transfer'/);
+});
+
+test('18c. rama de envío: displayTotalShip usa transferPayableShip con transferencia elegida, y pinta resumen+sticky+total', () => {
+  const shippingStart = CARRITO.indexOf('} else {', CARRITO.indexOf('if (isPickup) {'));
+  const shippingBranch = CARRITO.slice(shippingStart, CARRITO.indexOf('// ── Construir fila de item'));
+  assert.match(shippingBranch, /var displayTotalShip = paymentMethod === 'transfer' \? transferPayableShip : totalWithShipping;/);
+  assert.match(shippingBranch, /totalShippingEl\.textContent\s*=\s*fmt\.format\(displayTotalShip\)/);
+  assert.match(shippingBranch, /stickyTotalEl\.textContent\s*=\s*fmt\.format\(displayTotalShip\)/);
+  assert.match(shippingBranch, /cartSummaryTotalEl\.textContent\s*=\s*fmt\.format\(displayTotalShip\)/);
+  assert.match(shippingBranch, /transferDiscountLineEl\.hidden = paymentMethod !== 'transfer'/);
+});
+
+test('18d. sin medio de pago elegido (o Mercado Pago), el resumen/sticky muestran el total normal, no el de transferencia', () => {
+  const pickupBranch = CARRITO.slice(CARRITO.indexOf('if (isPickup) {'), CARRITO.indexOf('} else {'));
+  // displayTotal cae a "total" (no transferPayable) salvo que paymentMethod
+  // sea exactamente 'transfer' — Mercado Pago y "sin elegir" comparten rama.
+  assert.match(pickupBranch, /paymentMethod === 'transfer' \? transferPayable : total/);
+});
+
+test('18e. paridad NUMÉRICA real contra el backend en los 3 casos obligatorios del review (A/B/C)', () => {
+  const cases = [
+    { subtotal: 645,  deliveryType: 'pickup',   transfer: 568,  mercadopago: 645 },
+    { subtotal: 645,  deliveryType: 'shipping', transfer: 818,  mercadopago: 895 },
+    { subtotal: 2000, deliveryType: 'pickup',   transfer: 1610, mercadopago: 1850 },
+  ];
+  for (const c of cases) {
+    const totals = calculateTotals([{ line_total_uyu: c.subtotal }], c.deliveryType);
+    const server = calculateTransferTotals(totals);
+    assert.equal(
+      totals.payableTotal, c.mercadopago,
+      `subtotal=${c.subtotal} ${c.deliveryType}: Mercado Pago esperado ${c.mercadopago}, backend dio ${totals.payableTotal}`,
+    );
+    assert.equal(
+      server.transferPayableTotal, c.transfer,
+      `subtotal=${c.subtotal} ${c.deliveryType}: transferencia esperada ${c.transfer}, backend dio ${server.transferPayableTotal}`,
+    );
+    // displayTotal/displayTotalShip (18b/18c) usan exactamente esta misma
+    // fórmula (ver test 16, paridad de las 12 combinaciones) para pintar
+    // cart-summary-total y checkout-sticky-total-value — así que estos
+    // valores del backend son también los que terminan en pantalla según
+    // el medio elegido.
+  }
+});
+
 // ── 6. Resumen / disclosure / "Editar" ───────────────────────────────────
 
 test('19. el resumen usa <details> nativo y accesible, no un modal', () => {
@@ -225,22 +372,59 @@ test('19. el resumen usa <details> nativo y accesible, no un modal', () => {
   assert.doesNotMatch(CARRITO, /class="modal"|role="dialog"/);
 });
 
-test('20. desktop fuerza el resumen siempre expandido vía CSS, sin depender del atributo open', () => {
-  assert.match(CARRITO, /\.cart-summary-panel:not\(\[open\]\) \.cart-summary-body\s*\{\s*display:\s*flex;/);
-  // Esa regla vive dentro de un @media (min-width: 960px) cercano, no aplica en mobile.
-  const ruleIdx = CARRITO.indexOf('.cart-summary-panel:not([open]) .cart-summary-body');
-  const precedingMq = CARRITO.lastIndexOf('@media (min-width: 960px)', ruleIdx);
-  assert.ok(precedingMq !== -1 && ruleIdx - precedingMq < 300, 'la regla debe estar dentro del bloque @media, no suelta');
+// ── Corrección revisión ChatGPT #4: el resumen desktop ya no depende del
+// pseudo-elemento interno ::details-content (Chromium-only, sin garantía de
+// comportamiento igual en WebKit/Firefox) — ahora JS fuerza el atributo
+// real "open" del <details> según el viewport, y la regla base
+// .cart-summary-panel[open] .cart-summary-body (sin media query) alcanza
+// para mostrar el contenido con el comportamiento nativo del navegador.
+
+test('20. desktop ya no depende de ::details-content: CSS sólo deja el toggle decorativo', () => {
+  // No debe quedar ninguna regla CSS activa que dependa del pseudo-elemento
+  // (comentarios explicando por qué se sacó sí pueden nombrarlo).
+  assert.doesNotMatch(CARRITO, /::details-content\s*\{/);
+  assert.doesNotMatch(CARRITO, /\.cart-summary-panel:not\(\[open\]\)/);
+
+  const mqStart = CARRITO.indexOf('@media (min-width: 960px)', CARRITO.indexOf('.cart-summary-panel {'));
+  const mqBlock = CARRITO.slice(mqStart, CARRITO.indexOf('.cart-items-compact {', mqStart));
+  assert.match(mqBlock, /\.cart-summary-toggle\s*\{\s*\n\s*cursor:\s*default;\s*\n\s*pointer-events:\s*none;/);
+  assert.match(mqBlock, /\.cart-summary-chevron\s*\{\s*display:\s*none;\s*\}/);
+
+  // La regla que realmente muestra el contenido no tiene media query: ya
+  // alcanza con el atributo "open" real (forzado por JS en desktop, nativo
+  // del usuario en mobile).
+  assert.match(CARRITO, /\.cart-summary-panel\[open\] \.cart-summary-body\s*\{\s*\n\s*display:\s*flex;/);
 });
 
-test('20b. el override de desktop también alcanza ::details-content (no sólo el hijo)', () => {
-  // Regresión real encontrada con Playwright: Chromium colapsa el contenido
-  // de un <details> cerrado con un pseudo-elemento interno
-  // (::details-content), no sólo con display en los hijos. Sin este
-  // segundo override el panel medía 0 de alto en desktop aunque
-  // .cart-summary-body ya tuviera display:flex — "Editar" quedaba
-  // inalcanzable por completo en 1440×900.
-  assert.match(CARRITO, /\.cart-summary-panel:not\(\[open\]\)::details-content\s*\{\s*\n\s*content-visibility:\s*visible;\s*\n\s*display:\s*block;/);
+test('20b. JS fuerza el atributo real "open" en desktop vía matchMedia, con fallback addListener', () => {
+  const start = CARRITO.indexOf('function syncSummaryDesktopState');
+  assert.notEqual(start, -1);
+  const end = CARRITO.indexOf('syncSummaryDesktopState();', start);
+  const fn = CARRITO.slice(start, end);
+  assert.match(fn, /summaryDesktopMq\.matches/);
+  assert.match(fn, /cartSummaryPanelEl\.open = true;/);
+
+  const wireStart = CARRITO.indexOf("window.matchMedia('(min-width: 960px)')");
+  assert.notEqual(wireStart, -1);
+  const wireBlock = CARRITO.slice(wireStart, wireStart + 700);
+  assert.match(wireBlock, /summaryDesktopMq\.addEventListener\('change', syncSummaryDesktopState\)/);
+  assert.match(wireBlock, /summaryDesktopMq\.addListener\(syncSummaryDesktopState\)/);
+});
+
+test('20c. el <summary> desktop no queda como control fantasma: sale del tab order (tabindex=-1) mientras se fuerza abierto', () => {
+  const start = CARRITO.indexOf('function syncSummaryDesktopState');
+  const end = CARRITO.indexOf('syncSummaryDesktopState();', start);
+  const fn = CARRITO.slice(start, end);
+  assert.match(fn, /cartSummaryToggleEl\.setAttribute\('tabindex', '-1'\)/);
+  assert.match(fn, /cartSummaryToggleEl\.removeAttribute\('tabindex'\)/);
+});
+
+test('20d. si algo dispara "toggle" y cierra el panel en desktop, se re-fuerza abierto en el mismo evento (defensa extra)', () => {
+  const start = CARRITO.indexOf("cartSummaryPanelEl.addEventListener('toggle'");
+  assert.notEqual(start, -1);
+  const block = CARRITO.slice(start, start + 400);
+  assert.match(block, /if \(summaryDesktopMq\.matches && !cartSummaryPanelEl\.open\) \{/);
+  assert.match(block, /cartSummaryPanelEl\.open = true;/);
 });
 
 test('21. "Editar" reutiliza buildItemRow() sin reescribirla — sólo agrega una fila compacta nueva y separada', () => {

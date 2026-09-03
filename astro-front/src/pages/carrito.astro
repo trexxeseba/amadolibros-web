@@ -85,6 +85,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
                 <div class="cart-totals-card">
                   <div class="cart-totals">
                     <p class="cart-subtotal-line">Total de productos:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong></p>
+                    <p class="cart-transfer-discount-line" id="cart-transfer-discount-line" hidden>Ahorro por transferencia (12%):&nbsp;<strong id="cart-transfer-discount">−&nbsp;$0</strong></p>
                     <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
                     <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
                     <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
@@ -573,20 +574,16 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     display: flex;
   }
 
-  /* Desktop: el resumen siempre está expandido — el <details> deja de
-     comportarse como colapsable y el toggle se vuelve decorativo. */
+  /* Desktop: el resumen siempre está expandido. Corrección revisión
+     ChatGPT #4: ya no se fuerza visualmente vía CSS (dependía de
+     ::details-content, un pseudo-elemento interno de Chromium sin garantía
+     de comportamiento igual en WebKit/Firefox) — ahora es JS
+     (syncSummaryDesktopState) el que fuerza el atributo real "open" del
+     <details> según el viewport, así .cart-summary-panel[open]
+     .cart-summary-body (regla de arriba, sin media query) ya alcanza para
+     mostrar el contenido con el comportamiento nativo de cualquier motor.
+     Acá sólo queda lo puramente visual del toggle decorativo. */
   @media (min-width: 960px) {
-    .cart-summary-panel:not([open]) .cart-summary-body {
-      display: flex;
-    }
-    /* Chromium colapsa el contenido de un <details> cerrado a través de un
-       pseudo-elemento interno (::details-content), no sólo con display en
-       sus hijos — sin este override el <details> sigue midiendo 0 de alto
-       en desktop aunque .cart-summary-body ya diga display:flex. */
-    .cart-summary-panel:not([open])::details-content {
-      content-visibility: visible;
-      display: block;
-    }
     .cart-summary-toggle {
       cursor: default;
       pointer-events: none;
@@ -924,6 +921,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     border-color: var(--salmon);
     border-width: 2px;
     background: rgba(191, 87, 60, 0.06);
+  }
+
+  /* V1.1 REDESIGN (corrección revisión ChatGPT #2): medio de pago congelado
+     mientras un submit está en curso — se ve claramente no interactuable. */
+  .payment-opt:has(input[type="radio"]:disabled) {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
 
   .payment-opt input[type="radio"] {
@@ -1350,6 +1354,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     color: var(--ink-2);
   }
 
+  .cart-transfer-discount-line {
+    font-size: 0.875rem;
+    color: #177a43;
+    font-weight: 600;
+  }
+
   .cart-discount-line {
     font-size: 0.875rem;
     color: #267a42;
@@ -1599,6 +1609,8 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var cartSummaryCountEl = document.getElementById('cart-summary-count');
     var cartSummaryTotalEl = document.getElementById('cart-summary-total');
     var subtotalEl       = document.getElementById('cart-subtotal');
+    var transferDiscountLineEl = document.getElementById('cart-transfer-discount-line');
+    var transferDiscountEl     = document.getElementById('cart-transfer-discount');
     var discountLineEl   = document.getElementById('cart-discount-line');
     var totalLineEl      = document.getElementById('cart-total-line');
     var totalEl          = document.getElementById('cart-total');
@@ -1749,6 +1761,74 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       document.querySelectorAll('input[name="payment-method"]').forEach(function (radio) {
         radio.removeAttribute('aria-invalid');
       });
+    }
+
+    // V1.1 REDESIGN (corrección revisión ChatGPT #2): congelar el medio de
+    // pago mientras btnTransfer o btnPrepare están en curso (aria-busy). Un
+    // radio deshabilitado no dispara 'change' aunque se lo toque por mouse
+    // o teclado, así que mientras está congelado es físicamente imposible
+    // pasar de Transferencia a Mercado Pago (o viceversa) a mitad de un
+    // submit — no hace falta ninguna bandera extra: getPaymentMethod() sigue
+    // devolviendo el valor elegido porque un radio disabled sigue "checked".
+    function setPaymentMethodFrozen(frozen) {
+      document.querySelectorAll('input[name="payment-method"]').forEach(function (radio) {
+        radio.disabled = frozen;
+      });
+    }
+    function isPaymentMethodFrozen() {
+      var radio = document.querySelector('input[name="payment-method"]');
+      return !!(radio && radio.disabled);
+    }
+
+    // V1.1 REDESIGN (corrección revisión ChatGPT #3): único punto que decide
+    // a qué falta el CTA neutro debe llevar, siguiendo el mismo orden del
+    // flujo aprobado (Entrega → Nombre → WhatsApp/Teléfono → Email →
+    // [envío: Dirección/Barrio/Departamento] → Medio de pago). No duplica la
+    // validación de submit real de createTransferOrder()/btnPrepare (esas
+    // siguen intactas y se ejecutan recién al confirmar con un medio ya
+    // elegido) — esto sólo decide, antes de eso, cuál es el primer requisito
+    // incompleto para guiar foco+scroll+error inline hacia él.
+    function focusFirstMissingRequirement() {
+      if (!requireDeliveryType()) return false;
+      var deliveryType = getDeliveryType();
+
+      var name  = ((document.getElementById('buyer-name')  || {}).value || '').trim();
+      var phone = ((document.getElementById('buyer-phone') || {}).value || '').trim();
+      var email = ((document.getElementById('buyer-email') || {}).value || '').trim();
+
+      if (!name) {
+        showFieldError('buyer-name', 'Por favor ingresá tu nombre.');
+        return false;
+      }
+      if (!phone) {
+        showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.');
+        return false;
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError('buyer-email', 'Ingresá un correo válido para recibir la confirmación.');
+        return false;
+      }
+
+      if (deliveryType === 'shipping') {
+        var address       = ((document.getElementById('delivery-address')     || {}).value || '').trim();
+        var barrio        = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
+        var departamento  = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
+        if (!address) {
+          showFieldError('delivery-address', 'Por favor ingresá la dirección de entrega.');
+          return false;
+        }
+        if (!barrio) {
+          showFieldError('delivery-barrio', 'Por favor ingresá la localidad.');
+          return false;
+        }
+        if (!departamento) {
+          showFieldError('delivery-departamento', 'Por favor seleccioná el departamento.');
+          return false;
+        }
+      }
+
+      if (!requirePaymentMethod()) return false;
+      return true;
     }
 
     // ── Persistencia de la etapa y los datos mínimos ─────────────────────
@@ -1964,7 +2044,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
       if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !technicallyReady;
       if (mercadoPagoButton && !mercadoPagoButton.hasAttribute('aria-busy')) mercadoPagoButton.disabled = !technicallyReady;
-      if (neutralButton) neutralButton.disabled = !technicallyReady;
+      // V1.1 REDESIGN (corrección revisión ChatGPT #2): con el medio de pago
+      // congelado (submit en curso) el CTA neutro ya está hidden porque hay
+      // un método elegido — este disabled es una segunda barrera explícita,
+      // no el mecanismo principal.
+      if (neutralButton) neutralButton.disabled = !technicallyReady || isPaymentMethodFrozen();
 
       if (transferButton) transferButton.hidden = paymentMethod !== 'transfer';
       if (mercadoPagoButton) mercadoPagoButton.hidden = paymentMethod !== 'mercadopago';
@@ -2073,6 +2157,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (subtotalEl) subtotalEl.textContent = fmt.format(subtotal);
 
       if (!deliveryType || subtotal <= 0) {
+        if (transferDiscountLineEl) transferDiscountLineEl.hidden = true;
         if (discountLineEl)      discountLineEl.hidden      = true;
         if (totalLineEl)         totalLineEl.hidden         = true;
         if (shippingNoteEl)      shippingNoteEl.hidden      = true;
@@ -2093,24 +2178,38 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (isPickup) {
         var pickupDiscount = pickupEligible ? RETIRO_DISCOUNT : 0;
         var total = Math.max(0, subtotal - pickupDiscount);
+
+        // V1.1 REDESIGN (corrección revisión ChatGPT #1): preview de
+        // "Pagás $X" — espejo EXACTO de calculateTransferTotals() en
+        // functions/api/_orders_logic.js (mismo TRANSFER_FACTOR, mismo
+        // pickupDiscount ya calculado acá mismo, sin envío). Sólo de
+        // presentación: el backend recalcula todo desde cero al crear la
+        // orden, esto nunca se envía. El resumen y el sticky ya NO muestran
+        // siempre el total normal: si el medio elegido es transferencia,
+        // reflejan el monto real con el 12% aplicado — antes mostraban dos
+        // importes distintos a la vez (el preview de la card vs. el total
+        // del resumen), lo que confundía al comprador.
+        var transferProductsTotal = Math.round(subtotal * TRANSFER_FACTOR);
+        var transferPayable = Math.max(0, transferProductsTotal - pickupDiscount);
+        var paymentMethod = getPaymentMethod();
+        var displayTotal = paymentMethod === 'transfer' ? transferPayable : total;
+
         if (discountLineEl)      discountLineEl.hidden      = pickupDiscount === 0;
         if (totalLineEl)         totalLineEl.hidden         = false;
-        if (totalEl)             totalEl.textContent        = fmt.format(total);
+        if (totalEl)             totalEl.textContent        = fmt.format(displayTotal);
         if (shippingNoteEl)      shippingNoteEl.hidden      = true;
         if (transferNoteEl)      transferNoteEl.hidden      = false;
         if (shippingCostLineEl)  shippingCostLineEl.hidden  = true;
         if (totalShippingLineEl) totalShippingLineEl.hidden = true;
         if (shippingMsgEl)       { shippingMsgEl.hidden = true; shippingMsgEl.textContent = ''; }
-        if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(total);
-        if (cartSummaryTotalEl)  cartSummaryTotalEl.textContent = fmt.format(total);
+        if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(displayTotal);
+        if (cartSummaryTotalEl)  cartSummaryTotalEl.textContent = fmt.format(displayTotal);
 
-        // V1.1 REDESIGN: preview de "Pagás $X" — espejo EXACTO de
-        // calculateTransferTotals() en functions/api/_orders_logic.js
-        // (mismo TRANSFER_FACTOR, mismo pickupDiscount ya calculado acá
-        // mismo, sin envío). Sólo de presentación: el backend recalcula
-        // todo desde cero al crear la orden, esto nunca se envía.
-        var transferProductsTotal = Math.round(subtotal * TRANSFER_FACTOR);
-        var transferPayable = Math.max(0, transferProductsTotal - pickupDiscount);
+        if (transferDiscountLineEl) {
+          transferDiscountLineEl.hidden = paymentMethod !== 'transfer';
+          if (transferDiscountEl) transferDiscountEl.textContent = '− ' + fmt.format(subtotal - transferProductsTotal);
+        }
+
         if (transferPreviewEl) {
           transferPreviewEl.hidden = false;
           transferPreviewEl.textContent = 'Precio normal ' + fmt.format(subtotal) + ' · Pagás ' + fmt.format(transferPayable);
@@ -2122,6 +2221,17 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       } else {
         var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
         var totalWithShipping = subtotal + shippingCost;
+
+        // V1.1 REDESIGN (corrección revisión ChatGPT #1): mismo espejo que
+        // en la rama de retiro, ahora con shippingCost (sin pickupDiscount)
+        // — igual que calculateTransferTotals() del servidor. displayTotal
+        // decide qué importe real mostrar en resumen/sticky según el medio
+        // de pago elegido, para que nunca difiera del importe de la card.
+        var transferProductsTotalShip = Math.round(subtotal * TRANSFER_FACTOR);
+        var transferPayableShip = Math.max(0, transferProductsTotalShip + shippingCost);
+        var paymentMethod = getPaymentMethod();
+        var displayTotalShip = paymentMethod === 'transfer' ? transferPayableShip : totalWithShipping;
+
         if (discountLineEl)     discountLineEl.hidden     = true;
         if (totalLineEl)        totalLineEl.hidden        = true;
         if (shippingNoteEl)     shippingNoteEl.hidden     = true;
@@ -2132,7 +2242,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         }
         if (totalShippingLineEl) {
           totalShippingLineEl.hidden = false;
-          if (totalShippingEl) totalShippingEl.textContent = fmt.format(totalWithShipping);
+          if (totalShippingEl) totalShippingEl.textContent = fmt.format(displayTotalShip);
         }
         if (shippingMsgEl) {
           shippingMsgEl.hidden = false;
@@ -2140,14 +2250,14 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             ? 'Tu envío es gratis'
             : 'Te faltan ' + fmt.format(FREE_SHIPPING_THRESHOLD_UYU - subtotal) + ' para obtener envío gratis';
         }
-        if (stickyTotalEl) stickyTotalEl.textContent = fmt.format(totalWithShipping);
-        if (cartSummaryTotalEl) cartSummaryTotalEl.textContent = fmt.format(totalWithShipping);
+        if (stickyTotalEl) stickyTotalEl.textContent = fmt.format(displayTotalShip);
+        if (cartSummaryTotalEl) cartSummaryTotalEl.textContent = fmt.format(displayTotalShip);
 
-        // V1.1 REDESIGN: mismo espejo que en la rama de retiro, ahora con
-        // shippingCost (sin pickupDiscount) — igual que
-        // calculateTransferTotals() del servidor.
-        var transferProductsTotalShip = Math.round(subtotal * TRANSFER_FACTOR);
-        var transferPayableShip = Math.max(0, transferProductsTotalShip + shippingCost);
+        if (transferDiscountLineEl) {
+          transferDiscountLineEl.hidden = paymentMethod !== 'transfer';
+          if (transferDiscountEl) transferDiscountEl.textContent = '− ' + fmt.format(subtotal - transferProductsTotalShip);
+        }
+
         if (transferPreviewEl) {
           transferPreviewEl.hidden = false;
           transferPreviewEl.textContent = 'Precio normal ' + fmt.format(subtotal) + ' · Pagás ' + fmt.format(transferPayableShip);
@@ -2491,22 +2601,56 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     });
 
     // ── V1.1 REDESIGN: CTA neutro cuando todavía no se eligió pago ───────
+    // Corrección revisión ChatGPT #3: ya no salta directo de Entrega a
+    // Pago — sigue el orden completo vía focusFirstMissingRequirement().
     var btnConfirmNeutral = document.getElementById('btn-confirm-neutral');
     if (btnConfirmNeutral) {
       btnConfirmNeutral.addEventListener('click', function () {
         if (btnConfirmNeutral.disabled) return;
-        if (!requireDeliveryType()) return;
-        requirePaymentMethod();
+        focusFirstMissingRequirement();
       });
     }
 
     // ── V1.1 REDESIGN: texto del disclosure del resumen (colapsado/expandido) ─
     // <details> ya dispara "toggle" nativamente al abrir/cerrar — se usa acá
     // en vez de un truco de CSS con contenido dinámico en ::before.
+    //
+    // Corrección revisión ChatGPT #4: en desktop el resumen se fuerza
+    // realmente abierto por JS (atributo "open" genuino, no un efecto
+    // visual de CSS) según el viewport — comportamiento nativo del
+    // navegador, sin depender de ::details-content. Además, en desktop el
+    // <summary> sale del orden de tabulación (tabindex="-1") para que no
+    // quede como un control alcanzable por teclado que activa un toggle sin
+    // ningún cambio visible (o peor, que colapsa el resumen si el usuario
+    // logra activarlo antes de que el listener de "toggle" lo re-force
+    // abierto).
     var cartSummaryPanelEl = document.getElementById('cart-summary-panel');
     var cartSummaryChevronEl = document.querySelector('.cart-summary-chevron');
+    var cartSummaryToggleEl = document.querySelector('.cart-summary-toggle');
+    var summaryDesktopMq = window.matchMedia('(min-width: 960px)');
+
+    function syncSummaryDesktopState() {
+      if (!cartSummaryPanelEl) return;
+      if (summaryDesktopMq.matches) {
+        cartSummaryPanelEl.open = true;
+        if (cartSummaryToggleEl) cartSummaryToggleEl.setAttribute('tabindex', '-1');
+      } else if (cartSummaryToggleEl) {
+        cartSummaryToggleEl.removeAttribute('tabindex');
+      }
+    }
+    syncSummaryDesktopState();
+    if (typeof summaryDesktopMq.addEventListener === 'function') {
+      summaryDesktopMq.addEventListener('change', syncSummaryDesktopState);
+    } else if (typeof summaryDesktopMq.addListener === 'function') {
+      summaryDesktopMq.addListener(syncSummaryDesktopState);
+    }
+
     if (cartSummaryPanelEl && cartSummaryChevronEl) {
       cartSummaryPanelEl.addEventListener('toggle', function () {
+        if (summaryDesktopMq.matches && !cartSummaryPanelEl.open) {
+          cartSummaryPanelEl.open = true;
+          return;
+        }
         cartSummaryChevronEl.textContent = cartSummaryPanelEl.open ? 'Ocultar' : 'Ver resumen';
       });
     }
@@ -2672,6 +2816,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       btnTransfer.disabled = false;
       btnTransfer.removeAttribute('aria-busy');
       btnTransfer.innerHTML = btnTransferOriginalHtml;
+      setPaymentMethodFrozen(false);
       syncPaymentAvailability();
     }
 
@@ -2908,6 +3053,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       btnTransfer.disabled = true;
       btnTransfer.setAttribute('aria-busy', 'true');
       btnTransfer.textContent = 'Verificando precio y stock…';
+      setPaymentMethodFrozen(true);
 
       var availabilityOk = await refreshCartAvailability({ beforePayment: true });
       if (!availabilityOk) return null;
@@ -3012,6 +3158,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       btnPrepare.disabled = false;
       btnPrepare.removeAttribute('aria-busy');
       btnPrepare.innerHTML = origBtnHTML;
+      setPaymentMethodFrozen(false);
       syncPaymentAvailability();
     }
 
@@ -3063,6 +3210,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
         btnPrepare.disabled = true;
         btnPrepare.setAttribute('aria-busy', 'true');
+        setPaymentMethodFrozen(true);
 
         var availabilityOk = await refreshCartAvailability({ beforePayment: true });
         if (!availabilityOk) {
