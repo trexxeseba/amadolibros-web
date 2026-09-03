@@ -67,6 +67,39 @@ jobs:
         working-directory: astro-front
         run: npm ci --no-audit --no-fund
 
+      # BLOQUEANTE reproducido en checkout-v11-preview: POST /api/orders con
+      # Mercado Pago o Transferencia fallaba con "Error al guardar el
+      # pedido" — causa raíz: el INSERT en `orders` (_orders_handler.js)
+      # referencia buyer_email (migración 0006) y ga_client_id/ga_session_id
+      # (migración 0008), pero ningún workflow aplicaba migraciones a la D1
+      # de Preview (sólo deploy.yml, y sólo --env production) — la D1 de
+      # Preview quedó atrasada. Este diagnóstico deja evidencia real del
+      # esquema en los logs antes de corregir.
+      - name: Diagnóstico — esquema real de orders en D1 Preview (antes)
+        run: >
+          npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote
+          --command "PRAGMA table_info(orders);"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        continue-on-error: true
+
+      - name: Apply preview D1 migrations (corrección del bloqueante)
+        run: >
+          npx wrangler@3.114.17 d1 migrations apply
+          ORDERS_DB --env preview --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Diagnóstico — esquema real de orders en D1 Preview (después)
+        run: >
+          npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote
+          --command "PRAGMA table_info(orders);"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       # Config pública de Preview (docs/environments.md), NO la de
       # Producción: site key y hosts permitidos son los del widget
       # `amadolibros-orders-preview`, distinto del widget de Producción.
@@ -148,6 +181,205 @@ jobs:
             );
           }
           NODE
+
+      # Verificación de punta a punta contra el checkout real (no un mock):
+      # Retiro+MP, Envío+MP, Retiro+Transferencia. NO completa ningún pago
+      # real — se detiene apenas confirma que /api/orders y /api/preferences
+      # (o /api/transfer-options) respondieron bien. Playwright se instala
+      # de forma transitoria (--no-save, nunca entra a package.json/lock ni
+      # se commitea) sólo para este paso de CI.
+      #
+      # Nota honesta sobre Turnstile: /api/orders exige un token real de
+      # Turnstile (modo managed, sin bypass para automatización — por
+      # diseño, fail-closed). Un navegador headless de CI puede o no
+      # obtenerlo según el propio criterio anti-bot de Cloudflare — eso es
+      # el comportamiento CORRECTO de Turnstile, no un bug. Por eso este
+      # paso no bloquea el job (continue-on-error) y el resultado real
+      # (pase o no) se reporta tal cual, sin inventar un resultado.
+      - name: E2E real — Retiro+MP, Envío+MP, Retiro+Transferencia (no completa pagos)
+        id: e2e
+        continue-on-error: true
+        working-directory: astro-front
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+          cat > /tmp/e2e-checkout.mjs << 'EOF'
+          import { chromium } from 'playwright';
+          import { writeFileSync } from 'node:fs';
+
+          const BASE = 'https://checkout-v11-preview.amadolibros-web.pages.dev';
+          const PRODUCT_ID = 'MLU1001092502';
+
+          function cart() {
+            return {
+              version: 2,
+              items: [{ id: PRODUCT_ID, title: 'QA E2E test item', price: 500, quantity: 1, thumbnail: '', max_qty: 5 }],
+              idempotency_key: 'qa-e2e-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+            };
+          }
+          async function seed(page, cartData) {
+            await page.addInitScript((c) => { window.localStorage.setItem('amado-cart', JSON.stringify(c)); }, cartData);
+          }
+          async function fillBuyer(page) {
+            await page.fill('#buyer-name', 'QA Preview E2E');
+            await page.fill('#buyer-phone', '099000000');
+            await page.fill('#buyer-email', 'preview-e2e-test@amadolibros.com');
+          }
+
+          const results = { scenarios: [], publicCodes: [] };
+          let failures = 0;
+          function check(label, cond, extra) {
+            if (cond) { console.log('OK   ' + label); }
+            else { console.log('FAIL ' + label, extra !== undefined ? JSON.stringify(extra) : ''); failures++; }
+          }
+          function trackApi(page, state) {
+            page.on('response', async (resp) => {
+              const url = resp.url();
+              const method = resp.request().method();
+              if (method !== 'POST') return;
+              if (url.endsWith('/api/orders')) {
+                state.ordersResp = { status: resp.status(), body: await resp.text().catch(() => '') };
+              } else if (url.endsWith('/api/preferences')) {
+                state.prefsResp = { status: resp.status(), body: await resp.text().catch(() => '') };
+              } else if (url.includes('/api/transfer-options')) {
+                state.transferResp = { status: resp.status(), body: await resp.text().catch(() => '') };
+              }
+            });
+          }
+          function is2xx(r) { return !!r && r.status >= 200 && r.status < 300; }
+
+          async function run() {
+            const browser = await chromium.launch();
+
+            // A. Retiro + Mercado Pago
+            {
+              const ctx = await browser.newContext();
+              const page = await ctx.newPage();
+              const state = {};
+              trackApi(page, state);
+              await seed(page, cart());
+              await page.goto(BASE + '/carrito/', { waitUntil: 'load' });
+              await page.waitForSelector('#cart-content:not([hidden])', { timeout: 20000 });
+              await page.locator('input[name="delivery"][value="pickup"]').check();
+              await page.locator('#pickup-ack').check();
+              await fillBuyer(page);
+              await page.locator('input[name="payment-method"][value="mercadopago"]').check();
+              await page.locator('#btn-prepare-order').click();
+              await page.waitForTimeout(9000);
+              check('A. Retiro+MP: POST /api/orders 2xx', is2xx(state.ordersResp), state.ordersResp);
+              check('A. Retiro+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
+              let publicCode = null, checkoutUrl = null;
+              try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
+              try { checkoutUrl = JSON.parse(state.prefsResp.body).checkout_url; } catch {}
+              check('A. Retiro+MP: checkout_url es sandbox de Mercado Pago', !!checkoutUrl && /sandbox/.test(checkoutUrl), checkoutUrl);
+              if (publicCode) results.publicCodes.push(publicCode);
+              results.scenarios.push({ name: 'A-retiro-mp', ...state, publicCode, checkoutUrl });
+              await ctx.close();
+            }
+
+            // B. Envío + Mercado Pago
+            {
+              const ctx = await browser.newContext();
+              const page = await ctx.newPage();
+              const state = {};
+              trackApi(page, state);
+              await seed(page, cart());
+              await page.goto(BASE + '/carrito/', { waitUntil: 'load' });
+              await page.waitForSelector('#cart-content:not([hidden])', { timeout: 20000 });
+              await page.locator('input[name="delivery"][value="shipping"]').check();
+              await page.fill('#delivery-address', 'Av. Italia 2000');
+              await page.fill('#delivery-barrio', 'Pocitos');
+              await page.selectOption('#delivery-departamento', 'Montevideo');
+              await fillBuyer(page);
+              await page.locator('input[name="payment-method"][value="mercadopago"]').check();
+              await page.locator('#btn-prepare-order').click();
+              await page.waitForTimeout(9000);
+              check('B. Envío+MP: POST /api/orders 2xx', is2xx(state.ordersResp), state.ordersResp);
+              check('B. Envío+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
+              let publicCode = null, checkoutUrl = null;
+              try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
+              try { checkoutUrl = JSON.parse(state.prefsResp.body).checkout_url; } catch {}
+              if (publicCode) results.publicCodes.push(publicCode);
+              results.scenarios.push({ name: 'B-envio-mp', ...state, publicCode, checkoutUrl });
+              await ctx.close();
+            }
+
+            // C. Retiro + Transferencia
+            {
+              const ctx = await browser.newContext();
+              const page = await ctx.newPage();
+              const state = {};
+              trackApi(page, state);
+              await seed(page, cart());
+              await page.goto(BASE + '/carrito/', { waitUntil: 'load' });
+              await page.waitForSelector('#cart-content:not([hidden])', { timeout: 20000 });
+              await page.locator('input[name="delivery"][value="pickup"]').check();
+              await page.locator('#pickup-ack').check();
+              await fillBuyer(page);
+              await page.locator('input[name="payment-method"][value="transfer"]').check();
+              await page.locator('#btn-transfer-order').click();
+              await page.waitForTimeout(9000);
+              check('C. Retiro+Transferencia: POST /api/orders 2xx', is2xx(state.ordersResp), state.ordersResp);
+              check('C. Retiro+Transferencia: /api/transfer-options 2xx', is2xx(state.transferResp), state.transferResp);
+              let publicCode = null, accountsOk = false;
+              try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
+              try { accountsOk = Array.isArray(JSON.parse(state.transferResp.body).accounts) && JSON.parse(state.transferResp.body).accounts.length > 0; } catch {}
+              check('C. Retiro+Transferencia: cuentas oficiales cargadas', accountsOk);
+              const transferStepVisible = await page.locator('#transfer-payment-step').isVisible().catch(() => false);
+              check('C. Retiro+Transferencia: la UI llega a la pantalla de transferencia', transferStepVisible);
+              if (publicCode) results.publicCodes.push(publicCode);
+              results.scenarios.push({ name: 'C-retiro-transfer', ...state, publicCode });
+              await ctx.close();
+            }
+
+            await browser.close();
+            writeFileSync('/tmp/e2e-results.json', JSON.stringify(results, null, 2));
+            console.log('\npublic_codes creados:', results.publicCodes.join(', ') || '(ninguno)');
+            console.log(failures === 0 ? '\n✅ E2E TODO OK' : `\n❌ ${failures} verificación(es) fallaron`);
+            process.exitCode = failures === 0 ? 0 : 1;
+          }
+          run().catch((err) => { console.error(err); process.exitCode = 1; });
+          EOF
+          node /tmp/e2e-checkout.mjs
+
+      - name: Verificar en D1 Preview las órdenes de prueba creadas por el E2E
+        if: always()
+        run: |
+          if [ ! -f /tmp/e2e-results.json ]; then
+            echo "No hay resultados de E2E (el paso anterior no llegó a escribir el archivo)."
+            exit 0
+          fi
+          CODES=$(node -e "const r=require('/tmp/e2e-results.json'); console.log(r.publicCodes.join(','));")
+          if [ -z "$CODES" ]; then
+            echo "El E2E no creó ninguna orden (revisar el resultado del paso anterior — probablemente Turnstile bloqueó la creación en este entorno de CI, ver nota en el paso E2E)."
+            exit 0
+          fi
+          echo "Órdenes de prueba creadas por el E2E: $CODES"
+          IFS=',' read -ra CODE_ARR <<< "$CODES"
+          for CODE in "${CODE_ARR[@]}"; do
+            echo "--- $CODE ---"
+            npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote \
+              --command "SELECT public_code, status, delivery_type, buyer_email, ga_client_id, payable_total_uyu, created_at FROM orders WHERE public_code = '$CODE';"
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Limpiar las órdenes de prueba creadas por el E2E (D1 Preview)
+        if: always()
+        run: |
+          if [ ! -f /tmp/e2e-results.json ]; then exit 0; fi
+          CODES=$(node -e "const r=require('/tmp/e2e-results.json'); console.log(r.publicCodes.join(','));")
+          if [ -z "$CODES" ]; then exit 0; fi
+          IFS=',' read -ra CODE_ARR <<< "$CODES"
+          for CODE in "${CODE_ARR[@]}"; do
+            npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote \
+              --command "DELETE FROM orders WHERE public_code = '$CODE';"
+          done
+          echo "Órdenes de prueba eliminadas (order_items/order_events se borran en cascada)."
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Reportar URL de la Preview de checkout V1.1
         run: |

@@ -169,6 +169,41 @@ test('batch fallido devuelve 500 sin commit', async()=>{
   const d=dbMock({batchError:Error('D1')}); const r=await call(pickup('fail'),d); assert.equal(r.response.status,500); assert.equal(d.committed.length,0);
 });
 
+// BLOQUEANTE (Preview checkout-ON, ronda de revisión): un batch fallido por
+// desalineación de esquema real (ej.: columna faltante por una migración no
+// aplicada en Preview) devolvía un mensaje genérico sin código, y el
+// detalle real del error de D1 (nombre de columna, etc.) nunca quedaba
+// registrado en los logs — sólo `error.name` ("Error"), inútil para
+// diagnosticar. Ahora: mensaje claro para el cliente que aclara que no se
+// cobró nada, un `code` interno para triage, y el detalle real del error
+// (sin PII, es información de esquema) sí queda en los logs del servidor.
+test('batch fallido: mensaje al cliente aclara que no se cobró nada, code interno para triage, sin exponer el detalle del error', async()=>{
+  const d=dbMock({batchError:Error('no such column: ga_client_id: SQLITE_ERROR')});
+  const r=await call(pickup('fail-schema'),d);
+  assert.equal(r.response.status,500);
+  assert.equal(r.data.code,'ORDERS_DB_WRITE_FAILED');
+  assert.match(r.data.error,/No pudimos registrar tu pedido/);
+  assert.match(r.data.error,/No se realizó ningún cobro/);
+  assert.match(r.data.error,/WhatsApp/);
+  assert.doesNotMatch(r.data.error,/ga_client_id|SQLITE_ERROR|no such column/);
+});
+
+test('batch fallido: el detalle real del error SÍ queda en los logs del servidor (para diagnosticar sin adivinar)', async()=>{
+  const originalConsoleError = console.error;
+  const logs = [];
+  console.error = (...args) => { logs.push(args); };
+  try {
+    const d=dbMock({batchError:Error('no such column: ga_client_id: SQLITE_ERROR')});
+    await call(pickup('fail-schema-logged'),d);
+  } finally {
+    console.error = originalConsoleError;
+  }
+  const batchLog = logs.find((args) => String(args[0]).includes('[orders] batch error'));
+  assert.ok(batchLog, 'debe loguear el error del batch');
+  assert.match(batchLog.join(' '), /ORDERS_DB_WRITE_FAILED/);
+  assert.match(batchLog.join(' '), /ga_client_id/);
+});
+
 test('carrera idempotente recupera orden sin depender del texto del error', async()=>{
   const b=pickup('race'), race=stored(b), d=dbMock({batchError:Error('opaque'),race}); const r=await call(b,d); assert.equal(r.response.status,200); assert.equal(r.data.order.public_code,'AL-TEST'); assert.equal(d.lookups(),2);
 });

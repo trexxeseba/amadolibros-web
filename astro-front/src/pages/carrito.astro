@@ -3314,7 +3314,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
               resetPrepareButton();
               return;
             }
-            showCheckoutError('Error: ' + (orderData.error || 'Intentá de nuevo.'));
+            // BLOQUEANTE (revisión Preview checkout-ON): antes anteponía
+            // "Error: " al mensaje del servidor, que ya es una oración
+            // completa — mostraba "Error: Error al guardar el pedido..."
+            // duplicado. Se muestra el mensaje del servidor tal cual, igual
+            // que ya hace el camino de transferencia (línea ~3120).
+            showCheckoutError(orderData.error || 'No pudimos preparar tu pedido. Intentá de nuevo.');
             resetPrepareButton();
             return;
           }
