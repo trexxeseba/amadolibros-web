@@ -267,3 +267,64 @@ test('20. seguir deshabilitado (aria-busy) evita que syncPaymentAvailability lo 
   assert.match(fn, /!transferButton\.hasAttribute\('aria-busy'\)/);
   assert.match(fn, /!mercadoPagoButton\.hasAttribute\('aria-busy'\)/);
 });
+
+// ── 6. Microcopy "librería familiar" junto al WhatsApp secundario ──────────
+
+const PERSONAL_NOTE_TEXT = 'Somos una librería familiar y esta web también la hacemos nosotros. ' +
+  'Si necesitás ayuda para completar tu compra, escribinos por WhatsApp. Te atendemos personalmente.';
+
+test('21. la microcopy aparece con el texto exacto solicitado', () => {
+  assert.match(CARRITO, /class="checkout-personal-note"/);
+  const normalized = CARRITO.replace(/\s+/g, ' ');
+  assert.ok(normalized.includes(PERSONAL_NOTE_TEXT), 'el texto de la nota debe coincidir exactamente');
+});
+
+test('22. la nota está fuera de .checkout-mobile-bar, inmediatamente antes del botón "O coordinar por WhatsApp"', () => {
+  const mobileBarStart = CARRITO.indexOf('class="checkout-mobile-bar"');
+  const mobileBarEnd = CARRITO.indexOf('</div>', mobileBarStart);
+  const noteIdx = CARRITO.indexOf('class="checkout-personal-note"');
+  const waSecondaryIdx = CARRITO.indexOf('id="btn-wa-order" class="btn-wa-secondary"');
+
+  assert.notEqual(noteIdx, -1);
+  assert.notEqual(waSecondaryIdx, -1);
+  assert.ok(mobileBarEnd < noteIdx, 'la nota debe estar fuera (después del cierre) de .checkout-mobile-bar');
+  assert.ok(noteIdx < waSecondaryIdx, 'la nota debe preceder al botón secundario de WhatsApp');
+
+  // Nada más (otro tag que no sea el cierre del <p>) se interpone entre la
+  // nota y el botón — confirma "inmediatamente antes".
+  const between = CARRITO.slice(noteIdx, waSecondaryIdx);
+  const tagsBetween = (between.match(/<[a-zA-Z][^>]*>/g) || []).filter((tag) => !/^<\/?p[ >]/.test(tag));
+  assert.equal(tagsBetween.length, 0, `no debe haber otros elementos entre la nota y el botón: ${tagsBetween.join(', ')}`);
+});
+
+test('23. reutiliza el botón de WhatsApp existente — no se crea un botón ni un id nuevo', () => {
+  const waButtonIds = (CARRITO.match(/id="btn-wa-order"/g) || []).length;
+  assert.equal(waButtonIds, 2, 'sólo deben existir los dos btn-wa-order ya existentes (checkout ON/OFF), ninguno nuevo');
+
+  // La nota es un <p> plano, sin su propio <button>/<a> ni atributos de
+  // interacción — el único control que le sigue es el btn-wa-order ya
+  // existente, no uno nuevo envolviendo la nota.
+  const noteStart = CARRITO.indexOf('class="checkout-personal-note"');
+  const pOpenStart = CARRITO.lastIndexOf('<p', noteStart);
+  const pCloseEnd = CARRITO.indexOf('</p>', noteStart) + '</p>'.length;
+  const noteTag = CARRITO.slice(pOpenStart, pCloseEnd);
+  assert.match(noteTag, /^<p class="checkout-personal-note">[\s\S]*<\/p>$/);
+  assert.doesNotMatch(noteTag, /<button|<a\s|onclick|data-action/);
+});
+
+test('24. sin popup ni lógica JS nueva atada a la nota', () => {
+  const scriptStart = CARRITO.indexOf('<script is:inline');
+  assert.notEqual(scriptStart, -1);
+  const scriptBlock = CARRITO.slice(scriptStart);
+  assert.doesNotMatch(scriptBlock, /checkout-personal-note/, 'el script no debe referenciar la nota (sin JS nuevo)');
+  assert.doesNotMatch(scriptBlock, /window\.(alert|confirm)\(['"`][^'"`]*librería familiar/i);
+});
+
+test('25. presentación discreta: no reutiliza la paleta de error ni compite con los CTA de pago', () => {
+  const cssStart = CARRITO.indexOf('.checkout-personal-note {');
+  assert.notEqual(cssStart, -1);
+  const cssBlock = CARRITO.slice(cssStart, CARRITO.indexOf('}', cssStart));
+  assert.doesNotMatch(cssBlock, /#b42318|#fef2f2|#fecaca/, 'no debe reutilizar la paleta de error');
+  assert.doesNotMatch(cssBlock, /background/, 'debe seguir siendo texto discreto, sin fondo propio');
+  assert.match(cssBlock, /color:\s*var\(--ink-2\)/, 'mismo tono secundario que checkout-reassurance/checkout-policy-links');
+});
