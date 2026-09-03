@@ -1792,6 +1792,23 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (!requireDeliveryType()) return false;
       var deliveryType = getDeliveryType();
 
+      // Corrección revisión ChatGPT (ronda final): la aceptación de retiro
+      // va inmediatamente después de Entrega — mismo mensaje/foco/scroll que
+      // ya usan createTransferOrder()/btnPrepare al confirmar, para no
+      // mandar al comprador a elegir Pago y recién ahí hacerlo volver acá.
+      if (deliveryType === 'pickup' && !isPickupAccepted()) {
+        if (pickupAckErr) {
+          pickupAckErr.textContent = 'Necesitamos que confirmes esto antes de seguir.';
+          pickupAckErr.hidden = false;
+        }
+        if (pickupAck) {
+          pickupAck.setAttribute('aria-invalid', 'true');
+          pickupAck.focus();
+          pickupAck.scrollIntoView({ block: 'center' });
+        }
+        return false;
+      }
+
       var name  = ((document.getElementById('buyer-name')  || {}).value || '').trim();
       var phone = ((document.getElementById('buyer-phone') || {}).value || '').trim();
       var email = ((document.getElementById('buyer-email') || {}).value || '').trim();

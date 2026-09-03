@@ -149,6 +149,7 @@ test('11b. focusFirstMissingRequirement() sigue el orden completo, no salta dire
 
   const order = [
     'requireDeliveryType()',
+    '!isPickupAccepted()',
     "showFieldError('buyer-name'",
     "showFieldError('buyer-phone'",
     "showFieldError('buyer-email'",
@@ -167,6 +168,46 @@ test('11b. focusFirstMissingRequirement() sigue el orden completo, no salta dire
   const shippingGateIdx = fn.indexOf("deliveryType === 'shipping'");
   const addressIdx = fn.indexOf("showFieldError('delivery-address'");
   assert.ok(shippingGateIdx !== -1 && shippingGateIdx < addressIdx);
+});
+
+// Corrección revisión ChatGPT (ronda final): la aceptación de retiro
+// (pickup-ack) faltaba en focusFirstMissingRequirement() — permitía llegar
+// hasta Pago con retiro elegido y el checkbox sin marcar, para recién ahí
+// (al confirmar de verdad) volver arriba al pickup-ack. Ahora se exige
+// justo después de Entrega, sólo cuando deliveryType === 'pickup', con el
+// mismo mensaje/foco/scroll que ya usan createTransferOrder()/btnPrepare.
+
+test('11b2. focusFirstMissingRequirement() exige pickup-ack inmediatamente después de Entrega, sólo si es retiro', () => {
+  const start = CARRITO.indexOf('function focusFirstMissingRequirement');
+  const end = CARRITO.indexOf('// ── Persistencia de la etapa', start);
+  const fn = CARRITO.slice(start, end);
+
+  assert.match(fn, /if \(deliveryType === 'pickup' && !isPickupAccepted\(\)\) \{/);
+  assert.match(fn, /pickupAckErr\.textContent = 'Necesitamos que confirmes esto antes de seguir\.';/);
+  assert.match(fn, /pickupAckErr\.hidden = false;/);
+  assert.match(fn, /pickupAck\.setAttribute\('aria-invalid', 'true'\);/);
+  assert.match(fn, /pickupAck\.focus\(\);/);
+  assert.match(fn, /pickupAck\.scrollIntoView\(\{ block: 'center' \}\);/);
+
+  // El gate de pickup-ack va antes que el de Nombre, no después.
+  const pickupGateIdx = fn.indexOf("deliveryType === 'pickup' && !isPickupAccepted()");
+  const nameIdx = fn.indexOf("showFieldError('buyer-name'");
+  assert.ok(pickupGateIdx !== -1 && pickupGateIdx < nameIdx);
+});
+
+test('11b3. el mensaje/foco/scroll de pickup-ack en el CTA neutro es un espejo textual del que ya usa createTransferOrder()', () => {
+  const neutralStart = CARRITO.indexOf('function focusFirstMissingRequirement');
+  const neutralEnd = CARRITO.indexOf('// ── Persistencia de la etapa', neutralStart);
+  const neutralBlock = CARRITO.slice(neutralStart, neutralEnd);
+
+  const transferStart = CARRITO.indexOf('async function createTransferOrder');
+  const transferEnd = CARRITO.indexOf('if (btnTransfer) {', transferStart);
+  const transferBlock = CARRITO.slice(transferStart, transferEnd);
+  assert.match(transferBlock, /deliveryType === 'pickup' && !isPickupAccepted\(\)/);
+
+  const messageRe = /pickupAckErr\.textContent =\s*\n?\s*'Necesitamos que confirmes esto antes de seguir\.';/;
+  assert.match(neutralBlock, messageRe);
+  assert.match(transferBlock, messageRe);
 });
 
 test('11c. no duplica una segunda lógica de validación: createTransferOrder()/btnPrepare no llaman a focusFirstMissingRequirement()', () => {
