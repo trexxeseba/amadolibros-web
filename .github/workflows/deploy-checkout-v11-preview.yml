@@ -235,6 +235,19 @@ jobs:
             await page.fill('#buyer-email', 'preview-e2e-test@amadolibros.com');
           }
 
+          // El widget real de Turnstile (script externo de
+          // challenges.cloudflare.com) carga e inicializa de forma
+          // asíncrona — tsWidgetId queda null hasta que termina. Clickear
+          // antes de eso no dispara ningún fetch: el handler corta antes
+          // con "La verificación aún no cargó" (getTurnstileTokenForOrder()/
+          // el chequeo de tsWidgetId en el handler de Mercado Pago). Se
+          // espera el iframe real del widget antes de cada click.
+          async function waitForTurnstileWidget(page, timeoutMs) {
+            try {
+              await page.waitForSelector('iframe[src*="challenges.cloudflare.com"]', { timeout: timeoutMs });
+            } catch (_) { /* seguimos igual — el resultado real (con su motivo) queda en el diagnóstico */ }
+          }
+
           const results = { scenarios: [], publicCodes: [] };
           let failures = 0;
           function check(label, cond, extra) {
@@ -242,6 +255,8 @@ jobs:
             else { console.log('FAIL ' + label, extra !== undefined ? JSON.stringify(extra) : ''); failures++; }
           }
           function trackApi(page, state) {
+            state.consoleErrors = [];
+            page.on('console', (msg) => { if (msg.type() === 'error') state.consoleErrors.push(msg.text()); });
             page.on('response', async (resp) => {
               const url = resp.url();
               const method = resp.request().method();
@@ -256,6 +271,9 @@ jobs:
             });
           }
           function is2xx(r) { return !!r && r.status >= 200 && r.status < 300; }
+          async function checkoutErrorText(page) {
+            return page.locator('#checkout-error').innerText().catch(() => '');
+          }
 
           async function run() {
             const browser = await chromium.launch();
@@ -273,9 +291,11 @@ jobs:
               await page.locator('#pickup-ack').check();
               await fillBuyer(page);
               await page.locator('input[name="payment-method"][value="mercadopago"]').check();
+              await waitForTurnstileWidget(page, 8000);
               await page.locator('#btn-prepare-order').click();
               await page.waitForTimeout(9000);
-              check('A. Retiro+MP: POST /api/orders 2xx', is2xx(state.ordersResp), state.ordersResp);
+              state.checkoutErrorText = await checkoutErrorText(page);
+              check('A. Retiro+MP: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
               check('A. Retiro+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
               let publicCode = null, checkoutUrl = null;
               try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
@@ -301,9 +321,11 @@ jobs:
               await page.selectOption('#delivery-departamento', 'Montevideo');
               await fillBuyer(page);
               await page.locator('input[name="payment-method"][value="mercadopago"]').check();
+              await waitForTurnstileWidget(page, 8000);
               await page.locator('#btn-prepare-order').click();
               await page.waitForTimeout(9000);
-              check('B. Envío+MP: POST /api/orders 2xx', is2xx(state.ordersResp), state.ordersResp);
+              state.checkoutErrorText = await checkoutErrorText(page);
+              check('B. Envío+MP: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
               check('B. Envío+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
               let publicCode = null, checkoutUrl = null;
               try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
@@ -326,9 +348,11 @@ jobs:
               await page.locator('#pickup-ack').check();
               await fillBuyer(page);
               await page.locator('input[name="payment-method"][value="transfer"]').check();
+              await waitForTurnstileWidget(page, 8000);
               await page.locator('#btn-transfer-order').click();
               await page.waitForTimeout(9000);
-              check('C. Retiro+Transferencia: POST /api/orders 2xx', is2xx(state.ordersResp), state.ordersResp);
+              state.checkoutErrorText = await checkoutErrorText(page);
+              check('C. Retiro+Transferencia: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
               check('C. Retiro+Transferencia: /api/transfer-options 2xx', is2xx(state.transferResp), state.transferResp);
               let publicCode = null, accountsOk = false;
               try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
