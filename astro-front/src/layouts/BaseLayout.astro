@@ -24,6 +24,14 @@ const indexable  = indexableProp !== undefined ? indexableProp : import.meta.env
 const gaId       = import.meta.env.PUBLIC_GA_ID;
 const enableGA4  = (analyticsProp !== undefined ? analyticsProp : indexable) && !!gaId;
 const socialUrl  = canonical || 'https://www.amadolibros.com/';
+
+// CUSTOMER-REVIEWS-1: Google exige el opt-in en la página de confirmación del
+// pedido. En Amado esa pantalla es /pedido; /carrito y el paso de transferencia
+// no son confirmaciones de pago. La llamada externa queda además detrás del
+// flag, así que mergear este lote con flag OFF no activa Google Customer Reviews.
+const gcrPath = Astro.url.pathname === '/pedido';
+const gcrEnabled = gcrPath && import.meta.env.PUBLIC_GCR_ENABLED === 'true';
+const gcrMerchantId = String(import.meta.env.PUBLIC_GCR_MERCHANT_ID || '5330457716').trim();
 ---
 <!doctype html>
 <html lang="es">
@@ -36,6 +44,16 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v2">
   <link rel="manifest" href="/site.webmanifest?v2">
   <script is:inline src="/whatsapp-messages.js"></script>
+  {gcrPath && (
+    <>
+      <meta
+        name="amado-gcr-config"
+        data-enabled={gcrEnabled ? 'true' : 'false'}
+        data-merchant-id={gcrMerchantId}
+      >
+      <script src="/google-customer-reviews.js" defer></script>
+    </>
+  )}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content={indexable ? 'index, follow' : 'noindex, nofollow'}>
