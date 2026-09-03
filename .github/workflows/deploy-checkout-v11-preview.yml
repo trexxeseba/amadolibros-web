@@ -248,6 +248,25 @@ jobs:
             } catch (_) { /* seguimos igual — el resultado real (con su motivo) queda en el diagnóstico */ }
           }
 
+          // tsGetToken() en carrito.astro tiene su propio timeout de
+          // seguridad de 30s esperando el callback de Turnstile antes de
+          // rechazar. Un wait ciego más corto que eso (el intento anterior
+          // usaba 9s) no prueba nada — corta la espera antes de que el
+          // propio producto termine de intentarlo. Acá se espera, con
+          // margen, a que ocurra alguna de las dos salidas reales posibles:
+          // la respuesta de /api/orders llegó, o el checkout ya muestra un
+          // mensaje de error — lo que pase primero, hasta 35s.
+          async function waitForOutcome(page, state, timeoutMs) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+              if (state.ordersResp) return;
+              const text = await checkoutErrorText(page);
+              if (text) { state.checkoutErrorText = text; return; }
+              await page.waitForTimeout(500);
+            }
+            state.checkoutErrorText = await checkoutErrorText(page);
+          }
+
           const results = { scenarios: [], publicCodes: [] };
           let failures = 0;
           function check(label, cond, extra) {
@@ -293,8 +312,7 @@ jobs:
               await page.locator('input[name="payment-method"][value="mercadopago"]').check();
               await waitForTurnstileWidget(page, 8000);
               await page.locator('#btn-prepare-order').click();
-              await page.waitForTimeout(9000);
-              state.checkoutErrorText = await checkoutErrorText(page);
+              await waitForOutcome(page, state, 35000);
               check('A. Retiro+MP: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
               check('A. Retiro+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
               let publicCode = null, checkoutUrl = null;
@@ -323,8 +341,7 @@ jobs:
               await page.locator('input[name="payment-method"][value="mercadopago"]').check();
               await waitForTurnstileWidget(page, 8000);
               await page.locator('#btn-prepare-order').click();
-              await page.waitForTimeout(9000);
-              state.checkoutErrorText = await checkoutErrorText(page);
+              await waitForOutcome(page, state, 35000);
               check('B. Envío+MP: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
               check('B. Envío+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
               let publicCode = null, checkoutUrl = null;
@@ -350,8 +367,7 @@ jobs:
               await page.locator('input[name="payment-method"][value="transfer"]').check();
               await waitForTurnstileWidget(page, 8000);
               await page.locator('#btn-transfer-order').click();
-              await page.waitForTimeout(9000);
-              state.checkoutErrorText = await checkoutErrorText(page);
+              await waitForOutcome(page, state, 35000);
               check('C. Retiro+Transferencia: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
               check('C. Retiro+Transferencia: /api/transfer-options 2xx', is2xx(state.transferResp), state.transferResp);
               let publicCode = null, accountsOk = false;
