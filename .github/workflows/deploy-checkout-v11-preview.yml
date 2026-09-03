@@ -203,7 +203,16 @@ jobs:
         run: |
           npm install --no-save playwright@1.47.2
           npx playwright install --with-deps chromium
-          cat > /tmp/e2e-checkout.mjs << 'EOF'
+          # El script se escribe DENTRO de astro-front/ (no en /tmp): la
+          # resolución de módulos ESM de Node busca node_modules/playwright
+          # subiendo desde el directorio del propio archivo que hace el
+          # import, no desde el cwd — un intento anterior escribía el
+          # script en /tmp/, que no tiene relación con
+          # astro-front/node_modules/, y el import fallaba con
+          # ERR_MODULE_NOT_FOUND antes de lanzar el navegador (el job
+          # igual seguía en verde por continue-on-error, sin haber
+          # corrido ningún escenario real).
+          cat > ./e2e-checkout.mjs << 'EOF'
           import { chromium } from 'playwright';
           import { writeFileSync } from 'node:fs';
 
@@ -340,7 +349,7 @@ jobs:
           }
           run().catch((err) => { console.error(err); process.exitCode = 1; });
           EOF
-          node /tmp/e2e-checkout.mjs
+          node ./e2e-checkout.mjs
 
       - name: Verificar en D1 Preview las órdenes de prueba creadas por el E2E
         if: always()

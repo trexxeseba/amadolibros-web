@@ -2034,6 +2034,21 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
+    // BLOQUEANTE PR #310 — punto 1: mide cuántos compradores se traban en
+    // el checkout online y en qué etapa, sin ningún dato personal. stage
+    // sólo puede ser order_create/preference_create/transfer_options;
+    // errorCode es siempre un code interno ya saneado (nunca el texto del
+    // error ni el public_code de la orden).
+    function trackCheckoutErrorEvent(stage, errorCode, paymentMethod) {
+      if (!window.AmadoAnalytics || typeof window.AmadoAnalytics.trackCheckoutError !== 'function') return;
+      window.AmadoAnalytics.trackCheckoutError({
+        stage: stage,
+        errorCode: errorCode || '',
+        paymentMethod: paymentMethod || '',
+        deliveryType: getDeliveryType(),
+      });
+    }
+
     // V1.1: elegir entrega ya NO es requisito para habilitar el CTA — sólo
     // los bloqueos técnicos reales (stock/validación en curso o fallida,
     // carrito sin ítems pagables) lo dejan disabled. Sin entrega elegida el
@@ -3101,7 +3116,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         await refreshCartAvailability({ beforePayment: true });
         return null;
       }
-      if (!response.ok) throw new Error(orderData.error || 'No pudimos preparar el pedido.');
+      if (!response.ok) {
+        var orderCreateError = new Error(orderData.error || 'No pudimos preparar el pedido.');
+        orderCreateError.code = orderData.code || 'ORDER_CREATE_FAILED';
+        throw orderCreateError;
+      }
       transferIdempotencyKey = cart.idempotency_key;
       return orderData.order;
     }
@@ -3109,15 +3128,18 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     if (btnTransfer) {
       btnTransfer.addEventListener('click', async function () {
         if (btnTransfer.disabled || !window.AmadoCart || window.AmadoCart.get().items.length === 0) return;
+        var checkoutErrorStage = 'order_create';
         try {
           var order = await createTransferOrder();
           if (!order) { resetTransferButton(); return; }
           trackCommerce('begin_checkout', order, 'bank_transfer', 'begin_checkout_transfer');
           btnTransfer.textContent = 'Cargando cuentas oficiales…';
+          checkoutErrorStage = 'transfer_options';
           transferData = await fetchTransferOptions(order.public_code, transferIdempotencyKey);
           showTransferStep();
         } catch (error) {
           showCheckoutError(error.message || 'No pudimos preparar la transferencia. Intentá de nuevo.');
+          trackCheckoutErrorEvent(checkoutErrorStage, error && error.code, 'transfer');
         } finally {
           resetTransferButton();
         }
@@ -3320,12 +3342,14 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             // duplicado. Se muestra el mensaje del servidor tal cual, igual
             // que ya hace el camino de transferencia (línea ~3120).
             showCheckoutError(orderData.error || 'No pudimos preparar tu pedido. Intentá de nuevo.');
+            trackCheckoutErrorEvent('order_create', orderData.code || 'ORDER_CREATE_FAILED', 'mercadopago');
             resetPrepareButton();
             return;
           }
           trackCommerce('begin_checkout', orderData.order, 'mercado_pago', 'begin_checkout_mp');
         } catch (_fetchErr) {
           showCheckoutError('Error de conexión. Verificá tu internet e intentá de nuevo.');
+          trackCheckoutErrorEvent('order_create', 'NETWORK_ERROR', 'mercadopago');
           resetPrepareButton();
           return;
         }
@@ -3360,9 +3384,11 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             return;
           }
           showCheckoutError('Error al iniciar el pago: ' + (mpData.error || 'Intentá de nuevo.'));
+          trackCheckoutErrorEvent('preference_create', mpData.code || 'PREFERENCE_CREATE_FAILED', 'mercadopago');
           resetPrepareButton();
         } catch (_err) {
           showCheckoutError('Error de conexión. Verificá tu internet e intentá de nuevo.');
+          trackCheckoutErrorEvent('preference_create', 'NETWORK_ERROR', 'mercadopago');
           resetPrepareButton();
         }
       });

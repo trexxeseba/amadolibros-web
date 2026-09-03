@@ -141,6 +141,89 @@ test('trackCommerce normaliza el producto y no duplica purchase al recargar', ()
   assert.equal(params.items[0].price, 1100);
 });
 
+// BLOQUEANTE PR #310 — punto 1: checkout_error mide en qué etapa se traba
+// un comprador, sin ningún dato personal. stage/payment_method/
+// delivery_type sólo aceptan valores de una lista cerrada; error_code pasa
+// por el mismo safeToken() ya usado en cta_location/topic — nunca se envía
+// public_code, nombre, email, teléfono, dirección ni el texto del error.
+
+test('carrito.astro sólo pasa codes internos a trackCheckoutError, nunca error.message ni datos de la orden', () => {
+  assert.match(analytics, /'checkout_error'/);
+  assert.match(analytics, /CHECKOUT_ERROR_STAGES/);
+  assert.match(analytics, /order_create.*preference_create.*transfer_options/);
+  assert.match(cart, /trackCheckoutErrorEvent\('order_create', orderData\.code \|\| 'ORDER_CREATE_FAILED', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\('order_create', 'NETWORK_ERROR', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\('preference_create', mpData\.code \|\| 'PREFERENCE_CREATE_FAILED', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\('preference_create', 'NETWORK_ERROR', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\(checkoutErrorStage, error && error\.code, 'transfer'\)/);
+  // Ninguno de esos llamados pasa error.message, public_code ni datos del comprador.
+  const wrapperStart = cart.indexOf('function trackCheckoutErrorEvent');
+  const wrapperEnd = cart.indexOf('\n    }', wrapperStart);
+  const wrapperBody = cart.slice(wrapperStart, wrapperEnd);
+  assert.doesNotMatch(wrapperBody, /\.message|public_code|buyer|email|phone|address/i);
+});
+
+test('trackCheckoutError sólo emite con un stage de la lista cerrada, y satura/sanea todo lo demás', () => {
+  const window = {
+    location: { hostname: 'www.amadolibros.com', pathname: '/carrito', href: 'https://www.amadolibros.com/carrito' },
+    dataLayer: [],
+  };
+  const document = {
+    querySelector: () => null,
+    createElement: () => ({}),
+    head: { appendChild: () => {} },
+    addEventListener: () => {},
+  };
+  runInNewContext(analytics, { document, window, URL, Set, Date, Object, String, encodeURIComponent });
+
+  // stage inválido: no emite nada.
+  assert.equal(
+    window.AmadoAnalytics.trackCheckoutError({ stage: 'not_a_real_stage', errorCode: 'X' }),
+    false,
+  );
+  assert.equal(window.dataLayer.filter((e) => Array.from(e)[1] === 'checkout_error').length, 0);
+
+  // stage válido, con errorCode/paymentMethod/deliveryType válidos: pasan tal cual.
+  assert.equal(window.AmadoAnalytics.trackCheckoutError({
+    stage: 'order_create',
+    errorCode: 'ORDERS_DB_WRITE_FAILED',
+    paymentMethod: 'mercadopago',
+    deliveryType: 'pickup',
+  }), true);
+  const [, eventName, params] = Array.from(window.dataLayer.at(-1));
+  assert.equal(eventName, 'checkout_error');
+  assert.deepEqual({ ...params }, {
+    stage: 'order_create',
+    error_code: 'ORDERS_DB_WRITE_FAILED',
+    payment_method: 'mercadopago',
+    delivery_type: 'pickup',
+  });
+
+  // payment_method/delivery_type fuera de la lista cerrada: se omiten, no se inventan.
+  window.AmadoAnalytics.trackCheckoutError({
+    stage: 'transfer_options',
+    errorCode: 'TRANSFER_OPTIONS_FAILED',
+    paymentMethod: 'bitcoin',
+    deliveryType: 'teletransporte',
+  });
+  const [, , params2] = Array.from(window.dataLayer.at(-1));
+  assert.deepEqual({ ...params2 }, { stage: 'transfer_options', error_code: 'TRANSFER_OPTIONS_FAILED' });
+
+  // Texto libre (no tiene forma de code interno) se descarta ENTERO, no se
+  // "limpia" — un sanitizador que preserva dígitos dejaría pasar un
+  // teléfono pegado en el medio del texto; acá directamente no hay
+  // error_code en el evento.
+  window.AmadoAnalytics.trackCheckoutError({
+    stage: 'preference_create',
+    errorCode: 'no such column: buyer_email at ana@example.com, tel 099123456',
+  });
+  const [, , params3] = Array.from(window.dataLayer.at(-1));
+  assert.equal(JSON.stringify(params3).includes('@'), false);
+  assert.equal(JSON.stringify(params3).includes('099123456'), false);
+  assert.deepEqual({ ...params3 }, { stage: 'preference_create' });
+  assert.equal('error_code' in params3, false);
+});
+
 test('expone client_id y session_id anónimos para atribuir la compra server-side', async () => {
   const window = {
     location: {
