@@ -1,35 +1,42 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-Última actualización: 2026-09-02 — tras ejecutar el **Lote 03 final** de
-B11.2, que agota el pool automático `REVISAR`. Los resultados están en el
-[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), todavía
-**sin fusionar y sin verificar en Producción**.
+Última actualización: 2026-09-03 — **B11 CERRADO**. El
+[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) (Lote 03
+final) está **fusionado a `main` y verificado en Producción**. El circuito
+automático de B11.2 quedó agotado: no hay más lotes posibles con las fuentes
+actuales.
 
 ## Estado canónico (fuente de verdad)
 
 | Métrica | Valor |
 | --- | --- |
-| ISBN enriquecidos en el registry | **1.609** |
+| ISBN enriquecidos en el registry (en `main` y Producción) | **1.609** |
 | Pendientes totales | **2.006** |
 | — de los cuales `REVISAR` (evidencia con conflicto de identidad) | **442** |
 | — de los cuales `SIN_DATOS` (sin evidencia utilizable) | **1.564** |
 | Universo addressable | **3.615** ISBN únicos |
-| Fase activa | **B11.2** — circuito automático **agotado** |
-| Lotes B11.2 terminados | **01, 02 y 03 final** |
-| Lotes B11.2 en curso | **ninguno** |
+| Fase B11 | **TERMINADA** — circuito automático agotado |
+| Lotes B11.2 | 01, 02 y 03 final — los tres fusionados y verificados en Producción |
 | `REVISAR` sin intentar | **0** — los 556 del pool ya fueron procesados |
 
 Verificación aritmética: 442 + 1.564 = 2.006 pendientes; 1.609 + 2.006 =
 3.615. El universo no crece: cada lote sólo reclasifica ISBN dentro de él.
-
-Los valores del registry corresponden al head del PR #308. En `main` el
-registry sigue en 1.550 hasta que ese PR se fusione.
 
 Comprobación contra el repositorio (no son cifras declarativas):
 `listBookEnrichments()` de `functions/_shared/book-enrichment-registry.js`
 devuelve 1.609 ISBN, y `artifacts/b11-2/state.json` contiene 556 entradas
 con `TERMINADO` 83, `SIN_DATOS` 31 y `REVISAR` 442 — el pool `REVISAR`
 completo de B11.1, ya sin ningún ISBN pendiente de intentar.
+
+## Trabajo pendiente que hereda de B11 (no iniciado)
+
+1. **PR técnico de limpieza de idiomas históricos**: auditar los 17
+   `bibliographic.language` multivaluados que siguen publicados en módulos
+   fusionados antes de la corrección de MARC 041 (13 en `facts-1000`, 2 en
+   `facts-333`, 2 en B11.2 Lote 02). Detalle por ISBN más abajo.
+2. **B12**: se define después de esa limpieza. Cualquier avance de
+   enriquecimiento nuevo exige evidencia nueva (otra fuente o redacción
+   manual), no otra corrida del resolver.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -72,8 +79,8 @@ B11.2 ya movió esos números: ver "Estado canónico".
 
 | Métrica | Valor |
 | --- | --- |
-| PRs de lote abiertos | 1 — [#308](https://github.com/trexxeseba/amadolibros-web/pull/308) (B11.2 Lote 03 final), en Draft, sin fusionar |
-| PRs de lote fusionados | 4 — [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (187 fichas), [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) (infra de verificación), [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) (B11.2 Lote 01), [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) (B11.2 Lote 02) |
+| PRs de lote abiertos | 0 — B11 cerrado |
+| PRs de lote fusionados | 5 — [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (187 fichas), [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) (infra de verificación), [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) (B11.2 Lote 01), [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) (B11.2 Lote 02), [#308](https://github.com/trexxeseba/amadolibros-web/pull/308) (B11.2 Lote 03 final) |
 
 ## Corrección de Google Books (aplicada y verificada)
 
@@ -270,7 +277,7 @@ No tocó el pool SIN_DATOS.
   el universo total no cambia, sólo se movieron 12 ISBN de pendiente a
   enriquecido y 7 de REVISAR a SIN_DATOS.
 
-## B11.2 Lote 03 final — EJECUTADO (en PR, sin fusionar)
+## B11.2 Lote 03 final — TERMINADO (fusionado y verificado en Producción)
 
 Autorizado explícitamente por Seba el 2026-09-02 para **agotar el pool
 automático en una sola ejecución**, sobre los 356 ISBN `REVISAR` que nunca
@@ -411,13 +418,28 @@ para no mezclar la corrección del Lote 03 con la limpieza histórica.
   ejemplo `9788417346935` con MLU612098974 y MLU655413122, o `9788433029102`
   con MLU625756445 y MLU652705502).
 
-### Pendiente
+### Fusión y verificación en Producción (2026-09-03)
 
-El [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) está en
-Draft, **sin fusionar y sin desplegar**. La verificación contra Producción
-que sí tuvieron los lotes 01 y 02 (deploy, full commerce audit y book
-enrichment live check contra `www.amadolibros.com`) sólo puede hacerse
-después de fusionar. Lo ya verificado arriba es contra el Preview del PR.
+- [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) fusionado
+  a `main` (squash, commit `ebe83ff`), 2026-09-03T00:14:10Z, con los cuatro
+  checks en verde sobre su head final `0878104`.
+- Deploy to Cloudflare Pages sobre `ebe83ff`: `run 33698641329`, **success**
+  en sus cuatro jobs (guard, validate, publish catalog y deploy con smoke
+  test).
+- Full commerce production audit (auto-disparada tras el deploy,
+  `run 33699289571`): **result=pass, critical=0** — catálogo 7.115 items,
+  feed Merchant 3.702 items (0 críticos/warnings), 300/300 imágenes válidas,
+  300/300 páginas verificadas, sitemap con 10.086 URLs de libro.
+- Book enrichment live check contra Producción
+  (`https://www.amadolibros.com`): **1.594 verified, 15 not_applicable, 0
+  failed** sobre el registry completo de **1.609** ISBN (1.594 + 15 = 1.609,
+  exacto). Los **59 ISBN del Lote 03 aparecen los 59 como `verified`** en
+  Producción, con sus propios MLU reales (por ejemplo `9788417346935` con
+  MLU612098974 y MLU655413122). Nota operativa: el dispatch manual del
+  workflow devolvió `HTTP 403` para el token de esta sesión, así que esta
+  corrida se ejecutó localmente con el mismo script
+  (`scripts/seo/book-enrichment-live-check.mjs`) apuntado a Producción — es
+  el mismo chequeo HTTP de solo lectura que corre el workflow.
 
 ### Anomalía menor registrada
 
