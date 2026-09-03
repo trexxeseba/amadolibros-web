@@ -9,7 +9,7 @@
 // - sólo se usa offline/batch, nunca en una request de cliente.
 
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
-import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
+import { bookLanguageLabel, normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
 
 export const BNE_SRU_BASE = 'https://catalogo.bne.es/view/sru/34BNE_INST';
 export const BNE_MAX_RECORDS = 5;
@@ -157,9 +157,21 @@ function pageCount(record) {
   return Number.isInteger(pages) && pages > 0 ? pages : null;
 }
 
+// MARC 21 campo 041: $a es el idioma del texto de ESTA edición, $h el de la
+// obra original y $d el del contenido cantado o hablado. Sólo $a describe lo
+// que el lector recibe: mezclarlos convierte una traducción
+// (041 1#$aspa$heng) en un falso "Español, Inglés". Para un libro impreso $d
+// no aplica. Se leen todos los $a repetidos, que sí indican una edición
+// realmente multilingüe (041 0#$aspa$aeng).
+//
+// Un código que no se puede traducir a etiqueta se descarta en vez de
+// publicarse crudo: es preferible no informar el idioma antes que mostrar
+// "dut" en una ficha.
 function languageValue(record) {
-  const values = [...new Set(subfieldValues(record, '041', ['a', 'd', 'h']))];
-  return normalizeBookLanguage(values.join(', '));
+  const labels = [...new Set(subfieldValues(record, '041', 'a'))]
+    .map(bookLanguageLabel)
+    .filter(Boolean);
+  return labels.length ? normalizeBookLanguage(labels.join(', ')) : null;
 }
 
 function summaryValue(record) {

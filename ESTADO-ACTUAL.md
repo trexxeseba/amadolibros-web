@@ -1,31 +1,35 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-Última actualización: 2026-09-02 — cierre documental tras la verificación de
-B11.2 Lote 02 en Producción. Este documento y `PLAN-MAESTRO.md` se recuperan
-en `main` (vivían solo en la rama del PR #300, que nunca se fusionó) y quedan
-alineados con el estado real del repositorio.
+Última actualización: 2026-09-02 — tras ejecutar el **Lote 03 final** de
+B11.2, que agota el pool automático `REVISAR`. Los resultados están en el
+[PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308), todavía
+**sin fusionar y sin verificar en Producción**.
 
 ## Estado canónico (fuente de verdad)
 
 | Métrica | Valor |
 | --- | --- |
-| ISBN enriquecidos en el registry | **1.550** |
-| Pendientes totales | **2.065** |
-| — de los cuales `REVISAR` (evidencia con conflicto de identidad) | **524** |
-| — de los cuales `SIN_DATOS` (sin evidencia utilizable) | **1.541** |
+| ISBN enriquecidos en el registry | **1.609** |
+| Pendientes totales | **2.006** |
+| — de los cuales `REVISAR` (evidencia con conflicto de identidad) | **442** |
+| — de los cuales `SIN_DATOS` (sin evidencia utilizable) | **1.564** |
 | Universo addressable | **3.615** ISBN únicos |
-| Fase activa | **B11.2** (pipeline continuo sobre el pool `REVISAR`) |
-| Lotes B11.2 terminados | **01 y 02** (fusionados y verificados en Producción) |
-| Lotes B11.2 en curso | **ninguno — no hay ningún lote nuevo iniciado** |
+| Fase activa | **B11.2** — circuito automático **agotado** |
+| Lotes B11.2 terminados | **01, 02 y 03 final** |
+| Lotes B11.2 en curso | **ninguno** |
+| `REVISAR` sin intentar | **0** — los 556 del pool ya fueron procesados |
 
-Verificación aritmética: 524 + 1.541 = 2.065 pendientes; 1.550 + 2.065 =
+Verificación aritmética: 442 + 1.564 = 2.006 pendientes; 1.609 + 2.006 =
 3.615. El universo no crece: cada lote sólo reclasifica ISBN dentro de él.
+
+Los valores del registry corresponden al head del PR #308. En `main` el
+registry sigue en 1.550 hasta que ese PR se fusione.
 
 Comprobación contra el repositorio (no son cifras declarativas):
 `listBookEnrichments()` de `functions/_shared/book-enrichment-registry.js`
-devuelve 1.550 ISBN, y `artifacts/b11-2/state.json` contiene 200 entradas
-con `TERMINADO` 24, `SIN_DATOS` 8 y `REVISAR` 168 — los 200 ISBN intentados
-por los lotes 01 y 02.
+devuelve 1.609 ISBN, y `artifacts/b11-2/state.json` contiene 556 entradas
+con `TERMINADO` 83, `SIN_DATOS` 31 y `REVISAR` 442 — el pool `REVISAR`
+completo de B11.1, ya sin ningún ISBN pendiente de intentar.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -61,13 +65,14 @@ B11.2 ya movió esos números: ver "Estado canónico".
 | B11 Lote 1 | 187 |
 | B11.2 Lote 01 | 12 |
 | B11.2 Lote 02 | 12 |
-| **Total en el registry** | **1.550** |
+| B11.2 Lote 03 final | 59 |
+| **Total en el registry** | **1.609** |
 
 ## Estado de PRs
 
 | Métrica | Valor |
 | --- | --- |
-| PRs de lote abiertos | 0 — ningún lote nuevo iniciado |
+| PRs de lote abiertos | 1 — [#308](https://github.com/trexxeseba/amadolibros-web/pull/308) (B11.2 Lote 03 final), en Draft, sin fusionar |
 | PRs de lote fusionados | 4 — [#303](https://github.com/trexxeseba/amadolibros-web/pull/303) (187 fichas), [#304](https://github.com/trexxeseba/amadolibros-web/pull/304) (infra de verificación), [#305](https://github.com/trexxeseba/amadolibros-web/pull/305) (B11.2 Lote 01), [#306](https://github.com/trexxeseba/amadolibros-web/pull/306) (B11.2 Lote 02) |
 
 ## Corrección de Google Books (aplicada y verificada)
@@ -265,19 +270,162 @@ No tocó el pool SIN_DATOS.
   el universo total no cambia, sólo se movieron 12 ISBN de pendiente a
   enriquecido y 7 de REVISAR a SIN_DATOS.
 
-## B11.2 Lote 03 — NO INICIADO
+## B11.2 Lote 03 final — EJECUTADO (en PR, sin fusionar)
 
-No hay ningún lote nuevo en curso. Tras el Lote 02 no se creó rama, no se
-ejecutó ninguna corrida y no se abrió ningún PR de lote: el pipeline está
-detenido a la espera de autorización explícita.
+Autorizado explícitamente por Seba el 2026-09-02 para **agotar el pool
+automático en una sola ejecución**, sobre los 356 ISBN `REVISAR` que nunca
+habían sido intentados. No tocó el pool `SIN_DATOS`.
 
-- Candidatos disponibles para un eventual Lote 03: **356** ISBN del pool
-  `REVISAR` nunca intentados (524 `REVISAR` totales − 87 del Lote 01 sin
-  resolver − 81 del Lote 02 sin resolver).
-- Reintentar los 168 `REVISAR` ya intentados no aporta nada mientras no
-  haya evidencia nueva: el resolver reutiliza evidencia inmutable, así que
-  daría exactamente el mismo resultado.
-- Los 1.541 `SIN_DATOS` siguen fuera del circuito automático por diseño.
+- Resultado real: **59 TERMINADO** (integrados al registry), **23
+  SIN_DATOS**, **274 siguen REVISAR**. Procesados: 356. Duración del
+  procesamiento: 0,1s, sin ninguna llamada de red — reutiliza la evidencia
+  inmutable ya commiteada por B11.1.
+- Coincide exactamente con la simulación previa (59/23/274), como era
+  esperable: la evidencia no cambia y cada ISBN se evalúa por separado. Se
+  verificó además que un único lote de 356 y cuatro lotes secuenciales de
+  100 producen clasificaciones idénticas, sin una sola diferencia.
+- Registry: **1.550 → 1.609**. Campos publicados en el resultado final:
+  `publication_year` en 54 ISBN, `publisher` en 19, `author` en 4 y
+  `language` en **0** — los 8 `language` que generó la primera corrida se
+  retiraron con la corrección de MARC 041 descrita más abajo. Fuentes: Open
+  Library en los 59, Biblioteca Nacional de España en 47, Google Books en
+  34. Los 59 tienen `sample_listing_id` MLU real y procedencia en `https`.
+- Tasa de resolución: 16,6% (59/356), por encima del 12,0% de los lotes 01
+  y 02. La diferencia es de composición, no de método: 213 de los 356
+  restantes son prefijo 978-84 (registro español), que resuelve al 24%,
+  mientras que los prefijos latinoamericanos 978-95x y 978-98x resuelven
+  al 4-6%.
+
+### El circuito automático quedó agotado
+
+`artifacts/b11-2/state.json` pasa de 200 a **556** entradas, que son
+exactamente los 556 ISBN `REVISAR` que dejó B11.1: **no queda ninguno sin
+intentar**. Hay un test que lo verifica cruzando el estado persistente
+contra el report original de B11.1, no por conteo.
+
+Estado acumulado: `TERMINADO` 83, `SIN_DATOS` 31, `REVISAR` 442. Por lote:
+100 (lote 01) + 100 (lote 02) + 356 (lote 03 final).
+
+Reintentar los 442 `REVISAR` restantes con la evidencia actual daría
+idéntico resultado. Avanzar más exige evidencia nueva —una fuente
+adicional o redacción manual—, no otra corrida del resolver.
+
+### Protección contra sobrescritura
+
+Los defaults de `B11_2_FACTS_OUTPUT` y `B11_2_SUMMARY_PATH` apuntan a los
+archivos del Lote 01, y el resolver los reescribe por completo: correrlo
+sin definirlos habría borrado del registry los 12 ISBN del Lote 01. Se
+ejecutó con las cuatro variables explícitas (`B11_2_BATCH_SIZE=356`,
+`B11_2_BATCH_NAME=lote-03-final`, y los dos archivos nuevos
+`book-enrichment-facts-b11-2-lote-03.js` y `lote-03-final-summary.md`).
+Verificado después de correr: los módulos y resúmenes de los lotes 01 y 02
+quedaron sin cambios, y de las 200 entradas previas de `state.json` no se
+perdió ni se alteró ninguna.
+
+### Corrección semántica de `language` (cambios solicitados en el PR #308)
+
+La revisión detectó un bloqueo semántico real: los 8 `bibliographic.language`
+que publicaba este lote mezclaban el idioma del texto con el idioma de la
+obra original. `scripts/seo/book-intelligence-bne.mjs` construía el campo
+fusionando MARC 041 `$a`, `$d` y `$h`, cuando según MARC 21 `$a` es el idioma
+del texto de esta edición, `$h` el de la obra original y `$d` el del
+contenido cantado o hablado. Una traducción `041 1#$aspa$heng` quedaba
+publicada como "Español, Inglés" siendo un libro enteramente en español.
+
+Se corrigió en tres capas:
+
+1. **Adaptador BNE**: `language` usa únicamente los `041$a` repetidos. No
+   mezcla `$h` ni usa `$d` para libros impresos. Además, un código sin
+   etiqueta conocida se descarta en vez de publicarse crudo — ése era el
+   origen de `"Español, dut"`.
+2. **Normalización**: `bookLanguageLabel()` traduce un código a etiqueta o
+   devuelve `null`, para que un adaptador pueda descartarlo. Se agregó el
+   neerlandés (`nl`/`nld`/`dut`), presente en la evidencia real.
+3. **Resolver**: la caché de B11.1 es inmutable y sigue conteniendo los
+   valores mezclados, así que no se editó a mano ni se sustituyeron los ocho
+   valores por "Español". Se aplicó una regla conservadora y reproducible:
+   **no se publica ningún `language` con más de un idioma**. El defecto sólo
+   puede manifestarse como valor multivaluado (si `$a` y `$h` coinciden, la
+   mezcla colapsa a un único idioma y el dato es correcto igual), así que la
+   regla cubre exactamente el problema sin listar ISBN a mano.
+
+`book-enrichment-facts-b11-2-lote-03.js` se **regeneró** con el resolver
+corregido, partiendo del estado previo a la corrida. Resultado: los mismos 59
+ISBN, **0 `language` publicados** (antes 8), y ningún otro campo cambió. Los
+8 ISBN afectados conservan `publisher` y `publication_year`, así que siguen
+siendo `TERMINADO` y los contadores no se mueven.
+
+### Contaminación previa: pendiente de auditar en un PR separado
+
+El mismo defecto dejó valores mezclados en módulos ya fusionados, que **este
+PR no toca a propósito**. Auditoría del estado actual:
+
+| Módulo | Con `language` | Multivaluados (sospechosos) |
+| --- | --- | --- |
+| `book-enrichment-facts-1000.js` | 13 | **13** |
+| `book-enrichment-facts-333.js` | 2 | **2** |
+| `book-enrichment-facts-lote-01.js` | 0 | 0 |
+| `book-enrichment-facts-b11-2-lote-01.js` | 0 | 0 |
+| `book-enrichment-facts-b11-2-lote-02.js` | 2 | **2** |
+| `book-enrichment-facts-b11-2-lote-03.js` | 0 | 0 |
+| **Total** | **17** | **17** |
+
+Los 17 valores que quedan publicados en el catálogo son multivaluados y los
+17 provienen de la Biblioteca Nacional de España, es decir que replican
+exactamente el defecto corregido. Incluyen otro código crudo (`"Español,
+dan"` en `9788418859694`). Los dos casos de B11.2 Lote 02 son
+`9788408039532` ("Español, Francés") y `9788415292494` ("Español, Inglés").
+
+**Siguiente PR técnico, separado:** auditar los 17 `bibliographic.language`
+existentes contra MARC 041`$a` y corregirlos o retirarlos. No se hace acá
+para no mezclar la corrección del Lote 03 con la limpieza histórica.
+
+### Validación
+
+- Tests focales de B11.2, del adaptador BNE y de los lotes previos:
+  **44/44**.
+- Suite completa: **1.547/1.547**, 0 fallos (la de Functions pasa de 1.052 a
+  1.067 con los tests nuevos del Lote 03 y las regresiones de `language`).
+- `bash scripts/validate-ci.sh`: **Validación completa OK** (sintaxis, suite
+  completa y los dos builds de Astro, checkout OFF y ON).
+- `git diff --check`: sin errores.
+- CI de GitHub Actions sobre `023b026`, el head que trae la corrección de
+  `language` y todo el código del lote: los cuatro checks en verde —
+  `Syntax & Build`, `Deploy and audit every PR Preview`, `Investigate 1000
+  unique ISBN editions` y `Reproduce public SEO baseline` (este último se
+  sumó porque el diff toca `scripts/seo/`).
+- En un commit posterior de **sólo documentación** el job de preview falló
+  por muestreo de imágenes: 77 de 80 imágenes válidas, 3 sin responder desde
+  R2, con feed, catálogo y páginas en 0 críticos (80/80 páginas OK). Es un
+  fallo transitorio de red, no del cambio: la corrida inmediatamente anterior
+  con el mismo código dio 80/80, y el diff entre ambos commits es un único
+  archivo Markdown. La auditoría toma una muestra distinta de 80 imágenes en
+  cada corrida.
+- Book enrichment live check contra el Preview del PR
+  (`https://pr-308.amadolibros-web.pages.dev`), dentro del job de preview:
+  **1.594 ediciones activas verificadas en ficha y Merchant, 15 sin oferta
+  activa como no aplicables** — 1.594 + 15 = 1.550 + 59 = **1.609**, exacto.
+  Los **59 ISBN del Lote 03 aparecen los 59 como `verified`**, cada uno con
+  sus propios MLU reales y sin mezcla de datos entre ISBN. Los 8 que
+  perdieron el `language` siguen verificados por sus otros hechos (por
+  ejemplo `9788417346935` con MLU612098974 y MLU655413122, o `9788433029102`
+  con MLU625756445 y MLU652705502).
+
+### Pendiente
+
+El [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) está en
+Draft, **sin fusionar y sin desplegar**. La verificación contra Producción
+que sí tuvieron los lotes 01 y 02 (deploy, full commerce audit y book
+enrichment live check contra `www.amadolibros.com`) sólo puede hacerse
+después de fusionar. Lo ya verificado arriba es contra el Preview del PR.
+
+### Anomalía menor registrada
+
+Tres tests fijaban el total del registry en 1.550 como literal
+(`b11-2-lote-02.test.js`, `b11-2-resolve-revisar.test.js` y
+`book-enrichment-lote-01.test.js`), así que cada lote nuevo los rompe hasta
+que se actualizan a mano. Se actualizaron a 1.609. No es un fallo del lote,
+pero conviene saber que ese literal hay que tocarlo en cada corrida.
 
 ## PR #298 — CERRADO
 
