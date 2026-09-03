@@ -26,10 +26,15 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
   <main class="cart-page" data-online-checkout={checkoutEnabled ? 'enabled' : 'disabled'}>
     <div class="cart-wrap">
-      <h1 class="cart-h1">Tu carrito</h1>
-      <button type="button" id="btn-back-to-shopping" class="btn-context-back">
-        ← Seguir comprando
-      </button>
+      <div class="cart-header">
+        <button type="button" id="btn-back-to-shopping" class="btn-context-back">
+          ← Seguir comprando
+        </button>
+        <h1 class="cart-h1">Finalizar compra</h1>
+        {checkoutEnabled && (
+          <p class="cart-commercial-line">Transferencia 12% menos · Mercado Pago hasta 12 cuotas</p>
+        )}
+      </div>
 
       <!-- Región de anuncios accesibles -->
       <div id="cart-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
@@ -49,238 +54,298 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       <!-- Contenido con items -->
       <div id="cart-content" hidden>
         <div id="checkout-edit-step">
+        <div class="checkout-layout">
 
-        <!-- Lista de items (llenada por JS) -->
-        <div id="cart-items" role="list" aria-label="Artículos en el carrito"></div>
+          <!-- V1.1 REDESIGN: resumen — primero en el DOM (así en mobile,
+               una sola columna, aparece antes que Entrega, como pide el
+               flujo lineal) y reubicado a la columna derecha sólo por CSS
+               Grid (grid-column) a partir de 960px, sin alterar el orden
+               real de lectura/tab. -->
+          <aside class="checkout-summary" aria-label="Resumen de tu compra">
+            <details id="cart-summary-panel" class="cart-summary-panel">
+              <summary class="cart-summary-toggle">
+                <span class="cart-summary-toggle-text">
+                  🛒 Tu compra · <span id="cart-summary-count">0</span> libro(s) · <span id="cart-summary-total">$&nbsp;0</span>
+                </span>
+                <span class="cart-summary-chevron" aria-hidden="true">Ver resumen</span>
+              </summary>
+              <div class="cart-summary-body">
+                <!-- Fila compacta por producto — miniatura/título/cantidad/precio.
+                     No reescribe buildItemRow(): es una función nueva y mínima,
+                     separada, sólo para esta vista de resumen. -->
+                <div id="cart-items-compact" class="cart-items-compact"></div>
+                <button type="button" id="btn-toggle-editor" class="cart-summary-edit-toggle" aria-expanded="false">
+                  Editar
+                </button>
 
-        <!-- Barra de resumen -->
-        <div class="cart-summary-bar">
-          <button type="button" id="btn-clear" class="btn-clear">
-            Vaciar carrito
-          </button>
-          <div class="cart-totals">
-            <p class="cart-subtotal-line">Total de productos:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong></p>
-            <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
-            <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
-            <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
-            <p class="cart-shipping-cost-line" id="cart-shipping-cost-line" hidden>Envío:&nbsp;<strong id="cart-shipping-cost">$&nbsp;250</strong></p>
-            <p class="cart-total-shipping-line" id="cart-total-shipping-line" hidden>Total con envío:&nbsp;<strong id="cart-total-shipping">$&nbsp;0</strong></p>
-            <p class="cart-transfer-note" id="cart-transfer-note" hidden>Pagando por transferencia se aplica además 12&nbsp;% de descuento.</p>
-            <p class="cart-shipping-msg" id="cart-shipping-msg" hidden></p>
-          </div>
-        </div>
+                <!-- Lista completa editable (llenada por JS con buildItemRow(),
+                     sin cambios) — oculta hasta tocar "Editar". -->
+                <div id="cart-items" role="list" aria-label="Artículos en el carrito" class="cart-items-full" hidden></div>
 
-        <p class="cart-price-note">
-          Los precios corresponden al catálogo vigente. El total se actualiza
-          según la forma de entrega y los descuentos aplicables.
-          Pagando por transferencia bancaria obtenés&nbsp;12&nbsp;% de descuento.
-        </p>
-
-        <!-- Entrega -->
-        <section class="cart-section">
-          <h2 class="cart-section-h2">¿Cómo querés recibir tu pedido?</h2>
-          <div class="delivery-opts" role="radiogroup" aria-describedby="err-delivery">
-            <label class="delivery-opt">
-              <input type="radio" name="delivery" value="pickup">
-              <span class="delivery-opt-content">
-                <strong class="delivery-opt-name">Pick up a pasos de Plaza Matriz</strong>
-                <span class="delivery-opt-meta">Lunes a viernes, de 8 a 17 h</span>
-                <span class="delivery-opt-badge">Ahorrás $150 en compras desde $1.300</span>
-              </span>
-            </label>
-          </div>
-
-          <!-- PICKUP-CX-1: aviso y aceptación obligatoria. Solo visible con
-               retiro seleccionado; al pasar a envío se oculta y se limpia. -->
-          <div id="pickup-ack-box" class="pickup-ack" hidden>
-            <p class="pickup-ack-notice">
-              Para evitar que vengas en vano, esperá nuestra confirmación por
-              WhatsApp antes de venir. Te avisaremos apenas tu pedido esté
-              pronto para retirar.
-            </p>
-            <label class="pickup-ack-label" for="pickup-ack">
-              <input type="checkbox" id="pickup-ack" aria-describedby="err-pickup-ack">
-              <span>Entiendo que debo esperar la confirmación por WhatsApp antes de ir a retirar.</span>
-            </label>
-            <span class="field-error" id="err-pickup-ack" role="alert" hidden></span>
-          </div>
-
-          <div class="delivery-opts-rest">
-            <label class="delivery-opt">
-              <input type="radio" name="delivery" value="shipping">
-              <span class="delivery-opt-content">
-                <strong class="delivery-opt-name">Envío a domicilio</strong>
-                <span class="delivery-opt-meta">Coordinamos contigo y el cadete entrega en una franja horaria de tu conveniencia.</span>
-                <span class="delivery-opt-badge">Envío gratis en compras desde $1.500</span>
-              </span>
-            </label>
-          </div>
-          <span class="field-error delivery-error" id="err-delivery" role="alert" hidden></span>
-          <div id="shipping-fields" class="shipping-fields" hidden>
-            <div class="form-field">
-              <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
-              <input type="text" id="delivery-address" class="form-input"
-                placeholder="Ej: Av. Italia 2000, Apto 3"
-                autocomplete="shipping street-address"
-                aria-describedby="err-delivery-address">
-              <span class="field-error" id="err-delivery-address" role="alert" hidden></span>
-            </div>
-            <div class="form-field">
-              <label for="delivery-barrio" class="form-label">Barrio / Localidad</label>
-              <input type="text" id="delivery-barrio" class="form-input"
-                placeholder="Ej: Pocitos, Centro, Malvín"
-                autocomplete="shipping address-level3"
-                aria-describedby="err-delivery-barrio">
-              <span class="field-error" id="err-delivery-barrio" role="alert" hidden></span>
-            </div>
-            <div class="form-field">
-              <label for="delivery-departamento" class="form-label">Departamento <span class="form-req" aria-hidden="true">*</span></label>
-              <select id="delivery-departamento" class="form-input"
-                autocomplete="shipping address-level1"
-                aria-describedby="err-delivery-departamento">
-                <option value="">Seleccioná tu departamento</option>
-                <option>Artigas</option>
-                <option>Canelones</option>
-                <option>Cerro Largo</option>
-                <option>Colonia</option>
-                <option>Durazno</option>
-                <option>Flores</option>
-                <option>Florida</option>
-                <option>Lavalleja</option>
-                <option>Maldonado</option>
-                <option>Montevideo</option>
-                <option>Paysandú</option>
-                <option>Río Negro</option>
-                <option>Rivera</option>
-                <option>Rocha</option>
-                <option>Salto</option>
-                <option>San José</option>
-                <option>Soriano</option>
-                <option>Tacuarembó</option>
-                <option>Treinta y Tres</option>
-              </select>
-              <span class="field-error" id="err-delivery-departamento" role="alert" hidden></span>
-            </div>
-            <div class="form-field">
-              <label for="delivery-notes" class="form-label">Notas para la entrega</label>
-              <textarea id="delivery-notes" class="form-input form-textarea" rows="2" placeholder="Ej: timbre 2B, dejar con portero"></textarea>
-            </div>
-            <p class="delivery-confirm-note">Después del pago coordinamos el día y el horario por WhatsApp.</p>
-          </div>
-        </section>
-
-        <!-- Datos del comprador -->
-        <section class="cart-section">
-          <h2 class="cart-section-h2">Datos para coordinar</h2>
-          <p class="buyer-note">Mientras completás el pedido, recordamos estos datos sólo en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
-          <div class="form-grid">
-            <div class="form-field">
-              <label for="buyer-name" class="form-label">Nombre</label>
-              <input type="text" id="buyer-name" class="form-input" autocomplete="name"
-                aria-describedby="err-buyer-name">
-              <span class="field-error" id="err-buyer-name" role="alert" hidden></span>
-            </div>
-            <div class="form-field">
-              <label for="buyer-phone" class="form-label">WhatsApp / Teléfono</label>
-              <input type="tel" id="buyer-phone" class="form-input"
-                placeholder="Ej: 099 123 456"
-                autocomplete="tel"
-                inputmode="tel"
-                aria-describedby="err-buyer-phone">
-              <span class="field-error" id="err-buyer-phone" role="alert" hidden></span>
-            </div>
-            <div class="form-field">
-              <label for="buyer-email" class="form-label">Correo electrónico <span class="form-req" aria-hidden="true">*</span></label>
-              <input type="email" id="buyer-email" class="form-input"
-                placeholder="tu@email.com"
-                autocomplete="email"
-                inputmode="email"
-                maxlength="254"
-                required
-                aria-describedby="buyer-email-help err-buyer-email">
-              <span class="field-help" id="buyer-email-help">Ahí te enviamos la confirmación y el número de pedido.</span>
-              <span class="field-error" id="err-buyer-email" role="alert" hidden></span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Acciones de pago -->
-        <section class="cart-pay-section" aria-label="Confirmar y pagar">
-          {checkoutEnabled && <div id="cf-ts-container"></div>}
-
-          <div id="checkout-error" class="checkout-error" role="alert" hidden></div>
-
-          {checkoutEnabled ? (
-            <div class="checkout-mobile-bar">
-              <div class="checkout-sticky-total" aria-hidden="true">
-                <span class="checkout-sticky-total-label">Total</span>
-                <strong id="checkout-sticky-total-value">$&nbsp;0</strong>
+                <div class="cart-totals-card">
+                  <div class="cart-totals">
+                    <p class="cart-subtotal-line">Total de productos:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong></p>
+                    <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
+                    <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
+                    <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
+                    <p class="cart-shipping-cost-line" id="cart-shipping-cost-line" hidden>Envío:&nbsp;<strong id="cart-shipping-cost">$&nbsp;250</strong></p>
+                    <p class="cart-total-shipping-line" id="cart-total-shipping-line" hidden>Total con envío:&nbsp;<strong id="cart-total-shipping">$&nbsp;0</strong></p>
+                    <p class="cart-transfer-note" id="cart-transfer-note" hidden>Pagando por transferencia se aplica además 12&nbsp;% de descuento.</p>
+                    <p class="cart-shipping-msg" id="cart-shipping-msg" hidden></p>
+                  </div>
+                  <button type="button" id="btn-clear" class="btn-clear">
+                    Vaciar carrito
+                  </button>
+                  <p class="cart-price-note">Los precios corresponden al catálogo vigente.</p>
+                </div>
               </div>
-              <p id="cart-delivery-hint" class="cart-delivery-hint" role="status" aria-live="polite" hidden>Elegí envío o retiro para continuar.</p>
-              <button type="button" id="btn-transfer-order" class="btn-transfer-primary" aria-describedby="checkout-error">
-                <span>Comprar por transferencia</span>
-                <strong>12% menos</strong>
-              </button>
-              <button type="button" id="btn-prepare-order" class="btn-checkout-primary" aria-describedby="checkout-error">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                  <line x1="1" y1="10" x2="23" y2="10"/>
-                </svg>
-                <span class="btn-checkout-primary-text">Pagar con tarjeta o Mercado Pago</span>
-              </button>
-            </div>
-          ) : (
-            <button type="button" id="btn-wa-order" class="btn-wa-order">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
-              </svg>
-              Enviar pedido por WhatsApp
-            </button>
-          )}
+            </details>
+          </aside>
 
-          {checkoutEnabled && (
-            <>
-              <p class="checkout-reassurance">
-                Primero verificamos precio y stock. Tu carrito no se vacía hasta
-                que el pago quede confirmado.
+          <div class="checkout-left">
+
+          <!-- Entrega -->
+          <section class="cart-section cart-section-card">
+            <h2 class="cart-section-h2">¿Cómo querés recibir tu pedido?</h2>
+            <div class="delivery-opts" role="radiogroup" aria-describedby="err-delivery">
+              <label class="delivery-opt">
+                <input type="radio" name="delivery" value="pickup">
+                <span class="delivery-opt-content">
+                  <strong class="delivery-opt-name">Retiro en Ciudad Vieja</strong>
+                  <span class="delivery-opt-meta">A pasos de Plaza Matriz · Lunes a viernes, de 8 a 17 h</span>
+                  <span class="delivery-opt-badge">Ahorrás $150 en compras desde $1.300</span>
+                </span>
+              </label>
+            </div>
+
+            <!-- PICKUP-CX-1: aviso y aceptación obligatoria. Solo visible con
+                 retiro seleccionado; al pasar a envío se oculta y se limpia. -->
+            <div id="pickup-ack-box" class="pickup-ack" hidden>
+              <p class="pickup-ack-notice">
+                Para evitar que vengas en vano, esperá nuestra confirmación por
+                WhatsApp antes de venir. Te avisaremos apenas tu pedido esté
+                pronto para retirar.
               </p>
-              <p class="checkout-policy-links">
-                Al continuar aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
-                Consultá <a href="/envios" target="_blank">envíos</a> y
-                <a href="/devoluciones" target="_blank">devoluciones</a>.
-              </p>
-              <p class="checkout-personal-note">
-                Somos una librería familiar y esta web también la hacemos nosotros. Si necesitás ayuda para completar tu compra, escribinos por WhatsApp. Te atendemos personalmente.
-              </p>
-              <button type="button" id="btn-wa-order" class="btn-wa-secondary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <label class="pickup-ack-label" for="pickup-ack">
+                <input type="checkbox" id="pickup-ack" aria-describedby="err-pickup-ack">
+                <span>Entiendo que debo esperar la confirmación por WhatsApp antes de ir a retirar.</span>
+              </label>
+              <span class="field-error" id="err-pickup-ack" role="alert" hidden></span>
+            </div>
+
+            <div class="delivery-opts-rest">
+              <label class="delivery-opt">
+                <input type="radio" name="delivery" value="shipping">
+                <span class="delivery-opt-content">
+                  <strong class="delivery-opt-name">Envío a domicilio</strong>
+                  <span class="delivery-opt-meta">Entregas de lunes a viernes · coordinamos día y franja contigo</span>
+                  <span class="delivery-opt-badge">Gratis desde $1.500</span>
+                </span>
+              </label>
+            </div>
+            <span class="field-error delivery-error" id="err-delivery" role="alert" hidden></span>
+            <div id="shipping-fields" class="shipping-fields" hidden>
+              <div class="form-field">
+                <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="text" id="delivery-address" class="form-input"
+                  placeholder="Ej: Av. Italia 2000, Apto 3"
+                  autocomplete="shipping street-address"
+                  aria-describedby="err-delivery-address">
+                <span class="field-error" id="err-delivery-address" role="alert" hidden></span>
+              </div>
+              <div class="form-field">
+                <label for="delivery-barrio" class="form-label">Barrio / Localidad <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="text" id="delivery-barrio" class="form-input"
+                  placeholder="Ej: Pocitos, Centro, Malvín"
+                  autocomplete="shipping address-level3"
+                  aria-describedby="err-delivery-barrio">
+                <span class="field-error" id="err-delivery-barrio" role="alert" hidden></span>
+              </div>
+              <div class="form-field">
+                <label for="delivery-departamento" class="form-label">Departamento <span class="form-req" aria-hidden="true">*</span></label>
+                <select id="delivery-departamento" class="form-input"
+                  autocomplete="shipping address-level1"
+                  aria-describedby="err-delivery-departamento">
+                  <option value="">Seleccioná tu departamento</option>
+                  <option>Artigas</option>
+                  <option>Canelones</option>
+                  <option>Cerro Largo</option>
+                  <option>Colonia</option>
+                  <option>Durazno</option>
+                  <option>Flores</option>
+                  <option>Florida</option>
+                  <option>Lavalleja</option>
+                  <option>Maldonado</option>
+                  <option>Montevideo</option>
+                  <option>Paysandú</option>
+                  <option>Río Negro</option>
+                  <option>Rivera</option>
+                  <option>Rocha</option>
+                  <option>Salto</option>
+                  <option>San José</option>
+                  <option>Soriano</option>
+                  <option>Tacuarembó</option>
+                  <option>Treinta y Tres</option>
+                </select>
+                <span class="field-error" id="err-delivery-departamento" role="alert" hidden></span>
+              </div>
+              <div class="form-field">
+                <label for="delivery-notes" class="form-label">Indicaciones para la entrega (opcional)</label>
+                <textarea id="delivery-notes" class="form-input form-textarea" rows="2" placeholder="Ej: timbre 2B, dejar con portero"></textarea>
+              </div>
+              <p class="delivery-confirm-note">Después del pago coordinamos el día y el horario por WhatsApp.</p>
+            </div>
+          </section>
+
+          <!-- Datos del comprador -->
+          <section class="cart-section">
+            <h2 class="cart-section-h2">Tus datos</h2>
+            <p class="buyer-note">Mientras completás el pedido, recordamos estos datos sólo en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="buyer-name" class="form-label">Nombre <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="text" id="buyer-name" class="form-input" autocomplete="name"
+                  aria-describedby="err-buyer-name">
+                <span class="field-error" id="err-buyer-name" role="alert" hidden></span>
+              </div>
+              <div class="form-field">
+                <label for="buyer-phone" class="form-label">WhatsApp / Teléfono <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="tel" id="buyer-phone" class="form-input"
+                  placeholder="Ej: 099 123 456"
+                  autocomplete="tel"
+                  inputmode="tel"
+                  aria-describedby="buyer-phone-help err-buyer-phone">
+                <span class="field-help" id="buyer-phone-help">Lo usamos únicamente para coordinar tu pedido y la entrega.</span>
+                <span class="field-error" id="err-buyer-phone" role="alert" hidden></span>
+              </div>
+              <div class="form-field">
+                <label for="buyer-email" class="form-label">Correo electrónico <span class="form-req" aria-hidden="true">*</span></label>
+                <input type="email" id="buyer-email" class="form-input"
+                  placeholder="tu@email.com"
+                  autocomplete="email"
+                  inputmode="email"
+                  maxlength="254"
+                  required
+                  aria-describedby="buyer-email-help err-buyer-email">
+                <span class="field-help" id="buyer-email-help">Ahí te enviamos la confirmación y el número de pedido.</span>
+                <span class="field-error" id="err-buyer-email" role="alert" hidden></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Acciones de pago -->
+          <section class="cart-pay-section" aria-label="Confirmar y pagar">
+            {checkoutEnabled && <div id="cf-ts-container"></div>}
+
+            <div id="checkout-error" class="checkout-error" role="alert" hidden></div>
+
+            {checkoutEnabled && (
+              <div class="payment-method-section cart-section-card">
+                <h2 class="cart-section-h2">¿Cómo querés pagar?</h2>
+                <div class="payment-opts" role="radiogroup" aria-describedby="err-payment-method">
+                  <label class="payment-opt">
+                    <input type="radio" name="payment-method" value="transfer" id="payment-method-transfer">
+                    <span class="payment-opt-content">
+                      <span class="payment-opt-head">
+                        <strong class="payment-opt-name">Transferencia bancaria</strong>
+                        <span class="payment-opt-badge">12% menos</span>
+                      </span>
+                      <span class="payment-opt-preview" id="transfer-preview-line" hidden></span>
+                    </span>
+                  </label>
+                  <label class="payment-opt">
+                    <input type="radio" name="payment-method" value="mercadopago" id="payment-method-mercadopago">
+                    <span class="payment-opt-content">
+                      <strong class="payment-opt-name">Mercado Pago</strong>
+                      <span class="payment-opt-meta">Tarjetas, débito y hasta 12 cuotas</span>
+                      <span class="payment-opt-preview" id="mp-preview-line" hidden></span>
+                    </span>
+                  </label>
+                </div>
+                <span class="field-error" id="err-payment-method" role="alert" hidden></span>
+              </div>
+            )}
+
+            {checkoutEnabled ? (
+              <div class="checkout-mobile-bar">
+                <div class="checkout-sticky-total" aria-hidden="true">
+                  <span class="checkout-sticky-total-label">Total</span>
+                  <strong id="checkout-sticky-total-value">$&nbsp;0</strong>
+                </div>
+                <p id="cart-delivery-hint" class="cart-delivery-hint" role="status" aria-live="polite" hidden>Elegí envío o retiro para continuar.</p>
+                <p id="cart-payment-hint" class="cart-delivery-hint" role="status" aria-live="polite" hidden>Elegí cómo querés pagar.</p>
+                <button type="button" id="btn-confirm-neutral" class="btn-checkout-primary">
+                  Finalizar compra
+                </button>
+                <button type="button" id="btn-transfer-order" class="btn-transfer-primary" aria-describedby="checkout-error" hidden>
+                  Confirmar compra con 12% OFF
+                </button>
+                <button type="button" id="btn-prepare-order" class="btn-checkout-primary" aria-describedby="checkout-error" hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                  <span class="btn-checkout-primary-text">Pagar con Mercado Pago</span>
+                </button>
+              </div>
+            ) : (
+              <button type="button" id="btn-wa-order" class="btn-wa-order">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
                 </svg>
-                O coordinar por WhatsApp
+                Enviar pedido por WhatsApp
               </button>
-            </>
-          )}
+            )}
 
-          {!checkoutEnabled && (
-            <>
-              <p class="checkout-reassurance">
-                No pagás ahora. Te enviamos los datos para transferencia o un link de Mercado Pago.
-              </p>
-              <p class="checkout-policy-links">
-                Al enviar el pedido aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
-                Consultá <a href="/envios" target="_blank">envíos</a> y
-                <a href="/devoluciones" target="_blank">devoluciones</a>.
-              </p>
-            </>
-          )}
-        </section>
+            {checkoutEnabled && (
+              <>
+                <p class="checkout-reassurance">
+                  Primero verificamos precio y stock. Tu carrito no se vacía hasta
+                  que el pago quede confirmado.
+                </p>
+                <p class="checkout-policy-links">
+                  Al continuar aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
+                  Consultá <a href="/envios" target="_blank">envíos</a> y
+                  <a href="/devoluciones" target="_blank">devoluciones</a>.
+                </p>
+                <p class="checkout-personal-note">
+                  Somos una librería familiar y esta web también la hacemos nosotros. Si necesitás ayuda, escribinos por WhatsApp y te ayudamos a completar la compra.
+                </p>
+                <button type="button" id="btn-wa-order" class="btn-wa-secondary">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+                  </svg>
+                  O coordinar por WhatsApp
+                </button>
+              </>
+            )}
+
+            {!checkoutEnabled && (
+              <>
+                <p class="checkout-reassurance">
+                  No pagás ahora. Te enviamos los datos para transferencia o un link de Mercado Pago.
+                </p>
+                <p class="checkout-policy-links">
+                  Al enviar el pedido aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
+                  Consultá <a href="/envios" target="_blank">envíos</a> y
+                  <a href="/devoluciones" target="_blank">devoluciones</a>.
+                </p>
+              </>
+            )}
+          </section>
+
+          </div><!-- /.checkout-left -->
+
+        </div><!-- /.checkout-layout -->
         </div><!-- /#checkout-edit-step -->
 
         {checkoutEnabled && (
         <>
           <!-- Paso de pago por transferencia. Los datos se cargan desde un
-               endpoint no-cache después de validar y guardar la orden. -->
+               endpoint no-cache después de validar y guardar la orden.
+               V1.1 REDESIGN: no se toca — sigue siendo el reemplazo de
+               pantalla completa posterior a la creación de la orden. -->
           <section id="transfer-payment-step" class="transfer-step" aria-labelledby="transfer-step-title" hidden>
           <button type="button" id="btn-edit-order" class="btn-context-back">← Volver a revisar el pedido</button>
           <p class="transfer-step-kicker">Pedido <strong id="transfer-order-code">—</strong></p>
@@ -356,11 +421,33 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     margin: 0 auto;
   }
 
+  /* V1.1 REDESIGN: sólo desde ~960px el contenido crece al ancho pensado
+     para el layout de 2 columnas — por debajo, todo sigue en una sola
+     columna angosta, sin tocar el breakpoint mobile existente (640px). */
+  @media (min-width: 960px) {
+    .cart-wrap {
+      max-width: 1200px;
+    }
+  }
+
+  .cart-header {
+    margin-bottom: 1.25rem;
+  }
+
   .cart-h1 {
     font-family: var(--font-display);
     font-size: 1.75rem;
     color: var(--ink);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  /* V1.1 REDESIGN: visible desde el primer viewport, sin tener que llenar
+     datos para descubrir cómo se puede pagar. */
+  .cart-commercial-line {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #8f4436;
   }
 
   .btn-context-back {
@@ -370,7 +457,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     color: var(--ink-2);
     cursor: pointer;
     font: 600 0.82rem/1.4 var(--font-ui);
-    margin: 0 0 1.5rem;
+    margin: 0 0 0.5rem;
     padding: 0.6rem 0;
     text-decoration: underline;
     text-underline-offset: 0.2em;
@@ -408,26 +495,200 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
   }
   .btn-empty-back:hover { background: var(--salmon-hover); }
 
-  /* ── Barra de resumen ──────────────────────────── */
-  .cart-summary-bar {
+  /* ── V1.1 REDESIGN: layout de checkout ──────────────────────────────
+     Mobile (por defecto): una columna, orden natural del DOM — el resumen
+     va primero (aside), después Entrega/Datos/Pago (checkout-left).
+     Desktop (>=960px): grid de 2 columnas; el resumen se reubica a la
+     derecha SOLO con grid-column, sin cambiar el orden real del DOM. */
+  .checkout-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 960px) {
+    .checkout-layout {
+      display: grid;
+      grid-template-columns: 60fr 38fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    .checkout-left {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .checkout-summary {
+      grid-column: 2;
+      grid-row: 1;
+      position: sticky;
+      top: 1.5rem;
+    }
+  }
+
+  /* ── Resumen de compra (aside) ──────────────────────────────────────── */
+  .cart-summary-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 0;
+  }
+
+  .cart-summary-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border);
-    margin-top: 1rem;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+  .cart-summary-toggle::-webkit-details-marker { display: none; }
+  .cart-summary-toggle::marker { content: ''; }
+  .cart-summary-toggle:focus-visible { outline: 2px solid var(--salmon); outline-offset: 2px; }
+
+  .cart-summary-chevron {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #8f4436;
+    text-decoration: underline;
+    white-space: nowrap;
   }
 
+  .cart-summary-body {
+    padding: 0 1.1rem 1.1rem;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  /* El <details> nativo ya oculta este contenido cuando no está [open] (UA
+     stylesheet) — sólo declaramos flex para el estado abierto, así el
+     colapso real de mobile no queda pisado por esta regla. */
+  .cart-summary-panel[open] .cart-summary-body {
+    display: flex;
+  }
+
+  /* Desktop: el resumen siempre está expandido — el <details> deja de
+     comportarse como colapsable y el toggle se vuelve decorativo. */
+  @media (min-width: 960px) {
+    .cart-summary-panel:not([open]) .cart-summary-body {
+      display: flex;
+    }
+    /* Chromium colapsa el contenido de un <details> cerrado a través de un
+       pseudo-elemento interno (::details-content), no sólo con display en
+       sus hijos — sin este override el <details> sigue midiendo 0 de alto
+       en desktop aunque .cart-summary-body ya diga display:flex. */
+    .cart-summary-panel:not([open])::details-content {
+      content-visibility: visible;
+      display: block;
+    }
+    .cart-summary-toggle {
+      cursor: default;
+      pointer-events: none;
+    }
+    .cart-summary-chevron { display: none; }
+  }
+
+  .cart-items-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .cart-items-compact[hidden] { display: none; }
+
+  :global(.cart-item-compact) {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+  }
+
+  :global(.cart-item-compact-img),
+  :global(.cart-item-compact-img-placeholder) {
+    width: 40px;
+    height: 56px;
+    border-radius: 4px;
+    background: #ede9e1;
+    object-fit: cover;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--ink-2);
+  }
+
+  :global(.cart-item-compact-info) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  :global(.cart-item-compact-title) {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  :global(.cart-item-compact-meta) {
+    font-size: 0.76rem;
+    color: var(--ink-2);
+    margin: 0.2rem 0 0;
+  }
+
+  :global(.cart-item-compact-unavailable) {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #7f2f20;
+    background: #fff8f5;
+    border: 1px solid #efc7ba;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .cart-summary-edit-toggle {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: #8f4436;
+    cursor: pointer;
+    font: 700 0.78rem/1.4 var(--font-ui);
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .cart-items-full[hidden] { display: none; }
+
+  .cart-totals-card {
+    border-top: 1px solid var(--border);
+    padding-top: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  /* ── Barra de resumen (compat, ya no se usa como wrapper propio) ──── */
   .btn-clear {
-    padding: 0.45rem 1rem;
+    align-self: flex-start;
+    padding: 0.4rem 0.85rem;
     border: 1px solid var(--border);
     border-radius: var(--r);
     background: transparent;
     color: var(--ink-2);
     font-family: var(--font-ui);
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
@@ -435,14 +696,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
   /* ── Nota de precios ───────────────────────────── */
   .cart-price-note {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--ink-2);
-    line-height: 1.6;
-    padding: 0.875rem 1rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    margin-bottom: 1.5rem;
+    line-height: 1.5;
   }
 
   /* ── Secciones de formulario ───────────────────── */
@@ -473,7 +729,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     display: flex;
     align-items: flex-start;
     gap: 0.6rem;
-    min-height: 44px;
+    min-height: 48px;
     padding: 0.85rem;
     border: 1px solid var(--border);
     border-radius: var(--r);
@@ -485,13 +741,15 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
   .delivery-opt:has(input[type="radio"]:checked) {
     border-color: #267a42;
+    border-width: 2px;
     background: rgba(37, 160, 80, 0.06);
-    box-shadow: 0 0 0 1px rgba(37, 160, 80, 0.18);
   }
 
   .delivery-opt input[type="radio"] {
     margin-top: 0.2rem;
     flex-shrink: 0;
+    width: 20px;
+    height: 20px;
     accent-color: #267a42;
   }
 
@@ -583,6 +841,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     background: var(--bg);
     transition: border-color 0.15s;
     width: 100%;
+    min-height: 44px;
   }
   .form-input:focus {
     outline: 2px solid var(--salmon);
@@ -632,6 +891,90 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     gap: 0.75rem;
     padding-top: 0.5rem;
   }
+
+  /* V1.1 REDESIGN: "¿Cómo querés pagar?" — mismo lenguaje visual que las
+     cards de Entrega (delivery-opt), duplicado a propósito en vez de
+     compartir selector: cero riesgo de que un cambio futuro en una card
+     afecte a la otra sin querer. */
+  .payment-method-section {
+    margin-bottom: 0;
+  }
+
+  .payment-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .payment-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    min-height: 48px;
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: #fff;
+    font-size: 0.9rem;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .payment-opt:has(input[type="radio"]:checked) {
+    border-color: var(--salmon);
+    border-width: 2px;
+    background: rgba(191, 87, 60, 0.06);
+  }
+
+  .payment-opt input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--salmon);
+  }
+
+  .payment-opt-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+  }
+
+  .payment-opt-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .payment-opt-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .payment-opt-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    background: #177a43;
+    border-radius: 999px;
+    padding: 0.12rem 0.55rem;
+  }
+
+  .payment-opt-meta {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+
+  .payment-opt-preview {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #177a43;
+  }
+  .payment-opt-preview[hidden] { display: none; }
 
   .checkout-error {
     background: #fef2f2;
@@ -691,6 +1034,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     outline: 3px solid var(--ink);
     outline-offset: 3px;
   }
+  .btn-checkout-primary[hidden] { display: none; }
 
   .btn-transfer-primary {
     width: 100%;
@@ -702,22 +1046,16 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 0.75rem;
     padding: 0.85rem 1rem;
     font: 700 0.93rem/1.2 var(--font-ui);
     box-shadow: 0 2px 7px rgba(23, 122, 67, 0.2);
   }
-  .btn-transfer-primary strong {
-    white-space: nowrap;
-    font-size: 0.78rem;
-    background: rgba(255,255,255,.18);
-    border-radius: 999px;
-    padding: 0.3rem 0.55rem;
-  }
   .btn-transfer-primary:hover:not(:disabled) { background: #126536; }
   .btn-transfer-primary:disabled { cursor: wait; opacity: .68; }
   .btn-transfer-primary:focus-visible { outline: 3px solid #8de4b2; outline-offset: 2px; }
+  .btn-transfer-primary[hidden] { display: none; }
 
   /* WhatsApp como alternativa secundaria — nunca compite visualmente con el
      botón principal de pago. */
@@ -1127,9 +1465,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     }
 
     .cart-page[data-online-checkout="enabled"] .btn-transfer-primary,
-    .cart-page[data-online-checkout="enabled"] .btn-checkout-primary { min-height: 50px; padding: .7rem .75rem; }
-    .cart-page[data-online-checkout="enabled"] .btn-transfer-primary { flex-direction: column; align-items: flex-start; gap: .2rem; }
-    .cart-page[data-online-checkout="enabled"] .btn-transfer-primary strong { background: transparent; padding: 0; }
+    .cart-page[data-online-checkout="enabled"] .btn-checkout-primary { min-height: 50px; padding: .7rem .75rem; grid-column: 1 / -1; }
     .transfer-accounts { grid-template-columns: 1fr; }
 
     /* La burbuja flotante de WhatsApp (WAFloat, fuera de <main>) competiría
@@ -1249,6 +1585,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300;
     var SHIPPING_COST               = 250;
     var FREE_SHIPPING_THRESHOLD_UYU = 1500;
+    var TRANSFER_FACTOR             = 0.88;
     var CHECKOUT_DRAFT_KEY           = 'amado-checkout-draft-v2';
     var WHATSAPP_NUMBER              = '59899841325';
 
@@ -1257,6 +1594,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var emptyEl          = document.getElementById('cart-empty');
     var contentEl        = document.getElementById('cart-content');
     var itemsList        = document.getElementById('cart-items');
+    var itemsCompactList = document.getElementById('cart-items-compact');
+    var btnToggleEditor  = document.getElementById('btn-toggle-editor');
+    var cartSummaryCountEl = document.getElementById('cart-summary-count');
+    var cartSummaryTotalEl = document.getElementById('cart-summary-total');
     var subtotalEl       = document.getElementById('cart-subtotal');
     var discountLineEl   = document.getElementById('cart-discount-line');
     var totalLineEl      = document.getElementById('cart-total-line');
@@ -1272,6 +1613,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     var totalShippingEl      = document.getElementById('cart-total-shipping');
     var stickyTotalEl        = document.getElementById('checkout-sticky-total-value');
     var deliveryHintEl       = document.getElementById('cart-delivery-hint');
+    var paymentHintEl        = document.getElementById('cart-payment-hint');
+    var transferPreviewEl    = document.getElementById('transfer-preview-line');
+    var mpPreviewEl          = document.getElementById('mp-preview-line');
     var checkoutErrorEl      = document.getElementById('checkout-error');
     var cartPageEl           = document.querySelector('.cart-page');
     var checkoutEditStepEl   = document.getElementById('checkout-edit-step');
@@ -1371,6 +1715,42 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
+    // ── V1.1 REDESIGN: medio de pago ─────────────────────────────────────
+    // Mismo patrón exacto que getDeliveryType()/requireDeliveryType(): un
+    // radio-group real, sin preselección, con su propio mensaje/foco/scroll
+    // cuando falta elegir. btn-transfer-order y btn-prepare-order NO se
+    // fusionan — sólo se decide cuál de los dos (o el CTA neutro) queda
+    // visible según esta elección.
+    function getPaymentMethod() {
+      var checked = document.querySelector('input[name="payment-method"]:checked');
+      return checked ? checked.value : '';
+    }
+
+    function requirePaymentMethod() {
+      var method = getPaymentMethod();
+      if (method) return method;
+      var errEl = document.getElementById('err-payment-method');
+      if (errEl) {
+        errEl.textContent = 'Elegí cómo querés pagar.';
+        errEl.hidden = false;
+      }
+      var firstMethod = document.querySelector('input[name="payment-method"]');
+      if (firstMethod) {
+        firstMethod.setAttribute('aria-invalid', 'true');
+        firstMethod.focus();
+        firstMethod.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return '';
+    }
+
+    function clearPaymentMethodError() {
+      var errEl = document.getElementById('err-payment-method');
+      if (errEl) { errEl.textContent = ''; errEl.hidden = true; }
+      document.querySelectorAll('input[name="payment-method"]').forEach(function (radio) {
+        radio.removeAttribute('aria-invalid');
+      });
+    }
+
     // ── Persistencia de la etapa y los datos mínimos ─────────────────────
     // sessionStorage sobrevive a recargas y al salto a WhatsApp, pero
     // se elimina al cerrar la pestaña. Así no guardamos PII indefinidamente.
@@ -1407,6 +1787,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           idempotency_key: cart.idempotency_key,
           values: values,
           delivery_type: getDeliveryType(),
+          payment_method: getPaymentMethod(),
           pickup_ack: isPickupAccepted(),
           step: transferStepEl && !transferStepEl.hidden ? 'transfer' : 'edit',
           transfer_auth: transferAuth,
@@ -1432,6 +1813,10 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       }
       var delivery = document.querySelector('input[name="delivery"][value="' + draft.delivery_type + '"]');
       if (delivery) delivery.checked = true;
+      if (typeof draft.payment_method === 'string' && draft.payment_method) {
+        var paymentMethodRadio = document.querySelector('input[name="payment-method"][value="' + draft.payment_method + '"]');
+        if (paymentMethodRadio) paymentMethodRadio.checked = true;
+      }
       if (pickupAck) pickupAck.checked = draft.pickup_ack === true;
       if (typeof draft.selected_account_id === 'string') selectedAccountId = draft.selected_account_id;
       return draft;
@@ -1560,16 +1945,33 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     // de crear ninguna orden. El aviso persistente sólo se muestra cuando
     // la entrega es lo ÚNICO que falta, para no confundirlo con un bloqueo
     // técnico real (que ya tiene su propio mensaje vía showCheckoutError).
+    //
+    // V1.1 REDESIGN: mismo principio extendido al medio de pago. Ahora hay
+    // tres botones posibles en el DOM (neutro / transferencia / Mercado
+    // Pago) pero sólo UNO visible a la vez, según getPaymentMethod() — la
+    // lógica interna de cada botón (createTransferOrder(), el handler de
+    // btnPrepare) no cambia en absoluto, sólo su visibilidad.
     function syncPaymentAvailability() {
       var cart = window.AmadoCart ? window.AmadoCart.get() : { items: [] };
       var technicallyReady = cartValidationReady && !cartValidationFailed &&
         !validationRequest && getSellableItems(cart).length > 0;
       var hasDelivery = !!getDeliveryType();
+      var paymentMethod = getPaymentMethod();
+      var hasPaymentMethod = !!paymentMethod;
       var transferButton = document.getElementById('btn-transfer-order');
       var mercadoPagoButton = document.getElementById('btn-prepare-order');
+      var neutralButton = document.getElementById('btn-confirm-neutral');
+
       if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !technicallyReady;
       if (mercadoPagoButton && !mercadoPagoButton.hasAttribute('aria-busy')) mercadoPagoButton.disabled = !technicallyReady;
+      if (neutralButton) neutralButton.disabled = !technicallyReady;
+
+      if (transferButton) transferButton.hidden = paymentMethod !== 'transfer';
+      if (mercadoPagoButton) mercadoPagoButton.hidden = paymentMethod !== 'mercadopago';
+      if (neutralButton) neutralButton.hidden = hasPaymentMethod;
+
       if (deliveryHintEl) deliveryHintEl.hidden = !(technicallyReady && !hasDelivery);
+      if (paymentHintEl) paymentHintEl.hidden = !(technicallyReady && hasDelivery && !hasPaymentMethod);
     }
 
     function buildCartValidationPayload(cart) {
@@ -1679,6 +2081,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (totalShippingLineEl) totalShippingLineEl.hidden = true;
         if (shippingMsgEl)       { shippingMsgEl.hidden = true; shippingMsgEl.textContent = ''; }
         if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(subtotal);
+        if (cartSummaryTotalEl)  cartSummaryTotalEl.textContent = fmt.format(subtotal);
+        // V1.1 REDESIGN: sin entrega elegida todavía no hay total real que
+        // previsualizar por medio de pago — se ocultan ambas líneas en vez
+        // de mostrar un importe que después cambiaría.
+        if (transferPreviewEl) { transferPreviewEl.hidden = true; transferPreviewEl.textContent = ''; }
+        if (mpPreviewEl)        { mpPreviewEl.hidden = true; mpPreviewEl.textContent = ''; }
         return;
       }
 
@@ -1694,6 +2102,23 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (totalShippingLineEl) totalShippingLineEl.hidden = true;
         if (shippingMsgEl)       { shippingMsgEl.hidden = true; shippingMsgEl.textContent = ''; }
         if (stickyTotalEl)       stickyTotalEl.textContent  = fmt.format(total);
+        if (cartSummaryTotalEl)  cartSummaryTotalEl.textContent = fmt.format(total);
+
+        // V1.1 REDESIGN: preview de "Pagás $X" — espejo EXACTO de
+        // calculateTransferTotals() en functions/api/_orders_logic.js
+        // (mismo TRANSFER_FACTOR, mismo pickupDiscount ya calculado acá
+        // mismo, sin envío). Sólo de presentación: el backend recalcula
+        // todo desde cero al crear la orden, esto nunca se envía.
+        var transferProductsTotal = Math.round(subtotal * TRANSFER_FACTOR);
+        var transferPayable = Math.max(0, transferProductsTotal - pickupDiscount);
+        if (transferPreviewEl) {
+          transferPreviewEl.hidden = false;
+          transferPreviewEl.textContent = 'Precio normal ' + fmt.format(subtotal) + ' · Pagás ' + fmt.format(transferPayable);
+        }
+        if (mpPreviewEl) {
+          mpPreviewEl.hidden = false;
+          mpPreviewEl.textContent = 'Pagás ' + fmt.format(total);
+        }
       } else {
         var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
         var totalWithShipping = subtotal + shippingCost;
@@ -1716,6 +2141,21 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             : 'Te faltan ' + fmt.format(FREE_SHIPPING_THRESHOLD_UYU - subtotal) + ' para obtener envío gratis';
         }
         if (stickyTotalEl) stickyTotalEl.textContent = fmt.format(totalWithShipping);
+        if (cartSummaryTotalEl) cartSummaryTotalEl.textContent = fmt.format(totalWithShipping);
+
+        // V1.1 REDESIGN: mismo espejo que en la rama de retiro, ahora con
+        // shippingCost (sin pickupDiscount) — igual que
+        // calculateTransferTotals() del servidor.
+        var transferProductsTotalShip = Math.round(subtotal * TRANSFER_FACTOR);
+        var transferPayableShip = Math.max(0, transferProductsTotalShip + shippingCost);
+        if (transferPreviewEl) {
+          transferPreviewEl.hidden = false;
+          transferPreviewEl.textContent = 'Precio normal ' + fmt.format(subtotal) + ' · Pagás ' + fmt.format(transferPayableShip);
+        }
+        if (mpPreviewEl) {
+          mpPreviewEl.hidden = false;
+          mpPreviewEl.textContent = 'Pagás ' + fmt.format(totalWithShipping);
+        }
       }
     }
 
@@ -1896,6 +2336,55 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       return art;
     }
 
+    // ── V1.1 REDESIGN: fila compacta del resumen ─────────────────────────
+    // Función nueva y mínima, separada de buildItemRow() (que NO se toca):
+    // sólo miniatura + título + cantidad + precio para la vista colapsada
+    // del resumen. Los estados detallados (última unidad, precio
+    // actualizado, cantidad ajustada, quitar) siguen viviendo únicamente
+    // en la fila completa de buildItemRow(), detrás de "Editar".
+    function buildCompactItemRow(item, validation) {
+      var row = document.createElement('div');
+      row.className = 'cart-item-compact';
+
+      if (item.thumbnail) {
+        var img = document.createElement('img');
+        img.src = item.thumbnail;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.className = 'cart-item-compact-img';
+        row.appendChild(img);
+      } else {
+        var ph = document.createElement('div');
+        ph.className = 'cart-item-compact-img-placeholder';
+        ph.setAttribute('aria-hidden', 'true');
+        ph.textContent = '📚';
+        row.appendChild(ph);
+      }
+
+      var info = document.createElement('div');
+      info.className = 'cart-item-compact-info';
+
+      var t = document.createElement('p');
+      t.className = 'cart-item-compact-title';
+      t.textContent = item.title;
+      info.appendChild(t);
+
+      if (validation && isUnavailableStatus(validation.status)) {
+        var badge = document.createElement('span');
+        badge.className = 'cart-item-compact-unavailable';
+        badge.textContent = 'No disponible';
+        info.appendChild(badge);
+      } else {
+        var meta = document.createElement('p');
+        meta.className = 'cart-item-compact-meta';
+        meta.textContent = 'Cant. ' + item.quantity + ' · ' + fmt.format(item.price * item.quantity);
+        info.appendChild(meta);
+      }
+
+      row.appendChild(info);
+      return row;
+    }
+
     // ── Render completo ──────────────────────────────────────────────────
     function renderCart() {
       if (!window.AmadoCart) return;
@@ -1916,6 +2405,17 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       while (itemsList.firstChild) itemsList.removeChild(itemsList.firstChild);
       for (var i = 0; i < cart.items.length; i++) {
         itemsList.appendChild(buildItemRow(cart.items[i], validationFor(cart.items[i])));
+      }
+
+      if (itemsCompactList) {
+        while (itemsCompactList.firstChild) itemsCompactList.removeChild(itemsCompactList.firstChild);
+        for (var c = 0; c < cart.items.length; c++) {
+          itemsCompactList.appendChild(buildCompactItemRow(cart.items[c], validationFor(cart.items[c])));
+        }
+      }
+      if (cartSummaryCountEl) {
+        var totalQty = cart.items.reduce(function (s, it) { return s + (it.quantity || 0); }, 0);
+        cartSummaryCountEl.textContent = String(totalQty);
       }
 
       updateTotals();
@@ -1978,6 +2478,49 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     });
     syncShippingFields();
+
+    // ── V1.1 REDESIGN: toggle medio de pago ──────────────────────────────
+    var paymentMethodRadios = document.querySelectorAll('input[name="payment-method"]');
+    paymentMethodRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        clearPaymentMethodError();
+        updateTotals();
+        syncPaymentAvailability();
+        saveDraft();
+      });
+    });
+
+    // ── V1.1 REDESIGN: CTA neutro cuando todavía no se eligió pago ───────
+    var btnConfirmNeutral = document.getElementById('btn-confirm-neutral');
+    if (btnConfirmNeutral) {
+      btnConfirmNeutral.addEventListener('click', function () {
+        if (btnConfirmNeutral.disabled) return;
+        if (!requireDeliveryType()) return;
+        requirePaymentMethod();
+      });
+    }
+
+    // ── V1.1 REDESIGN: texto del disclosure del resumen (colapsado/expandido) ─
+    // <details> ya dispara "toggle" nativamente al abrir/cerrar — se usa acá
+    // en vez de un truco de CSS con contenido dinámico en ::before.
+    var cartSummaryPanelEl = document.getElementById('cart-summary-panel');
+    var cartSummaryChevronEl = document.querySelector('.cart-summary-chevron');
+    if (cartSummaryPanelEl && cartSummaryChevronEl) {
+      cartSummaryPanelEl.addEventListener('toggle', function () {
+        cartSummaryChevronEl.textContent = cartSummaryPanelEl.open ? 'Ocultar' : 'Ver resumen';
+      });
+    }
+
+    // ── V1.1 REDESIGN: mostrar/ocultar el editor completo del carrito ────
+    if (btnToggleEditor) {
+      btnToggleEditor.addEventListener('click', function () {
+        var expanded = itemsList && !itemsList.hidden;
+        if (itemsList) itemsList.hidden = expanded;
+        if (itemsCompactList) itemsCompactList.hidden = !expanded;
+        btnToggleEditor.textContent = expanded ? 'Editar' : 'Listo';
+        btnToggleEditor.setAttribute('aria-expanded', String(!expanded));
+      });
+    }
 
     // ── Barra mobile: no tapar teclado ni footer ─────────────────────────
     if (onlineCheckoutEnabled && cartPageEl) {

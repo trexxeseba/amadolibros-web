@@ -263,15 +263,19 @@ test('19. Transferencia: se deshabilita antes de cualquier await, con guarda exp
 
 test('20. seguir deshabilitado (aria-busy) evita que syncPaymentAvailability lo reactive a mitad de una operación', () => {
   const start = CARRITO.indexOf('function syncPaymentAvailability');
-  const fn = CARRITO.slice(start, start + 700);
+  // V1.1 REDESIGN: la función creció (medio de pago, CTA neutro) — la
+  // ventana necesita cubrir hasta después de mercadoPagoButton.hasAttribute.
+  const fn = CARRITO.slice(start, start + 1400);
   assert.match(fn, /!transferButton\.hasAttribute\('aria-busy'\)/);
   assert.match(fn, /!mercadoPagoButton\.hasAttribute\('aria-busy'\)/);
 });
 
 // ── 6. Microcopy "librería familiar" junto al WhatsApp secundario ──────────
 
+// V1.1 REDESIGN: texto final confirmado por Seba, reemplaza "Te atendemos
+// personalmente." por "y te ayudamos a completar la compra."
 const PERSONAL_NOTE_TEXT = 'Somos una librería familiar y esta web también la hacemos nosotros. ' +
-  'Si necesitás ayuda para completar tu compra, escribinos por WhatsApp. Te atendemos personalmente.';
+  'Si necesitás ayuda, escribinos por WhatsApp y te ayudamos a completar la compra.';
 
 test('21. la microcopy aparece con el texto exacto solicitado', () => {
   assert.match(CARRITO, /class="checkout-personal-note"/);
