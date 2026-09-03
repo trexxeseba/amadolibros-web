@@ -1,0 +1,45 @@
+name: SEARCH-QUALITY-1 baseline
+
+on:
+  push:
+    branches: [agent/search-quality-1]
+    paths:
+      - 'scripts/seo/search-quality-benchmark.mjs'
+      - '.github/workflows/search-quality-1.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/seo/search-quality-benchmark.mjs'
+      - '.github/workflows/search-quality-1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Run current production search baseline
+        env:
+          SEARCH_BENCHMARK_ORIGIN: https://www.amadolibros.com
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/search-quality-1
+          node scripts/seo/search-quality-benchmark.mjs | tee artifacts/search-quality-1/baseline.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const r=JSON.parse(fs.readFileSync('artifacts/search-quality-1/baseline.json','utf8'));
+          console.log(`cases=${r.summary.cases} no_results=${r.summary.no_results} rate=${r.summary.no_result_rate} errors=${r.summary.errors}`);
+          for(const c of r.cases) console.log(`${c.no_results?'MISS':'HIT '} [${c.intent}] ${c.q} -> ${(c.top5||[]).slice(0,3).map(x=>x.title).join(' | ')}`);
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: search-quality-1-baseline
+          path: artifacts/search-quality-1/baseline.json
+          retention-days: 14
