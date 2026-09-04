@@ -526,3 +526,28 @@ La limpieza histórica de los 17 `bibliographic.language` y la definición de
 B12 (heredadas del cierre de B11) quedan igualmente **pausadas detrás de la
 Verificación GA4** — ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en
 curso", que es la fuente de verdad única sobre el orden de prioridades.
+
+### Backlog registrado el 2026-09-04 — Merchant Center, Search Console, SEO técnico
+
+Ninguna de las tres áreas tenía una acción registrada antes de esta fecha
+(sólo menciones incidentales dentro de la evidencia de "full commerce
+production audit" de B11: conteos de `feed Merchant` y de URLs de
+`sitemap`, que no son lo mismo que un estado verificado en la consola real
+de cada herramienta). Registradas en `PLAN-MAESTRO.md`, sección "Backlog —
+Google Merchant Center, Search Console y SEO técnico", **todas después de
+GA4 y ninguna EN CURSO**:
+
+3. **Google Merchant Center — registrado, NO iniciado.** Estado real del
+   feed (diagnósticos, aprobados/desaprobados) contra la consola de
+   Merchant, no sólo el conteo interno ya existente.
+4. **Google Search Console — registrado, NO iniciado.** Estado real de
+   indexación (cobertura, sitemap) contra la consola de Search Console, no
+   sólo el conteo de URLs del sitemap ya reportado internamente.
+5. **SEO técnico / indexación / fichas — registrado, NO iniciado.**
+   Verificación de `canonical`/`noindex`/datos estructurados sobre una
+   muestra real de fichas, sin repetir lo que "full commerce production
+   audit" y "Reproduce public SEO baseline" ya cubren.
+
+Las tres pausadas detrás de la Verificación GA4 (y detrás de Blindaje
+técnico, que ya estaba pausado). Responsable, esfuerzo, criterio de
+aceptación y evidencia requerida de cada una en `PLAN-MAESTRO.md`.

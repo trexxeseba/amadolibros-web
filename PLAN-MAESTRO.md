@@ -19,9 +19,12 @@ explícitamente retomarlo.
   "Checkout V1.1".
 - **Qué queda pausado detrás de esta apuesta:** el PR técnico de limpieza
   de los 17 `bibliographic.language` históricos, la definición de B12
-  (ambos heredados del cierre de B11 — ver más abajo), y el Blindaje
-  técnico de Amado (registrado, **no iniciado** — ver "Backlog — checkout
-  V1.1", entrada 2).
+  (ambos heredados del cierre de B11 — ver más abajo); el Blindaje técnico
+  de Amado (registrado, **no iniciado** — ver "Backlog — checkout V1.1",
+  entrada 2); y, registrados el 2026-09-04, Google Merchant Center, Google
+  Search Console y SEO técnico/indexación (los tres registrados, **no
+  iniciados** — ver "Backlog — Google Merchant Center, Search Console y
+  SEO técnico", entradas 3-5).
 - **Checkout:** congelado comercialmente mientras dura esta verificación —
   no se toca código de checkout ni de Producción como parte de esta
   Gran Apuesta.
@@ -433,3 +436,95 @@ Seba antes de empezar cualquier trabajo sobre ella.
   `CODEOWNERS` en el repo, definición del gate, lista de required checks).
   Sin evidencia de configuración real, un punto no se considera cerrado
   aunque el código exista.
+
+---
+
+## Backlog — Google Merchant Center, Search Console y SEO técnico (fuera de B11 y de checkout V1.1)
+
+Ninguna de las tres áreas siguientes tenía una acción registrada en este
+documento antes de 2026-09-04 — sólo menciones incidentales (conteos de
+`feed Merchant` dentro de la evidencia del "full commerce production
+audit" de cada lote de B11, y "SEO" como parte del objetivo general de
+enriquecimiento editorial o como nombre de checks de CI). Ninguna de las
+tres es lo mismo que esos conteos existentes: piden estado real verificado
+directamente en la consola de cada herramienta, no una cifra ya calculada
+por otro proceso.
+
+Seba autorizó **registrar** las tres, en este orden, **después de GA4**.
+**Ninguna queda marcada EN CURSO** — las tres están **pausadas detrás de la
+Gran Apuesta en curso** (Verificación GA4 post-checkout) y detrás de
+Blindaje técnico de Amado, que ya estaba pausado. Requieren autorización
+explícita y separada de Seba antes de iniciar cualquier trabajo, la misma
+regla que ya aplica al resto del backlog.
+
+### 3. Google Merchant Center — estado real del feed
+
+- **Estado:** registrado, **NO iniciado**. Pausado detrás de GA4.
+- **Responsable:** a asignar por Seba.
+- **Esfuerzo estimado:** S-M — revisión de panel más comparación contra
+  evidencia interna ya existente; escala si aparecen desaprobaciones o
+  discrepancias reales que exijan corrección de datos.
+- **Objetivo:** confirmar el estado real de Merchant Center directamente en
+  su propia consola (Diagnósticos, Rendimiento del producto) — no sólo el
+  conteo de ítems del feed que ya reporta el "full commerce production
+  audit" interno (`scripts` de B11) en cada deploy. Puntualmente: ítems
+  aprobados vs. desaprobados y por qué; advertencias activas (precio,
+  disponibilidad, GTIN/ISBN, imagen); si el conteo de ofertas activas en
+  Merchant coincide con el conteo interno del feed del momento de la
+  comparación.
+- **Criterio de aceptación:** estado de diagnósticos de Merchant Center
+  confirmado con evidencia real de la consola, comparado explícitamente
+  contra el run más reciente disponible del "full commerce production
+  audit" — cualquier discrepancia (por ejemplo, ítems que el feed interno
+  cuenta como activos pero Merchant desaprueba) se documenta como hallazgo,
+  no se corrige como parte de este registro.
+- **Evidencia requerida:** captura o export del panel de diagnósticos de
+  Merchant Center (fecha incluida), con el conteo de aprobados/
+  desaprobados/advertencias, y la comparación numérica contra el run de
+  "full commerce production audit" usado como referencia.
+
+### 4. Google Search Console — indexación real
+
+- **Estado:** registrado, **NO iniciado**. Pausado detrás de GA4.
+- **Responsable:** a asignar por Seba.
+- **Esfuerzo estimado:** S — revisión de panel; escala a M si aparecen
+  errores de cobertura o de rastreo que exijan investigación adicional.
+- **Objetivo:** confirmar en Search Console real (no en el sitemap generado
+  internamente, que ya se reporta como conteo de URLs dentro del "full
+  commerce production audit") el estado real de indexación de las fichas
+  de libro: páginas indexadas vs. excluidas y por qué, errores de rastreo
+  activos, y que el sitemap enviado sea aceptado sin errores.
+- **Criterio de aceptación:** estado de cobertura de Search Console
+  confirmado con evidencia real de la consola — no sólo con el conteo de
+  URLs del sitemap ya reportado internamente —, incluyendo el motivo de
+  cualquier página excluida relevante y confirmación de que el sitemap no
+  tiene errores de procesamiento.
+- **Evidencia requerida:** captura o export del informe de cobertura de
+  Search Console (fecha incluida) y del estado del sitemap enviado.
+
+### 5. SEO técnico / indexación / fichas
+
+- **Estado:** registrado, **NO iniciado**. Pausado detrás de GA4.
+- **Responsable:** a asignar por Seba.
+- **Esfuerzo estimado:** S — es verificación, no desarrollo; escala a M si
+  aparecen problemas reales (canonical incorrecto, datos estructurados
+  inválidos, `noindex` mal aplicado) que exijan corrección de código.
+- **Objetivo:** confirmar, sobre una muestra real de fichas en Producción
+  (no sólo por lectura de código), que los elementos técnicos de SEO que
+  ya existen en el código siguen funcionando como se espera: `canonical`
+  correcto por ficha, `noindex`/`indexable` aplicado sólo donde corresponde
+  (el mismo criterio que ya usan `carrito`/`pedido`, que deben quedar
+  `noindex` con medición activa), datos estructurados (`schema.org`) sin
+  errores de validación, y que la muestra no repita ningún hallazgo que
+  auditorías previas de B11 (`full commerce production audit`, "Reproduce
+  public SEO baseline") ya hayan cerrado.
+- **Criterio de aceptación:** la muestra confirmada sin errores de
+  validación de datos estructurados, sin `canonical` incorrecto, sin
+  `noindex` aplicado o ausente donde no corresponde; cualquier hallazgo
+  real se documenta como hallazgo separado, no se corrige como parte de
+  este registro.
+- **Evidencia requerida:** resultado de una herramienta de validación de
+  datos estructurados (o equivalente) sobre la muestra elegida, con fecha;
+  lista de las URLs de la muestra y su `canonical`/`indexable` real
+  observado; referencia explícita a qué auditorías previas de B11 ya
+  cubrían parte de este alcance, para no repetir verificaciones cerradas.
