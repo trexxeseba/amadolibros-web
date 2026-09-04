@@ -4,6 +4,7 @@
 
   var STORAGE_KEY = 'amado-cart';
   var CONTEXT_KEY = 'amado-cart-context-v1';
+  var FINGERPRINT_KEY = 'amado-cart-order-fingerprint';
   var VERSION = 2; // v2: incorpora max_qty; carritos v1 sin max_qty se descartan
 
   function uuid() {
@@ -67,6 +68,36 @@
   function save(cart) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)); } catch (_) {}
     document.dispatchEvent(new CustomEvent('amado:cart-updated', { detail: cart }));
+  }
+
+  // Ciclo de vida de idempotency_key vs. fingerprint del pedido (BLOQUEANTE
+  // PR #310): una key representa UN fingerprint lógico de pedido (items +
+  // entrega + comprador + envío — ver generateFingerprint() en
+  // functions/api/_orders_logic.js, que es la fuente de verdad real). Acá
+  // sólo se guarda, junto a la key vigente, el último fingerprint con el que
+  // esa key se envió — para poder distinguir un reintento del mismo pedido
+  // (misma key) de un pedido que cambió después de haber sido enviado (key
+  // nueva). Nunca se rota "porque sí" en cada intento — sólo cuando el
+  // fingerprint actual difiere del último enviado CON LA KEY VIGENTE.
+  function loadLastFingerprint() {
+    try {
+      var raw = localStorage.getItem(FINGERPRINT_KEY);
+      if (!raw) return null;
+      var value = JSON.parse(raw);
+      if (!value || typeof value !== 'object' ||
+          typeof value.idempotency_key !== 'string' ||
+          typeof value.fingerprint !== 'string') return null;
+      return value;
+    } catch (_) { return null; }
+  }
+
+  function saveLastFingerprint(idempotencyKey, fingerprint) {
+    try {
+      localStorage.setItem(FINGERPRINT_KEY, JSON.stringify({
+        idempotency_key: idempotencyKey,
+        fingerprint: fingerprint,
+      }));
+    } catch (_) {}
   }
 
   function rememberShoppingContext() {
@@ -186,10 +217,35 @@
 
     clear: function () { save(emptyCart()); },
 
+    // No toca el fingerprint guardado: al dejarlo asociado a la key vieja,
+    // ensureKeyForFingerprint() ve que la key vigente cambió (sameKey da
+    // false) y sólo registra el fingerprint del próximo intento — no rota
+    // una segunda vez.
     rotateKey: function () {
       var cart = load();
       cart.idempotency_key = uuid();
       save(cart);
+      return cart.idempotency_key;
+    },
+
+    // Único punto centralizado que decide si la key vigente puede seguir
+    // usándose para `fingerprint` (mismo pedido — reintento de red, doble
+    // click, volver sin cambiar nada) o si hay que generar una nueva
+    // (el pedido cambió después de haber sido enviado con esta key). Debe
+    // llamarse con el fingerprint calculado del intento actual justo antes
+    // de cada submit a /api/orders. Cambios de items ya rotan la key por su
+    // cuenta (add/remove/setQty/syncValidated/clear) — cuando eso ya pasó,
+    // sameKey da false y acá sólo se registra el fingerprint nuevo, sin
+    // rotar una segunda vez.
+    ensureKeyForFingerprint: function (fingerprint) {
+      var cart = load();
+      var last = loadLastFingerprint();
+      var sameKey = !!last && last.idempotency_key === cart.idempotency_key;
+      if (sameKey && last.fingerprint !== fingerprint) {
+        cart.idempotency_key = uuid();
+        save(cart);
+      }
+      saveLastFingerprint(cart.idempotency_key, fingerprint);
       return cart.idempotency_key;
     },
 

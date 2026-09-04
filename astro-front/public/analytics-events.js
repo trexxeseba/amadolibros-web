@@ -256,6 +256,36 @@
     window.gtag('event', 'whatsapp_click', params);
   }
 
+  // BLOQUEANTE PR #310 — punto 1: mide en qué etapa se traba un comprador
+  // del checkout online, sin ningún dato personal. Sólo 4 parámetros
+  // permitidos, cada uno validado contra una lista cerrada. error_code no
+  // se "sanea" con safeToken() (que preserva dígitos literales — un
+  // teléfono pegado en un texto libre sobreviviría igual) — se exige que
+  // YA tenga forma de code interno (letras/números/guión bajo, empieza con
+  // letra); cualquier otra cosa (texto libre del error, un email, etc.) se
+  // descarta entera en vez de reenviar una versión "limpiada".
+  var CHECKOUT_ERROR_STAGES = new Set(['order_create', 'preference_create', 'transfer_options']);
+  var CHECKOUT_ERROR_PAYMENT_METHODS = new Set(['transfer', 'mercadopago']);
+  var CHECKOUT_ERROR_DELIVERY_TYPES = new Set(['pickup', 'shipping']);
+  var ERROR_CODE_SHAPE = /^[A-Za-z][A-Za-z0-9_]{0,59}$/;
+
+  function errorCodeToken(value) {
+    var str = String(value == null ? '' : value).trim();
+    return ERROR_CODE_SHAPE.test(str) ? str.toUpperCase() : '';
+  }
+
+  function trackCheckoutError(options) {
+    options = options || {};
+    if (!CHECKOUT_ERROR_STAGES.has(options.stage)) return false;
+    var params = { stage: options.stage };
+    var errorCode = errorCodeToken(options.errorCode);
+    if (errorCode) params.error_code = errorCode;
+    if (CHECKOUT_ERROR_PAYMENT_METHODS.has(options.paymentMethod)) params.payment_method = options.paymentMethod;
+    if (CHECKOUT_ERROR_DELIVERY_TYPES.has(options.deliveryType)) params.delivery_type = options.deliveryType;
+    window.gtag('event', 'checkout_error', params);
+    return true;
+  }
+
   function trackStockWaitlistCreated() {
     var context = pageContext();
     if (context.pageType !== 'product' || !context.productId) return false;
@@ -294,6 +324,7 @@
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
+    trackCheckoutError: trackCheckoutError,
     trackStockWaitlistCreated: trackStockWaitlistCreated,
     getMeasurementContext: getMeasurementContext,
   });

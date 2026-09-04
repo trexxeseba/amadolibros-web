@@ -21,7 +21,9 @@ test('pickup-cx-2: el beneficio de retiro se aplica desde $1.300 de compra total
   assert.match(carrito, /value="pickup"[\s\S]*?Ahorrás \$150 en compras desde \$1\.300/);
   assert.match(carrito, /PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300/);
   assert.match(carrito, /Number\(subtotal\) >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU/);
-  assert.match(carrito, /value="shipping"[\s\S]*?Envío gratis en compras desde \$1\.500/);
+  // V1.1 REDESIGN: copy más corto aprobado ("Gratis desde $1.500" en vez de
+  // "Envío gratis en compras desde $1.500"), mismo importe real.
+  assert.match(carrito, /value="shipping"[\s\S]*?Gratis desde \$1\.500/);
 });
 
 test('pickup-cx-2: sin selección o sin productos comprables no muestra descuentos', () => {
@@ -37,8 +39,8 @@ test('pickup-cx-2: sin selección o sin productos comprables no muestra descuent
   assert.match(fn, /discountLineEl\.hidden\s*=\s*pickupDiscount === 0/);
 });
 
-test('pickup-cx-2: elegir entrega recalcula y habilita el pago', () => {
-  assert.match(carrito, /getSellableItems\(cart\)\.length > 0 && !!getDeliveryType\(\)/);
+test('pickup-cx-2: elegir entrega recalcula totales y el aviso de guía (V1.1: la entrega ya no bloquea el CTA, sólo oculta el aviso)', () => {
+  assert.match(carrito, /var hasDelivery = !!getDeliveryType\(\);/);
   const start = carrito.indexOf("radio.addEventListener('change', function () {");
   const listener = carrito.slice(start, start + 300);
   assert.match(listener, /updateTotals\(\)/);
