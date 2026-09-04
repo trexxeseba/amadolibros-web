@@ -1,5 +1,31 @@
 # PLAN MAESTRO — B11: enriquecimiento editorial real del catálogo
 
+## 🎯 Gran Apuesta en curso — Verificación GA4 post-checkout
+
+Este documento es la única fuente de prioridades del proyecto. **Hay una
+sola Gran Apuesta en curso en este momento: la Verificación GA4
+post-checkout.** Todo lo demás (limpieza histórica de B11, definición de
+B12, Blindaje técnico de Amado) queda **registrado pero pausado detrás de
+esta apuesta** — no iniciar ningún otro trabajo hasta que Seba autorice
+explícitamente retomarlo.
+
+- **Estado:** EN CURSO.
+- **Responsable:** ChatGPT + Seba.
+- **Esfuerzo:** S — escalable a M sólo si aparecen eventos rotos que exijan
+  corrección de código además de medición.
+- **Objetivo, criterio de aceptación y evidencia requerida:** detallados en
+  "Backlog — checkout V1.1", entrada 1, más abajo.
+- **Avance real y evidencia recolectada:** `ESTADO-ACTUAL.md`, sección
+  "Checkout V1.1".
+- **Qué queda pausado detrás de esta apuesta:** el PR técnico de limpieza
+  de los 17 `bibliographic.language` históricos, la definición de B12
+  (ambos heredados del cierre de B11 — ver más abajo), y el Blindaje
+  técnico de Amado (registrado, **no iniciado** — ver "Backlog — checkout
+  V1.1", entrada 2).
+- **Checkout:** congelado comercialmente mientras dura esta verificación —
+  no se toca código de checkout ni de Producción como parte de esta
+  Gran Apuesta.
+
 ## Estado vigente (2026-09-03) — B11 TERMINADO
 
 - **B11 está cerrado.** Los tres lotes de B11.2 (01, 02 y 03 final) están
@@ -18,7 +44,9 @@
   `ESTADO-ACTUAL.md`, que es la fuente de verdad operativa.
 - **Lo que sigue, en orden:** 1) PR técnico de limpieza de los 17
   `bibliographic.language` históricos multivaluados; 2) definición de B12.
-  Ninguno de los dos está iniciado.
+  Ninguno de los dos está iniciado, y ambos quedan **pausados detrás de la
+  Gran Apuesta en curso** (Verificación GA4 post-checkout — ver sección al
+  principio del documento) hasta que Seba autorice retomarlos.
 
 ## Objetivo operativo
 
@@ -284,7 +312,7 @@ Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.
 
 ---
 
-## Backlog — checkout V1.1 (fuera de B11, registrado, sin ejecutar)
+## Backlog — checkout V1.1 (fuera de B11)
 
 Workstream separado de B11 — el checkout `/carrito` (rediseño V1.1,
 bloqueante de D1 Preview y ciclo de vida de idempotencia) se fusionó y se
@@ -293,21 +321,25 @@ desplegó a Producción en el
 `03abd31`, 2026-09-04). Detalle completo y evidencia en `ESTADO-ACTUAL.md`,
 sección "Checkout V1.1".
 
-Seba autorizó **registrar** las dos acciones siguientes en el backlog.
-**Ninguna de las dos está autorizada para ejecutarse todavía** — quedan
-anotadas fuera del orden de prioridades ya existente (limpieza de
-`bibliographic.language` → B12 sigue siendo lo próximo). Requieren
-autorización explícita y separada de Seba antes de iniciar cualquier
-trabajo.
+Seba autorizó registrar estas dos acciones en el backlog. Desde
+2026-09-04, la entrada 1 (Verificación GA4 post-checkout) es la **Gran
+Apuesta en curso** del proyecto — ver la sección al principio del
+documento — y queda **EN CURSO**, autorizada y activa. La entrada 2
+(Blindaje técnico de Amado) permanece **registrada, sin iniciar**, y
+**pausada detrás de GA4**: requiere autorización explícita y separada de
+Seba antes de empezar cualquier trabajo sobre ella.
 
-### 1. Verificación GA4 post-checkout
+### 1. Verificación GA4 post-checkout — 🎯 EN CURSO (Gran Apuesta activa)
 
-- **Responsable:** a asignar por Seba (agente/desarrollador designado al
-  momento de autorizar el inicio).
+- **Estado:** EN CURSO. Autorizada por Seba el 2026-09-04 como la única
+  Gran Apuesta activa del proyecto — todo lo demás en este documento
+  (limpieza de `bibliographic.language`, B12, Blindaje técnico) queda
+  pausado detrás de esta verificación.
+- **Responsable:** ChatGPT + Seba.
 - **Esfuerzo estimado:** S (1 sesión de trabajo) — es verificación de
-  instrumentación ya implementada, no desarrollo nuevo. Puede escalar a M
-  si aparecen eventos rotos que exijan corrección de código además de
-  medición.
+  instrumentación ya implementada, no desarrollo nuevo. Escalable a M
+  **sólo si** aparecen eventos rotos que exijan corrección de código
+  además de medición.
 - **Objetivo:** confirmar en Producción, con datos reales de GA4 (no sólo
   revisión de código), que los eventos de comercio y de error del checkout
   miden lo que deben:
@@ -344,8 +376,12 @@ trabajo.
   se observaron con datos reales (o su ausencia, si todavía no hubo
   errores reales que capturar).
 
-### 2. Blindaje técnico de Amado
+### 2. Blindaje técnico de Amado — registrado, NO iniciado
 
+- **Estado:** registrado, **NO iniciado**. Pausado detrás de la Gran
+  Apuesta en curso (Verificación GA4 post-checkout, entrada 1). No
+  empezar ningún punto de este objetivo sin autorización explícita y
+  separada de Seba.
 - **Responsable:** a asignar por Seba (agente/desarrollador designado al
   momento de autorizar el inicio).
 - **Esfuerzo estimado:** M-L (varios PRs pequeños y aislados, por diseño —

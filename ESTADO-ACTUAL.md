@@ -464,6 +464,18 @@ del bloqueante de D1 Preview y del ciclo de vida de idempotencia) se fusionó
 y desplegó en paralelo a B11, sobre la misma rama principal. No forma parte
 de B11 y no consume ni afecta sus contadores.
 
+**Estado actual (2026-09-04):**
+
+- **PR #310:** fusionado a `main` y **desplegado en Producción** (evidencia
+  abajo).
+- **Checkout:** **congelado comercialmente** — no se toca código de
+  checkout ni de Producción mientras dure la Verificación GA4
+  post-checkout.
+- **Acción activa actual (Gran Apuesta en curso):** **Verificación GA4
+  post-checkout**. Ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en curso"
+  y "Backlog — checkout V1.1", entrada 1, para objetivo, responsable
+  (ChatGPT + Seba), esfuerzo (S, escalable a M) y criterio de aceptación.
+
 - [PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310)
   fusionado a `main` por trexxeseba (commit `03abd3151fa093609c0c511d8207a056cd3fda19`),
   2026-09-04T08:46:00-03:00.
@@ -496,13 +508,21 @@ de B11 y no consume ni afecta sus contadores.
 - Detalle técnico completo (causa raíz, corrección, tests, checks) en el
   propio PR #310 y en su historial de comentarios.
 
-### Backlog registrado tras el cierre de PR #310 (sin ejecutar)
+### Backlog registrado tras el cierre de PR #310
 
-Seba autorizó **registrar** — no ejecutar todavía — dos acciones nuevas en
-`PLAN-MAESTRO.md`, sección "Backlog — checkout V1.1": (1) Verificación GA4
-post-checkout, (2) Blindaje técnico de Amado. Ambas quedan fuera del orden
-de prioridades ya existente (limpieza de `bibliographic.language` → B12
-sigue siendo lo próximo en B11) y requieren autorización explícita y
-separada antes de iniciar cualquier trabajo. Ver `PLAN-MAESTRO.md` para
-responsable/esfuerzo/criterio de aceptación/evidencia requerida de cada
-una.
+Dos acciones registradas en `PLAN-MAESTRO.md`, sección "Backlog — checkout
+V1.1":
+
+1. **Verificación GA4 post-checkout — EN CURSO.** Autorizada por Seba el
+   2026-09-04 como la única Gran Apuesta activa del proyecto. Responsable:
+   ChatGPT + Seba. Esfuerzo: S, escalable a M sólo si aparecen eventos
+   rotos. Objetivo, criterio de aceptación y evidencia requerida en
+   `PLAN-MAESTRO.md`.
+2. **Blindaje técnico de Amado — registrado, NO iniciado.** Pausado detrás
+   de la Verificación GA4. Requiere autorización explícita y separada de
+   Seba antes de empezar cualquier punto.
+
+La limpieza histórica de los 17 `bibliographic.language` y la definición de
+B12 (heredadas del cierre de B11) quedan igualmente **pausadas detrás de la
+Verificación GA4** — ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en
+curso", que es la fuente de verdad única sobre el orden de prioridades.
