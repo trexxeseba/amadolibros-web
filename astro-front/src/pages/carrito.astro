@@ -2004,6 +2004,39 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
+    // Espejo en el cliente de generateFingerprint() (functions/api/
+    // _orders_logic.js, fuente de verdad real) — sólo para decidir acá,
+    // ANTES de enviar, si la key vigente sigue representando el mismo
+    // pedido o si hay que rotar (evita el 409 en vez de reaccionar a él).
+    // Mismos campos, mismo orden de consolidación por product_id.
+    function checkoutFingerprint(cart, deliveryType, buyer, shipping) {
+      var items = paymentItemsPayload(cart)
+        .slice()
+        .sort(function (a, b) { return a.product_id < b.product_id ? -1 : a.product_id > b.product_id ? 1 : 0; });
+      var fp = {
+        items: items,
+        delivery_type: deliveryType,
+        pickup_ack: deliveryType === 'pickup' ? true : undefined,
+        buyer: {
+          name: (buyer.name || '').trim(),
+          phone: (buyer.phone || '').trim(),
+          email: (buyer.email || '').trim().toLowerCase(),
+        },
+      };
+      if (deliveryType === 'shipping' && shipping) {
+        fp.shipping = {
+          address: (shipping.address || '').trim(),
+          locality: (shipping.locality || '').trim(),
+          department: (shipping.department || '').trim(),
+          requested_date: '',
+          requested_from: '',
+          requested_to: '',
+          notes: (shipping.notes || '').trim(),
+        };
+      }
+      return JSON.stringify(fp);
+    }
+
     function commerceItems(cart) {
       return getSellableItems(cart).map(function (item) {
         return {
@@ -3091,6 +3124,17 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (!availabilityOk) return null;
       cart = window.AmadoCart.get();
 
+      var shippingForFp = deliveryType === 'shipping'
+        ? { address: address, locality: locality, department: department, notes: notes }
+        : null;
+      var fingerprint = checkoutFingerprint(
+        cart, deliveryType, { name: name, phone: phone, email: email }, shippingForFp
+      );
+      if (window.AmadoCart.ensureKeyForFingerprint) {
+        window.AmadoCart.ensureKeyForFingerprint(fingerprint);
+        cart = window.AmadoCart.get();
+      }
+
       var token = await getTurnstileTokenForOrder();
       var payload = {
         idempotency_key: cart.idempotency_key,
@@ -3115,6 +3159,20 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       if (!response.ok && orderData.code === 'CART_CHANGED') {
         await refreshCartAvailability({ beforePayment: true });
         return null;
+      }
+      if (!response.ok && (orderData.code === 'IDEMPOTENCY_CONFLICT' || orderData.code === 'ORDER_EXPIRED')) {
+        // Recuperación segura: la key vigente quedó inservible para este
+        // pedido (chocó con uno anterior, o el anterior venció) — se rota
+        // acá mismo para que el próximo intento del comprador ya salga con
+        // una identidad limpia, sin que tenga que hacer nada raro.
+        if (window.AmadoCart.rotateKey) window.AmadoCart.rotateKey();
+        var recoverableError = new Error(
+          orderData.code === 'IDEMPOTENCY_CONFLICT'
+            ? 'Actualizamos tu pedido para poder continuar. Intentá nuevamente.'
+            : (orderData.error || 'La orden anterior venció. Volvé a preparar el pedido.')
+        );
+        recoverableError.code = orderData.code;
+        throw recoverableError;
       }
       if (!response.ok) {
         var orderCreateError = new Error(orderData.error || 'No pudimos preparar el pedido.');
@@ -3304,6 +3362,17 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 
         btnPrepare.textContent = 'Preparando tu pedido…';
 
+        var prepShippingForFp = deliveryType === 'shipping'
+          ? { address: prepAddress, locality: prepBarrio, department: prepDepto, notes: prepNotes }
+          : null;
+        var prepFingerprint = checkoutFingerprint(
+          cart, deliveryType, { name: prepName, phone: prepPhone, email: prepEmail }, prepShippingForFp
+        );
+        if (window.AmadoCart.ensureKeyForFingerprint) {
+          window.AmadoCart.ensureKeyForFingerprint(prepFingerprint);
+          cart = window.AmadoCart.get();
+        }
+
         var payload = {
           idempotency_key: cart.idempotency_key,
           cf_turnstile_response: cfTsResponse,
@@ -3333,6 +3402,22 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           if (!resp.ok) {
             if (orderData.code === 'CART_CHANGED') {
               await refreshCartAvailability({ beforePayment: true });
+              resetPrepareButton();
+              return;
+            }
+            if (orderData.code === 'IDEMPOTENCY_CONFLICT' || orderData.code === 'ORDER_EXPIRED') {
+              // Recuperación segura: la key vigente quedó inservible para
+              // este pedido — se rota acá mismo para que el próximo intento
+              // ya salga limpio. Nunca se muestra el texto técnico del
+              // servidor ("idempotency_key"/"request_fingerprint") para
+              // IDEMPOTENCY_CONFLICT.
+              if (window.AmadoCart.rotateKey) window.AmadoCart.rotateKey();
+              showCheckoutError(
+                orderData.code === 'IDEMPOTENCY_CONFLICT'
+                  ? 'Actualizamos tu pedido para poder continuar. Intentá nuevamente.'
+                  : (orderData.error || 'La orden anterior venció. Volvé a preparar el pedido.')
+              );
+              trackCheckoutErrorEvent('order_create', orderData.code, 'mercadopago');
               resetPrepareButton();
               return;
             }

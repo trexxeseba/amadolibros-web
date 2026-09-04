@@ -40,7 +40,7 @@ test('deploy-checkout-v11-preview.yml aplica migraciones a la D1 de Preview ante
 test('el handler de Mercado Pago ya no antepone "Error: " al mensaje del servidor (evita el "Error: Error..." duplicado)', () => {
   const start = CARRITO.indexOf("btnPrepare.addEventListener('click'");
   assert.notEqual(start, -1);
-  const block = CARRITO.slice(start, start + 6000);
+  const block = CARRITO.slice(start, start + 8000);
   assert.doesNotMatch(block, /showCheckoutError\('Error: '/);
   assert.match(block, /showCheckoutError\(orderData\.error \|\|/);
 });

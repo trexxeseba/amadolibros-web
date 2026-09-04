@@ -290,8 +290,12 @@ async function findOrderByIdempotencyKey(db, idempotencyKey) {
 
 async function handleExistingOrder({ db, order, fingerprint, now }) {
   if (order.request_fingerprint !== fingerprint) {
+    // code interno para que el cliente pueda recuperarse (rotar identidad y
+    // reintentar) sin depender de parsear el texto — y sin que el texto
+    // técnico ("idempotency_key"/"request_fingerprint") le llegue nunca al
+    // comprador; carrito.astro nunca muestra `error` para este code.
     return json(
-      { error: 'Conflicto: el mismo idempotency_key fue usado con un pedido diferente.' },
+      { error: 'Conflicto: el mismo idempotency_key fue usado con un pedido diferente.', code: 'IDEMPOTENCY_CONFLICT' },
       409
     );
   }

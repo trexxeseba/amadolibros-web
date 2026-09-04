@@ -111,8 +111,10 @@ test('idempotencia idéntica responde antes de R2', async()=>{
   const r=await call(body,d,{},handler(async()=>{calls++; throw Error('R2');})); assert.equal(r.response.status,200); assert.equal(calls,0);
 });
 
-test('misma clave con pedido distinto devuelve 409', async()=>{
-  const body=pickup('conflict'); const r=await call(body,dbMock({existing:stored(body,{request_fingerprint:'otro'})})); assert.equal(r.response.status,409);
+test('misma clave con pedido distinto devuelve 409 con code de recuperación (IDEMPOTENCY_CONFLICT)', async()=>{
+  const body=pickup('conflict'); const r=await call(body,dbMock({existing:stored(body,{request_fingerprint:'otro'})}));
+  assert.equal(r.response.status,409);
+  assert.equal(r.data.code,'IDEMPOTENCY_CONFLICT');
 });
 
 test('orden vencida devuelve 410 y se marca expired', async()=>{
