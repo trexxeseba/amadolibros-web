@@ -453,3 +453,56 @@ pero conviene saber que ese literal hay que tocarlo en cada corrida.
 
 Registrado como definitivamente cerrado y fusionado. Ver detalle completo en
 `PLAN-MAESTRO.md`. No requiere ninguna acción adicional.
+
+---
+
+## Checkout V1.1 — PR #310 fusionado y desplegado (workstream separado de B11)
+
+Este documento es "ESTADO ACTUAL — B11" por título e historial, pero se dejó
+constancia acá porque el checkout V1.1 (rediseño de `/carrito`, corrección
+del bloqueante de D1 Preview y del ciclo de vida de idempotencia) se fusionó
+y desplegó en paralelo a B11, sobre la misma rama principal. No forma parte
+de B11 y no consume ni afecta sus contadores.
+
+- [PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310)
+  fusionado a `main` por trexxeseba (commit `03abd3151fa093609c0c511d8207a056cd3fda19`),
+  2026-09-04T08:46:00-03:00.
+- Alcance del PR: guía de checkout (entrega/envío gratis), rediseño
+  profundo de `/carrito` (layout 2 columnas, selector de pago, CTA único),
+  Preview dedicada con checkout realmente encendido
+  (`deploy-checkout-v11-preview.yml`), corrección del bloqueante real de
+  `POST /api/orders` en esa Preview (migraciones D1 de Preview atrasadas —
+  causa raíz confirmada con `PRAGMA table_info` antes/después), evento GA4
+  `checkout_error` sin PII, y corrección del ciclo de vida de
+  `idempotency_key` vs. `request_fingerprint` (bloqueante real encontrado
+  en prueba humana: reutilizar la key de una orden ya creada al cambiar el
+  pedido chocaba con el fail-safe 409 del backend).
+- Validación humana previa al merge, documentada en el propio PR: Retiro +
+  Mercado Pago, Envío + Mercado Pago y Retiro + Transferencia probados
+  sobre `https://checkout-v11-preview.amadolibros-web.pages.dev/carrito/`
+  sin conflicto de idempotencia en el recorrido completo (crear orden →
+  volver → cambiar entrega/medio de pago → reintentar).
+- Deploy to Cloudflare Pages sobre `03abd31`: `run 33869494365`. El job
+  "Deploy" (build Astro, migraciones D1 de Producción, Wrangler, smoke
+  test de Producción) terminó en **success**; el job "Publish production
+  paused/active catalog" (sincronización de catálogo, independiente del
+  checkout) seguía en curso al momento de este registro — no bloquea ni
+  condiciona el propio deploy del checkout, que ya está confirmado en
+  Producción.
+- **No se tocó nada de B11** en este PR: registry, `state.json` de B11.2 y
+  los contadores de la sección "Estado canónico" de este documento
+  permanecen exactamente en 1.609 enriquecidos / 2.006 pendientes / 3.615
+  universo, sin ningún cambio.
+- Detalle técnico completo (causa raíz, corrección, tests, checks) en el
+  propio PR #310 y en su historial de comentarios.
+
+### Backlog registrado tras el cierre de PR #310 (sin ejecutar)
+
+Seba autorizó **registrar** — no ejecutar todavía — dos acciones nuevas en
+`PLAN-MAESTRO.md`, sección "Backlog — checkout V1.1": (1) Verificación GA4
+post-checkout, (2) Blindaje técnico de Amado. Ambas quedan fuera del orden
+de prioridades ya existente (limpieza de `bibliographic.language` → B12
+sigue siendo lo próximo en B11) y requieren autorización explícita y
+separada antes de iniciar cualquier trabajo. Ver `PLAN-MAESTRO.md` para
+responsable/esfuerzo/criterio de aceptación/evidencia requerida de cada
+una.

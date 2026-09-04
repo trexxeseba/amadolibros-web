@@ -281,3 +281,119 @@ Trabajo heredado, en orden y sin iniciar: 1) PR técnico de limpieza de los
 17 `bibliographic.language` históricos; 2) B12.
 
 Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.
+
+---
+
+## Backlog — checkout V1.1 (fuera de B11, registrado, sin ejecutar)
+
+Workstream separado de B11 — el checkout `/carrito` (rediseño V1.1,
+bloqueante de D1 Preview y ciclo de vida de idempotencia) se fusionó y se
+desplegó a Producción en el
+[PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310) (commit
+`03abd31`, 2026-09-04). Detalle completo y evidencia en `ESTADO-ACTUAL.md`,
+sección "Checkout V1.1".
+
+Seba autorizó **registrar** las dos acciones siguientes en el backlog.
+**Ninguna de las dos está autorizada para ejecutarse todavía** — quedan
+anotadas fuera del orden de prioridades ya existente (limpieza de
+`bibliographic.language` → B12 sigue siendo lo próximo). Requieren
+autorización explícita y separada de Seba antes de iniciar cualquier
+trabajo.
+
+### 1. Verificación GA4 post-checkout
+
+- **Responsable:** a asignar por Seba (agente/desarrollador designado al
+  momento de autorizar el inicio).
+- **Esfuerzo estimado:** S (1 sesión de trabajo) — es verificación de
+  instrumentación ya implementada, no desarrollo nuevo. Puede escalar a M
+  si aparecen eventos rotos que exijan corrección de código además de
+  medición.
+- **Objetivo:** confirmar en Producción, con datos reales de GA4 (no sólo
+  revisión de código), que los eventos de comercio y de error del checkout
+  miden lo que deben:
+  - `view_item`, `add_to_cart`, `view_cart`, `begin_checkout`, `purchase`,
+    `whatsapp_click`, `checkout_error` — los siete disparan en el momento
+    correcto del flujo real, con los parámetros esperados.
+  - `purchase` no se duplica (recarga de `/pedido`, doble navegación,
+    back/forward) — ya existe una guarda de deduplicación en
+    `analytics-events.js`; esta verificación confirma que sostiene en
+    tráfico real, no sólo en el test unitario que ya la cubre.
+  - Ingresos y `transaction_id` de `purchase` coinciden con las órdenes
+    reales en D1 Producción (sin discrepancias de monto ni de moneda).
+  - Comportamiento consistente mobile vs. desktop (mismos eventos, mismos
+    parámetros, sin eventos exclusivos de una plataforma por accidente).
+  - `checkout_error` permite distinguir, en GA4, en qué etapa
+    (`order_create` / `preference_create` / `transfer_options`) se traban
+    compradores reales — no sólo que el evento existe, sino que sus datos
+    alcanzan para operar sobre ellos (identificar una etapa problemática
+    sin necesidad de leer logs del servidor).
+- **Criterio de aceptación:** los ocho puntos del objetivo confirmados con
+  evidencia de GA4 real (Realtime o informes, según disponibilidad en el
+  momento), no sólo con lectura de código. Cualquier evento roto, ausente,
+  duplicado o con parámetros incorrectos encontrado durante la
+  verificación se documenta como hallazgo — corregirlo es una acción
+  aparte, no implícita en esta verificación, y también requiere
+  autorización de Seba antes de tocar código de Producción.
+- **Evidencia requerida:** capturas o exports de GA4 (Realtime y/o
+  informes) mostrando cada uno de los siete eventos disparando con sus
+  parámetros; comparación numérica de `transaction_id`/monto de al menos
+  una muestra de compras reales contra las órdenes correspondientes en D1
+  Producción; confirmación explícita de no-duplicación de `purchase` sobre
+  al menos un caso de recarga/back real; comparación mobile vs. desktop
+  documentada; y un registro explícito de qué etapas de `checkout_error`
+  se observaron con datos reales (o su ausencia, si todavía no hubo
+  errores reales que capturar).
+
+### 2. Blindaje técnico de Amado
+
+- **Responsable:** a asignar por Seba (agente/desarrollador designado al
+  momento de autorizar el inicio).
+- **Esfuerzo estimado:** M-L (varios PRs pequeños y aislados, por diseño —
+  ver objetivo) — no es una sola pieza de trabajo, así que el esfuerzo
+  total depende de cuántos de los puntos siguientes se autoricen a la vez.
+- **Objetivo:** reducir el riesgo de que un cambio futuro rompa el
+  checkout o `main` sin que nadie lo note antes de Producción:
+  - Reforzar la protección de la rama `main` (reglas de branch protection:
+    checks obligatorios, sin push directo, revisión requerida donde
+    corresponda).
+  - Revisar `CODEOWNERS` para archivos críticos del checkout y del
+    backend de órdenes (`carrito.astro`, `cart.js`, `_orders_handler.js`,
+    `_orders_logic.js`, `_turnstile.js`, `_mp_handler.js`,
+    `_transfer_options_handler.js`, migraciones de `orders`) — hoy **no
+    existe ningún archivo `CODEOWNERS` en el repositorio**, así que este
+    punto empieza por definirlo, no por editarlo.
+  - Definir un gate de "cambio sensible" (qué archivos/rutas disparan
+    revisión y checks adicionales antes de poder fusionar).
+  - Suite de regresión obligatoria del checkout como check bloqueante en
+    PRs que toquen esos archivos críticos (hoy la suite existe y corre,
+    pero no está marcada como *required check* de branch protection).
+  - Separar el E2E automatizado de la dependencia de un Turnstile real:
+    el E2E de `deploy-checkout-v11-preview.yml` ya documenta (evidencia en
+    el PR #310) que Turnstile bloquea por diseño cualquier navegador
+    headless de CI, sin bypass — hace falta una estrategia explícita
+    (modo de prueba real de Turnstile si Cloudflare lo ofrece, o
+    verificación server-side desacoplada del challenge del navegador)
+    para que el E2E pueda confirmar la creación real de una orden sin
+    depender de una pasada humana cada vez.
+  - Convención de PRs pequeños y aislados para cambios críticos (no volver
+    a acumular etapas heterogéneas — guidance, rediseño, auditoría,
+    bloqueante de D1, idempotencia — en un solo PR como pasó con el
+    #310, aun cuando cada etapa individual estuvo bien probada).
+- **Criterio de aceptación:** cada punto del objetivo, al ejecutarse,
+  aterriza en su propio PR pequeño y aislado (consistente con el último
+  punto del objetivo) con su propio criterio de aceptación verificable —
+  por ejemplo: branch protection confirmado por captura de la
+  configuración real de GitHub, no por descripción; `CODEOWNERS` nuevo
+  cubriendo la lista de archivos críticos de arriba, con al menos una
+  aprobación de prueba ejercitándolo; el gate de cambio sensible
+  demostrado con un PR de prueba que lo dispara; la suite de regresión del
+  checkout agregada a los *required checks* de la rama `main`, confirmado
+  desde la configuración de branch protection; y una decisión explícita
+  (documentada) sobre cómo desacoplar el E2E de Turnstile real, con al
+  menos un caso demostrado end-to-end sin depender de una pasada humana.
+- **Evidencia requerida:** por cada punto ejecutado, el PR correspondiente
+  (número, head SHA, checks en verde) más la captura/export de la
+  configuración de GitHub que prueba el cambio (branch protection rules,
+  `CODEOWNERS` en el repo, definición del gate, lista de required checks).
+  Sin evidencia de configuración real, un punto no se considera cerrado
+  aunque el código exista.
