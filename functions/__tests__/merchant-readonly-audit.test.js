@@ -6,10 +6,16 @@ import {
   accountIssueLogSummary,
   aggregateDynamicRemarketingUy,
   aggregateProductStatusesByContextUy,
+  buildDataSourceInputMap,
   buildDiagnosis,
+  compareOfferIdsAcrossInputs,
+  countByInput,
   countFeedItems,
+  crossReferenceOfferIds,
   finalizeContextSummary,
   joinDataSourceProductCounts,
+  listProductsByIssueCode,
+  productDestinationStatus,
   summarizeDataSource,
   summarizeProducts,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -230,6 +236,137 @@ test('el resumen de accountIssues no expone PII y lista los destinos afectados s
   assert.equal(summary.severity, 'CRITICAL');
   assert.deepEqual(summary.destinations, ['SHOPPING_ADS', 'FREE_LISTINGS']);
   assert.doesNotMatch(JSON.stringify(summary), /@|telefono|phone|email/i);
+});
+
+// BLOQUEANTE PR #312 (misma auditoría, mismo PR) — detalle producto por
+// producto de los bloqueos prioritarios (image_too_small, precio faltante,
+// ebooks, landing pages) y cruce real de offer_id entre AUTOFEED y FILE.
+// Todo puro post-procesamiento en memoria sobre products.list ya leído.
+
+function sampleProduct(overrides = {}) {
+  return {
+    offerId: 'AL-0001',
+    dataSource: 'accounts/533/dataSources/1',
+    productAttributes: {
+      title: 'Cien años de soledad',
+      link: 'https://www.amadolibros.com/producto/cien-anos-de-soledad?utm_source=x',
+      imageLink: 'https://cdn.amadolibros.com/img/cien-anos.jpg?token=secreto',
+      price: { amountMicros: '450000000', currencyCode: 'UYU' },
+      availability: 'in stock',
+    },
+    productStatus: {
+      destinationStatuses: [
+        { reportingContext: 'SHOPPING_ADS', disapprovedCountries: ['UY'] },
+        { reportingContext: 'FREE_LISTINGS', approvedCountries: ['UY'] },
+      ],
+      itemLevelIssues: [
+        { code: 'image_too_small', severity: 'DISAPPROVED', reportingContext: 'SHOPPING_ADS' },
+      ],
+    },
+    ...overrides,
+  };
+}
+
+test('lista producto por producto los que tienen un código de issue dado, de-duplicados por offer_id', () => {
+  const products = [
+    sampleProduct(),
+    sampleProduct({
+      offerId: 'AL-0002',
+      productAttributes: { ...sampleProduct().productAttributes, title: 'Rayuela', price: undefined },
+      productStatus: {
+        destinationStatuses: [{ reportingContext: 'FREE_LISTINGS', pendingCountries: ['UY'] }],
+        itemLevelIssues: [{ code: 'item_missing_required_attribute', attribute: 'price', reportingContext: 'FREE_LISTINGS' }],
+      },
+    }),
+    sampleProduct({ offerId: 'AL-0003', productStatus: { itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'SHOPPING_ADS' }] } }),
+  ];
+
+  const tooSmall = listProductsByIssueCode(products, { code: 'image_too_small', contexts: ['SHOPPING_ADS', 'FREE_LISTINGS'] });
+  assert.equal(tooSmall.length, 1);
+  assert.equal(tooSmall[0].offerId, 'AL-0001');
+  assert.equal(tooSmall[0].title, 'Cien años de soledad');
+  assert.equal(tooSmall[0].price, '450.00 UYU');
+  assert.equal(tooSmall[0].shoppingAdsStatus, 'disapproved');
+  assert.equal(tooSmall[0].freeListingsStatus, 'active');
+  // ni la URL ni la imagen exponen credenciales o tokens de query.
+  assert.equal(JSON.stringify(tooSmall).includes('secreto'), false);
+  assert.equal(JSON.stringify(tooSmall).includes('utm_source'), false);
+
+  const missingPrice = listProductsByIssueCode(products, { code: 'item_missing_required_attribute', attribute: 'price', contexts: ['SHOPPING_ADS', 'FREE_LISTINGS'] });
+  assert.equal(missingPrice.length, 1);
+  assert.equal(missingPrice[0].offerId, 'AL-0002');
+  assert.equal(missingPrice[0].price, null);
+
+  const ebooks = listProductsByIssueCode(products, { code: 'ebooks_policy_violation', contexts: ['SHOPPING_ADS'] });
+  assert.equal(ebooks.length, 1);
+  assert.equal(ebooks[0].offerId, 'AL-0003');
+});
+
+test('el mismo offer_id con dos issues distintos no se cuenta dos veces dentro de una misma lista', () => {
+  const product = sampleProduct({
+    productStatus: {
+      destinationStatuses: [],
+      itemLevelIssues: [
+        { code: 'image_too_small', reportingContext: 'SHOPPING_ADS' },
+        { code: 'image_too_small', reportingContext: 'FREE_LISTINGS' },
+      ],
+    },
+  });
+  const result = listProductsByIssueCode([product, product], { code: 'image_too_small', contexts: ['SHOPPING_ADS', 'FREE_LISTINGS'] });
+  assert.equal(result.length, 1);
+});
+
+test('cruza offer_id exactos entre dos listas de issues (no sólo cantidades)', () => {
+  const a = [{ offerId: 'AL-1' }, { offerId: 'AL-2' }, { offerId: 'AL-3' }];
+  const b = [{ offerId: 'AL-2' }, { offerId: 'AL-4' }];
+  const overlap = crossReferenceOfferIds(a, b);
+  assert.deepEqual(overlap, { both: 1, onlyA: 2, onlyB: 1 });
+});
+
+test('countByInput agrupa filas por el input real de su dataSource', () => {
+  const map = buildDataSourceInputMap([
+    { name: 'accounts/533/dataSources/1', input: 'AUTOFEED' },
+    { name: 'accounts/533/dataSources/2', input: 'FILE' },
+  ]);
+  const rows = [
+    { dataSource: 'accounts/533/dataSources/1' },
+    { dataSource: 'accounts/533/dataSources/1' },
+    { dataSource: 'accounts/533/dataSources/2' },
+    { dataSource: 'accounts/533/dataSources/9' },
+  ];
+  assert.deepEqual(countByInput(rows, map), { AUTOFEED: 2, FILE: 1, '(desconocido)': 1 });
+});
+
+test('compara offer_id reales entre AUTOFEED y FILE, no sólo el total por fuente', () => {
+  const map = buildDataSourceInputMap([
+    { name: 'accounts/533/dataSources/autofeed', input: 'AUTOFEED' },
+    { name: 'accounts/533/dataSources/file', input: 'FILE' },
+  ]);
+  const products = [
+    sampleProduct({ offerId: 'AL-DUP', dataSource: 'accounts/533/dataSources/autofeed', productAttributes: { title: 'Duplicado (autofeed)', price: { amountMicros: '400000000', currencyCode: 'UYU' } } }),
+    sampleProduct({ offerId: 'AL-DUP', dataSource: 'accounts/533/dataSources/file', productAttributes: { title: 'Duplicado (file)', price: { amountMicros: '420000000', currencyCode: 'UYU' } } }),
+    sampleProduct({ offerId: 'AL-SOLO-AUTOFEED', dataSource: 'accounts/533/dataSources/autofeed' }),
+    sampleProduct({ offerId: 'AL-SOLO-FILE', dataSource: 'accounts/533/dataSources/file' }),
+  ];
+
+  const result = compareOfferIdsAcrossInputs(products, map, ['AUTOFEED', 'FILE'], 10);
+  assert.equal(result.totalUniqueOfferIds, 3);
+  assert.equal(result.bothCount, 1);
+  assert.equal(result.onlyACount, 1);
+  assert.equal(result.onlyBCount, 1);
+  assert.equal(result.sampleBoth.length, 1);
+  assert.equal(result.sampleBoth[0].offerId, 'AL-DUP');
+  assert.equal(result.sampleBoth[0].AUTOFEED.title, 'Duplicado (autofeed)');
+  assert.equal(result.sampleBoth[0].FILE.title, 'Duplicado (file)');
+  assert.equal(result.sampleBoth[0].AUTOFEED.price, '400.00 UYU');
+  assert.equal(result.sampleBoth[0].FILE.price, '420.00 UYU');
+});
+
+test('productDestinationStatus devuelve el estado real por reportingContext, no el de Dynamic remarketing', () => {
+  const product = sampleProduct();
+  assert.equal(productDestinationStatus(product, 'SHOPPING_ADS'), 'disapproved');
+  assert.equal(productDestinationStatus(product, 'FREE_LISTINGS'), 'active');
+  assert.equal(productDestinationStatus(product, 'DISPLAY_ADS'), 'missing_context');
 });
 
 test('la implementación no contiene llamadas de escritura a Merchant API', () => {

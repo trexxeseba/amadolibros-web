@@ -248,6 +248,138 @@ export function accountIssueLogSummary(issue = {}) {
   };
 }
 
+// Segunda ampliación (misma auditoría de solo lectura, mismo PR): las
+// secciones anteriores ya muestran cuántos productos bloquean cada código de
+// issue por reportingContext, pero no CUÁLES productos son. Estas funciones
+// recorren la lista de productos ya obtenida por products.list (sin ninguna
+// llamada nueva) y arman el detalle producto por producto para los bloqueos
+// prioritarios, más el cruce real de offer_id entre AUTOFEED y FILE.
+
+function productOfferId(product) {
+  return asText(product?.offerId) || asText(product?.productAttributes?.offerId) || null;
+}
+
+function productTitle(product) {
+  return asText(product?.productAttributes?.title) || asText(product?.title) || '(sin título)';
+}
+
+function productPriceText(product) {
+  const price = product?.productAttributes?.price;
+  if (!price || price.amountMicros == null) return null;
+  const amount = Number(price.amountMicros) / 1_000_000;
+  const currency = asText(price.currencyCode);
+  return `${Number.isFinite(amount) ? amount.toFixed(2) : price.amountMicros}${currency ? ` ${currency}` : ''}`;
+}
+
+function productAvailability(product) {
+  return asText(product?.productAttributes?.availability) || null;
+}
+
+export function productDestinationStatus(product, context) {
+  const rows = Array.isArray(product?.productStatus?.destinationStatuses) ? product.productStatus.destinationStatuses : [];
+  const row = rows.find(entry => upper(entry.reportingContext) === upper(context));
+  if (!row) return 'missing_context';
+  if ((row.approvedCountries || []).some(isUy)) return 'active';
+  if ((row.pendingCountries || []).some(isUy)) return 'pending';
+  if ((row.disapprovedCountries || []).some(isUy)) return 'disapproved';
+  return 'other_country';
+}
+
+function productRow(product) {
+  return {
+    offerId: productOfferId(product),
+    title: productTitle(product),
+    dataSource: asText(product.dataSource) || null,
+    link: safeFetchUri(product?.productAttributes?.link),
+    imageLink: safeFetchUri(product?.productAttributes?.imageLink),
+    price: productPriceText(product),
+    availability: productAvailability(product),
+    shoppingAdsStatus: productDestinationStatus(product, 'SHOPPING_ADS'),
+    freeListingsStatus: productDestinationStatus(product, 'FREE_LISTINGS'),
+  };
+}
+
+// Lista, de-duplicada por offer_id, los productos cuyo productStatus trae un
+// itemLevelIssue con ese código (y, si se pide, ese atributo y esos
+// reportingContext). Puro filtrado en memoria sobre datos ya leídos.
+export function listProductsByIssueCode(products = [], { code, attribute = null, contexts = [] } = {}) {
+  const wantedContexts = contexts.map(upper);
+  const seen = new Map();
+  for (const product of products) {
+    const issues = Array.isArray(product?.productStatus?.itemLevelIssues) ? product.productStatus.itemLevelIssues : [];
+    const matched = issues.some(issue =>
+      asText(issue.code) === code &&
+      (!attribute || upper(issue.attribute) === upper(attribute)) &&
+      (!wantedContexts.length || wantedContexts.includes(upper(issue.reportingContext)))
+    );
+    if (!matched) continue;
+    const offerId = productOfferId(product) || `(sin offerId #${seen.size})`;
+    if (!seen.has(offerId)) seen.set(offerId, productRow(product));
+  }
+  return [...seen.values()];
+}
+
+export function crossReferenceOfferIds(listA = [], listB = []) {
+  const idsA = new Set(listA.map(row => row.offerId));
+  const idsB = new Set(listB.map(row => row.offerId));
+  const both = [...idsA].filter(id => idsB.has(id));
+  return { both: both.length, onlyA: idsA.size - both.length, onlyB: idsB.size - both.length };
+}
+
+export function countByInput(rows = [], dataSourceInputMap = new Map()) {
+  const counts = {};
+  for (const row of rows) {
+    const input = dataSourceInputMap.get(row.dataSource) || '(desconocido)';
+    counts[input] = (counts[input] || 0) + 1;
+  }
+  return counts;
+}
+
+export function buildDataSourceInputMap(dataSources = []) {
+  const map = new Map();
+  for (const source of dataSources) {
+    if (source?.name) map.set(source.name, upper(source.input));
+  }
+  return map;
+}
+
+// Compara offer_id reales (no sólo cantidades) entre dos inputs de dataSource
+// (por defecto AUTOFEED vs FILE): cuántos offer_id están sólo en uno, sólo en
+// el otro, o en ambos — y para los que están en ambos, una muestra con
+// precio/imagen/disponibilidad/título de cada lado para poder compararlos.
+export function compareOfferIdsAcrossInputs(products = [], dataSourceInputMap = new Map(), inputsToCompare = ['AUTOFEED', 'FILE'], sampleSize = 10) {
+  const [inputA, inputB] = inputsToCompare;
+  const byInput = new Map(inputsToCompare.map(input => [input, new Map()]));
+  for (const product of products) {
+    const input = dataSourceInputMap.get(asText(product.dataSource));
+    const bucket = byInput.get(input);
+    if (!bucket) continue;
+    const offerId = productOfferId(product);
+    if (!offerId) continue;
+    if (!bucket.has(offerId)) bucket.set(offerId, product);
+  }
+  const mapA = byInput.get(inputA);
+  const mapB = byInput.get(inputB);
+  const idsA = new Set(mapA.keys());
+  const idsB = new Set(mapB.keys());
+  const bothIds = [...idsA].filter(id => idsB.has(id));
+  const onlyAIds = [...idsA].filter(id => !idsB.has(id));
+  const onlyBIds = [...idsB].filter(id => !idsA.has(id));
+  return {
+    inputA,
+    inputB,
+    totalUniqueOfferIds: new Set([...idsA, ...idsB]).size,
+    bothCount: bothIds.length,
+    onlyACount: onlyAIds.length,
+    onlyBCount: onlyBIds.length,
+    sampleBoth: bothIds.slice(0, sampleSize).map(offerId => ({
+      offerId,
+      [inputA]: productRow(mapA.get(offerId)),
+      [inputB]: productRow(mapB.get(offerId)),
+    })),
+  };
+}
+
 function productDestinationState(product, country = 'UY') {
   const rows = Array.isArray(product?.productStatus?.destinationStatuses)
     ? product.productStatus.destinationStatuses.filter(row => isDynamicRemarketing(row.reportingContext))
@@ -597,6 +729,32 @@ export async function main() {
 
   const dataSourcesWithCounts = joinDataSourceProductCounts(dataSources, products?.byDataSource || []);
 
+  // Tercera ampliación (mismo PR): detalle producto por producto de los
+  // bloqueos prioritarios (image_too_small, precio faltante, ebooks,
+  // landing pages) y el cruce real de offer_id entre AUTOFEED y FILE — todo
+  // en memoria sobre los mismos productos ya leídos por products.list.
+  const rawProducts = byName.products.data || [];
+  const dataSourceInputMap = buildDataSourceInputMap(dataSources);
+  const shoppingFreeContexts = ['SHOPPING_ADS', 'FREE_LISTINGS'];
+
+  const imageTooSmall = listProductsByIssueCode(rawProducts, { code: 'image_too_small', contexts: shoppingFreeContexts });
+  const missingPrice = listProductsByIssueCode(rawProducts, { code: 'item_missing_required_attribute', attribute: 'price', contexts: shoppingFreeContexts });
+  const ebooks = listProductsByIssueCode(rawProducts, { code: 'ebooks_policy_violation', contexts: ['SHOPPING_ADS'] });
+  const landingPendingCrawl = listProductsByIssueCode(rawProducts, { code: 'landing_page_pending_crawl', contexts: shoppingFreeContexts });
+  const landingError = listProductsByIssueCode(rawProducts, { code: 'landing_page_error', contexts: shoppingFreeContexts });
+
+  const productBreakdown = {
+    imageTooSmall,
+    imageTooSmallByInput: countByInput(imageTooSmall, dataSourceInputMap),
+    missingPrice,
+    missingPriceByInput: countByInput(missingPrice, dataSourceInputMap),
+    overlapImageTooSmallVsMissingPrice: crossReferenceOfferIds(imageTooSmall, missingPrice),
+    ebooks,
+    landingPendingCrawl,
+    landingError,
+    autofeedVsFile: compareOfferIdsAcrossInputs(rawProducts, dataSourceInputMap, ['AUTOFEED', 'FILE'], 10),
+  };
+
   const report = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -610,6 +768,7 @@ export async function main() {
     aggregateStatuses: byName.aggregateProductStatuses.ok ? byName.aggregateProductStatuses.data : null,
     dynamicRemarketingUy,
     reportingContextsUy,
+    productBreakdown,
     products,
     diagnosis: buildDiagnosis({
       alert,
@@ -666,6 +825,27 @@ export async function main() {
     total: accountIssues.length,
     issues: accountIssues.map(accountIssueLogSummary),
   }, null, 2));
+
+  // Cuarta sección de stdout: detalle producto por producto de los bloqueos
+  // prioritarios. Sin PII — son atributos de catálogo (offer_id, título,
+  // imagen, precio), no datos de compradores.
+  console.log('=== IMAGE_TOO_SMALL (producto por producto) ===');
+  console.log(JSON.stringify({ count: imageTooSmall.length, byInput: productBreakdown.imageTooSmallByInput, products: imageTooSmall }, null, 2));
+
+  console.log('=== MISSING PRICE (producto por producto) ===');
+  console.log(JSON.stringify({ count: missingPrice.length, byInput: productBreakdown.missingPriceByInput, products: missingPrice }, null, 2));
+
+  console.log('=== CRUCE image_too_small vs missing_price ===');
+  console.log(JSON.stringify(productBreakdown.overlapImageTooSmallVsMissingPrice, null, 2));
+
+  console.log('=== AUTOFEED vs FILE por offer_id ===');
+  console.log(JSON.stringify(productBreakdown.autofeedVsFile, null, 2));
+
+  console.log('=== EBOOKS policy violation (SHOPPING_ADS) ===');
+  console.log(JSON.stringify(ebooks, null, 2));
+
+  console.log('=== LANDING PAGES ===');
+  console.log(JSON.stringify({ pendingCrawl: landingPendingCrawl, error: landingError }, null, 2));
 
   if (!byName.aggregateProductStatuses.ok && !byName.products.ok) {
     process.exitCode = 1;
