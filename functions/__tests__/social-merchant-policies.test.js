@@ -94,3 +94,86 @@ test('las ofertas activas referencian la política global y las pausadas no crea
   ));
   assert.equal(paused.offers, undefined);
 });
+
+// QW1 (Merchant, PR de recuperación de missing_price): un producto ACTIVO
+// con precio real de catálogo debe publicar Offer aunque hoy no tenga stock
+// — Google necesita ver el precio real + disponibilidad real, no la ausencia
+// total de Offer (eso es lo que generaba missing_price para fichas que sí
+// tienen precio comercial). 'paused' (arriba) sigue sin Offer: no cambia.
+
+test('QW1: activo con precio real pero sin stock publica Offer con OutOfStock (no omite el precio)', () => {
+  const outOfStock = productSchemaFromHtml(renderPage(
+    item({ status: 'active', available_quantity: 0 }),
+    'libro-de-prueba',
+    false,
+    '',
+  ));
+  assert.ok(outOfStock.offers, 'debe existir Offer para un producto activo con precio real');
+  assert.equal(outOfStock.offers.price, '1500');
+  assert.equal(outOfStock.offers.priceCurrency, 'UYU');
+  assert.equal(outOfStock.offers.availability, 'https://schema.org/OutOfStock');
+  assert.equal(outOfStock.offers.url, 'https://www.amadolibros.com/libro/MLU123456789/libro-de-prueba');
+});
+
+test('QW1: activo con stock sigue publicando Offer con InStock (sin regresión)', () => {
+  const inStock = productSchemaFromHtml(renderPage(item(), 'libro-de-prueba', false, ''));
+  assert.equal(inStock.offers.availability, 'https://schema.org/InStock');
+  assert.equal(inStock.offers.price, '1500');
+});
+
+test('QW1: sin precio real de catálogo NUNCA se inventa un Offer (price=0, null o ausente)', () => {
+  for (const badPrice of [0, null, undefined, '']) {
+    const noPrice = productSchemaFromHtml(renderPage(
+      item({ price: badPrice, available_quantity: 3 }),
+      'libro-de-prueba',
+      false,
+      '',
+    ));
+    assert.equal(noPrice.offers, undefined, `price=${JSON.stringify(badPrice)} no debe generar Offer`);
+  }
+});
+
+test('QW1: moneda no soportada (no UYU) tampoco genera Offer — no se inventa una conversión', () => {
+  const otherCurrency = productSchemaFromHtml(renderPage(
+    item({ currency: 'USD', available_quantity: 3 }),
+    'libro-de-prueba',
+    false,
+    '',
+  ));
+  assert.equal(otherCurrency.offers, undefined);
+});
+
+test('QW1: paused sin stock sigue sin Offer aunque tenga precio real (no cambia)', () => {
+  const paused = productSchemaFromHtml(renderPage(
+    item({ status: 'paused', available_quantity: 0, price: 1500 }),
+    'libro-de-prueba',
+    false,
+    '',
+  ));
+  assert.equal(paused.offers, undefined);
+});
+
+test('QW1: Offer.url siempre coincide con la URL canónica de la ficha', () => {
+  const html = renderPage(item({ available_quantity: 0 }), 'otro-slug-de-prueba', false, '');
+  const schema = productSchemaFromHtml(html);
+  const canonicalMatch = html.match(/<link rel="canonical" href="([^"]+)">/);
+  assert.ok(canonicalMatch, 'debe existir <link rel=canonical>');
+  assert.equal(schema.offers.url, canonicalMatch[1]);
+});
+
+test('QW1: itemCondition sigue aplicándose sobre el Offer aunque esté sin stock', () => {
+  const used = productSchemaFromHtml(renderPage(
+    item({ condition: 'used', available_quantity: 0 }),
+    'libro-de-prueba',
+    false,
+    '',
+  ));
+  assert.equal(used.offers.itemCondition, 'https://schema.org/UsedCondition');
+});
+
+test('QW1: no hay regresión en el carrito/checkout — sellableInCheckout sigue exigiendo stock real', () => {
+  const html = renderPage(item({ available_quantity: 0 }), 'libro-de-prueba', false, '');
+  // El botón de acción y el bloque de precio comprables siguen ausentes sin
+  // stock real, aunque el JSON-LD ahora publique el Offer con OutOfStock.
+  assert.doesNotMatch(html, /Agregar al carrito/i);
+});

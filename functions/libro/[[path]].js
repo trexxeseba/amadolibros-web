@@ -456,6 +456,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = item.status === 'active' && stockQty > 0;
     const sellableInCheckout = inStock && checkoutCurrencySupported;
+    // QW1 (Merchant): un producto activo con precio real de catálogo publica
+    // Offer aunque hoy esté sin stock — Google necesita ver el precio real y
+    // la disponibilidad real (OutOfStock), no la ausencia total de Offer.
+    // 'paused' sigue sin Offer (no está realmente en venta). Nunca se inventa
+    // un precio: sin precio real de catálogo, tampoco hay Offer.
+    const hasRealPrice = item.status === 'active' && checkoutCurrencySupported && price > 0;
     const hasFreeShipping = sellableInCheckout && price >= FREE_SHIPPING_THRESHOLD_UYU;
     const condition     = formatCondition(item.condition);
     const dimensions    = item.dimensions_text || formatDimensions(item.dimensions);
@@ -556,13 +562,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
         'sku':      item.id,
     };
-    if (sellableInCheckout) {
+    if (hasRealPrice) {
         schemaProduct.offers = {
             '@type':        'Offer',
             'url':          canonicalUrl,
             'priceCurrency': currency,
             'price':        String(price),
-            'availability': 'https://schema.org/InStock',
+            'availability': inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             'seller': {
                 '@type': 'OnlineStore',
                 '@id': `${BASE}/#bookstore`,
