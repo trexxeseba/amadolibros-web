@@ -275,6 +275,13 @@ function productAvailability(product) {
   return asText(product?.productAttributes?.availability) || null;
 }
 
+function productGtin(product) {
+  const attrs = product?.productAttributes || {};
+  if (asText(attrs.gtin)) return asText(attrs.gtin);
+  if (Array.isArray(attrs.gtins) && attrs.gtins.length) return asText(attrs.gtins[0]) || null;
+  return null;
+}
+
 export function productDestinationStatus(product, context) {
   const rows = Array.isArray(product?.productStatus?.destinationStatuses) ? product.productStatus.destinationStatuses : [];
   const row = rows.find(entry => upper(entry.reportingContext) === upper(context));
@@ -294,8 +301,81 @@ function productRow(product) {
     imageLink: safeFetchUri(product?.productAttributes?.imageLink),
     price: productPriceText(product),
     availability: productAvailability(product),
+    gtin: productGtin(product),
     shoppingAdsStatus: productDestinationStatus(product, 'SHOPPING_ADS'),
     freeListingsStatus: productDestinationStatus(product, 'FREE_LISTINGS'),
+  };
+}
+
+// Tercera ampliación (mismo PR): el cruce por offer_id (arriba) no responde
+// si dos offer_id distintos son en realidad el mismo libro — para eso hace
+// falta identidad real: mismo link (landing page) o mismo GTIN/ISBN. Ambos
+// campos ya vienen en productAttributes de products.list, así que esto
+// sigue siendo post-procesamiento en memoria, sin ninguna llamada nueva.
+export function normalizeLink(url) {
+  const raw = asText(url);
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    const path = parsed.pathname.replace(/\/+$/, '').toLowerCase();
+    return `${parsed.hostname.toLowerCase()}${path}`;
+  } catch {
+    return raw.toLowerCase();
+  }
+}
+
+export function buildIdentityIndex(rows = []) {
+  const byLink = new Map();
+  const byGtin = new Map();
+  for (const row of rows) {
+    const link = normalizeLink(row.link);
+    if (link) {
+      if (!byLink.has(link)) byLink.set(link, []);
+      byLink.get(link).push(row);
+    }
+    if (row.gtin) {
+      if (!byGtin.has(row.gtin)) byGtin.set(row.gtin, []);
+      byGtin.get(row.gtin).push(row);
+    }
+  }
+  return { byLink, byGtin };
+}
+
+// Busca, para un producto de una fuente, su probable gemelo en el índice de
+// identidad de la otra fuente: primero por link normalizado, si no por GTIN.
+export function findTwin(row, identityIndex) {
+  const link = normalizeLink(row.link);
+  const byLink = link ? identityIndex.byLink.get(link) : null;
+  if (byLink?.length) return { offerId: byLink[0].offerId, title: byLink[0].title, matchedBy: 'link' };
+  const byGtin = row.gtin ? identityIndex.byGtin.get(row.gtin) : null;
+  if (byGtin?.length) return { offerId: byGtin[0].offerId, title: byGtin[0].title, matchedBy: 'gtin' };
+  return null;
+}
+
+// Reconciliación de catálogo completo entre dos fuentes por identidad real
+// (no offer_id): cuántos productos de rowsA tienen un probable gemelo en
+// indexB, por qué campo, y una muestra para inspección manual.
+export function reconcileIdentity(rowsA = [], indexB, sampleSize = 20) {
+  let linkMatches = 0;
+  let gtinMatches = 0;
+  const sameBook = new Set();
+  const sample = [];
+  for (const row of rowsA) {
+    const twin = findTwin(row, indexB);
+    if (!twin) continue;
+    sameBook.add(row.offerId);
+    if (twin.matchedBy === 'link') linkMatches += 1;
+    else gtinMatches += 1;
+    if (sample.length < sampleSize) sample.push({ offerIdA: row.offerId, titleA: row.title, ...twin });
+  }
+  return {
+    rowsChecked: rowsA.length,
+    withLink: rowsA.filter(row => row.link).length,
+    withGtin: rowsA.filter(row => row.gtin).length,
+    linkMatches,
+    gtinMatches,
+    probableSameBook: sameBook.size,
+    sample,
   };
 }
 
@@ -743,16 +823,33 @@ export async function main() {
   const landingPendingCrawl = listProductsByIssueCode(rawProducts, { code: 'landing_page_pending_crawl', contexts: shoppingFreeContexts });
   const landingError = listProductsByIssueCode(rawProducts, { code: 'landing_page_error', contexts: shoppingFreeContexts });
 
+  // Cuarta ampliación (mismo PR): reconciliación por identidad real
+  // (link/GTIN) entre AUTOFEED y FILE — offer_id distinto puede ser el
+  // mismo libro. Se construye una vez sobre TODOS los productos ya leídos
+  // (no sólo los bloqueados) y se usa además para marcar, dentro de cada
+  // lista de bloqueos AUTOFEED, si el producto ya tiene un gemelo en FILE.
+  const allProductRows = rawProducts.map(productRow);
+  const rowsByInput = input => allProductRows.filter(row => dataSourceInputMap.get(row.dataSource) === input);
+  const autofeedRows = rowsByInput('AUTOFEED');
+  const fileRows = rowsByInput('FILE');
+  const fileIdentityIndex = buildIdentityIndex(fileRows);
+  const identityReconciliation = reconcileIdentity(autofeedRows, fileIdentityIndex, 20);
+
+  const withFileTwin = rows => rows.map(row => ({ ...row, fileTwin: findTwin(row, fileIdentityIndex) }));
+  const imageTooSmallWithTwin = withFileTwin(imageTooSmall);
+  const missingPriceWithTwin = withFileTwin(missingPrice);
+
   const productBreakdown = {
-    imageTooSmall,
+    imageTooSmall: imageTooSmallWithTwin,
     imageTooSmallByInput: countByInput(imageTooSmall, dataSourceInputMap),
-    missingPrice,
+    missingPrice: missingPriceWithTwin,
     missingPriceByInput: countByInput(missingPrice, dataSourceInputMap),
     overlapImageTooSmallVsMissingPrice: crossReferenceOfferIds(imageTooSmall, missingPrice),
     ebooks,
     landingPendingCrawl,
     landingError,
     autofeedVsFile: compareOfferIdsAcrossInputs(rawProducts, dataSourceInputMap, ['AUTOFEED', 'FILE'], 10),
+    identityReconciliationAutofeedVsFile: identityReconciliation,
   };
 
   const report = {
@@ -830,16 +927,19 @@ export async function main() {
   // prioritarios. Sin PII — son atributos de catálogo (offer_id, título,
   // imagen, precio), no datos de compradores.
   console.log('=== IMAGE_TOO_SMALL (producto por producto) ===');
-  console.log(JSON.stringify({ count: imageTooSmall.length, byInput: productBreakdown.imageTooSmallByInput, products: imageTooSmall }, null, 2));
+  console.log(JSON.stringify({ count: imageTooSmallWithTwin.length, byInput: productBreakdown.imageTooSmallByInput, products: imageTooSmallWithTwin }, null, 2));
 
   console.log('=== MISSING PRICE (producto por producto) ===');
-  console.log(JSON.stringify({ count: missingPrice.length, byInput: productBreakdown.missingPriceByInput, products: missingPrice }, null, 2));
+  console.log(JSON.stringify({ count: missingPriceWithTwin.length, byInput: productBreakdown.missingPriceByInput, products: missingPriceWithTwin }, null, 2));
 
   console.log('=== CRUCE image_too_small vs missing_price ===');
   console.log(JSON.stringify(productBreakdown.overlapImageTooSmallVsMissingPrice, null, 2));
 
   console.log('=== AUTOFEED vs FILE por offer_id ===');
   console.log(JSON.stringify(productBreakdown.autofeedVsFile, null, 2));
+
+  console.log('=== RECONCILIACIÓN DE IDENTIDAD AUTOFEED vs FILE (link/GTIN, no offer_id) ===');
+  console.log(JSON.stringify(identityReconciliation, null, 2));
 
   console.log('=== EBOOKS policy violation (SHOPPING_ADS) ===');
   console.log(JSON.stringify(ebooks, null, 2));

@@ -8,14 +8,18 @@ import {
   aggregateProductStatusesByContextUy,
   buildDataSourceInputMap,
   buildDiagnosis,
+  buildIdentityIndex,
   compareOfferIdsAcrossInputs,
   countByInput,
   countFeedItems,
   crossReferenceOfferIds,
   finalizeContextSummary,
+  findTwin,
   joinDataSourceProductCounts,
   listProductsByIssueCode,
+  normalizeLink,
   productDestinationStatus,
+  reconcileIdentity,
   summarizeDataSource,
   summarizeProducts,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -367,6 +371,59 @@ test('productDestinationStatus devuelve el estado real por reportingContext, no 
   assert.equal(productDestinationStatus(product, 'SHOPPING_ADS'), 'disapproved');
   assert.equal(productDestinationStatus(product, 'FREE_LISTINGS'), 'active');
   assert.equal(productDestinationStatus(product, 'DISPLAY_ADS'), 'missing_context');
+});
+
+// BLOQUEANTE PR #312 (misma auditoría, mismo PR) — reconciliación por
+// identidad real (link normalizado / GTIN) entre AUTOFEED y FILE: dos
+// offer_id distintos pueden ser el mismo libro. Puro post-procesamiento en
+// memoria sobre productAttributes.link/gtin ya leídos por products.list.
+
+test('normalizeLink ignora query/hash/slash final y mayúsculas de host', () => {
+  assert.equal(
+    normalizeLink('https://www.AmadoLibros.com/libro/MLU1/titulo/?utm_source=x#frag'),
+    normalizeLink('https://www.amadolibros.com/libro/MLU1/titulo'),
+  );
+  assert.equal(normalizeLink(''), null);
+  assert.equal(normalizeLink(null), null);
+});
+
+test('findTwin encuentra el gemelo real por link o, si no hay, por GTIN', () => {
+  const index = buildIdentityIndex([
+    { offerId: 'FILE-1', title: 'Rayuela (FILE)', link: 'https://www.amadolibros.com/libro/rayuela', gtin: null },
+    { offerId: 'FILE-2', title: 'Cien años (FILE)', link: null, gtin: '9780307474728' },
+  ]);
+
+  const byLink = findTwin({ offerId: 'AUTO-1', link: 'https://www.amadolibros.com/libro/rayuela/', gtin: null }, index);
+  assert.equal(byLink.offerId, 'FILE-1');
+  assert.equal(byLink.matchedBy, 'link');
+
+  const byGtin = findTwin({ offerId: 'AUTO-2', link: null, gtin: '9780307474728' }, index);
+  assert.equal(byGtin.offerId, 'FILE-2');
+  assert.equal(byGtin.matchedBy, 'gtin');
+
+  const noMatch = findTwin({ offerId: 'AUTO-3', link: 'https://www.amadolibros.com/libro/otro', gtin: '000' }, index);
+  assert.equal(noMatch, null);
+});
+
+test('reconcileIdentity cuenta productos probablemente iguales aunque el offer_id no coincida', () => {
+  const fileRows = [
+    { offerId: 'FILE-1', title: 'Rayuela (FILE)', link: 'https://www.amadolibros.com/libro/rayuela', gtin: null },
+    { offerId: 'FILE-2', title: 'Cien años (FILE)', link: null, gtin: '9780307474728' },
+    { offerId: 'FILE-3', title: 'Sin relación', link: 'https://www.amadolibros.com/libro/otro-mas', gtin: null },
+  ];
+  const autofeedRows = [
+    { offerId: 'AUTO-1', title: 'Rayuela (AUTOFEED)', link: 'https://www.amadolibros.com/libro/rayuela/', gtin: null },
+    { offerId: 'AUTO-2', title: 'Cien años (AUTOFEED)', link: null, gtin: '9780307474728' },
+    { offerId: 'AUTO-3', title: 'No tiene gemelo', link: 'https://www.amadolibros.com/libro/no-existe', gtin: null },
+  ];
+
+  const index = buildIdentityIndex(fileRows);
+  const result = reconcileIdentity(autofeedRows, index, 20);
+  assert.equal(result.rowsChecked, 3);
+  assert.equal(result.linkMatches, 1);
+  assert.equal(result.gtinMatches, 1);
+  assert.equal(result.probableSameBook, 2);
+  assert.equal(result.sample.length, 2);
 });
 
 test('la implementación no contiene llamadas de escritura a Merchant API', () => {
