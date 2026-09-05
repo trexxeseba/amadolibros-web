@@ -259,6 +259,35 @@ export async function buildCatalog(env, accessToken, {
   };
 }
 
+/**
+ * RADAR AMADO — fetch liviano y aislado de publicaciones pausadas, para
+ * detectar PUBLICACION_PAUSADA sin mezclar esos items en el catálogo
+ * público (runSync sigue pidiendo únicamente statuses:['active'] — ver
+ * comentario en index.js). No enriquece descripciones ni galerías: el
+ * radar sólo necesita status, stock, ISBN y título.
+ *
+ * No aplica la guarda de MIN_ACTIVE_ITEMS de buildCatalog: por definición
+ * este conjunto no tiene items activos.
+ */
+export async function fetchPausedItemsForRadar(env, accessToken, {
+  retryBudget = createSyncRetryBudget(),
+  mlGetDeps = {},
+} = {}) {
+  const userId = env?.USER_ID;
+  if (!userId) {
+    throw new Error('[Radar] USER_ID no configurado. No se pueden auditar publicaciones pausadas.');
+  }
+
+  const ids = await fetchAllIds(userId, accessToken, ['paused'], retryBudget, mlGetDeps);
+  if (ids.length === 0) return [];
+
+  const rawItems = await fetchDetails(ids, accessToken, retryBudget, mlGetDeps);
+  const dataQuality = createDataQualitySummary();
+  return rawItems
+    .filter(raw => raw.status === 'paused')
+    .map(raw => slimItem(raw, dataQuality));
+}
+
 // ─── Scroll de IDs ────────────────────────────────────────────────────────────
 
 async function fetchAllIds(

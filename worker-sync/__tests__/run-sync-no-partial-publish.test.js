@@ -296,3 +296,58 @@ test('el cron sólo salta mantenimiento cuando la marca coincide con el catálog
   assert.equal(executed.status, 'completed');
   assert.equal(calls, 1);
 });
+
+test('RADAR AMADO corre después de publicar y stock_notifications, y recibe activos + pausados + waitlist', async () => {
+  const { env } = fakeEnv();
+  const order = [];
+  const waitlistCounts = new Map([['MLU1', 2]]);
+  const pausedItems = [{ id: 'MLU9', status: 'paused', available_quantity: 0 }];
+  let receivedArgs;
+
+  const result = await runSync(env, { source: 'cron' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => ({
+      total: 1,
+      updated_at: '2026-08-27T07:15:00.000Z',
+      items: [itemForSync()],
+    }),
+    publishToR2Fn: async () => { order.push('publish'); },
+    readPreviousPublicCatalogFn: async () => ({ items: [] }),
+    submitIndexNowFn: async () => ({ status: 'disabled' }),
+    processStockWaitlistFn: async () => { order.push('notify'); return { status: 'ok' }; },
+    notifyHealthcheckFn: noHealthcheck,
+    fetchPausedItemsForRadarFn: async () => { order.push('radar-fetch-paused'); return pausedItems; },
+    getWaitlistCountsFn: async () => { order.push('radar-waitlist-counts'); return waitlistCounts; },
+    buildRadarAlertsFn: (args) => { receivedArgs = args; order.push('radar-build'); return [{ alert_type: 'AGOTADO', item_id: 'MLU1', title: 'x', severity: 'high', reasons: [], metrics: {} }]; },
+    persistRadarAlertsFn: async (_env, alerts) => { order.push('radar-persist'); return { status: 'ok', examined: alerts.length, open: alerts.length, resolved: 0 }; },
+  });
+
+  assert.deepEqual(order, ['publish', 'notify', 'radar-fetch-paused', 'radar-waitlist-counts', 'radar-build', 'radar-persist']);
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.radar, { status: 'ok', examined: 1, open: 1, resolved: 0 });
+  assert.deepEqual(receivedArgs.activeItems, [itemForSync()]);
+  assert.deepEqual(receivedArgs.pausedItems, pausedItems);
+  assert.equal(receivedArgs.waitlistCounts.get('MLU1'), 2);
+});
+
+test('RADAR AMADO: un fallo del fetch de pausados no revierte el sync ni impide el resultado ok', async () => {
+  const { env } = fakeEnv();
+  const result = await runSync(env, { source: 'cron' }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => ({
+      total: 1,
+      updated_at: '2026-08-27T07:15:00.000Z',
+      items: [itemForSync()],
+    }),
+    publishToR2Fn: async () => {},
+    readPreviousPublicCatalogFn: async () => ({ items: [] }),
+    submitIndexNowFn: async () => ({ status: 'disabled' }),
+    processStockWaitlistFn: async () => ({ status: 'ok' }),
+    notifyHealthcheckFn: noHealthcheck,
+    fetchPausedItemsForRadarFn: async () => { throw new Error('ML caído para pausados'); },
+  });
+
+  assert.equal(result.status, 'ok');
+  assert.equal(result.radar.status, 'error');
+  assert.match(result.radar.error, /ML caído para pausados/);
+});

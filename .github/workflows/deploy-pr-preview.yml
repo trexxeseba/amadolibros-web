@@ -124,6 +124,23 @@ jobs:
           SEO_CONCURRENCY: '8'
         run: node scripts/seo/order-hub-live-audit.mjs
 
+      # RADAR AMADO PR1: prueba real y deliberadamente read-only. Usa sólo
+      # catalog.json productivo público; no toca D1, KV, secretos ni ML auth.
+      - name: Run RADAR against real production catalog (read-only)
+        env:
+          RADAR_CATALOG_URL: 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json'
+          RADAR_LIVE_OUTPUT: 'artifacts/radar-live-readonly.json'
+        run: node scripts/ops/radar-live-readonly.mjs
+
+      - name: Upload RADAR live read-only report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-live-readonly-pr-${{ github.event.pull_request.number }}
+          path: artifacts/radar-live-readonly.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Upload fichas quality report
         if: always()
         uses: actions/upload-artifact@v4
