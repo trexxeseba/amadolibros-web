@@ -10,6 +10,8 @@ on:
       - 'scripts/commerce/public-landing-check.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
       - 'functions/__tests__/public-landing-check.test.js'
+      - 'scripts/seo/image-dimension-audit.mjs'
+      - 'functions/__tests__/image-dimension-audit.test.js'
   pull_request:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
@@ -17,6 +19,8 @@ on:
       - 'scripts/commerce/public-landing-check.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
       - 'functions/__tests__/public-landing-check.test.js'
+      - 'scripts/seo/image-dimension-audit.mjs'
+      - 'functions/__tests__/image-dimension-audit.test.js'
   workflow_dispatch:
 
 permissions:
@@ -48,6 +52,8 @@ jobs:
           node --test functions/__tests__/merchant-readonly-audit.test.js
           node --check scripts/commerce/public-landing-check.mjs
           node --test functions/__tests__/public-landing-check.test.js
+          node --check scripts/seo/image-dimension-audit.mjs
+          node --test functions/__tests__/image-dimension-audit.test.js
 
       - name: Authenticate with Google through Workload Identity
         id: google_auth
@@ -84,6 +90,15 @@ jobs:
         env:
           MERCHANT_REPORT_PATH: artifacts/merchant/merchant-readonly-report.json
         run: node scripts/commerce/public-landing-check.mjs
+
+      - name: QW2 — medir dimensiones reales de image_too_small (sólo lectura)
+        id: image_dimension_audit
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          IMAGE_AUDIT_INPUT: artifacts/merchant/merchant-readonly-report.json
+          IMAGE_AUDIT_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/image-dimension-audit.mjs
 
       - name: Upload Merchant audit
         if: always()
