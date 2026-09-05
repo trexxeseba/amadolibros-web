@@ -453,3 +453,92 @@ pero conviene saber que ese literal hay que tocarlo en cada corrida.
 
 Registrado como definitivamente cerrado y fusionado. Ver detalle completo en
 `PLAN-MAESTRO.md`. No requiere ninguna acción adicional.
+
+---
+
+## Checkout V1.1 — PR #310 fusionado y desplegado (workstream separado de B11)
+
+Este documento es "ESTADO ACTUAL — B11" por título e historial, pero se dejó
+constancia acá porque el checkout V1.1 (rediseño de `/carrito`, corrección
+del bloqueante de D1 Preview y del ciclo de vida de idempotencia) se fusionó
+y desplegó en paralelo a B11, sobre la misma rama principal. No forma parte
+de B11 y no consume ni afecta sus contadores.
+
+**Estado actual (2026-09-05):**
+
+- **PR #310:** fusionado a `main` y **desplegado en Producción** (evidencia
+  abajo).
+- **Checkout:** **congelado comercialmente** — no se toca código de
+  checkout ni de Producción mientras la prioridad activa sea un
+  diagnóstico (Merchant Center) o una verificación pendiente de cierre
+  (GA4).
+- **Acción activa actual (Gran Apuesta en curso):** **Google Merchant
+  Center** — diagnóstico real (aprobados, desaprobados, advertencias,
+  cobertura del feed), **sin iniciar todavía, no declarado verificado**.
+  Ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en curso".
+- **Verificación GA4 post-checkout:** EN ESPERA DE EVIDENCIA (ya no es la
+  Gran Apuesta activa). Verificado: instrumentación, puente Apps Script +
+  Google Sheet, compra real `AL-260820-W33NZ9` (transaction_id + $2.750
+  UYU), mobile vs. desktop. Falta: validar una compra real posterior al
+  deploy del checkout V1.1 (PR #310, commit `03abd31`). Ver
+  `PLAN-MAESTRO.md`, "Backlog — checkout V1.1", entrada 2.
+
+- [PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310)
+  fusionado a `main` por trexxeseba (commit `03abd3151fa093609c0c511d8207a056cd3fda19`),
+  2026-09-04T08:46:00-03:00.
+- Alcance del PR: guía de checkout (entrega/envío gratis), rediseño
+  profundo de `/carrito` (layout 2 columnas, selector de pago, CTA único),
+  Preview dedicada con checkout realmente encendido
+  (`deploy-checkout-v11-preview.yml`), corrección del bloqueante real de
+  `POST /api/orders` en esa Preview (migraciones D1 de Preview atrasadas —
+  causa raíz confirmada con `PRAGMA table_info` antes/después), evento GA4
+  `checkout_error` sin PII, y corrección del ciclo de vida de
+  `idempotency_key` vs. `request_fingerprint` (bloqueante real encontrado
+  en prueba humana: reutilizar la key de una orden ya creada al cambiar el
+  pedido chocaba con el fail-safe 409 del backend).
+- Validación humana previa al merge, documentada en el propio PR: Retiro +
+  Mercado Pago, Envío + Mercado Pago y Retiro + Transferencia probados
+  sobre `https://checkout-v11-preview.amadolibros-web.pages.dev/carrito/`
+  sin conflicto de idempotencia en el recorrido completo (crear orden →
+  volver → cambiar entrega/medio de pago → reintentar).
+- Deploy to Cloudflare Pages sobre `03abd31`: `run 33869494365`. El job
+  "Deploy" (build Astro, migraciones D1 de Producción, Wrangler, smoke
+  test de Producción) terminó en **success**; el job "Publish production
+  paused/active catalog" (sincronización de catálogo, independiente del
+  checkout) seguía en curso al momento de este registro — no bloquea ni
+  condiciona el propio deploy del checkout, que ya está confirmado en
+  Producción.
+- **No se tocó nada de B11** en este PR: registry, `state.json` de B11.2 y
+  los contadores de la sección "Estado canónico" de este documento
+  permanecen exactamente en 1.609 enriquecidos / 2.006 pendientes / 3.615
+  universo, sin ningún cambio.
+- Detalle técnico completo (causa raíz, corrección, tests, checks) en el
+  propio PR #310 y en su historial de comentarios.
+
+### Orden de prioridades vigente (actualizado 2026-09-05)
+
+Seba autorizó explícitamente el siguiente orden — el único vigente,
+reemplaza el del 2026-09-04. Detalle completo (responsable, esfuerzo,
+criterio de aceptación, evidencia requerida) de cada punto en
+`PLAN-MAESTRO.md`:
+
+1. **Google Merchant Center — 🎯 EN CURSO (única Gran Apuesta activa).**
+   Diagnóstico real del feed (aprobados, desaprobados, advertencias,
+   cobertura), directamente contra la consola de Merchant — no contra el
+   conteo interno ya existente. Responsable: ChatGPT + Seba, con Claude
+   Code para cambios técnicos si fueran necesarios. Sin avance registrado
+   todavía; **no declarar verificado**.
+2. **Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA.** Dejó de
+   ser la Gran Apuesta activa el 2026-09-05. Verificado: instrumentación,
+   puente Apps Script + Sheet, compra real `AL-260820-W33NZ9`
+   (`transaction_id` + $2.750 UYU), mobile vs. desktop. Falta: una compra
+   real posterior al deploy del checkout V1.1 (PR #310, commit `03abd31`).
+3. **Google Search Console — registrado, NO iniciado.**
+4. **SEO técnico / indexación / fichas — registrado, NO iniciado.**
+5. **Blindaje técnico de Amado — registrado, NO iniciado.**
+6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado de
+   B11) — **pausado.**
+7. **Definición de B12** (heredado de B11) — **pausado.**
+
+Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
+autorización explícita y separada de Seba.
