@@ -253,6 +253,356 @@ export function summarizeProducts(products = [], now = new Date()) {
   };
 }
 
+function csvCell(value) {
+  let text = String(value ?? '');
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function csvRowValue(row, key) {
+  const value = row[key];
+  if (Array.isArray(value)) return value.join(';');
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  return value ?? '';
+}
+
+export function rowsToCsv(columns, rows) {
+  const lines = [columns.map(([header]) => csvCell(header)).join(',')];
+  for (const row of rows) {
+    lines.push(columns.map(([, key]) => csvCell(csvRowValue(row, key))).join(','));
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+export const OFFER_CSV_COLUMNS = [
+  ['offer_id', 'offerId'],
+  ['product_name', 'productName'],
+  ['channel', 'channel'],
+  ['feed_label', 'feedLabel'],
+  ['content_language', 'contentLanguage'],
+  ['data_source', 'dataSource'],
+  ['data_source_display_name', 'dataSourceDisplayName'],
+  ['source_input', 'sourceInput'],
+  ['source_type', 'sourceType'],
+  ['has_price', 'hasPrice'],
+  ['has_image', 'hasImage'],
+  ['image_status', 'imageStatus'],
+  ['image_blocking_issue_codes', 'imageBlockingIssueCodes'],
+  ['image_warning_issue_codes', 'imageWarningIssueCodes'],
+  ['reporting_states', 'reportingStatesText'],
+  ['present_in_public_feed', 'presentInPublicFeed'],
+  ['evidence', 'evidence'],
+];
+
+function decodeXmlEntities(value) {
+  return String(value ?? '')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll('&amp;', '&');
+}
+
+function firstTagValue(block, tag) {
+  const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = block.match(new RegExp(`<${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${escaped}>`, 'i'));
+  if (!match) return null;
+  return decodeXmlEntities(match[1].replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '').trim());
+}
+
+export function parseFeedOffers(xml) {
+  const text = String(xml || '');
+  const items = text.match(/<item\b[\s\S]*?<\/item>/gi) || [];
+  return items.map(block => {
+    const offerId = firstTagValue(block, 'g:id');
+    const price = firstTagValue(block, 'g:price');
+    const imageLink = firstTagValue(block, 'g:image_link');
+    return {
+      offerId: offerId || null,
+      hasPrice: Boolean(price),
+      hasImage: Boolean(imageLink),
+    };
+  });
+}
+
+// Merchant API v1 devuelve los atributos procesados de cada producto bajo
+// `product.productAttributes` (no bajo `product.attributes`, que no existe
+// en la respuesta real). Se mantiene `product.attributes` sólo como
+// fallback defensivo si algún día cambia la forma de la respuesta.
+function productAttributesOf(product = {}) {
+  return product.productAttributes || product.attributes || {};
+}
+
+function hasUsablePrice(price) {
+  if (!price || typeof price !== 'object') return false;
+  const amount = price.amountMicros ?? price.value ?? price.amount ?? price.priceMicros;
+  const currency = asText(price.currencyCode || price.currency);
+  if (amount == null || asText(amount) === '' || currency === '') return false;
+  const numeric = Number(amount);
+  return Number.isFinite(numeric) && numeric > 0;
+}
+
+function productHasPrice(product = {}) {
+  const attrs = productAttributesOf(product);
+  return hasUsablePrice(attrs.price) || hasUsablePrice(product.price);
+}
+
+function productImageLink(product = {}) {
+  const attrs = productAttributesOf(product);
+  return asText(attrs.imageLink || product.imageLink) || null;
+}
+
+const IMAGE_ISSUE_PATTERN = /image/i;
+const IMAGE_BLOCKING_SEVERITIES = new Set(['DISAPPROVED']);
+const IMAGE_WARNING_SEVERITIES = new Set(['NOT_IMPACTED', 'DEMOTED']);
+
+function imageIssuesOf(product = {}) {
+  const issues = Array.isArray(product?.productStatus?.itemLevelIssues) ? product.productStatus.itemLevelIssues : [];
+  return issues.filter(issue => IMAGE_ISSUE_PATTERN.test(asText(issue.code)) || IMAGE_ISSUE_PATTERN.test(asText(issue.attribute)));
+}
+
+function classifyImageIssues(issues) {
+  return {
+    blocking: issues.filter(issue => IMAGE_BLOCKING_SEVERITIES.has(upper(issue.severity))),
+    warning: issues.filter(issue => IMAGE_WARNING_SEVERITIES.has(upper(issue.severity))),
+  };
+}
+
+export function summarizeReportingStates(product = {}) {
+  const rows = Array.isArray(product?.productStatus?.destinationStatuses) ? product.productStatus.destinationStatuses : [];
+  return rows.map(row => ({
+    reportingContext: asText(row.reportingContext) || null,
+    approvedCountries: Array.isArray(row.approvedCountries) ? row.approvedCountries.map(asText).filter(Boolean) : [],
+    pendingCountries: Array.isArray(row.pendingCountries) ? row.pendingCountries.map(asText).filter(Boolean) : [],
+    disapprovedCountries: Array.isArray(row.disapprovedCountries) ? row.disapprovedCountries.map(asText).filter(Boolean) : [],
+  }));
+}
+
+function reportingStatesText(states) {
+  return states.map(state => {
+    const parts = [];
+    if (state.approvedCountries.length) parts.push(`aprobado:${state.approvedCountries.join(',')}`);
+    if (state.pendingCountries.length) parts.push(`pendiente:${state.pendingCountries.join(',')}`);
+    if (state.disapprovedCountries.length) parts.push(`rechazado:${state.disapprovedCountries.join(',')}`);
+    return `${state.reportingContext || '(sin contexto)'}[${parts.join('|') || 'sin datos'}]`;
+  }).join('; ');
+}
+
+function indexDataSourcesByName(dataSources = []) {
+  const map = new Map();
+  for (const source of dataSources) {
+    if (source?.name) map.set(source.name, source);
+  }
+  return map;
+}
+
+export function buildOfferRow(product = {}, dataSourcesByName = new Map()) {
+  const offerId = asText(product.offerId) || null;
+  const dataSourceName = asText(product.dataSource) || null;
+  const source = dataSourceName ? dataSourcesByName.get(dataSourceName) : null;
+  const hasPrice = productHasPrice(product);
+  const imageLink = productImageLink(product);
+  const hasImage = Boolean(imageLink);
+  const { blocking: blockingIssues, warning: warningIssues } = classifyImageIssues(imageIssuesOf(product));
+  const imageStatus = !hasImage ? 'ausente' : blockingIssues.length ? 'bloqueada' : warningIssues.length ? 'advertencia' : 'ok';
+  const reportingStates = summarizeReportingStates(product);
+
+  const evidence = [
+    offerId ? `offer_id=${offerId}` : 'offer_id ausente en el producto',
+    dataSourceName ? `dataSource=${dataSourceName}` : 'dataSource ausente',
+    source ? `input=${source.input || 'desconocido'} tipo=${source.type}` : 'fuente no resuelta contra dataSources.list',
+    hasPrice ? 'precio presente en productAttributes.price (con moneda)' : 'precio ausente, no numérico o sin moneda en productAttributes.price',
+    `imagen: ${imageStatus}${imageLink ? '' : ' (sin imageLink)'}`,
+    blockingIssues.length ? `issues bloqueantes de imagen: ${blockingIssues.map(issue => asText(issue.code)).join(',')}` : 'sin issues bloqueantes de imagen',
+    warningIssues.length ? `advertencias de imagen (no bloqueantes): ${warningIssues.map(issue => asText(issue.code)).join(',')}` : 'sin advertencias de imagen',
+  ].join('; ');
+
+  return {
+    offerId,
+    productName: asText(product.name) || null,
+    channel: asText(product.channel) || null,
+    feedLabel: asText(product.feedLabel) || null,
+    contentLanguage: asText(product.contentLanguage) || null,
+    dataSource: dataSourceName,
+    dataSourceDisplayName: source?.displayName || null,
+    sourceInput: source?.input || null,
+    sourceType: source?.type || null,
+    hasPrice,
+    hasImage,
+    imageStatus,
+    imageBlockingIssueCodes: blockingIssues.map(issue => asText(issue.code)).filter(Boolean),
+    imageWarningIssueCodes: warningIssues.map(issue => asText(issue.code)).filter(Boolean),
+    reportingStates,
+    reportingStatesText: reportingStatesText(reportingStates),
+    presentInPublicFeed: false,
+    evidence,
+  };
+}
+
+export function reconcileOffers(products = [], dataSources = [], feedOffers = []) {
+  const dataSourcesByName = indexDataSourcesByName(dataSources);
+  const rows = products.map(product => buildOfferRow(product, dataSourcesByName));
+
+  const feedOfferIds = new Set(feedOffers.map(offer => offer.offerId).filter(Boolean));
+  for (const row of rows) {
+    row.presentInPublicFeed = row.offerId ? feedOfferIds.has(row.offerId) : false;
+  }
+
+  const byOffer = new Map();
+  for (const row of rows) {
+    if (!row.offerId) continue;
+    const bucket = byOffer.get(row.offerId) || [];
+    bucket.push(row);
+    byOffer.set(row.offerId, bucket);
+  }
+
+  // products.list expone una sola fuente (la ganadora) por producto
+  // procesado; no permite ver todas las fuentes que compitieron por un
+  // mismo offer_id. Que un mismo offer_id resuelva a AUTOFEED en un
+  // producto y a FILE en otro (con distinto channel/feedLabel/
+  // contentLanguage) es una señal a investigar, no una prueba de
+  // solapamiento — por eso se reporta como "overlapSignals", nunca como
+  // "confirmado".
+  const overlapSignals = [];
+  for (const [offerId, entries] of byOffer.entries()) {
+    const inputs = new Set(entries.map(entry => upper(entry.sourceInput || '')).filter(Boolean));
+    if (entries.length > 1 && inputs.has('AUTOFEED') && inputs.has('FILE')) {
+      overlapSignals.push({ offerId, entries });
+    }
+  }
+  overlapSignals.sort((a, b) => a.offerId.localeCompare(b.offerId));
+
+  const missingPrice = rows.filter(row => row.offerId && !row.hasPrice);
+  const missingImage = rows.filter(row => row.offerId && (row.imageStatus === 'ausente' || row.imageStatus === 'bloqueada'));
+  const imageWarnings = rows.filter(row => row.offerId && row.imageStatus === 'advertencia');
+  const missingOfferId = rows.filter(row => !row.offerId).length;
+
+  const sourceCounts = new Map();
+  for (const row of rows) {
+    const key = row.sourceInput || '(desconocida)';
+    sourceCounts.set(key, (sourceCounts.get(key) || 0) + 1);
+  }
+
+  const uniqueOfferIds = new Set(rows.filter(row => row.offerId).map(row => row.offerId));
+  const feedOnlyOfferIds = [...feedOfferIds].filter(id => !uniqueOfferIds.has(id)).length;
+
+  return {
+    rows,
+    uniqueOffers: uniqueOfferIds.size,
+    offersBySource: [...sourceCounts.entries()]
+      .map(([input, count]) => ({ input, count }))
+      .sort((a, b) => b.count - a.count || a.input.localeCompare(b.input)),
+    overlapSignals,
+    missingPrice,
+    missingImage,
+    imageWarnings,
+    missingOfferId,
+    feedOfferCount: feedOffers.length,
+    feedOnlyOfferIds,
+  };
+}
+
+export function buildReconciliationDiagnosis({
+  rows,
+  overlapSignals,
+  missingPrice,
+  missingImage,
+  imageWarnings,
+  offersBySource,
+  feedOfferCount,
+  feedOnlyOfferIds,
+  missingOfferId,
+}) {
+  const facts = [];
+  const hypotheses = [];
+  const limitations = [];
+
+  facts.push(`Se procesaron ${rows.length} productos de Merchant con datos de offer_id, precio e imagen tal como los devolvió la API (productAttributes.price, productAttributes.imageLink).`);
+  facts.push(`Se detectaron ${overlapSignals.length} offer_id que aparecen en más de un producto procesado, con fuente resuelta a AUTOFEED en uno y a FILE en otro (distinta combinación de channel/feedLabel/contentLanguage); esto es una señal a investigar, no una confirmación de solapamiento.`);
+  facts.push(`${missingPrice.length} productos no tienen un precio utilizable (amountMicros > 0 con moneda) en productAttributes.price.`);
+  facts.push(`${missingImage.length} productos tienen imagen ausente o bloqueada (severidad DISAPPROVED en un issue de imagen).`);
+  if (imageWarnings.length) facts.push(`${imageWarnings.length} productos tienen advertencias de imagen no bloqueantes (severidad NOT_IMPACTED o DEMOTED); no se cuentan como imagen ausente ni bloqueada.`);
+  if (feedOfferCount != null) facts.push(`El feed público expuso ${feedOfferCount} ofertas con g:id legible en esta lectura.`);
+  if (missingOfferId) facts.push(`${missingOfferId} productos de la API no exponen offerId legible y quedaron fuera de la reconciliación por offer_id.`);
+
+  hypotheses.push({
+    confidence: 'medium',
+    text: overlapSignals.length
+      ? `Los ${overlapSignals.length} offer_id señalados requieren revisión manual en Merchant Center: products.list no permite confirmar por GET que ambas fuentes compitieron realmente por el mismo offer_id, sólo que Merchant resolvió combinaciones distintas de channel/feedLabel/contentLanguage hacia AUTOFEED y hacia FILE.`
+      : 'No se detectó ninguna señal de offer_id compartido entre AUTOFEED y FILE en esta lectura; esto no descarta duplicación bajo combinaciones de channel/feedLabel/contentLanguage no comparadas, ni duplicación oculta por la vista fusionada de products.list.',
+  });
+  const inputsSeen = new Set(offersBySource.map(row => upper(row.input)));
+  if (!inputsSeen.has('AUTOFEED') || !inputsSeen.has('FILE')) {
+    hypotheses.push({
+      confidence: 'medium',
+      text: 'No se observaron productos resueltos simultáneamente a fuentes AUTOFEED y FILE en esta lectura; puede deberse a que una de esas fuentes no está activa o a que Merchant resolvió todos los productos hacia una única fuente ganadora.',
+    });
+  }
+  if (feedOnlyOfferIds) {
+    hypotheses.push({
+      confidence: 'low',
+      text: `${feedOnlyOfferIds} offer_id aparecen en el feed público pero no se encontraron en los productos devueltos por la API en esta lectura; puede deberse a demora de procesamiento, límites de paginación o diferencias entre el feed público y la fuente que Merchant realmente consume.`,
+    });
+  }
+
+  limitations.push('products.list devuelve la vista fusionada por offer_id que resultó ganadora en Merchant; no expone todas las fuentes que compitieron por un mismo offer_id, sólo la fuente resultante para cada combinación de channel/feedLabel/contentLanguage. Por eso ninguna coincidencia de offer_id entre AUTOFEED y FILE constituye una confirmación de solapamiento — se reporta únicamente como señal a investigar.');
+  limitations.push('Merchant API v1 no ofrece un endpoint GET de sólo lectura para listar productInputs individuales por fuente; esta reconciliación se basa exclusivamente en products.list y dataSources.list.');
+  limitations.push('La presencia de precio e imagen se evalúa sólo sobre los campos que la API devolvió en esta lectura (productAttributes.price con amountMicros y moneda, productAttributes.imageLink); no se asume ni se completa ningún valor no reportado por Merchant.');
+  limitations.push('Las advertencias de imagen (severidad NOT_IMPACTED o DEMOTED) se reportan por separado y no se cuentan como imagen ausente ni bloqueante.');
+
+  return { facts, hypotheses, limitations };
+}
+
+export function reconciliationMarkdown(report) {
+  const lines = [
+    '# Merchant Center — reconciliación de ofertas por offer_id',
+    '',
+    `- Fecha de auditoría: ${report.generatedAt}`,
+    `- Cuenta: ${report.accountId}`,
+    `- Fuentes observadas: ${report.sourcesObserved.length ? report.sourcesObserved.join(', ') : '(ninguna)'}`,
+    `- Ofertas únicas (por offer_id, vista API): ${report.uniqueOffers}`,
+    `- Ofertas del feed público con g:id legible: ${report.feedOfferCount}`,
+    '',
+    '## Ofertas por fuente',
+    '',
+    '| Fuente (input) | Productos |',
+    '| --- | ---: |',
+  ];
+  if (!report.offersBySource.length) lines.push('| — | 0 |');
+  for (const row of report.offersBySource) lines.push(`| ${markdownEscape(row.input)} | ${row.count} |`);
+
+  lines.push('', '## Señal de posible solapamiento AUTOFEED / FILE (no confirmada)', '');
+  lines.push(`- offer_id que aparecen con fuente resuelta a AUTOFEED en un producto y a FILE en otro: ${report.overlapSignalCount}`);
+  lines.push('- Esto es una señal a investigar manualmente en Merchant Center, no una confirmación: `products.list` sólo expone la fuente ganadora por combinación de channel/feedLabel/contentLanguage, no todas las fuentes que compitieron por el offer_id.');
+  if (report.overlapSignalCount) {
+    lines.push('', '| offer_id | fuente | channel | feed_label | content_language |', '| --- | --- | --- | --- | --- |');
+    for (const overlap of report.overlapSignals.slice(0, 50)) {
+      for (const entry of overlap.entries) {
+        lines.push(`| ${markdownEscape(overlap.offerId)} | ${markdownEscape(entry.sourceInput || '—')} | ${markdownEscape(entry.channel || '—')} | ${markdownEscape(entry.feedLabel || '—')} | ${markdownEscape(entry.contentLanguage || '—')} |`);
+      }
+    }
+  }
+
+  lines.push('', '## Precio ausente', '', `- Productos sin precio utilizable (amountMicros > 0 con moneda): ${report.missingPriceCount}`);
+  lines.push('', '## Imagen ausente o bloqueante', '');
+  lines.push(`- Productos con imagen ausente o bloqueada (severidad DISAPPROVED): ${report.missingImageCount}`);
+  lines.push(`- Productos con advertencia de imagen no bloqueante (NOT_IMPACTED/DEMOTED, no cuentan como ausente/bloqueada): ${report.imageWarningCount}`);
+
+  lines.push('', '## Comparación contra snapshots históricos', '');
+  lines.push(`- Referencia histórica (no asumida como resultado): ${report.historicalSnapshots.missingPrice} sin precio, ${report.historicalSnapshots.missingImage} con imagen bloqueante, ${report.historicalSnapshots.overlapSuspected}.`);
+  lines.push(`- Observado en esta lectura: ${report.missingPriceCount} sin precio, ${report.missingImageCount} con imagen ausente/bloqueada, ${report.overlapSignalCount} señales de posible solapamiento AUTOFEED/FILE (no confirmadas).`);
+  lines.push('- Los valores históricos son sólo referencia para comparar; esta lectura no los reutiliza ni los fuerza como resultado.');
+
+  lines.push('', '## Hechos comprobados', '');
+  for (const fact of report.diagnosis.facts) lines.push(`- ${fact}`);
+  lines.push('', '## Hipótesis y limitaciones', '');
+  for (const hypothesis of report.diagnosis.hypotheses) lines.push(`- (${hypothesis.confidence}) ${hypothesis.text}`);
+  for (const limitation of report.diagnosis.limitations) lines.push(`- Limitación: ${limitation}`);
+
+  lines.push('', '> Esta reconciliación es de solo lectura. No modifica, corrige, crea ni elimina productos ni fuentes en Merchant Center.');
+  return `${lines.join('\n')}\n`;
+}
+
 export function buildDiagnosis({ alert, feedCount, dataSources, accountIssues, aggregate, products }) {
   const facts = [];
   const hypotheses = [];
@@ -298,7 +648,7 @@ export function buildDiagnosis({ alert, feedCount, dataSources, accountIssues, a
   return { facts, hypotheses };
 }
 
-async function requestJson(url, accessToken) {
+export async function requestJson(url, accessToken) {
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -324,7 +674,7 @@ async function requestJson(url, accessToken) {
   return data || {};
 }
 
-async function listAll({ endpoint, arrayField, pageSize, accessToken }) {
+export async function listAll({ endpoint, arrayField, pageSize, accessToken }) {
   const rows = [];
   let pageToken = '';
   for (let page = 0; page < 30; page += 1) {
@@ -339,7 +689,7 @@ async function listAll({ endpoint, arrayField, pageSize, accessToken }) {
   throw new Error(`Paginación excedió 30 páginas para ${arrayField}`);
 }
 
-function endpointError(error) {
+export function endpointError(error) {
   return {
     message: asText(error?.message) || 'Error desconocido',
     httpStatus: Number(error?.status) || null,
@@ -461,11 +811,13 @@ export async function main() {
   })));
 
   const byName = Object.fromEntries(endpoints.map(row => [row.name, row]));
+  let feedXml = '';
   const publicFeed = await (async () => {
     try {
       const response = await fetch(feedUrl, { signal: AbortSignal.timeout(60_000) });
       const xml = await response.text();
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      feedXml = xml;
       return { ok: true, url: feedUrl, items: countFeedItems(xml), bytes: Buffer.byteLength(xml) };
     } catch (error) {
       return { ok: false, url: feedUrl, items: null, bytes: null, error: asText(error?.message) };
@@ -519,12 +871,46 @@ export async function main() {
     }),
   };
 
+  const feedOffers = publicFeed.ok ? parseFeedOffers(feedXml) : [];
+  const reconciliation = reconcileOffers(byName.products.data || [], dataSources, feedOffers);
+  const reconciliationDiagnosis = buildReconciliationDiagnosis(reconciliation);
+  const offerReconciliationReport = {
+    schemaVersion: 1,
+    generatedAt: report.generatedAt,
+    accountId,
+    sourcesObserved: reconciliation.offersBySource.map(row => row.input),
+    uniqueOffers: reconciliation.uniqueOffers,
+    offersBySource: reconciliation.offersBySource,
+    overlapSignalCount: reconciliation.overlapSignals.length,
+    overlapSignals: reconciliation.overlapSignals,
+    missingPriceCount: reconciliation.missingPrice.length,
+    missingImageCount: reconciliation.missingImage.length,
+    imageWarningCount: reconciliation.imageWarnings.length,
+    missingOfferId: reconciliation.missingOfferId,
+    feedOfferCount: reconciliation.feedOfferCount,
+    feedOnlyOfferIds: reconciliation.feedOnlyOfferIds,
+    historicalSnapshots: {
+      missingPrice: 47,
+      missingImage: 18,
+      overlapSuspected: 'posible solapamiento AUTOFEED/FILE (referencia histórica, no confirmada previamente)',
+    },
+    diagnosis: reconciliationDiagnosis,
+    rows: reconciliation.rows,
+  };
+  const overlapEntries = reconciliation.overlapSignals.flatMap(overlap => overlap.entries);
+
   await mkdir(outputDir, { recursive: true });
   await Promise.all([
     writeFile(path.join(outputDir, 'merchant-readonly-report.json'), `${JSON.stringify(report, null, 2)}\n`),
     writeFile(path.join(outputDir, 'report-summary.md'), reportMarkdown(report)),
     writeFile(path.join(outputDir, 'account-issues.json'), `${JSON.stringify(accountIssues, null, 2)}\n`),
     writeFile(path.join(outputDir, 'data-sources.json'), `${JSON.stringify(dataSources, null, 2)}\n`),
+    writeFile(path.join(outputDir, 'offer-reconciliation.json'), `${JSON.stringify(offerReconciliationReport, null, 2)}\n`),
+    writeFile(path.join(outputDir, 'offer-reconciliation.csv'), rowsToCsv(OFFER_CSV_COLUMNS, reconciliation.rows)),
+    writeFile(path.join(outputDir, 'missing-price.csv'), rowsToCsv(OFFER_CSV_COLUMNS, reconciliation.missingPrice)),
+    writeFile(path.join(outputDir, 'missing-image.csv'), rowsToCsv(OFFER_CSV_COLUMNS, reconciliation.missingImage)),
+    writeFile(path.join(outputDir, 'source-overlap.csv'), rowsToCsv(OFFER_CSV_COLUMNS, overlapEntries)),
+    writeFile(path.join(outputDir, 'offer-reconciliation-summary.md'), reconciliationMarkdown(offerReconciliationReport)),
   ]);
 
   console.log(JSON.stringify({
@@ -532,6 +918,13 @@ export async function main() {
     publicFeedItems: publicFeed.items,
     dynamicRemarketingUy,
     processedProducts: products?.processed ?? null,
+    reconciliation: {
+      uniqueOffers: reconciliation.uniqueOffers,
+      overlapSignalCount: reconciliation.overlapSignals.length,
+      missingPriceCount: reconciliation.missingPrice.length,
+      missingImageCount: reconciliation.missingImage.length,
+      imageWarningCount: reconciliation.imageWarnings.length,
+    },
     endpointFailures: endpoints.filter(row => !row.ok).map(row => row.name),
   }));
 

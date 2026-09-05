@@ -71,6 +71,65 @@ jobs:
           test -s artifacts/merchant/report-summary.md
           node -e "const r=require('./artifacts/merchant/merchant-readonly-report.json'); if(r.schemaVersion!==1||r.accountId!=='5330457716') process.exit(1)"
 
+      - name: Validate offer reconciliation artifacts
+        if: steps.merchant_audit.outcome == 'success'
+        run: |
+          test -s artifacts/merchant/offer-reconciliation.json
+          test -s artifacts/merchant/offer-reconciliation.csv
+          test -s artifacts/merchant/missing-price.csv
+          test -s artifacts/merchant/missing-image.csv
+          test -s artifacts/merchant/source-overlap.csv
+          test -s artifacts/merchant/offer-reconciliation-summary.md
+          cat > /tmp/validate-offer-reconciliation.js <<'NODE_EOF'
+          const fs = require('fs');
+
+          function csvDataRowCount(path) {
+            const text = fs.readFileSync(path, 'utf8').trim();
+            if (!text) return 0;
+            return text.split('\n').length - 1;
+          }
+
+          const report = JSON.parse(fs.readFileSync('artifacts/merchant/offer-reconciliation.json', 'utf8'));
+          const totalCsvRows = csvDataRowCount('artifacts/merchant/offer-reconciliation.csv');
+          const missingPriceCsvRows = csvDataRowCount('artifacts/merchant/missing-price.csv');
+          const missingImageCsvRows = csvDataRowCount('artifacts/merchant/missing-image.csv');
+          const overlapCsvRows = csvDataRowCount('artifacts/merchant/source-overlap.csv');
+          const overlapEntryCount = (report.overlapSignals || []).reduce((sum, o) => sum + o.entries.length, 0);
+
+          const failures = [];
+          if (totalCsvRows !== report.rows.length) {
+            failures.push(`offer-reconciliation.csv filas (${totalCsvRows}) != report.rows (${report.rows.length})`);
+          }
+          if (missingPriceCsvRows !== report.missingPriceCount) {
+            failures.push(`missing-price.csv filas (${missingPriceCsvRows}) != missingPriceCount (${report.missingPriceCount})`);
+          }
+          if (missingImageCsvRows !== report.missingImageCount) {
+            failures.push(`missing-image.csv filas (${missingImageCsvRows}) != missingImageCount (${report.missingImageCount})`);
+          }
+          if (overlapCsvRows !== overlapEntryCount) {
+            failures.push(`source-overlap.csv filas (${overlapCsvRows}) != suma de entries de overlapSignals (${overlapEntryCount})`);
+          }
+          if (report.missingPriceCount > report.rows.length) failures.push('missingPriceCount supera el total de filas');
+          if (report.missingImageCount > report.rows.length) failures.push('missingImageCount supera el total de filas');
+          if ((report.imageWarningCount || 0) > report.rows.length) failures.push('imageWarningCount supera el total de filas');
+          if (report.uniqueOffers > report.rows.length) failures.push('uniqueOffers supera el total de filas');
+          if (typeof report.overlapSignalCount !== 'number' || typeof report.overlapSignals === 'undefined') {
+            failures.push('el reporte no expone overlapSignalCount/overlapSignals (nombres esperados para evitar el término "confirmado")');
+          }
+          if (JSON.stringify(report).match(/solapamiento\s+confirmado/i)) {
+            failures.push('el reporte usa el término "solapamiento confirmado", que products.list no permite probar');
+          }
+
+          if (failures.length) {
+            console.error('Inconsistencias en artefactos de reconciliación de ofertas:');
+            for (const failure of failures) console.error(` - ${failure}`);
+            process.exit(1);
+          }
+
+          console.log(`offer-reconciliation OK: rows=${totalCsvRows} uniqueOffers=${report.uniqueOffers} missingPrice=${report.missingPriceCount} missingImage=${report.missingImageCount} imageWarnings=${report.imageWarningCount || 0} overlapSignals=${report.overlapSignalCount}`);
+          NODE_EOF
+          node /tmp/validate-offer-reconciliation.js
+
       - name: Upload Merchant audit
         if: always()
         uses: actions/upload-artifact@v4
