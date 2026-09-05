@@ -159,6 +159,95 @@ function finalizeAggregate(summary) {
   };
 }
 
+// aggregateDynamicRemarketingUy() filtra deliberadamente a un solo destino
+// (Dynamic remarketing / DISPLAY_ADS) — así nació esta auditoría, para una
+// alerta puntual de ese destino. Eso deja ciego al resto: Shopping ads,
+// Free listings o cualquier otro reportingContext que la cuenta use nunca
+// se ven. Esta función agrupa TODOS los reportingContext reales que la API
+// devuelve para Uruguay, sin descartar ninguno — amplía el diagnóstico sin
+// tocar ni reemplazar el agregado específico de Dynamic remarketing que ya
+// existía (se mantiene igual, como campo aparte).
+export function aggregateProductStatusesByContextUy(rows = []) {
+  const byContext = new Map();
+  for (const row of rows) {
+    if (!isUy(row?.country)) continue;
+    const context = asText(row?.reportingContext) || '(sin reportingContext)';
+    const current = byContext.get(context) || {
+      reportingContext: context,
+      rows: 0,
+      active: 0,
+      pending: 0,
+      disapproved: 0,
+      expiring: 0,
+      issueCounts: new Map(),
+    };
+    const stats = row.stats || {};
+    current.rows += 1;
+    current.active += asNumber(stats.activeCount);
+    current.pending += asNumber(stats.pendingCount);
+    current.disapproved += asNumber(stats.disapprovedCount);
+    current.expiring += asNumber(stats.expiringCount);
+    for (const issue of Array.isArray(row.itemLevelIssues) ? row.itemLevelIssues : []) {
+      const key = asText(issue.code) || '(sin código)';
+      const issueCurrent = current.issueCounts.get(key) || {
+        code: key,
+        severity: asText(issue.severity) || null,
+        resolution: asText(issue.resolution) || null,
+        attribute: asText(issue.attribute) || null,
+        description: asText(issue.description) || null,
+        detail: asText(issue.detail) || null,
+        documentationUri: asText(issue.documentationUri) || null,
+        productCount: 0,
+      };
+      issueCurrent.productCount += asNumber(issue.productCount);
+      current.issueCounts.set(key, issueCurrent);
+    }
+    byContext.set(context, current);
+  }
+  return byContext;
+}
+
+export function finalizeContextSummary(summary, limit = 30) {
+  return {
+    reportingContext: summary.reportingContext,
+    rows: summary.rows,
+    active: summary.active,
+    pending: summary.pending,
+    disapproved: summary.disapproved,
+    expiring: summary.expiring,
+    topIssues: [...summary.issueCounts.values()]
+      .sort((a, b) => b.productCount - a.productCount || a.code.localeCompare(b.code))
+      .slice(0, limit),
+  };
+}
+
+// Une el conteo real de products.list (por dataSource) con los metadatos de
+// datasources.list (displayName/type/input) — ambos endpoints ya se leían
+// por separado, esto sólo los cruza para poder mostrar cantidad por fuente.
+export function joinDataSourceProductCounts(dataSources = [], byDataSource = []) {
+  const countByName = new Map(byDataSource.map(row => [row.dataSource, row.count]));
+  return dataSources.map(source => ({
+    ...source,
+    productCount: source.name ? (countByName.get(source.name) || 0) : 0,
+  }));
+}
+
+// Resumen de un accountIssue para stdout: sin PII (nunca hubo en accountIssues,
+// es información de cuenta/política, no de comprador) y sin duplicar el
+// detalle completo — sólo lo que hace falta para priorizar.
+export function accountIssueLogSummary(issue = {}) {
+  const destinations = [...new Set(
+    (Array.isArray(issue.impactedDestinations) ? issue.impactedDestinations : [])
+      .map(row => asText(row.reportingContext))
+      .filter(Boolean)
+  )];
+  return {
+    title: issue.title || '(sin título)',
+    severity: issue.severity || null,
+    destinations,
+  };
+}
+
 function productDestinationState(product, country = 'UY') {
   const rows = Array.isArray(product?.productStatus?.destinationStatuses)
     ? product.productStatus.destinationStatuses.filter(row => isDynamicRemarketing(row.reportingContext))
@@ -497,6 +586,17 @@ export async function main() {
       }
     : null;
 
+  // Ampliación del diagnóstico: dynamicRemarketingUy de arriba sigue igual
+  // (sesgado a un solo destino, a propósito, para no romper nada de lo que
+  // ya lo consume) — esto agrega TODOS los reportingContext reales que la
+  // API devolvió para Uruguay (Shopping ads, Free listings, Display ads,
+  // cualquier otro), sin descartar ninguno.
+  const reportingContextsUy = [...aggregateProductStatusesByContextUy(byName.aggregateProductStatuses.data || []).values()]
+    .map(summary => finalizeContextSummary(summary, 30))
+    .sort((a, b) => a.reportingContext.localeCompare(b.reportingContext));
+
+  const dataSourcesWithCounts = joinDataSourceProductCounts(dataSources, products?.byDataSource || []);
+
   const report = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -505,9 +605,11 @@ export async function main() {
     publicFeed,
     endpoints: endpoints.map(row => ({ name: row.name, ok: row.ok, error: row.error })),
     dataSources,
+    dataSourcesWithProductCounts: dataSourcesWithCounts,
     accountIssues,
     aggregateStatuses: byName.aggregateProductStatuses.ok ? byName.aggregateProductStatuses.data : null,
     dynamicRemarketingUy,
+    reportingContextsUy,
     products,
     diagnosis: buildDiagnosis({
       alert,
@@ -534,6 +636,36 @@ export async function main() {
     processedProducts: products?.processed ?? null,
     endpointFailures: endpoints.filter(row => !row.ok).map(row => row.name),
   }));
+
+  // Diagnóstico ampliado — un bloque por sección, para que quede legible
+  // directamente en el log del job (el artifact no siempre es accesible
+  // desde todos lados; el log del run sí). Top 15 issues por contexto, tal
+  // como se pidió — el archivo JSON completo (arriba) conserva hasta 30.
+  console.log('=== REPORTING CONTEXTS (Uruguay) ===');
+  console.log(JSON.stringify(
+    reportingContextsUy.map(context => ({ ...context, topIssues: context.topIssues.slice(0, 15) })),
+    null,
+    2
+  ));
+
+  console.log('=== DATA SOURCES ===');
+  console.log(JSON.stringify(
+    dataSourcesWithCounts.map(source => ({
+      displayName: source.displayName,
+      type: source.type,
+      input: source.input,
+      dataSourceId: source.dataSourceId,
+      productCount: source.productCount,
+    })),
+    null,
+    2
+  ));
+
+  console.log('=== ACCOUNT ISSUES ===');
+  console.log(JSON.stringify({
+    total: accountIssues.length,
+    issues: accountIssues.map(accountIssueLogSummary),
+  }, null, 2));
 
   if (!byName.aggregateProductStatuses.ok && !byName.products.ok) {
     process.exitCode = 1;

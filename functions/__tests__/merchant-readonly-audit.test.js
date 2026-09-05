@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
+  accountIssueLogSummary,
   aggregateDynamicRemarketingUy,
+  aggregateProductStatusesByContextUy,
   buildDiagnosis,
   countFeedItems,
+  finalizeContextSummary,
+  joinDataSourceProductCounts,
   summarizeDataSource,
   summarizeProducts,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -117,10 +121,129 @@ test('el diagnóstico diferencia hechos de hipótesis', () => {
   assert.ok(diagnosis.hypotheses.some(row => row.text.includes('2 fuentes primarias')));
 });
 
+// BLOQUEANTE PR #311 — Merchant Center (Gran Apuesta): el diagnóstico
+// original filtraba deliberadamente a un solo reportingContext (Dynamic
+// remarketing / DISPLAY_ADS), así que nunca mostraba Shopping ads, Free
+// listings ni ningún otro destino que la cuenta pudiera tener. Estas
+// pruebas cubren la ampliación: agrupar TODOS los reportingContext reales
+// de Uruguay sin descartar ninguno, cruzar dataSources con su conteo real
+// de productos, y resumir accountIssues sin PII.
+
+test('agrupa TODOS los reportingContext de Uruguay, sin descartar ninguno', () => {
+  const byContext = aggregateProductStatusesByContextUy([
+    {
+      reportingContext: 'DISPLAY_ADS',
+      country: 'UY',
+      stats: { activeCount: '3381', pendingCount: '0', disapprovedCount: '318' },
+      itemLevelIssues: [{ code: 'personal_hardships_policy_violation', severity: 'DISAPPROVED', productCount: '239' }],
+    },
+    {
+      reportingContext: 'SHOPPING_ADS',
+      country: 'UY',
+      stats: { activeCount: '500', pendingCount: '10', disapprovedCount: '5' },
+      itemLevelIssues: [{ code: 'missing_gtin', severity: 'DEMOTED', productCount: '12' }],
+    },
+    {
+      reportingContext: 'FREE_LISTINGS',
+      country: 'UY',
+      stats: { activeCount: '200' },
+    },
+    {
+      // Otro país: no debe mezclarse con Uruguay.
+      reportingContext: 'DISPLAY_ADS',
+      country: 'AR',
+      stats: { activeCount: '999' },
+    },
+  ]);
+
+  assert.equal(byContext.size, 3);
+  assert.ok(byContext.has('DISPLAY_ADS'));
+  assert.ok(byContext.has('SHOPPING_ADS'));
+  assert.ok(byContext.has('FREE_LISTINGS'));
+
+  const display = byContext.get('DISPLAY_ADS');
+  assert.equal(display.active, 3381);
+  assert.equal(display.disapproved, 318);
+  assert.equal(display.issueCounts.get('personal_hardships_policy_violation').productCount, 239);
+
+  const shopping = byContext.get('SHOPPING_ADS');
+  assert.equal(shopping.active, 500);
+  assert.equal(shopping.pending, 10);
+  assert.equal(shopping.issueCounts.get('missing_gtin').productCount, 12);
+
+  const free = byContext.get('FREE_LISTINGS');
+  assert.equal(free.active, 200);
+  assert.equal(free.pending, 0);
+});
+
+test('un reportingContext desconocido/nuevo también se agrupa (no hay lista cerrada de contextos)', () => {
+  const byContext = aggregateProductStatusesByContextUy([
+    { reportingContext: 'LOCAL_INVENTORY_ADS', country: 'UY', stats: { activeCount: '3' } },
+  ]);
+  assert.equal(byContext.size, 1);
+  assert.equal(byContext.get('LOCAL_INVENTORY_ADS').active, 3);
+});
+
+test('finalizeContextSummary ordena por productCount y respeta el límite (top N)', () => {
+  const summary = {
+    reportingContext: 'SHOPPING_ADS',
+    rows: 1,
+    active: 10,
+    pending: 0,
+    disapproved: 3,
+    expiring: 0,
+    issueCounts: new Map([
+      ['a_code', { code: 'a_code', severity: 'DISAPPROVED', productCount: 1 }],
+      ['b_code', { code: 'b_code', severity: 'DISAPPROVED', productCount: 5 }],
+      ['c_code', { code: 'c_code', severity: 'DISAPPROVED', productCount: 3 }],
+    ]),
+  };
+  const finalized = finalizeContextSummary(summary, 2);
+  assert.equal(finalized.reportingContext, 'SHOPPING_ADS');
+  assert.equal(finalized.topIssues.length, 2);
+  assert.deepEqual(finalized.topIssues.map(row => row.code), ['b_code', 'c_code']);
+});
+
+test('cruza dataSources con el conteo real de productos por fuente', () => {
+  const dataSources = [
+    { name: 'accounts/533/dataSources/1', displayName: 'Feed Amado', type: 'primaryProductDataSource' },
+    { name: 'accounts/533/dataSources/2', displayName: 'Suplementaria', type: 'supplementalProductDataSource' },
+  ];
+  const byDataSource = [{ dataSource: 'accounts/533/dataSources/1', count: 6974 }];
+  const joined = joinDataSourceProductCounts(dataSources, byDataSource);
+  assert.equal(joined[0].productCount, 6974);
+  assert.equal(joined[1].productCount, 0);
+  assert.equal(joined[0].displayName, 'Feed Amado');
+});
+
+test('el resumen de accountIssues no expone PII y lista los destinos afectados sin duplicar', () => {
+  const summary = accountIssueLogSummary({
+    title: 'Cuenta pendiente de verificación',
+    severity: 'CRITICAL',
+    impactedDestinations: [
+      { reportingContext: 'SHOPPING_ADS', impacts: [] },
+      { reportingContext: 'SHOPPING_ADS', impacts: [] },
+      { reportingContext: 'FREE_LISTINGS', impacts: [] },
+    ],
+  });
+  assert.equal(summary.title, 'Cuenta pendiente de verificación');
+  assert.equal(summary.severity, 'CRITICAL');
+  assert.deepEqual(summary.destinations, ['SHOPPING_ADS', 'FREE_LISTINGS']);
+  assert.doesNotMatch(JSON.stringify(summary), /@|telefono|phone|email/i);
+});
+
 test('la implementación no contiene llamadas de escritura a Merchant API', () => {
   const source = readFileSync('scripts/commerce/merchant-readonly-audit.mjs', 'utf8');
   assert.doesNotMatch(source, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/i);
   assert.doesNotMatch(source, /productInputs:insert|:fetch|triggeraction/i);
   assert.match(source, /merchantapi\.googleapis\.com/);
   assert.doesNotMatch(source, /\/v1beta\//);
+
+  // La ampliación del diagnóstico (reportingContexts, dataSources con
+  // conteo, accountIssues) es puro post-procesamiento en memoria de datos
+  // ya leídos — no agrega ninguna llamada de red nueva. Sólo dos fetch()
+  // deben existir en todo el archivo: el de listAll() (endpoints Merchant,
+  // todos GET) y el del feed público.
+  const fetchCalls = source.match(/\bfetch\(/g) || [];
+  assert.equal(fetchCalls.length, 2);
 });
