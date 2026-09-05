@@ -17,6 +17,9 @@ import { slugify } from '../_shared/slug.js';
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+// QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
+// inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
+import { normalizeIsbnToGtin } from '../feed.xml.js';
 import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
@@ -585,8 +588,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (displayAuthor) {
         schemaProduct.author = { '@type': 'Person', 'name': displayAuthor };
     }
-    if (item.isbn) {
-        schemaProduct.isbn = String(item.isbn);
+    // QW3A: sólo se publica un ISBN que valide como ISBN-13/ISBN-10 real (la
+    // misma regla que ya usa Merchant); si además valida, se suma `gtin`
+    // (ISBN-13) como identificador adicional — dato que ya existe, sin
+    // inventar ni corregir dígitos.
+    const isbnResult = normalizeIsbnToGtin(item.isbn);
+    if (isbnResult.valid) {
+        schemaProduct.isbn = isbnResult.gtin;
+        schemaProduct.gtin = isbnResult.gtin;
     }
     const realPublisher = normalizePublisher(item.publisher);
     if (realPublisher) {
