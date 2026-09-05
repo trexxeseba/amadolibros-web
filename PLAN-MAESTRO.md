@@ -1,33 +1,71 @@
 # PLAN MAESTRO — B11: enriquecimiento editorial real del catálogo
 
-## 🎯 Gran Apuesta en curso — Verificación GA4 post-checkout
+## 🎯 Gran Apuesta en curso — Google Merchant Center
 
-Este documento es la única fuente de prioridades del proyecto. **Hay una
-sola Gran Apuesta en curso en este momento: la Verificación GA4
-post-checkout.** Todo lo demás (limpieza histórica de B11, definición de
-B12, Blindaje técnico de Amado) queda **registrado pero pausado detrás de
-esta apuesta** — no iniciar ningún otro trabajo hasta que Seba autorice
-explícitamente retomarlo.
+Este documento es la única fuente de prioridades del proyecto. Seba
+autorizó explícitamente, el 2026-09-05, el siguiente orden de
+prioridades — es el único vigente y reemplaza cualquier orden anterior:
 
-- **Estado:** EN CURSO.
-- **Responsable:** ChatGPT + Seba.
-- **Esfuerzo:** S — escalable a M sólo si aparecen eventos rotos que exijan
-  corrección de código además de medición.
-- **Objetivo, criterio de aceptación y evidencia requerida:** detallados en
-  "Backlog — checkout V1.1", entrada 1, más abajo.
-- **Avance real y evidencia recolectada:** `ESTADO-ACTUAL.md`, sección
-  "Checkout V1.1".
-- **Qué queda pausado detrás de esta apuesta:** el PR técnico de limpieza
-  de los 17 `bibliographic.language` históricos, la definición de B12
-  (ambos heredados del cierre de B11 — ver más abajo); el Blindaje técnico
-  de Amado (registrado, **no iniciado** — ver "Backlog — checkout V1.1",
-  entrada 2); y, registrados el 2026-09-04, Google Merchant Center, Google
-  Search Console y SEO técnico/indexación (los tres registrados, **no
-  iniciados** — ver "Backlog — Google Merchant Center, Search Console y
-  SEO técnico", entradas 3-5).
-- **Checkout:** congelado comercialmente mientras dura esta verificación —
-  no se toca código de checkout ni de Producción como parte de esta
-  Gran Apuesta.
+1. **Google Merchant Center — 🎯 EN CURSO (única Gran Apuesta activa).**
+2. **Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA** (ya no es
+   la Gran Apuesta activa; queda a un paso de cerrarse — ver detalle
+   abajo).
+3. **Google Search Console — registrado, NO iniciado.**
+4. **SEO técnico / indexación / fichas — registrado, NO iniciado.**
+5. **Blindaje técnico de Amado — registrado, NO iniciado.**
+6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado
+   del cierre de B11) — **pausado.**
+7. **Definición de B12** (heredado del cierre de B11) — **pausado.**
+
+No iniciar ningún trabajo de los puntos 2-7 sin autorización explícita y
+separada de Seba. El detalle completo de cada uno (objetivo, criterio de
+aceptación, evidencia requerida) está en sus secciones de backlog
+correspondientes, más abajo.
+
+### Google Merchant Center — detalle de la Gran Apuesta activa
+
+- **Estado:** 🎯 EN CURSO — única Gran Apuesta activa del proyecto desde
+  el 2026-09-05.
+- **Responsable:** ChatGPT + Seba, con Claude Code para cambios técnicos
+  si fueran necesarios (ningún cambio técnico está autorizado todavía;
+  esta etapa es de diagnóstico).
+- **Esfuerzo:** S para el diagnóstico real inicial — sólo escala si
+  aparecen correcciones que autorizar.
+- **Objetivo inicial:** obtener el estado REAL de Merchant Center:
+  aprobados, desaprobados, advertencias, cobertura del feed y las
+  principales causas de cada problema encontrado.
+- **Criterio de aceptación:** diagnóstico real documentado (no inferido
+  desde el repo) más una lista de quick wins priorizados por cantidad de
+  productos afectados / impacto comercial.
+- **Evidencia requerida:** consola de Merchant Center o export/API real
+  — nunca una inferencia desde el código o desde auditorías internas de
+  B11 (esas ya existen, pero miden el feed propio, no el veredicto real
+  de Merchant sobre ese feed).
+- **Avance registrado:** ninguno todavía — diagnóstico sin iniciar
+  formalmente. **No declarar Merchant Center verificado hasta tener esa
+  evidencia real.**
+
+### Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA
+
+- **Estado:** EN ESPERA DE EVIDENCIA. Deja de ser la Gran Apuesta activa
+  el 2026-09-05, reemplazada por Google Merchant Center — no se cierra
+  todavía porque falta un último punto de evidencia (ver abajo).
+- Verificado hasta ahora: instrumentación de los eventos revisada y
+  confirmada; el puente Apps Script + Google Sheet que recibe los datos
+  de GA4 está funcionando; la compra real `AL-260820-W33NZ9` quedó
+  verificada por `transaction_id` e importe ($2.750 UYU); comportamiento
+  mobile vs. desktop verificado.
+- **Falta para cerrar:** validar una compra real posterior al deploy del
+  checkout V1.1 ([PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310),
+  commit `03abd31`) — la compra `AL-260820-W33NZ9` verificada hasta ahora
+  es anterior a ese deploy.
+- Detalle completo (responsable, esfuerzo, objetivo, criterio de
+  aceptación, evidencia) en "Backlog — checkout V1.1", entrada 2, más
+  abajo.
+
+**Checkout:** sigue **congelado comercialmente** — no se toca código de
+checkout ni de Producción mientras la prioridad activa es un diagnóstico
+(Merchant Center) o una verificación pendiente de cierre (GA4).
 
 ## Estado vigente (2026-09-03) — B11 TERMINADO
 
@@ -48,7 +86,7 @@ explícitamente retomarlo.
 - **Lo que sigue, en orden:** 1) PR técnico de limpieza de los 17
   `bibliographic.language` históricos multivaluados; 2) definición de B12.
   Ninguno de los dos está iniciado, y ambos quedan **pausados detrás de la
-  Gran Apuesta en curso** (Verificación GA4 post-checkout — ver sección al
+  Gran Apuesta en curso** (Google Merchant Center — ver sección al
   principio del documento) hasta que Seba autorice retomarlos.
 
 ## Objetivo operativo
@@ -325,19 +363,29 @@ desplegó a Producción en el
 sección "Checkout V1.1".
 
 Seba autorizó registrar estas dos acciones en el backlog. Desde
-2026-09-04, la entrada 1 (Verificación GA4 post-checkout) es la **Gran
-Apuesta en curso** del proyecto — ver la sección al principio del
-documento — y queda **EN CURSO**, autorizada y activa. La entrada 2
-(Blindaje técnico de Amado) permanece **registrada, sin iniciar**, y
-**pausada detrás de GA4**: requiere autorización explícita y separada de
-Seba antes de empezar cualquier trabajo sobre ella.
+2026-09-05, la entrada 2 (Verificación GA4 post-checkout) pasó de ser la
+Gran Apuesta activa a **EN ESPERA DE EVIDENCIA** — Google Merchant Center
+la reemplazó como Gran Apuesta (ver la sección al principio del
+documento). La entrada 5 (Blindaje técnico de Amado) permanece
+**registrada, sin iniciar**, y sigue pausada detrás de la Gran Apuesta
+activa: requiere autorización explícita y separada de Seba antes de
+empezar cualquier trabajo sobre ella.
 
-### 1. Verificación GA4 post-checkout — 🎯 EN CURSO (Gran Apuesta activa)
+### 2. Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA
 
-- **Estado:** EN CURSO. Autorizada por Seba el 2026-09-04 como la única
-  Gran Apuesta activa del proyecto — todo lo demás en este documento
-  (limpieza de `bibliographic.language`, B12, Blindaje técnico) queda
-  pausado detrás de esta verificación.
+- **Estado:** EN ESPERA DE EVIDENCIA. Fue la Gran Apuesta activa del
+  2026-09-04 al 2026-09-05; Seba la reemplazó por Google Merchant Center
+  (ver sección "🎯 Gran Apuesta en curso" al principio del documento) sin
+  cerrarla del todo — queda a un solo punto de evidencia de cerrarse.
+  - **Verificado hasta ahora:** instrumentación de los eventos revisada y
+    confirmada; el puente Apps Script + Google Sheet que recibe los datos
+    de GA4 funcionando; la compra real `AL-260820-W33NZ9` verificada por
+    `transaction_id` e importe ($2.750 UYU); comportamiento mobile vs.
+    desktop verificado.
+  - **Falta para cerrar:** validar una compra real posterior al deploy
+    del checkout V1.1 ([PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310),
+    commit `03abd31`, 2026-09-04) — `AL-260820-W33NZ9` es anterior a ese
+    deploy.
 - **Responsable:** ChatGPT + Seba.
 - **Esfuerzo estimado:** S (1 sesión de trabajo) — es verificación de
   instrumentación ya implementada, no desarrollo nuevo. Escalable a M
@@ -379,12 +427,12 @@ Seba antes de empezar cualquier trabajo sobre ella.
   se observaron con datos reales (o su ausencia, si todavía no hubo
   errores reales que capturar).
 
-### 2. Blindaje técnico de Amado — registrado, NO iniciado
+### 5. Blindaje técnico de Amado — registrado, NO iniciado
 
 - **Estado:** registrado, **NO iniciado**. Pausado detrás de la Gran
-  Apuesta en curso (Verificación GA4 post-checkout, entrada 1). No
-  empezar ningún punto de este objetivo sin autorización explícita y
-  separada de Seba.
+  Apuesta en curso (Google Merchant Center, entrada 1) y de la
+  Verificación GA4 pendiente de cierre (entrada 2). No empezar ningún
+  punto de este objetivo sin autorización explícita y separada de Seba.
 - **Responsable:** a asignar por Seba (agente/desarrollador designado al
   momento de autorizar el inicio).
 - **Esfuerzo estimado:** M-L (varios PRs pequeños y aislados, por diseño —
@@ -439,53 +487,31 @@ Seba antes de empezar cualquier trabajo sobre ella.
 
 ---
 
-## Backlog — Google Merchant Center, Search Console y SEO técnico (fuera de B11 y de checkout V1.1)
+## Backlog — Google Search Console y SEO técnico (fuera de B11 y de checkout V1.1)
 
-Ninguna de las tres áreas siguientes tenía una acción registrada en este
-documento antes de 2026-09-04 — sólo menciones incidentales (conteos de
-`feed Merchant` dentro de la evidencia del "full commerce production
-audit" de cada lote de B11, y "SEO" como parte del objetivo general de
-enriquecimiento editorial o como nombre de checks de CI). Ninguna de las
-tres es lo mismo que esos conteos existentes: piden estado real verificado
-directamente en la consola de cada herramienta, no una cifra ya calculada
-por otro proceso.
+Ninguna de las dos áreas siguientes tenía una acción registrada en este
+documento antes de 2026-09-04 — sólo menciones incidentales ("SEO" como
+parte del objetivo general de enriquecimiento editorial o como nombre de
+checks de CI). Ninguna es lo mismo que esos conteos existentes: piden
+estado real verificado directamente en la consola de cada herramienta, no
+una cifra ya calculada por otro proceso.
 
-Seba autorizó **registrar** las tres, en este orden, **después de GA4**.
-**Ninguna queda marcada EN CURSO** — las tres están **pausadas detrás de la
-Gran Apuesta en curso** (Verificación GA4 post-checkout) y detrás de
-Blindaje técnico de Amado, que ya estaba pausado. Requieren autorización
-explícita y separada de Seba antes de iniciar cualquier trabajo, la misma
-regla que ya aplica al resto del backlog.
+(Google Merchant Center estaba registrado en esta misma sección — se
+promovió a Gran Apuesta activa el 2026-09-05 y su detalle completo se
+movió a la sección "🎯 Gran Apuesta en curso", al principio del
+documento.)
 
-### 3. Google Merchant Center — estado real del feed
+Seba autorizó **registrar** las dos, en este orden, después de GA4.
+**Ninguna queda marcada EN CURSO** — las dos están **pausadas detrás de la
+Gran Apuesta en curso** (Google Merchant Center) y de la Verificación GA4
+pendiente de cierre. Requieren autorización explícita y separada de Seba
+antes de iniciar cualquier trabajo, la misma regla que ya aplica al resto
+del backlog.
 
-- **Estado:** registrado, **NO iniciado**. Pausado detrás de GA4.
-- **Responsable:** a asignar por Seba.
-- **Esfuerzo estimado:** S-M — revisión de panel más comparación contra
-  evidencia interna ya existente; escala si aparecen desaprobaciones o
-  discrepancias reales que exijan corrección de datos.
-- **Objetivo:** confirmar el estado real de Merchant Center directamente en
-  su propia consola (Diagnósticos, Rendimiento del producto) — no sólo el
-  conteo de ítems del feed que ya reporta el "full commerce production
-  audit" interno (`scripts` de B11) en cada deploy. Puntualmente: ítems
-  aprobados vs. desaprobados y por qué; advertencias activas (precio,
-  disponibilidad, GTIN/ISBN, imagen); si el conteo de ofertas activas en
-  Merchant coincide con el conteo interno del feed del momento de la
-  comparación.
-- **Criterio de aceptación:** estado de diagnósticos de Merchant Center
-  confirmado con evidencia real de la consola, comparado explícitamente
-  contra el run más reciente disponible del "full commerce production
-  audit" — cualquier discrepancia (por ejemplo, ítems que el feed interno
-  cuenta como activos pero Merchant desaprueba) se documenta como hallazgo,
-  no se corrige como parte de este registro.
-- **Evidencia requerida:** captura o export del panel de diagnósticos de
-  Merchant Center (fecha incluida), con el conteo de aprobados/
-  desaprobados/advertencias, y la comparación numérica contra el run de
-  "full commerce production audit" usado como referencia.
+### 3. Google Search Console — indexación real
 
-### 4. Google Search Console — indexación real
-
-- **Estado:** registrado, **NO iniciado**. Pausado detrás de GA4.
+- **Estado:** registrado, **NO iniciado**. Pausado detrás de la Gran
+  Apuesta en curso.
 - **Responsable:** a asignar por Seba.
 - **Esfuerzo estimado:** S — revisión de panel; escala a M si aparecen
   errores de cobertura o de rastreo que exijan investigación adicional.
@@ -502,9 +528,10 @@ regla que ya aplica al resto del backlog.
 - **Evidencia requerida:** captura o export del informe de cobertura de
   Search Console (fecha incluida) y del estado del sitemap enviado.
 
-### 5. SEO técnico / indexación / fichas
+### 4. SEO técnico / indexación / fichas
 
-- **Estado:** registrado, **NO iniciado**. Pausado detrás de GA4.
+- **Estado:** registrado, **NO iniciado**. Pausado detrás de la Gran
+  Apuesta en curso.
 - **Responsable:** a asignar por Seba.
 - **Esfuerzo estimado:** S — es verificación, no desarrollo; escala a M si
   aparecen problemas reales (canonical incorrecto, datos estructurados

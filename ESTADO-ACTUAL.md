@@ -464,17 +464,24 @@ del bloqueante de D1 Preview y del ciclo de vida de idempotencia) se fusionó
 y desplegó en paralelo a B11, sobre la misma rama principal. No forma parte
 de B11 y no consume ni afecta sus contadores.
 
-**Estado actual (2026-09-04):**
+**Estado actual (2026-09-05):**
 
 - **PR #310:** fusionado a `main` y **desplegado en Producción** (evidencia
   abajo).
 - **Checkout:** **congelado comercialmente** — no se toca código de
-  checkout ni de Producción mientras dure la Verificación GA4
-  post-checkout.
-- **Acción activa actual (Gran Apuesta en curso):** **Verificación GA4
-  post-checkout**. Ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en curso"
-  y "Backlog — checkout V1.1", entrada 1, para objetivo, responsable
-  (ChatGPT + Seba), esfuerzo (S, escalable a M) y criterio de aceptación.
+  checkout ni de Producción mientras la prioridad activa sea un
+  diagnóstico (Merchant Center) o una verificación pendiente de cierre
+  (GA4).
+- **Acción activa actual (Gran Apuesta en curso):** **Google Merchant
+  Center** — diagnóstico real (aprobados, desaprobados, advertencias,
+  cobertura del feed), **sin iniciar todavía, no declarado verificado**.
+  Ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en curso".
+- **Verificación GA4 post-checkout:** EN ESPERA DE EVIDENCIA (ya no es la
+  Gran Apuesta activa). Verificado: instrumentación, puente Apps Script +
+  Google Sheet, compra real `AL-260820-W33NZ9` (transaction_id + $2.750
+  UYU), mobile vs. desktop. Falta: validar una compra real posterior al
+  deploy del checkout V1.1 (PR #310, commit `03abd31`). Ver
+  `PLAN-MAESTRO.md`, "Backlog — checkout V1.1", entrada 2.
 
 - [PR #310](https://github.com/trexxeseba/amadolibros-web/pull/310)
   fusionado a `main` por trexxeseba (commit `03abd3151fa093609c0c511d8207a056cd3fda19`),
@@ -508,46 +515,30 @@ de B11 y no consume ni afecta sus contadores.
 - Detalle técnico completo (causa raíz, corrección, tests, checks) en el
   propio PR #310 y en su historial de comentarios.
 
-### Backlog registrado tras el cierre de PR #310
+### Orden de prioridades vigente (actualizado 2026-09-05)
 
-Dos acciones registradas en `PLAN-MAESTRO.md`, sección "Backlog — checkout
-V1.1":
+Seba autorizó explícitamente el siguiente orden — el único vigente,
+reemplaza el del 2026-09-04. Detalle completo (responsable, esfuerzo,
+criterio de aceptación, evidencia requerida) de cada punto en
+`PLAN-MAESTRO.md`:
 
-1. **Verificación GA4 post-checkout — EN CURSO.** Autorizada por Seba el
-   2026-09-04 como la única Gran Apuesta activa del proyecto. Responsable:
-   ChatGPT + Seba. Esfuerzo: S, escalable a M sólo si aparecen eventos
-   rotos. Objetivo, criterio de aceptación y evidencia requerida en
-   `PLAN-MAESTRO.md`.
-2. **Blindaje técnico de Amado — registrado, NO iniciado.** Pausado detrás
-   de la Verificación GA4. Requiere autorización explícita y separada de
-   Seba antes de empezar cualquier punto.
+1. **Google Merchant Center — 🎯 EN CURSO (única Gran Apuesta activa).**
+   Diagnóstico real del feed (aprobados, desaprobados, advertencias,
+   cobertura), directamente contra la consola de Merchant — no contra el
+   conteo interno ya existente. Responsable: ChatGPT + Seba, con Claude
+   Code para cambios técnicos si fueran necesarios. Sin avance registrado
+   todavía; **no declarar verificado**.
+2. **Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA.** Dejó de
+   ser la Gran Apuesta activa el 2026-09-05. Verificado: instrumentación,
+   puente Apps Script + Sheet, compra real `AL-260820-W33NZ9`
+   (`transaction_id` + $2.750 UYU), mobile vs. desktop. Falta: una compra
+   real posterior al deploy del checkout V1.1 (PR #310, commit `03abd31`).
+3. **Google Search Console — registrado, NO iniciado.**
+4. **SEO técnico / indexación / fichas — registrado, NO iniciado.**
+5. **Blindaje técnico de Amado — registrado, NO iniciado.**
+6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado de
+   B11) — **pausado.**
+7. **Definición de B12** (heredado de B11) — **pausado.**
 
-La limpieza histórica de los 17 `bibliographic.language` y la definición de
-B12 (heredadas del cierre de B11) quedan igualmente **pausadas detrás de la
-Verificación GA4** — ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en
-curso", que es la fuente de verdad única sobre el orden de prioridades.
-
-### Backlog registrado el 2026-09-04 — Merchant Center, Search Console, SEO técnico
-
-Ninguna de las tres áreas tenía una acción registrada antes de esta fecha
-(sólo menciones incidentales dentro de la evidencia de "full commerce
-production audit" de B11: conteos de `feed Merchant` y de URLs de
-`sitemap`, que no son lo mismo que un estado verificado en la consola real
-de cada herramienta). Registradas en `PLAN-MAESTRO.md`, sección "Backlog —
-Google Merchant Center, Search Console y SEO técnico", **todas después de
-GA4 y ninguna EN CURSO**:
-
-3. **Google Merchant Center — registrado, NO iniciado.** Estado real del
-   feed (diagnósticos, aprobados/desaprobados) contra la consola de
-   Merchant, no sólo el conteo interno ya existente.
-4. **Google Search Console — registrado, NO iniciado.** Estado real de
-   indexación (cobertura, sitemap) contra la consola de Search Console, no
-   sólo el conteo de URLs del sitemap ya reportado internamente.
-5. **SEO técnico / indexación / fichas — registrado, NO iniciado.**
-   Verificación de `canonical`/`noindex`/datos estructurados sobre una
-   muestra real de fichas, sin repetir lo que "full commerce production
-   audit" y "Reproduce public SEO baseline" ya cubren.
-
-Las tres pausadas detrás de la Verificación GA4 (y detrás de Blindaje
-técnico, que ya estaba pausado). Responsable, esfuerzo, criterio de
-aceptación y evidencia requerida de cada una en `PLAN-MAESTRO.md`.
+Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
+autorización explícita y separada de Seba.
