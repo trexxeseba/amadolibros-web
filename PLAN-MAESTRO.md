@@ -41,9 +41,33 @@ correspondientes, más abajo.
   — nunca una inferencia desde el código o desde auditorías internas de
   B11 (esas ya existen, pero miden el feed propio, no el veredicto real
   de Merchant sobre ese feed).
-- **Avance registrado:** ninguno todavía — diagnóstico sin iniciar
-  formalmente. **No declarar Merchant Center verificado hasta tener esa
-  evidencia real.**
+- **Avance registrado (2026-09-05):** diagnóstico real completo (99
+  `image_too_small`, ~149 `missing_price`, 16 `ebooks_policy_violation`,
+  2 `landing_page_error`, 0 solapamiento real AUTOFEED/FILE) y arranque
+  de quick wins con evidencia real, sin declarar Merchant Center
+  verificado todavía (falta re-crawl real de Google sobre los fixes).
+  Estado de cada quick win:
+  - **QW1 — Offer/precio:** IMPLEMENTADO — PENDIENTE MERGE/VERIFICACIÓN
+    MERCHANT. Causa raíz: la ficha omitía el `Offer` de schema.org
+    cuando el producto estaba sin stock, aunque tuviera precio real de
+    catálogo. [PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313)
+    (Draft, sin mergear).
+  - **QW3A — enriquecimiento de structured data:** IMPLEMENTADO —
+    PENDIENTE MERGE. El mapeo de campos bibliográficos (author,
+    publisher, inLanguage, numberOfPages, bookFormat, edition) ya
+    estaba completo; se corrigió la validación de ISBN/GTIN (no se
+    publicaba con el mismo checksum que ya usa el feed de Merchant).
+    [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314)
+    (Draft, sin mergear).
+  - **QW2 — imágenes:** registrado, medición read-only completa (sin
+    activar Cloudflare Images ni tocar Merchant). De 99 productos
+    `image_too_small`: 53 miden <500px, 38 miden 500-999px, 7 ya miden
+    ≥1000px (1 no se pudo medir). [PR #315](https://github.com/trexxeseba/amadolibros-web/pull/315)
+    (Draft, sin mergear — sin implementar corrección todavía).
+  - **QW4 — títulos/descripciones:** NO iniciado.
+  - **QW5 — enlazado interno:** NO iniciado.
+  **No declarar Merchant Center verificado hasta que QW1/QW3A se
+  mergeen y Google re-cruceé los productos afectados.**
 
 ### Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA
 

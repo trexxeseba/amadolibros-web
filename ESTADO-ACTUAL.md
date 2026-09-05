@@ -473,9 +473,11 @@ de B11 y no consume ni afecta sus contadores.
   diagnóstico (Merchant Center) o una verificación pendiente de cierre
   (GA4).
 - **Acción activa actual (Gran Apuesta en curso):** **Google Merchant
-  Center** — diagnóstico real (aprobados, desaprobados, advertencias,
-  cobertura del feed), **sin iniciar todavía, no declarado verificado**.
-  Ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en curso".
+  Center** — diagnóstico real completo (aprobados, desaprobados,
+  advertencias, cobertura del feed) y quick wins **IMPLEMENTADOS —
+  PENDIENTE MERGE/VERIFICACIÓN MERCHANT** (QW1, QW3A), **no declarado
+  verificado todavía**. Ver `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta
+  en curso", para el detalle de cada quick win (QW1-QW5) y sus PRs.
 - **Verificación GA4 post-checkout:** EN ESPERA DE EVIDENCIA (ya no es la
   Gran Apuesta activa). Verificado: instrumentación, puente Apps Script +
   Google Sheet, compra real `AL-260820-W33NZ9` (transaction_id + $2.750
@@ -523,11 +525,18 @@ criterio de aceptación, evidencia requerida) de cada punto en
 `PLAN-MAESTRO.md`:
 
 1. **Google Merchant Center — 🎯 EN CURSO (única Gran Apuesta activa).**
-   Diagnóstico real del feed (aprobados, desaprobados, advertencias,
-   cobertura), directamente contra la consola de Merchant — no contra el
-   conteo interno ya existente. Responsable: ChatGPT + Seba, con Claude
-   Code para cambios técnicos si fueran necesarios. Sin avance registrado
-   todavía; **no declarar verificado**.
+   Diagnóstico real del feed completo, directamente contra la consola de
+   Merchant. Responsable: ChatGPT + Seba, con Claude Code para cambios
+   técnicos. Avance (2026-09-05): **QW1** (Offer/precio) y **QW3A**
+   (structured data/ISBN-GTIN) IMPLEMENTADOS — PENDIENTE MERGE/
+   VERIFICACIÓN MERCHANT ([PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313),
+   [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314));
+   **QW2** (imágenes) con medición read-only completa — 53/99 productos
+   `image_too_small` miden <500px, 38/99 miden 500-999px, 7/99 ya miden
+   ≥1000px ([PR #315](https://github.com/trexxeseba/amadolibros-web/pull/315),
+   sin implementar corrección todavía); **QW4/QW5** NO iniciados.
+   **No declarar Merchant Center verificado** hasta mergear QW1/QW3A y
+   confirmar el re-crawl real de Google.
 2. **Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA.** Dejó de
    ser la Gran Apuesta activa el 2026-09-05. Verificado: instrumentación,
    puente Apps Script + Sheet, compra real `AL-260820-W33NZ9`
