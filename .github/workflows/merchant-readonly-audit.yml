@@ -7,12 +7,16 @@ on:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
       - 'scripts/commerce/merchant-readonly-audit.mjs'
+      - 'scripts/commerce/public-landing-check.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
+      - 'functions/__tests__/public-landing-check.test.js'
   pull_request:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
       - 'scripts/commerce/merchant-readonly-audit.mjs'
+      - 'scripts/commerce/public-landing-check.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
+      - 'functions/__tests__/public-landing-check.test.js'
   workflow_dispatch:
 
 permissions:
@@ -42,6 +46,8 @@ jobs:
         run: |
           node --check scripts/commerce/merchant-readonly-audit.mjs
           node --test functions/__tests__/merchant-readonly-audit.test.js
+          node --check scripts/commerce/public-landing-check.mjs
+          node --test functions/__tests__/public-landing-check.test.js
 
       - name: Authenticate with Google through Workload Identity
         id: google_auth
@@ -70,6 +76,14 @@ jobs:
           test -s artifacts/merchant/merchant-readonly-report.json
           test -s artifacts/merchant/report-summary.md
           node -e "const r=require('./artifacts/merchant/merchant-readonly-report.json'); if(r.schemaVersion!==1||r.accountId!=='5330457716') process.exit(1)"
+
+      - name: Verify public landing pages (sitio propio, sólo lectura)
+        id: public_landing_check
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          MERCHANT_REPORT_PATH: artifacts/merchant/merchant-readonly-report.json
+        run: node scripts/commerce/public-landing-check.mjs
 
       - name: Upload Merchant audit
         if: always()
