@@ -188,4 +188,3 @@ export function topicValues(record) {
   }
   return [...new Set(topics)].slice(0, 12);
 }
-
