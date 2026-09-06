@@ -37,7 +37,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          # En un evento de pull_request, github.ref_name es "325/merge", que
+          # no existe como rama: hay que pedir la rama real del PR.
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
