@@ -76,13 +76,21 @@ function offerLooksValid(side) {
     Boolean(side.canonical) && side.offer.url === side.canonical;
 }
 
-function classify(production, preview) {
-  if (production.httpStatus !== 200 || preview.httpStatus !== 200) return 'D';
+// Revisión de Astra: la etiqueta anterior "B = sigue sin Offer porque no
+// tiene precio real" era una INFERENCIA — desde el HTML sólo se ve que no
+// hay Offer, nunca por qué. Esta comparación HTTP no puede establecer la
+// causa; quien la establece es `qw1-cohort-catalog-evidence.mjs`, que cruza
+// cada MLU contra el catálogo que consume cada entorno.
+export function classify(production, preview) {
+  if (production.httpStatus !== 200 || preview.httpStatus !== 200) {
+    return 'no_comparable_http';
+  }
   const productionOk = offerLooksValid(production);
   const previewOk = offerLooksValid(preview);
-  if (!productionOk && previewOk) return 'A';
-  if (!productionOk && !preview.offer) return 'B';
-  return 'C';
+  if (!productionOk && previewOk) return 'corregido_por_313';
+  if (productionOk && previewOk) return 'ya_correcto_en_ambos';
+  if (productionOk && !previewOk) return 'regresion_en_313';
+  return 'sin_offer_causa_pendiente_de_verificar';
 }
 
 async function measureOne(row) {
@@ -122,13 +130,22 @@ export async function main() {
 
   const results = await mapWithConcurrency(rows, 8, measureOne);
 
-  const counts = { A: 0, B: 0, C: 0, D: 0 };
+  const counts = {
+    corregido_por_313: 0,
+    ya_correcto_en_ambos: 0,
+    regresion_en_313: 0,
+    sin_offer_causa_pendiente_de_verificar: 0,
+    no_comparable_http: 0,
+  };
   for (const row of results) counts[row.classification] += 1;
 
   const summary = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     totalCohort: results.length,
+    // Lo que esta comparación NO puede establecer: la causa de que falte el
+    // `Offer`. Eso se resuelve en qw1-cohort-catalog-evidence.mjs.
+    alcance: 'comparacion HTTP Produccion vs Preview; no infiere causas',
     counts,
     results,
   };
@@ -139,10 +156,14 @@ export async function main() {
 
   console.log('=== QW1 PREVIEW VALIDATION (solo lectura) ===');
   console.log(JSON.stringify({ totalCohort: summary.totalCohort, counts }, null, 2));
-  console.log('=== QW1 detalle C (sigue fallando por otra causa) ===');
-  console.log(JSON.stringify(results.filter(row => row.classification === 'C'), null, 2));
-  console.log('=== QW1 detalle D (no aplica) ===');
-  console.log(JSON.stringify(results.filter(row => row.classification === 'D'), null, 2));
+  console.log('=== QW1 detalle: regresión introducida por #313 ===');
+  console.log(JSON.stringify(results.filter(row => row.classification === 'regresion_en_313'), null, 2));
+  console.log('=== QW1 detalle: no comparable por HTTP (hasta 10) ===');
+  console.log(JSON.stringify(
+    results.filter(row => row.classification === 'no_comparable_http').slice(0, 10),
+    null,
+    2,
+  ));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
