@@ -74,6 +74,10 @@ jobs:
           set -euo pipefail
           git worktree add /tmp/main-tree origin/main
           cp artifacts/reconciliacion/catalog-snapshot.json /tmp/catalog-snapshot.json
+          # El medidor existe sólo en el PR. Se copia DENTRO del worktree para
+          # que sus imports relativos resuelvan al registro de main, que es
+          # justamente lo que queremos medir.
+          cp scripts/seo/effective-ficha-fields.mjs /tmp/main-tree/scripts/seo/
           cd /tmp/main-tree
           CATALOG_SNAPSHOT=/tmp/catalog-snapshot.json \
           FIELDS_OUTPUT=/tmp/fields-main.json \
