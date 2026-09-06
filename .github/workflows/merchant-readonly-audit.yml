@@ -6,11 +6,13 @@ on:
       - agent/merchant-readonly-diagnostics
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
+      - '.github/workflows/qw2-live-status.yml'
       - 'scripts/commerce/merchant-readonly-audit.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
   pull_request:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
+      - '.github/workflows/qw2-live-status.yml'
       - 'scripts/commerce/merchant-readonly-audit.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
   workflow_dispatch:
