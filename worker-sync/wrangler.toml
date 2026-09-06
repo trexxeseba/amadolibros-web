@@ -34,6 +34,9 @@ ML_CATALOG_GALLERY_PRIORITY_IDS = "MLU63131903"
 # primer backfill y luego baja automáticamente a mantenimiento horario para
 # cambios y revalidaciones de copias de más de 30 días.
 COVER_MIRROR_BATCH_SIZE = "100"
+# No generar detalles de portadas automáticamente. Las fuentes insuficientes
+# quedan en covers/v1/quality-report.json para conseguir un original mejor.
+COVER_ALLOW_GENERATIVE_UPSCALE = "false"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 INDEXNOW_ENABLED = "true"
 # Clave pública verificada por el archivo homónimo en astro-front/public.
@@ -53,7 +56,7 @@ bucket_name = "amadolibros-catalog"
 binding     = "COVER_R2"
 bucket_name = "amadolibros-images-production"
 
-# Cloudflare Images Free: una única variante de alta resolución por portada.
+# Cloudflare Images disponible; el mirror prioriza fuentes nativas medidas.
 # El Worker usa upscale=generate (IA) sólo cuando el lado corto es menor a
 # 1024 px y conserva el original en R2 si la transformación falla.
 [images]

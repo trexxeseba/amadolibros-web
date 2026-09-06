@@ -40,7 +40,7 @@ export function coverSource(item, position = 0) {
 function responseHeaders(source, contentType, etag = null) {
   return {
     'content-type': contentType?.startsWith('image/') ? contentType : 'image/jpeg',
-    'cache-control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000',
+    'cache-control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=300',
     'x-content-type-options': 'nosniff',
     'access-control-allow-origin': '*',
     ...(etag ? { etag } : {}),
@@ -77,19 +77,18 @@ export async function onRequest(ctx) {
 
   const cache = caches.default;
   const filename = position === 0 ? 'cover.jpg' : `cover-${position + 1}.jpg`;
-  const cacheKey = new Request(new URL(ctx.request.url).origin + `/book-cover/${id}/${filename}`);
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    return ctx.request.method === 'HEAD'
-      ? new Response(null, { status: cached.status, headers: cached.headers })
-      : cached;
-  }
-
   const catalog = await fetchCatalog(ctx);
   let item = Array.isArray(catalog?.items) ? catalog.items.find(candidate => candidate.id === id) : null;
   if (!item && ['preview', 'production'].includes(ctx.env?.APP_ENV)) item = await fetchPausedItem(ctx, id);
   const source = coverSource(item, position);
   const storedCover = await findPreviewCover(ctx, id, position, source || null);
+  // Content-aware cache: a new R2 master automatically stops using old cached bytes.
+  const cacheUrl = new URL(`/book-cover/${id}/${filename}`, ctx.request.url);
+  cacheUrl.searchParams.set('master', storedCover?.sha256 || source || 'missing');
+  const cacheKey = new Request(cacheUrl);
+  const cached = await cache.match(cacheKey);
+  if (cached) return ctx.request.method === 'HEAD'
+    ? new Response(null, {status: cached.status, headers: cached.headers}) : cached;
   let response = await r2CoverResponse(ctx, storedCover);
 
   if (!response && source) {
