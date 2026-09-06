@@ -95,6 +95,12 @@ export function evaluate(html, esperado) {
   const schema = productSchema(html);
   const rows = detailRows(html);
   const comprobaciones = [];
+  // Se conserva para poder revisar una falla sin volver a pedir la página.
+  const schemaCrudo = schema
+    ? Object.fromEntries(Object.entries(schema).filter(([key]) => (
+        ['@type', 'numberOfPages', 'inLanguage', 'bookFormat', 'bookEdition', 'datePublished', 'keywords', 'publisher', 'author'].includes(key)
+      )))
+    : null;
 
   for (const [field, valorEsperado] of Object.entries(esperado || {})) {
     const contrato = FIELD_CONTRACT[field];
@@ -125,7 +131,7 @@ export function evaluate(html, esperado) {
     });
   }
 
-  return { tieneSchema: Boolean(schema), comprobaciones };
+  return { tieneSchema: Boolean(schema), comprobaciones, schemaCrudo, filasVisibles: Object.fromEntries(rows) };
 }
 
 async function mapWithConcurrency(items, limit, worker) {
@@ -160,7 +166,7 @@ export async function main() {
         return { ...base_row, status: response.status, estado: 'no_verificada', motivo: `HTTP ${response.status}` };
       }
       const html = await response.text();
-      const { tieneSchema, comprobaciones } = evaluate(html, ficha.esperado || {});
+      const { tieneSchema, comprobaciones, schemaCrudo, filasVisibles } = evaluate(html, ficha.esperado || {});
       // Ningún campo mejorado puede quedar sin comprobar.
       const sinComprobar = (ficha.ganados || []).filter(
         field => !comprobaciones.some(c => c.campo === field),
@@ -170,6 +176,9 @@ export async function main() {
       return {
         ...base_row, status: 200, tieneSchema, comprobaciones, sin_comprobar: sinComprobar,
         estado: ok ? 'verificada' : 'fallida',
+        // Sólo para las fallidas: evidencia suficiente para diagnosticar sin
+        // volver a pedir la página.
+        ...(ok ? {} : { schema_crudo: schemaCrudo, filas_visibles: filasVisibles }),
       };
     } catch (error) {
       return { ...base_row, status: 0, estado: 'no_verificada', motivo: normalize(error?.message) || 'fetch falló' };
