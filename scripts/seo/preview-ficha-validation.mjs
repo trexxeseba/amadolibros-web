@@ -2,9 +2,13 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// Valida contra el Preview DESPLEGADO cada ficha que el PR dice mejorar.
-// Una prueba local del renderizador no sustituye esto: sólo el Preview
-// demuestra que el dato llegó a la página que sirve Cloudflare.
+// Valida contra un sitio DESPLEGADO cada ficha que se dice mejorar. Una
+// prueba local del renderizador no sustituye esto: sólo el sitio servido
+// demuestra que el dato llegó a la página que entrega Cloudflare.
+//
+// El mismo verificador sirve para el Preview de un PR y para Producción
+// después del merge: lo único que cambia es la base y el plan. Se conservan
+// los nombres PREVIEW_* como alias para no romper corridas ya publicadas.
 //
 // La versión anterior daba falsos positivos: buscaba el valor con
 // `html.includes()` sobre el documento entero, y como el bloque JSON-LD vive
@@ -186,12 +190,20 @@ async function mapWithConcurrency(items, limit, worker) {
   return out;
 }
 
+// FICHA_* es el nombre general; PREVIEW_* se sigue aceptando. Un error acá
+// no se nota al correr: el verificador leería una base vacía y fallaría con
+// un mensaje confuso, así que se prueba aparte.
+export function ajuste(nombre, entorno = process.env, porDefecto = '') {
+  return entorno[`FICHA_${nombre}`] ?? entorno[`PREVIEW_${nombre}`] ?? porDefecto;
+}
+
 export async function main() {
-  const base = normalize(process.env.PREVIEW_BASE_URL).replace(/\/$/, '');
-  const planPath = process.env.PREVIEW_PLAN;
-  const outputPath = process.env.PREVIEW_OUTPUT || 'artifacts/preview/preview-ficha-validation.json';
-  const deployedSha = normalize(process.env.PREVIEW_DEPLOYED_SHA) || null;
-  if (!base || !planPath) throw new Error('Faltan PREVIEW_BASE_URL y PREVIEW_PLAN.');
+  const base = normalize(ajuste('BASE_URL')).replace(/\/$/, '');
+  const planPath = ajuste('PLAN');
+  const outputPath = ajuste('OUTPUT') || 'artifacts/preview/preview-ficha-validation.json';
+  const deployedSha = normalize(ajuste('DEPLOYED_SHA')) || null;
+  const entorno = normalize(ajuste('ENTORNO')) || null;
+  if (!base || !planPath) throw new Error('Faltan FICHA_BASE_URL y FICHA_PLAN (o sus alias PREVIEW_*).');
 
   const plan = JSON.parse(await readFile(planPath, 'utf8'));
   const fichas = Array.isArray(plan.fichas) ? plan.fichas : [];
@@ -232,6 +244,7 @@ export async function main() {
   const report = {
     schemaVersion: 2,
     generatedAt: new Date().toISOString(),
+    entorno,
     previewBaseUrl: base,
     previewDeployedSha: deployedSha,
     snapshot: plan.snapshot || null,
@@ -251,7 +264,7 @@ export async function main() {
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);
 
-  console.log('=== VALIDACIÓN DEL PREVIEW DESPLEGADO ===');
+  console.log(`=== VALIDACIÓN DEL SITIO DESPLEGADO${entorno ? ` — ${entorno.toUpperCase()}` : ''} ===`);
   console.log(JSON.stringify({ ...report, resultados: undefined, fallidas: fallidas.slice(0, 10) }, null, 2));
   console.log('\n=== CAMPO | COMPROB. | VISIBLE OK | JSON-LD OK | JSON-LD N/A | FALLIDAS ===');
   for (const [campo, fila] of Object.entries(report.comprobaciones_por_campo)) {

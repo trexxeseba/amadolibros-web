@@ -30,10 +30,19 @@ completo de B11.1, ya sin ningún ISBN pendiente de intentar.
 
 ## B12 — enriquecimiento de fichas activas (2026-09-06)
 
-**Resultado real: 481 fichas activas mejoradas**, verificadas una por una en
-el Preview desplegado. La meta autorizada eran 1.000 y **no se alcanzó**: el
-circuito se agotó antes con las fuentes disponibles. El objetivo sigue
-pendiente y se continúa después.
+**Resultado real: 481 fichas activas mejoradas.**
+
+Tres cosas distintas, que conviene no mezclar:
+
+| | Estado |
+| --- | --- |
+| **481 fichas verificadas en el Preview desplegado** | **HECHO.** Una por una, 841 comprobaciones, 0 fallidas, 0 sin verificar. |
+| **Verificación en Producción** | **PENDIENTE.** No se puede hacer hasta que `main` esté fusionado y desplegado. El procedimiento está listo y no requiere trabajo nuevo: ver «Verificación de Producción» más abajo. |
+| **Meta de 1.000 fichas** | **PENDIENTE.** Se llegó a 481 y el circuito se agotó con las fuentes disponibles. Continúa después. |
+
+Nada de lo verificado está publicado todavía: el trabajo vive en
+[PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325), en Draft,
+**sin mergear ni desplegar**, esperando la aprobación de Seba.
 
 > **Corrección de una cifra que informé mal.** Antes reporté 423 fichas. Ese
 > número salía de reconstruir el "antes" restándole al ítem los hechos del
@@ -159,6 +168,54 @@ encontrado, valor JSON-LD y resultado— en el artefacto
 `b12-reconciliacion-34063187043` de esa corrida. Las cifras de arriba, además,
 quedan en el **resumen de la corrida**, que no vence con el artefacto.
 
+### Verificación de Producción — PENDIENTE, ya preparada
+
+El Preview demuestra que el dato llega a la página servida por Cloudflare,
+pero **no es Producción**. La comprobación equivalente contra
+`https://www.amadolibros.com` está preparada y **sólo se puede ejecutar
+después del merge y del deploy**: antes, Producción sirve el sitio anterior y
+la medición daría un falso negativo.
+
+**Qué hacer, después del merge:**
+
+1. Esperar a que termine bien el deploy de Producción del commit de merge
+   (workflow «Deploy to Cloudflare Pages», job `Deploy`).
+2. Ejecutar el workflow **«B12 — verificar en Producción las fichas
+   mejoradas»** (`workflow_dispatch` desde `main`). Sus valores por defecto ya
+   son los correctos:
+   - `commit_previo`: `d380374775db7b5d2ef80b09ae97351ccdcd88f9` — el estado de
+     `main` **anterior** a B12;
+   - `base_url`: `https://www.amadolibros.com`;
+   - `esperar_deploy`: activado, para que no mida un sitio viejo.
+3. Leer el resumen de la corrida y, si algo falla, el artefacto
+   `b12-produccion-<run_id>` (90 días), que trae el detalle por ficha.
+
+**Qué hace, y por qué es la misma vara que el Preview:**
+
+- Usa **el mismo verificador corregido** (`preview-ficha-validation.mjs`), con
+  el mismo contrato: valor visible leído **sólo** de la lista de detalles y
+  propiedad JSON-LD del renderizador, **exigidas ambas** donde ambas
+  corresponden, comparando el valor normalizado completo. Ningún campo
+  esperado pasa con cero comprobaciones.
+- El «antes» **no es una resta de hechos ni un supuesto**: es un `git worktree`
+  del commit previo a B12. Se calcula la ficha efectiva de los dos árboles
+  sobre **un único snapshot** del catálogo de Producción y se restan. Lo que
+  aparece es exactamente lo que B12 aportó.
+- **Informa las pérdidas**: cualquier ficha que deje de mostrar un campo que
+  antes mostraba se lista con su MLU, su ISBN y los campos perdidos, y
+  **hace fallar la corrida**.
+- Guarda **evidencia por ficha** —MLU, ISBN, campo, valor esperado, valor
+  visible encontrado, valor JSON-LD y resultado— en el artefacto.
+- Un **HTTP 404 queda SIN VERIFICAR**, no fallido: entre el cierre y el merge
+  una publicación pudo darse de baja. Se informa aparte y **no se le atribuye
+  causa**, ni al catálogo ni a nada.
+- Es de **sólo lectura**: baja el catálogo público y pide las fichas. No
+  despliega, no fusiona, no escribe catálogo, no toca Merchant.
+
+El universo puede no ser exactamente 481: entre el cierre y el merge el
+catálogo cambia. La corrida reporta el número que efectivamente mida, con las
+altas y bajas separadas — no se fuerza a que dé 481.
+
 ### Rendimiento por lote — el circuito se agotó
 
 | Lote | ISBN incorporados |
@@ -219,7 +276,8 @@ fuente por campo (`provider`, `url`, `relationship: exact_edition`), verificado
 por test. Precio, stock, imágenes, slug y canonical no se tocan.
 
 Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
-sin mergear ni desplegar.
+**sin mergear ni desplegar**. Mientras siga así, **nada de esto está en
+Producción** y la verificación de Producción sigue pendiente por definición.
 
 ## Trabajo pendiente que hereda de B11
 

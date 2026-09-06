@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   FIELD_CONTRACT,
+  ajuste,
   detailRows,
   evaluate,
   normalize,
@@ -195,4 +196,18 @@ test('el desglose por campo cuenta comprobaciones, aciertos y no aplicables', ()
   });
   // Un campo que nadie comprobó no aparece: cero comprobaciones es visible.
   assert.equal(porCampo.topics, undefined);
+});
+
+// El mismo verificador corre contra el Preview de un PR y contra Producción.
+// Si el nombre nuevo no resolviera, la corrida de Producción leería una base
+// vacía y fallaría con un mensaje que no dice nada.
+test('FICHA_* manda y PREVIEW_* sigue funcionando como alias', () => {
+  assert.equal(ajuste('BASE_URL', { FICHA_BASE_URL: 'https://www.amadolibros.com' }), 'https://www.amadolibros.com');
+  assert.equal(ajuste('BASE_URL', { PREVIEW_BASE_URL: 'https://pr-325.amadolibros-web.pages.dev' }), 'https://pr-325.amadolibros-web.pages.dev');
+  assert.equal(
+    ajuste('BASE_URL', { FICHA_BASE_URL: 'https://www.amadolibros.com', PREVIEW_BASE_URL: 'https://viejo' }),
+    'https://www.amadolibros.com',
+    'el nombre general gana sobre el alias',
+  );
+  assert.equal(ajuste('BASE_URL', {}), '');
 });

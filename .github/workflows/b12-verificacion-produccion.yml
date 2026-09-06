@@ -1,0 +1,231 @@
+name: B12 — verificar en Producción las fichas mejoradas
+
+# Se ejecuta DESPUÉS del merge y DESPUÉS del deploy de Producción. No fusiona,
+# no despliega y no escribe catálogo: sólo lee el catálogo público y pide las
+# fichas a www.amadolibros.com.
+#
+# Usa el MISMO verificador que validó el Preview del PR #325, con el mismo
+# contrato: valor visible leído sólo de la lista de detalles de la ficha y
+# propiedad JSON-LD según el renderizador, exigidas AMBAS donde ambas
+# corresponden. Un campo esperado nunca pasa con cero comprobaciones.
+#
+# El "antes" no es un supuesto ni una resta de hechos: es un worktree del
+# commit anterior a B12. La diferencia entre las dos fichas efectivas sobre el
+# MISMO snapshot es exactamente lo que B12 aportó.
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_previo:
+        description: Commit anterior a B12; es el lado "antes" de la comparación
+        required: true
+        default: d380374775db7b5d2ef80b09ae97351ccdcd88f9
+        type: string
+      base_url:
+        description: Sitio a verificar
+        required: true
+        default: https://www.amadolibros.com
+        type: string
+      esperar_deploy:
+        description: Esperar a que el deploy de Producción de este commit termine bien
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Verificar en Producción
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Pruebas del instrumental de medición
+        run: |
+          node --check scripts/seo/effective-ficha-fields.mjs
+          node --check scripts/seo/effective-ficha-diff.mjs
+          node --check scripts/seo/preview-ficha-validation.mjs
+          node --test functions/__tests__/effective-ficha-diff.test.js
+          node --test functions/__tests__/preview-ficha-validation.test.js
+
+      # Producción sirve lo que se fusionó sólo después de que el deploy
+      # concluye. Verificar antes mide el sitio viejo y da un falso negativo.
+      - name: Esperar el deploy de Producción de este commit
+        if: ${{ inputs.esperar_deploy }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ESPERADO_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "Commit a verificar: $ESPERADO_SHA"
+          for intento in $(seq 1 60); do
+            ESTADO="$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$REPO/commits/$ESPERADO_SHA/check-runs?per_page=100" \
+              | node -e "
+                let raw='';process.stdin.on('data',d=>raw+=d).on('end',()=>{
+                  let j={};try{j=JSON.parse(raw);}catch{}
+                  const runs=(j.check_runs||[]).filter(r=>r.name==='Deploy');
+                  const ok=runs.some(r=>r.status==='completed'&&r.conclusion==='success');
+                  const fail=runs.some(r=>r.status==='completed'&&['failure','timed_out'].includes(r.conclusion));
+                  console.log(ok?'ok':(fail?'fallo':'esperando'));
+                });")"
+            echo "intento $intento: $ESTADO"
+            [ "$ESTADO" = "ok" ] && exit 0
+            [ "$ESTADO" = "fallo" ] && { echo 'El deploy de Producción falló para este commit.' >&2; exit 1; }
+            sleep 20
+          done
+          echo "El deploy de Producción de $ESPERADO_SHA no terminó a tiempo." >&2
+          exit 1
+
+      # Un único snapshot para los dos lados de la comparación.
+      - name: Congelar el snapshot del catálogo
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/produccion
+          curl -sSf --max-time 120 \
+            https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json \
+            -o artifacts/produccion/catalog-snapshot.json
+          node -e "const c=require('./artifacts/produccion/catalog-snapshot.json');console.log('snapshot updated_at:',c.updated_at,'items:',c.items.length)"
+
+      - name: Ficha efectiva ANTES de B12
+        env:
+          COMMIT_PREVIO: ${{ inputs.commit_previo }}
+        run: |
+          set -euo pipefail
+          git worktree add /tmp/pre-b12 "$COMMIT_PREVIO"
+          cp artifacts/produccion/catalog-snapshot.json /tmp/catalog-snapshot.json
+          # El medidor puede no existir en el commit previo: se copia dentro
+          # del worktree para que sus imports resuelvan a AQUEL registro, que
+          # es justamente el lado que queremos medir.
+          cp scripts/seo/effective-ficha-fields.mjs /tmp/pre-b12/scripts/seo/
+          cd /tmp/pre-b12
+          CATALOG_SNAPSHOT=/tmp/catalog-snapshot.json \
+          FIELDS_OUTPUT=/tmp/fields-antes.json \
+          FIELDS_LABEL=pre-b12 \
+            node scripts/seo/effective-ficha-fields.mjs
+
+      - name: Ficha efectiva DESPUÉS de B12
+        env:
+          CATALOG_SNAPSHOT: artifacts/produccion/catalog-snapshot.json
+          FIELDS_OUTPUT: /tmp/fields-despues.json
+          FIELDS_LABEL: produccion
+        run: node scripts/seo/effective-ficha-fields.mjs
+
+      - name: Reconciliar el aporte de B12
+        env:
+          FIELDS_ANTES: /tmp/fields-antes.json
+          FIELDS_DESPUES: /tmp/fields-despues.json
+          DIFF_OUTPUT: artifacts/produccion/effective-ficha-diff.json
+        run: node scripts/seo/effective-ficha-diff.mjs
+
+      - name: Verificar las fichas en Producción
+        id: verificacion
+        continue-on-error: true
+        env:
+          FICHA_BASE_URL: ${{ inputs.base_url }}
+          FICHA_PLAN: artifacts/produccion/effective-ficha-diff.json
+          FICHA_OUTPUT: artifacts/produccion/ficha-validation.json
+          FICHA_DEPLOYED_SHA: ${{ github.sha }}
+          FICHA_ENTORNO: produccion
+        run: node scripts/seo/preview-ficha-validation.mjs
+
+      - name: Resumen de la corrida
+        if: always()
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            const leer = ruta => { try { return JSON.parse(fs.readFileSync(ruta, "utf8")); } catch { return null; } };
+            const diff = leer("artifacts/produccion/effective-ficha-diff.json");
+            const prod = leer("artifacts/produccion/ficha-validation.json");
+            const out = [];
+            const fila = (...c) => out.push(`| ${c.join(" | ")} |`);
+            if (diff) {
+              out.push("## Aporte de B12 sobre el catálogo de Producción", "");
+              out.push(`Snapshot \`catalog.json\` **${diff.snapshot.catalogUpdatedAt}** · ${diff.snapshot.fichasActivas} fichas activas.`, "");
+              fila("Métrica", "Valor"); fila("---", "---:");
+              fila("Registro antes de B12", diff.antes.registryIsbns);
+              fila("Registro en Producción", diff.despues.registryIsbns);
+              fila("ISBN únicos con mejora", diff.totales.isbn_unicos_con_mejora);
+              fila("**Fichas activas beneficiadas**", `**${diff.totales.fichas_beneficiadas}**`);
+              fila("**Fichas que PIERDEN algún campo**", `**${diff.totales.fichas_que_pierden_algun_campo}**`);
+              out.push("");
+              if ((diff.fichas_con_perdida || []).length) {
+                out.push("### Pérdidas", "");
+                fila("Ficha", "ISBN", "Campos perdidos"); fila("---", "---", "---");
+                for (const f of diff.fichas_con_perdida) fila(f.id, f.isbn || "—", f.perdidos.join(", "));
+                out.push("");
+              }
+            }
+            if (prod) {
+              out.push("## Fichas verificadas en Producción", "");
+              out.push(`SHA verificado: \`${prod.previewDeployedSha}\` · ${prod.previewBaseUrl}`, "");
+              fila("Esperadas", "Verificadas", "Fallidas", "Sin verificar", "Comprobaciones");
+              fila("---:", "---:", "---:", "---:", "---:");
+              const t = prod.totales;
+              fila(t.fichas_esperadas, `**${t.verificadas}**`, t.fallidas, t.no_verificadas, t.comprobaciones_totales);
+              out.push("", "### Comprobaciones por campo", "");
+              fila("Campo", "Comprob.", "Visible OK", "JSON-LD OK", "JSON-LD N/A", "Fallidas");
+              fila("---", "---:", "---:", "---:", "---:", "---:");
+              for (const [campo, f] of Object.entries(prod.comprobaciones_por_campo || {})) {
+                fila(campo, f.comprobaciones, f.visible_ok, f.jsonld_ok, f.jsonld_no_aplica, f.fallidas);
+              }
+              if ((prod.no_verificadas || []).length) {
+                out.push("", "### Sin verificar", "");
+                out.push("Un HTTP 404 queda SIN VERIFICAR. No se le atribuye causa.", "");
+                fila("Ficha", "ISBN", "Estado"); fila("---", "---", "---");
+                for (const f of prod.no_verificadas) fila(f.id, f.isbn || "—", f.motivo);
+              }
+            }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+          '
+
+      - name: Subir la evidencia por ficha
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b12-produccion-${{ github.run_id }}
+          path: artifacts/produccion/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Fallar si Producción no muestra lo prometido o si hay pérdidas
+        if: always()
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            const leer = ruta => { try { return JSON.parse(fs.readFileSync(ruta, "utf8")); } catch { return null; } };
+            const diff = leer("artifacts/produccion/effective-ficha-diff.json");
+            const prod = leer("artifacts/produccion/ficha-validation.json");
+            const problemas = [];
+            if (!diff) problemas.push("No se pudo reconciliar el aporte de B12.");
+            if (!prod) problemas.push("No se pudo verificar ninguna ficha en Producción.");
+            const perdidas = diff?.totales?.fichas_que_pierden_algun_campo || 0;
+            if (perdidas) problemas.push(`${perdidas} ficha(s) perdieron algún campo que antes mostraban.`);
+            if (prod?.totales?.fallidas) problemas.push(`${prod.totales.fallidas} ficha(s) no muestran lo prometido.`);
+            if (problemas.length) {
+              for (const p of problemas) console.error(p);
+              console.error("Detalle por ficha en el artefacto de esta corrida.");
+              process.exit(1);
+            }
+            // Las fichas sin verificar NO fallan la corrida: un 404 puede ser
+            // una publicación dada de baja, y atribuirle causa sería inventar.
+            const sin = prod.totales.no_verificadas;
+            console.log(`Producción verificada: ${prod.totales.verificadas} fichas, ${prod.totales.comprobaciones_totales} comprobaciones, 0 fallidas, 0 pérdidas.`);
+            if (sin) console.log(`${sin} ficha(s) quedaron SIN VERIFICAR (404 u otro error). Causa no atribuida: revisar en el artefacto.`);
+          '

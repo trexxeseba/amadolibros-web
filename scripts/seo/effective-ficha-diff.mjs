@@ -2,8 +2,12 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// Reconcilia el impacto del PR: diferencia exacta entre la ficha efectiva de
-// `main` y la del PR sobre el MISMO snapshot de catálogo.
+// Reconcilia el impacto: diferencia exacta entre la ficha efectiva de dos
+// árboles del repo sobre el MISMO snapshot de catálogo.
+//
+// Sirve para dos cosas con el mismo código: antes del merge, `main` contra el
+// PR sobre el catálogo público; después del merge, el commit previo a B12
+// contra el `main` fusionado sobre el catálogo de Producción.
 
 const EDITION_FIELDS = Object.freeze([
   'author', 'publisher', 'pages', 'language', 'format', 'edition', 'publication_year', 'topics',
@@ -89,7 +93,12 @@ export async function main() {
     despues: { label: despues.label, registryIsbns: despues.registryIsbns },
     crecimiento_del_registro: despues.registryIsbns - antes.registryIsbns,
     totales,
-    // Plan para la validación del Preview: qué ficha y qué debe mostrar.
+    // Detalle de las pérdidas. Si una ficha dejó de mostrar un campo que antes
+    // mostraba, hay que poder verlo sin abrir el archivo completo.
+    fichas_con_perdida: filas
+      .filter(f => (f.perdidos || []).length > 0)
+      .map(f => ({ id: f.id, isbn: f.isbn, perdidos: f.perdidos })),
+    // Plan para la validación del sitio desplegado: qué ficha y qué debe mostrar.
     fichas: beneficiadas.map(fila => ({
       id: fila.id,
       isbn: fila.isbn,
@@ -109,7 +118,7 @@ export async function main() {
   // Se imprime SÓLO el resumen: el detalle por ficha son cientos de entradas
   // que sepultan el resultado en el log. El archivo completo queda en el
   // artefacto.
-  console.log('=== RECONCILIACIÓN: FICHA EFECTIVA main vs PR ===');
+  console.log(`=== RECONCILIACIÓN: FICHA EFECTIVA ${antes.label} vs ${despues.label} ===`);
   console.log(JSON.stringify({
     snapshot: report.snapshot,
     antes: report.antes,
@@ -117,6 +126,12 @@ export async function main() {
     crecimiento_del_registro: report.crecimiento_del_registro,
     totales: report.totales,
   }, null, 2));
+  if (report.fichas_con_perdida.length) {
+    console.log('\n=== FICHAS QUE PIERDEN ALGÚN CAMPO ===');
+    for (const fila of report.fichas_con_perdida) {
+      console.log(`${fila.id} (${fila.isbn || 'sin ISBN'}): ${fila.perdidos.join(', ')}`);
+    }
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
