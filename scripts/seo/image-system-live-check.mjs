@@ -47,4 +47,4 @@ const summary = {catalog_products: seed.catalog_products, catalog_images: seed.c
 await writeFile(out+'/live-report.json', JSON.stringify({generated_at: new Date().toISOString(), preview: base,
   catalog_updated_at: seed.catalog_updated_at, summary, rows}, null, 2));
 console.log(JSON.stringify(summary));
-if (summary.validation_failures || !summary.r2_verified) process.exitCode = 1;
+if (summary.validation_failures || !summary.r2_verified || summary.preflight.would_exclude > 0) process.exitCode = 1;

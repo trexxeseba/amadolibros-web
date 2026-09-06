@@ -566,11 +566,11 @@ export async function syncCoverMirror(env, catalog, {
   const needsSource = Object.entries(finalManifest.entries).filter(([,entry]) => entry?.current?.object_key && !googleReadyImage(entry.current))
     .map(([key,entry]) => ({row:{product_id:entry.product_id || key.split(':')[0],position:Number(entry.position ?? key.split(':')[1]),source_url:entry.current.source_url},entry}));
   const unavailable = new Map(Object.entries(finalManifest.entries)
-    .filter(([,entry]) => !entry?.current?.object_key || (entry.last_error && entry.last_attempted_source_url !== entry.current.source_url))
+    .filter(([,entry]) => entry?.last_error && (!entry.current?.object_key || entry.last_attempted_source_url !== entry.current.source_url))
     .map(([key,entry]) => [key, {product_id: entry.product_id || key.split(':')[0], position: Number(entry.position ?? key.split(':')[1]),
       source_url: entry.last_attempted_source_url || entry.current?.source_url || null, error: entry.last_error || null}]));
   for (const {row,entry} of scopeEntries) {
-    if (!entry?.current?.object_key || entry.current.source_url !== row.source_url) unavailable.set(`${row.product_id}:${row.position}`, {
+    if (entry?.last_error && (!entry.current?.object_key || entry.current.source_url !== row.source_url)) unavailable.set(`${row.product_id}:${row.position}`, {
       product_id: row.product_id, position: row.position, source_url: row.source_url, error: entry?.last_error || null});
   }
   await bucket.put('covers/v1/quality-report.json', JSON.stringify({
@@ -579,6 +579,8 @@ export async function syncCoverMirror(env, catalog, {
     needs_better_source: needsSource.map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
       source_url: row.source_url, width: entry.current.width, height: entry.current.height,
       probes: entry.source_probes || [], next_check_at: new Date(timestamp(entry.native_checked_at) + IMAGE_SOURCE_RECHECK_MS).toISOString() })),
+    awaiting_first_copy: scopeEntries.filter(({entry}) => !entry?.current?.object_key && !entry?.last_error)
+      .map(({row}) => ({product_id: row.product_id, position: row.position, source_url: row.source_url})),
     unavailable: [...unavailable.values()],
   }), { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
   return {

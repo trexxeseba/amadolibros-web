@@ -41,7 +41,8 @@ export default {
         current_feed: currentFeed.length, strict_500_feed: strictFeed.length,
         would_exclude: currentFeed.length - strictFeed.length},
       quality: {known_images: qualityReport.known_images, discovery_pending: qualityReport.discovery_pending,
-        needs_better_source: qualityReport.needs_better_source.length, unavailable: qualityReport.unavailable.length}},
+        needs_better_source: qualityReport.needs_better_source.length, unavailable: qualityReport.unavailable.length,
+        awaiting_first_copy: qualityReport.awaiting_first_copy.length}},
       {status: result.status === 'completed' ? 200 : 500});
   },
 };
