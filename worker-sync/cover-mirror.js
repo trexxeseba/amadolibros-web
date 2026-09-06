@@ -272,8 +272,16 @@ function webpInfo(bytes) {
   return null;
 }
 
+// QW2 (medición de solo lectura, sin upscale ni escritura): mismo parseo de
+// bytes reales que ya usa inspectCoverBytes(), sin el rango de validación
+// pensado para decidir si algo se guarda en R2 — un medidor externo necesita
+// el ancho/alto real tal cual venga, incluso fuera de ese rango.
+export function readImageDimensions(bytes) {
+  return pngInfo(bytes) || jpegInfo(bytes) || webpInfo(bytes);
+}
+
 export function inspectCoverBytes(bytes, responseMime) {
-  const image = pngInfo(bytes) || jpegInfo(bytes) || webpInfo(bytes);
+  const image = readImageDimensions(bytes);
   if (!image || image.width < 100 || image.height < 100 || image.width > 12_000 || image.height > 12_000) {
     throw new Error('Imagen inválida o con dimensiones fuera de rango.');
   }
