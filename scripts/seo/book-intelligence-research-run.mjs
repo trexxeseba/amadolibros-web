@@ -9,6 +9,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { readJsonMaybeGzip, writeJsonGzip } from './book-intelligence-cache-io.mjs';
 import { CATALOG_URL } from '../../functions/_shared/catalog.js';
 import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
 import { applyBookEnrichment, listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
@@ -164,7 +165,7 @@ async function readJson(source) {
 
 async function loadCache(filePath) {
   try {
-    const parsed = JSON.parse(await readFile(filePath, 'utf8'));
+    const { data: parsed } = await readJsonMaybeGzip(filePath);
     if (!parsed?.entries || typeof parsed.entries !== 'object') return emptySourceCache();
     for (const entry of Object.values(parsed.entries)) {
       for (const source of ['google_books', 'open_library', 'bne', 'loc', 'dnb']) {
@@ -189,8 +190,8 @@ async function loadCache(filePath) {
 }
 
 async function saveCache(filePath, cache) {
-  await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(cache, null, 2)}\n`);
+  // Siempre comprimido: es el archivo que más crece del repo.
+  await writeJsonGzip(filePath, cache);
 }
 
 function recordsFor(cache, isbn) {
