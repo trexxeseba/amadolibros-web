@@ -14,6 +14,12 @@ on:
       - 'functions/__tests__/image-dimension-audit.test.js'
       - 'scripts/seo/qw1-preview-validation.mjs'
       - 'functions/__tests__/qw1-preview-validation.test.js'
+      - 'scripts/seo/qw1-cohort-catalog-evidence.mjs'
+      - 'scripts/seo/qw1-catalog-snapshot.mjs'
+      - 'scripts/seo/qw1-renderer-offer-report.mjs'
+      - 'scripts/seo/qw1-render-diff.mjs'
+      - 'scripts/seo/catalog-coverage-effective.mjs'
+      - 'functions/__tests__/qw1-evidence-and-diff.test.js'
   pull_request:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
@@ -25,6 +31,12 @@ on:
       - 'functions/__tests__/image-dimension-audit.test.js'
       - 'scripts/seo/qw1-preview-validation.mjs'
       - 'functions/__tests__/qw1-preview-validation.test.js'
+      - 'scripts/seo/qw1-cohort-catalog-evidence.mjs'
+      - 'scripts/seo/qw1-catalog-snapshot.mjs'
+      - 'scripts/seo/qw1-renderer-offer-report.mjs'
+      - 'scripts/seo/qw1-render-diff.mjs'
+      - 'scripts/seo/catalog-coverage-effective.mjs'
+      - 'functions/__tests__/qw1-evidence-and-diff.test.js'
   workflow_dispatch:
 
 permissions:
@@ -60,6 +72,12 @@ jobs:
           node --test functions/__tests__/image-dimension-audit.test.js
           node --check scripts/seo/qw1-preview-validation.mjs
           node --test functions/__tests__/qw1-preview-validation.test.js
+          node --check scripts/seo/qw1-cohort-catalog-evidence.mjs
+          node --check scripts/seo/qw1-catalog-snapshot.mjs
+          node --check scripts/seo/qw1-renderer-offer-report.mjs
+          node --check scripts/seo/qw1-render-diff.mjs
+          node --check scripts/seo/catalog-coverage-effective.mjs
+          node --test functions/__tests__/qw1-evidence-and-diff.test.js
 
       - name: Authenticate with Google through Workload Identity
         id: google_auth
@@ -114,6 +132,67 @@ jobs:
           QW1_VALIDATION_INPUT: artifacts/merchant/merchant-readonly-report.json
           QW1_VALIDATION_OUTPUT_DIR: artifacts/merchant
         run: node scripts/seo/qw1-preview-validation.mjs
+
+      - name: QW1 — evidencia de catálogo por entorno (sin inferencias)
+        id: qw1_catalog_evidence
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_EVIDENCE_INPUT: artifacts/merchant/merchant-readonly-report.json
+          QW1_EVIDENCE_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/qw1-cohort-catalog-evidence.mjs
+
+      - name: QW1 — snapshot reproducible del catálogo real
+        id: qw1_snapshot
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_COHORT_INPUT: artifacts/merchant/merchant-readonly-report.json
+          QW1_SNAPSHOT: artifacts/merchant/qw1-catalog-snapshot.json
+          QW1_INCLUDE_ALL_ACTIVE: '1'
+        run: node scripts/seo/qw1-catalog-snapshot.mjs
+
+      - name: QW1 — render con el renderizador de main y con el del PR #313
+        id: qw1_render
+        if: steps.qw1_snapshot.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_SNAPSHOT: artifacts/merchant/qw1-catalog-snapshot.json
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/agent/merchant-qw1-offer-price:refs/remotes/origin/agent/merchant-qw1-offer-price'
+          MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          PR313_SHA="$(git rev-parse refs/remotes/origin/agent/merchant-qw1-offer-price)"
+          cp "functions/libro/[[path]].js" /tmp/renderer-current.js
+
+          git checkout origin/main -- "functions/libro/[[path]].js"
+          QW1_RENDER_OUTPUT=artifacts/merchant/qw1-render-main.json \
+          QW1_RENDER_LABEL=main QW1_RENDER_SHA="$MAIN_SHA" \
+            node scripts/seo/qw1-renderer-offer-report.mjs
+
+          git checkout origin/agent/merchant-qw1-offer-price -- "functions/libro/[[path]].js"
+          QW1_RENDER_OUTPUT=artifacts/merchant/qw1-render-pr313.json \
+          QW1_RENDER_LABEL=pr313 QW1_RENDER_SHA="$PR313_SHA" \
+            node scripts/seo/qw1-renderer-offer-report.mjs
+
+          cp /tmp/renderer-current.js "functions/libro/[[path]].js"
+
+      - name: QW1 — diff entre ambos renderizadores
+        if: steps.qw1_render.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_DIFF_BEFORE: artifacts/merchant/qw1-render-main.json
+          QW1_DIFF_AFTER: artifacts/merchant/qw1-render-pr313.json
+          QW1_DIFF_OUTPUT: artifacts/merchant/qw1-render-diff.json
+        run: node scripts/seo/qw1-render-diff.mjs
+
+      - name: Cobertura cruda vs efectiva del catálogo
+        continue-on-error: true
+        env:
+          SEO_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/catalog-coverage-effective.mjs
 
       - name: Upload Merchant audit
         if: always()
