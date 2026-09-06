@@ -194,6 +194,26 @@ jobs:
           SEO_OUTPUT_DIR: artifacts/merchant
         run: node scripts/seo/catalog-coverage-effective.mjs
 
+      # Los informes completos quedan en el artefacto; este paso final imprime
+      # sólo los totales, para poder leerlos desde el log sin descargarlo.
+      - name: Resumen compacto de la evidencia QW1
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const read = p => { try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return null; } };
+            const ev = read("artifacts/merchant/qw1-cohort-catalog-evidence.json");
+            const diff = read("artifacts/merchant/qw1-render-diff.json");
+            const cov = read("artifacts/merchant/catalog-coverage-effective.json");
+            console.log("=== RESUMEN COMPACTO QW1 ===");
+            console.log(JSON.stringify({
+              evidencia: ev && { fetchedAt: ev.fetchedAt, sources: ev.sources, cohortSize: ev.cohortSize, counts: ev.counts },
+              diff: diff && { before: diff.before, after: diff.after, comparedItems: diff.comparedItems, counts: diff.counts, coherence: diff.coherence },
+              cobertura: cov && { universe: cov.universe, catalogUpdatedAt: cov.catalogUpdatedAt },
+            }, null, 2));
+          '
+
       - name: Upload Merchant audit
         if: always()
         uses: actions/upload-artifact@v4
