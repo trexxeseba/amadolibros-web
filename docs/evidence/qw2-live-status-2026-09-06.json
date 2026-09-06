@@ -1,0 +1,214 @@
+{
+  "worker": {
+    "catalog": {
+      "etag": "8c65e666c2be9fc3ce743b94d2b8e59f",
+      "exists": true,
+      "size": 12781550,
+      "uploaded": "2026-09-06T11:37:59.991Z"
+    },
+    "checked_at": "2026-09-06T21:45:52.088Z",
+    "cover_manifest": {
+      "etag": "8134003321e093190b0797fda868e262",
+      "exists": true,
+      "size": 42888461,
+      "uploaded": "2026-09-06T21:41:15.982Z"
+    },
+    "cover_mirror": {
+      "backfill_catalog_version": null,
+      "backfill_complete": false,
+      "last_result": {
+        "ai_upscaled": 3650,
+        "at": "2026-09-06T21:41:16.757Z",
+        "attempted": 100,
+        "catalog_version": "2026-09-06T11:37:55.003Z",
+        "failed": 0,
+        "manifest_retries": 0,
+        "needs_better_source": 20886,
+        "paused_progress": {
+          "block_count": 128,
+          "catalog_version": "20260906114235342",
+          "index": 0,
+          "policy": 1,
+          "remaining": 128
+        },
+        "pending": 20668,
+        "quality_pending": null,
+        "scope_images": 32967,
+        "source_policy_version": 1,
+        "status": "completed",
+        "valid_copies": 40167
+      }
+    }
+  },
+  "merchant": {
+    "after": {
+      "accountIssues": [],
+      "contexts": [
+        {
+          "context": "SHOPPING_ADS",
+          "imageIssues": [
+            {
+              "attribute": "n:image_link",
+              "code": "image_too_small",
+              "productCount": "12",
+              "severity": "DISAPPROVED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "low_image_quality",
+              "productCount": "23",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:additional_image_link",
+              "code": "image_too_small",
+              "productCount": "5",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "image_link_internal_error_fallback",
+              "productCount": "10",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "image_too_small_for_high_resolution",
+              "productCount": "2104",
+              "severity": "NOT_IMPACTED"
+            }
+          ],
+          "stats": {
+            "activeCount": "6651",
+            "disapprovedCount": "222",
+            "pendingCount": "2"
+          }
+        },
+        {
+          "context": "FREE_LISTINGS",
+          "imageIssues": [
+            {
+              "attribute": "n:image_link",
+              "code": "image_too_small",
+              "productCount": "12",
+              "severity": "DISAPPROVED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "low_image_quality",
+              "productCount": "23",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:additional_image_link",
+              "code": "image_too_small",
+              "productCount": "5",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "image_link_internal_error_fallback",
+              "productCount": "10",
+              "severity": "NOT_IMPACTED"
+            }
+          ],
+          "stats": {
+            "activeCount": "6668",
+            "disapprovedCount": "205",
+            "pendingCount": "2"
+          }
+        }
+      ],
+      "generatedAt": "2026-09-06T21:46:10.290Z"
+    },
+    "before": {
+      "accountIssues": [],
+      "contexts": [
+        {
+          "context": "SHOPPING_ADS",
+          "imageIssues": [
+            {
+              "attribute": "n:image_link",
+              "code": "image_too_small",
+              "productCount": "80",
+              "severity": "DISAPPROVED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "low_image_quality",
+              "productCount": "22",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:additional_image_link",
+              "code": "image_too_small",
+              "productCount": "6",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "image_link_internal_error_fallback",
+              "productCount": "31",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "image_too_small_for_high_resolution",
+              "productCount": "2095",
+              "severity": "NOT_IMPACTED"
+            }
+          ],
+          "stats": {
+            "activeCount": "6514",
+            "disapprovedCount": "271",
+            "pendingCount": "4"
+          }
+        },
+        {
+          "context": "FREE_LISTINGS",
+          "imageIssues": [
+            {
+              "attribute": "n:image_link",
+              "code": "image_too_small",
+              "productCount": "80",
+              "severity": "DISAPPROVED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "low_image_quality",
+              "productCount": "22",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:additional_image_link",
+              "code": "image_too_small",
+              "productCount": "6",
+              "severity": "NOT_IMPACTED"
+            },
+            {
+              "attribute": "n:image_link",
+              "code": "image_link_internal_error_fallback",
+              "productCount": "31",
+              "severity": "NOT_IMPACTED"
+            }
+          ],
+          "stats": {
+            "activeCount": "6531",
+            "disapprovedCount": "254",
+            "pendingCount": "4"
+          }
+        }
+      ],
+      "generatedAt": "2026-09-06T01:35:31.895Z"
+    }
+  },
+  "runs": {
+    "worker": 34062035660,
+    "merchant": 34062035421
+  },
+  "scope_notes": [
+    "pending=20668 corresponde a activos más un bloque de pausados e incluye un indicador de bloques pendientes; no es total global de imágenes faltantes.",
+    "needs_better_source=20886 cuenta copias bajo 500 en todo el manifest, incluidas las todavía no revisadas con la política nueva.",
+    "La reducción Merchant 80 a 12 es una diferencia agregada de catálogo vivo; no atribuye causalidad ni identifica 68 productos corregidos."
+  ]
+}
