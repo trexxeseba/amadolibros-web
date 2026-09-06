@@ -32,6 +32,14 @@ export function normalize(value) {
 // campo, leídos de functions/libro/[[path]].js. `jsonLd: null` significa que
 // el campo no tiene representación en el JSON-LD y se registra como NO
 // APLICABLE, nunca como aprobado por omisión.
+// El middleware de vidriera publica algunas fichas como `Product` a secas en
+// vez de `Book` y, cuando lo hace, BORRA a propósito numberOfPages, bookFormat
+// y bookEdition: un producto que no es un libro no debe declarar páginas en
+// schema.org. Para esas fichas el dato sigue siendo visible, pero su propiedad
+// JSON-LD NO APLICA. Se registra así, con el motivo, nunca como aprobado por
+// omisión.
+export const SOLO_EN_BOOK = Object.freeze(['pages', 'format', 'edition']);
+
 export const FIELD_CONTRACT = Object.freeze({
   author: { etiqueta: 'Autor', jsonLd: schema => schema?.author?.name },
   publisher: { etiqueta: 'Editorial', jsonLd: schema => schema?.publisher?.name },
@@ -91,8 +99,15 @@ function visibleCoincide(field, contrato, esperado, rows) {
   return { ok: valor === normalize(esperado), valor };
 }
 
+export function schemaEsBook(schema) {
+  const rawType = schema?.['@type'];
+  const types = Array.isArray(rawType) ? rawType : [rawType].filter(Boolean);
+  return types.includes('Book');
+}
+
 export function evaluate(html, esperado) {
   const schema = productSchema(html);
+  const esBook = schemaEsBook(schema);
   const rows = detailRows(html);
   const comprobaciones = [];
   // Se conserva para poder revisar una falla sin volver a pedir la página.
@@ -114,9 +129,10 @@ export function evaluate(html, esperado) {
     if (!esperadoNorm || (contrato.lista && esperadoNorm.length === 0)) continue;
 
     const visible = visibleCoincide(field, contrato, esperadoNorm, rows);
-    const jsonLd = contrato.jsonLd
-      ? jsonLdCoincide(field, contrato, esperadoNorm, schema)
-      : { ok: null, valor: null };
+    const noAplicaPorTipo = SOLO_EN_BOOK.includes(field) && schema && !esBook;
+    const jsonLd = noAplicaPorTipo || !contrato.jsonLd
+      ? { ok: null, valor: null }
+      : jsonLdCoincide(field, contrato, esperadoNorm, schema);
 
     comprobaciones.push({
       campo: field,
@@ -124,14 +140,17 @@ export function evaluate(html, esperado) {
       visible_encontrado: visible.valor,
       visible_ok: visible.ok,
       jsonld_encontrado: jsonLd.valor,
-      // `null` = el campo no tiene propiedad en el JSON-LD: no aplica.
+      // `null` = la propiedad no aplica a esta ficha; se dice por qué.
       jsonld_ok: jsonLd.ok,
+      ...(noAplicaPorTipo
+        ? { jsonld_no_aplica: 'la ficha se publica como Product, no como Book' }
+        : {}),
       // Se exigen AMBAS donde ambas corresponden.
       ok: visible.ok && (jsonLd.ok === null || jsonLd.ok === true),
     });
   }
 
-  return { tieneSchema: Boolean(schema), comprobaciones, schemaCrudo, filasVisibles: Object.fromEntries(rows) };
+  return { tieneSchema: Boolean(schema), esBook, comprobaciones, schemaCrudo, filasVisibles: Object.fromEntries(rows) };
 }
 
 async function mapWithConcurrency(items, limit, worker) {

@@ -7,22 +7,26 @@ import {
   evaluate,
   normalize,
   productSchema,
+  schemaEsBook,
 } from '../../scripts/seo/preview-ficha-validation.mjs';
 
 // La ficha real arma cada dato como <div class="detail-row"><dt>…</dt><dd>…</dd></div>
 // y publica el JSON-LD en un <script>. El verificador tiene que leer SÓLO lo
 // primero como "visible".
-function ficha({ filas = [], jsonLd = null, extra = '' } = {}) {
+function ficha({ filas = [], jsonLd = null, extra = '', tipo = 'Product' } = {}) {
   const detalles = filas
     .map(([label, value]) => `<div class="detail-row"><dt>${label}</dt><dd>${value}</dd></div>`)
     .join('');
   const script = jsonLd
-    ? `<script type="application/ld+json">${JSON.stringify({ '@type': 'Product', ...jsonLd })}</script>`
+    ? `<script type="application/ld+json">${JSON.stringify({ '@type': tipo, ...jsonLd })}</script>`
     : '';
   return `<html><body><dl>${detalles}</dl>${extra}${script}</body></html>`;
 }
 
+// Ficha de libro: es donde las propiedades de Book (páginas, formato,
+// edición) se exigen en el JSON-LD.
 const COMPLETA = ficha({
+  tipo: ['Product', 'Book'],
   filas: [['Editorial', 'Oxford University Press'], ['Páginas', '496'], ['Temas', 'Diccionarios · Inglés']],
   jsonLd: { publisher: { name: 'Oxford University Press' }, numberOfPages: 496, keywords: ['Diccionarios', 'Inglés'] },
 });
@@ -49,7 +53,7 @@ test('una ficha correcta aprueba con ambas comprobaciones', () => {
 // ---- Casos que DEBEN fallar. La versión anterior los aprobaba. ----
 
 test('un dato que sólo está dentro de un script NO cuenta como visible', () => {
-  const soloScript = ficha({ jsonLd: { publisher: { name: 'Oxford University Press' }, numberOfPages: 496 } });
+  const soloScript = ficha({ tipo: ['Product', 'Book'], jsonLd: { publisher: { name: 'Oxford University Press' }, numberOfPages: 496 } });
   const { comprobaciones } = evaluate(soloScript, { publisher: 'Oxford University Press', pages: 496 });
   for (const c of comprobaciones) {
     assert.equal(c.visible_ok, false, `${c.campo} no debería contarse como visible`);
@@ -66,13 +70,14 @@ test('un dato visible pero ausente del JSON-LD obligatorio falla', () => {
 });
 
 test('sin bloque JSON-LD, un campo que lo exige falla', () => {
-  const html = ficha({ filas: [['Páginas', '496']] });
+  const html = ficha({ tipo: ['Product', 'Book'], filas: [['Páginas', '496']] });
   assert.equal(productSchema(html), null);
   assert.equal(evaluate(html, { pages: 496 }).comprobaciones[0].ok, false);
 });
 
 test('un número que coincide dentro de otro número no aprueba', () => {
   const otroNumero = ficha({
+    tipo: ['Product', 'Book'],
     filas: [['Páginas', '1496']],
     jsonLd: { numberOfPages: 1496 },
   });
@@ -127,5 +132,44 @@ test('todo campo del contrato declara etiqueta visible y propiedad JSON-LD', () 
 test('un campo desconocido se marca sin contrato, nunca aprobado', () => {
   const [c] = evaluate(COMPLETA, { inventado: 'x' }).comprobaciones;
   assert.equal(c.resultado, 'sin_contrato');
+  assert.equal(c.ok, false);
+});
+
+// El middleware de vidriera publica algunas fichas como `Product` a secas y
+// borra a propósito numberOfPages/bookFormat/bookEdition: un producto que no
+// es un libro no debe declarar páginas en schema.org. Fue el caso real de
+// MLU644234684 (ISBN 9781572813458), que mostraba "250" en la ficha sin
+// publicar numberOfPages.
+test('en una ficha Product —no Book— las propiedades de libro NO aplican', () => {
+  const comoProducto = ficha({
+    filas: [['Páginas', '250'], ['Idioma', 'Español']],
+    jsonLd: { author: { name: 'Susan Levitt' }, inLanguage: 'Español' },
+  });
+  const { esBook, comprobaciones } = evaluate(comoProducto, { pages: 250, language: 'Español' });
+  assert.equal(esBook, false);
+  const paginas = comprobaciones.find(c => c.campo === 'pages');
+  assert.equal(paginas.visible_ok, true, 'el dato sí está visible');
+  assert.equal(paginas.jsonld_ok, null, 'la propiedad no aplica a un Product');
+  assert.match(paginas.jsonld_no_aplica, /Product, no como Book/);
+  assert.equal(paginas.ok, true);
+  // El idioma NO es exclusivo de Book: se sigue exigiendo.
+  const idioma = comprobaciones.find(c => c.campo === 'language');
+  assert.equal(idioma.jsonld_ok, true);
+});
+
+test('en una ficha Book las propiedades de libro se siguen exigiendo', () => {
+  const comoLibro = `<html><body><dl><div class="detail-row"><dt>Páginas</dt><dd>250</dd></div></dl>
+    <script type="application/ld+json">${JSON.stringify({ '@type': ['Product', 'Book'], author: { name: 'X' } })}</script>
+    </body></html>`;
+  const { esBook, comprobaciones } = evaluate(comoLibro, { pages: 250 });
+  assert.equal(esBook, true);
+  assert.equal(comprobaciones[0].jsonld_ok, false, 'es Book y le falta numberOfPages: falla');
+  assert.equal(comprobaciones[0].ok, false);
+});
+
+test('sin ningún bloque JSON-LD no se puede alegar que no aplica', () => {
+  const sinSchema = ficha({ filas: [['Páginas', '250']] });
+  const [c] = evaluate(sinSchema, { pages: 250 }).comprobaciones;
+  assert.equal(c.jsonld_ok, false, 'sin schema es una falla, no un "no aplica"');
   assert.equal(c.ok, false);
 });
