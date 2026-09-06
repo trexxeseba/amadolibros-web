@@ -41,9 +41,176 @@ correspondientes, más abajo.
   — nunca una inferencia desde el código o desde auditorías internas de
   B11 (esas ya existen, pero miden el feed propio, no el veredicto real
   de Merchant sobre ese feed).
-- **Avance registrado:** ninguno todavía — diagnóstico sin iniciar
-  formalmente. **No declarar Merchant Center verificado hasta tener esa
-  evidencia real.**
+- **Avance registrado (2026-09-06):** diagnóstico real completo y quick
+  wins con evidencia real, sin declarar Merchant Center verificado
+  todavía (falta re-crawl real de Google sobre los fixes). Estado real
+  de cada quick win, corregido tras validación (ver detalle en
+  ESTADO-ACTUAL.md):
+  - **QW1 — Offer/precio:** CAUSA RAÍZ VERIFICADA — EL FIX DE #313 NO
+    CORRIGE NINGÚN CASO REAL. Evidencia reproducible (run
+    [34005410037](https://github.com/trexxeseba/amadolibros-web/actions/runs/34005410037),
+    `catalog.json` `updated_at` 2026-09-05T07:19:57.025Z, manifest de
+    Producción `20260905012150762`):
+    - **Clasificación del cohorte (171 MLU resueltos de los 172):**
+      85 pausados presentes en el índice de ambos entornos, 85 no
+      comparables por HTTP 404 en Preview (existen en el índice de
+      Producción y no en el de Preview — los manifiestos de pausados
+      son distintos por entorno), 1 activo con precio real
+      (`MLU728138914`, 2.050 UYU, stock 2), 0 con causa pendiente de
+      verificar. Es decir: **170 de 171 son publicaciones pausadas
+      que siguen en el feed de Merchant**. La fuente que las
+      transporta (`catalog/versions/.../index.json.gz`) **no lleva
+      precio ni moneda**, así que la ficha no puede publicar `Offer`:
+      no es un fallo del renderizador.
+    - **Diff de renderizadores sobre el catálogo real completo
+      (7.277 ítems, mismo snapshot, `main` `ea0c475` vs #313
+      `6d38d22`):** 0 `Offer` agregados, 0 removidos, 0 modificados,
+      **7.277 sin cambio**. Ambos publican `Offer` en los 7.107
+      activos con stock y en ninguno de los 170 pausados. El supuesto
+      del fix —activo, con precio real y sin stock— **no ocurre en el
+      catálogo publicado**, porque `catalog.json` sólo contiene
+      activos con stock.
+    - **Coherencia precio visible ↔ JSON-LD:** 0 incoherencias en los
+      7.277 ítems con `main` y 0 con #313 (ni `Offer` sin precio
+      visible, ni precio visible sin `Offer`, ni botón de compra sin
+      stock). No hay nada que corregir aquí hoy, y #313 tampoco lo
+      introduce.
+    - **Consecuencia:** [PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313)
+      queda Draft y **no se propone para merge**: es inerte sobre el
+      catálogo real. La vía real para los 170 `missing_price` es
+      dejar de enviar a Merchant las publicaciones pausadas (o
+      transportar su precio), no cambiar el renderizador. **Nunca
+      "Terminado" hasta recrawl real de Merchant.**
+  - **QW3A1 — calidad de identificadores (ISBN/GTIN):** IMPLEMENTADO —
+    PENDIENTE MERGE. **No es "enriquecimiento estructurado completo"**
+    — es sólo la corrección de validación de ISBN/GTIN (mismo checksum
+    que ya usa el feed de Merchant). El mapeo de campos bibliográficos
+    (author, publisher, inLanguage, numberOfPages, bookFormat, edition)
+    ya estaba completo desde antes, sin relación con este PR.
+    [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314)
+    (Draft, sin mergear).
+  - **QW3A2 — enriquecimiento bibliográfico real:** LOTE 01 TERMINADO —
+    PENDIENTE MERGE. Corrida
+    [34004157966](https://github.com/trexxeseba/amadolibros-web/actions/runs/34004157966)
+    (success, 51 min) contra Google Books / Open Library / BNE:
+
+    | Métrica | Valor |
+    | --- | ---: |
+    | Ediciones únicas activas y vendibles investigadas | 2.005 |
+    | Google Books — coincidencias exactas | 500 (56 errores) |
+    | Open Library — coincidencias exactas | 825 (0 errores) |
+    | BNE — coincidencias exactas | 158 (0 errores) |
+    | `GREEN_FULL` / `GREEN_FACTS` | 7 / 40 |
+    | `REVIEW` / `NO_EVIDENCE` | 477 / 1.481 |
+    | **ISBN incorporados al registro** | **47** |
+
+    Registry: **1.609 → 1.656 ISBN** (+47). Rendimiento real del
+    universo investigado: **2,3%** (47/2.005) — el circuito automático
+    sigue dando poco, como ya mostró B11.
+
+    Mejoras por edición, medidas sobre el catálogo EFECTIVO (no sobre
+    el crudo, para no recontar datos ya publicados): **sin mejora 0**,
+    **≥1 dato 47**, **≥3 datos 3** (34 con exactamente 1 dato, 10 con
+    2). Son 63 datos sobre 47 ediciones.
+
+    | Campo completado | Ediciones |
+    | --- | ---: |
+    | Año de publicación | 31 |
+    | Páginas | 22 |
+    | Editorial | 6 |
+    | Temas | 3 |
+    | Autor | 1 |
+
+    Los dos campos que más pesan —páginas y editorial— son justamente
+    dos de los mayores gaps del catálogo efectivo (22,92% y 21,65%).
+    Cada dato conserva su fuente por campo (`provider`, `url`,
+    `relationship: exact_edition`), verificado por test; los 47 tienen
+    respaldo simultáneo de Google Books y Open Library. Ninguno de los
+    47 estaba ya en el registro vigente y 0 campos se solapan con lo ya
+    publicado. Sin sinopsis copiadas y sin datos comerciales.
+    [PR #319](https://github.com/trexxeseba/amadolibros-web/pull/319)
+    (Draft, sin mergear).
+    **Defecto del selector, corregido:** `selectResearchCohort()`
+    excluía cualquier ISBN presente en el registro de enriquecimiento
+    aunque conservara campos incompletos, así que una edición que sólo
+    aportó `publication_year` quedaba bloqueada para siempre. Ahora los
+    huecos se miden sobre la ficha EFECTIVA (catálogo +
+    `applyBookEnrichment()`) y un ISBN sólo queda fuera si no le falta
+    ningún campo. [PR #318](https://github.com/trexxeseba/amadolibros-web/pull/318)
+    (Draft, sin mergear).
+  - **QW2 — imágenes:** MEDICIÓN COMPLETA — CORRECCIÓN NO INICIADA.
+    **Responsable: Codex** (Seba lo asignó el 2026-09-06; Claude Code
+    deja esta línea libre y no toca imágenes). Sin
+    activar Cloudflare Images ni tocar Merchant. **Corrección de
+    encuadre:** la posición en NUESTRA galería no es la función en
+    Merchant. Toda URL que aparece en `imageLink` es la imagen
+    **principal** del producto para Google, aunque internamente sea la
+    segunda de la galería; hablar de «mayoría secundarias» minimizaba
+    el problema. Medición real de la última corrida (32 productos
+    `image_too_small` con imagen <500px): 24 servidas por nuestro
+    proxy y 8 servidas directo desde Mercado Libre — **las 32 son
+    principales para Merchant**. Todas usan ya la variante «-O» (la
+    mayor que ofrece Mercado Libre por URL), así que no hay una
+    variante mayor por simple sustitución. **Pendiente antes de
+    concluir que sólo quedan IA u omisión:** verificar fuente real
+    mejor por ISBN/edición (catálogo del editor, BNE, Open Library),
+    que todavía NO se hizo.
+
+### Cobertura del catálogo: CRUDA vs EFECTIVA (2026-09-06)
+
+Medido con `scripts/seo/catalog-coverage-effective.mjs` sobre el mismo
+universo y el mismo snapshot (`catalog.json` `updated_at`
+2026-09-05T07:19:57.025Z, run
+[34005410037](https://github.com/trexxeseba/amadolibros-web/actions/runs/34005410037)) —
+**7.107 productos activos con stock**:
+
+- **Cruda:** el catálogo tal como llega de Mercado Libre.
+- **Efectiva:** el mismo ítem después de `applyBookEnrichment()`, que es
+  lo que realmente ve la ficha publicada, el JSON-LD y el feed. El
+  enriquecimiento toca **2.985 de los 7.107 ítems**.
+
+**La cobertura cruda NO es la cobertura de las fichas publicadas.** La
+tabla anterior de este documento presentaba la columna cruda como si lo
+fuera, y subdeclaraba gravemente campos como páginas y editorial.
+
+| Campo | Cruda | Efectiva | Ganancia | % cruda | % efectiva |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Autor no vacío | 6.705 | 6.713 | +8 | 94,34% | 94,46% |
+| **Autor REAL** (descarta genéricos) | 6.288 | 6.336 | +48 | 88,48% | 89,15% |
+| Autor genérico | 417 | 377 | −40 | 5,87% | 5,30% |
+| ISBN válido | 6.703 | 6.703 | 0 | 94,32% | 94,32% |
+| Editorial real | 269 | 1.539 | +1.270 | 3,79% | 21,65% |
+| Páginas | 5 | 1.629 | +1.624 | 0,07% | 22,92% |
+| Idioma | 6.730 | 6.747 | +17 | 94,70% | 94,93% |
+| Formato | 370 | 383 | +13 | 5,21% | 5,39% |
+| Edición | 5 | 18 | +13 | 0,07% | 0,25% |
+| Año de publicación | 3.939 | 5.168 | +1.229 | 55,42% | 72,72% |
+| Género | 5.557 | 5.558 | +1 | 78,19% | 78,20% |
+| Descripción no vacía | 4.172 | 4.178 | +6 | 58,70% | 58,79% |
+| Descripción ≥80 | 4.104 | 4.110 | +6 | 57,75% | 57,83% |
+| **Descripción ÚTIL ≥280** | 3.852 | 3.858 | +6 | 54,20% | 54,28% |
+| Descripción ≥700 | 2.769 | 2.765 | −4 | 38,96% | 38,91% |
+
+Notas de lectura, para no volver a sobredeclarar:
+
+- «Autor no vacío» y «autor real» son métricas distintas: 377 fichas
+  publicadas siguen con un autor genérico (`Desconocido`, `Varios`).
+- «Descripción no vacía» y «descripción útil» también: casi 6 de cada 10
+  fichas tienen texto, pero sólo el 54,28% supera los 280 caracteres.
+- La descripción ≥700 baja 4 casos porque el copy editorial verificado
+  reemplaza descripciones largas de origen por texto más corto y real.
+
+Sobre el catálogo **efectivo**, los mayores gaps reales son ahora
+**edición (0,25%)**, **formato (5,39%)**, **editorial real (21,65%)** y
+**páginas (22,92%)** — no «páginas al 0,07%». QW3A2 prioriza estos
+campos cuando exista evidencia bibliográfica real verificable.
+    [PR #315](https://github.com/trexxeseba/amadolibros-web/pull/315)
+    (Draft, sin mergear).
+  - **QW4 — títulos/descripciones a escala:** NO iniciado, salvo las
+    descripciones incluidas legítimamente dentro del lote QW3A2.
+  - **QW5 — enlazado interno:** NO iniciado.
+  **No declarar Merchant Center verificado hasta mergear QW1/QW3A1/
+  QW3A2 y confirmar el re-crawl real de Google.**
 
 ### Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA
 
