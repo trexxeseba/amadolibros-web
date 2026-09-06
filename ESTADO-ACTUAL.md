@@ -53,10 +53,17 @@ Nada de lo verificado está publicado todavía: el trabajo vive en
 
 ### Reconciliación contra `main`, mismo snapshot
 
-Base `main` **`d380374`**, head **`a66b419`**. Corrida
-[34063187043](https://github.com/trexxeseba/amadolibros-web/actions/runs/34063187043),
-snapshot `catalog.json` `updated_at` **2026-09-06T11:37:55.003Z**, 7.104 fichas
-activas comparadas de los dos lados. El snapshot se baja **una sola vez** y lo
+Base `main` **`d380374`**. Snapshot `catalog.json` `updated_at`
+**2026-09-06T11:37:55.003Z**, 7.104 fichas activas comparadas de los dos lados.
+Corrida documentada:
+[34067949689](https://github.com/trexxeseba/amadolibros-web/actions/runs/34067949689),
+head **`798a9de`**.
+
+**Cada push a la rama vuelve a correr esta medición sobre el head nuevo**, así
+que la corrida vigente es siempre la última de «B12 — reconciliar impacto y
+validar el Preview desplegado» en el PR; el head y el SHA desplegado de esa
+corrida están en la descripción del PR. Las cifras se repitieron idénticas en
+las tres últimas corridas. El snapshot se baja **una sola vez** y lo
 comparten los dos lados: si cada uno bajara el suyo, una actualización del
 catálogo en el medio invalidaría la comparación.
 
@@ -130,9 +137,9 @@ Qué comprueba hoy, campo por campo:
 - **Un HTTP 404 queda SIN VERIFICAR**, no fallido y tampoco atribuido al
   catálogo: es un resultado propio, contado aparte.
 
-Corrida [34063187043](https://github.com/trexxeseba/amadolibros-web/actions/runs/34063187043),
+Corrida [34067949689](https://github.com/trexxeseba/amadolibros-web/actions/runs/34067949689),
 base `https://pr-325.amadolibros-web.pages.dev`. El SHA **realmente desplegado**
-es `a66b419` y no es un supuesto: la corrida espera a que concluya con éxito el
+es `798a9de` y no es un supuesto: la corrida espera a que concluya con éxito el
 check de despliegue **de ese mismo commit** y recién entonces valida.
 
 | | |
@@ -165,7 +172,7 @@ ningún dato ni se aflojó ninguna exigencia para que el número cerrara.
 
 Evidencia por ficha —MLU, ISBN, campo, valor esperado, valor visible
 encontrado, valor JSON-LD y resultado— en el artefacto
-`b12-reconciliacion-34063187043` de esa corrida. Las cifras de arriba, además,
+`b12-reconciliacion-34067949689` de esa corrida. Las cifras de arriba, además,
 quedan en el **resumen de la corrida**, que no vence con el artefacto.
 
 ### Verificación de Producción — PENDIENTE, ya preparada
