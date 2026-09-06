@@ -410,6 +410,15 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
     }
   }
   const previousKey = candidate.entry?.current?.object_key || null;
+  const previous = candidate.entry?.current;
+  // Una revalidación del mismo origen puede devolver su original pequeño
+  // si Images falla o no está disponible. Mantener el master ya publicado;
+  // el catch del sincronizador conserva current y deja el intento pendiente.
+  // Un cambio de URL puede ser una corrección de portada y no se bloquea aquí.
+  if (previousKey && previous.source_url === candidate.source_url &&
+      (finalImage.width < Number(previous.width) || finalImage.height < Number(previous.height))) {
+    throw new Error(`Se conserva el master: resolución ${finalImage.width}x${finalImage.height} inferior a ${previous.width}x${previous.height}.${transformError ? ` ${transformError}` : ''}`);
+  }
   return {
     entry: {
       product_id: candidate.product_id,
