@@ -1,0 +1,85 @@
+name: RADAR DATA 2 live read-only verify
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-data-2-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'radar/data-2-ml-orders-276' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Upload isolated Worker version — no production deploy
+        id: upload
+        working-directory: worker-sync
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          OUTPUT=$(npx wrangler@4.107.0 versions upload \
+            --preview-alias radar-sales-${{ github.event.pull_request.number }} \
+            --keep-vars \
+            --message "RADAR DATA 2 lectura real sin despliegue")
+          echo "$OUTPUT"
+          PREVIEW_URL=$(echo "$OUTPUT" | grep -Eo 'https://[^[:space:]]+\.workers\.dev' | tail -1)
+          if [ -z "$PREVIEW_URL" ]; then
+            echo "ERROR: Wrangler no devolvió URL de versión Preview."
+            exit 1
+          fi
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verify real ML sales read-only
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          sleep 8
+          mkdir -p artifacts/radar-data-2
+          RESPONSE=$(curl -sS --max-time 180 -w "\nHTTP_STATUS:%{http_code}" \
+            "$PREVIEW_URL/sales/verify?days=7&pages=1" \
+            -H "Authorization: Bearer $SYNC_SECRET")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "HTTP status: $HTTP_STATUS"
+          echo "$BODY" | tee artifacts/radar-data-2/live-sales-verify.json
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "ERROR: /sales/verify respondió HTTP $HTTP_STATUS."
+            exit 1
+          fi
+          echo "$BODY" | node -e '
+            let input="";
+            process.stdin.on("data", c => input += c);
+            process.stdin.on("end", () => {
+              const result = JSON.parse(input);
+              if (result.writes_to_ml !== false) throw new Error("No confirmó writes_to_ml=false");
+              if (result.pii_persisted !== false) throw new Error("No confirmó pii_persisted=false");
+              if (!Array.isArray(result.sample)) throw new Error("sample no es array");
+              for (const row of result.sample) {
+                const allowed = new Set(["item_id","units","revenue","last_sale_at"]);
+                for (const key of Object.keys(row)) if (!allowed.has(key)) throw new Error(`Campo inesperado en sample: ${key}`);
+              }
+            });
+          '
+
+      - name: Upload read-only verification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-data-2-live-pr-${{ github.event.pull_request.number }}
+          path: artifacts/radar-data-2/
+          if-no-files-found: warn
+          retention-days: 30
