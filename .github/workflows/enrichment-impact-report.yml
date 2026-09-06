@@ -1,0 +1,59 @@
+name: Impacto real del enriquecimiento por ficha
+
+# Sólo lectura: descarga el catálogo público y mide cuántas FICHAS activas
+# gana cada campo por efecto de un lote. No despliega ni escribe catálogo.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lote_module:
+        description: Módulo de hechos a medir
+        required: true
+        default: functions/_shared/book-enrichment-facts-b12-lote-01.js
+        type: string
+      isbn_investigados:
+        description: ISBN investigados en la corrida (para separar las tres cifras)
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  impact:
+    name: Medir impacto por ficha
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validar el medidor
+        run: |
+          node --check scripts/seo/enrichment-impact-report.mjs
+          node --test functions/__tests__/enrichment-impact-report.test.js
+
+      - name: Medir sobre el catálogo efectivo
+        env:
+          SEO_OUTPUT_DIR: artifacts/impacto
+          LOTE_MODULE: ${{ inputs.lote_module }}
+          ISBN_INVESTIGADOS: ${{ inputs.isbn_investigados }}
+        run: node scripts/seo/enrichment-impact-report.mjs
+
+      - name: Subir el informe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enrichment-impact-${{ github.run_id }}
+          path: artifacts/impacto/
+          if-no-files-found: warn
+          retention-days: 30
