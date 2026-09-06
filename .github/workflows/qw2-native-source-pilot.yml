@@ -1,0 +1,80 @@
+name: QW2 native source pilot
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/qw2-native-source-pilot.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Compare existing native image sources for the affected active cohort
+        run: |
+          mkdir -p artifacts/qw2-native-source-pilot
+          node --input-type=module <<'NODE'
+          import { writeFile } from 'node:fs/promises';
+          import { inspectCoverBytes, coverCandidates } from './worker-sync/cover-mirror.js';
+          const out = 'artifacts/qw2-native-source-pilot';
+          const ids = ['MLU628104849','MLU636119126','MLU629952475','MLU629940095','MLU651575382','MLU660323622','MLU670646778','MLU637120759','MLU688989388','MLU643205029','MLU690353270','MLU644928147','MLU702907426','MLU757785172','MLU823903586','MLU882935602'];
+          const catalogUrl = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
+          const response = await fetch(catalogUrl, { signal: AbortSignal.timeout(60000) });
+          if (!response.ok) throw new Error('catalog HTTP ' + response.status);
+          const catalog = await response.json();
+          const byId = new Map(catalog.items.map(item => [item.id, item]));
+          const results = [];
+          for (const id of ids) {
+            const item = byId.get(id);
+            const row = { id, status: item?.status || 'absent_in_active_catalog', isbn: item?.isbn || null, title: item?.title || null, images: [] };
+            results.push(row);
+            if (!item || item.status !== 'active' || !(Number(item.available_quantity) > 0)) continue;
+            for (const candidate of coverCandidates(item)) {
+              const image = { position: candidate.position, source_url: candidate.source_url };
+              row.images.push(image);
+              try {
+                const res = await fetch(candidate.source_url, { redirect: 'manual', signal: AbortSignal.timeout(15000) });
+                image.http = res.status;
+                if (!res.ok) throw new Error('image HTTP ' + res.status);
+                const bytes = new Uint8Array(await res.arrayBuffer());
+                if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new Error('Image outside 1 byte–8 MiB size limit');
+                const measured = inspectCoverBytes(bytes, res.headers.get('content-type'));
+                Object.assign(image, measured, { bytes: bytes.length, short_side: Math.min(measured.width, measured.height) });
+                image.file = id + '-' + candidate.position + '.' + measured.ext;
+                await writeFile(out + '/' + image.file, bytes);
+              } catch (error) { image.error = error.message; }
+            }
+          }
+          const images = results.flatMap(row => row.images);
+          const measured = images.filter(image => !image.error);
+          const summary = {
+            cohort_ids: ids.length, active_with_stock: results.filter(row => row.images.length).length,
+            measured: measured.length, errors: images.length - measured.length,
+            below_500: measured.filter(image => image.short_side < 500).length,
+            at_least_500: measured.filter(image => image.short_side >= 500).length,
+            at_least_1000: measured.filter(image => image.short_side >= 1000).length
+          };
+          const report = {
+            generated_at: new Date().toISOString(), catalog_updated_at: catalog.updated_at,
+            catalog_source: catalogUrl,
+            cohort_source: 'Merchant run 34005410037: 16 active matches among 30 image_too_small below 500px; current status rechecked here',
+            scope: 'Existing native catalog sources only. No transformations, no R2 writes, no Merchant changes. Dimensions do not prove visual fidelity or Merchant resolution.',
+            summary, results
+          };
+          await writeFile(out + '/report.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(summary));
+          if (!measured.length) throw new Error('No native image could be measured; pilot is not verified.');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qw2-native-source-pilot
+          path: artifacts/qw2-native-source-pilot/
+          if-no-files-found: error
+          retention-days: 30
