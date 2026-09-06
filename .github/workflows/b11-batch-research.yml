@@ -76,13 +76,21 @@ jobs:
           create_credentials_file: false
 
       - name: Research N exact ISBN editions
+        # Tope propio, más corto que el del job. Si el job entero agota su
+        # timeout, GitHub lo cancela y los pasos `if: always()` NO corren, así
+        # que la evidencia se perdería igual. Acotando el paso, la corrida
+        # termina por las suyas y el commit del caché siempre ocurre.
+        timeout-minutes: 70
         env:
           GOOGLE_BOOKS_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
           OPEN_LIBRARY_CONTACT: https://www.amadolibros.com
           BOOK_INTELLIGENCE_LIMIT: ${{ env.LIMIT }}
           BOOK_INTELLIGENCE_CANDIDATE_LIMIT: '0'
           BOOK_INTELLIGENCE_OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
-          BOOK_INTELLIGENCE_CACHE_PATH: ${{ env.OUTPUT_DIR }}/source-cache.json
+          # Caché COMPARTIDO entre lotes, no uno por lote: está indexado por
+          # ISBN y es resumible, así que un lote nuevo no vuelve a pedir lo que
+          # otro ya trajo. También hace barata una corrida perdida.
+          BOOK_INTELLIGENCE_CACHE_PATH: artifacts/book-intelligence/b12-source-cache.json
           # Google Books agotó su cuota diaria en la corrida 34035961388:
           # 20 x HTTP 429 y el circuit breaker cortó los 1.474 pedidos
           # restantes. Se baja el presupuesto para no quemar la cuota de golpe
@@ -129,7 +137,7 @@ jobs:
           export PREVIOUS_FACTS
           node scripts/seo/book-intelligence-project.mjs \
             --manifest "$OUTPUT_DIR/isbn-1000-manifest.json" \
-            --cache "$OUTPUT_DIR/source-cache.json" \
+            --cache artifacts/book-intelligence/b12-source-cache.json \
             --output "$FACTS_OUTPUT" \
             --expected "$EXPECTED"
           if [ -n "$PREVIOUS_FACTS" ]; then
@@ -176,6 +184,22 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # La evidencia se sube como artefacto ANTES de intentar el push: si el
+      # push falla —por ejemplo porque alguien empujó a la rama mientras el
+      # lote corría, que fue lo que pasó en la corrida 34039355129— la hora de
+      # llamadas a las fuentes no se pierde y se puede recuperar.
+      - name: Subir la evidencia como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b12-evidencia-${{ github.run_id }}
+          path: |
+            ${{ env.OUTPUT_DIR }}/
+            artifacts/book-intelligence/b12-source-cache.json
+            ${{ env.FACTS_OUTPUT }}
+          if-no-files-found: warn
+          retention-days: 30
+
       # `if: always()` a propósito: la corrida 34032150352 gastó 53 minutos de
       # llamadas a las fuentes y perdió TODO porque la proyección falló
       # después. La evidencia cruda es cara de obtener y el caché es
@@ -194,4 +218,16 @@ jobs:
           fi
           COMMIT_MSG=$'b11(lote): investigacion real '"${LIMIT}"$' ISBN + hechos verificados\n\nGenera evidencia bibliografica (Google Books, Open Library, BNE) y el\nmodulo de hechos verificados para este lote. No modifica el registry ni\npublica nada; queda para wiring y redaccion en un commit revisado aparte.'
           git commit -m "$COMMIT_MSG"
-          git push origin "HEAD:${{ github.ref_name }}"
+          # Otro push a la misma rama durante la corrida dejaba el commit sin
+          # publicar y tiraba la hora de investigación. Se reintenta sobre lo
+          # que haya llegado en el medio.
+          for intento in 1 2 3; do
+            if git push origin "HEAD:${{ github.ref_name }}"; then
+              echo "Evidencia publicada en el intento $intento."
+              exit 0
+            fi
+            echo "Push rechazado; reintegrando lo que llegó a la rama (intento $intento)."
+            git pull --rebase origin "${{ github.ref_name }}"
+          done
+          echo "No se pudo publicar la evidencia tras 3 intentos; queda en el artefacto de la corrida." >&2
+          exit 1
