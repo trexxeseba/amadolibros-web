@@ -1,3 +1,4 @@
+import { verifiedCoverSource, verifiedCoverRevision } from '../_shared/verified-cover-sources.js';
 import { fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 
@@ -29,7 +30,8 @@ export function coverSources(item) {
   const pictures = Array.isArray(item?.pictures) ? item.pictures : [];
   const candidates = pictures.length > 0 ? pictures : [item?.thumbnail];
   return [...new Set(candidates.map(largeMlImage).filter(Boolean))]
-    .slice(0, MAX_GALLERY_IMAGES);
+    .slice(0, MAX_GALLERY_IMAGES)
+    .map(source => verifiedCoverSource(item?.id, source));
 }
 
 export function coverSource(item, position = 0) {
@@ -77,7 +79,10 @@ export async function onRequest(ctx) {
 
   const cache = caches.default;
   const filename = position === 0 ? 'cover.jpg' : `cover-${position + 1}.jpg`;
-  const cacheKey = new Request(new URL(ctx.request.url).origin + `/book-cover/${id}/${filename}`);
+  const cacheUrl = new URL(`/book-cover/${id}/${filename}`, ctx.request.url);
+  const revision = verifiedCoverRevision(id);
+  if (revision) cacheUrl.searchParams.set('__cover_source_revision', revision);
+  const cacheKey = new Request(cacheUrl);
   const cached = await cache.match(cacheKey);
   if (cached) {
     return ctx.request.method === 'HEAD'

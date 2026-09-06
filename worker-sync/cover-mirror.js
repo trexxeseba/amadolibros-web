@@ -1,3 +1,4 @@
+import { verifiedCoverSource, verifiedNativeCover } from '../functions/_shared/verified-cover-sources.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
@@ -55,7 +56,7 @@ export function coverCandidates(item, { includePaused = false } = {}) {
   return sources.map((sourceUrl, position) => ({
     product_id: id,
     position,
-    source_url: sourceUrl,
+    source_url: verifiedCoverSource(id, sourceUrl),
     catalog_product_id: String(item.catalog_product_id || '').trim().toUpperCase() || null,
   }));
 }
@@ -135,6 +136,8 @@ async function writeManifestAtomically(bucket, initialState, processedEntries, n
 function needsAiUpscale(entry) {
   const current = entry?.current;
   if (!current?.object_key) return false;
+  if (verifiedNativeCover(entry.product_id, current.source_url) &&
+      Math.min(Number(current.width) || 0, Number(current.height) || 0) >= 500) return false;
   const shortEdge = Math.min(Number(current.width) || 0, Number(current.height) || 0);
   if (shortEdge >= TARGET_SHORT_EDGE) return false;
   return current.transform?.kind !== 'cloudflare-ai-upscale' ||
@@ -166,6 +169,7 @@ export function selectCoverBatch(catalog, manifest, {
     .map(candidate => {
       const entry = manifest?.entries?.[`${candidate.product_id}:${candidate.position}`] || null;
       const aiUpscaleEligible = candidate.position === 0 && aiUpscaleEnabled &&
+        !verifiedNativeCover(candidate.product_id, candidate.source_url) &&
         (!aiUpscaleProductIds || aiUpscaleProductIds.has(candidate.product_id));
       return {
         ...candidate,
@@ -377,6 +381,10 @@ async function fetchCover(candidate, fetchFn) {
 
 async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
   const source = await readStoredOriginal(bucket, candidate) || await fetchCover(candidate, fetchFn);
+  if (verifiedNativeCover(candidate.product_id, candidate.source_url) &&
+      Math.min(source.image.width, source.image.height) < 500) {
+    throw new Error("La fuente nativa verificada ya no alcanza 500 px; se conserva la copia anterior.");
+  }
   const originalStored = source.originalObjectKey
     ? { objectKey: source.originalObjectKey, sha256: candidate.entry.current.original_sha256 || candidate.entry.current.sha256 }
     : await storeImmutable(bucket, source.bytes, source.image, nowIso);

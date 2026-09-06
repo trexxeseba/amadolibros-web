@@ -1,3 +1,4 @@
+import { verifiedCoverSource } from './_shared/verified-cover-sources.js';
 /**
  * functions/feed.xml.js
  *
@@ -429,7 +430,8 @@ export function merchantImageSources(item) {
     const pictures = Array.isArray(item?.pictures) ? item.pictures : [];
     const candidates = pictures.length > 0 ? pictures : [item?.thumbnail];
     return [...new Set(candidates.map(normalizeMerchantImageSource).filter(Boolean))]
-        .slice(0, MAX_GALLERY_IMAGES);
+        .slice(0, MAX_GALLERY_IMAGES)
+        .map(source => verifiedCoverSource(item?.id, source));
 }
 
 function readyCoverCurrent(entry, sourceUrl) {
