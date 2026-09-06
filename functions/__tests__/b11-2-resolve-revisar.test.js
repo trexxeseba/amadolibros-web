@@ -43,7 +43,7 @@ test('B11.2 lote 01 resuelve 12 ISBN del pool REVISAR con consenso cruzado real'
   }
   // El total global sube con cada lote posterior (lote 02 agrega 12 y el
   // lote 03 final, 59).
-  assert.equal(listBookEnrichments().length, 1777);
+  assert.equal(listBookEnrichments().length, 1790);
 });
 
 test('B11.2 lote 01 no contiene ni modifica títulos o datos comerciales', () => {

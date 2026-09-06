@@ -56,8 +56,9 @@ test('los 196 ISBN del lote B12 01 quedan en el registro con procedencia', () =>
 });
 
 test('el contador del registry suma sólo los ISBN nuevos, no los fusionados', () => {
-  // 1.656 antes del lote + 121 ediciones nuevas (196 menos 75 ya investigadas).
-  assert.equal(listBookEnrichments().length, 1777);
+  // 1.656 + 121 del lote B12 01 (196 menos 75 fusionados) + 13 del lote 02
+  // (31 menos 18 fusionados).
+  assert.equal(listBookEnrichments().length, 1790);
 });
 
 test('el enriquecimiento no toca datos comerciales de la ficha', () => {

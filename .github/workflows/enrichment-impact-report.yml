@@ -11,12 +11,13 @@ on:
       - '.github/workflows/enrichment-impact-report.yml'
       - 'scripts/seo/enrichment-impact-report.mjs'
       - 'functions/_shared/book-enrichment-facts-b12-lote-01.js'
+      - 'functions/_shared/book-enrichment-facts-b12-lote-02.js'
   workflow_dispatch:
     inputs:
       lote_module:
-        description: Módulo de hechos a medir
+        description: Módulos de hechos a medir, separados por coma
         required: true
-        default: functions/_shared/book-enrichment-facts-b12-lote-01.js
+        default: functions/_shared/book-enrichment-facts-b12-lote-01.js,functions/_shared/book-enrichment-facts-b12-lote-02.js
         type: string
       isbn_investigados:
         description: ISBN investigados en la corrida (para separar las tres cifras)
@@ -54,7 +55,7 @@ jobs:
       - name: Medir sobre el catálogo efectivo
         env:
           SEO_OUTPUT_DIR: artifacts/impacto
-          LOTE_MODULE: ${{ inputs.lote_module || 'functions/_shared/book-enrichment-facts-b12-lote-01.js' }}
+          LOTE_MODULE: ${{ inputs.lote_module || 'functions/_shared/book-enrichment-facts-b12-lote-01.js,functions/_shared/book-enrichment-facts-b12-lote-02.js' }}
           ISBN_INVESTIGADOS: ${{ inputs.isbn_investigados || '3596' }}
         run: node scripts/seo/enrichment-impact-report.mjs
 

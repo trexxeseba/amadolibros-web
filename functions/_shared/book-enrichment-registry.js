@@ -13,6 +13,7 @@ import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_02 } from './
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03 } from './book-enrichment-facts-b11-2-lote-03.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01 } from './book-enrichment-facts-qw3a2-lote-01.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_01 } from './book-enrichment-facts-b12-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_02 } from './book-enrichment-facts-b12-lote-02.js';
 import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
@@ -597,6 +598,20 @@ for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_01) {
     throw new Error(`ISBN duplicado dentro del lote B12 01: ${record.isbn}.`);
   }
   b12Lote01Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
+}
+
+// Lote B12 02: mismo criterio de fusión que el 01. 18 de sus 31 ISBN ya
+// estaban en el registro y vuelven a completarles campos.
+const b12Lote02Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_02) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote02Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 02: ${record.isbn}.`);
+  }
+  b12Lote02Seen.add(record.isbn);
   ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
 }
 

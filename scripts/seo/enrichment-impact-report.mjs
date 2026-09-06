@@ -79,13 +79,35 @@ export function summarizeFichas(fichas) {
 
 export async function main() {
   const outputDir = process.env.SEO_OUTPUT_DIR || 'artifacts/seo';
-  const modulePath = process.env.LOTE_MODULE;
-  if (!modulePath) throw new Error('Falta LOTE_MODULE con el módulo de hechos a medir.');
+  // Acepta varios módulos separados por coma: el impacto acumulado de todos
+  // los lotes es lo que se compara contra la meta, no el de uno solo.
+  const modulePaths = String(process.env.LOTE_MODULE || '').split(',').map(value => value.trim()).filter(Boolean);
+  if (!modulePaths.length) throw new Error('Falta LOTE_MODULE con el módulo de hechos a medir.');
   const investigatedRaw = Number(process.env.ISBN_INVESTIGADOS);
   const investigated = Number.isFinite(investigatedRaw) ? investigatedRaw : null;
 
-  const { BOOK_FACT_ENRICHMENTS: lote } = await import(pathToFileURL(path.resolve(modulePath)).href);
-  const loteByIsbn = new Map(lote.map(record => [record.isbn, record]));
+  // Si un ISBN aparece en más de un lote, sus hechos se combinan para medir:
+  // la ficha publicada los recibe todos.
+  const loteByIsbn = new Map();
+  let registrosDeLote = 0;
+  for (const modulePath of modulePaths) {
+    const { BOOK_FACT_ENRICHMENTS: lote } = await import(pathToFileURL(path.resolve(modulePath)).href);
+    registrosDeLote += lote.length;
+    for (const record of lote) {
+      const previo = loteByIsbn.get(record.isbn);
+      loteByIsbn.set(record.isbn, previo
+        ? {
+            ...previo,
+            facts: {
+              ...previo.facts,
+              ...record.facts,
+              bibliographic: { ...(previo.facts?.bibliographic || {}), ...(record.facts?.bibliographic || {}) },
+            },
+          }
+        : record);
+    }
+  }
+  const lote = [...loteByIsbn.values()];
 
   const fetchedAt = new Date().toISOString();
   const response = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(60_000) });
@@ -120,11 +142,12 @@ export async function main() {
     fetchedAt,
     source: CATALOG_URL,
     catalogUpdatedAt: catalog?.updated_at || null,
-    lote: modulePath,
+    lotes: modulePaths,
+    registros_de_lote: registrosDeLote,
     universo: {
       fichas_activas_con_stock: activos.length,
       isbn_investigados: investigated,
-      isbn_incorporados: lote.length,
+      isbn_incorporados: loteByIsbn.size,
       isbn_con_ficha_viva: new Set(fichas.map(f => f.isbn)).size,
       isbn_que_benefician_alguna_ficha: isbnBeneficiados.size,
       fichas_beneficiadas: beneficiadas.length,

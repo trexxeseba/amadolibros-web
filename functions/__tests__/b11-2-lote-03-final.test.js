@@ -42,7 +42,7 @@ test('B11.2 lote 03 final resuelve 59 ISBN del pool REVISAR con consenso cruzado
       assert.match(source.url, /^https:\/\//);
     }
   }
-  assert.equal(listBookEnrichments().length, 1777);
+  assert.equal(listBookEnrichments().length, 1790);
 });
 
 test('B11.2 lote 03 no repite ningún ISBN de los lotes 01 y 02', () => {
