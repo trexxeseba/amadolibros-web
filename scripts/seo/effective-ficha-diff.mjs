@@ -100,8 +100,17 @@ export async function main() {
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);
 
+  // Se imprime SÓLO el resumen: el detalle por ficha son cientos de entradas
+  // que sepultan el resultado en el log. El archivo completo queda en el
+  // artefacto.
   console.log('=== RECONCILIACIÓN: FICHA EFECTIVA main vs PR ===');
-  console.log(JSON.stringify({ ...report, fichas_beneficiadas: undefined }, null, 2));
+  console.log(JSON.stringify({
+    snapshot: report.snapshot,
+    antes: report.antes,
+    despues: report.despues,
+    crecimiento_del_registro: report.crecimiento_del_registro,
+    totales: report.totales,
+  }, null, 2));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
