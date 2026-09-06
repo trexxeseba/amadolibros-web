@@ -41,33 +41,79 @@ correspondientes, más abajo.
   — nunca una inferencia desde el código o desde auditorías internas de
   B11 (esas ya existen, pero miden el feed propio, no el veredicto real
   de Merchant sobre ese feed).
-- **Avance registrado (2026-09-05):** diagnóstico real completo (99
-  `image_too_small`, ~149 `missing_price`, 16 `ebooks_policy_violation`,
-  2 `landing_page_error`, 0 solapamiento real AUTOFEED/FILE) y arranque
-  de quick wins con evidencia real, sin declarar Merchant Center
-  verificado todavía (falta re-crawl real de Google sobre los fixes).
-  Estado de cada quick win:
-  - **QW1 — Offer/precio:** IMPLEMENTADO — PENDIENTE MERGE/VERIFICACIÓN
-    MERCHANT. Causa raíz: la ficha omitía el `Offer` de schema.org
-    cuando el producto estaba sin stock, aunque tuviera precio real de
-    catálogo. [PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313)
-    (Draft, sin mergear).
-  - **QW3A — enriquecimiento de structured data:** IMPLEMENTADO —
-    PENDIENTE MERGE. El mapeo de campos bibliográficos (author,
-    publisher, inLanguage, numberOfPages, bookFormat, edition) ya
-    estaba completo; se corrigió la validación de ISBN/GTIN (no se
-    publicaba con el mismo checksum que ya usa el feed de Merchant).
+- **Avance registrado (2026-09-06):** diagnóstico real completo y quick
+  wins con evidencia real, sin declarar Merchant Center verificado
+  todavía (falta re-crawl real de Google sobre los fixes). Estado real
+  de cada quick win, corregido tras validación (ver detalle en
+  ESTADO-ACTUAL.md):
+  - **QW1 — Offer/precio:** IMPLEMENTADO — VALIDACIÓN PARCIAL EN
+    PREVIEW. Del cohorte real de 172 `missing_price`, sólo 86 (50%)
+    pudieron compararse Producción vs Preview (el resto no existe en
+    el catálogo de Preview — limitación de entorno, no de código): 0
+    fallos de código encontrados (85 correctamente sin `Offer` por no
+    tener precio real, 1 ya tenía `Offer` válido antes de #313). **No
+    se encontró ningún caso "A" (corregido) en la porción comparable**
+    — el efecto real del fix debe confirmarse recién con el re-crawl
+    de Merchant tras el merge. [PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313)
+    (Draft, sin mergear). **Nunca "Terminado" hasta recrawl real de
+    Merchant.**
+  - **QW3A1 — calidad de identificadores (ISBN/GTIN):** IMPLEMENTADO —
+    PENDIENTE MERGE. **No es "enriquecimiento estructurado completo"**
+    — es sólo la corrección de validación de ISBN/GTIN (mismo checksum
+    que ya usa el feed de Merchant). El mapeo de campos bibliográficos
+    (author, publisher, inLanguage, numberOfPages, bookFormat, edition)
+    ya estaba completo desde antes, sin relación con este PR.
     [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314)
     (Draft, sin mergear).
-  - **QW2 — imágenes:** registrado, medición read-only completa (sin
-    activar Cloudflare Images ni tocar Merchant). De 99 productos
-    `image_too_small`: 53 miden <500px, 38 miden 500-999px, 7 ya miden
-    ≥1000px (1 no se pudo medir). [PR #315](https://github.com/trexxeseba/amadolibros-web/pull/315)
-    (Draft, sin mergear — sin implementar corrección todavía).
-  - **QW4 — títulos/descripciones:** NO iniciado.
+  - **QW3A2 — enriquecimiento bibliográfico real:** EN CURSO. Selección
+    de 100 fichas activas priorizadas por stock real + ficha indexable
+    + ISBN válido + gaps bibliográficos reales (mismo criterio ya
+    usado y probado en B11:
+    `scripts/seo/book-intelligence-research-run.mjs`), investigación
+    real contra Google Books/Open Library/BNE en curso vía
+    `b11-batch-research.yml`. Se actualiza este documento al terminar,
+    con la tabla ANTES/DESPUÉS real y el PR correspondiente.
+  - **QW2 — imágenes:** MEDICIÓN COMPLETA — CORRECCIÓN NO INICIADA. Sin
+    activar Cloudflare Images ni tocar Merchant. Última medición real
+    (32 productos `image_too_small` con imagen <500px en esta corrida):
+    16 secundarias (galería, posición ≥1), 8 portada principal
+    (posición 0), 8 externas (imagen de Mercado Libre servida sin
+    pasar por nuestro proxy). No se pudo determinar "fuente real
+    alternativa ≥500" sin acceso al catálogo crudo (`item.pictures[]`)
+    — todas ya usan la variante "-O" (la mayor que ofrece Mercado
+    Libre por URL), así que no hay una variante mayor disponible por
+    simple sustitución de URL.
+
+### Cobertura real del catálogo (productos activos con stock, 2026-09-06)
+
+Medido con `scripts/seo/catalog-quality-audit.mjs` sobre el catálogo
+público real — **7.107 productos activos con stock**:
+
+| Campo | Con dato | Sin dato | % cobertura |
+| --- | ---: | ---: | ---: |
+| Autor | 6.705 | 402 | 94,34% |
+| ISBN (cualquiera) | 6.912 | 195 | 97,26% |
+| ISBN válido | 6.703 | 404 | 94,32% |
+| Editorial real | 269 | 6.838 | 3,79% |
+| Páginas | 5 | 7.102 | 0,07% |
+| Idioma | 6.730 | 377 | 94,70% |
+| Formato | 370 | 6.737 | 5,21% |
+| Edición | 5 | 7.102 | 0,07% |
+| Año de publicación | 3.939 | 3.168 | 55,42% |
+| Género | 5.557 | 1.550 | 78,19% |
+| Descripción | 4.172 | 2.935 | 58,70% |
+| 2+ imágenes | 7.086 | 21 | 99,70% |
+
+Los mayores gaps reales son **páginas (0,07%)**, **edición (0,07%)** y
+**editorial real (3,79%)** — QW3A2 prioriza estos campos cuando exista
+evidencia bibliográfica real verificable.
+    [PR #315](https://github.com/trexxeseba/amadolibros-web/pull/315)
+    (Draft, sin mergear).
+  - **QW4 — títulos/descripciones a escala:** NO iniciado, salvo las
+    descripciones incluidas legítimamente dentro del lote QW3A2.
   - **QW5 — enlazado interno:** NO iniciado.
-  **No declarar Merchant Center verificado hasta que QW1/QW3A se
-  mergeen y Google re-cruceé los productos afectados.**
+  **No declarar Merchant Center verificado hasta mergear QW1/QW3A1/
+  QW3A2 y confirmar el re-crawl real de Google.**
 
 ### Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA
 
