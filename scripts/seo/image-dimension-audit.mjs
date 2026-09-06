@@ -115,6 +115,20 @@ export async function main() {
 
   console.log('=== QW2 IMAGE DIMENSION AUDIT (solo lectura) ===');
   console.log(JSON.stringify({ totalMeasured: summary.totalMeasured, byBucket, byPosition }, null, 2));
+
+  console.log('=== QW2 — detalle de <500px (principal vs. secundaria) ===');
+  console.log(JSON.stringify(
+    results.filter(row => row.bucket === '<500').map(row => ({
+      offerId: row.offerId,
+      position: row.position,
+      role: row.position === 0 ? 'principal' : row.position == null ? 'externa' : 'secundaria',
+      width: row.width,
+      height: row.height,
+      imageLink: row.imageLink,
+    })),
+    null,
+    2,
+  ));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

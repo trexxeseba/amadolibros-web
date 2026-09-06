@@ -12,6 +12,8 @@ on:
       - 'functions/__tests__/public-landing-check.test.js'
       - 'scripts/seo/image-dimension-audit.mjs'
       - 'functions/__tests__/image-dimension-audit.test.js'
+      - 'scripts/seo/qw1-preview-validation.mjs'
+      - 'functions/__tests__/qw1-preview-validation.test.js'
   pull_request:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
@@ -21,6 +23,8 @@ on:
       - 'functions/__tests__/public-landing-check.test.js'
       - 'scripts/seo/image-dimension-audit.mjs'
       - 'functions/__tests__/image-dimension-audit.test.js'
+      - 'scripts/seo/qw1-preview-validation.mjs'
+      - 'functions/__tests__/qw1-preview-validation.test.js'
   workflow_dispatch:
 
 permissions:
@@ -54,6 +58,8 @@ jobs:
           node --test functions/__tests__/public-landing-check.test.js
           node --check scripts/seo/image-dimension-audit.mjs
           node --test functions/__tests__/image-dimension-audit.test.js
+          node --check scripts/seo/qw1-preview-validation.mjs
+          node --test functions/__tests__/qw1-preview-validation.test.js
 
       - name: Authenticate with Google through Workload Identity
         id: google_auth
@@ -99,6 +105,15 @@ jobs:
           IMAGE_AUDIT_INPUT: artifacts/merchant/merchant-readonly-report.json
           IMAGE_AUDIT_OUTPUT_DIR: artifacts/merchant
         run: node scripts/seo/image-dimension-audit.mjs
+
+      - name: QW1 — validar cohorte real Producción vs Preview PR #313 (sólo lectura)
+        id: qw1_preview_validation
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_VALIDATION_INPUT: artifacts/merchant/merchant-readonly-report.json
+          QW1_VALIDATION_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/qw1-preview-validation.mjs
 
       - name: Upload Merchant audit
         if: always()
