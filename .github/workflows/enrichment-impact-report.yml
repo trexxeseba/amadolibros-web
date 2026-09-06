@@ -4,6 +4,13 @@ name: Impacto real del enriquecimiento por ficha
 # gana cada campo por efecto de un lote. No despliega ni escribe catálogo.
 
 on:
+  # workflow_dispatch sólo existe una vez que el workflow está en la rama por
+  # defecto; hasta entonces el disparador de PR es el que permite correrlo.
+  pull_request:
+    paths:
+      - '.github/workflows/enrichment-impact-report.yml'
+      - 'scripts/seo/enrichment-impact-report.mjs'
+      - 'functions/_shared/book-enrichment-facts-b12-lote-01.js'
   workflow_dispatch:
     inputs:
       lote_module:
@@ -45,8 +52,8 @@ jobs:
       - name: Medir sobre el catálogo efectivo
         env:
           SEO_OUTPUT_DIR: artifacts/impacto
-          LOTE_MODULE: ${{ inputs.lote_module }}
-          ISBN_INVESTIGADOS: ${{ inputs.isbn_investigados }}
+          LOTE_MODULE: ${{ inputs.lote_module || 'functions/_shared/book-enrichment-facts-b12-lote-01.js' }}
+          ISBN_INVESTIGADOS: ${{ inputs.isbn_investigados || '3596' }}
         run: node scripts/seo/enrichment-impact-report.mjs
 
       - name: Subir el informe
