@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url';
 
 import { CATALOG_URL } from '../../functions/_shared/catalog.js';
 import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
-import { listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
+import { applyBookEnrichment, listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
 import {
   classifyBookIntelligenceEvidence,
   summarizeBookIntelligenceEvidence,
@@ -94,12 +94,20 @@ export function selectResearchCohort({
   for (const item of Array.isArray(catalogItems) ? catalogItems : []) {
     if (!isShowcaseEligible(item)) continue;
     const isbn = normalizeValidIsbn(item?.isbn);
-    if (!isbn || alreadyEnriched.has(isbn)) continue;
+    if (!isbn) continue;
     if (!byIsbn.has(isbn)) byIsbn.set(isbn, []);
     byIsbn.get(isbn).push(item);
   }
 
   const candidates = [...byIsbn.entries()].map(([isbn, listings]) => {
+    // Los huecos se miden sobre la ficha EFECTIVA (catálogo + registro), que
+    // es la que se publica. Estar en el registro no implica estar completo:
+    // una edición ya investigada que sólo aportó `publication_year` sigue
+    // necesitando `pages` o `publisher`.
+    const effective = listings.map(listing => applyBookEnrichment(listing));
+    const missingFields = EDITION_FIELDS.filter(field =>
+      effective.some(listing => !existingFact(listing, field)),
+    );
     const representative = [...listings].sort(compareRepresentatives)[0];
     const totalStock = listings.reduce(
       (sum, item) => sum + Math.max(0, Number(item?.available_quantity) || 0),
@@ -112,22 +120,23 @@ export function selectResearchCohort({
       listing_count: listings.length,
       total_stock: totalStock,
       priority_score: candidateScore(representative, listings.length),
+      already_in_registry: alreadyEnriched.has(isbn),
       research: {
         cohort_source: 'active_sellable_unique_isbn',
         description_length: descriptionLength(representative),
         // El gateway se aplica a todos los duplicados del ISBN. Una edición
         // cuenta como mejora si completa el campo en al menos una de sus
         // publicaciones, aunque el representante ya lo tuviera.
-        missing_fields: EDITION_FIELDS.filter(field =>
-          listings.some(listing => !existingFact(listing, field)),
-        ),
+        missing_fields: missingFields,
       },
     };
-  }).sort((a, b) =>
-    b.priority_score - a.priority_score ||
-    b.total_stock - a.total_stock ||
-    a.isbn.localeCompare(b.isbn),
-  );
+  }).filter(candidate => candidate.research.missing_fields.length > 0)
+    .sort((a, b) =>
+      Number(a.already_in_registry) - Number(b.already_in_registry) ||
+      b.priority_score - a.priority_score ||
+      b.total_stock - a.total_stock ||
+      a.isbn.localeCompare(b.isbn),
+    );
 
   if (requestedLimit > 0 && candidates.length < requestedLimit) {
     throw new Error(`ISBN-1000 resolvio ${candidates.length}/${requestedLimit} ediciones activas y vendibles.`);
@@ -136,7 +145,10 @@ export function selectResearchCohort({
   return {
     selected: requestedLimit > 0 ? candidates.slice(0, requestedLimit) : candidates,
     eligible_unique_isbns: candidates.length,
-    excluded_already_enriched: alreadyEnriched.size,
+    // Ya no se excluye un ISBN por estar en el registro: se excluye sólo si
+    // su ficha efectiva no tiene ningún campo pendiente.
+    isbns_en_registro: alreadyEnriched.size,
+    reinvestigables_en_registro: candidates.filter(candidate => candidate.already_in_registry).length,
   };
 }
 
@@ -502,7 +514,8 @@ export async function runResearch({
       requested: positiveInteger(limit, DEFAULT_LIMIT),
       selected: selected.length,
       eligible_unique_isbns: cohort.eligible_unique_isbns,
-      excluded_already_enriched: cohort.excluded_already_enriched,
+      isbns_en_registro: cohort.isbns_en_registro,
+      reinvestigables_en_registro: cohort.reinvestigables_en_registro,
     },
     catalog: {
       source: catalogSource,
