@@ -475,9 +475,11 @@ de B11 y no consume ni afecta sus contadores.
 - **Acción activa actual (Gran Apuesta en curso):** **Google Merchant
   Center** — diagnóstico real completo (aprobados, desaprobados,
   advertencias, cobertura del feed) y quick wins con evidencia real,
-  **no declarado verificado todavía**. QW1 validado parcialmente en
-  Preview (0 fallos de código, pero sólo 50% del cohorte comparable —
-  ver detalle abajo); QW3A1 (ISBN/GTIN) es una corrección de calidad,
+  **no declarado verificado todavía**. QW1 con causa raíz verificada:
+  170 de los 171 `missing_price` son publicaciones **pausadas** que
+  siguen en el feed, y el fix del PR #313 **no cambia ningún caso real**
+  (0 diferencias sobre los 7.277 ítems del catálogo) — ver detalle
+  abajo; QW3A1 (ISBN/GTIN) es una corrección de calidad,
   no "enriquecimiento completo"; QW3A2 (enriquecimiento bibliográfico
   real) es lo que efectivamente amplía la cobertura de datos. Ver
   `PLAN-MAESTRO.md`, sección "🎯 Gran Apuesta en curso", para el
@@ -532,26 +534,40 @@ criterio de aceptación, evidencia requerida) de cada punto en
    Diagnóstico real del feed completo, directamente contra la consola de
    Merchant. Responsable: ChatGPT + Seba, con Claude Code para cambios
    técnicos. Avance (2026-09-06), corregido para no sobredeclarar:
-   - **QW1 (Offer/precio):** IMPLEMENTADO — VALIDACIÓN PARCIAL EN
-     PREVIEW. Cohorte real: 172 `missing_price`. Sólo 86 (50%) existen
-     también en el catálogo de Preview y pudieron compararse
-     Producción vs Preview — el otro 50% no está en Preview (entorno
-     con catálogo distinto al de Producción, no un bug de #313). De
-     los 86 comparables: **0 corregidos ("A")**, 85 correctamente sin
-     `Offer` por no tener precio real ("B", esperado), 1 ya tenía
-     `Offer` válido desde antes de #313. **El efecto real del fix no
-     pudo demostrarse en esta muestra** — sólo se confirmó que no
-     introduce fallos nuevos. Falta recrawl real de Merchant tras el
-     merge para medir el impacto real.
-     [PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313).
+   - **QW1 (Offer/precio):** CAUSA RAÍZ VERIFICADA — #313 NO CORRIGE
+     NINGÚN CASO REAL. Evidencia reproducible en el run
+     [34005410037](https://github.com/trexxeseba/amadolibros-web/actions/runs/34005410037)
+     (`catalog.json` `updated_at` 2026-09-05T07:19:57.025Z, manifest de
+     Producción `20260905012150762`):
+     - Cohorte de 171 MLU resueltos: **85 pausados** presentes en el
+       índice de ambos entornos, **85 no comparables por HTTP 404** en
+       Preview (los manifiestos de pausados son distintos por entorno),
+       **1 activo con precio real** (`MLU728138914`), **0 con causa
+       pendiente de verificar**. O sea: 170 de 171 son publicaciones
+       **pausadas** que siguen en el feed de Merchant, y la fuente que
+       las transporta no lleva precio ni moneda.
+     - Diff de renderizadores sobre el catálogo real completo (7.277
+       ítems, mismo snapshot, `main` `ea0c475` vs #313 `6d38d22`):
+       **0 `Offer` agregados, 0 removidos, 0 modificados, 7.277 sin
+       cambio**. El supuesto del fix (activo, con precio, sin stock) no
+       existe en el catálogo publicado.
+     - Coherencia precio visible ↔ JSON-LD: **0 incoherencias** con
+       ambos renderizadores sobre los 7.277 ítems.
+     - Por eso [PR #313](https://github.com/trexxeseba/amadolibros-web/pull/313)
+       queda Draft y **no se propone para merge**. La vía real es dejar
+       de enviar a Merchant las publicaciones pausadas (o transportar
+       su precio), no cambiar el renderizador.
    - **QW3A1 (calidad ISBN/GTIN):** IMPLEMENTADO — PENDIENTE MERGE.
      Es una corrección de validación, **no** "enriquecimiento
      estructurado completo". [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314).
    - **QW3A2 (enriquecimiento bibliográfico real):** ver detalle en
      `PLAN-MAESTRO.md`.
    - **QW2 (imágenes):** MEDICIÓN COMPLETA — CORRECCIÓN NO INICIADA.
-     La mayoría de las imágenes <500px son de galería secundaria
-     (posición ≥1), no la portada principal — detalle en
+     Corrección de encuadre: **toda URL en `imageLink` es principal
+     para Merchant**, sea cual sea su posición en nuestra galería, así
+     que decir «la mayoría son secundarias» minimizaba el problema.
+     Falta verificar fuente real mejor por ISBN/edición antes de
+     concluir que sólo quedan IA u omisión — detalle en
      `PLAN-MAESTRO.md`. [PR #315](https://github.com/trexxeseba/amadolibros-web/pull/315).
    - **QW4/QW5:** NO iniciados (salvo descripciones dentro de QW3A2).
    **No declarar Merchant Center verificado** hasta mergear QW1/QW3A1/
