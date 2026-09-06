@@ -1,0 +1,64 @@
+name: QW2 live processing status (read only)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/qw2-live-status.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read authenticated Worker status without triggering work
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs/promises';
+          const secret = process.env.SYNC_SECRET;
+          const trigger = process.env.WORKER_SYNC_TRIGGER_URL;
+          if (!secret || !trigger) throw new Error('Missing existing Worker status configuration');
+          const url = new URL(trigger);
+          if (url.protocol !== 'https:') throw new Error('HTTPS required');
+          url.pathname = '/status';
+          url.search = '';
+          url.hash = '';
+          const response = await fetch(url, {
+            method: 'GET', redirect: 'error',
+            headers: { Authorization: `Bearer ${secret}` },
+            signal: AbortSignal.timeout(45000),
+          });
+          if (!response.ok) throw new Error(`Worker status HTTP ${response.status}`);
+          const raw = await response.json();
+          if (raw.status !== 'ok' || !raw.cover_mirror) throw new Error('Unexpected status response');
+          const observedAt = new Date();
+          const lastAt = Date.parse(raw.cover_mirror.last_result?.at || "");
+          const report = {
+            observed_at: observedAt.toISOString(),
+            last_batch_age_seconds: Number.isFinite(lastAt)
+              ? Math.round((observedAt.getTime() - lastAt) / 1000) : null,
+            checked_at: raw.checked_at,
+            cover_mirror: raw.cover_mirror,
+            cover_manifest: raw.r2?.cover_manifest,
+            catalog: raw.r2?.catalog,
+          };
+          await fs.mkdir('artifacts/qw2-status', { recursive: true });
+          await fs.writeFile('artifacts/qw2-status/status.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(report, null, 2));
+          await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,
+            'QW2 — estado productivo, solo GET /status. Los pendientes pertenecen al alcance de last_result; no equivalen al total global de imágenes sin resolver.\n\n```json\n' + JSON.stringify(report, null, 2) + '\n```\n');
+          JS
+      - name: Preserve status evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qw2-live-status-${{ github.run_id }}
+          path: artifacts/qw2-status/
+          if-no-files-found: error
+          retention-days: 30

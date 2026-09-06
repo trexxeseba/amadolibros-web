@@ -558,3 +558,25 @@ autorización explícita y separada de Seba.
 - **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
 - Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
 - QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.
+
+
+## QW2 — seguimiento real 2026-09-06 21:46 UTC
+
+- Responsable: Codex. Esfuerzo: S. Aceptación: lectura autenticada del Worker y API Merchant, sin trigger ni deploy. Ambas corridas terminadas en success; CI af335912 verde.
+- El sistema general #323 está desplegado desde main d380374. Los estados de Draft de secciones históricas anteriores no describen producción actual.
+- Worker: último lote 21:41:16 UTC, 100 intentos, 0 errores; manifest actualizado 21:41:15 UTC. Hay 40.167 copias; 20.886 están bajo 500 en alguna dimensión, incluidas las todavía no revisadas.
+- Alcance del lote: 32.967 imágenes (activos + un bloque pausado). pending=20.668 incluye el indicador de bloques pendientes: no es un conteo global de imágenes faltantes. Pausados: índice 0, 128 bloques por recorrer. Backfill incompleto. No hay evidencia de detención en esta lectura.
+- Merchant UY: Shopping 6.651 activos / 2 pendientes / 222 rechazados; Free Listings 6.668 / 2 / 205. Account issues: 0.
+- Portada pequeña, mismo código/atributo/severidad/contexto: 80 en la foto del 06/09 01:35 UTC → 12 a las 21:46 UTC, tanto Shopping como Free Listings. No sumar destinos ni atribuir las 68 bajas a productos individuales corregidos.
+- Siguen 2.104 advertencias image_too_small_for_high_resolution en Shopping, 23 low_image_quality y 5 advertencias de adicionales pequeños por contexto. El problema global no está cerrado.
+- Evidencia: docs/evidence/qw2-live-status-2026-09-06.json; Worker run 34062035660, Merchant run 34062035421. Draft #326 aporta lectura reproducible; sin cambios productivos ni interferencia con #325.
+
+
+## QW2 — avance comprobado 2026-09-06 23:48 UTC
+
+- Responsable Codex; esfuerzo S; aceptación cumplida: lectura autenticada Worker y Merchant, comparación sobre el mismo snapshot y alcance, sin cambios productivos.
+- Worker run 34067914442: última tanda 23:46:17 UTC, edad 141 segundos, 100 intentos / 0 fallos. Snapshot 2026-09-06T11:37:55.003Z y alcance 32.967 sin cambios respecto a 21:45 UTC.
+- Pendientes del alcance: 20.668 → 18.169 (-2.499). Copias bajo 500 en alguna dimensión: 20.886 → 19.761 (-1.125 netas), sobre las mismas 40.167 copias válidas. No equivale a fichas únicas ni identifica cada imagen corregida.
+- Backfill incompleto, pausados índice 0 / 128 bloques pendientes. El cursor avanza cuando termina el descubrimiento del alcance; esta lectura demuestra progreso, no detención.
+- Merchant run 34067914438: portada pequeña desaprobada 12 → 10 por destino Shopping/Free Listings; 80 → 10 desde la foto inicial del día (-87,5% agregado). Siguen 2.104 advertencias de alta resolución en Shopping. 0 problemas de cuenta.
+- Instrumentación d810bb0 añade hora de observación y edad de última tanda; no altera el Worker ni su frecuencia. Evidencia: docs/evidence/qw2-progress-2026-09-06-2348.json. Sin merge ni deploy; Claude conserva #325.

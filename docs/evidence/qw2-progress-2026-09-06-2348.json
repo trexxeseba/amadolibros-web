@@ -1,0 +1,148 @@
+{
+  "owner": "Codex",
+  "effort": "S",
+  "acceptance": "Fresh authenticated GET status and read-only Merchant API; compare same catalog and scope; no production modification.",
+  "worker": {
+    "catalog": {
+      "etag": "8c65e666c2be9fc3ce743b94d2b8e59f",
+      "exists": true,
+      "size": 12781550,
+      "uploaded": "2026-09-06T11:37:59.991Z"
+    },
+    "checked_at": "2026-09-06T23:48:38.571Z",
+    "cover_manifest": {
+      "etag": "ce773e35971a992c9b816606b41848e5",
+      "exists": true,
+      "size": 44052253,
+      "uploaded": "2026-09-06T23:46:15.812Z"
+    },
+    "cover_mirror": {
+      "backfill_catalog_version": null,
+      "backfill_complete": false,
+      "last_result": {
+        "ai_upscaled": 3650,
+        "at": "2026-09-06T23:46:17.220Z",
+        "attempted": 100,
+        "catalog_version": "2026-09-06T11:37:55.003Z",
+        "failed": 0,
+        "manifest_retries": 0,
+        "needs_better_source": 19761,
+        "paused_progress": {
+          "block_count": 128,
+          "catalog_version": "20260906114235342",
+          "index": 0,
+          "policy": 1,
+          "remaining": 128
+        },
+        "pending": 18169,
+        "quality_pending": null,
+        "scope_images": 32967,
+        "source_policy_version": 1,
+        "status": "completed",
+        "valid_copies": 40167
+      }
+    },
+    "last_batch_age_seconds": 141,
+    "observed_at": "2026-09-06T23:48:38.635Z"
+  },
+  "merchant": {
+    "accountIssues": [],
+    "contexts": [
+      {
+        "context": "SHOPPING_ADS",
+        "issues": [
+          {
+            "attribute": "n:image_link",
+            "code": "image_too_small",
+            "productCount": "10",
+            "severity": "DISAPPROVED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "low_image_quality",
+            "productCount": "23",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:additional_image_link",
+            "code": "image_too_small",
+            "productCount": "5",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "image_link_internal_error_fallback",
+            "productCount": "10",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "image_too_small_for_high_resolution",
+            "productCount": "2104",
+            "severity": "NOT_IMPACTED"
+          }
+        ],
+        "stats": {
+          "activeCount": "6650",
+          "disapprovedCount": "222",
+          "pendingCount": "3"
+        }
+      },
+      {
+        "context": "FREE_LISTINGS",
+        "issues": [
+          {
+            "attribute": "n:image_link",
+            "code": "image_too_small",
+            "productCount": "10",
+            "severity": "DISAPPROVED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "low_image_quality",
+            "productCount": "23",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:additional_image_link",
+            "code": "image_too_small",
+            "productCount": "5",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "image_link_internal_error_fallback",
+            "productCount": "10",
+            "severity": "NOT_IMPACTED"
+          }
+        ],
+        "stats": {
+          "activeCount": "6667",
+          "disapprovedCount": "205",
+          "pendingCount": "3"
+        }
+      }
+    ],
+    "generatedAt": "2026-09-06T23:48:51.821Z"
+  },
+  "comparison": {
+    "baseline_worker_run": 34062035660,
+    "current_worker_run": 34067914442,
+    "baseline_merchant_run": 34062035421,
+    "current_merchant_run": 34067914438,
+    "pending_before": 20668,
+    "pending_after": 18169,
+    "pending_delta": -2499,
+    "below_500_before": 20886,
+    "below_500_after": 19761,
+    "below_500_delta": -1125,
+    "merchant_small_primary_before": 12,
+    "merchant_small_primary_after": 10,
+    "notes": [
+      "Worker snapshot and scope unchanged; pending includes paused-block indicator, not whole-catalog remaining.",
+      "Same 40167 valid copies; 1125 net fewer below threshold does not identify individual changed images.",
+      "Merchant counts are per destination; do not sum destinations or infer causal attribution.",
+      "Backfill incomplete; 128 paused blocks remain."
+    ]
+  }
+}
