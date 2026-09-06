@@ -159,6 +159,307 @@ function finalizeAggregate(summary) {
   };
 }
 
+// aggregateDynamicRemarketingUy() filtra deliberadamente a un solo destino
+// (Dynamic remarketing / DISPLAY_ADS) — así nació esta auditoría, para una
+// alerta puntual de ese destino. Eso deja ciego al resto: Shopping ads,
+// Free listings o cualquier otro reportingContext que la cuenta use nunca
+// se ven. Esta función agrupa TODOS los reportingContext reales que la API
+// devuelve para Uruguay, sin descartar ninguno — amplía el diagnóstico sin
+// tocar ni reemplazar el agregado específico de Dynamic remarketing que ya
+// existía (se mantiene igual, como campo aparte).
+export function aggregateProductStatusesByContextUy(rows = []) {
+  const byContext = new Map();
+  for (const row of rows) {
+    if (!isUy(row?.country)) continue;
+    const context = asText(row?.reportingContext) || '(sin reportingContext)';
+    const current = byContext.get(context) || {
+      reportingContext: context,
+      rows: 0,
+      active: 0,
+      pending: 0,
+      disapproved: 0,
+      expiring: 0,
+      issueCounts: new Map(),
+    };
+    const stats = row.stats || {};
+    current.rows += 1;
+    current.active += asNumber(stats.activeCount);
+    current.pending += asNumber(stats.pendingCount);
+    current.disapproved += asNumber(stats.disapprovedCount);
+    current.expiring += asNumber(stats.expiringCount);
+    for (const issue of Array.isArray(row.itemLevelIssues) ? row.itemLevelIssues : []) {
+      const key = asText(issue.code) || '(sin código)';
+      const issueCurrent = current.issueCounts.get(key) || {
+        code: key,
+        severity: asText(issue.severity) || null,
+        resolution: asText(issue.resolution) || null,
+        attribute: asText(issue.attribute) || null,
+        description: asText(issue.description) || null,
+        detail: asText(issue.detail) || null,
+        documentationUri: asText(issue.documentationUri) || null,
+        productCount: 0,
+      };
+      issueCurrent.productCount += asNumber(issue.productCount);
+      current.issueCounts.set(key, issueCurrent);
+    }
+    byContext.set(context, current);
+  }
+  return byContext;
+}
+
+export function finalizeContextSummary(summary, limit = 30) {
+  return {
+    reportingContext: summary.reportingContext,
+    rows: summary.rows,
+    active: summary.active,
+    pending: summary.pending,
+    disapproved: summary.disapproved,
+    expiring: summary.expiring,
+    topIssues: [...summary.issueCounts.values()]
+      .sort((a, b) => b.productCount - a.productCount || a.code.localeCompare(b.code))
+      .slice(0, limit),
+  };
+}
+
+// Une el conteo real de products.list (por dataSource) con los metadatos de
+// datasources.list (displayName/type/input) — ambos endpoints ya se leían
+// por separado, esto sólo los cruza para poder mostrar cantidad por fuente.
+export function joinDataSourceProductCounts(dataSources = [], byDataSource = []) {
+  const countByName = new Map(byDataSource.map(row => [row.dataSource, row.count]));
+  return dataSources.map(source => ({
+    ...source,
+    productCount: source.name ? (countByName.get(source.name) || 0) : 0,
+  }));
+}
+
+// Resumen de un accountIssue para stdout: sin PII (nunca hubo en accountIssues,
+// es información de cuenta/política, no de comprador) y sin duplicar el
+// detalle completo — sólo lo que hace falta para priorizar.
+export function accountIssueLogSummary(issue = {}) {
+  const destinations = [...new Set(
+    (Array.isArray(issue.impactedDestinations) ? issue.impactedDestinations : [])
+      .map(row => asText(row.reportingContext))
+      .filter(Boolean)
+  )];
+  return {
+    title: issue.title || '(sin título)',
+    severity: issue.severity || null,
+    destinations,
+  };
+}
+
+// Segunda ampliación (misma auditoría de solo lectura, mismo PR): las
+// secciones anteriores ya muestran cuántos productos bloquean cada código de
+// issue por reportingContext, pero no CUÁLES productos son. Estas funciones
+// recorren la lista de productos ya obtenida por products.list (sin ninguna
+// llamada nueva) y arman el detalle producto por producto para los bloqueos
+// prioritarios, más el cruce real de offer_id entre AUTOFEED y FILE.
+
+function productOfferId(product) {
+  return asText(product?.offerId) || asText(product?.productAttributes?.offerId) || null;
+}
+
+function productTitle(product) {
+  return asText(product?.productAttributes?.title) || asText(product?.title) || '(sin título)';
+}
+
+function productPriceText(product) {
+  const price = product?.productAttributes?.price;
+  if (!price || price.amountMicros == null) return null;
+  const amount = Number(price.amountMicros) / 1_000_000;
+  const currency = asText(price.currencyCode);
+  return `${Number.isFinite(amount) ? amount.toFixed(2) : price.amountMicros}${currency ? ` ${currency}` : ''}`;
+}
+
+function productAvailability(product) {
+  return asText(product?.productAttributes?.availability) || null;
+}
+
+function productGtin(product) {
+  const attrs = product?.productAttributes || {};
+  if (asText(attrs.gtin)) return asText(attrs.gtin);
+  if (Array.isArray(attrs.gtins) && attrs.gtins.length) return asText(attrs.gtins[0]) || null;
+  return null;
+}
+
+export function productDestinationStatus(product, context) {
+  const rows = Array.isArray(product?.productStatus?.destinationStatuses) ? product.productStatus.destinationStatuses : [];
+  const row = rows.find(entry => upper(entry.reportingContext) === upper(context));
+  if (!row) return 'missing_context';
+  if ((row.approvedCountries || []).some(isUy)) return 'active';
+  if ((row.pendingCountries || []).some(isUy)) return 'pending';
+  if ((row.disapprovedCountries || []).some(isUy)) return 'disapproved';
+  return 'other_country';
+}
+
+function productRow(product) {
+  return {
+    offerId: productOfferId(product),
+    title: productTitle(product),
+    dataSource: asText(product.dataSource) || null,
+    link: safeFetchUri(product?.productAttributes?.link),
+    imageLink: safeFetchUri(product?.productAttributes?.imageLink),
+    price: productPriceText(product),
+    availability: productAvailability(product),
+    gtin: productGtin(product),
+    shoppingAdsStatus: productDestinationStatus(product, 'SHOPPING_ADS'),
+    freeListingsStatus: productDestinationStatus(product, 'FREE_LISTINGS'),
+  };
+}
+
+// Tercera ampliación (mismo PR): el cruce por offer_id (arriba) no responde
+// si dos offer_id distintos son en realidad el mismo libro — para eso hace
+// falta identidad real: mismo link (landing page) o mismo GTIN/ISBN. Ambos
+// campos ya vienen en productAttributes de products.list, así que esto
+// sigue siendo post-procesamiento en memoria, sin ninguna llamada nueva.
+export function normalizeLink(url) {
+  const raw = asText(url);
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    const path = parsed.pathname.replace(/\/+$/, '').toLowerCase();
+    return `${parsed.hostname.toLowerCase()}${path}`;
+  } catch {
+    return raw.toLowerCase();
+  }
+}
+
+export function buildIdentityIndex(rows = []) {
+  const byLink = new Map();
+  const byGtin = new Map();
+  for (const row of rows) {
+    const link = normalizeLink(row.link);
+    if (link) {
+      if (!byLink.has(link)) byLink.set(link, []);
+      byLink.get(link).push(row);
+    }
+    if (row.gtin) {
+      if (!byGtin.has(row.gtin)) byGtin.set(row.gtin, []);
+      byGtin.get(row.gtin).push(row);
+    }
+  }
+  return { byLink, byGtin };
+}
+
+// Busca, para un producto de una fuente, su probable gemelo en el índice de
+// identidad de la otra fuente: primero por link normalizado, si no por GTIN.
+export function findTwin(row, identityIndex) {
+  const link = normalizeLink(row.link);
+  const byLink = link ? identityIndex.byLink.get(link) : null;
+  if (byLink?.length) return { offerId: byLink[0].offerId, title: byLink[0].title, matchedBy: 'link' };
+  const byGtin = row.gtin ? identityIndex.byGtin.get(row.gtin) : null;
+  if (byGtin?.length) return { offerId: byGtin[0].offerId, title: byGtin[0].title, matchedBy: 'gtin' };
+  return null;
+}
+
+// Reconciliación de catálogo completo entre dos fuentes por identidad real
+// (no offer_id): cuántos productos de rowsA tienen un probable gemelo en
+// indexB, por qué campo, y una muestra para inspección manual.
+export function reconcileIdentity(rowsA = [], indexB, sampleSize = 20) {
+  let linkMatches = 0;
+  let gtinMatches = 0;
+  const sameBook = new Set();
+  const sample = [];
+  for (const row of rowsA) {
+    const twin = findTwin(row, indexB);
+    if (!twin) continue;
+    sameBook.add(row.offerId);
+    if (twin.matchedBy === 'link') linkMatches += 1;
+    else gtinMatches += 1;
+    if (sample.length < sampleSize) sample.push({ offerIdA: row.offerId, titleA: row.title, ...twin });
+  }
+  return {
+    rowsChecked: rowsA.length,
+    withLink: rowsA.filter(row => row.link).length,
+    withGtin: rowsA.filter(row => row.gtin).length,
+    linkMatches,
+    gtinMatches,
+    probableSameBook: sameBook.size,
+    sample,
+  };
+}
+
+// Lista, de-duplicada por offer_id, los productos cuyo productStatus trae un
+// itemLevelIssue con ese código (y, si se pide, ese atributo y esos
+// reportingContext). Puro filtrado en memoria sobre datos ya leídos.
+export function listProductsByIssueCode(products = [], { code, attribute = null, contexts = [] } = {}) {
+  const wantedContexts = contexts.map(upper);
+  const seen = new Map();
+  for (const product of products) {
+    const issues = Array.isArray(product?.productStatus?.itemLevelIssues) ? product.productStatus.itemLevelIssues : [];
+    const matched = issues.some(issue =>
+      asText(issue.code) === code &&
+      (!attribute || upper(issue.attribute) === upper(attribute)) &&
+      (!wantedContexts.length || wantedContexts.includes(upper(issue.reportingContext)))
+    );
+    if (!matched) continue;
+    const offerId = productOfferId(product) || `(sin offerId #${seen.size})`;
+    if (!seen.has(offerId)) seen.set(offerId, productRow(product));
+  }
+  return [...seen.values()];
+}
+
+export function crossReferenceOfferIds(listA = [], listB = []) {
+  const idsA = new Set(listA.map(row => row.offerId));
+  const idsB = new Set(listB.map(row => row.offerId));
+  const both = [...idsA].filter(id => idsB.has(id));
+  return { both: both.length, onlyA: idsA.size - both.length, onlyB: idsB.size - both.length };
+}
+
+export function countByInput(rows = [], dataSourceInputMap = new Map()) {
+  const counts = {};
+  for (const row of rows) {
+    const input = dataSourceInputMap.get(row.dataSource) || '(desconocido)';
+    counts[input] = (counts[input] || 0) + 1;
+  }
+  return counts;
+}
+
+export function buildDataSourceInputMap(dataSources = []) {
+  const map = new Map();
+  for (const source of dataSources) {
+    if (source?.name) map.set(source.name, upper(source.input));
+  }
+  return map;
+}
+
+// Compara offer_id reales (no sólo cantidades) entre dos inputs de dataSource
+// (por defecto AUTOFEED vs FILE): cuántos offer_id están sólo en uno, sólo en
+// el otro, o en ambos — y para los que están en ambos, una muestra con
+// precio/imagen/disponibilidad/título de cada lado para poder compararlos.
+export function compareOfferIdsAcrossInputs(products = [], dataSourceInputMap = new Map(), inputsToCompare = ['AUTOFEED', 'FILE'], sampleSize = 10) {
+  const [inputA, inputB] = inputsToCompare;
+  const byInput = new Map(inputsToCompare.map(input => [input, new Map()]));
+  for (const product of products) {
+    const input = dataSourceInputMap.get(asText(product.dataSource));
+    const bucket = byInput.get(input);
+    if (!bucket) continue;
+    const offerId = productOfferId(product);
+    if (!offerId) continue;
+    if (!bucket.has(offerId)) bucket.set(offerId, product);
+  }
+  const mapA = byInput.get(inputA);
+  const mapB = byInput.get(inputB);
+  const idsA = new Set(mapA.keys());
+  const idsB = new Set(mapB.keys());
+  const bothIds = [...idsA].filter(id => idsB.has(id));
+  const onlyAIds = [...idsA].filter(id => !idsB.has(id));
+  const onlyBIds = [...idsB].filter(id => !idsA.has(id));
+  return {
+    inputA,
+    inputB,
+    totalUniqueOfferIds: new Set([...idsA, ...idsB]).size,
+    bothCount: bothIds.length,
+    onlyACount: onlyAIds.length,
+    onlyBCount: onlyBIds.length,
+    sampleBoth: bothIds.slice(0, sampleSize).map(offerId => ({
+      offerId,
+      [inputA]: productRow(mapA.get(offerId)),
+      [inputB]: productRow(mapB.get(offerId)),
+    })),
+  };
+}
+
 function productDestinationState(product, country = 'UY') {
   const rows = Array.isArray(product?.productStatus?.destinationStatuses)
     ? product.productStatus.destinationStatuses.filter(row => isDynamicRemarketing(row.reportingContext))
@@ -497,6 +798,60 @@ export async function main() {
       }
     : null;
 
+  // Ampliación del diagnóstico: dynamicRemarketingUy de arriba sigue igual
+  // (sesgado a un solo destino, a propósito, para no romper nada de lo que
+  // ya lo consume) — esto agrega TODOS los reportingContext reales que la
+  // API devolvió para Uruguay (Shopping ads, Free listings, Display ads,
+  // cualquier otro), sin descartar ninguno.
+  const reportingContextsUy = [...aggregateProductStatusesByContextUy(byName.aggregateProductStatuses.data || []).values()]
+    .map(summary => finalizeContextSummary(summary, 30))
+    .sort((a, b) => a.reportingContext.localeCompare(b.reportingContext));
+
+  const dataSourcesWithCounts = joinDataSourceProductCounts(dataSources, products?.byDataSource || []);
+
+  // Tercera ampliación (mismo PR): detalle producto por producto de los
+  // bloqueos prioritarios (image_too_small, precio faltante, ebooks,
+  // landing pages) y el cruce real de offer_id entre AUTOFEED y FILE — todo
+  // en memoria sobre los mismos productos ya leídos por products.list.
+  const rawProducts = byName.products.data || [];
+  const dataSourceInputMap = buildDataSourceInputMap(dataSources);
+  const shoppingFreeContexts = ['SHOPPING_ADS', 'FREE_LISTINGS'];
+
+  const imageTooSmall = listProductsByIssueCode(rawProducts, { code: 'image_too_small', contexts: shoppingFreeContexts });
+  const missingPrice = listProductsByIssueCode(rawProducts, { code: 'item_missing_required_attribute', attribute: 'price', contexts: shoppingFreeContexts });
+  const ebooks = listProductsByIssueCode(rawProducts, { code: 'ebooks_policy_violation', contexts: ['SHOPPING_ADS'] });
+  const landingPendingCrawl = listProductsByIssueCode(rawProducts, { code: 'landing_page_pending_crawl', contexts: shoppingFreeContexts });
+  const landingError = listProductsByIssueCode(rawProducts, { code: 'landing_page_error', contexts: shoppingFreeContexts });
+
+  // Cuarta ampliación (mismo PR): reconciliación por identidad real
+  // (link/GTIN) entre AUTOFEED y FILE — offer_id distinto puede ser el
+  // mismo libro. Se construye una vez sobre TODOS los productos ya leídos
+  // (no sólo los bloqueados) y se usa además para marcar, dentro de cada
+  // lista de bloqueos AUTOFEED, si el producto ya tiene un gemelo en FILE.
+  const allProductRows = rawProducts.map(productRow);
+  const rowsByInput = input => allProductRows.filter(row => dataSourceInputMap.get(row.dataSource) === input);
+  const autofeedRows = rowsByInput('AUTOFEED');
+  const fileRows = rowsByInput('FILE');
+  const fileIdentityIndex = buildIdentityIndex(fileRows);
+  const identityReconciliation = reconcileIdentity(autofeedRows, fileIdentityIndex, 20);
+
+  const withFileTwin = rows => rows.map(row => ({ ...row, fileTwin: findTwin(row, fileIdentityIndex) }));
+  const imageTooSmallWithTwin = withFileTwin(imageTooSmall);
+  const missingPriceWithTwin = withFileTwin(missingPrice);
+
+  const productBreakdown = {
+    imageTooSmall: imageTooSmallWithTwin,
+    imageTooSmallByInput: countByInput(imageTooSmall, dataSourceInputMap),
+    missingPrice: missingPriceWithTwin,
+    missingPriceByInput: countByInput(missingPrice, dataSourceInputMap),
+    overlapImageTooSmallVsMissingPrice: crossReferenceOfferIds(imageTooSmall, missingPrice),
+    ebooks,
+    landingPendingCrawl,
+    landingError,
+    autofeedVsFile: compareOfferIdsAcrossInputs(rawProducts, dataSourceInputMap, ['AUTOFEED', 'FILE'], 10),
+    identityReconciliationAutofeedVsFile: identityReconciliation,
+  };
+
   const report = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -505,9 +860,12 @@ export async function main() {
     publicFeed,
     endpoints: endpoints.map(row => ({ name: row.name, ok: row.ok, error: row.error })),
     dataSources,
+    dataSourcesWithProductCounts: dataSourcesWithCounts,
     accountIssues,
     aggregateStatuses: byName.aggregateProductStatuses.ok ? byName.aggregateProductStatuses.data : null,
     dynamicRemarketingUy,
+    reportingContextsUy,
+    productBreakdown,
     products,
     diagnosis: buildDiagnosis({
       alert,
@@ -534,6 +892,60 @@ export async function main() {
     processedProducts: products?.processed ?? null,
     endpointFailures: endpoints.filter(row => !row.ok).map(row => row.name),
   }));
+
+  // Diagnóstico ampliado — un bloque por sección, para que quede legible
+  // directamente en el log del job (el artifact no siempre es accesible
+  // desde todos lados; el log del run sí). Top 15 issues por contexto, tal
+  // como se pidió — el archivo JSON completo (arriba) conserva hasta 30.
+  console.log('=== REPORTING CONTEXTS (Uruguay) ===');
+  console.log(JSON.stringify(
+    reportingContextsUy.map(context => ({ ...context, topIssues: context.topIssues.slice(0, 15) })),
+    null,
+    2
+  ));
+
+  console.log('=== DATA SOURCES ===');
+  console.log(JSON.stringify(
+    dataSourcesWithCounts.map(source => ({
+      displayName: source.displayName,
+      type: source.type,
+      input: source.input,
+      dataSourceId: source.dataSourceId,
+      productCount: source.productCount,
+    })),
+    null,
+    2
+  ));
+
+  console.log('=== ACCOUNT ISSUES ===');
+  console.log(JSON.stringify({
+    total: accountIssues.length,
+    issues: accountIssues.map(accountIssueLogSummary),
+  }, null, 2));
+
+  // Cuarta sección de stdout: detalle producto por producto de los bloqueos
+  // prioritarios. Sin PII — son atributos de catálogo (offer_id, título,
+  // imagen, precio), no datos de compradores.
+  console.log('=== IMAGE_TOO_SMALL (producto por producto) ===');
+  console.log(JSON.stringify({ count: imageTooSmallWithTwin.length, byInput: productBreakdown.imageTooSmallByInput, products: imageTooSmallWithTwin }, null, 2));
+
+  console.log('=== MISSING PRICE (producto por producto) ===');
+  console.log(JSON.stringify({ count: missingPriceWithTwin.length, byInput: productBreakdown.missingPriceByInput, products: missingPriceWithTwin }, null, 2));
+
+  console.log('=== CRUCE image_too_small vs missing_price ===');
+  console.log(JSON.stringify(productBreakdown.overlapImageTooSmallVsMissingPrice, null, 2));
+
+  console.log('=== AUTOFEED vs FILE por offer_id ===');
+  console.log(JSON.stringify(productBreakdown.autofeedVsFile, null, 2));
+
+  console.log('=== RECONCILIACIÓN DE IDENTIDAD AUTOFEED vs FILE (link/GTIN, no offer_id) ===');
+  console.log(JSON.stringify(identityReconciliation, null, 2));
+
+  console.log('=== EBOOKS policy violation (SHOPPING_ADS) ===');
+  console.log(JSON.stringify(ebooks, null, 2));
+
+  console.log('=== LANDING PAGES ===');
+  console.log(JSON.stringify({ pendingCrawl: landingPendingCrawl, error: landingError }, null, 2));
 
   if (!byName.aggregateProductStatuses.ok && !byName.products.ok) {
     process.exitCode = 1;

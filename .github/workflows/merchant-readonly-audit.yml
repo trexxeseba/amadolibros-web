@@ -7,12 +7,36 @@ on:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
       - 'scripts/commerce/merchant-readonly-audit.mjs'
+      - 'scripts/commerce/public-landing-check.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
+      - 'functions/__tests__/public-landing-check.test.js'
+      - 'scripts/seo/image-dimension-audit.mjs'
+      - 'functions/__tests__/image-dimension-audit.test.js'
+      - 'scripts/seo/qw1-preview-validation.mjs'
+      - 'functions/__tests__/qw1-preview-validation.test.js'
+      - 'scripts/seo/qw1-cohort-catalog-evidence.mjs'
+      - 'scripts/seo/qw1-catalog-snapshot.mjs'
+      - 'scripts/seo/qw1-renderer-offer-report.mjs'
+      - 'scripts/seo/qw1-render-diff.mjs'
+      - 'scripts/seo/catalog-coverage-effective.mjs'
+      - 'functions/__tests__/qw1-evidence-and-diff.test.js'
   pull_request:
     paths:
       - '.github/workflows/merchant-readonly-audit.yml'
       - 'scripts/commerce/merchant-readonly-audit.mjs'
+      - 'scripts/commerce/public-landing-check.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
+      - 'functions/__tests__/public-landing-check.test.js'
+      - 'scripts/seo/image-dimension-audit.mjs'
+      - 'functions/__tests__/image-dimension-audit.test.js'
+      - 'scripts/seo/qw1-preview-validation.mjs'
+      - 'functions/__tests__/qw1-preview-validation.test.js'
+      - 'scripts/seo/qw1-cohort-catalog-evidence.mjs'
+      - 'scripts/seo/qw1-catalog-snapshot.mjs'
+      - 'scripts/seo/qw1-renderer-offer-report.mjs'
+      - 'scripts/seo/qw1-render-diff.mjs'
+      - 'scripts/seo/catalog-coverage-effective.mjs'
+      - 'functions/__tests__/qw1-evidence-and-diff.test.js'
   workflow_dispatch:
 
 permissions:
@@ -42,6 +66,18 @@ jobs:
         run: |
           node --check scripts/commerce/merchant-readonly-audit.mjs
           node --test functions/__tests__/merchant-readonly-audit.test.js
+          node --check scripts/commerce/public-landing-check.mjs
+          node --test functions/__tests__/public-landing-check.test.js
+          node --check scripts/seo/image-dimension-audit.mjs
+          node --test functions/__tests__/image-dimension-audit.test.js
+          node --check scripts/seo/qw1-preview-validation.mjs
+          node --test functions/__tests__/qw1-preview-validation.test.js
+          node --check scripts/seo/qw1-cohort-catalog-evidence.mjs
+          node --check scripts/seo/qw1-catalog-snapshot.mjs
+          node --check scripts/seo/qw1-renderer-offer-report.mjs
+          node --check scripts/seo/qw1-render-diff.mjs
+          node --check scripts/seo/catalog-coverage-effective.mjs
+          node --test functions/__tests__/qw1-evidence-and-diff.test.js
 
       - name: Authenticate with Google through Workload Identity
         id: google_auth
@@ -70,6 +106,113 @@ jobs:
           test -s artifacts/merchant/merchant-readonly-report.json
           test -s artifacts/merchant/report-summary.md
           node -e "const r=require('./artifacts/merchant/merchant-readonly-report.json'); if(r.schemaVersion!==1||r.accountId!=='5330457716') process.exit(1)"
+
+      - name: Verify public landing pages (sitio propio, sólo lectura)
+        id: public_landing_check
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          MERCHANT_REPORT_PATH: artifacts/merchant/merchant-readonly-report.json
+        run: node scripts/commerce/public-landing-check.mjs
+
+      - name: QW2 — medir dimensiones reales de image_too_small (sólo lectura)
+        id: image_dimension_audit
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          IMAGE_AUDIT_INPUT: artifacts/merchant/merchant-readonly-report.json
+          IMAGE_AUDIT_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/image-dimension-audit.mjs
+
+      - name: QW1 — validar cohorte real Producción vs Preview PR #313 (sólo lectura)
+        id: qw1_preview_validation
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_VALIDATION_INPUT: artifacts/merchant/merchant-readonly-report.json
+          QW1_VALIDATION_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/qw1-preview-validation.mjs
+
+      - name: QW1 — evidencia de catálogo por entorno (sin inferencias)
+        id: qw1_catalog_evidence
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_EVIDENCE_INPUT: artifacts/merchant/merchant-readonly-report.json
+          QW1_EVIDENCE_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/qw1-cohort-catalog-evidence.mjs
+
+      - name: QW1 — snapshot reproducible del catálogo real
+        id: qw1_snapshot
+        if: steps.merchant_audit.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_COHORT_INPUT: artifacts/merchant/merchant-readonly-report.json
+          QW1_SNAPSHOT: artifacts/merchant/qw1-catalog-snapshot.json
+          QW1_INCLUDE_ALL_ACTIVE: '1'
+        run: node scripts/seo/qw1-catalog-snapshot.mjs
+
+      - name: QW1 — render con el renderizador de main y con el del PR #313
+        id: qw1_render
+        if: steps.qw1_snapshot.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_SNAPSHOT: artifacts/merchant/qw1-catalog-snapshot.json
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/agent/merchant-qw1-offer-price:refs/remotes/origin/agent/merchant-qw1-offer-price'
+          MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"
+          PR313_SHA="$(git rev-parse refs/remotes/origin/agent/merchant-qw1-offer-price)"
+          cp "functions/libro/[[path]].js" /tmp/renderer-current.js
+
+          git checkout origin/main -- "functions/libro/[[path]].js"
+          QW1_RENDER_OUTPUT=artifacts/merchant/qw1-render-main.json \
+          QW1_RENDER_LABEL=main QW1_RENDER_SHA="$MAIN_SHA" \
+            node scripts/seo/qw1-renderer-offer-report.mjs
+
+          git checkout origin/agent/merchant-qw1-offer-price -- "functions/libro/[[path]].js"
+          QW1_RENDER_OUTPUT=artifacts/merchant/qw1-render-pr313.json \
+          QW1_RENDER_LABEL=pr313 QW1_RENDER_SHA="$PR313_SHA" \
+            node scripts/seo/qw1-renderer-offer-report.mjs
+
+          cp /tmp/renderer-current.js "functions/libro/[[path]].js"
+
+      - name: QW1 — diff entre ambos renderizadores
+        if: steps.qw1_render.outcome == 'success'
+        continue-on-error: true
+        env:
+          QW1_DIFF_BEFORE: artifacts/merchant/qw1-render-main.json
+          QW1_DIFF_AFTER: artifacts/merchant/qw1-render-pr313.json
+          QW1_DIFF_OUTPUT: artifacts/merchant/qw1-render-diff.json
+        run: node scripts/seo/qw1-render-diff.mjs
+
+      - name: Cobertura cruda vs efectiva del catálogo
+        continue-on-error: true
+        env:
+          SEO_OUTPUT_DIR: artifacts/merchant
+        run: node scripts/seo/catalog-coverage-effective.mjs
+
+      # Los informes completos quedan en el artefacto; este paso final imprime
+      # sólo los totales, para poder leerlos desde el log sin descargarlo.
+      - name: Resumen compacto de la evidencia QW1
+        if: always()
+        continue-on-error: true
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const read = p => { try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return null; } };
+            const ev = read("artifacts/merchant/qw1-cohort-catalog-evidence.json");
+            const diff = read("artifacts/merchant/qw1-render-diff.json");
+            const cov = read("artifacts/merchant/catalog-coverage-effective.json");
+            console.log("=== RESUMEN COMPACTO QW1 ===");
+            console.log(JSON.stringify({
+              evidencia: ev && { fetchedAt: ev.fetchedAt, sources: ev.sources, cohortSize: ev.cohortSize, counts: ev.counts },
+              diff: diff && { before: diff.before, after: diff.after, comparedItems: diff.comparedItems, counts: diff.counts, coherence: diff.coherence },
+              cobertura: cov && { universe: cov.universe, catalogUpdatedAt: cov.catalogUpdatedAt },
+            }, null, 2));
+          '
 
       - name: Upload Merchant audit
         if: always()
