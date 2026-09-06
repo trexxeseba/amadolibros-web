@@ -1,0 +1,107 @@
+{
+  "checked_at": "2026-09-06T11:38:13.546Z",
+  "commit": "d380374775db7b5d2ef80b09ae97351ccdcd88f9",
+  "feed_offers": 3697,
+  "additional_images": 6299,
+  "primary": {
+    "inspected": 50,
+    "valid": 50,
+    "failed": 0,
+    "meets_500": 50,
+    "below_500": 0,
+    "meets_1024": 50,
+    "sources": {
+      "r2-production": 50
+    },
+    "failures": [],
+    "low_resolution_examples": []
+  },
+  "secondary": {
+    "inspected": 50,
+    "valid": 50,
+    "failed": 0,
+    "meets_500": 50,
+    "below_500": 0,
+    "meets_1024": 1,
+    "sources": {
+      "r2-production": 50
+    },
+    "failures": [],
+    "low_resolution_examples": []
+  },
+  "feed_before": {
+    "offers": 3697,
+    "additional_images": 15922
+  },
+  "excluded_additional_images": 9623,
+  "worker": {
+    "backfill_catalog_version": null,
+    "backfill_complete": false,
+    "last_result": {
+      "ai_upscaled": 3784,
+      "at": "2026-09-06T11:38:10.761Z",
+      "attempted": 100,
+      "catalog_version": "2026-09-06T11:37:55.003Z",
+      "failed": 0,
+      "manifest_retries": 0,
+      "needs_better_source": 25242,
+      "paused_progress": null,
+      "pending": 32426,
+      "quality_pending": null,
+      "scope_images": 32569,
+      "source_policy_version": 1,
+      "status": "completed",
+      "valid_copies": 39765
+    },
+    "native": 36,
+    "preserved": 64,
+    "processed": 100
+  },
+  "runs": {
+    "pages": 34030634695,
+    "worker": 34030634590
+  },
+  "jsonld_check": {
+    "checked_at": "2026-09-06T11:43:40.415Z",
+    "id": "MLU1001303650",
+    "link": "https://www.amadolibros.com/libro/MLU1001303650",
+    "omitted_images": [
+      "https://www.amadolibros.com/book-cover/MLU1001303650/cover-2.jpg"
+    ],
+    "jsonld_images": [
+      "https://www.amadolibros.com/book-cover/MLU1001303650/cover.jpg"
+    ],
+    "omitted_still_visible": 1,
+    "low_quality_in_jsonld": 0,
+    "check": {
+      "inspected": 1,
+      "valid": 1,
+      "failed": 0,
+      "meets_500": 1,
+      "below_500": 0,
+      "meets_1024": 1,
+      "sources": {
+        "r2-production": 1
+      },
+      "failures": [],
+      "low_resolution_examples": []
+    }
+  },
+  "deployment_status": {
+    "pages": "success",
+    "worker": "success",
+    "paused_catalog": "success"
+  },
+  "automatic_commerce_audit": {
+    "run_id": 34031063615,
+    "result": "pass",
+    "critical": 0,
+    "pages_inspected": 300,
+    "pages_failed": 0,
+    "images_inspected": 300,
+    "images_failed": 0,
+    "images_meets_500": 300,
+    "feed_items": 3697,
+    "catalog_items": 7104
+  }
+}
