@@ -69,3 +69,9 @@ export function verifiedNativeCover(productId, source) {
     row.product_id === String(productId || '').toUpperCase() && row.replacement_url === source
   ) || null;
 }
+
+// Bump only when the verified source registry changes. Public URLs stay stable.
+export function verifiedCoverRevision(productId) {
+  return VERIFIED_COVER_SOURCES.some(row => row.product_id === productId)
+    ? '20260906-native-v1' : null;
+}

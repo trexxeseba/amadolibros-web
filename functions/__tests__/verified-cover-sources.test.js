@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { VERIFIED_COVER_SOURCES, verifiedCoverSource } from '../_shared/verified-cover-sources.js';
-import { coverSources } from '../book-cover/[[path]].js';
+import { coverSources, onRequest } from '../book-cover/[[path]].js';
 import { merchantImageSources, additionalMerchantImageLinks } from '../feed.xml.js';
 import { coverCandidates, selectCoverBatch, syncCoverMirror, COVER_MANIFEST_KEY } from '../../worker-sync/cover-mirror.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
@@ -70,4 +70,19 @@ test('no modifica otros productos, otras fotos ni reordena la galería', () => {
   const book=item(row); book.pictures.unshift('https://http2.mlstatic.com/NEW-O.jpg');
   assert.equal(coverSources(book)[0],book.pictures[0]);
   assert.equal(coverSources(book)[1],row.replacement_url);
+});
+
+test('una fuente nueva no reutiliza el cache de los bytes anteriores; URL pública estable', async () => {
+  const previous = globalThis.caches;
+  const keys=[];
+  globalThis.caches={default:{match:async request=>{keys.push(request.url);return new Response('cached');}}};
+  try {
+    for (const id of ['MLU636119126','MLU999999']) {
+      const url='https://preview.example/book-cover/'+id+'/cover.jpg';
+      const response=await onRequest({request:new Request(url),params:{path:[id,'cover.jpg']}});
+      assert.equal(response.status,200);
+    }
+    assert.equal(keys[0],'https://preview.example/book-cover/MLU636119126/cover.jpg?__cover_source_revision=20260906-native-v1');
+    assert.equal(keys[1],'https://preview.example/book-cover/MLU999999/cover.jpg');
+  } finally {globalThis.caches=previous;}
 });
