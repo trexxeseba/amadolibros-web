@@ -68,8 +68,13 @@ export function responsiveImage(source, {
   quality = 85,
   fit = 'scale-down',
 } = {}) {
-  const normalizedWidths = [...new Set(widths.map(positiveInteger).filter(Boolean))]
-    .sort((a, b) => a - b);
+  const requestedWidths = widths.map(positiveInteger).filter(Boolean);
+  // La ficha pide [320, 480, 768, 1024]. En un móvil retina la portada de
+  // 260 CSS px necesita ~520 px físicos: 640 evita saltar directamente a 768.
+  const candidateWidths = requestedWidths.includes(480) && requestedWidths.includes(768)
+    ? [...requestedWidths, 640]
+    : requestedWidths;
+  const normalizedWidths = [...new Set(candidateWidths)].sort((a, b) => a - b);
   const fallbackWidth = positiveInteger(defaultWidth) || normalizedWidths.at(-1) || 480;
   const src = cloudflareImageUrl(source, { width: fallbackWidth, quality, fit });
   if (!sameProductionZone(source) || normalizedWidths.length === 0) {
@@ -82,4 +87,6 @@ export function responsiveImage(source, {
 }
 
 export const CARD_IMAGE_SIZES = '(max-width: 639px) calc(50vw - 24px), (max-width: 1023px) calc(33vw - 24px), 280px';
-export const PRODUCT_IMAGE_SIZES = '(max-width: 759px) calc(100vw - 48px), 360px';
+// La portada de la ficha tiene max-width:260px. Declarar 360px hacía que
+// Chrome eligiera variantes 768px en mobile y descargara bytes innecesarios.
+export const PRODUCT_IMAGE_SIZES = '(max-width: 291px) calc(100vw - 32px), 260px';
