@@ -37,7 +37,12 @@ jobs:
           if (!response.ok) throw new Error(`Worker status HTTP ${response.status}`);
           const raw = await response.json();
           if (raw.status !== 'ok' || !raw.cover_mirror) throw new Error('Unexpected status response');
+          const observedAt = new Date();
+          const lastAt = Date.parse(raw.cover_mirror.last_result?.at || "");
           const report = {
+            observed_at: observedAt.toISOString(),
+            last_batch_age_seconds: Number.isFinite(lastAt)
+              ? Math.round((observedAt.getTime() - lastAt) / 1000) : null,
             checked_at: raw.checked_at,
             cover_mirror: raw.cover_mirror,
             cover_manifest: raw.r2?.cover_manifest,
