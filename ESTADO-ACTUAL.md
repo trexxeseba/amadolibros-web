@@ -28,6 +28,104 @@ devuelve 1.609 ISBN, y `artifacts/b11-2/state.json` contiene 556 entradas
 con `TERMINADO` 83, `SIN_DATOS` 31 y `REVISAR` 442 — el pool `REVISAR`
 completo de B11.1, ya sin ningún ISBN pendiente de intentar.
 
+## B12 — enriquecimiento de fichas activas (2026-09-06)
+
+**Resultado real: 423 fichas mejoradas.** La meta autorizada eran 1.000, y
+**no se alcanzó**: el circuito se agotó antes. Los números y el bloqueo, sin
+adornos.
+
+### Lo conseguido, medido sobre el catálogo efectivo
+
+| Métrica | Valor |
+| --- | ---: |
+| ISBN únicos activos y vendibles investigados | 3.596 |
+| ISBN incorporados al registro | **227** |
+| **Fichas activas beneficiadas** | **423** |
+| — con ≥1 dato nuevo | 423 |
+| — con ≥3 datos nuevos | 112 |
+| — sin mejora | 0 |
+| Registry | 1.609 → **1.790** |
+
+| CAMPO | ANTES | DESPUÉS | +FICHAS |
+| --- | ---: | ---: | ---: |
+| Páginas | 77 | 328 | **+251** |
+| Temas | 21 | 251 | **+230** |
+| Editorial | 230 | 386 | **+156** |
+| Año de publicación | 287 | 402 | +115 |
+| Autor real | 400 | 416 | +16 |
+| Idioma | 414 | 422 | +8 |
+| Formato | 18 | 18 | 0 |
+| Edición | 0 | 0 | 0 |
+
+Medido con `scripts/seo/enrichment-impact-report.mjs` sobre el catálogo
+público (`updated_at` 2026-09-06T11:37:55.003Z), corrida
+[34047552099](https://github.com/trexxeseba/amadolibros-web/actions/runs/34047552099).
+El "antes" es la ficha **efectiva** —catálogo más registro vigente— así que
+ningún dato ya publicado se cuenta dos veces.
+
+Verificado extremo a extremo con el mismo renderizador que sirve el sitio: el
+ISBN `9780194419215` (MLU637824793) recibe editorial y páginas de Library of
+Congress, y ambos aparecen en el HTML y en el JSON-LD (`numberOfPages`,
+`publisher`). Fuente citada: https://lccn.loc.gov/2022288115
+
+### Rendimiento por lote — el circuito se agotó
+
+| Lote | ISBN incorporados |
+| --- | ---: |
+| B12 01 | 196 |
+| B12 02 | 31 |
+| B12 03 | **0** |
+
+Los tres lotes recorrieron el MISMO universo de 3.596 ediciones. El primero se
+llevó los casos con más evidencia y el tercero no encontró nada nuevo: con las
+fuentes disponibles hoy, esto es el techo.
+
+### El bloqueo concreto
+
+De los 3.596 investigados, **2.488 (69%) tienen al menos una fuente exacta**,
+así que el problema no es cobertura. Lo que frena a los 3.369 restantes:
+
+| Causa | ISBN |
+| --- | ---: |
+| Sin evidencia utilizable en ninguna fuente | 2.398 |
+| Conflicto de identidad (título o autor no coinciden con la fuente) | 638 |
+| Una sola familia de fuente (el gate exige dos, o una oficial) | 489 |
+| Evidencia cruzada pero los campos ya estaban completos | 71 |
+
+**El mayor freno recuperable es Google Books**: quedó en **4 de 3.596** con
+HTTP 429 en las tres corridas, incluso tras bajar el presupuesto de 1.500 a
+400. Es cuota diaria agotada, no un fallo de código. Históricamente aportaba
+**500-615 coincidencias exactas**, así que hoy falta la fuente más productiva.
+
+**Próximo paso propuesto, sin prometer un número:** esperar el reset de cuota
+diaria de Google Books y volver a correr el lote. El caché es compartido y
+resumible, así que la corrida sólo pedirá lo que falta. No se puede anticipar
+cuántas fichas más saldrán hasta medirlo.
+
+Los 489 bloqueados por "una sola familia" son el segundo grupo recuperable,
+pero desbloquearlos exige **sumar otro catálogo oficial**, no relajar el gate:
+bajar la exigencia publicaría datos con menos respaldo.
+
+### Qué se construyó para conseguirlo
+
+- **Library of Congress y Deutsche Nationalbibliothek** como fuentes oficiales
+  (`national_library`, mismo nivel que BNE), gratis y sin API key. LoC respaldó
+  135 de los 196 ISBN del primer lote. Sonda de alcance previa:
+  [34031761113](https://github.com/trexxeseba/amadolibros-web/actions/runs/34031761113).
+- **El selector mide huecos sobre la ficha efectiva** (#318): antes excluía
+  cualquier ISBN del registro aunque le faltaran campos. De 1.656 registrados,
+  1.638 volvieron a ser candidatos.
+- **Un lote posterior completa al anterior** sin pisar datos verificados: 93 de
+  los 227 ISBN son ediciones ya investigadas a las que se les llenaron huecos.
+- **Caché compartido entre lotes**: una corrida bajó de 60 a 15 minutos.
+
+**Sin sinopsis copiadas y sin datos comerciales.** Cada hecho conserva su
+fuente por campo (`provider`, `url`, `relationship: exact_edition`), verificado
+por test. Precio, stock, imágenes, slug y canonical no se tocan.
+
+Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
+Draft, sin mergear ni desplegar.
+
 ## Trabajo pendiente que hereda de B11 (no iniciado)
 
 1. **PR técnico de limpieza de idiomas históricos**: auditar los 17
