@@ -272,6 +272,8 @@ export function planBookSourceResearch(items, cache = {}, {
   googleBooksBudget = 300,
   openLibraryBudget = DEFAULT_OPEN_LIBRARY_BATCH_BUDGET,
   bneBudget = 0,
+  locBudget = 0,
+  dnbBudget = 0,
   now = Date.now(),
 } = {}) {
   const eligible = (Array.isArray(items) ? items : [])
@@ -296,6 +298,14 @@ export function planBookSourceResearch(items, cache = {}, {
   const bne = uniqueByIsbn
     .filter(item => !isSourceCacheFresh(cache, item.isbn, 'bne', { now }))
     .slice(0, Math.max(0, bneBudget));
+  const loc = uniqueByIsbn
+    .filter(item => !isSourceCacheFresh(cache, item.isbn, 'loc', { now }))
+    .slice(0, Math.max(0, locBudget));
+  const dnb = uniqueByIsbn
+    .filter(item => !isSourceCacheFresh(cache, item.isbn, 'dnb', { now }))
+    .slice(0, Math.max(0, dnbBudget));
+
+  const pending = source => uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, source, { now })).length;
 
   return {
     schema_version: 1,
@@ -303,9 +313,13 @@ export function planBookSourceResearch(items, cache = {}, {
     google_books: googleBooks.map(item => ({ id: item.id || null, isbn: item.isbn })),
     open_library: openLibrary.map(item => ({ id: item.id || null, isbn: item.isbn })),
     bne: bne.map(item => ({ id: item.id || null, isbn: item.isbn })),
-    cached_google_books: uniqueByIsbn.length - uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, 'google_books', { now })).length,
-    cached_open_library: uniqueByIsbn.length - uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, 'open_library', { now })).length,
-    cached_bne: uniqueByIsbn.length - uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, 'bne', { now })).length,
+    loc: loc.map(item => ({ id: item.id || null, isbn: item.isbn })),
+    dnb: dnb.map(item => ({ id: item.id || null, isbn: item.isbn })),
+    cached_google_books: uniqueByIsbn.length - pending('google_books'),
+    cached_open_library: uniqueByIsbn.length - pending('open_library'),
+    cached_bne: uniqueByIsbn.length - pending('bne'),
+    cached_loc: uniqueByIsbn.length - pending('loc'),
+    cached_dnb: uniqueByIsbn.length - pending('dnb'),
   };
 }
 

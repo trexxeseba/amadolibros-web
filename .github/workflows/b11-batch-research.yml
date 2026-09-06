@@ -92,6 +92,16 @@ jobs:
           BNE_DELAY_MS: '500'
           OPEN_LIBRARY_BUDGET: '2276'
           OPEN_LIBRARY_CONCURRENCY: '2'
+          # Bibliotecas nacionales adicionales. Son la fuente OFICIAL que
+          # desbloquea los ISBN con una sola familia de evidencia, así que
+          # reciben presupuesto para todo el cohorte. La sonda 34031761113
+          # midió LoC en ~120-300 ms y DNB en ~530-650 ms por consulta.
+          LOC_BUDGET: '7000'
+          LOC_CONCURRENCY: '3'
+          LOC_DELAY_MS: '300'
+          DNB_BUDGET: '7000'
+          DNB_CONCURRENCY: '2'
+          DNB_DELAY_MS: '600'
         run: node scripts/seo/book-intelligence-research-run.mjs --limit "$LIMIT"
 
       - name: Project verified facts module

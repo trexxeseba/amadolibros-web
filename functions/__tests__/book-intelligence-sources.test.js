@@ -341,3 +341,22 @@ test('mergeSourceCache versiona records/error por ISBN y fuente sin pisar la otr
   assert.equal(cache.entries[ISBN].open_library.error, 'sin match');
   assert.equal(cache.generated_at, fetchedAt);
 });
+
+// SOURCE-COVERAGE-4: Library of Congress y DNB entran al plan como cualquier
+// otra fuente, con su propio presupuesto y su propio cache.
+test('el plan reserva presupuesto propio para LoC y DNB', () => {
+  const plan = planBookSourceResearch(
+    [{ id: 'A', isbn: '9780062273208' }, { id: 'B', isbn: '9788496836693' }],
+    {},
+    { googleBooksBudget: 0, openLibraryBudget: 0, bneBudget: 0, locBudget: 2, dnbBudget: 1 },
+  );
+  assert.equal(plan.loc.length, 2);
+  assert.equal(plan.dnb.length, 1);
+  assert.equal(plan.google_books.length, 0);
+});
+
+test('sin presupuesto explícito las fuentes nuevas no consumen cuota', () => {
+  const plan = planBookSourceResearch([{ id: 'A', isbn: '9780062273208' }], {});
+  assert.deepEqual(plan.loc, []);
+  assert.deepEqual(plan.dnb, []);
+});

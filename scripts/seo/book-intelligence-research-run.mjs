@@ -18,6 +18,7 @@ import {
 } from '../../functions/_shared/book-intelligence-evidence.js';
 import { isGenericAuthor, isShowcaseEligible, normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
 import { fetchBneEvidence } from './book-intelligence-bne.mjs';
+import { fetchNationalLibraryEvidence } from './book-intelligence-national-libraries.mjs';
 import {
   chunkOpenLibraryPlan,
   emptySourceCache,
@@ -166,7 +167,7 @@ async function loadCache(filePath) {
     const parsed = JSON.parse(await readFile(filePath, 'utf8'));
     if (!parsed?.entries || typeof parsed.entries !== 'object') return emptySourceCache();
     for (const entry of Object.values(parsed.entries)) {
-      for (const source of ['google_books', 'open_library', 'bne']) {
+      for (const source of ['google_books', 'open_library', 'bne', 'loc', 'dnb']) {
         if (!Array.isArray(entry?.[source]?.records)) continue;
         entry[source].records = entry[source].records.map(record => ({
           ...record,
@@ -198,6 +199,8 @@ function recordsFor(cache, isbn) {
     ...(Array.isArray(entry.google_books?.records) ? entry.google_books.records : []),
     ...(Array.isArray(entry.open_library?.records) ? entry.open_library.records : []),
     ...(Array.isArray(entry.bne?.records) ? entry.bne.records : []),
+    ...(Array.isArray(entry.loc?.records) ? entry.loc.records : []),
+    ...(Array.isArray(entry.dnb?.records) ? entry.dnb.records : []),
   ];
 }
 
@@ -280,6 +283,8 @@ export function buildResearchResult(item, classification, cache) {
       google_books: sourceState(cache, item.isbn, 'google_books'),
       open_library: sourceState(cache, item.isbn, 'open_library'),
       bne: sourceState(cache, item.isbn, 'bne'),
+      loc: sourceState(cache, item.isbn, 'loc'),
+      dnb: sourceState(cache, item.isbn, 'dnb'),
     },
   };
 }
@@ -331,6 +336,8 @@ export function buildVerifiedFactsManifest(report) {
         google_books_records: result.sources.google_books.record_count,
         open_library_records: result.sources.open_library.record_count,
         bne_records: result.sources.bne.record_count,
+        loc_records: result.sources.loc?.record_count ?? 0,
+        dnb_records: result.sources.dnb?.record_count ?? 0,
       },
       conflicts: {
         identity: result.identity_conflicts,
@@ -352,6 +359,8 @@ export function researchMarkdown(report) {
     `- Google Books: ${report.sources.google_books.matched}/${report.cohort.selected} matches exactos; ${report.sources.google_books.errors} errores.`,
     `- Open Library: ${report.sources.open_library.matched}/${report.cohort.selected} matches exactos; ${report.sources.open_library.errors} errores.`,
     `- BNE: ${report.sources.bne.matched}/${report.cohort.selected} matches exactos; ${report.sources.bne.errors} errores.`,
+    `- Library of Congress: ${report.sources.loc?.matched ?? 0}/${report.cohort.selected} matches exactos; ${report.sources.loc?.errors ?? 0} errores.`,
+    `- Deutsche Nationalbibliothek: ${report.sources.dnb?.matched ?? 0}/${report.cohort.selected} matches exactos; ${report.sources.dnb?.errors ?? 0} errores.`,
     `- GREEN_FULL: ${p.GREEN_FULL}.`,
     `- GREEN_FACTS: ${p.GREEN_FACTS}.`,
     `- REVIEW: ${p.REVIEW}.`,
@@ -420,6 +429,12 @@ export async function runResearch({
   bneBudget = positiveInteger(process.env.BNE_BUDGET, 4000),
   bneConcurrency = positiveInteger(process.env.BNE_CONCURRENCY, 2),
   bneDelayMs = nonNegativeInteger(process.env.BNE_DELAY_MS, 500),
+  locBudget = positiveInteger(process.env.LOC_BUDGET, 4000),
+  locConcurrency = positiveInteger(process.env.LOC_CONCURRENCY, 2),
+  locDelayMs = nonNegativeInteger(process.env.LOC_DELAY_MS, 400),
+  dnbBudget = positiveInteger(process.env.DNB_BUDGET, 4000),
+  dnbConcurrency = positiveInteger(process.env.DNB_CONCURRENCY, 2),
+  dnbDelayMs = nonNegativeInteger(process.env.DNB_DELAY_MS, 600),
 } = {}) {
   if (!clean(googleBooksAccessToken) && !clean(googleBooksApiKey)) {
     throw new Error('ISBN-1000 requiere GOOGLE_BOOKS_ACCESS_TOKEN o GOOGLE_BOOKS_API_KEY.');
@@ -440,6 +455,8 @@ export async function runResearch({
     googleBooksBudget: Math.min(selected.length, googleBudget),
     openLibraryBudget: Math.min(selected.length, openLibraryBudget),
     bneBudget: Math.min(selected.length, bneBudget),
+    locBudget: Math.min(selected.length, locBudget),
+    dnbBudget: Math.min(selected.length, dnbBudget),
   });
 
   let googleConsecutiveRateLimits = 0;
@@ -447,7 +464,7 @@ export async function runResearch({
 
   // Las fuentes corren en paralelo entre sí, manteniendo sus límites internos.
   // Así la BNE no espera a Google y el lote completo cabe en una sola Action.
-  const [googleAttempts, openLibraryAttempts, bneAttempts] = await Promise.all([
+  const [googleAttempts, openLibraryAttempts, bneAttempts, locAttempts, dnbAttempts] = await Promise.all([
     mapWithConcurrency(plan.google_books, googleConcurrency, async entry => {
       if (googleCircuitOpen) {
         return { isbn: entry.isbn, ok: false, skipped: true, error: 'Google Books circuit open after repeated HTTP 429' };
@@ -495,6 +512,33 @@ export async function runResearch({
         if (bneDelayMs > 0) await new Promise(resolve => setTimeout(resolve, bneDelayMs));
       }
     }),
+    // Library of Congress y la Deutsche Nationalbibliothek hablan el mismo
+    // SRU + MARCXML que BNE y cubren catálogos distintos (inglés y alemán),
+    // así que suman una fuente OFICIAL donde antes había una sola familia.
+    mapWithConcurrency(plan.loc, locConcurrency, async entry => {
+      try {
+        const records = await fetchNationalLibraryEvidence('loc', entry.isbn);
+        cache = mergeSourceCache(cache, entry.isbn, 'loc', records);
+        return { isbn: entry.isbn, ok: true, records: records.length };
+      } catch (error) {
+        cache = mergeSourceCache(cache, entry.isbn, 'loc', [], { error: error?.message || String(error) });
+        return { isbn: entry.isbn, ok: false, error: error?.message || String(error) };
+      } finally {
+        if (locDelayMs > 0) await new Promise(resolve => setTimeout(resolve, locDelayMs));
+      }
+    }),
+    mapWithConcurrency(plan.dnb, dnbConcurrency, async entry => {
+      try {
+        const records = await fetchNationalLibraryEvidence('dnb', entry.isbn);
+        cache = mergeSourceCache(cache, entry.isbn, 'dnb', records);
+        return { isbn: entry.isbn, ok: true, records: records.length };
+      } catch (error) {
+        cache = mergeSourceCache(cache, entry.isbn, 'dnb', [], { error: error?.message || String(error) });
+        return { isbn: entry.isbn, ok: false, error: error?.message || String(error) };
+      } finally {
+        if (dnbDelayMs > 0) await new Promise(resolve => setTimeout(resolve, dnbDelayMs));
+      }
+    }),
   ]);
   for (const attempt of openLibraryAttempts) {
     cache = mergeSourceCache(cache, attempt.isbn, 'open_library', attempt.records, { error: attempt.error });
@@ -529,6 +573,10 @@ export async function runResearch({
       cached_open_library: plan.cached_open_library,
       bne_requests: plan.bne.length,
       cached_bne: plan.cached_bne,
+      loc_requests: plan.loc.length,
+      cached_loc: plan.cached_loc,
+      dnb_requests: plan.dnb.length,
+      cached_dnb: plan.cached_dnb,
     },
     execution: {
       google_books_http_successes: googleAttempts.filter(attempt => attempt.ok).length,
@@ -537,11 +585,17 @@ export async function runResearch({
       open_library_errors: openLibraryAttempts.filter(attempt => !attempt.ok).length,
       bne_http_successes: bneAttempts.filter(attempt => attempt.ok).length,
       bne_errors: bneAttempts.filter(attempt => !attempt.ok).length,
+      loc_http_successes: locAttempts.filter(attempt => attempt.ok).length,
+      loc_errors: locAttempts.filter(attempt => !attempt.ok).length,
+      dnb_http_successes: dnbAttempts.filter(attempt => attempt.ok).length,
+      dnb_errors: dnbAttempts.filter(attempt => !attempt.ok).length,
     },
     sources: {
       google_books: sourceSummary(results, 'google_books'),
       open_library: sourceSummary(results, 'open_library'),
       bne: sourceSummary(results, 'bne'),
+      loc: sourceSummary(results, 'loc'),
+      dnb: sourceSummary(results, 'dnb'),
     },
     evidence: summarizeBookIntelligenceEvidence(classifications),
     publication: classSummary(results),
