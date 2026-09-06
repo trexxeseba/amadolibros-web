@@ -15,7 +15,13 @@ prioridades — es el único vigente y reemplaza cualquier orden anterior:
 5. **Blindaje técnico de Amado — registrado, NO iniciado.**
 6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado
    del cierre de B11) — **pausado.**
-7. **Definición de B12** (heredado del cierre de B11) — **pausado.**
+7. **B12 — enriquecimiento de fichas activas** — **EN CURSO, primera tanda
+   entregada.** 481 fichas activas mejoradas y verificadas una por una en el
+   Preview desplegado; la meta de 1.000 sigue pendiente. El circuito se agotó
+   con las fuentes actuales (196 → 31 → 0 ediciones por lote sobre el mismo
+   universo). Detalle, reconciliación contra `main` y bloqueo concreto en
+   `ESTADO-ACTUAL.md`. Entrega en
+   [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325).
 
 No iniciar ningún trabajo de los puntos 2-7 sin autorización explícita y
 separada de Seba. El detalle completo de cada uno (objetivo, criterio de

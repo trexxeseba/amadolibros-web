@@ -30,43 +30,74 @@ completo de B11.1, ya sin ningún ISBN pendiente de intentar.
 
 ## B12 — enriquecimiento de fichas activas (2026-09-06)
 
-**Resultado real: 423 fichas mejoradas.** La meta autorizada eran 1.000, y
-**no se alcanzó**: el circuito se agotó antes. Los números y el bloqueo, sin
-adornos.
+**Resultado real: 481 fichas activas mejoradas**, verificadas una por una en
+el Preview desplegado. La meta autorizada eran 1.000 y **no se alcanzó**: el
+circuito se agotó antes con las fuentes disponibles. El objetivo sigue
+pendiente y se continúa después.
 
-### Lo conseguido, medido sobre el catálogo efectivo
+> **Corrección de una cifra que informé mal.** Antes reporté 423 fichas. Ese
+> número salía de reconstruir el "antes" restándole al ítem los hechos del
+> lote —un supuesto— y además medía sólo dos de los tres módulos que trae el
+> PR: dejaba fuera el lote `qw3a2` (47 ediciones). La cifra correcta,
+> comparando la ficha efectiva de `main` contra la del PR sobre el mismo
+> snapshot congelado, es **481**.
+
+### Reconciliación contra `main`, mismo snapshot
+
+Corrida [34060306958](https://github.com/trexxeseba/amadolibros-web/actions/runs/34060306958),
+head `a64d3a9`, snapshot `catalog.json` `updated_at` **2026-09-06T11:37:55.003Z**,
+7.104 fichas activas comparadas de los dos lados.
 
 | Métrica | Valor |
 | --- | ---: |
-| ISBN únicos activos y vendibles investigados | 3.596 |
-| ISBN incorporados al registro | **227** |
-| **Fichas activas beneficiadas** | **423** |
-| — con ≥1 dato nuevo | 423 |
-| — con ≥3 datos nuevos | 112 |
-| — sin mejora | 0 |
-| Registry | 1.609 → **1.790** |
+| Registro de enriquecimiento en `main` | 1.609 |
+| Registro en el PR | **1.790** |
+| Crecimiento del registro | **+181** |
+| ISBN únicos con mejora | **268** |
+| **Fichas activas beneficiadas** | **481** |
+| — con ≥1 campo nuevo | 481 |
+| — con ≥3 campos nuevos | **105** |
+| Fichas que **pierden** algún campo | **0** |
+| Fichas presentes en un solo lado (diferencia de catálogo) | 0 |
 
-| CAMPO | ANTES | DESPUÉS | +FICHAS |
-| --- | ---: | ---: | ---: |
-| Páginas | 77 | 328 | **+251** |
-| Temas | 21 | 251 | **+230** |
-| Editorial | 230 | 386 | **+156** |
-| Año de publicación | 287 | 402 | +115 |
-| Autor real | 400 | 416 | +16 |
-| Idioma | 414 | 422 | +8 |
-| Formato | 18 | 18 | 0 |
-| Edición | 0 | 0 | 0 |
+| CAMPO | +FICHAS |
+| --- | ---: |
+| Páginas | **+291** |
+| Temas | **+235** |
+| Editorial | **+158** |
+| Año de publicación | +135 |
+| Autor real | +16 |
+| Idioma | +6 |
 
-Medido con `scripts/seo/enrichment-impact-report.mjs` sobre el catálogo
-público (`updated_at` 2026-09-06T11:37:55.003Z), corrida
-[34047552099](https://github.com/trexxeseba/amadolibros-web/actions/runs/34047552099).
-El "antes" es la ficha **efectiva** —catálogo más registro vigente— así que
-ningún dato ya publicado se cuenta dos veces.
+### Cómo se relacionan 227, 268, 274 y +181
 
-Verificado extremo a extremo con el mismo renderizador que sirve el sitio: el
-ISBN `9780194419215` (MLU637824793) recibe editorial y páginas de Library of
-Congress, y ambos aparecen en el HTML y en el JSON-LD (`numberOfPages`,
-`publisher`). Fuente citada: https://lccn.loc.gov/2022288115
+Son cuatro cifras distintas y conviene no confundirlas:
+
+| Cifra | Qué es |
+| --- | ---: |
+| 274 | Registros de investigación en los tres módulos (47 + 196 + 31) |
+| **268** | **ISBN únicos**: 6 registros repiten ISBN entre módulos |
+| **+181** | Ediciones **nuevas** en el registro |
+| 87 | ISBN que `main` ya tenía y a los que el PR les **completó** campos |
+
+El «227» que informé antes era la suma de registros de sólo dos módulos, y
+además contaba registros en vez de ISBN únicos. Los 268 ISBN únicos mejoran al
+menos una ficha viva cada uno; 268 − 181 = 87 son ediciones ya investigadas
+que ganaron campos que les faltaban, sin pisar ningún dato verificado.
+
+### Verificado en el Preview desplegado
+
+No alcanza con probar el renderizador localmente. Se comprobó **cada una** de
+las 481 fichas contra `https://pr-325.amadolibros-web.pages.dev`:
+
+| | |
+| --- | ---: |
+| Fichas esperadas | 481 |
+| Verificadas con HTTP 200 | **481** |
+| Con todos los campos esperados (HTML y JSON-LD) | **481** |
+| Con campos faltantes | **0** |
+| No publicadas hoy (diferencia de catálogo, HTTP 404) | 0 |
+| Otros errores | 0 |
 
 ### Rendimiento por lote — el circuito se agotó
 
@@ -76,14 +107,14 @@ Congress, y ambos aparecen en el HTML y en el JSON-LD (`numberOfPages`,
 | B12 02 | 31 |
 | B12 03 | **0** |
 
-Los tres lotes recorrieron el MISMO universo de 3.596 ediciones. El primero se
-llevó los casos con más evidencia y el tercero no encontró nada nuevo: con las
-fuentes disponibles hoy, esto es el techo.
+Los tres recorrieron el MISMO universo de 3.596 ediciones. El primero se llevó
+los casos con más evidencia y el tercero no encontró nada: con las fuentes de
+hoy, esto es el techo.
 
 ### El bloqueo concreto
 
 De los 3.596 investigados, **2.488 (69%) tienen al menos una fuente exacta**,
-así que el problema no es cobertura. Lo que frena a los 3.369 restantes:
+así que el problema no es cobertura:
 
 | Causa | ISBN |
 | --- | ---: |
@@ -94,37 +125,41 @@ así que el problema no es cobertura. Lo que frena a los 3.369 restantes:
 
 **El mayor freno recuperable es Google Books**: quedó en **4 de 3.596** con
 HTTP 429 en las tres corridas, incluso tras bajar el presupuesto de 1.500 a
-400. Es cuota diaria agotada, no un fallo de código. Históricamente aportaba
-**500-615 coincidencias exactas**, así que hoy falta la fuente más productiva.
+400. Es cuota diaria agotada, no un fallo de código; históricamente aportaba
+500-615 coincidencias exactas.
 
-**Próximo paso propuesto, sin prometer un número:** esperar el reset de cuota
-diaria de Google Books y volver a correr el lote. El caché es compartido y
-resumible, así que la corrida sólo pedirá lo que falta. No se puede anticipar
-cuántas fichas más saldrán hasta medirlo.
+Continuar por ahí queda **fuera de este cierre**: esperar el reset de cuota y
+volver a correr, con el caché compartido pidiendo sólo lo que falta. Los 489
+bloqueados por «una sola familia» exigen **sumar otro catálogo oficial**, no
+relajar el gate: bajar la exigencia publicaría datos con menos respaldo.
 
-Los 489 bloqueados por "una sola familia" son el segundo grupo recuperable,
-pero desbloquearlos exige **sumar otro catálogo oficial**, no relajar el gate:
-bajar la exigencia publicaría datos con menos respaldo.
-
-### Qué se construyó para conseguirlo
+### Qué se construyó
 
 - **Library of Congress y Deutsche Nationalbibliothek** como fuentes oficiales
-  (`national_library`, mismo nivel que BNE), gratis y sin API key. LoC respaldó
-  135 de los 196 ISBN del primer lote. Sonda de alcance previa:
-  [34031761113](https://github.com/trexxeseba/amadolibros-web/actions/runs/34031761113).
-- **El selector mide huecos sobre la ficha efectiva** (#318): antes excluía
-  cualquier ISBN del registro aunque le faltaran campos. De 1.656 registrados,
-  1.638 volvieron a ser candidatos.
-- **Un lote posterior completa al anterior** sin pisar datos verificados: 93 de
-  los 227 ISBN son ediciones ya investigadas a las que se les llenaron huecos.
-- **Caché compartido entre lotes**: una corrida bajó de 60 a 15 minutos.
+  (`national_library`, mismo nivel que BNE), gratis y sin API key. Sonda de
+  alcance previa: [34031761113](https://github.com/trexxeseba/amadolibros-web/actions/runs/34031761113).
+- **El selector mide huecos sobre la ficha efectiva**: antes excluía cualquier
+  ISBN del registro aunque le faltaran campos.
+- **Un lote posterior completa al anterior** sin pisar datos verificados.
+- **Caché compartido y comprimido**: una corrida bajó de 60 a 15 minutos.
+
+### Evidencia y reanudación
+
+El diff llegó a superar **1.006.814 líneas**; el 98% eran dos archivos por
+lote —el volcado de investigación y el caché de fuentes—. Hoy son **20.329**.
+La evidencia **no se movió fuera del repo**: se guarda comprimida (unas doce
+veces menos) en el mismo lugar, así que la reanudación de un lote sigue siendo
+automática con un `checkout`, sin credenciales ni vencimientos. Se verificó
+que cada archivo se recupera **idéntico** y que el caché comprimido
+efectivamente evita repedir lo ya conocido. El caché compartido y el del lote
+01 eran byte a byte el mismo archivo; quedó uno solo.
 
 **Sin sinopsis copiadas y sin datos comerciales.** Cada hecho conserva su
 fuente por campo (`provider`, `url`, `relationship: exact_edition`), verificado
 por test. Precio, stock, imágenes, slug y canonical no se tocan.
 
 Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
-Draft, sin mergear ni desplegar.
+sin mergear ni desplegar.
 
 ## Trabajo pendiente que hereda de B11 (no iniciado)
 
