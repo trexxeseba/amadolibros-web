@@ -22,6 +22,7 @@ import {
   authorValue,
   clean,
   controlfield,
+  firstSubfield,
   languageValue,
   pageCount,
   parseMarcRecord,
@@ -54,6 +55,22 @@ export const NATIONAL_LIBRARIES = Object.freeze({
 });
 
 export const NATIONAL_LIBRARY_MAX_RECORDS = 5;
+
+// La URL de procedencia es una CITA: tiene que poder abrirse y ser estable.
+// La consulta SRU no sirve para eso —la de LoC ni siquiera es HTTPS, va por
+// el puerto 210— así que se publica el permalink canónico del catálogo:
+// lccn.loc.gov para LoC (MARC 010$a) y d-nb.info para DNB (control 001).
+export function citationUrl(key, record, isbn) {
+  if (key === 'loc') {
+    const lccn = clean(firstSubfield(record, '010', 'a')).replace(/\s+/g, '');
+    return lccn ? `https://lccn.loc.gov/${lccn}` : `https://www.loc.gov/search/?q=${isbn}`;
+  }
+  if (key === 'dnb') {
+    const idn = clean(controlfield(record, '001'));
+    return idn ? `https://d-nb.info/${idn}` : `https://portal.dnb.de/opac/simpleSearch?query=${isbn}`;
+  }
+  return null;
+}
 
 export function buildNationalLibraryUrl(key, isbn, { maximumRecords = NATIONAL_LIBRARY_MAX_RECORDS } = {}) {
   const config = NATIONAL_LIBRARIES[key];
@@ -89,7 +106,7 @@ export function parseNationalLibraryEvidence(key, xml, isbn) {
       source: 'national_library',
       source_provider: config.provider,
       source_id: clean(controlfield(record, '001')) || null,
-      source_url: buildNationalLibraryUrl(key, target),
+      source_url: citationUrl(key, record, target),
       isbn: target,
       title: titleValue(record),
       author: authorValue(record),

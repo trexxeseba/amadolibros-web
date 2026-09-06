@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url';
 
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
 import { normalizeBookLanguage } from '../../functions/_shared/book-bibliographic-normalization.js';
+import { CACHEABLE_SOURCES } from './book-intelligence-sources.mjs';
 
 const DEFAULT_MANIFEST = 'artifacts/book-intelligence/isbn-1000/isbn-1000-manifest.json';
 const DEFAULT_CACHE = 'artifacts/book-intelligence/isbn-1000/source-cache.json';
@@ -51,10 +52,23 @@ function httpsUrl(value, { source, isbn } = {}) {
   }
 }
 
+// Cada biblioteca nacional es un proveedor DISTINTO. Colapsarlas todas en
+// "Biblioteca Nacional de España" no sólo mentiría en la procedencia: haría
+// que dos catálogos independientes contaran como uno solo al exigir dos
+// proveedores para publicar un campo.
+const NATIONAL_LIBRARY_PROVIDERS = Object.freeze({
+  biblioteca_nacional_espana: 'Biblioteca Nacional de España',
+  library_of_congress: 'Library of Congress',
+  deutsche_nationalbibliothek: 'Deutsche Nationalbibliothek',
+});
+
 function sourceDescriptor(record) {
   const source = clean(record?.source);
   if (source === 'national_library') {
-    return { type: 'national_library', provider: 'Biblioteca Nacional de España', official: true };
+    const provider = NATIONAL_LIBRARY_PROVIDERS[clean(record?.source_provider)];
+    // Una biblioteca que no reconocemos no se publica como oficial.
+    if (!provider) return null;
+    return { type: 'national_library', provider, official: true };
   }
   if (source === 'google_books') {
     return { type: 'bibliographic_database', provider: 'Google Books', official: false };
@@ -67,7 +81,7 @@ function sourceDescriptor(record) {
 
 function recordsFor(cache, isbn) {
   const entry = cache?.entries?.[isbn] || {};
-  return ['google_books', 'open_library', 'bne'].flatMap(source =>
+  return CACHEABLE_SOURCES.flatMap(source =>
     Array.isArray(entry?.[source]?.records) ? entry[source].records : [],
   );
 }

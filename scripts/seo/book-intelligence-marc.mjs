@@ -82,7 +82,7 @@ function subfieldValues(record, tags, codes) {
   );
 }
 
-function firstSubfield(record, tags, codes) {
+export function firstSubfield(record, tags, codes) {
   return subfieldValues(record, tags, codes)[0] || '';
 }
 

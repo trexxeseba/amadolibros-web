@@ -16,6 +16,7 @@ function marcXml({ isbn = ISBN, title = 'The Hard Thing About Hard Things', auth
 <searchRetrieveResponse>
   <records><record>
     <controlfield tag="001">lc00012345</controlfield>
+    <datafield tag="010"><subfield code="a">2013031234</subfield></datafield>
     <datafield tag="020"><subfield code="a">${isbn}</subfield></datafield>
     <datafield tag="245"><subfield code="a">${title} :</subfield></datafield>
     <datafield tag="100"><subfield code="a">${author},</subfield></datafield>
@@ -91,5 +92,18 @@ test('el adaptador no publica copy: sólo hechos y procedencia', async () => {
   assert.equal(records.length, 1);
   for (const key of Object.keys(records[0])) {
     assert.equal(['price', 'available_quantity', 'canonical', 'currency_id'].includes(key), false);
+  }
+});
+
+// La consulta SRU de LoC va por HTTP en el puerto 210, así que no puede ser la
+// cita publicada: la procedencia usa el permalink canónico del catálogo.
+test('la procedencia publicada es un permalink HTTPS, no la consulta SRU', () => {
+  const [loc] = parseNationalLibraryEvidence('loc', marcXml(), ISBN);
+  assert.equal(loc.source_url, 'https://lccn.loc.gov/2013031234');
+  const [dnb] = parseNationalLibraryEvidence('dnb', marcXml(), ISBN);
+  assert.equal(dnb.source_url, 'https://d-nb.info/lc00012345');
+  for (const record of [loc, dnb]) {
+    assert.match(record.source_url, /^https:/);
+    assert.doesNotMatch(record.source_url, /searchRetrieve/);
   }
 });
