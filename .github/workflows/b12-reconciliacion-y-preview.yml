@@ -141,6 +141,49 @@ jobs:
           PREVIEW_DEPLOYED_SHA: ${{ steps.deploy.outputs.servido }}
         run: node scripts/seo/preview-ficha-validation.mjs
 
+      # Los artefactos vencen a los 30 días; el resumen de la corrida queda
+      # mientras exista la corrida. Las cifras que se citan en el PR y en los
+      # documentos tienen que poder leerse ahí sin descargar nada.
+      - name: Resumen de la corrida
+        if: always()
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            const leer = ruta => { try { return JSON.parse(fs.readFileSync(ruta, "utf8")); } catch { return null; } };
+            const diff = leer("artifacts/reconciliacion/effective-ficha-diff.json");
+            const prev = leer("artifacts/reconciliacion/preview-ficha-validation.json");
+            const out = [];
+            const fila = (...c) => out.push(`| ${c.join(" | ")} |`);
+            if (diff) {
+              out.push("## Impacto reconciliado", "");
+              out.push(`Snapshot \`catalog.json\` **${diff.snapshot.catalogUpdatedAt}** · ${diff.snapshot.fichasActivas} fichas activas.`, "");
+              fila("Métrica", "Valor"); fila("---", "---:");
+              fila("Registro en `main`", diff.antes.registryIsbns);
+              fila("Registro en el PR", diff.despues.registryIsbns);
+              fila("ISBN únicos con mejora", diff.totales.isbn_unicos_con_mejora);
+              fila("**Fichas activas beneficiadas**", `**${diff.totales.fichas_beneficiadas}**`);
+              fila("— con ≥3 campos nuevos", diff.totales.fichas_con_3_o_mas);
+              fila("Fichas que pierden algún campo", diff.totales.fichas_que_pierden_algun_campo);
+              out.push("");
+            }
+            if (prev) {
+              out.push("## Preview desplegado", "");
+              out.push(`SHA servido: \`${prev.previewDeployedSha}\` · ${prev.previewBaseUrl}`, "");
+              fila("Fichas esperadas", "Verificadas", "Fallidas", "Sin verificar", "Comprobaciones");
+              fila("---:", "---:", "---:", "---:", "---:");
+              const t = prev.totales;
+              fila(t.fichas_esperadas, `**${t.verificadas}**`, t.fallidas, t.no_verificadas, t.comprobaciones_totales);
+              out.push("", "### Comprobaciones por campo", "");
+              fila("Campo", "Comprob.", "Visible OK", "JSON-LD OK", "JSON-LD N/A", "Fallidas");
+              fila("---", "---:", "---:", "---:", "---:", "---:");
+              for (const [campo, f] of Object.entries(prev.comprobaciones_por_campo || {})) {
+                fila(campo, f.comprobaciones, f.visible_ok, f.jsonld_ok, f.jsonld_no_aplica, f.fallidas);
+              }
+            }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+          '
+
       - name: Subir la evidencia
         if: always()
         uses: actions/upload-artifact@v4

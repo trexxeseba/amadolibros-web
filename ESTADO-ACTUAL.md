@@ -44,9 +44,12 @@ pendiente y se continúa después.
 
 ### Reconciliación contra `main`, mismo snapshot
 
-Corrida [34060306958](https://github.com/trexxeseba/amadolibros-web/actions/runs/34060306958),
-head `a64d3a9`, snapshot `catalog.json` `updated_at` **2026-09-06T11:37:55.003Z**,
-7.104 fichas activas comparadas de los dos lados.
+Base `main` **`d380374`**, head **`a66b419`**. Corrida
+[34063187043](https://github.com/trexxeseba/amadolibros-web/actions/runs/34063187043),
+snapshot `catalog.json` `updated_at` **2026-09-06T11:37:55.003Z**, 7.104 fichas
+activas comparadas de los dos lados. El snapshot se baja **una sola vez** y lo
+comparten los dos lados: si cada uno bajara el suyo, una actualización del
+catálogo en el medio invalidaría la comparación.
 
 | Métrica | Valor |
 | --- | ---: |
@@ -87,17 +90,74 @@ que ganaron campos que les faltaban, sin pisar ningún dato verificado.
 
 ### Verificado en el Preview desplegado
 
-No alcanza con probar el renderizador localmente. Se comprobó **cada una** de
-las 481 fichas contra `https://pr-325.amadolibros-web.pages.dev`:
+Probar el renderizador localmente no demuestra nada: sólo el Preview muestra si
+el dato llegó a la página que sirve Cloudflare.
+
+> **Corrección — mi primer verificador daba falsos positivos.** Buscaba cada
+> valor con `html.includes()` sobre el documento entero y, como el bloque
+> JSON-LD vive DENTRO del HTML, todo campo «aparecía visible» aunque la ficha
+> no lo mostrara. Además aprobaba con **una sola** de las dos comprobaciones,
+> hacía coincidir un número dentro de otro (496 dentro de 1496) y `topics` no
+> se comprobaba en absoluto. **El 481/481 que informé antes no probaba nada.**
+> El verificador se reescribió, se le agregaron pruebas que reproducen los
+> cuatro defectos, y la medición se repitió. Lo que sigue es el resultado de
+> la versión corregida.
+
+Qué comprueba hoy, campo por campo:
+
+- **Valor visible**: se lee **sólo** de la lista de detalles de la ficha
+  (`<div class="detail-row"><dt>Etiqueta</dt><dd>Valor</dd></div>`), que por
+  construcción excluye scripts, estilos y contenido no mostrado. Se compara el
+  valor **normalizado completo**, nunca un fragmento.
+- **Propiedad JSON-LD**, declarada según el contrato real del renderizador:
+  `author.name`, `publisher.name`, `numberOfPages`, `inLanguage`,
+  `bookFormat`, `bookEdition`, `datePublished`, `keywords`.
+- **Se exigen las dos** donde las dos corresponden. Cuando una no corresponde,
+  se registra como NO APLICA **con el motivo escrito**, jamás como aprobada
+  por omisión.
+- **Ningún campo esperado pasa con cero comprobaciones**: un campo mejorado
+  que no produjo comprobación se cuenta como `sin_comprobar` y **reprueba** la
+  ficha.
+- **Un HTTP 404 queda SIN VERIFICAR**, no fallido y tampoco atribuido al
+  catálogo: es un resultado propio, contado aparte.
+
+Corrida [34063187043](https://github.com/trexxeseba/amadolibros-web/actions/runs/34063187043),
+base `https://pr-325.amadolibros-web.pages.dev`. El SHA **realmente desplegado**
+es `a66b419` y no es un supuesto: la corrida espera a que concluya con éxito el
+check de despliegue **de ese mismo commit** y recién entonces valida.
 
 | | |
 | --- | ---: |
 | Fichas esperadas | 481 |
-| Verificadas con HTTP 200 | **481** |
-| Con todos los campos esperados (HTML y JSON-LD) | **481** |
-| Con campos faltantes | **0** |
-| No publicadas hoy (diferencia de catálogo, HTTP 404) | 0 |
-| Otros errores | 0 |
+| **Verificadas** (todas sus comprobaciones aprobadas) | **481** |
+| Fallidas | **0** |
+| Sin verificar (HTTP 404 u otro error) | **0** |
+| Comprobaciones de campo realizadas | **841** |
+
+| CAMPO | COMPROB. | VISIBLE OK | JSON-LD OK | JSON-LD N/A | FALLIDAS |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Páginas | 291 | 291 | 290 | **1** | 0 |
+| Temas | 235 | 235 | 235 | 0 | 0 |
+| Editorial | 158 | 158 | 158 | 0 | 0 |
+| Año de publicación | 135 | 135 | 135 | 0 | 0 |
+| Autor real | 16 | 16 | 16 | 0 | 0 |
+| Idioma | 6 | 6 | 6 | 0 | 0 |
+
+Las 841 comprobaciones son exactamente la suma de las mejoras por campo de la
+reconciliación: **cada mejora que el PR declara fue comprobada en la página
+servida**, ninguna quedó sin mirar.
+
+El único «no aplica» es **MLU644234684** (ISBN 9781572813458). El middleware de
+vidriera publica esa ficha como `Product` a secas —no como `Book`— y entonces
+BORRA a propósito `numberOfPages`, `bookFormat` y `bookEdition`. Es lo correcto:
+un producto que no es un libro no debe declarar páginas en schema.org. El dato
+sigue **visible** en la ficha y su comprobación visible aprobó. No se retiró
+ningún dato ni se aflojó ninguna exigencia para que el número cerrara.
+
+Evidencia por ficha —MLU, ISBN, campo, valor esperado, valor visible
+encontrado, valor JSON-LD y resultado— en el artefacto
+`b12-reconciliacion-34063187043` de esa corrida. Las cifras de arriba, además,
+quedan en el **resumen de la corrida**, que no vence con el artefacto.
 
 ### Rendimiento por lote — el circuito se agotó
 
@@ -161,15 +221,17 @@ por test. Precio, stock, imágenes, slug y canonical no se tocan.
 Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
 sin mergear ni desplegar.
 
-## Trabajo pendiente que hereda de B11 (no iniciado)
+## Trabajo pendiente que hereda de B11
 
-1. **PR técnico de limpieza de idiomas históricos**: auditar los 17
-   `bibliographic.language` multivaluados que siguen publicados en módulos
+1. **PR técnico de limpieza de idiomas históricos** (no iniciado): auditar los
+   17 `bibliographic.language` multivaluados que siguen publicados en módulos
    fusionados antes de la corrección de MARC 041 (13 en `facts-1000`, 2 en
    `facts-333`, 2 en B11.2 Lote 02). Detalle por ISBN más abajo.
-2. **B12**: se define después de esa limpieza. Cualquier avance de
-   enriquecimiento nuevo exige evidencia nueva (otra fuente o redacción
-   manual), no otra corrida del resolver.
+2. **B12**: ya no está por definirse — su primera tanda está entregada y
+   medida (sección de arriba). Lo que sigue pendiente es llegar a las 1.000
+   fichas, y para eso vale lo mismo que decía este punto: **cualquier avance
+   exige evidencia nueva** (otra fuente oficial, o el reset de cuota de Google
+   Books), no otra corrida del resolver sobre el mismo universo.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -671,7 +733,10 @@ criterio de aceptación, evidencia requerida) de cada punto en
 5. **Blindaje técnico de Amado — registrado, NO iniciado.**
 6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado de
    B11) — **pausado.**
-7. **Definición de B12** (heredado de B11) — **pausado.**
+7. **B12 — enriquecimiento de fichas activas** (heredado de B11) — **EN
+   CURSO, primera tanda entregada**: 481 fichas activas mejoradas y
+   verificadas en el Preview desplegado. La meta de 1.000 sigue pendiente y
+   continúa después.
 
 Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
 autorización explícita y separada de Seba.
