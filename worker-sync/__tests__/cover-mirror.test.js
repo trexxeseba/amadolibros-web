@@ -274,6 +274,61 @@ test('si la mejora IA falla mantiene la portada original y registra el motivo', 
   assert.equal(bucket.objects.has(entry.current.object_key), true);
 });
 
+for (const mode of ['sin Images', 'Images falla']) {
+  test(`un refresh ${mode} no reemplaza el master bueno por el original pequeño`, async () => {
+    const bucket = new MockR2();
+    const catalog = { items: [item()] };
+    const fetchFn = async () => new Response(pngBytes(400, 600), {
+      headers: { 'content-type': 'image/png' },
+    });
+    await syncCoverMirror({ COVER_R2: bucket, IMAGES: imagesBinding() }, catalog, {
+      now: () => new Date('2026-08-01T12:00:00Z'), fetchFn,
+    });
+    const before = bucket.manifest().entries['MLU123456:0'];
+    const result = await syncCoverMirror({
+      COVER_R2: bucket,
+      ...(mode === 'Images falla' ? { IMAGES: imagesBinding({ fail: true }) } : {}),
+    }, catalog, {
+      now: () => new Date('2026-09-06T12:00:00Z'), fetchFn,
+    });
+    const after = bucket.manifest().entries['MLU123456:0'];
+    assert.deepEqual(after.current, before.current);
+    assert.equal(after.previous_object_key, before.previous_object_key);
+    assert.equal(result.failed, 1);
+    assert.equal(result.pending, 1);
+    assert.match(after.last_error.message, /resolución/);
+  });
+}
+
+test('un refresh conserva un master nativo mayor y permite una mejora real del mismo origen', async () => {
+  const bucket = new MockR2();
+  const catalog = { items: [item()] };
+  let dimensions = [1200, 1800];
+  const fetchFn = async () => new Response(pngBytes(...dimensions), {
+    headers: { 'content-type': 'image/png' },
+  });
+  await syncCoverMirror({ COVER_R2: bucket }, catalog, {
+    now: () => new Date('2026-07-01T12:00:00Z'), fetchFn,
+  });
+  const before = bucket.manifest().entries['MLU123456:0'].current;
+  dimensions = [600, 900];
+  const rejected = await syncCoverMirror({ COVER_R2: bucket }, catalog, {
+    now: () => new Date('2026-08-06T12:00:00Z'), fetchFn,
+  });
+  assert.equal(rejected.failed, 1);
+  assert.deepEqual(bucket.manifest().entries['MLU123456:0'].current, before);
+  dimensions = [1600, 2400];
+  const improved = await syncCoverMirror({ COVER_R2: bucket }, catalog, {
+    now: () => new Date('2026-09-06T12:00:00Z'), fetchFn,
+  });
+  assert.equal(improved.failed, 0);
+  const after = bucket.manifest().entries['MLU123456:0'];
+  assert.equal(after.current.width, 1600);
+  assert.equal(after.current.height, 2400);
+  assert.equal(after.previous_object_key, before.object_key);
+  assert.equal(after.last_error, null);
+});
+
 test('no consume Images para un producto que Merchant excluye', async () => {
   const bucket = new MockR2();
   const images = imagesBinding();
