@@ -31,6 +31,7 @@ for(const entry of VERIFIED_COVER_SOURCES) {
       await writeFile(out+'/'+entry.product_id+'-'+position+'-'+name+'.'+meta.ext,bytes);
     }
     if(preview.width<500 || preview.height<500) throw new Error('Preview below 500px');
+    if(preview.source!=='r2-preview') throw new Error('Preview must serve the real R2 copy');
     if(preview.sha256!==native.sha256) throw new Error('Preview is not the verified native bytes');
     row.short_edge_gain=Math.min(preview.width,preview.height)-Math.min(production.width,production.height);
     row.ok=true;

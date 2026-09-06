@@ -3,7 +3,7 @@ import { perfNow, recordPerf } from './perf.js';
 
 const MANIFEST_KEY = 'covers/v1/manifest.json';
 const MANIFEST_EDGE_TTL_SECONDS = 300;
-const MANIFEST_CACHE_PATH = '/__amado-cache/cover-manifest-v1';
+const MANIFEST_CACHE_PATH = '/__amado-cache/cover-manifest-v2-qw2';
 const OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 const PRODUCT_ID_RE = /^MLU\d+$/;
 

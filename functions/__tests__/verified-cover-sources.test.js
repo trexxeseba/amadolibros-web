@@ -82,7 +82,7 @@ test('una fuente nueva no reutiliza el cache de los bytes anteriores; URL públi
       const response=await onRequest({request:new Request(url),params:{path:[id,'cover.jpg']}});
       assert.equal(response.status,200);
     }
-    assert.equal(keys[0],'https://preview.example/book-cover/MLU636119126/cover.jpg?__cover_source_revision=20260906-native-v1');
+    assert.equal(keys[0],'https://preview.example/book-cover/MLU636119126/cover.jpg?__cover_source_revision=20260906-native-v2');
     assert.equal(keys[1],'https://preview.example/book-cover/MLU999999/cover.jpg');
   } finally {globalThis.caches=previous;}
 });
