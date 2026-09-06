@@ -98,6 +98,39 @@ jobs:
           DIFF_OUTPUT: artifacts/reconciliacion/effective-ficha-diff.json
         run: node scripts/seo/effective-ficha-diff.mjs
 
+      # El Preview de este commit puede no estar desplegado todavía. El sitio
+      # no expone un endpoint con su build, así que la señal autoritativa es
+      # el propio check de despliegue del commit: cuando concluye con éxito,
+      # lo que sirve Cloudflare ES este SHA.
+      - name: Esperar el despliegue del Preview de este commit
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ESPERADO_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "Commit evaluado: $ESPERADO_SHA"
+          for intento in $(seq 1 40); do
+            ESTADO="$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$REPO/commits/$ESPERADO_SHA/check-runs?per_page=100" \
+              | node -e "
+                let raw='';process.stdin.on('data',d=>raw+=d).on('end',()=>{
+                  let j={};try{j=JSON.parse(raw);}catch{}
+                  const runs=(j.check_runs||[]).filter(r=>/^(deploy-)?preview$/.test(r.name));
+                  const ok=runs.some(r=>r.status==='completed'&&r.conclusion==='success');
+                  const fail=runs.some(r=>r.status==='completed'&&['failure','timed_out'].includes(r.conclusion));
+                  console.log(ok?'ok':(fail?'fallo':'esperando'));
+                });")"
+            echo "intento $intento: $ESTADO"
+            [ "$ESTADO" = "ok" ] && { echo "servido=$ESPERADO_SHA" >> "$GITHUB_OUTPUT"; exit 0; }
+            [ "$ESTADO" = "fallo" ] && { echo "El despliegue del Preview falló para este commit." >&2; exit 1; }
+            sleep 20
+          done
+          echo "El Preview de $ESPERADO_SHA no terminó de desplegarse a tiempo." >&2
+          exit 1
+
       - name: Validar el Preview desplegado
         id: preview
         continue-on-error: true
@@ -105,6 +138,7 @@ jobs:
           PREVIEW_BASE_URL: ${{ inputs.preview_base_url || format('https://pr-{0}.amadolibros-web.pages.dev', github.event.pull_request.number) }}
           PREVIEW_PLAN: artifacts/reconciliacion/effective-ficha-diff.json
           PREVIEW_OUTPUT: artifacts/reconciliacion/preview-ficha-validation.json
+          PREVIEW_DEPLOYED_SHA: ${{ steps.deploy.outputs.servido }}
         run: node scripts/seo/preview-ficha-validation.mjs
 
       - name: Subir la evidencia
@@ -120,4 +154,5 @@ jobs:
         if: steps.preview.outcome != 'success'
         run: |
           echo 'El Preview no confirmó todas las fichas que el PR dice mejorar.' >&2
+          echo 'Detalle por ficha en el artefacto de esta corrida.' >&2
           exit 1

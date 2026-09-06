@@ -6,13 +6,43 @@ import { pathToFileURL } from 'node:url';
 // Una prueba local del renderizador no sustituye esto: sólo el Preview
 // demuestra que el dato llegó a la página que sirve Cloudflare.
 //
-// Comprueba, por ficha: HTTP, el campo visible en el HTML y el campo en el
-// JSON-LD cuando corresponde. Las diferencias de catálogo —fichas que ya no
-// están activas— se registran APARTE y no se cuentan como fallo del PR.
+// La versión anterior daba falsos positivos: buscaba el valor con
+// `html.includes()` sobre el documento entero, y como el bloque JSON-LD vive
+// DENTRO del HTML, todo campo "aparecía visible" aunque la ficha no lo
+// mostrara. Además aceptaba un campo con sólo una de las dos comprobaciones,
+// hacía coincidir un número dentro de otro número, y `topics` no se
+// comprobaba en absoluto.
+//
+// Ahora el valor visible se extrae de la sección de detalles de la ficha
+// —`<div class="detail-row"><dt>Etiqueta</dt><dd>Valor</dd></div>`—, que por
+// construcción excluye scripts, estilos y cualquier contenido no mostrado, y
+// se compara el valor NORMALIZADO COMPLETO, no un fragmento.
 
-function clean(value) {
-  return String(value ?? '').replace(/\s+/g, ' ').trim();
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' };
+
+function decodeEntities(value) {
+  return String(value ?? '').replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, name) => ENTITIES[name]);
 }
+
+export function normalize(value) {
+  return decodeEntities(value).replace(/\s+/g, ' ').trim();
+}
+
+// Contrato real de la ficha: etiqueta visible y propiedad JSON-LD de cada
+// campo, leídos de functions/libro/[[path]].js. `jsonLd: null` significa que
+// el campo no tiene representación en el JSON-LD y se registra como NO
+// APLICABLE, nunca como aprobado por omisión.
+export const FIELD_CONTRACT = Object.freeze({
+  author: { etiqueta: 'Autor', jsonLd: schema => schema?.author?.name },
+  publisher: { etiqueta: 'Editorial', jsonLd: schema => schema?.publisher?.name },
+  pages: { etiqueta: 'Páginas', jsonLd: schema => schema?.numberOfPages },
+  language: { etiqueta: 'Idioma', jsonLd: schema => schema?.inLanguage },
+  format: { etiqueta: 'Formato', jsonLd: schema => schema?.bookFormat },
+  edition: { etiqueta: 'Edición', jsonLd: schema => schema?.bookEdition },
+  publication_year: { etiqueta: 'Año', jsonLd: schema => schema?.datePublished },
+  // El renderizador une los temas con " · " y publica hasta 6 en `keywords`.
+  topics: { etiqueta: 'Temas', jsonLd: schema => schema?.keywords, lista: true, jsonLdTope: 6 },
+});
 
 export function productSchema(html) {
   for (const match of String(html).matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
@@ -24,36 +54,78 @@ export function productSchema(html) {
   return null;
 }
 
-// Qué se espera ver, campo por campo, en la página servida.
-export function expectedChecks(esperado) {
-  const checks = [];
-  if (esperado.publisher) {
-    checks.push({ campo: 'publisher', visible: esperado.publisher, jsonLd: schema => clean(schema?.publisher?.name || schema?.publisher) });
+// Sólo lee la lista de detalles de la ficha. Un valor que estuviera en un
+// script, en un estilo o en un atributo NO aparece acá.
+export function detailRows(html) {
+  const rows = new Map();
+  const pattern = /<div class="detail-row"><dt>([\s\S]*?)<\/dt><dd>([\s\S]*?)<\/dd><\/div>/g;
+  for (const match of String(html).matchAll(pattern)) {
+    const etiqueta = normalize(match[1].replace(/<[^>]+>/g, ' '));
+    const valor = normalize(match[2].replace(/<[^>]+>/g, ' '));
+    if (etiqueta) rows.set(etiqueta, valor);
   }
-  if (esperado.pages) {
-    checks.push({ campo: 'pages', visible: String(esperado.pages), jsonLd: schema => clean(schema?.numberOfPages) });
+  return rows;
+}
+
+function jsonLdCoincide(field, contrato, esperado, schema) {
+  const bruto = contrato.jsonLd(schema);
+  if (bruto == null || bruto === '') return { ok: false, valor: null };
+  if (contrato.lista) {
+    const publicados = (Array.isArray(bruto) ? bruto : [bruto]).map(normalize).filter(Boolean);
+    // El renderizador recorta a los primeros `jsonLdTope`; sólo se exigen los
+    // que efectivamente caben.
+    const exigidos = esperado.slice(0, contrato.jsonLdTope || esperado.length).map(normalize);
+    return { ok: exigidos.every(topic => publicados.includes(topic)), valor: publicados.join(' · ') };
   }
-  if (esperado.publication_year) {
-    checks.push({ campo: 'publication_year', visible: String(esperado.publication_year), jsonLd: null });
+  return { ok: normalize(bruto) === normalize(esperado), valor: normalize(bruto) };
+}
+
+function visibleCoincide(field, contrato, esperado, rows) {
+  const valor = rows.get(contrato.etiqueta);
+  if (valor == null) return { ok: false, valor: null };
+  if (contrato.lista) {
+    const publicados = valor.split('·').map(normalize).filter(Boolean);
+    return { ok: esperado.map(normalize).every(topic => publicados.includes(topic)), valor };
   }
-  if (esperado.language) {
-    checks.push({ campo: 'language', visible: esperado.language, jsonLd: null });
-  }
-  if (esperado.author) {
-    checks.push({ campo: 'author', visible: esperado.author, jsonLd: schema => clean(schema?.author?.name || schema?.author) });
-  }
-  return checks;
+  // Comparación por valor COMPLETO: 496 no puede aprobar dentro de 1496.
+  return { ok: valor === normalize(esperado), valor };
 }
 
 export function evaluate(html, esperado) {
   const schema = productSchema(html);
-  const resultados = [];
-  for (const check of expectedChecks(esperado)) {
-    const enHtml = html.includes(check.visible);
-    const enJsonLd = check.jsonLd ? String(check.jsonLd(schema)).includes(check.visible) : null;
-    resultados.push({ campo: check.campo, esperado: check.visible, enHtml, enJsonLd });
+  const rows = detailRows(html);
+  const comprobaciones = [];
+
+  for (const [field, valorEsperado] of Object.entries(esperado || {})) {
+    const contrato = FIELD_CONTRACT[field];
+    if (!contrato) {
+      comprobaciones.push({ campo: field, resultado: 'sin_contrato', ok: false });
+      continue;
+    }
+    const esperadoNorm = contrato.lista
+      ? (Array.isArray(valorEsperado) ? valorEsperado : [valorEsperado]).map(normalize).filter(Boolean)
+      : normalize(valorEsperado);
+    if (!esperadoNorm || (contrato.lista && esperadoNorm.length === 0)) continue;
+
+    const visible = visibleCoincide(field, contrato, esperadoNorm, rows);
+    const jsonLd = contrato.jsonLd
+      ? jsonLdCoincide(field, contrato, esperadoNorm, schema)
+      : { ok: null, valor: null };
+
+    comprobaciones.push({
+      campo: field,
+      esperado: contrato.lista ? esperadoNorm.join(' · ') : esperadoNorm,
+      visible_encontrado: visible.valor,
+      visible_ok: visible.ok,
+      jsonld_encontrado: jsonLd.valor,
+      // `null` = el campo no tiene propiedad en el JSON-LD: no aplica.
+      jsonld_ok: jsonLd.ok,
+      // Se exigen AMBAS donde ambas corresponden.
+      ok: visible.ok && (jsonLd.ok === null || jsonLd.ok === true),
+    });
   }
-  return { tieneSchema: Boolean(schema), resultados };
+
+  return { tieneSchema: Boolean(schema), comprobaciones };
 }
 
 async function mapWithConcurrency(items, limit, worker) {
@@ -69,9 +141,10 @@ async function mapWithConcurrency(items, limit, worker) {
 }
 
 export async function main() {
-  const base = clean(process.env.PREVIEW_BASE_URL).replace(/\/$/, '');
+  const base = normalize(process.env.PREVIEW_BASE_URL).replace(/\/$/, '');
   const planPath = process.env.PREVIEW_PLAN;
   const outputPath = process.env.PREVIEW_OUTPUT || 'artifacts/preview/preview-ficha-validation.json';
+  const deployedSha = normalize(process.env.PREVIEW_DEPLOYED_SHA) || null;
   if (!base || !planPath) throw new Error('Faltan PREVIEW_BASE_URL y PREVIEW_PLAN.');
 
   const plan = JSON.parse(await readFile(planPath, 'utf8'));
@@ -79,42 +152,49 @@ export async function main() {
 
   const resultados = await mapWithConcurrency(fichas, 6, async ficha => {
     const url = `${base}/libro/${ficha.id}`;
+    const base_row = { id: ficha.id, isbn: ficha.isbn, url, ganados: ficha.ganados };
     try {
       const response = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
-      const status = response.status;
-      if (status !== 200) return { ...ficha, url, status, ok: false, motivo: `HTTP ${status}` };
+      if (response.status !== 200) {
+        // Un 404 queda SIN VERIFICAR. No se le atribuye causa.
+        return { ...base_row, status: response.status, estado: 'no_verificada', motivo: `HTTP ${response.status}` };
+      }
       const html = await response.text();
-      const { tieneSchema, resultados: campos } = evaluate(html, ficha.esperado || {});
-      const faltantes = campos.filter(c => !c.enHtml && c.enJsonLd !== true);
-      return { ...ficha, url, status, tieneSchema, campos, ok: faltantes.length === 0, faltantes: faltantes.map(c => c.campo) };
+      const { tieneSchema, comprobaciones } = evaluate(html, ficha.esperado || {});
+      // Ningún campo mejorado puede quedar sin comprobar.
+      const sinComprobar = (ficha.ganados || []).filter(
+        field => !comprobaciones.some(c => c.campo === field),
+      );
+      const fallidas = comprobaciones.filter(c => !c.ok);
+      const ok = comprobaciones.length > 0 && fallidas.length === 0 && sinComprobar.length === 0;
+      return {
+        ...base_row, status: 200, tieneSchema, comprobaciones, sin_comprobar: sinComprobar,
+        estado: ok ? 'verificada' : 'fallida',
+      };
     } catch (error) {
-      return { ...ficha, url, status: 0, ok: false, motivo: clean(error?.message) || 'fetch falló' };
+      return { ...base_row, status: 0, estado: 'no_verificada', motivo: normalize(error?.message) || 'fetch falló' };
     }
   });
 
-  const noEncontradas = resultados.filter(r => r.status === 404);
-  const comparables = resultados.filter(r => r.status === 200);
-  const conFalla = comparables.filter(r => !r.ok);
-  const errores = resultados.filter(r => r.status !== 200 && r.status !== 404);
+  const verificadas = resultados.filter(r => r.estado === 'verificada');
+  const fallidas = resultados.filter(r => r.estado === 'fallida');
+  const noVerificadas = resultados.filter(r => r.estado === 'no_verificada');
 
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     previewBaseUrl: base,
+    previewDeployedSha: deployedSha,
     snapshot: plan.snapshot || null,
     totales: {
       fichas_esperadas: fichas.length,
-      verificadas_http_200: comparables.length,
-      con_todos_los_campos: comparables.length - conFalla.length,
-      con_campos_faltantes: conFalla.length,
-      // Diferencias de catálogo: la ficha ya no está publicada. No es un fallo
-      // del PR y se informa por separado.
-      no_publicadas_hoy_http_404: noEncontradas.length,
-      otros_errores: errores.length,
+      verificadas: verificadas.length,
+      fallidas: fallidas.length,
+      no_verificadas: noVerificadas.length,
+      comprobaciones_totales: resultados.reduce((sum, r) => sum + (r.comprobaciones?.length || 0), 0),
     },
-    fallas: conFalla,
-    diferencias_de_catalogo: noEncontradas.map(r => ({ id: r.id, isbn: r.isbn })),
-    errores,
+    fallidas,
+    no_verificadas: noVerificadas.map(r => ({ id: r.id, isbn: r.isbn, status: r.status, motivo: r.motivo })),
     resultados,
   };
 
@@ -122,8 +202,8 @@ export async function main() {
   await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);
 
   console.log('=== VALIDACIÓN DEL PREVIEW DESPLEGADO ===');
-  console.log(JSON.stringify({ ...report, resultados: undefined, fallas: conFalla.slice(0, 15) }, null, 2));
-  if (conFalla.length || errores.length) process.exitCode = 1;
+  console.log(JSON.stringify({ ...report, resultados: undefined, fallidas: fallidas.slice(0, 10) }, null, 2));
+  if (fallidas.length || noVerificadas.length) process.exitCode = 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -68,7 +68,12 @@ export async function main() {
       pages: facts.pages || null,
       author: facts.author || null,
       language: bib.language || null,
+      format: bib.format || null,
+      edition: bib.edition || null,
       publication_year: bib.publication_year || null,
+      // Faltaba: sin esto, una ficha cuya única mejora eran los temas se
+      // validaba con CERO comprobaciones y pasaba igual.
+      topics: Array.isArray(bib.subjects) && bib.subjects.length ? bib.subjects : null,
     };
   };
 
@@ -89,9 +94,10 @@ export async function main() {
       id: fila.id,
       isbn: fila.isbn,
       ganados: fila.ganados,
+      // Sólo se exige lo que ESTA ficha ganó, y todo lo que ganó.
       esperado: Object.fromEntries(
         Object.entries(valoresEsperados(fila.isbn))
-          .filter(([campo, valor]) => valor && fila.ganados.includes(campo === 'publication_year' ? 'publication_year' : campo)),
+          .filter(([campo, valor]) => valor && fila.ganados.includes(campo)),
       ),
     })),
     fichas_beneficiadas: beneficiadas,
