@@ -29,7 +29,7 @@ test('el lote 01 incorpora 187 ISBN nuevos con evidencia verificable', () => {
   }
   // El total global sube con cada lote posterior (los lotes 01, 02 y 03
   // final de B11.2 agregan 83 más).
-  assert.equal(listBookEnrichments().length, 1609);
+  assert.equal(listBookEnrichments().length, 1656);
 });
 
 test('el lote 01 no contiene ni modifica títulos o datos comerciales', () => {
