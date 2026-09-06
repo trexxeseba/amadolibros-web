@@ -1,7 +1,8 @@
+import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
-export const DEFAULT_COVER_BATCH_SIZE = 250;
+export const DEFAULT_COVER_BATCH_SIZE = 100;
 export const COVER_REFRESH_MS = 30 * 24 * 60 * 60 * 1000;
 export const COVER_AI_TRANSFORM_VERSION = 1;
 
@@ -56,6 +57,7 @@ export function coverCandidates(item, { includePaused = false } = {}) {
     product_id: id,
     position,
     source_url: sourceUrl,
+    alternatives: nativeImageAlternatives(sourceUrl, sources),
     catalog_product_id: String(item.catalog_product_id || '').trim().toUpperCase() || null,
   }));
 }
@@ -85,6 +87,11 @@ function mergeProcessedEntry(freshEntry, processed) {
   if (!freshEntry) return localEntry;
 
   if (processed.status !== 'failed') {
+    if (localEntry.current?.source_url === freshEntry.current?.source_url &&
+        resolutionDowngrade(localEntry.current, freshEntry.current)) {
+      return { ...freshEntry, native_checked_at: localEntry.native_checked_at,
+        source_policy_version: localEntry.source_policy_version };
+    }
     // Si otra ejecución ya validó la misma entrada mientras esta corrida
     // procesaba sus bytes, nunca hacemos retroceder el puntero `current`.
     return timestamp(localEntry?.last_validated_at) > timestamp(freshEntry?.last_validated_at)
@@ -97,6 +104,8 @@ function mergeProcessedEntry(freshEntry, processed) {
   // manifest más viejo.
   const merged = { ...freshEntry };
   if (timestamp(localEntry?.last_error?.at) > timestamp(freshEntry?.last_error?.at)) {
+    merged.source_policy_version = localEntry.source_policy_version;
+    merged.native_checked_at = localEntry.native_checked_at;
     merged.last_attempted_source_url = localEntry.last_attempted_source_url;
     merged.last_error = localEntry.last_error;
   }
@@ -142,8 +151,12 @@ function needsAiUpscale(entry) {
 }
 
 function candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) {
+  const failedAt = timestamp(entry?.last_error?.at);
+  if (failedAt && nowMs - failedAt < IMAGE_FETCH_RETRY_MS) return null;
   if (!entry?.current?.object_key) return 0;
   if (entry.current.source_url !== candidate.source_url) return 1;
+  if (entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION) return 2;
+  if (!googleReadyImage(entry.current) && nowMs - timestamp(entry.native_checked_at) >= IMAGE_SOURCE_RECHECK_MS) return 2;
   if (aiUpscaleEnabled && needsAiUpscale(entry)) {
     const attempted = Date.parse(entry.last_transform_attempt_at || '');
     if (!Number.isFinite(attempted) || nowMs - attempted >= TRANSFORM_RETRY_MS) return 2;
@@ -302,28 +315,6 @@ async function storeImmutable(bucket, bytes, image, nowIso, metadata = {}) {
   return { objectKey, sha256 };
 }
 
-async function readStoredOriginal(bucket, candidate) {
-  if (!needsAiUpscale(candidate.entry) || candidate.entry.current.source_url !== candidate.source_url) return null;
-  const current = candidate.entry.current;
-  const key = current.original_object_key || current.object_key;
-  const object = await bucket.get(key);
-  if (!object) return null;
-  let buffer;
-  if (typeof object.arrayBuffer === 'function') buffer = await object.arrayBuffer();
-  else if (object.body instanceof Uint8Array) buffer = object.body;
-  else if (object.body) buffer = await new Response(object.body).arrayBuffer();
-  else return null;
-  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-  if (bytes.byteLength === 0 || bytes.byteLength > MAX_IMAGE_BYTES) return null;
-  const image = inspectCoverBytes(bytes, current.original_mime || current.mime);
-  return {
-    bytes,
-    image,
-    sourceValidators: candidate.entry.source_validators || { etag: null, last_modified: null },
-    originalObjectKey: key,
-  };
-}
-
 async function aiUpscaleCover(imagesBinding, bytes, image) {
   if (!imagesBinding || typeof imagesBinding.input !== 'function' ||
       Math.min(image.width, image.height) >= TARGET_SHORT_EDGE) {
@@ -346,11 +337,11 @@ async function aiUpscaleCover(imagesBinding, bytes, image) {
   return { bytes: transformedBytes, image: transformedImage, transform };
 }
 
-async function fetchCover(candidate, fetchFn) {
+async function fetchOneCover(sourceUrl, fetchFn) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetchFn(candidate.source_url, {
+    const response = await fetchFn(sourceUrl, {
       headers: {
         accept: 'image/webp,image/png,image/jpeg',
         'user-agent': 'Mozilla/5.0 (compatible; AmadoLibrosCoverMirror/1.0)',
@@ -369,14 +360,43 @@ async function fetchCover(candidate, fetchFn) {
         last_modified: response.headers.get('last-modified') || null,
       },
       originalObjectKey: null,
+      nativeSourceUrl: sourceUrl,
     };
   } finally {
     clearTimeout(timeout);
   }
 }
 
+async function fetchCover(candidate, fetchFn) {
+  const probes = [];
+  let best = null;
+  for (const source of candidate.alternatives || [candidate.source_url]) {
+    try {
+      const found = await fetchOneCover(source, fetchFn);
+      probes.push({ source_url: source, width: found.image.width, height: found.image.height });
+      const ratio = found.image.width / found.image.height;
+      if (best && Math.abs(ratio / (best.image.width / best.image.height) - 1) > 0.05) {
+        probes.at(-1).rejected = 'aspect-ratio-mismatch';
+        continue;
+      }
+      if (!best || (!resolutionDowngrade(found.image, best.image) &&
+          found.image.width * found.image.height > best.image.width * best.image.height)) best = found;
+    } catch (error) { probes.push({ source_url: source, error: String(error.message).slice(0,160) }); }
+  }
+  if (!best) throw new Error('Ninguna fuente válida: '+JSON.stringify(probes).slice(0,200));
+  return { ...best, probes };
+}
+
 async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
-  const source = await readStoredOriginal(bucket, candidate) || await fetchCover(candidate, fetchFn);
+  const source = await fetchCover(candidate, fetchFn);
+  if ((candidate.entry?.current?.source_url === candidate.source_url ||
+      (mlImageIdentity(candidate.source_url) && mlImageIdentity(candidate.source_url) === mlImageIdentity(candidate.entry?.current?.source_url))) &&
+      resolutionDowngrade(source.image, candidate.entry.current)) {
+    return { entry: { ...candidate.entry, current: { ...candidate.entry.current,
+      source_url: candidate.source_url, native_source_url: candidate.entry.current.native_source_url || candidate.entry.current.source_url }, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+      native_checked_at: nowIso, source_probes: source.probes, last_validated_at: nowIso,
+      last_error: null }, status: 'revalidated', quality_status: 'better-master-preserved' };
+  }
   const originalStored = source.originalObjectKey
     ? { objectKey: source.originalObjectKey, sha256: candidate.entry.current.original_sha256 || candidate.entry.current.sha256 }
     : await storeImmutable(bucket, source.bytes, source.image, nowIso);
@@ -414,6 +434,9 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
     entry: {
       product_id: candidate.product_id,
       position: candidate.position,
+      source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+      native_checked_at: nowIso,
+      source_probes: source.probes,
       current: {
         object_key: finalStored.objectKey,
         sha256: finalStored.sha256,
@@ -425,6 +448,7 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
         original_sha256: originalStored.sha256,
         original_mime: source.image.mime,
         source_url: candidate.source_url,
+        native_source_url: source.nativeSourceUrl,
         imported_at: nowIso,
         transform: transformInfo,
       },
@@ -468,7 +492,7 @@ export async function syncCoverMirror(env, catalog, {
   const nowIso = nowDate.toISOString();
   const manifestState = await readManifestState(bucket, nowIso);
   const manifest = manifestState.manifest;
-  const aiUpscaleEnabled = Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
+  const aiUpscaleEnabled = env?.COVER_ALLOW_GENERATIVE_UPSCALE === 'true' && Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
   // La mejora generativa se reserva para la portada primaria del mismo
   // universo deduplicado que recibe Merchant. Las imágenes secundarias se
   // copian sin alterarlas para no inventar texto ni accesorios del producto.
@@ -481,7 +505,7 @@ export async function syncCoverMirror(env, catalog, {
     .map(value => value.trim().toUpperCase())
     .filter(value => /^MLU\d+$/.test(value)));
   const batch = selectCoverBatch(catalog, manifest, {
-    limit,
+    limit: Math.min(100, Math.max(1, Number(limit) || 100)),
     nowMs: nowDate.getTime(),
     aiUpscaleEnabled,
     aiUpscaleProductIds,
@@ -504,6 +528,8 @@ export async function syncCoverMirror(env, catalog, {
     } catch (error) {
       const entry = {
         ...(candidate.entry || { product_id: candidate.product_id, position: candidate.position, current: null }),
+        source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+        native_checked_at: nowIso,
         last_attempted_source_url: candidate.source_url,
         last_error: { at: nowIso, message: String(error?.message || 'Error').slice(0, 240) },
       };
@@ -532,7 +558,37 @@ export async function syncCoverMirror(env, catalog, {
         aiUpscaleProductIds.has(String(entry?.product_id || '').toUpperCase()) && needsAiUpscale(entry)
       ).length
     : null;
+  const scope = (catalog?.items || []).flatMap(item => coverCandidates(item, { includePaused }));
+  const scopeEntries = scope.map(row => ({ row, entry: finalManifest.entries[`${row.product_id}:${row.position}`] }));
+  const sourcePending = scopeEntries.filter(({row,entry}) =>
+    !entry || entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION ||
+    (entry.current?.source_url !== row.source_url && entry.last_attempted_source_url !== row.source_url)).length;
+  const needsSource = Object.entries(finalManifest.entries).filter(([,entry]) => entry?.current?.object_key && !googleReadyImage(entry.current))
+    .map(([key,entry]) => ({row:{product_id:entry.product_id || key.split(':')[0],position:Number(entry.position ?? key.split(':')[1]),source_url:entry.current.source_url},entry}));
+  const unavailable = new Map(Object.entries(finalManifest.entries)
+    .filter(([,entry]) => !entry?.current?.object_key || (entry.last_error && entry.last_attempted_source_url !== entry.current.source_url))
+    .map(([key,entry]) => [key, {product_id: entry.product_id || key.split(':')[0], position: Number(entry.position ?? key.split(':')[1]),
+      source_url: entry.last_attempted_source_url || entry.current?.source_url || null, error: entry.last_error || null}]));
+  for (const {row,entry} of scopeEntries) {
+    if (!entry?.current?.object_key || entry.current.source_url !== row.source_url) unavailable.set(`${row.product_id}:${row.position}`, {
+      product_id: row.product_id, position: row.position, source_url: row.source_url, error: entry?.last_error || null});
+  }
+  await bucket.put('covers/v1/quality-report.json', JSON.stringify({
+    generated_at: nowIso, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+    scope_images: scope.length, known_images: Object.keys(finalManifest.entries).length, discovery_pending: sourcePending,
+    needs_better_source: needsSource.map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
+      source_url: row.source_url, width: entry.current.width, height: entry.current.height,
+      probes: entry.source_probes || [], next_check_at: new Date(timestamp(entry.native_checked_at) + IMAGE_SOURCE_RECHECK_MS).toISOString() })),
+    unavailable: [...unavailable.values()],
+  }), { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
   return {
+    source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+    scope_images: scope.length,
+    source_discovery_pending: sourcePending,
+    needs_better_source: needsSource.length,
+    needs_better_source_examples: needsSource.slice(0,100).map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
+      source_url: row.source_url, width: entry.current.width, height: entry.current.height,
+      reason: 'no-native-source-at-least-500', next_source_check: new Date(timestamp(entry.native_checked_at) + IMAGE_SOURCE_RECHECK_MS).toISOString() })),
     status: 'completed',
     attempted: results.length,
     imported,
@@ -540,7 +596,7 @@ export async function syncCoverMirror(env, catalog, {
     // Un intento fallido sigue pendiente. Sin esto, el último lote podía
     // declarar terminado el backfill y bajar prematuramente la frecuencia
     // de reintento de 5 minutos a una hora.
-    pending: Math.max(0, batch.total_candidates - imported),
+    pending: Math.max(sourcePending, batch.total_candidates - imported),
     valid_copies: validCopies,
     ai_upscaled: aiUpscaled,
     quality_pending: qualityPending,

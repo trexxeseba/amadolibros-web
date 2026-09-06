@@ -189,7 +189,7 @@ test('completa portadas principales de distintos libros antes que galerías secu
   );
 });
 
-test('vuelve a seleccionar una copia reciente de baja resolución al activar Images', () => {
+test('la política nueva reprocesa copias anteriores aunque sean recientes', () => {
   const now = Date.parse('2026-08-16T12:00:00Z');
   const catalog = { items: [item()] };
   const manifest = {
@@ -206,7 +206,7 @@ test('vuelve a seleccionar una copia reciente de baja resolución al activar Ima
       },
     },
   };
-  assert.equal(selectCoverBatch(catalog, manifest, { nowMs: now }).selected.length, 0);
+  assert.equal(selectCoverBatch(catalog, manifest, { nowMs: now }).selected.length, 1);
   assert.equal(selectCoverBatch(catalog, manifest, { nowMs: now, aiUpscaleEnabled: true }).selected.length, 1);
 });
 
@@ -234,7 +234,7 @@ test('Cloudflare Images mejora la copia R2 y conserva el original inmutable', as
   const bucket = new MockR2();
   const images = imagesBinding();
   const result = await syncCoverMirror(
-    { COVER_R2: bucket, IMAGES: images },
+    { COVER_R2: bucket, COVER_ALLOW_GENERATIVE_UPSCALE: 'true', IMAGES: images },
     { items: [item()] },
     {
       now: () => new Date('2026-08-16T12:00:00Z'),
@@ -258,7 +258,7 @@ test('Cloudflare Images mejora la copia R2 y conserva el original inmutable', as
 test('si la mejora IA falla mantiene la portada original y registra el motivo', async () => {
   const bucket = new MockR2();
   const result = await syncCoverMirror(
-    { COVER_R2: bucket, IMAGES: imagesBinding({ fail: true }) },
+    { COVER_R2: bucket, COVER_ALLOW_GENERATIVE_UPSCALE: 'true', IMAGES: imagesBinding({ fail: true }) },
     { items: [item()] },
     {
       now: () => new Date('2026-08-16T12:00:00Z'),
@@ -278,7 +278,7 @@ test('no consume Images para un producto que Merchant excluye', async () => {
   const bucket = new MockR2();
   const images = imagesBinding();
   const result = await syncCoverMirror(
-    { COVER_R2: bucket, IMAGES: images },
+    { COVER_R2: bucket, COVER_ALLOW_GENERATIVE_UPSCALE: 'true', IMAGES: images },
     { items: [item('MLU999999', { domain_id: 'MLU-COMPUTER_COMPONENTS' })] },
     {
       now: () => new Date('2026-08-16T12:00:00Z'),
@@ -400,4 +400,77 @@ test('un intento fallido concurrente no pisa una copia válida más nueva', asyn
   const entry = bucket.manifest().entries['MLU123456:0'];
   assert.equal(entry.current.object_key, `covers/v1/objects/${'c'.repeat(64)}.jpg`);
   assert.match(entry.last_error.message, /HTTP 403/);
+});
+
+test('sistema general descubre fuentes nativas en todas las posiciones sin MLU predefinidos ni IA', async () => {
+  const book=item('MLU987654321', {pictures:[
+    'https://http2.mlstatic.com/D_123456-MLU123456789_012026-O.jpg',
+    'https://http2.mlstatic.com/D_654321-MLU987654321_022026-O.jpg',
+  ]});
+  const bucket=new MockR2();
+  const result=await syncCoverMirror({COVER_R2:bucket,IMAGES:{input(){throw new Error('No IA automática');}}},{items:[book]}, {
+    fetchFn:async url=>new Response(url.endsWith('-F.jpg')?pngBytes(800,1200,7):pngBytes(300,450),{headers:{'content-type':'image/png'}}),
+  });
+  assert.equal(result.scope_images,2); assert.equal(result.pending,0); assert.equal(result.needs_better_source,0);
+  for(const position of [0,1]) {
+    const entry=bucket.manifest().entries[`${book.id}:${position}`];
+    assert.equal(entry.current.width,800); assert.equal(entry.current.height,1200);
+    assert.equal(entry.current.source_url,book.pictures[position]);
+    assert.match(entry.current.native_source_url,/-F.jpg$/); assert.equal(entry.current.transform,null);
+    assert.equal(entry.source_policy_version,1);
+  }
+});
+
+test('el master bueno se conserva cuando el origen pierde resolución', async () => {
+  const bucket=new MockR2(); const catalog={items:[item()]};
+  await syncCoverMirror({COVER_R2:bucket},catalog,{now:()=>new Date('2026-01-01'),fetchFn:async()=>new Response(pngBytes(1200,1800),{headers:{'content-type':'image/png'}})});
+  const before=bucket.manifest().entries['MLU123456:0'].current;
+  const result=await syncCoverMirror({COVER_R2:bucket},catalog,{now:()=>new Date('2026-03-01'),fetchFn:async()=>new Response(pngBytes(300,450),{headers:{'content-type':'image/png'}})});
+  assert.deepEqual(bucket.manifest().entries['MLU123456:0'].current,before);
+  assert.equal(result.results[0].quality_status,'better-master-preserved');
+  assert.equal(result.needs_better_source,0);
+});
+
+test('cola persistente de fuentes insuficientes, sin reintento caliente y recuperación automática', async () => {
+  const bucket=new MockR2(); const catalog={items:[item()]}; let calls=0;
+  const fetchFn=async()=>{calls++;return new Response(pngBytes(300,450),{headers:{'content-type':'image/png'}});};
+  const first=await syncCoverMirror({COVER_R2:bucket},catalog,{now:()=>new Date('2026-01-01'),fetchFn});
+  assert.equal(first.needs_better_source,1);
+  const report=JSON.parse(await (await bucket.get('covers/v1/quality-report.json')).text());
+  assert.equal(report.needs_better_source.length,1);
+  await syncCoverMirror({COVER_R2:bucket},catalog,{now:()=>new Date('2026-01-01T00:05:00Z'),fetchFn});
+  assert.equal(calls,1);
+  const recovered=await syncCoverMirror({COVER_R2:bucket},catalog,{now:()=>new Date('2026-01-09'),fetchFn:async()=>new Response(pngBytes(800,1200),{headers:{'content-type':'image/png'}})});
+  assert.equal(recovered.needs_better_source,0); assert.equal(recovered.pending,0);
+});
+
+test('una variante caída no bloquea otra fuente real válida', async () => {
+  const book=item('MLU987654321',{pictures:['https://http2.mlstatic.com/D_123456-MLU123456789_012026-O.jpg']});
+  const bucket=new MockR2();
+  const result=await syncCoverMirror({COVER_R2:bucket},{items:[book]},{fetchFn:async url=>url.endsWith('-O.jpg')?new Response('down',{status:503}):new Response(pngBytes(800,1200),{headers:{'content-type':'image/png'}})});
+  assert.equal(result.failed,0);
+  assert.ok(bucket.manifest().entries[book.id+':0'].source_probes.some(x=>x.error));
+});
+
+test('una imagen inaccesible no bloquea el descubrimiento y permanece en la cola entre bloques', async () => {
+  const bucket = new MockR2();
+  const broken = item('MLU111111', { status: 'paused' });
+  const first = await syncCoverMirror({COVER_R2: bucket}, {items: [broken]}, {
+    includePaused: true, now: () => new Date('2026-01-01'),
+    fetchFn: async () => new Response('unavailable', {status: 503}),
+  });
+  assert.equal(first.failed, 1);
+  assert.equal(first.source_discovery_pending, 0);
+  const next = await syncCoverMirror({COVER_R2: bucket}, {items: [item('MLU222222')]}, {
+    now: () => new Date('2026-01-01T00:05:00Z'),
+    fetchFn: async () => new Response(pngBytes(), {headers: {'content-type': 'image/png'}}),
+  });
+  assert.equal(next.imported, 1);
+  const report = JSON.parse(await (await bucket.get('covers/v1/quality-report.json')).text());
+  assert.ok(report.unavailable.some(row => row.product_id === broken.id));
+  const cooling = await syncCoverMirror({COVER_R2: bucket}, {items: [broken]}, {
+    includePaused: true, now: () => new Date('2026-01-01T00:10:00Z'),
+    fetchFn: async () => { throw new Error('must not retry before cooldown'); },
+  });
+  assert.equal(cooling.attempted, 0);
 });

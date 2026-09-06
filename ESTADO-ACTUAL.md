@@ -542,3 +542,19 @@ criterio de aceptación, evidencia requerida) de cada punto en
 
 Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
 autorización explícita y separada de Seba.
+
+
+## QW2 — sistema general de imágenes (rama Codex, 2026-09-06)
+
+- **Responsable:** Codex. **Esfuerzo:** implementación transversal + validación CI/Preview.
+- **Base:** main `ea0c4756cd1dfb44756d68d719d864cf9d9a8284`. Rama `codex/catalog-image-system`.
+- **Alcance:** todas las imágenes del catálogo, actuales y futuras, en las 16 posiciones admitidas por la web; activos y bloques completos de pausados. Sin listas de MLU/ISBN para resolver imágenes.
+- **Implementado en rama:** búsqueda de variantes nativas del mismo archivo ML, medición de bytes, selección sin reducir dimensiones, master R2 inmutable, preservación de copias mejores, caché por hash y cola persistente de fuentes insuficientes/inaccesibles.
+- **Continuidad:** cron existente, lotes limitados a 100 imágenes; cursor persistente para pausados; errores con espera de 6 horas, fuentes <500 con revisión semanal, masters con revisión mensual. Cambiar la versión de la política obliga a recorrer de nuevo las imágenes conocidas.
+- **Aceptación:** tests de todas las posiciones, fuente inaccesible sin bloqueo, preservación y caché; CI y Preview verdes; ejecución real de un lote automático en R2 Preview; igualdad SHA-256 entre master y URL web. El lote de verificación no limita el alcance del sistema.
+- **Estado:** código implementado; validación local realizada y validación remota pendiente al crear el Draft. Evidencia remota se registra en el PR. No declarar desplegado ni catálogo completo procesado.
+- **Google:** filtro mínimo de ambos lados >=500 disponible para feed/JSON-LD mediante `COVER_GOOGLE_QUALITY_GATE=true`. Permanece desactivado hasta medir el impacto real y completar el backfill necesario; no confundir disponibilidad del filtro con activación.
+- **Cloudflare Images:** binding de pago existente conservado para la arquitectura actual. La generación artificial queda desactivada por defecto: no inventa resolución ni sustituye la búsqueda de fuente real. Las variantes responsive web existentes consumen el master mediante `/book-cover/`.
+- **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
+- Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
+- QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.

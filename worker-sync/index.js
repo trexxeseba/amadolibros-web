@@ -1,3 +1,4 @@
+import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
  *
@@ -617,11 +618,16 @@ export async function persistCoverMirrorState(env, result, catalog) {
     valid_copies: result.valid_copies ?? null,
     ai_upscaled: result.ai_upscaled ?? null,
     quality_pending: result.quality_pending ?? null,
+    source_policy_version: result.source_policy_version ?? null,
+    scope_images: result.scope_images ?? null,
+    needs_better_source: result.needs_better_source ?? null,
+    paused_progress: result.paused_progress ?? null,
     manifest_retries: result.manifest_retries ?? null,
   }));
   if (result.status === 'completed' && result.pending === 0) {
     await kvPut(env, 'cover-mirror:backfill_complete', JSON.stringify({
       completed: true,
+      source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
       catalog_version: catalogVersion,
       at: new Date().toISOString(),
     }));
@@ -640,11 +646,40 @@ export async function runCoverMirror(env, { limit = 250, maintenanceMinute = nul
     if (maintenanceMinute !== null && Number(maintenanceMinute) !== 0) {
       const marker = parseBackfillMarker(await kvGet(env, 'cover-mirror:backfill_complete'));
       const currentVersion = catalogBackfillVersion(catalog);
-      if (marker?.catalog_version && marker.catalog_version === currentVersion) {
+      if (marker?.source_policy_version === IMAGE_SOURCE_POLICY_VERSION && marker?.catalog_version && marker.catalog_version === currentVersion) {
         return { status: 'skipped', reason: 'hourly-maintenance', catalog_version: currentVersion };
       }
     }
-    const result = await syncCoverMirrorFn(env, catalog, { limit });
+    // Include one full paused block per pass; preserve galleries, not only index thumbnails.
+    const pausedManifest = await readR2Json(env, 'catalog/manifest.json');
+    if (pausedManifest.error) throw new Error('Paused manifest unreadable; completion withheld: '+pausedManifest.error);
+    const descriptor = pausedManifest?.body?.current;
+    let cursor = null;
+    let pausedItems = [];
+    if (descriptor?.block_prefix && Number.isInteger(descriptor.block_count) && descriptor.block_count > 0) {
+      try { cursor = JSON.parse(await kvGet(env, 'cover-mirror:paused_cursor') || 'null'); } catch {}
+      if (!cursor || cursor.block_count !== descriptor.block_count || cursor.policy !== IMAGE_SOURCE_POLICY_VERSION) {
+        cursor = { index: 0, remaining: descriptor.block_count, block_count: descriptor.block_count, policy: IMAGE_SOURCE_POLICY_VERSION };
+      }
+      if (cursor.catalog_version !== descriptor.version) {
+        cursor.remaining = cursor.block_count;
+        cursor.catalog_version = descriptor.version;
+      }
+      const block = await readR2Json(env, `${descriptor.block_prefix}/block-${String(cursor.index).padStart(3,'0')}.json`);
+      if (!Array.isArray(block?.body?.items)) throw new Error('Paused image block unavailable; cursor retained.');
+      const activeIds = new Set(catalog.items.map(item => item.id));
+      pausedItems = block.body.items.filter(item => item.status === 'paused' && !activeIds.has(item.id));
+    }
+    const result = await syncCoverMirrorFn(env, { ...catalog, items: [...catalog.items, ...pausedItems] }, { limit, includePaused: true });
+    if (cursor && result.status === 'completed') {
+      if ((result.source_discovery_pending ?? result.pending) === 0) {
+        cursor.index = (cursor.index + 1) % cursor.block_count;
+        cursor.remaining = Math.max(0, cursor.remaining - 1);
+        await kvPut(env, 'cover-mirror:paused_cursor', JSON.stringify(cursor));
+      }
+      result.paused_progress = cursor;
+      result.pending += cursor.remaining > 0 ? 1 : 0;
+    }
     await persistCoverMirrorState(env, result, catalog);
     return result;
   } catch (error) {

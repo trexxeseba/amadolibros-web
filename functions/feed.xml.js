@@ -1,3 +1,4 @@
+import { googleReadyImage } from './_shared/image-source-policy.js';
 /**
  * functions/feed.xml.js
  *
@@ -90,9 +91,10 @@ export async function onRequest(context) {
         // web puede seguir mostrando antigüedades u otros productos; el feed
         // de Amado Libros se mantiene deliberadamente limitado a libros.
         const commerciallyEligibleItems = items.filter(isEligibleForFeed);
+        const requireImageQuality = context.env?.COVER_GOOGLE_QUALITY_GATE === 'true';
         const coverManifest = await readMerchantCoverManifest(context);
         const eligibleItems = coverManifest
-            ? filterItemsWithReadyPrimaryCover(commerciallyEligibleItems, coverManifest)
+            ? filterItemsWithReadyPrimaryCover(commerciallyEligibleItems, coverManifest, requireImageQuality)
             : commerciallyEligibleItems;
         const pendingCovers = commerciallyEligibleItems.length - eligibleItems.length;
 
@@ -112,7 +114,7 @@ export async function onRequest(context) {
 
         let feedItems = '';
         for (const item of sortedItems) {
-            feedItems += renderFeedItem(item, coverManifest, categoryData);
+            feedItems += renderFeedItem(item, coverManifest, categoryData, requireImageQuality);
         }
 
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -442,7 +444,7 @@ function readyCoverCurrent(entry, sourceUrl) {
         : null;
 }
 
-export function additionalMerchantImageLinks(item, manifest, limit = MAX_ADDITIONAL_IMAGE_LINKS) {
+export function additionalMerchantImageLinks(item, manifest, limit = MAX_ADDITIONAL_IMAGE_LINKS, requireQuality = false) {
     if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
         typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) return [];
     const id = String(item?.id || '').trim().toUpperCase();
@@ -457,7 +459,7 @@ export function additionalMerchantImageLinks(item, manifest, limit = MAX_ADDITIO
     const safeLimit = Math.min(MAX_ADDITIONAL_IMAGE_LINKS, Math.max(0, Number(limit) || 0));
     for (let position = 1; position < sources.length && links.length < safeLimit; position += 1) {
         const current = readyCoverCurrent(manifest.entries[`${id}:${position}`], sources[position]);
-        if (!current || seenHashes.has(current.sha256)) continue;
+        if (!current || (requireQuality && !googleReadyImage(current)) || seenHashes.has(current.sha256)) continue;
         const link = merchantImageLink(item, position);
         if (!link) continue;
         seenHashes.add(current.sha256);
@@ -466,7 +468,7 @@ export function additionalMerchantImageLinks(item, manifest, limit = MAX_ADDITIO
     return links;
 }
 
-export function filterItemsWithReadyPrimaryCover(items, manifest) {
+export function filterItemsWithReadyPrimaryCover(items, manifest, requireQuality = false) {
     if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
         typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) {
         throw new Error('Manifest de portadas no válido para Merchant.');
@@ -474,12 +476,13 @@ export function filterItemsWithReadyPrimaryCover(items, manifest) {
     return items.filter(item => {
         const id = String(item?.id || '').trim().toUpperCase();
         const sourceUrl = merchantImageSources(item)[0];
-        return Boolean(sourceUrl && readyCoverCurrent(manifest.entries[`${id}:0`], sourceUrl));
+        const current = sourceUrl && readyCoverCurrent(manifest.entries[`${id}:0`], sourceUrl);
+        return Boolean(current && (!requireQuality || googleReadyImage(current)));
     });
 }
 
 async function readMerchantCoverManifest(context) {
-    if (context?.env?.APP_ENV !== 'production') return null;
+    if (context?.env?.APP_ENV !== 'production' && context?.env?.COVER_GOOGLE_QUALITY_GATE !== 'true') return null;
     const bucket = context?.env?.COVER_R2;
     if (!bucket || typeof bucket.get !== 'function') {
         throw new Error('COVER_R2 no está disponible en producción; se conserva el feed anterior.');
@@ -500,7 +503,7 @@ async function readMerchantCoverManifest(context) {
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
-export function renderFeedItem(item, coverManifest = null, categoryData = null) {
+export function renderFeedItem(item, coverManifest = null, categoryData = null, requireImageQuality = false) {
     item = applyBookEnrichment(item);
     const stock = Number(item.available_quantity) || 0;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
@@ -512,7 +515,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null) 
     // El feed nunca expone mlstatic.com: Google obtiene la portada desde el
     // proxy/cache de Amado Libros, bajo un dominio que controlamos.
     const imageLink = merchantImageLink(item);
-    const additionalImageTags = additionalMerchantImageLinks(item, coverManifest)
+    const additionalImageTags = additionalMerchantImageLinks(item, coverManifest, MAX_ADDITIONAL_IMAGE_LINKS, requireImageQuality)
         .map(link => `\n        <g:additional_image_link>${escapeXml(link)}</g:additional_image_link>`)
         .join('');
 
