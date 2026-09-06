@@ -89,15 +89,47 @@ correspondientes, más abajo.
     ya estaba completo desde antes, sin relación con este PR.
     [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314)
     (Draft, sin mergear).
-  - **QW3A2 — enriquecimiento bibliográfico real:** EN CURSO. Selección
-    de 100 fichas activas priorizadas por stock real + ficha indexable
-    + ISBN válido + gaps bibliográficos reales (mismo criterio ya
-    usado y probado en B11:
-    `scripts/seo/book-intelligence-research-run.mjs`), investigación
-    real contra Google Books/Open Library/BNE en curso vía
-    `b11-batch-research.yml` (run 34004157966). Se actualiza este
-    documento al terminar, con la tabla ANTES/DESPUÉS real y los
-    conteos de ≥1 dato, ≥3 datos y sin mejora.
+  - **QW3A2 — enriquecimiento bibliográfico real:** LOTE 01 TERMINADO —
+    PENDIENTE MERGE. Corrida
+    [34004157966](https://github.com/trexxeseba/amadolibros-web/actions/runs/34004157966)
+    (success, 51 min) contra Google Books / Open Library / BNE:
+
+    | Métrica | Valor |
+    | --- | ---: |
+    | Ediciones únicas activas y vendibles investigadas | 2.005 |
+    | Google Books — coincidencias exactas | 500 (56 errores) |
+    | Open Library — coincidencias exactas | 825 (0 errores) |
+    | BNE — coincidencias exactas | 158 (0 errores) |
+    | `GREEN_FULL` / `GREEN_FACTS` | 7 / 40 |
+    | `REVIEW` / `NO_EVIDENCE` | 477 / 1.481 |
+    | **ISBN incorporados al registro** | **47** |
+
+    Registry: **1.609 → 1.656 ISBN** (+47). Rendimiento real del
+    universo investigado: **2,3%** (47/2.005) — el circuito automático
+    sigue dando poco, como ya mostró B11.
+
+    Mejoras por edición, medidas sobre el catálogo EFECTIVO (no sobre
+    el crudo, para no recontar datos ya publicados): **sin mejora 0**,
+    **≥1 dato 47**, **≥3 datos 3** (34 con exactamente 1 dato, 10 con
+    2). Son 63 datos sobre 47 ediciones.
+
+    | Campo completado | Ediciones |
+    | --- | ---: |
+    | Año de publicación | 31 |
+    | Páginas | 22 |
+    | Editorial | 6 |
+    | Temas | 3 |
+    | Autor | 1 |
+
+    Los dos campos que más pesan —páginas y editorial— son justamente
+    dos de los mayores gaps del catálogo efectivo (22,92% y 21,65%).
+    Cada dato conserva su fuente por campo (`provider`, `url`,
+    `relationship: exact_edition`), verificado por test; los 47 tienen
+    respaldo simultáneo de Google Books y Open Library. Ninguno de los
+    47 estaba ya en el registro vigente y 0 campos se solapan con lo ya
+    publicado. Sin sinopsis copiadas y sin datos comerciales.
+    [PR #319](https://github.com/trexxeseba/amadolibros-web/pull/319)
+    (Draft, sin mergear).
     **Defecto del selector, corregido:** `selectResearchCohort()`
     excluía cualquier ISBN presente en el registro de enriquecimiento
     aunque conservara campos incompletos, así que una edición que sólo
@@ -106,7 +138,9 @@ correspondientes, más abajo.
     `applyBookEnrichment()`) y un ISBN sólo queda fuera si no le falta
     ningún campo. [PR #318](https://github.com/trexxeseba/amadolibros-web/pull/318)
     (Draft, sin mergear).
-  - **QW2 — imágenes:** MEDICIÓN COMPLETA — CORRECCIÓN NO INICIADA. Sin
+  - **QW2 — imágenes:** MEDICIÓN COMPLETA — CORRECCIÓN NO INICIADA.
+    **Responsable: Codex** (Seba lo asignó el 2026-09-06; Claude Code
+    deja esta línea libre y no toca imágenes). Sin
     activar Cloudflare Images ni tocar Merchant. **Corrección de
     encuadre:** la posición en NUESTRA galería no es la función en
     Merchant. Toda URL que aparece en `imageLink` es la imagen

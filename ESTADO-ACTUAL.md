@@ -11,6 +11,7 @@ actuales.
 | Métrica | Valor |
 | --- | --- |
 | ISBN enriquecidos en el registry (en `main` y Producción) | **1.609** |
+| — más 47 del lote QW3A2 01, **en Draft [PR #319](https://github.com/trexxeseba/amadolibros-web/pull/319), sin mergear** (llevarían el registry a 1.656) | pendiente |
 | Pendientes totales | **2.006** |
 | — de los cuales `REVISAR` (evidencia con conflicto de identidad) | **442** |
 | — de los cuales `SIN_DATOS` (sin evidencia utilizable) | **1.564** |
@@ -560,7 +561,20 @@ criterio de aceptación, evidencia requerida) de cada punto en
    - **QW3A1 (calidad ISBN/GTIN):** IMPLEMENTADO — PENDIENTE MERGE.
      Es una corrección de validación, **no** "enriquecimiento
      estructurado completo". [PR #314](https://github.com/trexxeseba/amadolibros-web/pull/314).
-   - **QW3A2 (enriquecimiento bibliográfico real):** ver detalle en
+   - **QW3A2 (enriquecimiento bibliográfico real):** LOTE 01 TERMINADO
+     — PENDIENTE MERGE. Corrida
+     [34004157966](https://github.com/trexxeseba/amadolibros-web/actions/runs/34004157966)
+     (success): 2.005 ediciones investigadas, **47 incorporadas** al
+     registro (7 `GREEN_FULL` + 40 `GREEN_FACTS`), rendimiento real
+     **2,3%**. Registry **1.609 → 1.656**. Medido sobre el catálogo
+     efectivo: sin mejora 0, ≥1 dato 47, ≥3 datos 3 — 63 datos en
+     total (año 31, páginas 22, editorial 6, temas 3, autor 1). Cada
+     dato con su fuente; sin sinopsis copiadas ni datos comerciales.
+     [PR #319](https://github.com/trexxeseba/amadolibros-web/pull/319).
+     El selector que bloqueaba ISBN incompletos del registro quedó
+     corregido en
+     [PR #318](https://github.com/trexxeseba/amadolibros-web/pull/318).
+     Detalle completo en
      `PLAN-MAESTRO.md`.
    - **QW2 (imágenes):** MEDICIÓN COMPLETA — CORRECCIÓN NO INICIADA.
      Corrección de encuadre: **toda URL en `imageLink` es principal
