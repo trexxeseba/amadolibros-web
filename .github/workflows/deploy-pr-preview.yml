@@ -73,6 +73,21 @@ jobs:
           done
           exit 1
 
+      - name: Verify exact native cover bytes on Preview
+        if: github.head_ref == 'codex/qw2-verified-sources'
+        env:
+          QW2_PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: node scripts/seo/verified-cover-live-check.mjs
+
+      - name: Upload verified native cover evidence
+        if: always() && github.head_ref == 'codex/qw2-verified-sources'
+        uses: actions/upload-artifact@v4
+        with:
+          name: qw2-verified-covers-pr-${{ github.event.pull_request.number }}
+          path: artifacts/qw2-verified-covers/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Audit protected Preview
         env:
           COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}

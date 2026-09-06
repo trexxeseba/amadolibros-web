@@ -1,3 +1,4 @@
+import { verifiedCoverSource } from './verified-cover-sources.js';
 import { perfNow, recordPerf } from './perf.js';
 
 const MANIFEST_KEY = 'covers/v1/manifest.json';
@@ -125,7 +126,7 @@ export async function findPreviewCover(ctx, productId, position = 0, sourceUrl =
     // no conservan pictures[]; en ese caso sourceUrl=null y confiamos en el
     // manifest validado/refrescado por el piloto.
     if (sourceUrl !== null) {
-        const normalized = normalizeSourceUrl(sourceUrl);
+        const normalized = normalizeSourceUrl(verifiedCoverSource(productId, sourceUrl));
         if (!normalized || normalized !== current.entry.current.source_url) return null;
     }
     return current;
