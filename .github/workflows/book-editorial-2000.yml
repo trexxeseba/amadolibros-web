@@ -1,0 +1,227 @@
+name: B11 editorial real — lote 2000
+
+on:
+  push:
+    branches:
+      - b11/editorial-real-2000-batch-01
+    paths:
+      - '.github/workflows/book-editorial-2000.yml'
+      - 'scripts/seo/book-editorial-2000-plan.mjs'
+      - 'functions/__tests__/book-editorial-2000-plan.test.js'
+      - 'functions/_shared/book-editorial-upgrades.js'
+      - 'functions/_shared/book-enrichment-registry.js'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/book-editorial-2000.yml'
+      - 'scripts/seo/book-editorial-2000-plan.mjs'
+      - 'functions/__tests__/book-editorial-2000-plan.test.js'
+      - 'functions/_shared/book-editorial-upgrades.js'
+      - 'functions/_shared/book-enrichment-registry.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: book-editorial-2000-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan-and-lock:
+    name: Select 2000 ISBN and prove title immutability
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validate code and title-lock tests
+        run: |
+          node --check scripts/seo/book-editorial-2000-plan.mjs
+          node --check functions/_shared/book-enrichment-registry.js
+          node --test functions/__tests__/book-editorial-2000-plan.test.js
+
+      - name: Build the real 2000-ISBN cohort
+        env:
+          BOOK_EDITORIAL_BATCH_LIMIT: '2000'
+          BOOK_EDITORIAL_OUTPUT_DIR: artifacts/book-editorial/isbn-2000
+        run: node scripts/seo/book-editorial-2000-plan.mjs
+
+      - name: Enforce all per-listing title fingerprints
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import {
+            assertEditorialBatchPlan,
+            titleFingerprint,
+          } from './scripts/seo/book-editorial-2000-plan.mjs';
+
+          const plan = JSON.parse(fs.readFileSync(
+            'artifacts/book-editorial/isbn-2000/cohort.json',
+            'utf8',
+          ));
+          assertEditorialBatchPlan(plan, 2000);
+
+          const snapshots = plan.entries.flatMap(entry => entry.title_snapshots);
+          if (snapshots.some(snapshot => snapshot.sha256 !== titleFingerprint(snapshot.title))) {
+            throw new Error('Una huella de título por MLU no coincide.');
+          }
+          if (plan.title_policy.commercial_title !== 'immutable_byte_for_byte_per_listing') {
+            throw new Error('La política de títulos por publicación no quedó bloqueada.');
+          }
+          if (plan.title_policy.editorial_payload_title_fields !== 'forbidden') {
+            throw new Error('La salida editorial todavía podría definir títulos.');
+          }
+
+          console.log(JSON.stringify({
+            selected_isbns: plan.selected_count,
+            protected_listings: snapshots.length,
+            title_variant_groups: plan.entries.filter(entry => entry.title_variant_count > 1).length,
+            titles_changed: 0,
+            policy: plan.title_policy,
+          }, null, 2));
+          NODE
+
+      - name: Prove shared ISBN content cannot alter two different listing titles
+        run: |
+          node --input-type=module <<'NODE'
+          import { applyBookEnrichment } from './functions/_shared/book-enrichment-registry.js';
+
+          const base = {
+            isbn: '9791388034435',
+            author: 'Desconocido',
+            publisher: null,
+            pages: null,
+            description: '',
+            price: 1590,
+            status: 'active',
+            available_quantity: 1,
+            condition: 'new',
+            pictures: ['https://example.com/cover.jpg'],
+          };
+          const a = applyBookEnrichment({
+            ...base,
+            id: 'MLU1453287196',
+            title: 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear',
+            canonical: '/libro/a',
+          });
+          const b = applyBookEnrichment({
+            ...base,
+            id: 'MLU999999999',
+            title: 'OTRO TITULO COMERCIAL DEL MISMO ISBN',
+            canonical: '/libro/b',
+          });
+
+          if (a.title !== 'Grandes Clasicos Tomo 11 Disney Pixar para Colorear') throw new Error('Cambió título A.');
+          if (b.title !== 'OTRO TITULO COMERCIAL DEL MISMO ISBN') throw new Error('Cambió título B.');
+          if (a._amadoEditorial?.seo_title !== a.title) throw new Error('HTML title A no coincide con su MLU.');
+          if (b._amadoEditorial?.seo_title !== b.title) throw new Error('HTML title B no coincide con su MLU.');
+          if (a.canonical !== '/libro/a' || b.canonical !== '/libro/b') throw new Error('Cambió canonical.');
+          if (a.price !== 1590 || b.price !== 1590) throw new Error('Cambió precio.');
+          if (!a.description.includes('100 ilustraciones misteriosas')) throw new Error('Se perdió el contenido editorial real.');
+          console.log('Contenido compartido por ISBN; títulos, HTML title, canonical y precio preservados por MLU.');
+          NODE
+
+      - name: Verify the authorized pilot directly in Production
+        env:
+          AUDIT_NONCE: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          CATALOG_URL='https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json'
+          PRODUCT_ID='MLU1453287196'
+          PRODUCT_URL="https://www.amadolibros.com/libro/${PRODUCT_ID}/grandes-clasicos-tomo-11-disney-pixar-para-colorear?audit=${AUDIT_NONCE}"
+          FEED_URL="https://www.amadolibros.com/feed.xml?audit=${AUDIT_NONCE}"
+
+          curl --fail --location --silent --show-error --retry 3 --output /tmp/catalog.json "$CATALOG_URL"
+          curl --fail --location --silent --show-error --retry 3 --output /tmp/product.html "$PRODUCT_URL"
+          curl --fail --location --silent --show-error --retry 3 --output /tmp/feed.xml "$FEED_URL"
+
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function decodeXml(value) {
+            return String(value || '')
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&apos;/g, "'");
+          }
+
+          function comparableTitle(value) {
+            return String(value || '')
+              .normalize('NFKC')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLocaleLowerCase('es');
+          }
+
+          const id = 'MLU1453287196';
+          const catalog = JSON.parse(fs.readFileSync('/tmp/catalog.json', 'utf8'));
+          const item = (catalog.items || []).find(entry => entry.id === id);
+          if (!item?.title) throw new Error(`El catálogo vigente no contiene ${id}.`);
+          const catalogTitle = item.title;
+
+          const html = fs.readFileSync('/tmp/product.html', 'utf8');
+          const h1 = decodeXml(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]*>/g, '').trim());
+          if (comparableTitle(h1) !== comparableTitle(catalogTitle)) {
+            throw new Error(`H1 reformulado. catálogo=${JSON.stringify(catalogTitle)} h1=${JSON.stringify(h1)}`);
+          }
+          for (const signal of [
+            '100 ilustraciones misteriosas',
+            'coloreando números y zonas según un código de color',
+            '¿Para quién está recomendado?',
+          ]) {
+            if (!html.includes(signal)) throw new Error(`La ficha perdió: ${signal}`);
+          }
+
+          const xml = fs.readFileSync('/tmp/feed.xml', 'utf8');
+          const marker = `<g:id>${id}</g:id>`;
+          const index = xml.indexOf(marker);
+          if (index < 0) throw new Error(`Merchant no contiene ${id}.`);
+          const start = xml.lastIndexOf('<item>', index);
+          const end = xml.indexOf('</item>', index);
+          const block = xml.slice(start, end + 7);
+          const merchantTitle = decodeXml(block.match(/<g:title>([\s\S]*?)<\/g:title>/i)?.[1]?.trim());
+          if (comparableTitle(merchantTitle) !== comparableTitle(catalogTitle)) {
+            throw new Error(`Merchant title reformulado. catálogo=${JSON.stringify(catalogTitle)} merchant=${JSON.stringify(merchantTitle)}`);
+          }
+          for (const signal of [
+            'Libro para colorear por números Disney y Pixar',
+            '100 ilustraciones misteriosas',
+          ]) {
+            if (!block.includes(signal)) throw new Error(`Merchant perdió: ${signal}`);
+          }
+
+          console.log(JSON.stringify({
+            product_id: id,
+            catalog_title: catalogTitle,
+            h1,
+            merchant_title: merchantTitle,
+            same_words_without_added_seo_terms: true,
+            exact_cache_convergence: {
+              h1: h1 === catalogTitle,
+              merchant: merchantTitle === catalogTitle,
+            },
+            editorial_content: true,
+          }, null, 2));
+          NODE
+
+      - name: Publish summary
+        run: cat artifacts/book-editorial/isbn-2000/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the 2000-ISBN cohort and title evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-real-2000-${{ github.run_id }}
+          path: artifacts/book-editorial/isbn-2000/
+          if-no-files-found: error
+          retention-days: 30
