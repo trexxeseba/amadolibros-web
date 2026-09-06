@@ -544,17 +544,21 @@ Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
 autorización explícita y separada de Seba.
 
 
-## QW2 — sistema general de imágenes (rama Codex, 2026-09-06)
+## QW2 — sistema general de imágenes EN PRODUCCIÓN (2026-09-06)
 
-- **Responsable:** Codex. **Esfuerzo:** implementación transversal + validación CI/Preview.
-- **Base:** main `ea0c4756cd1dfb44756d68d719d864cf9d9a8284`. Rama `codex/catalog-image-system`.
-- **Alcance:** todas las imágenes del catálogo, actuales y futuras, en las 16 posiciones admitidas por la web; activos y bloques completos de pausados. Sin listas de MLU/ISBN para resolver imágenes.
-- **Implementado en rama:** búsqueda de variantes nativas del mismo archivo ML, medición de bytes, selección sin reducir dimensiones, master R2 inmutable, preservación de copias mejores, caché por hash y cola persistente de fuentes insuficientes/inaccesibles.
-- **Continuidad:** cron existente, lotes limitados a 100 imágenes; cursor persistente para pausados; errores con espera de 6 horas, fuentes <500 con revisión semanal, masters con revisión mensual. Cambiar la versión de la política obliga a recorrer de nuevo las imágenes conocidas.
-- **Aceptación:** tests de todas las posiciones, fuente inaccesible sin bloqueo, preservación y caché; CI y Preview verdes; ejecución real de un lote automático en R2 Preview; igualdad SHA-256 entre master y URL web. El lote de verificación no limita el alcance del sistema.
-- **Estado:** implementado en Draft #323. CI y prueba de imágenes R2/Preview verificadas en `1129dd4`; snapshot activo real de 2026-09-06: 7.104 productos / 32.569 imágenes. Lote automático de 100: 100/100 SHA-256 verificados, 81 fuentes mayores que la URL del catálogo, 74 >=500, 26 todavía insuficientes, 0 errores de validación. No son upgrades productivos: eran copias nuevas en Preview (0 masters existentes mejorados). Catálogo completo todavía no procesado.
-- **Google:** filtro mínimo de ambos lados >=500 disponible para feed/JSON-LD mediante `COVER_GOOGLE_QUALITY_GATE=true`. Configurado en true para el futuro despliegue productivo autorizado: preflight read-only conserva 3.697/3.697 ofertas actuales, 0 excluidas. Preview mantiene el filtro apagado por tener un bucket parcial. Evidencia: Actions `34028835918`, artifact `9987951211`. La configuración aún no está desplegada.
-- **Cloudflare Images:** binding de pago existente conservado para la arquitectura actual. La generación artificial queda desactivada por defecto: no inventa resolución ni sustituye la búsqueda de fuente real. Las variantes responsive web existentes consumen el master mediante `/book-cover/`.
-- **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
-- Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
-- QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.
+- **Responsable:** Codex. **Esfuerzo:** implementación transversal + despliegue y verificación productiva.
+- **Autorización:** Seba aprobó avanzar después de la solicitud concreta de merge y despliegue del #323.
+- **Merge:** PR #323, commit `d380374775db7b5d2ef80b09ae97351ccdcd88f9`; head revisado `75f84f8f239c3e4dfaff4ac25e610db63b7e1b21`.
+- **Sitio:** desplegado. Job `101479461181` del run `34030634695` success; smoke de producción y comprobación real de manifest, ficha y bytes R2 success.
+- **Worker:** desplegado, run `34030634590` success. Versión Cloudflare `d747d8dc-3401-4d80-ab68-20a47ab2bfa2`; cron cada 5 minutos confirmado en el deploy.
+- **Publicación auxiliar del catálogo pausado:** success, job `101479461309`. El run completo de Pages `34030634695` terminó success.
+- **Alcance permanente:** todas las posiciones de imagen admitidas por la web (0–15), productos activos, bloques completos de pausados y altas futuras. Sin listas manuales de MLU/ISBN. Snapshot activo: 7.104 productos / 32.569 imágenes.
+- **Procesamiento real confirmado:** `/status` autenticado a las 11:38:10 UTC registra política de fuentes versión 1, lote de 100 completado, 0 fallos, 32.426 pendientes de descubrimiento en el universo activo y `backfill_complete=false`. En ese lote se conservaron 64 masters mejores y se procesaron 36 con fuente nativa; estos números no significan 100 imágenes mejoradas.
+- **Feed productivo antes/después:** 3.697 → 3.697 ofertas; imágenes adicionales 15.922 → 6.299. Se omiten 9.623 imágenes adicionales que no cumplen el filtro >=500 en ambos lados. La galería visible se mantiene. `COVER_GOOGLE_QUALITY_GATE=true` quedó desplegado.
+- **Verificación HTTP posterior al deploy (11:38:13 UTC):** 50 portadas + 50 secundarias; 100/100 válidas, 100/100 desde `r2-production`, 100/100 >=500, 0 errores. Se reutilizó `auditImages()` del auditor comercial existente. Evidencia: `docs/evidence/qw2-production-2026-09-06.json`.
+- **JSON-LD real:** ficha `MLU1001303650` verificada por HTTP; la imagen secundaria omitida del feed sigue visible en la galería, no aparece en JSON-LD, y la imagen del schema es R2 >=500.
+- **Control comercial automático posterior:** run `34031063615` success; 300/300 fichas y 300/300 portadas válidas, todas >=500; 0 críticos. Feed 3.697 y catálogo activo 7.104.
+- **Criterio de aceptación del despliegue:** sitio y Worker publicados desde el commit aprobado; lote real sin fallos; feed conserva las ofertas; bytes productivos cumplen calidad; proceso y pendientes observables. **El recorrido completo del catálogo NO está terminado.**
+- **Continuidad:** búsqueda y medición de variantes nativas; protección contra degradación y conflictos R2; master inmutable por hash; URL web estable; caché por master; reintentos de errores tras 6 h, fuentes insuficientes semanalmente y revisión de masters cada 30 días. Cursor persistente para pausados. Cloudflare Images de pago sigue disponible para las variantes responsive existentes; generación artificial desactivada por defecto.
+- **Límite comercial:** procesar una imagen no garantiza hallar una fuente >=500. Tampoco demuestra que Merchant haya retirado un rechazo: falta su recrawl. No declarar todo el catálogo corregido.
+- **Coordinación:** #322 reemplazado por #323. Claude mantiene QW3A2 y consolidación central #316. No se modificó checkout. Este cierre documental se entrega en rama separada desde main actualizado, sin merge adicional no aprobado.
