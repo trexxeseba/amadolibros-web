@@ -11,6 +11,22 @@ import {
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
 
+// La fusión de lotes hace que el registry devuelva un objeto COMBINADO, no el
+// del módulo: un lote posterior puede completarle campos a la misma edición.
+// Lo que hay que garantizar es que ningún hecho del lote se perdió ni cambió.
+function conservaLosHechos(resolved, entry) {
+  for (const [field, value] of Object.entries(entry.facts || {})) {
+    if (field === 'bibliographic') {
+      for (const [key, bibValue] of Object.entries(value || {})) {
+        assert.deepEqual(resolved.facts.bibliographic[key], bibValue, `${entry.isbn}.${key}`);
+      }
+      continue;
+    }
+    assert.deepEqual(resolved.facts[field], value, `${entry.isbn}.${field}`);
+  }
+}
+
+
 test('el lote 01 incorpora 187 ISBN nuevos con evidencia verificable', () => {
   // Dos corridas acumuladas del workflow b11-batch-research.yml: 19 ISBN
   // (Google Books sin cuota, solo BNE/Open Library) + 168 ISBN (Google
@@ -25,11 +41,11 @@ test('el lote 01 incorpora 187 ISBN nuevos con evidencia verificable', () => {
   for (const entry of BOOK_FACT_ENRICHMENTS_LOTE_01) {
     assert.equal(previous.has(entry.isbn), false, `ISBN repetido: ${entry.isbn}`);
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
-    assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
+    conservaLosHechos(getBookEnrichmentByIsbn(entry.isbn), entry);
   }
   // El total global sube con cada lote posterior (los lotes 01, 02 y 03
   // final de B11.2 agregan 83 más).
-  assert.equal(listBookEnrichments().length, 1656);
+  assert.equal(listBookEnrichments().length, 1777);
 });
 
 test('el lote 01 no contiene ni modifica títulos o datos comerciales', () => {

@@ -19,7 +19,7 @@ test('B11.2 lote 02 resuelve 12 ISBN nuevos del pool REVISAR con consenso cruzad
       assert.match(source.url, /^https:\/\//);
     }
   }
-  assert.equal(listBookEnrichments().length, 1656);
+  assert.equal(listBookEnrichments().length, 1777);
 });
 
 test('B11.2 lote 02 no repite ningún ISBN ya resuelto en el lote 01', () => {
