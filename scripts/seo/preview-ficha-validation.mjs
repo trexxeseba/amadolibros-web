@@ -153,6 +153,27 @@ export function evaluate(html, esperado) {
   return { tieneSchema: Boolean(schema), esBook, comprobaciones, schemaCrudo, filasVisibles: Object.fromEntries(rows) };
 }
 
+// Desglose por campo de las comprobaciones realmente hechas. Sirve para
+// demostrar la condición de aceptación —ningún campo esperado pasa con cero
+// comprobaciones— y para separar las que llevaron las dos verificaciones de
+// aquellas donde el JSON-LD no aplica por el tipo publicado.
+export function resumirPorCampo(resultados) {
+  const porCampo = {};
+  for (const ficha of resultados || []) {
+    for (const c of ficha.comprobaciones || []) {
+      const fila = porCampo[c.campo] || (porCampo[c.campo] = {
+        comprobaciones: 0, visible_ok: 0, jsonld_ok: 0, jsonld_no_aplica: 0, fallidas: 0,
+      });
+      fila.comprobaciones += 1;
+      if (c.visible_ok) fila.visible_ok += 1;
+      if (c.jsonld_ok === true) fila.jsonld_ok += 1;
+      if (c.jsonld_ok === null) fila.jsonld_no_aplica += 1;
+      if (!c.ok) fila.fallidas += 1;
+    }
+  }
+  return porCampo;
+}
+
 async function mapWithConcurrency(items, limit, worker) {
   const out = new Array(items.length);
   let next = 0;
@@ -221,6 +242,7 @@ export async function main() {
       no_verificadas: noVerificadas.length,
       comprobaciones_totales: resultados.reduce((sum, r) => sum + (r.comprobaciones?.length || 0), 0),
     },
+    comprobaciones_por_campo: resumirPorCampo(resultados),
     fallidas,
     no_verificadas: noVerificadas.map(r => ({ id: r.id, isbn: r.isbn, status: r.status, motivo: r.motivo })),
     resultados,
@@ -231,6 +253,14 @@ export async function main() {
 
   console.log('=== VALIDACIÓN DEL PREVIEW DESPLEGADO ===');
   console.log(JSON.stringify({ ...report, resultados: undefined, fallidas: fallidas.slice(0, 10) }, null, 2));
+  console.log('\n=== CAMPO | COMPROB. | VISIBLE OK | JSON-LD OK | JSON-LD N/A | FALLIDAS ===');
+  for (const [campo, fila] of Object.entries(report.comprobaciones_por_campo)) {
+    console.log([
+      campo.padEnd(18), String(fila.comprobaciones).padStart(8), String(fila.visible_ok).padStart(10),
+      String(fila.jsonld_ok).padStart(10), String(fila.jsonld_no_aplica).padStart(11),
+      String(fila.fallidas).padStart(8),
+    ].join(' | '));
+  }
   if (fallidas.length || noVerificadas.length) process.exitCode = 1;
 }
 

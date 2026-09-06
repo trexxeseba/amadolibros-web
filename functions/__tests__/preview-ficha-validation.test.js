@@ -7,6 +7,7 @@ import {
   evaluate,
   normalize,
   productSchema,
+  resumirPorCampo,
   schemaEsBook,
 } from '../../scripts/seo/preview-ficha-validation.mjs';
 
@@ -172,4 +173,26 @@ test('sin ningún bloque JSON-LD no se puede alegar que no aplica', () => {
   const [c] = evaluate(sinSchema, { pages: 250 }).comprobaciones;
   assert.equal(c.jsonld_ok, false, 'sin schema es una falla, no un "no aplica"');
   assert.equal(c.ok, false);
+});
+
+// El informe entregado tiene que poder demostrar, campo por campo, cuántas
+// comprobaciones se hicieron: la condición de aceptación es que ningún campo
+// esperado quede con cero.
+test('el desglose por campo cuenta comprobaciones, aciertos y no aplicables', () => {
+  const libro = evaluate(COMPLETA, { publisher: 'Oxford University Press', pages: 496 });
+  const producto = evaluate(
+    ficha({ filas: [['Páginas', '250']], jsonLd: { author: { name: 'X' } } }),
+    { pages: 250 },
+  );
+  const fallida = evaluate(ficha({ filas: [['Editorial', 'Otra']] }), { publisher: 'Oxford University Press' });
+
+  const porCampo = resumirPorCampo([libro, producto, fallida]);
+  assert.deepEqual(porCampo.pages, {
+    comprobaciones: 2, visible_ok: 2, jsonld_ok: 1, jsonld_no_aplica: 1, fallidas: 0,
+  });
+  assert.deepEqual(porCampo.publisher, {
+    comprobaciones: 2, visible_ok: 1, jsonld_ok: 1, jsonld_no_aplica: 0, fallidas: 1,
+  });
+  // Un campo que nadie comprobó no aparece: cero comprobaciones es visible.
+  assert.equal(porCampo.topics, undefined);
 });
