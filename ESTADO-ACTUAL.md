@@ -213,15 +213,34 @@ la medición daría un falso negativo.
   **hace fallar la corrida**.
 - Guarda **evidencia por ficha** —MLU, ISBN, campo, valor esperado, valor
   visible encontrado, valor JSON-LD y resultado— en el artefacto.
-- Un **HTTP 404 queda SIN VERIFICAR**, no fallido: entre el cierre y el merge
-  una publicación pudo darse de baja. Se informa aparte y **no se le atribuye
-  causa**, ni al catálogo ni a nada.
+- Un **HTTP 404 queda SIN VERIFICAR**, no fallido, y **no se le atribuye
+  causa**: ni al catálogo, ni a una baja, ni a nada. Pero **tampoco se lo
+  excluye**: una ficha que no se pudo mirar no es una ficha aprobada, así que
+  **hace fallar la corrida** hasta que alguien la revise.
 - Es de **sólo lectura**: baja el catálogo público y pide las fichas. No
   despliega, no fusiona, no escribe catálogo, no toca Merchant.
+- **Conserva el resumen y el artefacto aunque falle**: la evidencia de una
+  corrida fallida es justamente la que hace falta para entenderla.
 
-El universo puede no ser exactamente 481: entre el cierre y el merge el
-catálogo cambia. La corrida reporta el número que efectivamente mida, con las
-altas y bajas separadas — no se fuerza a que dé 481.
+**Cuándo se aprueba, y sólo entonces:** todas las fichas esperadas
+verificadas, comprobaciones efectivas y ninguna pérdida. La decisión vive en
+`scripts/seo/verificacion-produccion-gate.mjs` —una sola implementación, que
+usan el workflow y las pruebas— y **falla** ante cualquiera de estas: plan
+vacío, cero comprobaciones, cero fichas verificadas, alguna ficha fallida,
+alguna ficha sin verificar, alguna pérdida de campo, un informe ausente o
+incompleto, o cifras que no suman.
+
+> **Se corrigió un criterio que aprobaba de más.** La primera versión de esta
+> compuerta daba por buenas tres corridas que no verifican nada: todas las
+> fichas en 404, todas en 500 y el plan vacío. Las tres terminaban en éxito e
+> imprimían «Producción verificada: 0 fichas». Ahora sólo se aprueba con
+> evidencia positiva; los siete casos —incluidos esos tres— están probados
+> contra la misma función que corre el workflow.
+
+Entre el cierre y el merge el catálogo cambia, así que el universo puede no
+dar exactamente 481. Eso **no se acepta en silencio**: la corrida falla y la
+diferencia se revisa ficha por ficha. El número no se fuerza a 481, pero
+tampoco se aprueba un número menor sin mirarlo.
 
 ### Rendimiento por lote — el circuito se agotó
 

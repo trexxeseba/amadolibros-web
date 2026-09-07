@@ -9,6 +9,11 @@ name: B12 — verificar en Producción las fichas mejoradas
 # propiedad JSON-LD según el renderizador, exigidas AMBAS donde ambas
 # corresponden. Un campo esperado nunca pasa con cero comprobaciones.
 #
+# La corrida se aprueba SÓLO con evidencia positiva: todas las fichas
+# esperadas verificadas, comprobaciones efectivas y ninguna pérdida. Un plan
+# vacío, cero comprobaciones o una sola ficha sin verificar hacen fallar la
+# corrida; no verificar nada nunca es un éxito.
+#
 # El "antes" no es un supuesto ni una resta de hechos: es un worktree del
 # commit anterior a B12. La diferencia entre las dos fichas efectivas sobre el
 # MISMO snapshot es exactamente lo que B12 aportó.
@@ -57,8 +62,10 @@ jobs:
           node --check scripts/seo/effective-ficha-fields.mjs
           node --check scripts/seo/effective-ficha-diff.mjs
           node --check scripts/seo/preview-ficha-validation.mjs
+          node --check scripts/seo/verificacion-produccion-gate.mjs
           node --test functions/__tests__/effective-ficha-diff.test.js
           node --test functions/__tests__/preview-ficha-validation.test.js
+          node --test functions/__tests__/verificacion-produccion-gate.test.js
 
       # Producción sirve lo que se fusionó sólo después de que el deploy
       # concluye. Verificar antes mide el sitio viejo y da un falso negativo.
@@ -203,29 +210,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-      - name: Fallar si Producción no muestra lo prometido o si hay pérdidas
+      # La decisión vive en scripts/seo/verificacion-produccion-gate.mjs y es
+      # la MISMA que ejercitan las pruebas. Reescribirla acá en un `node -e`
+      # haría que las pruebas validaran una copia y no lo que corre.
+      #
+      # Va al final y con `if: always()`: el resumen y el artefacto ya se
+      # guardaron, así que una corrida que falla conserva toda su evidencia.
+      - name: Aprobar sólo con evidencia positiva
         if: always()
-        run: |
-          set -euo pipefail
-          node -e '
-            const fs = require("node:fs");
-            const leer = ruta => { try { return JSON.parse(fs.readFileSync(ruta, "utf8")); } catch { return null; } };
-            const diff = leer("artifacts/produccion/effective-ficha-diff.json");
-            const prod = leer("artifacts/produccion/ficha-validation.json");
-            const problemas = [];
-            if (!diff) problemas.push("No se pudo reconciliar el aporte de B12.");
-            if (!prod) problemas.push("No se pudo verificar ninguna ficha en Producción.");
-            const perdidas = diff?.totales?.fichas_que_pierden_algun_campo || 0;
-            if (perdidas) problemas.push(`${perdidas} ficha(s) perdieron algún campo que antes mostraban.`);
-            if (prod?.totales?.fallidas) problemas.push(`${prod.totales.fallidas} ficha(s) no muestran lo prometido.`);
-            if (problemas.length) {
-              for (const p of problemas) console.error(p);
-              console.error("Detalle por ficha en el artefacto de esta corrida.");
-              process.exit(1);
-            }
-            // Las fichas sin verificar NO fallan la corrida: un 404 puede ser
-            // una publicación dada de baja, y atribuirle causa sería inventar.
-            const sin = prod.totales.no_verificadas;
-            console.log(`Producción verificada: ${prod.totales.verificadas} fichas, ${prod.totales.comprobaciones_totales} comprobaciones, 0 fallidas, 0 pérdidas.`);
-            if (sin) console.log(`${sin} ficha(s) quedaron SIN VERIFICAR (404 u otro error). Causa no atribuida: revisar en el artefacto.`);
-          '
+        env:
+          GATE_DIFF: artifacts/produccion/effective-ficha-diff.json
+          GATE_VALIDACION: artifacts/produccion/ficha-validation.json
+        run: node scripts/seo/verificacion-produccion-gate.mjs
