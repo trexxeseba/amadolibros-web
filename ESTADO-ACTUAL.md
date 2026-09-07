@@ -603,3 +603,13 @@ autorización explícita y separada de Seba.
 - Merchant: image_too_small / portada / DISAPPROVED sigue en 8 por destino Shopping y Free Listings. Advertencias de resolución futura en Shopping: 2.097 → 2.098. Baja calidad 23, adicionales pequeños 4 y demoras de imagen 10 por destino, sin cambios. Account issues 0.
 - Evidencia Merchant: run 34068005896, intento 3, job 101778813496; generado 14:32:19 UTC. Reporte persistido en docs/evidence/qw2-progress-2026-09-07-1432.json.
 - Estado: sistema activo con progreso comprobado; calidad global pendiente. Sin merge ni deploy en esta lectura.
+
+
+## QW2 — diagnóstico de velocidad 2026-09-07
+
+- Responsable Codex; esfuerzo S. Diagnóstico acotado completado sobre main d380374 y evidencia productiva ya registrada a las 14:31 UTC; no es una nueva observación de estado.
+- Límite confirmado en código: hasta 100 referencias por tanda, cron cada cinco minutos, seis tareas concurrentes; ~1.200 referencias/hora, sin implicar mejoras de calidad. Cambiar sólo COVER_MIRROR_BATCH_SIZE no elimina el tope interno.
+- Índice global de 51,7 MB leído y reescrito por tanda. El cursor recorre un bloque pausado por invocación: 128 visitas a ritmo de cinco minutos suman 10 h 40 min como mínimo de ese recorrido, sin tandas adicionales.
+- Snapshot activo de 2026-09-06: 32.569 referencias / 23.600 identidades o URLs únicas; 8.969 repetidas (27,54%). Ahorro potencial de investigación, no velocidad ganada ya.
+- Evaluadas tres mejoras: deduplicar investigación por fuente (M), continuar tareas sin espera fija y con publicación controlada (M), particionar índice (L). Responsables y aceptación propuestos en docs/qw2-speed-diagnosis-2026-09-07.md. Recomendación: mantener imágenes en Codex por continuidad, posible revisión de Claude cuando Seba la autorice; no se asignó ni implementó trabajo nuevo.
+- La ejecución real es Cloudflare; cambiar de GPT a Claude no cambia el ritmo del proceso. Fuentes insuficientes requieren originales mejores. Sin merge, deploy ni nuevas compras.
