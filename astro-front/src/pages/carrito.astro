@@ -15,6 +15,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
   .split(',')
   .map((h) => h.trim())
   .filter(Boolean);
+
+// CUENTA-1 · Client ID web de Google, inyectado por ambiente en tiempo de
+// build igual que la site key de Turnstile. Si está vacío, el bloque de
+// cuenta no se muestra y la compra como invitado sigue igual: nunca se
+// simula un ingreso ni se anuncia una función que no está configurada.
+const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 ---
 <BaseLayout
   title="Tu carrito — Amado Libros"
@@ -202,6 +208,28 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
           <section class="cart-section">
             <h2 class="cart-section-h2">Tus datos</h2>
             <p class="buyer-note">Mientras completás el pedido, recordamos estos datos sólo en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
+
+            <!-- CUENTA-1 · Identificarse es OPCIONAL: el formulario de abajo
+                 está disponible desde el primer momento y la compra como
+                 invitado no cambia. Todo este bloque queda oculto si no hay
+                 Client ID de Google configurado. -->
+            <div class="cuenta-bloque" id="cuenta-bloque" hidden>
+              <div id="cuenta-anonima">
+                <p class="cuenta-nota">¿Ya compraste antes y guardaste tus datos? Podés traerlos.</p>
+                <div id="cuenta-boton-google"></div>
+              </div>
+              <div id="cuenta-identificada" hidden>
+                <p class="cuenta-nota">
+                  Entraste como <strong id="cuenta-email"></strong>.
+                  <button type="button" class="cuenta-enlace" id="cuenta-salir">Salir</button>
+                </p>
+                <div class="cuenta-acciones">
+                  <button type="button" class="cuenta-accion" id="cuenta-usar" hidden>Usar mis datos guardados</button>
+                  <button type="button" class="cuenta-accion" id="cuenta-guardar">Guardar estos datos para la próxima</button>
+                </div>
+              </div>
+              <p class="cuenta-aviso" id="cuenta-aviso" role="status" aria-live="polite"></p>
+            </div>
             <div class="form-grid">
               <div class="form-field">
                 <label for="buyer-name" class="form-label">Nombre <span class="form-req" aria-hidden="true">*</span></label>
@@ -1485,9 +1513,20 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       display: none;
     }
   }
+  /* CUENTA-1 · bloque opcional de cuenta */
+  .cuenta-bloque { margin: 0 0 1.25rem; padding: .9rem 1rem; border: 1px solid #dfe3e8;
+    border-radius: .5rem; background: #fafbfc; }
+  .cuenta-nota { margin: 0 0 .6rem; font-size: .93rem; color: #444; }
+  .cuenta-acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .cuenta-accion { padding: .55rem .9rem; font-size: .93rem; border: 1px solid #1c3f60;
+    border-radius: .4rem; background: #fff; color: #1c3f60; cursor: pointer; }
+  .cuenta-accion[disabled] { opacity: .55; cursor: progress; }
+  .cuenta-enlace { border: 0; background: none; padding: 0; color: #1c3f60;
+    text-decoration: underline; cursor: pointer; font-size: inherit; }
+  .cuenta-aviso { margin: .6rem 0 0; font-size: .9rem; color: #1c3f60; min-height: 1.2rem; }
 </style>
 
-<script is:inline define:vars={{ turnstileSiteKey, turnstileAllowedHosts }}>
+<script is:inline define:vars={{ turnstileSiteKey, turnstileAllowedHosts, googleClientId }}>
   // ── Turnstile ────────────────────────────────────────────────────────────
   var onlineCheckoutEnabled = document.querySelector('.cart-page')?.dataset.onlineCheckout === 'enabled';
 
@@ -1931,6 +1970,262 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       radio.addEventListener('change', clearDeliveryError);
     });
     window.addEventListener('pagehide', saveDraft);
+
+    // ── CUENTA-1 · cuenta opcional con Google ────────────────────────────
+    //
+    // Identificarse es opcional y NO es parte del pago. Si falla cualquier
+    // cosa —Google no carga, la persona cancela, la API responde mal— el
+    // formulario sigue funcionando igual y se compra como invitado.
+    //
+    // Copia inline de astro-front/src/lib/perfil-checkout.js (probada con
+    // `node --test` en src/lib/__tests__/perfil-checkout.test.js). Este
+    // bloque corre sin bundler y no puede importar: si se cambia la lógica
+    // acá, replicar el cambio allá.
+    var CAMPO_A_ID = {
+      buyer_name: 'buyer-name',
+      buyer_phone: 'buyer-phone',
+      address: 'delivery-address',
+      locality: 'delivery-barrio',
+      department: 'delivery-departamento',
+    };
+    var CAMPOS_PERFIL = Object.keys(CAMPO_A_ID);
+
+    function limpiarCuenta(valor) {
+      return String(valor === null || valor === undefined ? '' : valor).replace(/\s+/g, ' ').trim();
+    }
+
+    // Sólo se completa un campo vacío que la persona no tocó. Así una
+    // respuesta que llega tarde no borra lo que estuvo escribiendo.
+    function camposACompletar(perfil, valoresActuales, tocados) {
+      var yaTocado = {};
+      for (var i = 0; i < (tocados || []).length; i++) yaTocado[tocados[i]] = true;
+      var aCompletar = {};
+      for (var j = 0; j < CAMPOS_PERFIL.length; j++) {
+        var campo = CAMPOS_PERFIL[j];
+        var guardado = perfil ? limpiarCuenta(perfil[campo]) : '';
+        if (!guardado) continue;
+        if (yaTocado[campo]) continue;
+        if (limpiarCuenta(valoresActuales ? valoresActuales[campo] : '')) continue;
+        aCompletar[campo] = guardado;
+      }
+      return aCompletar;
+    }
+
+    var cuentaBloque = document.getElementById('cuenta-bloque');
+    if (cuentaBloque && googleClientId) {
+      var cuentaAnonima = document.getElementById('cuenta-anonima');
+      var cuentaIdentificada = document.getElementById('cuenta-identificada');
+      var cuentaEmail = document.getElementById('cuenta-email');
+      var cuentaAviso = document.getElementById('cuenta-aviso');
+      var botonUsar = document.getElementById('cuenta-usar');
+      var botonGuardar = document.getElementById('cuenta-guardar');
+      var botonSalir = document.getElementById('cuenta-salir');
+      var tocados = [];
+      var nombreSugerido = null;
+      var emailSugerido = null;
+
+      cuentaBloque.hidden = false;
+
+      function avisar(texto) { cuentaAviso.textContent = texto || ''; }
+
+      function valorDe(campo) {
+        var el = document.getElementById(CAMPO_A_ID[campo]);
+        return el && typeof el.value === 'string' ? el.value : '';
+      }
+
+      function valoresActuales() {
+        var valores = {};
+        for (var i = 0; i < CAMPOS_PERFIL.length; i++) valores[CAMPOS_PERFIL[i]] = valorDe(CAMPOS_PERFIL[i]);
+        return valores;
+      }
+
+      // Cualquier escritura marca el campo como tocado: desde ahí, los datos
+      // guardados ya no lo pisan.
+      for (var t = 0; t < CAMPOS_PERFIL.length; t++) {
+        (function (campo) {
+          var el = document.getElementById(CAMPO_A_ID[campo]);
+          if (!el) return;
+          var marcar = function () { if (tocados.indexOf(campo) === -1) tocados.push(campo); };
+          el.addEventListener('input', marcar);
+          el.addEventListener('change', marcar);
+        })(CAMPOS_PERFIL[t]);
+      }
+      var emailEl = document.getElementById('buyer-email');
+      var emailTocado = false;
+      if (emailEl) {
+        emailEl.addEventListener('input', function () { emailTocado = true; });
+        emailEl.addEventListener('change', function () { emailTocado = true; });
+      }
+
+      function leerCsrf() {
+        var partes = String(document.cookie || '').split(';');
+        for (var i = 0; i < partes.length; i++) {
+          var corte = partes[i].indexOf('=');
+          if (corte === -1) continue;
+          if (partes[i].slice(0, corte).trim() !== '__Host-al_csrf') continue;
+          return partes[i].slice(corte + 1).trim();
+        }
+        return '';
+      }
+
+      function mostrarIdentificada(datos) {
+        cuentaAnonima.hidden = true;
+        cuentaIdentificada.hidden = false;
+        cuentaEmail.textContent = datos.email || '';
+        nombreSugerido = datos.nombre_sugerido || null;
+        emailSugerido = datos.email || null;
+        botonUsar.hidden = !(datos.tiene_perfil || nombreSugerido || emailSugerido);
+      }
+
+      function mostrarAnonima() {
+        cuentaIdentificada.hidden = true;
+        cuentaAnonima.hidden = false;
+        nombreSugerido = null;
+        emailSugerido = null;
+      }
+
+      // ── Usar mis datos guardados (acción explícita) ────────────────────
+      botonUsar.addEventListener('click', function () {
+        botonUsar.disabled = true;
+        avisar('Buscando tus datos…');
+        // Se toman los valores AL LLEGAR la respuesta, no al pedirla: si la
+        // persona escribió mientras esperaba, eso es lo que vale.
+        fetch('/api/cuenta/perfil', { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (datos) {
+            botonUsar.disabled = false;
+            var perfil = (datos && datos.perfil) || {};
+            if (nombreSugerido && !perfil.buyer_name) perfil.buyer_name = nombreSugerido;
+            var aCompletar = camposACompletar(perfil, valoresActuales(), tocados);
+            var completados = 0;
+            for (var campo in aCompletar) {
+              if (!Object.prototype.hasOwnProperty.call(aCompletar, campo)) continue;
+              var el = document.getElementById(CAMPO_A_ID[campo]);
+              if (!el) continue;
+              el.value = aCompletar[campo];
+              completados++;
+            }
+            if (emailSugerido && emailEl && !emailTocado && !limpiarCuenta(emailEl.value)) {
+              emailEl.value = emailSugerido;
+              completados++;
+            }
+            saveDraft();
+            avisar(completados
+              ? 'Completamos ' + completados + ' dato(s). Revisalos y editá lo que haga falta.'
+              : 'No había nada para completar: ya estaba todo escrito.');
+          })
+          .catch(function () {
+            botonUsar.disabled = false;
+            avisar('No pudimos traer tus datos. Podés escribirlos y seguir igual.');
+          });
+      });
+
+      // ── Guardar estos datos (acción explícita, ajena al pago) ──────────
+      botonGuardar.addEventListener('click', function () {
+        var perfil = {};
+        var hayAlgo = false;
+        for (var i = 0; i < CAMPOS_PERFIL.length; i++) {
+          perfil[CAMPOS_PERFIL[i]] = limpiarCuenta(valorDe(CAMPOS_PERFIL[i]));
+          if (perfil[CAMPOS_PERFIL[i]]) hayAlgo = true;
+        }
+        if (!hayAlgo) { avisar('Escribí algún dato antes de guardarlo.'); return; }
+        botonGuardar.disabled = true;
+        avisar('Guardando…');
+        fetch('/api/cuenta/perfil', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': leerCsrf() },
+          body: JSON.stringify({ perfil: perfil }),
+        }).then(function (r) {
+          botonGuardar.disabled = false;
+          // Guardar el perfil no crea ni modifica ningún pedido.
+          avisar(r.ok ? 'Guardado. La próxima los traés con un botón.' : 'No pudimos guardarlos. Tus datos siguen acá y podés comprar igual.');
+          if (r.ok) botonUsar.hidden = false;
+        }).catch(function () {
+          botonGuardar.disabled = false;
+          avisar('No pudimos guardarlos. Tus datos siguen acá y podés comprar igual.');
+        });
+      });
+
+      botonSalir.addEventListener('click', function () {
+        fetch('/api/cuenta/salir', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': leerCsrf() },
+        }).then(function () {
+          mostrarAnonima();
+          avisar('Saliste. Tus datos escritos siguen donde estaban.');
+          prepararGoogle();
+        }).catch(function () { avisar('No pudimos cerrar la sesión.'); });
+      });
+
+      // ── Google Identity Services ───────────────────────────────────────
+      //
+      // Ventana emergente, no redirección: así no se sale del carrito y no
+      // hay nada que restaurar. El nonce lo emite el servidor y se consume
+      // una sola vez, contra reenvío del mismo token.
+      function alRecibirCredencial(respuesta, nonce) {
+        avisar('Verificando…');
+        fetch('/api/cuenta/google', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: respuesta.credential, nonce: nonce }),
+        }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (datos) {
+            if (!datos) { avisar('No pudimos verificar tu ingreso. Podés comprar como invitado.'); prepararGoogle(); return; }
+            mostrarIdentificada(datos);
+            avisar(datos.tiene_perfil
+              ? 'Listo. Podés traer tus datos guardados.'
+              : 'Listo. Cuando completes tus datos, podés guardarlos para la próxima.');
+          })
+          .catch(function () {
+            avisar('No pudimos verificar tu ingreso. Podés comprar como invitado.');
+            prepararGoogle();
+          });
+      }
+
+      function prepararGoogle() {
+        if (!window.google || !window.google.accounts || !window.google.accounts.id) return;
+        // Nonce nuevo por intento: el anterior ya se consumió.
+        fetch('/api/cuenta/nonce', { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (datos) {
+            if (!datos || !datos.nonce) return;
+            window.google.accounts.id.initialize({
+              client_id: googleClientId,
+              nonce: datos.nonce,
+              ux_mode: 'popup',
+              auto_select: false,
+              cancel_on_tap_outside: true,
+              callback: function (respuesta) { alRecibirCredencial(respuesta, datos.nonce); },
+            });
+            var contenedor = document.getElementById('cuenta-boton-google');
+            if (contenedor) {
+              contenedor.innerHTML = '';
+              window.google.accounts.id.renderButton(contenedor, {
+                type: 'standard', theme: 'outline', size: 'large',
+                text: 'continue_with', locale: 'es', width: 260,
+              });
+            }
+          })
+          .catch(function () { /* sin cuenta: se compra como invitado */ });
+      }
+
+      // Si ya había sesión abierta, se refleja sin pedir nada.
+      fetch('/api/cuenta/sesion', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (datos) {
+          if (datos && datos.autenticado) { mostrarIdentificada(datos); return; }
+          var gs = document.createElement('script');
+          gs.src = 'https://accounts.google.com/gsi/client';
+          gs.async = true; gs.defer = true;
+          gs.onload = prepararGoogle;
+          document.head.appendChild(gs);
+        })
+        .catch(function () { /* sin cuenta: se compra como invitado */ });
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     // ── PICKUP-CX-1 ──────────────────────────────────────────────────────
     var pickupAckBox = document.getElementById('pickup-ack-box');
