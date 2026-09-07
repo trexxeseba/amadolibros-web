@@ -1,0 +1,149 @@
+{
+  "owner": "Codex",
+  "effort": "S",
+  "acceptance": "Fresh authenticated Worker status and read-only Merchant API, both completed successfully; no production mutation.",
+  "worker": {
+    "catalog": {
+      "etag": "6e9c07334c78f1837e31eef5ed50e5b1",
+      "exists": true,
+      "size": 12770972,
+      "uploaded": "2026-09-07T07:18:54.230Z"
+    },
+    "checked_at": "2026-09-07T12:04:42.912Z",
+    "cover_manifest": {
+      "etag": "2df409d639cd6d412548d2d58f487de5",
+      "exists": true,
+      "size": 50456996,
+      "uploaded": "2026-09-07T12:01:06.590Z"
+    },
+    "cover_mirror": {
+      "backfill_catalog_version": null,
+      "backfill_complete": false,
+      "last_result": {
+        "ai_upscaled": 3650,
+        "at": "2026-09-07T12:01:07.493Z",
+        "attempted": 100,
+        "catalog_version": "2026-09-07T07:18:48.068Z",
+        "failed": 0,
+        "manifest_retries": 0,
+        "needs_better_source": 15603,
+        "paused_progress": {
+          "block_count": 128,
+          "catalog_version": "20260906114235342",
+          "index": 0,
+          "policy": 1,
+          "remaining": 128
+        },
+        "pending": 3359,
+        "quality_pending": null,
+        "scope_images": 32939,
+        "source_policy_version": 1,
+        "status": "completed",
+        "valid_copies": 40167
+      }
+    },
+    "last_batch_age_seconds": 215,
+    "observed_at": "2026-09-07T12:04:42.946Z"
+  },
+  "merchant": {
+    "accountIssues": [],
+    "contexts": [
+      {
+        "context": "SHOPPING_ADS",
+        "issues": [
+          {
+            "attribute": "n:image_link",
+            "code": "image_too_small",
+            "productCount": "8",
+            "severity": "DISAPPROVED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "low_image_quality",
+            "productCount": "23",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:additional_image_link",
+            "code": "image_too_small",
+            "productCount": "4",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "image_link_internal_error_fallback",
+            "productCount": "10",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "image_too_small_for_high_resolution",
+            "productCount": "2097",
+            "severity": "NOT_IMPACTED"
+          }
+        ],
+        "stats": {
+          "activeCount": "6656",
+          "disapprovedCount": "218",
+          "pendingCount": "1"
+        }
+      },
+      {
+        "context": "FREE_LISTINGS",
+        "issues": [
+          {
+            "attribute": "n:image_link",
+            "code": "image_too_small",
+            "productCount": "8",
+            "severity": "DISAPPROVED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "low_image_quality",
+            "productCount": "23",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:additional_image_link",
+            "code": "image_too_small",
+            "productCount": "4",
+            "severity": "NOT_IMPACTED"
+          },
+          {
+            "attribute": "n:image_link",
+            "code": "image_link_internal_error_fallback",
+            "productCount": "10",
+            "severity": "NOT_IMPACTED"
+          }
+        ],
+        "stats": {
+          "activeCount": "6673",
+          "disapprovedCount": "201",
+          "pendingCount": "1"
+        }
+      }
+    ],
+    "generatedAt": "2026-09-07T12:05:09.573Z",
+    "publicFeed": {
+      "bytes": 6769862,
+      "items": 3695,
+      "ok": true,
+      "url": "https://www.amadolibros.com/feed.xml"
+    }
+  },
+  "evidence": {
+    "worker_run": 34068005892,
+    "worker_attempt": 2,
+    "worker_job": 101735328879,
+    "merchant_run": 34068005896,
+    "merchant_attempt": 2,
+    "merchant_job": 101735365512,
+    "merchant_artifact": 10017765442
+  },
+  "limits": [
+    "Catalog and scope changed since prior reading: counter differences do not establish per-image fixes.",
+    "Pending is current scope, including paused-block indicator, not all remaining images.",
+    "needs_better_source includes unreviewed low-resolution copies.",
+    "Merchant destinations are separate; aggregate decline is not percentage of all images repaired."
+  ]
+}

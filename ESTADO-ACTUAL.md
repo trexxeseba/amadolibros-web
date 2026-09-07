@@ -580,3 +580,15 @@ autorización explícita y separada de Seba.
 - Backfill incompleto, pausados índice 0 / 128 bloques pendientes. El cursor avanza cuando termina el descubrimiento del alcance; esta lectura demuestra progreso, no detención.
 - Merchant run 34067914438: portada pequeña desaprobada 12 → 10 por destino Shopping/Free Listings; 80 → 10 desde la foto inicial del día (-87,5% agregado). Siguen 2.104 advertencias de alta resolución en Shopping. 0 problemas de cuenta.
 - Instrumentación d810bb0 añade hora de observación y edad de última tanda; no altera el Worker ni su frecuencia. Evidencia: docs/evidence/qw2-progress-2026-09-06-2348.json. Sin merge ni deploy; Claude conserva #325.
+
+
+## QW2 — estado comprobado 2026-09-07 12:05 UTC (09:05 Uruguay)
+
+- Responsable: Codex. Esfuerzo: S. Aceptación cumplida: lectura autenticada GET /status y API Merchant; ambas corridas success. Se reejecutaron los jobs existentes, sin modificar el sistema productivo.
+- Worker run 34068005892, intento 2, job 101735328879: observado 12:04:42 UTC; última tanda 12:01:07 UTC, 100 intentos / 0 fallos, manifest actualizado 12:01:06 UTC. El sistema sigue procesando automáticamente.
+- Pendientes del alcance actual: 3.359; alcance 32.939 imágenes. Snapshot 2026-09-07T07:18:48.068Z. No es el total global restante: incluye indicador de pausados y todavía quedan 128 bloques. Backfill incompleto.
+- Copias válidas conocidas: 40.167; 15.603 todavía bajo 500 en alguna dimensión. Incluye imágenes aún no revisadas; no significa que todas hayan agotado las fuentes nativas. No equivale a fichas únicas. El snapshot y alcance cambiaron desde la lectura anterior: no atribuir la diferencia de contadores a correcciones individuales.
+- Merchant run 34068005896, intento 2, job 101735365512, generado 12:05:09 UTC: image_too_small / n:image_link / DISAPPROVED = 8 por destino Shopping y Free Listings, frente a 10 en la última lectura y 80 al inicio del 06/09. La caída agregada desde 80 es 90%; no representa el porcentaje de fotos resueltas ni demuestra causalidad por producto.
+- Pendiente Merchant: 2.097 advertencias de resolución futura en Shopping, 23 de baja calidad, 4 por imágenes adicionales pequeñas y 10 demoras de procesamiento de imagen por destino. 0 problemas de cuenta. Shopping: 6.656 activos / 1 pendiente / 218 desaprobados; Free Listings: 6.673 / 1 / 201.
+- El sistema general de #323 está en producción, pero la calidad de todas las fotos sigue pendiente. Completar la revisión automática y conseguir originales mejores donde no alcance la fuente actual siguen siendo necesarios; sin fecha global de cierre demostrada.
+- Evidencia persistida: docs/evidence/qw2-progress-2026-09-07-1205.json. Sin merge, deploy, cambio de frecuencia ni nuevas escrituras en Merchant/R2 por esta comprobación.
