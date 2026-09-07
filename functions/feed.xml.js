@@ -1,4 +1,5 @@
 import { googleReadyImage } from './_shared/image-source-policy.js';
+import { streamCoverManifest } from './_shared/cover-manifest-stream.js';
 /**
  * functions/feed.xml.js
  *
@@ -92,7 +93,7 @@ export async function onRequest(context) {
         // de Amado Libros se mantiene deliberadamente limitado a libros.
         const commerciallyEligibleItems = items.filter(isEligibleForFeed);
         const requireImageQuality = context.env?.COVER_GOOGLE_QUALITY_GATE === 'true';
-        const coverManifest = await readMerchantCoverManifest(context);
+        const coverManifest = await readMerchantCoverManifest(context, commerciallyEligibleItems.map(item => item.id));
         const eligibleItems = coverManifest
             ? filterItemsWithReadyPrimaryCover(commerciallyEligibleItems, coverManifest, requireImageQuality)
             : commerciallyEligibleItems;
@@ -481,17 +482,17 @@ export function filterItemsWithReadyPrimaryCover(items, manifest, requireQuality
     });
 }
 
-async function readMerchantCoverManifest(context) {
+async function readMerchantCoverManifest(context, productIds) {
     if (context?.env?.APP_ENV !== 'production' && context?.env?.COVER_GOOGLE_QUALITY_GATE !== 'true') return null;
     const bucket = context?.env?.COVER_R2;
     if (!bucket || typeof bucket.get !== 'function') {
         throw new Error('COVER_R2 no está disponible en producción; se conserva el feed anterior.');
     }
     const object = await bucket.get(COVER_MANIFEST_KEY);
-    if (!object || typeof object.text !== 'function') {
+    if (!object) {
         throw new Error('Manifest de portadas no disponible; se conserva el feed anterior.');
     }
-    const manifest = JSON.parse(await object.text());
+    const manifest = await streamCoverManifest(object, { productIds });
     if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
         typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) {
         throw new Error('Manifest de portadas inválido; se conserva el feed anterior.');
