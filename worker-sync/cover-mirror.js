@@ -337,9 +337,14 @@ async function aiUpscaleCover(imagesBinding, bytes, image) {
   return { bytes: transformedBytes, image: transformedImage, transform };
 }
 
-async function fetchOneCover(sourceUrl, fetchFn) {
+function imageDeadlineError() {
+  return Object.assign(new Error('Presupuesto de imágenes agotado; reanudar en la próxima tanda.'), {name:'ImageBatchDeadline'});
+}
+
+async function fetchOneCover(sourceUrl, fetchFn, {deadlineMs = Infinity, clock = Date.now} = {}) {
+  if (clock() >= deadlineMs) throw imageDeadlineError();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), Math.min(FETCH_TIMEOUT_MS, deadlineMs - clock()));
   try {
     const response = await fetchFn(sourceUrl, {
       headers: {
@@ -362,17 +367,20 @@ async function fetchOneCover(sourceUrl, fetchFn) {
       originalObjectKey: null,
       nativeSourceUrl: sourceUrl,
     };
+  } catch (error) {
+    if (clock() >= deadlineMs) throw imageDeadlineError();
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function fetchCover(candidate, fetchFn) {
+async function fetchCover(candidate, fetchFn, budget) {
   const probes = [];
   let best = null;
   for (const source of candidate.alternatives || [candidate.source_url]) {
     try {
-      const found = await fetchOneCover(source, fetchFn);
+      const found = await fetchOneCover(source, fetchFn, budget);
       probes.push({ source_url: source, width: found.image.width, height: found.image.height });
       const ratio = found.image.width / found.image.height;
       if (best && Math.abs(ratio / (best.image.width / best.image.height) - 1) > 0.05) {
@@ -397,7 +405,7 @@ function sourceIdentity(url) {
 // Cache metadata, not image buffers: a batch may contain 100 x 8 MB images.
 // The manifest is the persistent cache; a copied association must not extend
 // the age of the original source check or satisfy a newer set of alternatives.
-function nativeSourceResolver(bucket, manifest, candidates, nowIso, fetchFn, stats) {
+function nativeSourceResolver(bucket, manifest, candidates, nowIso, fetchFn, stats, budget) {
   const groups = new Map();
   for (const candidate of candidates) {
     const key = sourceIdentity(candidate.source_url);
@@ -447,7 +455,7 @@ function nativeSourceResolver(bucket, manifest, candidates, nowIso, fetchFn, sta
       const source = await fetchCover({ ...group.candidate, alternatives: [...group.alternatives] }, async (...args) => {
         stats.origin_requests++;
         return fetchFn(...args);
-      });
+      }, budget);
       const stored = await storeImmutable(bucket, source.bytes, source.image, nowIso);
       return { image: source.image, byteLength: source.bytes.byteLength,
         originalObjectKey: stored.objectKey, sha256: stored.sha256,
@@ -589,31 +597,7 @@ export async function syncCoverMirror(env, catalog, {
   });
   const processedEntries = new Map();
   const sourceReuse = { sources_fetched: 0, reused_from_manifest: 0, shared_in_batch: 0, origin_requests: 0 };
-  const deadlineError = () => Object.assign(new Error('Presupuesto de imágenes agotado; reanudar en la próxima tanda.'), {name:'ImageBatchDeadline'});
-  const boundedFetch = async (url, options = {}) => {
-    if (!Number.isFinite(deadlineMs)) return fetchFn(url, options);
-    const remaining = deadlineMs - clock();
-    if (remaining <= 0) throw deadlineError();
-    const controller = new AbortController();
-    const abort = () => controller.abort();
-    options.signal?.addEventListener('abort', abort, {once:true});
-    if (options.signal?.aborted) controller.abort();
-    const timer = setTimeout(abort, remaining);
-    try {
-      const response = await fetchFn(url, {...options, signal:controller.signal});
-      // Keep the deadline attached until the body is consumed. fetch resolves
-      // at headers, while a slow image body can otherwise exceed the budget.
-      const bytes = await readLimitedBody(response);
-      return new Response(bytes, {status:response.status, headers:response.headers});
-    } catch (error) {
-      if (clock() >= deadlineMs) throw deadlineError();
-      throw error;
-    } finally {
-      clearTimeout(timer);
-      options.signal?.removeEventListener('abort', abort);
-    }
-  };
-  const resolveSource = nativeSourceResolver(bucket, manifest, batch.selected, nowIso, boundedFetch, sourceReuse);
+  const resolveSource = nativeSourceResolver(bucket, manifest, batch.selected, nowIso, fetchFn, sourceReuse, {deadlineMs, clock});
   const results = await mapWithConcurrency(batch.selected, Math.max(1, Number(concurrency) || 1), async candidate => {
     const key = `${candidate.product_id}:${candidate.position}`;
     if (clock() >= deadlineMs) return {key, status:'deferred'};
