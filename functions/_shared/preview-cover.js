@@ -1,8 +1,9 @@
 import { perfNow, recordPerf } from './perf.js';
+import { streamCoverManifest } from './cover-manifest-stream.js';
 
 const MANIFEST_KEY = 'covers/v1/manifest.json';
 const MANIFEST_EDGE_TTL_SECONDS = 300;
-const MANIFEST_CACHE_PATH = '/__amado-cache/cover-manifest-v1';
+const MANIFEST_CACHE_PATH = '/__amado-cache/cover-selection-v2';
 const OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 const PRODUCT_ID_RE = /^MLU\d+$/;
 
@@ -27,77 +28,64 @@ function validManifest(value) {
         !Array.isArray(value.entries);
 }
 
-async function readPreviewManifest(ctx) {
+async function readPreviewManifest(ctx, productIds = null) {
     if (!['preview', 'production'].includes(ctx?.env?.APP_ENV)) return null;
     const bucket = ctx?.env?.COVER_R2;
     if (!bucket || typeof bucket.get !== 'function') return null;
-    if (!ctx.data || typeof ctx.data !== 'object') ctx.data = {};
-    if (!ctx.data.__coverManifestPromise) {
-        ctx.data.__coverManifestPromise = (async () => {
-            const totalStartedAt = perfNow();
-            try {
-                const appEnv = ctx.env.APP_ENV;
-                const edgeCache = globalThis.caches?.default;
-                const cacheKey = new Request(new URL(
-                    `${MANIFEST_CACHE_PATH}?env=${encodeURIComponent(appEnv)}`,
-                    ctx.request.url,
-                ));
-                let body = null;
-                if (edgeCache && typeof edgeCache.match === 'function') {
-                    const cacheStartedAt = perfNow();
-                    const cached = await edgeCache.match(cacheKey);
-                    recordPerf(ctx, 'cover_manifest_cache', cacheStartedAt, {
-                        cache: cached ? 'hit' : 'miss',
-                    });
-                    if (cached) {
-                        const bodyStartedAt = perfNow();
-                        body = await cached.text();
-                        recordPerf(ctx, 'cover_manifest_body', bodyStartedAt, {
-                            bytes: new TextEncoder().encode(body).byteLength,
-                        });
-                    }
-                }
-
-                if (body !== null) {
-                    const parseStartedAt = perfNow();
-                    const parsed = JSON.parse(body);
-                    recordPerf(ctx, 'cover_manifest_parse', parseStartedAt);
-                    return validManifest(parsed) ? parsed : null;
-                }
-
-                const bindingStartedAt = perfNow();
-                const object = await bucket.get(MANIFEST_KEY);
-                recordPerf(ctx, 'cover_manifest_binding', bindingStartedAt);
-                if (!object || typeof object.text !== 'function') return null;
-                const bodyStartedAt = perfNow();
-                body = await object.text();
-                recordPerf(ctx, 'cover_manifest_body', bodyStartedAt, {
-                    bytes: new TextEncoder().encode(body).byteLength,
-                });
-                const parseStartedAt = perfNow();
-                const parsed = JSON.parse(body);
-                recordPerf(ctx, 'cover_manifest_parse', parseStartedAt);
-                if (!validManifest(parsed)) return null;
-
-                if (edgeCache && typeof edgeCache.put === 'function') {
-                    const put = edgeCache.put(cacheKey, new Response(body, {
-                        headers: {
-                            'content-type': 'application/json; charset=utf-8',
-                            'cache-control': `public, max-age=${MANIFEST_EDGE_TTL_SECONDS}`,
-                        },
-                    }));
-                    if (typeof ctx.waitUntil === 'function') ctx.waitUntil(put);
-                    else await put;
-                }
-                return parsed;
-            } catch {
-                return null;
-            } finally {
-                recordPerf(ctx, 'cover_manifest_total', totalStartedAt);
-            }
-        })();
+    const totalStartedAt = perfNow();
+    try {
+        const cache = globalThis.caches?.default;
+        const cacheUrl = new URL(MANIFEST_CACHE_PATH, ctx.request.url);
+        cacheUrl.searchParams.set('env', ctx.env.APP_ENV);
+        cacheUrl.searchParams.set('ids', productIds === null ? 'all' : [...productIds].sort().join(','));
+        const cacheKey = new Request(cacheUrl);
+        const cacheStartedAt = perfNow();
+        const cached = await cache?.match?.(cacheKey);
+        recordPerf(ctx, 'cover_manifest_cache', cacheStartedAt, { cache: cached ? 'hit' : 'miss' });
+        if (cached) {
+            const parsed = await cached.json();
+            if (validManifest(parsed)) return parsed;
+        }
+        const bindingStartedAt = perfNow();
+        const object = await bucket.get(MANIFEST_KEY);
+        recordPerf(ctx, 'cover_manifest_binding', bindingStartedAt);
+        if (!object) return null;
+        const readStartedAt = perfNow();
+        const parsed = await streamCoverManifest(object, { productIds });
+        recordPerf(ctx, 'cover_manifest_stream', readStartedAt, { bytes: parsed.read_stats.bytes });
+        recordPerf(ctx, 'cover_manifest_body', perfNow() - parsed.read_stats.body_ms, { bytes: parsed.read_stats.bytes });
+        recordPerf(ctx, 'cover_manifest_parse', perfNow() - parsed.read_stats.parse_ms);
+        if (cache?.put) {
+            // Cache only the selected public pointers, never the global probe history.
+            const put = cache.put(cacheKey, Response.json(parsed, { headers: {
+                'cache-control': `public, max-age=${MANIFEST_EDGE_TTL_SECONDS}`,
+            } }));
+            if (typeof ctx.waitUntil === 'function') ctx.waitUntil(put);
+            else await put;
+        }
+        return parsed;
+    } catch {
+        return null;
+    } finally {
+        recordPerf(ctx, 'cover_manifest_total', totalStartedAt);
     }
-    return ctx.data.__coverManifestPromise;
+}
+
+function manifestForProduct(ctx, productId) {
+    if (!ctx.data || typeof ctx.data !== 'object') ctx.data = {};
+    const state = ctx.data.__coverSelection ||= { products: new Map(), pending: null };
+    if (state.products.has(productId)) return state.products.get(productId);
+    if (!state.pending || state.pending.started) {
+        const batch = { ids: new Set(), started: false };
+        batch.promise = Promise.resolve().then(() => {
+            batch.started = true;
+            return readPreviewManifest(ctx, [...batch.ids]);
+        });
+        state.pending = batch;
+    }
+    state.pending.ids.add(productId);
+    state.products.set(productId, state.pending.promise);
+    return state.pending.promise;
 }
 
 function validCurrent(entry) {
@@ -116,7 +104,7 @@ function validCurrent(entry) {
 export async function findPreviewCover(ctx, productId, position = 0, sourceUrl = null) {
     if (!PRODUCT_ID_RE.test(String(productId || '')) ||
         !Number.isInteger(position) || position < 0 || position > 15) return null;
-    const manifest = await readPreviewManifest(ctx);
+    const manifest = await manifestForProduct(ctx, productId);
     const current = validCurrent(manifest?.entries?.[`${productId}:${position}`]);
     if (!current) return null;
 

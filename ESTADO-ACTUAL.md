@@ -1,5 +1,13 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Incidente activo de portadas y catálogo — 2026-09-07
+
+- Responsable: Codex. Esfuerzo: M. Prioridad operativa dentro de Merchant: recuperar las imágenes visibles y el catálogo antes de activar la aceleración #329.
+- Evidencia: Seba adjuntó captura con cuatro portadas rotas. Los endpoints de MLU634431651, MLU709390092, MLU690771648 y MLU679987262 devolvieron HTTP 503 / Cloudflare 1102. El catálogo también falla. Main sigue en d380374; el manifiesto de imágenes medido supera 60 MB.
+- Rama nueva desde main actualizado: codex/cover-resource-hotfix. Las URLs inmutables pasan a leer directamente su objeto público por SHA. Catálogo, fichas y proxy estable leen el manifiesto por streaming y conservan sólo los productos solicitados; el feed usa la misma proyección con sus productos elegibles. El manifiesto y los masters R2 no se modifican.
+- Aceptación: pruebas de integridad, rutas inválidas, Unicode dividido entre chunks, JSON malformado, coalescencia por página y lectura de 65 MB con heap de 64 MB; CI y ensayo en Cloudflare con el manifiesto productivo real, vía binding de sólo lectura. Comparación del XML de ítems Merchant antes/después sobre el mismo snapshot.
+- Estado: implementado en rama, validación en curso. No declarar restaurada la producción hasta aprobar, desplegar y verificar las URLs públicas. Sin cambios en checkout, precios, Merchant ni escrituras de datos productivos.
+
 Última actualización: 2026-09-03 — **B11 CERRADO**. El
 [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) (Lote 03
 final) está **fusionado a `main` y verificado en Producción**. El circuito
