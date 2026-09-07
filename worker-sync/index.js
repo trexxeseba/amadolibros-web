@@ -77,7 +77,7 @@ export default {
       // baja solo a una ejecución por hora para revalidar el ciclo de 30 días.
       const minute = new Date().getUTCMinutes();
       ctx.waitUntil(Promise.all([
-        runCoverMirror(env, {
+        runCoverMirrorBurst(env, {
           limit: configuredCoverMirrorBatchSize(env),
           maintenanceMinute: minute,
         }),
@@ -614,6 +614,7 @@ export async function persistCoverMirrorState(env, result, catalog) {
     catalog_version: catalogVersion,
     attempted: result.attempted ?? null,
     failed: result.failed ?? null,
+    deferred: result.deferred ?? null,
     pending: result.pending ?? null,
     valid_copies: result.valid_copies ?? null,
     ai_upscaled: result.ai_upscaled ?? null,
@@ -623,6 +624,7 @@ export async function persistCoverMirrorState(env, result, catalog) {
     needs_better_source: result.needs_better_source ?? null,
     paused_progress: result.paused_progress ?? null,
     manifest_retries: result.manifest_retries ?? null,
+    source_reuse: result.source_reuse ?? null,
   }));
   if (result.status === 'completed' && result.pending === 0) {
     await kvPut(env, 'cover-mirror:backfill_complete', JSON.stringify({
@@ -636,7 +638,7 @@ export async function persistCoverMirrorState(env, result, catalog) {
   }
 }
 
-export async function runCoverMirror(env, { limit = 250, maintenanceMinute = null } = {}, {
+export async function runCoverMirror(env, { limit = 250, maintenanceMinute = null, deadlineMs = Infinity } = {}, {
   syncCoverMirrorFn = syncCoverMirror,
 } = {}) {
   try {
@@ -670,12 +672,13 @@ export async function runCoverMirror(env, { limit = 250, maintenanceMinute = nul
       const activeIds = new Set(catalog.items.map(item => item.id));
       pausedItems = block.body.items.filter(item => item.status === 'paused' && !activeIds.has(item.id));
     }
-    const result = await syncCoverMirrorFn(env, { ...catalog, items: [...catalog.items, ...pausedItems] }, { limit, includePaused: true });
+    const result = await syncCoverMirrorFn(env, { ...catalog, items: [...catalog.items, ...pausedItems] }, { limit, includePaused: true, deadlineMs });
     if (cursor && result.status === 'completed') {
       if ((result.source_discovery_pending ?? result.pending) === 0) {
         cursor.index = (cursor.index + 1) % cursor.block_count;
         cursor.remaining = Math.max(0, cursor.remaining - 1);
         await kvPut(env, 'cover-mirror:paused_cursor', JSON.stringify(cursor));
+        result.paused_advanced = true;
       }
       result.paused_progress = cursor;
       result.pending += cursor.remaining > 0 ? 1 : 0;
@@ -685,6 +688,48 @@ export async function runCoverMirror(env, { limit = 250, maintenanceMinute = nul
   } catch (error) {
     return { status: 'error', error: String(error?.message || 'Error').slice(0, 240) };
   }
+}
+
+// Preserve the cron and GA4 cadence. Complete up to three sequential image
+// batches instead of waiting five minutes after each successful batch.
+// The time budget is a guard for STARTING another batch, not cancellation of
+// one already writing its checkpoint. Errors stop the burst immediately.
+export async function runCoverMirrorBurst(env, options = {}, {
+  runBatch = runCoverMirror,
+  clock = Date.now,
+  maxBatches = 3,
+  startBudgetMs = 120_000,
+} = {}) {
+  const started = clock();
+  const results = [];
+  let reason = 'batch-limit';
+  const cap = Math.min(3, Math.max(1, Number(maxBatches) || 1));
+  for (let index = 0; index < cap; index++) {
+    if (index > 0 && clock() - started >= startBudgetMs) { reason = 'start-budget'; break; }
+    const result = await runBatch(env, {...options, deadlineMs: started + 240_000});
+    results.push(result);
+    if (result.status !== 'completed') { reason = result.status || 'unknown-status'; break; }
+    if (result.failed > 0) { reason = 'source-errors'; break; }
+    if (result.deferred > 0) { reason = 'fetch-budget'; break; }
+    if (!(result.pending > 0)) { reason = 'scope-complete'; break; }
+    // Empty batches can still advance a completed paused block. Without that
+    // progress, do not busy-loop on a retry whose backoff has not expired.
+    if (!(result.attempted > 0) && result.paused_advanced !== true) {
+      reason = 'no-work'; break;
+    }
+  }
+  const summary = {
+    at: new Date(clock()).toISOString(),
+    batches: results.length,
+    attempted: results.reduce((n, row) => n + (row.attempted || 0), 0),
+    failed: results.reduce((n, row) => n + (row.failed || 0), 0),
+    deferred: results.reduce((n, row) => n + (row.deferred || 0), 0),
+    origin_requests: results.reduce((n, row) => n + (row.source_reuse?.origin_requests || 0), 0),
+    duration_ms: clock() - started,
+    stop_reason: reason,
+  };
+  await kvPut(env, 'cover-mirror:last_burst', JSON.stringify(summary));
+  return { ...summary, results };
 }
 
 async function safeNotifyHealthcheck(notifyFn, env, kind) {
@@ -699,7 +744,7 @@ async function safeNotifyHealthcheck(notifyFn, env, kind) {
 // ── Status ───────────────────────────────────────────────────────────────────
 
 async function readStatus(env) {
-  const [lastStarted, lastOk, lastError, indexNowResult, indexNowError, coverMirrorResult, coverMirrorComplete, meta, catalogHead, coverManifest] = await Promise.all([
+  const [lastStarted, lastOk, lastError, indexNowResult, indexNowError, coverMirrorResult, coverMirrorComplete, meta, catalogHead, coverManifest, coverMirrorBurst] = await Promise.all([
     kvGet(env, 'sync:last_started'),
     kvGet(env, 'sync:last_ok'),
     kvGet(env, 'sync:last_error'),
@@ -710,6 +755,7 @@ async function readStatus(env) {
     readR2Json(env, 'meta.json'),
     readR2Head(env, 'catalog.json'),
     readBucketHead(env?.COVER_R2, 'covers/v1/manifest.json'),
+    kvGet(env, 'cover-mirror:last_burst'),
   ]);
 
   const parsedCoverMirrorComplete = parseBackfillMarker(coverMirrorComplete);
@@ -727,6 +773,7 @@ async function readStatus(env) {
     },
     cover_mirror: {
       last_result: parseJsonOrValue(coverMirrorResult),
+      last_burst: parseJsonOrValue(coverMirrorBurst),
       backfill_complete: parsedCoverMirrorComplete?.completed === true,
       backfill_catalog_version: parsedCoverMirrorComplete?.catalog_version || null,
     },

@@ -558,3 +558,14 @@ autorización explícita y separada de Seba.
 - **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
 - Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
 - QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.
+
+
+## QW2 — eficiencia de imágenes, 2026-09-07 (rama Codex)
+
+- Responsable: Codex. Esfuerzo: M. Seba autorizó empezar por las mejoras de eficiencia propuestas. Base: main d380374775db7b5d2ef80b09ae97351ccdcd88f9; rama nueva codex/image-throughput.
+- Implementado en rama: reutilización de investigación por identidad exacta de imagen ML (o URL exacta), combinación de variantes observadas, memoria compartida de promesas y reutilización de originales nativos frescos del manifest tras verificar existencia/tamaño en R2. No conserva buffers de todo el lote en memoria.
+- Cada ficha mantiene MLU, posición y URL propia. La fecha de comprobación nativa se conserva al reutilizar, sin prolongar artificialmente su vigencia. Alternativas nuevas, política vieja, objetos ausentes, sondeos con errores y fuentes vencidas se vuelven a investigar. Se conserva el master mejor de cada ficha; no se comparten transformaciones generativas como si fueran originales.
+- El cron de cinco minutos permanece igual. Puede completar hasta tres tandas secuenciales; deja de iniciar tandas después de 120 segundos, limita nuevas descargas al presupuesto de 240 segundos y conserva checkpoints. Lo que no entra se difiere, sin marcarlo como fallo del origen ni completado. GA4 conserva su llamada/frecuencia y no se toca checkout ni sincronización comercial.
+- Aceptación: pruebas de fuentes compartidas, expiración, fuente cambiada, variantes nuevas, conservación y reanudación; CI; ejecución real con R2 Preview, solicitudes contadas y verificación SHA/dimensiones de cada master servido en la Preview del PR. Comparar solicitudes reales con las que habría intentado el algoritmo anterior sobre las mismas referencias, sin confundir ese cálculo con un benchmark de tiempo del código anterior.
+- Estado al abrir revisión: pruebas focales verdes; CI y prueba real Preview pendientes. La cobertura general y el diagnóstico del sistema productivo anterior están documentados en #326. Esta mejora todavía no está desplegada y no resuelve por sí sola imágenes con originales insuficientes.
+- Sin merge, deploy de producción, escritura en R2 productivo ni modificación de Merchant.

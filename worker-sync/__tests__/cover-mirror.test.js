@@ -105,6 +105,149 @@ function imagesBinding({ fail = false } = {}) {
   };
 }
 
+const SHARED_SOURCE = 'https://http2.mlstatic.com/D_123456-MLU123456789_012026-O.jpg';
+const SHARED_VARIANT = 'https://http2.mlstatic.com/D_NQ_NP_123456-MLU123456789_012026-F.jpg';
+const SHARED_NOW = new Date('2026-09-07T12:00:00Z');
+const sharedItem = (id, source = SHARED_SOURCE) => item(id, {pictures: [source]});
+const nativeResponse = (width = 800, height = 1200) => new Response(pngBytes(width, height), {
+  headers: {'content-type': 'image/png'},
+});
+
+test('dos publicaciones comparten descargas en vuelo y mantienen sus URLs y posiciones', async () => {
+  const bucket = new MockR2();
+  const calls = [];
+  const result = await syncCoverMirror({COVER_R2: bucket}, {items: [
+    sharedItem('MLU100001'), sharedItem('MLU100002', SHARED_VARIANT),
+  ]}, {now: () => SHARED_NOW, fetchFn: async url => {calls.push(url); return nativeResponse();}});
+  assert.equal(calls.length, 2);
+  assert.equal(new Set(calls).size, 2);
+  assert.deepEqual(result.source_reuse, {sources_fetched: 1, reused_from_manifest: 0, shared_in_batch: 1, origin_requests: 2});
+  const a = bucket.manifest().entries['MLU100001:0'];
+  const b = bucket.manifest().entries['MLU100002:0'];
+  assert.equal(a.current.sha256, b.current.sha256);
+  assert.equal(a.current.source_url, SHARED_SOURCE);
+  assert.equal(b.current.source_url, SHARED_VARIANT);
+  assert.equal(b.product_id, 'MLU100002');
+});
+
+test('otra tanda reutiliza R2 sin tocar el origen ni extender la fecha nativa', async () => {
+  const bucket = new MockR2();
+  const first = sharedItem('MLU100001');
+  await syncCoverMirror({COVER_R2: bucket}, {items: [first]}, {now: () => SHARED_NOW, fetchFn: async () => nativeResponse()});
+  const later = new Date('2026-09-08T12:00:00Z');
+  const result = await syncCoverMirror({COVER_R2: bucket}, {items: [first, sharedItem('MLU100002')]}, {
+    now: () => later, fetchFn: async () => {throw new Error('No debe descargar');},
+  });
+  assert.equal(result.failed, 0);
+  assert.equal(result.imported, 1);
+  assert.equal(result.source_reuse.reused_from_manifest, 1);
+  assert.equal(result.source_reuse.origin_requests, 0);
+  const copy = bucket.manifest().entries['MLU100002:0'];
+  assert.equal(copy.native_checked_at, SHARED_NOW.toISOString());
+  assert.equal(copy.last_validated_at, later.toISOString());
+  const pending = selectCoverBatch({items: [sharedItem('MLU100002')]}, bucket.manifest(), {
+    nowMs: Date.parse('2026-10-07T13:00:00Z'), limit: 10,
+  });
+  assert.equal(pending.selected.length, 1, 'la asociación copiada también vence por la edad del origen');
+});
+
+test('un presupuesto agotado difiere trabajo sin inventar errores ni completar el backfill', async () => {
+  const bucket = new MockR2();
+  const catalog = {items:[sharedItem('MLU100001'), sharedItem('MLU100002')]};
+  const result = await syncCoverMirror({COVER_R2:bucket}, catalog, {
+    now:()=>SHARED_NOW, clock:()=>100, deadlineMs:99,
+    fetchFn:async()=>{throw new Error('No debe descargar');},
+  });
+  assert.equal(result.failed, 0);
+  assert.equal(result.deferred, 2);
+  assert.equal(result.pending, 2);
+  assert.deepEqual(bucket.manifest().entries, {});
+  const recovered = await syncCoverMirror({COVER_R2:bucket}, catalog, {now:()=>SHARED_NOW, fetchFn:async()=>nativeResponse()});
+  assert.equal(recovered.imported, 2);
+  assert.equal(recovered.pending, 0);
+});
+
+test('si el plazo vence durante un fetch conserva el master y no aplica espera por error de origen', async () => {
+  const bucket = new MockR2();
+  const catalog = {items:[sharedItem('MLU100001')]};
+  await syncCoverMirror({COVER_R2:bucket}, catalog, {now:()=>SHARED_NOW, fetchFn:async()=>nativeResponse()});
+  const original = bucket.manifest().entries['MLU100001:0'];
+  let tick = 0;
+  const expired = await syncCoverMirror({COVER_R2:bucket}, catalog, {
+    now:()=>new Date('2026-10-09T12:00:00Z'), clock:()=>tick, deadlineMs:100,
+    fetchFn:async()=>{tick=101; throw new Error('Abortado por presupuesto');},
+  });
+  assert.equal(expired.deferred, 1);
+  assert.equal(expired.failed, 0);
+  assert.equal(expired.pending, 1);
+  assert.deepEqual(bucket.manifest().entries['MLU100001:0'], original);
+});
+
+test('agrupar fuentes une alternativas observadas sin perder una variante mejor', async () => {
+  const extra = 'https://http2.mlstatic.com/D_NQ_NP_123456-MLU123456789_012026-R.jpg';
+  const bucket = new MockR2();
+  const calls = [];
+  await syncCoverMirror({COVER_R2: bucket}, {items: [sharedItem('MLU100001'), sharedItem('MLU100002', extra)]}, {
+    now: () => SHARED_NOW, fetchFn: async url => {calls.push(url); return url === extra ? nativeResponse(1200,1800) : nativeResponse();},
+  });
+  assert.equal(calls.length, 3);
+  assert.equal(bucket.manifest().entries['MLU100001:0'].current.width, 1200);
+  assert.equal(bucket.manifest().entries['MLU100002:0'].current.width, 1200);
+});
+
+test('una alternativa nueva invalida la reutilización aunque el archivo base coincida', async () => {
+  const bucket = new MockR2();
+  await syncCoverMirror({COVER_R2: bucket}, {items: [sharedItem('MLU100001')]}, {now: () => SHARED_NOW, fetchFn: async () => nativeResponse()});
+  const extra = 'https://http2.mlstatic.com/D_NQ_NP_123456-MLU123456789_012026-R.jpg';
+  let calls = 0;
+  const result = await syncCoverMirror({COVER_R2: bucket}, {items: [sharedItem('MLU100002', extra)]}, {
+    now: () => SHARED_NOW, fetchFn: async () => {calls++; return nativeResponse(1200,1800);},
+  });
+  assert.equal(result.source_reuse.reused_from_manifest, 0);
+  assert.equal(calls, 3);
+  assert.equal(bucket.manifest().entries['MLU100002:0'].current.width, 1200);
+});
+
+for (const reason of ['vencida', 'política vieja', 'objeto perdido', 'sondeo fallido']) {
+  test(`no comparte una fuente ${reason}`, async () => {
+    const bucket = new MockR2();
+    await syncCoverMirror({COVER_R2: bucket}, {items: [sharedItem('MLU100001')]}, {now: () => SHARED_NOW, fetchFn: async () => nativeResponse()});
+    const manifest = bucket.manifest();
+    const donor = manifest.entries['MLU100001:0'];
+    if (reason === 'política vieja') donor.source_policy_version = -1;
+    if (reason === 'objeto perdido') bucket.objects.delete(donor.current.object_key);
+    if (reason === 'sondeo fallido') donor.source_probes[0].error = 'timeout';
+    await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(manifest));
+    const result = await syncCoverMirror({COVER_R2: bucket}, {items: [sharedItem('MLU100002')]}, {
+      now: () => reason === 'vencida' ? new Date('2026-10-09T12:00:00Z') : SHARED_NOW,
+      fetchFn: async () => nativeResponse(),
+    });
+    assert.equal(result.source_reuse.reused_from_manifest, 0);
+    assert.equal(result.source_reuse.sources_fetched, 1);
+    assert.equal(result.failed, 0);
+  });
+}
+
+test('no confunde dos fotos distintas de la misma edición y comparte errores sólo en la tanda', async () => {
+  const other = SHARED_SOURCE.replace('123456-MLU', '654321-MLU');
+  const bucket = new MockR2();
+  const items = [sharedItem('MLU100001'), sharedItem('MLU100002'), sharedItem('MLU100003', other)];
+  const options = {now: () => SHARED_NOW, fetchFn: async url => {
+    if (url.includes('123456-MLU')) throw new Error('Origen caído');
+    return nativeResponse();
+  }};
+  const failed = await syncCoverMirror({COVER_R2: bucket}, {items}, options);
+  assert.equal(failed.failed, 2);
+  assert.equal(failed.imported, 1);
+  assert.equal(failed.source_reuse.sources_fetched, 2);
+  const recovered = await syncCoverMirror({COVER_R2: bucket}, {items}, {
+    now: () => new Date('2026-09-08T12:00:00Z'), fetchFn: async () => nativeResponse(),
+  });
+  assert.equal(recovered.failed, 0);
+  assert.equal(recovered.imported, 2);
+  assert.equal(recovered.source_reuse.sources_fetched, 1);
+});
+
 test('normaliza miniatura y excluye productos no activos o sin origen ML', () => {
   assert.equal(
     primaryCoverCandidate(item('MLU123456', { pictures: [], thumbnail: 'http://http2.mlstatic.com/D_X-I.jpg' })).source_url,

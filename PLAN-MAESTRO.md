@@ -555,3 +555,12 @@ del backlog.
   lista de las URLs de la muestra y su `canonical`/`indexable` real
   observado; referencia explícita a qué auditorías previas de B11 ya
   cubrían parte de este alcance, para no repetir verificaciones cerradas.
+
+
+### QW2 — eficiencia autorizada por Seba (2026-09-07)
+
+La única Gran Apuesta activa sigue siendo Google Merchant Center. Seba autorizó mejorar la eficiencia del sistema de imágenes existente, empezando por reutilizar fuentes y encadenar tandas acotadas.
+
+- Responsable Codex; esfuerzo M; rama codex/image-throughput desde main d380374.
+- Aceptación y evidencia: conservar masters/identidad/galerías, medir reducción de solicitudes, probar reanudación y límites, CI verde y bytes reales R2/Preview. Estado: implementado en rama, pendiente validación real y aprobación de merge. No se declara velocidad productiva mejorada antes del despliegue.
+- El particionado del índice global queda para otra entrega; no se agrega una migración de almacenamiento a este cambio.

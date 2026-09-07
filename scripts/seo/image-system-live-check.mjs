@@ -12,6 +12,11 @@ const rows = [];
 for (const entry of seed.entries) {
   const row = {key: entry.key, status: entry.status, google_ready: entry.google_ready};
   rows.push(row);
+  if (entry.status === 'deferred') {
+    row.ok = false;
+    row.error = 'Deferred work is not verified';
+    continue;
+  }
   if (entry.status === 'failed') {
     row.ok = Boolean(entry.error);
     row.queued_failure = true;
@@ -43,7 +48,8 @@ const summary = {catalog_products: seed.catalog_products, catalog_images: seed.c
   existing_masters_upgraded: rows.filter(row => row.master_upgraded).length,
   google_ready: rows.filter(row => row.ok && row.google_ready).length,
   queued_failures: rows.filter(row => row.queued_failure).length,
-  validation_failures: rows.filter(row => !row.ok).length, preflight: seed.preflight, quality: seed.quality};
+  validation_failures: rows.filter(row => !row.ok).length, preflight: seed.preflight, quality: seed.quality,
+  throughput: seed.throughput};
 await writeFile(out+'/live-report.json', JSON.stringify({generated_at: new Date().toISOString(), preview: base,
   catalog_updated_at: seed.catalog_updated_at, summary, rows}, null, 2));
 console.log(JSON.stringify(summary));
