@@ -1,0 +1,237 @@
+{
+  "owner": "Codex",
+  "effort": "M",
+  "base_main": "d380374775db7b5d2ef80b09ae97351ccdcd88f9",
+  "pr": 329,
+  "head": "7b02ff50e125edd04dacfd58fc6fabeb4dd8bab5",
+  "production_deployed": false,
+  "rows_unique": 1200,
+  "verified": 1200,
+  "source_failures": 0,
+  "validation_failures": 0,
+  "google_ready": 916,
+  "native_sources_still_below_google_minimum": 284,
+  "actual_origin_requests": 2231,
+  "calculated_previous_origin_requests": 2398,
+  "reference_definition": "Calculated probes of the old per-reference algorithm on the same selected rows; not a timed baseline. Zero reuse when selected rows have no shared sources.",
+  "existing_masters_upgraded": 0,
+  "runs": [
+    {
+      "head": "aa8883b8ac1c1165d9ce93c5e11a402c39bf1e38",
+      "run": 34146777648,
+      "artifact": 10028070510,
+      "generated_at": "2026-09-07T17:20:29.304Z",
+      "summary": {
+        "catalog_products": 7100,
+        "catalog_images": 32541,
+        "automatic_batch": 300,
+        "r2_verified": 300,
+        "larger_than_catalog_source": 271,
+        "existing_masters_upgraded": 0,
+        "google_ready": 247,
+        "queued_failures": 0,
+        "validation_failures": 0,
+        "preflight": {
+          "production_read_only": true,
+          "commercially_eligible": 6786,
+          "current_feed": 3695,
+          "strict_500_feed": 3695,
+          "would_exclude": 0
+        },
+        "quality": {
+          "known_images": 525,
+          "discovery_pending": 32041,
+          "needs_better_source": 120,
+          "unavailable": 0,
+          "awaiting_first_copy": 32016
+        },
+        "throughput": {
+          "batches": 3,
+          "duration_ms": 112400,
+          "stop_reason": "batch-limit",
+          "origin_requests": 504,
+          "reference_probe_requests": 600,
+          "sources_fetched": 252,
+          "reused_from_manifest": 1,
+          "shared_in_batch": 47,
+          "pending_after_each_batch": [
+            32241,
+            32141,
+            32041
+          ],
+          "note": "reference_probe_requests is the number of probes the previous per-reference algorithm would attempt on these selected rows; it is not a timed baseline run"
+        }
+      }
+    },
+    {
+      "head": "93368f125ed1ba71b64a91e700fc0dedd885a40c",
+      "run": 34147238152,
+      "artifact": 10028161073,
+      "generated_at": "2026-09-07T17:24:18.519Z",
+      "summary": {
+        "catalog_products": 7100,
+        "catalog_images": 32541,
+        "automatic_batch": 300,
+        "r2_verified": 300,
+        "larger_than_catalog_source": 275,
+        "existing_masters_upgraded": 0,
+        "google_ready": 258,
+        "queued_failures": 0,
+        "validation_failures": 0,
+        "preflight": {
+          "production_read_only": true,
+          "commercially_eligible": 6786,
+          "current_feed": 3695,
+          "strict_500_feed": 3695,
+          "would_exclude": 0
+        },
+        "quality": {
+          "known_images": 825,
+          "discovery_pending": 31741,
+          "needs_better_source": 162,
+          "unavailable": 0,
+          "awaiting_first_copy": 31716
+        },
+        "throughput": {
+          "batches": 3,
+          "duration_ms": 104956,
+          "stop_reason": "batch-limit",
+          "origin_requests": 527,
+          "reference_probe_requests": 598,
+          "sources_fetched": 264,
+          "reused_from_manifest": 9,
+          "shared_in_batch": 27,
+          "pending_after_each_batch": [
+            31941,
+            31841,
+            31741
+          ],
+          "note": "reference_probe_requests is the number of probes the previous per-reference algorithm would attempt on these selected rows; it is not a timed baseline run"
+        }
+      }
+    },
+    {
+      "head": "bea7671721687a62906614c397827ef1f5eb6922",
+      "run": 34147760424,
+      "artifact": 10028338583,
+      "generated_at": "2026-09-07T17:31:57.139Z",
+      "summary": {
+        "catalog_products": 7100,
+        "catalog_images": 32541,
+        "automatic_batch": 300,
+        "r2_verified": 300,
+        "larger_than_catalog_source": 265,
+        "existing_masters_upgraded": 0,
+        "google_ready": 235,
+        "queued_failures": 0,
+        "validation_failures": 0,
+        "preflight": {
+          "production_read_only": true,
+          "commercially_eligible": 6786,
+          "current_feed": 3695,
+          "strict_500_feed": 3695,
+          "would_exclude": 0
+        },
+        "quality": {
+          "known_images": 1125,
+          "discovery_pending": 31441,
+          "needs_better_source": 227,
+          "unavailable": 0,
+          "awaiting_first_copy": 31416
+        },
+        "throughput": {
+          "batches": 3,
+          "duration_ms": 134839,
+          "stop_reason": "batch-limit",
+          "origin_requests": 600,
+          "reference_probe_requests": 600,
+          "sources_fetched": 300,
+          "reused_from_manifest": 0,
+          "shared_in_batch": 0,
+          "pending_after_each_batch": [
+            31641,
+            31541,
+            31441
+          ],
+          "note": "reference_probe_requests is the number of probes the previous per-reference algorithm would attempt on these selected rows; it is not a timed baseline run"
+        }
+      }
+    },
+    {
+      "head": "7b02ff50e125edd04dacfd58fc6fabeb4dd8bab5",
+      "run": 34148650383,
+      "artifact": 10028632553,
+      "generated_at": "2026-09-07T17:44:54.282Z",
+      "summary": {
+        "catalog_products": 7100,
+        "catalog_images": 32541,
+        "automatic_batch": 300,
+        "r2_verified": 300,
+        "larger_than_catalog_source": 217,
+        "existing_masters_upgraded": 0,
+        "google_ready": 176,
+        "queued_failures": 0,
+        "validation_failures": 0,
+        "preflight": {
+          "production_read_only": true,
+          "commercially_eligible": 6786,
+          "current_feed": 3695,
+          "strict_500_feed": 3695,
+          "would_exclude": 0
+        },
+        "quality": {
+          "known_images": 1425,
+          "discovery_pending": 31141,
+          "needs_better_source": 351,
+          "unavailable": 0,
+          "awaiting_first_copy": 31116
+        },
+        "throughput": {
+          "batches": 3,
+          "duration_ms": 120531,
+          "stop_reason": "batch-limit",
+          "origin_requests": 600,
+          "reference_probe_requests": 600,
+          "sources_fetched": 300,
+          "reused_from_manifest": 0,
+          "shared_in_batch": 0,
+          "pending_after_each_batch": [
+            31341,
+            31241,
+            31141
+          ],
+          "note": "reference_probe_requests is the number of probes the previous per-reference algorithm would attempt on these selected rows; it is not a timed baseline run"
+        }
+      }
+    }
+  ],
+  "rows_gzip": "qw2-efficiency-1200-rows.json.gz",
+  "rows_uncompressed_sha256": "cb15f087504cc57e27432b6c6ffa49c5c575ad8bf441078b096b4067bed8ce86",
+  "checks": {
+    "ci": {
+      "conclusion": "success",
+      "run": 34148650388
+    },
+    "preview": {
+      "conclusion": "success",
+      "run": 34148650383
+    },
+    "seo_public_production": {
+      "conclusion": "failure",
+      "run": 34148650498,
+      "job": 101826024068
+    }
+  },
+  "production_blocker": {
+    "observed_at": "2026-09-07T17:41:58Z",
+    "url": "https://www.amadolibros.com/catalogo?page=2",
+    "http_status": 503,
+    "cloudflare_error": 1102,
+    "message": "Worker exceeded resource limits",
+    "cf_ray": "a37781d46b7b5a4c-IAD",
+    "cpu_or_memory": "Not distinguished by the HTTP response; logs required",
+    "image_manifest_bytes_previously_observed": 51682491,
+    "manifest_causation": "Suspected contributor, not established as root cause",
+    "next_action": "Inspect Cloudflare resource outcome/logs for the recorded Ray before changing limits or the public index architecture. No merge, production deploy or validation bypass."
+  }
+}
