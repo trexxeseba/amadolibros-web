@@ -15,7 +15,21 @@ prioridades — es el único vigente y reemplaza cualquier orden anterior:
 5. **Blindaje técnico de Amado — registrado, NO iniciado.**
 6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado
    del cierre de B11) — **pausado.**
-7. **Definición de B12** (heredado del cierre de B11) — **pausado.**
+7. **B12 — enriquecimiento de fichas activas** — **EN CURSO, primera tanda
+   entregada y lista para revisión.** **481 fichas activas** mejoradas (268
+   ISBN únicos), reconciliadas contra `main` sobre un snapshot congelado y
+   verificadas **una por una en el Preview desplegado**: 481 verificadas, 0
+   fallidas, 0 sin verificar, **841 comprobaciones de campo**, 0 fichas que
+   pierdan algún dato. La meta de 1.000 **sigue pendiente**: el circuito se
+   agotó con las fuentes actuales (196 → 31 → **0** ediciones por lote sobre
+   el mismo universo de 3.596). Detalle, reconciliación y bloqueo concreto en
+   `ESTADO-ACTUAL.md`. Entrega en
+   [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325) —
+   **sin mergear ni desplegar**, a la espera de aprobación de Seba.
+   **La verificación de Producción queda pendiente** hasta que haya merge y
+   deploy; el procedimiento ya está preparado (workflow «B12 — verificar en
+   Producción las fichas mejoradas», detalle en `ESTADO-ACTUAL.md`) y no
+   requiere trabajo nuevo.
 
 No iniciar ningún trabajo de los puntos 2-7 sin autorización explícita y
 separada de Seba. El detalle completo de cada uno (objetivo, criterio de
@@ -84,7 +98,8 @@ checkout ni de Producción mientras la prioridad activa es un diagnóstico
 - Los contadores en vivo y la evidencia de Producción están en
   `ESTADO-ACTUAL.md`, que es la fuente de verdad operativa.
 - **Lo que sigue, en orden:** 1) PR técnico de limpieza de los 17
-  `bibliographic.language` históricos multivaluados; 2) definición de B12.
+  `bibliographic.language` históricos multivaluados; 2) B12 — la primera tanda
+  ya está entregada y medida; lo pendiente es llegar a las 1.000 fichas.
   Ninguno de los dos está iniciado, y ambos quedan **pausados detrás de la
   Gran Apuesta en curso** (Google Merchant Center — ver sección al
   principio del documento) hasta que Seba autorice retomarlos.
@@ -346,8 +361,9 @@ ya fueron procesados y no queda ninguno sin intentar. No hay un Lote 04
 posible con las fuentes actuales — cualquier avance adicional exige
 evidencia nueva, no otra corrida del resolver.
 
-Trabajo heredado, en orden y sin iniciar: 1) PR técnico de limpieza de los
-17 `bibliographic.language` históricos; 2) B12.
+Trabajo heredado, en orden: 1) PR técnico de limpieza de los 17
+`bibliographic.language` históricos, sin iniciar; 2) B12, con su primera
+tanda ya entregada y medida (ver punto 7 del orden vigente).
 
 Ver `ESTADO-ACTUAL.md` para contadores en vivo y bloqueos activos.
 

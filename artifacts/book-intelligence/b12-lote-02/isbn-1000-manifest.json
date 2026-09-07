@@ -1,0 +1,1108 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-06T16:26:57.077Z",
+  "cohort": {
+    "requested": 1000,
+    "researched": 3596,
+    "selected_updates": 31,
+    "unique_isbn": true,
+    "scope": "active_sellable_editions"
+  },
+  "metrics": {
+    "GREEN_FULL": 8,
+    "GREEN_FACTS": 23,
+    "REVIEW": 1389,
+    "NO_EVIDENCE": 2176,
+    "updated_count": 31,
+    "remaining_to_1000": 969,
+    "target_reached": false
+  },
+  "entries": [
+    {
+      "isbn": "9789509603295",
+      "representative_id": "MLU639020919",
+      "listing_ids": [
+        "MLU639020919"
+      ],
+      "title": "Integración De Aportes Cognitivos Psicoterapia Baringoltz",
+      "author": "Gabriel Brarda",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 178,
+        "topics": [
+          "Government liability — Argentina.",
+          "Highway law — Argentina.",
+          "Liability for traffic accidents — Argentina."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Martin Diego Pirota, Sara Baringoltz"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Peaje y Responsabilidad Civil"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Pirota, Martín Diego"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Peaje y responsabilidad civil : los accidentes de tránsito en rutas concesionadas, la responsabilidad de concesionario y del estado, enfoque teórico-práctico, análisis de casos relevantes"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781408232361",
+      "representative_id": "MLU645389091",
+      "listing_ids": [
+        "MLU645389091",
+        "MLU645389093"
+      ],
+      "title": "Longman Active Study Dictionary 5th Edition Cd-rom Pack",
+      "author": "INDEFINIDO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Pearson Longman",
+        "topics": [
+          "English language, dictionaries",
+          "English language, textbooks for foreign speakers",
+          "Anglais (Langue) — Dictionnaires.",
+          "Anglais (Langue) — Manuels pour allophones.",
+          "Dictionaries",
+          "Engelska språket — lexikon."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Michael Mayor"
+          }
+        ],
+        "edition_fields": [
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9780156005999",
+      "representative_id": "MLU643166869",
+      "listing_ids": [
+        "MLU643166869",
+        "MLU688989460"
+      ],
+      "title": "Única Guía De Inversión Que Usted Necesitará Andrew Tobias",
+      "author": "Andrew Tobias",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Harcourt Brace",
+        "pages": 267
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780671418731",
+      "representative_id": "MLU640086937",
+      "listing_ids": [
+        "MLU640086937"
+      ],
+      "title": "El Amateur Robert Littell Ingles Excelente Estado Suspenso",
+      "author": "Robert Littell",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Simon and Schuster",
+        "pages": 252
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781591473800",
+      "representative_id": "MLU1428464266",
+      "listing_ids": [
+        "MLU1428464266"
+      ],
+      "title": "Diccionario Apa De Psicología Inglés Tapa Dura",
+      "author": "Gary R. Vandenbos",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 1024
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788481092035",
+      "representative_id": "MLU626310388",
+      "listing_ids": [
+        "MLU626310388",
+        "MLU669964216"
+      ],
+      "title": "Obras Completas I (paz Octavio) Casa De La Presencia / Poes",
+      "author": "Octavio Paz",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publication_year": "1999",
+        "topics": [
+          "Poetry",
+          "Poetry, Modern — 19th century — History and criticism.",
+          "Poetry, Modern — 20th century — History and criticism."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9780199576449",
+      "representative_id": "MLU715782332",
+      "listing_ids": [
+        "MLU715557590",
+        "MLU715782332"
+      ],
+      "title": "Diccionario Oxford Español-inglés Compacto Para Estudiantes",
+      "author": "OXFORD LANGUAGES",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Oxford University Press",
+        "pages": 515,
+        "topics": [
+          "Dictionaries",
+          "English language, dictionaries, spanish",
+          "Spanish language, dictionaries, english"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Christine Lea"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Oxford essential Spanish dictionary"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Lea, Christine."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Oxford essential Spanish dictionary : Spanish-English, English-Spanish = español-inglés, inglés-español"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781974751884",
+      "representative_id": "MLU662039047",
+      "listing_ids": [
+        "MLU662039047",
+        "MLU662064817"
+      ],
+      "title": "Jujutsu Kaisen 25 Gege Akutami Manga Panini Ivrea Tomo",
+      "author": "GEGE AKUTAMI",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Action and adventure comics.",
+          "Clubs.",
+          "Demonology.",
+          "Fantasy comics.",
+          "High school students.",
+          "Magic."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789877193442",
+      "representative_id": "MLU682769634",
+      "listing_ids": [
+        "MLU641088949",
+        "MLU682769634"
+      ],
+      "title": "Sanadores, Parteras, Curanderos Y Médicas Artes De Curar",
+      "author": "Diego Armus",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Fondo de Cultura Económica",
+        "pages": 370
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877370652",
+      "representative_id": "MLU1001523996",
+      "listing_ids": [
+        "MLU1001317126",
+        "MLU1001523996"
+      ],
+      "title": "Costa Tecnoceno Algoritmos Y Nuevas Formas De Vida",
+      "author": "Flavia Costa",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Taurus",
+        "pages": 190,
+        "topics": [
+          "Information technology — Environmental aspects.",
+          "Information technology — Political aspects.",
+          "Information technology — Social aspects."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789878326696",
+      "representative_id": "MLU650041446",
+      "listing_ids": [
+        "MLU650041446",
+        "MLU654742880"
+      ],
+      "title": "Segura : Las Ciudades Y Las Teorias Sociales Urbanos",
+      "author": "SEGURA RAMIRO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 179,
+        "publication_year": "2021"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789501524772",
+      "representative_id": "MLU650652476",
+      "listing_ids": [
+        "MLU650652476",
+        "MLU654852516"
+      ],
+      "title": "Historias De Medicos Hijos De Puta Autor Cassandra",
+      "author": "CASSANDRA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 228,
+        "topics": [
+          "Anecdotes.",
+          "Physician and patient — Anecdotes.",
+          "Physicians — Anecdotes."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Cassanddra"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "CaSSanDDra."
+          }
+        ],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9789507863257",
+      "representative_id": "MLU630492253",
+      "listing_ids": [
+        "MLU630492253",
+        "MLU651562704"
+      ],
+      "title": "Psicopedagogía: Conceptos Y Problemas",
+      "author": "Norma Filidoro",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 127
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9780198338734",
+      "representative_id": "MLU674762260",
+      "listing_ids": [
+        "MLU674762260",
+        "MLU961377506"
+      ],
+      "title": "Ib Biología Libro Del Alumno Oxford Programa",
+      "author": "Andrew Allot (",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Biology — Textbooks.",
+          "Biology.",
+          "Textbooks."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Allott, Andrew"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9780345536938",
+      "representative_id": "MLU631442941",
+      "listing_ids": [
+        "MLU631442941",
+        "MLU643412259"
+      ],
+      "title": "Full Catastrophe Living",
+      "author": "Jon Kabat-Zinn",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Self-care, Health",
+          "Stress (Psychology)",
+          "Stress management"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9789871555390",
+      "representative_id": "MLU633453146",
+      "listing_ids": [
+        "MLU633453146",
+        "MLU655234476"
+      ],
+      "title": "La Patria Posible, Omar Lopez Mato",
+      "author": "Omar López Mato",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Argentina — History — 1817-1860.",
+          "Biographies.",
+          "Generals — Uruguay — Biography.",
+          "Presidents — Uruguay — Biography.",
+          "Rivera, Fructuoso",
+          "Uruguay — History — 1830-1875."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780989551342",
+      "representative_id": "MLU659000130",
+      "listing_ids": [
+        "MLU659000130"
+      ],
+      "title": "Us Army Small Unit Tactics Handbook",
+      "author": "Paul D LeFavor",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Special operations (Military science) — Handbooks, manuals, etc.",
+          "Tactics — Handbooks, manuals, etc.",
+          "United States. — Handbooks, manuals, etc."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789505811120",
+      "representative_id": "MLU672617566",
+      "listing_ids": [
+        "MLU672617566"
+      ],
+      "title": "Teatro Uruguayo Contemporaneo Usado",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Riccetto, María Nélida.",
+        "pages": 235
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789504964063",
+      "representative_id": "MLU694173662",
+      "listing_ids": [
+        "MLU694173662",
+        "MLU694335958"
+      ],
+      "title": "Embutidos Guido Tassi Hermoso Ejemplar Unico",
+      "author": "Guido Tassi",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "PLANETA",
+        "topics": [
+          "Illustrated works.",
+          "Sausages — Argentina — Pictorial works.",
+          "Sausages — Argentina."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "TASSI"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788426481078",
+      "representative_id": "MLU623280680",
+      "listing_ids": [
+        "MLU623280680",
+        "MLU853145970"
+      ],
+      "title": "Las Señoritas Maestras Eeuu Sarmiento",
+      "author": "Laura Ramos",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Lumen",
+        "topics": [
+          "Education — Argentina — History — 19th century.",
+          "Teachers, Foreign — Argentina — History — 19th century.",
+          "Women teachers — Argentina — History — 19th century.",
+          "Women teachers — United States — History — 19th century."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781421536255",
+      "representative_id": "MLU701220446",
+      "listing_ids": [
+        "MLU701194178",
+        "MLU701220446"
+      ],
+      "title": "Libro One Piece: East Blue 1-2-3, Vol. 1 (omnibus Edition)",
+      "author": "Eiichiro Oda",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Viz Media",
+        "topics": [
+          "Comics & graphic novels, manga, fantasy",
+          "Pirates",
+          "Action and adventure comics.",
+          "Comic books, strips, etc.",
+          "COMICS & GRAPHIC NOVELS / Manga / Media Tie-In.",
+          "Graphic novels."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789507248924",
+      "representative_id": "MLU1033930564",
+      "listing_ids": [
+        "MLU1033930564",
+        "MLU643026389"
+      ],
+      "title": "María Esther Rey Dialoga Con Violeta H. De Gainza, De Hemsy De Gainza, Violeta. Editorial Lumen, Tapa Pasta Blanda En Español, 2021",
+      "author": "Hemsy De Gainza, Violeta",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Editorial Lumen",
+        "topics": [
+          "Music — Mathematics.",
+          "Music — Philosophy and aesthetics.",
+          "Rey, María Esther — Interviews."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789877801606",
+      "representative_id": "MLU680670268",
+      "listing_ids": [
+        "MLU680670268",
+        "MLU680748298"
+      ],
+      "title": "Diario De Un Inocente, Carrascosa - Belsunce Carmel Crimen",
+      "author": "Carrascosa, Carlos",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "B",
+        "topics": [
+          "Carrascosa, Carlos — Diaries.",
+          "False arrest — Argentina.",
+          "Murder — Argentina.",
+          "Prisoners — Argentina — Diaries."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9781405221740",
+      "representative_id": "MLU631182498",
+      "listing_ids": [
+        "MLU1398580938",
+        "MLU631182498"
+      ],
+      "title": "Kensuke's Kingdom",
+      "author": "Morpurgo",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 176
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789873804533",
+      "representative_id": "MLU761427324",
+      "listing_ids": [
+        "MLU761297292",
+        "MLU761427324"
+      ],
+      "title": "La Humanidad Frente A La Barbarie - Muchnik Guerra Muerte",
+      "author": "REFLEXIONES SOBRE LA GUERRA LA MUERTE Y LA SUPERVIVENCIA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ariel"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Daniel Muchnik"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Muchnik, Daniel"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "La humanidad frente a la barbarie : reflexiones sobre la guerra, la muerte y la supervivencia"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781682631553",
+      "representative_id": "MLU644148389",
+      "listing_ids": [
+        "MLU644148389",
+        "MLU644174417"
+      ],
+      "title": "Sobre Los Insectos Guía Para Niños Aprendizaje Naturaleza",
+      "author": "Cathryn Sill",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Insectes — Anatomie — Ouvrages pour la jeunesse.",
+          "Insectes — Mœurs et comportement — Ouvrages pour la jeunesse.",
+          "Insectes — Ouvrages pour la jeunesse.",
+          "Insectos — Literatura juvenil.",
+          "Insects — Anatomy — Juvenile literature.",
+          "Insects — Behavior — Juvenile literature."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500758925",
+      "representative_id": "MLU643557527",
+      "listing_ids": [
+        "MLU643557527",
+        "MLU690332286"
+      ],
+      "title": "La Explosion Lutzky Horacio Amia Israel Daia Atentado",
+      "author": "Horacio Lutzky",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "topics": [
+          "Antisemitism — Argentina — Buenos Aires — Fiction.",
+          "Asociación Mutual Israelita Argentina — Fiction.",
+          "Bombings — Argentina — Buenos Aires — Fiction.",
+          "Jews — Violence against — Argentina — Buenos Aires — Fiction.",
+          "Terrorism — Argentina — Buenos Aires — Fiction."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788467051100",
+      "representative_id": "MLU718981384",
+      "listing_ids": [
+        "MLU718981384",
+        "MLU719007230"
+      ],
+      "title": "Libro La Reina Sin Reino Peridis Trilogía De La Reconquista",
+      "author": "Peridis",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Berengaria — Fiction.",
+          "Castile (Spain) — History — Ferdinand III, 1217-1252.",
+          "Ferdinand — Fiction.",
+          "Fiction.",
+          "Kings and rulers — Fiction.",
+          "Queens — Fiction."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Pérez González, José María"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788409106844",
+      "representative_id": "MLU1496759690",
+      "listing_ids": [
+        "MLU1496759690"
+      ],
+      "title": "Para Siempre Camino García - Duelo Y Muerte En Niños",
+      "author": "Camino García Calleja",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Camino Garcia"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788425438905",
+      "representative_id": "MLU645375344",
+      "listing_ids": [
+        "MLU645375344",
+        "MLU656315126"
+      ],
+      "title": "Etapas Del Desarrollo",
+      "author": "Rebeca Wild",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2016"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788495311580",
+      "representative_id": "MLU672400514",
+      "listing_ids": [
+        "MLU672400354",
+        "MLU672400514"
+      ],
+      "title": "Magia Blanca, Magia Negra (clasicos Esotericos)",
+      "author": "LEADBEATER, C. W.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "language": "Español"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 2,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Charles Webster Leadbeater"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Magia Blanca, Magia Negra/ La Magia de Arbatel / White Magic, Black Magic / Arbatel's Magic (Clasicos Esotericos)"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    }
+  ]
+}

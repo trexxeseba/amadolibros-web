@@ -1,0 +1,42 @@
+name: Sonda de alcance de fuentes bibliográficas
+
+# Sólo lectura: prueba unos pocos ISBN reales contra cada biblioteca nacional
+# para saber si el endpoint contesta antes de lanzar un lote largo.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/book-source-probe.yml'
+      - 'scripts/seo/book-intelligence-source-probe.mjs'
+      - 'scripts/seo/book-intelligence-national-libraries.mjs'
+      - 'scripts/seo/book-intelligence-marc.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Probar bibliotecas nacionales
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Pruebas offline del adaptador
+        run: |
+          node --check scripts/seo/book-intelligence-marc.mjs
+          node --check scripts/seo/book-intelligence-national-libraries.mjs
+          node --test functions/__tests__/book-intelligence-national-libraries.test.js
+          node --test functions/__tests__/book-intelligence-bne.test.js
+
+      - name: Sondear alcance real
+        continue-on-error: true
+        run: node scripts/seo/book-intelligence-source-probe.mjs

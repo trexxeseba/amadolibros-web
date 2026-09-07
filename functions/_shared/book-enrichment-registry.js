@@ -11,6 +11,9 @@ import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_LOTE_01 } from './book-e
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_01 } from './book-enrichment-facts-b11-2-lote-01.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_02 } from './book-enrichment-facts-b11-2-lote-02.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03 } from './book-enrichment-facts-b11-2-lote-03.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01 } from './book-enrichment-facts-qw3a2-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_01 } from './book-enrichment-facts-b12-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_02 } from './book-enrichment-facts-b12-lote-02.js';
 import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
@@ -478,6 +481,33 @@ export function validateBookEnrichment(record) {
   );
 }
 
+
+// Un lote posterior puede volver sobre un ISBN ya investigado: desde que el
+// selector mide huecos sobre la ficha efectiva, una edición que sólo aportó
+// `publication_year` vuelve al cohorte para buscar `pages` o `publisher`.
+//
+// Esa reincidencia COMPLETA, nunca pisa: el dato viejo también se verificó en
+// su momento, así que gana el primero y el nuevo sólo llena lo que faltaba.
+// La procedencia se acumula para no perder de dónde salió cada campo.
+export function mergeFactEnrichment(existing, incoming) {
+  if (!existing) return incoming;
+  const facts = { ...(incoming.facts || {}), ...(existing.facts || {}) };
+  const existingBib = existing.facts?.bibliographic || {};
+  const incomingBib = incoming.facts?.bibliographic || {};
+  if (Object.keys(existingBib).length || Object.keys(incomingBib).length) {
+    facts.bibliographic = { ...incomingBib, ...existingBib };
+  }
+  const provenance = [...(existing.provenance || [])];
+  const seen = new Set(provenance.map(source => `${source.url}|${(source.fields || []).join(',')}`));
+  for (const source of incoming.provenance || []) {
+    const key = `${source.url}|${(source.fields || []).join(',')}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    provenance.push(source);
+  }
+  return { ...existing, facts, provenance };
+}
+
 const ENRICHMENT_BY_ISBN = new Map();
 for (const record of BIBLE_ENRICHMENTS) {
   if (!validateBookEnrichment(record)) {
@@ -543,6 +573,46 @@ for (const record of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03) {
     throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
   }
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+
+// El lote B12 01 es el primero posterior a la corrección del selector, así que
+// vuelve sobre ediciones ya investigadas para completarles campos: 75 de sus
+// 196 ISBN ya estaban en el registro. Por eso FUSIONA en vez de rechazar el
+// duplicado — pero un ISBN repetido DENTRO del propio lote sigue siendo un
+// error, no una fusión.
+const b12Lote01Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote01Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 01: ${record.isbn}.`);
+  }
+  b12Lote01Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
+}
+
+// Lote B12 02: mismo criterio de fusión que el 01. 18 de sus 31 ISBN ya
+// estaban en el registro y vuelven a completarles campos.
+const b12Lote02Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_02) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote02Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 02: ${record.isbn}.`);
+  }
+  b12Lote02Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
 }
 
 // Una mejora editorial reemplaza el registro factual de la misma edición,

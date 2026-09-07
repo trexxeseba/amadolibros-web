@@ -17,6 +17,8 @@ import {
   mergeSourceCache,
   parseGoogleBooksEvidence,
   parseOpenLibraryEvidence,
+  CACHEABLE_SOURCES,
+  SOURCE_CACHE_TTL_MS,
   planBookSourceResearch,
 } from '../../scripts/seo/book-intelligence-sources.mjs';
 
@@ -340,4 +342,38 @@ test('mergeSourceCache versiona records/error por ISBN y fuente sin pisar la otr
   assert.equal(cache.entries[ISBN].google_books.records.length, 1);
   assert.equal(cache.entries[ISBN].open_library.error, 'sin match');
   assert.equal(cache.generated_at, fetchedAt);
+});
+
+// SOURCE-COVERAGE-4: Library of Congress y DNB entran al plan como cualquier
+// otra fuente, con su propio presupuesto y su propio cache.
+test('el plan reserva presupuesto propio para LoC y DNB', () => {
+  const plan = planBookSourceResearch(
+    [{ id: 'A', isbn: '9780062273208' }, { id: 'B', isbn: '9788496836693' }],
+    {},
+    { googleBooksBudget: 0, openLibraryBudget: 0, bneBudget: 0, locBudget: 2, dnbBudget: 1 },
+  );
+  assert.equal(plan.loc.length, 2);
+  assert.equal(plan.dnb.length, 1);
+  assert.equal(plan.google_books.length, 0);
+});
+
+test('sin presupuesto explícito las fuentes nuevas no consumen cuota', () => {
+  const plan = planBookSourceResearch([{ id: 'A', isbn: '9780062273208' }], {});
+  assert.deepEqual(plan.loc, []);
+  assert.deepEqual(plan.dnb, []);
+});
+
+// El lote 34032005445 falló con "Fuente no cacheable": LoC y DNB estaban
+// cableadas al orquestador pero no a la lista blanca del caché. Este test
+// ata las dos cosas para que no se separen otra vez.
+test('toda fuente del plan es cacheable y tiene TTL propio', () => {
+  const plan = planBookSourceResearch([{ id: 'A', isbn: '9780062273208' }], {}, {
+    googleBooksBudget: 1, openLibraryBudget: 1, bneBudget: 1, locBudget: 1, dnbBudget: 1,
+  });
+  const enElPlan = Object.keys(plan).filter(key => Array.isArray(plan[key]) && key !== 'entries');
+  for (const source of enElPlan) {
+    assert.ok(CACHEABLE_SOURCES.includes(source), `${source} no está en CACHEABLE_SOURCES`);
+    assert.ok(Number.isFinite(SOURCE_CACHE_TTL_MS[source]), `${source} no tiene TTL`);
+    assert.doesNotThrow(() => mergeSourceCache({}, '9780062273208', source, []), source);
+  }
 });

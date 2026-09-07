@@ -1,0 +1,201 @@
+name: B12 — reconciliar impacto y validar el Preview desplegado
+
+# Dos cosas que no se pueden dar por sabidas:
+#
+# 1. El impacto real del PR, comparando la ficha EFECTIVA de `main` contra la
+#    del PR sobre el MISMO snapshot de catálogo. Sin reconstrucciones: se
+#    aplica el registro de cada lado y se resta.
+# 2. Que cada ficha que el PR dice mejorar lo muestre en el Preview DESPLEGADO.
+#    Una prueba local del renderizador no alcanza.
+#
+# Sólo lectura: no despliega, no escribe catálogo, no toca Merchant.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/b12-reconciliacion-y-preview.yml'
+      - 'scripts/seo/effective-ficha-fields.mjs'
+      - 'scripts/seo/effective-ficha-diff.mjs'
+      - 'scripts/seo/preview-ficha-validation.mjs'
+      - 'functions/_shared/book-enrichment-facts-b12-lote-01.js'
+      - 'functions/_shared/book-enrichment-facts-b12-lote-02.js'
+      - 'functions/_shared/book-enrichment-facts-qw3a2-lote-01.js'
+  workflow_dispatch:
+    inputs:
+      preview_base_url:
+        description: Base del Preview desplegado a validar
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reconciliar:
+    name: Reconciliar impacto y validar Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout del PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Pruebas del instrumental de medición
+        run: |
+          node --check scripts/seo/effective-ficha-fields.mjs
+          node --check scripts/seo/effective-ficha-diff.mjs
+          node --check scripts/seo/preview-ficha-validation.mjs
+          node --test functions/__tests__/effective-ficha-diff.test.js
+          node --test functions/__tests__/preview-ficha-validation.test.js
+          node --test functions/__tests__/book-intelligence-cache-io.test.js
+
+      # Un único snapshot para los dos lados: si cada uno bajara el suyo, una
+      # actualización del catálogo en el medio invalidaría la comparación.
+      - name: Congelar el snapshot del catálogo
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/reconciliacion
+          curl -sSf --max-time 120 \
+            https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json \
+            -o artifacts/reconciliacion/catalog-snapshot.json
+          node -e "const c=require('./artifacts/reconciliacion/catalog-snapshot.json');console.log('snapshot updated_at:',c.updated_at,'items:',c.items.length)"
+
+      - name: Ficha efectiva con el registro de main
+        run: |
+          set -euo pipefail
+          git worktree add /tmp/main-tree origin/main
+          cp artifacts/reconciliacion/catalog-snapshot.json /tmp/catalog-snapshot.json
+          # El medidor existe sólo en el PR. Se copia DENTRO del worktree para
+          # que sus imports relativos resuelvan al registro de main, que es
+          # justamente lo que queremos medir.
+          cp scripts/seo/effective-ficha-fields.mjs /tmp/main-tree/scripts/seo/
+          cd /tmp/main-tree
+          CATALOG_SNAPSHOT=/tmp/catalog-snapshot.json \
+          FIELDS_OUTPUT=/tmp/fields-main.json \
+          FIELDS_LABEL=main \
+            node scripts/seo/effective-ficha-fields.mjs
+
+      - name: Ficha efectiva con el registro del PR
+        env:
+          CATALOG_SNAPSHOT: artifacts/reconciliacion/catalog-snapshot.json
+          FIELDS_OUTPUT: /tmp/fields-pr.json
+          FIELDS_LABEL: pr-325
+        run: node scripts/seo/effective-ficha-fields.mjs
+
+      - name: Reconciliar el impacto
+        env:
+          FIELDS_ANTES: /tmp/fields-main.json
+          FIELDS_DESPUES: /tmp/fields-pr.json
+          DIFF_OUTPUT: artifacts/reconciliacion/effective-ficha-diff.json
+        run: node scripts/seo/effective-ficha-diff.mjs
+
+      # El Preview de este commit puede no estar desplegado todavía. El sitio
+      # no expone un endpoint con su build, así que la señal autoritativa es
+      # el propio check de despliegue del commit: cuando concluye con éxito,
+      # lo que sirve Cloudflare ES este SHA.
+      - name: Esperar el despliegue del Preview de este commit
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ESPERADO_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "Commit evaluado: $ESPERADO_SHA"
+          for intento in $(seq 1 40); do
+            ESTADO="$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$REPO/commits/$ESPERADO_SHA/check-runs?per_page=100" \
+              | node -e "
+                let raw='';process.stdin.on('data',d=>raw+=d).on('end',()=>{
+                  let j={};try{j=JSON.parse(raw);}catch{}
+                  const runs=(j.check_runs||[]).filter(r=>/^(deploy-)?preview$/.test(r.name));
+                  const ok=runs.some(r=>r.status==='completed'&&r.conclusion==='success');
+                  const fail=runs.some(r=>r.status==='completed'&&['failure','timed_out'].includes(r.conclusion));
+                  console.log(ok?'ok':(fail?'fallo':'esperando'));
+                });")"
+            echo "intento $intento: $ESTADO"
+            [ "$ESTADO" = "ok" ] && { echo "servido=$ESPERADO_SHA" >> "$GITHUB_OUTPUT"; exit 0; }
+            [ "$ESTADO" = "fallo" ] && { echo "El despliegue del Preview falló para este commit." >&2; exit 1; }
+            sleep 20
+          done
+          echo "El Preview de $ESPERADO_SHA no terminó de desplegarse a tiempo." >&2
+          exit 1
+
+      - name: Validar el Preview desplegado
+        id: preview
+        continue-on-error: true
+        env:
+          PREVIEW_BASE_URL: ${{ inputs.preview_base_url || format('https://pr-{0}.amadolibros-web.pages.dev', github.event.pull_request.number) }}
+          PREVIEW_PLAN: artifacts/reconciliacion/effective-ficha-diff.json
+          PREVIEW_OUTPUT: artifacts/reconciliacion/preview-ficha-validation.json
+          PREVIEW_DEPLOYED_SHA: ${{ steps.deploy.outputs.servido }}
+        run: node scripts/seo/preview-ficha-validation.mjs
+
+      # Los artefactos vencen a los 30 días; el resumen de la corrida queda
+      # mientras exista la corrida. Las cifras que se citan en el PR y en los
+      # documentos tienen que poder leerse ahí sin descargar nada.
+      - name: Resumen de la corrida
+        if: always()
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            const leer = ruta => { try { return JSON.parse(fs.readFileSync(ruta, "utf8")); } catch { return null; } };
+            const diff = leer("artifacts/reconciliacion/effective-ficha-diff.json");
+            const prev = leer("artifacts/reconciliacion/preview-ficha-validation.json");
+            const out = [];
+            const fila = (...c) => out.push(`| ${c.join(" | ")} |`);
+            if (diff) {
+              out.push("## Impacto reconciliado", "");
+              out.push(`Snapshot \`catalog.json\` **${diff.snapshot.catalogUpdatedAt}** · ${diff.snapshot.fichasActivas} fichas activas.`, "");
+              fila("Métrica", "Valor"); fila("---", "---:");
+              fila("Registro en `main`", diff.antes.registryIsbns);
+              fila("Registro en el PR", diff.despues.registryIsbns);
+              fila("ISBN únicos con mejora", diff.totales.isbn_unicos_con_mejora);
+              fila("**Fichas activas beneficiadas**", `**${diff.totales.fichas_beneficiadas}**`);
+              fila("— con ≥3 campos nuevos", diff.totales.fichas_con_3_o_mas);
+              fila("Fichas que pierden algún campo", diff.totales.fichas_que_pierden_algun_campo);
+              out.push("");
+            }
+            if (prev) {
+              out.push("## Preview desplegado", "");
+              out.push(`SHA servido: \`${prev.previewDeployedSha}\` · ${prev.previewBaseUrl}`, "");
+              fila("Fichas esperadas", "Verificadas", "Fallidas", "Sin verificar", "Comprobaciones");
+              fila("---:", "---:", "---:", "---:", "---:");
+              const t = prev.totales;
+              fila(t.fichas_esperadas, `**${t.verificadas}**`, t.fallidas, t.no_verificadas, t.comprobaciones_totales);
+              out.push("", "### Comprobaciones por campo", "");
+              fila("Campo", "Comprob.", "Visible OK", "JSON-LD OK", "JSON-LD N/A", "Fallidas");
+              fila("---", "---:", "---:", "---:", "---:", "---:");
+              for (const [campo, f] of Object.entries(prev.comprobaciones_por_campo || {})) {
+                fila(campo, f.comprobaciones, f.visible_ok, f.jsonld_ok, f.jsonld_no_aplica, f.fallidas);
+              }
+            }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+          '
+
+      - name: Subir la evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b12-reconciliacion-${{ github.run_id }}
+          path: artifacts/reconciliacion/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Fallar si el Preview no muestra lo prometido
+        if: steps.preview.outcome != 'success'
+        run: |
+          echo 'El Preview no confirmó todas las fichas que el PR dice mejorar.' >&2
+          echo 'Detalle por ficha en el artefacto de esta corrida.' >&2
+          exit 1
