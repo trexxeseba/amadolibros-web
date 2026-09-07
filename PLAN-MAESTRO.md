@@ -555,3 +555,14 @@ del backlog.
   lista de las URLs de la muestra y su `canonical`/`indexable` real
   observado; referencia explícita a qué auditorías previas de B11 ya
   cubrían parte de este alcance, para no repetir verificaciones cerradas.
+
+
+### Excepción puntual autorizada — datos del comprador (2026-09-07)
+
+Seba pidió autocompletado inmediato y Google opcional; detuvo el enlace mágico.
+Responsable Codex para metadatos del formulario (S), Claude para Google y perfil
+(M). No cambia la única Gran Apuesta Merchant. Alcance y aceptación en
+`docs/checkout-google-handoff.md`: perfil confirmado, invitado disponible,
+carrito/borrador preservados, privacidad entre cuentas y Preview verificado.
+No autoriza cambios en precios/pagos ni merge o despliegue. Evidencia inicial:
+114/114 tests de checkout verdes en la rama Codex; Google aún no implementado.
