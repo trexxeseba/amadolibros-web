@@ -592,3 +592,14 @@ autorización explícita y separada de Seba.
 - Pendiente Merchant: 2.097 advertencias de resolución futura en Shopping, 23 de baja calidad, 4 por imágenes adicionales pequeñas y 10 demoras de procesamiento de imagen por destino. 0 problemas de cuenta. Shopping: 6.656 activos / 1 pendiente / 218 desaprobados; Free Listings: 6.673 / 1 / 201.
 - El sistema general de #323 está en producción, pero la calidad de todas las fotos sigue pendiente. Completar la revisión automática y conseguir originales mejores donde no alcance la fuente actual siguen siendo necesarios; sin fecha global de cierre demostrada.
 - Evidencia persistida: docs/evidence/qw2-progress-2026-09-07-1205.json. Sin merge, deploy, cambio de frecuencia ni nuevas escrituras en Merchant/R2 por esta comprobación.
+
+
+## QW2 — avance comprobado 2026-09-07 14:32 UTC (11:32 Uruguay)
+
+- Responsable: Codex. Esfuerzo: S. Aceptación cumplida: nueva lectura autenticada Worker y Merchant; ambos jobs success. Se reejecutaron los jobs de solo lectura, sin cambio productivo.
+- Worker: última tanda 14:31:15 UTC, 100 intentos / 0 fallos; observación 42 segundos después. Manifest actualizado 14:31:13 UTC. Evidencia: run 34068005892, intento 3, job 101778815838.
+- Mismo catálogo 2026-09-07T07:18:48.068Z y alcance 32.939 que a las 12:04 UTC. Pendientes del alcance 3.359 → 359 (-3.000). Copias por debajo del mínimo 15.603 → 15.456 (-147 netas), sobre las mismas 40.167 copias. Es una mejora agregada; no identifica 147 productos ni imágenes individuales corregidos.
+- Quedan 128 bloques de pausados por recorrer; backfill incompleto. Terminar el tramo actual no equivale a completar toda la web ni resolver las fuentes insuficientes.
+- Merchant: image_too_small / portada / DISAPPROVED sigue en 8 por destino Shopping y Free Listings. Advertencias de resolución futura en Shopping: 2.097 → 2.098. Baja calidad 23, adicionales pequeños 4 y demoras de imagen 10 por destino, sin cambios. Account issues 0.
+- Evidencia Merchant: run 34068005896, intento 3, job 101778813496; generado 14:32:19 UTC. Reporte persistido en docs/evidence/qw2-progress-2026-09-07-1432.json.
+- Estado: sistema activo con progreso comprobado; calidad global pendiente. Sin merge ni deploy en esta lectura.
