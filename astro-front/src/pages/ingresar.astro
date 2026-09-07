@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '';
+---
+<BaseLayout
+  title="Ver mis pedidos — Amado Libros"
+  description="Ingresá con un enlace por correo para ver el estado de tus pedidos en Amado Libros."
+  canonical="https://www.amadolibros.com/ingresar/"
+  indexable={false}
+>
+  <Header />
+  <main class="ingresar">
+    <h1>Ver mis pedidos</h1>
+
+    <!-- Paso 1: pedir el enlace. Se oculta si la URL trae un token. -->
+    <section id="paso-pedir">
+      <p>Te mandamos un enlace al correo con el que hiciste la compra. No hace falta contraseña.</p>
+      <form id="form-ingreso" novalidate>
+        <label for="email">Tu correo</label>
+        <input id="email" name="email" type="email" autocomplete="email" required inputmode="email" />
+        <div id="cf-ts-container"></div>
+        <button type="submit" id="enviar">Enviarme el enlace</button>
+      </form>
+    </section>
+
+    <!-- Paso 2: confirmar. El enlace del correo llega acá con ?t=…
+         El token NO se consume al abrir la página: hace falta este botón.
+         Los antivirus y algunos clientes de correo abren los enlaces solos
+         para inspeccionarlos, y si un GET consumiera el token lo quemarían
+         antes de que la persona lo tocara. -->
+    <section id="paso-confirmar" hidden>
+      <p>Confirmá que sos vos para entrar.</p>
+      <button type="button" id="confirmar">Confirmar ingreso</button>
+    </section>
+
+    <p id="aviso" role="status" aria-live="polite"></p>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .ingresar { max-width: 34rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .ingresar label { display: block; margin-bottom: .35rem; font-weight: 600; }
+  .ingresar input { width: 100%; padding: .7rem; font-size: 1rem; border: 1px solid #bbb; border-radius: .4rem; }
+  .ingresar button { margin-top: 1rem; padding: .8rem 1.4rem; font-size: 1rem; border: 0; border-radius: .4rem;
+    background: #1c3f60; color: #fff; cursor: pointer; }
+  .ingresar button[disabled] { opacity: .6; cursor: progress; }
+  #aviso { margin-top: 1.2rem; min-height: 1.5rem; }
+  #cf-ts-container { margin-top: 1rem; }
+</style>
+
+<script is:inline define:vars={{ turnstileSiteKey }}>
+  (function () {
+    var aviso = document.getElementById('aviso');
+    var pasoPedir = document.getElementById('paso-pedir');
+    var pasoConfirmar = document.getElementById('paso-confirmar');
+    var token = new URLSearchParams(location.search).get('t');
+
+    function decir(texto) { aviso.textContent = texto; }
+
+    if (token) {
+      pasoPedir.hidden = true;
+      pasoConfirmar.hidden = false;
+      document.getElementById('confirmar').addEventListener('click', function (evento) {
+        var boton = evento.currentTarget;
+        boton.disabled = true;
+        decir('Entrando…');
+        fetch('/api/auth/confirmar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token }),
+        }).then(function (r) {
+          if (r.ok) { location.replace('/mis-pedidos/'); return null; }
+          boton.disabled = false;
+          decir('Ese enlace ya se usó o venció. Pedí uno nuevo desde /ingresar.');
+          return null;
+        }).catch(function () {
+          boton.disabled = false;
+          decir('No pudimos entrar. Probá de nuevo en un momento.');
+        });
+      });
+      return;
+    }
+
+    // Turnstile en modo explícito, igual que en el carrito.
+    var widgetId = null;
+    var pendiente = null;
+    function alExito(t) { if (pendiente) { var r = pendiente.resolve; pendiente = null; r(t); } }
+    function alFallar() { if (pendiente) { var r = pendiente.reject; pendiente = null; r(new Error('ts')); } }
+
+    if (turnstileSiteKey) {
+      window.__tsOnLoadIngreso = function () {
+        widgetId = window.turnstile.render(document.getElementById('cf-ts-container'), {
+          sitekey: turnstileSiteKey,
+          action: 'login_link',
+          appearance: 'interaction-only',
+          execution: 'execute',
+          callback: alExito,
+          'error-callback': alFallar,
+          'expired-callback': alFallar,
+          'timeout-callback': alFallar,
+        });
+      };
+      var s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__tsOnLoadIngreso&render=explicit';
+      s.async = true; s.defer = true;
+      document.head.appendChild(s);
+    }
+
+    function obtenerToken() {
+      return new Promise(function (resolve, reject) {
+        if (widgetId == null) { reject(new Error('ts-no-listo')); return; }
+        pendiente = { resolve: resolve, reject: reject };
+        window.turnstile.reset(widgetId);
+        window.turnstile.execute(widgetId);
+        setTimeout(function () {
+          if (pendiente) { var r = pendiente.reject; pendiente = null; r(new Error('ts-timeout')); }
+        }, 30000);
+      });
+    }
+
+    document.getElementById('form-ingreso').addEventListener('submit', function (evento) {
+      evento.preventDefault();
+      var boton = document.getElementById('enviar');
+      var email = document.getElementById('email').value.trim();
+      if (!email) { decir('Escribí tu correo.'); return; }
+      boton.disabled = true;
+      decir('Verificando…');
+
+      obtenerToken().then(function (ts) {
+        return fetch('/api/auth/solicitar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, turnstileToken: ts }),
+        });
+      }).then(function (r) {
+        boton.disabled = false;
+        // La respuesta es la misma exista o no el correo: acá tampoco se
+        // distingue, para no delatar quién compró en la librería.
+        decir(r && r.ok
+          ? 'Si ese correo tiene pedidos, te mandamos un enlace. Revisá tu casilla y el correo no deseado.'
+          : 'No pudimos enviarlo. Probá de nuevo en un momento.');
+      }).catch(function () {
+        boton.disabled = false;
+        decir('No pudimos verificar que sos una persona. Recargá la página y probá otra vez.');
+      });
+    });
+  })();
+</script>
