@@ -22,6 +22,11 @@ export default {
             const object = await writable.head(prefix + MANIFEST);
             return Response.json({ bytes: object?.size || 0, root: object?.customMetadata?.cover_index_v1 || null });
         }
+        if (url.pathname === '/written-manifest' && request.method === 'GET') {
+            const object = await writable.get(prefix + MANIFEST);
+            return object ? new Response(object.body, { headers: { 'content-type': 'application/json' } })
+                : new Response('Not prepared', { status: 404 });
+        }
         if (url.pathname === '/cleanup' && request.method === 'DELETE') {
             let cursor;
             let deleted = 0;

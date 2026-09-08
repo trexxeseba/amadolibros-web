@@ -1,6 +1,7 @@
 import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
 import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
+import { putJsonToR2 } from './json-r2-stream.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 export const DEFAULT_COVER_BATCH_SIZE = 100;
@@ -141,7 +142,7 @@ async function writeManifestAtomically(bucket, initialState, processedEntries, n
     const onlyIf = state.etag
       ? { etagMatches: state.etag }
       : { etagDoesNotMatch: '*' };
-    const result = await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(nextManifest), {
+    const result = await putJsonToR2(bucket, COVER_MANIFEST_KEY, nextManifest, {
       onlyIf,
       httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
       customMetadata: { ...state.customMetadata, [COVER_INDEX_METADATA]: publicIndex.hash,
@@ -592,7 +593,7 @@ export async function syncCoverMirror(env, catalog, {
     if (entry?.last_error && (!entry.current?.object_key || entry.current.source_url !== row.source_url)) unavailable.set(`${row.product_id}:${row.position}`, {
       product_id: row.product_id, position: row.position, source_url: row.source_url, error: entry?.last_error || null});
   }
-  await bucket.put('covers/v1/quality-report.json', JSON.stringify({
+  await putJsonToR2(bucket, 'covers/v1/quality-report.json', {
     generated_at: nowIso, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
     scope_images: scope.length, known_images: Object.keys(finalManifest.entries).length, discovery_pending: sourcePending,
     needs_better_source: needsSource.map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
@@ -601,7 +602,7 @@ export async function syncCoverMirror(env, catalog, {
     awaiting_first_copy: scopeEntries.filter(({entry}) => !entry?.current?.object_key && !entry?.last_error)
       .map(({row}) => ({product_id: row.product_id, position: row.position, source_url: row.source_url})),
     unavailable: [...unavailable.values()],
-  }), { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
+  }, { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
   return {
     source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
     scope_images: scope.length,

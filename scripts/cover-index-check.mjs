@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { prepareCoverIndex, readCoverIndex, COVER_INDEX_METADATA } from '../functions/_shared/cover-public-index.js';
+import { isDeepStrictEqual } from 'node:util';
 import { isEligibleForFeed, dedupeByGtinAndCondition, filterItemsWithReadyPrimaryCover, renderFeedItem } from '../functions/feed.xml.js';
 
 const base = process.env.INCIDENT_URL;
@@ -54,9 +55,24 @@ try {
     const original = JSON.parse(raw.toString('utf8'));
     const etag = manifestResponse.headers.get('x-manifest-etag');
     await writeFile(`${output}/manifest-snapshot.json.gz`, gzipSync(raw));
-    const preparation = await request('/prepare', { method: 'POST', headers: { 'if-match': etag } });
-    if (!preparation.ok) throw new Error(`Index preparation HTTP ${preparation.status}: ${await preparation.text()}`);
-    report.index = await preparation.json();
+    report.preparations = [];
+    // Both full-snapshot preparations must pass. This is a repeated-write
+    // resource check, not a retry that could hide a failed first attempt.
+    for (let pass = 1; pass <= 2; pass++) {
+        const preparation = await request('/prepare', { method: 'POST', headers: { 'if-match': etag } });
+        if (!preparation.ok) throw new Error(`Index preparation ${pass}/2 HTTP ${preparation.status}: ${await preparation.text()}`);
+        const index = await preparation.json();
+        if (report.index && report.index.hash !== index.hash) throw new Error('Repeated snapshot preparation changed the public index');
+        report.preparations.push(index);
+        report.index = index;
+    }
+    const writtenResponse = await request('/written-manifest');
+    if (!writtenResponse.ok) throw new Error(`Written manifest HTTP ${writtenResponse.status}`);
+    const written = await writtenResponse.json();
+    report.full_manifest_preserved = isDeepStrictEqual({ ...written, updated_at: original.updated_at }, original);
+    if (!report.full_manifest_preserved || Date.parse(written.updated_at) < Date.parse(original.updated_at)) {
+        throw new Error('Full manifest rewrite lost data or moved updated_at backwards');
+    }
 
     // Independently reconstruct and read every shard, not only the sample.
     // Its hash must equal the tree actually generated inside Cloudflare.
@@ -127,6 +143,7 @@ try {
     await writeFile(`${output}/report.json`, `${JSON.stringify(report, null, 2)}\n`);
     console.log(JSON.stringify({ snapshot: report.snapshot, index: report.index, summary: report.summary,
         performance: report.performance, comparison: report.comparison, pages: report.pages,
+        preparations: report.preparations, full_manifest_preserved: report.full_manifest_preserved,
         preparation_state: report.preparation_state, failures: report.failures }));
     if (process.env.GITHUB_STEP_SUMMARY) {
         const { appendFile } = await import('node:fs/promises');

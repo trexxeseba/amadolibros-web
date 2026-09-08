@@ -7,7 +7,7 @@ const env = { SCROLL_EXPIRES_AT: String(Date.now() + 60_000), INCIDENT_TOKEN: 't
 const execution = { waitUntil() {} };
 
 test('public browser cannot invoke preparation, snapshot or cleanup APIs', async () => {
-    for (const path of ['/prepare', '/manifest', '/cleanup', '/ready']) {
+    for (const path of ['/prepare', '/manifest', '/cleanup', '/ready', '/index-state', '/written-manifest']) {
         for (const method of ['GET', 'POST', 'DELETE']) {
             const response = await preview.fetch(new Request(`https://qa.example${path}`, { method }), env, execution);
             assert.ok([404, 405].includes(response.status), `${method} ${path}`);
