@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "checkId": "{{CHECK_ID}}",
+  "resultId": "{{CHECK_RESULT_ID}}",
+  "alertType": "{{ALERT_TYPE}}",
+  "occurredAt": "{{STARTED_AT}}"
+}

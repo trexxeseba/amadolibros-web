@@ -79,4 +79,26 @@ Checkly plantilla mínima propuesta (no activa): `provider=checkly`, `checkId={{
 
 La actualización horaria de Analytics sigue preparada pero inactiva hasta el merge aprobado. No confundirla con un monitor continuo de errores.
 
+## Receptor y demostración preparados tras «cómo seguimos»
+
+Implementación en `worker-monitor/index.js`, esquema `worker-monitor/schema.sql`, lector `functions/_shared/admin-web-incidents.js`, sensor sintético `scripts/admin-web-image-sensor.mjs` y prueba `scripts/admin-web-monitoring-e2e.mjs`.
+
+El receptor está desactivado por defecto y **no se despliega** en el workflow. No hay base remota nueva ni migración productiva. El ensayo crea una base D1 efímera y un servidor de fixtures locales en el runner. Únicamente se actualiza el Worker privado existente del panel, cuyo binding de incidentes permanece ausente hasta conectar una fuente real.
+
+- POST con HMAC SHA-256 sobre bytes originales; secreto sólo servidor, hostname/ruta exactos, límite de cuerpo 16 KB, lectura acotada a 6 segundos, limiter requerido y registro de checks permitidos por entorno.
+- Una tabla de eventos inmutables guarda sólo campos permitidos y hash del payload, sin conservar el cuerpo ni datos personales. ID único deduplica reintentos; un ID reutilizado con otro contenido devuelve conflicto.
+- Se aceptan las ocho transiciones documentadas de falla, persistencia, degradación y recuperación; recuperación parcial permanece degradada. [Estados oficiales de Checkly](https://www.checklyhq.com/docs/communicate/alerts/overview/).
+- Estado calculado por hora de observación, no por llegada. Si hay estados contradictorios con igual hora prevalece la falla. Las fallas abiertas se priorizan y no caducan. Historial intermedio retenido 30 días; se conserva el último estado de cada check. Purgado por lotes de hasta 5.000 preparado, calendario aún sin configurar.
+- La interfaz distingue datos de prueba y producción, y no declara vigilancia conectada si falta el binding. Cuenta registros retenidos, no personas ni todas las entregas HTTP duplicadas.
+
+Prueba preparada con Chromium, workerd y D1 efímero: foto 404 que cae al logo, imagen inválida con HTTP 200, foto visible lenta, imagen lazy fuera de pantalla, API 500 y luego 200, incidente firmado visible en el panel, recuperación visible, duplicados, eventos atrasados y firma falsa. Los webhooks se generan dentro del ensayo; **no demuestran una entrega desde Checkly**. El rate limiter real se sustituye por un doble controlado, con rechazo 429 probado aparte. Faltan resize/srcset y banners CSS para ampliar cobertura; todavía no afirmar detección de todos los recursos gráficos.
+
+### Conexión real: paso concreto pendiente
+
+1. Tener acceso a la cuenta Checkly de Amado. No pegar API keys ni secretos en la conversación.
+2. Provisionar el receptor y base exclusivos, revisar binding/limiter/retención y guardar el secret como secreto del Worker. No reutilizar D1 de pedidos ni abrir `/admin` a webhooks.
+3. Registrar el ID real del check con componente/ruta/entorno permitido. El receptor espera la plantilla exacta de `worker-monitor/checkly-webhook.template.json`; sustituye la propuesta preliminar de campos de la sección anterior.
+4. Configurar el webhook con firma en Checkly, suscribir fallas y recuperaciones y realizar una entrega real de prueba. La URL definitiva se obtiene al provisionar el receptor; no hay una URL activa que copiar todavía.
+5. Validar la misma prueba controlada desde Checkly y recién después preparar activación de controles de la tienda. Sensor del navegador de compradores/Sentry queda separado de esta primera vigilancia sintética.
+
 Revisión final CTO: sin bloqueantes para consulta privada; se incorporó normalización ISO de las fechas para no conservar comentarios arbitrarios en el JSON. Prueba específica correcta. Evidencia de publicación: [run privado 34286404858](https://github.com/trexxeseba/amadolibros-web/actions/runs/34286404858); CI compartido [34286409625](https://github.com/trexxeseba/amadolibros-web/actions/runs/34286409625), 1.689 tests y ambos builds correctos.

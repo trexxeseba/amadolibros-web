@@ -12,6 +12,9 @@ on:
       - 'scripts/admin-web-ga4-export.mjs'
       - 'functions/admin.js'
       - 'functions/_shared/admin-web-*.js'
+      - 'worker-monitor/**'
+      - 'scripts/admin-web-monitoring-e2e.mjs'
+      - 'scripts/admin-web-image-sensor.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +38,11 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/admin-auth-runtime" --no-audit --no-fund miniflare@4.20260701.0
           node scripts/admin-web-runtime-check.mjs "$RUNNER_TEMP/admin-auth-runtime/node_modules/miniflare/dist/src/index.js"
+      - name: Prove image failures and recovery through isolated monitoring pipeline
+        run: |
+          npm install --prefix "$RUNNER_TEMP/admin-monitor-browser" --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/admin-monitor-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          node scripts/admin-web-monitoring-e2e.mjs "$RUNNER_TEMP/admin-monitor-browser/node_modules/playwright/index.mjs" "$RUNNER_TEMP/admin-auth-runtime/node_modules/miniflare/dist/src/index.js"
       - name: Authenticate existing GA4 reader
         id: google_auth
         uses: google-github-actions/auth@v3

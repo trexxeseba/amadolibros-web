@@ -129,6 +129,14 @@ function healthPanel(health) {
     <div class="callout"><strong>Fotos y banners: detección pendiente de conexión</strong><p>Hoy una imagen puede fallar y ser reemplazada por el logo sin generar un aviso. El monitor externo y la detección desde el navegador todavía no están conectados.</p></div>${foot(health)}</section>`;
 }
 
+export function incidentPanel(incidents) {
+  if (!usable(incidents)) return `<section class="panel"><h2>Avisos de los monitores</h2>${notice(incidents)}<p class="note">La vigilancia automática de fotos y navegación todavía no está activa.</p></section>`;
+  const states = { confirmed: 'Falla confirmada por el monitor', degraded: 'Funcionamiento degradado', recovered: 'Recuperado en la comprobación' };
+  return `<section class="panel"><h2>Avisos de los monitores</h2>${incidents.environment === 'preview' ? '<p class="notice">Pruebas de la integración. No son fallas observadas en la tienda productiva.</p>' : ''}
+    ${table(['Componente', 'Página', 'Último aviso', 'Observado', 'Registros'], incidents.rows.map(r => [e(r.component), e(r.path),
+      pill(states[r.state], r.state === 'recovered' ? '' : 'warn'), e(date(r.occurredAt)), e(n(r.events))]), 'Sin avisos registrados. Esto no confirma que la web esté sana.')}${foot(incidents)}</section>`;
+}
+
 function productsPanel(catalog, query, days) {
   const url = page => `/admin?view=productos&days=${days}&q=${encodeURIComponent(query)}&page=${page}`;
   return `<section class="panel"><h2>Catálogo de la web</h2><form class="search" action="/admin" method="get"><input type="hidden" name="view" value="productos"><input type="hidden" name="days" value="${days}"><label for="q">Título, autor, ISBN o identificador</label><div><input id="q" name="q" maxlength="120" value="${e(query)}" placeholder="Buscar un libro"><button>Buscar</button></div></form>
@@ -145,7 +153,7 @@ export function renderAdminWeb(model) {
   else if (view === 'compra') content = purchasePanel(a, emails);
   else if (view === 'pedidos') content = `<div class="metrics">${card('Pedidos creados', orders?.summary?.total, 'Dentro del período seleccionado')}${card('Pago aprobado', orders?.summary?.approved, 'Estado actual')}${card('Pendientes de pago', orders?.summary?.pending, 'Abiertos y sin vencer')}${card('Pago rechazado', orders?.summary?.rejected, 'No equivale a un error técnico')}</div>` + ordersPanel(orders);
   else if (view === 'productos') content = interestPanel(a, catalog) + productsPanel(catalog, query, period.days);
-  else if (view === 'estado') content = healthPanel(health) + `<div class="columns">${sourcesPanel(a)}${syncPanel(sync)}</div>` + emailPanel(emails);
+  else if (view === 'estado') content = healthPanel(health) + incidentPanel(model.incidents) + `<div class="columns">${sourcesPanel(a)}${syncPanel(sync)}</div>` + emailPanel(emails);
   else {
     content = healthPanel(health) + `<div class="metrics">${comparisonCard('Visitas · sesiones', a?.summary?.sessions, a?.detail?.previous.summary.sessions)}${card('Pedidos creados', orders?.summary?.total, 'Pedidos de la web · período seleccionado')}${card('Con pago aprobado', orders?.summary?.approved, 'Estado actual de esos pedidos')}${card('Incidencias de checkout', a?.events?.checkout_error, 'Eventos GA4; falta distinguir la causa')}</div>
       ${trendPanel(a)}${attentionPanel(model)}<div class="columns">${syncPanel(sync)}<section class="panel"><h2>Pedidos pendientes</h2><p class="large-number">${e(n(orders?.summary?.pending))}</p><p>De los creados en el período, siguen abiertos, sin pago aprobado y sin vencer.</p><a href="${adminLink('pedidos', period.days)}">Consultar pedidos →</a>${foot(orders)}</section></div>${ordersPanel(orders)}`;
