@@ -67,7 +67,7 @@ Checkly plantilla mínima propuesta (no activa): `provider=checkly`, `checkId={{
 - Resumen y Funcionamiento muestran **Problemas de la web** antes de los números, con fecha, detalle del sync y cobertura explícita. Fotos, banners y vigilante externo figuran pendientes de conexión.
 - Se conserva el enriquecimiento autorizado: comparación de períodos, visitas diarias y fichas más vistas.
 - Incidencias de checkout ya no se presentan todas como fallas técnicas confirmadas.
-- 31 pruebas focalizadas locales correctas. La prueba workerd fue ampliada a 16 escenarios, incluyendo 503 y redirects del diagnóstico; pendiente ejecución remota de este lote. El workflow privado verifica la fuente real antes de actualizar/presentar la nueva versión.
+- 31 pruebas focalizadas locales correctas. La prueba workerd fue ampliada a 16 escenarios, incluyendo 503 y redirects del diagnóstico; verificados en el run privado 34286404858. Fuente real `/api/status` validada sin alertas el 2026-09-08 a las 22:32:30 UTC. El workflow privado verificó la fuente antes de actualizar/presentar la nueva versión.
 
 ## Criterios antes de activar vigilancia completa
 
@@ -78,3 +78,5 @@ Checkly plantilla mínima propuesta (no activa): `provider=checkly`, `checkId={{
 5. Presentar versión concreta para aprobar instrumentación productiva y arreglo del heartbeat/sync. El merge de la rama y la publicación de la tienda siguen pendientes; la revisión privada aislada sí está autorizada.
 
 La actualización horaria de Analytics sigue preparada pero inactiva hasta el merge aprobado. No confundirla con un monitor continuo de errores.
+
+Revisión final CTO: sin bloqueantes para consulta privada; se incorporó normalización ISO de las fechas para no conservar comentarios arbitrarios en el JSON. Prueba específica correcta. Evidencia de publicación: [run privado 34286404858](https://github.com/trexxeseba/amadolibros-web/actions/runs/34286404858); CI compartido [34286409625](https://github.com/trexxeseba/amadolibros-web/actions/runs/34286409625), 1.689 tests y ambos builds correctos.

@@ -231,3 +231,9 @@ mismo enlace: commit `d56c04d`, [run 34282206299](https://github.com/trexxeseba/
 tests, 9 escenarios y 3 verificaciones privadas pasaron en Actions. GA4
 actualizado y releído a las 21:44:17 UTC. Pendiente: reintento de Seba con su
 sesión real. No se fusionó main ni se activó el calendario horario.
+
+## Detección prioritaria y enriquecimiento publicados — 2026-09-08
+
+Seba confirmó su ingreso y priorizó fallas, fotos/banners y procesos trancados. El panel incorpora `/api/status` en Resumen/Funcionamiento, con diagnóstico 503, fecha verificable, campos permitidos y cobertura explícita. Detectores de fotos y proveedores externos aún pendientes. Diseño y revisión CTO en `MONITOREO.md`.
+
+Enriquecimiento real validado y publicado con el mismo acceso: visitas diarias, comparación con período previo y ranking de fichas. Run privado 34286404858, commit 37c69dfd, success: 31 tests, 16 comprobaciones workerd, fuente de estado real, informe GA4 actualizado y 3 comprobaciones de login. CI compartido 34286409625: 1.689 tests y ambos builds correctos. El calendario horario sigue inactivo; no se fusionó ni se publicó la tienda.

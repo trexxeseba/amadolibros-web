@@ -139,7 +139,8 @@ export async function readWebHealth(fetchFn = fetch, now = new Date()) {
     if (c.total_items === 0) warnings.add('catalog_empty');
     if (!raw.healthy && !warnings.size) warnings.add('unknown_warning');
     return { status: warnings.size ? 'degraded' : 'ok', source, checkedAt, warnings: [...warnings],
-      worker: { lastStarted: w.last_started, lastOk: w.last_ok, inProgress: w.in_progress },
+      worker: { lastStarted: w.last_started === null ? null : new Date(w.last_started).toISOString(),
+        lastOk: w.last_ok === null ? null : new Date(w.last_ok).toISOString(), inProgress: w.in_progress },
       catalog: { available: c.available, metaAvailable: c.meta_available, totalItems: c.total_items },
       note: 'Estado al abrir o recargar el panel. Comprueba señales del sincronizador y disponibilidad del catálogo; no verifica cada foto, banner ni compra.' };
   } catch { return failed(source); }

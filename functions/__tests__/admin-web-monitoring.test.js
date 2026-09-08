@@ -25,6 +25,10 @@ test('diagnóstico distingue 503 verificable, estado sano acotado y falta de cob
   assert.equal(health.status, 'degraded');
   assert.deepEqual(health.warnings, ['sync_possibly_stuck', 'sync_error']);
   assert.doesNotMatch(JSON.stringify(health), /NEVER_RENDER/);
+  const annotated = body(); annotated.worker.last_ok = 'Tue, 08 Sep 2026 06:10:00 GMT (private@example.test)';
+  const normalized = await read(annotated);
+  assert.equal(normalized.worker.lastOk, '2026-09-08T06:10:00.000Z');
+  assert.doesNotMatch(JSON.stringify(normalized), /private@example/);
   const html = renderAdminWeb({ view: 'estado', period: webPeriod(7, now), health });
   assert.match(html, /podría haberse trancado/);
   assert.match(html, /Fotos y banners: detección pendiente de conexión/);
