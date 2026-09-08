@@ -5,6 +5,7 @@ on:
     paths:
       - 'functions/_shared/cover-public-index.js'
       - 'functions/_shared/preview-cover.js'
+      - 'functions/book-cover/**'
       - 'functions/__tests__/cover-public-index.test.js'
       - 'worker-sync/cover-mirror.js'
       - 'worker-sync/cover-index-preview*'

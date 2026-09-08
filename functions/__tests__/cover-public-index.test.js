@@ -6,6 +6,8 @@ import {
     prepareCoverIndex, readCoverIndex,
 } from '../_shared/cover-public-index.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
+import { onRequest as stableCoverRequest } from '../book-cover/[[path]].js';
+import { CATALOG_URL } from '../_shared/catalog.js';
 import { COVER_MANIFEST_KEY, syncCoverMirror } from '../../worker-sync/cover-mirror.js';
 
 const NOW = '2026-09-08T12:00:00.000Z';
@@ -394,4 +396,76 @@ test('cover index: ordinary image batches do not postpone the daily complete reb
     assert.ok(daily.public_index);
     assert.equal(daily.public_index.shards_written, daily.public_index.shards);
     assert.equal(bucket.info(COVER_MANIFEST_KEY).customMetadata.cover_index_refreshed_at, dueAt);
+});
+
+test('cover index: stable route updates telemetry on cached bytes after fallback, including bodyless HEAD', async t => {
+    const cachesDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'caches');
+    const originalFetch = globalThis.fetch;
+    t.after(() => {
+        if (cachesDescriptor) Object.defineProperty(globalThis, 'caches', cachesDescriptor);
+        else delete globalThis.caches;
+        globalThis.fetch = originalFetch;
+    });
+    const storedResponses = new Map();
+    const cache = {
+        async match(request) { return storedResponses.get(request.url)?.clone(); },
+        async put(request, response) {
+            const bytes = await response.arrayBuffer();
+            storedResponses.set(request.url, new Response(bytes, { status: response.status, headers: response.headers }));
+        },
+    };
+    Object.defineProperty(globalThis, 'caches', { configurable: true, value: { default: cache } });
+    globalThis.fetch = async () => { throw new Error('Integration test must never use a network fallback'); };
+    const imageBytes = png();
+    const digest = createHash('sha256').update(imageBytes).digest('hex');
+    const row = entry();
+    row.current = { ...row.current, sha256: digest, object_key: `covers/v1/objects/${digest}.png`, mime: 'image/png' };
+    const source = manifest(row);
+    const bucket = new MetadataR2(source);
+    bucket.seed(row.current.object_key, imageBytes);
+    await publish(bucket, source);
+    await cache.put(new Request(CATALOG_URL), Response.json({ items: [{
+        id: 'MLU100', status: 'active', available_quantity: 1, pictures: [row.current.source_url],
+    }] }));
+    async function invoke(method = 'GET') {
+        const pending = [];
+        const ctx = { request: new Request('https://example.test/book-cover/MLU100/cover.jpg', { method }),
+            params: { path: ['MLU100', 'cover.jpg'] }, env: { APP_ENV: 'production', COVER_R2: bucket },
+            data: {}, waitUntil: promise => pending.push(promise) };
+        const response = await stableCoverRequest(ctx);
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        await Promise.all(pending);
+        return { response, bytes, ctx };
+    }
+    bucket.resetCalls();
+    const first = await invoke();
+    assert.equal(first.response.status, 200);
+    assert.equal(first.response.headers.get('x-cover-index'), 'public-index');
+    assert.equal(first.response.headers.get('x-cover-source'), 'r2-production');
+    assert.deepEqual(first.bytes, imageBytes);
+    assert.equal(bucket.gets.filter(key => key === row.current.object_key).length, 1);
+    assert.equal(bucket.gets.includes(COVER_MANIFEST_KEY), false);
+
+    const imageCacheUrl = `https://example.test/book-cover/MLU100/cover.jpg?master=${digest}`;
+    assert.ok(storedResponses.has(imageCacheUrl), 'Actual stable handler must have cached the master bytes');
+    // Also exercise an already cached response containing old telemetry. The
+    // per-request observation must overwrite it instead of trusting its age.
+    storedResponses.get(imageCacheUrl).headers.set('x-cover-index', 'public-index');
+    bucket.seed(COVER_MANIFEST_KEY, JSON.stringify(source), { owner: 'existing-metadata' });
+    bucket.resetCalls();
+    const fallback = await invoke();
+    assert.equal(fallback.response.status, 200);
+    assert.equal(fallback.response.headers.get('x-cover-index'), 'legacy-fallback');
+    assert.equal(fallback.ctx.data.coverIndex.reason, 'cover-index-not-published');
+    assert.deepEqual(fallback.bytes, imageBytes);
+    assert.equal(bucket.gets.filter(key => key === COVER_MANIFEST_KEY).length, 1);
+    assert.equal(bucket.gets.includes(row.current.object_key), false, 'Fallback request must reuse cached image bytes');
+
+    bucket.resetCalls();
+    const head = await invoke('HEAD');
+    assert.equal(head.response.status, 200);
+    assert.equal(head.response.headers.get('x-cover-index'), 'legacy-fallback');
+    assert.equal(head.response.headers.get('etag'), `"${digest}"`);
+    assert.equal(head.bytes.byteLength, 0);
+    assert.equal(bucket.gets.includes(row.current.object_key), false);
 });

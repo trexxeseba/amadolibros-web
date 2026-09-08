@@ -2,7 +2,7 @@ import { onRequest as catalog } from '../functions/catalogo.js';
 import { onRequest as category } from '../functions/libros/[[path]].js';
 import { onRequest as cover } from '../functions/book-cover/[[path]].js';
 import { onRequest as immutable } from '../functions/preview-cover/[[path]].js';
-import { COVER_INDEX_PREFIX } from '../functions/_shared/cover-public-index.js';
+import { COVER_INDEX_PREFIX, coverIndexHash } from '../functions/_shared/cover-public-index.js';
 import { syncCoverMirror } from './cover-mirror.js';
 
 const MANIFEST = 'covers/v1/manifest.json';
@@ -86,9 +86,20 @@ export default {
         const ctx = { request: new Request(url, request), data: {}, params: {}, waitUntil: p => execution.waitUntil(p),
             env: { APP_ENV: 'production', COVER_R2: reader, COVER_GOOGLE_QUALITY_GATE: 'true' } };
         let response;
+        let categoryAssetHash = null;
         if (url.pathname === '/catalogo') response = await catalog(ctx);
         else if (url.pathname.startsWith('/libros/')) {
             ctx.params.path = url.pathname.slice('/libros/'.length).split('/');
+            // Pages normally serves this static asset from its own origin.
+            // The isolated cold origin has no assets/DNS; seed ONLY that
+            // fixture from the real public asset, then use the real renderer.
+            // This is not part of the measured image cold comparison.
+            const asset = await fetch('https://www.amadolibros.com/data/active-categories.json');
+            if (!asset.ok) throw new Error(`Category fixture HTTP ${asset.status}`);
+            const assetText = await asset.text();
+            categoryAssetHash = await coverIndexHash(assetText);
+            await caches.default.put(new Request(new URL('/data/active-categories.json', ctx.request.url)),
+                new Response(assetText, { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' } }));
             response = await category(ctx);
         } else if (url.pathname.startsWith('/book-cover/')) {
             ctx.params.path = url.pathname.slice('/book-cover/'.length).split('/');
@@ -98,6 +109,7 @@ export default {
             response = await immutable(ctx);
         } else return new Response('Not found', { status: 404 });
         const headers = new Headers(response.headers);
+        if (categoryAssetHash) headers.set('x-incident-category-sha256', categoryAssetHash);
         headers.set('x-incident-build', env.INCIDENT_BUILD_SHA);
         headers.set('x-incident-manifest-reads', String(manifestReads));
         headers.set('x-incident-r2-bytes', String(bytes));

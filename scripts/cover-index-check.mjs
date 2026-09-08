@@ -19,7 +19,8 @@ function metrics(response) {
     return { status: response.status, manifest_reads: Number(response.headers.get('x-incident-manifest-reads')),
         r2_bytes: Number(response.headers.get('x-incident-r2-bytes')), heads: Number(response.headers.get('x-incident-heads')),
         index_mode: response.headers.get('x-incident-index-mode'), fallback_reason: response.headers.get('x-incident-index-reason'),
-        handler_ms: Number(response.headers.get('x-incident-handler-ms')), deployed_head: response.headers.get('x-incident-build') };
+        handler_ms: Number(response.headers.get('x-incident-handler-ms')), public_index_header: response.headers.get('x-cover-index'),
+        deployed_head: response.headers.get('x-incident-build') };
 }
 async function imageCheck(path, { mode = 'index', cold = null, expected = null } = {}) {
     const started = Date.now();
@@ -32,7 +33,8 @@ async function imageCheck(path, { mode = 'index', cold = null, expected = null }
         bytes: bytes.length, ms: Date.now() - started, source: response.headers.get('x-cover-source') || response.headers.get('x-amado-cover-source') };
     row.ok = response.ok && row.deployed_head === head && bytes.length > 0 && digest === expected &&
         response.headers.get('content-type')?.startsWith('image/') && row.source === 'r2-production' &&
-        (mode === 'legacy' ? row.manifest_reads === 1 : row.manifest_reads === 0 && (immutable || row.index_mode === 'public-index'));
+        (mode === 'legacy' ? row.manifest_reads === 1 && row.public_index_header === 'legacy-fallback' :
+            row.manifest_reads === 0 && (immutable || row.index_mode === 'public-index' && row.public_index_header === 'public-index'));
     report.images.push(row);
     if (!row.ok) report.failures.push(`Image failed: ${path} (${mode}), HTTP ${response.status}, ${row.index_mode}/${row.fallback_reason}`);
     return row;
@@ -97,7 +99,8 @@ try {
         const html = await response.text();
         const images = [...new Set([...html.matchAll(/\/(?:preview-cover\/MLU\d+\/(?:[0-9]|1[0-5])\/[a-f0-9]{64}\.(?:jpg|png|webp)|book-cover\/MLU\d+\/cover(?:-\d+)?\.jpg)/g)].map(x => x[0]))];
         images.forEach(path => paths.add(path));
-        const row = { path: page, ...metrics(response), images: images.length, ms: Date.now() - started };
+        const row = { path: page, ...metrics(response), images: images.length, ms: Date.now() - started,
+            category_asset_sha256: response.headers.get('x-incident-category-sha256') };
         row.ok = response.ok && row.deployed_head === head && images.length >= 40 && row.manifest_reads === 0 &&
             (page.startsWith('/catalogo') ? row.index_mode === 'public-index' : row.index_mode !== 'legacy-fallback');
         report.pages.push(row);
