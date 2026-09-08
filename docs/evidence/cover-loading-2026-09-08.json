@@ -1,0 +1,139 @@
+{
+  "observed_on": "2026-09-08",
+  "main_sha": "0ae0a50e8c9da74a023e4e609966d87ab3e72aa6",
+  "product_id": "MLU1094451174",
+  "category_url": "https://www.amadolibros.com/libros/psicologia",
+  "measurements": [
+    {
+      "kind": "stable",
+      "attempt": 1,
+      "url": "https://www.amadolibros.com/book-cover/MLU1094451174/cover.jpg",
+      "status": 200,
+      "ttfb_ms": 10987,
+      "total_ms": 10991,
+      "bytes": 141942,
+      "timing": "middleware_before;dur=0, worker_total;dur=158",
+      "cf_resized": null,
+      "cache": "MISS",
+      "etag": "\"bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": "r2-production"
+    },
+    {
+      "kind": "stable",
+      "attempt": 2,
+      "url": "https://www.amadolibros.com/book-cover/MLU1094451174/cover.jpg",
+      "status": 200,
+      "ttfb_ms": 9949,
+      "total_ms": 9950,
+      "bytes": 141942,
+      "timing": "middleware_before;dur=0, worker_total;dur=126",
+      "cf_resized": null,
+      "cache": "MISS",
+      "etag": "\"bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": "r2-production"
+    },
+    {
+      "kind": "immutable",
+      "attempt": 1,
+      "url": "https://www.amadolibros.com/preview-cover/MLU1094451174/0/bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d.jpg",
+      "status": 200,
+      "ttfb_ms": 11124,
+      "total_ms": 11128,
+      "bytes": 141942,
+      "timing": "middleware_before;dur=0, worker_total;dur=370",
+      "cf_resized": null,
+      "cache": "MISS",
+      "etag": "\"bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": "r2-production"
+    },
+    {
+      "kind": "immutable",
+      "attempt": 2,
+      "url": "https://www.amadolibros.com/preview-cover/MLU1094451174/0/bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d.jpg",
+      "status": 200,
+      "ttfb_ms": 9589,
+      "total_ms": 9593,
+      "bytes": 141942,
+      "timing": "middleware_before;dur=0, worker_total;dur=370",
+      "cf_resized": null,
+      "cache": "HIT",
+      "etag": "\"bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": "r2-production"
+    },
+    {
+      "kind": "responsive_stable",
+      "attempt": 1,
+      "url": "https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1094451174/cover.jpg",
+      "status": 200,
+      "ttfb_ms": 11018,
+      "total_ms": 11020,
+      "bytes": 13022,
+      "timing": null,
+      "cf_resized": "internal=ok/h q=0 n=266+0 c=14+12 v=2026.9.0 l=13022 f=false c2=0 wv=2026.9.0",
+      "cache": "MISS",
+      "etag": "\"cfSj30AZvykk0EvTFh85Hd3EoGQxdQnL40Nk_6wcXDDw:bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": null
+    },
+    {
+      "kind": "responsive_stable",
+      "attempt": 2,
+      "url": "https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1094451174/cover.jpg",
+      "status": 200,
+      "ttfb_ms": 9674,
+      "total_ms": 9674,
+      "bytes": 13022,
+      "timing": null,
+      "cf_resized": "internal=ok/h q=0 n=266+0 c=14+12 v=2026.9.0 l=13022 f=false c2=0 wv=2026.9.0",
+      "cache": "HIT",
+      "etag": "\"cfSj30AZvykk0EvTFh85Hd3EoGQxdQnL40Nk_6wcXDDw:bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": null
+    },
+    {
+      "kind": "responsive_immutable",
+      "attempt": 1,
+      "url": "https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/preview-cover/MLU1094451174/0/bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d.jpg",
+      "status": 200,
+      "ttfb_ms": 10931,
+      "total_ms": 10931,
+      "bytes": 13022,
+      "timing": null,
+      "cf_resized": "internal=ok/m q=0 n=164+0 c=13+12 v=2026.9.0 l=13022 f=false c2=0 wv=2026.9.0",
+      "cache": "MISS",
+      "etag": "\"cfSj30AZvykk0EvTFh85Hd3EoGQxdQnL40Nk_6wcXDDQ:bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": null
+    },
+    {
+      "kind": "responsive_immutable",
+      "attempt": 2,
+      "url": "https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/preview-cover/MLU1094451174/0/bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d.jpg",
+      "status": 200,
+      "ttfb_ms": 9772,
+      "total_ms": 9774,
+      "bytes": 13022,
+      "timing": null,
+      "cf_resized": "internal=ok/m q=0 n=164+0 c=13+12 v=2026.9.0 l=13022 f=false c2=0 wv=2026.9.0",
+      "cache": "HIT",
+      "etag": "\"cfSj30AZvykk0EvTFh85Hd3EoGQxdQnL40Nk_6wcXDDQ:bba55f1b9daa5db0cf9d8d8e694c0dbbb5446afe9d737f69b8dcee6798a4d97d\"",
+      "source": null
+    }
+  ],
+  "findings": [
+    "The exact product from the screenshot uses loading=lazy and a Cloudflare transform of /book-cover/... on the psychology category.",
+    "The same product on /catalogo search uses a transform of the immutable /preview-cover/... SHA URL.",
+    "All eight HTTP requests returned 200. Transformed bodies were 13022 bytes; the R2 master was 141942 bytes.",
+    "Stable route resolves catalog and manifest before checking its image response cache. Without a selected-pointer cache hit this scans the large global manifest.",
+    "Prior real Cloudflare acceptance for #330 measured cold stable image responses between 5.45 and 8.40 seconds on other product IDs.",
+    "The reported blank interval was not reproduced in this observation: the exact image was loaded. The current server timings for the stable route were 158 and 126 ms."
+  ],
+  "limits": [
+    "No browser network trace from Seba's session is available, so the precise cause and duration of that individual delay cannot be assigned conclusively.",
+    "Client timings of roughly 9.6–11.1 seconds include the verification environment transport; they are not latency measurements for Uruguay.",
+    "No code or production change was made for this diagnosis."
+  ],
+  "next_action": {
+    "owner": "Codex",
+    "effort": "M",
+    "description": "Implement a small persistent public cover lookup for stable routes and unify immutable cover URLs across rendered lists, then measure cold delivery and scroll loading on the psychology category.",
+    "acceptance": "Production-equivalent cold image delivery without scanning the global manifest, no blank covers after entering viewport in browser verification, integrity preserved, and no feed or checkout change."
+  }
+}

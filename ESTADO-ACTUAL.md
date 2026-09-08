@@ -1,5 +1,15 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Demoras al aparecer portadas — diagnóstico 2026-09-08
+
+- Responsable: Codex. Esfuerzo: S (diagnóstico); M para la corrección pendiente. Gran Apuesta: Merchant/QW2.
+- Captura de Seba localizada en `/libros/psicologia`: MLU1094451174, Complicidades sensibles. Esa tarjeta y sus vecinas usan `loading="lazy"` y transformación Cloudflare sobre `/book-cover/`. En la búsqueda de `/catalogo`, el mismo libro usa URL inmutable por SHA.
+- El archivo está sano: 8/8 solicitudes HTTP 200; variante responsive 13.022 bytes, master R2 141.942 bytes. En esta observación de navegador la portada terminó cargada y no se reprodujo el intervalo vacío de Seba.
+- Demora potencial comprobada en código: el endpoint estable consulta catálogo y selección del manifiesto antes de buscar la respuesta de imagen en caché. Sin selección en caché, vuelve a recorrer el manifiesto global de más de 60 MB. Los ensayos fríos previos de #330 midieron 5,45–8,40 s en otras portadas; no se atribuye ese tiempo a esta captura. La medición actual de este libro informó 126–158 ms de servidor, con cachés ya utilizadas.
+- El lazy loading retrasa el inicio hasta acercarse a la tarjeta. No se culpa al tamaño del archivo ni se afirma una causa individual definitiva sin el rastro de red del navegador de Seba. Los tiempos completos del cliente de verificación incluyen su transporte y no equivalen a tiempos desde Uruguay.
+- Evidencia: `docs/evidence/cover-loading-2026-09-08.json`. El criterio de diagnóstico quedó cumplido: portada exacta, ruta, atributo y comparación medidos. **La corrección de velocidad sigue pendiente; no se cambió código ni producción en esta revisión.**
+- Próximo cambio: índice público pequeño y persistente para resolver portadas estables sin escanear el índice global, y uso coherente de URLs inmutables en las listas. Responsable Codex; esfuerzo M. Aceptación: medición fría y scroll en la categoría de la captura, integridad preservada y feed/checkout sin cambios.
+
 ## Portadas y catálogo recuperados en producción — 2026-09-07
 
 - Responsable: Codex. Esfuerzo: M. Gran Apuesta: Google Merchant Center. Seba autorizó expresamente fusionar y desplegar únicamente #330.
