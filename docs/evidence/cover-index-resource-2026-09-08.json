@@ -39,7 +39,7 @@
       ],
       "comparison": [],
       "failures": [
-        "Error: Index preparation 2/2 HTTP 503: <!DOCTYPE html>\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 8]>    <html class=\"no-js ie8 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if gt IE 8]><!--> <html class=\"no-js\" lang=\"en-US\"> <!--<![endif]-->\n<head>\n<title>Worker exceeded resource limits | amado-cover-index-34227121174-1.undiaes.workers.dev | Cloudflare</title>\n<meta charset=\"UTF-8\" />\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />\n<meta name=\"robots\" content=\"noindex, nofollow\" />\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />\n<link rel=\"stylesheet\" id=\"cf_styles-css\" href=\"/cdn-cgi/styles/cf.errors.css\" />\n<!--[if lt IE 9]><link rel=\"stylesheet\" id='cf_styles-ie-css' href=\"/cdn-cgi/styles/cf.errors.ie.css\" /><![endif]-->\n<style>body{margin:0;padding:0}</style>\n\n\n<!--[if gte IE 10]><!-->\n<script>\n  if (!navigator.cookieEnabled) {\n    window.addEventListener('DOMContentLoaded', function () {\n      var cookieEl = document.getElementById('cookie-alert');\n      cookieEl.style.display = 'block';\n    })\n  }\n</script>\n<!--<![endif]-->\n\n</head>\n<body>\n    <div id=\"cf-wrapper\">\n        <div class=\"cf-alert cf-alert-error cf-cookie-error\" id=\"cookie-alert\" data-translate=\"enable_cookies\">Please enable cookies.</div>\n        <div id=\"cf-error-details\" class=\"cf-error-details-wrapper\">\n            <div class=\"cf-wrapper cf-header cf-error-overview\">\n                <h1>\n                    <span class=\"cf-error-type\" data-translate=\"error\">Error</span>\n                    <span class=\"cf-error-code\">1102</span>\n                    <small class=\"heading-ray-id\">Ray ID: a37e030b1a566172 &bull; 2026-09-08 12:39:26 UTC</small>\n                </h1>\n                <h2 class=\"cf-subheadline\" data-translate=\"error_desc\">Worker exceeded resource limits</h2>\n            </div><!-- /.header -->\n    \n            <section></section><!-- spacer -->\n    \n            <div class=\"cf-section cf-wrapper\">\n                <div class=\"cf-columns two\">\n                    <div class=\"cf-column\">\n                        <h2 data-translate=\"what_happened\">What happened?</h2>\n                            <p>You've requested a page on a website (amado-cover-index-34227121174-1.undiaes.workers.dev) that is on the <a href=\"https://www.cloudflare.com/5xx-error-landing?utm_source=error_100x\" target=\"_blank\">Cloudflare</a> network. An unknown error occurred while rendering the page.</p>\n                    </div>\n                    \n                    <div class=\"cf-column\">\n                        <h2 data-translate=\"what_can_i_do\">What can I do?</h2>\n                            <p><strong>If you are the owner of this website:</strong><br />refer to <a href=\"https://developers.cloudflare.com/workers/observability/errors/\" target=\"_blank\">Workers - Errors and Exceptions</a> and check Workers Logs for amado-cover-index-34227121174-1.undiaes.workers.dev.</p>\n                    </div>\n                    \n                </div>\n            </div><!-- /.section -->\n    \n            <div class=\"cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300\">\n    <p class=\"text-13\">\n      <span class=\"cf-footer-item sm:block sm:mb-1\">Cloudflare Ray ID: <strong class=\"font-semibold\">a37e030b1a566172</strong></span>\n      <span class=\"cf-footer-separator sm:hidden\">&bull;</span>\n      <span id=\"cf-footer-item-ip\" class=\"cf-footer-item hidden sm:block sm:mb-1\">\n        Your IP:\n        <button type=\"button\" id=\"cf-footer-ip-reveal\" class=\"cf-footer-ip-reveal-btn\">Click to reveal</button>\n        <span class=\"hidden\" id=\"cf-footer-ip\">52.176.124.181</span>\n        <span class=\"cf-footer-separator sm:hidden\">&bull;</span>\n      </span>\n      <span class=\"cf-footer-item sm:block sm:mb-1\"><span>Performance &amp; security by</span> <a rel=\"noopener noreferrer\" href=\"https://www.cloudflare.com/5xx-error-landing\" id=\"brand_link\" target=\"_blank\">Cloudflare</a></span>\n      \n    </p>\n    <script>(function(){function d(){var b=a.getElementById(\"cf-footer-item-ip\"),c=a.getElementById(\"cf-footer-ip-reveal\");b&&\"classList\"in b&&(b.classList.remove(\"hidden\"),c.addEventListener(\"click\",function(){c.classList.add(\"hidden\");a.getElementById(\"cf-footer-ip\").classList.remove(\"hidden\")}))}var a=document;document.addEventListener&&a.addEventListener(\"DOMContentLoaded\",d)})();</script>\n  </div><!-- /.error-footer -->\n\n        </div><!-- /#cf-error-details -->\n    </div><!-- /#cf-wrapper -->\n\n     <script>\n    window._cf_translation = {};\n    \n    \n  </script> \n</body>\n</html>\n    at file:///home/runner/work/amadolibros-web/amadolibros-web/scripts/cover-index-check.mjs:63:36\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"
+        "Error: Index preparation 2/2 HTTP 503: <!DOCTYPE html>"
       ],
       "preparation_state": {
         "bytes": 78432808,
@@ -314,7 +314,349 @@
           "messages": []
         }
       }
+    },
+    {
+      "run_url": "https://github.com/trexxeseba/amadolibros-web/actions/runs/34229568517",
+      "head": "2a9636d8d0577264f578280ce76054bc61560b9d",
+      "summary": {
+        "pages": 0,
+        "pages_ok": 0,
+        "images": 0,
+        "images_ok": 0,
+        "failures": 1
+      },
+      "index": {
+        "hash": "94e954be744198dd1b609578841cd86f74294d986ac83e07f389a02b98caaaa1",
+        "shards": 256,
+        "shards_written": 256,
+        "bytes": 23325884,
+        "entries": 59633,
+        "source_etag": "ce25b3f6647ec05154f9ff88b21c87f1",
+        "source_bytes": 79065368,
+        "manifest_retries": 0,
+        "conditional_conflicts": 0,
+        "production_writes": 0
+      },
+      "preparations": [
+        {
+          "hash": "94e954be744198dd1b609578841cd86f74294d986ac83e07f389a02b98caaaa1",
+          "shards": 256,
+          "shards_written": 256,
+          "bytes": 23325884,
+          "entries": 59633,
+          "source_etag": "ce25b3f6647ec05154f9ff88b21c87f1",
+          "source_bytes": 79065368,
+          "manifest_retries": 0,
+          "conditional_conflicts": 0,
+          "production_writes": 0
+        }
+      ],
+      "comparison": [],
+      "preparation_state": {
+        "bytes": 79065368,
+        "root": null
+      },
+      "failures": [
+        "Error: Index preparation 2/2 HTTP 500: <!DOCTYPE html>"
+      ],
+      "runtime": {
+        "observations": 6,
+        "not_ok": [
+          {
+            "outcome": "exception",
+            "cpuTime": 5622,
+            "wallTime": 25772,
+            "exceptions": [
+              {
+                "stack": "    at async Object.put (cover-index-preview.js:61065:30)\n    at async putJsonToR2 (cover-index-preview.js:60121:20)\n    at async writeManifestAttempt (cover-index-preview.js:60475:18)\n    at async writeManifestAtomically (cover-index-preview.js:60491:21)\n    at async syncCoverMirror (cover-index-preview.js:60920:21)\n    at async Object.fetch (cover-index-preview.js:61078:22)",
+                "name": "Error",
+                "message": "Network connection lost.",
+                "timestamp": 1788872659460
+              }
+            ],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ]
+            ]
+          }
+        ],
+        "writer_phases": [
+          {
+            "outcome": "ok",
+            "cpuTime": 7359,
+            "wallTime": 29874,
+            "exceptions": [],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-end"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-start"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-end"
+              ]
+            ]
+          },
+          {
+            "outcome": "exception",
+            "cpuTime": 5622,
+            "wallTime": 25772,
+            "exceptions": [
+              {
+                "stack": "    at async Object.put (cover-index-preview.js:61065:30)\n    at async putJsonToR2 (cover-index-preview.js:60121:20)\n    at async writeManifestAttempt (cover-index-preview.js:60475:18)\n    at async writeManifestAtomically (cover-index-preview.js:60491:21)\n    at async syncCoverMirror (cover-index-preview.js:60920:21)\n    at async Object.fetch (cover-index-preview.js:61078:22)",
+                "name": "Error",
+                "message": "Network connection lost.",
+                "timestamp": 1788872659460
+              }
+            ],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ]
+            ]
+          }
+        ]
+      },
+      "cleanup": {
+        "index": {
+          "deleted": 260,
+          "prefix": "acceptance/cover-index/amado-cover-index-34229568517-1/",
+          "production_writes": 0
+        },
+        "worker": {
+          "result": {
+            "id": "b6c1c144a4ed495480cfeed91027b469"
+          },
+          "success": true,
+          "errors": [],
+          "messages": []
+        }
+      }
+    },
+    {
+      "run_url": "https://github.com/trexxeseba/amadolibros-web/actions/runs/34230577186",
+      "head": "b97c534f195fa1b723315ee98e47d3da2a5d792d",
+      "snapshot": {
+        "catalog_updated_at": "2026-09-08T07:18:09.289Z",
+        "manifest_etag": "7f82621b9a320b9205ac85dd45f99d5a",
+        "manifest_bytes": 79197274,
+        "manifest_sha256": "0b171d7aab45661144e82e2723c4705130b94058796e018923606c77099d7dc2",
+        "original_entries": 59733,
+        "indexed_entries": 59733,
+        "old_feed_items": 3697,
+        "new_feed_items": 3697,
+        "old_item_xml_sha256": "b36ac1daeb1dc2fdca3eda0ae3784b336271412bcec243daa50f2ed25e53967a",
+        "new_item_xml_sha256": "b36ac1daeb1dc2fdca3eda0ae3784b336271412bcec243daa50f2ed25e53967a"
+      },
+      "summary": {
+        "pages": 4,
+        "pages_ok": 4,
+        "images": 154,
+        "images_ok": 154,
+        "failures": 0
+      },
+      "index": {
+        "hash": "8aa8d51ba17a30e1383d209b2863d0cb9b0cec21eaee816510653ff9b948e120",
+        "shards": 256,
+        "shards_written": 256,
+        "bytes": 23364975,
+        "entries": 59733,
+        "source_etag": "7f82621b9a320b9205ac85dd45f99d5a",
+        "source_bytes": 79197274,
+        "manifest_retries": 1,
+        "manifest_transport_retries": 1,
+        "manifest_transport_errors": [
+          {
+            "attempt": 1,
+            "message": "Network connection lost.",
+            "outcome": "unknown"
+          }
+        ],
+        "conditional_conflicts": 0,
+        "conditional_transport_errors": 1,
+        "injected_conditional_checks": 1,
+        "production_writes": 0
+      },
+      "preparations": [
+        {
+          "hash": "8aa8d51ba17a30e1383d209b2863d0cb9b0cec21eaee816510653ff9b948e120",
+          "shards": 256,
+          "shards_written": 256,
+          "bytes": 23364975,
+          "entries": 59733,
+          "source_etag": "7f82621b9a320b9205ac85dd45f99d5a",
+          "source_bytes": 79197274,
+          "manifest_retries": 0,
+          "manifest_transport_retries": 0,
+          "manifest_transport_errors": [],
+          "conditional_conflicts": 0,
+          "conditional_transport_errors": 0,
+          "injected_conditional_checks": 0,
+          "production_writes": 0
+        },
+        {
+          "hash": "8aa8d51ba17a30e1383d209b2863d0cb9b0cec21eaee816510653ff9b948e120",
+          "shards": 256,
+          "shards_written": 256,
+          "bytes": 23364975,
+          "entries": 59733,
+          "source_etag": "7f82621b9a320b9205ac85dd45f99d5a",
+          "source_bytes": 79197274,
+          "manifest_retries": 1,
+          "manifest_transport_retries": 1,
+          "manifest_transport_errors": [
+            {
+              "attempt": 1,
+              "message": "Network connection lost.",
+              "outcome": "unknown"
+            }
+          ],
+          "conditional_conflicts": 0,
+          "conditional_transport_errors": 1,
+          "injected_conditional_checks": 1,
+          "production_writes": 0
+        }
+      ],
+      "full_manifest_preserved": true,
+      "performance": {
+        "scope": "Authenticated Cloudflare Worker, unique cold cache origins, same frozen snapshot; not a Uruguay browser measurement",
+        "before_median_handler_ms": 4388,
+        "after_median_handler_ms": 709,
+        "reduction_percent": 83.84
+      },
+      "comparison": [
+        {
+          "id": "MLU1094451174",
+          "before_handler_ms": 4388,
+          "after_handler_ms": 879,
+          "before_r2_bytes": 79339216,
+          "after_r2_bytes": 265512,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU634431651",
+          "before_handler_ms": 4449,
+          "after_handler_ms": 543,
+          "before_r2_bytes": 79328159,
+          "after_r2_bytes": 252083,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU709390092",
+          "before_handler_ms": 3303,
+          "after_handler_ms": 709,
+          "before_r2_bytes": 79307481,
+          "after_r2_bytes": 231436,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU690771648",
+          "before_handler_ms": 3922,
+          "after_handler_ms": 489,
+          "before_r2_bytes": 79337880,
+          "after_r2_bytes": 270356,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU679987262",
+          "before_handler_ms": 4781,
+          "after_handler_ms": 760,
+          "before_r2_bytes": 79335533,
+          "after_r2_bytes": 257597,
+          "identical_bytes": true
+        }
+      ],
+      "failures": [],
+      "runtime": {
+        "observations": 164,
+        "not_ok": [],
+        "writer_phases": [
+          {
+            "outcome": "ok",
+            "cpuTime": 4210,
+            "wallTime": 20265,
+            "exceptions": [],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-end"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-start"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-end"
+              ]
+            ]
+          },
+          {
+            "outcome": "ok",
+            "cpuTime": 7314,
+            "wallTime": 36879,
+            "exceptions": [],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-transport-error-unchanged"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-end"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-start"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-end"
+              ]
+            ]
+          }
+        ]
+      },
+      "cleanup": {
+        "index": {
+          "deleted": 260,
+          "prefix": "acceptance/cover-index/amado-cover-index-34230577186-1/",
+          "production_writes": 0
+        },
+        "worker": {
+          "result": {
+            "id": "037ec5004d2f43cd903fb823505158c6"
+          },
+          "success": true,
+          "errors": [],
+          "messages": []
+        }
+      }
     }
   ],
-  "pending": "Native R2 conditional-write rejection and full-snapshot reread/rebuild with bounded graph retention."
+  "status": "Verified in isolated Cloudflare, including native uncertain-write recovery; production approval pending.",
+  "acceptance": "Two completed full-snapshot bootstraps. Second issues a deliberately stale native R2 conditional PUT: R2 returned Network connection lost., recorded explicitly, unchanged isolated ETag confirmed, then actual writer reread/rebuilt/CAS succeeded. This is not reported as a native null response. Whole written manifest equals input except monotonic updated_at."
 }
