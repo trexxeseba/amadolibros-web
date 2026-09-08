@@ -95,6 +95,8 @@ Prueba preparada con Chromium, workerd y D1 efímero: foto 404 que cae al logo, 
 
 ### Conexión real: paso concreto pendiente
 
+**Ensayo completado:** [run privado 34288960290](https://github.com/trexxeseba/amadolibros-web/actions/runs/34288960290), código `390c41044c890c622635d9cd0a636e039d20eb61`, success el 2026-09-08. 34 pruebas Node, 16 escenarios workerd de acceso/fuentes y los 11 escenarios de navegador/ingestión/persistencia/representación listados arriba. Chromium comprobó en el DOM el incidente y su recuperación usando el mismo renderizador del panel. Son fixtures locales con D1 efímero, no datos inventados dentro del panel publicado ni pruebas de disponibilidad productiva. CI compartido 34288963083 success. Sólo se actualizó el Worker privado existente, versión `e1ba50b7-610d-4ab6-828a-c37e11085570`; el receptor no está publicado.
+
 1. Tener acceso a la cuenta Checkly de Amado. No pegar API keys ni secretos en la conversación.
 2. Provisionar el receptor y base exclusivos, revisar binding/limiter/retención y guardar el secret como secreto del Worker. No reutilizar D1 de pedidos ni abrir `/admin` a webhooks.
 3. Registrar el ID real del check con componente/ruta/entorno permitido. El receptor espera la plantilla exacta de `worker-monitor/checkly-webhook.template.json`; sustituye la propuesta preliminar de campos de la sección anterior.
