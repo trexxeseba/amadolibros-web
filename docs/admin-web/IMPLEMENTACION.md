@@ -158,7 +158,16 @@ intercepta el destino de red: 9 escenarios de sesión, catálogo, estado y
 sesiones de usuarios. La prueba local de red completa fue cancelada por
 el entorno antes de entregar el resultado; se ejecutará en el runner
 aislado de GitHub antes de publicar. Reproducción directa del TypeError
-sí obtenida localmente. Pendiente publicación y reintento del titular.
+sí obtenida localmente.
+
+Resultado: [run 34282927166](https://github.com/trexxeseba/amadolibros-web/actions/runs/34282927166),
+commit `b5437d5`, **success**. 24 tests, 14 escenarios con fetch real de
+workerd (`realFetch: true`) y 3 controles privados correctos. Publicado en
+el mismo enlace, versión Worker `df559c70-ae93-4b22-a18c-247e3f6b386d`.
+GA4 actualizado y releído a las 21:52:31 UTC. Se conserva el fallo local
+de infraestructura como tal; el runner completó la prueba. Falta el
+reintento del titular para confirmar su ingreso. Main y calendario horario
+continúan pendientes de aprobación, sin cambios en esta corrección.
 
 ## Registro anterior
 
