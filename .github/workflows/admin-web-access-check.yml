@@ -1,0 +1,25 @@
+name: Admin web - private access preflight
+on:
+  push:
+    branches: [codex/admin-web-observability]
+    paths:
+      - '.github/workflows/admin-web-access-check.yml'
+      - 'scripts/admin-web-access-check.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  access:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Inspect existing private-access configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/admin-web-access-check.mjs
