@@ -16,7 +16,11 @@ if (!ready) throw new Error('Worker not ready on requested head');
 const snapshot = await request('/manifest');
 if (!snapshot.ok) throw new Error(`Freeze snapshot: HTTP ${snapshot.status}`);
 const etag = snapshot.headers.get('x-manifest-etag');
-await snapshot.body.cancel(); // The complete original has already been frozen in isolated R2.
+// Complete the snapshot response before bootstrapping; do not overlap a
+// cancelled R2 response with the next memory-heavy preparation request.
+let snapshotBytes = 0;
+for await (const chunk of snapshot.body) snapshotBytes += chunk.byteLength;
+console.log(JSON.stringify({ stage: 'snapshot-complete', bytes: snapshotBytes }));
 const prepared = await request('/prepare', { method: 'POST', headers: { 'if-match': etag } });
 if (!prepared.ok) throw new Error(`Prepare full index: HTTP ${prepared.status}: ${await prepared.text()}`);
 const index = await prepared.json();

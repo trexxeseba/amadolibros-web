@@ -61,6 +61,15 @@ jobs:
           printf 'INCIDENT_URL=%s\n' "$INCIDENT_URL" >> "$GITHUB_ENV"
           printf '%s' "$INCIDENT_TOKEN" | npx wrangler@3.114.17 secret put INCIDENT_TOKEN \
             --config worker-sync/cover-scroll-preview.wrangler.toml --name "$WORKER_NAME"
+          # Persist only runtime outcomes, never request headers or tokens.
+          (npx wrangler@3.114.17 tail "$WORKER_NAME" --format json \
+            --config worker-sync/cover-scroll-preview.wrangler.toml \
+            2> artifacts/cover-scroll/tail-stderr.txt | \
+            jq --unbuffered '{outcome, cpuTime, wallTime, exceptions, scriptName}' \
+            > artifacts/cover-scroll/runtime-outcomes.jsonl) &
+          TRACE_PID=$!
+          trap 'kill "$TRACE_PID" 2>/dev/null || true' EXIT
+          sleep 5
           node scripts/prepare-cover-scroll.mjs
       - uses: actions/upload-artifact@v4
         if: steps.gate.outputs.enabled == 'true'
