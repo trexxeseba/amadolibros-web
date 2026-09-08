@@ -22,3 +22,7 @@ astro-front/.astro/
 # masiva (~17k registros): datos derivados, reproducibles desde R2 público,
 # no pertenecen al repositorio. Reglas, esquema y tests sí se versionan.
 scripts/categorize/data/
+
+# ADMIN-WEB: informes privados de GA4, jamás publicar como assets ni en Git.
+artifacts/admin-web-private/
+artifacts/admin-web-review/

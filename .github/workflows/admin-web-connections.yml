@@ -1,0 +1,73 @@
+name: Admin web - read-only connections
+
+on:
+  push:
+    branches: [codex/admin-web-observability]
+    paths:
+      - '.github/workflows/admin-web-connections.yml'
+      - 'scripts/admin-web-connections.mjs'
+      - 'scripts/admin-web-ga4-export.mjs'
+      - 'functions/_shared/admin-web-data.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-web-connections
+  cancel-in-progress: false
+
+jobs:
+  ga4:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Authenticate existing read-only GA4 connection
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
+      - name: Verify web-only reports without exposing metrics
+        env:
+          GA4_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+        run: node scripts/admin-web-connections.mjs ga4
+
+  cloudflare:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Read existing order stores without changing records
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/admin-web-connections.mjs cloudflare
+
+  catalog:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Read public catalog and freshness metadata
+        run: node scripts/admin-web-connections.mjs catalog
