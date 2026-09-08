@@ -6,6 +6,7 @@ import {
   clearFailedLogins,
   clearedSessionCookieHeader,
   createSessionToken,
+  deriveSessionSecret,
   hasValidSession,
   loginAttemptsExceeded,
   parseCookies,
@@ -35,15 +36,38 @@ function kvStub({ failing = false } = {}) {
   };
 }
 
-test('el panel falla cerrado: sin secrets, o con secrets débiles, no hay configuración válida', () => {
+test('el panel falla cerrado: sin contraseña, o con una corta, no hay configuración válida', () => {
   assert.equal(resolvePanelConfig(undefined).ok, false);
   assert.equal(resolvePanelConfig({}).ok, false);
-  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'corta', PANEL_SESSION_SECRET: SECRET }).ok, false);
-  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(12), PANEL_SESSION_SECRET: 'corto' }).ok, false);
+  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: '' }).ok, false);
+  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'corta' }).ok, false);
+  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(11) }).ok, false);
 
-  const valid = resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(12), PANEL_SESSION_SECRET: SECRET });
+  // Una sola clave para configurar: no se pide ni se usa un segundo secret.
+  const valid = resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(12) });
   assert.equal(valid.ok, true);
   assert.equal(valid.password, 'x'.repeat(12));
+  assert.equal('sessionSecret' in valid, false);
+});
+
+test('la llave de sesión se deriva de la contraseña, no es la contraseña, y cambia con ella', async () => {
+  const derived = await deriveSessionSecret('contraseña-del-panel');
+  assert.notEqual(derived, 'contraseña-del-panel');
+  assert.ok(derived.length >= 32);
+  // Determinística: dos Workers con la misma contraseña validan las mismas cookies.
+  assert.equal(derived, await deriveSessionSecret('contraseña-del-panel'));
+  // Cambiar la contraseña cambia la llave, así que las sesiones viejas mueren.
+  assert.notEqual(derived, await deriveSessionSecret('contraseña-del-panel-2'));
+
+  const token = await createSessionToken(derived);
+  assert.equal(await verifySessionToken(token, derived), true);
+  assert.equal(
+    await verifySessionToken(token, await deriveSessionSecret('contraseña-del-panel-2')),
+    false,
+    'al cambiar la contraseña, la sesión anterior deja de valer',
+  );
+  // La contraseña cruda tampoco sirve como llave de firma.
+  assert.equal(await verifySessionToken(token, 'contraseña-del-panel'), false);
 });
 
 test('timingSafeEqual compara por valor sin cortar ante longitudes distintas', () => {

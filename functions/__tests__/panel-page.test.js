@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createSessionToken } from '../_shared/panel-auth.js';
+import { createSessionToken, deriveSessionSecret } from '../_shared/panel-auth.js';
 import { onRequest } from '../panel/[[path]].js';
 
 const PASSWORD = 'contraseña-larga-del-panel';
-const SESSION_SECRET = 's'.repeat(48);
 
 const ORDER_ROWS = [{
   public_code: 'AL-1001',
@@ -54,7 +53,6 @@ function baseEnv(overrides = {}) {
     APP_ENV: 'production',
     ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com',
     PANEL_PASSWORD: PASSWORD,
-    PANEL_SESSION_SECRET: SESSION_SECRET,
     TURNSTILE_SECRET_KEY: 'turnstile-secret',
     STOCK_WAITLIST_TURNSTILE_SITE_KEY: '0x4AAAAAAD_sitekey',
     ORDERS_DB: dbStub(),
@@ -91,11 +89,12 @@ async function withTurnstile(success, run) {
   }
 }
 
-async function sessionCookie() {
-  return `amado_panel_session=${await createSessionToken(SESSION_SECRET)}`;
+async function sessionCookie(password = PASSWORD) {
+  const token = await createSessionToken(await deriveSessionSecret(password));
+  return `amado_panel_session=${token}`;
 }
 
-test('sin secrets configurados el panel responde 503 y no muestra ni el login', async () => {
+test('sin contraseña configurada el panel responde 503 y no muestra ni el login', async () => {
   const response = await onRequest({
     request: request('/panel'),
     env: { APP_ENV: 'production' },
@@ -224,10 +223,11 @@ test('el tablero sigue en pie aunque D1 no esté disponible', async () => {
   assert.match(html, /No se pudo cargar/);
 });
 
-test('una cookie con firma ajena no abre el tablero', async () => {
-  const foreign = await createSessionToken('otro-secret-largo-de-prueba-0000000000000');
+test('una cookie firmada con otra contraseña no abre el tablero', async () => {
+  // Es el caso real de cambiar la contraseña: las sesiones abiertas se caen solas,
+  // porque la llave de firma se deriva de ella.
   const response = await onRequest({
-    request: request('/panel', { cookie: `amado_panel_session=${foreign}` }),
+    request: request('/panel', { cookie: await sessionCookie('otra-contraseña-vieja') }),
     env: baseEnv(),
   });
   assert.equal(response.status, 200);

@@ -4,9 +4,14 @@
  * PANEL-BACKEND-1 — autenticación del panel interno (/panel).
  *
  * El panel muestra pedidos con datos del comprador, así que la regla de oro es
- * FALLAR CERRADO: si falta cualquiera de los dos secrets (PANEL_PASSWORD,
- * PANEL_SESSION_SECRET) el panel no se sirve, nunca queda abierto "porque
- * todavía no lo configuraron".
+ * FALLAR CERRADO: sin PANEL_PASSWORD el panel no se sirve, nunca queda abierto
+ * "porque todavía no lo configuraron".
+ *
+ * Una sola clave para configurar. La llave que firma las sesiones no es un
+ * segundo secret a cargar a mano: se deriva de la contraseña con HMAC sobre una
+ * etiqueta fija. Quien tiene la contraseña ya entra al panel, así que derivarla
+ * no debilita nada, y de yapa cambiar la contraseña invalida al instante todas
+ * las sesiones abiertas.
  *
  * La sesión es una cookie firmada con HMAC-SHA256 sobre el instante de
  * expiración. No guarda identidad ni datos del comprador: solo prueba que
@@ -21,6 +26,7 @@
 const SESSION_COOKIE_NAME = 'amado_panel_session';
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
 const TOKEN_VERSION = 'v1';
+const SESSION_KEY_LABEL = 'amado-panel-session-key-v1';
 
 // Freno de fuerza bruta: una contraseña compartida es adivinable a fuerza de
 // intentos, y el login es público. Se cuenta por IP en KV.
@@ -34,11 +40,10 @@ function cleanString(value) {
 
 export function resolvePanelConfig(env) {
   const password = cleanString(env?.PANEL_PASSWORD);
-  const sessionSecret = cleanString(env?.PANEL_SESSION_SECRET);
   // Una contraseña corta con Turnstile delante sigue siendo débil; se exige un
   // mínimo acá para que el panel no dependa de la disciplina de quien la cargue.
-  if (password.length < 12 || sessionSecret.length < 32) return { ok: false };
-  return { ok: true, password, sessionSecret };
+  if (password.length < 12) return { ok: false };
+  return { ok: true, password };
 }
 
 /**
@@ -75,6 +80,15 @@ async function hmacSignature(secret, message, cryptoImpl = globalThis.crypto) {
   );
   const signature = await cryptoImpl.subtle.sign('HMAC', key, encoder.encode(message));
   return base64UrlEncode(new Uint8Array(signature));
+}
+
+/**
+ * Llave de firma derivada de la contraseña. La etiqueta fija separa este uso de
+ * cualquier otro que la contraseña pudiera tener: lo que firma las cookies no es
+ * la contraseña en sí, sino HMAC(contraseña, etiqueta).
+ */
+export async function deriveSessionSecret(password, { crypto: cryptoImpl = globalThis.crypto } = {}) {
+  return hmacSignature(cleanString(password), SESSION_KEY_LABEL, cryptoImpl);
 }
 
 export async function createSessionToken(sessionSecret, {

@@ -23,6 +23,7 @@ import {
   clearFailedLogins,
   clearedSessionCookieHeader,
   createSessionToken,
+  deriveSessionSecret,
   hasValidSession,
   loginAttemptsExceeded,
   recordFailedLogin,
@@ -350,7 +351,7 @@ async function handleLogin(context, config) {
   }
 
   await clearFailedLogins(env?.AMADO_KV, ip);
-  const token = await createSessionToken(config.sessionSecret);
+  const token = await createSessionToken(await deriveSessionSecret(config.password));
   return redirectToPanel({ 'Set-Cookie': sessionCookieHeader(token) });
 }
 
@@ -362,10 +363,10 @@ export async function onRequest(context) {
 
   const config = resolvePanelConfig(context.env);
   if (!config.ok) {
-    // Sin secrets no hay panel: ni login ni tablero. Nunca "abierto por defecto".
+    // Sin contraseña no hay panel: ni login ni tablero. Nunca "abierto por defecto".
     return htmlResponse(
       layout('Panel no disponible', '<main class="card"><h1>Panel no disponible</h1>'
-        + '<p class="muted">Faltan PANEL_PASSWORD y/o PANEL_SESSION_SECRET en este entorno.</p></main>'),
+        + '<p class="muted">Falta PANEL_PASSWORD en este entorno (mínimo 12 caracteres).</p></main>'),
       { status: 503 },
     );
   }
@@ -383,7 +384,7 @@ export async function onRequest(context) {
   if (path !== '/panel') return new Response('Not Found', { status: 404 });
   if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
 
-  if (!(await hasValidSession(request, config.sessionSecret))) {
+  if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
     return htmlResponse(loginPage({
       siteKey: cleanString(context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY),
     }));
