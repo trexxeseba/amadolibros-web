@@ -1,0 +1,320 @@
+{
+  "responsible": "Codex",
+  "effort": "M",
+  "scope": "Complete private manifest writer; production data read-only, all mutations isolated and cleaned up.",
+  "attempts": [
+    {
+      "run_url": "https://github.com/trexxeseba/amadolibros-web/actions/runs/34227121174",
+      "head": "d9ff375276b2e7708c64afb9d5312f979c3c80c2",
+      "summary": {
+        "pages": 0,
+        "pages_ok": 0,
+        "images": 0,
+        "images_ok": 0,
+        "failures": 1
+      },
+      "index": {
+        "hash": "062a202a27459b36ce5e69b5c018cfbe459c244c5349675c65038d22ac679d23",
+        "shards": 256,
+        "shards_written": 256,
+        "bytes": 23142634,
+        "entries": 59164,
+        "source_etag": "7b6441fe2f66c7bb8b4e4cc7d825406c",
+        "source_bytes": 78432808,
+        "manifest_retries": 0,
+        "production_writes": 0
+      },
+      "preparations": [
+        {
+          "hash": "062a202a27459b36ce5e69b5c018cfbe459c244c5349675c65038d22ac679d23",
+          "shards": 256,
+          "shards_written": 256,
+          "bytes": 23142634,
+          "entries": 59164,
+          "source_etag": "7b6441fe2f66c7bb8b4e4cc7d825406c",
+          "source_bytes": 78432808,
+          "manifest_retries": 0,
+          "production_writes": 0
+        }
+      ],
+      "comparison": [],
+      "failures": [
+        "Error: Index preparation 2/2 HTTP 503: <!DOCTYPE html>\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if IE 8]>    <html class=\"no-js ie8 oldie\" lang=\"en-US\"> <![endif]-->\n<!--[if gt IE 8]><!--> <html class=\"no-js\" lang=\"en-US\"> <!--<![endif]-->\n<head>\n<title>Worker exceeded resource limits | amado-cover-index-34227121174-1.undiaes.workers.dev | Cloudflare</title>\n<meta charset=\"UTF-8\" />\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />\n<meta name=\"robots\" content=\"noindex, nofollow\" />\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />\n<link rel=\"stylesheet\" id=\"cf_styles-css\" href=\"/cdn-cgi/styles/cf.errors.css\" />\n<!--[if lt IE 9]><link rel=\"stylesheet\" id='cf_styles-ie-css' href=\"/cdn-cgi/styles/cf.errors.ie.css\" /><![endif]-->\n<style>body{margin:0;padding:0}</style>\n\n\n<!--[if gte IE 10]><!-->\n<script>\n  if (!navigator.cookieEnabled) {\n    window.addEventListener('DOMContentLoaded', function () {\n      var cookieEl = document.getElementById('cookie-alert');\n      cookieEl.style.display = 'block';\n    })\n  }\n</script>\n<!--<![endif]-->\n\n</head>\n<body>\n    <div id=\"cf-wrapper\">\n        <div class=\"cf-alert cf-alert-error cf-cookie-error\" id=\"cookie-alert\" data-translate=\"enable_cookies\">Please enable cookies.</div>\n        <div id=\"cf-error-details\" class=\"cf-error-details-wrapper\">\n            <div class=\"cf-wrapper cf-header cf-error-overview\">\n                <h1>\n                    <span class=\"cf-error-type\" data-translate=\"error\">Error</span>\n                    <span class=\"cf-error-code\">1102</span>\n                    <small class=\"heading-ray-id\">Ray ID: a37e030b1a566172 &bull; 2026-09-08 12:39:26 UTC</small>\n                </h1>\n                <h2 class=\"cf-subheadline\" data-translate=\"error_desc\">Worker exceeded resource limits</h2>\n            </div><!-- /.header -->\n    \n            <section></section><!-- spacer -->\n    \n            <div class=\"cf-section cf-wrapper\">\n                <div class=\"cf-columns two\">\n                    <div class=\"cf-column\">\n                        <h2 data-translate=\"what_happened\">What happened?</h2>\n                            <p>You've requested a page on a website (amado-cover-index-34227121174-1.undiaes.workers.dev) that is on the <a href=\"https://www.cloudflare.com/5xx-error-landing?utm_source=error_100x\" target=\"_blank\">Cloudflare</a> network. An unknown error occurred while rendering the page.</p>\n                    </div>\n                    \n                    <div class=\"cf-column\">\n                        <h2 data-translate=\"what_can_i_do\">What can I do?</h2>\n                            <p><strong>If you are the owner of this website:</strong><br />refer to <a href=\"https://developers.cloudflare.com/workers/observability/errors/\" target=\"_blank\">Workers - Errors and Exceptions</a> and check Workers Logs for amado-cover-index-34227121174-1.undiaes.workers.dev.</p>\n                    </div>\n                    \n                </div>\n            </div><!-- /.section -->\n    \n            <div class=\"cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300\">\n    <p class=\"text-13\">\n      <span class=\"cf-footer-item sm:block sm:mb-1\">Cloudflare Ray ID: <strong class=\"font-semibold\">a37e030b1a566172</strong></span>\n      <span class=\"cf-footer-separator sm:hidden\">&bull;</span>\n      <span id=\"cf-footer-item-ip\" class=\"cf-footer-item hidden sm:block sm:mb-1\">\n        Your IP:\n        <button type=\"button\" id=\"cf-footer-ip-reveal\" class=\"cf-footer-ip-reveal-btn\">Click to reveal</button>\n        <span class=\"hidden\" id=\"cf-footer-ip\">52.176.124.181</span>\n        <span class=\"cf-footer-separator sm:hidden\">&bull;</span>\n      </span>\n      <span class=\"cf-footer-item sm:block sm:mb-1\"><span>Performance &amp; security by</span> <a rel=\"noopener noreferrer\" href=\"https://www.cloudflare.com/5xx-error-landing\" id=\"brand_link\" target=\"_blank\">Cloudflare</a></span>\n      \n    </p>\n    <script>(function(){function d(){var b=a.getElementById(\"cf-footer-item-ip\"),c=a.getElementById(\"cf-footer-ip-reveal\");b&&\"classList\"in b&&(b.classList.remove(\"hidden\"),c.addEventListener(\"click\",function(){c.classList.add(\"hidden\");a.getElementById(\"cf-footer-ip\").classList.remove(\"hidden\")}))}var a=document;document.addEventListener&&a.addEventListener(\"DOMContentLoaded\",d)})();</script>\n  </div><!-- /.error-footer -->\n\n        </div><!-- /#cf-error-details -->\n    </div><!-- /#cf-wrapper -->\n\n     <script>\n    window._cf_translation = {};\n    \n    \n  </script> \n</body>\n</html>\n    at file:///home/runner/work/amadolibros-web/amadolibros-web/scripts/cover-index-check.mjs:63:36\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"
+      ],
+      "preparation_state": {
+        "bytes": 78432808,
+        "root": null
+      },
+      "runtime": {
+        "observations": 6,
+        "not_ok": [
+          {
+            "outcome": "exceededMemory",
+            "cpuTime": 2557,
+            "wallTime": 42630,
+            "exceptions": [
+              {
+                "name": "Error",
+                "message": "Worker exceeded memory limit.",
+                "timestamp": 1788871165886
+              },
+              {
+                "name": "Error",
+                "message": "Worker exceeded memory limit.",
+                "timestamp": 1788871165886
+              }
+            ],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ]
+            ]
+          }
+        ],
+        "writer_phases": [
+          {
+            "outcome": "ok",
+            "cpuTime": 3990,
+            "wallTime": 39303,
+            "exceptions": [],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-end"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-start"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-end"
+              ]
+            ]
+          },
+          {
+            "outcome": "exceededMemory",
+            "cpuTime": 2557,
+            "wallTime": 42630,
+            "exceptions": [
+              {
+                "name": "Error",
+                "message": "Worker exceeded memory limit.",
+                "timestamp": 1788871165886
+              },
+              {
+                "name": "Error",
+                "message": "Worker exceeded memory limit.",
+                "timestamp": 1788871165886
+              }
+            ],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ]
+            ]
+          }
+        ]
+      },
+      "cleanup": {
+        "index": {
+          "deleted": 260,
+          "prefix": "acceptance/cover-index/amado-cover-index-34227121174-1/",
+          "production_writes": 0
+        },
+        "worker": {
+          "result": {
+            "id": "8e8285c7103a4bf3a054eb86da18b5cc"
+          },
+          "success": true,
+          "errors": [],
+          "messages": []
+        }
+      }
+    },
+    {
+      "run_url": "https://github.com/trexxeseba/amadolibros-web/actions/runs/34228477299",
+      "head": "04257bcc4ecc6d8bad1ce5fb431f0ca30811fce3",
+      "snapshot": {
+        "catalog_updated_at": "2026-09-08T07:18:09.289Z",
+        "manifest_etag": "0a52f2c0598c177d266a2db374a1ab9e",
+        "manifest_bytes": 78801346,
+        "manifest_sha256": "d0d49480fa532dd379d4a87f1f31769799e17381b19c9264311a1c2c71813a53",
+        "original_entries": 59433,
+        "indexed_entries": 59433,
+        "old_feed_items": 3697,
+        "new_feed_items": 3697,
+        "old_item_xml_sha256": "b36ac1daeb1dc2fdca3eda0ae3784b336271412bcec243daa50f2ed25e53967a",
+        "new_item_xml_sha256": "b36ac1daeb1dc2fdca3eda0ae3784b336271412bcec243daa50f2ed25e53967a"
+      },
+      "summary": {
+        "pages": 4,
+        "pages_ok": 4,
+        "images": 154,
+        "images_ok": 154,
+        "failures": 0
+      },
+      "index": {
+        "hash": "aa9b2241dbcd8cd20d2a871fcd4c43372368d76959849db5369d50d93a7de548",
+        "shards": 256,
+        "shards_written": 256,
+        "bytes": 23247559,
+        "entries": 59433,
+        "source_etag": "0a52f2c0598c177d266a2db374a1ab9e",
+        "source_bytes": 78801346,
+        "manifest_retries": 0,
+        "production_writes": 0
+      },
+      "preparations": [
+        {
+          "hash": "aa9b2241dbcd8cd20d2a871fcd4c43372368d76959849db5369d50d93a7de548",
+          "shards": 256,
+          "shards_written": 256,
+          "bytes": 23247559,
+          "entries": 59433,
+          "source_etag": "0a52f2c0598c177d266a2db374a1ab9e",
+          "source_bytes": 78801346,
+          "manifest_retries": 0,
+          "production_writes": 0
+        },
+        {
+          "hash": "aa9b2241dbcd8cd20d2a871fcd4c43372368d76959849db5369d50d93a7de548",
+          "shards": 256,
+          "shards_written": 256,
+          "bytes": 23247559,
+          "entries": 59433,
+          "source_etag": "0a52f2c0598c177d266a2db374a1ab9e",
+          "source_bytes": 78801346,
+          "manifest_retries": 0,
+          "production_writes": 0
+        }
+      ],
+      "full_manifest_preserved": true,
+      "performance": {
+        "scope": "Authenticated Cloudflare Worker, unique cold cache origins, same frozen snapshot; not a Uruguay browser measurement",
+        "before_median_handler_ms": 5829,
+        "after_median_handler_ms": 840,
+        "reduction_percent": 85.59
+      },
+      "comparison": [
+        {
+          "id": "MLU1094451174",
+          "before_handler_ms": 3667,
+          "after_handler_ms": 627,
+          "before_r2_bytes": 78943288,
+          "after_r2_bytes": 265509,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU634431651",
+          "before_handler_ms": 6218,
+          "after_handler_ms": 840,
+          "before_r2_bytes": 78932231,
+          "after_r2_bytes": 252080,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU709390092",
+          "before_handler_ms": 5295,
+          "after_handler_ms": 963,
+          "before_r2_bytes": 78911553,
+          "after_r2_bytes": 231433,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU690771648",
+          "before_handler_ms": 6751,
+          "after_handler_ms": 834,
+          "before_r2_bytes": 78941952,
+          "after_r2_bytes": 266067,
+          "identical_bytes": true
+        },
+        {
+          "id": "MLU679987262",
+          "before_handler_ms": 5829,
+          "after_handler_ms": 1138,
+          "before_r2_bytes": 78939605,
+          "after_r2_bytes": 257594,
+          "identical_bytes": true
+        }
+      ],
+      "failures": [],
+      "runtime": {
+        "observations": 164,
+        "not_ok": [],
+        "writer_phases": [
+          {
+            "outcome": "ok",
+            "cpuTime": 4171,
+            "wallTime": 41136,
+            "exceptions": [],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-end"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-start"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-end"
+              ]
+            ]
+          },
+          {
+            "outcome": "ok",
+            "cpuTime": 4279,
+            "wallTime": 47277,
+            "exceptions": [],
+            "phases": [
+              [
+                "cover-qa-phase",
+                "manifest-cas-start"
+              ],
+              [
+                "cover-qa-phase",
+                "manifest-cas-end"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-start"
+              ],
+              [
+                "cover-qa-phase",
+                "quality-report-end"
+              ]
+            ]
+          }
+        ]
+      },
+      "cleanup": {
+        "index": {
+          "deleted": 260,
+          "prefix": "acceptance/cover-index/amado-cover-index-34228477299-1/",
+          "production_writes": 0
+        },
+        "worker": {
+          "result": {
+            "id": "2492d525e7884bc49ef0dfd0bebeaa9a"
+          },
+          "success": true,
+          "errors": [],
+          "messages": []
+        }
+      }
+    }
+  ],
+  "pending": "Native R2 conditional-write rejection and full-snapshot reread/rebuild with bounded graph retention."
+}

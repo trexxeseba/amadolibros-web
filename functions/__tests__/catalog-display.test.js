@@ -85,7 +85,9 @@ test.beforeEach(() => {
           return Response.json({ schema_version: 1, categories: [], items: {} });
         }
         if (request.url === CATALOG_URL) return Response.json(CATALOG);
-        if (request.url === PAUSED_MANIFEST_URL) {
+        // Both environments must stay on the fixture. A missing production
+        // cache row would make the cover-binding test depend on live R2.
+        if (request.url === PAUSED_MANIFEST_URL || request.url === PRODUCTION_MANIFEST_URL) {
           return Response.json({
             schema_version: 1,
             current: {

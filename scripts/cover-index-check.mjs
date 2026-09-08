@@ -59,9 +59,13 @@ try {
     // Both full-snapshot preparations must pass. This is a repeated-write
     // resource check, not a retry that could hide a failed first attempt.
     for (let pass = 1; pass <= 2; pass++) {
-        const preparation = await request('/prepare', { method: 'POST', headers: { 'if-match': etag } });
+        const preparation = await request('/prepare', { method: 'POST', headers: { 'if-match': etag,
+            ...(pass === 2 ? { 'x-acceptance-conflict-once': 'true' } : {}) } });
         if (!preparation.ok) throw new Error(`Index preparation ${pass}/2 HTTP ${preparation.status}: ${await preparation.text()}`);
         const index = await preparation.json();
+        if (index.conditional_conflicts !== pass - 1 || index.manifest_retries !== pass - 1) {
+            throw new Error('Full snapshot did not exercise the expected native conditional-write retry');
+        }
         if (report.index && report.index.hash !== index.hash) throw new Error('Repeated snapshot preparation changed the public index');
         report.preparations.push(index);
         report.index = index;

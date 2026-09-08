@@ -3275,7 +3275,7 @@
     "decoded_sha256": "e29015529f2911f106f04648002261df49baaa7683dc6c8d8763b5bbbf5ac57a"
   },
   "known_failures": [
-    "First QA preparation returned Cloudflare 1102. Snapshot response now drains before preparation; the next two full-snapshot preparations succeeded. The original CPU-versus-memory cause was not captured and remains unconfirmed.",
+    "First QA preparation returned Cloudflare 1102; its original CPU-versus-memory cause was not captured. Later writer run 34227121174 confirmed exceededMemory. Draining the snapshot or streaming writes alone did not resolve repeated bootstrap. Incremental full-fidelity reading plus streaming writing passed both full bootstraps in 34228477299; native CAS retry verification is tracked separately in cover-index-resource-2026-09-08.json.",
     "First observer deployment lost esbuild __name helper during serialization. Fixed with a self-contained helper and actual bundled regression test.",
     "CI initially ran that packaging test before Astro dependencies existed. Native and packaging phases now run at their correct dependency stages."
   ],

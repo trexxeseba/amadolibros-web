@@ -121,9 +121,7 @@ function mergeProcessedEntry(freshEntry, processed) {
   return merged;
 }
 
-async function writeManifestAtomically(bucket, initialState, processedEntries, nowIso) {
-  let state = initialState;
-  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+async function writeManifestAttempt(bucket, state, processedEntries, nowIso) {
     const nextManifest = {
       ...state.manifest,
       updated_at: timestamp(nowIso) > timestamp(state.manifest.updated_at)
@@ -151,7 +149,18 @@ async function writeManifestAtomically(bucket, initialState, processedEntries, n
     });
     // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
     // un éxito válido para mocks/implementaciones compatibles con put().
-    if (result !== null) return { manifest: nextManifest, retries: attempt, publicIndex };
+    return result !== null ? { manifest: nextManifest, publicIndex } : null;
+}
+
+async function writeManifestAtomically(bucket, state, processedEntries, nowIso) {
+  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+    const writing = writeManifestAttempt(bucket, state, processedEntries, nowIso);
+    // The per-attempt frame owns both state and its shallow replacement. A
+    // failed attempt returns only null, so neither graph survives into the next
+    // read through caller aliases or async temporaries in this retry loop.
+    state = null;
+    const written = await writing;
+    if (written) return { ...written, retries: attempt };
     state = await readManifestState(bucket, nowIso);
   }
   throw new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
@@ -506,8 +515,8 @@ export async function syncCoverMirror(env, catalog, {
   }
   const nowDate = now();
   const nowIso = nowDate.toISOString();
-  const manifestState = await readManifestState(bucket, nowIso);
-  const manifest = manifestState.manifest;
+  let manifestState = await readManifestState(bucket, nowIso);
+  let manifest = manifestState.manifest;
   const aiUpscaleEnabled = env?.COVER_ALLOW_GENERATIVE_UPSCALE === 'true' && Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
   // La mejora generativa se reserva para la portada primaria del mismo
   // universo deduplicado que recibe Merchant. Las imágenes secundarias se
@@ -560,7 +569,13 @@ export async function syncCoverMirror(env, catalog, {
   // refreshing. Subsequent no-op batches do not rewrite the index/manifest.
   if (batch.selected.length > 0 || indexRefreshDue(manifestState, nowIso) ||
       !/^[a-f0-9]{64}$/.test(manifestState.customMetadata[COVER_INDEX_METADATA] || '')) {
-    const written = await writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+    const writing = writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+    // The writer now owns the complete graph. Keeping any caller alias alive
+    // across a CAS retry would retain the original alongside the fresh graph.
+    manifestState = null;
+    manifest = null;
+    finalManifest = null;
+    const written = await writing;
     finalManifest = written.manifest;
     manifestRetries = written.retries;
     publicIndex = written.publicIndex;

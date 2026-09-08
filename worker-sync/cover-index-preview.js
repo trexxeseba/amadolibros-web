@@ -54,11 +54,26 @@ export default {
             // manifest inside Cloudflare's resource limits, not a smaller
             // preprojected fixture. All its writes stay in this namespace.
             await writable.put(prefix + MANIFEST, object.body, { customMetadata: { production_etag: expected } });
+            let conflictPending = request.headers.get('x-acceptance-conflict-once') === 'true';
+            let conditionalConflicts = 0;
             const isolated = {
                 get: key => writable.get(prefix + key), head: key => writable.head(prefix + key),
                 async put(key, body, options) {
                     const phase = key === MANIFEST ? 'manifest-cas' : key === 'covers/v1/quality-report.json' ? 'quality-report' : null;
                     if (phase) console.log('cover-qa-phase', `${phase}-start`);
+                    if (key === MANIFEST && conflictPending) {
+                        conflictPending = false;
+                        // Exercise native R2's failed conditional PUT, followed
+                        // by a complete reread/rebuild. Only this isolated copy
+                        // receives the deliberately stale ETag; no fake success.
+                        const current = await writable.head(prefix + key);
+                        const stale = (current.etag[0] === '0' ? '1' : '0') + current.etag.slice(1);
+                        const rejected = await writable.put(prefix + key, body, { ...options, onlyIf: { etagMatches: stale } });
+                        if (rejected !== null) throw new Error('Native R2 did not reject the deliberately stale ETag');
+                        conditionalConflicts++;
+                        console.log('cover-qa-phase', 'manifest-cas-conflict');
+                        return null;
+                    }
                     const result = await writable.put(prefix + key, body, options);
                     if (phase) console.log('cover-qa-phase', `${phase}-end`);
                     return result;
@@ -68,7 +83,7 @@ export default {
                 fetchFn: () => { throw new Error('Bootstrap must not fetch images'); },
             });
             return Response.json({ ...result.public_index, source_etag: expected, source_bytes: object.size,
-                manifest_retries: result.manifest_retries, production_writes: 0 });
+                manifest_retries: result.manifest_retries, conditional_conflicts: conditionalConflicts, production_writes: 0 });
         }
         if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
         const started = performance.now();

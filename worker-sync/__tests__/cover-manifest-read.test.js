@@ -86,7 +86,7 @@ test('two complete 60 MB reads retain every history under a 96 MB heap', () => {
   const script = `
     import { readFullCoverManifest } from './worker-sync/cover-manifest-read.js';
     const encoder = new TextEncoder();
-    for (let pass = 0; pass < 2; pass++) {
+    async function runPass(pass) {
       let next = -1; let bytes = 0;
       const body = new ReadableStream({ pull(controller) {
         let text;
@@ -98,11 +98,13 @@ test('two complete 60 MB reads retain every history under a 96 MB heap', () => {
         else { controller.close(); return; }
         const chunk = encoder.encode(text); bytes += chunk.byteLength; controller.enqueue(chunk);
       } });
-      const parsed = await readFullCoverManifest({ body, text() { throw new Error('no text buffering'); } });
+      let parsed = await readFullCoverManifest({ body, text() { throw new Error('no text buffering'); } });
       if (Object.keys(parsed.entries).length !== 6000 || bytes < 60000000 || parsed.after.unknown !== 'kept' || !parsed.before.private) throw new Error('full read failed');
       for (let i = 0; i < 6000; i++) if (parsed.entries['MLU' + i + ':0'].private_history !== String(i).padEnd(10000, 'x')) throw new Error('lost history');
-      console.log(JSON.stringify({ pass, entries: 6000, bytes }));
+      parsed = null;
+      return { pass, entries: 6000, bytes };
     }
+    for (let pass = 0; pass < 2; pass++) console.log(JSON.stringify(await runPass(pass)));
   `;
   const result = spawnSync(process.execPath, ['--max-old-space-size=96', '--input-type=module', '-e', script], {
     cwd: new URL('../../', import.meta.url), encoding: 'utf8', timeout: 20000,
