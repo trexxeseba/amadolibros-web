@@ -112,3 +112,18 @@ Validación focal de la corrección: regresión de enlaces (96 destinos válidos
 | Fecha de actualización del catálogo | ok |
 
 Esto demuestra que las credenciales existentes permiten las lecturas necesarias, sin instalar Cloudflare en ChatGPT. No demuestra acceso al panel ni actualización automática: aún falta crear/verificar almacenamiento privado del snapshot, su escritor/calendario, el binding del panel y Cloudflare Access. No se archivaron ni publicaron métricas o pedidos del diagnóstico. Cero escrituras de negocio, cero cambios de IAM/Access y cero deploys en este lote.
+
+
+## Continuación: persistencia y revisión privada conectada
+
+Autorizada por Seba al pedir seguir adelante después de verificar las conexiones. La lectura de Access, organización, namespaces y subdominio Workers devolvió HTTP 200 en [run 34278982091](https://github.com/trexxeseba/amadolibros-web/actions/runs/34278982091). Main 1aaaba8 incorporado antes de este lote.
+
+- Snapshot v2: ambos períodos se guardan en una única clave `preview:ga4:web:v2`, dentro del namespace exclusivo `amadolibros-admin-analytics-preview`. Todos los informes se validan antes de escribir y se verifica la lectura posterior. Un error de GA4 conserva el último valor; el lector rechaza períodos incorrectos o datos incompletos. Se serializan sólo campos del contrato, sin tokens, queries ni PII.
+- Worker nuevo `amadolibros-admin-preview`, separado de Pages y del sincronizador. Ruta `/admin`; URLs de versión desactivadas, sin custom routes y sin cron en el Worker. Sólo este Worker recibe bindings de consulta a pedidos productivos y al KV propio. La interfaz indica revisión con datos reales; `APP_ENV=preview` identifica el alojamiento y `ADMIN_WEB_DATA_ENV=production` identifica el origen de pedidos.
+- Access nuevo limitado al hostname exacto del Worker y al correo del titular verificado en GitHub. Se usa un proveedor de identidad existente. Una aplicación encontrada con otro nombre/dominio o una política distinta de la lista explícita se rechaza, sin modificarla. No se cambian otras políticas ni se crea un proveedor de identidad.
+- El workflow de revisión prueba el código, actualiza GA4, prepara Access, despliega sólo el Worker dedicado y verifica que HTML/JSON y una cabecera de identidad falsa se redirijan al login privado. No ejecuta la publicación de la tienda.
+- Actualización horaria preparada en `.github/workflows/admin-web-refresh.yml`, minuto 17. Comparte exclusión con el despliegue para impedir escrituras concurrentes. Sólo actualiza un namespace ya existente; no crea recursos ni despliega. **El calendario no corre desde esta rama: requiere que el workflow aprobado llegue a main.**
+- Validación local: 21/21 pruebas focales; bundle ESM del Worker de 32.800 bytes; YAML de ambos workflows parseado. Pruebas de almacenamiento completo, períodos, rechazo de namespace compartido, conservación ante fallas, política del titular y rutas anónimas.
+- Aún se debe verificar el despliegue remoto y el primer ingreso real del titular. La validación de login del workflow no suplanta a Seba ni solicita códigos de acceso.
+
+Fuentes técnicas: [Cloudflare Access para Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/), [crear namespace KV](https://developers.cloudflare.com/api/resources/kv/subresources/namespaces/methods/create/), [guardar un valor KV](https://developers.cloudflare.com/api/resources/kv/subresources/namespaces/subresources/values/methods/update/).

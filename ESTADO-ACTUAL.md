@@ -2,6 +2,8 @@
 
 ## ADMIN-WEB-01 — avance de consulta en rama (2026-09-08)
 
+- Continuación: Access/org/KV/subdominio confirmados HTTP 200 en run 34278982091. Worker privado separado, datos productivos en sólo lectura, bundle GA4 v2 y calendario horario implementados; 21/21 pruebas locales y bundle ESM 32.800 bytes. Despliegue de revisión y acceso real del titular pendientes de verificación. El calendario requiere incorporar el workflow aprobado a main.
+
 - Lote de conexiones: Seba pidió iniciar con los conectores y comunicó que no puede instalar Cloudflare. Drive permite leer GA4 CONTROL, actualizado al 4/9; faltan fechas/filtro para usarlo como informe actual. Se preparó diagnóstico de sólo lectura vía las credenciales existentes de GitHub Actions, con GA4, D1 Preview/Production y catálogo independientes. 15/15 tests locales; ejecución remota 34222874855 exitosa: GA4 7/30, D1 Preview/Production y catálogo/metadatos con estado ok. No requiere instalar el plugin. Identidad de GitHub y propiedad de este repositorio verificadas como `trexxeseba`; main `0ae0a50` incorporado a la rama conservando el registro del incidente de portadas.
 - Encargo autorizado por Seba: centro de administración y observación exclusivamente de la web, incluyendo visitas, problemas de compra, productos, pedidos y banners. Alcance registrado en `PLAN-MAESTRO.md` antes de programar. Responsable: Codex. Esfuerzo: M.
 - Rama `codex/admin-web-observability` desde main actualizado `d380374`. No se modifica la Gran Apuesta Merchant.

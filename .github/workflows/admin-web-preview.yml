@@ -1,0 +1,61 @@
+name: Admin web - connected private preview
+on:
+  push:
+    branches: [codex/admin-web-observability]
+    paths:
+      - '.github/workflows/admin-web-preview.yml'
+      - 'worker-admin/index.js'
+      - 'scripts/admin-web-preview*.mjs'
+      - 'scripts/admin-web-cloudflare.mjs'
+      - 'scripts/admin-web-refresh.mjs'
+      - 'scripts/admin-web-ga4-export.mjs'
+      - 'functions/admin.js'
+      - 'functions/_shared/admin-web-*.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: admin-web-private-data
+  cancel-in-progress: false
+jobs:
+  preview:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Test panel, storage and access boundaries
+        run: node --experimental-sqlite --test functions/__tests__/admin-web*.test.js
+      - name: Authenticate existing GA4 reader
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
+      - name: Store and verify the complete private Analytics report
+        env:
+          GA4_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/admin-web-refresh.mjs --create-preview-storage
+      - name: Prepare owner-only Access and isolated bindings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_WEB_OWNER_EMAIL: undiaes@gmail.com
+        run: node scripts/admin-web-preview.mjs
+      - name: Deploy isolated admin Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.107.0 deploy --config worker-admin/wrangler.preview.json
+      - name: Verify anonymous and forged-identity requests reach private login
+        run: node scripts/admin-web-preview-check.mjs

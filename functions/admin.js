@@ -30,6 +30,7 @@ export async function onRequest(context) {
   const now = new Date();
   const period = webPeriod(days, now);
   const model = { view, period, checkedAt: now.toISOString(), environment: env.APP_ENV,
+    dataEnvironment: env.ADMIN_WEB_DATA_ENV || env.APP_ENV,
     query: url.searchParams.get('q') || '' };
   const readers = [];
   const collect = (key, promise) => readers.push(promise.then(value => { model[key] = value; }));

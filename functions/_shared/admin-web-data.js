@@ -127,7 +127,11 @@ export async function readWebAnalytics(env, period, now = new Date()) {
   // Binding exclusivo del panel, no AMADO_KV compartido por preview/producción.
   if (!env.ADMIN_WEB_ANALYTICS_KV || !['preview', 'production'].includes(env.APP_ENV)) return unknown(source);
   try {
-    const raw = await env.ADMIN_WEB_ANALYTICS_KV.get(`${env.APP_ENV}:ga4:web:v1:${period.days}d`, 'json');
+    // Ambos períodos se publican juntos; nunca mezclar dos actualizaciones.
+    const bundle = await env.ADMIN_WEB_ANALYTICS_KV.get(`${env.APP_ENV}:ga4:web:v2`, 'json');
+    if (bundle?.version !== 2 || bundle.environment !== env.APP_ENV ||
+        ![7, 30].every(days => bundle.snapshots?.[days]?.extractedAt === bundle.updatedAt)) return unknown(source, 'Sin actualización completa de Analytics');
+    const raw = bundle.snapshots[period.days];
     const value = validateWebAnalytics(raw, period, now);
     return value || unknown(source, 'Sin informe válido para este período y esta web');
   } catch { return failed(source); }

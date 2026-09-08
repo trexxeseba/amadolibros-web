@@ -26,3 +26,5 @@ scripts/categorize/data/
 # ADMIN-WEB: informes privados de GA4, jamás publicar como assets ni en Git.
 artifacts/admin-web-private/
 artifacts/admin-web-review/
+worker-admin/wrangler.preview.json
+worker-admin/.wrangler/

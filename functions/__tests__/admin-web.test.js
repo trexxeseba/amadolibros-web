@@ -144,9 +144,9 @@ test('GA4 rechaza otra propiedad, web, período, datos futuros o conteos inváli
     assert.equal(validateWebAnalytics({ ...snapshot(), ...changes }, period, fixedNow), null);
   }
   let key;
-  const read = await readWebAnalytics({ APP_ENV: 'preview', ADMIN_WEB_ANALYTICS_KV: { get: async k => { key = k; return snapshot(); } } }, period, fixedNow);
+  const read = await readWebAnalytics({ APP_ENV: 'preview', ADMIN_WEB_ANALYTICS_KV: { get: async k => { key = k; return { version: 2, environment: 'preview', updatedAt: fixedNow.toISOString(), snapshots: { 7: snapshot(), 30: snapshot() } }; } } }, period, fixedNow);
   assert.equal(read.status, 'ok');
-  assert.equal(key, 'preview:ga4:web:v1:7d');
+  assert.equal(key, 'preview:ga4:web:v2');
 });
 
 test('catálogo: paginación, búsqueda por identificador y fuente caída', async () => {
