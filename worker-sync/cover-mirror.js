@@ -2,6 +2,7 @@ import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHEC
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
 import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
 import { putJsonToR2 } from './json-r2-stream.js';
+import { readFullCoverManifest } from './cover-manifest-read.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 export const DEFAULT_COVER_BATCH_SIZE = 100;
@@ -78,7 +79,7 @@ function validManifest(value) {
 async function readManifestState(bucket, nowIso) {
   const object = await bucket.get(COVER_MANIFEST_KEY);
   if (!object) return { manifest: emptyManifest(nowIso), etag: null, customMetadata: {} };
-  const parsed = JSON.parse(await object.text());
+  const parsed = await readFullCoverManifest(object);
   if (!validManifest(parsed)) throw new Error('Manifest de portadas R2 inválido.');
   const etag = String(object.etag || object.httpEtag || '').replace(/^"|"$/g, '');
   if (!etag) throw new Error('Manifest de portadas R2 sin ETag; no se puede actualizar de forma atómica.');

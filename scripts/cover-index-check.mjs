@@ -70,7 +70,8 @@ try {
     if (!writtenResponse.ok) throw new Error(`Written manifest HTTP ${writtenResponse.status}`);
     const written = await writtenResponse.json();
     report.full_manifest_preserved = isDeepStrictEqual({ ...written, updated_at: original.updated_at }, original);
-    if (!report.full_manifest_preserved || Date.parse(written.updated_at) < Date.parse(original.updated_at)) {
+    const previousTime = Date.parse(original.updated_at), writtenTime = Date.parse(written.updated_at);
+    if (!report.full_manifest_preserved || !Number.isFinite(previousTime) || !Number.isFinite(writtenTime) || writtenTime < previousTime) {
         throw new Error('Full manifest rewrite lost data or moved updated_at backwards');
     }
 
@@ -147,7 +148,7 @@ try {
         preparation_state: report.preparation_state, failures: report.failures }));
     if (process.env.GITHUB_STEP_SUMMARY) {
         const { appendFile } = await import('node:fs/promises');
-        await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Cover public index\n\n\`\`\`json\n${JSON.stringify({ head, snapshot: report.snapshot, index: report.index, summary: report.summary, performance: report.performance, comparison: report.comparison, failures: report.failures }, null, 2)}\n\`\`\`\n`);
+        await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Cover public index\n\n\`\`\`json\n${JSON.stringify({ head, snapshot: report.snapshot, index: report.index, preparations: report.preparations, full_manifest_preserved: report.full_manifest_preserved, preparation_state: report.preparation_state, summary: report.summary, performance: report.performance, comparison: report.comparison, failures: report.failures }, null, 2)}\n\`\`\`\n`);
     }
     if (report.failures.length) process.exitCode = 1;
 }
