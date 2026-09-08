@@ -160,5 +160,9 @@ negocio. HTML y JSON siguen rechazándose antes de consultar las fuentes.
 Validación: 24 pruebas focalizadas y 9 escenarios en workerd mediante
 `scripts/admin-web-runtime-check.mjs`, con claves e identidades sintéticas.
 El ensayo se ejecuta localmente y antes de cada publicación privada; no
-publica un acceso de prueba ni amplía los permisos. Pendiente: publicación
-del ajuste y reintento de Seba con su sesión real.
+publica un acceso de prueba ni amplía los permisos. Ajuste publicado en el
+mismo enlace: commit `d56c04d`, [run 34282206299](https://github.com/trexxeseba/amadolibros-web/actions/runs/34282206299)
+**success**, versión Worker `9cbf9402-6649-4224-9668-9c174747aede`. Los 24
+tests, 9 escenarios y 3 verificaciones privadas pasaron en Actions. GA4
+actualizado y releído a las 21:44:17 UTC. Pendiente: reintento de Seba con su
+sesión real. No se fusionó main ni se activó el calendario horario.
