@@ -18,7 +18,7 @@ export function adminAnalyticsBundle(snapshots, now = new Date()) {
     clean[days] = { version: 1, scope: 'web-only', property: '543434807', hosts: WEB_HOSTS,
       period: { startDate: period.startDate, endDate: period.endDate, timeZone: period.timeZone },
       extractedAt: raw.extractedAt, summary: value.summary, events: value.events,
-      channels: value.channels, devices: value.devices, pages: value.pages };
+      channels: value.channels, devices: value.devices, pages: value.pages, ...(value.detail ? { detail: value.detail } : {}) };
   }
   return { version: 2, environment: 'preview', updatedAt: now.toISOString(), snapshots: clean };
 }
@@ -26,7 +26,7 @@ export function adminAnalyticsBundle(snapshots, now = new Date()) {
 export async function refreshAdminAnalytics({ env = process.env, now = new Date(), fetchFn = fetch,
   create = false, pause = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
   // Si falla cualquier informe no se modifica la última actualización válida.
-  const snapshots = await Promise.all([7, 30].map(days => exportAdminGa4({ token: env.GA4_ACCESS_TOKEN, days, now, fetchFn })));
+  const snapshots = await Promise.all([7, 30].map(days => exportAdminGa4({ token: env.GA4_ACCESS_TOKEN, days, now, fetchFn, enrich: true })));
   const bundle = adminAnalyticsBundle(snapshots, now);
   const value = JSON.stringify(bundle);
   if (new TextEncoder().encode(value).length > 128000) throw new Error('ADMIN_BUNDLE_TOO_LARGE');

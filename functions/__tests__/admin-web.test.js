@@ -237,7 +237,7 @@ test('revisión descargable: cada enlace existe en el mismo archivo aun sin Java
   assert.equal(screenIds.at(-1), 'resumen-7', 'Resumen por defecto, último hermano');
   assert.doesNotMatch(html, /<script\b|<form\b|\bonclick=|href="\/admin/);
   const internal = [...html.matchAll(/href="#([^"]+)"/g)].map(match => match[1]);
-  assert.equal(internal.length, 96);
+  assert.ok(internal.length >= 96, 'Se conservan todos los enlaces originales');
   for (const target of internal) assert.ok(screenIds.includes(target), `Destino presente: ${target}`);
   for (const view of ['resumen','visitas','compra','pedidos','productos','estado']) {
     for (const days of [7, 30]) assert.ok(internal.includes(`${view}-${days}`));

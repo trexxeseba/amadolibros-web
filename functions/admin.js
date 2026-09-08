@@ -1,5 +1,5 @@
 import { checkAdminAccess } from './_shared/admin-web-auth.js';
-import { webPeriod, readWebOrders, readWebEmails, readWebCatalog, readWebSync, readWebAnalytics } from './_shared/admin-web-data.js';
+import { webPeriod, readWebOrders, readWebEmails, readWebCatalog, readWebSync, readWebHealth, readWebAnalytics } from './_shared/admin-web-data.js';
 import { renderAdminWeb } from './_shared/admin-web-view.js';
 
 const HEADERS = {
@@ -36,15 +36,16 @@ export async function onRequest(context) {
   const period = webPeriod(days, now);
   const model = { view, period, checkedAt: now.toISOString(), environment: env.APP_ENV,
     dataEnvironment: env.ADMIN_WEB_DATA_ENV || env.APP_ENV,
-    query: url.searchParams.get('q') || '' };
+    query: url.searchParams.get('q') || '', page };
   const readers = [];
   const collect = (key, promise) => readers.push(promise.then(value => { model[key] = value; }));
-  if (['resumen','visitas','compra'].includes(view)) collect('analytics', readWebAnalytics(env, period, now));
+  if (['resumen','visitas','compra','productos','estado'].includes(view)) collect('analytics', readWebAnalytics(env, period, now));
   if (['resumen','pedidos'].includes(view)) collect('orders', readWebOrders(env, period));
   if (['resumen','compra','estado'].includes(view)) collect('emails', readWebEmails(env, period));
   if (['resumen','estado'].includes(view)) collect('sync', readWebSync(fetch, now));
-  if (view === 'productos') collect('catalog', readWebCatalog(model.query, page));
+  if (['resumen','estado'].includes(view)) collect('health', readWebHealth(fetch, now));
   await Promise.all(readers);
+  if (view === 'productos') model.catalog = await readWebCatalog(model.query, page, fetch, model.analytics?.detail?.products || []);
   return url.searchParams.get('format') === 'json'
     ? respond(JSON.stringify(model), 200, 'application/json; charset=utf-8')
     : respond(renderAdminWeb(model), 200, 'text/html; charset=utf-8');

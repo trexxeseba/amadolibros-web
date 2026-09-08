@@ -3,7 +3,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { WEB_HOSTS, WEB_EVENTS, webPeriod, validateWebAnalytics } from '../functions/_shared/admin-web-data.js';
+import { WEB_HOSTS, WEB_EVENTS, webPeriod, validateWebAnalytics, previousWebPeriod, webDates } from '../functions/_shared/admin-web-data.js';
 
 const PROPERTY = '543434807';
 const reports = [
@@ -12,6 +12,11 @@ const reports = [
   { id: 'devices', metrics: ['sessions'], dimensions: ['deviceCategory'], limit: '25' },
   { id: 'pages', metrics: ['screenPageViews'], dimensions: ['pagePath'], limit: '25' },
   { id: 'events', metrics: ['eventCount'], dimensions: ['eventName'], limit: '25' },
+];
+const detailReports = [
+  { id: 'daily', metrics: ['sessions', 'screenPageViews'], dimensions: ['date'], limit: '31' },
+  { id: 'previous', metrics: ['sessions', 'totalUsers', 'screenPageViews'], dimensions: [], limit: '1' },
+  { id: 'products', metrics: ['screenPageViews'], dimensions: ['pagePath'], limit: '15' },
 ];
 
 export function buildAdminGa4Requests(period) {
@@ -28,6 +33,27 @@ export function buildAdminGa4Requests(period) {
   })) };
 }
 
+export function buildAdminGa4DetailRequests(period) {
+  return { requests: detailReports.map(report => {
+    const range = report.id === 'previous' ? previousWebPeriod(period) : period;
+    return { dateRanges: [{ startDate: range.startDate, endDate: range.endDate }],
+      dimensions: report.dimensions.map(name => ({ name })), metrics: report.metrics.map(name => ({ name })),
+      dimensionFilter: { andGroup: { expressions: [
+        { filter: { fieldName: 'hostName', inListFilter: { values: WEB_HOSTS, caseSensitive: false } } },
+        ...(report.id === 'products' ? [{ filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: '/libro/', caseSensitive: true } } }] : []),
+      ] } },
+      orderBys: report.id === 'daily' ? [{ dimension: { dimensionName: 'date' } }] : [{ metric: { metricName: report.metrics[0] }, desc: true }],
+      limit: report.limit };
+  }) };
+}
+
+function checkedReports(body, definitions) {
+  if (!Array.isArray(body.reports) || body.reports.length !== definitions.length) throw new Error('GA4_REPORTS_INCOMPLETE');
+  if (body.reports.some(r => r.metadata?.timeZone !== 'America/Montevideo')) throw new Error('GA4_TIMEZONE_NOT_VERIFIED');
+  if (body.reports.some(r => r.metadata?.subjectToThresholding || r.metadata?.dataLossFromOtherRow || r.metadata?.samplingMetadatas?.length)) throw new Error('GA4_LIMITED_REPORT');
+  return body.reports.map((r, i) => rowsFor(r, definitions[i]));
+}
+
 function rowsFor(response, config) {
   if (JSON.stringify((response.metricHeaders || []).map(x => x.name)) !== JSON.stringify(config.metrics) ||
       JSON.stringify((response.dimensionHeaders || []).map(x => x.name)) !== JSON.stringify(config.dimensions)) throw new Error('GA4_HEADERS_INVALID');
@@ -38,7 +64,7 @@ function rowsFor(response, config) {
   });
 }
 
-export async function exportAdminGa4({ token, days = 7, now = new Date(), fetchFn = fetch }) {
+export async function exportAdminGa4({ token, days = 7, now = new Date(), fetchFn = fetch, enrich = false }) {
   if (!token) throw new Error('Falta GA4_ACCESS_TOKEN temporal de la conexión existente.');
   const period = webPeriod(days, now);
   const response = await fetchFn(`https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY}:batchRunReports`, {
@@ -64,6 +90,30 @@ export async function exportAdminGa4({ token, days = 7, now = new Date(), fetchF
     pages: data[3].map(r => ({ label: r.label.split(/[?#]/)[0], count: r.values[0] })),
   };
   if (!validateWebAnalytics(snapshot, period, now)) throw new Error('GA4_SNAPSHOT_INVALID');
+  if (enrich) {
+    const detailResponse = await fetchFn(`https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY}:batchRunReports`, {
+      method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(buildAdminGa4DetailRequests(period)), redirect: 'error', signal: AbortSignal.timeout(20000),
+    });
+    if (!detailResponse.ok) throw new Error('GA4_DETAIL_UNAVAILABLE');
+    const detailData = checkedReports(await detailResponse.json(), detailReports);
+    const dates = webDates(period);
+    const daily = new Map();
+    for (const row of detailData[0]) {
+      if (!/^\d{8}$/.test(row.label)) throw new Error('GA4_DAY_INVALID');
+      const date = `${row.label.slice(0, 4)}-${row.label.slice(4, 6)}-${row.label.slice(6)}`;
+      if (!dates.includes(date) || daily.has(date)) throw new Error('GA4_DAY_INVALID');
+      daily.set(date, { date, sessions: row.values[0], views: row.values[1] });
+    }
+    const before = previousWebPeriod(period);
+    const totalsBefore = detailData[1][0]?.values || [0, 0, 0];
+    snapshot.detail = { version: 1,
+      previous: { startDate: before.startDate, endDate: before.endDate,
+        summary: { sessions: totalsBefore[0], users: totalsBefore[1], views: totalsBefore[2] } },
+      daily: dates.map(date => daily.get(date) || { date, sessions: 0, views: 0 }),
+      products: detailData[2].map(row => ({ path: row.label.split(/[?#]/)[0], views: row.values[0] })) };
+    if (!validateWebAnalytics(snapshot, period, now)) throw new Error('GA4_DETAIL_INVALID');
+  }
   return snapshot;
 }
 

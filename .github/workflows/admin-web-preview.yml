@@ -45,6 +45,14 @@ jobs:
           token_format: access_token
           access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
           create_credentials_file: false
+      - name: Verify the existing public status source without exposing its payload
+        run: |
+          node --input-type=module <<'JS'
+          import { readWebHealth } from './functions/_shared/admin-web-data.js';
+          const result = await readWebHealth();
+          console.log(JSON.stringify({ source: 'web-status', status: result.status, checkedAt: result.checkedAt, warnings: result.warnings }));
+          if (!['ok', 'degraded'].includes(result.status)) process.exitCode = 1;
+          JS
       - name: Store and verify the complete private Analytics report
         env:
           GA4_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}

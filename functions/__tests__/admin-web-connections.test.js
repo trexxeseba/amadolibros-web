@@ -52,12 +52,14 @@ test('GA4 comprueba ambos períodos sin guardar ni imprimir las métricas', asyn
   const result = await checkAdminConnections({ source: 'ga4', env, now, fetchFn: async (url, options) => {
     assert.equal(new URL(url).host, 'analyticsdata.googleapis.com');
     const { requests } = JSON.parse(options.body);
-    periods.push(requests[0].dateRanges[0]);
+    periods.push(...requests.map(r => r.dateRanges[0]));
     return Response.json({ reports: requests.map(r => ({ metricHeaders: r.metrics, dimensionHeaders: r.dimensions,
       metadata: { timeZone: 'America/Montevideo' }, rows: [] })) });
   } });
   assert.deepEqual(result.checks, [{ name: 'ga4_7d', status: 'ok' }, { name: 'ga4_30d', status: 'ok' }]);
-  assert.deepEqual(periods, [{ startDate: '2026-09-01', endDate: '2026-09-07' }, { startDate: '2026-08-09', endDate: '2026-09-07' }]);
+  assert.deepEqual([...new Map(periods.map(p => [JSON.stringify(p), p])).values()], [
+    { startDate: '2026-09-01', endDate: '2026-09-07' }, { startDate: '2026-08-09', endDate: '2026-09-07' },
+    { startDate: '2026-08-25', endDate: '2026-08-31' }, { startDate: '2026-07-10', endDate: '2026-08-08' }]);
   assert.doesNotMatch(JSON.stringify(result), /sessions|users|events|PRIVATE_/);
   assert.ok((await checkAdminConnections({ source: 'ga4', env: {}, now })).checks.every(c => c.status === 'unavailable'));
 });

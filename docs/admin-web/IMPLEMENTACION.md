@@ -139,6 +139,39 @@ Fuentes técnicas: [Cloudflare Access para Workers](https://developers.cloudflar
 - La compilación/routing del Worker separado quedó verificada por Wrangler 4.107.0 en el run exitoso. Los límites anteriores de compilación local de Wrangler ya no bloquean esta revisión privada.
 # Incidencia de ingreso — 2026-09-08
 
+## Enriquecimiento autorizado tras el ingreso confirmado
+
+Seba confirmó que pudo entrar después del arreglo A07 y pidió enriquecer
+el panel. Se conserva URL, política de acceso, fuentes y diseño aprobado.
+Esta confirmación cierra la incidencia de ingreso del titular.
+
+Lote: sesiones/páginas por día, comparación de sesiones/usuarios/vistas con
+los 7 o 30 días completos anteriores, top 15 URLs de fichas por vistas y
+títulos/stock del catálogo actual. Canales, dispositivos y eventos de compra
+se muestran con barras. Los avisos enlazan al detalle y distinguen errores
+registrados, fuentes sin datos y tareas comerciales pendientes.
+
+Fuente exclusiva de métricas nuevas: GA4 543434807, hostName filtrado a los
+dos dominios de la web, zona America/Montevideo y hasta ayer. Se agrega un
+segundo batch de 3 informes (máximo permitido 5): date+sessions/screenPageViews,
+resumen previo y pagePath filtrado por /libro/. No se solicitan datos de
+clientes, URLs con consultas ni parámetros personalizados sin verificar.
+Los rankings cuentan vistas de URLs, no unidades vendidas ni libros únicos.
+El stock es actual; el interés corresponde al período elegido.
+
+El detalle opcional vive en el mismo snapshot v2 atómico: lectores anteriores
+siguen leyendo sus métricas originales. La extracción nueva debe completarse
+en ambos períodos antes de escribir y desplegar. Una falla conserva el
+snapshot anterior. No se divide por cero ni se suman usuarios diarios. Si
+los totales diarios difieren del resumen, se muestran ambos y se advierte
+la diferencia. Ceros diarios sólo se completan tras un informe exitoso sin
+umbrales, muestreo o pérdida reportada.
+
+Validación local: 29 pruebas; fechas sin solapes, año bisiesto, comparaciones,
+ausencia de base porcentual, sanitización, fallo antes de persistencia, títulos
+reales del catálogo, límites de URLs y enlaces del HTML original conservados.
+Pendiente extracción real, despliegue privado y verificación terminal.
+
 ## Actualización: causa de A07 reproducida
 
 La segunda captura de Seba muestra A07. Un ensayo con `fetch` real de

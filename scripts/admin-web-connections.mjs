@@ -47,7 +47,7 @@ export async function checkAdminConnections({ source, env = process.env, now = n
   const checks = [];
   if (source === 'ga4') {
     for (const days of [7, 30]) checks.push(safeCheck(`ga4_${days}d`, async () => {
-      await exportAdminGa4({ token: env.GA4_ACCESS_TOKEN, days, now, fetchFn });
+      await exportAdminGa4({ token: env.GA4_ACCESS_TOKEN, days, now, fetchFn, enrich: true });
       return 'ok';
     }));
   } else if (source === 'cloudflare') {

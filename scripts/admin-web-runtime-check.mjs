@@ -41,10 +41,11 @@ const requests = [];
 function runtime(redirects = false) {
   return new Miniflare({ compatibilityDate: '2024-09-23', modules: [{ type: 'ESModule', path: resolve(root, 'runtime-check.js'),
     contents: `import {checkAdminAccess} from './functions/_shared/admin-web-auth.js';
-      import {readWebCatalog,readWebSync} from './functions/_shared/admin-web-data.js';
+      import {readWebCatalog,readWebSync,readWebHealth} from './functions/_shared/admin-web-data.js';
       export default {async fetch(request) {const path=new URL(request.url).pathname;
         if(path==='/catalog')return Response.json(await readWebCatalog());
         if(path==='/sync')return Response.json(await readWebSync());
+        if(path==='/health')return Response.json(await readWebHealth());
         return Response.json(await checkAdminAccess(request, ${JSON.stringify(env)}));}};` }, ...modules],
     // Se intercepta el destino de red DESPUÉS de ejecutar fetch real de workerd.
     // Sustituir fetchFn dentro del Worker ocultaba opciones no soportadas.
@@ -52,9 +53,11 @@ function runtime(redirects = false) {
       assert.equal(request.headers.get('Cookie'), null, 'No reenviar la sesión a las fuentes');
       assert.equal(request.headers.get('Cf-Access-Jwt-Assertion'), null);
       requests.push(request.url);
-      assert.ok([certUrl, `${publicRoot}/catalog.json`, `${publicRoot}/meta.json`].includes(request.url), 'No seguir redirects');
+      assert.ok([certUrl, `${publicRoot}/catalog.json`, `${publicRoot}/meta.json`, 'https://www.amadolibros.com/api/status'].includes(request.url), 'No seguir redirects');
       if (redirects) return new Response(null, { status: 302, headers: { location: 'https://untrusted.example/' } });
       if (request.url === certUrl) return Response.json({ keys: [jwk] });
+      if (request.url.endsWith('/api/status')) return Response.json({ status: 'degraded', healthy: false,
+        checked_at: new Date().toISOString(), code: 'kv_unavailable' }, { status: 503 });
       if (request.url.endsWith('/catalog.json')) return Response.json({ items: [{ id: 'TEST-BOOK', title: 'Libro de prueba', price: 300, available_quantity: 2 }] });
       return Response.json({ updated_at: new Date(Date.now() - 60000).toISOString() });
     } });
@@ -70,12 +73,13 @@ try {
     assert.equal(result.status, 'ok', path);
     if (path === '/catalog') assert.equal(result.rows[0].id, 'TEST-BOOK');
   }
+  assert.equal((await (await mf.dispatchFetch('https://runtime-test.example/health')).json()).status, 'degraded');
 } finally { await mf.dispose(); }
 const redirectRuntime = runtime(true);
 try {
   const access = await (await redirectRuntime.dispatchFetch('https://runtime-test.example/admin', { headers: { 'Cf-Access-Jwt-Assertion': valid } })).json();
   assert.deepEqual(access, { ok: false, reference: 'A07' });
-  for (const path of ['/catalog', '/sync']) assert.equal((await (await redirectRuntime.dispatchFetch(`https://runtime-test.example${path}`)).json()).status, 'unavailable');
+  for (const path of ['/catalog', '/sync', '/health']) assert.equal((await (await redirectRuntime.dispatchFetch(`https://runtime-test.example${path}`)).json()).status, 'unavailable');
 } finally { await redirectRuntime.dispose(); }
-assert.equal(requests.length, 6, 'Tres fuentes válidas y tres redirects rechazados');
-console.log(JSON.stringify({ status: 'runtime_auth_verified', checks: cases.length + 5, realFetch: true }));
+assert.equal(requests.length, 8, 'Cuatro fuentes consultadas y cuatro redirects rechazados');
+console.log(JSON.stringify({ status: 'runtime_auth_verified', checks: cases.length + 7, realFetch: true }));

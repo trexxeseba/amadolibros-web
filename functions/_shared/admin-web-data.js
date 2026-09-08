@@ -65,7 +65,7 @@ async function getJson(url, fetchFn) {
   return response.json();
 }
 
-export async function readWebCatalog(query = '', page = 0, fetchFn = fetch) {
+export async function readWebCatalog(query = '', page = 0, fetchFn = fetch, interest = []) {
   const source = 'Catálogo público que consume la web';
   try {
     const catalog = await getJson(CATALOG_URL, fetchFn);
@@ -80,6 +80,11 @@ export async function readWebCatalog(query = '', page = 0, fetchFn = fetch) {
         stock: Number.isInteger(r.available_quantity) ? r.available_quantity : null,
         status: String(r.status || 'sin_datos'),
       })),
+      interest: interest.slice(0, 15).filter(r => safeProductPath(r.path) && count(r.views)).map(r => {
+        const item = catalog.items.find(item => String(item.id) === r.path.split('/')[2]);
+        return { path: r.path, views: r.views, title: item?.title ? String(item.title) : null,
+          stock: Number.isInteger(item?.available_quantity) ? item.available_quantity : null };
+      }),
       note: 'Consulta de las publicaciones incluidas en el catálogo web. No representa libros únicos ni todas las publicaciones pausadas. Precio y stock se muestran según la fuente.' };
   } catch { return failed(source); }
 }
@@ -97,8 +102,76 @@ export async function readWebSync(fetchFn = fetch, now = new Date()) {
   } catch { return failed(source); }
 }
 
+export const WEB_STATUS_URL = 'https://www.amadolibros.com/api/status';
+const statusWarnings = ['meta_unavailable', 'catalog_unavailable', 'sync_missing', 'sync_stale', 'sync_error', 'sync_possibly_stuck'];
+export async function readWebHealth(fetchFn = fetch, now = new Date()) {
+  const source = 'Comprobación de la web · /api/status';
+  try {
+    const response = await fetchFn(WEB_STATUS_URL, { redirect: 'manual', signal: AbortSignal.timeout(8000) });
+    // 503 es una respuesta útil del diagnóstico, no una ausencia de datos.
+    if (![200, 503, 500].includes(response.status)) return failed(source);
+    const raw = await response.json();
+    const stamp = Date.parse(raw?.checked_at);
+    if (!Number.isFinite(stamp) || stamp > now.getTime() + 60000 || now.getTime() - stamp > 10 * 60000)
+      return unknown(source, 'La comprobación no tiene una fecha vigente verificable.');
+    const checkedAt = new Date(stamp).toISOString();
+    if ((response.status === 503 && raw.code === 'kv_unavailable' && raw.status === 'degraded' ||
+        response.status === 500 && raw.code === 'status_internal_error' && raw.status === 'error') && raw.healthy === false)
+      return { status: 'degraded', source, checkedAt, warnings: [raw.code],
+        note: 'Falló la comprobación de estado. Todavía no permite determinar qué partes de la tienda funcionan.' };
+    const w = raw.worker, c = raw.catalog;
+    const timestamp = value => value === null || typeof value === 'string' && Number.isFinite(Date.parse(value)) && Date.parse(value) <= now.getTime() + 60000;
+    if (raw.env !== 'prod' || ![true, false].includes(raw.healthy) ||
+        response.status !== (raw.healthy ? 200 : 503) || raw.status !== (raw.healthy ? 'ok' : 'degraded') ||
+        !['has_error', 'sync_fresh', 'in_progress', 'possibly_stuck'].every(k => typeof w?.[k] === 'boolean') ||
+        !['available', 'meta_available'].every(k => typeof c?.[k] === 'boolean') ||
+        ![w?.last_started, w?.last_ok, c?.last_updated].every(timestamp) ||
+        !(c.total_items === null || Number.isSafeInteger(c.total_items) && c.total_items >= 0) ||
+        raw.warnings !== undefined && (!Array.isArray(raw.warnings) || raw.warnings.length > 20 || !raw.warnings.every(x => typeof x === 'string')))
+      return unknown(source, 'La respuesta de estado no tiene el formato esperado.');
+    const warnings = new Set((raw.warnings || []).map(x => statusWarnings.includes(x) ? x : 'unknown_warning'));
+    if (!c.available) warnings.add('catalog_unavailable');
+    if (!c.meta_available) warnings.add('meta_unavailable');
+    if (!w.last_ok) warnings.add('sync_missing');
+    else if (!w.sync_fresh) warnings.add('sync_stale');
+    if (w.has_error) warnings.add('sync_error');
+    if (w.possibly_stuck) warnings.add('sync_possibly_stuck');
+    if (c.total_items === 0) warnings.add('catalog_empty');
+    if (!raw.healthy && !warnings.size) warnings.add('unknown_warning');
+    return { status: warnings.size ? 'degraded' : 'ok', source, checkedAt, warnings: [...warnings],
+      worker: { lastStarted: w.last_started, lastOk: w.last_ok, inProgress: w.in_progress },
+      catalog: { available: c.available, metaAvailable: c.meta_available, totalItems: c.total_items },
+      note: 'Estado al abrir o recargar el panel. Comprueba señales del sincronizador y disponibilidad del catálogo; no verifica cada foto, banner ni compra.' };
+  } catch { return failed(source); }
+}
+
 const count = x => typeof x === 'number' && Number.isSafeInteger(x) && x >= 0;
 export const WEB_EVENTS = ['view_item', 'add_to_cart', 'begin_checkout', 'add_shipping_info', 'add_payment_info', 'purchase', 'checkout_error'];
+
+export const previousWebPeriod = period => webPeriod(period.days, new Date(period.start));
+export function webDates(period) {
+  const start = Date.parse(`${period.startDate}T12:00:00Z`);
+  return Array.from({ length: period.days }, (_, i) => new Date(start + i * 86400000).toISOString().slice(0, 10));
+}
+export function safeProductPath(path) {
+  if (typeof path !== 'string' || path.length > 800 || !/^\/libro\/[A-Za-z0-9_-]+(?:\/[^?#\\\s]*)?$/.test(path)) return false;
+  try { return new URL(path, 'https://www.amadolibros.com').pathname === path; } catch { return false; }
+}
+
+function validateAnalyticsDetail(detail, period) {
+  const previous = previousWebPeriod(period);
+  if (detail?.version !== 1 || detail.previous?.startDate !== previous.startDate || detail.previous?.endDate !== previous.endDate ||
+      !['sessions', 'users', 'views'].every(k => count(detail.previous?.summary?.[k])) ||
+      !Array.isArray(detail.daily) || detail.daily.length !== period.days ||
+      !detail.daily.every((r, i) => r.date === webDates(period)[i] && count(r.sessions) && count(r.views)) ||
+      !Array.isArray(detail.products) || detail.products.length > 15 ||
+      !detail.products.every(r => safeProductPath(r.path) && count(r.views)) ||
+      new Set(detail.products.map(r => r.path)).size !== detail.products.length) return null;
+  return { version: 1, previous: { startDate: previous.startDate, endDate: previous.endDate,
+    summary: Object.fromEntries(['sessions', 'users', 'views'].map(k => [k, detail.previous.summary[k]])) },
+    daily: detail.daily.map(r => ({ date: r.date, sessions: r.sessions, views: r.views })),
+    products: detail.products.map(r => ({ path: r.path, views: r.views })).sort((a, b) => b.views - a.views) };
+}
 
 export function validateWebAnalytics(raw, period, now = new Date()) {
   if (!raw || raw.version !== 1 || raw.property !== '543434807' || raw.scope !== 'web-only' ||
@@ -115,10 +188,12 @@ export function validateWebAnalytics(raw, period, now = new Date()) {
     // Listas de páginas sin query strings; nunca renderizar texto arbitrario como HTML.
     lists[name] = raw[name].map(r => ({ label: name === 'pages' ? r.label.split(/[?#]/)[0] : r.label, count: r.count }));
   }
+  const detail = raw.detail === undefined ? undefined : validateAnalyticsDetail(raw.detail, period);
+  if (raw.detail !== undefined && !detail) return null;
   return { status: now.getTime() - Date.parse(raw.extractedAt) > 26 * 3600000 ? 'stale' : 'ok',
     source: 'Google Analytics 4 · sólo amadolibros.com', extractedAt: raw.extractedAt,
     summary: { sessions: raw.summary.sessions, users: raw.summary.users, views: raw.summary.views },
-    events: Object.fromEntries(WEB_EVENTS.map(k => [k, raw.events[k]])), ...lists,
+    events: Object.fromEntries(WEB_EVENTS.map(k => [k, raw.events[k]])), ...lists, ...(detail ? { detail } : {}),
     note: 'Período cerrado hasta ayer. GA4 puede omitir visitas por consentimiento o bloqueadores y recibir datos con demora. Los pasos son conteos de eventos, no un embudo de personas ni una tasa de abandono. Cero errores significa cero eventos recibidos.' };
 }
 
