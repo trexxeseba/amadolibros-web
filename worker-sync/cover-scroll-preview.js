@@ -81,7 +81,7 @@ export default {
             for (const attribute of ['src', 'srcset']) {
                 const value = element.getAttribute(attribute);
                 if (!value) continue;
-                element.setAttribute(attribute, value.startsWith('/assets/') ? `${BASE}${value}` : rewriteImage(value));
+                element.setAttribute(attribute, /^\/(assets|images)\//.test(value) ? `${BASE}${value}` : rewriteImage(value));
             }
         } }).on('script[src], link[rel="stylesheet"]', { element(element) {
             const attribute = element.tagName === 'script' ? 'src' : 'href';

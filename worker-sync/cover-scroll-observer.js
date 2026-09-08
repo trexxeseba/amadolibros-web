@@ -271,4 +271,10 @@ function observeCoverScroll() {
     render();
 }
 
-export const browserObserverScript = `(${observeCoverScroll.toString()})();`;
+// Wrangler/esbuild keepNames inserts __name() calls inside this function.
+// Function.toString() does not carry the bundle's helper into the browser, so
+// provide its equivalent inside the injected script's own lexical scope.
+export const browserObserverScript = `(() => {
+    const __name = (target, value) => Object.defineProperty(target, 'name', { value, configurable: true });
+    (${observeCoverScroll.toString()})();
+})();`;

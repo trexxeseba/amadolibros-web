@@ -10,7 +10,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: cover-scroll-${{ github.event.pull_request.number }}
+  # Each run owns a distinct Worker and R2 prefix; a corrected head need not
+  # wait for an earlier browser window to expire, and both clean up normally.
+  group: cover-scroll-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 jobs:
   browser-preview:
