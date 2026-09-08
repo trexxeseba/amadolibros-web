@@ -20,18 +20,23 @@ test('el evento cubre enlaces y aperturas programáticas de WhatsApp', () => {
   assert.match(analytics, /'whatsapp_click'/);
   assert.match(analytics, /'wa\.me'/);
   assert.match(analytics, /'api\.whatsapp\.com'/);
+  assert.match(analytics, /'web\.whatsapp\.com'/);
   assert.match(bookRequest, /trackWhatsApp\(\{[\s\S]*book_request_form/);
   assert.match(cart, /trackWhatsApp\(\{ ctaLocation: 'checkout_order' \}\)/);
   assert.match(searchOverlay, /trackWhatsApp\(\{ ctaLocation: 'search_overlay' \}\)/);
 });
 
-test('no envía la URL de WhatsApp, el mensaje ni parámetros de búsqueda a GA4', () => {
+test('no envía la URL de WhatsApp, el mensaje, el teléfono ni parámetros de búsqueda a GA4', () => {
   const eventCall = analytics.slice(analytics.indexOf("window.gtag('event', 'whatsapp_click'"));
-  assert.doesNotMatch(eventCall, /link_url|searchParams|location\.search|href:/);
+  assert.doesNotMatch(eventCall, /link_url|searchParams|location\.search|href:|phone/);
   assert.match(analytics, /page_type/);
   assert.match(analytics, /cta_location/);
   assert.match(analytics, /product_id/);
   assert.match(analytics, /topic/);
+  assert.match(analytics, /origen/);
+  assert.match(analytics, /\bruta\b/);
+  assert.match(analytics, /libro_id/);
+  assert.match(analytics, /transport_type = 'beacon'/);
   assert.match(analytics, /allowedParameters/);
   assert.match(baseLayout, /allowedParameters/);
 });
@@ -89,9 +94,102 @@ test('el payload real usa contexto estable y descarta la query sensible', () => 
     page_type: 'specialty',
     cta_location: 'hero_principal',
     topic: 'oftalmologia',
+    origen: 'otro',
+    ruta: '/especialidades/oftalmologia',
+    libro_id: '',
+    transport_type: 'beacon',
   });
   assert.equal(JSON.stringify(params).includes('consulta-privada'), false);
   assert.equal(typeof listeners.click, 'function');
+});
+
+// GA4-WHATSAPP-EVENT-1: origen/ruta/libro_id se agregan al whatsapp_click ya
+// existente (sin reemplazar page_type/cta_location/product_id/
+// availability_type/topic, para no romper nada ya armado en GA4 sobre esos
+// campos) y con transport_type=beacon para que el evento llegue aunque el
+// clic navegue fuera del sitio de inmediato.
+test('el listener delegado detecta los tres dominios de WhatsApp y arma origen/ruta/libro_id con transporte beacon', () => {
+  function fireWhatsAppClick(pathname, { href, hasStockBadge = false, inHeader = false } = {}) {
+    const listeners = {};
+    const window = {
+      location: {
+        hostname: 'www.amadolibros.com',
+        pathname,
+        href: `https://www.amadolibros.com${pathname}`,
+      },
+      dataLayer: [],
+    };
+    const document = {
+      querySelector: (selector) => (selector === '.badge.in-stock' && hasStockBadge ? {} : null),
+      createElement: () => ({}),
+      head: { appendChild: () => {} },
+      addEventListener: (name, handler) => { listeners[name] = handler; },
+    };
+    runInNewContext(analytics, { document, window, URL, Set, Date, Object, String, encodeURIComponent });
+
+    const anchor = {
+      href,
+      closest: (selector) => (selector === 'header' && inHeader ? {} : null),
+    };
+    listeners.click({ target: { closest: (selector) => (selector === 'a[href]' ? anchor : null) } });
+
+    const last = window.dataLayer.at(-1);
+    if (!last || Array.from(last)[0] !== 'event') return null;
+    const [, eventName, params] = Array.from(last);
+    return eventName === 'whatsapp_click' ? { ...params } : null;
+  }
+
+  const whatsappHrefs = [
+    'https://wa.me/59800000000',
+    'https://api.whatsapp.com/send?phone=59800000000',
+    'https://web.whatsapp.com/send?phone=59800000000',
+  ];
+  for (const href of whatsappHrefs) {
+    const params = fireWhatsAppClick('/', { href });
+    assert.ok(params, `no disparó whatsapp_click para ${href}`);
+    assert.equal(params.origen, 'home');
+    assert.equal(params.ruta, '/');
+    assert.equal(params.libro_id, '');
+    assert.equal(params.transport_type, 'beacon');
+  }
+
+  // un enlace que no es de WhatsApp no dispara nada.
+  assert.equal(fireWhatsAppClick('/', { href: 'https://example.com' }), null);
+
+  assert.equal(
+    fireWhatsAppClick('/libros/infantil-juvenil', { href: 'https://wa.me/1' }).origen,
+    'catalogo',
+  );
+  assert.equal(
+    fireWhatsAppClick('/catalogo', { href: 'https://wa.me/1' }).origen,
+    'catalogo',
+  );
+
+  const ficha = fireWhatsAppClick('/libro/MLU1453287196/grandes-clasicos', {
+    href: 'https://wa.me/1',
+    hasStockBadge: true,
+  });
+  assert.equal(ficha.origen, 'ficha');
+  assert.equal(ficha.libro_id, 'MLU1453287196');
+  assert.equal(ficha.ruta, '/libro/MLU1453287196/grandes-clasicos');
+
+  const fichaPausada = fireWhatsAppClick('/libro/MLU1453287196/grandes-clasicos', {
+    href: 'https://wa.me/1',
+    hasStockBadge: false,
+  });
+  assert.equal(fichaPausada.origen, 'ficha_pausada');
+  assert.equal(fichaPausada.libro_id, 'MLU1453287196');
+
+  const header = fireWhatsAppClick('/libro/MLU1453287196/grandes-clasicos', {
+    href: 'https://wa.me/1',
+    inHeader: true,
+  });
+  assert.equal(header.origen, 'header');
+  assert.equal(header.libro_id, 'MLU1453287196');
+
+  const otro = fireWhatsAppClick('/contacto', { href: 'https://wa.me/1' });
+  assert.equal(otro.origen, 'otro');
+  assert.equal(otro.libro_id, '');
 });
 
 test('trackCommerce normaliza el producto y no duplica purchase al recargar', () => {
