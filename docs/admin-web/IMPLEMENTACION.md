@@ -127,3 +127,13 @@ Autorizada por Seba al pedir seguir adelante después de verificar las conexione
 - Aún se debe verificar el despliegue remoto y el primer ingreso real del titular. La validación de login del workflow no suplanta a Seba ni solicita códigos de acceso.
 
 Fuentes técnicas: [Cloudflare Access para Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/), [crear namespace KV](https://developers.cloudflare.com/api/resources/kv/subresources/namespaces/methods/create/), [guardar un valor KV](https://developers.cloudflare.com/api/resources/kv/subresources/namespaces/subresources/values/methods/update/).
+
+
+### Entrega privada verificada
+
+- URL: https://amadolibros-admin-preview.undiaes.workers.dev/admin.
+- [Run 34280416597](https://github.com/trexxeseba/amadolibros-web/actions/runs/34280416597), código `81f9c37`, resultado **success**. Pruebas 22/22; snapshot actualizado y releído 2026-09-08 21:24:36 UTC; Access del titular verificado; Worker desplegado, versión `aee64b61-6129-4745-afac-3b3531f069bf`; tres comprobaciones reales de login aprobadas, sin autenticar a Seba.
+- [CI 34280483216](https://github.com/trexxeseba/amadolibros-web/actions/runs/34280483216): 1.680 tests, cero fallos, dos builds, `Validación completa OK`.
+- Fallo histórico: run 34279948776 publicó correctamente pero su comprobación inmediata obtuvo 404. Una lectura posterior devolvió 302 al dominio de Access; la regresión limita los reintentos a ese 404, nunca tolera 200 ni un redirect ajeno. La siguiente ejecución privada pasó completa.
+- [PR #335](https://github.com/trexxeseba/amadolibros-web/pull/335) en borrador. El calendario horario aún no está activo: requiere incorporar el workflow a main. El merge también dispara el despliegue habitual de la tienda y queda pendiente de aprobación explícita de Seba y los controles del PR. El primer ingreso del titular debe confirmarlo él; no se le solicitan ni se interceptan códigos OTP.
+- La compilación/routing del Worker separado quedó verificada por Wrangler 4.107.0 en el run exitoso. Los límites anteriores de compilación local de Wrangler ya no bloquean esta revisión privada.
