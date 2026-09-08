@@ -1,0 +1,74 @@
+name: Cover public index acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/_shared/cover-public-index.js'
+      - 'functions/_shared/preview-cover.js'
+      - 'functions/__tests__/cover-public-index.test.js'
+      - 'worker-sync/cover-mirror.js'
+      - 'worker-sync/cover-index-preview*'
+      - 'scripts/cover-index-check.mjs'
+      - '.github/workflows/cover-index-preview.yml'
+permissions:
+  contents: read
+concurrency:
+  group: cover-index-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Compare frozen production snapshot on isolated Cloudflare index
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          INCIDENT_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKER_NAME: amado-cover-index-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cover-index
+          INCIDENT_TOKEN=$(openssl rand -hex 32)
+          export INCIDENT_TOKEN
+          echo "::add-mask::$INCIDENT_TOKEN"
+          cleanup() {
+            local result=0
+            if [ -n "${INCIDENT_URL:-}" ]; then
+              curl --max-time 60 -fsS -X DELETE -H "Authorization: Bearer $INCIDENT_TOKEN" \
+                "$INCIDENT_URL/cleanup" > artifacts/cover-index/index-cleanup.json || result=1
+            fi
+            curl --max-time 60 -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME" \
+              > artifacts/cover-index/worker-cleanup.json || result=1
+            return "$result"
+          }
+          cleanup_exit() {
+            local status=$?
+            trap - EXIT
+            if ! cleanup; then status=1; fi
+            exit "$status"
+          }
+          trap cleanup_exit EXIT
+          OUTPUT=$(npx wrangler@3.114.17 deploy --config worker-sync/cover-index-preview.wrangler.toml \
+            --name "$WORKER_NAME" --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA" --var "ACCEPTANCE_NAME:$WORKER_NAME")
+          echo "$OUTPUT"
+          INCIDENT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$INCIDENT_URL"
+          export INCIDENT_URL
+          printf '%s' "$INCIDENT_TOKEN" | npx wrangler@3.114.17 secret put INCIDENT_TOKEN \
+            --config worker-sync/cover-index-preview.wrangler.toml --name "$WORKER_NAME"
+          node scripts/cover-index-check.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cover-index-${{ github.run_id }}
+          path: artifacts/cover-index/
+          if-no-files-found: error
+          retention-days: 90

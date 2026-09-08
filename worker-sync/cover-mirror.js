@@ -1,5 +1,6 @@
 import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
+import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 export const DEFAULT_COVER_BATCH_SIZE = 100;
@@ -14,6 +15,12 @@ const MAX_GALLERY_IMAGES = 16;
 const TARGET_SHORT_EDGE = 1024;
 const TRANSFORM_RETRY_MS = 24 * 60 * 60 * 1000;
 const MANIFEST_WRITE_ATTEMPTS = 4;
+const INDEX_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+function indexRefreshDue(state, nowIso) {
+  const refreshed = timestamp(state.customMetadata.cover_index_refreshed_at);
+  return !refreshed || timestamp(nowIso) - refreshed >= INDEX_REFRESH_MS;
+}
 
 function emptyManifest(nowIso) {
   return { schema_version: 1, updated_at: nowIso, entries: {} };
@@ -69,12 +76,12 @@ function validManifest(value) {
 
 async function readManifestState(bucket, nowIso) {
   const object = await bucket.get(COVER_MANIFEST_KEY);
-  if (!object) return { manifest: emptyManifest(nowIso), etag: null };
+  if (!object) return { manifest: emptyManifest(nowIso), etag: null, customMetadata: {} };
   const parsed = JSON.parse(await object.text());
   if (!validManifest(parsed)) throw new Error('Manifest de portadas R2 inválido.');
   const etag = String(object.etag || object.httpEtag || '').replace(/^"|"$/g, '');
   if (!etag) throw new Error('Manifest de portadas R2 sin ETag; no se puede actualizar de forma atómica.');
-  return { manifest: parsed, etag };
+  return { manifest: parsed, etag, customMetadata: object.customMetadata || {} };
 }
 
 function timestamp(value) {
@@ -126,16 +133,23 @@ async function writeManifestAtomically(bucket, initialState, processedEntries, n
       nextManifest.entries[key] = mergeProcessedEntry(nextManifest.entries[key], processed);
     }
 
+    // A daily bounded rewrite repairs deleted/damaged derived objects even if
+    // no image changes. Normal batches upload only changed shards.
+    const refreshIndex = indexRefreshDue(state, nowIso);
+    const publicIndex = await prepareCoverIndex(bucket, nextManifest,
+      refreshIndex ? null : state.customMetadata[COVER_INDEX_METADATA]);
     const onlyIf = state.etag
       ? { etagMatches: state.etag }
       : { etagDoesNotMatch: '*' };
     const result = await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(nextManifest), {
       onlyIf,
       httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+      customMetadata: { ...state.customMetadata, [COVER_INDEX_METADATA]: publicIndex.hash,
+        cover_index_refreshed_at: refreshIndex ? nowIso : state.customMetadata.cover_index_refreshed_at },
     });
     // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
     // un éxito válido para mocks/implementaciones compatibles con put().
-    if (result !== null) return { manifest: nextManifest, retries: attempt };
+    if (result !== null) return { manifest: nextManifest, retries: attempt, publicIndex };
     state = await readManifestState(bucket, nowIso);
   }
   throw new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
@@ -539,10 +553,15 @@ export async function syncCoverMirror(env, catalog, {
   });
   let finalManifest = manifest;
   let manifestRetries = 0;
-  if (batch.selected.length > 0) {
+  let publicIndex = null;
+  // Bootstrap every existing cover on the first sync, even if no image needs
+  // refreshing. Subsequent no-op batches do not rewrite the index/manifest.
+  if (batch.selected.length > 0 || indexRefreshDue(manifestState, nowIso) ||
+      !/^[a-f0-9]{64}$/.test(manifestState.customMetadata[COVER_INDEX_METADATA] || '')) {
     const written = await writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
     finalManifest = written.manifest;
     manifestRetries = written.retries;
+    publicIndex = written.publicIndex;
   }
   const validCopies = Object.values(finalManifest.entries).filter(entry => entry?.current?.object_key).length;
   const imported = results.filter(result => ['imported', 'revalidated'].includes(result.status)).length;
@@ -603,6 +622,7 @@ export async function syncCoverMirror(env, catalog, {
     ai_upscaled: aiUpscaled,
     quality_pending: qualityPending,
     manifest_retries: manifestRetries,
+    public_index: publicIndex,
     results,
   };
 }
