@@ -60,7 +60,7 @@ export async function readWebEmails(env, period) {
 }
 
 async function getJson(url, fetchFn) {
-  const response = await fetchFn(url, { signal: AbortSignal.timeout(6000), redirect: 'error' });
+  const response = await fetchFn(url, { signal: AbortSignal.timeout(6000), redirect: 'manual' });
   if (!response.ok) throw new Error('SOURCE_UNAVAILABLE');
   return response.json();
 }

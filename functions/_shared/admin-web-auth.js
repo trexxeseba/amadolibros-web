@@ -51,7 +51,9 @@ export async function checkAdminAccess(request, env, { fetchFn = fetch, now = Da
     if (!keyCache || keyCache.issuer !== issuer || keyCache.until <= now ||
         !keyCache.keys.some(k => k.kid === header.kid)) {
       const response = await fetchFn(`${issuer}/cdn-cgi/access/certs`, {
-        redirect: 'error', signal: AbortSignal.timeout(4000),
+        // workerd sólo admite follow/manual. Manual + response.ok rechaza
+        // redirecciones sin seguirlas y sin romper todas las sesiones válidas.
+        redirect: 'manual', signal: AbortSignal.timeout(4000),
       });
       if (!response.ok) return deny('A07');
       const body = await response.json();

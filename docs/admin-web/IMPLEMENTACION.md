@@ -139,6 +139,29 @@ Fuentes técnicas: [Cloudflare Access para Workers](https://developers.cloudflar
 - La compilación/routing del Worker separado quedó verificada por Wrangler 4.107.0 en el run exitoso. Los límites anteriores de compilación local de Wrangler ya no bloquean esta revisión privada.
 # Incidencia de ingreso — 2026-09-08
 
+## Actualización: causa de A07 reproducida
+
+La segunda captura de Seba muestra A07. Un ensayo con `fetch` real de
+workerd y compatibility date 2024-09-23 reproduce `TypeError: Invalid
+redirect value, must be one of "follow" or "manual"`. Sucede antes de
+consultar las claves; el transporte por cookie no resolvía la causa.
+También afectaba catálogo y estado, que usaban la misma opción.
+
+Corrección: `redirect: 'manual'` y rechazo explícito mediante `response.ok`
+antes de leer JSON. No se siguen redirects ni se amplía la confianza de
+claves o fuentes. Se mantienen todas las validaciones de identidad/firma.
+
+La prueba de workerd anterior reemplazaba fetchFn dentro del Worker y no
+ejecutaba la API que falla. El ensayo actualizado usa fetch real y sólo
+intercepta el destino de red: 9 escenarios de sesión, catálogo, estado y
+3 redirecciones hostiles rechazadas, sin red a servicios del negocio ni
+sesiones de usuarios. La prueba local de red completa fue cancelada por
+el entorno antes de entregar el resultado; se ejecutará en el runner
+aislado de GitHub antes de publicar. Reproducción directa del TypeError
+sí obtenida localmente. Pendiente publicación y reintento del titular.
+
+## Registro anterior
+
 Seba mostró el 403 generado por `/admin`. La captura no distingue sesión
 ausente, claims incompatibles o fallo de firma/certificados. El login anónimo
 redirige correctamente y las claves públicas de Access responden HTTP 200.
