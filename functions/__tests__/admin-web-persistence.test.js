@@ -6,6 +6,7 @@ import { adminAnalyticsNamespace, ADMIN_ANALYTICS_TITLE } from '../../scripts/ad
 import { prepareAdminPreview, validateAdminPolicy, ADMIN_ACCESS_NAME } from '../../scripts/admin-web-preview.mjs';
 import { readWebAnalytics, webPeriod, WEB_EVENTS, WEB_HOSTS } from '../_shared/admin-web-data.js';
 import worker from '../../worker-admin/index.js';
+import { checkAdminPreview } from '../../scripts/admin-web-preview-check.mjs';
 
 const now = new Date('2026-09-08T21:00:00Z');
 const namespaceId = 'b'.repeat(32);
@@ -111,4 +112,16 @@ test('calendario comparte lock con deploy y sólo actualiza el almacenamiento ex
   assert.doesNotMatch(refresh, /wrangler|--create-preview-storage/);
   assert.match(refresh, /cron: '17 \* \* \* \*'/);
   assert.match(preview, /github.ref == 'refs\/heads\/codex\/admin-web-observability'/);
+});
+
+test('propagación permite reintentar 404 pero nunca acepta datos públicos ni redirects ajenos', async () => {
+  const config = { vars: { ADMIN_WEB_HOST: 'amadolibros-admin-preview.test.workers.dev', ADMIN_WEB_ACCESS_TEAM: 'test.cloudflareaccess.com', ADMIN_WEB_ALLOWED_EMAILS: 'owner@example.test' } };
+  let calls = 0;
+  const result = await checkAdminPreview({ config, pause: async () => {}, fetchFn: async () => ++calls === 1
+    ? new Response('', { status: 404 }) : new Response(null, { status: 302, headers: { location: 'https://test.cloudflareaccess.com/cdn-cgi/access/login' } }) });
+  assert.equal(result.protectedChecks, 3);
+  assert.equal(calls, 4);
+  for (const response of [new Response('PRIVATE_DATA'), new Response(null, { status: 302, headers: { location: 'https://evil.test/' } })]) {
+    await assert.rejects(checkAdminPreview({ config, pause: () => assert.fail('No reintentar una exposición'), fetchFn: async () => response }), /PRIVATE_LOGIN/);
+  }
 });
