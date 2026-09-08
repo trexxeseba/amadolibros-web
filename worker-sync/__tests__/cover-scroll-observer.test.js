@@ -1,17 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { build } from '../../astro-front/node_modules/esbuild/lib/main.js';
+import { browserObserverScript } from '../cover-scroll-observer.js';
 
-test('keepNames bundle produces standalone browser evidence and accounts for real viewport intervals', async () => {
-    const bundle = await build({
-        entryPoints: [new URL('../cover-scroll-observer.js', import.meta.url).pathname],
-        bundle: true, write: false, format: 'esm', platform: 'browser', keepNames: true,
-    });
-    const { browserObserverScript } = await import('data:text/javascript;base64,' +
-        Buffer.from(bundle.outputFiles[0].text).toString('base64'));
-    // Exercise the actual helper calls injected by esbuild, not merely source JS.
-    assert.match(browserObserverScript, /__name\(/);
+async function assertBrowserEvidence(script) {
     let clock = 0;
     let intersectionCallback;
     let pre;
@@ -53,7 +45,7 @@ test('keepNames bundle produces standalone browser evidence and accounts for rea
         IntersectionObserver: class { constructor(fn) { intersectionCallback = fn; } observe() {} },
     };
     // Intentionally no __name or other bundle helper on the browser global.
-    vm.runInNewContext(browserObserverScript, context);
+    vm.runInNewContext(script, context);
     assert.equal(JSON.parse(pre.textContent).counts.never_entered_images, 3);
     async function flush(at) {
         clock = at;
@@ -91,4 +83,26 @@ test('keepNames bundle produces standalone browser evidence and accounts for rea
     assert.equal(evidence.images[0].sources[0].visible_ms, 50);
     assert.equal(evidence.images[0].sources[0].visible_blank_ms, 30);
     assert.equal(Object.hasOwn(context, '__name'), false);
+}
+
+test('standalone observer produces evidence and accounts for real viewport intervals', async () => {
+    await assertBrowserEvidence(browserObserverScript);
 });
+
+// The native suite runs before any npm install. validate-ci.sh explicitly runs
+// this additional phase after Astro's locked npm ci; dependency failures must
+// fail that phase rather than silently disabling the packaging regression test.
+if (process.env.COVER_SCROLL_TEST_BUNDLE === 'true') {
+    test('keepNames bundle produces standalone browser evidence and accounts for real viewport intervals', async () => {
+        const { build } = await import('../../astro-front/node_modules/esbuild/lib/main.js');
+        const bundle = await build({
+            entryPoints: [new URL('../cover-scroll-observer.js', import.meta.url).pathname],
+            bundle: true, write: false, format: 'esm', platform: 'browser', keepNames: true,
+        });
+        const { browserObserverScript: bundledScript } = await import('data:text/javascript;base64,' +
+            Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+        // Exercise the actual helper calls injected by esbuild, not merely source JS.
+        assert.match(bundledScript, /__name\(/);
+        await assertBrowserEvidence(bundledScript);
+    });
+}

@@ -1,0 +1,3300 @@
+{
+  "schema": "cover-scroll-review-v1",
+  "responsible": "Codex",
+  "effort": "M",
+  "head": "b972d09b61c7c0b5b7374be0a23b9d76d30a0775",
+  "run_url": "https://github.com/trexxeseba/amadolibros-web/actions/runs/34224677948",
+  "browser_artifact_id": 10055211709,
+  "environment": {
+    "head": "b972d09b61c7c0b5b7374be0a23b9d76d30a0775",
+    "origin": "https://amado-cover-index-34224677948-1.undiaes.workers.dev",
+    "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/libros/psicologia",
+    "expires_at": "2026-09-08T12:31:27.000Z",
+    "index": {
+      "hash": "a4743d047eb7d5818524be00753d78063f6b8ff800e77cd03eb5da90902d3496",
+      "shards": 256,
+      "shards_written": 256,
+      "bytes": 23025383,
+      "entries": 58864,
+      "source_etag": "08c895ca74c1539c860138497cf5f869",
+      "source_bytes": 78003033,
+      "manifest_retries": 0,
+      "production_writes": 0
+    },
+    "scope": "Real renderer and lazy image attributes; responsive variants use native Cloudflare Images binding in isolated Worker, not the production CDN URL cache.",
+    "production_writes": 0
+  },
+  "acceptance": {
+    "all_48_entered_and_decoded": true,
+    "http_200": 48,
+    "initial_responses_public_index": 48,
+    "initial_global_manifest_gets": 0,
+    "missing_server_timing": 0,
+    "pending_readiness": 0,
+    "image_errors": 0,
+    "cold_scroll_instant": false,
+    "production_deployed": false
+  },
+  "method": [
+    "Chrome cloud, 1363x936 CSS pixels, actual category renderer and original loading/srcset/sizes.",
+    "First pass used PageDown then wheel, with diagnostic pauses and reverse traversal to visit twelve cards skipped by the initial keyboard jumps. It is not a standardized continuous-scroll benchmark.",
+    "Warm pass used 11 consecutive 700px wheel gestures, reading DOM evidence after each. All 48 resources had transferSize=0 in browser cache.",
+    "Visible readiness delay is measured viewport exposure before decode() resolution, not a compositor-paint or Uruguay-network guarantee.",
+    "Native Cloudflare Images binding and isolated Worker URL are used; this differs from production /cdn-cgi/image CDN delivery. No claim that production cold latency equals this preview."
+  ],
+  "first_pass": {
+    "counts": {
+      "total_article_images": 48,
+      "observed_images": 48,
+      "entered_images": 48,
+      "never_entered_images": 0,
+      "currently_visible_images": 4,
+      "entered_sources": 48,
+      "loaded_when_entered": 24,
+      "not_loaded_when_entered": 24,
+      "verified_zero_blank": 24,
+      "positive_visible_blank": 24,
+      "pending_readiness": 0,
+      "image_errors": 0,
+      "decode_errors": 0
+    },
+    "delay_ms": {
+      "median": 35.65,
+      "p95_nearest_rank": 3881.3,
+      "max": 3992.5
+    },
+    "viewport": {
+      "width": 1363,
+      "height": 936,
+      "scroll_y": 369
+    },
+    "time_origin": 1788869587890.1,
+    "rows": [
+      {
+        "image_index": 0,
+        "alt": "Portada de Libro Me Haces Mal - Damian Quilici (el Freud De La Villa), De Quilici, Damian. Editorial Sudestada, Tapa Blanda",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU657184584/cover.jpg",
+        "entered_at_ms": 933,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2357.8,
+        "decoded_at_ms": 3290.8,
+        "width": 256,
+        "height": 388,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2425.9,
+        "transfer_bytes": 27035,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 194,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 1,
+        "alt": "Portada de La Infancia Y Sus Bordes: Un Desafío Para El Psicoanálisis, De Moreno, Julio. Psicología Profunda Editorial Paidos México, Tapa Blanda En Español, 2014",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU889916620/cover.jpg",
+        "entered_at_ms": 933,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2260.4,
+        "decoded_at_ms": 3193.4,
+        "width": 280,
+        "height": 462,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2329,
+        "transfer_bytes": 19631,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 117,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 2,
+        "alt": "Portada de El Cuerpo Y El Agua Psicomotricidad Catherine Potel",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1459056374/cover.jpg",
+        "entered_at_ms": 933,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2219.4,
+        "decoded_at_ms": 3152.4,
+        "width": 280,
+        "height": 431,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2283.4,
+        "transfer_bytes": 11570,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 101,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 3,
+        "alt": "Portada de Profesionales Aceptación Incondicional Relaciones Ayuda",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU646615735/cover.jpg",
+        "entered_at_ms": 933,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2262.4,
+        "decoded_at_ms": 3195.4,
+        "width": 280,
+        "height": 392,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2329,
+        "transfer_bytes": 11730,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 175,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 4,
+        "alt": "Portada de El Trauma Visto Por Los Niños",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1398581158/cover.jpg",
+        "entered_at_ms": 1095.3,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2134.5,
+        "decoded_at_ms": 3229.8,
+        "width": 280,
+        "height": 417,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2351,
+        "transfer_bytes": 17817,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 105,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 5,
+        "alt": "Portada de Libro La Psicomotricidad Lazos Entre Teorías Y Prácticas",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU602626469/cover.jpg",
+        "entered_at_ms": 1095.3,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3158.6,
+        "decoded_at_ms": 4253.9,
+        "width": 280,
+        "height": 378,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3386.5,
+        "transfer_bytes": 35529,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 183,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 6,
+        "alt": "Portada de Libro - Grupos De Encuentro De Carl Rogers",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU680686310/cover.jpg",
+        "entered_at_ms": 1095.3,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3154.4,
+        "decoded_at_ms": 4249.7,
+        "width": 280,
+        "height": 480,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3311.2,
+        "transfer_bytes": 23878,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 139,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 7,
+        "alt": "Portada de El Proceso De Convertirse En Persona - Carl Rogers Terapia",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU713376570/cover.jpg",
+        "entered_at_ms": 1095.3,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3139.1,
+        "decoded_at_ms": 4234.4,
+        "width": 280,
+        "height": 417,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3297.6,
+        "transfer_bytes": 16616,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 280,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 8,
+        "alt": "Portada de Libro: Psicoterapia Centrada En El Cliente - Carl R. Rogers",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU641087569/cover.jpg",
+        "entered_at_ms": 294382.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4216.8,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3278.8,
+        "transfer_bytes": 32856,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 114,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 9,
+        "alt": "Portada de El Apego Y La Pérdida 1 Psicologia John Bowlby",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU669175074/cover.jpg",
+        "entered_at_ms": 294382.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4166.8,
+        "width": 280,
+        "height": 455,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3229.3,
+        "transfer_bytes": 10993,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 134,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 10,
+        "alt": "Portada de Libro Complicidades Sensibles En La Clínica Con Las Infancias, De Esteban Levin, Vol. 1. Editorial Noveduc, Tapa Blanda (2025)",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1094451174/cover.jpg",
+        "entered_at_ms": 294382.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4162.5,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3223.3,
+        "transfer_bytes": 11070,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 185,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 11,
+        "alt": "Portada de Libro - Psicoanálisis Para Niños - Fendrik Silvia",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU611399788/cover.jpg",
+        "entered_at_ms": 294382.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4228.8,
+        "width": 280,
+        "height": 465,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3286.3,
+        "transfer_bytes": 7686,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 152,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 12,
+        "alt": "Portada de Libro Educación Psicomotriz Psicomotricidad Angels",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU600673007/cover.jpg",
+        "entered_at_ms": 290322,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4231.7,
+        "width": 280,
+        "height": 390,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3128.4,
+        "transfer_bytes": 23603,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 228,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 13,
+        "alt": "Portada de Trabajo Del Juego Bruner Infancia Autismo Psicologia",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU645314230/cover.jpg",
+        "entered_at_ms": 290322,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4327.1,
+        "width": 280,
+        "height": 406,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3225.6,
+        "transfer_bytes": 17552,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 392,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 14,
+        "alt": "Portada de Le Bon Psicología De Las Masas Libro Psicología Social",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1428452954/cover.jpg",
+        "entered_at_ms": 290322,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4127.8,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3025.9,
+        "transfer_bytes": 12928,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 120,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 15,
+        "alt": "Portada de Libro Los Orígenes Del Juego Libre Psicomotricidad Kallo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU602596323/cover.jpg",
+        "entered_at_ms": 290322,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 4318.5,
+        "width": 280,
+        "height": 381,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3217.5,
+        "transfer_bytes": 16010,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 322,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 16,
+        "alt": "Portada de La Práctica De La Psicoterapia. La Construcción De Narrativas Terapéuticas, De Fernández Liria, Alberto. Editorial Desclée De Brouwer, Tapa Blanda En Español",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1045409526/cover.jpg",
+        "entered_at_ms": 285214.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 32085.1,
+        "width": 280,
+        "height": 467,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4068.5,
+        "transfer_bytes": 30024,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 203,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 17,
+        "alt": "Portada de Palabras De Esperanza Lutereau  Reflexiones Psicoanalíticas",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU706763032/cover.jpg",
+        "entered_at_ms": 285214.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 32090,
+        "width": 280,
+        "height": 434,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4072.6,
+        "transfer_bytes": 17293,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 285,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 18,
+        "alt": "Portada de Libro Verdugo Del Amor Irvin Yalom Psicoterapia Relatos",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU719905398/cover.jpg",
+        "entered_at_ms": 285214.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 31988.2,
+        "width": 280,
+        "height": 430,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3979.8,
+        "transfer_bytes": 20460,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 85,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 19,
+        "alt": "Portada de Estrategias De Enseñanza - R. Anijovich Y S. Mora",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU631153278/cover.jpg",
+        "entered_at_ms": 285214.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 32036.7,
+        "width": 280,
+        "height": 400,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4029,
+        "transfer_bytes": 29135,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 240,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 20,
+        "alt": "Portada de Correspondencia  Freud - Tomo Iii   1909-1914 Psicoanalisis",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU694168686/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 71.3,
+        "decoded_at_ms": 31991.8,
+        "width": 280,
+        "height": 440,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3982.4,
+        "transfer_bytes": 14685,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 232,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 21,
+        "alt": "Portada de Amor O Dominación-los Estragos Del Patriarcado- Laura Gutman",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU476747986/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 71.3,
+        "decoded_at_ms": 31982.7,
+        "width": 280,
+        "height": 273,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3974.1,
+        "transfer_bytes": 17183,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 219,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 22,
+        "alt": "Portada de Psicomotricidad El Cuerpo En Juego, Myrtha Chokler",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU623589227/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 71.3,
+        "decoded_at_ms": 32042.5,
+        "width": 280,
+        "height": 434,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4035.8,
+        "transfer_bytes": 34780,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 435,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 23,
+        "alt": "Portada de 1 2 3 4 Tomo 1 Los Cursos Psicoanaliticos J A Miller",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU644253190/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 71.3,
+        "decoded_at_ms": 32091.9,
+        "width": 280,
+        "height": 398,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4081,
+        "transfer_bytes": 11485,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 488,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 24,
+        "alt": "Portada de Constitución Del Sujeto Des Psicomotor Levin Psicomotricidad",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU603986736/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2751.4,
+        "decoded_at_ms": 30752.8,
+        "width": 280,
+        "height": 402,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2745.3,
+        "transfer_bytes": 14087,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 120,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 25,
+        "alt": "Portada de Libro - Autismos Y Perturbarciones Graves - Levin, Ilda S",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU612063006/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 1285.5,
+        "decoded_at_ms": 29286.9,
+        "width": 280,
+        "height": 433,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1281.6,
+        "transfer_bytes": 14710,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 105,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 26,
+        "alt": "Portada de Libro - El Contenido De Las Psicosis -  Carl G. Jung",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU614865254/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3992.5,
+        "decoded_at_ms": 31993.9,
+        "width": 280,
+        "height": 512,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3987.7,
+        "transfer_bytes": 23178,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 214,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 27,
+        "alt": "Portada de Psicoanalisis Radiofonia Y Television Jacques Lacan",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1317543050/cover.jpg",
+        "entered_at_ms": 28001.4,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3039.2,
+        "decoded_at_ms": 31040.6,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3034.4,
+        "transfer_bytes": 8912,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 176,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 28,
+        "alt": "Portada de Psicologia Desarrollo Adolescencia Adultez Vejez Griffa",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU631715153/cover.jpg",
+        "entered_at_ms": 28072.7,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3984.6,
+        "decoded_at_ms": 32057.3,
+        "width": 280,
+        "height": 406,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4051.2,
+        "transfer_bytes": 18354,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 132,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 29,
+        "alt": "Portada de Freud Obras Completas 18 Psicoanálisis",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU693789453/cover.jpg",
+        "entered_at_ms": 28072.7,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2965.1,
+        "decoded_at_ms": 31037.8,
+        "width": 280,
+        "height": 469,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3030.1,
+        "transfer_bytes": 20851,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 275,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 30,
+        "alt": "Portada de Tiempo, Historia Glocer En El Psicoanalisis Contemporaneo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU656254572/cover.jpg",
+        "entered_at_ms": 28072.7,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2816.3,
+        "decoded_at_ms": 30889,
+        "width": 280,
+        "height": 412,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2881.4,
+        "transfer_bytes": 12953,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 154,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 31,
+        "alt": "Portada de Realidad Y Juego D W Winnicott Psicoanalisis Infantil",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1256360600/cover.jpg",
+        "entered_at_ms": 28072.7,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 1396,
+        "decoded_at_ms": 29468.7,
+        "width": 280,
+        "height": 437,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1461.9,
+        "transfer_bytes": 15931,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 190,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 32,
+        "alt": "Portada de La Niñez Infectada - Esteban Levin",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU634428188/cover.jpg",
+        "entered_at_ms": 28136.6,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 1329.7,
+        "decoded_at_ms": 29466.3,
+        "width": 280,
+        "height": 406,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1458.6,
+        "transfer_bytes": 13414,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 96,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 33,
+        "alt": "Portada de Counselling Humanista Bermejo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU687622472/cover.jpg",
+        "entered_at_ms": 28136.6,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 3881.3,
+        "decoded_at_ms": 32017.9,
+        "width": 280,
+        "height": 438,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4007.4,
+        "transfer_bytes": 22299,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 222,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 34,
+        "alt": "Portada de Libro - Historias De Amor Hellinger Constelaciones Familiare",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU612983471/cover.jpg",
+        "entered_at_ms": 28136.6,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 1029.1,
+        "decoded_at_ms": 29165.7,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1156.3,
+        "transfer_bytes": 24641,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 107,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 35,
+        "alt": "Portada de Libro El Origen Del Sujeto En Psicoanalisis, De Alfredo Eidelsztein. Editorial Letra Viva (2018)",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU696579048/cover.jpg",
+        "entered_at_ms": 28136.6,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 2894.2,
+        "decoded_at_ms": 31030.8,
+        "width": 280,
+        "height": 470,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 3022.7,
+        "transfer_bytes": 35383,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 131,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 36,
+        "alt": "Portada de Vencer Los Miedos Lucien Auguer Ellis Psicologia Estoica",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU672631134/cover.jpg",
+        "entered_at_ms": 178192.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 32143.6,
+        "width": 280,
+        "height": 446,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4086.4,
+        "transfer_bytes": 12663,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 372,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 37,
+        "alt": "Portada de Libro La Sabiduría De Los Psicópatas - Psicología Y Crimen",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU707190270/cover.jpg",
+        "entered_at_ms": 178192.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 29707.2,
+        "width": 280,
+        "height": 437,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1645.8,
+        "transfer_bytes": 28916,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 184,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 38,
+        "alt": "Portada de Pánico! Psicoeducación Para Trastorno De Ansiedad Infantil",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU644976251/cover.jpg",
+        "entered_at_ms": 178192.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 31033.1,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2973.3,
+        "transfer_bytes": 18137,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 148,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 39,
+        "alt": "Portada de Hilando Lo Psicomotor En Psicomotricidad Burzac",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU656469908/cover.jpg",
+        "entered_at_ms": 178192.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 31043.6,
+        "width": 280,
+        "height": 421,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2982.5,
+        "transfer_bytes": 14690,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 420,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 40,
+        "alt": "Portada de Psicomotricidad Infantil: Manual Completo Para Desarrollo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU735144180/cover.jpg",
+        "entered_at_ms": 193034.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 29322.7,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1198.1,
+        "transfer_bytes": 21414,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 152,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 41,
+        "alt": "Portada de Ideas Directrices Para Un Psicoanalisis Contemporaneo - Andr",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU679854098/cover.jpg",
+        "entered_at_ms": 193034.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 30937,
+        "width": 280,
+        "height": 473,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2812,
+        "transfer_bytes": 20102,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 190,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 42,
+        "alt": "Portada de Figurabilidad Psiquica Botella Psicoanalisis Freudiana",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU633003679/cover.jpg",
+        "entered_at_ms": 193034.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 30514.9,
+        "width": 280,
+        "height": 485,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2390.1,
+        "transfer_bytes": 7369,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 147,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 43,
+        "alt": "Portada de Psicoanálisis Para Psicomotricistas",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU636153502/cover.jpg",
+        "entered_at_ms": 193034.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 32273.8,
+        "width": 280,
+        "height": 423,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 4147.8,
+        "transfer_bytes": 14620,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 489,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 44,
+        "alt": "Portada de Paradigma Borderline De La Afanisis Al Ataque De Panico",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU760868470/cover.jpg",
+        "entered_at_ms": 198121.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 180060.3,
+        "width": 280,
+        "height": 411,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1862.5,
+        "transfer_bytes": 22415,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 214,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 45,
+        "alt": "Portada de Mosquera Trastorno Bipolar Manual Clínico Y Familiar",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1468246340/cover.jpg",
+        "entered_at_ms": 198121.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 179830,
+        "width": 280,
+        "height": 358,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1632.1,
+        "transfer_bytes": 33012,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 202,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 46,
+        "alt": "Portada de Dutton Sabiduría De Los Psicópatas Psicología Aplicada",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU925948404/cover.jpg",
+        "entered_at_ms": 198121.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 180057.6,
+        "width": 280,
+        "height": 438,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 1858,
+        "transfer_bytes": 23651,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 142,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 47,
+        "alt": "Portada de Test Gestaltico Visomotor Bender  Kacero Psicologia Gestalt",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU684788954/cover.jpg",
+        "entered_at_ms": 198121.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 180199.3,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 2002.7,
+        "transfer_bytes": 10266,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 160,
+            "description": ""
+          }
+        ]
+      }
+    ]
+  },
+  "warm_pass": {
+    "counts": {
+      "total_article_images": 48,
+      "observed_images": 48,
+      "entered_images": 48,
+      "never_entered_images": 0,
+      "currently_visible_images": 4,
+      "entered_sources": 48,
+      "loaded_when_entered": 46,
+      "not_loaded_when_entered": 2,
+      "verified_zero_blank": 44,
+      "positive_visible_blank": 4,
+      "pending_readiness": 0,
+      "image_errors": 0,
+      "decode_errors": 0
+    },
+    "delay_ms": {
+      "median": 0.0,
+      "p95_nearest_rank": 46.9,
+      "max": 47.5
+    },
+    "viewport": {
+      "width": 1363,
+      "height": 936,
+      "scroll_y": 7700
+    },
+    "time_origin": 1788869917088.5,
+    "rows": [
+      {
+        "image_index": 0,
+        "alt": "Portada de Libro Me Haces Mal - Damian Quilici (el Freud De La Villa), De Quilici, Damian. Editorial Sudestada, Tapa Blanda",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU657184584/cover.jpg",
+        "entered_at_ms": 343.1,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 10.6,
+        "decoded_at_ms": 353.7,
+        "width": 256,
+        "height": 388,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 22.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 194,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 1,
+        "alt": "Portada de La Infancia Y Sus Bordes: Un Desafío Para El Psicoanálisis, De Moreno, Julio. Psicología Profunda Editorial Paidos México, Tapa Blanda En Español, 2014",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU889916620/cover.jpg",
+        "entered_at_ms": 343.1,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 46.9,
+        "decoded_at_ms": 390,
+        "width": 280,
+        "height": 462,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 22.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 117,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 2,
+        "alt": "Portada de El Cuerpo Y El Agua Psicomotricidad Catherine Potel",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1459056374/cover.jpg",
+        "entered_at_ms": 343.1,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 47.5,
+        "decoded_at_ms": 390.6,
+        "width": 280,
+        "height": 431,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 41.5,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 101,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 3,
+        "alt": "Portada de Profesionales Aceptación Incondicional Relaciones Ayuda",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU646615735/cover.jpg",
+        "entered_at_ms": 343.1,
+        "loaded_when_entered": false,
+        "visible_readiness_delay_ms": 47.5,
+        "decoded_at_ms": 390.6,
+        "width": 280,
+        "height": 392,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 41.5,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 175,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 4,
+        "alt": "Portada de El Trauma Visto Por Los Niños",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1398581158/cover.jpg",
+        "entered_at_ms": 1498.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 392.3,
+        "width": 280,
+        "height": 417,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 41.7,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 105,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 5,
+        "alt": "Portada de Libro La Psicomotricidad Lazos Entre Teorías Y Prácticas",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU602626469/cover.jpg",
+        "entered_at_ms": 1498.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 396.7,
+        "width": 280,
+        "height": 378,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 41.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 183,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 6,
+        "alt": "Portada de Libro - Grupos De Encuentro De Carl Rogers",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU680686310/cover.jpg",
+        "entered_at_ms": 1498.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 400.8,
+        "width": 280,
+        "height": 480,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.3,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 139,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 7,
+        "alt": "Portada de El Proceso De Convertirse En Persona - Carl Rogers Terapia",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU713376570/cover.jpg",
+        "entered_at_ms": 1498.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 405.6,
+        "width": 280,
+        "height": 417,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 18.5,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 280,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 8,
+        "alt": "Portada de Libro: Psicoterapia Centrada En El Cliente - Carl R. Rogers",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU641087569/cover.jpg",
+        "entered_at_ms": 6574.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 411.4,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 18.6,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 114,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 9,
+        "alt": "Portada de El Apego Y La Pérdida 1 Psicologia John Bowlby",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU669175074/cover.jpg",
+        "entered_at_ms": 6574.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 420.3,
+        "width": 280,
+        "height": 455,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 19.3,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 134,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 10,
+        "alt": "Portada de Libro Complicidades Sensibles En La Clínica Con Las Infancias, De Esteban Levin, Vol. 1. Editorial Noveduc, Tapa Blanda (2025)",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1094451174/cover.jpg",
+        "entered_at_ms": 6574.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 420.9,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 18.5,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 185,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 11,
+        "alt": "Portada de Libro - Psicoanálisis Para Niños - Fendrik Silvia",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU611399788/cover.jpg",
+        "entered_at_ms": 6574.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 423.7,
+        "width": 280,
+        "height": 465,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 19.7,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 152,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 12,
+        "alt": "Portada de Libro Educación Psicomotriz Psicomotricidad Angels",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU600673007/cover.jpg",
+        "entered_at_ms": 10641.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 1553.8,
+        "width": 280,
+        "height": 390,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 23.4,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 228,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 13,
+        "alt": "Portada de Trabajo Del Juego Bruner Infancia Autismo Psicologia",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU645314230/cover.jpg",
+        "entered_at_ms": 10641.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 1532.7,
+        "width": 280,
+        "height": 406,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 24.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 392,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 14,
+        "alt": "Portada de Le Bon Psicología De Las Masas Libro Psicología Social",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1428452954/cover.jpg",
+        "entered_at_ms": 10641.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 1535.2,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 23.6,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 120,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 15,
+        "alt": "Portada de Libro Los Orígenes Del Juego Libre Psicomotricidad Kallo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU602596323/cover.jpg",
+        "entered_at_ms": 10641.3,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 1551,
+        "width": 280,
+        "height": 381,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 24.1,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 322,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 16,
+        "alt": "Portada de La Práctica De La Psicoterapia. La Construcción De Narrativas Terapéuticas, De Fernández Liria, Alberto. Editorial Desclée De Brouwer, Tapa Blanda En Español",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1045409526/cover.jpg",
+        "entered_at_ms": 14707.5,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 6595.7,
+        "width": 280,
+        "height": 467,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8.3,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 203,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 17,
+        "alt": "Portada de Palabras De Esperanza Lutereau  Reflexiones Psicoanalíticas",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU706763032/cover.jpg",
+        "entered_at_ms": 14707.5,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 6598.5,
+        "width": 280,
+        "height": 434,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 14,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 285,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 18,
+        "alt": "Portada de Libro Verdugo Del Amor Irvin Yalom Psicoterapia Relatos",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU719905398/cover.jpg",
+        "entered_at_ms": 14707.5,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 6600.3,
+        "width": 280,
+        "height": 430,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 16.2,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 85,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 19,
+        "alt": "Portada de Estrategias De Enseñanza - R. Anijovich Y S. Mora",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU631153278/cover.jpg",
+        "entered_at_ms": 14707.5,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 6617.1,
+        "width": 280,
+        "height": 400,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 18.9,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 240,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 20,
+        "alt": "Portada de Correspondencia  Freud - Tomo Iii   1909-1914 Psicoanalisis",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU694168686/cover.jpg",
+        "entered_at_ms": 19788.9,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 10658.7,
+        "width": 280,
+        "height": 440,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8.1,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 232,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 21,
+        "alt": "Portada de Amor O Dominación-los Estragos Del Patriarcado- Laura Gutman",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU476747986/cover.jpg",
+        "entered_at_ms": 19788.9,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 10665.5,
+        "width": 280,
+        "height": 273,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 10.4,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 219,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 22,
+        "alt": "Portada de Psicomotricidad El Cuerpo En Juego, Myrtha Chokler",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU623589227/cover.jpg",
+        "entered_at_ms": 19788.9,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 10661.9,
+        "width": 280,
+        "height": 434,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 435,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 23,
+        "alt": "Portada de 1 2 3 4 Tomo 1 Los Cursos Psicoanaliticos J A Miller",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU644253190/cover.jpg",
+        "entered_at_ms": 19788.9,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 10663.8,
+        "width": 280,
+        "height": 398,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.7,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 488,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 24,
+        "alt": "Portada de Constitución Del Sujeto Des Psicomotor Levin Psicomotricidad",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU603986736/cover.jpg",
+        "entered_at_ms": 23855.2,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 14727,
+        "width": 280,
+        "height": 402,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 7.2,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 120,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 25,
+        "alt": "Portada de Libro - Autismos Y Perturbarciones Graves - Levin, Ilda S",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU612063006/cover.jpg",
+        "entered_at_ms": 23855.2,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 14730,
+        "width": 280,
+        "height": 433,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 7.1,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 105,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 26,
+        "alt": "Portada de Libro - El Contenido De Las Psicosis -  Carl G. Jung",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU614865254/cover.jpg",
+        "entered_at_ms": 23855.2,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 14731.2,
+        "width": 280,
+        "height": 512,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 12.2,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 214,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 27,
+        "alt": "Portada de Psicoanalisis Radiofonia Y Television Jacques Lacan",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1317543050/cover.jpg",
+        "entered_at_ms": 23855.2,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 14733.6,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.7,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 176,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 28,
+        "alt": "Portada de Psicologia Desarrollo Adolescencia Adultez Vejez Griffa",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU631715153/cover.jpg",
+        "entered_at_ms": 60663,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 19818.5,
+        "width": 280,
+        "height": 406,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 14.3,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 132,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 29,
+        "alt": "Portada de Freud Obras Completas 18 Psicoanálisis",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU693789453/cover.jpg",
+        "entered_at_ms": 60663,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 19811.5,
+        "width": 280,
+        "height": 469,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 12,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 275,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 30,
+        "alt": "Portada de Tiempo, Historia Glocer En El Psicoanalisis Contemporaneo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU656254572/cover.jpg",
+        "entered_at_ms": 60663,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 19816.5,
+        "width": 280,
+        "height": 412,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 154,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 31,
+        "alt": "Portada de Realidad Y Juego D W Winnicott Psicoanalisis Infantil",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1256360600/cover.jpg",
+        "entered_at_ms": 60663,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 19809.4,
+        "width": 280,
+        "height": 437,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 9.2,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 190,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 32,
+        "alt": "Portada de La Niñez Infectada - Esteban Levin",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU634428188/cover.jpg",
+        "entered_at_ms": 61728.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23894.4,
+        "width": 280,
+        "height": 406,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 12.4,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 96,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 33,
+        "alt": "Portada de Counselling Humanista Bermejo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU687622472/cover.jpg",
+        "entered_at_ms": 61728.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23882.2,
+        "width": 280,
+        "height": 438,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.9,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 222,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 34,
+        "alt": "Portada de Libro - Historias De Amor Hellinger Constelaciones Familiare",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU612983471/cover.jpg",
+        "entered_at_ms": 61728.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23884.7,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 12.2,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 107,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 35,
+        "alt": "Portada de Libro El Origen Del Sujeto En Psicoanalisis, De Alfredo Eidelsztein. Editorial Letra Viva (2018)",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU696579048/cover.jpg",
+        "entered_at_ms": 61728.8,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23887.2,
+        "width": 280,
+        "height": 470,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.9,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 131,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 36,
+        "alt": "Portada de Vencer Los Miedos Lucien Auguer Ellis Psicologia Estoica",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU672631134/cover.jpg",
+        "entered_at_ms": 65795.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23892.4,
+        "width": 280,
+        "height": 446,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 13.3,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 372,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 37,
+        "alt": "Portada de Libro La Sabiduría De Los Psicópatas - Psicología Y Crimen",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU707190270/cover.jpg",
+        "entered_at_ms": 65795.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23902.7,
+        "width": 280,
+        "height": 437,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 21.7,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 184,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 38,
+        "alt": "Portada de Pánico! Psicoeducación Para Trastorno De Ansiedad Infantil",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU644976251/cover.jpg",
+        "entered_at_ms": 65795.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23896.2,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 18.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 148,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 39,
+        "alt": "Portada de Hilando Lo Psicomotor En Psicomotricidad Burzac",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU656469908/cover.jpg",
+        "entered_at_ms": 65795.7,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 23898.6,
+        "width": 280,
+        "height": 421,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 18.9,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 420,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 40,
+        "alt": "Portada de Psicomotricidad Infantil: Manual Completo Para Desarrollo",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU735144180/cover.jpg",
+        "entered_at_ms": 69862.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 61746.4,
+        "width": 280,
+        "height": 280,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 152,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 41,
+        "alt": "Portada de Ideas Directrices Para Un Psicoanalisis Contemporaneo - Andr",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU679854098/cover.jpg",
+        "entered_at_ms": 69862.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 61753.3,
+        "width": 280,
+        "height": 473,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 190,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 42,
+        "alt": "Portada de Figurabilidad Psiquica Botella Psicoanalisis Freudiana",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU633003679/cover.jpg",
+        "entered_at_ms": 69862.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 61748.8,
+        "width": 280,
+        "height": 485,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8.2,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 147,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 43,
+        "alt": "Portada de Psicoanálisis Para Psicomotricistas",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU636153502/cover.jpg",
+        "entered_at_ms": 69862.6,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 61751.1,
+        "width": 280,
+        "height": 423,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 9,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 489,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 44,
+        "alt": "Portada de Paradigma Borderline De La Afanisis Al Ataque De Panico",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU760868470/cover.jpg",
+        "entered_at_ms": 73928.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 65821.8,
+        "width": 280,
+        "height": 411,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8.1,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 214,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 45,
+        "alt": "Portada de Mosquera Trastorno Bipolar Manual Clínico Y Familiar",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU1468246340/cover.jpg",
+        "entered_at_ms": 73928.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 65814.8,
+        "width": 280,
+        "height": 358,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 202,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 46,
+        "alt": "Portada de Dutton Sabiduría De Los Psicópatas Psicología Aplicada",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU925948404/cover.jpg",
+        "entered_at_ms": 73928.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 65819.2,
+        "width": 280,
+        "height": 438,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 8.1,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 142,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "image_index": 47,
+        "alt": "Portada de Test Gestaltico Visomotor Bender  Kacero Psicologia Gestalt",
+        "url": "https://amado-cover-index-34224677948-1.undiaes.workers.dev/resize/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU684788954/cover.jpg",
+        "entered_at_ms": 73928.4,
+        "loaded_when_entered": true,
+        "visible_readiness_delay_ms": 0,
+        "decoded_at_ms": 65824.3,
+        "width": 280,
+        "height": 395,
+        "error": false,
+        "decode_error": null,
+        "status": 200,
+        "resource_duration_ms": 11.8,
+        "transfer_bytes": 0,
+        "server_timing": [
+          {
+            "name": "cover_global_manifest",
+            "duration_ms": 0,
+            "description": ""
+          },
+          {
+            "name": "cover_index",
+            "duration_ms": 0,
+            "description": "public-index"
+          },
+          {
+            "name": "cover_transform",
+            "duration_ms": 160,
+            "description": ""
+          }
+        ]
+      }
+    ]
+  },
+  "raw_evidence": {
+    "file": "cover-scroll-2026-09-08.raw.json.gz",
+    "decoded_sha256": "e29015529f2911f106f04648002261df49baaa7683dc6c8d8763b5bbbf5ac57a"
+  },
+  "known_failures": [
+    "First QA preparation returned Cloudflare 1102. Snapshot response now drains before preparation; the next two full-snapshot preparations succeeded. The original CPU-versus-memory cause was not captured and remains unconfirmed.",
+    "First observer deployment lost esbuild __name helper during serialization. Fixed with a self-contained helper and actual bundled regression test.",
+    "CI initially ran that packaging test before Astro dependencies existed. Native and packaging phases now run at their correct dependency stages."
+  ],
+  "cleanup": {
+    "status": "success",
+    "artifact_id": 10055524508,
+    "index": {
+      "deleted": 260,
+      "prefix": "acceptance/cover-index/amado-cover-index-34224677948-1/",
+      "production_writes": 0
+    },
+    "worker": {
+      "result": {
+        "id": "e41c5ea4a0434b4ca17f64a79da312f7"
+      },
+      "success": true,
+      "errors": [],
+      "messages": []
+    }
+  },
+  "runtime_outcomes": "{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 1,\n  \"wallTime\": 1,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 1,\n  \"wallTime\": 3424,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 2172,\n  \"wallTime\": 34501,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 169,\n  \"wallTime\": 591,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 0,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 271,\n  \"wallTime\": 2153,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 228,\n  \"wallTime\": 2158,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 180,\n  \"wallTime\": 2165,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 221,\n  \"wallTime\": 2256,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 305,\n  \"wallTime\": 2376,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 84,\n  \"wallTime\": 2981,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 117,\n  \"wallTime\": 3122,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 205,\n  \"wallTime\": 3128,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 184,\n  \"wallTime\": 3174,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 155,\n  \"wallTime\": 3176,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 271,\n  \"wallTime\": 3071,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 486,\n  \"wallTime\": 3175,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 205,\n  \"wallTime\": 3215,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 82,\n  \"wallTime\": 3202,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 142,\n  \"wallTime\": 3212,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 0,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 1,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 109,\n  \"wallTime\": 3131,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 0,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 0,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 132,\n  \"wallTime\": 852,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 99,\n  \"wallTime\": 1045,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 184,\n  \"wallTime\": 1078,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 105,\n  \"wallTime\": 1160,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 130,\n  \"wallTime\": 1222,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 112,\n  \"wallTime\": 1396,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 146,\n  \"wallTime\": 2287,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 201,\n  \"wallTime\": 2525,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 202,\n  \"wallTime\": 2659,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 212,\n  \"wallTime\": 2708,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 593,\n  \"wallTime\": 2798,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 151,\n  \"wallTime\": 2803,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 94,\n  \"wallTime\": 2803,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 90,\n  \"wallTime\": 2803,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 144,\n  \"wallTime\": 2807,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 798,\n  \"wallTime\": 3824,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 93,\n  \"wallTime\": 3828,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 238,\n  \"wallTime\": 3832,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 357,\n  \"wallTime\": 3828,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 138,\n  \"wallTime\": 3854,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 166,\n  \"wallTime\": 3879,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 248,\n  \"wallTime\": 3884,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 122,\n  \"wallTime\": 3897,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 229,\n  \"wallTime\": 3980,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 114,\n  \"wallTime\": 3924,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 108,\n  \"wallTime\": 3932,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 124,\n  \"wallTime\": 3983,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 240,\n  \"wallTime\": 4112,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 187,\n  \"wallTime\": 1469,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 277,\n  \"wallTime\": 1774,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 240,\n  \"wallTime\": 1820,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 286,\n  \"wallTime\": 1916,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 91,\n  \"wallTime\": 219,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 0,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 0,\n  \"wallTime\": 0,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n{\n  \"outcome\": \"ok\",\n  \"cpuTime\": 4,\n  \"wallTime\": 8557,\n  \"exceptions\": [],\n  \"scriptName\": \"amado-cover-index-34224677948-1\"\n}\n"
+}
