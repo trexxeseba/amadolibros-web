@@ -63,7 +63,9 @@ try {
             ...(pass === 2 ? { 'x-acceptance-conflict-once': 'true' } : {}) } });
         if (!preparation.ok) throw new Error(`Index preparation ${pass}/2 HTTP ${preparation.status}: ${await preparation.text()}`);
         const index = await preparation.json();
-        if (index.conditional_conflicts !== pass - 1 || index.manifest_retries !== pass - 1) {
+        if (index.injected_conditional_checks !== pass - 1 ||
+            index.conditional_conflicts + index.conditional_transport_errors !== pass - 1 ||
+            index.manifest_transport_retries !== index.conditional_transport_errors || index.manifest_retries !== pass - 1) {
             throw new Error('Full snapshot did not exercise the expected native conditional-write retry');
         }
         if (report.index && report.index.hash !== index.hash) throw new Error('Repeated snapshot preparation changed the public index');

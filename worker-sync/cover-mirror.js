@@ -141,29 +141,65 @@ async function writeManifestAttempt(bucket, state, processedEntries, nowIso) {
     const onlyIf = state.etag
       ? { etagMatches: state.etag }
       : { etagDoesNotMatch: '*' };
-    const result = await putJsonToR2(bucket, COVER_MANIFEST_KEY, nextManifest, {
-      onlyIf,
-      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-      customMetadata: { ...state.customMetadata, [COVER_INDEX_METADATA]: publicIndex.hash,
-        cover_index_refreshed_at: refreshIndex ? nowIso : state.customMetadata.cover_index_refreshed_at },
-    });
+    let transportError = null;
+    // Classify only this native conditional PUT. The same message from index
+    // preparation, serialization, a fresh GET or the quality report propagates.
+    const conditionalBucket = { async put(key, body, options) {
+      try { return await bucket.put(key, body, options); }
+      catch (error) {
+        if (error?.message === 'Network connection lost.') transportError = error;
+        throw error;
+      }
+    } };
+    let result;
+    try {
+      result = await putJsonToR2(conditionalBucket, COVER_MANIFEST_KEY, nextManifest, {
+        onlyIf,
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        customMetadata: { ...state.customMetadata, [COVER_INDEX_METADATA]: publicIndex.hash,
+          cover_index_refreshed_at: refreshIndex ? nowIso : state.customMetadata.cover_index_refreshed_at },
+      });
+    } catch (error) {
+      // putJsonToR2 has already cancelled and awaited its producer. Return an
+      // explicit uncertain outcome, never a fake commit or silent CAS null.
+      if (transportError && error === transportError) return { transportError: error.message };
+      throw error;
+    }
     // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
     // un éxito válido para mocks/implementaciones compatibles con put().
     return result !== null ? { manifest: nextManifest, publicIndex } : null;
 }
 
 async function writeManifestAtomically(bucket, state, processedEntries, nowIso) {
+  let transportRetries = 0;
+  const transportErrors = [];
   for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
     const writing = writeManifestAttempt(bucket, state, processedEntries, nowIso);
     // The per-attempt frame owns both state and its shallow replacement. A
-    // failed attempt returns only null, so neither graph survives into the next
-    // read through caller aliases or async temporaries in this retry loop.
+    // failed attempt returns only null or a transport message, so neither graph
+    // survives into the next read through aliases or async temporaries.
     state = null;
     const written = await writing;
-    if (written) return { ...written, retries: attempt };
+    if (written?.transportError) {
+      transportErrors.push({ attempt: attempt + 1, message: written.transportError, outcome: 'unknown' });
+      if (attempt + 1 === MANIFEST_WRITE_ATTEMPTS) {
+        const error = new Error(`Transporte persistente al publicar ${COVER_MANIFEST_KEY}: ${written.transportError}`);
+        error.manifest_transport_retries = transportRetries;
+        error.manifest_transport_errors = transportErrors;
+        throw error;
+      }
+      transportRetries++;
+    } else if (written) return { ...written, retries: attempt, transportRetries, transportErrors };
+    // A transport failure may have committed. Re-read the authoritative body,
+    // metadata and ETag, then merge/rebuild and CAS against that actual version.
     state = await readManifestState(bucket, nowIso);
   }
-  throw new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
+  const error = new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
+  if (transportErrors.length) {
+    error.manifest_transport_retries = transportRetries;
+    error.manifest_transport_errors = transportErrors;
+  }
+  throw error;
 }
 
 function needsAiUpscale(entry) {
@@ -564,6 +600,8 @@ export async function syncCoverMirror(env, catalog, {
   });
   let finalManifest = manifest;
   let manifestRetries = 0;
+  let manifestTransportRetries = 0;
+  let manifestTransportErrors = [];
   let publicIndex = null;
   // Bootstrap every existing cover on the first sync, even if no image needs
   // refreshing. Subsequent no-op batches do not rewrite the index/manifest.
@@ -578,6 +616,8 @@ export async function syncCoverMirror(env, catalog, {
     const written = await writing;
     finalManifest = written.manifest;
     manifestRetries = written.retries;
+    manifestTransportRetries = written.transportRetries;
+    manifestTransportErrors = written.transportErrors;
     publicIndex = written.publicIndex;
   }
   const validCopies = Object.values(finalManifest.entries).filter(entry => entry?.current?.object_key).length;
@@ -639,6 +679,8 @@ export async function syncCoverMirror(env, catalog, {
     ai_upscaled: aiUpscaled,
     quality_pending: qualityPending,
     manifest_retries: manifestRetries,
+    manifest_transport_retries: manifestTransportRetries,
+    manifest_transport_errors: manifestTransportErrors,
     public_index: publicIndex,
     results,
   };

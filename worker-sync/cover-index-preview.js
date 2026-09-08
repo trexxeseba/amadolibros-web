@@ -56,6 +56,8 @@ export default {
             await writable.put(prefix + MANIFEST, object.body, { customMetadata: { production_etag: expected } });
             let conflictPending = request.headers.get('x-acceptance-conflict-once') === 'true';
             let conditionalConflicts = 0;
+            let conditionalTransportErrors = 0;
+            let injectedConditionalChecks = 0;
             const isolated = {
                 get: key => writable.get(prefix + key), head: key => writable.head(prefix + key),
                 async put(key, body, options) {
@@ -68,7 +70,20 @@ export default {
                         // receives the deliberately stale ETag; no fake success.
                         const current = await writable.head(prefix + key);
                         const stale = (current.etag[0] === '0' ? '1' : '0') + current.etag.slice(1);
-                        const rejected = await writable.put(prefix + key, body, { ...options, onlyIf: { etagMatches: stale } });
+                        injectedConditionalChecks++;
+                        let rejected;
+                        try {
+                            rejected = await writable.put(prefix + key, body, { ...options, onlyIf: { etagMatches: stale } });
+                        } catch (error) {
+                            if (error?.message !== 'Network connection lost.') throw error;
+                            const after = await writable.head(prefix + key);
+                            if (after?.etag !== current.etag) throw new Error('Isolated stale-ETag transport failure changed the manifest');
+                            conditionalTransportErrors++;
+                            console.log('cover-qa-phase', 'manifest-cas-transport-error-unchanged');
+                            // Do not turn a transport failure into a fake null.
+                            // The real writer must recover by rereading R2.
+                            throw error;
+                        }
                         if (rejected !== null) throw new Error('Native R2 did not reject the deliberately stale ETag');
                         conditionalConflicts++;
                         console.log('cover-qa-phase', 'manifest-cas-conflict');
@@ -83,7 +98,10 @@ export default {
                 fetchFn: () => { throw new Error('Bootstrap must not fetch images'); },
             });
             return Response.json({ ...result.public_index, source_etag: expected, source_bytes: object.size,
-                manifest_retries: result.manifest_retries, conditional_conflicts: conditionalConflicts, production_writes: 0 });
+                manifest_retries: result.manifest_retries, manifest_transport_retries: result.manifest_transport_retries,
+                manifest_transport_errors: result.manifest_transport_errors,
+                conditional_conflicts: conditionalConflicts, conditional_transport_errors: conditionalTransportErrors,
+                injected_conditional_checks: injectedConditionalChecks, production_writes: 0 });
         }
         if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
         const started = performance.now();
