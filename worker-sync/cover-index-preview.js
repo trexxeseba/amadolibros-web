@@ -18,6 +18,10 @@ export default {
         const writable = env.ISOLATED_INDEX_PREVIEW;
         const url = new URL(request.url);
         if (url.pathname === '/ready' && request.method === 'GET') return Response.json({ head: env.INCIDENT_BUILD_SHA });
+        if (url.pathname === '/index-state' && request.method === 'GET') {
+            const object = await writable.head(prefix + MANIFEST);
+            return Response.json({ bytes: object?.size || 0, root: object?.customMetadata?.cover_index_v1 || null });
+        }
         if (url.pathname === '/cleanup' && request.method === 'DELETE') {
             let cursor;
             let deleted = 0;
@@ -47,7 +51,13 @@ export default {
             await writable.put(prefix + MANIFEST, object.body, { customMetadata: { production_etag: expected } });
             const isolated = {
                 get: key => writable.get(prefix + key), head: key => writable.head(prefix + key),
-                put: (key, body, options) => writable.put(prefix + key, body, options),
+                async put(key, body, options) {
+                    const phase = key === MANIFEST ? 'manifest-cas' : key === 'covers/v1/quality-report.json' ? 'quality-report' : null;
+                    if (phase) console.log('cover-qa-phase', `${phase}-start`);
+                    const result = await writable.put(prefix + key, body, options);
+                    if (phase) console.log('cover-qa-phase', `${phase}-end`);
+                    return result;
+                },
             };
             const result = await syncCoverMirror({ COVER_R2: isolated }, { items: [] }, {
                 fetchFn: () => { throw new Error('Bootstrap must not fetch images'); },

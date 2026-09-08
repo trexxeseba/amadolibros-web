@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'worker-sync/cover-scroll-*'
+      - 'scripts/deploy-cover-preview.sh'
       - 'scripts/prepare-cover-scroll.mjs'
       - '.github/workflows/cover-scroll-preview.yml'
 permissions:
@@ -53,8 +54,8 @@ jobs:
           printf 'INCIDENT_TOKEN=%s\n' "$INCIDENT_TOKEN" >> "$GITHUB_ENV"
           SCROLL_EXPIRES_AT=$(( ($(date +%s) + 1200) * 1000 ))
           export SCROLL_EXPIRES_AT
-          OUTPUT=$(npx wrangler@3.114.17 deploy --config worker-sync/cover-scroll-preview.wrangler.toml \
-            --name "$WORKER_NAME" --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA" \
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/cover-scroll-preview.wrangler.toml \
+            --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA" \
             --var "ACCEPTANCE_NAME:$WORKER_NAME" --var "SCROLL_EXPIRES_AT:$SCROLL_EXPIRES_AT")
           echo "$OUTPUT"
           INCIDENT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)

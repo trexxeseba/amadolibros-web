@@ -9,6 +9,7 @@ on:
       - 'functions/feed.xml.js'
       - 'functions/_vendor/streamparser-json/**'
       - 'worker-sync/cover-resource-preview*'
+      - 'scripts/deploy-cover-preview.sh'
       - 'scripts/cover-resource-check.mjs'
       - '.github/workflows/cover-resource-preview.yml'
 permissions:
@@ -45,8 +46,8 @@ jobs:
               > artifacts/cover-resource/cleanup.json
           }
           trap cleanup EXIT
-          OUTPUT=$(npx wrangler@3.114.17 deploy --config worker-sync/cover-resource-preview.wrangler.toml \
-            --name "$WORKER_NAME" --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA")
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/cover-resource-preview.wrangler.toml \
+            --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA")
           echo "$OUTPUT"
           INCIDENT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
           test -n "$INCIDENT_URL"

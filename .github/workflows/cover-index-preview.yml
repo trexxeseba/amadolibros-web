@@ -9,6 +9,7 @@ on:
       - 'functions/__tests__/cover-public-index.test.js'
       - 'worker-sync/cover-mirror.js'
       - 'worker-sync/cover-index-preview*'
+      - 'scripts/deploy-cover-preview.sh'
       - 'scripts/cover-index-check.mjs'
       - '.github/workflows/cover-index-preview.yml'
 permissions:
@@ -54,17 +55,26 @@ jobs:
             local status=$?
             trap - EXIT
             if ! cleanup; then status=1; fi
+            if [ -n "${TRACE_PID:-}" ]; then kill "$TRACE_PID" 2>/dev/null || true; fi
             exit "$status"
           }
           trap cleanup_exit EXIT
-          OUTPUT=$(npx wrangler@3.114.17 deploy --config worker-sync/cover-index-preview.wrangler.toml \
-            --name "$WORKER_NAME" --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA" --var "ACCEPTANCE_NAME:$WORKER_NAME")
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/cover-index-preview.wrangler.toml \
+            --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA" --var "ACCEPTANCE_NAME:$WORKER_NAME")
           echo "$OUTPUT"
           INCIDENT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
           test -n "$INCIDENT_URL"
           export INCIDENT_URL
           printf '%s' "$INCIDENT_TOKEN" | npx wrangler@3.114.17 secret put INCIDENT_TOKEN \
             --config worker-sync/cover-index-preview.wrangler.toml --name "$WORKER_NAME"
+          (timeout 240s npx wrangler@3.114.17 tail "$WORKER_NAME" --format json \
+            --config worker-sync/cover-index-preview.wrangler.toml \
+            2> artifacts/cover-index/tail-stderr.txt | \
+            jq --unbuffered '{outcome, cpuTime, wallTime, exceptions,
+              phases: [.logs[]? | select(.message[0] == "cover-qa-phase") | .message]}' \
+            > artifacts/cover-index/runtime-outcomes.jsonl) &
+          TRACE_PID=$!
+          sleep 5
           node scripts/cover-index-check.mjs
       - uses: actions/upload-artifact@v4
         if: always()

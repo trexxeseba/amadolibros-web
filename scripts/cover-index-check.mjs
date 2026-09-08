@@ -118,13 +118,16 @@ try {
     if (after >= before * 0.5 || after >= 1500) report.failures.push('Cold median did not improve at least 50% and fall below 1500ms');
 } catch (error) {
     report.failures.push(error.stack || error.message);
+    const state = await request('/index-state').catch(() => null);
+    report.preparation_state = state?.ok ? await state.json() : { unavailable: true, status: state?.status || null };
 } finally {
     report.completed_at = new Date().toISOString();
     report.summary = { pages: report.pages.length, pages_ok: report.pages.filter(row => row.ok).length,
         images: report.images.length, images_ok: report.images.filter(row => row.ok).length, failures: report.failures.length };
     await writeFile(`${output}/report.json`, `${JSON.stringify(report, null, 2)}\n`);
     console.log(JSON.stringify({ snapshot: report.snapshot, index: report.index, summary: report.summary,
-        performance: report.performance, comparison: report.comparison, pages: report.pages, failures: report.failures }));
+        performance: report.performance, comparison: report.comparison, pages: report.pages,
+        preparation_state: report.preparation_state, failures: report.failures }));
     if (process.env.GITHUB_STEP_SUMMARY) {
         const { appendFile } = await import('node:fs/promises');
         await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Cover public index\n\n\`\`\`json\n${JSON.stringify({ head, snapshot: report.snapshot, index: report.index, summary: report.summary, performance: report.performance, comparison: report.comparison, failures: report.failures }, null, 2)}\n\`\`\`\n`);
