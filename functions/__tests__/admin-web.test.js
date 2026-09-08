@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { verifyAdminAccess } from '../_shared/admin-web-auth.js';
+import { verifyAdminAccess, checkAdminAccess } from '../_shared/admin-web-auth.js';
 import { WEB_HOSTS, WEB_EVENTS, webPeriod, readWebOrders, readWebEmails, readWebCatalog, readWebSync,
   validateWebAnalytics, readWebAnalytics } from '../_shared/admin-web-data.js';
 import { renderAdminWeb } from '../_shared/admin-web-view.js';
@@ -71,6 +71,44 @@ test('desactivado o anónimo: rechaza antes de leer D1 o GA4; cabecera email no 
   assert.equal((await onRequest({ request: request(), env: { ...env, ADMIN_WEB_HOST: 'other.test' } })).status, 404);
   assert.match(off.headers.get('Cache-Control'), /no-store/);
   assert.equal(off.headers.get('X-Frame-Options'), 'DENY');
+});
+
+test('sesión del navegador: cookie firmada válida, sin rescatar cabeceras inválidas ni cookies ambiguas', async () => {
+  const token = await signed();
+  const fromCookie = cookie => new Request(`https://${env.ADMIN_WEB_HOST}/admin?view=visitas`, { headers: { Cookie: cookie } });
+  assert.equal(await verifyAdminAccess(fromCookie(`other=value; CF_Authorization=${token}; next=ok`), env, { fetchFn: certs }), true);
+  for (const cookie of [`CF_Authorization=invalid.invalid.invalid`, `CF_Authorization=${await signed({ email: 'other@example.test' })}`,
+    `CF_Authorization=${await signed({ aud: ['other'] })}`, `CF_Authorization=${await signed({ exp: 1 })}`,
+    `CF_Authorization=${token}; CF_Authorization=${token}`, `Other_CF_Authorization=${token}`]) {
+    assert.equal(await verifyAdminAccess(fromCookie(cookie), env, { fetchFn: certs }), false);
+  }
+  const invalidHeader = fromCookie(`CF_Authorization=${token}`);
+  invalidHeader.headers.set('Cf-Access-Jwt-Assertion', 'invalid.invalid.invalid');
+  assert.equal(await verifyAdminAccess(invalidHeader, env, { fetchFn: certs }), false);
+  const validHeader = request(token);
+  validHeader.headers.set('Cookie', 'CF_Authorization=invalid');
+  assert.equal(await verifyAdminAccess(validHeader, env, { fetchFn: certs }), true);
+  const previous = globalThis.fetch;
+  globalThis.fetch = certs;
+  try {
+    const response = await onRequest({ request: fromCookie(`CF_Authorization=${token}`), env });
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /Sin conectar/);
+  } finally { globalThis.fetch = previous; }
+});
+
+test('rechazo ofrece reingreso y referencia cerrada sin revelar la sesión ni consultar datos', async () => {
+  const protectedEnv = { ...env, get ORDERS_DB() { assert.fail('No leer pedidos'); },
+    get ADMIN_WEB_ANALYTICS_KV() { assert.fail('No leer Analytics'); } };
+  const response = await onRequest({ request: request(), env: protectedEnv });
+  assert.equal(response.status, 403);
+  const html = await response.text();
+  assert.match(html, /href="\/cdn-cgi\/access\/logout"/);
+  assert.match(html, /A02/);
+  assert.doesNotMatch(html, /owner@example|test-audience|Cf-Access|CF_Authorization/);
+  const json = await onRequest({ request: request('PRIVATE_TOKEN', '?format=json'), env: protectedEnv });
+  assert.deepEqual(await json.json(), { error: 'access_denied', reference: 'A03' });
+  assert.deepEqual(await checkAdminAccess(request(await signed({ aud: ['other'] })), env, { fetchFn: certs }), { ok: false, reference: 'A04' });
 });
 
 test('HTML/JSON protegidos; métodos de escritura y filtros abusivos bloqueados', async () => {

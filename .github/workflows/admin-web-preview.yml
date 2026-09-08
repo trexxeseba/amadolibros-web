@@ -6,6 +6,7 @@ on:
       - '.github/workflows/admin-web-preview.yml'
       - 'worker-admin/index.js'
       - 'scripts/admin-web-preview*.mjs'
+      - 'scripts/admin-web-runtime-check.mjs'
       - 'scripts/admin-web-cloudflare.mjs'
       - 'scripts/admin-web-refresh.mjs'
       - 'scripts/admin-web-ga4-export.mjs'
@@ -30,6 +31,10 @@ jobs:
           node-version: '22.12.0'
       - name: Test panel, storage and access boundaries
         run: node --experimental-sqlite --test functions/__tests__/admin-web*.test.js
+      - name: Verify browser sessions in the Cloudflare runtime
+        run: |
+          npm install --prefix "$RUNNER_TEMP/admin-auth-runtime" --no-audit --no-fund miniflare@4.20260701.0
+          node scripts/admin-web-runtime-check.mjs "$RUNNER_TEMP/admin-auth-runtime/node_modules/miniflare/dist/src/index.js"
       - name: Authenticate existing GA4 reader
         id: google_auth
         uses: google-github-actions/auth@v3

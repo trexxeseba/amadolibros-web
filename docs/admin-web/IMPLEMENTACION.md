@@ -137,3 +137,28 @@ Fuentes técnicas: [Cloudflare Access para Workers](https://developers.cloudflar
 - Fallo histórico: run 34279948776 publicó correctamente pero su comprobación inmediata obtuvo 404. Una lectura posterior devolvió 302 al dominio de Access; la regresión limita los reintentos a ese 404, nunca tolera 200 ni un redirect ajeno. La siguiente ejecución privada pasó completa.
 - [PR #335](https://github.com/trexxeseba/amadolibros-web/pull/335) en borrador. El calendario horario aún no está activo: requiere incorporar el workflow a main. El merge también dispara el despliegue habitual de la tienda y queda pendiente de aprobación explícita de Seba y los controles del PR. El primer ingreso del titular debe confirmarlo él; no se le solicitan ni se interceptan códigos OTP.
 - La compilación/routing del Worker separado quedó verificada por Wrangler 4.107.0 en el run exitoso. Los límites anteriores de compilación local de Wrangler ya no bloquean esta revisión privada.
+# Incidencia de ingreso — 2026-09-08
+
+Seba mostró el 403 generado por `/admin`. La captura no distingue sesión
+ausente, claims incompatibles o fallo de firma/certificados. El login anónimo
+redirige correctamente y las claves públicas de Access responden HTTP 200.
+La validación original con una identidad sintética válida también pasa en
+workerd; no se atribuye la incidencia a una causa exacta sin esa evidencia.
+
+Se añade la cookie `CF_Authorization` como transporte alternativo únicamente
+cuando falta `Cf-Access-Jwt-Assertion`. Ambas vías verifican el JWT completo.
+Una cabecera inválida nunca se rescata con la cookie; cookies duplicadas se
+rechazan. No se modifica la política, la audiencia ni la lista de titulares.
+Cloudflare documenta ambos transportes en [Validar JWTs](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/).
+
+La respuesta de rechazo ofrece reingreso y una referencia cerrada: A01
+configuración, A02 token ausente/ambiguo, A03 formato/algoritmo, A04
+emisor/audiencia, A05 vigencia, A06 identidad, A07 certificados, A08 firma.
+No se exponen ni registran valores de tokens, claims, cookies o datos del
+negocio. HTML y JSON siguen rechazándose antes de consultar las fuentes.
+
+Validación: 24 pruebas focalizadas y 9 escenarios en workerd mediante
+`scripts/admin-web-runtime-check.mjs`, con claves e identidades sintéticas.
+El ensayo se ejecuta localmente y antes de cada publicación privada; no
+publica un acceso de prueba ni amplía los permisos. Pendiente: publicación
+del ajuste y reintento de Seba con su sesión real.
