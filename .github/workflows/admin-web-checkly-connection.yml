@@ -1,0 +1,24 @@
+name: Admin web - Checkly read-only connection
+on:
+  push:
+    branches: [codex/admin-web-observability]
+    paths:
+      - '.github/workflows/admin-web-checkly-connection.yml'
+      - 'scripts/admin-web-checkly-connection.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  connection:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Verify access without creating or modifying checks
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+        run: node scripts/admin-web-checkly-connection.mjs
