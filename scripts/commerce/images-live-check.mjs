@@ -82,17 +82,20 @@ try {
       assert.equal(new URL(page.url()).origin, base.origin, 'BROWSER_REDIRECT_OUTSIDE_SITE');
       const row = { path, navigationMs: Date.now() - started, images: [] };
       run.pages.push(row);
-      const selector = path === '/libros/psicologia' ? '.book-card img' : 'main img';
+      const selector = path === '/libros/psicologia' ? '.book-card img' :
+        path === '/' ? '.v2-cover img, .v2-book-cover img' : 'main img';
       await page.waitForSelector(selector, { timeout: 10000 });
       const images = page.locator(selector);
       const count = await images.count();
       assert.ok(count > 0, 'CONTENT_IMAGES_ABSENT');
       if (path === '/libros/psicologia') assert.ok(count >= 24, 'CATALOG_SAMPLE_TOO_SMALL');
       const limit = Math.min(count, path === '/libros/psicologia' ? 48 : 8);
-      for (let i = 0; i < limit; i++) {
+      for (let i = 0; i < count && row.images.length < limit; i++) {
         const image = images.nth(i);
         if (!await image.isVisible()) continue;
-        await image.scrollIntoViewIfNeeded();
+        // Covers on the home page intentionally float. Native scroll observes
+        // the real animation without waiting for a motionless bounding box.
+        await image.evaluate(img => img.scrollIntoView({ block: 'center', behavior: 'instant' }));
         const result = await image.evaluate(async img => {
           const start = performance.now();
           const original = img.currentSrc || img.src;
