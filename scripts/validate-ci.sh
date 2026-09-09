@@ -87,6 +87,11 @@ node --experimental-sqlite --test functions/api/__tests__/*.test.js
 step "Instalar dependencias de astro-front"
 (cd astro-front && npm ci --no-audit --no-fund)
 
+# El test de empaquetado usa esbuild del lockfile de Astro. La misma prueba de
+# comportamiento ya corrió sin dependencias durante la suite nativa anterior.
+step "Observador QA — empaquetado real con esbuild keepNames"
+COVER_SCROLL_TEST_BUNDLE=true node --test worker-sync/__tests__/cover-scroll-observer.test.js
+
 # ── 4. Build con checkout OFF ─────────────────────────────────────────────
 step "Build — checkout OFF"
 (

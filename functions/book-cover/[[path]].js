@@ -63,6 +63,14 @@ async function r2CoverResponse(ctx, cover) {
   });
 }
 
+function withIndexStatus(ctx, response) {
+  const headers = new Headers(response.headers);
+  // Recompute on cache hits too: a cached image must not conceal a fallback
+  // performed by this request while resolving its current master.
+  headers.set('x-cover-index', ctx.data?.coverIndex?.mode || 'not-used');
+  return new Response(ctx.request.method === 'HEAD' ? null : response.body, { status: response.status, headers });
+}
+
 export async function onRequest(ctx) {
   if (!['GET', 'HEAD'].includes(ctx.request.method)) {
     return new Response('Method Not Allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
@@ -87,8 +95,7 @@ export async function onRequest(ctx) {
   cacheUrl.searchParams.set('master', storedCover?.sha256 || source || 'missing');
   const cacheKey = new Request(cacheUrl);
   const cached = await cache.match(cacheKey);
-  if (cached) return ctx.request.method === 'HEAD'
-    ? new Response(null, {status: cached.status, headers: cached.headers}) : cached;
+  if (cached) return withIndexStatus(ctx, cached);
   let response = await r2CoverResponse(ctx, storedCover);
 
   if (!response && source) {
@@ -112,7 +119,5 @@ export async function onRequest(ctx) {
     });
   }
   if (typeof ctx.waitUntil === 'function') ctx.waitUntil(cache.put(cacheKey, response.clone()));
-  return ctx.request.method === 'HEAD'
-    ? new Response(null, { status: 200, headers: response.headers })
-    : response;
+  return withIndexStatus(ctx, response);
 }

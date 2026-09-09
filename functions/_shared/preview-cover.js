@@ -1,5 +1,6 @@
 import { perfNow, recordPerf } from './perf.js';
 import { streamCoverManifest } from './cover-manifest-stream.js';
+import { readCoverIndex } from './cover-public-index.js';
 
 const MANIFEST_KEY = 'covers/v1/manifest.json';
 const MANIFEST_EDGE_TTL_SECONDS = 300;
@@ -34,6 +35,24 @@ async function readPreviewManifest(ctx, productIds = null) {
     if (!bucket || typeof bucket.get !== 'function') return null;
     const totalStartedAt = perfNow();
     try {
+        if (productIds !== null) {
+            const startedAt = perfNow();
+            try {
+                const indexed = await readCoverIndex(bucket, productIds, {
+                    cache: globalThis.caches?.default, origin: new URL(ctx.request.url).origin,
+                    appEnv: ctx.env.APP_ENV, waitUntil: typeof ctx.waitUntil === 'function' ? p => ctx.waitUntil(p) : null,
+                });
+                recordPerf(ctx, 'cover_public_index', startedAt, { bytes: indexed.read_stats.bytes });
+                (ctx.data ||= {}).coverIndex = indexed.read_stats;
+                return indexed;
+            } catch (error) {
+                // Availability is preserved during rollout and if a derived
+                // object is damaged. The fallback is explicit, never reported
+                // as a successful fast-index read by acceptance/monitoring.
+                (ctx.data ||= {}).coverIndex = { mode: 'legacy-fallback', reason: String(error?.message || error) };
+                recordPerf(ctx, 'cover_index_fallback', startedAt, { reason: ctx.data.coverIndex.reason });
+            }
+        }
         const cache = globalThis.caches?.default;
         const cacheUrl = new URL(MANIFEST_CACHE_PATH, ctx.request.url);
         cacheUrl.searchParams.set('env', ctx.env.APP_ENV);

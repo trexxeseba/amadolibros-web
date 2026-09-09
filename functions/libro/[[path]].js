@@ -560,14 +560,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@context': 'https://schema.org',
         '@type':    ['Product', 'Book'],
         'name':     item.title,
-        'image':    images.length ? images : img,
+        ...(images.length ? { image: images } : {}),
         'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
         'sku':      item.id,
     };
-    if (googleImages !== null) {
-        if (googleImages.length) schemaProduct.image = googleImages;
-        else delete schemaProduct.image;
-    }
+    // La calidad determina la preferencia, no la existencia de la foto.
+    // [] también puede significar que falló la lectura del índice de R2.
+    // Conservamos la primera portada real de la galería en ambos casos;
+    // si no existe ninguna, no inventamos una ni usamos el logo.
+    if (googleImages?.length) schemaProduct.image = googleImages;
+    else if (googleImages !== null && images.length) schemaProduct.image = images.slice(0, 1);
     if (sellableInCheckout) {
         schemaProduct.offers = {
             '@type':        'Offer',
