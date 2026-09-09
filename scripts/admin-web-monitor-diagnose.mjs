@@ -4,7 +4,13 @@ import { checklyApi, dedicatedMonitorDb } from './admin-web-monitor-connect.mjs'
 const cf = adminCloudflare(); const api = checklyApi();
 const stamp = x => Number.isFinite(Date.parse(x)) ? new Date(x).toISOString() : null;
 try {
+  const entitlements = await api('/v1/accounts/me/entitlements');
+  console.log(JSON.stringify({status:'monitor_plan_limits',plan:entitlements.plan,
+    limits:(entitlements.entitlements || []).filter(e=>/check|browser|multi/i.test(e.key) && /^[a-z0-9_.-]{1,80}$/i.test(e.key))
+      .map(e=>({key:e.key,enabled:e.enabled,quantity:e.quantity}))}));
   const checks = (await api('/v1/checks')).filter(c => c.tags?.includes('amado-admin-web-v1'));
+  console.log(JSON.stringify({status:'owned_monitor_inventory',checks:checks.map(c=>({type:c.checkType,active:c.activated,
+    googleImage:c.name==='Amado - imagen declarada para Google',fixture:c.request?.url?.endsWith('/_monitor-test')===true}))}));
   const settings = await cf.request('/workers/scripts/amadolibros-web-monitor/settings');
   const get = name => settings.bindings?.find(b => b.name === name);
   console.log(JSON.stringify({ status: 'receiver_metadata', enabled: get('MONITOR_ENABLED')?.text === 'true',
