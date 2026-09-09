@@ -25,11 +25,17 @@ try {
     } catch(error) { console.log(JSON.stringify({status:'monitor_database_probe',probe,error:/^[A-Z0-9_]+$/.test(error.message)?error.message:'PROBE_FAILED'})); }
   }
   for (const c of checks) {
-    const result = await api(`/v2/check-results/${c.id}?limit=3&resultType=FINAL&fields=checkId,hasFailures,hasErrors,isCancelled,startedAt,apiCheckResult`);
+    const result = await api(`/v2/check-results/${c.id}?limit=3&resultType=FINAL&fields=checkId,hasFailures,hasErrors,isCancelled,startedAt,apiCheckResult,browserCheckResult`);
+    const browserCodes = r => {
+      const text = JSON.stringify([r.browserCheckResult?.errors,r.browserCheckResult?.jobLog]);
+      return ['PAGINA_SIN_FOTOS_DE_CONTENIDO','IMAGEN_VISIBLE_NO_CARGA','FOTO_FALLIDA_O_LENTA_AUN_CON_LOGO_DE_REEMPLAZO',
+        'FONDO_O_BANNER_VISIBLE_NO_CARGA','PAGINA_NO_DISPONIBLE','REDIRECCION_INESPERADA','CONTENIDO_PRINCIPAL_AUSENTE',
+        'CATALOGO_SIN_FICHAS','ERROR_JAVASCRIPT_EN_RECORRIDO','__name is not defined','Timeout'].filter(code => text.includes(code));
+    };
     console.log(JSON.stringify({ status:'monitor_check_diagnostic',fixture:c.request?.url?.endsWith('/_monitor-test') === true,
       activated:c.activated === true,frequency:c.frequency,subscriptions:c.alertChannelSubscriptions?.length,
       runs:(result.entries || []).map(r=>({matchedCheck:r.checkId===c.id,startedAt:stamp(r.startedAt),failed:r.hasFailures,monitorError:r.hasErrors,
         cancelled:r.isCancelled,httpStatus:Number.isInteger(r.apiCheckResult?.response?.status)?r.apiCheckResult.response.status:null,
-        requestError:!!r.apiCheckResult?.requestError})) }));
+        requestError:!!r.apiCheckResult?.requestError,browserCodes:browserCodes(r)})) }));
   }
 } catch(error) { console.error(/^[A-Z0-9_]+$/.test(error.message)?error.message:'MONITOR_DIAGNOSE_FAILED');process.exitCode=1; }
