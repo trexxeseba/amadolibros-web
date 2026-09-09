@@ -1,5 +1,10 @@
 # PLAN MAESTRO — B11: enriquecimiento editorial real del catálogo
 
+## Corrección Product.image — autorizada 2026-09-09
+
+Seba pide una solución final tras confirmar una ficha con foto real 426×500 y Product.image ausente. Alcance: conservar una portada existente cuando el filtro de calidad quede vacío, cubrir el caso de índice inaccesible y verificar Product.image en la auditoría. Rama acotada desde main; no merge ni despliegue productivo sin aprobación de la revisión validada. El monitor privado se amplía en ADMIN-WEB-01. No se cambian el feed, el umbral de calidad del mirror ni los trabajos del índice público de #333.
+
+
 ## 🎯 Gran Apuesta en curso — Google Merchant Center
 
 Este documento es la única fuente de prioridades del proyecto. Seba

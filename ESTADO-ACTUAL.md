@@ -1,5 +1,13 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Corrección de imagen declarada para Google — 2026-09-09
+
+- Producción comprobada en [run 34342149786](https://github.com/trexxeseba/amadolibros-web/actions/runs/34342149786): MLU651526046 responde 200 con Product y Offer, pero sin image; portada R2 426×500 y HTTP 200. No hay evidencia de fallo de lectura del índice en esa solicitud.
+- Preparación en codex/product-image-fallback: si la selección de alta calidad está vacía se conserva la primera foto real; si no existe ninguna, se omite sin inventar logo y el auditor lo marca. Se mantiene la preferencia por fotos calificadas y la galería.
+- 27 pruebas focales correctas: handler en modo producción con 426×500, índice ausente/corrupto/inaccesible, secundaria de calidad y producto sin foto; detector de JSON-LD real incluyendo @graph e ImageObject.
+- CI y Preview pendientes al registrar este avance. No fusionado ni desplegado a la tienda.
+
+
 ## Incidente activo de portadas y catálogo — 2026-09-07
 
 - Responsable: Codex. Esfuerzo: M. Prioridad operativa dentro de Merchant: recuperar las imágenes visibles y el catálogo antes de activar la aceleración #329.

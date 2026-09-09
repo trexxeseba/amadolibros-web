@@ -74,11 +74,11 @@ test('distingue una ficha indexable de un Preview protegido', () => {
   const page = robots => `<!doctype html><html><head>
     <meta name="robots" content="${robots}">
     <link rel="canonical" href="https://www.amadolibros.com/libro/MLU123456/libro-real">
-    <title>Libro real</title><script type="application/ld+json">{"@type":"Book"}</script>
+    <title>Libro real</title><script type="application/ld+json">{"@type":"Product","image":"https://www.amadolibros.com/book-cover/MLU123456/cover.jpg"}</script>
   </head><body><h1>Libro real</h1></body></html>`;
   const url = 'https://preview.example/libro/MLU123456/libro-real';
   assert.deepEqual(inspectProductHtml(page('index, follow'), url, { expectIndexable: true }).issues, []);
   assert.deepEqual(inspectProductHtml(page('noindex, follow'), url, { expectIndexable: false }).issues, []);
   assert.ok(inspectProductHtml(page('index, follow'), url, { expectIndexable: false }).issues.includes('PREVIEW_INDEXABLE'));
-  assert.equal(inspectProductHtml(page('index, follow').replace('"@type":"Book"', '"@type":["Product","Book"]'), url).product_schema, true);
+  assert.equal(inspectProductHtml(page('index, follow').replace('"@type":"Product"', '"@type":["Product","Book"]'), url).product_schema, true);
 });
