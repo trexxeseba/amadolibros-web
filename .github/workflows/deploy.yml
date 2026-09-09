@@ -238,6 +238,26 @@ jobs:
           printf '%s' "$GA4_API_SECRET" |
             npx wrangler@3.114.17 pages secret put GA4_API_SECRET --project-name amadolibros-web
 
+      - name: Sync panel password to Cloudflare Pages
+        # PANEL-BACKEND-1: la contraseña de /panel se carga como secret de
+        # GitHub y se sincroniza desde acá, para no depender de que alguien la
+        # cargue a mano en el panel de Cloudflare (donde una variable común se
+        # ignora: en este proyecto sólo los Secrets se administran ahí).
+        # A diferencia de los dos secrets de arriba, si falta NO corta el
+        # deploy: el panel ya falla cerrado solo (responde 503 sin contraseña),
+        # así que no vale la pena bloquear una publicación del sitio por esto.
+        env:
+          PANEL_PASSWORD: ${{ secrets.PANEL_PASSWORD }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$PANEL_PASSWORD" ]; then
+            echo "::warning::Sin PANEL_PASSWORD en GitHub: /panel seguirá respondiendo 503."
+            exit 0
+          fi
+          printf '%s' "$PANEL_PASSWORD" |
+            npx wrangler@3.114.17 pages secret put PANEL_PASSWORD --project-name amadolibros-web
+
       - name: Deploy via Wrangler
         run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:
