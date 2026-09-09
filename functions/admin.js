@@ -1,5 +1,6 @@
 import { checkAdminAccess } from './_shared/admin-web-auth.js';
 import { webPeriod, readWebOrders, readWebEmails, readWebCatalog, readWebSync, readWebHealth, readWebAnalytics } from './_shared/admin-web-data.js';
+import { readMonitorCoverage } from './_shared/admin-web-coverage.js';
 import { readWebIncidents } from './_shared/admin-web-incidents.js';
 import { renderAdminWeb } from './_shared/admin-web-view.js';
 
@@ -46,6 +47,7 @@ export async function onRequest(context) {
   if (['resumen','estado'].includes(view)) collect('sync', readWebSync(fetch, now));
   if (['resumen','estado'].includes(view)) collect('health', readWebHealth(fetch, now));
   if (['resumen','estado'].includes(view)) collect('incidents', readWebIncidents(env, now));
+  if (['resumen','estado'].includes(view)) collect('coverage', readMonitorCoverage(env, now));
   await Promise.all(readers);
   if (view === 'productos') model.catalog = await readWebCatalog(model.query, page, fetch, model.analytics?.detail?.products || []);
   return url.searchParams.get('format') === 'json'

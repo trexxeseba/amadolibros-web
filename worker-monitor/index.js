@@ -32,7 +32,8 @@ async function boundedBody(request) {
 export function normalizeCheckly(raw, registry, environment, now = new Date()) {
   const keys = ['version', 'checkId', 'resultId', 'alertType', 'occurredAt'];
   if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.keys(raw).length !== keys.length ||
-      !keys.every(k => Object.hasOwn(raw, k)) || raw.version !== 1 || !UUID.test(raw.checkId) || !UUID.test(raw.resultId) ||
+      !keys.every(k => Object.hasOwn(raw, k)) || raw.version !== 1 ||
+      !['checkId','resultId','alertType'].every(k => typeof raw[k] === 'string') || !UUID.test(raw.checkId) || !UUID.test(raw.resultId) ||
       !Object.hasOwn(states, raw.alertType) || typeof raw.occurredAt !== 'string' ||
       !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(raw.occurredAt)) throw new Error('EVENT_INVALID');
   const stamp = Date.parse(raw.occurredAt);
@@ -48,6 +49,10 @@ export function normalizeCheckly(raw, registry, environment, now = new Date()) {
 
 export async function receiveCheckly(request, env, now = new Date()) {
   const url = new URL(request.url);
+  if (env.MONITOR_ENABLED === 'true' && env.MONITOR_ENV === 'preview' && url.protocol === 'https:' &&
+      url.hostname === env.MONITOR_HOST && url.pathname === '/_monitor-test' && !url.search && request.method === 'GET' &&
+      ['failure','recovery'].includes(env.MONITOR_ACCEPTANCE_MODE))
+    return reply(env.MONITOR_ACCEPTANCE_MODE === 'failure' ? 503 : 200, 'ISOLATED_ACCEPTANCE_FIXTURE');
   if (env.MONITOR_ENABLED !== 'true' || !['preview', 'production'].includes(env.MONITOR_ENV) ||
       url.protocol !== 'https:' || !env.MONITOR_HOST || url.hostname !== env.MONITOR_HOST ||
       url.pathname !== '/webhooks/checkly' || url.search) return reply(404, 'NOT_FOUND');

@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { adminCloudflare, adminAnalyticsNamespace } from './admin-web-cloudflare.mjs';
 
+import { normalizeMonitorRegistry } from '../functions/_shared/admin-web-coverage.js';
+
 export const ADMIN_WORKER = 'amadolibros-admin-preview';
 export const ADMIN_ACCESS_NAME = 'Amado web admin - private preview';
 const ID = /^[a-zA-Z0-9-]{1,80}$/;
@@ -49,6 +51,25 @@ export async function prepareAdminPreview({ cf, ownerEmail }) {
     kv_namespaces: [{ binding: 'ADMIN_WEB_ANALYTICS_KV', id: namespaceId }],
     d1_databases: [{ binding: 'ORDERS_DB', database_name: 'amadolibros-orders-production', database_id: '6dc8dc3a-2d4f-4045-b428-14323c7b0bcd' }],
   };
+  // Sólo se enlaza una conexión que ya demostró entrega real y usa la D1 exclusiva.
+  const databases = await cf.list('/d1/database');
+  const monitor = databases.filter(d => d.name === 'amadolibros-web-monitor');
+  if (monitor.length > 1) throw new Error('ADMIN_MONITOR_DATABASE_AMBIGUOUS');
+  if (monitor.length === 1) {
+    const id = monitor[0].uuid || monitor[0].id;
+    if (!/^[a-f0-9-]{36}$/.test(id || '') || id === config.d1_databases[0].database_id) throw new Error('ADMIN_MONITOR_DATABASE_INVALID');
+    const result = await cf.request(`/d1/database/${id}/query`, { method: 'POST', body: {
+      sql: "SELECT value FROM monitor_config WHERE key = 'connection'", params: [] } });
+    const raw = result?.[0]?.results?.[0]?.value;
+    if (raw) {
+      const connection = JSON.parse(raw);
+      if (connection.version !== 1 || connection.environment !== 'production' || !Number.isFinite(Date.parse(connection.deliveryVerifiedAt))) throw new Error('ADMIN_MONITOR_CONNECTION_INVALID');
+      normalizeMonitorRegistry(connection.checks);
+      config.d1_databases.push({ binding: 'ADMIN_WEB_MONITOR_DB', database_name: 'amadolibros-web-monitor', database_id: id });
+      config.vars.ADMIN_WEB_MONITOR_ENV = 'production';
+      config.vars.ADMIN_WEB_MONITOR_CHECKS_JSON = JSON.stringify(connection.checks);
+    }
+  }
   return { config, url: `https://${hostname}/admin`, login: identity.type };
 }
 

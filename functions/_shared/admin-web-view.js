@@ -110,7 +110,7 @@ function syncPanel(sync) {
     ? `${pill(sync.status === 'stale' ? 'Revisar actualización' : 'Actualización reciente', sync.status === 'stale' ? 'warn' : '')}<p class="timestamp">${e(date(sync.updatedAt))}</p><p>Hace ${e(n(Math.round(sync.ageHours * 10) / 10))} horas.</p>` : notice(sync)}${foot(sync)}</section>`;
 }
 
-function healthPanel(health) {
+function healthPanel(health, coverage) {
   const messages = {
     catalog_unavailable: ['No se pudo acceder al catálogo', 'La comprobación de acceso al archivo falló. Revisar disponibilidad y respuesta del origen.'],
     meta_unavailable: ['No se pudo leer el estado del catálogo', 'Los metadatos no respondieron correctamente.'],
@@ -126,7 +126,17 @@ function healthPanel(health) {
   const available = ['ok', 'degraded'].includes(health?.status);
   return `<section class="panel attention"><div class="section-heading"><h2>Problemas de la web</h2>${pill(!available ? 'Sin comprobación válida' : health.status === 'degraded' ? 'Requiere revisión' : 'Sin alertas en esta comprobación', health?.status === 'ok' ? '' : 'warn')}</div>
     ${available ? `<p class="note">Comprobado: ${e(date(health.checkedAt))} · estado actual, independiente del filtro de días.</p>${health.warnings.length ? `<div class="actions">${health.warnings.map(code => { const [title, text] = messages[code] || messages.unknown_warning; return `<article class="action"><div><strong>${e(title)}</strong><p>${e(text)}</p></div></article>`; }).join('')}</div>` : '<p>Las señales consultadas de catálogo y sincronización respondieron sin alertas.</p>'}${health.worker ? `<p class="note">Último inicio: ${e(date(health.worker.lastStarted))} · Último éxito: ${e(date(health.worker.lastOk))}${health.worker.inProgress ? ' · Hay una ejecución sin éxito posterior registrado.' : ''}</p>` : ''}` : notice(health)}
-    <div class="callout"><strong>Fotos y banners: detección pendiente de conexión</strong><p>Hoy una imagen puede fallar y ser reemplazada por el logo sin generar un aviso. El monitor externo y la detección desde el navegador todavía no están conectados.</p></div>${foot(health)}</section>`;
+    <div class="callout"><strong>${usable(coverage) ? 'Fotos y navegación: controles externos conectados' : 'Fotos y banners: detección pendiente de conexión'}</strong><p>${usable(coverage) ? 'Consultá debajo la última ejecución y los avisos del recorrido con navegador. El resultado corresponde a las páginas e imágenes comprobadas.' : 'Una imagen puede fallar y ser reemplazada por el logo sin generar un aviso. Todavía falta verificar la conexión del monitor externo.'}</p></div>${foot(health)}</section>`;
+}
+
+export function coveragePanel(coverage) {
+  if (!usable(coverage)) return `<section class="panel"><h2>Controles automáticos</h2>${notice(coverage)}</section>`;
+  const names = { sync: 'Catálogo y sincronización', catalogo: 'Página del catálogo', portadas: 'Imágenes y navegación' };
+  const states = { passed: 'Comprobación correcta', confirmed: 'Falla detectada', degraded: 'Respuesta lenta', stale: 'Control atrasado',
+    paused: 'Control desactivado', unknown: 'Sin resultado verificable', monitor_error: 'Falló el monitor' };
+  return `<section class="panel"><h2>Controles automáticos</h2>${table(['Control', 'Frecuencia', 'Última ejecución', 'Resultado'],
+    coverage.rows.map(r => [e(names[r.component]), r.frequency === 120 ? 'Cada 2 horas' : 'Cada 10 minutos', e(date(r.checkedAt)),
+      pill(states[r.state], r.state === 'passed' ? '' : 'warn')]))}${foot(coverage)}</section>`;
 }
 
 export function incidentPanel(incidents) {
@@ -153,9 +163,9 @@ export function renderAdminWeb(model) {
   else if (view === 'compra') content = purchasePanel(a, emails);
   else if (view === 'pedidos') content = `<div class="metrics">${card('Pedidos creados', orders?.summary?.total, 'Dentro del período seleccionado')}${card('Pago aprobado', orders?.summary?.approved, 'Estado actual')}${card('Pendientes de pago', orders?.summary?.pending, 'Abiertos y sin vencer')}${card('Pago rechazado', orders?.summary?.rejected, 'No equivale a un error técnico')}</div>` + ordersPanel(orders);
   else if (view === 'productos') content = interestPanel(a, catalog) + productsPanel(catalog, query, period.days);
-  else if (view === 'estado') content = healthPanel(health) + incidentPanel(model.incidents) + `<div class="columns">${sourcesPanel(a)}${syncPanel(sync)}</div>` + emailPanel(emails);
+  else if (view === 'estado') content = healthPanel(health, model.coverage) + coveragePanel(model.coverage) + incidentPanel(model.incidents) + `<div class="columns">${sourcesPanel(a)}${syncPanel(sync)}</div>` + emailPanel(emails);
   else {
-    content = healthPanel(health) + `<div class="metrics">${comparisonCard('Visitas · sesiones', a?.summary?.sessions, a?.detail?.previous.summary.sessions)}${card('Pedidos creados', orders?.summary?.total, 'Pedidos de la web · período seleccionado')}${card('Con pago aprobado', orders?.summary?.approved, 'Estado actual de esos pedidos')}${card('Incidencias de checkout', a?.events?.checkout_error, 'Eventos GA4; falta distinguir la causa')}</div>
+    content = healthPanel(health, model.coverage) + coveragePanel(model.coverage) + incidentPanel(model.incidents) + `<div class="metrics">${comparisonCard('Visitas · sesiones', a?.summary?.sessions, a?.detail?.previous.summary.sessions)}${card('Pedidos creados', orders?.summary?.total, 'Pedidos de la web · período seleccionado')}${card('Con pago aprobado', orders?.summary?.approved, 'Estado actual de esos pedidos')}${card('Incidencias de checkout', a?.events?.checkout_error, 'Eventos GA4; falta distinguir la causa')}</div>
       ${trendPanel(a)}${attentionPanel(model)}<div class="columns">${syncPanel(sync)}<section class="panel"><h2>Pedidos pendientes</h2><p class="large-number">${e(n(orders?.summary?.pending))}</p><p>De los creados en el período, siguen abiertos, sin pago aprobado y sin vencer.</p><a href="${adminLink('pedidos', period.days)}">Consultar pedidos →</a>${foot(orders)}</section></div>${ordersPanel(orders)}`;
   }
   return `<!doctype html><html lang="es-UY"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Amado · Control de la web</title><style>

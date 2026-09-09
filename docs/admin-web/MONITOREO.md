@@ -104,3 +104,22 @@ Prueba preparada con Chromium, workerd y D1 efímero: foto 404 que cae al logo, 
 5. Validar la misma prueba controlada desde Checkly y recién después preparar activación de controles de la tienda. Sensor del navegador de compradores/Sentry queda separado de esta primera vigilancia sintética.
 
 Revisión final CTO: sin bloqueantes para consulta privada; se incorporó normalización ISO de las fechas para no conservar comentarios arbitrarios en el JSON. Prueba específica correcta. Evidencia de publicación: [run privado 34286404858](https://github.com/trexxeseba/amadolibros-web/actions/runs/34286404858); CI compartido [34286409625](https://github.com/trexxeseba/amadolibros-web/actions/runs/34286409625), 1.689 tests y ambos builds correctos.
+
+
+## Conexión concreta del 9 de septiembre de 2026
+
+Acceso Checkly verificado con la clave guardada por Seba en GitHub Actions; cuenta coincidente con su captura, plan `trial`, cero comprobaciones previas. Diagnóstico de acceso: run 34289707114, intento posterior a «LISTO». Límites y cuenta: run 34298095541.
+
+Implementación preparada para desplegar el circuito solicitado mediante `admin-web-monitor-connect.yml`:
+
+- Worker `amadolibros-web-monitor`, D1 nueva del mismo nombre, sin binding de pedidos. ID comprobado contra la base de negocio antes de cualquier SQL. Los únicos datos persistidos son estados normalizados y configuración de monitores.
+- Canal WEBHOOK exclusivo con `webhookSecret`, sin suscripciones automáticas ni destinatarios personales. Clave HMAC generada en el runner, guardada sólo en el receptor y Checkly; la clave de lectura de Checkly se guarda como secreto del panel privado. Ninguna se incluye en sus respuestas ni archivos del repo.
+- Checks creados inactivos con `autoAssignAlerts=false`. Prueba aislada marcada `preview`: ejecución 200, 503 y 200 mediante `/v2/check-sessions/trigger` dirigido a un UUID. Cada aviso de falla/recuperación se correlaciona con el ID del resultado real en D1. El fixture se desactiva y su ruta desaparece antes de usar el receptor para producción.
+- Controles de lectura: `/api/status` cada 10 minutos con catálogo no vacío y estado saludable; `/catalogo` cada 10 minutos; recorrido navegador por inicio, catálogo y una ficha cada 120 minutos. El navegador bloquea métodos distintos de GET/HEAD y peticiones de Analytics, detecta imágenes originales fallidas aunque aparezca un logo, imágenes visibles que no cargan, algunos fondos CSS visibles y errores JavaScript.
+- Consumo programado máximo en 31 días: 8.928 ejecuciones API y 372 recorridos de navegador antes de pruebas manuales. Sin reintentos automáticos. El recorrido tiene timeout de 55 segundos; es una muestra, no un inventario de todas las fotos ni una prueba de pago. No se cambia de plan ni se contratan excedentes.
+- El panel consulta la última ejecución real de cada UUID al abrir/recargar. Distingue comprobación correcta, falla, lentitud, atraso, pausa y ausencia de resultados. El historial de avisos aparece también en Resumen. Un webhook silencioso no se usa como señal de salud.
+- Si la conexión falla, el script intenta pausar todos los controles que creó o modificó; una pausa fallida queda señalada. No toca controles ajenos. El receptor rechaza por defecto registros fuera de su entorno y checks no autorizados.
+
+Validación local: 38 pruebas focales aprobadas. Pruebas de workerd/Chromium del pipeline privado siguen vigentes. La evidencia de conexión real se añadirá sólo después de la ejecución remota; preparar este código no confirma activación.
+
+Contratos: [API Checkly](https://www.checklyhq.com/docs/api-reference/overview/), [webhooks](https://www.checklyhq.com/docs/integrations/alerts/webhooks/), [construct del webhook](https://www.checklyhq.com/docs/constructs/webhook-alert-channel/), [planes](https://www.checklyhq.com/pricing/), [binding de rate limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).

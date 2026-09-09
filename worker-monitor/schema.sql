@@ -11,3 +11,4 @@ CREATE TABLE IF NOT EXISTS monitor_events (
   payload_hash TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS monitor_events_check_time ON monitor_events(environment, check_id, occurred_at);
+CREATE TABLE IF NOT EXISTS monitor_config (key TEXT PRIMARY KEY, value TEXT NOT NULL);
