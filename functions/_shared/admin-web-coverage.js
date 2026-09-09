@@ -4,11 +4,13 @@ const source = 'Checkly · última ejecución de cada control';
 const absent = reason => ({ status: 'unavailable', source, reason });
 export function normalizeMonitorRegistry(value) {
   const rows = Object.entries(typeof value === 'string' ? JSON.parse(value) : value || {});
-  if (rows.length !== 3 || rows.some(([id, c]) => !UUID.test(id) || c?.environment !== 'production' ||
-      !['sync','catalogo','portadas'].includes(c.component) || ![10,120].includes(c.frequency) ||
-      !['/api/status','/catalogo','/'].includes(c.path))) throw new Error('MONITOR_REGISTRY_INVALID');
-  const expected = { sync: ['/api/status',10], catalogo: ['/catalogo',10], portadas: ['/',120] };
-  if (new Set(rows.map(([,c]) => c.component)).size !== 3 || rows.some(([,c]) => c.path !== expected[c.component][0] || c.frequency !== expected[c.component][1]))
+  const expected = { sync: ['/api/status',10], catalogo: ['/catalogo',10], portadas: ['/',120],
+    google_imagen: ['/libro/MLU651526046/big-english-1-british-pupil-s-book-pearson',120] };
+  if (![3,4].includes(rows.length) || rows.some(([id, c]) => !UUID.test(id) || c?.environment !== 'production' ||
+      !Object.hasOwn(expected,c.component))) throw new Error('MONITOR_REGISTRY_INVALID');
+  const components = new Set(rows.map(([,c]) => c.component));
+  if (components.size !== rows.length || !['sync','catalogo','portadas'].every(c => components.has(c)) ||
+      rows.some(([,c]) => c.path !== expected[c.component][0] || c.frequency !== expected[c.component][1]))
     throw new Error('MONITOR_REGISTRY_INVALID');
   return rows;
 }
@@ -29,16 +31,21 @@ export async function readMonitorCoverage(env, now = new Date(), fetchFn = fetch
         const current = definitions.find(c => c.id === id);
         if (!current || current.activated !== true) return { ...base, state: 'paused' };
         if (current.frequency !== check.frequency) return base;
-        const results = await request(`/v2/check-results/${id}?limit=1&resultType=FINAL&fields=checkId,hasFailures,hasErrors,isDegraded,isCancelled,startedAt`);
+        const results = await request(`/v2/check-results/${id}?limit=1&resultType=FINAL&fields=checkId,hasFailures,hasErrors,isDegraded,isCancelled,startedAt${check.component === 'google_imagen' ? ',browserCheckResult' : ''}`);
         const result = results.entries?.[0]; const stamp = Date.parse(result?.startedAt);
         if (!result || result.checkId !== id || !Number.isFinite(stamp) || stamp > now.getTime() + 60000 ||
             ![result.hasFailures,result.hasErrors].every(v => typeof v === 'boolean')) return base;
         const stale = now.getTime() - stamp > (check.frequency * 2 + 5) * 60000;
-        return { ...base, checkedAt: new Date(stamp).toISOString(), state: stale ? 'stale' : result.isCancelled ? 'unknown' :
+        const detail = check.component === 'google_imagen' && result.hasFailures ?
+          ['PRODUCT_IMAGE_MISSING','PRODUCT_IMAGE_INVALID','PRODUCT_JSONLD_INVALID','PRODUCT_SCHEMA_MISSING','PRODUCT_PAGE_UNAVAILABLE','PRODUCT_ID_MISMATCH']
+            .find(code => JSON.stringify([result.browserCheckResult?.errors,result.browserCheckResult?.jobLog]).includes(code)) : null;
+        return { ...base, ...(detail ? { detail } : {}), checkedAt: new Date(stamp).toISOString(), state: stale ? 'stale' : result.isCancelled ? 'unknown' :
           result.hasErrors ? 'monitor_error' : result.hasFailures ? 'confirmed' : result.isDegraded ? 'degraded' : 'passed' };
       } catch { return base; }
     }));
     return { status: 'ok', source, rows, observedAt: now.toISOString(),
-      note: 'API cada 10 minutos. Navegador cada 2 horas: inicio, catálogo y una ficha; imágenes visibles y errores detectados en ese recorrido. No comprueba todas las fotos, dispositivos ni el pago. Los avisos se guardan automáticamente; recargar consulta la última ejecución.' };
+      note: 'API cada 10 minutos. Navegador cada 2 horas: inicio, catálogo y una ficha; imágenes visibles y errores detectados en ese recorrido. ' +
+        (registry.some(([,c]) => c.component === 'google_imagen') ? 'Control independiente cada 2 horas del dato de imagen para Google en Big English 1 (MLU651526046). ' : 'Control de imagen declarada para Google pendiente. ') +
+        'No comprueba todas las fotos, dispositivos ni el pago, ni el estado del informe de Google. Los avisos se guardan automáticamente; recargar consulta la última ejecución.' };
   } catch { return absent('No se pudo comprobar la actividad de los monitores.'); }
 }

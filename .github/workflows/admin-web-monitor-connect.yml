@@ -6,6 +6,8 @@ on:
       - '.github/workflows/admin-web-monitor-connect.yml'
       - 'scripts/admin-web-monitor-connect.mjs'
       - 'scripts/admin-web-checkly-browser.js'
+      - 'scripts/admin-web-google-image-check.mjs'
+      - 'shared/product-image-audit.js'
   workflow_dispatch:
 permissions:
   contents: read
@@ -43,6 +45,12 @@ jobs:
         run: npx --yes wrangler@4.107.0 deploy --config worker-admin/wrangler.preview.json
       - name: Verify private login remains enforced
         run: node scripts/admin-web-preview-check.mjs
+      - name: Verify deployed monitor bindings and private panel results
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/admin-web-monitor-verify.mjs
       - name: Pause integration checks if setup failed or was cancelled
         if: failure() || cancelled()
         env:

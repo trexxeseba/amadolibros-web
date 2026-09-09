@@ -18,7 +18,7 @@ export async function readWebIncidents(env, now = new Date()) {
       .bind(env.ADMIN_WEB_MONITOR_ENV, new Date(now.getTime() + 60000).toISOString(), new Date(now.getTime() - 30 * 86400000).toISOString()).all();
     if (result.success === false || !Array.isArray(result.results)) return missing('No se pudo consultar el registro de incidentes.');
     const rows = result.results.map(r => {
-      if (!['confirmed', 'degraded', 'recovered'].includes(r.state) || !['portadas', 'banners', 'navegacion', 'catalogo', 'sync'].includes(r.component) ||
+      if (!['confirmed', 'degraded', 'recovered'].includes(r.state) || !['portadas', 'banners', 'navegacion', 'catalogo', 'sync', 'google_imagen'].includes(r.component) ||
           ![r.occurred_at, r.received_at, r.first_observed].every(x => Number.isFinite(Date.parse(x))) ||
           typeof r.page_path !== 'string' || r.page_path.length > 300 || !/^\/[a-zA-Z0-9_/-]*$/.test(r.page_path) || r.page_path.startsWith('//') ||
           !Number.isSafeInteger(r.event_count) || r.event_count < 1) throw new Error('INCIDENT_SHAPE');

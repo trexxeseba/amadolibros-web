@@ -131,19 +131,22 @@ function healthPanel(health, coverage) {
 
 export function coveragePanel(coverage) {
   if (!usable(coverage)) return `<section class="panel"><h2>Controles automáticos</h2>${notice(coverage)}</section>`;
-  const names = { sync: 'Catálogo y sincronización', catalogo: 'Página del catálogo', portadas: 'Imágenes y navegación' };
+  const names = { sync: 'Catálogo y sincronización', catalogo: 'Página del catálogo', portadas: 'Imágenes y navegación', google_imagen: 'Imagen de la ficha para Google' };
+  const details = { PRODUCT_IMAGE_MISSING: 'Ficha sin imagen para Google', PRODUCT_IMAGE_INVALID: 'Imagen declarada inválida',
+    PRODUCT_JSONLD_INVALID: 'Datos estructurados inválidos', PRODUCT_SCHEMA_MISSING: 'Falta el producto en los datos estructurados',
+    PRODUCT_PAGE_UNAVAILABLE: 'La ficha no respondió correctamente', PRODUCT_ID_MISMATCH: 'La ficha respondió con otro producto' };
   const states = { passed: 'Comprobación correcta', confirmed: 'Falla detectada', degraded: 'Respuesta lenta', stale: 'Control atrasado',
     paused: 'Control desactivado', unknown: 'Sin resultado verificable', monitor_error: 'Falló el monitor' };
   return `<section class="panel"><h2>Controles automáticos</h2>${table(['Control', 'Frecuencia', 'Última ejecución', 'Resultado'],
-    coverage.rows.map(r => [e(names[r.component]), r.frequency === 120 ? 'Cada 2 horas' : 'Cada 10 minutos', e(date(r.checkedAt)),
-      pill(states[r.state], r.state === 'passed' ? '' : 'warn')]))}${foot(coverage)}</section>`;
+    coverage.rows.map(r => [e(names[r.component]) + (r.component === 'google_imagen' ? `<small><a href="https://www.amadolibros.com${e(r.path)}" target="_blank" rel="noopener noreferrer">Abrir ficha ↗</a></small>` : ''), r.frequency === 120 ? 'Cada 2 horas' : 'Cada 10 minutos', e(date(r.checkedAt)),
+      pill(states[r.state], r.state === 'passed' ? '' : 'warn') + (details[r.detail] ? `<small>${e(details[r.detail])}</small>` : '')]))}${foot(coverage)}</section>`;
 }
 
 export function incidentPanel(incidents) {
   if (!usable(incidents)) return `<section class="panel"><h2>Avisos de los monitores</h2>${notice(incidents)}<p class="note">La vigilancia automática de fotos y navegación todavía no está activa.</p></section>`;
   const states = { confirmed: 'Falla confirmada por el monitor', degraded: 'Funcionamiento degradado', recovered: 'Recuperado en la comprobación' };
   return `<section class="panel"><h2>Avisos de los monitores</h2>${incidents.environment === 'preview' ? '<p class="notice">Pruebas de la integración. No son fallas observadas en la tienda productiva.</p>' : ''}
-    ${table(['Componente', 'Página', 'Último aviso', 'Observado', 'Registros'], incidents.rows.map(r => [e(r.component), e(r.path),
+    ${table(['Componente', 'Página', 'Último aviso', 'Observado', 'Registros'], incidents.rows.map(r => [e(r.component === 'google_imagen' ? 'Imagen de la ficha para Google' : r.component), `<a href="https://www.amadolibros.com${e(r.path)}" target="_blank" rel="noopener noreferrer">${e(r.path)}</a>`,
       pill(states[r.state], r.state === 'recovered' ? '' : 'warn'), e(date(r.occurredAt)), e(n(r.events))]), 'Sin avisos registrados. Esto no confirma que la web esté sana.')}${foot(incidents)}</section>`;
 }
 

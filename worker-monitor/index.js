@@ -39,7 +39,7 @@ export function normalizeCheckly(raw, registry, environment, now = new Date()) {
   const stamp = Date.parse(raw.occurredAt);
   if (!Number.isFinite(stamp) || stamp > now.getTime() + 60000 || now.getTime() - stamp > 72 * 3600000) throw new Error('EVENT_TIME_INVALID');
   const check = registry?.[raw.checkId];
-  if (!check || check.environment !== environment || !['portadas', 'banners', 'navegacion', 'catalogo', 'sync'].includes(check.component) ||
+  if (!check || check.environment !== environment || !['portadas', 'banners', 'navegacion', 'catalogo', 'sync', 'google_imagen'].includes(check.component) ||
       typeof check.path !== 'string' || check.path.length > 300 || !/^\/(?:[a-zA-Z0-9_/-]*)$/.test(check.path) ||
       check.path.startsWith('//') || new URL(check.path, 'https://www.amadolibros.com').pathname !== check.path) throw new Error('CHECK_NOT_ALLOWED');
   return { deliveryId: `${raw.checkId}:${raw.resultId}:${raw.alertType}`, checkId: raw.checkId,

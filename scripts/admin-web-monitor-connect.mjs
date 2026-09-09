@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { adminCloudflare } from './admin-web-cloudflare.mjs';
 import { AMADO_CHECKLY_ACCOUNT } from './admin-web-checkly-connection.mjs';
 import { installImageSensor } from './admin-web-image-sensor.mjs';
+import { GOOGLE_IMAGE_PATH, googleImageCheckScript } from './admin-web-google-image-check.mjs';
 
 export const MONITOR_WORKER = 'amadolibros-web-monitor';
 export const MONITOR_DATABASE = 'amadolibros-web-monitor';
@@ -149,10 +150,13 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     const browserSource = await readFile('scripts/admin-web-checkly-browser.js', 'utf8');
     const browserId = await upsert({ ...baseCheck('Amado - portadas banners y ficha', 120, channel.id),
       checkType: 'BROWSER', runtimeId: '2026.04', script: browserSource.replace('/* AMADO_IMAGE_SENSOR */', `const installImageSensor = ${installImageSensor.toString()};`) });
+    const googleImageId = await upsert({ ...baseCheck('Amado - imagen declarada para Google', 120, channel.id),
+      checkType: 'BROWSER', runtimeId: '2026.04', script: googleImageCheckScript() });
     const production = {
       [statusId]: { environment: 'production', component: 'sync', path: '/api/status', frequency: 10 },
       [navigationId]: { environment: 'production', component: 'catalogo', path: '/catalogo', frequency: 10 },
       [browserId]: { environment: 'production', component: 'portadas', path: '/', frequency: 120 },
+      [googleImageId]: { environment: 'production', component: 'google_imagen', path: GOOGLE_IMAGE_PATH, frequency: 120 },
     };
     const fixtureRegistry = { [testId]: { environment: 'preview', component: 'navegacion', path: '/_monitor-test', frequency: 1440 } };
     const configPath = resolve('worker-monitor/wrangler.connected.json');
@@ -250,8 +254,8 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     const connection = { version: 1, environment: 'production', deliveryVerifiedAt: new Date().toISOString(), checks: production };
     await query("INSERT INTO monitor_config (key,value) VALUES ('connection',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [JSON.stringify(connection)]);
     accepted = true;
-    log('monitoring_connected', { realProviderDeliveryVerified: true, activeChecks: 3, apiFrequencyMinutes: 10,
-      browserFrequencyMinutes: 120, maximumScheduledBrowserRuns31Days: 372, fixtureDeactivated: true,
+    log('monitoring_connected', { realProviderDeliveryVerified: true, activeChecks: 4, apiFrequencyMinutes: 10,
+      browserFrequencyMinutes: 120, maximumScheduledBrowserRuns31Days: 744, fixtureDeactivated: true,
       shopDeployed: false, businessWrites: 0 });
   } catch (error) {
     log('monitor_connection_incomplete', { phase }); throw error;

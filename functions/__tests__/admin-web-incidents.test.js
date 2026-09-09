@@ -49,6 +49,21 @@ test('aviso firmado → registro → panel → recuperación; duplicados y aviso
   } finally { sqlite.close(); }
 });
 
+test('imagen para Google conserva enlace y recuperación en el registro real SQLite', async () => {
+  const { env, read, sqlite } = setup();
+  const path = '/libro/MLU651526046/big-english-1-british-pupil-s-book-pearson';
+  env.MONITOR_CHECKS_JSON = JSON.stringify({ [checkId]: { environment:'preview',component:'google_imagen',path } });
+  try {
+    assert.equal((await receiveCheckly(await signed(env,event(1)),env,now)).status,202);
+    const failed = await read();
+    assert.equal(failed.rows[0].component,'google_imagen'); assert.equal(failed.rows[0].path,path);
+    assert.ok(incidentPanel(failed).includes(`https://www.amadolibros.com${path}`));
+    assert.equal((await receiveCheckly(await signed(env,event(2,'ALERT_RECOVERY',20)),env,now)).status,202);
+    assert.equal((await read()).rows[0].state,'recovered');
+    assert.equal((await read()).rows[0].events,2);
+  } finally { sqlite.close(); }
+});
+
 test('rechazo de firma, entorno, datos extra, evento viejo y tamaño sin escritura', async () => {
   const { env, sqlite } = setup();
   try {
