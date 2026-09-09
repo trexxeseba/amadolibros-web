@@ -130,7 +130,8 @@ export async function onRequest(context) {
         return new Response(feed, {
             headers: {
                 "content-type": "application/xml;charset=UTF-8",
-                "cache-control": `public, max-age=${pendingCovers > 0 ? 300 : 21600}`,
+                "cache-control": 'public, max-age=60',
+                ...(catalog?.updated_at ? { 'x-amado-catalog-updated-at': String(catalog.updated_at) } : {}),
                 "x-amado-feed-cover-pending": String(pendingCovers),
             },
         });

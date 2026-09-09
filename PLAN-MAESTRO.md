@@ -2,7 +2,7 @@
 
 ## Cierre de imágenes — ejecución completa autorizada 2026-09-09
 
-Seba pidió «una solución final y robusta» y «hace todo lo que debés hacer» tras revisar los arreglos #333 y #336. Autoriza integrarlos, fusionarlos, desplegarlos y verificar producción. Responsable: Codex. Alcance: índice público pequeño y atómico para todas las portadas, fallback de Product.image y control automático después del despliegue con HTTP, JSON-LD y scroll en escritorio/móvil. Se conserva el catálogo, el feed, los masters y la lógica del checkout. El panel privado se trabaja en otro chat. La aceptación exige evidencia real en la tienda, no sólo pruebas de Preview.
+Seba pidió «una solución final y robusta» y «hace todo lo que debés hacer» tras revisar los arreglos #333 y #336. Autoriza integrarlos, fusionarlos, desplegarlos y verificar producción. Responsable: Codex. Alcance: índice público pequeño y atómico para todas las portadas, fallback de Product.image y control automático después del despliegue con HTTP, JSON-LD y scroll en escritorio/móvil. Se conserva el catálogo, el feed, los masters y la lógica del checkout. El panel privado se trabaja en otro chat. La aceptación exige evidencia real en la tienda, no sólo pruebas de Preview. La verificación productiva confirmó las imágenes y detectó copias antiguas de catálogo/feed tras el sync; el cierre incluye acotar esas cachés a 60 segundos y corregir la espera del test sobre portadas animadas. No se cambian precios ni stock en su fuente.
 
 ## 🎯 Gran Apuesta en curso — Google Merchant Center
 

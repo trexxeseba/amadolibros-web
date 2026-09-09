@@ -1,12 +1,13 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-## Cierre de imágenes autorizado — 2026-09-09
+## Imágenes publicadas y verificadas — 2026-09-09
 
-- Seba pidió ejecutar la solución final y robusta después de revisar #333 y #336. Esta instrucción autoriza integrar, fusionar, desplegar y comprobar ambos arreglos. No requiere otra aprobación de publicación.
-- Se integra #336 (462d729) en #333 (902c7eb) y se incorpora main 1aaaba8. El único conflicto es documental; se conserva el historial de ambas correcciones.
-- Product.image: evidencia productiva 34342149786, portada 426×500 válida excluida por el filtro. El fallback preserva la primera foto real si la selección queda vacía, incluso ante un índice inaccesible. PR #336 ya pasó CI 34359782848 y Preview 34359782792: ficha reportada y auditoría 80/80 páginas/imágenes, cero críticos.
-- Se añade una comprobación de producción tras cada despliegue: índice público activo, Product.image, bytes de portadas y scroll real en Chromium de escritorio y móvil. Los resultados se conservan por URL; no se declara producción resuelta antes de la corrida real.
-- Panel privado fuera del alcance. Publicación y aceptación conjunta en curso.
+- #333 y #336 fusionados en main `305de731` con autorización completa de Seba. Pages `34363553956` success en el segundo intento; el primero cortó una comprobación GET por conexión reiniciada. Worker Sync `34363553916` success, catálogo 7.105 y 79.116 referencias en 256 fragmentos publicados; cero fallas del mirror. Checkout sin cambios.
+- Aceptación conjunta `9a1ab427`: CI `34362856125`, 1.720 pruebas y ambos builds; Preview `34362856257`; índice real `34362856142`, 154/154 imágenes, 4/4 páginas, 79.116 referencias preservadas y recuperación de escritura comprobada. Mediana del handler controlado 4.868 → 598 ms, no medición desde Uruguay.
+- Producción `34365186356`: Product.image presente en MLU651526046, cinco portadas HTTP 200/R2/public-index; 126 observaciones de imagen correctas en Chromium de escritorio y móvil, incluidas 48/48 portadas de Psicología en cada viewport. Muestra ampliada: 300/300 imágenes y 300/300 páginas correctas. Artefacto `10109592201` con JSON y capturas. No se afirma cobertura de todo dispositivo o del rastreo de Google.
+- Corrección del test: las portadas del inicio tienen animación continua; esperar inmovilidad era incorrecto. Se usa scroll nativo y se recorren las imágenes visibles también en móvil, conservando la animación y la detección de fallas.
+- Hallazgo adicional al verificar: el feed retuvo cuatro ofertas retiradas y 16 precios anteriores tras el sync. El catálogo interno admitía una hora de caché y el feed seis. Se reduce a 60 s cada caché mutable y se descartan copias cuya duración declarada exceda la nueva política, incluidas las horarias anteriores. El origen y los datos no se modifican; el checkout conserva su índice versionado. Prueba reproduce la copia antigua, la renovación y la reutilización acotada. Esta corrección final y el test de scroll se preparan en revisión; aceptación postpublicación pendiente en este registro.
+- Panel privado fuera del alcance. Evidencias de fallos intermedios conservadas; no se presenta la auditoría general en verde mientras existan diferencias del feed.
 
 ## Historial: índice rápido y scroll verificados en Preview — 2026-09-08
 
