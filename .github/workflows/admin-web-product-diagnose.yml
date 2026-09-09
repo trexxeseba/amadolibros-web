@@ -1,0 +1,22 @@
+name: Admin web - inspect reported product
+on:
+  push:
+    branches: [codex/admin-web-observability]
+    paths:
+      - '.github/workflows/admin-web-product-diagnose.yml'
+      - 'scripts/admin-web-product-diagnose.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    if: github.repository == 'trexxeseba/amadolibros-web' && github.ref == 'refs/heads/codex/admin-web-observability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Read product HTML and decode its public images
+        run: node scripts/admin-web-product-diagnose.mjs
