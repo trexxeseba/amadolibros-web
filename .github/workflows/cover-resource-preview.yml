@@ -61,4 +61,4 @@ jobs:
           name: cover-resource-${{ github.run_id }}
           path: artifacts/cover-resource/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30

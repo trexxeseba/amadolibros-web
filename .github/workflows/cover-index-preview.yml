@@ -82,4 +82,4 @@ jobs:
           name: cover-index-${{ github.run_id }}
           path: artifacts/cover-index/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30

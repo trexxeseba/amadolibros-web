@@ -79,7 +79,7 @@ jobs:
         with:
           name: cover-scroll-browser-${{ github.run_id }}
           path: artifacts/cover-scroll/browser-info.json
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
       - name: Browser verification window (8 minutes)
         if: steps.gate.outputs.enabled == 'true'
@@ -108,5 +108,5 @@ jobs:
         with:
           name: cover-scroll-cleanup-${{ github.run_id }}
           path: artifacts/cover-scroll/
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: error
