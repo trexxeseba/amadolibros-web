@@ -9,7 +9,25 @@ export function adminCloudflare({ env = process.env, fetchFn = fetch } = {}) {
       headers: { authorization: `Bearer ${token}`, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
       ...(body === undefined ? {} : { body: raw ? body : JSON.stringify(body) }),
       redirect: 'error', signal: AbortSignal.timeout(20000) });
-    if (!response.ok) throw new Error(`CLOUDFLARE_HTTP_${response.status}`);
+    if (!response.ok) {
+      let detail = '';
+      try {
+        const rejected = await response.json();
+        const messages = (rejected.errors || []).map(e => String(e.message || '')).join(' ');
+        const codes = (rejected.errors || []).map(e => e.code).filter(Number.isSafeInteger).slice(0,3);
+        const reasons = [
+          [/no such table/i, 'TABLE_MISSING'], [/no such column/i, 'COLUMN_MISSING'],
+          [/not authorized|permission/i, 'PERMISSION'], [/syntax error/i, 'SQL_SYNTAX'],
+          [/binding|bind parameter|wrong number|parameter count/i, 'SQL_BINDING'],
+          [/LIKE|GLOB/i, 'SQL_PATTERN'], [/too many|limit|too large/i, 'LIMIT'],
+          [/SQLITE_ERROR/i, 'SQLITE_ERROR'],
+        ];
+        const reason = reasons.find(([pattern]) => pattern.test(messages));
+        detail = [...codes, ...(reason ? [reason[1]] : [])].map(String).join('_');
+      } catch {}
+      // Sólo códigos y categorías cerradas. Nunca imprimir la respuesta ni SQL o secretos.
+      throw new Error(`CLOUDFLARE_HTTP_${response.status}${detail ? `_${detail}` : ''}`);
+    }
     const value = await response.json();
     if (raw && method === 'GET') return value;
     if (value.success !== true) throw new Error('CLOUDFLARE_REQUEST_FAILED');

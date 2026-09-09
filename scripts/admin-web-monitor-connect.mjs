@@ -113,7 +113,11 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
       if (!Array.isArray(r) || r.some(x => x.success === false)) throw new Error('MONITOR_QUERY_FAILED');
       return r[0]?.results || [];
     };
-    await query(await readFile('worker-monitor/schema.sql', 'utf8'));
+    // Ejecutar cada DDL de esta base por separado y verificar que existan ambos contratos.
+    const schema = (await readFile('worker-monitor/schema.sql', 'utf8')).replace(/^--.*$/gm, '');
+    for (const statement of schema.split(';').map(s => s.trim()).filter(Boolean)) await query(statement);
+    await query('SELECT delivery_id FROM monitor_events LIMIT 1');
+    await query('SELECT key FROM monitor_config LIMIT 1');
     const secret = randomBytes(32).toString('hex');
     const channelDefinition = { type: 'WEBHOOK', sendFailure: true, sendRecovery: true, sendDegraded: true,
       autoSubscribe: false, sslExpiry: false, subscriptions: [], config: { name: MONITOR_CHANNEL,
