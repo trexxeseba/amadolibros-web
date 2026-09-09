@@ -118,6 +118,8 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     for (const statement of schema.split(';').map(s => s.trim()).filter(Boolean)) await query(statement);
     await query('SELECT delivery_id FROM monitor_events LIMIT 1');
     await query('SELECT key FROM monitor_config LIMIT 1');
+    const fixtureMode = value => query("INSERT INTO monitor_config(key,value) VALUES ('acceptance_mode',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [value]);
+    await fixtureMode('recovery');
     const secret = randomBytes(32).toString('hex');
     const channelDefinition = { type: 'WEBHOOK', sendFailure: true, sendRecovery: true, sendDegraded: true,
       autoSubscribe: false, sslExpiry: false, subscriptions: [], config: { name: MONITOR_CHANNEL,
@@ -170,7 +172,7 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     const config = { name: MONITOR_WORKER, main: 'index.js', compatibility_date: '2024-09-23',
       workers_dev: true, preview_urls: false, observability: { enabled: false },
       vars: { MONITOR_ENABLED: 'false', MONITOR_ENV: 'preview', MONITOR_HOST: host, MONITOR_CHECKS_JSON: JSON.stringify(fixtureRegistry),
-        MONITOR_ACCEPTANCE_MODE: 'recovery' },
+        MONITOR_ACCEPTANCE_MODE: 'enabled' },
       d1_databases: [{ binding: 'MONITOR_DB', database_name: db.name, database_id: db.id }],
       ratelimits: [{ name: 'MONITOR_RATE_LIMITER', namespace_id: '2026090901', simple: { limit: 60, period: 60 } }],
       triggers: { crons: ['23 4 * * *'] } };
@@ -193,12 +195,11 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
         const alertTypes = state === 'confirmed' ? ['ALERT_FAILURE','ALERT_FAILURE_REMAIN','ALERT_DEGRADED_FAILURE'] : ['ALERT_RECOVERY','ALERT_DEGRADED_RECOVERY','ALERT_RECOVERY'];
         const events = await query('SELECT state FROM monitor_events WHERE delivery_id IN (?,?,?)',
           alertTypes.map(type => `${testId}:${result.id}:${type}`));
-        if (events.length) return;
+        if (events.some(event => event.state === state)) return;
         await sleep(15000);
       }
       throw new Error(`CHECKLY_DELIVERY_${state.toUpperCase()}_TIMEOUT`);
     };
-    const acceptanceStart = new Date().toISOString();
     const trigger = id => api('/v2/check-sessions/trigger', { method: 'POST', body: { target: { checkId: [id] }, refreshCache: true } });
     const waitResult = async (id, since, failures = null) => {
       for (let attempt = 0; attempt < 20; attempt++) {
@@ -209,21 +210,28 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
       }
       throw new Error('CHECKLY_RESULT_TIMEOUT');
     };
+    const runFixture = async failures => {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const since = new Date().toISOString();
+        await trigger(testId);
+        const result = await waitResult(testId, since);
+        if (result.hasFailures === failures && result.hasErrors === false) return result;
+        log('fixture_result_retry', { expectedFailure: failures, observedFailure: result.hasFailures === true });
+        await sleep(10000);
+      }
+      throw new Error('CHECKLY_FIXTURE_RESPONSE_MISMATCH');
+    };
     phase = 'healthy_baseline';
     await putCheck({ ...fixtureDefinition, activated: true }, testId);
-    await trigger(testId); await waitResult(testId, acceptanceStart, false);
+    await runFixture(false);
     phase = 'real_failure';
-    config.vars.MONITOR_ACCEPTANCE_MODE = 'failure'; await deploy();
+    await fixtureMode('failure');
     await waitHttp('/_monitor-test', 503);
-    const failedAt = new Date().toISOString();
-    await trigger(testId);
-    await waitEvent('confirmed', await waitResult(testId, failedAt, true)); log('real_checkly_failure_received', { fixtureOnly: true, signed: true });
-    config.vars.MONITOR_ACCEPTANCE_MODE = 'recovery'; await deploy();
+    await waitEvent('confirmed', await runFixture(true)); log('real_checkly_failure_received', { fixtureOnly: true, signed: true });
+    await fixtureMode('recovery');
     await waitHttp('/_monitor-test', 200);
     phase = 'real_recovery';
-    const recoveredAt = new Date().toISOString();
-    await trigger(testId);
-    await waitEvent('recovered', await waitResult(testId, recoveredAt, false)); log('real_checkly_recovery_received', { fixtureOnly: true, signed: true });
+    await waitEvent('recovered', await runFixture(false)); log('real_checkly_recovery_received', { fixtureOnly: true, signed: true });
     await putCheck(fixtureDefinition, testId);
     config.vars.MONITOR_ENV = 'production'; config.vars.MONITOR_CHECKS_JSON = JSON.stringify(production);
     delete config.vars.MONITOR_ACCEPTANCE_MODE;

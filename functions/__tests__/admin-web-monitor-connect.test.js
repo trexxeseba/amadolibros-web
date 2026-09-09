@@ -48,10 +48,13 @@ test('última ejecución distingue fallo, pausa, atraso y falta de datos sin fil
 });
 
 test('fixture existe sólo en entorno de prueba y el contrato no acepta coerciones', async () => {
-  const env = { MONITOR_ENABLED: 'true', MONITOR_ENV: 'preview', MONITOR_HOST: 'fixture.test', MONITOR_ACCEPTANCE_MODE: 'failure' };
+  let fixtureMode = 'failure';
+  const env = { MONITOR_ENABLED: 'true', MONITOR_ENV: 'preview', MONITOR_HOST: 'fixture.test', MONITOR_ACCEPTANCE_MODE: 'enabled',
+    MONITOR_DB: { prepare: () => ({ first: async () => ({ value: fixtureMode }) }) } };
   const request = new Request('https://fixture.test/_monitor-test');
   assert.equal((await receiveCheckly(request, env, now)).status, 503);
-  assert.equal((await receiveCheckly(request, { ...env, MONITOR_ACCEPTANCE_MODE: 'recovery' }, now)).status, 200);
+  fixtureMode = 'recovery';
+  assert.equal((await receiveCheckly(request, env, now)).status, 200);
   assert.equal((await receiveCheckly(request, { ...env, MONITOR_ENV: 'production' }, now)).status, 404);
   assert.equal((await receiveCheckly(request, { ...env, MONITOR_ENABLED: 'false' }, now)).status, 404);
   const raw = { version: 1, checkId: ids[0], resultId: ids[1], alertType: 'ALERT_FAILURE', occurredAt: now.toISOString() };

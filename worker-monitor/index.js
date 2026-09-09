@@ -51,8 +51,13 @@ export async function receiveCheckly(request, env, now = new Date()) {
   const url = new URL(request.url);
   if (env.MONITOR_ENABLED === 'true' && env.MONITOR_ENV === 'preview' && url.protocol === 'https:' &&
       url.hostname === env.MONITOR_HOST && url.pathname === '/_monitor-test' && !url.search && request.method === 'GET' &&
-      ['failure','recovery'].includes(env.MONITOR_ACCEPTANCE_MODE))
-    return reply(env.MONITOR_ACCEPTANCE_MODE === 'failure' ? 503 : 200, 'ISOLATED_ACCEPTANCE_FIXTURE');
+      env.MONITOR_ACCEPTANCE_MODE === 'enabled') {
+    try {
+      const mode = await env.MONITOR_DB?.prepare("SELECT value FROM monitor_config WHERE key = 'acceptance_mode'").first();
+      if (!['failure','recovery'].includes(mode?.value)) return reply(503, 'FIXTURE_STATE_UNAVAILABLE');
+      return reply(mode.value === 'failure' ? 503 : 200, 'ISOLATED_ACCEPTANCE_FIXTURE');
+    } catch { return reply(503, 'FIXTURE_STATE_UNAVAILABLE'); }
+  }
   if (env.MONITOR_ENABLED !== 'true' || !['preview', 'production'].includes(env.MONITOR_ENV) ||
       url.protocol !== 'https:' || !env.MONITOR_HOST || url.hostname !== env.MONITOR_HOST ||
       url.pathname !== '/webhooks/checkly' || url.search) return reply(404, 'NOT_FOUND');
