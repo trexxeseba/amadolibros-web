@@ -1,5 +1,9 @@
 # PLAN MAESTRO — B11: enriquecimiento editorial real del catálogo
 
+## Cierre de imágenes — ejecución completa autorizada 2026-09-09
+
+Seba pidió «una solución final y robusta» y «hace todo lo que debés hacer» tras revisar los arreglos #333 y #336. Autoriza integrarlos, fusionarlos, desplegarlos y verificar producción. Responsable: Codex. Alcance: índice público pequeño y atómico para todas las portadas, fallback de Product.image y control automático después del despliegue con HTTP, JSON-LD y scroll en escritorio/móvil. Se conserva el catálogo, el feed, los masters y la lógica del checkout. El panel privado se trabaja en otro chat. La aceptación exige evidencia real en la tienda, no sólo pruebas de Preview.
+
 ## 🎯 Gran Apuesta en curso — Google Merchant Center
 
 Este documento es la única fuente de prioridades del proyecto. Seba

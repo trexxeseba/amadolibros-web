@@ -72,6 +72,10 @@ test('whatsapp_click incluye availability_type en fichas sin enviar datos person
     cta_location: 'primary',
     product_id: 'MLU123',
     availability_type: 'by_request',
+    origen: 'ficha_pausada',
+    ruta: '/libro/MLU123/libro-de-prueba',
+    libro_id: 'MLU123',
+    transport_type: 'beacon',
   });
   assert.equal(JSON.stringify(event[2]).includes('@'), false);
 });

@@ -101,6 +101,12 @@ jobs:
           done
           exit 1
 
+      - name: Verify reported missing Product.image on isolated Preview
+        if: github.head_ref == 'codex/product-image-fallback' || github.head_ref == 'codex/cover-public-index'
+        env:
+          COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: node scripts/commerce/product-image-preview-check.mjs
+
       - name: Verify exact native cover bytes on Preview
         if: github.head_ref == 'codex/catalog-image-system'
         env:

@@ -1,6 +1,14 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
-## Portadas: índice rápido y scroll verificados; producción pendiente — 2026-09-08
+## Cierre de imágenes autorizado — 2026-09-09
+
+- Seba pidió ejecutar la solución final y robusta después de revisar #333 y #336. Esta instrucción autoriza integrar, fusionar, desplegar y comprobar ambos arreglos. No requiere otra aprobación de publicación.
+- Se integra #336 (462d729) en #333 (902c7eb) y se incorpora main 1aaaba8. El único conflicto es documental; se conserva el historial de ambas correcciones.
+- Product.image: evidencia productiva 34342149786, portada 426×500 válida excluida por el filtro. El fallback preserva la primera foto real si la selección queda vacía, incluso ante un índice inaccesible. PR #336 ya pasó CI 34359782848 y Preview 34359782792: ficha reportada y auditoría 80/80 páginas/imágenes, cero críticos.
+- Se añade una comprobación de producción tras cada despliegue: índice público activo, Product.image, bytes de portadas y scroll real en Chromium de escritorio y móvil. Los resultados se conservan por URL; no se declara producción resuelta antes de la corrida real.
+- Panel privado fuera del alcance. Publicación y aceptación conjunta en curso.
+
+## Historial: índice rápido y scroll verificados en Preview — 2026-09-08
 
 - Responsable: Codex. Esfuerzo: M. Trabajo operativo dentro de Google Merchant Center, única Gran Apuesta activa. Fuente de prioridades: PLAN-MAESTRO.md.
 - Producción conserva la recuperación #330, aprobada por Seba y fusionada en `0ae0a50` (deploy `34171140241`, 4/4 páginas y 104/104 imágenes válidas). La aceleración #333 sigue en Draft, sin merge ni despliegue productivo. Checkout intacto.
