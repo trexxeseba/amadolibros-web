@@ -21,6 +21,13 @@ import { fetchCatalog } from './catalog.js';
 const RECENT_ORDERS_LIMIT = 20;
 const STUCK_LIMIT = 25;
 const CRAWL_DAYS = 7;
+const MISSING_IMAGE_LIMIT = 25;
+
+// El id va a parar a un href. Sólo se acepta la forma real de Mercado Libre;
+// cualquier otra cosa queda en cadena vacía y el panel muestra el texto sin enlace.
+function cleanId(value) {
+  return /^MLU\d+$/.test(String(value || '')) ? String(value) : '';
+}
 
 async function queryAll(db, sql, params = []) {
   const statement = db.prepare(sql);
@@ -173,18 +180,36 @@ export async function loadCatalogSummary(ctx) {
   const catalog = await fetchCatalog(ctx);
   const items = Array.isArray(catalog?.items) ? catalog.items : [];
   let withStock = 0;
-  let withoutImage = 0;
   let withoutIsbn = 0;
+  // Una ficha sin ninguna foto es la que sale a Google sin `image` en el
+  // JSON-LD, y es lo que Search Console reporta como "Falta el campo image".
+  // El contador ya existía; lo que faltaba era saber CUÁLES para poder actuar.
+  const missingImageItems = [];
   for (const item of items) {
     if (Number(item?.available_quantity) > 0) withStock += 1;
-    if (!Array.isArray(item?.pictures) || item.pictures.length === 0) withoutImage += 1;
     if (!item?.isbn) withoutIsbn += 1;
+    if (!Array.isArray(item?.pictures) || item.pictures.length === 0) {
+      if (missingImageItems.length < MISSING_IMAGE_LIMIT) {
+        missingImageItems.push({
+          id: cleanId(item?.id),
+          title: item?.title || '(sin título)',
+          status: item?.status || '—',
+        });
+      }
+    }
   }
+  const withoutImage = items.reduce(
+    (total, item) => total + (Array.isArray(item?.pictures) && item.pictures.length ? 0 : 1),
+    0,
+  );
   return {
     total: items.length,
     withStock,
     withoutImage,
     withoutIsbn,
+    // `items` está recortado a MISSING_IMAGE_LIMIT: es una muestra para actuar,
+    // no el listado completo. `withoutImage` sigue siendo el total real.
+    missingImage: { count: withoutImage, items: missingImageItems, limit: MISSING_IMAGE_LIMIT },
     generatedAt: catalog?.generated_at || catalog?.generatedAt || null,
   };
 }

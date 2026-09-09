@@ -235,3 +235,65 @@ test('una cookie firmada con otra contraseña no abre el tablero', async () => {
   assert.match(html, /type="password"/);
   assert.doesNotMatch(html, /AL-1001/);
 });
+
+const CATALOG_HOSTILE = {
+  items: [
+    // Sin fotos: es la ficha que sale a Google sin `image`.
+    { id: 'MLU999111', title: 'Libro sin foto', status: 'active', available_quantity: 1, isbn: '9781234567897', pictures: [] },
+    // Id hostil escrito afuera: nunca debe terminar dentro de un href.
+    { id: 'MLU1" onmouseover="alert(1)', title: '<script>alert("titulo")</script>', status: 'paused', available_quantity: 0, isbn: '', pictures: [] },
+    // Con foto: no debe aparecer en el aviso.
+    { id: 'MLU222333', title: 'Libro con foto', status: 'active', available_quantity: 3, isbn: '9780000000001', pictures: [{ url: 'https://x/y.jpg' }] },
+  ],
+};
+
+async function withCatalog(catalog, run) {
+  const originalFetch = globalThis.fetch;
+  const originalCaches = globalThis.caches;
+  globalThis.caches = { default: { match: async () => undefined, put: async () => {} } };
+  globalThis.fetch = async () => Response.json(catalog);
+  try {
+    return await run();
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalCaches) globalThis.caches = originalCaches; else delete globalThis.caches;
+  }
+}
+
+test('el panel avisa qué fichas salen a Google sin imagen, con enlace para ir a arreglarlas', async () => {
+  const html = await withCatalog(CATALOG_HOSTILE, async () => {
+    const response = await onRequest({
+      request: request('/panel', { cookie: await sessionCookie() }),
+      env: baseEnv(),
+    });
+    assert.equal(response.status, 200);
+    return response.text();
+  });
+
+  assert.match(html, /Ficha sin imagen para Google \(2\)/);
+  assert.match(html, /Libro sin foto/);
+  assert.match(html, /href="https:\/\/www\.amadolibros\.com\/libro\/MLU999111"/);
+
+  // El que sí tiene foto no se reporta.
+  assert.doesNotMatch(html, /Libro con foto/);
+
+  // El id hostil no genera enlace ni escapa del atributo, y el título va escapado.
+  assert.doesNotMatch(html, /onmouseover/);
+  assert.doesNotMatch(html, /<script>alert\("titulo"\)<\/script>/);
+  assert.match(html, /&lt;script&gt;alert\(&quot;titulo&quot;\)&lt;\/script&gt;/);
+});
+
+test('sin fichas sin imagen el aviso no inventa una alerta', async () => {
+  const html = await withCatalog({
+    items: [{ id: 'MLU222333', title: 'Libro con foto', status: 'active', available_quantity: 3, isbn: '9780000000001', pictures: [{ url: 'https://x/y.jpg' }] }],
+  }, async () => {
+    const response = await onRequest({
+      request: request('/panel', { cookie: await sessionCookie() }),
+      env: baseEnv(),
+    });
+    return response.text();
+  });
+
+  assert.match(html, /Ficha sin imagen para Google/);
+  assert.doesNotMatch(html, /Ficha sin imagen para Google \(/);
+});
