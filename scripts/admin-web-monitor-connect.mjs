@@ -154,6 +154,19 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     };
     const fixtureRegistry = { [testId]: { environment: 'preview', component: 'navegacion', path: '/_monitor-test', frequency: 1440 } };
     const configPath = resolve('worker-monitor/wrangler.connected.json');
+    const waitHttp = async (path, expected, method = 'GET') => {
+      let status = 0;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        const response = await fetch(`https://${host}${path}`, { method, redirect: 'manual',
+          ...(method === 'POST' ? { headers: { 'Content-Type': 'application/json' }, body: '{}' } : {}),
+          signal: AbortSignal.timeout(10000) });
+        status = response.status; await response.body?.cancel();
+        if (status === expected) return;
+        if (method === 'POST' && status === 200) throw new Error('MONITOR_UNSIGNED_ACCEPTED');
+        await sleep(2000);
+      }
+      throw new Error(`MONITOR_PROPAGATION_HTTP_${status}_EXPECTED_${expected}`);
+    };
     const config = { name: MONITOR_WORKER, main: 'index.js', compatibility_date: '2024-09-23',
       workers_dev: true, preview_urls: false, observability: { enabled: false },
       vars: { MONITOR_ENABLED: 'false', MONITOR_ENV: 'preview', MONITOR_HOST: host, MONITOR_CHECKS_JSON: JSON.stringify(fixtureRegistry),
@@ -172,14 +185,14 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     await cf.request(`/workers/scripts/${MONITOR_WORKER}/secrets`, { method: 'PUT', body: { name: 'CHECKLY_WEBHOOK_SECRET', text: secret, type: 'secret_text' } });
     config.vars.MONITOR_ENABLED = 'true'; await deploy();
     // La respuesta 401 confirma que el binding real existe y el receptor exige firma.
-    const probe = await fetch(`https://${host}/webhooks/checkly`, { method: 'POST', redirect: 'manual',
-      headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(15000) });
-    if (probe.status !== 401) throw new Error('MONITOR_SIGNATURE_GATE_FAILED');
+    await waitHttp('/webhooks/checkly', 401, 'POST');
+    await waitHttp('/_monitor-test', 200);
     const waitEvent = async (state, result) => {
       if (!UUID.test(result?.id || '')) throw new Error('CHECKLY_RESULT_ID_INVALID');
       for (let attempt = 0; attempt < 24; attempt++) {
-        const events = await query('SELECT state FROM monitor_events WHERE check_id = ? AND environment = ? AND delivery_id LIKE ? AND state = ? LIMIT 1',
-          [testId, 'preview', `${testId}:${result.id}:%`, state]);
+        const alertTypes = state === 'confirmed' ? ['ALERT_FAILURE','ALERT_FAILURE_REMAIN','ALERT_DEGRADED_FAILURE'] : ['ALERT_RECOVERY','ALERT_DEGRADED_RECOVERY','ALERT_RECOVERY'];
+        const events = await query('SELECT state FROM monitor_events WHERE delivery_id IN (?,?,?)',
+          alertTypes.map(type => `${testId}:${result.id}:${type}`));
         if (events.length) return;
         await sleep(15000);
       }
@@ -201,10 +214,12 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     await trigger(testId); await waitResult(testId, acceptanceStart, false);
     phase = 'real_failure';
     config.vars.MONITOR_ACCEPTANCE_MODE = 'failure'; await deploy();
+    await waitHttp('/_monitor-test', 503);
     const failedAt = new Date().toISOString();
     await trigger(testId);
     await waitEvent('confirmed', await waitResult(testId, failedAt, true)); log('real_checkly_failure_received', { fixtureOnly: true, signed: true });
     config.vars.MONITOR_ACCEPTANCE_MODE = 'recovery'; await deploy();
+    await waitHttp('/_monitor-test', 200);
     phase = 'real_recovery';
     const recoveredAt = new Date().toISOString();
     await trigger(testId);
@@ -213,8 +228,7 @@ export async function connectMonitor({ env = process.env, cf = adminCloudflare({
     config.vars.MONITOR_ENV = 'production'; config.vars.MONITOR_CHECKS_JSON = JSON.stringify(production);
     delete config.vars.MONITOR_ACCEPTANCE_MODE;
     await deploy();
-    const removedFixture = await fetch(`https://${host}/_monitor-test`, { redirect: 'manual', signal: AbortSignal.timeout(15000) });
-    if (removedFixture.status !== 404) throw new Error('MONITOR_FIXTURE_NOT_REMOVED');
+    await waitHttp('/_monitor-test', 404);
     phase = 'activate';
     const firstProductionRun = new Date().toISOString();
     for (const id of Object.keys(production)) { await putCheck({ ...checks.get(id), activated: true }, id); await trigger(id); }
