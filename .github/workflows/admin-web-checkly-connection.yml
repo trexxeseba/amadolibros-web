@@ -21,4 +21,5 @@ jobs:
       - name: Verify access without creating or modifying checks
         env:
           CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+          CHECKLY_INSPECT_PLAN: 'true'
         run: node scripts/admin-web-checkly-connection.mjs
