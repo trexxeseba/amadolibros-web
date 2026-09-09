@@ -1,0 +1,170 @@
+import { onRequest as catalog } from '../functions/catalogo.js';
+import { onRequest as category } from '../functions/libros/[[path]].js';
+import { onRequest as cover } from '../functions/book-cover/[[path]].js';
+import { onRequest as immutable } from '../functions/preview-cover/[[path]].js';
+import { COVER_INDEX_PREFIX, coverIndexHash } from '../functions/_shared/cover-public-index.js';
+import { syncCoverMirror } from './cover-mirror.js';
+
+const MANIFEST = 'covers/v1/manifest.json';
+export default {
+    async fetch(request, env, execution) {
+        if (!env.INCIDENT_TOKEN || request.headers.get('authorization') !== `Bearer ${env.INCIDENT_TOKEN}`) {
+            return new Response('Forbidden', { status: 403 });
+        }
+        if (!/^amado-cover-index-\d+-\d+$/.test(env.ACCEPTANCE_NAME || '')) return new Response('Invalid namespace', { status: 500 });
+        // Only the temporary preview namespace has writes. No production put,
+        // delete, metadata update, checkout or Merchant binding is exposed.
+        const prefix = `acceptance/cover-index/${env.ACCEPTANCE_NAME}/`;
+        const writable = env.ISOLATED_INDEX_PREVIEW;
+        const url = new URL(request.url);
+        if (url.pathname === '/ready' && request.method === 'GET') return Response.json({ head: env.INCIDENT_BUILD_SHA });
+        if (url.pathname === '/index-state' && request.method === 'GET') {
+            const object = await writable.head(prefix + MANIFEST);
+            return Response.json({ bytes: object?.size || 0, root: object?.customMetadata?.cover_index_v1 || null });
+        }
+        if (url.pathname === '/written-manifest' && request.method === 'GET') {
+            const object = await writable.get(prefix + MANIFEST);
+            return object ? new Response(object.body, { headers: { 'content-type': 'application/json' } })
+                : new Response('Not prepared', { status: 404 });
+        }
+        if (url.pathname === '/cleanup' && request.method === 'DELETE') {
+            let cursor;
+            let deleted = 0;
+            do {
+                const page = await writable.list({ prefix, ...(cursor ? { cursor } : {}) });
+                const keys = page.objects.map(row => row.key);
+                if (keys.length) await writable.delete(keys);
+                deleted += keys.length;
+                cursor = page.truncated ? page.cursor : null;
+            } while (cursor);
+            return Response.json({ deleted, prefix, production_writes: 0 });
+        }
+        if (url.pathname === '/manifest' && request.method === 'GET') {
+            const object = await env.PRODUCTION_COVERS_READONLY.get(MANIFEST);
+            await writable.put(prefix + 'baseline.json', object.body, { customMetadata: { production_etag: object.etag } });
+            const frozen = await writable.get(prefix + 'baseline.json');
+            return new Response(frozen.body, { headers: { 'content-type': 'application/json', 'x-manifest-etag': object.etag } });
+        }
+        if (url.pathname === '/prepare' && request.method === 'POST') {
+            const expected = request.headers.get('if-match');
+            if (!expected) return new Response('Snapshot ETag required', { status: 400 });
+            const object = await writable.get(prefix + 'baseline.json');
+            if (!object?.body || object.customMetadata.production_etag !== expected) return new Response('Snapshot mismatch', { status: 409 });
+            // Exercise the actual sync/CAS/bootstrap on the FULL original
+            // manifest inside Cloudflare's resource limits, not a smaller
+            // preprojected fixture. All its writes stay in this namespace.
+            await writable.put(prefix + MANIFEST, object.body, { customMetadata: { production_etag: expected } });
+            let conflictPending = request.headers.get('x-acceptance-conflict-once') === 'true';
+            let conditionalConflicts = 0;
+            let conditionalTransportErrors = 0;
+            let injectedConditionalChecks = 0;
+            const isolated = {
+                get: key => writable.get(prefix + key), head: key => writable.head(prefix + key),
+                async put(key, body, options) {
+                    const phase = key === MANIFEST ? 'manifest-cas' : key === 'covers/v1/quality-report.json' ? 'quality-report' : null;
+                    if (phase) console.log('cover-qa-phase', `${phase}-start`);
+                    if (key === MANIFEST && conflictPending) {
+                        conflictPending = false;
+                        // Exercise native R2's failed conditional PUT, followed
+                        // by a complete reread/rebuild. Only this isolated copy
+                        // receives the deliberately stale ETag; no fake success.
+                        const current = await writable.head(prefix + key);
+                        const stale = (current.etag[0] === '0' ? '1' : '0') + current.etag.slice(1);
+                        injectedConditionalChecks++;
+                        let rejected;
+                        try {
+                            rejected = await writable.put(prefix + key, body, { ...options, onlyIf: { etagMatches: stale } });
+                        } catch (error) {
+                            if (error?.message !== 'Network connection lost.') throw error;
+                            const after = await writable.head(prefix + key);
+                            if (after?.etag !== current.etag) throw new Error('Isolated stale-ETag transport failure changed the manifest');
+                            conditionalTransportErrors++;
+                            console.log('cover-qa-phase', 'manifest-cas-transport-error-unchanged');
+                            // Do not turn a transport failure into a fake null.
+                            // The real writer must recover by rereading R2.
+                            throw error;
+                        }
+                        if (rejected !== null) throw new Error('Native R2 did not reject the deliberately stale ETag');
+                        conditionalConflicts++;
+                        console.log('cover-qa-phase', 'manifest-cas-conflict');
+                        return null;
+                    }
+                    const result = await writable.put(prefix + key, body, options);
+                    if (phase) console.log('cover-qa-phase', `${phase}-end`);
+                    return result;
+                },
+            };
+            const result = await syncCoverMirror({ COVER_R2: isolated }, { items: [] }, {
+                fetchFn: () => { throw new Error('Bootstrap must not fetch images'); },
+            });
+            return Response.json({ ...result.public_index, source_etag: expected, source_bytes: object.size,
+                manifest_retries: result.manifest_retries, manifest_transport_retries: result.manifest_transport_retries,
+                manifest_transport_errors: result.manifest_transport_errors,
+                conditional_conflicts: conditionalConflicts, conditional_transport_errors: conditionalTransportErrors,
+                injected_conditional_checks: injectedConditionalChecks, production_writes: 0 });
+        }
+        if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
+        const started = performance.now();
+        let manifestReads = 0;
+        let bytes = 0;
+        let heads = 0;
+        const legacy = request.headers.get('x-acceptance-mode') === 'legacy';
+        const reader = { async get(key) {
+            let object;
+            if (key === MANIFEST) {
+                manifestReads++;
+                // The comparison baseline is the original full production
+                // body, pinned to the exact snapshot used to build the index.
+                object = await writable.get(prefix + 'baseline.json');
+                if (!object?.body) throw new Error('Acceptance snapshot missing');
+            } else if (key.startsWith(COVER_INDEX_PREFIX)) object = await writable.get(prefix + key);
+            else if (/^covers\/v1\/objects\/[a-f0-9]{64}\.(jpg|png|webp)$/.test(key)) object = await env.PRODUCTION_COVERS_READONLY.get(key);
+            else throw new Error('Unexpected acceptance R2 key');
+            bytes += object?.size || 0;
+            return object;
+        }, ...(!legacy ? { async head(key) {
+            if (key !== MANIFEST) throw new Error('Unexpected acceptance HEAD');
+            heads++;
+            return writable.head(prefix + key);
+        } } : {}) };
+        // Unique cache origins provide a reproducible cold comparison without
+        // purging or writing any production cache entry.
+        const cacheId = request.headers.get('x-acceptance-cache-id');
+        if (cacheId && /^[a-z0-9-]{1,63}$/.test(cacheId)) url.hostname = `${cacheId}.${env.ACCEPTANCE_NAME}.cover-acceptance.invalid`;
+        const ctx = { request: new Request(url, request), data: {}, params: {}, waitUntil: p => execution.waitUntil(p),
+            env: { APP_ENV: 'production', COVER_R2: reader, COVER_GOOGLE_QUALITY_GATE: 'true' } };
+        let response;
+        let categoryAssetHash = null;
+        if (url.pathname === '/catalogo') response = await catalog(ctx);
+        else if (url.pathname.startsWith('/libros/')) {
+            ctx.params.path = url.pathname.slice('/libros/'.length).split('/');
+            // Pages normally serves this static asset from its own origin.
+            // The isolated cold origin has no assets/DNS; seed ONLY that
+            // fixture from the real public asset, then use the real renderer.
+            // This is not part of the measured image cold comparison.
+            const asset = await fetch('https://www.amadolibros.com/data/active-categories.json');
+            if (!asset.ok) throw new Error(`Category fixture HTTP ${asset.status}`);
+            const assetText = await asset.text();
+            categoryAssetHash = await coverIndexHash(assetText);
+            await caches.default.put(new Request(new URL('/data/active-categories.json', ctx.request.url)),
+                new Response(assetText, { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' } }));
+            response = await category(ctx);
+        } else if (url.pathname.startsWith('/book-cover/')) {
+            ctx.params.path = url.pathname.slice('/book-cover/'.length).split('/');
+            response = await cover(ctx);
+        } else if (url.pathname.startsWith('/preview-cover/')) {
+            ctx.params.path = url.pathname.slice('/preview-cover/'.length).split('/');
+            response = await immutable(ctx);
+        } else return new Response('Not found', { status: 404 });
+        const headers = new Headers(response.headers);
+        if (categoryAssetHash) headers.set('x-incident-category-sha256', categoryAssetHash);
+        headers.set('x-incident-build', env.INCIDENT_BUILD_SHA);
+        headers.set('x-incident-manifest-reads', String(manifestReads));
+        headers.set('x-incident-r2-bytes', String(bytes));
+        headers.set('x-incident-heads', String(heads));
+        headers.set('x-incident-index-mode', ctx.data.coverIndex?.mode || 'not-used');
+        headers.set('x-incident-index-reason', ctx.data.coverIndex?.reason || '');
+        headers.set('x-incident-handler-ms', String(Math.round(performance.now() - started)));
+        return new Response(response.body, { status: response.status, headers });
+    },
+};
