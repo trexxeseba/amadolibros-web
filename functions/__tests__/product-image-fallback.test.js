@@ -61,3 +61,9 @@ test('detector lee Product de @graph; og:image y otros esquemas no ocultan su au
     assert.ok(inspectProductImages(schema({ '@type':'Product',image:invalid })).issues.includes('PRODUCT_IMAGE_INVALID'));
   assert.ok(inspectProductImages('<script type="application/ld+json">broken</script>').issues.includes('PRODUCT_JSONLD_INVALID'));
 });
+test('auditor conserva fichas editoriales Book; no permite que Book oculte un Product sin imagen', () => {
+  const book='<script type="application/ld+json">{"@type":"Book","name":"Libro"}</script>';
+  assert.deepEqual(inspectProductImages(book,{allowBookOnly:true}).issues,[]);
+  assert.ok(inspectProductImages(book).issues.includes('PRODUCT_SCHEMA_MISSING'));
+  assert.ok(inspectProductImages(book+'<script type="application/ld+json">{"@type":"Product"}</script>',{allowBookOnly:true}).issues.includes('PRODUCT_IMAGE_MISSING'));
+});

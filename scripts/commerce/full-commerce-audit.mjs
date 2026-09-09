@@ -237,8 +237,10 @@ export function inspectProductHtml(html, requestedUrl, { expectIndexable = true 
   const canonical = htmlValue(html, /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i);
   const titleValue = htmlValue(html, /<title>([\s\S]*?)<\/title>/i);
   const h1 = htmlValue(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i).replace(/<[^>]+>/g, '').trim();
-  const imageInspection = inspectProductImages(html);
-  const productSchema = imageInspection.products.length > 0;
+  // Las fichas editoriales Book sin Product ya estaban admitidas. Esta
+  // comprobación agrega image a los Product, sin cambiar esa política.
+  const imageInspection = inspectProductImages(html, { allowBookOnly: true });
+  const productSchema = imageInspection.products.length > 0 || imageInspection.hasBook;
   const noindex = /\bnoindex\b/i.test(robots);
   const issues = [];
   if (expectIndexable && noindex) issues.push('NOINDEX_LIVE');
