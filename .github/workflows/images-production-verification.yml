@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 305de731510f816af2fa0306d16bcce34d71b6dc
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
@@ -30,6 +30,14 @@ jobs:
           COMMERCE_EXPECT_INDEXABLE: 'true'
           COMMERCE_FAIL_ON_CRITICAL: 'true'
         run: node scripts/commerce/full-commerce-audit.mjs
+      - name: Explain current feed discrepancies
+        if: always()
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const name = fs.readdirSync("artifacts/commerce").find(x => x.startsWith("full-commerce-audit-") && x.endsWith(".json"));
+            if (name) { const r=JSON.parse(fs.readFileSync("artifacts/commerce/"+name)); console.log(JSON.stringify({feed:r.feed})); }
+          '
       - uses: actions/upload-artifact@v4
         if: always()
         with:
