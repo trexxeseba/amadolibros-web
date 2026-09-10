@@ -4,6 +4,7 @@ import { gzipSync } from 'node:zlib';
 import { prepareCoverIndex, readCoverIndex, COVER_INDEX_METADATA } from '../functions/_shared/cover-public-index.js';
 import { isDeepStrictEqual } from 'node:util';
 import { isEligibleForFeed, dedupeByGtinAndCondition, filterItemsWithReadyPrimaryCover, renderFeedItem } from '../functions/feed.xml.js';
+import { coverManifestBudget, coverBudgetMessage } from '../functions/_shared/cover-manifest-budget.js';
 
 const base = process.env.INCIDENT_URL;
 const token = process.env.INCIDENT_TOKEN;
@@ -40,6 +41,23 @@ async function imageCheck(path, { mode = 'index', cold = null, expected = null }
     if (!row.ok) report.failures.push(`Image failed: ${path} (${mode}), HTTP ${response.status}, ${row.index_mode}/${row.fallback_reason}`);
     return row;
 }
+
+// Medir el manifest REAL en un proceso aparte (necesita --expose-gc, que los
+// chequeos no tienen). Si la medición no sale, el presupuesto se informa igual
+// pero como estimación, y una estimación nunca pone el CI en rojo.
+async function medirManifest(rutaGz) {
+    const { spawnSync } = await import('node:child_process');
+    const hijo = spawnSync(process.execPath,
+        ['--expose-gc', '--max-old-space-size=4096', 'scripts/cover-manifest-measure.mjs', rutaGz],
+        { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+    if (hijo.status !== 0) {
+        console.warn(`No se pudo medir el manifest: ${(hijo.stderr || '').trim() || `salida ${hijo.status}`}`);
+        return null;
+    }
+    try { return JSON.parse(hijo.stdout.trim().split('\n').at(-1)); }
+    catch { return null; }
+}
+
 try {
     await mkdir(output, { recursive: true });
     let ready = false;
@@ -55,6 +73,24 @@ try {
     const original = JSON.parse(raw.toString('utf8'));
     const etag = manifestResponse.headers.get('x-manifest-etag');
     await writeFile(`${output}/manifest-snapshot.json.gz`, gzipSync(raw));
+
+    // Cuánto aire le queda al escritor antes del 1102. El manifest entero vive
+    // en memoria mientras el cron lo reescribe, y el isolate tiene 128 MB.
+    // Esto no lo arregla: avisa con meses, que es lo que no teníamos.
+    //
+    // Va acá arriba a propósito, apenas se tiene el manifest y antes de
+    // cualquier cosa que pueda tirar: si el chequeo se cae por otro motivo,
+    // el presupuesto se informa igual. Es justo cuando más se quiere ver.
+    report.measurement = await medirManifest(`${output}/manifest-snapshot.json.gz`);
+    report.budget = coverManifestBudget({ manifestBytes: raw.length,
+        entries: Object.keys(original.entries).length, measured: report.measurement });
+    console.log(coverBudgetMessage(report.budget));
+    // Sólo una medición sobre el manifest real puede poner el CI en rojo. Una
+    // estimación que se contradiga con producción sería un guardián que miente.
+    if (report.budget.level === 'critical') {
+        report.failures.push(`Presupuesto de memoria del escritor de portadas: ${coverBudgetMessage(report.budget)}`);
+    }
+
     report.preparations = [];
     // Both full-snapshot preparations must pass. This is a repeated-write
     // resource check, not a retry that could hide a failed first attempt.
@@ -148,13 +184,13 @@ try {
     report.summary = { pages: report.pages.length, pages_ok: report.pages.filter(row => row.ok).length,
         images: report.images.length, images_ok: report.images.filter(row => row.ok).length, failures: report.failures.length };
     await writeFile(`${output}/report.json`, `${JSON.stringify(report, null, 2)}\n`);
-    console.log(JSON.stringify({ snapshot: report.snapshot, index: report.index, summary: report.summary,
+    console.log(JSON.stringify({ snapshot: report.snapshot, budget: report.budget, measurement: report.measurement, index: report.index, summary: report.summary,
         performance: report.performance, comparison: report.comparison, pages: report.pages,
         preparations: report.preparations, full_manifest_preserved: report.full_manifest_preserved,
         preparation_state: report.preparation_state, failures: report.failures }));
     if (process.env.GITHUB_STEP_SUMMARY) {
         const { appendFile } = await import('node:fs/promises');
-        await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Cover public index\n\n\`\`\`json\n${JSON.stringify({ head, snapshot: report.snapshot, index: report.index, preparations: report.preparations, full_manifest_preserved: report.full_manifest_preserved, preparation_state: report.preparation_state, summary: report.summary, performance: report.performance, comparison: report.comparison, failures: report.failures }, null, 2)}\n\`\`\`\n`);
+        await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Cover public index\n\n\`\`\`json\n${JSON.stringify({ head, snapshot: report.snapshot, budget: report.budget, measurement: report.measurement, index: report.index, preparations: report.preparations, full_manifest_preserved: report.full_manifest_preserved, preparation_state: report.preparation_state, summary: report.summary, performance: report.performance, comparison: report.comparison, failures: report.failures }, null, 2)}\n\`\`\`\n`);
     }
     if (report.failures.length) process.exitCode = 1;
 }
