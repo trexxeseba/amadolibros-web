@@ -262,7 +262,9 @@ export async function loadCatalogSummary(ctx) {
         .map(([reason, total]) => ({ reason, total }))
         .sort((a, b) => b.total - a.total),
     },
-    generatedAt: catalog?.generated_at || catalog?.generatedAt || null,
+    // El catálogo real trae `updated_at` (lo escribe buildCatalog en el Worker).
+    // Las otras dos formas nunca existieron: por eso el panel mostraba "—".
+    generatedAt: catalog?.updated_at || catalog?.generated_at || catalog?.generatedAt || null,
   };
 }
 
