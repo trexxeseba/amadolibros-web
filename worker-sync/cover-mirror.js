@@ -1,6 +1,7 @@
 import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleFutureReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
 import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
+import { pruneEntryProbes } from '../functions/_shared/cover-probe-retention.js';
 import { putJsonToR2 } from './json-r2-stream.js';
 import { readFullCoverManifest } from './cover-manifest-read.js';
 
@@ -129,9 +130,27 @@ async function writeManifestAttempt(bucket, state, processedEntries, nowIso) {
         : state.manifest.updated_at,
       entries: { ...state.manifest.entries },
     };
+    // El historial de sondeos de una portada que ya llegó a 500px no lo lee
+    // nadie: el reporte de calidad sólo mira el de las que todavía no llegan.
+    // Guardarlo igual es peso muerto que hay que cargar en memoria en cada
+    // escritura, y el manifest ya está cerca del límite del isolate.
+    //
+    // Se poda SOLO lo que esta corrida escribe, no todo el manifest. Un
+    // barrido global cambiaría entradas que nadie tocó, y eso rompe una
+    // garantía que vale más que el ahorro: que reescribir con un lote vacío
+    // deje el manifest idéntico. Hay tres tests y un chequeo de aceptación
+    // que la verifican, y son los que agarraron el intento anterior.
+    //
+    // El costo es que converge de a poco, al ritmo con el que el cron
+    // revalida cada portada, en vez de liberar todo de una.
+    let pruned = 0;
     for (const [key, processed] of processedEntries) {
-      nextManifest.entries[key] = mergeProcessedEntry(nextManifest.entries[key], processed);
+      const merged = mergeProcessedEntry(nextManifest.entries[key], processed);
+      const podado = pruneEntryProbes(merged);
+      if (podado !== merged) pruned += 1;
+      nextManifest.entries[key] = podado;
     }
+    const probes = { scanned: processedEntries.length, pruned };
 
     // A daily bounded rewrite repairs deleted/damaged derived objects even if
     // no image changes. Normal batches upload only changed shards.
@@ -167,7 +186,7 @@ async function writeManifestAttempt(bucket, state, processedEntries, nowIso) {
     }
     // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
     // un éxito válido para mocks/implementaciones compatibles con put().
-    return result !== null ? { manifest: nextManifest, publicIndex } : null;
+    return result !== null ? { manifest: nextManifest, publicIndex, probes } : null;
 }
 
 async function writeManifestAtomically(bucket, state, processedEntries, nowIso) {
