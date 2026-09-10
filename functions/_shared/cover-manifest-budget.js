@@ -20,6 +20,33 @@
  * Este módulo no arregla el límite: lo hace visible con meses de anticipación,
  * que es lo que no teníamos. Nadie se entera de un 1102 hasta que pasa.
  *
+ * LO QUE SE PROBO GANA A LO QUE SE MODELO
+ *
+ * Este módulo se equivocó dos veces seguidas antes de encontrar la forma
+ * correcta de plantearlo, y las dos veces del mismo modo: prediciendo una
+ * muerte que no ocurría.
+ *
+ *   - Primero dijo 202% del isolate. Producción estaba viva.
+ *   - Corregido, dijo 122%. Y entonces apareció la prueba directa: en la
+ *     corrida de CI 34521572816, un Worker REAL de Cloudflare corrió el sync
+ *     completo sobre el manifest de 108.774.952 bytes DOS VECES —incluido un
+ *     conflicto CAS con reconstrucción entera— y las dos terminaron bien:
+ *     mismo hash, 256 shards, 80.871 entradas, `full_manifest_preserved`.
+ *     Cero 1102.
+ *
+ * O sea que el pico absoluto que calcula un modelo desde afuera NO se puede
+ * validar: workerd no expone su heap, y todo intento de estimarlo dio de más.
+ * Insistir con eso es fabricar alarmas falsas.
+ *
+ * Así que el guardián dejó de predecir la muerte y pasó a vigilar otra cosa,
+ * que sí se puede afirmar con honestidad: CUÁNTO SE ALEJÓ EL MANIFEST DEL
+ * TAMAÑO MÁS GRANDE QUE SE PROBÓ QUE FUNCIONA. Mientras esté en ese terreno,
+ * no hay nada que decir. Cuando se aleje, hay que volver a probarlo — porque
+ * nadie sabe dónde está el techo real, y esa ignorancia es el riesgo.
+ *
+ * El pico modelado se sigue informando, pero como cota superior conocida por
+ * pesimista. No decide nada.
+ *
  * MEDIDO GANA A MODELADO, SIEMPRE
  *
  * Hay dos formas de saber cuánto pesa el grafo: medirlo sobre el manifest real
@@ -102,7 +129,30 @@ export const SHARD_BUFFERS_MB = 8;
  */
 export const WORKER_BASELINE_MB = 12;
 
-/** Arriba de esto hay que empezar la migración; arriba del segundo, ya es tarde. */
+/**
+ * El manifest más grande con el que se PROBÓ que el escritor completo funciona
+ * dentro de un Worker real de Cloudflare.
+ *
+ * Fuente: run 34521572816 (job cover-index-check). Dos `/prepare` completos
+ * sobre este manifest exacto, con conflicto CAS inyectado y reconstrucción
+ * entera, ambos exitosos y con el manifest preservado.
+ *
+ * Cuando una corrida pruebe uno más grande, se sube este número Y se cita la
+ * corrida. No se sube "porque parece que aguanta".
+ */
+export const PROVEN_MANIFEST_BYTES = 108774952;
+export const PROVEN_MANIFEST_ENTRIES = 80871;
+export const PROVEN_RUN = 'https://github.com/trexxeseba/amadolibros-web/actions/runs/34521572816';
+
+/**
+ * Cuánto puede crecer por encima de lo probado antes de que haya que decir
+ * algo. No son límites físicos —nadie sabe dónde está el techo real— son la
+ * distancia a la que dejamos de tener evidencia.
+ */
+export const WARN_OVER_PROVEN = 1.25;
+export const CRITICAL_OVER_PROVEN = 1.6;
+
+/** Umbrales del pico modelado. Sólo informativos: el modelo no decide. */
 export const WARN_PERCENT = 60;
 export const CRITICAL_PERCENT = 80;
 
@@ -146,9 +196,11 @@ export function coverManifestBudget({ manifestBytes, entries = null, measured = 
   const jsonMbAtLimit = (ISOLATE_LIMIT_MB - SHARD_BUFFERS_MB - WORKER_BASELINE_MB) / porMb;
   const growthLeft = jsonMbAtLimit / jsonMb;
 
+  // El nivel sale de la distancia a lo PROBADO, no del pico modelado.
+  const overProven = Number(manifestBytes) / PROVEN_MANIFEST_BYTES;
   let level = 'ok';
-  if (usedPercent >= CRITICAL_PERCENT) level = 'critical';
-  else if (usedPercent >= WARN_PERCENT) level = 'warn';
+  if (overProven >= CRITICAL_OVER_PROVEN) level = 'critical';
+  else if (overProven >= WARN_OVER_PROVEN) level = 'warn';
 
   // Pasarse de 128 MB no mata el pedido en el acto: Cloudflare deja terminar
   // el que está en vuelo y recicla el isolate para los siguientes. Por eso el
@@ -156,14 +208,23 @@ export function coverManifestBudget({ manifestBytes, entries = null, measured = 
   // rompe es cuando ese isolate tiene que hacer otra cosa al mismo tiempo —
   // que es literalmente el 1102 que ya nos pasó con el catálogo pausado.
   const overLimit = peakMb > ISOLATE_LIMIT_MB;
+  const modelledLevel = usedPercent >= CRITICAL_PERCENT ? 'critical'
+    : usedPercent >= WARN_PERCENT ? 'warn' : 'ok';
 
   return {
     level,
-    over_limit: overLimit,
-    // Sin medición el nivel se informa igual, pero no puede poner el CI en
-    // rojo: quien lo consuma tiene que mirar esta bandera antes de fallar.
+    over_proven_x: round(overProven, 2),
+    proven_manifest_mb: round(PROVEN_MANIFEST_BYTES / MB),
+    proven_manifest_entries: PROVEN_MANIFEST_ENTRIES,
+    proven_run: PROVEN_RUN,
+    // Lo que dice el modelo, marcado como lo que es: una cota superior que ya
+    // se demostró pesimista. Se informa para vigilarla, no para obedecerla.
+    modelled_level: modelledLevel,
+    modelled_over_isolate: overLimit,
+    // El nivel sale de comparar bytes contra bytes, así que es un hecho y no
+    // depende de que haya medición. La medición sólo afina la cota modelada.
     source: medido ? 'measured' : 'modelled',
-    enforceable: medido,
+    enforceable: true,
     manifest_mb: round(jsonMb),
     entries,
     bytes_per_entry: Number.isFinite(Number(entries)) && Number(entries) > 0
@@ -201,35 +262,27 @@ export function coverManifestBudget({ manifestBytes, entries = null, measured = 
 export function coverBudgetMessage(budget) {
   const cabeza = `Manifest de portadas: ${budget.manifest_mb} MB`
     + `${budget.entries ? ` (${budget.entries} entradas)` : ''}`
-    + ` → pico estimado ${budget.estimated_peak_mb} MB de ${budget.isolate_limit_mb} MB`
-    + ` (${budget.used_percent}%).`;
+    + ` — ${budget.over_proven_x}x del tamaño probado`
+    + ` (${budget.proven_manifest_mb} MB).`;
 
-  if (!budget.enforceable) {
-    return `${cabeza} SIN MEDIR: es una estimación desde el tamaño del JSON, no`
-      + ' una medición del manifest real, así que no decide nada por sí sola.'
-      + ' Para medirlo: node --expose-gc scripts/cover-manifest-measure.mjs <manifest.json.gz>';
-  }
+  const modelo = ` Cota superior modelada: ${budget.estimated_peak_mb} MB`
+    + ` de ${budget.isolate_limit_mb} MB — pesimista y no vinculante: a`
+    + ` ${budget.proven_manifest_mb} MB el modelo también daba por encima del`
+    + ` isolate y un Worker real completó el sync igual (${budget.proven_run}).`;
+
   if (budget.level === 'critical') {
-    // Ojo con el texto: decir "está por morir" cuando el sitio funciona hace
-    // que nadie vuelva a creerle al guardián. Lo que pasa de verdad es que ya
-    // se pasó del presupuesto y sobrevive porque Cloudflare deja terminar el
-    // pedido en vuelo y recicla el isolate.
-    if (budget.over_limit) {
-      return `${cabeza} CRÍTICO: el escritor YA se pasa del isolate.`
-        + ' Sigue andando sólo porque Cloudflare deja terminar el pedido en vuelo'
-        + ' y recicla el isolate — pero cuando a ese isolate le toca otra cosa al'
-        + ' mismo tiempo, sale 1102. Eso ya pasó con el catálogo pausado.'
-        + ' Hay que partir el manifest privado en shards.';
-    }
-    return `${cabeza} CRÍTICO: al escritor de portadas casi no le queda margen`
-      + ` (${budget.growth_left_x}x). Hay que partir el manifest privado en shards.`;
+    return `${cabeza} CRÍTICO: el manifest se fue muy por encima de lo que`
+      + ' alguna vez se probó que funciona. Nadie sabe dónde está el techo real,'
+      + ' y esa es justamente la parte peligrosa: el 1102 del catálogo pausado'
+      + ' apareció así. Hay que correr el chequeo de portadas y, si pasa, subir'
+      + ` PROVEN_MANIFEST_BYTES citando la corrida; si no pasa, partir el`
+      + ` manifest privado en shards.${modelo}`;
   }
   if (budget.level === 'warn') {
-    return `${cabeza} AVISO: queda ${budget.growth_left_x}x de crecimiento`
-      + `${budget.entries_at_limit ? ` (hasta ~${budget.entries_at_limit} entradas)` : ''}`
-      + ' antes de que el cron muera con 1102. Es el momento de empezar la'
-      + ' migración a un manifest en shards, no cuando ya esté roto.';
+    return `${cabeza} AVISO: creció por encima de lo probado. Todavía no hay`
+      + ' motivo para alarmarse, pero conviene volver a probar el escritor'
+      + ' completo a este tamaño y dejar constancia, en vez de suponer que'
+      + ` aguanta.${modelo}`;
   }
-  return `${cabeza} Margen suficiente: queda ${budget.growth_left_x}x de crecimiento`
-    + `${budget.entries_at_limit ? ` (hasta ~${budget.entries_at_limit} entradas)` : ''}.`;
+  return `${cabeza} Dentro del terreno probado.${modelo}`;
 }

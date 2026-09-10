@@ -87,7 +87,7 @@ try {
     console.log(coverBudgetMessage(report.budget));
     // Sólo una medición sobre el manifest real puede poner el CI en rojo. Una
     // estimación que se contradiga con producción sería un guardián que miente.
-    if (report.budget.enforceable && report.budget.level === 'critical') {
+    if (report.budget.level === 'critical') {
         report.failures.push(`Presupuesto de memoria del escritor de portadas: ${coverBudgetMessage(report.budget)}`);
     }
 

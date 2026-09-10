@@ -87,7 +87,7 @@ try {
     report.budget = coverManifestBudget({ manifestBytes: raw.length,
         entries: Object.keys(original.entries).length, measured: report.measurement });
     console.log(coverBudgetMessage(report.budget));
-    if (report.budget.enforceable && report.budget.level === 'critical') {
+    if (report.budget.level === 'critical') {
         report.failures.push(`Presupuesto de memoria del escritor de portadas: ${coverBudgetMessage(report.budget)}`);
     }
 
