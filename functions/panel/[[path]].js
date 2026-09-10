@@ -192,6 +192,9 @@ function sectionOrError(block, render) {
 function dashboardPage(data) {
   const env = data.environment;
   const stuckCount = data.stuck?.ok ? data.stuck.data.total : null;
+  // Se cuenta aparte de `stuckCount`: viene del catálogo, no de D1, así que uno
+  // puede estar disponible y el otro caído. La tarjeta se enciende con cualquiera.
+  const missingImageCount = data.catalog?.ok ? (data.catalog.data.missingImage?.count || 0) : 0;
 
   return layout('Panel — Amado Libros', `
 <div class="top">
@@ -207,7 +210,7 @@ function dashboardPage(data) {
   <form method="POST" action="/panel/logout"><button class="logout" type="submit">Salir</button></form>
 </div>
 
-<section class="card ${stuckCount ? 'alert' : ''}">
+<section class="card ${stuckCount || missingImageCount ? 'alert' : ''}">
   <h2>Qué quedó trancado${stuckCount ? ` (${stuckCount})` : ''}</h2>
   ${sectionOrError(data.stuck, stuck => `
     <h3 class="muted">Pagados sin despachar</h3>
@@ -231,6 +234,25 @@ function dashboardPage(data) {
           <td>${escapeHtml(row.internal_notification_status)}</td>
           <td>${shortDate(row.created_at)}</td></tr>`)}
   `)}
+
+  <h3 class="muted">Ficha sin imagen para Google${missingImageCount ? ` (${missingImageCount})` : ''}</h3>
+  ${sectionOrError(data.catalog, catalog => {
+    const missing = catalog.missingImage || { count: 0, items: [] };
+    if (!missing.count) return '<p class="empty">Nada por acá. 👌</p>';
+    return `
+      <p class="muted">
+        Estas fichas no tienen ninguna foto, así que salen a Google sin imagen.
+        Es lo que Search Console reporta como «Falta el campo image».
+        ${missing.count > missing.items.length
+          ? `Se muestran las primeras ${missing.items.length} de ${missing.count}.`
+          : ''}
+      </p>
+      ${table(['Libro', 'Estado', 'Ficha'], missing.items, row => `
+        <tr><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.status)}</td>
+            <td>${row.id
+              ? `<a href="https://www.amadolibros.com/libro/${escapeHtml(row.id)}" rel="noreferrer">${escapeHtml(row.id)}</a>`
+              : '—'}</td></tr>`)}`;
+  })}
 </section>
 
 <section class="card">
@@ -272,6 +294,24 @@ function dashboardPage(data) {
       <div class="stat"><b>${escapeHtml(catalog.withoutIsbn)}</b><span>sin ISBN</span></div>
     </div>
     <p class="muted">Catálogo generado: ${shortDate(catalog.generatedAt)}</p>
+
+    <h3 class="muted">Cuántos llegan a Google Shopping</h3>
+    <div class="grid">
+      <div class="stat"><b>${escapeHtml(catalog.feed.activeTotal)}</b><span>libros activos</span></div>
+      <div class="stat"><b>${escapeHtml(catalog.feed.eligible)}</b><span>pasan la puerta comercial</span></div>
+      <div class="stat ${catalog.feed.blocked ? 'alert' : ''}"><b>${escapeHtml(catalog.feed.blocked)}</b><span>quedan afuera</span></div>
+    </div>
+    ${catalog.feed.blockers.length
+      ? `<p class="muted">Por qué quedan afuera:</p>
+         ${table(['Motivo', 'Libros'], catalog.feed.blockers, row => `
+           <tr><td>${escapeHtml(row.reason)}</td><td>${escapeHtml(row.total)}</td></tr>`)}`
+      : ''}
+    <p class="muted">
+      Esta es sólo la primera puerta: precio, moneda, stock, enlace y que se reconozca
+      como libro. Después hay una segunda —que la portada esté lista— que no se mide acá.
+      O sea que la cantidad real de ofertas en Merchant es <b>igual o menor</b> a
+      ${escapeHtml(catalog.feed.eligible)}, nunca mayor.
+    </p>
   `)}
 </section>
 
