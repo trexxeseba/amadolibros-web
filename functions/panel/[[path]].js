@@ -5,6 +5,8 @@
  *
  * Rutas:
  *   GET  /panel         → login si no hay sesión válida, tablero si la hay
+ *   GET  /panel/pedido/<código> → la ficha del pedido: qué va en la caja,
+ *                       a dónde va, el pago y el historial
  *   POST /panel/login   → Turnstile + contraseña → cookie de sesión firmada
  *   POST /panel/logout  → borra la cookie
  *
@@ -31,7 +33,7 @@ import {
   sessionCookieHeader,
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
-import { loadPanelData } from '../_shared/panel-data.js';
+import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
 
 // Mismo patrón que functions/api/_stock_waitlist_handler.js: el panel no puede
 // aceptar un hostname de Preview que el resto del sitio rechaza, ni al revés.
@@ -142,6 +144,25 @@ function layout(title, body) {
            color:#fff; font-size:.95rem; cursor:pointer; }
   .logout { background:none; color:#6b7280; border:1px solid #cbd2d9; margin:0; padding:.35rem .8rem; }
   .empty { color:#6b7280; font-style:italic; font-size:.85rem; }
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;
+            flex-wrap:wrap; margin-bottom:1.25rem; }
+  .back { display:inline-block; color:#6b7280; text-decoration:none; font-size:.85rem;
+          margin-bottom:.35rem; }
+  .back:hover { color:#1f2933; }
+  .tag { border:1px solid #cbd2d9; border-radius:999px; padding:.2rem .7rem; font-size:.8rem;
+         color:#6b7280; white-space:nowrap; }
+  .tag.alerta { border-color:#f0b429; background:#fffbeb; color:#8a5200; font-weight:600; }
+  dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:.35rem .9rem; font-size:.88rem; }
+  dt { color:#6b7280; white-space:nowrap; }
+  dd { margin:0; text-align:right; }
+  dl.totales { margin-top:.9rem; padding-top:.75rem; border-top:1px solid #eef0f3; }
+  .total { font-weight:700; font-size:1rem; color:#1f2933; }
+  .direccion { margin:.85rem 0 0; padding:.7rem .8rem; background:#f6f7f9; border-radius:8px;
+               font-size:.9rem; line-height:1.45; }
+  .nota { margin:.6rem 0 0; padding:.6rem .8rem; border-left:3px solid #cbd2d9; color:#4b5563;
+          font-style:italic; font-size:.88rem; }
+  tbody tr a { color:inherit; text-decoration:none; display:block; }
+  tbody tr:hover { background:#f6f7f9; }
 </style>
 </head>
 <body><main>${body}</main></body>
@@ -189,6 +210,95 @@ function sectionOrError(block, render) {
   return render(block.data);
 }
 
+
+const EVENT_LABEL = {
+  preference_created: 'Pago iniciado',
+  payment_approved: 'Pago aprobado',
+  payment_pending: 'Pago pendiente',
+  payment_rejected: 'Pago rechazado',
+  payment_cancelled: 'Pago cancelado',
+  payment_refunded: 'Pago devuelto',
+  order_unavailable: 'Sin stock al confirmar',
+  already_sent: 'Aviso ya enviado',
+};
+
+function deliveryWindow(order) {
+  const day = shortDate(order.requested_delivery_date);
+  if (day === '—') return 'Sin fecha pedida';
+  const from = cleanString(order.requested_delivery_from);
+  const to = cleanString(order.requested_delivery_to);
+  return from && to ? `${day.slice(0, 10)}, de ${escapeHtml(from)} a ${escapeHtml(to)}` : day.slice(0, 10);
+}
+
+/**
+ * La ficha de un pedido: qué va en la caja, a dónde va y qué le pasó.
+ * Es la pantalla que se usa para despachar, así que lo primero es el contenido
+ * y la dirección — no los identificadores internos.
+ */
+function orderPage(found) {
+  const { order, items, events } = found;
+  const units = items.reduce((total, item) => total + Number(item.quantity || 0), 0);
+  const pickup = order.delivery_type === 'pickup';
+  const pending = order.payment_status === 'approved' && !order.fulfilled_at;
+
+  const body = `
+<div class="topbar">
+  <div>
+    <a class="back" href="/panel">← Pedidos</a>
+    <h1>${escapeHtml(order.public_code)}</h1>
+    <p class="muted">${escapeHtml(order.buyer_name)} · ${escapeHtml(units)} libro${units === 1 ? '' : 's'} · ${shortDate(order.created_at)}</p>
+  </div>
+  <span class="tag ${pending ? 'alerta' : ''}">${pending ? 'Pagado sin despachar' : escapeHtml(order.status)}</span>
+</div>
+
+<section class="card">
+  <h2>Qué va en la caja</h2>
+  ${table(['Cant.', 'Libro', 'Publicación', 'Precio'], items, row => `
+    <tr><td>${escapeHtml(row.quantity)}×</td>
+        <td>${escapeHtml(row.title)}</td>
+        <td>${escapeHtml(row.product_id)}</td>
+        <td>${money(row.line_total_uyu)}</td></tr>`)}
+  <dl class="totales">
+    <dt>Libros</dt><dd>${money(order.products_total_uyu)}</dd>
+    ${Number(order.shipping_cost_uyu) ? `<dt>Envío</dt><dd>${money(order.shipping_cost_uyu)}</dd>` : ''}
+    ${Number(order.pickup_discount_uyu) ? `<dt>Descuento por retiro</dt><dd>−${money(order.pickup_discount_uyu)}</dd>` : ''}
+    <dt class="total">Total</dt><dd class="total">${money(order.payable_total_uyu)}</dd>
+  </dl>
+</section>
+
+<section class="card">
+  <h2>${pickup ? 'Retira en el local' : 'A dónde va'}</h2>
+  <dl>
+    <dt>Entrega</dt><dd>${pickup ? 'Retiro' : 'Envío'}</dd>
+    <dt>Teléfono</dt><dd>${escapeHtml(order.buyer_phone)}</dd>
+    <dt>Correo</dt><dd>${escapeHtml(order.buyer_email)}</dd>
+    <dt>Fecha pedida</dt><dd>${deliveryWindow(order)}</dd>
+  </dl>
+  ${pickup ? '' : `<p class="direccion">${escapeHtml(order.address)}<br>${escapeHtml(order.locality)}, ${escapeHtml(order.department)}</p>`}
+  ${cleanString(order.delivery_notes) ? `<p class="nota">“${escapeHtml(order.delivery_notes)}”</p>` : ''}
+</section>
+
+<section class="card">
+  <h2>Pago</h2>
+  <dl>
+    <dt>Estado</dt><dd>${escapeHtml(order.payment_status)}</dd>
+    <dt>Medio</dt><dd>${escapeHtml(order.payment_provider) || '—'}</dd>
+    <dt>ID de pago</dt><dd>${escapeHtml(order.payment_id) || '—'}</dd>
+    <dt>Cobrado</dt><dd>${shortDate(order.paid_at)}</dd>
+    <dt>Despachado</dt><dd>${shortDate(order.fulfilled_at)}</dd>
+  </dl>
+</section>
+
+<section class="card">
+  <h2>Historial</h2>
+  ${table(['Qué pasó', 'Cuándo'], events, row => `
+    <tr><td>${escapeHtml(EVENT_LABEL[row.event_type] || row.event_type)}</td>
+        <td>${shortDate(row.created_at)}</td></tr>`)}
+</section>`;
+
+  return layout(`Pedido ${order.public_code}`, body);
+}
+
 function dashboardPage(data) {
   const env = data.environment;
   const stuckCount = data.stuck?.ok ? data.stuck.data.total : null;
@@ -215,7 +325,7 @@ function dashboardPage(data) {
   ${sectionOrError(data.stuck, stuck => `
     <h3 class="muted">Pagados sin despachar</h3>
     ${table(['Pedido', 'Comprador', 'Total', 'Pagado'], stuck.paidNotFulfilled, row => `
-      <tr><td>${escapeHtml(row.public_code)}</td><td>${escapeHtml(row.buyer_name)}</td>
+      <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td><td>${escapeHtml(row.buyer_name)}</td>
           <td>${money(row.payable_total_uyu)}</td><td>${shortDate(row.paid_at)}</td></tr>`)}
 
     <h3 class="muted">Pago colgado hace más de una hora</h3>
@@ -266,7 +376,7 @@ function dashboardPage(data) {
     ${statusList(orders.byStatus)}
     <h3 class="muted">Últimos ${orders.recent.length}</h3>
     ${table(['Pedido', 'Estado', 'Pago', 'Comprador', 'Entrega', 'Total', 'Creado'], orders.recent, row => `
-      <tr><td>${escapeHtml(row.public_code)}</td><td>${escapeHtml(row.status)}</td>
+      <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td><td>${escapeHtml(row.status)}</td>
           <td>${escapeHtml(row.payment_status)}</td><td>${escapeHtml(row.buyer_name)}</td>
           <td>${escapeHtml(row.delivery_type)}</td><td>${money(row.payable_total_uyu)}</td>
           <td>${shortDate(row.created_at)}</td></tr>`)}
@@ -419,6 +529,28 @@ export async function onRequest(context) {
   if (path === '/panel/login') {
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
     return handleLogin(context, config);
+  }
+
+  const pedido = /^\/panel\/pedido\/([^/]+)$/.exec(path);
+  if (pedido) {
+    if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
+    if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
+      return htmlResponse(loginPage({
+        siteKey: cleanString(context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY),
+      }));
+    }
+    const db = context.env?.ORDERS_DB;
+    // Un pedido inexistente y un código inválido responden igual: la ficha no
+    // sirve para averiguar qué códigos existen.
+    const found = db ? await loadOrder(db, decodeURIComponent(pedido[1])) : null;
+    if (!found) {
+      return htmlResponse(
+        layout('Pedido no encontrado', '<main class="card"><a class="back" href="/panel">← Pedidos</a>'
+          + '<h1>Pedido no encontrado</h1><p class="muted">Revisá el código.</p></main>'),
+        { status: 404 },
+      );
+    }
+    return htmlResponse(orderPage(found));
   }
 
   if (path !== '/panel') return new Response('Not Found', { status: 404 });

@@ -23,9 +23,16 @@ const RECENT_ORDERS_LIMIT = 20;
 const STUCK_LIMIT = 25;
 const CRAWL_DAYS = 7;
 const MISSING_IMAGE_LIMIT = 25;
+const ORDER_EVENTS_LIMIT = 30;
+// El código va en la URL y de ahí a una consulta: sólo se acepta su forma real.
+const ORDER_CODE_RE = /^AL-[0-9]{6}-[A-Z0-9]{6}$/;
 
 // El id va a parar a un href. Sólo se acepta la forma real de Mercado Libre;
 // cualquier otra cosa queda en cadena vacía y el panel muestra el texto sin enlace.
+function cleanString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function cleanId(value) {
   return /^MLU\d+$/.test(String(value || '')) ? String(value) : '';
 }
@@ -266,6 +273,54 @@ export async function loadCatalogSummary(ctx) {
     // Las otras dos formas nunca existieron: por eso el panel mostraba "—".
     generatedAt: catalog?.updated_at || catalog?.generated_at || catalog?.generatedAt || null,
   };
+}
+
+
+/**
+ * Un pedido completo: qué libros, a dónde va y qué le pasó.
+ * Es lo que hace falta para despachar, y hasta ahora el panel no lo mostraba:
+ * la lista daba una fila por pedido y nunca el contenido de la caja.
+ */
+export async function loadOrder(db, publicCode) {
+  const code = cleanString(publicCode).toUpperCase();
+  if (!ORDER_CODE_RE.test(code)) return null;
+
+  const [order] = await queryAll(
+    db,
+    `SELECT id, public_code, status, payment_status, buyer_name, buyer_email, buyer_phone,
+            delivery_type, address, locality, department, delivery_notes,
+            requested_delivery_date, requested_delivery_from, requested_delivery_to,
+            products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, payable_total_uyu,
+            currency, payment_provider, payment_id,
+            created_at, paid_at, fulfilled_at, cancelled_at
+       FROM orders
+      WHERE public_code = ?
+      LIMIT 1`,
+    [code],
+  );
+  if (!order) return null;
+
+  const [items, events] = await Promise.all([
+    queryAll(
+      db,
+      `SELECT title, product_id, quantity, unit_price_uyu, line_total_uyu
+         FROM order_items
+        WHERE order_id = ?
+        ORDER BY id ASC`,
+      [order.id],
+    ),
+    queryAll(
+      db,
+      `SELECT event_type, created_at
+         FROM order_events
+        WHERE order_id = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?`,
+      [order.id, ORDER_EVENTS_LIMIT],
+    ),
+  ]);
+
+  return { order, items, events };
 }
 
 export function environmentSummary(env) {
