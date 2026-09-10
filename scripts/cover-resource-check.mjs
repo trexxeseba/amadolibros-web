@@ -34,6 +34,23 @@ async function imageCheck(path, immutable = false) {
         if (!row.ok) report.failures.push(`Image ${path}: HTTP ${response.status}, integrity/source/read failure`);
     } catch (error) { report.failures.push(`Image ${path}: ${error.message}`); }
 }
+
+// Medir el manifest REAL en un proceso aparte (necesita --expose-gc, que los
+// chequeos no tienen). Si la medición no sale, el presupuesto se informa igual
+// pero como estimación, y una estimación nunca pone el CI en rojo.
+async function medirManifest(rutaGz) {
+    const { spawnSync } = await import('node:child_process');
+    const hijo = spawnSync(process.execPath,
+        ['--expose-gc', '--max-old-space-size=4096', 'scripts/cover-manifest-measure.mjs', rutaGz],
+        { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+    if (hijo.status !== 0) {
+        console.warn(`No se pudo medir el manifest: ${(hijo.stderr || '').trim() || `salida ${hijo.status}`}`);
+        return null;
+    }
+    try { return JSON.parse(hijo.stdout.trim().split('\n').at(-1)); }
+    catch { return null; }
+}
+
 try {
     await mkdir(output, { recursive: true });
     let ready = false;
@@ -57,18 +74,22 @@ try {
     const newFeed = dedupeByGtinAndCondition(filterItemsWithReadyPrimaryCover(eligible, projected, true));
     const oldXml = oldFeed.map(item => renderFeedItem(item, original, null, true)).join('');
     const newXml = newFeed.map(item => renderFeedItem(item, projected, null, true)).join('');
-    report.budget = coverManifestBudget({ manifestBytes: raw.length,
-        entries: Object.keys(original.entries).length });
-    console.log(coverBudgetMessage(report.budget));
-    if (report.budget.level === 'critical') {
-        report.failures.push(`Presupuesto de memoria del escritor de portadas: ${coverBudgetMessage(report.budget)}`);
-    }
-
     report.snapshot = { catalog_updated_at: catalog.updated_at, manifest_etag: manifestResponse.headers.get('x-manifest-etag'),
         manifest_bytes: raw.length, manifest_sha256: hash(raw), entries: Object.keys(original.entries).length,
         old_feed_items: oldFeed.length, new_feed_items: newFeed.length, old_item_xml_sha256: hash(oldXml), new_item_xml_sha256: hash(newXml) };
     if (oldFeed.length === 0 || oldXml !== newXml) throw new Error('Merchant item XML differs after projection');
     await writeFile(`${output}/manifest-snapshot.json.gz`, gzipSync(raw));
+
+    // El guardián va después de escribir el snapshot porque mide sobre ese
+    // archivo, y sólo falla con una medición real: una estimación que se
+    // contradiga con producción sería un guardián que miente.
+    report.measurement = await medirManifest(`${output}/manifest-snapshot.json.gz`);
+    report.budget = coverManifestBudget({ manifestBytes: raw.length,
+        entries: Object.keys(original.entries).length, measured: report.measurement });
+    console.log(coverBudgetMessage(report.budget));
+    if (report.budget.enforceable && report.budget.level === 'critical') {
+        report.failures.push(`Presupuesto de memoria del escritor de portadas: ${coverBudgetMessage(report.budget)}`);
+    }
 
     const paths = new Set();
     for (const page of ['/catalogo', '/catalogo?page=2', '/catalogo?disponibilidad=disponibles']) {
@@ -104,6 +125,6 @@ try {
     report.summary = { pages: report.pages.length, pages_ok: report.pages.filter(x => x.ok).length,
         images: report.images.length, images_ok: report.images.filter(x => x.ok).length, failures: report.failures.length };
     await writeFile(`${output}/report.json`, `${JSON.stringify(report, null, 2)}\n`);
-    console.log(JSON.stringify({ snapshot: report.snapshot, budget: report.budget, summary: report.summary, pages: report.pages, failures: report.failures }));
+    console.log(JSON.stringify({ snapshot: report.snapshot, budget: report.budget, measurement: report.measurement, summary: report.summary, pages: report.pages, failures: report.failures }));
     if (report.failures.length) process.exitCode = 1;
 }

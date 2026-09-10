@@ -24,6 +24,12 @@
  * - `JSON.stringify` del manifest entero crea una cadena de decenas de MB que
  *   ensucia la medición siguiente. Por eso los bytes se cuentan por pedazos.
  *
+ * - La peor de las tres: CONSTRUIR los objetos con literales en vez de
+ *   PARSEARLOS. Sobre los mismos datos, construidos dan 2,2x y parseados dan
+ *   1,25x — V8 parsea mucho más compacto. El Worker parsea, así que acá se
+ *   arma el texto, se tira el grafo construido y se mide el que sale de
+ *   JSON.parse. Medir el construido daba un 76% de más.
+ *
  * NO mide el bucket: el `put` de este banco guarda los shards en un Map y eso
  * en el Worker real se va a R2 y no ocupa memoria. Ese término se informa
  * aparte y no entra en el modelo.
@@ -36,7 +42,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
 import {
-  GRAPH_PER_JSON_MB, ENTRIES_COPY_PER_JSON_MB, coverManifestBudget,
+  GRAPH_PER_JSON_MB, ENTRIES_COPY_BYTES_PER_ENTRY, coverManifestBudget,
 } from '../functions/_shared/cover-manifest-budget.js';
 
 const MB = 1024 * 1024;
@@ -89,19 +95,24 @@ const ESTE = fileURLToPath(import.meta.url);
 const unaSola = process.argv.indexOf('--una');
 
 async function medir(cuantas) {
-  const base = heap();
-
-  const entries = {};
-  for (let i = 0; i < cuantas; i += 2) {
-    const id = `MLU${600000000 + i * 37}`;
-    entries[`${id}:0`] = entrada(id, 0);
-    entries[`${id}:1`] = entrada(id, 1);
+  // Se arma el texto y se descarta el grafo construido: lo que importa es el
+  // que produce JSON.parse, que es lo que hace el Worker.
+  let texto = null;
+  {
+    const entries = {};
+    for (let i = 0; i < cuantas; i += 2) {
+      const id = `MLU${600000000 + i * 37}`;
+      entries[`${id}:0`] = entrada(id, 0);
+      entries[`${id}:1`] = entrada(id, 1);
+    }
+    texto = JSON.stringify({ schema_version: 1, updated_at: '2026-09-09T04:12:33.109Z', entries });
   }
-  const manifest = { schema_version: 1, updated_at: '2026-09-09T04:12:33.109Z', entries };
-  const grafo = heap() - base;
+  const jsonMb = Buffer.byteLength(texto) / MB;
 
-  const jsonMb = bytesSinRetener(manifest) / MB;
-  const trasContar = heap() - base;
+  const base = heap();
+  const manifest = JSON.parse(texto);
+  const grafo = heap() - base;
+  const trasContar = grafo;
 
   const siguiente = { ...manifest, entries: { ...manifest.entries } };
   const copia = (heap() - base) - trasContar;
@@ -125,7 +136,7 @@ async function medir(cuantas) {
     grafo_mb: Number(grafo.toFixed(1)),
     grafo_por_json: Number((grafo / jsonMb).toFixed(2)),
     copia_mb: Number(Math.max(0, copia).toFixed(1)),
-    copia_por_json: Number((Math.max(0, copia) / jsonMb).toFixed(3)),
+    copia_bytes_por_entrada: Math.round((Math.max(0, copia) * MB) / cuantas),
     prepare_s: Number(segundos.toFixed(2)),
     shards: resultado.shards,
   };
@@ -150,27 +161,27 @@ for (const cuantas of TAMANOS) {
   filas.push(JSON.parse(hijo.stdout.trim().split('\n').at(-1)));
 }
 
-console.log('entradas | JSON MB | grafo MB | grafo/JSON | copia MB | copia/JSON | prepare s');
-console.log('---------+---------+----------+------------+----------+------------+----------');
+console.log('entradas | JSON MB | grafo MB | grafo/JSON | copia MB | copia B/ent | prepare s');
+console.log('---------+---------+----------+------------+----------+-------------+----------');
 for (const fila of filas) {
   console.log(
     `${String(fila.entradas).padStart(8)} | ${String(fila.json_mb).padStart(7)}`
     + ` | ${String(fila.grafo_mb).padStart(8)} | ${String(fila.grafo_por_json).padStart(10)}`
-    + ` | ${String(fila.copia_mb).padStart(8)} | ${String(fila.copia_por_json).padStart(10)}`
+    + ` | ${String(fila.copia_mb).padStart(8)} | ${String(fila.copia_bytes_por_entrada).padStart(10)}`
     + ` | ${String(fila.prepare_s).padStart(9)}`,
   );
 }
 
 const grafoMedido = Math.max(...filas.map(fila => fila.grafo_por_json));
-const copiaMedida = Math.max(...filas.map(fila => fila.copia_por_json));
+const copiaMedida = Math.max(...filas.map(fila => fila.copia_bytes_por_entrada));
 console.log('');
-console.log(`Modelo en uso:  grafo ${GRAPH_PER_JSON_MB}x · copia ${ENTRIES_COPY_PER_JSON_MB}x`);
-console.log(`Medido ahora:   grafo ${grafoMedido.toFixed(2)}x · copia ${copiaMedida.toFixed(3)}x`);
+console.log(`Modelo en uso:  grafo ${GRAPH_PER_JSON_MB}x · copia ${ENTRIES_COPY_BYTES_PER_ENTRY} B/entrada`);
+console.log(`Medido ahora:   grafo ${grafoMedido.toFixed(2)}x · copia ${copiaMedida} B/entrada`);
 // Tolerancia del 2%: los valores vienen redondeados y una diferencia en el
 // último decimal no es un modelo optimista, es ruido de medición.
 const TOLERANCIA = 1.02;
 if (grafoMedido > GRAPH_PER_JSON_MB * TOLERANCIA
-  || copiaMedida > ENTRIES_COPY_PER_JSON_MB * TOLERANCIA) {
+  || copiaMedida > ENTRIES_COPY_BYTES_PER_ENTRY * TOLERANCIA) {
   console.log('');
   console.log('El modelo quedó OPTIMISTA respecto de lo medido. Hay que subir las');
   console.log('constantes en functions/_shared/cover-manifest-budget.js.');
@@ -178,5 +189,7 @@ if (grafoMedido > GRAPH_PER_JSON_MB * TOLERANCIA
 }
 
 console.log('');
-console.log('Ejemplo con el manifest de producción del 2026-09-10 (31,6 MB / 80.863):');
-console.log(JSON.stringify(coverManifestBudget({ manifestBytes: 31.6 * MB, entries: 80863 }), null, 2));
+// El manifest real, medido en CI el 2026-09-10: 108.774.952 bytes, 80.871
+// entradas, 1387 por entrada. El 31,6 MB que circulaba era un dato viejo.
+console.log('Ejemplo con el manifest real de producción (103,7 MB / 80.871):');
+console.log(JSON.stringify(coverManifestBudget({ manifestBytes: 108774952, entries: 80871 }), null, 2));
