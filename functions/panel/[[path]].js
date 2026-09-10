@@ -8,6 +8,8 @@
  *   GET  /panel/pedido/<código> → la ficha del pedido: qué va en la caja,
  *                       a dónde va, el pago y el historial
  *   POST /panel/login   → Turnstile + contraseña → cookie de sesión firmada
+ *   GET  /panel/ajustes → datos de retiro que salen en el correo al cliente
+ *   POST /panel/ajustes → los guarda en KV (única escritura del panel)
  *   POST /panel/logout  → borra la cookie
  *
  * Reglas que este archivo no puede romper:
@@ -34,6 +36,7 @@ import {
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
+import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
 
 // Mismo patrón que functions/api/_stock_waitlist_handler.js: el panel no puede
 // aceptar un hostname de Preview que el resto del sitio rechaza, ni al revés.
@@ -163,6 +166,17 @@ function layout(title, body) {
           font-style:italic; font-size:.88rem; }
   tbody tr a { color:inherit; text-decoration:none; display:block; }
   tbody tr:hover { background:#f6f7f9; }
+  form.card label { margin:1rem 0 .3rem; }
+  form.card input[type=text], form.card input[type=number], form.card textarea {
+    width:100%; max-width:32rem; padding:.55rem .65rem; border:1px solid #cbd2d9;
+    border-radius:8px; font:inherit; font-size:.95rem; }
+  form.card textarea { resize:vertical; }
+  form.card input[type=number] { max-width:7rem; }
+  .acciones { display:flex; gap:.5rem; align-items:center; }
+  .linkbtn { border:1px solid #cbd2d9; border-radius:8px; padding:.35rem .8rem;
+             color:#6b7280; text-decoration:none; font-size:.95rem; }
+  .linkbtn:hover { color:#1f2933; }
+  .ok-box { border-color:#7ac9a5; background:#effaf4; color:#087443; }
 </style>
 </head>
 <body><main>${body}</main></body>
@@ -299,6 +313,73 @@ function orderPage(found) {
   return layout(`Pedido ${order.public_code}`, body);
 }
 
+
+/**
+ * Ajustes: los datos de retiro que el equipo carga y que despues salen en el
+ * correo al cliente. Es la unica pantalla del panel que escribe, y escribe
+ * solo estos cuatro campos en KV.
+ */
+function settingsPage(pickup, { saved = false, error = '' } = {}) {
+  const falta = !pickupComplete(pickup);
+  return layout('Ajustes - Amado Libros', `
+<div class="topbar">
+  <div>
+    <a class="back" href="/panel">&larr; Pedidos</a>
+    <h1>Ajustes</h1>
+    <p class="muted">Lo que se escribe acá aparece en los correos que recibe el cliente.</p>
+  </div>
+</div>
+
+${saved ? '<p class="card ok-box">Guardado.</p>' : ''}
+${error ? `<p class="card err">No se pudo guardar: ${escapeHtml(error)}</p>` : ''}
+${falta ? '<p class="card alert">Falta completar dirección, barrio u horarios. Hasta que estén, el aviso de retiro no se puede enviar.</p>' : ''}
+
+<form class="card" method="POST" action="/panel/ajustes">
+  <h2>Retiro en el local</h2>
+
+  <label for="address">Dirección</label>
+  <input id="address" name="address" type="text" maxlength="160" autocomplete="off"
+         placeholder="Calle y número, apartamento o local" value="${escapeHtml(pickup.address)}">
+
+  <label for="zone">Barrio y ciudad</label>
+  <input id="zone" name="zone" type="text" maxlength="120" autocomplete="off"
+         placeholder="Pocitos, Montevideo" value="${escapeHtml(pickup.zone)}">
+
+  <label for="hours">Horarios</label>
+  <textarea id="hours" name="hours" maxlength="240" rows="3"
+            placeholder="Lunes a viernes de 10 a 18, sábados de 10 a 13">${escapeHtml(pickup.hours)}</textarea>
+
+  <label for="holdDays">Días que se guarda el pedido</label>
+  <input id="holdDays" name="holdDays" type="number" min="1" max="90" value="${escapeHtml(pickup.holdDays)}">
+  <p class="muted">Se le dice al cliente en el correo de retiro.</p>
+
+  <button type="submit">Guardar</button>
+</form>`);
+}
+
+async function handleSettingsSave(context) {
+  const { request } = context;
+  // La cookie de sesión es SameSite=Strict, así que un POST desde otro sitio
+  // ni siquiera la lleva. El origen se verifica igual, por las dudas.
+  const origin = request.headers.get('origin');
+  if (origin && origin !== new URL(request.url).origin) {
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  const form = await request.formData();
+  const result = await savePickup(context.env, {
+    address: form.get('address'),
+    zone: form.get('zone'),
+    hours: form.get('hours'),
+    holdDays: form.get('holdDays'),
+  });
+
+  return htmlResponse(settingsPage(result.pickup, {
+    saved: result.ok,
+    error: result.ok ? '' : result.error,
+  }), { status: result.ok ? 200 : 500 });
+}
+
 function dashboardPage(data) {
   const env = data.environment;
   const stuckCount = data.stuck?.ok ? data.stuck.data.total : null;
@@ -317,7 +398,7 @@ function dashboardPage(data) {
       datos al ${shortDate(data.generatedAt)} UTC
     </p>
   </div>
-  <form method="POST" action="/panel/logout"><button class="logout" type="submit">Salir</button></form>
+  <div class="acciones"><a class="linkbtn" href="/panel/ajustes">Ajustes</a><form method="POST" action="/panel/logout"><button class="logout" type="submit">Salir</button></form></div>
 </div>
 
 <section class="card ${stuckCount || missingImageCount ? 'alert' : ''}">
@@ -529,6 +610,19 @@ export async function onRequest(context) {
   if (path === '/panel/login') {
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
     return handleLogin(context, config);
+  }
+
+  if (path === '/panel/ajustes') {
+    if (!['GET', 'POST'].includes(request.method)) {
+      return new Response('Method Not Allowed', { status: 405 });
+    }
+    if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
+      return htmlResponse(loginPage({
+        siteKey: cleanString(context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY),
+      }));
+    }
+    if (request.method === 'POST') return handleSettingsSave(context);
+    return htmlResponse(settingsPage(await loadPickup(context.env)));
   }
 
   const pedido = /^\/panel\/pedido\/([^/]+)$/.exec(path);

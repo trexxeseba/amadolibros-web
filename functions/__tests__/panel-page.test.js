@@ -490,3 +490,129 @@ test('sin sesión la ficha muestra el login, nunca los datos del pedido', async 
   assert.doesNotMatch(html, /Bulevar España/);
   assert.doesNotMatch(html, /Valentina/);
 });
+
+
+function kvStub(initial = null) {
+  const store = { value: initial, writes: 0 };
+  return {
+    store,
+    get: async () => store.value,
+    put: async (_k, v) => { store.value = v; store.writes += 1; },
+    delete: async () => {},
+  };
+}
+
+function settingsForm(values) {
+  const form = new URLSearchParams();
+  for (const [k, v] of Object.entries(values)) form.set(k, v);
+  return form;
+}
+
+test('ajustes guarda los datos de retiro y los devuelve en el formulario', async () => {
+  const kv = kvStub();
+  const guardado = await onRequest({
+    request: request('/panel/ajustes', {
+      method: 'POST', cookie: await sessionCookie(),
+      body: settingsForm({ address: 'Bulevar Espana 2341', zone: 'Pocitos, Montevideo', hours: 'Lun a vie de 10 a 18', holdDays: '20' }),
+    }),
+    env: baseEnv({ AMADO_KV: kv }),
+  });
+  assert.equal(guardado.status, 200);
+  assert.match(await guardado.text(), /Guardado\./);
+  assert.equal(kv.store.writes, 1);
+  assert.deepEqual(JSON.parse(kv.store.value), {
+    address: 'Bulevar Espana 2341', zone: 'Pocitos, Montevideo', hours: 'Lun a vie de 10 a 18', holdDays: 20,
+  });
+
+  const vista = await onRequest({
+    request: request('/panel/ajustes', { cookie: await sessionCookie() }),
+    env: baseEnv({ AMADO_KV: kv }),
+  });
+  const html = await vista.text();
+  assert.match(html, /value="Bulevar Espana 2341"/);
+  assert.match(html, /Lun a vie de 10 a 18/);
+  assert.doesNotMatch(html, /Falta completar/);
+});
+
+test('mientras falte un dato, ajustes avisa que el correo de retiro no se puede mandar', async () => {
+  const response = await onRequest({
+    request: request('/panel/ajustes', {
+      method: 'POST', cookie: await sessionCookie(),
+      body: settingsForm({ address: 'Bulevar Espana 2341', zone: '', hours: '', holdDays: '15' }),
+    }),
+    env: baseEnv({ AMADO_KV: kvStub() }),
+  });
+  assert.match(await response.text(), /Falta completar/);
+});
+
+test('los datos de retiro se limpian y se acotan antes de guardarse', async () => {
+  const kv = kvStub();
+  await onRequest({
+    request: request('/panel/ajustes', {
+      method: 'POST', cookie: await sessionCookie(),
+      body: settingsForm({
+        // Un caracter de control invisible no puede terminar en el correo.
+        address: '  Calle 1  con basura  ',
+        zone: 'Centro',
+        hours: 'Lunes a viernes\r\nSabados de 10 a 13',
+        holdDays: '999',
+      }),
+    }),
+    env: baseEnv({ AMADO_KV: kv }),
+  });
+  const saved = JSON.parse(kv.store.value);
+  assert.equal(saved.address, 'Calle 1  con basura', 'el caracter de control no llega al correo');
+  assert.equal(saved.hours, 'Lunes a viernes\nSabados de 10 a 13', 'el salto de linea si se conserva');
+  assert.equal(saved.holdDays, 90, 'los dias se acotan a un rango razonable');
+});
+
+test('lo que carga el equipo sale escapado, no como HTML', async () => {
+  const kv = kvStub(JSON.stringify({
+    address: '<img src=x onerror=alert(1)>', zone: 'Centro', hours: '10 a 18', holdDays: 15,
+  }));
+  const html = await (await onRequest({
+    request: request('/panel/ajustes', { cookie: await sessionCookie() }),
+    env: baseEnv({ AMADO_KV: kv }),
+  })).text();
+  assert.doesNotMatch(html, /<img src=x onerror/);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+});
+
+test('un POST desde otro sitio se rechaza aunque traiga cookie', async () => {
+  const headers = new Headers({ cookie: await sessionCookie(), origin: 'https://sitio-ajeno.example' });
+  const kv = kvStub();
+  const response = await onRequest({
+    request: new Request('https://www.amadolibros.com/panel/ajustes', {
+      method: 'POST', headers, body: settingsForm({ address: 'x', zone: 'y', hours: 'z', holdDays: '1' }),
+    }),
+    env: baseEnv({ AMADO_KV: kv }),
+  });
+  assert.equal(response.status, 403);
+  assert.equal(kv.store.writes, 0, 'no se escribio nada');
+});
+
+test('sin sesion no se puede ni ver ni guardar los ajustes', async () => {
+  const kv = kvStub();
+  const vista = await onRequest({ request: request('/panel/ajustes'), env: baseEnv({ AMADO_KV: kv }) });
+  assert.match(await vista.text(), /type="password"/);
+
+  await onRequest({
+    request: request('/panel/ajustes', { method: 'POST', body: settingsForm({ address: 'x', zone: 'y', hours: 'z', holdDays: '1' }) }),
+    env: baseEnv({ AMADO_KV: kv }),
+  });
+  assert.equal(kv.store.writes, 0, 'sin sesion no se escribe');
+});
+
+test('si KV no esta, avisa en vez de decir que guardo', async () => {
+  const response = await onRequest({
+    request: request('/panel/ajustes', {
+      method: 'POST', cookie: await sessionCookie(),
+      body: settingsForm({ address: 'x', zone: 'y', hours: 'z', holdDays: '1' }),
+    }),
+    env: baseEnv({ AMADO_KV: undefined }),
+  });
+  assert.equal(response.status, 500);
+  const html = await response.text();
+  assert.match(html, /No se pudo guardar/);
+  assert.doesNotMatch(html, /Guardado\./);
+});
