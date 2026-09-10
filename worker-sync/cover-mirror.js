@@ -1,4 +1,4 @@
-import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
+import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleFutureReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
 import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
 import { putJsonToR2 } from './json-r2-stream.js';
@@ -217,7 +217,7 @@ function candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) {
   if (!entry?.current?.object_key) return 0;
   if (entry.current.source_url !== candidate.source_url) return 1;
   if (entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION) return 2;
-  if (!googleReadyImage(entry.current) && nowMs - timestamp(entry.native_checked_at) >= IMAGE_SOURCE_RECHECK_MS) return 2;
+  if (!googleFutureReadyImage(entry.current) && nowMs - timestamp(entry.native_checked_at) >= IMAGE_SOURCE_RECHECK_MS) return 2;
   if (aiUpscaleEnabled && needsAiUpscale(entry)) {
     const attempted = Date.parse(entry.last_transform_attempt_at || '');
     if (!Number.isFinite(attempted) || nowMs - attempted >= TRANSFORM_RETRY_MS) return 2;
@@ -639,7 +639,7 @@ export async function syncCoverMirror(env, catalog, {
   const sourcePending = scopeEntries.filter(({row,entry}) =>
     !entry || entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION ||
     (entry.current?.source_url !== row.source_url && entry.last_attempted_source_url !== row.source_url)).length;
-  const needsSource = Object.entries(finalManifest.entries).filter(([,entry]) => entry?.current?.object_key && !googleReadyImage(entry.current))
+  const needsSource = Object.entries(finalManifest.entries).filter(([,entry]) => entry?.current?.object_key && !googleFutureReadyImage(entry.current))
     .map(([key,entry]) => ({row:{product_id:entry.product_id || key.split(':')[0],position:Number(entry.position ?? key.split(':')[1]),source_url:entry.current.source_url},entry}));
   const unavailable = new Map(Object.entries(finalManifest.entries)
     .filter(([,entry]) => entry?.last_error && (!entry.current?.object_key || entry.last_attempted_source_url !== entry.current.source_url))

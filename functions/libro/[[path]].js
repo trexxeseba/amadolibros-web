@@ -1,5 +1,5 @@
 import { coverSources } from '../book-cover/[[path]].js';
-import { googleReadyImage } from '../_shared/image-source-policy.js';
+import { googleReadyImage, googleFutureReadyImage } from '../_shared/image-source-policy.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
@@ -1206,8 +1206,21 @@ export async function onRequest(context) {
     if (context.env?.COVER_GOOGLE_QUALITY_GATE === 'true') {
         const positions = originalImages.map(source => coverSources(item).indexOf(source));
         const copies = await Promise.all(originalImages.map((source, index) => findPreviewCover(context, item.id, positions[index], source)));
-        googleImages = copies.flatMap((copy, index) => googleReadyImage(copy?.entry?.current)
-          ? [new URL(`/book-cover/${item.id}/${positions[index] === 0 ? 'cover.jpg' : `cover-${positions[index] + 1}.jpg`}`, navigationBase).toString()] : []);
+        googleImages = copies
+            .map((copy, index) => ({ current: copy?.entry?.current, index }))
+            .filter(candidate => googleReadyImage(candidate.current))
+            // La primera de la lista es la que Google toma como principal. Las
+            // que ya cumplen el mínimo de 2027 van adelante: sirven hoy, van a
+            // seguir sirviendo y no arrastran el aviso de resolución. Las que
+            // sólo cumplen el mínimo vigente quedan detrás, pero NO se
+            // descartan — descartarlas era lo que dejaba miles de libros fuera
+            // del feed. El orden dentro de cada grupo se conserva.
+            .sort((left, right) =>
+                (googleFutureReadyImage(right.current) ? 1 : 0) -
+                (googleFutureReadyImage(left.current) ? 1 : 0))
+            .map(candidate => new URL(
+                `/book-cover/${item.id}/${positions[candidate.index] === 0 ? 'cover.jpg' : `cover-${positions[candidate.index] + 1}.jpg`}`,
+                navigationBase).toString());
     }
     const renderStartedAt = perfNow();
     const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks, googleImages);
