@@ -40,9 +40,13 @@ test('índice ausente, corrupto o inaccesible conserva la foto real sin esconder
     { get: async () => { throw new Error('R2 unavailable'); } },
   ]) assert.deepEqual(inspectProductImages(await page(data)).products[0].images, [image(0)]);
 });
-test('se prefiere una secundaria de calidad y se conserva la galería', async () => {
+test('la secundaria de calidad va primera, y la chica se conserva en vez de tirarse', async () => {
+  // La portada (426×500) sirve hoy pero no llega al mínimo de 2027; la
+  // secundaria (800×1000) cumple las dos. Google toma la PRIMERA como
+  // principal, así que la buena va adelante — pero la otra no se descarta:
+  // descartarla era lo que dejaba miles de libros sin imagen para Google.
   const html = await page(bucket({ [`${id}:0`]: entry(0,426,500), [`${id}:1`]: entry(1,800,1000) }));
-  assert.deepEqual(inspectProductImages(html).products[0].images, [image(1)]);
+  assert.deepEqual(inspectProductImages(html).products[0].images, [image(1), image(0)]);
   assert.match(html, /class="cover-main"/);
   assert.match(html, /data-idx="1"/);
 });
