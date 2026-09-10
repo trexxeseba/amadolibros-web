@@ -311,7 +311,9 @@ export async function loadOrder(db, publicCode) {
     ),
     queryAll(
       db,
-      `SELECT event_type, created_at
+      // `payload_json` se lee para saber si un aviso al cliente salió, quedó
+      // a medias o falló. Nunca se muestra crudo: sólo se mira su estado.
+      `SELECT event_type, payload_json, created_at
          FROM order_events
         WHERE order_id = ?
         ORDER BY created_at DESC, id DESC
