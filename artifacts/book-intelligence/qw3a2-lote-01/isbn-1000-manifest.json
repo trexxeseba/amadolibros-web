@@ -1,0 +1,1464 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-06T02:23:17.423Z",
+  "cohort": {
+    "requested": 100,
+    "researched": 2005,
+    "selected_updates": 47,
+    "unique_isbn": true,
+    "scope": "active_sellable_editions"
+  },
+  "metrics": {
+    "GREEN_FULL": 7,
+    "GREEN_FACTS": 40,
+    "REVIEW": 477,
+    "NO_EVIDENCE": 1481,
+    "updated_count": 47,
+    "remaining_to_1000": 953,
+    "target_reached": false
+  },
+  "entries": [
+    {
+      "isbn": "9781418599942",
+      "representative_id": "MLU609632159",
+      "listing_ids": [
+        "MLU609632159",
+        "MLU631885765"
+      ],
+      "title": "El Inversor Inteligente. Benjamin Graham",
+      "author": "Graham, Benjamin",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 624
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780194646864",
+      "representative_id": "MLU649729108",
+      "listing_ids": [
+        "MLU649729108",
+        "MLU652240554"
+      ],
+      "title": "Oxford Read And Discover: Level 2: Jobs",
+      "author": "Geatches / Clegg",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 40,
+        "publication_year": "2013"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Kamini Khanduri"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Hazel Geatches, Kamini Khanduri"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Jobs, Level 2"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9780198392439",
+      "representative_id": "MLU673416720",
+      "listing_ids": [
+        "MLU673416720",
+        "MLU674037194"
+      ],
+      "title": "Ignite English Student Book 2",
+      "author": "Christopher Edge",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2014"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Geoff Barton"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9780525435006",
+      "representative_id": "MLU647750874",
+      "listing_ids": [
+        "MLU647750874",
+        "MLU651601394"
+      ],
+      "title": "The Handmaid´s Tale Atwood",
+      "author": "Margaret Atwood",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publication_year": "2017",
+        "topics": [
+          "Fiction"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9780738746364",
+      "representative_id": "MLU659069824",
+      "listing_ids": [
+        "MLU659069824",
+        "MLU669984884"
+      ],
+      "title": "Egyptian Tarot Grand Trumps",
+      "author": "LO SCARABEO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2015"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780738749839",
+      "representative_id": "MLU659005076",
+      "listing_ids": [
+        "MLU637121295",
+        "MLU659005076"
+      ],
+      "title": "Golden Visconti Grand Trumps",
+      "author": "LO SCARABEO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2016"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781292292557",
+      "representative_id": "MLU669674092",
+      "listing_ids": [
+        "MLU636406491",
+        "MLU669674092"
+      ],
+      "title": "Team Together 4 Activity Book (all Set!) Ines Avello",
+      "author": "Ines Avello",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 136
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Pearson Education, Limited"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781365910753",
+      "representative_id": "MLU652762690",
+      "listing_ids": [
+        "MLU652762690",
+        "MLU655279578"
+      ],
+      "title": "Relato Psicoanálisis De Un Niño Melanie Klein Psicologia",
+      "author": "Melanie Klein",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2017"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9789508083937",
+      "representative_id": "MLU650159154",
+      "listing_ids": [
+        "MLU1318669620",
+        "MLU650159154"
+      ],
+      "title": "Escuela, Violencia Y Niñez: Nuevos Modos Convivir Belgich",
+      "author": "BELGICH, HORACIO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2003"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789875704480",
+      "representative_id": "MLU676978400",
+      "listing_ids": [
+        "MLU676965668",
+        "MLU676978400"
+      ],
+      "title": "Cerebro Activo Temporada Invierno Agustina Melnitzky",
+      "author": "Agustina Melnitzky",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2021"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780738745589",
+      "representative_id": "MLU672629546",
+      "listing_ids": [
+        "MLU672629546"
+      ],
+      "title": "Tarot Mucha",
+      "author": "LO SCARABEO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2015"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781572813458",
+      "representative_id": "MLU644234684",
+      "listing_ids": [
+        "MLU644234684"
+      ],
+      "title": "The Complete Tarot Kit",
+      "author": "SUSAN LEVITT",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 250
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "INC. U. S. GAMES SYSTEMS"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9780194046701",
+      "representative_id": "MLU626744642",
+      "listing_ids": [
+        "MLU626744642"
+      ],
+      "title": "Playtime B - Student´s Book - Oxford",
+      "author": "Oxford",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 32
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Claire Selby, Annabel Tempest"
+          },
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Playtime: B: Workbook"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Claire Selby"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9780393045147",
+      "representative_id": "MLU672676948",
+      "listing_ids": [
+        "MLU672676948"
+      ],
+      "title": "Notas Zoologicas Uruguayas Usado",
+      "author": "Horacio Arredondo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 1003,
+        "publication_year": "1981",
+        "topics": [
+          "Readers"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Miguel de Cervantes Saavedra, John Ormsby, Joseph Ramon Jones, Kenneth Douglas"
+          },
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Don Quixote"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Miguel de Cervantes Saavedra"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Don Quixote"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788433030498",
+      "representative_id": "MLU672583506",
+      "listing_ids": [
+        "MLU672583506",
+        "MLU673178500"
+      ],
+      "title": "Biblia De Jerusalén 5ª Edición Manual Totalmente Revisada",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2019"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Biblia de Jerusalén : modelo con cremallera"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9783836522168",
+      "representative_id": "MLU626638961",
+      "listing_ids": [
+        "MLU626638961",
+        "MLU652188510"
+      ],
+      "title": "Industrial Design Form A To Z",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Charlotte Fiell, Peter Fiell",
+        "publication_year": "2016"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Industrial Design A-Z"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Industrial design A-Z"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781074092290",
+      "representative_id": "MLU644161565",
+      "listing_ids": [
+        "MLU644161565",
+        "MLU644187249"
+      ],
+      "title": "Espérame En El Arcoíris Cómo Afrontar Duelo Pérdida Mascota",
+      "author": "Laura Vidal",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 128
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780194113465",
+      "representative_id": "MLU648585219",
+      "listing_ids": [
+        "MLU648494401",
+        "MLU648585219"
+      ],
+      "title": "Oxford Skills World Level 1 Reading With Writing Sb",
+      "author": "Oxford",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 120
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Sarah Jane Lewis-Mantzarls"
+          },
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Oxford Skills World Reading with Writing"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Sarah Jane Lewis-Mantzarls"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Oxford Skills World Reading with Writing"
+          }
+        ],
+        "edition_fields": [
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9781316637081",
+      "representative_id": "MLU713558546",
+      "listing_ids": [
+        "MLU713545548",
+        "MLU713558546"
+      ],
+      "title": "Success International English Skills For Cambridge Igcse Wb",
+      "author": "BARRY, Marian",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Cambridge University Press"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781557768407",
+      "representative_id": "MLU701208580",
+      "listing_ids": [
+        "MLU1205882426",
+        "MLU701208580"
+      ],
+      "title": "Narcóticos Anónimostexto Basico Adiccion Drogas",
+      "author": "Wso",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2010"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9786070747717",
+      "representative_id": "MLU683738330",
+      "listing_ids": [
+        "MLU683738330",
+        "MLU683764390"
+      ],
+      "title": "Libro: El Derecho A Decir No - Riso, Walter",
+      "author": "Riso, Walter",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2018"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788416138661",
+      "representative_id": "MLU701980804",
+      "listing_ids": [
+        "MLU701980804",
+        "MLU701980806"
+      ],
+      "title": "Piezas Y Accesorios Trapillo Diseños Rápidos Restos Telas",
+      "author": "DEDRI UYS",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 144
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Piezas y accesorios con trapillo"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788419464125",
+      "representative_id": "MLU680067790",
+      "listing_ids": [
+        "MLU680067790",
+        "MLU680067794"
+      ],
+      "title": "Nuestro Mejor Regalo - Román, José Carlos",
+      "author": "JOSÉ CARLOS ROMÁN",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Cuento de Luz",
+        "publication_year": "2023"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9789873804533",
+      "representative_id": "MLU761427324",
+      "listing_ids": [
+        "MLU761297292",
+        "MLU761427324"
+      ],
+      "title": "La Humanidad Frente A La Barbarie - Muchnik Guerra Muerte",
+      "author": "REFLEXIONES SOBRE LA GUERRA LA MUERTE Y LA SUPERVIVENCIA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 197
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Daniel Muchnik"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Daniel Muchnik"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780062273208",
+      "representative_id": "MLU1497570376",
+      "listing_ids": [
+        "MLU1496875752",
+        "MLU1497570376"
+      ],
+      "title": "The Hard Thing About Hard Things Ben Horowitz",
+      "author": "Ben Horowitz",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "HarperBusiness"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 2,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9780063226555",
+      "representative_id": "MLU731514266",
+      "listing_ids": [
+        "MLU731345270",
+        "MLU731514266"
+      ],
+      "title": "The Wild Unknown Pocket Animal Spirit Deck - Tarot",
+      "author": "Kim Krans",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2022"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9780192767202",
+      "representative_id": "MLU709454496",
+      "listing_ids": [
+        "MLU709363578",
+        "MLU709454496"
+      ],
+      "title": "Oxford First Dictionary - Diccionario Infantil Vocabulario",
+      "author": "Oxford Dictionaries",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 160,
+        "publication_year": "2018"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780738710075",
+      "representative_id": "MLU706416626",
+      "listing_ids": [
+        "MLU706416626",
+        "MLU706429648"
+      ],
+      "title": "Tarot Lenormand Multilingüe - Baraja Completa De 78 Cartas",
+      "author": "Lo Scara",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2006"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Giordano Berti"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781500530761",
+      "representative_id": "MLU701188370",
+      "listing_ids": [
+        "MLU701188370",
+        "MLU729067558"
+      ],
+      "title": "La Nueva Medicina Del Dr. Hamer Piel Y Alergias Cutáneas",
+      "author": "Andrea Taddei",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 108,
+        "publication_year": "2014"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9781502921895",
+      "representative_id": "MLU753443972",
+      "listing_ids": [
+        "MLU753443972",
+        "MLU767547742"
+      ],
+      "title": "Marc Reklau: Hábitos Para Transformar Tu Vida En 30 Días",
+      "author": "Marc Reklau",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2014"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9781682631553",
+      "representative_id": "MLU644148389",
+      "listing_ids": [
+        "MLU644148389",
+        "MLU644174417"
+      ],
+      "title": "Sobre Los Insectos Guía Para Niños Aprendizaje Naturaleza",
+      "author": "Cathryn Sill",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2020"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9781793013040",
+      "representative_id": "MLU711376292",
+      "listing_ids": [
+        "MLU711376292",
+        "MLU711624600"
+      ],
+      "title": "Libro Kebra Nagast Tradición Rastafari Y Arca De La Alianza",
+      "author": "Mazzoni, Lorenzo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2019"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781940265230",
+      "representative_id": "MLU729459140",
+      "listing_ids": [
+        "MLU729394448",
+        "MLU729459140"
+      ],
+      "title": "Search For Hidden Knowledge - Dolores Cannon - En Inglés",
+      "author": "DOLORES CANNON",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publication_year": "2014"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9781981720705",
+      "representative_id": "MLU629439283",
+      "listing_ids": [
+        "MLU629439283",
+        "MLU692647026"
+      ],
+      "title": "Mi Viaje Sin Ti: Lo Que Queríamos Ser Y No Fuimos",
+      "author": "Alejandro Sequera",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Createspace Independent Publishing Platform",
+        "publication_year": "2017"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Deja Vu Ediciones"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9786073238496",
+      "representative_id": "MLU806768804",
+      "listing_ids": [
+        "MLU806326804",
+        "MLU806768804"
+      ],
+      "title": "Química Orgánica Volumen 2 - Nivel Avanzado Estudiantes",
+      "author": "LEROY G. WADE",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2017"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788417492199",
+      "representative_id": "MLU684660466",
+      "listing_ids": [
+        "MLU684660466",
+        "MLU684660468"
+      ],
+      "title": "El Arte De Ilustrar Libros Infantiles - Práctica Y Teórica",
+      "author": "Martin Salisbury / Morag Styles",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 192
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "El arte de ilustrar libros infantiles (2018)"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Martin Salisbury, Cristina Rodríguez Fischer, Remedios Diéguez Diéguez"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788467705201",
+      "representative_id": "MLU755068518",
+      "listing_ids": [
+        "MLU755068518",
+        "MLU755068520"
+      ],
+      "title": "Libro Aviación Militar España - Aviones De Combate",
+      "author": "Permuy López, Rafael Ángel",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "SUSAETA",
+        "pages": 256,
+        "publication_year": "2010"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Rafael A. Permuy López, José Luis González Serrano"
+          },
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Aviación militar española"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788478696550",
+      "representative_id": "MLU685358144",
+      "listing_ids": [
+        "MLU641949127",
+        "MLU685358144"
+      ],
+      "title": "Ale 1 - Aprendizaje Lectura Escritura Evaluacion Inicial",
+      "author": "GONZALEZ SEIJAS, ROSA/CUETOS VEGA, FERNA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 72
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Rosa Mary González Seijas, Fernando Cuetos Vega"
+          },
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Ale 1"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Fernando Cuetos Vega, Rosa María González Seijas"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "ALE 1. Actividades para el aprendizaje de la lectura y la escritura. Cuaderno de evaluación inicial."
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "González Seijas, Rosa Mary"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Ale : actividades para el aprendizaje de la lectura y la escritura"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788490355282",
+      "representative_id": "MLU697017772",
+      "listing_ids": [
+        "MLU697017772",
+        "MLU697056730"
+      ],
+      "title": "Redes De Computadoras Kurose It Ofimatica",
+      "author": "Kurose, James",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 704
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788490615102",
+      "representative_id": "MLU686363028",
+      "listing_ids": [
+        "MLU686363028",
+        "MLU686389012"
+      ],
+      "title": "El Padre Pío El Capuchino De Los Estigmas Chiron, Yves",
+      "author": "Chiron, Yves",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ediciones Palabra, S.A.",
+        "pages": 392,
+        "publication_year": "2017"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788497343343",
+      "representative_id": "MLU687870618",
+      "listing_ids": [
+        "MLU687857632",
+        "MLU687870618"
+      ],
+      "title": "Historia Del Antiguo Egipto Oxford Excelente Ian Shaw",
+      "author": "Oxford",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 728,
+        "publication_year": "2010"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Ian Shaw"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Oxford, Ian Shaw, José Miguel Parra Ortiz"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788853004512",
+      "representative_id": "MLU711638074",
+      "listing_ids": [
+        "MLU711638074",
+        "MLU767482772"
+      ],
+      "title": "The Wonderful Wizard Of Oz - Edición Adaptada A1",
+      "author": "L. Frank Baum",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 80
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Lyman Frank Baum, Gina D. B. Clemen, Alida Massari"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500758925",
+      "representative_id": "MLU643557527",
+      "listing_ids": [
+        "MLU643557527",
+        "MLU690332286"
+      ],
+      "title": "La Explosion Lutzky Horacio Amia Israel Daia Atentado",
+      "author": "Horacio Lutzky",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 189,
+        "publication_year": "2017"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501239812",
+      "representative_id": "MLU688989224",
+      "listing_ids": [
+        "MLU643179215",
+        "MLU688989224"
+      ],
+      "title": "El Seminario Lacan 11 Conceptos Psicologia Del Psicoanalisis",
+      "author": "Jacques Lacan",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 290,
+        "topics": [
+          "Psychology"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 2,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789505045822",
+      "representative_id": "MLU823811980",
+      "listing_ids": [
+        "MLU632103121",
+        "MLU823811980"
+      ],
+      "title": "Libro Caballo Deportivo En Argentina - Equitación",
+      "author": "Carreras, Faustino Fermin",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2005"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "El Caballo Deportivo En Argentina"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789508921635",
+      "representative_id": "MLU753456482",
+      "listing_ids": [
+        "MLU753326602",
+        "MLU753456482"
+      ],
+      "title": "Cómo Se Aprende La Lengua Escrita: Claves De Ortiz Y Robino",
+      "author": "ORTIZ, ROBINO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 96
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789876291576",
+      "representative_id": "MLU827069128",
+      "listing_ids": [
+        "MLU826991156",
+        "MLU827069128"
+      ],
+      "title": "La Etnografía Guber Investigación Antropología Social",
+      "author": "Rosana Guber",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2011"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "La etnografía : método, campo y reflexividad - 1. ed."
+          }
+        ],
+        "edition_fields": []
+      }
+    }
+  ]
+}

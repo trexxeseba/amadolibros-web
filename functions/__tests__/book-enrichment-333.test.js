@@ -11,6 +11,22 @@ import {
 } from '../_shared/book-enrichment-registry.js';
 import { renderFeedItem } from '../feed.xml.js';
 
+// La fusión de lotes hace que el registry devuelva un objeto COMBINADO, no el
+// del módulo: un lote posterior puede completarle campos a la misma edición.
+// Lo que hay que garantizar es que ningún hecho del lote se perdió ni cambió.
+function conservaLosHechos(resolved, entry) {
+  for (const [field, value] of Object.entries(entry.facts || {})) {
+    if (field === 'bibliographic') {
+      for (const [key, bibValue] of Object.entries(value || {})) {
+        assert.deepEqual(resolved.facts.bibliographic[key], bibValue, `${entry.isbn}.${key}`);
+      }
+      continue;
+    }
+    assert.deepEqual(resolved.facts[field], value, `${entry.isbn}.${field}`);
+  }
+}
+
+
 test('la segunda cohorte contiene exactamente 333 ISBN nuevos y verificables', () => {
   const firstCohort = new Set(BOOK_FACT_ENRICHMENTS_1000.map(entry => entry.isbn));
   assert.equal(BOOK_FACT_ENRICHMENTS_333.length, 333);
@@ -18,7 +34,7 @@ test('la segunda cohorte contiene exactamente 333 ISBN nuevos y verificables', (
   for (const entry of BOOK_FACT_ENRICHMENTS_333) {
     assert.equal(firstCohort.has(entry.isbn), false, `ISBN repetido: ${entry.isbn}`);
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
-    assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
+    conservaLosHechos(getBookEnrichmentByIsbn(entry.isbn), entry);
   }
   const firstTwoCohorts = new Set([
     ...BOOK_FACT_ENRICHMENTS_1000,

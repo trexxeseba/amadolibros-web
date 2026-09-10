@@ -13,6 +13,22 @@ import {
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
 
+// La fusión de lotes hace que el registry devuelva un objeto COMBINADO, no el
+// del módulo: un lote posterior puede completarle campos a la misma edición.
+// Lo que hay que garantizar es que ningún hecho del lote se perdió ni cambió.
+function conservaLosHechos(resolved, entry) {
+  for (const [field, value] of Object.entries(entry.facts || {})) {
+    if (field === 'bibliographic') {
+      for (const [key, bibValue] of Object.entries(value || {})) {
+        assert.deepEqual(resolved.facts.bibliographic[key], bibValue, `${entry.isbn}.${key}`);
+      }
+      continue;
+    }
+    assert.deepEqual(resolved.facts[field], value, `${entry.isbn}.${field}`);
+  }
+}
+
+
 const state = JSON.parse(readFileSync('artifacts/b11-2/state.json', 'utf8'));
 
 test('B11.2 lote 03 final resuelve 59 ISBN del pool REVISAR con consenso cruzado real', () => {
@@ -20,13 +36,13 @@ test('B11.2 lote 03 final resuelve 59 ISBN del pool REVISAR con consenso cruzado
   assert.equal(new Set(BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03.map(entry => entry.isbn)).size, 59);
   for (const entry of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03) {
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
-    assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
+    conservaLosHechos(getBookEnrichmentByIsbn(entry.isbn), entry);
     assert.equal(entry.decision, 'auto_publish_facts', entry.isbn);
     for (const source of entry.provenance) {
       assert.match(source.url, /^https:\/\//);
     }
   }
-  assert.equal(listBookEnrichments().length, 1609);
+  assert.equal(listBookEnrichments().length, 1790);
 });
 
 test('B11.2 lote 03 no repite ningún ISBN de los lotes 01 y 02', () => {
