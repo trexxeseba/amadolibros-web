@@ -387,3 +387,106 @@ test('la fecha del catálogo sale del campo que el catálogo realmente trae', as
   );
   assert.equal(summary.generatedAt, '2026-09-10T00:30:00.000Z');
 });
+
+const ORDER = {
+  id: 42, public_code: 'AL-260909-K71QP2', status: 'paid', payment_status: 'approved',
+  buyer_name: 'Valentina Rodríguez', buyer_email: 'valen@example.com', buyer_phone: '099 214 887',
+  delivery_type: 'shipping', address: 'Bulevar España 2341 ap. 604', locality: 'Pocitos',
+  department: 'Montevideo', delivery_notes: '<b>Portero</b> hasta las 18',
+  requested_delivery_date: '2026-09-11', requested_delivery_from: '14:00', requested_delivery_to: '18:00',
+  products_total_uyu: 3770, pickup_discount_uyu: 0, shipping_cost_uyu: 190, payable_total_uyu: 3960,
+  currency: 'UYU', payment_provider: 'mercadopago', payment_id: '118742339015',
+  created_at: '2026-09-07T10:00:00.000Z', paid_at: '2026-09-07T10:05:00.000Z',
+  fulfilled_at: null, cancelled_at: null,
+};
+const ORDER_ITEMS = [
+  { title: '<script>alert(1)</script>Biblia Reina-Valera', product_id: 'MLU651526046', quantity: 1, unit_price_uyu: 1990, line_total_uyu: 1990 },
+  { title: 'El Tarot de Marsella', product_id: 'MLU478189961', quantity: 2, unit_price_uyu: 890, line_total_uyu: 1780 },
+];
+
+function orderDb({ found = true } = {}) {
+  const seen = [];
+  const answer = (sql, params) => {
+    seen.push({ sql, params });
+    if (sql.includes('FROM orders') && sql.includes('public_code = ?')) return found ? [ORDER] : [];
+    if (sql.includes('FROM order_items')) return ORDER_ITEMS;
+    if (sql.includes('FROM order_events')) return [{ event_type: 'payment_approved', created_at: '2026-09-07T10:05:00.000Z' }];
+    return [];
+  };
+  return {
+    seen,
+    prepare(sql) {
+      let bound = [];
+      const st = { bind: (...p) => { bound = p; return st; }, all: async () => ({ results: answer(sql, bound) }) };
+      return st;
+    },
+  };
+}
+
+test('la ficha muestra qué va en la caja y a dónde va, con todo escapado', async () => {
+  const db = orderDb();
+  const response = await onRequest({
+    request: request('/panel/pedido/AL-260909-K71QP2', { cookie: await sessionCookie() }),
+    env: baseEnv({ ORDERS_DB: db }),
+  });
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  // Lo que hoy la lista no muestra y hace falta para despachar.
+  assert.match(html, /Qué va en la caja/);
+  assert.match(html, /El Tarot de Marsella/);
+  assert.match(html, /2×/);
+  assert.match(html, /Bulevar España 2341/);
+  assert.match(html, /099 214 887/);
+  assert.match(html, /2026-09-11, de 14:00 a 18:00/);
+  assert.match(html, /Pago aprobado/);
+  assert.match(html, /\$ 3[.,]?960/);
+
+  // Un título hostil de Mercado Libre no ejecuta nada.
+  assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
+  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  // Ni una nota de entrega con etiquetas.
+  assert.doesNotMatch(html, /<b>Portero<\/b>/);
+});
+
+test('sigue siendo solo lectura: la ficha no escribe nada', async () => {
+  const db = orderDb();
+  await onRequest({
+    request: request('/panel/pedido/AL-260909-K71QP2', { cookie: await sessionCookie() }),
+    env: baseEnv({ ORDERS_DB: db }),
+  });
+  for (const { sql } of db.seen) {
+    assert.doesNotMatch(sql, /\b(INSERT|UPDATE|DELETE|DROP|ALTER)\b/i, `consulta que escribe: ${sql}`);
+  }
+});
+
+test('un código con forma inválida no llega a consultar la base', async () => {
+  const db = orderDb();
+  const response = await onRequest({
+    request: request(`/panel/pedido/${encodeURIComponent("AL-1' OR 1=1--")}`, { cookie: await sessionCookie() }),
+    env: baseEnv({ ORDERS_DB: db }),
+  });
+  assert.equal(response.status, 404);
+  assert.equal(db.seen.length, 0, 'un código que no tiene la forma real ni siquiera se consulta');
+});
+
+test('un pedido inexistente responde 404 sin revelar si el código existe', async () => {
+  const response = await onRequest({
+    request: request('/panel/pedido/AL-260101-ZZZZZZ', { cookie: await sessionCookie() }),
+    env: baseEnv({ ORDERS_DB: orderDb({ found: false }) }),
+  });
+  assert.equal(response.status, 404);
+  assert.match(await response.text(), /Pedido no encontrado/);
+});
+
+test('sin sesión la ficha muestra el login, nunca los datos del pedido', async () => {
+  const response = await onRequest({
+    request: request('/panel/pedido/AL-260909-K71QP2'),
+    env: baseEnv({ ORDERS_DB: orderDb() }),
+  });
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /type="password"/);
+  assert.doesNotMatch(html, /Bulevar España/);
+  assert.doesNotMatch(html, /Valentina/);
+});
