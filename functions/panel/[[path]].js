@@ -132,76 +132,174 @@ function layout(title, body) {
 <meta name="robots" content="noindex, nofollow">
 <title>${escapeHtml(title)}</title>
 <style>
-  :root { color-scheme: light; }
-  * { box-sizing: border-box; }
-  body { margin:0; padding:1.5rem; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
-         background:#f6f7f9; color:#1f2933; }
-  main { max-width:1100px; margin:0 auto; }
-  h1 { font-size:1.4rem; margin:0; }
-  h2 { font-size:1.05rem; margin:0 0 .75rem; }
-  .top { display:flex; justify-content:space-between; align-items:baseline; gap:1rem;
-         flex-wrap:wrap; margin-bottom:1.25rem; }
-  .muted { color:#6b7280; font-size:.85rem; }
-  .card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:1rem 1.15rem;
-          margin-bottom:1rem; }
-  .card.alert { border-color:#f0b429; background:#fffbeb; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.75rem; }
-  .stat { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:.75rem .9rem; }
-  .stat b { display:block; font-size:1.5rem; line-height:1.2; }
-  .stat span { color:#6b7280; font-size:.8rem; }
-  .scroll { overflow-x:auto; }
-  table { border-collapse:collapse; width:100%; font-size:.85rem; }
-  th,td { text-align:left; padding:.4rem .55rem; border-bottom:1px solid #eef0f3; white-space:nowrap; }
-  th { color:#6b7280; font-weight:600; }
-  .err { color:#b42318; }
-  .ok { color:#087443; }
-  form.login { max-width:340px; margin:12vh auto 0; }
-  label { display:block; margin:.75rem 0 .25rem; font-weight:600; }
-  input[type=password] { width:100%; padding:.55rem .65rem; border:1px solid #cbd2d9; border-radius:8px;
-                         font-size:1rem; }
-  button { margin-top:1rem; padding:.55rem 1.1rem; border:0; border-radius:8px; background:#1f2933;
-           color:#fff; font-size:.95rem; cursor:pointer; }
-  .logout { background:none; color:#6b7280; border:1px solid #cbd2d9; margin:0; padding:.35rem .8rem; }
-  .empty { color:#6b7280; font-style:italic; font-size:.85rem; }
-  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;
-            flex-wrap:wrap; margin-bottom:1.25rem; }
-  .back { display:inline-block; color:#6b7280; text-decoration:none; font-size:.85rem;
-          margin-bottom:.35rem; }
-  .back:hover { color:#1f2933; }
-  .tag { border:1px solid #cbd2d9; border-radius:999px; padding:.2rem .7rem; font-size:.8rem;
-         color:#6b7280; white-space:nowrap; }
-  .tag.alerta { border-color:#f0b429; background:#fffbeb; color:#8a5200; font-weight:600; }
-  dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:.35rem .9rem; font-size:.88rem; }
-  dt { color:#6b7280; white-space:nowrap; }
-  dd { margin:0; text-align:right; }
-  dl.totales { margin-top:.9rem; padding-top:.75rem; border-top:1px solid #eef0f3; }
-  .total { font-weight:700; font-size:1rem; color:#1f2933; }
-  .direccion { margin:.85rem 0 0; padding:.7rem .8rem; background:#f6f7f9; border-radius:8px;
-               font-size:.9rem; line-height:1.45; }
-  .nota { margin:.6rem 0 0; padding:.6rem .8rem; border-left:3px solid #cbd2d9; color:#4b5563;
-          font-style:italic; font-size:.88rem; }
-  tbody tr a { color:inherit; text-decoration:none; display:block; }
-  tbody tr:hover { background:#f6f7f9; }
-  form.card label { margin:1rem 0 .3rem; }
-  form.card input[type=text], form.card input[type=number], form.card textarea {
-    width:100%; max-width:32rem; padding:.55rem .65rem; border:1px solid #cbd2d9;
-    border-radius:8px; font:inherit; font-size:.95rem; }
+  /* Paleta de librería: papel, tinta y un solo acento. El panel se usa parado
+     atrás del mostrador con el celular en la mano, así que lo primero tiene que
+     ser legible de un vistazo y el resto tiene que poder plegarse. */
+  :root {
+    color-scheme: light dark;
+    --papel:#faf8f5; --tarjeta:#fff; --borde:#e7e2da; --borde-suave:#f0ece5;
+    --tinta:#241f1a; --tinta-media:#6b6157; --tinta-suave:#938a80;
+    --acento:#9c3d2e; --acento-suave:#fdf3f1;
+    --ok:#1f6b4a; --ok-suave:#eef7f2;
+    --error:#b42318; --error-suave:#fef3f2;
+    --alerta:#8a5200; --alerta-suave:#fdf6e7; --alerta-borde:#e8c26a;
+    --sombra:0 1px 2px rgba(36,31,26,.05), 0 4px 12px rgba(36,31,26,.04);
+    --radio:14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papel:#191715; --tarjeta:#222020; --borde:#35312d; --borde-suave:#2c2926;
+      --tinta:#f2ede7; --tinta-media:#a89f95; --tinta-suave:#7d746b;
+      --acento:#e08a76; --acento-suave:#2e211d;
+      --ok:#6cc79b; --ok-suave:#1c2a24;
+      --error:#f0917f; --error-suave:#2e1c1a;
+      --alerta:#e8c26a; --alerta-suave:#2b2418; --alerta-borde:#5c4a24;
+      --sombra:0 1px 2px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.2);
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--papel); color:var(--tinta);
+         font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+         -webkit-font-smoothing:antialiased; }
+  main { max-width:1080px; margin:0 auto; padding:0 1.25rem 4rem; }
+  a { color:var(--acento); }
+
+  /* ── Cabecera ───────────────────────────────────────────────────── */
+  .top, .topbar { display:flex; justify-content:space-between; align-items:center;
+                  gap:1rem; flex-wrap:wrap;
+                  padding:1.35rem 0 1.15rem; margin-bottom:1.5rem;
+                  border-bottom:1px solid var(--borde); }
+  .topbar { align-items:flex-start; }
+  h1 { font-size:1.5rem; letter-spacing:-.02em; margin:0; font-weight:650; }
+  h2 { font-size:1.05rem; letter-spacing:-.01em; margin:0 0 .9rem; font-weight:650; }
+  h3 { font-size:.8rem; font-weight:650; text-transform:uppercase;
+       letter-spacing:.06em; color:var(--tinta-suave);
+       margin:1.6rem 0 .55rem; }
+  h3:first-of-type { margin-top:.5rem; }
+  .muted { color:var(--tinta-media); font-size:.875rem; }
+  p.muted { margin:.3rem 0 0; }
+  .acciones { display:flex; gap:.5rem; align-items:center; }
+
+  /* ── Tarjetas ───────────────────────────────────────────────────── */
+  .card { background:var(--tarjeta); border:1px solid var(--borde);
+          border-radius:var(--radio); padding:1.35rem 1.5rem;
+          margin-bottom:1.1rem; box-shadow:var(--sombra); }
+  .card.alert { border-color:var(--alerta-borde); background:var(--alerta-suave); }
+  .card.alert > h2::before { content:"● "; color:var(--alerta); }
+
+  /* Lo informativo se pliega: la página tiene que empezar corta. */
+  details.card { padding:0; }
+  details.card > summary { list-style:none; cursor:pointer; padding:1.1rem 1.5rem;
+                           font-size:1.05rem; font-weight:650; letter-spacing:-.01em;
+                           display:flex; justify-content:space-between; align-items:center;
+                           gap:1rem; }
+  details.card > summary::-webkit-details-marker { display:none; }
+  details.card > summary::after { content:"▾"; color:var(--tinta-suave);
+                                  font-size:.8rem; transition:transform .15s; }
+  details.card[open] > summary::after { transform:rotate(180deg); }
+  details.card > summary:hover { color:var(--acento); }
+  details.card > .cuerpo { padding:0 1.5rem 1.35rem; }
+  details.card > summary .resumen { color:var(--tinta-suave); font-weight:400;
+                                    font-size:.85rem; margin-left:auto; }
+
+  /* ── Números ────────────────────────────────────────────────────── */
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+          gap:.7rem; margin:.2rem 0 .4rem; }
+  .stat { background:var(--papel); border:1px solid var(--borde-suave);
+          border-radius:10px; padding:.85rem .95rem; }
+  .stat b { display:block; font-size:1.6rem; line-height:1.15; font-weight:650;
+            letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+  .stat span { color:var(--tinta-media); font-size:.78rem; }
+  .stat.alert { border-color:var(--alerta-borde); background:var(--alerta-suave); }
+  .stat.alert b { color:var(--alerta); }
+
+  /* ── Tablas ─────────────────────────────────────────────────────── */
+  .scroll { overflow-x:auto; margin:0 -.35rem; padding:0 .35rem; }
+  table { border-collapse:collapse; width:100%; font-size:.875rem; }
+  th, td { text-align:left; padding:.6rem .7rem; white-space:nowrap; }
+  th { color:var(--tinta-suave); font-weight:650; font-size:.72rem;
+       text-transform:uppercase; letter-spacing:.06em;
+       border-bottom:1px solid var(--borde); }
+  td { border-bottom:1px solid var(--borde-suave); font-variant-numeric:tabular-nums; }
+  tbody tr:last-child td { border-bottom:0; }
+  tbody tr:hover { background:var(--acento-suave); }
+  tbody tr a { color:var(--acento); text-decoration:none; font-weight:600; }
+  tbody tr a:hover { text-decoration:underline; }
+
+  /* ── Estados ────────────────────────────────────────────────────── */
+  .err { color:var(--error); }
+  .ok { color:var(--ok); }
+  .empty { color:var(--tinta-suave); font-size:.875rem; margin:.4rem 0; }
+  .tag { border:1px solid var(--borde); border-radius:999px; padding:.25rem .75rem;
+         font-size:.78rem; color:var(--tinta-media); white-space:nowrap;
+         background:var(--tarjeta); }
+  .tag.alerta { border-color:var(--alerta-borde); background:var(--alerta-suave);
+                color:var(--alerta); font-weight:650; }
+
+  /* ── Botones ────────────────────────────────────────────────────── */
+  button { margin-top:1rem; padding:.6rem 1.15rem; border:0; border-radius:9px;
+           background:var(--acento); color:#fff; font:inherit; font-size:.9rem;
+           font-weight:600; cursor:pointer; }
+  button:hover { filter:brightness(1.08); }
+  button[disabled] { background:var(--borde); color:var(--tinta-suave); cursor:not-allowed;
+                     filter:none; }
+  .logout, .linkbtn { background:none; color:var(--tinta-media);
+                      border:1px solid var(--borde); margin:0;
+                      padding:.4rem .85rem; text-decoration:none;
+                      font-size:.85rem; font-weight:500; border-radius:9px; }
+  .logout:hover, .linkbtn:hover { color:var(--tinta); border-color:var(--tinta-suave);
+                                  filter:none; }
+  .back { display:inline-block; color:var(--tinta-media); text-decoration:none;
+          font-size:.85rem; margin-bottom:.4rem; }
+  .back:hover { color:var(--acento); }
+
+  /* ── Formularios ────────────────────────────────────────────────── */
+  form.login { max-width:360px; margin:14vh auto 0; }
+  label { display:block; margin:.85rem 0 .3rem; font-weight:600; font-size:.875rem; }
+  input[type=password], form.card input[type=text], form.card input[type=number],
+  form.card textarea {
+    width:100%; max-width:32rem; padding:.65rem .75rem; border:1px solid var(--borde);
+    border-radius:9px; font:inherit; font-size:.95rem;
+    background:var(--tarjeta); color:var(--tinta); }
+  input:focus-visible, button:focus-visible, summary:focus-visible {
+    outline:2px solid var(--acento); outline-offset:2px; }
   form.card textarea { resize:vertical; }
   form.card input[type=number] { max-width:7rem; }
-  .acciones { display:flex; gap:.5rem; align-items:center; }
-  .linkbtn { border:1px solid #cbd2d9; border-radius:8px; padding:.35rem .8rem;
-             color:#6b7280; text-decoration:none; font-size:.95rem; }
-  .linkbtn:hover { color:#1f2933; }
-  .ok-box { border-color:#7ac9a5; background:#effaf4; color:#087443; }
-  p.ok-box, section.card p.err { padding:.6rem .8rem; border-radius:8px; margin:.8rem 0 0;
-                                 font-size:.92rem; }
-  section.card p.err { background:#fef3f2; color:#b42318; }
-  section.card form { margin-top:.9rem; }
-  section.card form + form { padding-top:.9rem; border-top:1px solid #eef0f3; }
+
+  /* ── Ficha de pedido ────────────────────────────────────────────── */
+  dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:.45rem 1rem;
+       font-size:.9rem; }
+  dt { color:var(--tinta-media); white-space:nowrap; }
+  dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; }
+  dl.totales { margin-top:1rem; padding-top:.85rem; border-top:1px solid var(--borde); }
+  .total { font-weight:700; font-size:1.05rem; color:var(--tinta); }
+  .direccion { margin:.9rem 0 0; padding:.8rem .9rem; background:var(--papel);
+               border:1px solid var(--borde-suave); border-radius:10px;
+               font-size:.9rem; line-height:1.5; }
+  .nota { margin:.7rem 0 0; padding:.65rem .9rem; border-left:3px solid var(--acento);
+          background:var(--acento-suave); border-radius:0 8px 8px 0;
+          color:var(--tinta-media); font-style:italic; font-size:.88rem; }
+
+  /* ── Avisos ─────────────────────────────────────────────────────── */
+  .ok-box { border-color:var(--ok); background:var(--ok-suave); color:var(--ok); }
+  p.ok-box, section.card p.err, details.card p.err, .aviso-hecho {
+    padding:.7rem .9rem; border-radius:10px; margin:.85rem 0 0; font-size:.9rem; }
+  section.card p.err, details.card p.err { background:var(--error-suave); color:var(--error); }
+  .aviso-hecho { background:var(--ok-suave); color:var(--ok); }
+  section.card form { margin-top:1rem; }
+  section.card form + form { padding-top:1rem; border-top:1px solid var(--borde-suave); }
   section.card form .muted, section.card form p { margin:0; font-size:.88rem; }
-  button[disabled] { background:#cbd2d9; cursor:not-allowed; }
-  .aviso-hecho { margin:.9rem 0 0; padding:.6rem .8rem; background:#effaf4; border-radius:8px;
-                 color:#087443; font-size:.92rem; }
+
+  @media (max-width:640px) {
+    main { padding:0 .9rem 3rem; }
+    .card { padding:1.1rem 1.15rem; }
+    details.card > summary { padding:1rem 1.15rem; }
+    details.card > .cuerpo { padding:0 1.15rem 1.1rem; }
+    /* En el celular el subtítulo de la sección plegada empuja el título a dos
+       líneas y no aporta nada: el título ya dice qué es. */
+    details.card > summary .resumen { display:none; }
+    h1 { font-size:1.3rem; }
+  }
 </style>
 </head>
 <body><main>${body}</main></body>
@@ -227,10 +325,10 @@ function loginPage({ siteKey, error = '' }) {
 </form>`);
 }
 
-function statusList(rows, labelKey = 'status') {
+function statusList(rows, diccionario = ORDER_STATUS_LABEL, labelKey = 'status') {
   if (!rows.length) return '<p class="empty">Sin datos.</p>';
   return `<div class="grid">${rows.map(row => `
-    <div class="stat"><b>${escapeHtml(row.total ?? 0)}</b><span>${escapeHtml(row[labelKey] ?? '—')}</span></div>
+    <div class="stat"><b>${escapeHtml(row.total ?? 0)}</b><span>${label(diccionario, row[labelKey])}</span></div>
   `).join('')}</div>`;
 }
 
@@ -249,6 +347,28 @@ function sectionOrError(block, render) {
   return render(block.data);
 }
 
+
+// Los valores crudos vienen de los CHECK de migrations/ y están en inglés.
+// El panel lo usa gente, no la base: se traducen. Lo que no esté en el
+// diccionario se muestra tal cual, nunca en blanco.
+const ORDER_STATUS_LABEL = {
+  open: 'abierto', paid: 'pagado', cancelled: 'cancelado',
+  expired: 'vencido', fulfilled: 'despachado',
+};
+const PAYMENT_STATUS_LABEL = {
+  not_started: 'sin empezar', pending: 'pendiente', approved: 'aprobado',
+  rejected: 'rechazado', refunded: 'devuelto', cancelled: 'cancelado',
+};
+const DELIVERY_LABEL = { pickup: 'retiro', shipping: 'envío' };
+const WAITLIST_STATUS_LABEL = {
+  waiting: 'esperando', notified: 'avisados', cancelled: 'cancelados',
+  pending: 'pendientes', sent: 'enviados', failed: 'fallidos', skipped: 'omitidos',
+};
+
+function label(diccionario, valor) {
+  const clave = String(valor ?? '').trim();
+  return escapeHtml(diccionario[clave] || clave || '—');
+}
 
 const EVENT_LABEL = {
   preference_created: 'Pago iniciado',
@@ -332,7 +452,7 @@ function orderPage(found, { pickup, flash = null } = {}) {
     <h1>${escapeHtml(order.public_code)}</h1>
     <p class="muted">${escapeHtml(order.buyer_name)} · ${escapeHtml(units)} libro${units === 1 ? '' : 's'} · ${shortDate(order.created_at)}</p>
   </div>
-  <span class="tag ${pending ? 'alerta' : ''}">${pending ? 'Pagado sin despachar' : escapeHtml(order.status)}</span>
+  <span class="tag ${pending ? 'alerta' : ''}">${pending ? 'Pagado sin despachar' : label(ORDER_STATUS_LABEL, order.status)}</span>
 </div>
 
 <section class="card">
@@ -365,7 +485,7 @@ function orderPage(found, { pickup, flash = null } = {}) {
 <section class="card">
   <h2>Pago</h2>
   <dl>
-    <dt>Estado</dt><dd>${escapeHtml(order.payment_status)}</dd>
+    <dt>Estado</dt><dd>${label(PAYMENT_STATUS_LABEL, order.payment_status)}</dd>
     <dt>Medio</dt><dd>${escapeHtml(order.payment_provider) || '—'}</dd>
     <dt>ID de pago</dt><dd>${escapeHtml(order.payment_id) || '—'}</dd>
     <dt>Cobrado</dt><dd>${shortDate(order.paid_at)}</dd>
@@ -462,12 +582,12 @@ function dashboardPage(data) {
   return layout('Panel — Amado Libros', `
 <div class="top">
   <div>
-    <h1>Panel interno</h1>
+    <h1>Amado Libros</h1>
     <p class="muted">
-      Entorno ${escapeHtml(env.appEnv)} ·
+      ${escapeHtml(env.appEnv)} ·
       checkout ${env.checkoutEnabled ? '<span class="ok">encendido</span>' : '<span class="err">apagado</span>'} ·
       D1 ${env.hasOrdersDb ? '<span class="ok">ok</span>' : '<span class="err">sin binding</span>'} ·
-      datos al ${shortDate(data.generatedAt)} UTC
+      ${shortDate(data.generatedAt)} UTC
     </p>
   </div>
   <div class="acciones"><a class="linkbtn" href="/panel/ajustes">Ajustes</a><form method="POST" action="/panel/logout"><button class="logout" type="submit">Salir</button></form></div>
@@ -494,7 +614,7 @@ function dashboardPage(data) {
     <h3 class="muted">Avisos internos que fallaron</h3>
     ${table(['Libro', 'Estado', 'Creado'], stuck.notificationFailed, row => `
       <tr><td>${escapeHtml(row.product_title)}</td>
-          <td>${escapeHtml(row.internal_notification_status)}</td>
+          <td>${label(WAITLIST_STATUS_LABEL, row.internal_notification_status)}</td>
           <td>${shortDate(row.created_at)}</td></tr>`)}
   `)}
 
@@ -511,7 +631,8 @@ function dashboardPage(data) {
           : ''}
       </p>
       ${table(['Libro', 'Estado', 'Ficha'], missing.items, row => `
-        <tr><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.status)}</td>
+        <tr><td>${escapeHtml(row.title)}</td>
+            <td>${label({ active: 'activo', paused: 'pausado', closed: 'cerrado' }, row.status)}</td>
             <td>${row.id
               ? `<a href="https://www.amadolibros.com/libro/${escapeHtml(row.id)}" rel="noreferrer">${escapeHtml(row.id)}</a>`
               : '—'}</td></tr>`)}`;
@@ -529,26 +650,31 @@ function dashboardPage(data) {
     ${statusList(orders.byStatus)}
     <h3 class="muted">Últimos ${orders.recent.length}</h3>
     ${table(['Pedido', 'Estado', 'Pago', 'Comprador', 'Entrega', 'Total', 'Creado'], orders.recent, row => `
-      <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td><td>${escapeHtml(row.status)}</td>
-          <td>${escapeHtml(row.payment_status)}</td><td>${escapeHtml(row.buyer_name)}</td>
-          <td>${escapeHtml(row.delivery_type)}</td><td>${money(row.payable_total_uyu)}</td>
+      <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td>
+          <td>${label(ORDER_STATUS_LABEL, row.status)}</td>
+          <td>${label(PAYMENT_STATUS_LABEL, row.payment_status)}</td>
+          <td>${escapeHtml(row.buyer_name)}</td>
+          <td>${label(DELIVERY_LABEL, row.delivery_type)}</td><td>${money(row.payable_total_uyu)}</td>
           <td>${shortDate(row.created_at)}</td></tr>`)}
   `)}
 </section>
 
-<section class="card">
-  <h2>Avisos de stock</h2>
+<details class="card">
+  <summary>Avisos de stock<span class="resumen">gente esperando reposición</span></summary>
+  <div class="cuerpo">
   ${sectionOrError(data.waitlist, waitlist => `
-    ${statusList(waitlist.byStatus)}
+    ${statusList(waitlist.byStatus, WAITLIST_STATUS_LABEL)}
     <h3 class="muted">Libros más esperados</h3>
     ${table(['Libro', 'ID', 'Personas'], waitlist.topProducts, row => `
       <tr><td>${escapeHtml(row.product_title)}</td><td>${escapeHtml(row.product_id)}</td>
           <td>${escapeHtml(row.total)}</td></tr>`)}
   `)}
-</section>
+  </div>
+</details>
 
-<section class="card">
-  <h2>Productos</h2>
+<details class="card">
+  <summary>Productos y Google Shopping<span class="resumen">catálogo y qué llega al feed</span></summary>
+  <div class="cuerpo">
   ${sectionOrError(data.catalog, catalog => `
     <div class="grid">
       <div class="stat"><b>${escapeHtml(catalog.total)}</b><span>publicaciones activas</span></div>
@@ -576,10 +702,12 @@ function dashboardPage(data) {
       ${escapeHtml(catalog.feed.eligible)}, nunca mayor.
     </p>
   `)}
-</section>
+  </div>
+</details>
 
-<section class="card">
-  <h2>Rastreo de Google</h2>
+<details class="card">
+  <summary>Rastreo de Google<span class="resumen">Googlebot, no visitas</span></summary>
+  <div class="cuerpo">
   <p class="muted">
     Esto es Googlebot rastreando el sitio, no visitas de personas. Las visitas reales
     están en GA4 y necesitan una credencial que el panel todavía no tiene.
@@ -591,7 +719,8 @@ function dashboardPage(data) {
                 <td>${escapeHtml(row.errors ?? 0)}</td>
                 <td>${escapeHtml(row.verified_googlebot ?? 0)}</td></tr>`,
   ))}
-</section>`);
+  </div>
+</details>`);
 }
 
 function clientIp(request) {
