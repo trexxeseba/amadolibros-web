@@ -297,3 +297,82 @@ test('sin fichas sin imagen el aviso no inventa una alerta', async () => {
   assert.match(html, /Ficha sin imagen para Google/);
   assert.doesNotMatch(html, /Ficha sin imagen para Google \(/);
 });
+
+const CATALOG_FEED = {
+  items: [
+    // Llega a Google: activo, con stock, precio, UYU, permalink y es libro.
+    { id: 'MLU100', title: 'Libro vendible', status: 'active', available_quantity: 2, price: 500,
+      currency: 'UYU', permalink: 'https://ml/1', domain_id: 'MLU-BOOKS', isbn: '9780000000001', pictures: [{ url: 'https://x/1.jpg' }] },
+    // Activos que NO llegan, uno por cada motivo.
+    { id: 'MLU200', title: 'Sin precio', status: 'active', available_quantity: 1, price: 0,
+      currency: 'UYU', permalink: 'https://ml/2', domain_id: 'MLU-BOOKS', pictures: [{ url: 'https://x/2.jpg' }] },
+    { id: 'MLU300', title: 'Sin moneda', status: 'active', available_quantity: 1, price: 400,
+      currency: '', permalink: 'https://ml/3', domain_id: 'MLU-BOOKS', pictures: [{ url: 'https://x/3.jpg' }] },
+    { id: 'MLU400', title: 'Sin enlace', status: 'active', available_quantity: 1, price: 400,
+      currency: 'UYU', permalink: '', domain_id: 'MLU-BOOKS', pictures: [{ url: 'https://x/4.jpg' }] },
+    // Pausado: no cuenta como "activo que queda afuera".
+    { id: 'MLU500', title: 'Pausado', status: 'paused', available_quantity: 0, price: 300,
+      currency: 'UYU', permalink: 'https://ml/5', domain_id: 'MLU-BOOKS', pictures: [{ url: 'https://x/5.jpg' }] },
+  ],
+};
+
+test('el panel muestra cuántos activos no llegan a Google Shopping y por qué', async () => {
+  const html = await withCatalog(CATALOG_FEED, async () => {
+    const response = await onRequest({
+      request: request('/panel', { cookie: await sessionCookie() }),
+      env: baseEnv(),
+    });
+    assert.equal(response.status, 200);
+    return response.text();
+  });
+
+  assert.match(html, /Cuántos llegan a Google Shopping/);
+  // 4 activos, 1 pasa, 3 quedan afuera. El pausado no entra en la cuenta.
+  assert.match(html, /<b>4<\/b><span>libros activos<\/span>/);
+  assert.match(html, /<b>1<\/b><span>pasan la puerta comercial<\/span>/);
+  assert.match(html, /<b>3<\/b><span>quedan afuera<\/span>/);
+
+  assert.match(html, /sin precio/);
+  assert.match(html, /sin moneda UYU/);
+  assert.match(html, /sin enlace a Mercado Libre/);
+
+  // No se promete que ese número sea la cantidad final de ofertas en Merchant.
+  assert.match(html, /igual o menor/);
+});
+
+test('el motivo del feed nunca se desincroniza de la regla real', async () => {
+  // Si alguien cambia isEligibleForFeed y no toca feedBlockerReason, este test
+  // falla: todo activo contado como bloqueado tiene que ser realmente inelegible,
+  // y todo activo elegible no debe aparecer con motivo.
+  const { loadCatalogSummary } = await import('../_shared/panel-data.js');
+  const { isEligibleForFeed } = await import('../feed.xml.js');
+
+  const summary = await withCatalog(CATALOG_FEED, () => loadCatalogSummary({}));
+  const active = CATALOG_FEED.items.filter(item => item.status === 'active');
+  const reallyEligible = active.filter(isEligibleForFeed).length;
+
+  assert.equal(summary.feed.activeTotal, active.length);
+  assert.equal(summary.feed.eligible, reallyEligible);
+  assert.equal(
+    summary.feed.blockers.reduce((total, row) => total + row.total, 0),
+    active.length - reallyEligible,
+    'la suma de motivos tiene que dar exactamente los activos que no pasan',
+  );
+});
+
+test('las fichas sin foto se ordenan por las que venden primero', async () => {
+  const { loadCatalogSummary } = await import('../_shared/panel-data.js');
+  const summary = await withCatalog({
+    items: [
+      { id: 'MLU1', title: 'Pausado sin foto', status: 'paused', available_quantity: 0, pictures: [] },
+      { id: 'MLU2', title: 'Activo sin stock sin foto', status: 'active', available_quantity: 0, pictures: [] },
+      { id: 'MLU3', title: 'Activo CON stock sin foto', status: 'active', available_quantity: 5, pictures: [] },
+    ],
+  }, () => loadCatalogSummary({}));
+
+  assert.deepEqual(summary.missingImage.items.map(row => row.title), [
+    'Activo CON stock sin foto',
+    'Activo sin stock sin foto',
+    'Pausado sin foto',
+  ]);
+});

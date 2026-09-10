@@ -294,6 +294,24 @@ function dashboardPage(data) {
       <div class="stat"><b>${escapeHtml(catalog.withoutIsbn)}</b><span>sin ISBN</span></div>
     </div>
     <p class="muted">Catálogo generado: ${shortDate(catalog.generatedAt)}</p>
+
+    <h3 class="muted">Cuántos llegan a Google Shopping</h3>
+    <div class="grid">
+      <div class="stat"><b>${escapeHtml(catalog.feed.activeTotal)}</b><span>libros activos</span></div>
+      <div class="stat"><b>${escapeHtml(catalog.feed.eligible)}</b><span>pasan la puerta comercial</span></div>
+      <div class="stat ${catalog.feed.blocked ? 'alert' : ''}"><b>${escapeHtml(catalog.feed.blocked)}</b><span>quedan afuera</span></div>
+    </div>
+    ${catalog.feed.blockers.length
+      ? `<p class="muted">Por qué quedan afuera:</p>
+         ${table(['Motivo', 'Libros'], catalog.feed.blockers, row => `
+           <tr><td>${escapeHtml(row.reason)}</td><td>${escapeHtml(row.total)}</td></tr>`)}`
+      : ''}
+    <p class="muted">
+      Esta es sólo la primera puerta: precio, moneda, stock, enlace y que se reconozca
+      como libro. Después hay una segunda —que la portada esté lista— que no se mide acá.
+      O sea que la cantidad real de ofertas en Merchant es <b>igual o menor</b> a
+      ${escapeHtml(catalog.feed.eligible)}, nunca mayor.
+    </p>
   `)}
 </section>
 

@@ -17,6 +17,7 @@
  */
 
 import { fetchCatalog } from './catalog.js';
+import { isEligibleForFeed } from '../feed.xml.js';
 
 const RECENT_ORDERS_LIMIT = 20;
 const STUCK_LIMIT = 25;
@@ -27,6 +28,23 @@ const MISSING_IMAGE_LIMIT = 25;
 // cualquier otra cosa queda en cadena vacía y el panel muestra el texto sin enlace.
 function cleanId(value) {
   return /^MLU\d+$/.test(String(value || '')) ? String(value) : '';
+}
+
+/**
+ * Por qué un libro activo no llega al feed de Google. La cuenta autorizada la
+ * da isEligibleForFeed; esto sólo pone el motivo en palabras, en el mismo
+ * orden en que esa función descarta. Hay un test que verifica que las dos
+ * coincidan siempre: si alguien cambia la regla y no toca esto, falla.
+ */
+function feedBlockerReason(item) {
+  if (!item?.permalink) return 'sin enlace a Mercado Libre';
+  if (!/^MLU\d+$/.test(String(item?.id || ''))) return 'id inválido';
+  if (!(Number(item?.available_quantity) > 0)) return 'sin stock';
+  if (!(Number(item?.price) > 0)) return 'sin precio';
+  if (String(item?.currency || item?.currency_id || '').trim().toUpperCase() !== 'UYU') {
+    return 'sin moneda UYU';
+  }
+  return 'no se reconoce como libro';
 }
 
 async function queryAll(db, sql, params = []) {
@@ -181,27 +199,45 @@ export async function loadCatalogSummary(ctx) {
   const items = Array.isArray(catalog?.items) ? catalog.items : [];
   let withStock = 0;
   let withoutIsbn = 0;
+  let withoutImage = 0;
+  let feedEligible = 0;
   // Una ficha sin ninguna foto es la que sale a Google sin `image` en el
   // JSON-LD, y es lo que Search Console reporta como "Falta el campo image".
   // El contador ya existía; lo que faltaba era saber CUÁLES para poder actuar.
   const missingImageItems = [];
+  const feedBlockers = new Map();
+
   for (const item of items) {
-    if (Number(item?.available_quantity) > 0) withStock += 1;
+    const active = item?.status === 'active';
+    const inStock = Number(item?.available_quantity) > 0;
+    if (inStock) withStock += 1;
     if (!item?.isbn) withoutIsbn += 1;
+
     if (!Array.isArray(item?.pictures) || item.pictures.length === 0) {
-      if (missingImageItems.length < MISSING_IMAGE_LIMIT) {
-        missingImageItems.push({
-          id: cleanId(item?.id),
-          title: item?.title || '(sin título)',
-          status: item?.status || '—',
-        });
-      }
+      withoutImage += 1;
+      missingImageItems.push({
+        id: cleanId(item?.id),
+        title: item?.title || '(sin título)',
+        status: item?.status || '—',
+        // Un activo con stock es plata parada; un pausado sin foto no le
+        // importa a nadie hoy. Se ordena por eso para que el trabajo manual
+        // de cargar fotos empiece por lo que vende.
+        priority: active && inStock ? 0 : active ? 1 : 2,
+      });
+    }
+
+    // Se usa la MISMA función que arma el feed, no una copia: si mañana cambia
+    // la regla, este contador cambia con ella en vez de mentir.
+    if (isEligibleForFeed(item)) feedEligible += 1;
+    else if (active) {
+      const reason = feedBlockerReason(item);
+      feedBlockers.set(reason, (feedBlockers.get(reason) || 0) + 1);
     }
   }
-  const withoutImage = items.reduce(
-    (total, item) => total + (Array.isArray(item?.pictures) && item.pictures.length ? 0 : 1),
-    0,
-  );
+
+  missingImageItems.sort((a, b) => a.priority - b.priority);
+  const activeTotal = items.filter(item => item?.status === 'active').length;
+
   return {
     total: items.length,
     withStock,
@@ -209,7 +245,23 @@ export async function loadCatalogSummary(ctx) {
     withoutIsbn,
     // `items` está recortado a MISSING_IMAGE_LIMIT: es una muestra para actuar,
     // no el listado completo. `withoutImage` sigue siendo el total real.
-    missingImage: { count: withoutImage, items: missingImageItems, limit: MISSING_IMAGE_LIMIT },
+    missingImage: {
+      count: withoutImage,
+      items: missingImageItems.slice(0, MISSING_IMAGE_LIMIT),
+      limit: MISSING_IMAGE_LIMIT,
+    },
+    // Sólo la puerta comercial del feed. La segunda puerta —que la portada
+    // esté lista en R2— se mide aparte y necesita el manifest de portadas,
+    // que pesa demasiado para cargarlo en cada vista del panel. O sea:
+    // `eligible` es un techo, no la cantidad final de ofertas en Merchant.
+    feed: {
+      activeTotal,
+      eligible: feedEligible,
+      blocked: Math.max(0, activeTotal - feedEligible),
+      blockers: [...feedBlockers.entries()]
+        .map(([reason, total]) => ({ reason, total }))
+        .sort((a, b) => b.total - a.total),
+    },
     generatedAt: catalog?.generated_at || catalog?.generatedAt || null,
   };
 }
