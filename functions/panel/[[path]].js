@@ -8,13 +8,18 @@
  *   GET  /panel/pedido/<código> → la ficha del pedido: qué va en la caja,
  *                       a dónde va, el pago y el historial
  *   POST /panel/login   → Turnstile + contraseña → cookie de sesión firmada
+ *   POST /panel/pedido/<código>/avisar → le manda al cliente el aviso de
+ *                       retiro o de envío
  *   GET  /panel/ajustes → datos de retiro que salen en el correo al cliente
- *   POST /panel/ajustes → los guarda en KV (única escritura del panel)
+ *   POST /panel/ajustes → los guarda en KV
  *   POST /panel/logout  → borra la cookie
  *
  * Reglas que este archivo no puede romper:
- * - Solo lectura. No hay ninguna escritura al catálogo, a los pedidos ni a
- *   Mercado Libre; el panel mira, no toca.
+ * - El panel NO toca el catálogo, los pedidos ni Mercado Libre. Precio, stock,
+ *   título, slug, imágenes y estado del pedido se leen y nunca se escriben.
+ *   Lo único que el panel escribe son los datos de retiro en KV y una fila de
+ *   historial por cada aviso que le manda a un cliente. Un aviso no despacha
+ *   el pedido ni le cambia el estado: sólo manda un correo y lo anota.
  * - Sin secrets configurados responde 503, nunca una versión "abierta".
  * - Todo lo que sale de D1 se escapa antes de entrar al HTML: los nombres y
  *   títulos los escribe gente de afuera y terminan en esta página.
@@ -37,6 +42,17 @@ import {
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
+import {
+  NOTICE_EVENT_TYPE,
+  NOTICE_KINDS,
+  NOTICE_LABEL,
+  noticeBlockedReason,
+  noticeStateFromEvents,
+  sendNotice,
+} from '../_shared/panel-notice.js';
+import { createTrackedEmailSender } from '../api/_order_email.js';
+
+const sendTrackedEmail = createTrackedEmailSender();
 
 // Mismo patrón que functions/api/_stock_waitlist_handler.js: el panel no puede
 // aceptar un hostname de Preview que el resto del sitio rechaza, ni al revés.
@@ -177,6 +193,15 @@ function layout(title, body) {
              color:#6b7280; text-decoration:none; font-size:.95rem; }
   .linkbtn:hover { color:#1f2933; }
   .ok-box { border-color:#7ac9a5; background:#effaf4; color:#087443; }
+  p.ok-box, section.card p.err { padding:.6rem .8rem; border-radius:8px; margin:.8rem 0 0;
+                                 font-size:.92rem; }
+  section.card p.err { background:#fef3f2; color:#b42318; }
+  section.card form { margin-top:.9rem; }
+  section.card form + form { padding-top:.9rem; border-top:1px solid #eef0f3; }
+  section.card form .muted, section.card form p { margin:0; font-size:.88rem; }
+  button[disabled] { background:#cbd2d9; cursor:not-allowed; }
+  .aviso-hecho { margin:.9rem 0 0; padding:.6rem .8rem; background:#effaf4; border-radius:8px;
+                 color:#087443; font-size:.92rem; }
 </style>
 </head>
 <body><main>${body}</main></body>
@@ -234,6 +259,8 @@ const EVENT_LABEL = {
   payment_refunded: 'Pago devuelto',
   order_unavailable: 'Sin stock al confirmar',
   already_sent: 'Aviso ya enviado',
+  [NOTICE_EVENT_TYPE.pickup_ready]: 'Se le avisó que está listo para retirar',
+  [NOTICE_EVENT_TYPE.shipping_today]: 'Se le avisó que el envío sale hoy',
 };
 
 function deliveryWindow(order) {
@@ -249,10 +276,53 @@ function deliveryWindow(order) {
  * Es la pantalla que se usa para despachar, así que lo primero es el contenido
  * y la dirección — no los identificadores internos.
  */
-function orderPage(found) {
+function noticeCard(order, events, pickup, flash) {
+  const sent = noticeStateFromEvents(events);
+
+  const botones = NOTICE_KINDS.map(kind => {
+    const blocked = noticeBlockedReason({ kind, order, pickup });
+    // Un aviso que no corresponde a este tipo de entrega no se muestra en
+    // gris: directamente no está. La ficha de un retiro no ofrece "sale hoy".
+    if (blocked === 'Este pedido es un envío, no un retiro.'
+      || blocked === 'Este pedido es un retiro en el local, no un envío.') return '';
+
+    const estado = sent[kind];
+    if (estado.status === 'sent') {
+      return `<p class="aviso-hecho">${escapeHtml(NOTICE_LABEL[kind])}: ya se le avisó`
+        + ` el ${shortDate(estado.at)}.</p>`;
+    }
+
+    const falta = blocked
+      ? `<p class="muted">${escapeHtml(blocked)}`
+        + (blocked.includes('Ajustes') ? ' <a href="/panel/ajustes">Cargarlos ahora</a>.' : '')
+        + '</p>'
+      : '';
+    const fallo = estado.status === 'failed'
+      ? `<p class="err">El intento anterior falló (${escapeHtml(estado.failureCode) || 'sin código'}). Podés reintentar.</p>`
+      : '';
+
+    return `<form method="POST" action="/panel/pedido/${encodeURIComponent(order.public_code)}/avisar">
+      <input type="hidden" name="kind" value="${escapeHtml(kind)}">
+      ${fallo}${falta}
+      <button type="submit"${blocked ? ' disabled' : ''}>${escapeHtml(NOTICE_LABEL[kind])}</button>
+    </form>`;
+  }).join('');
+
+  if (!botones) return '';
+
+  return `
+<section class="card">
+  <h2>Avisarle al cliente</h2>
+  <p class="muted">Se manda a ${escapeHtml(order.buyer_email) || '—'}. Cada aviso sale una sola vez.</p>
+  ${flash ? `<p class="${flash.ok ? 'ok-box' : 'err'}">${escapeHtml(flash.message)}</p>` : ''}
+  ${botones}
+</section>`;
+}
+
+function orderPage(found, { pickup, flash = null } = {}) {
   const { order, items, events } = found;
   const units = items.reduce((total, item) => total + Number(item.quantity || 0), 0);
-  const pickup = order.delivery_type === 'pickup';
+  const esRetiro = order.delivery_type === 'pickup';
   const pending = order.payment_status === 'approved' && !order.fulfilled_at;
 
   const body = `
@@ -281,14 +351,14 @@ function orderPage(found) {
 </section>
 
 <section class="card">
-  <h2>${pickup ? 'Retira en el local' : 'A dónde va'}</h2>
+  <h2>${esRetiro ? 'Retira en el local' : 'A dónde va'}</h2>
   <dl>
-    <dt>Entrega</dt><dd>${pickup ? 'Retiro' : 'Envío'}</dd>
+    <dt>Entrega</dt><dd>${esRetiro ? 'Retiro' : 'Envío'}</dd>
     <dt>Teléfono</dt><dd>${escapeHtml(order.buyer_phone)}</dd>
     <dt>Correo</dt><dd>${escapeHtml(order.buyer_email)}</dd>
     <dt>Fecha pedida</dt><dd>${deliveryWindow(order)}</dd>
   </dl>
-  ${pickup ? '' : `<p class="direccion">${escapeHtml(order.address)}<br>${escapeHtml(order.locality)}, ${escapeHtml(order.department)}</p>`}
+  ${esRetiro ? '' : `<p class="direccion">${escapeHtml(order.address)}<br>${escapeHtml(order.locality)}, ${escapeHtml(order.department)}</p>`}
   ${cleanString(order.delivery_notes) ? `<p class="nota">“${escapeHtml(order.delivery_notes)}”</p>` : ''}
 </section>
 
@@ -302,6 +372,8 @@ function orderPage(found) {
     <dt>Despachado</dt><dd>${shortDate(order.fulfilled_at)}</dd>
   </dl>
 </section>
+
+${noticeCard(order, events, pickup, flash)}
 
 <section class="card">
   <h2>Historial</h2>
@@ -625,14 +697,23 @@ export async function onRequest(context) {
     return htmlResponse(settingsPage(await loadPickup(context.env)));
   }
 
-  const pedido = /^\/panel\/pedido\/([^/]+)$/.exec(path);
+  const pedido = /^\/panel\/pedido\/([^/]+)(\/avisar)?$/.exec(path);
   if (pedido) {
-    if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
+    const avisar = Boolean(pedido[2]);
+    const metodo = avisar ? 'POST' : 'GET';
+    if (request.method !== metodo) return new Response('Method Not Allowed', { status: 405 });
     if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
       return htmlResponse(loginPage({
         siteKey: cleanString(context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY),
       }));
     }
+    // La cookie es SameSite=Strict, así que un POST desde otro sitio ni la
+    // lleva. El origen se verifica igual, por las dudas.
+    if (avisar) {
+      const origin = request.headers.get('origin');
+      if (origin && origin !== url.origin) return new Response('Forbidden', { status: 403 });
+    }
+
     const db = context.env?.ORDERS_DB;
     // Un pedido inexistente y un código inválido responden igual: la ficha no
     // sirve para averiguar qué códigos existen.
@@ -644,7 +725,23 @@ export async function onRequest(context) {
         { status: 404 },
       );
     }
-    return htmlResponse(orderPage(found));
+
+    const pickup = await loadPickup(context.env);
+    if (!avisar) return htmlResponse(orderPage(found, { pickup }));
+
+    const form = await request.formData();
+    const flash = await sendNotice({
+      sendTrackedEmail,
+      db,
+      env: context.env,
+      order: found.order,
+      kind: cleanString(form.get('kind')),
+      pickup,
+    });
+    // Se recarga el pedido para que el historial y el estado de los botones
+    // muestren el aviso que se acaba de mandar, no el de antes.
+    const fresh = await loadOrder(db, found.order.public_code) || found;
+    return htmlResponse(orderPage(fresh, { pickup, flash }), { status: flash.ok ? 200 : 422 });
   }
 
   if (path !== '/panel') return new Response('Not Found', { status: 404 });
