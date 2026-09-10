@@ -114,7 +114,8 @@ test('sin sesión, /panel muestra el login y ningún dato del negocio', async ()
   assert.match(html, /data-action="panel_login"/);
   // Nada de pedidos, compradores ni totales antes de autenticarse.
   assert.doesNotMatch(html, /AL-1001/);
-  assert.doesNotMatch(html, /Qué quedó trancado/);
+  assert.doesNotMatch(html, /<h2>Para hacer ahora<\/h2>/);
+  assert.doesNotMatch(html, /class="tarea/);
 });
 
 test('toda respuesta del panel es noindex y no cacheable', async () => {
@@ -131,9 +132,13 @@ test('con sesión válida se ve el tablero, y el nombre del comprador va escapad
   assert.equal(response.status, 200);
   const html = await response.text();
 
-  assert.match(html, /Qué quedó trancado/);
+  assert.match(html, /Para hacer ahora/);
   assert.match(html, /AL-1001/);
   assert.match(html, /\$ 1[.,]?990/);
+  // Lo pendiente sale como una tarea con su acción, no como una fila de tabla.
+  assert.match(html, /class="tarea t-alta"/);
+  assert.match(html, /Despachar AL-1001/);
+  assert.match(html, /href="\/panel\/pedido\/AL-1001"[^>]*>Ver pedido</);
 
   // El nombre hostil aparece escapado, nunca como etiqueta ejecutable.
   assert.match(html, /&lt;script&gt;alert\(&quot;xss&quot;\)&lt;\/script&gt;/);
@@ -219,8 +224,11 @@ test('el tablero sigue en pie aunque D1 no esté disponible', async () => {
   });
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Qué quedó trancado/);
+  assert.match(html, /Para hacer ahora/);
+  // Sin D1 el bloque dice que se cayó, en vez de mostrar "0 pendientes" y
+  // hacer creer que está todo al día.
   assert.match(html, /No se pudo cargar/);
+  assert.doesNotMatch(html, /Nada pendiente/);
 });
 
 test('una cookie firmada con otra contraseña no abre el tablero', async () => {
@@ -270,9 +278,12 @@ test('el panel avisa qué fichas salen a Google sin imagen, con enlace para ir a
     return response.text();
   });
 
-  assert.match(html, /Ficha sin imagen para Google \(2\)/);
+  // Las fichas sin foto son tareas más, en la misma lista que todo lo demás.
+  assert.match(html, /Falta la foto/);
   assert.match(html, /Libro sin foto/);
   assert.match(html, /href="https:\/\/www\.amadolibros\.com\/libro\/MLU999111"/);
+  // Y salen como tarea, en la misma lista que todo lo demás.
+  assert.match(html, /class="tarea t-\w+">\s*<div class="tarea-texto">\s*<b>Falta la foto<\/b>/);
 
   // El que sí tiene foto no se reporta.
   assert.doesNotMatch(html, /Libro con foto/);
@@ -281,6 +292,27 @@ test('el panel avisa qué fichas salen a Google sin imagen, con enlace para ir a
   assert.doesNotMatch(html, /onmouseover/);
   assert.doesNotMatch(html, /<script>alert\("titulo"\)<\/script>/);
   assert.match(html, /&lt;script&gt;alert\(&quot;titulo&quot;\)&lt;\/script&gt;/);
+});
+
+test('con todo al día el panel lo dice, en vez de mostrar una lista vacía', async () => {
+  // Es una pantalla real y hay que probarla: una lista vacía sin explicación
+  // deja la duda de si no hay nada o si no cargó.
+  const vacia = { prepare: () => { const st = { bind: () => st, all: async () => ({ results: [] }) }; return st; } };
+  const html = await withCatalog(
+    { items: [{ id: 'MLU222333', title: 'Libro con foto', status: 'active', available_quantity: 3, isbn: '9780000000001', pictures: [{ url: 'https://x/y.jpg' }] }] },
+    async () => {
+      const response = await onRequest({
+        request: request('/panel', { cookie: await sessionCookie() }),
+        env: baseEnv({ ORDERS_DB: vacia }),
+      });
+      return response.text();
+    },
+  );
+  assert.match(html, /Nada pendiente/);
+  assert.match(html, /cuenta-cero">al día</);
+  assert.doesNotMatch(html, /class="tarea/);
+  // Y no puede decir "al día" tapando un error: eso es lo peligroso.
+  assert.doesNotMatch(html, /No se pudo cargar/);
 });
 
 test('sin fichas sin imagen el aviso no inventa una alerta', async () => {
@@ -294,8 +326,10 @@ test('sin fichas sin imagen el aviso no inventa una alerta', async () => {
     return response.text();
   });
 
-  assert.match(html, /Ficha sin imagen para Google/);
-  assert.doesNotMatch(html, /Ficha sin imagen para Google \(/);
+  // Sin fichas sin foto no se inventa ninguna tarea de foto. (Los pedidos
+  // trancados del entorno de prueba siguen apareciendo: son otra cosa.)
+  assert.doesNotMatch(html, /Falta la foto/);
+  assert.doesNotMatch(html, /Libro con foto/);
 });
 
 const CATALOG_FEED = {
