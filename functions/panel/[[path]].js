@@ -290,6 +290,44 @@ function layout(title, body) {
   section.card form + form { padding-top:1rem; border-top:1px solid var(--borde-suave); }
   section.card form .muted, section.card form p { margin:0; font-size:.88rem; }
 
+  /* ── Lista de pendientes ────────────────────────────────────────── */
+  .hoy { margin-bottom:1.6rem; }
+  .hoy-cabeza { display:flex; align-items:center; gap:.6rem; margin-bottom:.75rem; }
+  .hoy-cabeza h2 { margin:0; font-size:1.15rem; }
+  .cuenta { background:var(--acento); color:#fff; border-radius:999px;
+            min-width:1.6rem; height:1.6rem; padding:0 .5rem;
+            display:inline-flex; align-items:center; justify-content:center;
+            font-size:.82rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .cuenta-cero { background:var(--ok-suave); color:var(--ok); font-weight:600; }
+  .mas { margin-top:.7rem; }
+
+  .tareas { list-style:none; margin:0; padding:0;
+            display:flex; flex-direction:column; gap:.5rem; }
+  .tarea { display:flex; align-items:center; gap:1rem;
+           background:var(--tarjeta); border:1px solid var(--borde);
+           border-left:4px solid var(--borde); border-radius:12px;
+           padding:.8rem 1rem; box-shadow:var(--sombra); }
+  /* El color va en una barrita al costado, no llenando la tarjeta entera:
+     con cinco cosas pendientes, cinco bloques de color cansan la vista. */
+  .tarea.t-alta  { border-left-color:var(--acento); }
+  .tarea.t-media { border-left-color:var(--alerta-borde); }
+  .tarea.t-baja  { border-left-color:var(--borde); }
+  .tarea-texto { display:flex; flex-direction:column; gap:.15rem; min-width:0; flex:1; }
+  .tarea-texto b { font-weight:600; font-size:.95rem; letter-spacing:-.01em; }
+  .tarea-texto .muted { font-size:.82rem; overflow:hidden;
+                        text-overflow:ellipsis; white-space:nowrap; }
+  .tarea .linkbtn { flex:none; }
+
+  /* ── Cifras ─────────────────────────────────────────────────────── */
+  .cifras { display:flex; flex-wrap:wrap; gap:.4rem 2rem;
+            padding:.9rem 1.15rem; margin-bottom:1.1rem;
+            background:var(--tarjeta); border:1px solid var(--borde);
+            border-radius:var(--radio); box-shadow:var(--sombra); }
+  .cifras div { display:flex; align-items:baseline; gap:.4rem; }
+  .cifras b { font-size:1.05rem; font-weight:650; letter-spacing:-.02em;
+              font-variant-numeric:tabular-nums; }
+  .cifras span { color:var(--tinta-media); font-size:.8rem; }
+
   @media (max-width:640px) {
     main { padding:0 .9rem 3rem; }
     .card { padding:1.1rem 1.15rem; }
@@ -298,6 +336,11 @@ function layout(title, body) {
     /* En el celular el subtítulo de la sección plegada empuja el título a dos
        líneas y no aporta nada: el título ya dice qué es. */
     details.card > summary .resumen { display:none; }
+    /* En el celular la fila de tarea se apila: el botón abajo y a lo ancho,
+       que es donde cae el pulgar. */
+    .tarea { flex-direction:column; align-items:stretch; gap:.6rem; }
+    .tarea .linkbtn { text-align:center; }
+    .cifras { gap:.5rem 1.4rem; }
     h1 { font-size:1.3rem; }
   }
 </style>
@@ -572,15 +615,95 @@ async function handleSettingsSave(context) {
   }), { status: result.ok ? 200 : 500 });
 }
 
+/**
+ * Una fila de trabajo: qué hay que hacer, sobre quién, y por dónde se hace.
+ * Reemplaza a las cuatro tablas que había antes. Una tabla con encabezados
+ * para mostrar dos filas es un informe; esto es una lista de cosas para hacer.
+ */
+function tarea({ urgencia = 'media', que, quien, detalle = '', enlace = null, accion = 'Abrir' }) {
+  return `<li class="tarea t-${urgencia}">
+    <div class="tarea-texto">
+      <b>${que}</b>
+      <span class="muted">${quien}${detalle ? ` · ${detalle}` : ''}</span>
+    </div>
+    ${enlace ? `<a class="linkbtn" href="${enlace}">${escapeHtml(accion)}</a>` : ''}
+  </li>`;
+}
+
+/**
+ * Todo lo que necesita que alguien haga algo, en un solo lugar y ordenado por
+ * urgencia. Antes estaba repartido en cuatro tablas y una lista aparte, y
+ * había que leerlas todas para saber si había algo pendiente.
+ */
+function tareasPendientes(data) {
+  const filas = [];
+
+  if (data.stuck?.ok) {
+    const stuck = data.stuck.data;
+    for (const row of stuck.paidNotFulfilled) {
+      filas.push(tarea({
+        urgencia: 'alta',
+        que: `Despachar ${escapeHtml(row.public_code)}`,
+        quien: escapeHtml(row.buyer_name),
+        detalle: `${money(row.payable_total_uyu)} · pagado ${shortDate(row.paid_at)}`,
+        enlace: `/panel/pedido/${encodeURIComponent(row.public_code)}`,
+        accion: 'Ver pedido',
+      }));
+    }
+    for (const row of stuck.waitlistRestocked) {
+      filas.push(tarea({
+        urgencia: 'alta',
+        que: 'Avisar que llegó',
+        quien: escapeHtml(row.product_title),
+        detalle: `${escapeHtml(row.email)} · repuesto ${shortDate(row.restocked_at)}`,
+      }));
+    }
+    for (const row of stuck.paymentHanging) {
+      filas.push(tarea({
+        urgencia: 'media',
+        que: `Pago sin resolver · ${escapeHtml(row.public_code)}`,
+        quien: escapeHtml(row.buyer_name),
+        detalle: `${money(row.payable_total_uyu)} · desde ${shortDate(row.created_at)}`,
+      }));
+    }
+    for (const row of stuck.notificationFailed) {
+      filas.push(tarea({
+        urgencia: 'media',
+        que: 'Aviso interno que falló',
+        quien: escapeHtml(row.product_title),
+        detalle: label(WAITLIST_STATUS_LABEL, row.internal_notification_status),
+      }));
+    }
+  }
+
+  const missing = data.catalog?.ok ? (data.catalog.data.missingImage || { count: 0, items: [] }) : null;
+  if (missing?.count) {
+    for (const row of missing.items) {
+      filas.push(tarea({
+        urgencia: row.priority === 0 ? 'alta' : 'baja',
+        que: 'Falta la foto',
+        quien: escapeHtml(row.title),
+        detalle: label({ active: 'activo', paused: 'pausado', closed: 'cerrado' }, row.status),
+        enlace: row.id ? `https://www.amadolibros.com/libro/${escapeHtml(row.id)}` : null,
+        accion: 'Ver ficha',
+      }));
+    }
+  }
+
+  return { filas, missing };
+}
+
 function dashboardPage(data) {
   const env = data.environment;
-  const stuckCount = data.stuck?.ok ? data.stuck.data.total : null;
-  // Se cuenta aparte de `stuckCount`: viene del catálogo, no de D1, así que uno
-  // puede estar disponible y el otro caído. La tarjeta se enciende con cualquiera.
-  const missingImageCount = data.catalog?.ok ? (data.catalog.data.missingImage?.count || 0) : 0;
+  const { filas, missing } = tareasPendientes(data);
+  const totalTareas = (data.stuck?.ok ? data.stuck.data.total : 0) + (missing?.count || 0);
+  const rotas = [
+    !data.stuck?.ok ? data.stuck?.error : null,
+    !data.catalog?.ok ? data.catalog?.error : null,
+  ].filter(Boolean);
 
   return layout('Panel — Amado Libros', `
-<div class="top">
+<header class="top">
   <div>
     <h1>Amado Libros</h1>
     <p class="muted">
@@ -591,80 +714,51 @@ function dashboardPage(data) {
     </p>
   </div>
   <div class="acciones"><a class="linkbtn" href="/panel/ajustes">Ajustes</a><form method="POST" action="/panel/logout"><button class="logout" type="submit">Salir</button></form></div>
-</div>
+</header>
 
-<section class="card ${stuckCount || missingImageCount ? 'alert' : ''}">
-  <h2>Qué quedó trancado${stuckCount ? ` (${stuckCount})` : ''}</h2>
-  ${sectionOrError(data.stuck, stuck => `
-    <h3 class="muted">Pagados sin despachar</h3>
-    ${table(['Pedido', 'Comprador', 'Total', 'Pagado'], stuck.paidNotFulfilled, row => `
-      <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td><td>${escapeHtml(row.buyer_name)}</td>
-          <td>${money(row.payable_total_uyu)}</td><td>${shortDate(row.paid_at)}</td></tr>`)}
+<section class="hoy">
+  <div class="hoy-cabeza">
+    <h2>Para hacer ahora</h2>
+    ${totalTareas
+      ? `<span class="cuenta">${escapeHtml(totalTareas)}</span>`
+      : '<span class="cuenta cuenta-cero">al día</span>'}
+  </div>
+  ${rotas.map(mensaje => `<p class="err">No se pudo cargar: ${escapeHtml(mensaje)}</p>`).join('')}
+  ${filas.length
+    ? `<ul class="tareas">${filas.join('')}</ul>`
+    : (rotas.length ? '' : '<p class="empty">Nada pendiente. Todo despachado y todas las fichas con foto. 👌</p>')}
+  ${missing && missing.count > missing.items.length
+    ? `<p class="muted mas">Y ${escapeHtml(missing.count - missing.items.length)} fichas sin foto más.
+       Sin foto no salen en Google: es lo que Search Console reporta como «Falta el campo image».</p>`
+    : ''}
+</section>
 
-    <h3 class="muted">Pago colgado hace más de una hora</h3>
-    ${table(['Pedido', 'Comprador', 'Total', 'Creado'], stuck.paymentHanging, row => `
-      <tr><td>${escapeHtml(row.public_code)}</td><td>${escapeHtml(row.buyer_name)}</td>
-          <td>${money(row.payable_total_uyu)}</td><td>${shortDate(row.created_at)}</td></tr>`)}
-
-    <h3 class="muted">Repuesto y todavía sin avisar al cliente</h3>
-    ${table(['Libro', 'Cliente', 'Repuesto'], stuck.waitlistRestocked, row => `
-      <tr><td>${escapeHtml(row.product_title)}</td><td>${escapeHtml(row.email)}</td>
-          <td>${shortDate(row.restocked_at)}</td></tr>`)}
-
-    <h3 class="muted">Avisos internos que fallaron</h3>
-    ${table(['Libro', 'Estado', 'Creado'], stuck.notificationFailed, row => `
-      <tr><td>${escapeHtml(row.product_title)}</td>
-          <td>${label(WAITLIST_STATUS_LABEL, row.internal_notification_status)}</td>
-          <td>${shortDate(row.created_at)}</td></tr>`)}
-  `)}
-
-  <h3 class="muted">Ficha sin imagen para Google${missingImageCount ? ` (${missingImageCount})` : ''}</h3>
-  ${sectionOrError(data.catalog, catalog => {
-    const missing = catalog.missingImage || { count: 0, items: [] };
-    if (!missing.count) return '<p class="empty">Nada por acá. 👌</p>';
-    return `
-      <p class="muted">
-        Estas fichas no tienen ninguna foto, así que salen a Google sin imagen.
-        Es lo que Search Console reporta como «Falta el campo image».
-        ${missing.count > missing.items.length
-          ? `Se muestran las primeras ${missing.items.length} de ${missing.count}.`
-          : ''}
-      </p>
-      ${table(['Libro', 'Estado', 'Ficha'], missing.items, row => `
-        <tr><td>${escapeHtml(row.title)}</td>
-            <td>${label({ active: 'activo', paused: 'pausado', closed: 'cerrado' }, row.status)}</td>
-            <td>${row.id
-              ? `<a href="https://www.amadolibros.com/libro/${escapeHtml(row.id)}" rel="noreferrer">${escapeHtml(row.id)}</a>`
-              : '—'}</td></tr>`)}`;
-  })}
+${sectionOrError(data.orders, orders => `
+<section class="cifras">
+  <div><b>${escapeHtml(orders.paidLast30.total ?? 0)}</b><span>cobrados en 30 días</span></div>
+  <div><b>${money(orders.paidLast30.total_uyu)}</b><span>facturado en 30 días</span></div>
+  ${orders.byStatus.map(row => `
+    <div><b>${escapeHtml(row.total ?? 0)}</b><span>${label(ORDER_STATUS_LABEL, row.status)}</span></div>`).join('')}
 </section>
 
 <section class="card">
-  <h2>Pedidos</h2>
-  ${sectionOrError(data.orders, orders => `
-    <div class="grid">
-      <div class="stat"><b>${escapeHtml(orders.paidLast30.total ?? 0)}</b><span>cobrados (30 días)</span></div>
-      <div class="stat"><b>${money(orders.paidLast30.total_uyu)}</b><span>facturado (30 días)</span></div>
-    </div>
-    <h3 class="muted">Por estado</h3>
-    ${statusList(orders.byStatus)}
-    <h3 class="muted">Últimos ${orders.recent.length}</h3>
-    ${table(['Pedido', 'Estado', 'Pago', 'Comprador', 'Entrega', 'Total', 'Creado'], orders.recent, row => `
-      <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td>
-          <td>${label(ORDER_STATUS_LABEL, row.status)}</td>
-          <td>${label(PAYMENT_STATUS_LABEL, row.payment_status)}</td>
-          <td>${escapeHtml(row.buyer_name)}</td>
-          <td>${label(DELIVERY_LABEL, row.delivery_type)}</td><td>${money(row.payable_total_uyu)}</td>
-          <td>${shortDate(row.created_at)}</td></tr>`)}
-  `)}
-</section>
+  <h2>Últimos pedidos</h2>
+  ${table(['Pedido', 'Comprador', 'Entrega', 'Estado', 'Pago', 'Total', 'Creado'], orders.recent, row => `
+    <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td>
+        <td>${escapeHtml(row.buyer_name)}</td>
+        <td>${label(DELIVERY_LABEL, row.delivery_type)}</td>
+        <td>${label(ORDER_STATUS_LABEL, row.status)}</td>
+        <td>${label(PAYMENT_STATUS_LABEL, row.payment_status)}</td>
+        <td>${money(row.payable_total_uyu)}</td>
+        <td>${shortDate(row.created_at)}</td></tr>`)}
+</section>`)}
 
 <details class="card">
   <summary>Avisos de stock<span class="resumen">gente esperando reposición</span></summary>
   <div class="cuerpo">
   ${sectionOrError(data.waitlist, waitlist => `
     ${statusList(waitlist.byStatus, WAITLIST_STATUS_LABEL)}
-    <h3 class="muted">Libros más esperados</h3>
+    <h3>Libros más esperados</h3>
     ${table(['Libro', 'ID', 'Personas'], waitlist.topProducts, row => `
       <tr><td>${escapeHtml(row.product_title)}</td><td>${escapeHtml(row.product_id)}</td>
           <td>${escapeHtml(row.total)}</td></tr>`)}
@@ -684,7 +778,7 @@ function dashboardPage(data) {
     </div>
     <p class="muted">Catálogo generado: ${shortDate(catalog.generatedAt)}</p>
 
-    <h3 class="muted">Cuántos llegan a Google Shopping</h3>
+    <h3>Cuántos llegan a Google Shopping</h3>
     <div class="grid">
       <div class="stat"><b>${escapeHtml(catalog.feed.activeTotal)}</b><span>libros activos</span></div>
       <div class="stat"><b>${escapeHtml(catalog.feed.eligible)}</b><span>pasan la puerta comercial</span></div>
