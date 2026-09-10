@@ -92,13 +92,27 @@ jobs:
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         run: |
+          # Se espera por TODAS las rutas que la auditoría va a pedir, no sólo
+          # por dos. Los sitemaps son Functions distintas y propagan por su
+          # cuenta: esperar sólo home y feed dejaba pasar el job con los
+          # sitemaps todavía en 404, y la auditoría moría a los 30 segundos
+          # con "sitemap-pages.xml respondió HTTP 404". Pasó en el #334 y en
+          # el #342, y cada vez costó una re-ejecución a mano.
+          ROUTES="/ /feed.xml /sitemap.xml /sitemap-pages.xml /sitemap-categories.xml /sitemap-books-active.xml /sitemap-books-paused.xml"
           for attempt in 1 2 3 4 5 6 7 8; do
-            HOME_CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL/")
-            FEED_CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL/feed.xml")
-            [ "$HOME_CODE" = "200" ] && [ "$FEED_CODE" = "200" ] && exit 0
-            echo "Preview propagándose: intento $attempt/8, home HTTP $HOME_CODE, feed HTTP $FEED_CODE."
+            PENDING=""
+            for route in $ROUTES; do
+              CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL$route")
+              [ "$CODE" = "200" ] || PENDING="$PENDING $route(HTTP $CODE)"
+            done
+            if [ -z "$PENDING" ]; then
+              echo "Preview propagado: todas las rutas responden 200."
+              exit 0
+            fi
+            echo "Preview propagándose: intento $attempt/8, faltan:$PENDING"
             sleep 10
           done
+          echo "ERROR: el Preview no propagó todas las rutas. Faltan:$PENDING"
           exit 1
 
       - name: Verify reported missing Product.image on isolated Preview
