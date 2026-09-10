@@ -376,3 +376,14 @@ test('las fichas sin foto se ordenan por las que venden primero', async () => {
     'Pausado sin foto',
   ]);
 });
+
+test('la fecha del catálogo sale del campo que el catálogo realmente trae', async () => {
+  // buildCatalog escribe `updated_at`. El panel buscaba `generated_at` y
+  // `generatedAt`, que no existen en ningún catálogo real: por eso mostraba "—".
+  const { loadCatalogSummary } = await import('../_shared/panel-data.js');
+  const summary = await withCatalog(
+    { updated_at: '2026-09-10T00:30:00.000Z', items: [] },
+    () => loadCatalogSummary({}),
+  );
+  assert.equal(summary.generatedAt, '2026-09-10T00:30:00.000Z');
+});
