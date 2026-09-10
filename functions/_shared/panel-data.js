@@ -23,6 +23,7 @@ const RECENT_ORDERS_LIMIT = 20;
 const STUCK_LIMIT = 25;
 const CRAWL_DAYS = 7;
 const MISSING_IMAGE_LIMIT = 25;
+const REVENUE_MONTHS = 12;
 const ORDER_EVENTS_LIMIT = 30;
 // El código va en la URL y de ahí a una consulta: sólo se acepta su forma real.
 const ORDER_CODE_RE = /^AL-[0-9]{6}-[A-Z0-9]{6}$/;
@@ -160,6 +161,56 @@ export async function loadStuck(db, { now = Date.now() } = {}) {
       paymentHanging.length +
       waitlistRestocked.length +
       notificationFailed.length,
+  };
+}
+
+/**
+ * Facturado por mes, para el gráfico del tablero.
+ *
+ * Se agrupa por MES y no por día a propósito: con el volumen real de la
+ * librería, un gráfico diario serían doce barras y trescientos ceros. El mes
+ * es la unidad en la que se mira si el negocio sube o baja.
+ *
+ * Los meses sin ventas vienen con cero y no se saltean: un hueco en la serie
+ * se leería como "no hay dato" cuando en realidad significa "no se vendió".
+ */
+export async function loadRevenueByMonth(db, { now = Date.now() } = {}) {
+  const desde = new Date(now);
+  desde.setUTCDate(1);
+  desde.setUTCHours(0, 0, 0, 0);
+  desde.setUTCMonth(desde.getUTCMonth() - (REVENUE_MONTHS - 1));
+
+  const rows = await queryAll(
+    db,
+    `SELECT substr(paid_at, 1, 7) AS month,
+            COUNT(*) AS orders,
+            COALESCE(SUM(payable_total_uyu), 0) AS total_uyu
+       FROM orders
+      WHERE payment_status = 'approved' AND paid_at >= ?
+      GROUP BY month
+      ORDER BY month ASC`,
+    [desde.toISOString()],
+  );
+
+  const porMes = new Map(rows.map(row => [String(row.month), row]));
+  const months = [];
+  for (let i = 0; i < REVENUE_MONTHS; i++) {
+    const fecha = new Date(desde);
+    fecha.setUTCMonth(desde.getUTCMonth() + i);
+    const clave = fecha.toISOString().slice(0, 7);
+    const fila = porMes.get(clave);
+    months.push({
+      month: clave,
+      orders: Number(fila?.orders) || 0,
+      total_uyu: Number(fila?.total_uyu) || 0,
+    });
+  }
+
+  return {
+    months,
+    max: months.reduce((mayor, fila) => Math.max(mayor, fila.total_uyu), 0),
+    total_uyu: months.reduce((suma, fila) => suma + fila.total_uyu, 0),
+    orders: months.reduce((suma, fila) => suma + fila.orders, 0),
   };
 }
 
@@ -340,8 +391,9 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     ? section(() => loader(db))
     : Promise.resolve({ ok: false, error: 'ORDERS_DB no está disponible en este entorno.' }));
 
-  const [orders, stuck, waitlist, crawl, catalog] = await Promise.all([
+  const [orders, revenue, stuck, waitlist, crawl, catalog] = await Promise.all([
     withDb(database => loadOrdersOverview(database, { now })),
+    withDb(database => loadRevenueByMonth(database, { now })),
     withDb(database => loadStuck(database, { now })),
     withDb(database => loadWaitlist(database)),
     withDb(database => loadCrawl(database, { now })),
@@ -352,6 +404,7 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     generatedAt: new Date(now).toISOString(),
     environment: environmentSummary(context?.env),
     orders,
+    revenue,
     stuck,
     waitlist,
     crawl,

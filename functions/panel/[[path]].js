@@ -41,6 +41,7 @@ import {
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
+import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
 import {
   NOTICE_EVENT_TYPE,
@@ -117,13 +118,51 @@ function money(value) {
   return `$ ${number.toLocaleString('es-UY')}`;
 }
 
+/**
+ * Sólo el día. En la tabla del tablero la hora no aporta nada a la mirada
+ * rápida y empuja la última columna fuera de la tarjeta: la fecha terminaba
+ * cortada a la mitad. La hora exacta está en la ficha del pedido.
+ */
+function shortDay(value) {
+  const raw = cleanString(value);
+  if (!raw) return '—';
+  return escapeHtml(raw.slice(0, 10));
+}
+
 function shortDate(value) {
   const raw = cleanString(value);
   if (!raw) return '—';
   return escapeHtml(raw.slice(0, 16).replace('T', ' '));
 }
 
-function layout(title, body) {
+/**
+ * El menú lateral. Sólo lleva a lugares que existen: el tablero, la pantalla
+ * de ajustes y las secciones de esta misma página. Un menú con "Clientes" o
+ * "Marketing" que no abre nada se ve bien en una captura y estorba al usarlo.
+ */
+function sidebar(activo = 'tablero') {
+  const items = [
+    { id: 'tablero', href: '/panel', texto: 'Tablero', icono: '▦' },
+    { id: 'pendientes', href: '/panel#pendientes', texto: 'Para hacer', icono: '◉' },
+    { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos', icono: '❑' },
+    { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
+    { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },
+  ];
+  return `<nav class="lateral" aria-label="Secciones del panel">
+  <a class="marca" href="/panel"><b>Amado</b><span>Libros</span></a>
+  <ul>
+    ${items.map(item => `<li><a href="${item.href}"
+      class="${item.id === activo ? 'aqui' : ''}"
+      ${item.id === activo ? 'aria-current="page"' : ''}
+      ><i aria-hidden="true">${item.icono}</i>${escapeHtml(item.texto)}</a></li>`).join('')}
+  </ul>
+  <form class="salir" method="POST" action="/panel/logout">
+    <button class="logout" type="submit">Salir</button>
+  </form>
+</nav>`;
+}
+
+function layout(title, body, { nav = '' } = {}) {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -201,6 +240,75 @@ function layout(title, body) {
   details.card > .cuerpo { padding:0 1.5rem 1.35rem; }
   details.card > summary .resumen { color:var(--tinta-suave); font-weight:400;
                                     font-size:.85rem; margin-left:auto; }
+
+  /* ── Menú lateral ───────────────────────────────────────────────── */
+  body.con-lateral { display:flex; align-items:flex-start; }
+  body.con-lateral main { flex:1; min-width:0; max-width:1080px; padding-top:.5rem; }
+  .lateral { position:sticky; top:0; width:200px; flex:none; height:100vh;
+             background:var(--tarjeta); border-right:1px solid var(--borde);
+             display:flex; flex-direction:column; padding:1.35rem 0 1rem; }
+  .marca { display:block; padding:0 1.25rem 1.35rem; text-decoration:none;
+           color:var(--tinta); letter-spacing:-.02em; line-height:1.15; }
+  .marca b { display:block; font-size:1.15rem; font-weight:700; }
+  .marca span { color:var(--tinta-suave); font-size:.85rem; }
+  .lateral ul { list-style:none; margin:0; padding:0 .6rem; flex:1;
+                display:flex; flex-direction:column; gap:.15rem; }
+  .lateral a:not(.marca) { display:flex; align-items:center; gap:.65rem;
+    padding:.55rem .65rem; border-radius:9px; text-decoration:none;
+    color:var(--tinta-media); font-size:.9rem; font-weight:500; }
+  .lateral a:not(.marca):hover { background:var(--papel); color:var(--tinta); }
+  .lateral a.aqui { background:var(--acento-suave); color:var(--acento); font-weight:650; }
+  .lateral i { font-style:normal; font-size:.9rem; width:1.1rem; text-align:center; }
+  .salir { padding:0 1.25rem; margin:0; }
+  .salir button { width:100%; margin:0; }
+
+  /* ── Tarjetas de indicadores ────────────────────────────────────── */
+  .tarjetas { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+              gap:.8rem; margin-bottom:1.1rem; }
+  .tarjetas > .err { grid-column:1/-1; margin:0; padding:1rem 1.15rem; font-size:.9rem;
+                     border:1px solid var(--error); border-radius:var(--radio);
+                     background:var(--error-suave); }
+  .kpi { background:var(--tarjeta); border:1px solid var(--borde);
+         border-radius:var(--radio); padding:1rem 1.15rem; box-shadow:var(--sombra);
+         display:flex; flex-direction:column; gap:.15rem; }
+  .kpi span { color:var(--tinta-media); font-size:.78rem; font-weight:600;
+              text-transform:uppercase; letter-spacing:.05em; }
+  .kpi b { font-size:1.75rem; font-weight:650; letter-spacing:-.03em; line-height:1.15; }
+  .kpi small { color:var(--tinta-suave); font-size:.8rem; }
+  .kpi-alerta { border-color:var(--alerta-borde); }
+  .kpi-alerta b { color:var(--alerta); }
+
+  /* ── Gráfico ────────────────────────────────────────────────────── */
+  .card-cabeza { display:flex; justify-content:space-between; align-items:baseline;
+                 gap:1rem; margin-bottom:1rem; }
+  .card-cabeza h2 { margin:0; }
+  figure.grafico { margin:0; }
+  figure.grafico svg { width:100%; height:auto; display:block; overflow:visible; }
+  /* La grilla y el eje son recesivos: la barra es el dato, no la regla. */
+  .grilla { stroke:var(--borde-suave); stroke-width:1; }
+  .base { stroke:var(--borde); stroke-width:1; }
+  .barra { fill:var(--acento); }
+  .blanco { fill:transparent; }
+  .mes:hover .barra { filter:brightness(1.15); }
+  .mes:hover .blanco { fill:var(--acento-suave); }
+  .eje { fill:var(--tinta-suave); font-size:10px; text-anchor:middle;
+         font-variant-numeric:tabular-nums; }
+  .valor { fill:var(--tinta); font-size:11px; font-weight:650; text-anchor:middle; }
+  .tabla-datos { margin-top:1rem; }
+  .tabla-datos > summary { cursor:pointer; color:var(--tinta-media);
+                           font-size:.85rem; padding:.3rem 0; }
+  .tabla-datos > summary:hover { color:var(--acento); }
+
+  /* ── Pastillas de estado ────────────────────────────────────────── */
+  /* Color Y palabra: el color solo nunca alcanza. */
+  .pastilla { display:inline-block; padding:.15rem .55rem; border-radius:999px;
+              font-size:.78rem; font-weight:600; white-space:nowrap;
+              border:1px solid transparent; }
+  .p-bien   { background:var(--ok-suave);     color:var(--ok);     border-color:var(--ok); }
+  .p-aviso  { background:var(--alerta-suave); color:var(--alerta); border-color:var(--alerta-borde); }
+  .p-serio  { background:#fdf0e9;             color:#a1500f;       border-color:#e8b48f; }
+  .p-grave  { background:var(--error-suave);  color:var(--error);  border-color:var(--error); }
+  .p-neutro { background:var(--papel);        color:var(--tinta-media); border-color:var(--borde); }
 
   /* ── Números ────────────────────────────────────────────────────── */
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -328,6 +436,42 @@ function layout(title, body) {
               font-variant-numeric:tabular-nums; }
   .cifras span { color:var(--tinta-media); font-size:.8rem; }
 
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .p-serio {
+      background:#2b1d15; color:#e8a06f; border-color:#5c3a24; }
+  }
+
+  /* En pantalla chica el lateral se acuesta arriba y se desplaza solo: un
+     menú fijo de 200px sobre 390 se come media pantalla. */
+  @media (max-width:820px) {
+    body.con-lateral { display:block; }
+    .lateral { position:static; width:auto; height:auto; flex-direction:row;
+               align-items:center; gap:.5rem; padding:.7rem .9rem;
+               border-right:0; border-bottom:1px solid var(--borde); }
+    .marca { padding:0 .5rem 0 0; flex:none; }
+    .marca b { font-size:1rem; }
+    .marca span { display:none; }
+    /* Sólo corre el menú, no la barra entera: si corriera la barra, «Salir»
+       quedaba fuera de la pantalla y había que arrastrar para encontrarlo. */
+    .lateral ul { flex-direction:row; padding:0; flex:1; gap:.3rem; min-width:0;
+                  overflow-x:auto; scrollbar-width:none; }
+    .lateral ul::-webkit-scrollbar { display:none; }
+    .lateral li { flex:none; }
+    .lateral a:not(.marca) { white-space:nowrap; padding:.4rem .6rem; }
+    .lateral i { display:none; }
+    .salir { padding:0; flex:none; }
+    .salir button { padding:.4rem .8rem; }
+
+    /* El gráfico no se achica hasta ser ilegible: se corre. A 340px de ancho,
+       doce meses en 720 de viewBox dejan las etiquetas en 5px. */
+    /* direction:rtl arranca el corrimiento del lado derecho: en el celular
+       lo primero que se ve son los meses recientes, que son los que importan,
+       y se arrastra hacia atrás para ver el historial. El SVG vuelve a ltr
+       para que las barras no se den vuelta. */
+    figure.grafico { overflow-x:auto; direction:rtl; }
+    figure.grafico svg { min-width:600px; direction:ltr; }
+  }
+
   @media (max-width:640px) {
     main { padding:0 .9rem 3rem; }
     .card { padding:1.1rem 1.15rem; }
@@ -345,7 +489,7 @@ function layout(title, body) {
   }
 </style>
 </head>
-<body><main>${body}</main></body>
+<body class="${nav ? 'con-lateral' : ''}">${nav}<main>${body}</main></body>
 </html>`;
 }
 
@@ -693,6 +837,26 @@ function tareasPendientes(data) {
   return { filas, missing };
 }
 
+/** La píldora de estado. Color Y palabra: el color solo nunca alcanza. */
+function pastilla(diccionario, valor, tono) {
+  return `<span class="pastilla p-${tono}">${label(diccionario, valor)}</span>`;
+}
+
+function tonoPedido(status) {
+  if (status === 'fulfilled') return 'bien';
+  if (status === 'paid') return 'aviso';
+  if (status === 'cancelled' || status === 'expired') return 'grave';
+  return 'neutro';
+}
+
+function tonoPago(status) {
+  if (status === 'approved') return 'bien';
+  if (status === 'pending' || status === 'not_started') return 'aviso';
+  if (status === 'rejected' || status === 'cancelled') return 'grave';
+  if (status === 'refunded') return 'serio';
+  return 'neutro';
+}
+
 function dashboardPage(data) {
   const env = data.environment;
   const { filas, missing } = tareasPendientes(data);
@@ -701,11 +865,12 @@ function dashboardPage(data) {
     !data.stuck?.ok ? data.stuck?.error : null,
     !data.catalog?.ok ? data.catalog?.error : null,
   ].filter(Boolean);
+  const pagadosSinDespachar = data.stuck?.ok ? data.stuck.data.paidNotFulfilled.length : null;
 
   return layout('Panel — Amado Libros', `
 <header class="top">
   <div>
-    <h1>Amado Libros</h1>
+    <h1>Tablero</h1>
     <p class="muted">
       ${escapeHtml(env.appEnv)} ·
       checkout ${env.checkoutEnabled ? '<span class="ok">encendido</span>' : '<span class="err">apagado</span>'} ·
@@ -713,10 +878,46 @@ function dashboardPage(data) {
       ${shortDate(data.generatedAt)} UTC
     </p>
   </div>
-  <div class="acciones"><a class="linkbtn" href="/panel/ajustes">Ajustes</a><form method="POST" action="/panel/logout"><button class="logout" type="submit">Salir</button></form></div>
+  <a class="linkbtn" href="/panel/ajustes">Ajustes</a>
 </header>
 
-<section class="hoy">
+${sectionOrError(data.orders, orders => `
+<section class="tarjetas">
+  <article class="kpi">
+    <span>Facturado · 30 días</span>
+    <b>${money(orders.paidLast30.total_uyu)}</b>
+    <small>${escapeHtml(orders.paidLast30.total ?? 0)} pedido${Number(orders.paidLast30.total) === 1 ? '' : 's'} cobrado${Number(orders.paidLast30.total) === 1 ? '' : 's'}</small>
+  </article>
+  <article class="kpi${pagadosSinDespachar ? ' kpi-alerta' : ''}">
+    <span>Pagados sin despachar</span>
+    <b>${escapeHtml(pagadosSinDespachar ?? '—')}</b>
+    <small>${pagadosSinDespachar ? 'esperando que salgan' : 'nada esperando'}</small>
+  </article>
+  ${sectionOrError(data.catalog, catalog => `
+  <article class="kpi">
+    <span>Libros publicados</span>
+    <b>${escapeHtml(catalog.feed.activeTotal)}</b>
+    <small>${escapeHtml(catalog.withStock)} con stock</small>
+  </article>
+  <article class="kpi${catalog.missingImage?.count ? ' kpi-alerta' : ''}">
+    <span>Fichas sin foto</span>
+    <b>${escapeHtml(catalog.missingImage?.count ?? 0)}</b>
+    <small>no salen en Google</small>
+  </article>`)}
+</section>`)}
+
+<section class="card grafico" id="facturacion">
+  <div class="card-cabeza">
+    <h2>Facturación cobrada</h2>
+    <span class="muted">últimos 12 meses</span>
+  </div>
+  ${sectionOrError(data.revenue, revenue => `
+    ${revenueChart(revenue)}
+    ${revenueTable(revenue)}
+  `)}
+</section>
+
+<section class="hoy" id="pendientes">
   <div class="hoy-cabeza">
     <h2>Para hacer ahora</h2>
     ${totalTareas
@@ -734,55 +935,32 @@ function dashboardPage(data) {
 </section>
 
 ${sectionOrError(data.orders, orders => `
-<section class="cifras">
-  <div><b>${escapeHtml(orders.paidLast30.total ?? 0)}</b><span>cobrados en 30 días</span></div>
-  <div><b>${money(orders.paidLast30.total_uyu)}</b><span>facturado en 30 días</span></div>
-  ${orders.byStatus.map(row => `
-    <div><b>${escapeHtml(row.total ?? 0)}</b><span>${label(ORDER_STATUS_LABEL, row.status)}</span></div>`).join('')}
-</section>
-
-<section class="card">
-  <h2>Últimos pedidos</h2>
+<section class="card" id="pedidos">
+  <div class="card-cabeza">
+    <h2>Últimos pedidos</h2>
+    <span class="muted">${escapeHtml(orders.recent.length)} más recientes</span>
+  </div>
   ${table(['Pedido', 'Comprador', 'Entrega', 'Estado', 'Pago', 'Total', 'Creado'], orders.recent, row => `
     <tr><td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td>
         <td>${escapeHtml(row.buyer_name)}</td>
         <td>${label(DELIVERY_LABEL, row.delivery_type)}</td>
-        <td>${label(ORDER_STATUS_LABEL, row.status)}</td>
-        <td>${label(PAYMENT_STATUS_LABEL, row.payment_status)}</td>
+        <td>${pastilla(ORDER_STATUS_LABEL, row.status, tonoPedido(row.status))}</td>
+        <td>${pastilla(PAYMENT_STATUS_LABEL, row.payment_status, tonoPago(row.payment_status))}</td>
         <td>${money(row.payable_total_uyu)}</td>
-        <td>${shortDate(row.created_at)}</td></tr>`)}
+        <td>${shortDay(row.created_at)}</td></tr>`)}
 </section>`)}
 
-<details class="card">
-  <summary>Avisos de stock<span class="resumen">gente esperando reposición</span></summary>
-  <div class="cuerpo">
-  ${sectionOrError(data.waitlist, waitlist => `
-    ${statusList(waitlist.byStatus, WAITLIST_STATUS_LABEL)}
-    <h3>Libros más esperados</h3>
-    ${table(['Libro', 'ID', 'Personas'], waitlist.topProducts, row => `
-      <tr><td>${escapeHtml(row.product_title)}</td><td>${escapeHtml(row.product_id)}</td>
-          <td>${escapeHtml(row.total)}</td></tr>`)}
-  `)}
-  </div>
-</details>
-
-<details class="card">
-  <summary>Productos y Google Shopping<span class="resumen">catálogo y qué llega al feed</span></summary>
+<details class="card" id="catalogo">
+  <summary>Catálogo y Google Shopping<span class="resumen">qué llega al feed</span></summary>
   <div class="cuerpo">
   ${sectionOrError(data.catalog, catalog => `
-    <div class="grid">
-      <div class="stat"><b>${escapeHtml(catalog.total)}</b><span>publicaciones activas</span></div>
-      <div class="stat"><b>${escapeHtml(catalog.withStock)}</b><span>con stock</span></div>
-      <div class="stat"><b>${escapeHtml(catalog.withoutImage)}</b><span>sin imagen</span></div>
-      <div class="stat"><b>${escapeHtml(catalog.withoutIsbn)}</b><span>sin ISBN</span></div>
-    </div>
     <p class="muted">Catálogo generado: ${shortDate(catalog.generatedAt)}</p>
-
     <h3>Cuántos llegan a Google Shopping</h3>
     <div class="grid">
       <div class="stat"><b>${escapeHtml(catalog.feed.activeTotal)}</b><span>libros activos</span></div>
       <div class="stat"><b>${escapeHtml(catalog.feed.eligible)}</b><span>pasan la puerta comercial</span></div>
       <div class="stat ${catalog.feed.blocked ? 'alert' : ''}"><b>${escapeHtml(catalog.feed.blocked)}</b><span>quedan afuera</span></div>
+      <div class="stat"><b>${escapeHtml(catalog.withoutIsbn)}</b><span>sin ISBN</span></div>
     </div>
     ${catalog.feed.blockers.length
       ? `<p class="muted">Por qué quedan afuera:</p>
@@ -795,6 +973,19 @@ ${sectionOrError(data.orders, orders => `
       O sea que la cantidad real de ofertas en Merchant es <b>igual o menor</b> a
       ${escapeHtml(catalog.feed.eligible)}, nunca mayor.
     </p>
+  `)}
+  </div>
+</details>
+
+<details class="card">
+  <summary>Avisos de stock<span class="resumen">gente esperando reposición</span></summary>
+  <div class="cuerpo">
+  ${sectionOrError(data.waitlist, waitlist => `
+    ${statusList(waitlist.byStatus, WAITLIST_STATUS_LABEL)}
+    <h3>Libros más esperados</h3>
+    ${table(['Libro', 'ID', 'Personas'], waitlist.topProducts, row => `
+      <tr><td>${escapeHtml(row.product_title)}</td><td>${escapeHtml(row.product_id)}</td>
+          <td>${escapeHtml(row.total)}</td></tr>`)}
   `)}
   </div>
 </details>
@@ -814,7 +1005,7 @@ ${sectionOrError(data.orders, orders => `
                 <td>${escapeHtml(row.verified_googlebot ?? 0)}</td></tr>`,
   ))}
   </div>
-</details>`);
+</details>`, { nav: sidebar('tablero') });
 }
 
 function clientIp(request) {
