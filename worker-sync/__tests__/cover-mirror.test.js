@@ -26,6 +26,7 @@ class MockR2 {
   constructor(manifest = null) {
     this.objects = new Map();
     this.versions = new Map();
+    this.metadata = new Map();
     this.conflictManifestOnce = null;
     if (manifest) this.write(COVER_MANIFEST_KEY, new TextEncoder().encode(JSON.stringify(manifest)));
   }
@@ -39,11 +40,11 @@ class MockR2 {
   async get(key) {
     const bytes = this.objects.get(key);
     if (!bytes) return null;
-    return { body: bytes, etag: this.etag(key), text: async () => new TextDecoder().decode(bytes) };
+    return { body: bytes, etag: this.etag(key), customMetadata: this.metadata.get(key) || {}, text: async () => new TextDecoder().decode(bytes) };
   }
   async head(key) {
     const bytes = this.objects.get(key);
-    return bytes ? { size: bytes.byteLength } : null;
+    return bytes ? { size: bytes.byteLength, customMetadata: this.metadata.get(key) || {} } : null;
   }
   async put(key, body, options = {}) {
     if (key === COVER_MANIFEST_KEY && this.conflictManifestOnce) {
@@ -58,6 +59,7 @@ class MockR2 {
     if (onlyIf?.etagDoesNotMatch === '*' && current) return null;
     const bytes = typeof body === 'string' ? new TextEncoder().encode(body) : new Uint8Array(body);
     this.write(key, bytes);
+    this.metadata.set(key, options.customMetadata || {});
     return { etag: this.etag(key) };
   }
   manifest() {

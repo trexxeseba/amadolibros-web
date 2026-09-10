@@ -239,6 +239,16 @@
     }
   }
 
+  function whatsappOrigin(context, element) {
+    if (element && typeof element.closest === 'function' && element.closest('header')) return 'header';
+    if (context.pageType === 'home') return 'home';
+    if (context.pageType === 'category' || context.pageType === 'catalog') return 'catalogo';
+    if (context.pageType === 'product') {
+      return productAvailabilityType() === 'active' ? 'ficha' : 'ficha_pausada';
+    }
+    return 'otro';
+  }
+
   function trackWhatsApp(options) {
     options = options || {};
     var context = pageContext();
@@ -252,6 +262,13 @@
     if (context.productId) params.product_id = context.productId;
     var availabilityType = productAvailabilityType();
     if (availabilityType) params.availability_type = availabilityType;
+
+    // GA4-WHATSAPP-EVENT-1: origen/ruta/libro_id para importar como conversión
+    // en Google Ads/Meta; transport_type=beacon porque el clic navega fuera del sitio.
+    params.origen = whatsappOrigin(context, options.element);
+    params.ruta = window.location.pathname;
+    params.libro_id = context.productId || '';
+    params.transport_type = 'beacon';
 
     window.gtag('event', 'whatsapp_click', params);
   }
@@ -340,6 +357,6 @@
       ? event.target.closest('a[href]')
       : null;
     if (!anchor || !isWhatsAppUrl(anchor.href)) return;
-    trackWhatsApp({ ctaLocation: ctaLocation(anchor) });
+    trackWhatsApp({ ctaLocation: ctaLocation(anchor), element: anchor });
   }, true);
 })();

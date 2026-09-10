@@ -753,3 +753,52 @@ test('CF-R2-2-BRIDGE: producción tampoco cambia su manifest si falla la verific
   assert.equal(writtenKeys.includes(PRODUCTION_MANIFEST_KEY), false);
   assert.ok(writtenKeys.some(key => key.includes('/versions/')));
 });
+
+test('publicar el catálogo productivo no toca el espejo de portadas: eso lo hace el cron', async () => {
+  // Cloudflare mataba este pedido con 1102 ("Worker exceeded resource limits")
+  // porque, después de publicar, arrancaba el espejo de portadas con el
+  // catálogo entero todavía en memoria. El cron `*/5 * * * *` ya lo hace, con
+  // los pausados incluidos, así que acá no corresponde.
+  const objects = new Map();
+  const coverAccess = [];
+  // Cualquier lectura o escritura de portadas desde esta ruta rompe el test.
+  const forbiddenCoverBucket = new Proxy({}, {
+    get(_target, property) {
+      coverAccess.push(String(property));
+      return () => { throw new Error(`COVER_R2.${String(property)} no debe usarse al publicar el catálogo.`); };
+    },
+  });
+
+  const result = await runProductionCatalogPublish({
+    PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED: true,
+    COVER_MIRROR_BATCH_SIZE: '100',
+    COVER_R2: forbiddenCoverBucket,
+    CATALOG_R2: {
+      async put(key, body) { objects.set(key, body); },
+      async get(key) {
+        const body = objects.get(key);
+        return body == null ? null : { async text() { return body; } };
+      },
+      async head(key) {
+        const body = objects.get(key);
+        return body == null ? null : {
+          size: typeof body === 'string' ? new TextEncoder().encode(body).length : body.byteLength,
+        };
+      },
+    },
+  }, {
+    getAccessTokenFn: async () => 'token',
+    buildCatalogFn: async () => ({
+      updated_at: '2026-08-01T09:00:00.000Z',
+      items: [
+        { id: 'MLU1', title: 'Activo', status: 'active', available_quantity: 2 },
+        { id: 'MLU2', title: 'Pausado', status: 'paused', available_quantity: 0 },
+      ],
+    }),
+  });
+
+  assert.equal(result.status, 'published-production');
+  assert.equal(result.published, true);
+  assert.deepEqual(coverAccess, [], 'publicar el catálogo no debe tocar COVER_R2');
+  assert.deepEqual(result.cover_mirror, { status: 'delegated-to-cron', cron: '*/5 * * * *' });
+});

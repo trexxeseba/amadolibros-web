@@ -1,5 +1,8 @@
 import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
+import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
+import { putJsonToR2 } from './json-r2-stream.js';
+import { readFullCoverManifest } from './cover-manifest-read.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
 export const DEFAULT_COVER_BATCH_SIZE = 100;
@@ -14,6 +17,12 @@ const MAX_GALLERY_IMAGES = 16;
 const TARGET_SHORT_EDGE = 1024;
 const TRANSFORM_RETRY_MS = 24 * 60 * 60 * 1000;
 const MANIFEST_WRITE_ATTEMPTS = 4;
+const INDEX_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+function indexRefreshDue(state, nowIso) {
+  const refreshed = timestamp(state.customMetadata.cover_index_refreshed_at);
+  return !refreshed || timestamp(nowIso) - refreshed >= INDEX_REFRESH_MS;
+}
 
 function emptyManifest(nowIso) {
   return { schema_version: 1, updated_at: nowIso, entries: {} };
@@ -69,12 +78,12 @@ function validManifest(value) {
 
 async function readManifestState(bucket, nowIso) {
   const object = await bucket.get(COVER_MANIFEST_KEY);
-  if (!object) return { manifest: emptyManifest(nowIso), etag: null };
-  const parsed = JSON.parse(await object.text());
+  if (!object) return { manifest: emptyManifest(nowIso), etag: null, customMetadata: {} };
+  const parsed = await readFullCoverManifest(object);
   if (!validManifest(parsed)) throw new Error('Manifest de portadas R2 inválido.');
   const etag = String(object.etag || object.httpEtag || '').replace(/^"|"$/g, '');
   if (!etag) throw new Error('Manifest de portadas R2 sin ETag; no se puede actualizar de forma atómica.');
-  return { manifest: parsed, etag };
+  return { manifest: parsed, etag, customMetadata: object.customMetadata || {} };
 }
 
 function timestamp(value) {
@@ -112,9 +121,7 @@ function mergeProcessedEntry(freshEntry, processed) {
   return merged;
 }
 
-async function writeManifestAtomically(bucket, initialState, processedEntries, nowIso) {
-  let state = initialState;
-  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+async function writeManifestAttempt(bucket, state, processedEntries, nowIso) {
     const nextManifest = {
       ...state.manifest,
       updated_at: timestamp(nowIso) > timestamp(state.manifest.updated_at)
@@ -126,19 +133,73 @@ async function writeManifestAtomically(bucket, initialState, processedEntries, n
       nextManifest.entries[key] = mergeProcessedEntry(nextManifest.entries[key], processed);
     }
 
+    // A daily bounded rewrite repairs deleted/damaged derived objects even if
+    // no image changes. Normal batches upload only changed shards.
+    const refreshIndex = indexRefreshDue(state, nowIso);
+    const publicIndex = await prepareCoverIndex(bucket, nextManifest,
+      refreshIndex ? null : state.customMetadata[COVER_INDEX_METADATA]);
     const onlyIf = state.etag
       ? { etagMatches: state.etag }
       : { etagDoesNotMatch: '*' };
-    const result = await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(nextManifest), {
-      onlyIf,
-      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-    });
+    let transportError = null;
+    // Classify only this native conditional PUT. The same message from index
+    // preparation, serialization, a fresh GET or the quality report propagates.
+    const conditionalBucket = { async put(key, body, options) {
+      try { return await bucket.put(key, body, options); }
+      catch (error) {
+        if (error?.message === 'Network connection lost.') transportError = error;
+        throw error;
+      }
+    } };
+    let result;
+    try {
+      result = await putJsonToR2(conditionalBucket, COVER_MANIFEST_KEY, nextManifest, {
+        onlyIf,
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        customMetadata: { ...state.customMetadata, [COVER_INDEX_METADATA]: publicIndex.hash,
+          cover_index_refreshed_at: refreshIndex ? nowIso : state.customMetadata.cover_index_refreshed_at },
+      });
+    } catch (error) {
+      // putJsonToR2 has already cancelled and awaited its producer. Return an
+      // explicit uncertain outcome, never a fake commit or silent CAS null.
+      if (transportError && error === transportError) return { transportError: error.message };
+      throw error;
+    }
     // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
     // un éxito válido para mocks/implementaciones compatibles con put().
-    if (result !== null) return { manifest: nextManifest, retries: attempt };
+    return result !== null ? { manifest: nextManifest, publicIndex } : null;
+}
+
+async function writeManifestAtomically(bucket, state, processedEntries, nowIso) {
+  let transportRetries = 0;
+  const transportErrors = [];
+  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+    const writing = writeManifestAttempt(bucket, state, processedEntries, nowIso);
+    // The per-attempt frame owns both state and its shallow replacement. A
+    // failed attempt returns only null or a transport message, so neither graph
+    // survives into the next read through aliases or async temporaries.
+    state = null;
+    const written = await writing;
+    if (written?.transportError) {
+      transportErrors.push({ attempt: attempt + 1, message: written.transportError, outcome: 'unknown' });
+      if (attempt + 1 === MANIFEST_WRITE_ATTEMPTS) {
+        const error = new Error(`Transporte persistente al publicar ${COVER_MANIFEST_KEY}: ${written.transportError}`);
+        error.manifest_transport_retries = transportRetries;
+        error.manifest_transport_errors = transportErrors;
+        throw error;
+      }
+      transportRetries++;
+    } else if (written) return { ...written, retries: attempt, transportRetries, transportErrors };
+    // A transport failure may have committed. Re-read the authoritative body,
+    // metadata and ETag, then merge/rebuild and CAS against that actual version.
     state = await readManifestState(bucket, nowIso);
   }
-  throw new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
+  const error = new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
+  if (transportErrors.length) {
+    error.manifest_transport_retries = transportRetries;
+    error.manifest_transport_errors = transportErrors;
+  }
+  throw error;
 }
 
 function needsAiUpscale(entry) {
@@ -490,8 +551,8 @@ export async function syncCoverMirror(env, catalog, {
   }
   const nowDate = now();
   const nowIso = nowDate.toISOString();
-  const manifestState = await readManifestState(bucket, nowIso);
-  const manifest = manifestState.manifest;
+  let manifestState = await readManifestState(bucket, nowIso);
+  let manifest = manifestState.manifest;
   const aiUpscaleEnabled = env?.COVER_ALLOW_GENERATIVE_UPSCALE === 'true' && Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
   // La mejora generativa se reserva para la portada primaria del mismo
   // universo deduplicado que recibe Merchant. Las imágenes secundarias se
@@ -539,10 +600,25 @@ export async function syncCoverMirror(env, catalog, {
   });
   let finalManifest = manifest;
   let manifestRetries = 0;
-  if (batch.selected.length > 0) {
-    const written = await writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+  let manifestTransportRetries = 0;
+  let manifestTransportErrors = [];
+  let publicIndex = null;
+  // Bootstrap every existing cover on the first sync, even if no image needs
+  // refreshing. Subsequent no-op batches do not rewrite the index/manifest.
+  if (batch.selected.length > 0 || indexRefreshDue(manifestState, nowIso) ||
+      !/^[a-f0-9]{64}$/.test(manifestState.customMetadata[COVER_INDEX_METADATA] || '')) {
+    const writing = writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+    // The writer now owns the complete graph. Keeping any caller alias alive
+    // across a CAS retry would retain the original alongside the fresh graph.
+    manifestState = null;
+    manifest = null;
+    finalManifest = null;
+    const written = await writing;
     finalManifest = written.manifest;
     manifestRetries = written.retries;
+    manifestTransportRetries = written.transportRetries;
+    manifestTransportErrors = written.transportErrors;
+    publicIndex = written.publicIndex;
   }
   const validCopies = Object.values(finalManifest.entries).filter(entry => entry?.current?.object_key).length;
   const imported = results.filter(result => ['imported', 'revalidated'].includes(result.status)).length;
@@ -573,7 +649,7 @@ export async function syncCoverMirror(env, catalog, {
     if (entry?.last_error && (!entry.current?.object_key || entry.current.source_url !== row.source_url)) unavailable.set(`${row.product_id}:${row.position}`, {
       product_id: row.product_id, position: row.position, source_url: row.source_url, error: entry?.last_error || null});
   }
-  await bucket.put('covers/v1/quality-report.json', JSON.stringify({
+  await putJsonToR2(bucket, 'covers/v1/quality-report.json', {
     generated_at: nowIso, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
     scope_images: scope.length, known_images: Object.keys(finalManifest.entries).length, discovery_pending: sourcePending,
     needs_better_source: needsSource.map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
@@ -582,7 +658,7 @@ export async function syncCoverMirror(env, catalog, {
     awaiting_first_copy: scopeEntries.filter(({entry}) => !entry?.current?.object_key && !entry?.last_error)
       .map(({row}) => ({product_id: row.product_id, position: row.position, source_url: row.source_url})),
     unavailable: [...unavailable.values()],
-  }), { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
+  }, { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
   return {
     source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
     scope_images: scope.length,
@@ -603,6 +679,9 @@ export async function syncCoverMirror(env, catalog, {
     ai_upscaled: aiUpscaled,
     quality_pending: qualityPending,
     manifest_retries: manifestRetries,
+    manifest_transport_retries: manifestTransportRetries,
+    manifest_transport_errors: manifestTransportErrors,
+    public_index: publicIndex,
     results,
   };
 }

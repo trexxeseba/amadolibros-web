@@ -35,7 +35,7 @@ test('JSON-LD respeta imágenes verificadas sin esconder la galería visible', (
   const filtered = renderPage(item,'libro-de-prueba',false,'','',[],[good]);
   assert.deepEqual(productSchema(filtered).image,[good]);
   const pending = renderPage(item,'libro-de-prueba',false,'','',[],[]);
-  assert.equal(productSchema(pending).image,undefined);
+  assert.deepEqual(productSchema(pending).image,['https://www.amadolibros.com/book-cover/MLU123456/cover.jpg']);
   assert.match(pending,/cover-2\.jpg/);
 });
 
