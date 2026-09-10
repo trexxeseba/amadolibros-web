@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { streamCoverManifest } from '../functions/_shared/cover-manifest-stream.js';
 import { isEligibleForFeed, dedupeByGtinAndCondition, filterItemsWithReadyPrimaryCover, renderFeedItem } from '../functions/feed.xml.js';
+import { coverManifestBudget, coverBudgetMessage } from '../functions/_shared/cover-manifest-budget.js';
 
 const base = process.env.INCIDENT_URL;
 const token = process.env.INCIDENT_TOKEN;
@@ -56,6 +57,13 @@ try {
     const newFeed = dedupeByGtinAndCondition(filterItemsWithReadyPrimaryCover(eligible, projected, true));
     const oldXml = oldFeed.map(item => renderFeedItem(item, original, null, true)).join('');
     const newXml = newFeed.map(item => renderFeedItem(item, projected, null, true)).join('');
+    report.budget = coverManifestBudget({ manifestBytes: raw.length,
+        entries: Object.keys(original.entries).length });
+    console.log(coverBudgetMessage(report.budget));
+    if (report.budget.level === 'critical') {
+        report.failures.push(`Presupuesto de memoria del escritor de portadas: ${coverBudgetMessage(report.budget)}`);
+    }
+
     report.snapshot = { catalog_updated_at: catalog.updated_at, manifest_etag: manifestResponse.headers.get('x-manifest-etag'),
         manifest_bytes: raw.length, manifest_sha256: hash(raw), entries: Object.keys(original.entries).length,
         old_feed_items: oldFeed.length, new_feed_items: newFeed.length, old_item_xml_sha256: hash(oldXml), new_item_xml_sha256: hash(newXml) };
@@ -96,6 +104,6 @@ try {
     report.summary = { pages: report.pages.length, pages_ok: report.pages.filter(x => x.ok).length,
         images: report.images.length, images_ok: report.images.filter(x => x.ok).length, failures: report.failures.length };
     await writeFile(`${output}/report.json`, `${JSON.stringify(report, null, 2)}\n`);
-    console.log(JSON.stringify({ snapshot: report.snapshot, summary: report.summary, pages: report.pages, failures: report.failures }));
+    console.log(JSON.stringify({ snapshot: report.snapshot, budget: report.budget, summary: report.summary, pages: report.pages, failures: report.failures }));
     if (report.failures.length) process.exitCode = 1;
 }
