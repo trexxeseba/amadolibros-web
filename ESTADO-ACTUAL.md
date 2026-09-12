@@ -865,3 +865,11 @@ autorización explícita y separada de Seba.
 - **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
 - Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
 - QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.
+
+
+## Checkout — datos sugeridos y Google opcional (2026-09-07)
+
+- Responsable Codex (autocompletado, S) y Claude (Google/perfil, M). Seba aclaró que quiere completar datos en la web sin correo y detuvo el enlace mágico. Autoriza el cambio puntual de datos del comprador; Merchant sigue como única Gran Apuesta. Sin aprobación de merge ni deploy.
+- Rama Codex `codex/checkout-autofill` desde main `d380374`: los autocomplete ya existían. Se agregan nombres de controles y se corrige localidad a address-level2; IDs, handlers y reglas comerciales conservados. 114/114 controles existentes de checkout verdes. Verificación de sugerencias con un perfil real de navegador todavía pendiente.
+- Contrato listo para Claude en `docs/checkout-google-handoff.md`: Google opcional, perfil guardado explícitamente, datos editables, invitado disponible y borrador protegido. No hay login Google implementado en esta rama.
+- B12/#325 e imágenes/QW2 quedan fuera de este cambio. Google real en Preview requiere Client ID/orígenes correctos; no inventar credenciales ni declarar verificado sin esa prueba.
