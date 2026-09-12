@@ -865,3 +865,31 @@ autorización explícita y separada de Seba.
 - **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
 - Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
 - QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.
+
+
+## QW2 — eficiencia de imágenes, 2026-09-07 (rama Codex)
+
+- Responsable: Codex. Esfuerzo: M. Seba autorizó empezar por las mejoras de eficiencia propuestas. Base: main d380374775db7b5d2ef80b09ae97351ccdcd88f9; rama nueva codex/image-throughput.
+- Implementado en rama: reutilización de investigación por identidad exacta de imagen ML (o URL exacta), combinación de variantes observadas, memoria compartida de promesas y reutilización de originales nativos frescos del manifest tras verificar existencia/tamaño en R2. No conserva buffers de todo el lote en memoria.
+- Cada ficha mantiene MLU, posición y URL propia. La fecha de comprobación nativa se conserva al reutilizar, sin prolongar artificialmente su vigencia. Alternativas nuevas, política vieja, objetos ausentes, sondeos con errores y fuentes vencidas se vuelven a investigar. Se conserva el master mejor de cada ficha; no se comparten transformaciones generativas como si fueran originales.
+- El cron de cinco minutos permanece igual. Puede completar hasta tres tandas secuenciales; deja de iniciar tandas después de 120 segundos, limita nuevas descargas al presupuesto de 240 segundos y conserva checkpoints. Lo que no entra se difiere, sin marcarlo como fallo del origen ni completado. GA4 conserva su llamada/frecuencia y no se toca checkout ni sincronización comercial.
+- Aceptación: pruebas de fuentes compartidas, expiración, fuente cambiada, variantes nuevas, conservación y reanudación; CI; ejecución real con R2 Preview, solicitudes contadas y verificación SHA/dimensiones de cada master servido en la Preview del PR. Comparar solicitudes reales con las que habría intentado el algoritmo anterior sobre las mismas referencias, sin confundir ese cálculo con un benchmark de tiempo del código anterior.
+- Estado al abrir revisión: pruebas focales verdes; CI y prueba real Preview pendientes. La cobertura general y el diagnóstico del sistema productivo anterior están documentados en #326. Esta mejora todavía no está desplegada y no resuelve por sí sola imágenes con originales insuficientes.
+- Sin merge, deploy de producción, escritura en R2 productivo ni modificación de Merchant.
+
+
+### QW2 eficiencia — primera prueba real de Preview
+
+- Head medido aa8883b8, run 34146777648, artifact 10028070510. Snapshot real 2026-09-07T07:18:48.068Z: 7.100 productos / 32.541 imágenes.
+- Tres tandas consecutivas: 300 referencias en 112,4 segundos; 504 solicitudes de origen frente a 600 que habría intentado el algoritmo anterior sobre esas mismas referencias (16% menos solicitudes; no es un benchmark de tiempo del código anterior). 252 fuentes descargadas, 1 reutilización de manifest y 47 referencias compartidas dentro de tanda.
+- 300/300 imágenes verificadas por SHA y dimensiones en las URLs reales de Preview; 0 fallos de validación, 0 fallos de fuente. 247 cumplen el mínimo de Google; 53 todavía no. Las 300 eran copias nuevas de Preview: 0 upgrades de masters existentes. No contar esto como mejora productiva de 300 fotos.
+- Preflight read-only conserva 3.695/3.695 ofertas productivas. CI inicial verde y registro local 1.668/1.668 con ambos builds OK. El head posterior optimiza el uso de buffers y paraleliza la comprobación de URLs; requiere sus propios checks antes de aprobar merge.
+- Evidencia por imagen persistida en docs/evidence/qw2-throughput-preview-2026-09-07.json. Draft #329. No desplegado en producción; autorización expresa de Seba pendiente para merge.
+
+
+### QW2 eficiencia — código final medido y control general
+
+- Código final 93368f1: CI verde. En run 34147238152, tres tandas y 300/300 imágenes servidas verificadas en 104,956 s de procesamiento. 527 solicitudes reales frente a 598 calculadas para el algoritmo anterior en las mismas referencias: 71 menos (11,87%). 264 fuentes descargadas, 9 reutilizaciones del manifest, 27 compartidas en tanda. 0 fallos de fuente y 0 fallos de verificación de imágenes; 258 aptas para Google y 42 todavía insuficientes.
+- Son otras 300 referencias del catálogo: no comparar 104,956 s contra los 112,4 s iniciales como benchmark entre versiones. Ninguno de los dos lotes es un cambio productivo.
+- El control general posterior falló por HTTP 503 en la imagen productiva MLU632444697. Relectura directa 2026-09-07 17:26:11 UTC: HTTP 200, r2-production, 1200 x 1177 y SHA coincidente con el ETag. El PR requiere repetir el control general completo antes de merge; no se relajó ninguna validación.
+- Evidencia resumida y filas comprimidas sin pérdida en docs/evidence/qw2-throughput-preview-2026-09-07*. CI/Preview del último commit documental determinan el estado final en Checks del PR #329. Producción continúa con #323 hasta aprobación expresa de Seba.

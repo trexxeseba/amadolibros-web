@@ -241,7 +241,7 @@ function candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) {
     const attempted = Date.parse(entry.last_transform_attempt_at || '');
     if (!Number.isFinite(attempted) || nowMs - attempted >= TRANSFORM_RETRY_MS) return 2;
   }
-  const validated = Date.parse(entry.last_validated_at || '');
+  const validated = Date.parse(entry.native_checked_at || entry.last_validated_at || '');
   if (!Number.isFinite(validated) || nowMs - validated >= COVER_REFRESH_MS) return 3;
   return null;
 }
@@ -417,9 +417,14 @@ async function aiUpscaleCover(imagesBinding, bytes, image) {
   return { bytes: transformedBytes, image: transformedImage, transform };
 }
 
-async function fetchOneCover(sourceUrl, fetchFn) {
+function imageDeadlineError() {
+  return Object.assign(new Error('Presupuesto de imágenes agotado; reanudar en la próxima tanda.'), {name:'ImageBatchDeadline'});
+}
+
+async function fetchOneCover(sourceUrl, fetchFn, {deadlineMs = Infinity, clock = Date.now} = {}) {
+  if (clock() >= deadlineMs) throw imageDeadlineError();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), Math.min(FETCH_TIMEOUT_MS, deadlineMs - clock()));
   try {
     const response = await fetchFn(sourceUrl, {
       headers: {
@@ -442,17 +447,20 @@ async function fetchOneCover(sourceUrl, fetchFn) {
       originalObjectKey: null,
       nativeSourceUrl: sourceUrl,
     };
+  } catch (error) {
+    if (clock() >= deadlineMs) throw imageDeadlineError();
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function fetchCover(candidate, fetchFn) {
+async function fetchCover(candidate, fetchFn, budget) {
   const probes = [];
   let best = null;
   for (const source of candidate.alternatives || [candidate.source_url]) {
     try {
-      const found = await fetchOneCover(source, fetchFn);
+      const found = await fetchOneCover(source, fetchFn, budget);
       probes.push({ source_url: source, width: found.image.width, height: found.image.height });
       const ratio = found.image.width / found.image.height;
       if (best && Math.abs(ratio / (best.image.width / best.image.height) - 1) > 0.05) {
@@ -461,26 +469,96 @@ async function fetchCover(candidate, fetchFn) {
       }
       if (!best || (!resolutionDowngrade(found.image, best.image) &&
           found.image.width * found.image.height > best.image.width * best.image.height)) best = found;
-    } catch (error) { probes.push({ source_url: source, error: String(error.message).slice(0,160) }); }
+    } catch (error) {
+      if (error.name === 'ImageBatchDeadline') throw error;
+      probes.push({ source_url: source, error: String(error.message).slice(0,160) });
+    }
   }
   if (!best) throw new Error('Ninguna fuente válida: '+JSON.stringify(probes).slice(0,200));
   return { ...best, probes };
 }
 
-async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
-  const source = await fetchCover(candidate, fetchFn);
+function sourceIdentity(url) {
+  return mlImageIdentity(url) || url;
+}
+
+// Cache metadata, not image buffers: a batch may contain 100 x 8 MB images.
+// The manifest is the persistent cache; a copied association must not extend
+// the age of the original source check or satisfy a newer set of alternatives.
+function nativeSourceResolver(bucket, manifest, candidates, nowIso, fetchFn, stats, budget) {
+  const groups = new Map();
+  for (const candidate of candidates) {
+    const key = sourceIdentity(candidate.source_url);
+    if (!groups.has(key)) groups.set(key, { candidate, alternatives: new Set(), donors: [] });
+    for (const url of candidate.alternatives) groups.get(key).alternatives.add(url);
+  }
+  const nowMs = Date.parse(nowIso);
+  for (const entry of Object.values(manifest.entries)) {
+    const current = entry?.current;
+    const group = groups.get(sourceIdentity(current?.source_url));
+    if (!group || current.transform || entry.last_error ||
+        entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION ||
+        !/^[a-f0-9]{64}$/.test(current.sha256 || '') ||
+        !current.object_key?.startsWith(`covers/v1/objects/${current.sha256}.`) ||
+        !(current.bytes > 0 && current.width > 0 && current.height > 0)) continue;
+    const checkedAt = timestamp(entry.native_checked_at);
+    const maxAge = googleReadyImage(current) ? COVER_REFRESH_MS : IMAGE_SOURCE_RECHECK_MS;
+    if (!checkedAt || checkedAt > nowMs || nowMs - checkedAt >= maxAge) continue;
+    const probes = entry.source_probes || [];
+    // A failed probe could hide a better alternative; do not prolong it by reuse.
+    if (probes.some(probe => probe.error) || [...group.alternatives].some(url =>
+      !probes.some(probe => probe.source_url === url && probe.width > 0 && probe.height > 0))) continue;
+    group.donors.push(entry);
+  }
+  const inFlight = new Map();
+  return async candidate => {
+    const key = sourceIdentity(candidate.source_url);
+    if (inFlight.has(key)) {
+      stats.shared_in_batch++;
+      return inFlight.get(key);
+    }
+    const group = groups.get(key);
+    const promise = (async () => {
+      group.donors.sort((a, b) => b.current.width * b.current.height - a.current.width * a.current.height);
+      for (const entry of group.donors) {
+        const current = entry.current;
+        const head = await bucket.head(current.object_key);
+        if (!head || Number(head.size) !== Number(current.bytes)) continue;
+        stats.reused_from_manifest++;
+        return { image: {width: current.width, height: current.height, mime: current.mime},
+          byteLength: current.bytes, originalObjectKey: current.object_key, sha256: current.sha256,
+          nativeSourceUrl: current.native_source_url || current.source_url,
+          sourceValidators: entry.source_validators, probes: entry.source_probes,
+          checkedAt: entry.native_checked_at };
+      }
+      stats.sources_fetched++;
+      const source = await fetchCover({ ...group.candidate, alternatives: [...group.alternatives] }, async (...args) => {
+        stats.origin_requests++;
+        return fetchFn(...args);
+      }, budget);
+      const stored = await storeImmutable(bucket, source.bytes, source.image, nowIso);
+      return { image: source.image, byteLength: source.bytes.byteLength,
+        originalObjectKey: stored.objectKey, sha256: stored.sha256,
+        nativeSourceUrl: source.nativeSourceUrl, sourceValidators: source.sourceValidators,
+        probes: source.probes, checkedAt: nowIso };
+    })();
+    inFlight.set(key, promise);
+    return promise;
+  };
+}
+
+async function processCover(bucket, candidate, nowIso, resolveSource, imagesBinding) {
+  const source = await resolveSource(candidate);
   if ((candidate.entry?.current?.source_url === candidate.source_url ||
       (mlImageIdentity(candidate.source_url) && mlImageIdentity(candidate.source_url) === mlImageIdentity(candidate.entry?.current?.source_url))) &&
       resolutionDowngrade(source.image, candidate.entry.current)) {
     return { entry: { ...candidate.entry, current: { ...candidate.entry.current,
       source_url: candidate.source_url, native_source_url: candidate.entry.current.native_source_url || candidate.entry.current.source_url }, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
-      native_checked_at: nowIso, source_probes: source.probes, last_validated_at: nowIso,
+      native_checked_at: source.checkedAt, source_probes: source.probes, last_validated_at: nowIso,
       last_error: null }, status: 'revalidated', quality_status: 'better-master-preserved' };
   }
-  const originalStored = source.originalObjectKey
-    ? { objectKey: source.originalObjectKey, sha256: candidate.entry.current.original_sha256 || candidate.entry.current.sha256 }
-    : await storeImmutable(bucket, source.bytes, source.image, nowIso);
-  let finalBytes = source.bytes;
+  const originalStored = { objectKey: source.originalObjectKey, sha256: source.sha256 };
+  let finalByteLength = source.byteLength;
   let finalImage = source.image;
   let finalStored = originalStored;
   let transformInfo = null;
@@ -489,11 +567,14 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
     Math.min(source.image.width, source.image.height) < TARGET_SHORT_EDGE;
   if (shouldUpscale) {
     try {
-      const transformed = await aiUpscaleCover(imagesBinding, source.bytes, source.image);
+      const object = await bucket.get(source.originalObjectKey);
+      if (!object) throw new Error('Original R2 no disponible para transformar.');
+      const bytes = await readLimitedBody(new Response(object.body));
+      const transformed = await aiUpscaleCover(imagesBinding, bytes, source.image);
       if (transformed) {
-        finalBytes = transformed.bytes;
+        finalByteLength = transformed.bytes.byteLength;
         finalImage = transformed.image;
-        finalStored = await storeImmutable(bucket, finalBytes, finalImage, nowIso, {
+        finalStored = await storeImmutable(bucket, transformed.bytes, finalImage, nowIso, {
           transformedBy: 'cloudflare-images-ai',
           originalSha256: originalStored.sha256,
         });
@@ -515,12 +596,12 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
       product_id: candidate.product_id,
       position: candidate.position,
       source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
-      native_checked_at: nowIso,
+      native_checked_at: source.checkedAt,
       source_probes: source.probes,
       current: {
         object_key: finalStored.objectKey,
         sha256: finalStored.sha256,
-        bytes: finalBytes.byteLength,
+        bytes: finalByteLength,
         mime: finalImage.mime,
         width: finalImage.width,
         height: finalImage.height,
@@ -563,6 +644,8 @@ export async function syncCoverMirror(env, catalog, {
   limit = Number(env?.COVER_MIRROR_BATCH_SIZE || DEFAULT_COVER_BATCH_SIZE),
   concurrency = DEFAULT_CONCURRENCY,
   includePaused = false,
+  deadlineMs = Infinity,
+  clock = Date.now,
 } = {}) {
   const bucket = env?.COVER_R2;
   if (!bucket || typeof bucket.get !== 'function' || typeof bucket.put !== 'function' || typeof bucket.head !== 'function') {
@@ -593,19 +676,23 @@ export async function syncCoverMirror(env, catalog, {
     priorityCatalogProductIds,
   });
   const processedEntries = new Map();
+  const sourceReuse = { sources_fetched: 0, reused_from_manifest: 0, shared_in_batch: 0, origin_requests: 0 };
+  const resolveSource = nativeSourceResolver(bucket, manifest, batch.selected, nowIso, fetchFn, sourceReuse, {deadlineMs, clock});
   const results = await mapWithConcurrency(batch.selected, Math.max(1, Number(concurrency) || 1), async candidate => {
     const key = `${candidate.product_id}:${candidate.position}`;
+    if (clock() >= deadlineMs) return {key, status:'deferred'};
     try {
       const result = await processCover(
         bucket,
         candidate,
         nowIso,
-        fetchFn,
+        resolveSource,
         candidate.aiUpscaleEligible ? env?.IMAGES : null,
       );
       processedEntries.set(key, { entry: result.entry, status: result.status });
       return { key, status: result.status, quality_status: result.quality_status };
     } catch (error) {
+      if (error.name === 'ImageBatchDeadline') return {key, status:'deferred'};
       const entry = {
         ...(candidate.entry || { product_id: candidate.product_id, position: candidate.position, current: null }),
         source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
@@ -681,6 +768,8 @@ export async function syncCoverMirror(env, catalog, {
   return {
     source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
     scope_images: scope.length,
+    source_reuse: sourceReuse,
+    reference_probe_requests: batch.selected.reduce((n, row) => n + row.alternatives.length, 0),
     source_discovery_pending: sourcePending,
     needs_better_source: needsSource.length,
     needs_better_source_examples: needsSource.slice(0,100).map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
@@ -688,6 +777,7 @@ export async function syncCoverMirror(env, catalog, {
       reason: 'no-native-source-at-least-500', next_source_check: new Date(timestamp(entry.native_checked_at) + IMAGE_SOURCE_RECHECK_MS).toISOString() })),
     status: 'completed',
     attempted: results.length,
+    deferred: results.filter(row => row.status === 'deferred').length,
     imported,
     failed,
     // Un intento fallido sigue pendiente. Sin esto, el último lote podía

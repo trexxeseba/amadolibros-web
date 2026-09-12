@@ -78,7 +78,20 @@ async function fetchText(url) {
     headers: { 'user-agent': 'AmadoLibros-SEO-Baseline/1.0' },
     redirect: 'follow',
   });
-  if (!response.ok) throw new Error(`${url} respondió HTTP ${response.status}`);
+  if (!response.ok) {
+    const body = await response.text();
+    console.error(JSON.stringify({
+      event: 'seo_public_http_failure',
+      url: String(url),
+      status: response.status,
+      headers: Object.fromEntries(['cf-ray', 'server', 'content-type', 'retry-after', 'server-timing']
+        .map(name => [name, response.headers.get(name)])),
+      body: body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 4096),
+    }));
+    throw new Error(`${url} respondió HTTP ${response.status}`);
+  }
   return response.text();
 }
 
