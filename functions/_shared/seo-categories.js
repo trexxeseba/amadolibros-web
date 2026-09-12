@@ -25,7 +25,7 @@ export const SEO_CATEGORIES = [
     },
     {
         id: 'esoterismo-tarot/mazos',
-        classificationId: 'tarot-oraculos',
+        classificationId: 'esoterismo-tarot',
         parentId: 'esoterismo-tarot',
         parentName: 'Tarot y oráculos',
         kind: 'tarot-decks',

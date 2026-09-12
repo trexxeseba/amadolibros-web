@@ -245,5 +245,16 @@ export const VERIFIED_TAROT_MERCH_CORRECTIONS = Object.freeze([
     "review_reason": null
   },
   {"id": "MLU693866286", "isbn": "9781572818460", "primary_type": "tarot", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
-  {"id": "MLU693752792", "isbn": "9781572818460", "primary_type": "tarot", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null}
+  {"id": "MLU693752792", "isbn": "9781572818460", "primary_type": "tarot", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU609592474", "isbn": "9782925095019", "primary_type": "otro_sistema", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU625745211", "isbn": "9782925095019", "primary_type": "otro_sistema", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU621616953", "isbn": "9781572818453", "primary_type": "kipper", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU654175694", "isbn": "8437019107024", "primary_type": "oraculo", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU657184646", "isbn": "8437019107024", "primary_type": "oraculo", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU669181450", "isbn": "9781571892980", "primary_type": "otro_sistema", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU671310164", "isbn": "9781571892980", "primary_type": "otro_sistema", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU669549988", "isbn": "9788865274415", "primary_type": "oraculo", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU670954314", "isbn": "9789875820739", "primary_type": "otro_sistema", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU697155554", "isbn": "9782813203366", "primary_type": "oraculo", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU747723116", "isbn": "9788499285146", "primary_type": "oraculo", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null}
 ]);

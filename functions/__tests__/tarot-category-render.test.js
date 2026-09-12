@@ -229,3 +229,23 @@ test('se mezclan los índices vigentes, activos ganan ante el mismo ID y no se c
   assert.match(html, /2 productos<\/strong> · 1 disponible · 1 por encargo/);
   assert.equal((html.match(/class="stock-badge by-request"/g) || []).length, 1);
 });
+
+
+test('los mazos fuera de la subcategoría antigua y las cartas revisadas por ISBN no se pierden ni figuran como libros', async () => {
+  const selected = [
+    { id: 'MLU654175694', isbn: '8437019107024', title: '22 cartas de Arcángeles' },
+    { id: 'MLU999990001', isbn: '8437019107024', title: 'Otra publicación de las 22 cartas' },
+    { id: 'MLU649728710', title: 'Everyday Witch Oracle' },
+    { id: 'MLU669181450', isbn: '9781571892980', title: 'Los 72 nombres de Dios. Baraja' },
+    { id: 'MLU999990003', title: 'Un mazo sin formato verificado' },
+  ];
+  items = selected.map((item, i) => ({ ...item, status: i % 2 ? 'paused' : 'active', available_quantity: i % 2 ? 0 : 1, price: 1234 }));
+  const original = globalThis.caches.default.match;
+  globalThis.caches.default.match = request => request.url.endsWith('/data/active-categories.json')
+    ? Response.json({ ...categoryData(), items: Object.fromEntries(items.map(item => [item.id, ['esoterismo-tarot']])) }) : original(request);
+  const root = ids((await render()).html);
+  const decks = ids((await render('', 'esoterismo-tarot/mazos')).html);
+  assert.deepEqual(root, decks);
+  assert.deepEqual(new Set(root), new Set([selected[0].id, selected[2].id, selected[3].id]));
+  assert.deepEqual(ids((await render('', 'esoterismo-tarot/libros-esoterismo')).html), []);
+});

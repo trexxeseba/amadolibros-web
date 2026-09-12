@@ -23,6 +23,7 @@ import {
 import { buildWhatsAppMessage, whatsappHref } from '../../shared/whatsapp-messages.js';
 // TAROT-HUB-MERCH-1: sólo se usa cuando category.id === 'esoterismo-tarot'.
 // Ninguna otra categoría de SEO_CATEGORIES se ve afectada por este import.
+import { VERIFIED_TAROT_MERCH_CORRECTIONS } from '../_shared/tarot-merch-corrections.js';
 import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
 import { buildTagLookup } from '../_shared/tarot-hub-modules.js';
 import { hasClassificationId } from '../_shared/category-paths.js';
@@ -35,7 +36,10 @@ const TAROT_CATEGORY_ID = 'esoterismo-tarot';
 const TAROT_DECKS_CATEGORY_ID = 'esoterismo-tarot/mazos';
 const BIBLE_CATEGORY_IDS = new Set(['biblias', 'biblias/reina-valera']);
 const PRIORITY_LOCAL_INTENT_IDS = new Set(['biblias/reina-valera', TAROT_DECKS_CATEGORY_ID]);
-const tarotTagLookup = buildTagLookup(TAROT_MERCH_TAGS);
+const baseTarotTagLookup = buildTagLookup(TAROT_MERCH_TAGS);
+const reviewedFormats = new Map(VERIFIED_TAROT_MERCH_CORRECTIONS.map(row => [row.id, row]));
+const reviewedIsbns = new Map(VERIFIED_TAROT_MERCH_CORRECTIONS.filter(row => row.isbn).map(row => [row.isbn, row]));
+const tarotTagLookup = item => reviewedFormats.get(item.id) || reviewedIsbns.get(item.isbn) || baseTarotTagLookup(item.id);
 const isSimpleCategory = category => category.id === TAROT_CATEGORY_ID || category.id === TAROT_DECKS_CATEGORY_ID || category.tarotFilter === 'study-books' || category.id === 'esoterismo-tarot/libros-esoterismo';
 
 const MAX_RESULTS = 48;
@@ -608,15 +612,15 @@ export async function onRequest(ctx) {
                 && !excludedClassificationIds.some(id => hasClassificationId(paths, id));
             if (!matchesClassification) return false;
             if (category.tarotFilter === 'verified-decks') {
-                const tarotTag = tarotTagLookup(item.id);
-                return ['tarot', 'oraculo', 'lenormand', 'kipper'].includes(tarotTag?.primary_type)
+                const tarotTag = tarotTagLookup(item);
+                return ['tarot', 'oraculo', 'lenormand', 'kipper', 'otro_sistema'].includes(tarotTag?.primary_type)
                     && tarotTag?.format === 'mazo'
                     && tarotTag?.needs_review !== true;
             }
-            if (category.tarotFilter === 'study-books') return tarotTagLookup(item.id)?.format === 'libro';
+            if (category.tarotFilter === 'study-books') return tarotTagLookup(item)?.format === 'libro';
             if (category.tarotFilter === 'books') {
-                const tag = tarotTagLookup(item.id);
-                return !tag || tag.format === 'libro';
+                const tag = tarotTagLookup(item);
+                return tag ? tag.format === 'libro' : !/\b(?:mazo|baraja|\d+\s+cartas|libro\s*(?:\+|y)\s*cartas)\b/i.test(item.title || '');
             }
             return true;
         })
