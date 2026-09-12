@@ -243,5 +243,7 @@ export const VERIFIED_TAROT_MERCH_CORRECTIONS = Object.freeze([
     "format": "mazo",
     "needs_review": false,
     "review_reason": null
-  }
+  },
+  {"id": "MLU693866286", "isbn": "9781572818460", "primary_type": "tarot", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null},
+  {"id": "MLU693752792", "isbn": "9781572818460", "primary_type": "tarot", "format": "mazo", "bundle": "desconocido", "needs_review": false, "review_reason": null}
 ]);

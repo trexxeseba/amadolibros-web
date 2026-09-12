@@ -40,7 +40,7 @@ import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
-import { CARD_COVER_FRAMING_STYLES } from '../shared/card-cover-framing.js';
+import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
     buildBookWhatsAppMessage,
     buildWhatsAppMessage,
@@ -806,6 +806,7 @@ export async function onRequest(ctx) {
             widths: [240, 360, 480],
             defaultWidth: 360,
             sizes: CARD_IMAGE_SIZES,
+            ...cardCoverImageOptions(b.id),
         });
         const img = escapeHtml(image.src);
         const title = escapeHtml(b.title);

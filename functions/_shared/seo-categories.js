@@ -21,29 +21,6 @@ export const SEO_CATEGORIES = [
         description: 'Mazos de tarot, oráculos y libros de esoterismo disponibles en Uruguay. Compará el tipo de producto, idioma y edición antes de comprar o pedir por encargo.',
         intro: 'Encontrá mazos de tarot, oráculos y libros para estudiar cada sistema. La ficha de cada producto identifica la edición y sus características cuando esos datos están disponibles; también buscamos títulos y mazos difíciles de conseguir por encargo.',
         about: ['Tarot', 'Cartas de oráculo', 'Libros de esoterismo'],
-        buyerGuide: {
-            title: 'Cómo elegir un tarot, un oráculo o un libro de estudio',
-            intro: 'Antes de comprar, identificá exactamente qué contiene la edición. No todos los productos de esta categoría son mazos ni todos usan el mismo sistema.',
-            points: [
-                {
-                    title: 'Tipo de producto',
-                    text: 'Comprobá si es un mazo, un libro o un conjunto de mazo más guía. La ficha sólo muestra esa clasificación cuando está identificada.',
-                },
-                {
-                    title: 'Sistema',
-                    text: 'Tarot, oráculo, Lenormand y Kipper son sistemas distintos. Elegí por el sistema indicado por la propia edición, no sólo por la imagen de tapa.',
-                },
-                {
-                    title: 'Idioma y guía',
-                    text: 'Revisá el idioma de las cartas y del manual, y si la edición informa que incluye guía o instructivo.',
-                },
-                {
-                    title: 'Edición física',
-                    text: 'Compará editorial, ISBN, formato y medidas cuando estén disponibles. Si falta un dato decisivo, consultanos antes de comprar.',
-                },
-            ],
-            serviceNote: 'Amado Libros ayuda a identificar y conseguir la edición correcta. No ofrece lecturas de tarot ni interpreta el contenido del mazo.',
-        },
     },
     {
         id: 'esoterismo-tarot/mazos',
@@ -51,36 +28,13 @@ export const SEO_CATEGORIES = [
         parentId: 'esoterismo-tarot',
         parentName: 'Tarot y oráculos',
         kind: 'tarot-decks',
-        tarotFilter: 'verified-tarot-decks',
-        name: 'Mazos de tarot',
-        title: 'Mazos de Tarot Uruguay | Entrega hoy | Amado Libros',
-        h1: 'Mazos de tarot en Uruguay con entrega hoy en Montevideo',
-        description: 'Mazos de tarot disponibles en Uruguay con stock real, entrega en el día coordinada en Montevideo, envío a $250 y atención personalizada para elegir la edición correcta.',
-        intro: 'Compará mazos físicos de tarot disponibles ahora: sistema, idioma, cantidad de cartas, guía incluida y edición. Coordinamos entrega en el día en Montevideo según zona y horario, y te ayudamos personalmente a confirmar que sea el mazo que buscás.',
-        about: ['Mazo de tarot', 'Tarot Rider-Waite-Smith', 'Tarot de Marsella', 'Tarot Thoth'],
-        buyerGuide: {
-            title: 'Cómo elegir un mazo de tarot sin equivocarte de edición',
-            intro: 'La ilustración de la caja no alcanza para identificar un mazo. Antes de comprar, revisá el sistema, el contenido físico, el idioma y la edición exacta.',
-            points: [
-                {
-                    title: 'Sistema del mazo',
-                    text: 'Rider-Waite-Smith, Marsella y Thoth tienen estructuras e imágenes distintas. La ficha sólo declara el sistema cuando está verificado.',
-                },
-                {
-                    title: 'Cartas y contenido',
-                    text: 'Confirmá la cantidad de cartas y si el producto incluye libro, guía breve o solamente el mazo. No lo inferimos por la fotografía de portada.',
-                },
-                {
-                    title: 'Idioma',
-                    text: 'Revisá por separado el idioma de las cartas y el del manual. Algunas ediciones importadas combinan cartas sin texto con una guía en otro idioma.',
-                },
-                {
-                    title: 'Editorial e identificador',
-                    text: 'Usá editorial, ISBN, EAN o GTIN para distinguir reimpresiones y formatos. Si falta un dato decisivo, lo verificamos antes de la compra.',
-                },
-            ],
-            serviceNote: 'Te ayudamos a comparar ediciones y a encontrar un mazo específico. Amado Libros vende productos; no realiza lecturas ni interpretaciones de tarot.',
-        },
+        tarotFilter: 'verified-decks',
+        name: 'Mazos de tarot y oráculos',
+        title: 'Mazos de tarot y oráculos en Uruguay | Amado Libros',
+        h1: 'Mazos de tarot y oráculos en Uruguay',
+        description: 'Mazos de tarot y oráculos disponibles en Uruguay. Encontrá cartas, estuches y conjuntos con guía, con entrega en Montevideo y envíos a todo el país.',
+        intro: 'Encontrá mazos de tarot y oráculos disponibles en una sola selección. Ordená por incorporación al catálogo o por precio para elegir tu próxima baraja.',
+        about: ['Mazo de tarot', 'Cartas de oráculo', 'Lenormand', 'Kipper'],
     },
     {
         id: 'esoterismo-tarot/cabala-kabbalah',
@@ -105,16 +59,6 @@ export const SEO_CATEGORIES = [
             ],
             serviceNote: '¿Buscás un título específico que no aparece? Consultanos con el título, autor o ISBN. Hacemos envíos a todo Uruguay y coordinamos entregas en Montevideo.',
         },
-    },
-    {
-        id: 'esoterismo-tarot/oraculos',
-        classificationId: 'tarot-oraculos', parentId: 'esoterismo-tarot', parentName: 'Tarot y oráculos',
-        tarotFilter: 'oracle-decks', name: 'Mazos de oráculo',
-        title: 'Mazos de oráculo en Uruguay | Amado Libros',
-        h1: 'Mazos de oráculo en Uruguay',
-        description: 'Encontrá mazos de oráculo disponibles en Uruguay. Compará temática, autor y contenido de cada edición, y consultá si incluye cartas y guía antes de comprar.',
-        intro: 'Explorá cartas de oráculo por temática y autor. Esta selección reúne productos identificados como mazos: revisá en la ficha el idioma, la cantidad de cartas y si la edición incluye guía o libro acompañante.',
-        about: ['Cartas de oráculo'],
     },
     {
         id: 'esoterismo-tarot/libros-tarot-oraculos',

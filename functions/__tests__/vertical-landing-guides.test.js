@@ -23,13 +23,7 @@ test('conserva el hub general de Tarot y separa la intención comercial de mazos
   assert.match(category.h1, /Tarot, oráculos/);
   assert.deepEqual(category.about, ['Tarot', 'Cartas de oráculo', 'Libros de esoterismo']);
 
-  const html = editorialGuideHtml(category);
-  assert.match(html, /Cómo elegir un tarot, un oráculo o un libro de estudio/);
-  assert.match(html, /Tipo de producto/);
-  assert.match(html, /Sistema/);
-  assert.match(html, /Idioma y guía/);
-  assert.match(html, /No ofrece lecturas de tarot ni interpreta/);
-  assert.doesNotMatch(html, /href="/);
+  assert.equal(editorialGuideHtml(category), '');
   assert.equal(SEO_CATEGORY_IDS.has('tarot'), false);
   assert.equal(SEO_CATEGORY_IDS.has('oraculos'), false);
   assert.equal(SEO_CATEGORY_IDS.has('esoterismo-tarot/mazos'), true);
@@ -102,8 +96,6 @@ test('las guías quedan limitadas a verticales con contenido editorial propio', 
     .filter(category => category?.buyerGuide)
     .map(category => category.id);
   assert.deepEqual(conGuia, [
-    'esoterismo-tarot',
-    'esoterismo-tarot/mazos',
     'esoterismo-tarot/cabala-kabbalah',
     'psicologia/psicoanalisis',
     'psicologia/psicomotricidad',

@@ -69,3 +69,16 @@ Fuentes editoriales consultadas para los casos ambiguos:
 - https://www.editorialkairos.com/catalogo/p/el-juego-del-ahora — juego de cartas didácticas.
 
 Los títulos y descripciones originales de producto no se reescriben. La categorización describe la materia de las obras sin validar afirmaciones sobrenaturales ni terapéuticas.
+
+## Revisión de la vista previa: grilla simple
+
+Seba pidió quitar la introducción larga, el cuestionario y los módulos Para empezar, Clásicos, Para profundizar y Lenormand/Kipper. La página general pasa a una sola grilla con todas sus publicaciones; tarot y oráculos se muestran juntos. La clasificación curada, Cábala, Juegos y Constelaciones se conserva.
+
+- El selector ofrece Más nuevos, Más antiguos, Mayor precio y Menor precio. El orden se calcula sobre todo el universo antes de paginar y se conserva al cambiar de página. Cambiar el orden reinicia en la primera página.
+- Las fechas corresponden a `start_time`, la publicación en el catálogo, no al año de edición. Cuando el índice activo no incluye fechas, se toma únicamente ese dato del catálogo completo; stock, precio y pertenencia siguen viniendo del índice activo. Los registros sin fecha o precio se ubican al final.
+- No se presenta Más popular: el catálogo no aporta ventas ni visitas por producto. No se usa stock, antigüedad ni puntaje editorial como sustituto de popularidad.
+- La colección de mazos reúne tarot, oráculos, Lenormand y Kipper. `/libros/esoterismo-tarot/oraculos` redirige 301 a `/libros/esoterismo-tarot/mazos` y sale del sitemap. Los manuales y libros conservan sus URLs.
+- Las URLs de ordenamiento son noindex y mantienen canonical sin orden. Biblias y las demás categorías conservan sus guías.
+- Se amplía Aquarian (MLU693752792 y MLU693866286) 1,65×, Golden Marseille (MLU616949061) 1,70× y Universal Waite en lata (MLU644725123) 1,75×, según las capturas. Sólo cambia el encuadre de tarjeta, conservando proporciones y originales. Las fotos ampliadas solicitan variantes de hasta 960 px para evitar usar una miniatura al agrandarlas.
+- Aquarian incluye físicamente un mazo, tal como muestra la captura y el ISBN 9781572818460. Se corrige su formato persistente para que también aparezca en la colección compartida de cartas.
+- Se sustituyen las pruebas de render del cuestionario retirado por pruebas de la grilla, orden global, paginación, deduplicación, redirección, canonical y enriquecimiento de fechas sin alterar el inventario.

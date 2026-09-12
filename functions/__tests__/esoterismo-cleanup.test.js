@@ -59,7 +59,7 @@ test('las páginas muestran los títulos en su destino y ofrecen filtros para la
       }
       if (category === 'esoterismo-tarot') {
         assert.ok(html.includes('/libros/esoterismo-tarot/cabala-kabbalah'));
-        assert.ok(html.includes('subcategoria=espiritualidad-energia'));
+        assert.ok(!html.includes('aria-label="Subcategorías de Esoterismo'));
       }
       if (category === 'infantil-juvenil') assert.ok(html.includes('subcategoria=educacion-menstrual'));
     }
@@ -99,11 +99,11 @@ test('la tanda completa conserva sus destinos al regenerar y los formatos revisa
   }
 });
 
-test('los cuatro accesos separan un tarot con libro, un oráculo, un manual y un libro de Cábala', async () => {
+test('las cartas se muestran juntas y los libros conservan sus destinos', async () => {
   const sampleIds = ['MLU608201824', 'MLU643087668', 'MLU804612402', 'MLU643758459'];
   const expected = new Map([
-    ['mazos', 'MLU608201824'], ['oraculos', 'MLU643087668'],
-    ['libros-tarot-oraculos', 'MLU804612402'], ['libros-esoterismo', 'MLU643758459'],
+    ['mazos', ['MLU608201824', 'MLU643087668']],
+    ['libros-tarot-oraculos', ['MLU804612402']], ['libros-esoterismo', ['MLU643758459']],
   ]);
   const originalCaches = globalThis.caches;
   globalThis.caches = { default: { async match(request) {
@@ -116,7 +116,7 @@ test('los cuatro accesos separan un tarot con libro, un oráculo, un manual y un
       const response = await categoryRequest({ request: new Request(`https://preview.example/libros/esoterismo-tarot/${path}`), params: { path: ['esoterismo-tarot', path] }, env: { APP_ENV: 'test' }, data: {}, waitUntil() {} });
       const html = await response.text();
       assert.equal(response.status, 200, path);
-      for (const id of sampleIds) assert.equal(html.includes(`/libro/${id}/`), id === expectedId, `${path}: ${id}`);
+      for (const id of sampleIds) assert.equal(html.includes(`/libro/${id}/`), expectedId.includes(id), `${path}: ${id}`);
       assert.match(html, /Te llega hoy/);
     }
   } finally { globalThis.caches = originalCaches; }
