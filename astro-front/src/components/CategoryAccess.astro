@@ -113,8 +113,18 @@ const priorityAccesses = [
 
 const secondaryAccesses = [
   {
+    name: 'Juegos y actividades',
+    href: '/libros/juegos-actividades',
+    count: category('juegos-actividades')?.count || 0,
+  },
+  {
+    name: 'Constelaciones familiares',
+    href: '/catalogo?categoria=desarrollo-personal&subcategoria=constelaciones-familiares',
+    count: subcategoryCount('desarrollo-personal', 'constelaciones-familiares'),
+  },
+  {
     name: 'Cábala y Kabbalah',
-    href: '/catalogo?categoria=esoterismo-tarot&subcategoria=cabala-kabbalah',
+    href: '/libros/esoterismo-tarot/cabala-kabbalah',
     count: subcategoryCount('esoterismo-tarot', 'cabala-kabbalah'),
   },
   {

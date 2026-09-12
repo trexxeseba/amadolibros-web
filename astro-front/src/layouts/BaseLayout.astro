@@ -1,4 +1,7 @@
 ---
+import { DELIVERY_BADGE_STYLES } from '../../../shared/delivery-badge.js';
+import { CARD_COVER_FRAMING_STYLES } from '../../../shared/card-cover-framing.js';
+
 interface Props {
   title?: string;
   description?: string;
@@ -86,6 +89,7 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
   <script src="/cart.js" defer></script>
   <script src="/orders-guard.js" defer></script>
   <script src="/search-autocomplete.js" defer></script>
+  <style is:global set:html={DELIVERY_BADGE_STYLES + CARD_COVER_FRAMING_STYLES}></style>
   <style is:global>
     /* ── Custom properties ─────────────────────────────────── */
     :root {

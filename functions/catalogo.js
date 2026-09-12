@@ -39,6 +39,8 @@
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
+import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
+import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
     buildBookWhatsAppMessage,
     buildWhatsAppMessage,
@@ -804,6 +806,7 @@ export async function onRequest(ctx) {
             widths: [240, 360, 480],
             defaultWidth: 360,
             sizes: CARD_IMAGE_SIZES,
+            ...cardCoverImageOptions(b.id),
         });
         const img = escapeHtml(image.src);
         const title = escapeHtml(b.title);
@@ -829,7 +832,7 @@ export async function onRequest(ctx) {
             : `<div class="rc-no-img">📚</div>`;
 
         const badge = available
-            ? `<span class="rc-badge available">Disponible</span>`
+            ? deliveryBadgeHtml(true)
             : isPaused
                 ? `<span class="rc-badge order">Disponible por encargo</span>`
                 : `<span class="rc-badge order">No disponible</span>`;
@@ -993,6 +996,8 @@ export async function onRequest(ctx) {
   ${faviconHeadHtml()}
   ${jsonLd}
   <style>
+    ${DELIVERY_BADGE_STYLES}
+    ${CARD_COVER_FRAMING_STYLES}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#faf7f2;color:#1e293b;line-height:1.5}

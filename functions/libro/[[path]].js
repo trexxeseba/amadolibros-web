@@ -54,6 +54,7 @@ import {
     whatsappHref,
 } from '../../shared/whatsapp-messages.js';
 import { isPausedProductInSeoCohort } from '../_shared/paused-seo-cohort.js';
+import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-badge.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
@@ -951,6 +952,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
                         object-fit:contain;background:#f8fafc;border-radius:.3rem}
     .related-book-title{font-size:.82rem;font-weight:700;line-height:1.35}
     @media(min-width:760px){.related-books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    ${DELIVERY_BADGE_STYLES}
     ${FOOTER_STYLES}
     ${WA_FLOAT_STYLES}
   </style>
@@ -992,6 +994,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <div class="info">
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
+    ${deliveryBadgeHtml(inStock)}
     ${inStock ? moreDetailsHtml : ''}
     ${priceHtml}
     <div class="cta">

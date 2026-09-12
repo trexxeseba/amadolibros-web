@@ -10,7 +10,7 @@
 // revistas, objetos de colección) — reemplaza la idea de "excluir del
 // catálogo": todo activo queda visible en alguna categoría.
 
-export const TAXONOMY_VERSION = 4;
+export const TAXONOMY_VERSION = 6;
 
 // subcategories: null si la categoría no tiene subdivisión (volumen
 // insuficiente para que valga la pena, o no aplica).
@@ -33,6 +33,8 @@ export const CATEGORIES = [
       { id: 'literatura-infantil', name: 'Literatura infantil' },
       { id: 'literatura-juvenil', name: 'Literatura juvenil' },
       { id: 'actividades-aprendizaje', name: 'Actividades y aprendizaje' },
+      { id: 'educacion-menstrual', name: 'Pubertad y educación menstrual' },
+      { id: 'emociones-vinculos', name: 'Emociones y vínculos' },
     ],
   },
   {
@@ -55,7 +57,10 @@ export const CATEGORIES = [
     ],
   },
   {
-    id: 'desarrollo-personal', name: 'Desarrollo personal', subcategories: null,
+    id: 'desarrollo-personal', name: 'Desarrollo personal',
+    subcategories: [
+      { id: 'constelaciones-familiares', name: 'Constelaciones familiares' },
+    ],
   },
   {
     id: 'religion-espiritualidad', name: 'Religión y espiritualidad',
@@ -64,6 +69,7 @@ export const CATEGORIES = [
       { id: 'reina-valera', name: 'Reina-Valera' },
       { id: 'espiritualidad', name: 'Espiritualidad' },
       { id: 'otras-tradiciones', name: 'Otras tradiciones religiosas' },
+      { id: 'yoga-meditacion', name: 'Yoga y meditación' },
     ],
   },
   {
@@ -73,6 +79,11 @@ export const CATEGORIES = [
       { id: 'astrologia', name: 'Astrología' },
       { id: 'cabala-kabbalah', name: 'Cábala y Kabbalah' },
       { id: 'sufismo', name: 'Sufismo' },
+      { id: 'espiritualidad-energia', name: 'Espiritualidad y energía' },
+      { id: 'magia-brujeria', name: 'Magia y brujería' },
+      { id: 'hermetismo-alquimia', name: 'Hermetismo y alquimia' },
+      { id: 'numerologia', name: 'Numerología' },
+      { id: 'ufologia-misterios', name: 'Ufología y misterios' },
     ],
   },
   {
@@ -151,6 +162,14 @@ export const CATEGORIES = [
     subcategories: [
       { id: 'ingles', name: 'Inglés' },
       { id: 'otros-idiomas', name: 'Otros idiomas' },
+    ],
+  },
+  {
+    id: 'juegos-actividades', name: 'Juegos y actividades',
+    subcategories: [
+      { id: 'juegos-educativos', name: 'Juegos educativos' },
+      { id: 'juegos-mesa-cartas', name: 'Juegos de mesa y cartas' },
+      { id: 'ingenio-pasatiempos', name: 'Ingenio y pasatiempos' },
     ],
   },
   {

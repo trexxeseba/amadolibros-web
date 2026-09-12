@@ -57,6 +57,12 @@ const topics = [
     mark: '?',
   },
 ];
+
+const moreTopics = [
+  { title: 'Cábala y Kabbalah', href: '/libros/esoterismo-tarot/cabala-kabbalah' },
+  { title: 'Juegos y actividades', href: '/libros/juegos-actividades' },
+  { title: 'Constelaciones familiares', href: '/catalogo?categoria=desarrollo-personal&subcategoria=constelaciones-familiares' },
+];
 ---
 
 <section id="v2-temas" class="v2-topics" aria-labelledby="v2-topics-title">
@@ -80,6 +86,9 @@ const topics = [
       </a>
     ))}
   </div>
+  <nav class="v2-more-topics" aria-label="Más temas para explorar">
+    {moreTopics.map(topic => <a href={topic.href}>{topic.title}<span aria-hidden="true">↗</span></a>)}
+  </nav>
 </section>
 
 <style>
@@ -132,6 +141,28 @@ const topics = [
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
+
+  .v2-more-topics {
+    width: min(100%, 1360px);
+    margin: 1rem auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .v2-more-topics a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.7rem 0.95rem;
+    border: 1px solid rgba(27, 23, 20, 0.2);
+    border-radius: 0.6rem;
+    color: #1b1714;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .v2-more-topics a:hover { background: #f0e8dc; }
 
   .v2-topic {
     position: relative;

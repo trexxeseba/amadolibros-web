@@ -373,6 +373,7 @@ test('pausada muestra "Disponible por encargo" y CTA "Pedir este libro", nunca "
   const html = await res.text();
   assert.match(html, /Disponible por encargo/);
   assert.match(html, /Pedir este libro/);
+  assert.doesNotMatch(html, /Te llega hoy/);
   assert.doesNotMatch(html, /\bpaused\b/i);
   assert.doesNotMatch(html, /\bpausado\b/i);
   assert.doesNotMatch(html, /needsReview/);
@@ -401,6 +402,9 @@ test('a igual relevancia, la activa aparece antes que la pausada', async () => {
   const idxActive = html.indexOf('Manual De Filosofía Estoica'); // MLU9, activa
   const idxPaused = html.indexOf('Ensayo De Filosofía Moderna'); // MLU10, pausada
   assert.ok(idxActive !== -1 && idxPaused !== -1);
+  const activeCard = html.match(/<article class="rc-card">[\s\S]*?Manual De Filosofía Estoica[\s\S]*?<\/article>/)?.[0];
+  assert.match(activeCard || '', /Te llega hoy/);
+  assert.match(activeCard || '', /Montevideo/);
   assert.ok(idxActive < idxPaused, 'la activa debería listarse antes que la pausada en empate de relevancia');
 });
 
