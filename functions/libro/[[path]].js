@@ -1,3 +1,6 @@
+import { coverSources } from '../book-cover/[[path]].js';
+import { googleReadyImage, googleFutureReadyImage } from '../_shared/image-source-policy.js';
+import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
  *
@@ -411,7 +414,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
+export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = [], googleImages = null) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     // B11: los textos alternativos describen la portada sin arrastrar una
@@ -434,10 +437,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const documentTitle = escapeHtml(seoOverride?.title || editorial?.seo_title || item.title);
     const indexWhenPaused = seoOverride?.indexWhenPaused === true ||
         isPausedProductInSeoCohort(item.id);
+    const originalSources = normalizeImages(item);
+    const catalogSources = coverSources(item);
     const sourceImages = normalizeImages(item, previewCoverSrc);
     const images       = isPreview
         ? sourceImages
-        : sourceImages.map((_, position) => bookCoverUrl(item.id, position));
+        : sourceImages.map((source, position) => {
+            const catalogPosition = catalogSources.indexOf(originalSources[position]);
+            return catalogPosition >= 0 ? bookCoverUrl(item.id, catalogPosition) : source;
+        });
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],
@@ -555,10 +563,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@context': 'https://schema.org',
         '@type':    ['Product', 'Book'],
         'name':     item.title,
-        'image':    images.length ? images : img,
+        ...(images.length ? { image: images } : {}),
         'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
         'sku':      item.id,
     };
+    // La calidad determina la preferencia, no la existencia de la foto.
+    // [] también puede significar que falló la lectura del índice de R2.
+    // Conservamos la primera portada real de la galería en ambos casos;
+    // si no existe ninguna, no inventamos una ni usamos el logo.
+    if (googleImages?.length) schemaProduct.image = googleImages;
+    else if (googleImages !== null && images.length) schemaProduct.image = images.slice(0, 1);
     if (sellableInCheckout) {
         schemaProduct.offers = {
             '@type':        'Offer',
@@ -1187,7 +1201,7 @@ export async function onRequest(context) {
     const coversEnabled = ['preview', 'production'].includes(context.env?.APP_ENV);
     const coverResolveStartedAt = perfNow();
     const previewCoverSrc = coversEnabled && originalImages[0]
-        ? await resolvePreviewCoverUrl(context, item.id, 0, originalImages[0])
+        ? await resolvePreviewCoverUrl(context, item.id, coverSources(item).indexOf(originalImages[0]), originalImages[0])
         : null;
     recordPerf(context, 'cover_resolve', coverResolveStartedAt, {
         found: Boolean(previewCoverSrc),
@@ -1197,8 +1211,28 @@ export async function onRequest(context) {
         ? selectRelatedBooks(catalog.items, item)
         : [];
 
+    let googleImages = null;
+    if (context.env?.COVER_GOOGLE_QUALITY_GATE === 'true') {
+        const positions = originalImages.map(source => coverSources(item).indexOf(source));
+        const copies = await Promise.all(originalImages.map((source, index) => findPreviewCover(context, item.id, positions[index], source)));
+        googleImages = copies
+            .map((copy, index) => ({ current: copy?.entry?.current, index }))
+            .filter(candidate => googleReadyImage(candidate.current))
+            // La primera de la lista es la que Google toma como principal. Las
+            // que ya cumplen el mínimo de 2027 van adelante: sirven hoy, van a
+            // seguir sirviendo y no arrastran el aviso de resolución. Las que
+            // sólo cumplen el mínimo vigente quedan detrás, pero NO se
+            // descartan — descartarlas era lo que dejaba miles de libros fuera
+            // del feed. El orden dentro de cada grupo se conserva.
+            .sort((left, right) =>
+                (googleFutureReadyImage(right.current) ? 1 : 0) -
+                (googleFutureReadyImage(left.current) ? 1 : 0))
+            .map(candidate => new URL(
+                `/book-cover/${item.id}/${positions[candidate.index] === 0 ? 'cover.jpg' : `cover-${positions[candidate.index] + 1}.jpg`}`,
+                navigationBase).toString());
+    }
     const renderStartedAt = perfNow();
-    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks);
+    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks, googleImages);
     recordPerf(context, 'render', renderStartedAt);
 
     const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;

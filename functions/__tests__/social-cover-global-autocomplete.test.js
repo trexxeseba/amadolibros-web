@@ -38,7 +38,7 @@ test('el proxy entrega bytes de imagen con caché pública y admite HEAD', async
     const get = await coverRequest(ctx('GET'));
     assert.equal(get.status, 200);
     assert.equal(get.headers.get('content-type'), 'image/jpeg');
-    assert.match(get.headers.get('cache-control'), /s-maxage=604800/);
+    assert.match(get.headers.get('cache-control'), /s-maxage=300/);
     assert.deepEqual([...new Uint8Array(await get.arrayBuffer())], [1, 2, 3]);
     const head = await coverRequest(ctx('HEAD'));
     assert.equal(head.status, 200);
@@ -140,4 +140,30 @@ test('el script compartido apunta a todos los buscadores del catálogo', () => {
   assert.match(script, /form\[action="\/catalogo"\] input\[name="q"\]/);
   assert.match(script, /api\/search-suggestions/);
   assert.match(script, /aria-autocomplete/);
+});
+
+
+test('un master nuevo cambia la clave interna aunque la URL pública siga igual', async () => {
+  const originalFetch = globalThis.fetch, originalCaches = globalThis.caches;
+  const store = new Map();
+  globalThis.caches = {default: {
+    async match(request) { return store.get(request.url)?.clone() || null; },
+    async put(request,response) { if (new URL(request.url).pathname.startsWith('/book-cover/')) store.set(request.url,response.clone()); },
+  }};
+  let hash = 'a'.repeat(64), value = 1;
+  const bucket = {async get(key) {
+    if (key === 'covers/v1/manifest.json') return {text: async () => JSON.stringify({schema_version:1,entries:{
+      [`${item.id}:0`]: {product_id:item.id,position:0,current:{object_key:`covers/v1/objects/${hash}.jpg`,sha256:hash,mime:'image/jpeg',source_url:item.pictures[0]}}
+    }})};
+    return {body: new Uint8Array([value])};
+  }};
+  globalThis.fetch = async () => Response.json({items:[item]});
+  const context = () => ({request:new Request(`https://www.amadolibros.com/book-cover/${item.id}/cover.jpg`),
+    params:{path:[item.id,'cover.jpg']},env:{APP_ENV:'production',COVER_R2:bucket},data:{},waitUntil(){}});
+  try {
+    assert.deepEqual([...new Uint8Array(await (await coverRequest(context())).arrayBuffer())],[1]);
+    hash = 'b'.repeat(64); value = 2;
+    assert.deepEqual([...new Uint8Array(await (await coverRequest(context())).arrayBuffer())],[2]);
+    assert.equal(store.size,2);
+  } finally { globalThis.fetch = originalFetch; globalThis.caches = originalCaches; }
 });

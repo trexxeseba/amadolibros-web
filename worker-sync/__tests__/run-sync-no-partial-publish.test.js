@@ -276,6 +276,7 @@ test('el cron sólo salta mantenimiento cuando la marca coincide con el catálog
   };
   store.set('cover-mirror:backfill_complete', JSON.stringify({
     completed: true,
+    source_policy_version: 1,
     catalog_version: catalog.updated_at,
   }));
   let calls = 0;
@@ -290,9 +291,28 @@ test('el cron sólo salta mantenimiento cuando la marca coincide con el catálog
 
   store.set('cover-mirror:backfill_complete', JSON.stringify({
     completed: true,
+    source_policy_version: 1,
     catalog_version: '2026-08-15T00:00:00.000Z',
   }));
   const executed = await runCoverMirror(env, { maintenanceMinute: 25 }, { syncCoverMirrorFn });
   assert.equal(executed.status, 'completed');
   assert.equal(calls, 1);
+});
+
+test('el cron recorre bloques pausados con sus galerías completas y persiste el cursor', async () => {
+  const store=new Map(); const seen=[];
+  const payloads={
+    'catalog.json':{updated_at:'v1',items:[]},
+    'catalog/manifest.json':{current:{block_count:2,block_prefix:'catalog/v1'}},
+    'catalog/v1/block-000.json':{items:[{id:'MLU100001',status:'paused',pictures:['a','b']}]},
+    'catalog/v1/block-001.json':{items:[{id:'MLU100002',status:'paused',pictures:['c','d','e']}]},
+  };
+  const env={CATALOG_R2:{async get(key){return payloads[key]?{text:async()=>JSON.stringify(payloads[key])}:null;}},
+    AMADO_KV:{get:async key=>store.get(key)||null,put:async(key,value)=>store.set(key,value),delete:async key=>store.delete(key)}};
+  const syncCoverMirrorFn=async(_env,catalog,options)=>{seen.push(catalog.items);assert.equal(options.includePaused,true);return {status:'completed',pending:0,source_discovery_pending:0};};
+  const one=await runCoverMirror(env,{}, {syncCoverMirrorFn});
+  assert.equal(one.paused_progress.remaining,1); assert.equal(one.pending,1);
+  const two=await runCoverMirror(env,{}, {syncCoverMirrorFn});
+  assert.equal(two.paused_progress.remaining,0);assert.equal(two.pending,0);
+  assert.deepEqual(seen.map(items=>items[0].pictures.length),[2,3]);
 });

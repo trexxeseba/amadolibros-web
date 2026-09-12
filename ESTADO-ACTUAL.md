@@ -1,5 +1,30 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Imágenes publicadas y verificadas — 2026-09-09
+
+- #333 y #336 fusionados en main `305de731` con autorización completa de Seba. Pages `34363553956` success en el segundo intento; el primero cortó una comprobación GET por conexión reiniciada. Worker Sync `34363553916` success, catálogo 7.105 y 79.116 referencias en 256 fragmentos publicados; cero fallas del mirror. Checkout sin cambios.
+- Aceptación conjunta `9a1ab427`: CI `34362856125`, 1.720 pruebas y ambos builds; Preview `34362856257`; índice real `34362856142`, 154/154 imágenes, 4/4 páginas, 79.116 referencias preservadas y recuperación de escritura comprobada. Mediana del handler controlado 4.868 → 598 ms, no medición desde Uruguay.
+- Producción `34365186356`: Product.image presente en MLU651526046, cinco portadas HTTP 200/R2/public-index; 126 observaciones de imagen correctas en Chromium de escritorio y móvil, incluidas 48/48 portadas de Psicología en cada viewport. Muestra ampliada: 300/300 imágenes y 300/300 páginas correctas. Artefacto `10109592201` con JSON y capturas. No se afirma cobertura de todo dispositivo o del rastreo de Google.
+- Corrección del test: las portadas del inicio tienen animación continua; esperar inmovilidad era incorrecto. Se usa scroll nativo y se recorren las imágenes visibles también en móvil, conservando la animación y la detección de fallas.
+- Hallazgo adicional al verificar: el feed retuvo cuatro ofertas retiradas y 16 precios anteriores tras el sync. El catálogo interno admitía una hora de caché y el feed seis. Se reduce a 60 s cada caché mutable y se descartan copias cuya duración declarada exceda la nueva política, incluidas las horarias anteriores. El origen y los datos no se modifican; el checkout conserva su índice versionado. Prueba reproduce la copia antigua, la renovación y la reutilización acotada. Esta corrección final y el test de scroll se preparan en revisión; aceptación postpublicación pendiente en este registro.
+- Panel privado fuera del alcance. Evidencias de fallos intermedios conservadas; no se presenta la auditoría general en verde mientras existan diferencias del feed.
+
+## Historial: índice rápido y scroll verificados en Preview — 2026-09-08
+
+- Responsable: Codex. Esfuerzo: M. Trabajo operativo dentro de Google Merchant Center, única Gran Apuesta activa. Fuente de prioridades: PLAN-MAESTRO.md.
+- Producción conserva la recuperación #330, aprobada por Seba y fusionada en `0ae0a50` (deploy `34171140241`, 4/4 páginas y 104/104 imágenes válidas). La aceleración #333 sigue en Draft, sin merge ni despliegue productivo. Checkout intacto.
+- Rama `codex/cover-public-index`, desde main actualizado `0ae0a50`: cada portada resuelve su fragmento pequeño del índice público, en vez de descargar el manifiesto privado completo. Son 256 fragmentos inmutables por SHA, con límites de tamaño e integridad. Cubre todas las referencias existentes desde la primera sincronización y las nuevas automáticamente; conserva URLs, masters y calidad de imágenes. El feed mantiene su lector.
+- Publicación atómica: el puntero del índice se escribe en los metadatos del mismo PUT condicional que el manifiesto. Conflictos obligan a releer, combinar y reconstruir. Si el índice falta o está dañado se usa el lector anterior y se declara el fallback; una reconstrucción diaria repara los objetos derivados.
+- Escritura: lectura incremental y salida por bloques preservan todos los campos privados. Se libera la versión anterior antes de releer por conflicto. Sólo el error nativo exacto `Network connection lost.` del PUT condicional se recupera mediante lectura fresca y nuevo CAS, dentro de cuatro intentos totales. El resultado incierto y los reintentos quedan registrados; otros errores se propagan.
+- Aceptación del código `b97c534`, corrida `34230577186`: snapshot de 79.197.274 bytes, 59.733/59.733 referencias, 3.697/3.697 ofertas con XML idéntico, 154/154 comprobaciones de imágenes y 4/4 páginas. Las 149 peticiones de imagen del camino nuevo tuvieron cero GET del manifiesto global y cero fallback; las otras cinco son la comparación anterior.
+- Dos reconstrucciones completas verificadas. En la segunda se forzó un ETag incorrecto contra R2 nativo: R2 devolvió `Network connection lost.`, se confirmó el ETag aislado sin cambios y el escritor real releyó/reconstruyó/publicó con un reintento. No se presenta como una respuesta `null` nativa. El documento privado escrito es íntegramente equivalente al snapshot, salvo `updated_at` monotónico. Trazas finales `ok`, sin excepciones no recuperadas ni exceso de memoria; CPU 4.210 y 7.314 ms.
+- Velocidad del handler en Worker Cloudflare aislado, cachés frías y mismo snapshot: mediana 4.388 → 709 ms (−83,84%). No es una medición de navegador desde Uruguay. Evidencia por URL, bytes, SHA y tiempos en `docs/evidence/cover-index-2026-09-08.json`; fallos, recuperación y trazas en `docs/evidence/cover-index-resource-2026-09-08.json`. Snapshot/HTML en artefacto `10057684135` hasta 2026-12-07. Eliminados los 260 objetos temporales y el Worker, con confirmación; cero escrituras productivas.
+- Scroll real, corrida `34224677948`, código de navegador `b972d09`: las 48/48 portadas de Psicología entraron en pantalla y quedaron decodificadas, HTTP 200, cero errores y cero pendientes. Las 48 respuestas iniciales registraron índice público, cero GET global y ninguna cabecera de medición ausente.
+- Primera visita: 24 portadas tuvieron espera visible, máximo 3.992,5 ms. El recorrido incluyó pausas y regreso para cubrir filas saltadas; no fue un benchmark de scroll continuo. Segunda visita con caché: las 44 portadas posteriores a la primera fila estaban decodificadas antes de entrar en pantalla; las cuatro iniciales tardaron hasta 47,5 ms en confirmar `decode()`. Esto mide disponibilidad para dibujar, no el instante exacto de pintura. La latencia fría residual no se declara resuelta.
+- Alcance del navegador: Chrome remoto, 1363×936, renderer y atributos `loading`/`srcset`/`sizes` reales; Cloudflare Images nativo en un Worker aislado, distinto de la entrega productiva `/cdn-cgi/image`. Evidencia individual, original comprimido y capturas en `docs/evidence/cover-scroll-2026-09-08.*`. Ensayo limpiado: 260 objetos y Worker eliminados, artefacto `10055524508`, cero escrituras productivas. Los cambios posteriores afectan al escritor y sus comprobaciones, no al lector ni al observador de este ensayo.
+- Controles: 1.713 ejecuciones de pruebas y ambos builds pasaron con Node 22.12, igual que CI (`34230577156`). Incluyen equivalencia completa, JSON malformado, memoria acotada, liberación de versiones, escritura incierta antes/después de guardar, metadatos ganadores y límites de reintento. También se corrigió un fixture de catálogo que omitía el manifiesto productivo y dependía de red real. Los fallos intermedios están conservados; no se dieron por resueltos con una repetición afortunada.
+- Para producción falta aprobación expresa de Seba para merge y despliegue de #333. Después: esperar Pages, Worker Sync y su sincronización; comprobar `x-cover-index: public-index`, HTTP 200/bytes, catálogo y scroll en la web pública. No declarar la mejora publicada hasta esa verificación.
+
 Última actualización: 2026-09-03 — **B11 CERRADO**. El
 [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) (Lote 03
 final) está **fusionado a `main` y verificado en Producción**. El circuito
@@ -28,15 +53,294 @@ devuelve 1.609 ISBN, y `artifacts/b11-2/state.json` contiene 556 entradas
 con `TERMINADO` 83, `SIN_DATOS` 31 y `REVISAR` 442 — el pool `REVISAR`
 completo de B11.1, ya sin ningún ISBN pendiente de intentar.
 
-## Trabajo pendiente que hereda de B11 (no iniciado)
+## B12 — enriquecimiento de fichas activas (2026-09-06)
 
-1. **PR técnico de limpieza de idiomas históricos**: auditar los 17
-   `bibliographic.language` multivaluados que siguen publicados en módulos
+**Resultado real: 481 fichas activas mejoradas.**
+
+Tres cosas distintas, que conviene no mezclar:
+
+| | Estado |
+| --- | --- |
+| **481 fichas verificadas en el Preview desplegado** | **HECHO.** Una por una, 841 comprobaciones, 0 fallidas, 0 sin verificar. |
+| **Verificación en Producción** | **PENDIENTE.** No se puede hacer hasta que `main` esté fusionado y desplegado. El procedimiento está listo y no requiere trabajo nuevo: ver «Verificación de Producción» más abajo. |
+| **Meta de 1.000 fichas** | **PENDIENTE.** Se llegó a 481 y el circuito se agotó con las fuentes disponibles. Continúa después. |
+
+Nada de lo verificado está publicado todavía: el trabajo vive en
+[PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325), en Draft,
+**sin mergear ni desplegar**, esperando la aprobación de Seba.
+
+> **Corrección de una cifra que informé mal.** Antes reporté 423 fichas. Ese
+> número salía de reconstruir el "antes" restándole al ítem los hechos del
+> lote —un supuesto— y además medía sólo dos de los tres módulos que trae el
+> PR: dejaba fuera el lote `qw3a2` (47 ediciones). La cifra correcta,
+> comparando la ficha efectiva de `main` contra la del PR sobre el mismo
+> snapshot congelado, es **481**.
+
+### Reconciliación contra `main`, mismo snapshot
+
+Base `main` **`d380374`**. Snapshot `catalog.json` `updated_at`
+**2026-09-06T11:37:55.003Z**, 7.104 fichas activas comparadas de los dos lados.
+Corrida documentada:
+[34067949689](https://github.com/trexxeseba/amadolibros-web/actions/runs/34067949689),
+head **`798a9de`**.
+
+**Cada push a la rama vuelve a correr esta medición sobre el head nuevo**, así
+que la corrida vigente es siempre la última de «B12 — reconciliar impacto y
+validar el Preview desplegado» en el PR; el head y el SHA desplegado de esa
+corrida están en la descripción del PR. Las cifras se repitieron idénticas en
+las tres últimas corridas. El snapshot se baja **una sola vez** y lo
+comparten los dos lados: si cada uno bajara el suyo, una actualización del
+catálogo en el medio invalidaría la comparación.
+
+| Métrica | Valor |
+| --- | ---: |
+| Registro de enriquecimiento en `main` | 1.609 |
+| Registro en el PR | **1.790** |
+| Crecimiento del registro | **+181** |
+| ISBN únicos con mejora | **268** |
+| **Fichas activas beneficiadas** | **481** |
+| — con ≥1 campo nuevo | 481 |
+| — con ≥3 campos nuevos | **105** |
+| Fichas que **pierden** algún campo | **0** |
+| Fichas presentes en un solo lado (diferencia de catálogo) | 0 |
+
+| CAMPO | +FICHAS |
+| --- | ---: |
+| Páginas | **+291** |
+| Temas | **+235** |
+| Editorial | **+158** |
+| Año de publicación | +135 |
+| Autor real | +16 |
+| Idioma | +6 |
+
+### Cómo se relacionan 227, 268, 274 y +181
+
+Son cuatro cifras distintas y conviene no confundirlas:
+
+| Cifra | Qué es |
+| --- | ---: |
+| 274 | Registros de investigación en los tres módulos (47 + 196 + 31) |
+| **268** | **ISBN únicos**: 6 registros repiten ISBN entre módulos |
+| **+181** | Ediciones **nuevas** en el registro |
+| 87 | ISBN que `main` ya tenía y a los que el PR les **completó** campos |
+
+El «227» que informé antes era la suma de registros de sólo dos módulos, y
+además contaba registros en vez de ISBN únicos. Los 268 ISBN únicos mejoran al
+menos una ficha viva cada uno; 268 − 181 = 87 son ediciones ya investigadas
+que ganaron campos que les faltaban, sin pisar ningún dato verificado.
+
+### Verificado en el Preview desplegado
+
+Probar el renderizador localmente no demuestra nada: sólo el Preview muestra si
+el dato llegó a la página que sirve Cloudflare.
+
+> **Corrección — mi primer verificador daba falsos positivos.** Buscaba cada
+> valor con `html.includes()` sobre el documento entero y, como el bloque
+> JSON-LD vive DENTRO del HTML, todo campo «aparecía visible» aunque la ficha
+> no lo mostrara. Además aprobaba con **una sola** de las dos comprobaciones,
+> hacía coincidir un número dentro de otro (496 dentro de 1496) y `topics` no
+> se comprobaba en absoluto. **El 481/481 que informé antes no probaba nada.**
+> El verificador se reescribió, se le agregaron pruebas que reproducen los
+> cuatro defectos, y la medición se repitió. Lo que sigue es el resultado de
+> la versión corregida.
+
+Qué comprueba hoy, campo por campo:
+
+- **Valor visible**: se lee **sólo** de la lista de detalles de la ficha
+  (`<div class="detail-row"><dt>Etiqueta</dt><dd>Valor</dd></div>`), que por
+  construcción excluye scripts, estilos y contenido no mostrado. Se compara el
+  valor **normalizado completo**, nunca un fragmento.
+- **Propiedad JSON-LD**, declarada según el contrato real del renderizador:
+  `author.name`, `publisher.name`, `numberOfPages`, `inLanguage`,
+  `bookFormat`, `bookEdition`, `datePublished`, `keywords`.
+- **Se exigen las dos** donde las dos corresponden. Cuando una no corresponde,
+  se registra como NO APLICA **con el motivo escrito**, jamás como aprobada
+  por omisión.
+- **Ningún campo esperado pasa con cero comprobaciones**: un campo mejorado
+  que no produjo comprobación se cuenta como `sin_comprobar` y **reprueba** la
+  ficha.
+- **Un HTTP 404 queda SIN VERIFICAR**, no fallido y tampoco atribuido al
+  catálogo: es un resultado propio, contado aparte.
+
+Corrida [34067949689](https://github.com/trexxeseba/amadolibros-web/actions/runs/34067949689),
+base `https://pr-325.amadolibros-web.pages.dev`. El SHA **realmente desplegado**
+es `798a9de` y no es un supuesto: la corrida espera a que concluya con éxito el
+check de despliegue **de ese mismo commit** y recién entonces valida.
+
+| | |
+| --- | ---: |
+| Fichas esperadas | 481 |
+| **Verificadas** (todas sus comprobaciones aprobadas) | **481** |
+| Fallidas | **0** |
+| Sin verificar (HTTP 404 u otro error) | **0** |
+| Comprobaciones de campo realizadas | **841** |
+
+| CAMPO | COMPROB. | VISIBLE OK | JSON-LD OK | JSON-LD N/A | FALLIDAS |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Páginas | 291 | 291 | 290 | **1** | 0 |
+| Temas | 235 | 235 | 235 | 0 | 0 |
+| Editorial | 158 | 158 | 158 | 0 | 0 |
+| Año de publicación | 135 | 135 | 135 | 0 | 0 |
+| Autor real | 16 | 16 | 16 | 0 | 0 |
+| Idioma | 6 | 6 | 6 | 0 | 0 |
+
+Las 841 comprobaciones son exactamente la suma de las mejoras por campo de la
+reconciliación: **cada mejora que el PR declara fue comprobada en la página
+servida**, ninguna quedó sin mirar.
+
+El único «no aplica» es **MLU644234684** (ISBN 9781572813458). El middleware de
+vidriera publica esa ficha como `Product` a secas —no como `Book`— y entonces
+BORRA a propósito `numberOfPages`, `bookFormat` y `bookEdition`. Es lo correcto:
+un producto que no es un libro no debe declarar páginas en schema.org. El dato
+sigue **visible** en la ficha y su comprobación visible aprobó. No se retiró
+ningún dato ni se aflojó ninguna exigencia para que el número cerrara.
+
+Evidencia por ficha —MLU, ISBN, campo, valor esperado, valor visible
+encontrado, valor JSON-LD y resultado— en el artefacto
+`b12-reconciliacion-34067949689` de esa corrida. Las cifras de arriba, además,
+quedan en el **resumen de la corrida**, que no vence con el artefacto.
+
+### Verificación de Producción — PENDIENTE, ya preparada
+
+El Preview demuestra que el dato llega a la página servida por Cloudflare,
+pero **no es Producción**. La comprobación equivalente contra
+`https://www.amadolibros.com` está preparada y **sólo se puede ejecutar
+después del merge y del deploy**: antes, Producción sirve el sitio anterior y
+la medición daría un falso negativo.
+
+**Qué hacer, después del merge:**
+
+1. Esperar a que termine bien el deploy de Producción del commit de merge
+   (workflow «Deploy to Cloudflare Pages», job `Deploy`).
+2. Ejecutar el workflow **«B12 — verificar en Producción las fichas
+   mejoradas»** (`workflow_dispatch` desde `main`). Sus valores por defecto ya
+   son los correctos:
+   - `commit_previo`: `d380374775db7b5d2ef80b09ae97351ccdcd88f9` — el estado de
+     `main` **anterior** a B12;
+   - `base_url`: `https://www.amadolibros.com`;
+   - `esperar_deploy`: activado, para que no mida un sitio viejo.
+3. Leer el resumen de la corrida y, si algo falla, el artefacto
+   `b12-produccion-<run_id>` (90 días), que trae el detalle por ficha.
+
+**Qué hace, y por qué es la misma vara que el Preview:**
+
+- Usa **el mismo verificador corregido** (`preview-ficha-validation.mjs`), con
+  el mismo contrato: valor visible leído **sólo** de la lista de detalles y
+  propiedad JSON-LD del renderizador, **exigidas ambas** donde ambas
+  corresponden, comparando el valor normalizado completo. Ningún campo
+  esperado pasa con cero comprobaciones.
+- El «antes» **no es una resta de hechos ni un supuesto**: es un `git worktree`
+  del commit previo a B12. Se calcula la ficha efectiva de los dos árboles
+  sobre **un único snapshot** del catálogo de Producción y se restan. Lo que
+  aparece es exactamente lo que B12 aportó.
+- **Informa las pérdidas**: cualquier ficha que deje de mostrar un campo que
+  antes mostraba se lista con su MLU, su ISBN y los campos perdidos, y
+  **hace fallar la corrida**.
+- Guarda **evidencia por ficha** —MLU, ISBN, campo, valor esperado, valor
+  visible encontrado, valor JSON-LD y resultado— en el artefacto.
+- Un **HTTP 404 queda SIN VERIFICAR**, no fallido, y **no se le atribuye
+  causa**: ni al catálogo, ni a una baja, ni a nada. Pero **tampoco se lo
+  excluye**: una ficha que no se pudo mirar no es una ficha aprobada, así que
+  **hace fallar la corrida** hasta que alguien la revise.
+- Es de **sólo lectura**: baja el catálogo público y pide las fichas. No
+  despliega, no fusiona, no escribe catálogo, no toca Merchant.
+- **Conserva el resumen y el artefacto aunque falle**: la evidencia de una
+  corrida fallida es justamente la que hace falta para entenderla.
+
+**Cuándo se aprueba, y sólo entonces:** todas las fichas esperadas
+verificadas, comprobaciones efectivas y ninguna pérdida. La decisión vive en
+`scripts/seo/verificacion-produccion-gate.mjs` —una sola implementación, que
+usan el workflow y las pruebas— y **falla** ante cualquiera de estas: plan
+vacío, cero comprobaciones, cero fichas verificadas, alguna ficha fallida,
+alguna ficha sin verificar, alguna pérdida de campo, un informe ausente o
+incompleto, o cifras que no suman.
+
+> **Se corrigió un criterio que aprobaba de más.** La primera versión de esta
+> compuerta daba por buenas tres corridas que no verifican nada: todas las
+> fichas en 404, todas en 500 y el plan vacío. Las tres terminaban en éxito e
+> imprimían «Producción verificada: 0 fichas». Ahora sólo se aprueba con
+> evidencia positiva; los siete casos —incluidos esos tres— están probados
+> contra la misma función que corre el workflow.
+
+Entre el cierre y el merge el catálogo cambia, así que el universo puede no
+dar exactamente 481. Eso **no se acepta en silencio**: la corrida falla y la
+diferencia se revisa ficha por ficha. El número no se fuerza a 481, pero
+tampoco se aprueba un número menor sin mirarlo.
+
+### Rendimiento por lote — el circuito se agotó
+
+| Lote | ISBN incorporados |
+| --- | ---: |
+| B12 01 | 196 |
+| B12 02 | 31 |
+| B12 03 | **0** |
+
+Los tres recorrieron el MISMO universo de 3.596 ediciones. El primero se llevó
+los casos con más evidencia y el tercero no encontró nada: con las fuentes de
+hoy, esto es el techo.
+
+### El bloqueo concreto
+
+De los 3.596 investigados, **2.488 (69%) tienen al menos una fuente exacta**,
+así que el problema no es cobertura:
+
+| Causa | ISBN |
+| --- | ---: |
+| Sin evidencia utilizable en ninguna fuente | 2.398 |
+| Conflicto de identidad (título o autor no coinciden con la fuente) | 638 |
+| Una sola familia de fuente (el gate exige dos, o una oficial) | 489 |
+| Evidencia cruzada pero los campos ya estaban completos | 71 |
+
+**El mayor freno recuperable es Google Books**: quedó en **4 de 3.596** con
+HTTP 429 en las tres corridas, incluso tras bajar el presupuesto de 1.500 a
+400. Es cuota diaria agotada, no un fallo de código; históricamente aportaba
+500-615 coincidencias exactas.
+
+Continuar por ahí queda **fuera de este cierre**: esperar el reset de cuota y
+volver a correr, con el caché compartido pidiendo sólo lo que falta. Los 489
+bloqueados por «una sola familia» exigen **sumar otro catálogo oficial**, no
+relajar el gate: bajar la exigencia publicaría datos con menos respaldo.
+
+### Qué se construyó
+
+- **Library of Congress y Deutsche Nationalbibliothek** como fuentes oficiales
+  (`national_library`, mismo nivel que BNE), gratis y sin API key. Sonda de
+  alcance previa: [34031761113](https://github.com/trexxeseba/amadolibros-web/actions/runs/34031761113).
+- **El selector mide huecos sobre la ficha efectiva**: antes excluía cualquier
+  ISBN del registro aunque le faltaran campos.
+- **Un lote posterior completa al anterior** sin pisar datos verificados.
+- **Caché compartido y comprimido**: una corrida bajó de 60 a 15 minutos.
+
+### Evidencia y reanudación
+
+El diff llegó a superar **1.006.814 líneas**; el 98% eran dos archivos por
+lote —el volcado de investigación y el caché de fuentes—. Hoy son **20.329**.
+La evidencia **no se movió fuera del repo**: se guarda comprimida (unas doce
+veces menos) en el mismo lugar, así que la reanudación de un lote sigue siendo
+automática con un `checkout`, sin credenciales ni vencimientos. Se verificó
+que cada archivo se recupera **idéntico** y que el caché comprimido
+efectivamente evita repedir lo ya conocido. El caché compartido y el del lote
+01 eran byte a byte el mismo archivo; quedó uno solo.
+
+**Sin sinopsis copiadas y sin datos comerciales.** Cada hecho conserva su
+fuente por campo (`provider`, `url`, `relationship: exact_edition`), verificado
+por test. Precio, stock, imágenes, slug y canonical no se tocan.
+
+Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
+**sin mergear ni desplegar**. Mientras siga así, **nada de esto está en
+Producción** y la verificación de Producción sigue pendiente por definición.
+
+## Trabajo pendiente que hereda de B11
+
+1. **PR técnico de limpieza de idiomas históricos** (no iniciado): auditar los
+   17 `bibliographic.language` multivaluados que siguen publicados en módulos
    fusionados antes de la corrección de MARC 041 (13 en `facts-1000`, 2 en
    `facts-333`, 2 en B11.2 Lote 02). Detalle por ISBN más abajo.
-2. **B12**: se define después de esa limpieza. Cualquier avance de
-   enriquecimiento nuevo exige evidencia nueva (otra fuente o redacción
-   manual), no otra corrida del resolver.
+2. **B12**: ya no está por definirse — su primera tanda está entregada y
+   medida (sección de arriba). Lo que sigue pendiente es llegar a las 1.000
+   fichas, y para eso vale lo mismo que decía este punto: **cualquier avance
+   exige evidencia nueva** (otra fuente oficial, o el reset de cuota de Google
+   Books), no otra corrida del resolver sobre el mismo universo.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -538,7 +842,26 @@ criterio de aceptación, evidencia requerida) de cada punto en
 5. **Blindaje técnico de Amado — registrado, NO iniciado.**
 6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado de
    B11) — **pausado.**
-7. **Definición de B12** (heredado de B11) — **pausado.**
+7. **B12 — enriquecimiento de fichas activas** (heredado de B11) — **EN
+   CURSO, primera tanda entregada**: 481 fichas activas mejoradas y
+   verificadas en el Preview desplegado. La meta de 1.000 sigue pendiente y
+   continúa después.
 
 Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
 autorización explícita y separada de Seba.
+
+
+## QW2 — sistema general de imágenes (rama Codex, 2026-09-06)
+
+- **Responsable:** Codex. **Esfuerzo:** implementación transversal + validación CI/Preview.
+- **Base:** main `ea0c4756cd1dfb44756d68d719d864cf9d9a8284`. Rama `codex/catalog-image-system`.
+- **Alcance:** todas las imágenes del catálogo, actuales y futuras, en las 16 posiciones admitidas por la web; activos y bloques completos de pausados. Sin listas de MLU/ISBN para resolver imágenes.
+- **Implementado en rama:** búsqueda de variantes nativas del mismo archivo ML, medición de bytes, selección sin reducir dimensiones, master R2 inmutable, preservación de copias mejores, caché por hash y cola persistente de fuentes insuficientes/inaccesibles.
+- **Continuidad:** cron existente, lotes limitados a 100 imágenes; cursor persistente para pausados; errores con espera de 6 horas, fuentes <500 con revisión semanal, masters con revisión mensual. Cambiar la versión de la política obliga a recorrer de nuevo las imágenes conocidas.
+- **Aceptación:** tests de todas las posiciones, fuente inaccesible sin bloqueo, preservación y caché; CI y Preview verdes; ejecución real de un lote automático en R2 Preview; igualdad SHA-256 entre master y URL web. El lote de verificación no limita el alcance del sistema.
+- **Estado:** implementado en Draft #323. CI y prueba de imágenes R2/Preview verificadas en `1129dd4`; snapshot activo real de 2026-09-06: 7.104 productos / 32.569 imágenes. Lote automático de 100: 100/100 SHA-256 verificados, 81 fuentes mayores que la URL del catálogo, 74 >=500, 26 todavía insuficientes, 0 errores de validación. No son upgrades productivos: eran copias nuevas en Preview (0 masters existentes mejorados). Catálogo completo todavía no procesado.
+- **Google:** filtro mínimo de ambos lados >=500 disponible para feed/JSON-LD mediante `COVER_GOOGLE_QUALITY_GATE=true`. Configurado en true para el futuro despliegue productivo autorizado: preflight read-only conserva 3.697/3.697 ofertas actuales, 0 excluidas. Preview mantiene el filtro apagado por tener un bucket parcial. Evidencia: Actions `34028835918`, artifact `9987951211`. La configuración aún no está desplegada.
+- **Cloudflare Images:** binding de pago existente conservado para la arquitectura actual. La generación artificial queda desactivada por defecto: no inventa resolución ni sustituye la búsqueda de fuente real. Las variantes responsive web existentes consumen el master mediante `/book-cover/`.
+- **Límites reales:** ML puede no ofrecer una fuente >=500; esos casos quedan pendientes con evidencia y reintento, no se contabilizan como corregidos. Buscar fuentes editoriales por edición sigue requiriendo datos verificables.
+- Sin merge, sin deploy de producción, sin escritura en R2 productivo ni cambios en checkout. La prueba temporal sólo escribe en R2 Preview; el manifest productivo se lee para medir el impacto del filtro.
+- QW3A2 y la consolidación central de documentación en #316 siguen a cargo de Claude. Este apartado registra únicamente el trabajo QW2 de esta rama.

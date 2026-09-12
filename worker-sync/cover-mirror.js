@@ -1,7 +1,12 @@
+import { IMAGE_SOURCE_POLICY_VERSION, GOOGLE_IMAGE_MIN_EDGE, IMAGE_SOURCE_RECHECK_MS, IMAGE_FETCH_RETRY_MS, nativeImageAlternatives, mlImageIdentity, googleFutureReadyImage, resolutionDowngrade } from '../functions/_shared/image-source-policy.js';
 import { dedupeByGtinAndCondition, isEligibleForFeed } from '../functions/feed.xml.js';
+import { COVER_INDEX_METADATA, prepareCoverIndex } from '../functions/_shared/cover-public-index.js';
+import { pruneEntryProbes } from '../functions/_shared/cover-probe-retention.js';
+import { putJsonToR2 } from './json-r2-stream.js';
+import { readFullCoverManifest } from './cover-manifest-read.js';
 
 export const COVER_MANIFEST_KEY = 'covers/v1/manifest.json';
-export const DEFAULT_COVER_BATCH_SIZE = 250;
+export const DEFAULT_COVER_BATCH_SIZE = 100;
 export const COVER_REFRESH_MS = 30 * 24 * 60 * 60 * 1000;
 export const COVER_AI_TRANSFORM_VERSION = 1;
 
@@ -13,6 +18,12 @@ const MAX_GALLERY_IMAGES = 16;
 const TARGET_SHORT_EDGE = 1024;
 const TRANSFORM_RETRY_MS = 24 * 60 * 60 * 1000;
 const MANIFEST_WRITE_ATTEMPTS = 4;
+const INDEX_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+function indexRefreshDue(state, nowIso) {
+  const refreshed = timestamp(state.customMetadata.cover_index_refreshed_at);
+  return !refreshed || timestamp(nowIso) - refreshed >= INDEX_REFRESH_MS;
+}
 
 function emptyManifest(nowIso) {
   return { schema_version: 1, updated_at: nowIso, entries: {} };
@@ -56,6 +67,7 @@ export function coverCandidates(item, { includePaused = false } = {}) {
     product_id: id,
     position,
     source_url: sourceUrl,
+    alternatives: nativeImageAlternatives(sourceUrl, sources),
     catalog_product_id: String(item.catalog_product_id || '').trim().toUpperCase() || null,
   }));
 }
@@ -67,12 +79,12 @@ function validManifest(value) {
 
 async function readManifestState(bucket, nowIso) {
   const object = await bucket.get(COVER_MANIFEST_KEY);
-  if (!object) return { manifest: emptyManifest(nowIso), etag: null };
-  const parsed = JSON.parse(await object.text());
+  if (!object) return { manifest: emptyManifest(nowIso), etag: null, customMetadata: {} };
+  const parsed = await readFullCoverManifest(object);
   if (!validManifest(parsed)) throw new Error('Manifest de portadas R2 inválido.');
   const etag = String(object.etag || object.httpEtag || '').replace(/^"|"$/g, '');
   if (!etag) throw new Error('Manifest de portadas R2 sin ETag; no se puede actualizar de forma atómica.');
-  return { manifest: parsed, etag };
+  return { manifest: parsed, etag, customMetadata: object.customMetadata || {} };
 }
 
 function timestamp(value) {
@@ -85,6 +97,11 @@ function mergeProcessedEntry(freshEntry, processed) {
   if (!freshEntry) return localEntry;
 
   if (processed.status !== 'failed') {
+    if (localEntry.current?.source_url === freshEntry.current?.source_url &&
+        resolutionDowngrade(localEntry.current, freshEntry.current)) {
+      return { ...freshEntry, native_checked_at: localEntry.native_checked_at,
+        source_policy_version: localEntry.source_policy_version };
+    }
     // Si otra ejecución ya validó la misma entrada mientras esta corrida
     // procesaba sus bytes, nunca hacemos retroceder el puntero `current`.
     return timestamp(localEntry?.last_validated_at) > timestamp(freshEntry?.last_validated_at)
@@ -97,15 +114,15 @@ function mergeProcessedEntry(freshEntry, processed) {
   // manifest más viejo.
   const merged = { ...freshEntry };
   if (timestamp(localEntry?.last_error?.at) > timestamp(freshEntry?.last_error?.at)) {
+    merged.source_policy_version = localEntry.source_policy_version;
+    merged.native_checked_at = localEntry.native_checked_at;
     merged.last_attempted_source_url = localEntry.last_attempted_source_url;
     merged.last_error = localEntry.last_error;
   }
   return merged;
 }
 
-async function writeManifestAtomically(bucket, initialState, processedEntries, nowIso) {
-  let state = initialState;
-  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+async function writeManifestAttempt(bucket, state, processedEntries, nowIso) {
     const nextManifest = {
       ...state.manifest,
       updated_at: timestamp(nowIso) > timestamp(state.manifest.updated_at)
@@ -113,23 +130,95 @@ async function writeManifestAtomically(bucket, initialState, processedEntries, n
         : state.manifest.updated_at,
       entries: { ...state.manifest.entries },
     };
+    // El historial de sondeos de una portada que ya llegó a 500px no lo lee
+    // nadie: el reporte de calidad sólo mira el de las que todavía no llegan.
+    // Guardarlo igual es peso muerto que hay que cargar en memoria en cada
+    // escritura, y el manifest ya está cerca del límite del isolate.
+    //
+    // Se poda SOLO lo que esta corrida escribe, no todo el manifest. Un
+    // barrido global cambiaría entradas que nadie tocó, y eso rompe una
+    // garantía que vale más que el ahorro: que reescribir con un lote vacío
+    // deje el manifest idéntico. Hay tres tests y un chequeo de aceptación
+    // que la verifican, y son los que agarraron el intento anterior.
+    //
+    // El costo es que converge de a poco, al ritmo con el que el cron
+    // revalida cada portada, en vez de liberar todo de una.
+    let pruned = 0;
     for (const [key, processed] of processedEntries) {
-      nextManifest.entries[key] = mergeProcessedEntry(nextManifest.entries[key], processed);
+      const merged = mergeProcessedEntry(nextManifest.entries[key], processed);
+      const podado = pruneEntryProbes(merged);
+      if (podado !== merged) pruned += 1;
+      nextManifest.entries[key] = podado;
     }
+    const probes = { scanned: processedEntries.length, pruned };
 
+    // A daily bounded rewrite repairs deleted/damaged derived objects even if
+    // no image changes. Normal batches upload only changed shards.
+    const refreshIndex = indexRefreshDue(state, nowIso);
+    const publicIndex = await prepareCoverIndex(bucket, nextManifest,
+      refreshIndex ? null : state.customMetadata[COVER_INDEX_METADATA]);
     const onlyIf = state.etag
       ? { etagMatches: state.etag }
       : { etagDoesNotMatch: '*' };
-    const result = await bucket.put(COVER_MANIFEST_KEY, JSON.stringify(nextManifest), {
-      onlyIf,
-      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-    });
+    let transportError = null;
+    // Classify only this native conditional PUT. The same message from index
+    // preparation, serialization, a fresh GET or the quality report propagates.
+    const conditionalBucket = { async put(key, body, options) {
+      try { return await bucket.put(key, body, options); }
+      catch (error) {
+        if (error?.message === 'Network connection lost.') transportError = error;
+        throw error;
+      }
+    } };
+    let result;
+    try {
+      result = await putJsonToR2(conditionalBucket, COVER_MANIFEST_KEY, nextManifest, {
+        onlyIf,
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        customMetadata: { ...state.customMetadata, [COVER_INDEX_METADATA]: publicIndex.hash,
+          cover_index_refreshed_at: refreshIndex ? nowIso : state.customMetadata.cover_index_refreshed_at },
+      });
+    } catch (error) {
+      // putJsonToR2 has already cancelled and awaited its producer. Return an
+      // explicit uncertain outcome, never a fake commit or silent CAS null.
+      if (transportError && error === transportError) return { transportError: error.message };
+      throw error;
+    }
     // R2 devuelve null cuando la precondición falla. `undefined` sigue siendo
     // un éxito válido para mocks/implementaciones compatibles con put().
-    if (result !== null) return { manifest: nextManifest, retries: attempt };
+    return result !== null ? { manifest: nextManifest, publicIndex, probes } : null;
+}
+
+async function writeManifestAtomically(bucket, state, processedEntries, nowIso) {
+  let transportRetries = 0;
+  const transportErrors = [];
+  for (let attempt = 0; attempt < MANIFEST_WRITE_ATTEMPTS; attempt++) {
+    const writing = writeManifestAttempt(bucket, state, processedEntries, nowIso);
+    // The per-attempt frame owns both state and its shallow replacement. A
+    // failed attempt returns only null or a transport message, so neither graph
+    // survives into the next read through aliases or async temporaries.
+    state = null;
+    const written = await writing;
+    if (written?.transportError) {
+      transportErrors.push({ attempt: attempt + 1, message: written.transportError, outcome: 'unknown' });
+      if (attempt + 1 === MANIFEST_WRITE_ATTEMPTS) {
+        const error = new Error(`Transporte persistente al publicar ${COVER_MANIFEST_KEY}: ${written.transportError}`);
+        error.manifest_transport_retries = transportRetries;
+        error.manifest_transport_errors = transportErrors;
+        throw error;
+      }
+      transportRetries++;
+    } else if (written) return { ...written, retries: attempt, transportRetries, transportErrors };
+    // A transport failure may have committed. Re-read the authoritative body,
+    // metadata and ETag, then merge/rebuild and CAS against that actual version.
     state = await readManifestState(bucket, nowIso);
   }
-  throw new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
+  const error = new Error(`Conflicto persistente al publicar ${COVER_MANIFEST_KEY}.`);
+  if (transportErrors.length) {
+    error.manifest_transport_retries = transportRetries;
+    error.manifest_transport_errors = transportErrors;
+  }
+  throw error;
 }
 
 function needsAiUpscale(entry) {
@@ -142,8 +231,12 @@ function needsAiUpscale(entry) {
 }
 
 function candidatePriority(candidate, entry, nowMs, aiUpscaleEnabled) {
+  const failedAt = timestamp(entry?.last_error?.at);
+  if (failedAt && nowMs - failedAt < IMAGE_FETCH_RETRY_MS) return null;
   if (!entry?.current?.object_key) return 0;
   if (entry.current.source_url !== candidate.source_url) return 1;
+  if (entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION) return 2;
+  if (!googleFutureReadyImage(entry.current) && nowMs - timestamp(entry.native_checked_at) >= IMAGE_SOURCE_RECHECK_MS) return 2;
   if (aiUpscaleEnabled && needsAiUpscale(entry)) {
     const attempted = Date.parse(entry.last_transform_attempt_at || '');
     if (!Number.isFinite(attempted) || nowMs - attempted >= TRANSFORM_RETRY_MS) return 2;
@@ -302,28 +395,6 @@ async function storeImmutable(bucket, bytes, image, nowIso, metadata = {}) {
   return { objectKey, sha256 };
 }
 
-async function readStoredOriginal(bucket, candidate) {
-  if (!needsAiUpscale(candidate.entry) || candidate.entry.current.source_url !== candidate.source_url) return null;
-  const current = candidate.entry.current;
-  const key = current.original_object_key || current.object_key;
-  const object = await bucket.get(key);
-  if (!object) return null;
-  let buffer;
-  if (typeof object.arrayBuffer === 'function') buffer = await object.arrayBuffer();
-  else if (object.body instanceof Uint8Array) buffer = object.body;
-  else if (object.body) buffer = await new Response(object.body).arrayBuffer();
-  else return null;
-  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-  if (bytes.byteLength === 0 || bytes.byteLength > MAX_IMAGE_BYTES) return null;
-  const image = inspectCoverBytes(bytes, current.original_mime || current.mime);
-  return {
-    bytes,
-    image,
-    sourceValidators: candidate.entry.source_validators || { etag: null, last_modified: null },
-    originalObjectKey: key,
-  };
-}
-
 async function aiUpscaleCover(imagesBinding, bytes, image) {
   if (!imagesBinding || typeof imagesBinding.input !== 'function' ||
       Math.min(image.width, image.height) >= TARGET_SHORT_EDGE) {
@@ -346,11 +417,11 @@ async function aiUpscaleCover(imagesBinding, bytes, image) {
   return { bytes: transformedBytes, image: transformedImage, transform };
 }
 
-async function fetchCover(candidate, fetchFn) {
+async function fetchOneCover(sourceUrl, fetchFn) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetchFn(candidate.source_url, {
+    const response = await fetchFn(sourceUrl, {
       headers: {
         accept: 'image/webp,image/png,image/jpeg',
         'user-agent': 'Mozilla/5.0 (compatible; AmadoLibrosCoverMirror/1.0)',
@@ -369,14 +440,43 @@ async function fetchCover(candidate, fetchFn) {
         last_modified: response.headers.get('last-modified') || null,
       },
       originalObjectKey: null,
+      nativeSourceUrl: sourceUrl,
     };
   } finally {
     clearTimeout(timeout);
   }
 }
 
+async function fetchCover(candidate, fetchFn) {
+  const probes = [];
+  let best = null;
+  for (const source of candidate.alternatives || [candidate.source_url]) {
+    try {
+      const found = await fetchOneCover(source, fetchFn);
+      probes.push({ source_url: source, width: found.image.width, height: found.image.height });
+      const ratio = found.image.width / found.image.height;
+      if (best && Math.abs(ratio / (best.image.width / best.image.height) - 1) > 0.05) {
+        probes.at(-1).rejected = 'aspect-ratio-mismatch';
+        continue;
+      }
+      if (!best || (!resolutionDowngrade(found.image, best.image) &&
+          found.image.width * found.image.height > best.image.width * best.image.height)) best = found;
+    } catch (error) { probes.push({ source_url: source, error: String(error.message).slice(0,160) }); }
+  }
+  if (!best) throw new Error('Ninguna fuente válida: '+JSON.stringify(probes).slice(0,200));
+  return { ...best, probes };
+}
+
 async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
-  const source = await readStoredOriginal(bucket, candidate) || await fetchCover(candidate, fetchFn);
+  const source = await fetchCover(candidate, fetchFn);
+  if ((candidate.entry?.current?.source_url === candidate.source_url ||
+      (mlImageIdentity(candidate.source_url) && mlImageIdentity(candidate.source_url) === mlImageIdentity(candidate.entry?.current?.source_url))) &&
+      resolutionDowngrade(source.image, candidate.entry.current)) {
+    return { entry: { ...candidate.entry, current: { ...candidate.entry.current,
+      source_url: candidate.source_url, native_source_url: candidate.entry.current.native_source_url || candidate.entry.current.source_url }, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+      native_checked_at: nowIso, source_probes: source.probes, last_validated_at: nowIso,
+      last_error: null }, status: 'revalidated', quality_status: 'better-master-preserved' };
+  }
   const originalStored = source.originalObjectKey
     ? { objectKey: source.originalObjectKey, sha256: candidate.entry.current.original_sha256 || candidate.entry.current.sha256 }
     : await storeImmutable(bucket, source.bytes, source.image, nowIso);
@@ -414,6 +514,9 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
     entry: {
       product_id: candidate.product_id,
       position: candidate.position,
+      source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+      native_checked_at: nowIso,
+      source_probes: source.probes,
       current: {
         object_key: finalStored.objectKey,
         sha256: finalStored.sha256,
@@ -425,6 +528,7 @@ async function processCover(bucket, candidate, nowIso, fetchFn, imagesBinding) {
         original_sha256: originalStored.sha256,
         original_mime: source.image.mime,
         source_url: candidate.source_url,
+        native_source_url: source.nativeSourceUrl,
         imported_at: nowIso,
         transform: transformInfo,
       },
@@ -466,9 +570,9 @@ export async function syncCoverMirror(env, catalog, {
   }
   const nowDate = now();
   const nowIso = nowDate.toISOString();
-  const manifestState = await readManifestState(bucket, nowIso);
-  const manifest = manifestState.manifest;
-  const aiUpscaleEnabled = Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
+  let manifestState = await readManifestState(bucket, nowIso);
+  let manifest = manifestState.manifest;
+  const aiUpscaleEnabled = env?.COVER_ALLOW_GENERATIVE_UPSCALE === 'true' && Boolean(env?.IMAGES && typeof env.IMAGES.input === 'function');
   // La mejora generativa se reserva para la portada primaria del mismo
   // universo deduplicado que recibe Merchant. Las imágenes secundarias se
   // copian sin alterarlas para no inventar texto ni accesorios del producto.
@@ -481,7 +585,7 @@ export async function syncCoverMirror(env, catalog, {
     .map(value => value.trim().toUpperCase())
     .filter(value => /^MLU\d+$/.test(value)));
   const batch = selectCoverBatch(catalog, manifest, {
-    limit,
+    limit: Math.min(100, Math.max(1, Number(limit) || 100)),
     nowMs: nowDate.getTime(),
     aiUpscaleEnabled,
     aiUpscaleProductIds,
@@ -504,6 +608,8 @@ export async function syncCoverMirror(env, catalog, {
     } catch (error) {
       const entry = {
         ...(candidate.entry || { product_id: candidate.product_id, position: candidate.position, current: null }),
+        source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+        native_checked_at: nowIso,
         last_attempted_source_url: candidate.source_url,
         last_error: { at: nowIso, message: String(error?.message || 'Error').slice(0, 240) },
       };
@@ -513,10 +619,25 @@ export async function syncCoverMirror(env, catalog, {
   });
   let finalManifest = manifest;
   let manifestRetries = 0;
-  if (batch.selected.length > 0) {
-    const written = await writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+  let manifestTransportRetries = 0;
+  let manifestTransportErrors = [];
+  let publicIndex = null;
+  // Bootstrap every existing cover on the first sync, even if no image needs
+  // refreshing. Subsequent no-op batches do not rewrite the index/manifest.
+  if (batch.selected.length > 0 || indexRefreshDue(manifestState, nowIso) ||
+      !/^[a-f0-9]{64}$/.test(manifestState.customMetadata[COVER_INDEX_METADATA] || '')) {
+    const writing = writeManifestAtomically(bucket, manifestState, processedEntries, nowIso);
+    // The writer now owns the complete graph. Keeping any caller alias alive
+    // across a CAS retry would retain the original alongside the fresh graph.
+    manifestState = null;
+    manifest = null;
+    finalManifest = null;
+    const written = await writing;
     finalManifest = written.manifest;
     manifestRetries = written.retries;
+    manifestTransportRetries = written.transportRetries;
+    manifestTransportErrors = written.transportErrors;
+    publicIndex = written.publicIndex;
   }
   const validCopies = Object.values(finalManifest.entries).filter(entry => entry?.current?.object_key).length;
   const imported = results.filter(result => ['imported', 'revalidated'].includes(result.status)).length;
@@ -532,7 +653,39 @@ export async function syncCoverMirror(env, catalog, {
         aiUpscaleProductIds.has(String(entry?.product_id || '').toUpperCase()) && needsAiUpscale(entry)
       ).length
     : null;
+  const scope = (catalog?.items || []).flatMap(item => coverCandidates(item, { includePaused }));
+  const scopeEntries = scope.map(row => ({ row, entry: finalManifest.entries[`${row.product_id}:${row.position}`] }));
+  const sourcePending = scopeEntries.filter(({row,entry}) =>
+    !entry || entry.source_policy_version !== IMAGE_SOURCE_POLICY_VERSION ||
+    (entry.current?.source_url !== row.source_url && entry.last_attempted_source_url !== row.source_url)).length;
+  const needsSource = Object.entries(finalManifest.entries).filter(([,entry]) => entry?.current?.object_key && !googleFutureReadyImage(entry.current))
+    .map(([key,entry]) => ({row:{product_id:entry.product_id || key.split(':')[0],position:Number(entry.position ?? key.split(':')[1]),source_url:entry.current.source_url},entry}));
+  const unavailable = new Map(Object.entries(finalManifest.entries)
+    .filter(([,entry]) => entry?.last_error && (!entry.current?.object_key || entry.last_attempted_source_url !== entry.current.source_url))
+    .map(([key,entry]) => [key, {product_id: entry.product_id || key.split(':')[0], position: Number(entry.position ?? key.split(':')[1]),
+      source_url: entry.last_attempted_source_url || entry.current?.source_url || null, error: entry.last_error || null}]));
+  for (const {row,entry} of scopeEntries) {
+    if (entry?.last_error && (!entry.current?.object_key || entry.current.source_url !== row.source_url)) unavailable.set(`${row.product_id}:${row.position}`, {
+      product_id: row.product_id, position: row.position, source_url: row.source_url, error: entry?.last_error || null});
+  }
+  await putJsonToR2(bucket, 'covers/v1/quality-report.json', {
+    generated_at: nowIso, source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+    scope_images: scope.length, known_images: Object.keys(finalManifest.entries).length, discovery_pending: sourcePending,
+    needs_better_source: needsSource.map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
+      source_url: row.source_url, width: entry.current.width, height: entry.current.height,
+      probes: entry.source_probes || [], next_check_at: new Date(timestamp(entry.native_checked_at) + IMAGE_SOURCE_RECHECK_MS).toISOString() })),
+    awaiting_first_copy: scopeEntries.filter(({entry}) => !entry?.current?.object_key && !entry?.last_error)
+      .map(({row}) => ({product_id: row.product_id, position: row.position, source_url: row.source_url})),
+    unavailable: [...unavailable.values()],
+  }, { httpMetadata: {contentType: 'application/json', cacheControl: 'no-store'} });
   return {
+    source_policy_version: IMAGE_SOURCE_POLICY_VERSION,
+    scope_images: scope.length,
+    source_discovery_pending: sourcePending,
+    needs_better_source: needsSource.length,
+    needs_better_source_examples: needsSource.slice(0,100).map(({row,entry}) => ({ product_id: row.product_id, position: row.position,
+      source_url: row.source_url, width: entry.current.width, height: entry.current.height,
+      reason: 'no-native-source-at-least-500', next_source_check: new Date(timestamp(entry.native_checked_at) + IMAGE_SOURCE_RECHECK_MS).toISOString() })),
     status: 'completed',
     attempted: results.length,
     imported,
@@ -540,11 +693,14 @@ export async function syncCoverMirror(env, catalog, {
     // Un intento fallido sigue pendiente. Sin esto, el último lote podía
     // declarar terminado el backfill y bajar prematuramente la frecuencia
     // de reintento de 5 minutos a una hora.
-    pending: Math.max(0, batch.total_candidates - imported),
+    pending: Math.max(sourcePending, batch.total_candidates - imported),
     valid_copies: validCopies,
     ai_upscaled: aiUpscaled,
     quality_pending: qualityPending,
     manifest_retries: manifestRetries,
+    manifest_transport_retries: manifestTransportRetries,
+    manifest_transport_errors: manifestTransportErrors,
+    public_index: publicIndex,
     results,
   };
 }
