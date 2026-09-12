@@ -86,3 +86,14 @@ Seba pidió quitar la introducción larga, el cuestionario y los módulos Para e
 Revisión de especialistas solicitada por Seba: acceso compacto a «Ver mazos de tarot y oráculos» junto al ordenamiento en la raíz; contador de productos y alcance breve también en las selecciones de cartas y libros. No se reintroducen guías, módulos ni animaciones parpadeantes.
 
 La revisión Cloudflare detectó que el orden cronológico parseaba el catálogo completo de 12,7 MB en cada SSR. Se agrega una proyección ID→fecha cacheada durante 60 s, sin precio ni stock: en los hits sólo se parsea ese mapa; en miss aún se consulta el catálogo completo. Un fallo no guarda mapas vacíos.
+
+
+## Corrección de la portada y mezcla de disponibilidad
+
+Seba señaló que el enlace principal todavía mezclaba libros y cartas. Ahora tanto `/libros/esoterismo-tarot` como `/libros/esoterismo-tarot/mazos` muestran exclusivamente mazos identificados. Dos accesos compactos y visibles, «Tarot y oráculos» y «Libros», mantienen clara la separación. `/libros/esoterismo-tarot/libros-esoterismo` reúne también los manuales de tarot; excluye mazos y productos de formato indeterminado ya etiquetados.
+
+Se comprobaron por ID las capturas: Kabbalah y Shabat, El mal de ojo, Más allá de ángeles y demonios, Introducción al Agni Yoga, Están aquí, Tarot: la llave de tu transformación y Luz de tungsteno. Sus libros salen de las dos entradas de mazos y se encuentran en Libros. Las materias internas, Cábala y los demás destinos curados se conservan.
+
+Por nuevo pedido expreso, estas selecciones incluyen los índices de disponibles y por encargo del entorno vigente. La vista inicial intercala ambos estados antes de paginar; no obliga a llegar al final de los disponibles para ver encargos. Los órdenes por fecha y precio siguen disponibles; donde el índice no aporta fecha o precio, esos registros se ubican al final de esos órdenes explícitos. No se inventan fechas ni cotizaciones.
+
+Los encargos muestran «Por encargo», consulta de precio/plazo y enlace a su ficha; no muestran «Te llega hoy», cuotas ni precios antiguos. Si un MLU o una edición repetida aparece disponible y por encargo, se conserva la publicación disponible. No se modifica el estado comercial del catálogo. Se agregan pruebas para las siete capturas, intercalado global, paginación sin pérdidas, separación por formato y lectura de ambos índices sin consultar el catálogo completo en la vista inicial.

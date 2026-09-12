@@ -20,8 +20,8 @@ test('conserva el hub general de Tarot y separa la intención comercial de mazos
   const category = findSeoCategory('esoterismo-tarot');
   assert.ok(category);
   assert.match(category.title, /Tarot y oráculos en Uruguay/);
-  assert.match(category.h1, /Tarot, oráculos/);
-  assert.deepEqual(category.about, ['Tarot', 'Cartas de oráculo', 'Libros de esoterismo']);
+  assert.match(category.h1, /Tarot y oráculos/);
+  assert.deepEqual(category.about, ['Tarot', 'Cartas de oráculo', 'Lenormand', 'Kipper']);
 
   assert.equal(editorialGuideHtml(category), '');
   assert.equal(SEO_CATEGORY_IDS.has('tarot'), false);

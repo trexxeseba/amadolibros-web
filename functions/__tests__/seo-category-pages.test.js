@@ -12,7 +12,7 @@ import {
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
 
 const ITEMS = SEO_CATEGORIES.map((category, index) => ({
-    id: category.kind === 'tarot-decks' ? 'MLU624123456'
+    id: category.id === 'esoterismo-tarot' ? 'MLU643087668' : category.kind === 'tarot-decks' ? 'MLU624123456'
 
             : category.tarotFilter === 'study-books' ? 'MLU804612402'
                 : `MLU${index + 1}`,

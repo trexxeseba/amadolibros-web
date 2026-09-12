@@ -54,7 +54,7 @@ test('las páginas muestran los títulos en su destino y ofrecen filtros para la
       assert.equal(response.status, 200);
       const html = await response.text();
       for (const id of ids) {
-        const expected = normalizeCategoryPaths(data.items[id]).some(p => p[0] === category);
+        const expected = normalizeCategoryPaths(data.items[id]).some(p => p[0] === category) && (category !== 'esoterismo-tarot' || buildTagLookup(TAROT_MERCH_TAGS)(id)?.format === 'mazo');
         assert.equal(html.includes(`/libro/${id}/`), expected, `${category}: ${id}`);
       }
       if (category === 'esoterismo-tarot') {
@@ -103,7 +103,7 @@ test('las cartas se muestran juntas y los libros conservan sus destinos', async 
   const sampleIds = ['MLU608201824', 'MLU643087668', 'MLU804612402', 'MLU643758459'];
   const expected = new Map([
     ['mazos', ['MLU608201824', 'MLU643087668']],
-    ['libros-tarot-oraculos', ['MLU804612402']], ['libros-esoterismo', ['MLU643758459']],
+    ['libros-tarot-oraculos', ['MLU804612402']], ['libros-esoterismo', ['MLU643758459', 'MLU804612402']],
   ]);
   const originalCaches = globalThis.caches;
   globalThis.caches = { default: { async match(request) {
