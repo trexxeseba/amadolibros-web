@@ -6,6 +6,15 @@
 // condición, imágenes, título comercial, id y URL permanecen en el catálogo.
 
 import { BOOK_FACT_ENRICHMENTS } from './book-enrichment-facts-1000.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_333 } from './book-enrichment-facts-333.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_LOTE_01 } from './book-enrichment-facts-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_01 } from './book-enrichment-facts-b11-2-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_02 } from './book-enrichment-facts-b11-2-lote-02.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03 } from './book-enrichment-facts-b11-2-lote-03.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01 } from './book-enrichment-facts-qw3a2-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_01 } from './book-enrichment-facts-b12-lote-01.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_02 } from './book-enrichment-facts-b12-lote-02.js';
+import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
 const SOURCE_TYPES = new Set([
@@ -417,6 +426,44 @@ export function validateBookEnrichment(record) {
   if (!Array.isArray(record.editorial?.paragraphs) || record.editorial.paragraphs.length < 1) return false;
   if (record.editorial.paragraphs.some(paragraph => clean(paragraph).length < 80)) return false;
   if (!Array.isArray(record.provenance) || record.provenance.length < 1) return false;
+
+  const isEditorialReal = record.editorial?.quality_level === 'editorial_real_v1';
+  if (isEditorialReal) {
+    const editorialText = record.editorial.paragraphs.map(clean).join(' ');
+    if (record.editorial.paragraphs.length < 2 || editorialText.length < 450) return false;
+    if (!Array.isArray(record.editorial.highlights) || record.editorial.highlights.length < 5) return false;
+    if (record.editorial.highlights.some(value => clean(value).length < 25)) return false;
+    if (clean(record.editorial.decision_copy).length < 180) return false;
+    const metaLength = clean(record.editorial.meta_description).length;
+    if (metaLength < 80 || metaLength > 170) return false;
+    if (clean(record.editorial.merchant_description).length < 250) return false;
+    if (!clean(record.editorial.seo_title) || !clean(record.editorial.heading)) return false;
+
+    const exactEditionSources = record.provenance.filter(source =>
+      source?.relationship === 'exact_edition' &&
+      normalizeValidIsbn(source?.isbn) === isbn
+    );
+    const exactProviders = new Set(exactEditionSources.map(source => clean(source?.provider)).filter(Boolean));
+    const sourceEditionPublisher = record.provenance.some(source =>
+      source?.type === 'publisher' &&
+      source?.relationship === 'source_edition' &&
+      normalizeValidIsbn(source?.isbn) &&
+      /^https:\/\//i.test(clean(source?.url))
+    );
+    if (exactProviders.size < 2 || !sourceEditionPublisher) return false;
+
+    return record.provenance.every(source => {
+      if (!SOURCE_TYPES.has(source?.type)) return false;
+      if (!['exact_edition', 'source_edition'].includes(source?.relationship)) return false;
+      const sourceIsbn = normalizeValidIsbn(source?.isbn);
+      if (!sourceIsbn) return false;
+      if (source.relationship === 'exact_edition' && sourceIsbn !== isbn) return false;
+      if (!/^https:\/\//i.test(clean(source?.url))) return false;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(clean(source?.verified_at))) return false;
+      return Array.isArray(source?.fields) && source.fields.length > 0;
+    });
+  }
+
   const exactOfficial = record.provenance.some(source =>
     source?.type === 'publisher' &&
     source?.relationship === 'exact_edition' &&
@@ -432,6 +479,33 @@ export function validateBookEnrichment(record) {
     /^\d{4}-\d{2}-\d{2}$/.test(clean(source?.verified_at)) &&
     Array.isArray(source?.fields) && source.fields.length > 0,
   );
+}
+
+
+// Un lote posterior puede volver sobre un ISBN ya investigado: desde que el
+// selector mide huecos sobre la ficha efectiva, una edición que sólo aportó
+// `publication_year` vuelve al cohorte para buscar `pages` o `publisher`.
+//
+// Esa reincidencia COMPLETA, nunca pisa: el dato viejo también se verificó en
+// su momento, así que gana el primero y el nuevo sólo llena lo que faltaba.
+// La procedencia se acumula para no perder de dónde salió cada campo.
+export function mergeFactEnrichment(existing, incoming) {
+  if (!existing) return incoming;
+  const facts = { ...(incoming.facts || {}), ...(existing.facts || {}) };
+  const existingBib = existing.facts?.bibliographic || {};
+  const incomingBib = incoming.facts?.bibliographic || {};
+  if (Object.keys(existingBib).length || Object.keys(incomingBib).length) {
+    facts.bibliographic = { ...incomingBib, ...existingBib };
+  }
+  const provenance = [...(existing.provenance || [])];
+  const seen = new Set(provenance.map(source => `${source.url}|${(source.fields || []).join(',')}`));
+  for (const source of incoming.provenance || []) {
+    const key = `${source.url}|${(source.fields || []).join(',')}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    provenance.push(source);
+  }
+  return { ...existing, facts, provenance };
 }
 
 const ENRICHMENT_BY_ISBN = new Map();
@@ -450,6 +524,105 @@ for (const record of BOOK_FACT_ENRICHMENTS) {
   }
   if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
     throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_333) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+// B11.2: ISBN que B11.1 dejó en REVISAR, resueltos por consenso cruzado de
+// fuentes independientes (scripts/seo/b11-2-resolve-revisar.mjs).
+for (const record of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_02) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+for (const record of BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`ISBN duplicado en el registro de enriquecimiento: ${record.isbn}.`);
+  }
+  ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+
+// El lote B12 01 es el primero posterior a la corrección del selector, así que
+// vuelve sobre ediciones ya investigadas para completarles campos: 75 de sus
+// 196 ISBN ya estaban en el registro. Por eso FUSIONA en vez de rechazar el
+// duplicado — pero un ISBN repetido DENTRO del propio lote sigue siendo un
+// error, no una fusión.
+const b12Lote01Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_01) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote01Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 01: ${record.isbn}.`);
+  }
+  b12Lote01Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
+}
+
+// Lote B12 02: mismo criterio de fusión que el 01. 18 de sus 31 ISBN ya
+// estaban en el registro y vuelven a completarles campos.
+const b12Lote02Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_02) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote02Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 02: ${record.isbn}.`);
+  }
+  b12Lote02Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
+}
+
+// Una mejora editorial reemplaza el registro factual de la misma edición,
+// pero no crea una edición nueva ni altera la métrica de cobertura por ISBN.
+for (const record of BOOK_EDITORIAL_UPGRADES) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento editorial real inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (!ENRICHMENT_BY_ISBN.has(record.isbn)) {
+    throw new Error(`La mejora editorial debe corresponder a un ISBN ya investigado: ${record.isbn}.`);
   }
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
 }
@@ -474,6 +647,17 @@ export function applyBookEnrichment(item) {
   const editorialDescription = Array.isArray(enrichment?.editorial?.paragraphs)
     ? enrichment.editorial.paragraphs.map(clean).filter(Boolean).join('\n\n')
     : '';
+  // El catálogo trae `bibliographic` con las claves siempre presentes
+  // (atributo de MercadoLibre), a menudo vacías. Un spread simple deja que
+  // esa clave vacía tape el hecho verificado; sólo el ítem gana cuando su
+  // propio valor es real, igual que ya hacen publisher/pages/dimensions.
+  const factsBibliography = facts.bibliographic || {};
+  const mergedBibliography = {};
+  for (const key of new Set([...Object.keys(factsBibliography), ...Object.keys(bibliography)])) {
+    const original = bibliography[key];
+    const hasRealValue = Array.isArray(original) ? original.length > 0 : clean(original) !== '';
+    mergedBibliography[key] = hasRealValue ? original : factsBibliography[key];
+  }
   return {
     ...item,
     author: facts.author && isGenericAuthor(item.author) ? facts.author : item.author,
@@ -483,10 +667,14 @@ export function applyBookEnrichment(item) {
     publisher: item.publisher || facts.publisher,
     pages: item.pages || facts.pages,
     dimensions_text: item.dimensions_text || facts.dimensions_text,
-    bibliographic: {
-      ...(facts.bibliographic || {}),
-      ...bibliography,
-    },
+    bibliographic: mergedBibliography,
+    // Metadatos internos para el render SSR. No contienen precio, stock,
+    // imágenes ni URL comercial y no se escriben de vuelta al catálogo.
+    _amadoEditorial: enrichment.decision === 'auto_publish' ? enrichment.editorial : null,
+    _amadoSchema: enrichment.schema || null,
+    _amadoEnrichmentLevel: enrichment.editorial?.quality_level === 'editorial_real_v1'
+      ? 'editorial_real'
+      : enrichment.decision === 'auto_publish' ? 'editorial_curated' : 'bibliographic',
   };
 }
 

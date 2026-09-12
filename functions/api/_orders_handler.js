@@ -253,8 +253,18 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         // Se conserva el error genérico de escritura; no se expone detalle interno.
       }
 
-      console.error('[orders] batch error', safeErrorName(batchError));
-      return json({ error: 'Error al guardar el pedido. Intentá de nuevo.' }, 500);
+      // code=ORDERS_DB_WRITE_FAILED identifica esta etapa exacta (el batch de
+      // INSERT en orders/order_items/order_events) en los logs — sin exponer
+      // el detalle del error (nombre de columna, constraint, etc.) al cliente.
+      console.error(
+        '[orders] batch error code=ORDERS_DB_WRITE_FAILED',
+        safeErrorName(batchError),
+        safeErrorMessage(batchError)
+      );
+      return json({
+        error: 'No pudimos registrar tu pedido. No se realizó ningún cobro. Intentá nuevamente; si continúa, escribinos por WhatsApp.',
+        code: 'ORDERS_DB_WRITE_FAILED',
+      }, 500);
     }
 
     return json({
@@ -280,8 +290,12 @@ async function findOrderByIdempotencyKey(db, idempotencyKey) {
 
 async function handleExistingOrder({ db, order, fingerprint, now }) {
   if (order.request_fingerprint !== fingerprint) {
+    // code interno para que el cliente pueda recuperarse (rotar identidad y
+    // reintentar) sin depender de parsear el texto — y sin que el texto
+    // técnico ("idempotency_key"/"request_fingerprint") le llegue nunca al
+    // comprador; carrito.astro nunca muestra `error` para este code.
     return json(
-      { error: 'Conflicto: el mismo idempotency_key fue usado con un pedido diferente.' },
+      { error: 'Conflicto: el mismo idempotency_key fue usado con un pedido diferente.', code: 'IDEMPOTENCY_CONFLICT' },
       409
     );
   }
@@ -333,6 +347,17 @@ function safeErrorName(error) {
   return error && typeof error === 'object' && typeof error.name === 'string'
     ? error.name
     : 'Error';
+}
+
+// El mensaje de un error de D1 (p.ej. "no such column: ga_client_id") es
+// información estructural del esquema, no PII ni datos del comprador — es
+// justo lo que hace falta para diagnosticar sin adivinar, y sólo va al log
+// del servidor (nunca a la respuesta del cliente). Mismo patrón ya usado en
+// functions/_shared/r2-access.js.
+function safeErrorMessage(error) {
+  return error && typeof error === 'object' && typeof error.message === 'string'
+    ? error.message.slice(0, 200)
+    : 'error';
 }
 
 function json(data, status = 200, extraHeaders = {}) {

@@ -1,80 +1,32 @@
 ---
-const benefits = [
-  'Hasta 12 cuotas con Mercado Pago',
-  '12% menos por transferencia',
-  'Envío $250 · gratis desde $1.500',
-  'Entrega coordinada en Montevideo',
-];
+// HOME-ARTE-1: la barra deja de rotar beneficios y prioriza una sola promesa
+// comercial en el primer pantallazo. Los otros tres claims quedan declarados
+// para reubicarlos en el bloque comercial del Lote 3:
+// - Hasta 12 cuotas con Mercado Pago
+// - 12% menos por transferencia
+// - Entrega coordinada en Montevideo
 ---
 
-<aside class="announcement-bar" aria-label="Beneficios de compra">
-  <div class="announcement-track">
-    <div class="announcement-set">
-      {benefits.map(benefit => (
-        <span class="announcement-item"><b aria-hidden="true">·</b>{benefit}</span>
-      ))}
-    </div>
-    <div class="announcement-set" aria-hidden="true">
-      {benefits.map(benefit => (
-        <span class="announcement-item"><b aria-hidden="true">·</b>{benefit}</span>
-      ))}
-    </div>
-  </div>
+<aside class="announcement-bar" aria-label="Beneficio de envío">
+  <span>Envío gratis desde $1.500</span>
 </aside>
 
 <style>
   .announcement-bar {
     width: 100%;
-    min-height: 36px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
     overflow: hidden;
-    background: var(--salmon);
-    color: var(--ink);
-    border-bottom: 1px solid rgba(24, 18, 14, 0.14);
-    font-size: 0.76rem;
-    font-weight: 800;
-    line-height: 1.2;
-  }
-
-  .announcement-track {
-    display: flex;
-    align-items: center;
-    width: max-content;
-    min-height: 36px;
-    animation: amado-benefits-scroll 28s linear infinite;
-    will-change: transform;
-  }
-
-  .announcement-set {
-    display: flex;
-    align-items: center;
-    flex: none;
-    gap: 2rem;
-    padding-right: 1rem;
-  }
-
-  .announcement-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
+    background: #1F1B18;
+    color: #FAF6EF;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
     white-space: nowrap;
-  }
-
-  .announcement-item b {
-    font-size: 1rem;
-    line-height: 0;
-  }
-
-  .announcement-bar:hover .announcement-track {
-    animation-play-state: paused;
-  }
-
-  @keyframes amado-benefits-scroll {
-    to { transform: translateX(-50%); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .announcement-bar { overflow-x: auto; }
-    .announcement-track { animation: none; will-change: auto; }
-    .announcement-set[aria-hidden='true'] { display: none; }
   }
 </style>

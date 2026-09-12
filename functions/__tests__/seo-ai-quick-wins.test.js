@@ -8,17 +8,19 @@ import { onRequest as renderSitemap, STATIC_SITEMAP_ENTRIES } from '../sitemap-p
 const root = (rel) => fileURLToPath(new URL('../../' + rel, import.meta.url));
 const read = (rel) => readFileSync(root(rel), 'utf8');
 
-test('la portada identifica a Amado Libros y enlaza las páginas de autoridad', () => {
+test('la portada V2 identifica a Amado Libros y conecta sus páginas de autoridad', () => {
   const home = read('astro-front/src/pages/index.astro');
-  const guides = read('astro-front/src/components/GuideAccess.astro');
+  const header = read('astro-front/src/components/HomeV2Header.astro');
+  const ideas = read('astro-front/src/components/HomeV2Ideas.astro');
+  const request = read('astro-front/src/pages/pedir-libro.astro');
 
   assert.match(home, /'@type': 'OnlineStore'/);
   assert.match(home, /'@type': 'WebSite'/);
   assert.match(home, /jsonLd=\{jsonLd\}/);
-  assert.match(home, /<GuideAccess \/>/);
-  assert.match(guides, /\/como-identificar-edicion-correcta-isbn/);
-  assert.match(guides, /\/libros-agotados-importados-uruguay/);
-  assert.match(guides, /\/quienes-somos/);
+  assert.match(home, /<HomeV2Ideas \/>/);
+  assert.match(ideas, /\/libros-agotados-importados-uruguay/);
+  assert.match(header, /\/quienes-somos\//);
+  assert.match(request, /\/como-identificar-edicion-correcta-isbn\//);
 });
 
 test('el formulario de búsqueda ofrece ayuda contextual antes del envío', () => {
@@ -44,12 +46,13 @@ test('el sitemap declara lastmod sólo para páginas con revisión significativa
   const guide = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc.endsWith('/como-identificar-edicion-correcta-isbn/'));
   const policies = STATIC_SITEMAP_ENTRIES.find(entry => entry.loc.endsWith('/politicas/'));
 
-  assert.equal(home?.lastmod, '2026-08-12');
+  assert.equal(home?.lastmod, '2026-08-27');
   assert.equal(guide?.lastmod, '2026-08-12');
   assert.equal(policies?.lastmod, undefined);
 
   const response = await renderSitemap();
   const xml = await response.text();
+  assert.match(xml, /<loc>https:\/\/www\.amadolibros\.com\/<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/);
   assert.match(xml, /<loc>https:\/\/www\.amadolibros\.com\/como-identificar-edicion-correcta-isbn\/<\/loc>\s*<lastmod>2026-08-12<\/lastmod>/);
   assert.doesNotMatch(xml, /<loc>https:\/\/www\.amadolibros\.com\/politicas\/<\/loc>\s*<lastmod>/);
 });

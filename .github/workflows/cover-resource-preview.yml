@@ -1,0 +1,64 @@
+name: Cover resource incident acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/_shared/cover-manifest-stream.js'
+      - 'functions/_shared/preview-cover.js'
+      - 'functions/preview-cover/**'
+      - 'functions/feed.xml.js'
+      - 'functions/_vendor/streamparser-json/**'
+      - 'worker-sync/cover-resource-preview*'
+      - 'scripts/deploy-cover-preview.sh'
+      - 'scripts/cover-resource-check.mjs'
+      - '.github/workflows/cover-resource-preview.yml'
+permissions:
+  contents: read
+concurrency:
+  group: cover-resource-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Verify on Cloudflare with production data (read only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          INCIDENT_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKER_NAME: amado-cover-fix-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cover-resource
+          INCIDENT_TOKEN=$(openssl rand -hex 32)
+          export INCIDENT_TOKEN
+          echo "::add-mask::$INCIDENT_TOKEN"
+          cleanup() {
+            curl -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME" \
+              > artifacts/cover-resource/cleanup.json
+          }
+          trap cleanup EXIT
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/cover-resource-preview.wrangler.toml \
+            --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA")
+          echo "$OUTPUT"
+          INCIDENT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$INCIDENT_URL"
+          export INCIDENT_URL
+          printf '%s' "$INCIDENT_TOKEN" | npx wrangler@3.114.17 secret put INCIDENT_TOKEN \
+            --config worker-sync/cover-resource-preview.wrangler.toml --name "$WORKER_NAME"
+          node scripts/cover-resource-check.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cover-resource-${{ github.run_id }}
+          path: artifacts/cover-resource/
+          if-no-files-found: error
+          retention-days: 90

@@ -167,21 +167,29 @@ test('el showcase usa copy propio, decisión de compra y hechos verificables', (
   assert.equal(config.sources[0].provider, 'Editorial Verbo Divino');
 });
 
-test('la ficha SSR y su capa automática muestran enriquecimiento sin autor inventado', () => {
+test('la ficha SSR curada conserva el enriquecimiento sin duplicarse ni alterar el título', () => {
   const item = applyBookEnrichment(RAW_ITEM);
   const baseHtml = renderPage(item, 'la-biblia-palabra-de-vida-verbo-divino', false, '', '', []);
   const html = enrichAutomaticProductShowcaseHtml(baseHtml, item.id, {
     classificationTags: ['biblia'],
   });
+  assert.equal(html, baseHtml);
   assert.doesNotMatch(html, /desconocid/i);
+  assert.match(html, new RegExp(`<title>${RAW_ITEM.title} \\| Amado Libros<\\/title>`));
+  assert.match(html, new RegExp(`<h1>${RAW_ITEM.title}<\\/h1>`));
+  assert.match(
+    html,
+    /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libro\/MLU724888358\/la-biblia-palabra-de-vida-verbo-divino">/,
+  );
   assert.match(html, /Qué contiene esta edición de La Biblia Palabra de Vida/);
   assert.match(html, /Editorial Verbo Divino/);
   assert.match(html, /1\.600 páginas/);
-  assert.match(html, /Fuentes bibliográficas consultadas/);
-  assert.match(html, /Editorial Verbo Divino/);
+  assert.equal((html.match(/class="editorial-enrichment"/g) || []).length, 1);
+  assert.doesNotMatch(html, /class="product-showcase"/);
+  assert.doesNotMatch(html, /Fuentes bibliográficas consultadas/);
   assert.doesNotMatch(html, /Casa del Libro/);
   assert.doesNotMatch(html, /casadellibro\.com/);
-  assert.match(html, /¿Buscás otra Biblia o una edición específica\?/);
+  assert.doesNotMatch(html, /¿Buscás otra Biblia o una edición específica\?/);
   assert.doesNotMatch(html, /Cómo verificar una edición por ISBN/);
 
   const schemas = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]

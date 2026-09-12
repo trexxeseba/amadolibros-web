@@ -24,9 +24,15 @@ interface Book {
 
 interface Props {
   book: Book;
+  loading?: 'eager' | 'lazy';
+  fetchPriority?: 'high' | 'auto' | 'low';
 }
 
-const { book } = Astro.props;
+const {
+  book,
+  loading = 'lazy',
+  fetchPriority = 'auto',
+} = Astro.props;
 
 // Debe coincidir con FREE_SHIPPING_THRESHOLD en functions/api/_orders_logic.js
 // La tarjeta y el checkout deben comunicar y aplicar el mismo umbral.
@@ -77,7 +83,8 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
       srcset={cover.srcset || undefined}
       sizes={cover.sizes || undefined}
       alt=""
-      loading="lazy"
+      loading={loading}
+      fetchpriority={fetchPriority}
       decoding="async"
       width="280"
       height="373"

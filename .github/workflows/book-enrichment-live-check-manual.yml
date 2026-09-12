@@ -1,0 +1,69 @@
+name: Book enrichment live check — manual (any base URL)
+
+# Verificación HTTP real y puntual de fichas enriquecidas contra un
+# entorno con red completa (GitHub Actions), reutilizando el mismo
+# script que corre en Preview (scripts/seo/book-enrichment-live-check.mjs)
+# pero apuntado a la URL que se indique — por defecto, Producción.
+# Solo lectura: no escribe nada en el catálogo ni en el registry.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: URL base a verificar (sin barra final)
+        required: true
+        default: https://www.amadolibros.com
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  live-check:
+    name: Run book-enrichment-live-check against base_url
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Run live check
+        env:
+          BOOK_ENRICHMENT_BASE_URL: ${{ inputs.base_url }}
+          BOOK_ENRICHMENT_OUTPUT_DIR: artifacts/book-enrichment-live-check-manual
+        run: node scripts/seo/book-enrichment-live-check.mjs
+
+      - name: Publish job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# Book enrichment live check — ${{ inputs.base_url }}"
+            echo
+            if [ -f artifacts/book-enrichment-live-check-manual/book-enrichment-live-check.json ]; then
+              node -e "
+                const r = require('./artifacts/book-enrichment-live-check-manual/book-enrichment-live-check.json');
+                console.log('- verified:', r.verified);
+                console.log('- not_applicable:', r.not_applicable);
+                console.log('- failed:', r.failed);
+                console.log();
+                console.log('| ISBN | product_ids | status | failures |');
+                console.log('|---|---|---|---|');
+                for (const rep of r.reports) {
+                  console.log('| ' + rep.isbn + ' | ' + (rep.product_ids||[]).join(', ') + ' | ' + rep.status + ' | ' + (rep.failures||[]).join('; ') + ' |');
+                }
+              "
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-enrichment-live-check-manual-${{ github.run_id }}
+          path: artifacts/book-enrichment-live-check-manual/
+          if-no-files-found: error
+          retention-days: 14

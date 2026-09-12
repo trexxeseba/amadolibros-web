@@ -20,18 +20,23 @@ test('el evento cubre enlaces y aperturas programáticas de WhatsApp', () => {
   assert.match(analytics, /'whatsapp_click'/);
   assert.match(analytics, /'wa\.me'/);
   assert.match(analytics, /'api\.whatsapp\.com'/);
+  assert.match(analytics, /'web\.whatsapp\.com'/);
   assert.match(bookRequest, /trackWhatsApp\(\{[\s\S]*book_request_form/);
   assert.match(cart, /trackWhatsApp\(\{ ctaLocation: 'checkout_order' \}\)/);
   assert.match(searchOverlay, /trackWhatsApp\(\{ ctaLocation: 'search_overlay' \}\)/);
 });
 
-test('no envía la URL de WhatsApp, el mensaje ni parámetros de búsqueda a GA4', () => {
+test('no envía la URL de WhatsApp, el mensaje, el teléfono ni parámetros de búsqueda a GA4', () => {
   const eventCall = analytics.slice(analytics.indexOf("window.gtag('event', 'whatsapp_click'"));
-  assert.doesNotMatch(eventCall, /link_url|searchParams|location\.search|href:/);
+  assert.doesNotMatch(eventCall, /link_url|searchParams|location\.search|href:|phone/);
   assert.match(analytics, /page_type/);
   assert.match(analytics, /cta_location/);
   assert.match(analytics, /product_id/);
   assert.match(analytics, /topic/);
+  assert.match(analytics, /origen/);
+  assert.match(analytics, /\bruta\b/);
+  assert.match(analytics, /libro_id/);
+  assert.match(analytics, /transport_type = 'beacon'/);
   assert.match(analytics, /allowedParameters/);
   assert.match(baseLayout, /allowedParameters/);
 });
@@ -89,9 +94,102 @@ test('el payload real usa contexto estable y descarta la query sensible', () => 
     page_type: 'specialty',
     cta_location: 'hero_principal',
     topic: 'oftalmologia',
+    origen: 'otro',
+    ruta: '/especialidades/oftalmologia',
+    libro_id: '',
+    transport_type: 'beacon',
   });
   assert.equal(JSON.stringify(params).includes('consulta-privada'), false);
   assert.equal(typeof listeners.click, 'function');
+});
+
+// GA4-WHATSAPP-EVENT-1: origen/ruta/libro_id se agregan al whatsapp_click ya
+// existente (sin reemplazar page_type/cta_location/product_id/
+// availability_type/topic, para no romper nada ya armado en GA4 sobre esos
+// campos) y con transport_type=beacon para que el evento llegue aunque el
+// clic navegue fuera del sitio de inmediato.
+test('el listener delegado detecta los tres dominios de WhatsApp y arma origen/ruta/libro_id con transporte beacon', () => {
+  function fireWhatsAppClick(pathname, { href, hasStockBadge = false, inHeader = false } = {}) {
+    const listeners = {};
+    const window = {
+      location: {
+        hostname: 'www.amadolibros.com',
+        pathname,
+        href: `https://www.amadolibros.com${pathname}`,
+      },
+      dataLayer: [],
+    };
+    const document = {
+      querySelector: (selector) => (selector === '.badge.in-stock' && hasStockBadge ? {} : null),
+      createElement: () => ({}),
+      head: { appendChild: () => {} },
+      addEventListener: (name, handler) => { listeners[name] = handler; },
+    };
+    runInNewContext(analytics, { document, window, URL, Set, Date, Object, String, encodeURIComponent });
+
+    const anchor = {
+      href,
+      closest: (selector) => (selector === 'header' && inHeader ? {} : null),
+    };
+    listeners.click({ target: { closest: (selector) => (selector === 'a[href]' ? anchor : null) } });
+
+    const last = window.dataLayer.at(-1);
+    if (!last || Array.from(last)[0] !== 'event') return null;
+    const [, eventName, params] = Array.from(last);
+    return eventName === 'whatsapp_click' ? { ...params } : null;
+  }
+
+  const whatsappHrefs = [
+    'https://wa.me/59800000000',
+    'https://api.whatsapp.com/send?phone=59800000000',
+    'https://web.whatsapp.com/send?phone=59800000000',
+  ];
+  for (const href of whatsappHrefs) {
+    const params = fireWhatsAppClick('/', { href });
+    assert.ok(params, `no disparó whatsapp_click para ${href}`);
+    assert.equal(params.origen, 'home');
+    assert.equal(params.ruta, '/');
+    assert.equal(params.libro_id, '');
+    assert.equal(params.transport_type, 'beacon');
+  }
+
+  // un enlace que no es de WhatsApp no dispara nada.
+  assert.equal(fireWhatsAppClick('/', { href: 'https://example.com' }), null);
+
+  assert.equal(
+    fireWhatsAppClick('/libros/infantil-juvenil', { href: 'https://wa.me/1' }).origen,
+    'catalogo',
+  );
+  assert.equal(
+    fireWhatsAppClick('/catalogo', { href: 'https://wa.me/1' }).origen,
+    'catalogo',
+  );
+
+  const ficha = fireWhatsAppClick('/libro/MLU1453287196/grandes-clasicos', {
+    href: 'https://wa.me/1',
+    hasStockBadge: true,
+  });
+  assert.equal(ficha.origen, 'ficha');
+  assert.equal(ficha.libro_id, 'MLU1453287196');
+  assert.equal(ficha.ruta, '/libro/MLU1453287196/grandes-clasicos');
+
+  const fichaPausada = fireWhatsAppClick('/libro/MLU1453287196/grandes-clasicos', {
+    href: 'https://wa.me/1',
+    hasStockBadge: false,
+  });
+  assert.equal(fichaPausada.origen, 'ficha_pausada');
+  assert.equal(fichaPausada.libro_id, 'MLU1453287196');
+
+  const header = fireWhatsAppClick('/libro/MLU1453287196/grandes-clasicos', {
+    href: 'https://wa.me/1',
+    inHeader: true,
+  });
+  assert.equal(header.origen, 'header');
+  assert.equal(header.libro_id, 'MLU1453287196');
+
+  const otro = fireWhatsAppClick('/contacto', { href: 'https://wa.me/1' });
+  assert.equal(otro.origen, 'otro');
+  assert.equal(otro.libro_id, '');
 });
 
 test('trackCommerce normaliza el producto y no duplica purchase al recargar', () => {
@@ -139,6 +237,89 @@ test('trackCommerce normaliza el producto y no duplica purchase al recargar', ()
   assert.equal(params.currency, 'UYU');
   assert.equal(params.items[0].item_id, 'MLU123');
   assert.equal(params.items[0].price, 1100);
+});
+
+// BLOQUEANTE PR #310 — punto 1: checkout_error mide en qué etapa se traba
+// un comprador, sin ningún dato personal. stage/payment_method/
+// delivery_type sólo aceptan valores de una lista cerrada; error_code pasa
+// por el mismo safeToken() ya usado en cta_location/topic — nunca se envía
+// public_code, nombre, email, teléfono, dirección ni el texto del error.
+
+test('carrito.astro sólo pasa codes internos a trackCheckoutError, nunca error.message ni datos de la orden', () => {
+  assert.match(analytics, /'checkout_error'/);
+  assert.match(analytics, /CHECKOUT_ERROR_STAGES/);
+  assert.match(analytics, /order_create.*preference_create.*transfer_options/);
+  assert.match(cart, /trackCheckoutErrorEvent\('order_create', orderData\.code \|\| 'ORDER_CREATE_FAILED', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\('order_create', 'NETWORK_ERROR', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\('preference_create', mpData\.code \|\| 'PREFERENCE_CREATE_FAILED', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\('preference_create', 'NETWORK_ERROR', 'mercadopago'\)/);
+  assert.match(cart, /trackCheckoutErrorEvent\(checkoutErrorStage, error && error\.code, 'transfer'\)/);
+  // Ninguno de esos llamados pasa error.message, public_code ni datos del comprador.
+  const wrapperStart = cart.indexOf('function trackCheckoutErrorEvent');
+  const wrapperEnd = cart.indexOf('\n    }', wrapperStart);
+  const wrapperBody = cart.slice(wrapperStart, wrapperEnd);
+  assert.doesNotMatch(wrapperBody, /\.message|public_code|buyer|email|phone|address/i);
+});
+
+test('trackCheckoutError sólo emite con un stage de la lista cerrada, y satura/sanea todo lo demás', () => {
+  const window = {
+    location: { hostname: 'www.amadolibros.com', pathname: '/carrito', href: 'https://www.amadolibros.com/carrito' },
+    dataLayer: [],
+  };
+  const document = {
+    querySelector: () => null,
+    createElement: () => ({}),
+    head: { appendChild: () => {} },
+    addEventListener: () => {},
+  };
+  runInNewContext(analytics, { document, window, URL, Set, Date, Object, String, encodeURIComponent });
+
+  // stage inválido: no emite nada.
+  assert.equal(
+    window.AmadoAnalytics.trackCheckoutError({ stage: 'not_a_real_stage', errorCode: 'X' }),
+    false,
+  );
+  assert.equal(window.dataLayer.filter((e) => Array.from(e)[1] === 'checkout_error').length, 0);
+
+  // stage válido, con errorCode/paymentMethod/deliveryType válidos: pasan tal cual.
+  assert.equal(window.AmadoAnalytics.trackCheckoutError({
+    stage: 'order_create',
+    errorCode: 'ORDERS_DB_WRITE_FAILED',
+    paymentMethod: 'mercadopago',
+    deliveryType: 'pickup',
+  }), true);
+  const [, eventName, params] = Array.from(window.dataLayer.at(-1));
+  assert.equal(eventName, 'checkout_error');
+  assert.deepEqual({ ...params }, {
+    stage: 'order_create',
+    error_code: 'ORDERS_DB_WRITE_FAILED',
+    payment_method: 'mercadopago',
+    delivery_type: 'pickup',
+  });
+
+  // payment_method/delivery_type fuera de la lista cerrada: se omiten, no se inventan.
+  window.AmadoAnalytics.trackCheckoutError({
+    stage: 'transfer_options',
+    errorCode: 'TRANSFER_OPTIONS_FAILED',
+    paymentMethod: 'bitcoin',
+    deliveryType: 'teletransporte',
+  });
+  const [, , params2] = Array.from(window.dataLayer.at(-1));
+  assert.deepEqual({ ...params2 }, { stage: 'transfer_options', error_code: 'TRANSFER_OPTIONS_FAILED' });
+
+  // Texto libre (no tiene forma de code interno) se descarta ENTERO, no se
+  // "limpia" — un sanitizador que preserva dígitos dejaría pasar un
+  // teléfono pegado en el medio del texto; acá directamente no hay
+  // error_code en el evento.
+  window.AmadoAnalytics.trackCheckoutError({
+    stage: 'preference_create',
+    errorCode: 'no such column: buyer_email at ana@example.com, tel 099123456',
+  });
+  const [, , params3] = Array.from(window.dataLayer.at(-1));
+  assert.equal(JSON.stringify(params3).includes('@'), false);
+  assert.equal(JSON.stringify(params3).includes('099123456'), false);
+  assert.deepEqual({ ...params3 }, { stage: 'preference_create' });
+  assert.equal('error_code' in params3, false);
 });
 
 test('expone client_id y session_id anónimos para atribuir la compra server-side', async () => {

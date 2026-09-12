@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HomeV2Header from '../../components/HomeV2Header.astro';
+import HomeV2Hero from '../../components/HomeV2Hero.astro';
+import HomeV2Topics from '../../components/HomeV2Topics.astro';
+import HomeV2Shelf from '../../components/HomeV2Shelf.astro';
+import HomeV2Ideas from '../../components/HomeV2Ideas.astro';
+import Footer from '../../components/Footer.astro';
+import SearchOverlay from '../../components/SearchOverlay.astro';
+import CatalogSearchOverlay from '../../components/CatalogSearchOverlay.astro';
+---
+
+<BaseLayout
+  title="Portada V2 — Amado Libros"
+  description="Preview no indexable de la nueva dirección editorial de Amado Libros."
+  indexable={false}
+  analytics={false}
+>
+  <HomeV2Header />
+  <main class="home-v2-main">
+    <HomeV2Hero />
+    <HomeV2Topics />
+    <HomeV2Shelf />
+    <HomeV2Ideas />
+  </main>
+  <Footer />
+  <SearchOverlay />
+  <CatalogSearchOverlay />
+</BaseLayout>
+
+<style is:global>
+  body {
+    padding-bottom: 0 !important;
+    background: #fffaf3;
+  }
+
+  .home-v2-main { overflow: clip; }
+
+  ::selection {
+    background: #ef6844;
+    color: #1b1714;
+  }
+</style>

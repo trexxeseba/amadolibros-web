@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'worker-sync/**'
+      - 'functions/_shared/cover-public-index.js'
       - '.github/workflows/deploy-worker-sync.yml'
   workflow_dispatch:
     inputs:

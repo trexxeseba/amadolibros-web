@@ -37,8 +37,36 @@ function buildMetaDescription(item, displayTitle) {
   );
 }
 
+/**
+ * Las ediciones `auto_publish` ya salen del renderer SSR con su bloque
+ * editorial, título SEO y meta description verificados. La vidriera automática
+ * se diseñó para completar fichas sin copy editorial; volver a aplicarla sobre
+ * una ficha curada duplica contenido y pisa esos metadatos con texto genérico.
+ *
+ * `audienceCopy()` de la vidriera automática siempre devuelve null. Por eso la
+ * combinación audiencia sustancial + fuentes + párrafos identifica de forma
+ * conservadora un copy editorial curado sin acoplar este módulo al registro.
+ */
+export function hasCuratedEditorialCopy(config) {
+  const paragraphs = Array.isArray(config?.summary)
+    ? config.summary.map(clean).filter(Boolean)
+    : [];
+  const sources = Array.isArray(config?.sources)
+    ? config.sources.filter(Boolean)
+    : [];
+  return paragraphs.some(value => value.length >= 80) &&
+    clean(config?.audience).length >= 80 &&
+    sources.length >= 1;
+}
+
 export function applyShowcaseTitleQuality(config, item) {
   if (!config || typeof config !== 'object' || !item || typeof item !== 'object') return config;
+
+  // El SSR ya produjo la versión superior. Devolver null hace que el
+  // middleware conserve el HTML tal cual, sin sumar otra ficha ni reescribir
+  // title, meta, Open Graph, Twitter o JSON-LD.
+  if (hasCuratedEditorialCopy(config)) return null;
+
   const display = deriveBookDisplayTitle(item);
   if (!display.title) return config;
 

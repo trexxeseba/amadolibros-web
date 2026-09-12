@@ -92,6 +92,9 @@ bucket_name = "amadolibros-images-production"
 # el workflow lo sincroniza como secret cifrado antes de cada deploy.
 [env.production.vars]
 APP_ENV           = "production"
+# QW2: preflight real 2026-09-06 conserva 3697/3697 ofertas; secundarios
+# sin master >=500 se omiten del feed/JSON-LD, sin ocultar galería web.
+COVER_GOOGLE_QUALITY_GATE = "true"
 CHECKOUT_ENABLED  = "true"
 CANONICAL_ORIGIN  = "https://www.amadolibros.com"
 ALLOWED_HOSTS     = "amadolibros.com,www.amadolibros.com"

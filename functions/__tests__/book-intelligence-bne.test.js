@@ -10,7 +10,21 @@ import {
 const ISBN = '9788496836693';
 const OTHER_ISBN = '9780194527552';
 
-function marcRecord({ isbn = ISBN, title = 'Padres fuertes, hijas felices', author = 'Meeker, Meg' } = {}) {
+const LANGUAGE_041_DEFAULT = '<datafield tag="041" ind1="0" ind2=" "><subfield code="a">spa</subfield></datafield>';
+
+// Construye un 041 con los subcampos indicados, respetando el orden en que
+// se pasan: `subfields([['a','spa'],['h','eng']])`.
+function language041(subfields, ind1 = '1') {
+  const body = subfields.map(([code, value]) => `<subfield code="${code}">${value}</subfield>`).join('');
+  return `<datafield tag="041" ind1="${ind1}" ind2=" ">${body}</datafield>`;
+}
+
+function marcRecord({
+  isbn = ISBN,
+  title = 'Padres fuertes, hijas felices',
+  author = 'Meeker, Meg',
+  languageField = LANGUAGE_041_DEFAULT,
+} = {}) {
   return `
     <record xmlns="http://www.loc.gov/MARC21/slim">
       <leader>00000nam a2200000 i 4500</leader>
@@ -26,7 +40,7 @@ function marcRecord({ isbn = ISBN, title = 'Padres fuertes, hijas felices', auth
         <subfield code="c">2008.</subfield>
       </datafield>
       <datafield tag="300" ind1=" " ind2=" "><subfield code="a">304 p. ;</subfield></datafield>
-      <datafield tag="041" ind1="0" ind2=" "><subfield code="a">spa</subfield></datafield>
+      ${languageField}
       <datafield tag="520" ind1=" " ind2=" ">
         <subfield code="a">Registro bibliográfico con una descripción suficientemente extensa para comprobar la extracción semántica del adaptador.</subfield>
       </datafield>
@@ -80,6 +94,58 @@ test('parser BNE revalida 020$a y extrae evidencia bibliográfica fuerte', () =>
   assert.equal(record.topics.length, 3);
   assert.equal(record.raw_quality.exact_isbn, true);
   assert.equal(record.raw_quality.catalog, 'BNE');
+});
+
+// Regresión de B11.2 lote 03: el adaptador fusionaba 041 $a, $d y $h, así
+// que una traducción al español desde otro idioma se publicaba como si el
+// libro fuera bilingüe ("Español, Inglés"). Según MARC 21, $a es el idioma
+// del texto de esta edición, $h el de la obra original y $d el del contenido
+// cantado o hablado: sólo $a describe lo que el lector recibe.
+function languageOf(languageField) {
+  const [record] = parseBneEvidence(sruResponse([marcRecord({ languageField })]), ISBN);
+  return record.language;
+}
+
+test('041$h (idioma de la obra original) no se mezcla: una traducción es sólo Español', () => {
+  assert.equal(languageOf(language041([['a', 'spa'], ['h', 'eng']])), 'Español');
+  assert.equal(languageOf(language041([['a', 'spa'], ['h', 'ita']])), 'Español');
+  assert.equal(languageOf(language041([['a', 'spa'], ['h', 'fre']])), 'Español');
+  assert.equal(languageOf(language041([['a', 'spa'], ['h', 'cat']])), 'Español');
+});
+
+test('041$a repetido sí indica una edición realmente multilingüe', () => {
+  assert.equal(languageOf(language041([['a', 'spa'], ['a', 'eng']], '0')), 'Español, Inglés');
+  assert.equal(languageOf(language041([['a', 'spa'], ['a', 'cat']], '0')), 'Español, Catalán');
+});
+
+test('041$d (cantado o hablado) no se usa en un libro impreso', () => {
+  assert.equal(languageOf(language041([['a', 'spa'], ['d', 'eng']])), 'Español');
+  assert.equal(languageOf(language041([['a', 'spa'], ['d', 'eng'], ['h', 'ger']])), 'Español');
+});
+
+test('ningún código crudo de idioma llega al dato visible', () => {
+  // El caso real que disparó la corrección: 041 1#$aspa$hdut publicaba
+  // "Español, dut" porque `dut` no tenía etiqueta y pasaba tal cual.
+  assert.equal(languageOf(language041([['a', 'spa'], ['h', 'dut']])), 'Español');
+  assert.equal(languageOf(language041([['a', 'dut']], '0')), 'Neerlandés');
+
+  // Un código sin etiqueta conocida se descarta: preferimos no informar el
+  // idioma antes que mostrar el código crudo en una ficha.
+  assert.equal(languageOf(language041([['a', 'zzz']], '0')), null);
+  assert.equal(languageOf(language041([['a', 'spa'], ['a', 'zzz']], '0')), 'Español');
+
+  for (const field of [
+    language041([['a', 'spa'], ['h', 'eng']]),
+    language041([['a', 'spa'], ['a', 'eng']], '0'),
+    language041([['a', 'dut']], '0'),
+    language041([['a', 'zzz']], '0'),
+  ]) {
+    const value = languageOf(field);
+    if (value === null) continue;
+    for (const code of ['dut', 'eng', 'spa', 'fre', 'ger', 'ita', 'cat', 'zzz']) {
+      assert.equal(new RegExp(`\\b${code}\\b`, 'i').test(value), false, `${value} contiene ${code}`);
+    }
+  }
 });
 
 test('un registro sin el ISBN solicitado nunca se convierte en evidencia', () => {

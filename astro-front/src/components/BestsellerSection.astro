@@ -47,7 +47,13 @@ try {
         <div class="bs-inner">
           <h2 class="bs-heading">Incorporaciones recientes</h2>
           <div class="bs-grid">
-            {books.map(book => <BookCard book={book} />)}
+            {books.map((book, index) => (
+              <BookCard
+                book={book}
+                loading={index < 2 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+              />
+            ))}
           </div>
           <a class="bs-see-all" href="/catalogo">Ver todo el catálogo →</a>
         </div>

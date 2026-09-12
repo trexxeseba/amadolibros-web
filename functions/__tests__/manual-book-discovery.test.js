@@ -7,39 +7,45 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = relativePath => readFileSync(path.join(ROOT, relativePath), 'utf8');
 const home = read('astro-front/src/pages/index.astro');
-const discovery = read('astro-front/src/components/BookDiscovery.astro');
+const hero = read('astro-front/src/components/HomeV2Hero.astro');
+const topics = read('astro-front/src/components/HomeV2Topics.astro');
+const shelf = read('astro-front/src/components/HomeV2Shelf.astro');
+const ideas = read('astro-front/src/components/HomeV2Ideas.astro');
 const requestPage = read('astro-front/src/pages/pedir-libro.astro');
 const footer = read('astro-front/src/components/Footer.astro');
 
-test('la portada incorpora descubrimiento por preguntas mobile-first', () => {
-  assert.match(home, /import BookDiscovery/);
-  assert.match(home, /<BookDiscovery\s*\/>/);
-  assert.match(discovery, /¿Qué libro querés que encontremos\?/);
-  assert.equal((discovery.match(/type: '/g) || []).length, 6);
-  assert.match(discovery, /grid-template-columns: 1fr/);
-  assert.match(discovery, /@media \(min-width: 650px\)/);
-  assert.match(discovery, /@media \(min-width: 980px\)/);
+test('la portada V2 incorpora descubrimiento editorial mobile-first', () => {
+  assert.match(home, /import HomeV2Topics/);
+  assert.match(home, /<HomeV2Topics\s*\/>/);
+  assert.match(topics, /Todo empieza por una curiosidad\./);
+  assert.equal((topics.match(/title: '/g) || []).length, 8);
+  assert.match(topics, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(topics, /@media \(min-width: 700px\)/);
+  assert.match(topics, /@media \(min-width: 1100px\)/);
 });
 
-test('la portada prioriza búsqueda con categorías integradas y libros antes del descubrimiento asistido', () => {
-  const heroPosition = home.indexOf('<Hero />');
-  const booksPosition = home.indexOf('<BestsellerSection />');
-  const discoveryPosition = home.indexOf('<BookDiscovery />');
-  const hero = read('astro-front/src/components/Hero.astro');
+test('la portada ordena búsqueda, temas, libros e ideas en un recorrido coherente', () => {
+  const heroPosition = home.indexOf('<HomeV2Hero />');
+  const topicsPosition = home.indexOf('<HomeV2Topics />');
+  const booksPosition = home.indexOf('<HomeV2Shelf />');
+  const ideasPosition = home.indexOf('<HomeV2Ideas />');
 
   assert.ok(heroPosition >= 0, 'falta el buscador principal');
-  assert.match(hero, /import CategoryAccess/);
-  assert.match(hero, /<CategoryAccess \/>/);
-  assert.ok(booksPosition > heroPosition, 'los libros deben seguir al hero de búsqueda y categorías');
-  assert.ok(discoveryPosition > booksPosition, 'las preguntas deben aparecer después de los libros');
+  assert.ok(topicsPosition > heroPosition, 'los temas deben seguir al hero');
+  assert.ok(booksPosition > topicsPosition, 'la estantería debe seguir a los temas');
+  assert.ok(ideasPosition > booksPosition, 'Amado Lee debe seguir a los libros');
+  assert.match(hero, /una persona revisa opciones y lo busca por encargo/);
+  assert.match(shelf, /Tapas que piden que las mires\./);
+  assert.match(ideas, /Ideas, guías y caminos entre libros\./);
 });
 
-test('las preguntas cubren diferenciales concretos y conducen al formulario', () => {
-  for (const type of ['agotado', 'novedades-tecnicas', 'digital', 'antiguo', 'tapa', 'bibliografia']) {
-    assert.match(discovery, new RegExp(`type: '${type}'`));
+test('los accesos editoriales cubren diferenciales concretos y conducen al formulario', () => {
+  for (const topic of ['Literatura y ficción', 'Psicología', 'Tarot y oráculos', 'Medicina y salud', 'Infantiles y juveniles', 'Biblias y espiritualidad', 'Idiomas', 'Libros agotados']) {
+    assert.match(topics, new RegExp(topic));
   }
-  assert.match(discovery, /href={`\/pedir-libro\/\?tipo=\$\{question\.type\}`}/);
-  assert.match(discovery, /una persona de Amado Libros hace la búsqueda/i);
+  assert.match(hero, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(ideas, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(ideas, /No es una respuesta automática/i);
 });
 
 test('el pedido ordena los datos y termina en WhatsApp sin guardar información', () => {

@@ -43,6 +43,34 @@ jobs:
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
         run: npm run build
 
+      - name: Run universal image pipeline in R2 Preview
+        if: github.head_ref == 'codex/catalog-image-system'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SEED_NAME: amado-qw2-seed-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          mkdir -p artifacts/image-system
+          PREVIEW_SEED_TOKEN=$(openssl rand -hex 32)
+          echo "::add-mask::$PREVIEW_SEED_TOKEN"
+          cleanup() {
+            curl -fsS -X DELETE \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$SEED_NAME" \
+              > artifacts/image-system/temporary-worker-cleanup.json
+          }
+          trap cleanup EXIT
+          OUTPUT=$(npx wrangler@3.114.17 deploy --config worker-sync/image-system-preview.wrangler.toml --name "$SEED_NAME")
+          echo "$OUTPUT"
+          SEED_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$SEED_URL"
+          printf '%s' "$PREVIEW_SEED_TOKEN" | npx wrangler@3.114.17 secret put PREVIEW_SEED_TOKEN \
+            --config worker-sync/image-system-preview.wrangler.toml --name "$SEED_NAME"
+          curl -fsS --retry 8 --retry-all-errors --retry-delay 3 --max-time 300 \
+            -X POST -H "Authorization: Bearer $PREVIEW_SEED_TOKEN" "$SEED_URL" \
+            > artifacts/image-system/r2-seed.json
+          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('artifacts/image-system/r2-seed.json')); if(r.entries.length===0 || r.result.status!=='completed')process.exit(1); console.log(JSON.stringify({bucket:r.bucket,verified:r.entries.length}));"
+
       - name: Deploy isolated PR Preview
         id: deploy
         env:
@@ -64,14 +92,49 @@ jobs:
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         run: |
+          # Se espera por TODAS las rutas que la auditoría va a pedir, no sólo
+          # por dos. Los sitemaps son Functions distintas y propagan por su
+          # cuenta: esperar sólo home y feed dejaba pasar el job con los
+          # sitemaps todavía en 404, y la auditoría moría a los 30 segundos
+          # con "sitemap-pages.xml respondió HTTP 404". Pasó en el #334 y en
+          # el #342, y cada vez costó una re-ejecución a mano.
+          ROUTES="/ /feed.xml /sitemap.xml /sitemap-pages.xml /sitemap-categories.xml /sitemap-books-active.xml /sitemap-books-paused.xml"
           for attempt in 1 2 3 4 5 6 7 8; do
-            HOME_CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL/")
-            FEED_CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL/feed.xml")
-            [ "$HOME_CODE" = "200" ] && [ "$FEED_CODE" = "200" ] && exit 0
-            echo "Preview propagándose: intento $attempt/8, home HTTP $HOME_CODE, feed HTTP $FEED_CODE."
+            PENDING=""
+            for route in $ROUTES; do
+              CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$PREVIEW_URL$route")
+              [ "$CODE" = "200" ] || PENDING="$PENDING $route(HTTP $CODE)"
+            done
+            if [ -z "$PENDING" ]; then
+              echo "Preview propagado: todas las rutas responden 200."
+              exit 0
+            fi
+            echo "Preview propagándose: intento $attempt/8, faltan:$PENDING"
             sleep 10
           done
+          echo "ERROR: el Preview no propagó todas las rutas. Faltan:$PENDING"
           exit 1
+
+      - name: Verify reported missing Product.image on isolated Preview
+        if: github.head_ref == 'codex/product-image-fallback' || github.head_ref == 'codex/cover-public-index' || github.head_ref == 'codex/images-production-verify'
+        env:
+          COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: node scripts/commerce/product-image-preview-check.mjs
+
+      - name: Verify exact native cover bytes on Preview
+        if: github.head_ref == 'codex/catalog-image-system'
+        env:
+          QW2_PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: node scripts/seo/image-system-live-check.mjs
+
+      - name: Upload verified native cover evidence
+        if: always() && github.head_ref == 'codex/catalog-image-system'
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-system-pr-${{ github.event.pull_request.number }}
+          path: artifacts/image-system/
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Audit protected Preview
         env:

@@ -239,6 +239,16 @@
     }
   }
 
+  function whatsappOrigin(context, element) {
+    if (element && typeof element.closest === 'function' && element.closest('header')) return 'header';
+    if (context.pageType === 'home') return 'home';
+    if (context.pageType === 'category' || context.pageType === 'catalog') return 'catalogo';
+    if (context.pageType === 'product') {
+      return productAvailabilityType() === 'active' ? 'ficha' : 'ficha_pausada';
+    }
+    return 'otro';
+  }
+
   function trackWhatsApp(options) {
     options = options || {};
     var context = pageContext();
@@ -253,7 +263,44 @@
     var availabilityType = productAvailabilityType();
     if (availabilityType) params.availability_type = availabilityType;
 
+    // GA4-WHATSAPP-EVENT-1: origen/ruta/libro_id para importar como conversión
+    // en Google Ads/Meta; transport_type=beacon porque el clic navega fuera del sitio.
+    params.origen = whatsappOrigin(context, options.element);
+    params.ruta = window.location.pathname;
+    params.libro_id = context.productId || '';
+    params.transport_type = 'beacon';
+
     window.gtag('event', 'whatsapp_click', params);
+  }
+
+  // BLOQUEANTE PR #310 — punto 1: mide en qué etapa se traba un comprador
+  // del checkout online, sin ningún dato personal. Sólo 4 parámetros
+  // permitidos, cada uno validado contra una lista cerrada. error_code no
+  // se "sanea" con safeToken() (que preserva dígitos literales — un
+  // teléfono pegado en un texto libre sobreviviría igual) — se exige que
+  // YA tenga forma de code interno (letras/números/guión bajo, empieza con
+  // letra); cualquier otra cosa (texto libre del error, un email, etc.) se
+  // descarta entera en vez de reenviar una versión "limpiada".
+  var CHECKOUT_ERROR_STAGES = new Set(['order_create', 'preference_create', 'transfer_options']);
+  var CHECKOUT_ERROR_PAYMENT_METHODS = new Set(['transfer', 'mercadopago']);
+  var CHECKOUT_ERROR_DELIVERY_TYPES = new Set(['pickup', 'shipping']);
+  var ERROR_CODE_SHAPE = /^[A-Za-z][A-Za-z0-9_]{0,59}$/;
+
+  function errorCodeToken(value) {
+    var str = String(value == null ? '' : value).trim();
+    return ERROR_CODE_SHAPE.test(str) ? str.toUpperCase() : '';
+  }
+
+  function trackCheckoutError(options) {
+    options = options || {};
+    if (!CHECKOUT_ERROR_STAGES.has(options.stage)) return false;
+    var params = { stage: options.stage };
+    var errorCode = errorCodeToken(options.errorCode);
+    if (errorCode) params.error_code = errorCode;
+    if (CHECKOUT_ERROR_PAYMENT_METHODS.has(options.paymentMethod)) params.payment_method = options.paymentMethod;
+    if (CHECKOUT_ERROR_DELIVERY_TYPES.has(options.deliveryType)) params.delivery_type = options.deliveryType;
+    window.gtag('event', 'checkout_error', params);
+    return true;
   }
 
   function trackStockWaitlistCreated() {
@@ -294,6 +341,7 @@
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
+    trackCheckoutError: trackCheckoutError,
     trackStockWaitlistCreated: trackStockWaitlistCreated,
     getMeasurementContext: getMeasurementContext,
   });
@@ -309,6 +357,6 @@
       ? event.target.closest('a[href]')
       : null;
     if (!anchor || !isWhatsAppUrl(anchor.href)) return;
-    trackWhatsApp({ ctaLocation: ctaLocation(anchor) });
+    trackWhatsApp({ ctaLocation: ctaLocation(anchor), element: anchor });
   }, true);
 })();

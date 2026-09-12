@@ -1,10 +1,6 @@
 ---
 import CartIcon from './CartIcon.astro';
 import AnnouncementBar from './AnnouncementBar.astro';
-import {
-  buildWhatsAppMessage,
-  whatsappHref,
-} from '../../../shared/whatsapp-messages.js';
 
 interface Props {
   showSearch?: boolean;
@@ -13,20 +9,13 @@ interface Props {
 const {
   showSearch = true,
 } = Astro.props;
-
-const currentPage = Astro.url.pathname;
-const WA_HREF = whatsappHref(buildWhatsAppMessage({
-  motive: 'Consulta general',
-  page: currentPage,
-  closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
-}));
 ---
 <header class="site-header">
   <AnnouncementBar />
   <div class:list={['header-inner', { 'without-search': !showSearch }]}>
 
-    <!-- Marca — logo (gato+libro), sin duplicar el texto "Amado Libros"
-         que ya lleva la imagen. width/height fijos: evita layout shift. -->
+    <!-- Marca. Se conserva el logo actual: no existe una variante mobile
+         reducida en public/images y este lote no rediseña identidad. -->
     <a href="/" class="brand" aria-label="Amado Libros — inicio">
       <img
         src="/images/logo-amado.webp"
@@ -37,37 +26,8 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
       />
     </a>
 
-    {!showSearch && (
-      <div class="header-welcome">
-        <img
-          src="/images/amado-cat-reading-lounge-v1.webp"
-          alt=""
-          width="219"
-          height="180"
-          class="header-cat header-cat-lounge"
-          aria-hidden="true"
-        />
-        <span>Bienvenido a Amado Libros</span>
-        <img
-          src="/images/amado-cat-reading-seated-v1.webp"
-          alt=""
-          width="172"
-          height="180"
-          class="header-cat header-cat-seated"
-          aria-hidden="true"
-        />
-        <img
-          src="/images/amado-cat-welcome-v1.webp"
-          alt=""
-          width="136"
-          height="180"
-          class="header-cat header-cat-wave"
-          aria-hidden="true"
-        />
-      </div>
-    )}
-
-    <!-- Buscador — abre overlay de búsqueda -->
+    <!-- Buscador compacto para páginas internas. La portada mantiene su
+         buscador principal en el hero y por eso usa showSearch={false}. -->
     {showSearch && (
       <button
         type="button"
@@ -83,25 +43,10 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
       </button>
     )}
 
-    <!-- Carrito -->
+    <!-- Carrito: conserva su implementación actual, sin crear una isla nueva. -->
     <CartIcon />
 
-    <!-- WhatsApp -->
-    <a
-      href={WA_HREF}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="wa-btn"
-      aria-label="Consultar por WhatsApp"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.663 1.437 5.17L2.057 22.5l5.373-1.408A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
-      </svg>
-      <span class="wa-btn-label">WhatsApp</span>
-    </a>
-
   </div>
-
 </header>
 
 <style>
@@ -118,69 +63,39 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   .header-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 1.5rem;
-    height: 72px;
-    display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    padding: 0 1rem;
+    height: 56px;
+    display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 0.75rem;
   }
 
-  .header-inner.without-search {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-  }
-
-  /* Marca */
+  /* La marca empuja las acciones funcionales hacia la derecha tanto en la
+     portada (carrito) como en páginas internas (buscar + carrito). */
   .brand {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 0.55rem;
     flex-shrink: 0;
+    margin-right: auto;
     transition: opacity 0.15s;
   }
   .brand:hover { opacity: 0.8; }
 
   .brand-logo {
     display: block;
-    height: 57px;
-    width: 58px;
+    width: auto;
+    height: 44px;
     flex-shrink: 0;
   }
-
-  .header-welcome {
-    min-width: 0;
-    height: 68px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    overflow: hidden;
-    color: rgba(255, 255, 255, 0.88);
-    font-family: var(--font-display);
-    font-size: clamp(0.875rem, 1.4vw, 1.05rem);
-    letter-spacing: 0.015em;
-    white-space: nowrap;
-  }
-
-  .header-cat {
-    display: block;
-    flex: 0 0 auto;
-    width: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 7px rgba(236, 147, 122, 0.2));
-  }
-
-  .header-cat-lounge { height: 54px; }
-  .header-cat-seated { height: 57px; }
-  .header-cat-wave { height: 58px; }
 
   /* Buscador — pill compacta */
   .search-pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
-    padding: 0.4rem 0.875rem;
+    min-height: 44px;
+    padding: 0.4rem 0.75rem;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 999px;
@@ -201,56 +116,13 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   .search-pill-label { display: none; }
   @media (min-width: 400px) { .search-pill-label { display: inline; } }
 
-  /* WA */
-  .wa-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.875rem;
-    background: rgba(37, 211, 102, 0.1);
-    border: 1px solid rgba(37, 211, 102, 0.3);
-    border-radius: 999px;
-    color: var(--wa);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    flex-shrink: 0;
-    white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .wa-btn:hover {
-    background: rgba(37, 211, 102, 0.18);
-    border-color: var(--wa);
-  }
-
-  .wa-btn-label { display: none; }
-  @media (min-width: 560px) { .wa-btn-label { display: inline; } }
-
-  /* Mobile: fila única marca / buscar / wa */
-  @media (max-width: 559px) {
+  @media (min-width: 768px) {
     .header-inner {
-      gap: 0.75rem;
+      padding: 0 1.5rem;
     }
-    .wa-btn { padding: 0.4rem 0.75rem; }
 
-  }
-
-  @media (max-width: 860px) {
-    .header-welcome {
-      justify-content: flex-end;
-      gap: 0.45rem;
-    }
-    .header-cat-lounge,
-    .header-cat-seated {
-      display: none;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .header-inner.without-search {
-      grid-template-columns: 1fr auto auto;
-    }
-    .header-welcome {
-      display: none;
+    .brand-logo {
+      height: 48px;
     }
   }
 </style>

@@ -1,0 +1,317 @@
+<section id="v2-ideas" class="v2-ideas" aria-labelledby="v2-ideas-title">
+  <div class="v2-ideas-head">
+    <div>
+      <p>Amado Lee</p>
+      <h2 id="v2-ideas-title">Ideas, guías y caminos entre libros.</h2>
+    </div>
+    <span>Contenido propio de Amado Libros</span>
+  </div>
+
+  <div class="v2-ideas-grid">
+    <a class="v2-idea v2-idea-main" href="/libros-agotados-importados-uruguay">
+      <span class="v2-idea-label">Cómo trabajamos</span>
+      <h3>¿Qué hacemos cuando un libro no aparece?</h3>
+      <p>
+        Buscamos por edición, ISBN, editorial y país. Comparamos opciones y te contamos qué encontramos antes de avanzar.
+      </p>
+      <strong>Conocer el servicio <span aria-hidden="true">→</span></strong>
+    </a>
+
+    <a class="v2-idea v2-idea-yellow" href="/pedir-libro/?tipo=exacto">
+      <span class="v2-idea-label">Guía breve</span>
+      <h3>Agotado no siempre significa imposible.</h3>
+      <p>Otra edición, otro país o un ejemplar usado pueden abrir una nueva pista.</p>
+      <strong>Empezar una búsqueda <span aria-hidden="true">→</span></strong>
+    </a>
+
+    <a class="v2-idea v2-idea-photo" href="/libros/biblias">
+      <img
+        src="/images/amado-cat-reading-lounge-v1.webp"
+        alt="Gato de Amado Libros leyendo"
+        width="520"
+        height="360"
+        loading="lazy"
+        decoding="async"
+      />
+      <span class="v2-idea-photo-overlay"></span>
+      <span class="v2-idea-photo-copy">
+        <span class="v2-idea-label">Recorrido</span>
+        <h3>Una misma obra puede tener muchas ediciones.</h3>
+        <strong>Explorar ediciones <span aria-hidden="true">→</span></strong>
+      </span>
+    </a>
+  </div>
+</section>
+
+<section id="v2-nosotros" class="v2-human" aria-labelledby="v2-human-title">
+  <div class="v2-human-art" aria-hidden="true">
+    <span class="v2-human-orbit v2-human-orbit-a"></span>
+    <span class="v2-human-orbit v2-human-orbit-b"></span>
+    <img src="/images/logo-amado.webp" alt="" width="180" height="176" loading="lazy" decoding="async" />
+  </div>
+
+  <div class="v2-human-copy">
+    <p>Personas detrás de la búsqueda</p>
+    <h2 id="v2-human-title">Tu búsqueda nos importa.</h2>
+    <div class="v2-human-text">
+      <p>
+        Nos gusta buscar esos libros que no aparecen fácil. No es una respuesta automática:
+        revisamos opciones, comparamos ediciones y te acompañamos hasta encontrar una alternativa posible.
+      </p>
+      <p>
+        La disponibilidad, el precio y el plazo se confirman antes de iniciar cualquier encargo.
+      </p>
+    </div>
+    <div class="v2-human-actions">
+      <a href="/pedir-libro/?tipo=exacto">Contanos qué libro buscás</a>
+      <a class="v2-human-link" href="/catalogo">Explorar el catálogo →</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .v2-ideas {
+    padding: 4rem 1rem 4.5rem;
+    background: #f2eadf;
+    color: #1b1714;
+  }
+
+  .v2-ideas-head {
+    width: min(100%, 1360px);
+    margin: 0 auto 1.8rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .v2-ideas-head p,
+  .v2-human-copy > p {
+    margin-bottom: 0.35rem;
+    color: #b4442a;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .v2-ideas-head h2 {
+    max-width: 17ch;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 4rem);
+    letter-spacing: -0.04em;
+    line-height: 0.98;
+  }
+
+  .v2-ideas-head > span {
+    display: none;
+    color: #73685f;
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .v2-ideas-grid {
+    width: min(100%, 1360px);
+    margin: 0 auto;
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .v2-idea {
+    position: relative;
+    min-height: 280px;
+    padding: 1.3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    border-radius: 1.2rem;
+    color: #1b1714;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .v2-idea:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 45px rgba(44, 31, 22, 0.16);
+  }
+
+  .v2-idea-main { background: #ff7651; }
+  .v2-idea-yellow { background: #e8cf61; }
+
+  .v2-idea-label {
+    margin-bottom: 0.55rem;
+    font-size: 0.61rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .v2-idea h3 {
+    max-width: 15ch;
+    font-family: var(--font-display);
+    font-size: clamp(1.65rem, 4vw, 2.8rem);
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+
+  .v2-idea p {
+    max-width: 50ch;
+    margin-top: 0.75rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .v2-idea strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 1rem;
+    font-size: 0.72rem;
+    font-weight: 900;
+  }
+
+  .v2-idea-photo {
+    min-height: 340px;
+    padding: 0;
+    color: #fff;
+    background: #29211d;
+  }
+
+  .v2-idea-photo > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .v2-idea-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15, 12, 10, 0.02), rgba(15, 12, 10, 0.84));
+  }
+
+  .v2-idea-photo-copy {
+    position: relative;
+    z-index: 2;
+    padding: 1.3rem;
+  }
+
+  .v2-human {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+    background: #6e4ab0;
+    color: #fffaf3;
+  }
+
+  .v2-human-art {
+    position: relative;
+    min-height: 300px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #9bd7c8;
+  }
+
+  .v2-human-art img {
+    position: relative;
+    z-index: 2;
+    width: min(42vw, 190px);
+    border-radius: 1.5rem;
+    box-shadow: 0 28px 60px rgba(27, 23, 20, 0.24);
+    transform: rotate(-3deg);
+  }
+
+  .v2-human-orbit {
+    position: absolute;
+    border: 2px solid rgba(27, 23, 20, 0.22);
+    border-radius: 50%;
+  }
+
+  .v2-human-orbit-a { width: 280px; height: 280px; }
+  .v2-human-orbit-b { width: 420px; height: 180px; transform: rotate(24deg); }
+
+  .v2-human-copy {
+    padding: 2.4rem 1rem 3rem;
+    align-self: center;
+  }
+
+  .v2-human-copy > p { color: #f4d55f; }
+
+  .v2-human-copy h2 {
+    max-width: 12ch;
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 9vw, 5rem);
+    letter-spacing: -0.045em;
+    line-height: 0.94;
+  }
+
+  .v2-human-text {
+    max-width: 62ch;
+    margin-top: 1.1rem;
+    color: rgba(255, 250, 243, 0.82);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .v2-human-text p + p {
+    margin-top: 0.65rem;
+    color: rgba(255, 250, 243, 0.62);
+    font-size: 0.76rem;
+  }
+
+  .v2-human-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 1.35rem;
+  }
+
+  .v2-human-actions > a:first-child {
+    display: inline-flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.72rem 1rem;
+    border-radius: 999px;
+    background: #f4d55f;
+    color: #1b1714;
+    font-size: 0.74rem;
+    font-weight: 900;
+  }
+
+  .v2-human-link {
+    color: #fffaf3;
+    font-size: 0.74rem;
+    font-weight: 850;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  @media (min-width: 720px) {
+    .v2-ideas { padding: 5.5rem 2rem 6rem; }
+    .v2-ideas-head > span { display: block; }
+    .v2-ideas-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .v2-idea-main { grid-row: span 2; min-height: 570px; }
+    .v2-idea-photo { min-height: 350px; }
+    .v2-human { grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.18fr); }
+    .v2-human-art { min-height: 600px; }
+    .v2-human-copy { padding: 4rem clamp(2rem, 6vw, 6rem); }
+  }
+
+  @media (min-width: 1100px) {
+    .v2-ideas-grid { grid-template-columns: 1.2fr 0.8fr 0.8fr; }
+    .v2-idea-main { grid-row: auto; min-height: 520px; }
+    .v2-idea-yellow,
+    .v2-idea-photo { min-height: 520px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .v2-idea { transition: none; }
+    .v2-idea:hover { transform: none; }
+  }
+</style>

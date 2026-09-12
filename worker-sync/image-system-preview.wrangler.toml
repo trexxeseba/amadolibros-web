@@ -1,0 +1,13 @@
+name = "amado-image-system-preview"
+main = "image-system-preview.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+[vars]
+APP_ENV = "preview"
+[[r2_buckets]]
+binding = "COVER_R2"
+bucket_name = "amadolibros-images-preview"
+[[r2_buckets]]
+# Application code calls only get() on this binding.
+binding = "PRODUCTION_COVERS_READONLY"
+bucket_name = "amadolibros-images-production"

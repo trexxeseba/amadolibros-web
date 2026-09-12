@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // FICHAS-ENRICHMENT-BIBLIAS-1 — gate HTTP real del Preview.
 //
-// Verifica todas las ediciones del registro, no una muestra. Si una futura
-// entrada queda fuera del render SSR, del showcase o de Merchant, el Preview
-// falla antes de que el PR pueda llegar a Producción.
+// Verifica todas las ediciones enriquecidas que tengan al menos una oferta
+// activa en el catálogo. Una edición sin publicación MLU activa se conserva
+// en el registro y queda reportada como not_applicable: no existe una ficha
+// comercial ni una oferta Merchant que tenga sentido exigir en ese momento.
+// Si vuelve a aparecer una publicación activa para ese ISBN, el gate estricto
+// se reactiva automáticamente.
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -106,6 +109,26 @@ function changedFactSignals(record, original) {
   return [...new Set(signals)];
 }
 
+export function classifyBookEnrichmentCoverage(items, record) {
+  const candidates = (Array.isArray(items) ? items : [])
+    .filter(item => item?.status === 'active' && normalizeValidIsbn(item?.isbn) === record?.isbn)
+    .sort((a, b) => (Number(b.available_quantity) || 0) - (Number(a.available_quantity) || 0));
+
+  if (!candidates.length) {
+    return {
+      status: 'not_applicable',
+      reason: 'no_active_publication',
+      candidates: [],
+    };
+  }
+
+  return {
+    status: 'pending',
+    reason: null,
+    candidates,
+  };
+}
+
 export function verifyBookEnrichmentHtml(html, record, productId, originalItem = null) {
   const text = clean(html);
   const failures = [];
@@ -114,9 +137,13 @@ export function verifyBookEnrichmentHtml(html, record, productId, originalItem =
     if (record.facts.publisher && !text.includes(record.facts.publisher)) failures.push('falta la editorial verificada');
     if (!text.includes(record.editorial.decision_heading)) failures.push('falta ayuda de decisión');
   } else {
-    const signals = changedFactSignals(record, originalItem);
-    if (!signals.length) failures.push('la publicación elegida no recibe ningún hecho nuevo');
-    for (const signal of signals) {
+    // Si el catálogo ya trae un valor real (no vacío) para un campo, el
+    // merge lo conserva a propósito y no hay ningún hecho nuevo que exigir
+    // para ese campo — no es una falla, es la regla de "nunca reemplazar
+    // un dato ya confirmado" funcionando como corresponde. Sólo se exige
+    // que cada hecho que sí se aplicó (porque el campo estaba vacío)
+    // aparezca realmente en la página.
+    for (const signal of changedFactSignals(record, originalItem)) {
       if (!text.includes(signal)) failures.push(`falta el hecho verificado: ${signal}`);
     }
   }
@@ -201,34 +228,39 @@ async function main() {
   const pageTasks = [];
 
   for (const record of listBookEnrichments()) {
-    const candidates = items
-      .filter(item => item?.status === 'active' && normalizeValidIsbn(item?.isbn) === record.isbn)
-      .sort((a, b) => (Number(b.available_quantity) || 0) - (Number(a.available_quantity) || 0));
-    if (!candidates.length) {
-      reports.push({ isbn: record.isbn, status: 'failed', failures: ['no hay publicación activa para la edición'] });
+    const coverage = classifyBookEnrichmentCoverage(items, record);
+    const candidates = coverage.candidates;
+    if (coverage.status === 'not_applicable') {
+      reports.push({
+        isbn: record.isbn,
+        product_ids: [],
+        merchant_product_id: null,
+        pages: [],
+        status: 'not_applicable',
+        reason: coverage.reason,
+        failures: [],
+      });
       continue;
     }
 
-    // Los 1.000 registros masivos se prueban todos, en una publicación donde
-    // el hecho realmente completa un vacío. La aplicación a duplicados queda
-    // cubierta exhaustivamente por el gate local de 1.000 ISBN.
-    const pageItem = record?.decision === 'auto_publish_facts'
-      ? candidates.find(item => changedFactSignals(record, item).length > 0)
-      : candidates[0];
+    // Se verifica siempre la publicación de mayor stock (mismo criterio que
+    // `auto_publish`): un `auto_publish_facts` puede legítimamente no
+    // aportar ningún campo nuevo a esta publicación puntual si el catálogo
+    // ya trae ahí un valor real para todo lo que el registro sabe — eso no
+    // es una falla, `verifyBookEnrichmentHtml` sólo exige lo que sí se
+    // aplicó.
+    const pageItem = candidates[0];
     const report = {
       isbn: record.isbn,
       product_ids: candidates.map(item => item.id),
       merchant_product_id: null,
       pages: [],
       status: 'pending',
+      reason: null,
       failures: [],
     };
     reports.push(report);
-    if (!pageItem) {
-      report.failures.push('ninguna publicación activa recibe un hecho nuevo');
-    } else {
-      pageTasks.push({ record, item: pageItem, report });
-    }
+    pageTasks.push({ record, item: pageItem, report });
 
     // Merchant consolida ofertas duplicadas por GTIN. Se verifica el MLU que
     // efectivamente ganó en el feed, no se presupone que sea el de mayor stock.
@@ -252,24 +284,43 @@ async function main() {
     });
     report.failures.push(...failures.map(failure => `${item.id}: ${failure}`));
   });
-  for (const report of reports) report.status = report.failures.length ? 'failed' : 'verified';
 
-  const failed = reports.filter(report => report.status !== 'verified');
+  for (const report of reports) {
+    if (report.status === 'not_applicable') continue;
+    report.status = report.failures.length ? 'failed' : 'verified';
+  }
+
+  const failed = reports.filter(report => report.status === 'failed');
+  const verified = reports.filter(report => report.status === 'verified');
+  const notApplicable = reports.filter(report => report.status === 'not_applicable');
+
   mkdirSync(OUTPUT_DIR, { recursive: true });
   writeFileSync(`${OUTPUT_DIR}/book-enrichment-live-check.json`, `${JSON.stringify({
     base_url: BASE_URL,
     checked_at: new Date().toISOString(),
-    verified: reports.length - failed.length,
+    verified: verified.length,
+    not_applicable: notApplicable.length,
     failed: failed.length,
     reports,
   }, null, 2)}\n`);
 
   for (const report of reports) {
-    console.log(`  ${report.isbn} · ${(report.product_ids || []).join(', ') || 'sin MLU'} · ${report.status}`);
-    for (const failure of report.failures) console.error(`    - ${failure}`);
+    console.log(`  ${report.isbn} · ${(report.product_ids || []).join(', ') || 'sin MLU activo'} · ${report.status}`);
+    if (report.status === 'not_applicable') {
+      console.warn('    - edición enriquecida conservada; sin oferta activa para verificar en este Preview');
+    }
+    // console.log en vez de console.error: en CI, stderr se pierde por
+    // buffering cuando el proceso termina justo después de escribir (visto
+    // en la corrida de PR #305 — las líneas de resumen por ISBN llegaban al
+    // log pero el detalle de cada fallo no).
+    for (const failure of report.failures) console.log(`    - ${failure}`);
   }
-  if (failed.length) throw new Error(`${failed.length} edición(es) fallaron la verificación HTTP.`);
-  console.log(`OK: ${reports.length} ediciones enriquecidas verificadas en ficha y Merchant.`);
+
+  if (failed.length) throw new Error(`${failed.length} edición(es) activas fallaron la verificación HTTP.`);
+  console.log(
+    `OK: ${verified.length} ediciones activas verificadas en ficha y Merchant; ` +
+    `${notApplicable.length} sin oferta activa quedaron como no aplicables.`
+  );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

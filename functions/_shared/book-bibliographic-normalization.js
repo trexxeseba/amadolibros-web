@@ -22,10 +22,22 @@ const LANGUAGE_LABELS = Object.freeze({
   eu: 'Euskera',
   baq: 'Euskera',
   eus: 'Euskera',
+  nl: 'Neerlandés',
+  nld: 'Neerlandés',
+  dut: 'Neerlandés',
 });
 
 function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+// Devuelve la etiqueta legible de un código de idioma, o null si no se
+// conoce. Sirve para que un adaptador pueda descartar un código en vez de
+// dejar que llegue crudo al dato visible (`dut`, `eng`, `spa`…).
+export function bookLanguageLabel(code) {
+  const key = clean(code).toLocaleLowerCase('es');
+  if (!key) return null;
+  return LANGUAGE_LABELS[key] || null;
 }
 
 export function normalizeBookLanguage(value) {

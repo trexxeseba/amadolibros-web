@@ -58,9 +58,12 @@ test('carrito.astro: Mercado Pago conserva un único CTA id="btn-prepare-order"'
 });
 
 test('carrito.astro: muestra transferencia destacada y Mercado Pago separado', () => {
+  // V1.1 REDESIGN: el copy exacto de los CTA cambió ("Confirmar compra con
+  // 12% OFF" / "Pagar con Mercado Pago"), pero la garantía sigue siendo la
+  // misma: dos botones con texto distinto para cada medio de pago.
   assert.match(carritoAstro, /id="btn-transfer-order"[^>]*class="btn-transfer-primary"/);
-  assert.match(carritoAstro, /Comprar por transferencia/);
-  assert.match(carritoAstro, /Pagar con tarjeta o Mercado Pago/);
+  assert.match(carritoAstro, /Confirmar compra con 12% OFF/);
+  assert.match(carritoAstro, /Pagar con Mercado Pago/);
 });
 
 test('carrito.astro: un solo listener de click maneja todo el pago (no hay un segundo botón/handler de "pagar")', () => {
@@ -261,7 +264,12 @@ test('carrito.astro: retiro oculta y deshabilita todos los controles de envío',
   assert.match(fnBody, /querySelectorAll\('input, select, textarea'\)/);
   assert.match(fnBody, /controls\[i\]\.disabled\s*=\s*!shippingSelected/);
   assert.match(carritoAstro, /syncShippingFields\(\);\s*\n\s*updateTotals\(\);/);
-  assert.match(carritoAstro, /syncShippingFields\(\);\s*\n\s*\n\s*\/\/ ── Barra mobile/);
+  // V1.1 REDESIGN: el bloque de "Barra mobile" ya no es lo primero que sigue
+  // a la llamada inicial de syncShippingFields() (ahora hay wiring de medio
+  // de pago en el medio) — lo que sigue garantizado es que se llama tanto en
+  // cada cambio de entrega como una vez más al cargar la página.
+  const callSites = (carritoAstro.match(/\bsyncShippingFields\(\);/g) || []).length;
+  assert.ok(callSites >= 2, 'debe llamarse tanto en el listener de cambio como al cargar la página');
 });
 
 // ── Carrito conservado antes de pago aprobado (2-N-I1 v2) ───────────────────

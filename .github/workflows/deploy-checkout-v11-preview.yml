@@ -1,0 +1,437 @@
+name: Deploy V1.1 checkout Preview (checkout ON)
+
+# El Preview automático de todo PR (deploy-pr-preview.yml) compila
+# deliberadamente con PUBLIC_CHECKOUT_ENABLED=false — sirve para auditar
+# SEO/catálogo, no para revisar el checkout. No existe hoy ningún pipeline
+# que despliegue un Preview con el checkout visible para esta rama (ver
+# docs/environments.md, "Pendientes antes de activar cobros LIVE", punto 3).
+# Este workflow, gateado a una sola rama de trabajo, cubre exactamente ese
+# hueco para la revisión del rediseño V1.1 — mismo patrón ya usado en
+# deploy-price-bank-preview.yml. No toca el pipeline global de PR previews
+# ni el de Producción.
+
+on:
+  push:
+    branches:
+      - v1.1/checkout-guidance
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checkout-v11-preview
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Guard Preview ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Block every other branch
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/v1.1/checkout-guidance" ]; then
+            echo "Deploy bloqueado: rama incorrecta."
+            exit 1
+          fi
+
+  validate:
+    name: Validate exact branch code
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+      - name: Validate shared suite
+        run: bash scripts/validate-ci.sh
+
+  deploy-preview:
+    name: Deploy isolated Preview with checkout visible
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: astro-front/package-lock.json
+
+      - name: Install Astro dependencies
+        working-directory: astro-front
+        run: npm ci --no-audit --no-fund
+
+      # BLOQUEANTE reproducido en checkout-v11-preview: POST /api/orders con
+      # Mercado Pago o Transferencia fallaba con "Error al guardar el
+      # pedido" — causa raíz: el INSERT en `orders` (_orders_handler.js)
+      # referencia buyer_email (migración 0006) y ga_client_id/ga_session_id
+      # (migración 0008), pero ningún workflow aplicaba migraciones a la D1
+      # de Preview (sólo deploy.yml, y sólo --env production) — la D1 de
+      # Preview quedó atrasada. Este diagnóstico deja evidencia real del
+      # esquema en los logs antes de corregir.
+      - name: Diagnóstico — esquema real de orders en D1 Preview (antes)
+        run: >
+          npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote
+          --command "PRAGMA table_info(orders);"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        continue-on-error: true
+
+      - name: Apply preview D1 migrations (corrección del bloqueante)
+        run: >
+          npx wrangler@3.114.17 d1 migrations apply
+          ORDERS_DB --env preview --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Diagnóstico — esquema real de orders en D1 Preview (después)
+        run: >
+          npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote
+          --command "PRAGMA table_info(orders);"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Config pública de Preview (docs/environments.md), NO la de
+      # Producción: site key y hosts permitidos son los del widget
+      # `amadolibros-orders-preview`, distinto del widget de Producción.
+      - name: Build protected Preview with checkout visible
+        working-directory: astro-front
+        env:
+          PUBLIC_INDEXABLE: 'false'
+          PUBLIC_GA_ID: ''
+          PUBLIC_CHECKOUT_ENABLED: 'true'
+          PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
+          PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+        run: npm run build
+
+      - name: Deploy branch to Cloudflare Pages Preview
+        run: >
+          npx wrangler@3.114.17 pages deploy ./astro-front/dist
+          --project-name amadolibros-web
+          --branch checkout-v11-preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Smoke mínimo pero decisivo: si esto falla, la URL entregada a Seba
+      # NO es un checkout real navegable y no debe usarse para revisar nada
+      # de V1.1. Cubre exactamente el error que motivó este workflow: una
+      # Preview de checkout que en realidad muestra el fallback de
+      # WhatsApp porque se compiló con el flag equivocado.
+      - name: Smoke — el checkout online está realmente presente (no el fallback de WhatsApp)
+        env:
+          PREVIEW_URL: https://checkout-v11-preview.amadolibros-web.pages.dev
+        run: |
+          ready=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            code=$(curl -sSL -o /tmp/cart.html -w '%{http_code}' \
+              "$PREVIEW_URL/carrito/" || true)
+            if [ "$code" = "200" ]; then
+              ready=true
+              break
+            fi
+            echo "Preview propagándose: intento $attempt/8, HTTP $code."
+            sleep 10
+          done
+          test "$ready" = "true"
+
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('/tmp/cart.html', 'utf8');
+
+          const mustContain = [
+            'data-online-checkout="enabled"',
+            'Finalizar compra',
+            'Transferencia 12% menos',
+            'Mercado Pago hasta 12 cuotas',
+            '¿Cómo querés recibir tu pedido?',
+            'Tus datos',
+            '¿Cómo querés pagar?',
+            'name="payment-method" value="transfer"',
+            'name="payment-method" value="mercadopago"',
+            'id="btn-confirm-neutral"',
+            'id="btn-transfer-order"',
+            'id="btn-prepare-order"',
+            'class="checkout-summary"',
+            'id="cart-summary-total"',
+          ];
+          const missing = mustContain.filter((needle) => !html.includes(needle));
+          if (missing.length) {
+            throw new Error(
+              'El checkout online no está realmente presente en el HTML servido. Faltan: ' +
+              missing.join(' | ')
+            );
+          }
+
+          // El fallback de WhatsApp (class="btn-wa-order") sólo existe en el
+          // build con checkout OFF — si aparece acá, esta Preview no sirve
+          // para revisar el checkout online, sin importar qué diga el flag.
+          if (html.includes('class="btn-wa-order"')) {
+            throw new Error(
+              'El CTA de WhatsApp aparece como fallback principal — esta Preview NO tiene el checkout online activo de verdad.'
+            );
+          }
+          NODE
+
+      # Verificación de punta a punta contra el checkout real (no un mock):
+      # Retiro+MP, Envío+MP, Retiro+Transferencia. NO completa ningún pago
+      # real — se detiene apenas confirma que /api/orders y /api/preferences
+      # (o /api/transfer-options) respondieron bien. Playwright se instala
+      # de forma transitoria (--no-save, nunca entra a package.json/lock ni
+      # se commitea) sólo para este paso de CI.
+      #
+      # Nota honesta sobre Turnstile: /api/orders exige un token real de
+      # Turnstile (modo managed, sin bypass para automatización — por
+      # diseño, fail-closed). Un navegador headless de CI puede o no
+      # obtenerlo según el propio criterio anti-bot de Cloudflare — eso es
+      # el comportamiento CORRECTO de Turnstile, no un bug. Por eso este
+      # paso no bloquea el job (continue-on-error) y el resultado real
+      # (pase o no) se reporta tal cual, sin inventar un resultado.
+      - name: E2E real — Retiro+MP, Envío+MP, Retiro+Transferencia (no completa pagos)
+        id: e2e
+        continue-on-error: true
+        working-directory: astro-front
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+          # El script se escribe DENTRO de astro-front/ (no en /tmp): la
+          # resolución de módulos ESM de Node busca node_modules/playwright
+          # subiendo desde el directorio del propio archivo que hace el
+          # import, no desde el cwd — un intento anterior escribía el
+          # script en /tmp/, que no tiene relación con
+          # astro-front/node_modules/, y el import fallaba con
+          # ERR_MODULE_NOT_FOUND antes de lanzar el navegador (el job
+          # igual seguía en verde por continue-on-error, sin haber
+          # corrido ningún escenario real).
+          cat > ./e2e-checkout.mjs << 'EOF'
+          import { chromium } from 'playwright';
+          import { writeFileSync } from 'node:fs';
+
+          const BASE = 'https://checkout-v11-preview.amadolibros-web.pages.dev';
+          const PRODUCT_ID = 'MLU1001092502';
+
+          function cart() {
+            return {
+              version: 2,
+              items: [{ id: PRODUCT_ID, title: 'QA E2E test item', price: 500, quantity: 1, thumbnail: '', max_qty: 5 }],
+              idempotency_key: 'qa-e2e-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+            };
+          }
+          async function seed(page, cartData) {
+            await page.addInitScript((c) => { window.localStorage.setItem('amado-cart', JSON.stringify(c)); }, cartData);
+          }
+          async function fillBuyer(page) {
+            await page.fill('#buyer-name', 'QA Preview E2E');
+            await page.fill('#buyer-phone', '099000000');
+            await page.fill('#buyer-email', 'preview-e2e-test@amadolibros.com');
+          }
+
+          // El widget real de Turnstile (script externo de
+          // challenges.cloudflare.com) carga e inicializa de forma
+          // asíncrona — tsWidgetId queda null hasta que termina. Clickear
+          // antes de eso no dispara ningún fetch: el handler corta antes
+          // con "La verificación aún no cargó" (getTurnstileTokenForOrder()/
+          // el chequeo de tsWidgetId en el handler de Mercado Pago). Se
+          // espera el iframe real del widget antes de cada click.
+          async function waitForTurnstileWidget(page, timeoutMs) {
+            try {
+              await page.waitForSelector('iframe[src*="challenges.cloudflare.com"]', { timeout: timeoutMs });
+            } catch (_) { /* seguimos igual — el resultado real (con su motivo) queda en el diagnóstico */ }
+          }
+
+          // tsGetToken() en carrito.astro tiene su propio timeout de
+          // seguridad de 30s esperando el callback de Turnstile antes de
+          // rechazar. Un wait ciego más corto que eso (el intento anterior
+          // usaba 9s) no prueba nada — corta la espera antes de que el
+          // propio producto termine de intentarlo. Acá se espera, con
+          // margen, a que ocurra alguna de las dos salidas reales posibles:
+          // la respuesta de /api/orders llegó, o el checkout ya muestra un
+          // mensaje de error — lo que pase primero, hasta 35s.
+          async function waitForOutcome(page, state, timeoutMs) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+              if (state.ordersResp) return;
+              const text = await checkoutErrorText(page);
+              if (text) { state.checkoutErrorText = text; return; }
+              await page.waitForTimeout(500);
+            }
+            state.checkoutErrorText = await checkoutErrorText(page);
+          }
+
+          const results = { scenarios: [], publicCodes: [] };
+          let failures = 0;
+          function check(label, cond, extra) {
+            if (cond) { console.log('OK   ' + label); }
+            else { console.log('FAIL ' + label, extra !== undefined ? JSON.stringify(extra) : ''); failures++; }
+          }
+          function trackApi(page, state) {
+            state.consoleErrors = [];
+            page.on('console', (msg) => { if (msg.type() === 'error') state.consoleErrors.push(msg.text()); });
+            page.on('response', async (resp) => {
+              const url = resp.url();
+              const method = resp.request().method();
+              if (method !== 'POST') return;
+              if (url.endsWith('/api/orders')) {
+                state.ordersResp = { status: resp.status(), body: await resp.text().catch(() => '') };
+              } else if (url.endsWith('/api/preferences')) {
+                state.prefsResp = { status: resp.status(), body: await resp.text().catch(() => '') };
+              } else if (url.includes('/api/transfer-options')) {
+                state.transferResp = { status: resp.status(), body: await resp.text().catch(() => '') };
+              }
+            });
+          }
+          function is2xx(r) { return !!r && r.status >= 200 && r.status < 300; }
+          async function checkoutErrorText(page) {
+            return page.locator('#checkout-error').innerText().catch(() => '');
+          }
+
+          async function run() {
+            const browser = await chromium.launch();
+
+            // A. Retiro + Mercado Pago
+            {
+              const ctx = await browser.newContext();
+              const page = await ctx.newPage();
+              const state = {};
+              trackApi(page, state);
+              await seed(page, cart());
+              await page.goto(BASE + '/carrito/', { waitUntil: 'load' });
+              await page.waitForSelector('#cart-content:not([hidden])', { timeout: 20000 });
+              await page.locator('input[name="delivery"][value="pickup"]').check();
+              await page.locator('#pickup-ack').check();
+              await fillBuyer(page);
+              await page.locator('input[name="payment-method"][value="mercadopago"]').check();
+              await waitForTurnstileWidget(page, 8000);
+              await page.locator('#btn-prepare-order').click();
+              await waitForOutcome(page, state, 35000);
+              check('A. Retiro+MP: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
+              check('A. Retiro+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
+              let publicCode = null, checkoutUrl = null;
+              try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
+              try { checkoutUrl = JSON.parse(state.prefsResp.body).checkout_url; } catch {}
+              check('A. Retiro+MP: checkout_url es sandbox de Mercado Pago', !!checkoutUrl && /sandbox/.test(checkoutUrl), checkoutUrl);
+              if (publicCode) results.publicCodes.push(publicCode);
+              results.scenarios.push({ name: 'A-retiro-mp', ...state, publicCode, checkoutUrl });
+              await ctx.close();
+            }
+
+            // B. Envío + Mercado Pago
+            {
+              const ctx = await browser.newContext();
+              const page = await ctx.newPage();
+              const state = {};
+              trackApi(page, state);
+              await seed(page, cart());
+              await page.goto(BASE + '/carrito/', { waitUntil: 'load' });
+              await page.waitForSelector('#cart-content:not([hidden])', { timeout: 20000 });
+              await page.locator('input[name="delivery"][value="shipping"]').check();
+              await page.fill('#delivery-address', 'Av. Italia 2000');
+              await page.fill('#delivery-barrio', 'Pocitos');
+              await page.selectOption('#delivery-departamento', 'Montevideo');
+              await fillBuyer(page);
+              await page.locator('input[name="payment-method"][value="mercadopago"]').check();
+              await waitForTurnstileWidget(page, 8000);
+              await page.locator('#btn-prepare-order').click();
+              await waitForOutcome(page, state, 35000);
+              check('B. Envío+MP: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
+              check('B. Envío+MP: POST /api/preferences 2xx', is2xx(state.prefsResp), state.prefsResp);
+              let publicCode = null, checkoutUrl = null;
+              try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
+              try { checkoutUrl = JSON.parse(state.prefsResp.body).checkout_url; } catch {}
+              if (publicCode) results.publicCodes.push(publicCode);
+              results.scenarios.push({ name: 'B-envio-mp', ...state, publicCode, checkoutUrl });
+              await ctx.close();
+            }
+
+            // C. Retiro + Transferencia
+            {
+              const ctx = await browser.newContext();
+              const page = await ctx.newPage();
+              const state = {};
+              trackApi(page, state);
+              await seed(page, cart());
+              await page.goto(BASE + '/carrito/', { waitUntil: 'load' });
+              await page.waitForSelector('#cart-content:not([hidden])', { timeout: 20000 });
+              await page.locator('input[name="delivery"][value="pickup"]').check();
+              await page.locator('#pickup-ack').check();
+              await fillBuyer(page);
+              await page.locator('input[name="payment-method"][value="transfer"]').check();
+              await waitForTurnstileWidget(page, 8000);
+              await page.locator('#btn-transfer-order').click();
+              await waitForOutcome(page, state, 35000);
+              check('C. Retiro+Transferencia: POST /api/orders 2xx', is2xx(state.ordersResp), { ordersResp: state.ordersResp, checkoutErrorText: state.checkoutErrorText, consoleErrors: state.consoleErrors });
+              check('C. Retiro+Transferencia: /api/transfer-options 2xx', is2xx(state.transferResp), state.transferResp);
+              let publicCode = null, accountsOk = false;
+              try { publicCode = JSON.parse(state.ordersResp.body).order.public_code; } catch {}
+              try { accountsOk = Array.isArray(JSON.parse(state.transferResp.body).accounts) && JSON.parse(state.transferResp.body).accounts.length > 0; } catch {}
+              check('C. Retiro+Transferencia: cuentas oficiales cargadas', accountsOk);
+              const transferStepVisible = await page.locator('#transfer-payment-step').isVisible().catch(() => false);
+              check('C. Retiro+Transferencia: la UI llega a la pantalla de transferencia', transferStepVisible);
+              if (publicCode) results.publicCodes.push(publicCode);
+              results.scenarios.push({ name: 'C-retiro-transfer', ...state, publicCode });
+              await ctx.close();
+            }
+
+            await browser.close();
+            writeFileSync('/tmp/e2e-results.json', JSON.stringify(results, null, 2));
+            console.log('\npublic_codes creados:', results.publicCodes.join(', ') || '(ninguno)');
+            console.log(failures === 0 ? '\n✅ E2E TODO OK' : `\n❌ ${failures} verificación(es) fallaron`);
+            process.exitCode = failures === 0 ? 0 : 1;
+          }
+          run().catch((err) => { console.error(err); process.exitCode = 1; });
+          EOF
+          node ./e2e-checkout.mjs
+
+      - name: Verificar en D1 Preview las órdenes de prueba creadas por el E2E
+        if: always()
+        run: |
+          if [ ! -f /tmp/e2e-results.json ]; then
+            echo "No hay resultados de E2E (el paso anterior no llegó a escribir el archivo)."
+            exit 0
+          fi
+          CODES=$(node -e "const r=require('/tmp/e2e-results.json'); console.log(r.publicCodes.join(','));")
+          if [ -z "$CODES" ]; then
+            echo "El E2E no creó ninguna orden (revisar el resultado del paso anterior — probablemente Turnstile bloqueó la creación en este entorno de CI, ver nota en el paso E2E)."
+            exit 0
+          fi
+          echo "Órdenes de prueba creadas por el E2E: $CODES"
+          IFS=',' read -ra CODE_ARR <<< "$CODES"
+          for CODE in "${CODE_ARR[@]}"; do
+            echo "--- $CODE ---"
+            npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote \
+              --command "SELECT public_code, status, delivery_type, buyer_email, ga_client_id, payable_total_uyu, created_at FROM orders WHERE public_code = '$CODE';"
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Limpiar las órdenes de prueba creadas por el E2E (D1 Preview)
+        if: always()
+        run: |
+          if [ ! -f /tmp/e2e-results.json ]; then exit 0; fi
+          CODES=$(node -e "const r=require('/tmp/e2e-results.json'); console.log(r.publicCodes.join(','));")
+          if [ -z "$CODES" ]; then exit 0; fi
+          IFS=',' read -ra CODE_ARR <<< "$CODES"
+          for CODE in "${CODE_ARR[@]}"; do
+            npx wrangler@3.114.17 d1 execute ORDERS_DB --env preview --remote \
+              --command "DELETE FROM orders WHERE public_code = '$CODE';"
+          done
+          echo "Órdenes de prueba eliminadas (order_items/order_events se borran en cascada)."
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Reportar URL de la Preview de checkout V1.1
+        run: |
+          echo "### Preview de checkout V1.1 (checkout ON)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://checkout-v11-preview.amadolibros-web.pages.dev/carrito/" >> "$GITHUB_STEP_SUMMARY"

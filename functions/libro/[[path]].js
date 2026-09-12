@@ -1,3 +1,6 @@
+import { coverSources } from '../book-cover/[[path]].js';
+import { googleReadyImage, googleFutureReadyImage } from '../_shared/image-source-policy.js';
+import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
  *
@@ -339,6 +342,38 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
   </section>`;
 }
 
+function renderEditorialEnrichment(editorial) {
+    if (!editorial || typeof editorial !== 'object') return '';
+    const paragraphs = Array.isArray(editorial.paragraphs)
+        ? editorial.paragraphs.map(value => String(value || '').trim()).filter(Boolean)
+        : [];
+    if (!paragraphs.length || !editorial.heading) return '';
+
+    const highlights = Array.isArray(editorial.highlights)
+        ? editorial.highlights.map(value => String(value || '').trim()).filter(Boolean)
+        : [];
+    const links = Array.isArray(editorial.links)
+        ? editorial.links.filter(link =>
+            link && typeof link.href === 'string' && link.href.startsWith('/') && link.label
+          )
+        : [];
+
+    return `<section class="editorial-enrichment" aria-labelledby="editorial-enrichment-heading">
+      ${editorial.eyebrow ? `<p class="editorial-eyebrow">${escapeHtml(editorial.eyebrow)}</p>` : ''}
+      <h2 id="editorial-enrichment-heading">${escapeHtml(editorial.heading)}</h2>
+      ${paragraphs.map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('\n')}
+      ${highlights.length ? `<h3>${escapeHtml(editorial.highlights_heading || 'Características comprobadas')}</h3>
+      <ul>${highlights.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : ''}
+      ${editorial.decision_heading && editorial.decision_copy ? `<div class="editorial-decision">
+        <h3>${escapeHtml(editorial.decision_heading)}</h3>
+        <p>${escapeHtml(editorial.decision_copy)}</p>
+      </div>` : ''}
+      ${links.length ? `<div class="editorial-links">${links.map(link =>
+        `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)} →</a>`
+      ).join('')}</div>` : ''}
+    </section>`;
+}
+
 // ---------------------------------------------------------------------------
 // Respuestas de error
 // ---------------------------------------------------------------------------
@@ -376,23 +411,38 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = []) {
+export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = [], googleImages = null) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
+    // B11: los textos alternativos describen la portada sin arrastrar una
+    // autoría genérica del título comercial. El título almacenado, el slug,
+    // el canonical y la identidad de carrito permanecen intactos.
+    const safeImageTitle = escapeHtml(stripGenericAuthorMention(item.title) || item.title);
     // FICHAS-QUALITY-GUARD-1: 'Desconocido', 'Unknown', 'Varios autores'… no
     // son autoría. displayAuthor queda null y TODA superficie que dependa de
     // él (fila Autor, JSON-LD, WhatsApp, relacionados, meta description) omite
     // el dato en vez de imprimir un nombre falso. Nunca se sustituye.
     const displayAuthor = realAuthor(item.author);
     const safeAuthor   = displayAuthor ? escapeHtml(displayAuthor) : null;
+    const editorial = item._amadoEditorial && typeof item._amadoEditorial === 'object'
+        ? item._amadoEditorial
+        : null;
+    const enrichmentSchema = item._amadoSchema && typeof item._amadoSchema === 'object'
+        ? item._amadoSchema
+        : null;
     const seoOverride  = PRODUCT_SEO_OVERRIDES[item.id] || null;
-    const documentTitle = escapeHtml(seoOverride?.title || item.title);
+    const documentTitle = escapeHtml(seoOverride?.title || editorial?.seo_title || item.title);
     const indexWhenPaused = seoOverride?.indexWhenPaused === true ||
         isPausedProductInSeoCohort(item.id);
+    const originalSources = normalizeImages(item);
+    const catalogSources = coverSources(item);
     const sourceImages = normalizeImages(item, previewCoverSrc);
     const images       = isPreview
         ? sourceImages
-        : sourceImages.map((_, position) => bookCoverUrl(item.id, position));
+        : sourceImages.map((source, position) => {
+            const catalogPosition = catalogSources.indexOf(originalSources[position]);
+            return catalogPosition >= 0 ? bookCoverUrl(item.id, catalogPosition) : source;
+        });
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],
@@ -416,12 +466,13 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const sellableInCheckout = inStock && checkoutCurrencySupported;
     const hasFreeShipping = sellableInCheckout && price >= FREE_SHIPPING_THRESHOLD_UYU;
     const condition     = formatCondition(item.condition);
-    const dimensions    = formatDimensions(item.dimensions);
+    const dimensions    = item.dimensions_text || formatDimensions(item.dimensions);
     const bibliographic = item.bibliographic && typeof item.bibliographic === 'object'
         ? item.bibliographic
         : {};
+    const editorialHtml = renderEditorialEnrichment(editorial);
     const description = item.description ? String(item.description).trim() : '';
-    const descriptionHtml = description
+    const descriptionHtml = description && !editorial
         ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
         : '';
     const waMessage = buildBookWhatsAppMessage({
@@ -453,6 +504,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         detailRow('Formato', bibliographic.format),
         detailRow('Edición', bibliographic.edition),
         detailRow('Año', bibliographic.publication_year),
+        detailRow('Fecha de publicación', bibliographic.publication_date),
         detailRow('Género', bibliographic.genre),
         detailRow('Temas', Array.isArray(bibliographic.subjects)
             ? bibliographic.subjects.map(value => String(value || '').trim()).filter(Boolean).join(' · ')
@@ -492,7 +544,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
           : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
     const metaDesc = seoOverride?.description
         ? escapeHtml(seoOverride.description)
-        : defaultMetaDesc;
+        : editorial?.meta_description
+          ? escapeHtml(editorial.meta_description)
+          : defaultMetaDesc;
     const seoOpportunityHtml = seoOverride?.heading && seoOverride?.copy
         ? `<section class="seo-opportunity" aria-labelledby="seo-opportunity-heading">
       <h2 id="seo-opportunity-heading">${escapeHtml(seoOverride.heading)}</h2>
@@ -506,10 +560,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@context': 'https://schema.org',
         '@type':    ['Product', 'Book'],
         'name':     item.title,
-        'image':    images.length ? images : img,
+        ...(images.length ? { image: images } : {}),
         'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
         'sku':      item.id,
     };
+    // La calidad determina la preferencia, no la existencia de la foto.
+    // [] también puede significar que falló la lectura del índice de R2.
+    // Conservamos la primera portada real de la galería en ambos casos;
+    // si no existe ninguna, no inventamos una ni usamos el logo.
+    if (googleImages?.length) schemaProduct.image = googleImages;
+    else if (googleImages !== null && images.length) schemaProduct.image = images.slice(0, 1);
     if (sellableInCheckout) {
         schemaProduct.offers = {
             '@type':        'Offer',
@@ -573,6 +633,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (bibliographic.illustrator) {
         schemaProduct.illustrator = { '@type': 'Person', 'name': bibliographic.illustrator };
     }
+    if (enrichmentSchema?.inLanguage) schemaProduct.inLanguage = enrichmentSchema.inLanguage;
+    if (enrichmentSchema?.bookFormat) schemaProduct.bookFormat = enrichmentSchema.bookFormat;
+    if (enrichmentSchema?.bookEdition) schemaProduct.bookEdition = enrichmentSchema.bookEdition;
+    if (enrichmentSchema?.datePublished) schemaProduct.datePublished = enrichmentSchema.datePublished;
+    if (enrichmentSchema?.genre) schemaProduct.genre = enrichmentSchema.genre;
     if (schemaProduct.offers && item.condition === 'new') {
         schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
     } else if (schemaProduct.offers && item.condition === 'used') {
@@ -673,7 +738,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta property="og:description" content="${metaDesc}">
   <meta property="og:image"       content="${escapeHtml(socialImage)}">
   <meta property="og:image:secure_url" content="${escapeHtml(socialImage)}">
-  <meta property="og:image:alt"   content="Portada de ${safeTitle}">
+  <meta property="og:image:alt"   content="Portada de ${safeImageTitle}">
   <meta property="og:locale"      content="es_UY">
   <meta property="og:site_name"   content="Amado Libros">
 
@@ -681,7 +746,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta name="twitter:title"       content="${documentTitle} | Amado Libros">
   <meta name="twitter:description" content="${metaDesc}">
   <meta name="twitter:image"       content="${escapeHtml(socialImage)}">
-  <meta name="twitter:image:alt"   content="Portada de ${safeTitle}">
+  <meta name="twitter:image:alt"   content="Portada de ${safeImageTitle}">
 
   <script type="application/ld+json">${safeJson(schemaProduct)}</script>
   <script type="application/ld+json">${safeJson(schemaBreadcrumb)}</script>
@@ -844,6 +909,18 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .waitlist-status.is-ok{color:#16733a;font-weight:700}
     .waitlist-unavailable{font-size:.85rem;color:#64748b}
     @media(max-width:520px){.waitlist-row{flex-direction:column}.btn-waitlist{width:100%}}
+    .editorial-enrichment{margin-top:1.1rem;padding:1.15rem;background:#fff;
+                            border:1px solid #dbe3ec;border-radius:.7rem}
+    .editorial-enrichment h2{font-size:1.22rem;line-height:1.3;color:#0f172a;margin-bottom:.75rem}
+    .editorial-enrichment h3{font-size:1rem;line-height:1.35;color:#1e293b;margin:1rem 0 .45rem}
+    .editorial-enrichment p{font-size:.92rem;color:#334155;margin-top:.65rem}
+    .editorial-eyebrow{font-size:.76rem!important;font-weight:800;text-transform:uppercase;
+                       letter-spacing:.055em;color:#9a3412!important;margin:0 0 .4rem!important}
+    .editorial-enrichment ul{padding-left:1.15rem;margin-top:.45rem;color:#334155}
+    .editorial-enrichment li{margin:.3rem 0;font-size:.9rem}
+    .editorial-decision{margin-top:1rem;padding-top:.15rem;border-top:1px solid #e2e8f0}
+    .editorial-links{display:flex;flex-wrap:wrap;gap:.65rem 1rem;margin-top:1rem}
+    .editorial-links a{font-size:.86rem;font-weight:700;color:#9a3412}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
     .seo-opportunity{margin-top:1rem;padding:1rem;background:#fff7ed;
@@ -902,7 +979,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 </nav>
 
 <main>
-  ${renderGallery(images, safeTitle)}
+  ${renderGallery(images, safeImageTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
@@ -911,6 +988,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     <div class="cta">
       ${actionHtml}
     </div>
+    ${editorialHtml}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
@@ -1114,7 +1192,7 @@ export async function onRequest(context) {
     const coversEnabled = ['preview', 'production'].includes(context.env?.APP_ENV);
     const coverResolveStartedAt = perfNow();
     const previewCoverSrc = coversEnabled && originalImages[0]
-        ? await resolvePreviewCoverUrl(context, item.id, 0, originalImages[0])
+        ? await resolvePreviewCoverUrl(context, item.id, coverSources(item).indexOf(originalImages[0]), originalImages[0])
         : null;
     recordPerf(context, 'cover_resolve', coverResolveStartedAt, {
         found: Boolean(previewCoverSrc),
@@ -1124,8 +1202,28 @@ export async function onRequest(context) {
         ? selectRelatedBooks(catalog.items, item)
         : [];
 
+    let googleImages = null;
+    if (context.env?.COVER_GOOGLE_QUALITY_GATE === 'true') {
+        const positions = originalImages.map(source => coverSources(item).indexOf(source));
+        const copies = await Promise.all(originalImages.map((source, index) => findPreviewCover(context, item.id, positions[index], source)));
+        googleImages = copies
+            .map((copy, index) => ({ current: copy?.entry?.current, index }))
+            .filter(candidate => googleReadyImage(candidate.current))
+            // La primera de la lista es la que Google toma como principal. Las
+            // que ya cumplen el mínimo de 2027 van adelante: sirven hoy, van a
+            // seguir sirviendo y no arrastran el aviso de resolución. Las que
+            // sólo cumplen el mínimo vigente quedan detrás, pero NO se
+            // descartan — descartarlas era lo que dejaba miles de libros fuera
+            // del feed. El orden dentro de cada grupo se conserva.
+            .sort((left, right) =>
+                (googleFutureReadyImage(right.current) ? 1 : 0) -
+                (googleFutureReadyImage(left.current) ? 1 : 0))
+            .map(candidate => new URL(
+                `/book-cover/${item.id}/${positions[candidate.index] === 0 ? 'cover.jpg' : `cover-${positions[candidate.index] + 1}.jpg`}`,
+                navigationBase).toString());
+    }
     const renderStartedAt = perfNow();
-    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks);
+    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks, googleImages);
     recordPerf(context, 'render', renderStartedAt);
 
     const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;
