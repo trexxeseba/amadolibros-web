@@ -12,7 +12,10 @@ import {
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
 
 const ITEMS = SEO_CATEGORIES.map((category, index) => ({
-    id: category.kind === 'tarot-decks' ? 'MLU624123456' : `MLU${index + 1}`,
+    id: category.kind === 'tarot-decks' ? 'MLU624123456'
+        : category.tarotFilter === 'oracle-decks' ? 'MLU643087668'
+            : category.tarotFilter === 'study-books' ? 'MLU804612402'
+                : `MLU${index + 1}`,
     title: `Libro de prueba ${category.name}`,
     author: `Autor ${index + 1}`,
     price: 1000 + index,
@@ -89,8 +92,8 @@ test.beforeEach(() => {
 });
 
 test('la allowlist contiene las categorías base y las verticales comerciales aprobadas', () => {
-    assert.equal(SEO_CATEGORIES.length, 14);
-    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 14);
+    assert.equal(SEO_CATEGORIES.length, 19);
+    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 19);
     for (const category of SEO_CATEGORIES) {
         assert.match(category.title, /Uruguay.*\| Amado Libros$/);
         assert.ok(category.description.length >= 100);

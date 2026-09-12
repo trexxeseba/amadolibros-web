@@ -26,6 +26,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
+import { VERIFIED_TAROT_MERCH_CORRECTIONS } from '../../functions/_shared/tarot-merch-corrections.js';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -311,6 +312,11 @@ export function needsReview({ primaryType, format, text }) {
 const CIELO_ORACLE_IDS = new Set(['MLU643087668', 'MLU669963610']);
 
 export function applyVerifiedMerchCorrection(row) {
+  const correction = VERIFIED_TAROT_MERCH_CORRECTIONS.find(entry => entry.id === row.id || (entry.isbn && entry.isbn === row.isbn));
+  if (correction) {
+    const { id, isbn, ...fields } = correction;
+    return { ...row, ...fields };
+  }
   if (!CIELO_ORACLE_IDS.has(row.id)) return row;
   if (row.isbn && row.isbn !== '9789877782363') return row;
   return { ...row, primary_type: 'oraculo', format: 'mazo', bundle: 'mazo_mas_guia' };

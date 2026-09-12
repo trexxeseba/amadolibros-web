@@ -39,3 +39,32 @@ Se revisaron las descripciones de las diez fichas públicas el 12/09/2026. Las r
 ## Verificación
 
 La prueba `functions/__tests__/esoterismo-cleanup.test.js` comprueba la permanencia de las correcciones, los contadores, la pertenencia de los diez títulos a las páginas renderizadas y el formato del oráculo. Las suites existentes cubren clasificación, rutas, navegación, merchandising y fichas.
+
+## Ampliación: Cábala Uruguay y entrega visible
+
+Pedido explícito de Seba: página de Kabbalah para Uruguay y distintivo literal «Te llega hoy».
+
+- Nueva landing `/libros/esoterismo-tarot/cabala-kabbalah`, alimentada por la subcategoría existente. Tiene título, H1, descripción, canonical, breadcrumbs, guía de compra y entrada automática en el sitemap de categorías. Se enlaza desde Esoterismo y la navegación de categorías.
+- Un distintivo compartido muestra «Te llega hoy» y «Montevideo» en los productos activos con stock de portada, catálogo, categorías y ficha. No aparece en productos por encargo o sin stock. Es un mensaje comercial fijo solicitado por el dueño; no calcula horario de corte, días hábiles ni disponibilidad de cadetería. No cambia las reglas de envío, checkout ni datos estructurados.
+- Los estilos se incluyen una sola vez por página, también en la portada Astro.
+- Tras recibir «LISTO», se revisaron 220 publicaciones (incluidos duplicados y ediciones), con 170 cambios de rutas respecto de la primera tanda. El detalle antes/después está en `esoterismo-curation-2026-09-12.json`. Se conservan los 17.195 IDs públicos.
+- Las correcciones de la primera tanda se conservan. La ampliación queda en la misma PR Draft, sin merge ni publicación productiva.
+
+## Tanda completa y navegación
+
+- Cuatro accesos visibles: mazos de tarot, mazos de oráculo, libros de tarot/oráculos y libros de esoterismo. Las tres nuevas selecciones complementan la página de mazos existente.
+- Nueva categoría Juegos y actividades, con acceso desde la portada: incluye Mi maleta de yoga, El juego del ahora, Magic Rabbit y STOP. Los recursos infantiles conservan un acceso secundario por edad.
+- Constelaciones familiares queda dentro de Desarrollo personal, con Hellinger, Siegfried Essen y otros títulos explícitos. Principios místicos de Thomas Hübl se incluye por instrucción expresa de Seba como lectura complementaria, conservando además Espiritualidad. Tarot sistémico transgeneracional se puede encontrar desde ambas materias.
+- Yoga y meditación sale de la mezcla de esoterismo. Se agregan las divisiones temáticas requeridas por la tanda, manteniendo Sufismo y Cábala.
+- 27 publicaciones de tarot/oráculos reciben una corrección persistente de formato y sistema. Los conjuntos de mazo y libro revisados no figuran como libros de estudio. No se infieren idiomas, cantidades de cartas ni contenidos desconocidos.
+- Las tarjetas de Alma y Frin (MLU697305757) y Deleuze y la brujería (MLU706573878) amplían el encuadre en 1,65× y 1,72× respectivamente, conservando la proporción. Se aplica a tarjetas de portada, catálogo y categorías. Los archivos originales y las galerías no se editan.
+
+Fuentes editoriales consultadas para los casos ambiguos:
+
+- https://almalepik.com/nuestro-catalogo/ — Thomas Hübl y Bert Hellinger; la proximidad comercial no convierte Principios místicos en un manual técnico de constelaciones.
+- https://blume.net/naturaleza/2260-la-magia-de-los-hongos-9788419094834.html — historia natural y cultural de hongos.
+- https://www.lascuarentaeditorial.com.ar/productos/deleuze-y-la-brujeria-de-mark-fisher-y-matt-lee-digital/ — ensayos filosóficos de Matt Lee y Mark Fisher.
+- https://www.editorialsaban.com.ar/productos/amor-en-magdala-mario-saban/ — bitácora espiritual, con acceso secundario a Cábala.
+- https://www.editorialkairos.com/catalogo/p/el-juego-del-ahora — juego de cartas didácticas.
+
+Los títulos y descripciones originales de producto no se reescriben. La categorización describe la materia de las obras sin validar afirmaciones sobrenaturales ni terapéuticas.

@@ -11,6 +11,7 @@ import { classifyItem } from '../../scripts/seo/generate-tarot-merch-tags.mjs';
 
 const data = JSON.parse(readFileSync(new URL('../../astro-front/public/data/active-categories.json', import.meta.url)));
 const corrections = JSON.parse(readFileSync(new URL('../../scripts/categorize/manual-corrections.json', import.meta.url)));
+const audit = JSON.parse(readFileSync(new URL('../../docs/seo/esoterismo-curation-2026-09-12.json', import.meta.url))).records;
 const ids = ['MLU661851377', 'MLU643087668', 'MLU643758459', 'MLU698362131', 'MLU646991953', 'MLU650471127', 'MLU706775946', 'MLU669972586', 'MLU477509991', 'MLU613405055'];
 const items = ids.map((id, index) => ({ id, title: `Edición verificada ${index}`, status: 'active', available_quantity: 1, price: 1000, pictures: [] }));
 
@@ -57,7 +58,7 @@ test('las páginas muestran los títulos en su destino y ofrecen filtros para la
         assert.equal(html.includes(`/libro/${id}/`), expected, `${category}: ${id}`);
       }
       if (category === 'esoterismo-tarot') {
-        assert.ok(html.includes('subcategoria=cabala-kabbalah'));
+        assert.ok(html.includes('/libros/esoterismo-tarot/cabala-kabbalah'));
         assert.ok(html.includes('subcategoria=espiritualidad-energia'));
       }
       if (category === 'infantil-juvenil') assert.ok(html.includes('subcategoria=educacion-menstrual'));
@@ -79,4 +80,44 @@ test('Cielo tiene su luna conserva el mazo y deja de aparecer como libro de estu
   }
   const unrelated = classifyItem({ id: 'MLU999', title: 'Libro sobre oráculos' });
   assert.equal(unrelated.format, 'libro');
+});
+
+test('la tanda completa conserva sus destinos al regenerar y los formatos revisados no vuelven a confundirse', () => {
+  const lookup = buildTagLookup(TAROT_MERCH_TAGS);
+  for (const row of audit) {
+    const result = classify({ id: row.id, title: 'Alma Magia Tarot Yoga', status: 'active' }, corrections.find(c => c.mlu === row.id));
+    assert.equal(result.method, 'manual', row.id);
+    const paths = normalizeCategoryPaths([[result.primaryCategoryId, result.subcategoryId], ...result.secondaryCategoryPaths.map(p => [p.categoryId, p.subcategoryId])]);
+    assert.deepEqual(paths, row.after, row.id);
+    assert.deepEqual(normalizeCategoryPaths(data.items[row.id]), row.after, row.id);
+    if (row.merch) {
+      const generated = classifyItem({ id: row.id, isbn: row.isbn, title: row.title });
+      assert.equal(generated.format, row.merch.format, row.id);
+      assert.equal(lookup(row.id)?.format, row.merch.format, row.id);
+      assert.equal(lookup(row.id)?.primary_type, row.merch.primary_type, row.id);
+    }
+  }
+});
+
+test('los cuatro accesos separan un tarot con libro, un oráculo, un manual y un libro de Cábala', async () => {
+  const sampleIds = ['MLU608201824', 'MLU643087668', 'MLU804612402', 'MLU643758459'];
+  const expected = new Map([
+    ['mazos', 'MLU608201824'], ['oraculos', 'MLU643087668'],
+    ['libros-tarot-oraculos', 'MLU804612402'], ['libros-esoterismo', 'MLU643758459'],
+  ]);
+  const originalCaches = globalThis.caches;
+  globalThis.caches = { default: { async match(request) {
+    if (request.url.endsWith('/data/active-categories.json')) return Response.json(data);
+    if (request.url === CATALOG_URL) return Response.json({ items: sampleIds.map(id => ({ id, title: id, status: 'active', available_quantity: 1, price: 1000, pictures: [] })) });
+    return null;
+  }, async put() {} } };
+  try {
+    for (const [path, expectedId] of expected) {
+      const response = await categoryRequest({ request: new Request(`https://preview.example/libros/esoterismo-tarot/${path}`), params: { path: ['esoterismo-tarot', path] }, env: { APP_ENV: 'test' }, data: {}, waitUntil() {} });
+      const html = await response.text();
+      assert.equal(response.status, 200, path);
+      for (const id of sampleIds) assert.equal(html.includes(`/libro/${id}/`), id === expectedId, `${path}: ${id}`);
+      assert.match(html, /Te llega hoy/);
+    }
+  } finally { globalThis.caches = originalCaches; }
 });

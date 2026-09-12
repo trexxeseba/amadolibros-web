@@ -104,6 +104,7 @@ test('las guías quedan limitadas a verticales con contenido editorial propio', 
   assert.deepEqual(conGuia, [
     'esoterismo-tarot',
     'esoterismo-tarot/mazos',
+    'esoterismo-tarot/cabala-kabbalah',
     'psicologia/psicoanalisis',
     'psicologia/psicomotricidad',
     'psicologia/autismo',

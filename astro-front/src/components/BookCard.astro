@@ -1,5 +1,6 @@
 ---
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
+import { deliveryBadgeHtml } from '../../../shared/delivery-badge.js';
 import {
   buildBookWhatsAppMessage,
   whatsappHref,
@@ -94,6 +95,7 @@ const hasFreeShipping = book.price >= FREE_SHIPPING_THRESHOLD;
   </a>
 
   <div class="bc-body">
+    <Fragment set:html={deliveryBadgeHtml(book.status === 'active' && Number(book.available_quantity) > 0)} />
     <a href={fichaHref} class="bc-title-link">
       <p class="bc-title">{book.title}</p>
     </a>
