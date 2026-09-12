@@ -22,8 +22,8 @@ export const TAROT_MERCH_TAGS_META = Object.freeze({
     "thoth": 5
   },
   "por_format": {
-    "libro": 86,
-    "mazo": 249,
+    "libro": 85,
+    "mazo": 250,
     "desconocido": 192
   },
   "por_language": {
@@ -35,7 +35,8 @@ export const TAROT_MERCH_TAGS_META = Object.freeze({
   "needs_review_count": 262,
   "is_new_arrival_count": 5,
   "is_restocked_count": 0,
-  "restock_evidence_available": true
+  "restock_evidence_available": true,
+  "verified_corrections_at": "2026-09-12"
 });
 
 export const TAROT_MERCH_TAGS = Object.freeze([
@@ -310,7 +311,7 @@ export const TAROT_MERCH_TAGS = Object.freeze([
   Object.freeze({"id":"MLU641291930","title":"Diosas, Dioses Y Guardianes Oráculo","author":"SOPHIE BASHFORD","status":"paused","stock":null,"isbn":"9788417851606","primary_type":"oraculo","deck_family":null,"format":"desconocido","bundle":"desconocido","level":"desconocido","language":"desconocido","edition_style":null,"is_new_arrival":false,"is_restocked":false,"needs_review":true,"review_reason":"no se pudo determinar si es un mazo o un libro con las señales de texto disponibles","duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU641291930","MLU652733930"]}),
   Object.freeze({"id":"MLU641501270","title":"Tarot Mini Ceccoli Libro Y Cartas","author":"AUTOR","status":"paused","stock":null,"isbn":"9788865276563","primary_type":"tarot","deck_family":null,"format":"libro","bundle":"desconocido","level":"desconocido","language":"desconocido","edition_style":"bolsillo_lata","is_new_arrival":false,"is_restocked":false,"needs_review":false,"review_reason":null,"duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU641501270","MLU654807920"]}),
   Object.freeze({"id":"MLU641919482","title":"Pagana Tarot Oráculo Cartas Saraiba","author":"Aitor Saraiba","status":"active","stock":1,"isbn":"9788419164469","primary_type":"tarot","deck_family":null,"format":"mazo","bundle":"solo_mazo","level":"desconocido","language":"espanol","edition_style":null,"is_new_arrival":false,"is_restocked":false,"needs_review":true,"review_reason":"menciona 2 o más sistemas distintos (tarot/oráculo/lenormand/kipper) en el mismo título o descripción","duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU641919482","MLU671336960"]}),
-  Object.freeze({"id":"MLU643087668","title":"Primera Menstruación Cielo Tiene Su Luna Libro + Oráculo","author":"María Eugenia Ortega","status":"active","stock":5,"isbn":"9789877782363","primary_type":"oraculo","deck_family":null,"format":"libro","bundle":"desconocido","level":"desconocido","language":"espanol","edition_style":null,"is_new_arrival":false,"is_restocked":false,"needs_review":false,"review_reason":null,"duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU643087668","MLU669963610"]}),
+  Object.freeze({"id":"MLU643087668","title":"Primera Menstruación Cielo Tiene Su Luna Libro + Oráculo","author":"María Eugenia Ortega","status":"active","stock":5,"isbn":"9789877782363","primary_type":"oraculo","deck_family":null,"format":"mazo","bundle":"mazo_mas_guia","level":"desconocido","language":"espanol","edition_style":null,"is_new_arrival":false,"is_restocked":false,"needs_review":false,"review_reason":null,"duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU643087668","MLU669963610"]}),
   Object.freeze({"id":"MLU643192635","title":"Mini Radiant Wise Spirit Tarot - Colman Smith Y Waite Arthur","author":"Colman Smith Pamela y Waite Arthur Edward","status":"paused","stock":null,"isbn":"9788865276556","primary_type":"tarot","deck_family":null,"format":"desconocido","bundle":"desconocido","level":"desconocido","language":"desconocido","edition_style":"bolsillo_lata","is_new_arrival":false,"is_restocked":false,"needs_review":true,"review_reason":"no se pudo determinar si es un mazo o un libro con las señales de texto disponibles","duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU643192635","MLU643231301"]}),
   Object.freeze({"id":"MLU643231351","title":"Tarot De La Nuit - Tarot De La Noche, De Carole-anne Eschenazi., Vol. Ninguno. Editorial Llewellyn, Tapa Blanda En Inglés, 2018","author":"Carole-Anne Eschenazi","status":"active","stock":1,"isbn":"9780738759845","primary_type":"tarot","deck_family":null,"format":"libro","bundle":"desconocido","level":"desconocido","language":"ingles","edition_style":null,"is_new_arrival":false,"is_restocked":false,"needs_review":false,"review_reason":null,"duplicate_mlu_count":2,"duplicate_mlu_ids":["MLU643231351","MLU688989606"]}),
   Object.freeze({"id":"MLU643333666","title":"De Los Gatos Paganos ( Manual + Cartas ) Tarot","author":"LO SCARABEO","status":"paused","stock":null,"isbn":"9788883959837","primary_type":"tarot","deck_family":null,"format":"libro","bundle":"desconocido","level":"desconocido","language":"desconocido","edition_style":null,"is_new_arrival":false,"is_restocked":false,"needs_review":false,"review_reason":null,"duplicate_mlu_count":1,"duplicate_mlu_ids":["MLU643333666"]}),

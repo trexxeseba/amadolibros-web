@@ -10,7 +10,7 @@
 // revistas, objetos de colección) — reemplaza la idea de "excluir del
 // catálogo": todo activo queda visible en alguna categoría.
 
-export const TAXONOMY_VERSION = 4;
+export const TAXONOMY_VERSION = 5;
 
 // subcategories: null si la categoría no tiene subdivisión (volumen
 // insuficiente para que valga la pena, o no aplica).
@@ -33,6 +33,7 @@ export const CATEGORIES = [
       { id: 'literatura-infantil', name: 'Literatura infantil' },
       { id: 'literatura-juvenil', name: 'Literatura juvenil' },
       { id: 'actividades-aprendizaje', name: 'Actividades y aprendizaje' },
+      { id: 'educacion-menstrual', name: 'Pubertad y educación menstrual' },
     ],
   },
   {
@@ -73,6 +74,7 @@ export const CATEGORIES = [
       { id: 'astrologia', name: 'Astrología' },
       { id: 'cabala-kabbalah', name: 'Cábala y Kabbalah' },
       { id: 'sufismo', name: 'Sufismo' },
+      { id: 'espiritualidad-energia', name: 'Espiritualidad y energía' },
     ],
   },
   {

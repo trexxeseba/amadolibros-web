@@ -310,6 +310,18 @@ function classificationCount(categoryData, classificationId) {
     return 0;
 }
 
+function subcategoryLinksHtml(category, categoryData) {
+    if (!['esoterismo-tarot', 'infantil-juvenil'].includes(category.id)) return '';
+    const root = categoryData.categories?.find(entry => entry.id === category.id);
+    const children = (root?.subcategories || []).filter(entry => Number(entry.count) > 0);
+    if (!children.length) return '';
+    const links = children.map(child => {
+        const query = new URLSearchParams({ categoria: category.id, subcategoria: child.id });
+        return `<a href="/catalogo?${escapeHtml(query.toString())}">${escapeHtml(child.name)}</a>`;
+    }).join('');
+    return `<nav class="category-nav" aria-label="Subcategorías de ${escapeHtml(root.name)}">${links}</nav>`;
+}
+
 // TAROT-HUB-MERCH-1: etiquetas cortas de merchandising para las tarjetas de
 // los módulos "Clásicos" y "Lenormand y Kipper". Sólo texto/estilo — no
 // afectan precio, stock, carrito ni checkout. deck_family/bundle/
@@ -620,7 +632,7 @@ export function editorialGuideHtml(category) {
   </section>`;
 }
 
-function renderPage({ category, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, tarotModules, tarotFinderDataset }) {
+function renderPage({ category, categoryData, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, tarotModules, tarotFinderDataset }) {
     const canonical = `${BASE}${categoryPath(category.id, page)}`;
     const offset = (page - 1) * pageSize;
     const visibleItems = items.slice(offset, offset + pageSize);
@@ -758,6 +770,7 @@ ${categoryBreadcrumbHtml(category)}
   ${biblePathwaysHtml(category)}
   ${psychologyPathwaysHtml(category)}
   ${tarotPathwaysHtml(category)}
+  ${subcategoryLinksHtml(category, categoryData)}
   ${tarotFinderHtml(tarotFinderDataset, canonical)}
   ${editorialGuideHtml(category)}
   ${tarotModulesHtml(tarotModules, navigationBase, canonical, Boolean(tarotFinderDataset?.length))}
@@ -879,6 +892,7 @@ export async function onRequest(ctx) {
     // alternativas". Cero fetchPausedIndex() en la visita normal.
     const html = renderPage({
         category,
+        categoryData,
         categoryUniverseCount,
         items,
         isPreview,

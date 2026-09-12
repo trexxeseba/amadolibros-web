@@ -146,5 +146,161 @@
     "secondaryCategoryPaths": [],
     "tags": ["Programación", "Ingeniería de software", "Calidad de código"],
     "note": "Curación comercial 2026-08-26: Clean Code corresponde a Informática y desarrollo de software; Robert C. Martin se retira de Psicología"
+  },
+  {
+    "mlu": "MLU661851377",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cristianismo",
+      "Contemplación"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El Cristo interior: espiritualidad cristiana y teología; no tarot."
+  },
+  {
+    "mlu": "MLU643087668",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "educacion-menstrual",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "tarot-oraculos"
+      }
+    ],
+    "tags": [
+      "Menstruación",
+      "Pubertad",
+      "Libro y cartas oráculo"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Cielo tiene su luna: educación menstrual como tema principal; conserva Oráculos porque incluye un mazo."
+  },
+  {
+    "mlu": "MLU669963610",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "educacion-menstrual",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "tarot-oraculos"
+      }
+    ],
+    "tags": [
+      "Menstruación",
+      "Pubertad",
+      "Libro y cartas oráculo"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Duplicado de Cielo tiene su luna, ISBN 9789877782363, identificado en el registro de merchandising."
+  },
+  {
+    "mlu": "MLU643758459",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cábala"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El poder de la Kabbalah: se confirma su subcategoría específica."
+  },
+  {
+    "mlu": "MLU698362131",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Pensamiento crítico"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Pedro y la magia del pensamiento: lectura infantil y aprendizaje; magia en el título no define esoterismo."
+  },
+  {
+    "mlu": "MLU646991953",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cábala"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Sefer Yetzirah, El libro de la creación: se confirma Cábala y Kabbalah."
+  },
+  {
+    "mlu": "MLU650471127",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cábala"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El camino del kabbalista: se confirma Cábala y Kabbalah."
+  },
+  {
+    "mlu": "MLU706775946",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Yoga infantil",
+      "Juegos educativos"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Mi maleta de yoga: libro y actividades de yoga para niños; corresponde a actividades infantiles."
+  },
+  {
+    "mlu": "MLU669972586",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Espiritualidad",
+      "Chakras"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Anatomía del espíritu: espiritualidad y energía; no anatomía médica ni tarot."
+  },
+  {
+    "mlu": "MLU477509991",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "educacion-menstrual",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Menstruación",
+      "Pubertad"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: La magia de Daniela: educación menstrual infantil; magia en el título no define esoterismo."
+  },
+  {
+    "mlu": "MLU613405055",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Yoga",
+      "Meditación",
+      "Espiritualidad"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El yoga de Jesús: interpretación espiritual de los Evangelios desde el yoga; no tarot."
   }
 ]
