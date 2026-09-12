@@ -129,7 +129,7 @@ test('la landing filtra productos por la categoría solicitada', async () => {
     assert.ok(html.includes(`href="https://www.amadolibros.com/libro/${psychologyItem.id}/`));
     assert.ok(html.includes(`/book-cover/${psychologyItem.id}/cover.jpg`));
     assert.match(html, /srcset="[^"]+240w,[^"]+360w,[^"]+480w"/);
-    assert.match(html, /<strong>1 título disponible ahora\.<\/strong> Los 791 títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo\./);
+    assert.match(html, /<strong>1 libro<\/strong> · 1 disponible · 0 por encargo/);
 });
 
 test('Biblias une Biblia y Reina-Valera, mientras Reina-Valera conserva su intención propia', async () => {

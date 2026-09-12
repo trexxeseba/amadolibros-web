@@ -400,7 +400,7 @@ export function editorialGuideHtml(category) {
   </section>`;
 }
 
-function renderPage({ category, categoryData, categoryUniverseCount, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, order }) {
+function renderPage({ category, categoryData, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, order }) {
     const simple = isSimpleCategory(category);
     const canonical = `${BASE}${categoryPath(category.id, page)}`;
     const offset = (page - 1) * pageSize;
@@ -463,8 +463,8 @@ function renderPage({ category, categoryData, categoryUniverseCount, items, isPr
     const resultText = items.length === 0
         ? 'Sin productos en esta selección'
         : totalPages > 1
-            ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} ${productNoun}s${simple ? '' : ' disponibles'}`
-            : `${items.length} ${productNoun}${items.length === 1 ? '' : 's'}${simple ? '' : ` disponible${items.length === 1 ? '' : 's'}`}`;
+            ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} ${productNoun}s`
+            : `${items.length} ${productNoun}${items.length === 1 ? '' : 's'}`;
     const cards = visibleItems.map((item, index) => cardHtml(item, index, navigationBase)).join('\n');
     const robots = isPreview || hasUnexpectedParameters || Boolean(order) || items.length === 0
         ? 'noindex, follow'
@@ -472,19 +472,10 @@ function renderPage({ category, categoryData, categoryUniverseCount, items, isPr
     const pageTitle = page > 1 ? `${category.title} — Página ${page}` : category.title;
     const pageDescription = page > 1 ? `${category.description} Página ${page} de ${totalPages}.` : category.description;
     const pagination = paginationHtml({ categoryId: category.id, page, totalPages, order });
-    // TAROT-HUB-MERCH-1: copy inequívoco para esoterismo-tarot — "314 título(s)
-    // informados en la portada" se podía leer como stock inmediato, que no es
-    // lo que dice. El número visible es siempre el de items.length (dinámico,
-    // nunca hardcodeado); el universo por-encargo mayor se nombra sin cifra
-    // propia, sólo cuando existe realmente. El resto de las categorías
-    // conserva el texto original, sin cambios.
+    // Contar la colección visible después de deduplicar, con ambos estados.
     const availableCount = items.filter(item => item.status === 'active' && Number(item.available_quantity) > 0).length;
     const byRequestCount = items.filter(item => item.status === 'paused').length;
-    const scopeText = simple
-        ? `<strong>${items.length} productos</strong> · ${availableCount} disponible${availableCount === 1 ? '' : 's'} · ${byRequestCount} por encargo`
-        : (Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
-            ? `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> Los ${categoryUniverseCount} títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo.`
-            : `<strong>${items.length} título${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'} ahora.</strong> También buscamos ediciones agotadas o difíciles de conseguir por encargo.`);
+    const scopeText = `<strong>${items.length} ${productNoun}${items.length === 1 ? '' : 's'}</strong> · ${availableCount} disponible${availableCount === 1 ? '' : 's'} · ${byRequestCount} por encargo`;
     const waMessage = buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
         motive: 'Consultar por un libro de esta categoría',
@@ -530,9 +521,10 @@ ${categoryBreadcrumbHtml(category)}
   ${biblePathwaysHtml(category)}
   ${psychologyPathwaysHtml(category)}
   ${simple ? '' : subcategoryLinksHtml(category, categoryData)}
-  ${simple ? categoryProductTabsHtml(category) + categoryOrderHtml(category.id, order || 'mezclados') : editorialGuideHtml(category)}
-  <div class="results-head"><h2>${simple ? 'Todos los productos' : 'Libros disponibles'}</h2><p>${resultText}</p></div>
-  ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos disponibles en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
+  ${simple ? categoryProductTabsHtml(category) : editorialGuideHtml(category)}
+  ${categoryOrderHtml(category.id, order || 'mezclados')}
+  <div class="results-head"><h2>${simple ? 'Todos los productos' : 'Todos los libros'}</h2><p>${resultText}</p></div>
+  ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos publicados en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
   ${categoryNavHtml(category.id)}
 </main>
 ${footerHtml(undefined, canonical)}
@@ -571,8 +563,8 @@ export async function onRequest(ctx) {
             headers: { Location: `${clean.pathname}${clean.search}` },
         });
     }
-    const order = isSimpleCategory(category) && requestUrl.searchParams.has('orden') ? parseCategoryOrder(requestUrl.searchParams.get('orden')) : '';
-    const hasUnexpectedParameters = [...requestUrl.searchParams.keys()].some(key => key !== 'page' && !(isSimpleCategory(category) && key === 'orden'))
+    const order = requestUrl.searchParams.has('orden') ? parseCategoryOrder(requestUrl.searchParams.get('orden')) : '';
+    const hasUnexpectedParameters = [...requestUrl.searchParams.keys()].some(key => key !== 'page' && key !== 'orden')
         || requestUrl.searchParams.getAll('page').length > 1 || requestUrl.searchParams.getAll('orden').length > 1;
 
     const [categoryData, activeIndex, pausedIndex] = await Promise.all([
@@ -580,7 +572,7 @@ export async function onRequest(ctx) {
         ['preview', 'production'].includes(ctx.env?.APP_ENV)
             ? fetchActiveIndex(ctx)
             : Promise.resolve(null),
-        isSimpleCategory(category) && ['preview', 'production'].includes(ctx.env?.APP_ENV)
+        ['preview', 'production'].includes(ctx.env?.APP_ENV)
             ? fetchPausedIndex(ctx) : Promise.resolve(null),
     ]);
     if (!categoryData) {
@@ -594,7 +586,7 @@ export async function onRequest(ctx) {
         if (!catalog || !Array.isArray(catalog.items)) {
             return errorPage(503, 'Catálogo temporalmente no disponible', 'Intentá nuevamente en unos minutos.');
         }
-        if (isSimpleCategory(category)) fallbackPaused = catalog.items.filter(item => item.status === 'paused');
+        fallbackPaused = catalog.items.filter(item => item.status === 'paused');
         activeItems = catalog.items.filter(item =>
             item.status === 'active' && Number(item.available_quantity) > 0
         );
@@ -631,18 +623,14 @@ export async function onRequest(ctx) {
             return price || String(a.id).localeCompare(String(b.id));
         });
     let items = dedupeCategoryResults(categoryItems);
-    if (isSimpleCategory(category)) {
-        const selectedOrder = order || 'mezclados';
-        if (['recientes', 'antiguos'].includes(selectedOrder) && items.some(item => !item.start_time)) {
-            // El índice ligero conserva stock/precio actuales, pero no fechas.
-            // Sólo se toma start_time del catálogo; nunca se pisa disponibilidad.
-            const dates = await fetchCategoryDates(ctx);
-            items = items.map(item => ({ ...item, start_time: item.start_time || dates.get(item.id) || null }));
-        }
-        items = orderCategoryItems(items, selectedOrder);
+    const selectedOrder = order || 'mezclados';
+    if (['recientes', 'antiguos'].includes(selectedOrder) && items.some(item => !item.start_time)) {
+        // El índice ligero conserva stock/precio actuales, pero no fechas.
+        // Sólo se toma start_time del catálogo; nunca se pisa disponibilidad.
+        const dates = await fetchCategoryDates(ctx);
+        items = items.map(item => ({ ...item, start_time: item.start_time || dates.get(item.id) || null }));
     }
-    const categoryUniverseCount = classificationIds.reduce((total, id) => total + classificationCount(categoryData, id), 0)
-        - excludedClassificationIds.reduce((total, id) => total + classificationCount(categoryData, id), 0);
+    items = orderCategoryItems(items, selectedOrder);
     const pageSize = BIBLE_CATEGORY_IDS.has(category.id) ? 24 : MAX_RESULTS;
     const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
     if (pageParam.page > totalPages) {
@@ -653,7 +641,6 @@ export async function onRequest(ctx) {
     const html = renderPage({
         category,
         categoryData,
-        categoryUniverseCount,
         items,
         isPreview,
         hasUnexpectedParameters,

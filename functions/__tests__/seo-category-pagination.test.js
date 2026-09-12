@@ -71,7 +71,7 @@ test('1. primera página sirve 48 fichas y enlaces HTML a página 2', async () =
   const { response, html } = await render();
   assert.equal(response.status, 200);
   assert.equal(ids(html).length, PAGE_SIZE);
-  assert.match(html, /Mostrando 1–48 de 100 libros disponibles/);
+  assert.match(html, /Mostrando 1–48 de 100 libros/);
   assert.match(html, /<a class="pg-ctl" rel="next" href="\/libros\/psicologia\?page=2">Siguiente/);
   assert.match(html, /<meta name="robots" content="index, follow">/);
 });
@@ -80,7 +80,7 @@ test('2. página 2 es indexable y self-canonical', async () => {
   const { response, html } = await render('?page=2');
   assert.equal(response.status, 200);
   assert.equal(ids(html).length, PAGE_SIZE);
-  assert.match(html, /Mostrando 49–96 de 100 libros disponibles/);
+  assert.match(html, /Mostrando 49–96 de 100 libros/);
   assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libros\/psicologia\?page=2">/);
   assert.match(html, /<meta name="robots" content="index, follow">/);
   assert.match(html, /<a class="pg-ctl" rel="prev" href="\/libros\/psicologia">‹ Anterior<\/a>/);
@@ -89,7 +89,7 @@ test('2. página 2 es indexable y self-canonical', async () => {
 test('3. última página sirve el resto y no enlaza a una página inexistente', async () => {
   const { html } = await render('?page=3');
   assert.equal(ids(html).length, 4);
-  assert.match(html, /Mostrando 97–100 de 100 libros disponibles/);
+  assert.match(html, /Mostrando 97–100 de 100 libros/);
   assert.match(html, /<span class="pg-ctl is-off" aria-disabled="true">Siguiente/);
 });
 
@@ -136,6 +136,6 @@ test('9. parámetros ajenos a page no crean otra landing indexable', async () =>
 test('10. preview conserva navegación relativa y permanece noindex', async () => {
   const { html } = await render('?page=2', 'preview');
   assert.match(html, /<meta name="robots" content="noindex, follow">/);
-  assert.match(html, /href="https:\/\/preview\.example\/libro\/MLU0049\//);
+  assert.match(html, /href="https:\/\/preview\.example\/libro\/MLU\d+\//);
   assert.match(html, /href="\/libros\/psicologia\?page=3"/);
 });
