@@ -82,3 +82,7 @@ Seba pidió quitar la introducción larga, el cuestionario y los módulos Para e
 - Se amplía Aquarian (MLU693752792 y MLU693866286) 1,65×, Golden Marseille (MLU616949061) 1,70× y Universal Waite en lata (MLU644725123) 1,75×, según las capturas. Sólo cambia el encuadre de tarjeta, conservando proporciones y originales. Las fotos ampliadas solicitan variantes de hasta 960 px para evitar usar una miniatura al agrandarlas.
 - Aquarian incluye físicamente un mazo, tal como muestra la captura y el ISBN 9781572818460. Se corrige su formato persistente para que también aparezca en la colección compartida de cartas.
 - Se sustituyen las pruebas de render del cuestionario retirado por pruebas de la grilla, orden global, paginación, deduplicación, redirección, canonical y enriquecimiento de fechas sin alterar el inventario.
+
+Revisión de especialistas solicitada por Seba: acceso compacto a «Ver mazos de tarot y oráculos» junto al ordenamiento en la raíz; contador de productos y alcance breve también en las selecciones de cartas y libros. No se reintroducen guías, módulos ni animaciones parpadeantes.
+
+La revisión Cloudflare detectó que el orden cronológico parseaba el catálogo completo de 12,7 MB en cada SSR. Se agrega una proyección ID→fecha cacheada durante 60 s, sin precio ni stock: en los hits sólo se parsea ese mapa; en miss aún se consulta el catálogo completo. Un fallo no guarda mapas vacíos.

@@ -29,6 +29,7 @@ import { hasClassificationId } from '../_shared/category-paths.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../../shared/card-cover-framing.js';
 import { parseCategoryOrder, orderCategoryItems, categoryOrderHtml, CATEGORY_ORDER_STYLES } from '../_shared/category-order.js';
+import { fetchCategoryDates } from '../_shared/category-dates.js';
 
 const TAROT_CATEGORY_ID = 'esoterismo-tarot';
 const TAROT_DECKS_CATEGORY_ID = 'esoterismo-tarot/mazos';
@@ -452,11 +453,12 @@ function renderPage({ category, categoryData, categoryUniverseCount, items, isPr
     };
     const rangeFrom = items.length === 0 ? 0 : offset + 1;
     const rangeTo = offset + visibleItems.length;
+    const productNoun = simple ? 'producto' : 'libro';
     const resultText = items.length === 0
         ? 'Sin títulos disponibles'
         : totalPages > 1
-            ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} libros disponibles`
-            : `${items.length} libro${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'}`;
+            ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} ${productNoun}s disponibles`
+            : `${items.length} ${productNoun}${items.length === 1 ? '' : 's'} disponible${items.length === 1 ? '' : 's'}`;
     const cards = visibleItems.map((item, index) => cardHtml(item, index, navigationBase)).join('\n');
     const robots = isPreview || hasUnexpectedParameters || Boolean(order) || items.length === 0
         ? 'noindex, follow'
@@ -470,7 +472,7 @@ function renderPage({ category, categoryData, categoryUniverseCount, items, isPr
     // nunca hardcodeado); el universo por-encargo mayor se nombra sin cifra
     // propia, sólo cuando existe realmente. El resto de las categorías
     // conserva el texto original, sin cambios.
-    const scopeText = category.id === TAROT_CATEGORY_ID
+    const scopeText = simple
         ? (Number.isFinite(categoryUniverseCount) && categoryUniverseCount > items.length
             ? `<strong>${items.length} disponible${items.length === 1 ? '' : 's'} ahora</strong> · más títulos disponibles por encargo`
             : `<strong>${items.length} disponible${items.length === 1 ? '' : 's'} ahora</strong>`)
@@ -617,8 +619,7 @@ export async function onRequest(ctx) {
         if (!selectedOrder.startsWith('precio-') && items.some(item => !item.start_time)) {
             // El índice ligero conserva stock/precio actuales, pero no fechas.
             // Sólo se toma start_time del catálogo; nunca se pisa disponibilidad.
-            const catalog = await fetchCatalog(ctx).catch(() => null);
-            const dates = new Map((catalog?.items || []).map(item => [item.id, item.start_time]));
+            const dates = await fetchCategoryDates(ctx);
             items = items.map(item => ({ ...item, start_time: item.start_time || dates.get(item.id) || null }));
         }
         items = orderCategoryItems(items, selectedOrder);

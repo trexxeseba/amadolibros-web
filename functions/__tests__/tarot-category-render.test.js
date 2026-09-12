@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { onRequest } from '../libros/[[path]].js';
 import { CATALOG_URL, PRODUCTION_MANIFEST_URL, PAUSED_MANIFEST_URL, R2_BASE } from '../_shared/catalog.js';
 import { orderCategoryItems } from '../_shared/category-order.js';
+import { fetchCategoryDates, CATEGORY_DATES_CACHE_URL } from '../_shared/category-dates.js';
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
 
 let items;
@@ -118,4 +119,45 @@ test('el enriquecimiento de fechas respeta el precio, el stock y el universo del
   assert.match(html, /9[.,]876 UYU/);
   assert.match(html, /4[.,]567 UYU/);
   assert.ok(!html.includes(`/libro/${items[2].id}/`));
+});
+
+
+test('la proyección de fechas evita releer el catálogo completo y sólo cachea fechas válidas', async () => {
+  let catalogReads = 0;
+  const entries = new Map();
+  globalThis.caches.default = {
+    async match(request) {
+      if (request.url === CATEGORY_DATES_CACHE_URL) return entries.get(request.url)?.clone();
+      assert.equal(request.url, CATALOG_URL);
+      catalogReads++;
+      return Response.json({ items: [items[0], { id: 'MLU9999', start_time: 'desconocida' }] });
+    },
+    async put(request, response) { entries.set(request.url, response.clone()); },
+  };
+  const pending = [];
+  const first = await fetchCategoryDates({ waitUntil(p) { pending.push(p); } });
+  await Promise.all(pending);
+  const second = await fetchCategoryDates({});
+  assert.deepEqual([...first], [[items[0].id, items[0].start_time]]);
+  assert.deepEqual([...second], [...first]);
+  assert.equal(catalogReads, 1);
+  assert.equal(entries.get(CATEGORY_DATES_CACHE_URL).headers.get('cache-control'), 'public, max-age=60');
+  assert.deepEqual(await entries.get(CATEGORY_DATES_CACHE_URL).json(), { [items[0].id]: items[0].start_time });
+});
+
+test('un catálogo fallido no guarda una proyección vacía y permite reintentar', async () => {
+  let reads = 0, writes = 0;
+  globalThis.caches.default = {
+    async match(request) {
+      if (request.url === CATEGORY_DATES_CACHE_URL) return null;
+      assert.equal(request.url, CATALOG_URL);
+      return ++reads === 1 ? new Response('JSON incompleto') : Response.json({ items: [items[0]] });
+    },
+    async put() { writes++; },
+  };
+  const ctx = { waitUntil() {} };
+  assert.equal((await fetchCategoryDates(ctx)).size, 0);
+  assert.equal(writes, 0);
+  assert.equal((await fetchCategoryDates(ctx)).size, 1);
+  assert.equal(writes, 1);
 });
