@@ -47,6 +47,7 @@ Pedido explícito de Seba: página de Kabbalah para Uruguay y distintivo literal
 - Nueva landing `/libros/esoterismo-tarot/cabala-kabbalah`, alimentada por la subcategoría existente. Tiene título, H1, descripción, canonical, breadcrumbs, guía de compra y entrada automática en el sitemap de categorías. Se enlaza desde Esoterismo y la navegación de categorías.
 - Un distintivo compartido muestra «Te llega hoy» y «Montevideo» en los productos activos con stock de portada, catálogo, categorías y ficha. No aparece en productos por encargo o sin stock. Es un mensaje comercial fijo solicitado por el dueño; no calcula horario de corte, días hábiles ni disponibilidad de cadetería. No cambia las reglas de envío, checkout ni datos estructurados.
 - Los estilos se incluyen una sola vez por página, también en la portada Astro.
+- La portada productiva usa HomeV2Topics y HomeV2Shelf: allí se incorporan los tres accesos específicos y el sello en las siete fichas disponibles. Se conservan también los componentes anteriores para sus usos existentes.
 - Tras recibir «LISTO», se revisaron 220 publicaciones (incluidos duplicados y ediciones), con 170 cambios de rutas respecto de la primera tanda. El detalle antes/después está en `esoterismo-curation-2026-09-12.json`. Se conservan los 17.195 IDs públicos.
 - Las correcciones de la primera tanda se conservan. La ampliación queda en la misma PR Draft, sin merge ni publicación productiva.
 

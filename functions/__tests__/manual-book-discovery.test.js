@@ -18,7 +18,7 @@ test('la portada V2 incorpora descubrimiento editorial mobile-first', () => {
   assert.match(home, /import HomeV2Topics/);
   assert.match(home, /<HomeV2Topics\s*\/>/);
   assert.match(topics, /Todo empieza por una curiosidad\./);
-  assert.equal((topics.match(/title: '/g) || []).length, 8);
+  assert.equal((topics.match(/title: '/g) || []).length, 11); // Ocho temas principales y tres accesos específicos.
   assert.match(topics, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(topics, /@media \(min-width: 700px\)/);
   assert.match(topics, /@media \(min-width: 1100px\)/);
