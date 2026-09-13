@@ -231,3 +231,34 @@ test('el timeout queda limitado a 5 segundos', async () => {
   });
   assert.equal(scheduledMs, 5000);
 });
+
+// El runtime de Cloudflare sólo admite 'follow' y 'manual'. Con 'error' la
+// llamada tira antes de salir, el catch la convierte en 'network-error' y el
+// ping no se envía nunca — en silencio, con el sync en verde. Los demás tests
+// no lo detectan porque mockean fetch y el mock acepta cualquier opción: por
+// eso este fija el valor exacto.
+test('no usa un valor de redirect que el runtime de Cloudflare rechaza', async () => {
+  let opciones = null;
+  const fetchFn = async (_url, init) => { opciones = init; return { ok: true, status: 200 }; };
+
+  const resultado = await notifyHealthcheck(
+    { SYNC_HEALTHCHECK_URL: 'https://hc-ping.com/abc' },
+    'success',
+    { fetchFn, setTimeoutFn: () => 0, clearTimeoutFn: () => {} },
+  );
+
+  assert.equal(resultado.sent, true);
+  assert.equal(opciones.redirect, 'manual');
+  assert.notEqual(opciones.redirect, 'error');
+});
+
+test('una redirección no se sigue: se registra como error, no se pinga a otro destino', async () => {
+  const fetchFn = async () => ({ ok: false, status: 302 });
+  const resultado = await notifyHealthcheck(
+    { SYNC_HEALTHCHECK_URL: 'https://hc-ping.com/abc' },
+    'success',
+    { fetchFn, setTimeoutFn: () => 0, clearTimeoutFn: () => {} },
+  );
+  assert.equal(resultado.sent, false);
+  assert.equal(resultado.reason, 'http-error');
+});
