@@ -605,3 +605,30 @@ test('28. Merchant publica product_type jerárquico para una o varias rutas cura
     assert.match(xml, /<g:product_type>Libros &gt; Educación &gt; Pedagogía<\/g:product_type>/);
     assert.doesNotMatch(renderFeedItem(book()), /<g:product_type>/);
 });
+
+// Merchant rechazó dos fichas con `utf8_encoding_error [description]`. La
+// causa está acá: slice() corta por unidades UTF-16, así que un carácter
+// astral partido al medio deja un suplente solitario que no es UTF-8 válido.
+test('truncar nunca parte un carácter al medio', () => {
+    const conAstral = 'a'.repeat(19) + '\u{1F31F}' + ' resto del texto';
+    const cortado = truncateMerchantText(conAstral, 20);
+
+    const ultimo = cortado.charCodeAt(cortado.length - 1);
+    assert.equal(ultimo >= 0xD800 && ultimo <= 0xDBFF, false, 'no queda medio carácter al final');
+    assert.equal(
+        Buffer.from(cortado, 'utf8').toString('utf8'),
+        cortado,
+        'el texto truncado sobrevive una ida y vuelta por UTF-8',
+    );
+});
+
+test('truncar conserva entero el carácter astral que entra completo', () => {
+    const texto = 'ab \u{1F31F} cd efgh ijkl';
+    const cortado = truncateMerchantText(texto, 12);
+    assert.equal(cortado.includes('\u{1F31F}'), true, 'no se descarta lo que sí entraba');
+    assert.equal(Buffer.from(cortado, 'utf8').toString('utf8'), cortado);
+});
+
+test('truncar deja intacto el texto que no llega al tope', () => {
+    assert.equal(truncateMerchantText('¿Y La Abuela?', 150), '¿Y La Abuela?');
+});

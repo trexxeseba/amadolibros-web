@@ -109,9 +109,33 @@ correspondientes, más abajo.
   colisiones de **categoría**, no errores de datos: un fondo fuerte en
   psicología, autoayuda, duelo y adicciones choca de frente con la política de
   publicidad personalizada, y el de esoterismo con las de contenido adulto e
-  identidad. No se arreglan corrigiendo un campo. El **único quick win
-  limpio y enteramente nuestro son los 16 ebooks**: si no se venden libros
-  digitales en el sitio, no deberían viajar en el feed.
+  identidad. No se arreglan corrigiendo un campo.
+
+  > **Corrección.** Escribí que el quick win era «sacar los 16 ebooks del
+  > feed». Es falso: **ninguno de los 16 es un ebook.** Los 16 están activos y
+  > los 16 están en nuestro feed; son libros de papel, con «Tapa Dura» y
+  > «Tapa Blanda» escritos en el propio título, que Google clasifica mal.
+  > Sacarlos habría sido esconder stock vendible por un error ajeno. Detalle
+  > producto por producto en `ESTADO-ACTUAL.md`.
+
+- **Quick wins reales, en orden de qué tan nuestro es el problema:**
+
+  1. **`utf8_encoding_error` (2 fichas) — era nuestro, ya está arreglado.**
+     `truncateMerchantText` cortaba con `slice()`, por unidades UTF-16, y
+     partía al medio los caracteres fuera del BMP. Quedaba medio carácter, que
+     no es UTF-8 válido. Reproducido, corregido y con pruebas de regresión.
+  2. **`ebooks_policy_violation` (16) — probablemente nuestro, sin probar.** El
+     feed publica `<g:product_type>` pero no `<g:google_product_category>`, que
+     es el atributo que declara explícitamente el tipo de producto. Es lo
+     primero a probar; no se promete que lo resuelva, y la verificación es la
+     auditoría viendo si bajan a 0.
+  3. **Cuatro clasificaciones absurdas — a disputar en consola.** «Conducta
+     deshonesta» sobre un libro de adolescencia y sobre uno de sobrevivientes
+     de cáncer de mama; «drogas ilegales» sobre *Cannabis Consciente* y sobre
+     una guía de rastreo. Son las familias de política más severas y no
+     conviene dejarlas acumular.
+  4. **Los 311 por categoría — decisión comercial, no técnica.** Implica
+     elegir qué se publica. No se toca sin autorización de Seba.
 
 - **Hallazgo que nadie estaba mirando: hay 3 fuentes primarias.**
   `amadolibros.com` (**AUTOFEED**), `Content API` (API) y `PRODUCTS SOURCE 3`

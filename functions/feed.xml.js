@@ -395,12 +395,24 @@ export function buildFeedDescription(item) {
     return sentence;
 }
 
+// slice() corta por unidades UTF-16, no por caracteres. Un emoji o cualquier
+// carácter fuera del BMP ocupa DOS unidades, así que un corte que cae justo en
+// el medio deja media letra: un suplente solitario. Eso no se puede codificar
+// en UTF-8, y Merchant rechaza la ficha con `utf8_encoding_error [description]`.
+// Se descarta esa mitad huérfana; perder un emoji al final de un texto ya
+// truncado no le cambia nada a nadie, y una ficha rechazada sí.
+function dropLoneSurrogate(text) {
+    const last = text.charCodeAt(text.length - 1);
+    return last >= 0xD800 && last <= 0xDBFF ? text.slice(0, -1) : text;
+}
+
 export function truncateMerchantText(value, maxChars) {
     const text = String(value || '').trim();
     if (text.length <= maxChars) return text;
     const clipped = text.slice(0, maxChars + 1);
     const boundary = clipped.lastIndexOf(' ');
-    return clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars).trim();
+    const cut = clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars);
+    return dropLoneSurrogate(cut).trim();
 }
 
 export function merchantImageLink(item, position = 0) {

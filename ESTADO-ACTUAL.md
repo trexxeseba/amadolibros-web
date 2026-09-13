@@ -45,9 +45,47 @@ Sin bloquear a nadie (`NOT_IMPACTED`): 14 `image_link_internal_error`,
 **311 de los 321 son colisiones de categoría, no errores de datos.** Un fondo
 fuerte en psicología, autoayuda, duelo y adicciones choca con la política de
 publicidad personalizada de Google; el de esoterismo, con las de contenido
-adulto e identidad. No se arreglan corrigiendo un campo. El único quick win
-limpio y enteramente propio son los **16 ebooks**: si el sitio no vende libros
-digitales, no deberían viajar en el feed.
+adulto e identidad. No se arreglan corrigiendo un campo.
+
+> **Corrección de algo que escribí mal hace unas horas.** Dije que «el único
+> quick win limpio son los 16 ebooks: no deberían viajar en el feed». Está
+> mal y el listado producto por producto lo desmiente: **ninguno de los 16 es
+> un ebook.** Los 16 están `active` en el catálogo y los 16 viajan en nuestro
+> feed. Son libros de papel —hay «Tapa Dura» y «Tapa Blanda» escritos en el
+> propio título— que Google clasifica como libro digital. Sacarlos del feed
+> habría sido esconder stock vendible por un error de Google.
+
+**Los 16 supuestos ebooks, con nombre y apellido** (corrida
+[34784222877](https://github.com/trexxeseba/amadolibros-web/actions/runs/34784222877)):
+tres de ellos —`MLU628456890` (Bright Ideas Starter · **Digital Pack**),
+`MLU629748753` (Wider World 3 · **Ebook** + MyEnglishLab) y `MLU711560890`
+(Close-up B1 · con **Ebook** y prácticas)— llevan la palabra en el título
+porque son cursos de inglés en papel que incluyen un código de acceso digital.
+Ahí Google lee «ebook» literal. Los otros trece no tienen ninguna palabra
+digital en el título: son novela, medicina, historia y psicoterapia, y la
+clasificación es sencillamente errónea.
+
+**Lo que falta en el feed.** Hoy se publica `<g:product_type>` pero **no**
+`<g:google_product_category>`. Es el único atributo que le dice a Google
+explícitamente de qué tipo de producto se trata, y es lo primero a probar
+contra esta causa. No se promete que lo resuelva: la verificación es la
+auditoría misma, viendo si esos 16 bajan a 0.
+
+**Cuatro clasificaciones absurdas que conviene disputar en consola:**
+`fake_documents_policy_violation` («conducta deshonesta») sobre *De Crisálida
+A Mariposa. Adolescencia* y sobre *Heroínas Compasivas. Vida Como
+Supervivientes Cáncer Mama`; e `illegal_drugs_policy_violation` sobre
+*Cannabis Consciente* y sobre *Guía Completa De Rastreo*. Son cuatro libros y
+son las familias de política más severas: no conviene dejarlas acumular.
+
+**Un defecto propio, real, encontrado y arreglado.** Los 2
+`utf8_encoding_error` en `[description]` no eran de Google: `truncateMerchantText`
+en `functions/feed.xml.js` cortaba con `slice()`, que trabaja por unidades
+UTF-16. Un carácter fuera del BMP ocupa dos, así que un corte en el medio
+dejaba **medio carácter** —un suplente solitario— que no se puede codificar en
+UTF-8. Reproducido y corregido, con tres pruebas de regresión. Se verifica
+solo: en la próxima auditoría después de que se publique el feed, esa causa
+tiene que pasar de 2 a 0.
 
 **Tres fuentes primarias, y una es AUTOFEED.** `amadolibros.com` (AUTOFEED),
 `Content API` (API) y `PRODUCTS SOURCE 3` (FILE diaria desde
