@@ -88,6 +88,25 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
 
+      - name: Sync healthcheck ping URL to Worker
+        # SYNC-ALERT-1: la Ping URL de Healthchecks.io es el aviso de que el
+        # cron del catálogo dejó de publicar. A diferencia de los tres secrets
+        # de arriba, si falta NO corta el deploy: el heartbeat es opcional y el
+        # Worker lo saltea solo (`notifyHealthcheck` devuelve 'not-configured'),
+        # así que no vale la pena bloquear una publicación del catálogo por un
+        # monitoreo que todavía no se dio de alta.
+        run: |
+          if [ -z "$SYNC_HEALTHCHECK_URL" ]; then
+            echo "::warning::Sin SYNC_HEALTHCHECK_URL en GitHub: el sync no avisa si deja de publicar."
+            exit 0
+          fi
+          cd worker-sync
+          printf '%s' "$SYNC_HEALTHCHECK_URL" | npx wrangler@3 secret put SYNC_HEALTHCHECK_URL
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SYNC_HEALTHCHECK_URL: ${{ secrets.SYNC_HEALTHCHECK_URL }}
+
       - name: Wait for Worker propagation
         # Un cambio de código que altera catálogo/feed debe reflejarse en R2
         # inmediatamente después del deploy; no esperamos al cron del día
