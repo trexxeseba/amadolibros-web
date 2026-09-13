@@ -105,7 +105,9 @@ correspondientes, más abajo.
   procesar, 2 con demora de procesamiento y 2 descripciones con UTF-8
   inválido.
 
-  **Lectura comercial.** Los motivos 1 a 4 y el 6 —311 de los 321— son
+  **Lectura comercial.** Los motivos 1 a 4 y el 6 —**348 de las 368
+  incidencias**, contadas en incidencias y no en productos, porque los 368
+  motivos caen sobre 321 productos y varios acumulan más de uno— son
   colisiones de **categoría**, no errores de datos: un fondo fuerte en
   psicología, autoayuda, duelo y adicciones choca de frente con la política de
   publicidad personalizada, y el de esoterismo con las de contenido adulto e

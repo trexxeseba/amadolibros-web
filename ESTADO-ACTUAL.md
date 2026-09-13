@@ -42,7 +42,11 @@ Los motivos suman 368 sobre 321 productos: hay productos con más de un motivo.
 Sin bloquear a nadie (`NOT_IMPACTED`): 14 `image_link_internal_error`,
 2 `image_link_internal_error_fallback`, 2 `utf8_encoding_error` en descripción.
 
-**311 de los 321 son colisiones de categoría, no errores de datos.** Un fondo
+**348 de las 368 incidencias son colisiones de categoría, no errores de
+datos** — y se cuentan en incidencias, no en productos: los 368 motivos caen
+sobre 321 productos porque hay productos con más de un motivo, así que los 321
+no se reparten entre causas. Las otras 20 incidencias (16 ebooks, 2 documentos
+falsos, 2 drogas) son clasificación errónea. Un fondo
 fuerte en psicología, autoayuda, duelo y adicciones choca con la política de
 publicidad personalizada de Google; el de esoterismo, con las de contenido
 adulto e identidad. No se arreglan corrigiendo un campo.
