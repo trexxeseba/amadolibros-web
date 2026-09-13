@@ -6,6 +6,7 @@ import {
   aggregateDynamicRemarketingUy,
   buildDiagnosis,
   countFeedItems,
+  listProductsByIssue,
   summarizeDataSource,
   summarizeProducts,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -123,4 +124,84 @@ test('la implementación no contiene llamadas de escritura a Merchant API', () =
   assert.doesNotMatch(source, /productInputs:insert|:fetch|triggeraction/i);
   assert.match(source, /merchantapi\.googleapis\.com/);
   assert.doesNotMatch(source, /\/v1beta\//);
+});
+
+test('lista los productos de cada causa, con tope y total real', () => {
+  const products = [
+    {
+      offerId: 'MLU111',
+      attributes: { title: 'Libro de duelo', link: 'https://www.amadolibros.com/libro/MLU111/duelo?utm=x' },
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'personal_hardships_policy_violation',
+          reportingContext: 'DISPLAY_ADS',
+          applicableCountries: ['UY'],
+        }],
+      },
+    },
+    {
+      offerId: 'MLU222',
+      attributes: { title: 'Otro de duelo', link: 'https://usuario:clave@www.amadolibros.com/libro/MLU222/otro' },
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'personal_hardships_policy_violation',
+          reportingContext: 'DISPLAY_ADS',
+          applicableCountries: ['UY'],
+        }],
+      },
+    },
+    {
+      offerId: 'MLU333',
+      attributes: { title: 'Fuera del destino' },
+      dataSource: 'accounts/533/dataSources/2',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'personal_hardships_policy_violation',
+          reportingContext: 'SHOPPING_ADS',
+          applicableCountries: ['UY'],
+        }],
+      },
+    },
+    {
+      offerId: 'MLU444',
+      attributes: { title: 'Fuera del país' },
+      dataSource: 'accounts/533/dataSources/2',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'ebooks_policy_violation',
+          reportingContext: 'DISPLAY_ADS',
+          applicableCountries: ['AR'],
+        }],
+      },
+    },
+  ];
+
+  const grupos = listProductsByIssue(products, { limitPerIssue: 1 });
+
+  assert.equal(grupos.length, 1, 'sólo la causa que aplica al destino y al país');
+  const duelo = grupos[0];
+  assert.equal(duelo.code, 'personal_hardships_policy_violation');
+  assert.equal(duelo.total, 2, 'el total cuenta todos, no sólo la muestra');
+  assert.equal(duelo.sample.length, 1, 'la muestra respeta el tope');
+  assert.equal(duelo.sample[0].offerId, 'MLU111');
+  assert.equal(duelo.sample[0].link, 'https://www.amadolibros.com/libro/MLU111/duelo');
+});
+
+test('el listado por causa nunca imprime credenciales del link', () => {
+  const grupos = listProductsByIssue([
+    {
+      offerId: 'MLU999',
+      attributes: { title: 'Con credenciales', link: 'https://usuario:clave@example.com/x?token=secreto' },
+      productStatus: {
+        itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+  ]);
+
+  const serializado = JSON.stringify(grupos);
+  assert.equal(serializado.includes('clave'), false);
+  assert.equal(serializado.includes('secreto'), false);
+  assert.equal(serializado.includes('usuario'), false);
 });

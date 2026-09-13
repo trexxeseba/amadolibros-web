@@ -253,6 +253,42 @@ export function summarizeProducts(products = [], now = new Date()) {
   };
 }
 
+// Qué productos concretos arrastra cada causa. `summarizeProducts` sólo
+// cuenta, y con un número no se puede hacer nada: para decidir si 16 rechazos
+// por "ebooks" son libros digitales de verdad o papel mal clasificado hay que
+// poder mirarlos uno por uno. Mismos filtros que el agregado —destino Dynamic
+// remarketing y país UY— para que el total de acá y el de allá coincidan.
+export function listProductsByIssue(products = [], { limitPerIssue = 25 } = {}) {
+  const byCode = new Map();
+
+  for (const product of products) {
+    const status = product.productStatus || {};
+    for (const issue of Array.isArray(status.itemLevelIssues) ? status.itemLevelIssues : []) {
+      const countries = Array.isArray(issue.applicableCountries) ? issue.applicableCountries : [];
+      if (!isDynamicRemarketing(issue.reportingContext)) continue;
+      if (countries.length && !countries.some(isUy)) continue;
+
+      const key = asText(issue.code) || '(sin código)';
+      const current = byCode.get(key) || { code: key, total: 0, sample: [] };
+      current.total += 1;
+      if (current.sample.length < limitPerIssue) {
+        const attributes = product.attributes || {};
+        current.sample.push({
+          offerId: asText(product.offerId) || asText(product.name) || null,
+          title: asText(attributes.title) || null,
+          // safeFetchUri, no la URL cruda: mismo saneado que las fuentes, así
+          // nada de lo que se imprime puede arrastrar credenciales ni tokens.
+          link: safeFetchUri(attributes.link),
+          dataSource: asText(product.dataSource) || null,
+        });
+      }
+      byCode.set(key, current);
+    }
+  }
+
+  return [...byCode.values()].sort((a, b) => b.total - a.total || a.code.localeCompare(b.code));
+}
+
 export function buildDiagnosis({ alert, feedCount, dataSources, accountIssues, aggregate, products }) {
   const facts = [];
   const hypotheses = [];
@@ -417,6 +453,28 @@ function reportMarkdown(report) {
     lines.push(`| ${markdownEscape(issue.code)} | ${issue.severity || '—'} | ${issue.productCount ?? issue.products ?? 0} | ${markdownEscape(issue.description || issue.detail || '—')} |`);
   }
 
+  if (report.products?.byDataSource?.length) {
+    lines.push('', '## De dónde salen los productos', '', '| Fuente | Productos |', '| --- | ---: |');
+    for (const row of report.products.byDataSource) {
+      lines.push(`| ${markdownEscape(row.dataSource)} | ${row.count} |`);
+    }
+  }
+
+  if (report.productsByIssue?.length) {
+    lines.push('', '## Qué productos arrastra cada causa', '');
+    for (const group of report.productsByIssue) {
+      lines.push(`### ${group.code} — ${group.total} producto(s)`, '');
+      lines.push('| Oferta | Título | Fuente |', '| --- | --- | --- |');
+      for (const row of group.sample) {
+        lines.push(`| ${markdownEscape(row.offerId || '—')} | ${markdownEscape(row.title || '—')} | ${markdownEscape(row.dataSource || '—')} |`);
+      }
+      if (group.total > group.sample.length) {
+        lines.push(`| … | ${group.total - group.sample.length} más, no listados | |`);
+      }
+      lines.push('');
+    }
+  }
+
   lines.push('', '## Endpoints', '');
   for (const endpoint of report.endpoints) {
     lines.push(`- ${endpoint.name}: ${endpoint.ok ? 'OK' : `ERROR ${endpoint.error?.httpStatus || ''} ${endpoint.error?.apiStatus || ''} — ${endpoint.error?.message || ''}`}`);
@@ -476,6 +534,12 @@ export async function main() {
   const accountIssues = (byName.accountIssues.data || []).map(summarizeAccountIssue);
   const aggregate = finalizeAggregate(aggregateDynamicRemarketingUy(byName.aggregateProductStatuses.data || []));
   const products = byName.products.ok ? summarizeProducts(byName.products.data || [], new Date()) : null;
+  const limitPerIssue = Number(process.env.MERCHANT_ISSUE_SAMPLE_LIMIT) > 0
+    ? Number(process.env.MERCHANT_ISSUE_SAMPLE_LIMIT)
+    : 25;
+  const productsByIssue = byName.products.ok
+    ? listProductsByIssue(byName.products.data || [], { limitPerIssue })
+    : [];
   const alert = {
     observedAt: '2026-08-17T00:20:00-03:00',
     previousActive: 3745,
@@ -509,6 +573,7 @@ export async function main() {
     aggregateStatuses: byName.aggregateProductStatuses.ok ? byName.aggregateProductStatuses.data : null,
     dynamicRemarketingUy,
     products,
+    productsByIssue,
     diagnosis: buildDiagnosis({
       alert,
       feedCount: publicFeed.ok ? publicFeed.items : null,
