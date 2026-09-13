@@ -83,8 +83,12 @@ jobs:
       - name: Write run summary
         if: always()
         run: |
+          # tee, no `>>`: el diagnóstico va al resumen Y al log de la corrida.
+          # Mandarlo sólo al resumen lo dejaba encerrado ahí y en un artefacto
+          # zipeado, así que el dato existía pero nadie lo leía. El log se lee
+          # desde la API, sin descargar nada.
           if [ -f artifacts/merchant/report-summary.md ]; then
-            cat artifacts/merchant/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+            cat artifacts/merchant/report-summary.md | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo '## Merchant Center — auditoría incompleta' >> "$GITHUB_STEP_SUMMARY"
             echo '' >> "$GITHUB_STEP_SUMMARY"

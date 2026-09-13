@@ -198,7 +198,12 @@ jobs:
                 for (const f of prod.no_verificadas) fila(f.id, f.isbn || "—", f.motivo);
               }
             }
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+            const texto = out.join("\n") + "\n";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, texto);
+            // También al log: el resumen de la corrida no se puede leer por
+            // API y el artefacto hay que bajarlo. El desglose por campo es
+            // justamente lo que se quiere mirar sin abrir nada.
+            process.stdout.write(texto);
           '
 
       - name: Subir la evidencia por ficha

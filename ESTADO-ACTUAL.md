@@ -1,5 +1,29 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## B12 verificado en Producción — 2026-09-13
+
+- **B12 dejó de estar pendiente.** El PR #325 se había fusionado el 2026-09-10
+  y estaba desplegado desde entonces, pero la verificación productiva nunca se
+  disparó: el workflow «B12 — verificar en Producción las fichas mejoradas»
+  tenía **cero corridas** tres días después del merge. Se corrió hoy.
+- Corrida [34783054060](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783054060)
+  sobre `a012874`, contra `https://www.amadolibros.com`, lado «antes» en
+  `d380374`: **475/475 fichas verificadas, 828 comprobaciones de campo, 0
+  fallidas, 0 sin verificar, 0 fichas que pierdan algún dato.** El gate de
+  evidencia positiva aprobó; no verificar nada nunca cuenta como éxito ahí.
+- **475 y no 481**: el plan se recalcula contra el catálogo vivo del día, y
+  seis de las 481 del Preview ya no figuran activas. Ninguna falló. El Preview
+  midió sobre el snapshot del 2026-09-06 y Producción sobre el del 2026-09-13;
+  ambas cifras son correctas para su día.
+- Este documento y `PLAN-MAESTRO.md` afirmaban, hasta hoy, que #325 seguía «en
+  Draft, sin mergear ni desplegar, esperando aprobación». Llevaban tres días
+  desactualizados y quedan corregidos en esta misma revisión. Las menciones a
+  #323 y #333 como borradores viven dentro de secciones fechadas del 6 y el 8
+  de septiembre, donde eran ciertas: no se reescriben.
+- Los dos reportes que ya existían pero eran ilegibles —Merchant Center y esta
+  misma verificación— ahora vuelcan su resumen **también al log de la corrida**,
+  no sólo al resumen y a un artefacto zipeado. El dato existía y nadie lo leía.
+
 ## Imágenes publicadas y verificadas — 2026-09-09
 
 - #333 y #336 fusionados en main `305de731` con autorización completa de Seba. Pages `34363553956` success en el segundo intento; el primero cortó una comprobación GET por conexión reiniciada. Worker Sync `34363553916` success, catálogo 7.105 y 79.116 referencias en 256 fragmentos publicados; cero fallas del mirror. Checkout sin cambios.
@@ -62,12 +86,23 @@ Tres cosas distintas, que conviene no mezclar:
 | | Estado |
 | --- | --- |
 | **481 fichas verificadas en el Preview desplegado** | **HECHO.** Una por una, 841 comprobaciones, 0 fallidas, 0 sin verificar. |
-| **Verificación en Producción** | **PENDIENTE.** No se puede hacer hasta que `main` esté fusionado y desplegado. El procedimiento está listo y no requiere trabajo nuevo: ver «Verificación de Producción» más abajo. |
+| **Verificación en Producción** | **HECHO — 2026-09-13.** Corrida [34783054060](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783054060) sobre `a012874`: 475/475 fichas, 828 comprobaciones, 0 fallidas, 0 sin verificar, 0 pérdidas. |
 | **Meta de 1.000 fichas** | **PENDIENTE.** Se llegó a 481 y el circuito se agotó con las fuentes disponibles. Continúa después. |
 
-Nada de lo verificado está publicado todavía: el trabajo vive en
-[PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325), en Draft,
-**sin mergear ni desplegar**, esperando la aprobación de Seba.
+Todo esto está publicado: el
+[PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325) se **fusionó
+el 2026-09-10** y viaja en Producción desde ese deploy. La verificación
+productiva quedó tres días sin disparar y se corrió el **2026-09-13**: las
+fichas que el plan del día señala están verificadas en la web pública, 475 de
+475, con 828 comprobaciones de campo y ninguna pérdida.
+
+> **Por qué 475 y no 481.** No es que seis hayan fallado: ninguna falló. El
+> plan de verificación no es una lista congelada, se recalcula comparando la
+> ficha efectiva de antes de B12 contra la de hoy sobre el **catálogo vivo del
+> día**. Seis de aquellas 481 ya no figuran activas en el catálogo de hoy, así
+> que no hay ficha pública que mirar. El Preview midió 481 sobre el snapshot
+> del 2026-09-06; Producción midió 475 sobre el del 2026-09-13. Las dos cifras
+> son correctas para su día.
 
 > **Corrección de una cifra que informé mal.** Antes reporté 423 fichas. Ese
 > número salía de reconstruir el "antes" restándole al ítem los hechos del
@@ -327,8 +362,8 @@ fuente por campo (`provider`, `url`, `relationship: exact_edition`), verificado
 por test. Precio, stock, imágenes, slug y canonical no se tocan.
 
 Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
-**sin mergear ni desplegar**. Mientras siga así, **nada de esto está en
-Producción** y la verificación de Producción sigue pendiente por definición.
+**fusionado el 2026-09-10 y desplegado**. Está en Producción y verificado ahí
+el 2026-09-13: 475/475 fichas, 828 comprobaciones, 0 pérdidas.
 
 ## Trabajo pendiente que hereda de B11
 

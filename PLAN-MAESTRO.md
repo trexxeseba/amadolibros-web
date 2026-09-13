@@ -29,11 +29,13 @@ prioridades — es el único vigente y reemplaza cualquier orden anterior:
    el mismo universo de 3.596). Detalle, reconciliación y bloqueo concreto en
    `ESTADO-ACTUAL.md`. Entrega en
    [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325) —
-   **sin mergear ni desplegar**, a la espera de aprobación de Seba.
-   **La verificación de Producción queda pendiente** hasta que haya merge y
-   deploy; el procedimiento ya está preparado (workflow «B12 — verificar en
-   Producción las fichas mejoradas», detalle en `ESTADO-ACTUAL.md`) y no
-   requiere trabajo nuevo.
+   **fusionado el 2026-09-10 y desplegado en Producción**.
+   **Verificado en Producción el 2026-09-13**, corrida
+   [34783054060](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783054060):
+   **475/475 fichas, 828 comprobaciones, 0 fallidas, 0 sin verificar, 0
+   pérdidas**. Son 475 y no las 481 del Preview porque el plan se recalcula
+   contra el catálogo vivo del día y seis de aquellas fichas ya no figuran
+   activas; ninguna falló ni perdió un campo.
 
 No iniciar ningún trabajo de los puntos 2-7 sin autorización explícita y
 separada de Seba. El detalle completo de cada uno (objetivo, criterio de
