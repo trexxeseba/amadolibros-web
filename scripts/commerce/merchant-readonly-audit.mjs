@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 const API_ROOT = 'https://merchantapi.googleapis.com';
 const DEFAULT_ACCOUNT_ID = '5330457716';
 const DEFAULT_FEED_URL = 'https://www.amadolibros.com/feed.xml';
+const DEFAULT_CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function asText(value) {
@@ -46,6 +47,19 @@ function safeFetchUri(value) {
 
 export function countFeedItems(xml) {
   return [...String(xml || '').matchAll(/<item(?:\s|>)/gi)].length;
+}
+
+// Los `<g:id>` que realmente viajan en nuestro feed. Sirve para la única
+// pregunta que decide qué se puede hacer con un rechazo: si el producto entra
+// por el feed que controlamos o si Merchant lo conoce por otra fuente. En el
+// segundo caso, tocar el feed no lo cambia.
+export function extractFeedIds(xml) {
+  const ids = new Set();
+  for (const match of String(xml || '').matchAll(/<g:id>([\s\S]*?)<\/g:id>/gi)) {
+    const id = asText(match[1]);
+    if (id) ids.add(id);
+  }
+  return ids;
 }
 
 export function summarizeDataSource(source = {}) {
@@ -258,8 +272,9 @@ export function summarizeProducts(products = [], now = new Date()) {
 // por "ebooks" son libros digitales de verdad o papel mal clasificado hay que
 // poder mirarlos uno por uno. Mismos filtros que el agregado —destino Dynamic
 // remarketing y país UY— para que el total de acá y el de allá coincidan.
-export function listProductsByIssue(products = [], { limitPerIssue = 25 } = {}) {
+export function listProductsByIssue(products = [], { limitPerIssue = 25, codes = null, feedIds = null, catalog = null } = {}) {
   const byCode = new Map();
+  const wanted = codes && codes.length ? new Set(codes) : null;
 
   for (const product of products) {
     const status = product.productStatus || {};
@@ -269,17 +284,24 @@ export function listProductsByIssue(products = [], { limitPerIssue = 25 } = {}) 
       if (countries.length && !countries.some(isUy)) continue;
 
       const key = asText(issue.code) || '(sin código)';
+      if (wanted && !wanted.has(key)) continue;
       const current = byCode.get(key) || { code: key, total: 0, sample: [] };
       current.total += 1;
       if (current.sample.length < limitPerIssue) {
         const attributes = product.attributes || {};
+        const offerId = asText(product.offerId) || asText(product.name) || null;
+        const fromCatalog = catalog && offerId ? catalog.get(offerId) : null;
         current.sample.push({
-          offerId: asText(product.offerId) || asText(product.name) || null,
-          title: asText(attributes.title) || null,
+          offerId,
+          // Merchant no siempre devuelve el título procesado; el catálogo
+          // propio sí lo tiene, y es el nombre que una persona reconoce.
+          title: asText(attributes.title) || fromCatalog?.title || null,
           // safeFetchUri, no la URL cruda: mismo saneado que las fuentes, así
           // nada de lo que se imprime puede arrastrar credenciales ni tokens.
           link: safeFetchUri(attributes.link),
           dataSource: asText(product.dataSource) || null,
+          enNuestroFeed: feedIds && offerId ? feedIds.has(offerId) : null,
+          estadoEnCatalogo: fromCatalog ? (asText(fromCatalog.status) || 'sin estado') : (catalog ? 'no está' : null),
         });
       }
       byCode.set(key, current);
@@ -464,12 +486,13 @@ function reportMarkdown(report) {
     lines.push('', '## Qué productos arrastra cada causa', '');
     for (const group of report.productsByIssue) {
       lines.push(`### ${group.code} — ${group.total} producto(s)`, '');
-      lines.push('| Oferta | Título | Fuente |', '| --- | --- | --- |');
+      lines.push('| Oferta | Título | ¿En nuestro feed? | Estado en catálogo |', '| --- | --- | --- | --- |');
       for (const row of group.sample) {
-        lines.push(`| ${markdownEscape(row.offerId || '—')} | ${markdownEscape(row.title || '—')} | ${markdownEscape(row.dataSource || '—')} |`);
+        const enFeed = row.enNuestroFeed == null ? '—' : (row.enNuestroFeed ? 'sí' : 'NO');
+        lines.push(`| ${markdownEscape(row.offerId || '—')} | ${markdownEscape(row.title || '—')} | ${enFeed} | ${markdownEscape(row.estadoEnCatalogo || '—')} |`);
       }
       if (group.total > group.sample.length) {
-        lines.push(`| … | ${group.total - group.sample.length} más, no listados | |`);
+        lines.push(`| … | ${group.total - group.sample.length} más, no listados | | |`);
       }
       lines.push('');
     }
@@ -524,7 +547,7 @@ export async function main() {
       const response = await fetch(feedUrl, { signal: AbortSignal.timeout(60_000) });
       const xml = await response.text();
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return { ok: true, url: feedUrl, items: countFeedItems(xml), bytes: Buffer.byteLength(xml) };
+      return { ok: true, url: feedUrl, items: countFeedItems(xml), bytes: Buffer.byteLength(xml), ids: extractFeedIds(xml) };
     } catch (error) {
       return { ok: false, url: feedUrl, items: null, bytes: null, error: asText(error?.message) };
     }
@@ -537,8 +560,38 @@ export async function main() {
   const limitPerIssue = Number(process.env.MERCHANT_ISSUE_SAMPLE_LIMIT) > 0
     ? Number(process.env.MERCHANT_ISSUE_SAMPLE_LIMIT)
     : 25;
+  const codes = asText(process.env.MERCHANT_ISSUE_CODES)
+    .split(',')
+    .map(value => asText(value))
+    .filter(Boolean);
+
+  // Catálogo propio: sólo para poner nombre y estado a cada MLU. Es el mismo
+  // objeto público que ya leen otras auditorías; si no responde, el listado
+  // sigue saliendo con el id pelado en vez de abortar.
+  const catalog = await (async () => {
+    const catalogUrl = asText(process.env.MERCHANT_CATALOG_URL) || DEFAULT_CATALOG_URL;
+    try {
+      const response = await fetch(catalogUrl, { signal: AbortSignal.timeout(120_000) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const map = new Map();
+      for (const item of Array.isArray(data?.items) ? data.items : []) {
+        const id = asText(item?.id);
+        if (id) map.set(id, { title: asText(item?.title) || null, status: asText(item?.status) || null });
+      }
+      return map;
+    } catch {
+      return null;
+    }
+  })();
+
   const productsByIssue = byName.products.ok
-    ? listProductsByIssue(byName.products.data || [], { limitPerIssue })
+    ? listProductsByIssue(byName.products.data || [], {
+        limitPerIssue,
+        codes,
+        feedIds: publicFeed.ok ? publicFeed.ids : null,
+        catalog,
+      })
     : [];
   const alert = {
     observedAt: '2026-08-17T00:20:00-03:00',
@@ -566,7 +619,9 @@ export async function main() {
     generatedAt: new Date().toISOString(),
     accountId,
     alert,
-    publicFeed,
+    // Sin `ids`: es un Set con miles de entradas que sólo sirve durante la
+    // corrida y que JSON.stringify escribiría como `{}` igual.
+    publicFeed: { ...publicFeed, ids: undefined },
     endpoints: endpoints.map(row => ({ name: row.name, ok: row.ok, error: row.error })),
     dataSources,
     accountIssues,

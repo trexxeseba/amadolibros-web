@@ -6,6 +6,7 @@ import {
   aggregateDynamicRemarketingUy,
   buildDiagnosis,
   countFeedItems,
+  extractFeedIds,
   listProductsByIssue,
   summarizeDataSource,
   summarizeProducts,
@@ -204,4 +205,49 @@ test('el listado por causa nunca imprime credenciales del link', () => {
   assert.equal(serializado.includes('clave'), false);
   assert.equal(serializado.includes('secreto'), false);
   assert.equal(serializado.includes('usuario'), false);
+});
+
+test('extrae los g:id que viajan en el feed', () => {
+  const ids = extractFeedIds('<item><g:id>MLU1</g:id></item><item><g:id> MLU2 </g:id></item><item><g:id></g:id></item>');
+  assert.deepEqual([...ids].sort(), ['MLU1', 'MLU2']);
+});
+
+test('cruza cada rechazo contra el feed y el catálogo propios', () => {
+  const products = [
+    {
+      offerId: 'MLU_EN_FEED',
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+    {
+      offerId: 'MLU_FANTASMA',
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+    {
+      offerId: 'MLU_OTRA_CAUSA',
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{ code: 'illegal_drugs_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+  ];
+
+  const [grupo, ...resto] = listProductsByIssue(products, {
+    codes: ['ebooks_policy_violation'],
+    feedIds: new Set(['MLU_EN_FEED']),
+    catalog: new Map([['MLU_EN_FEED', { title: 'Un libro de papel', status: 'active' }]]),
+  });
+
+  assert.equal(resto.length, 0, 'el filtro por código deja fuera las demás causas');
+  assert.equal(grupo.total, 2);
+  assert.equal(grupo.sample[0].enNuestroFeed, true);
+  assert.equal(grupo.sample[0].title, 'Un libro de papel');
+  assert.equal(grupo.sample[0].estadoEnCatalogo, 'active');
+  assert.equal(grupo.sample[1].enNuestroFeed, false, 'lo que Merchant conoce y el feed no tiene');
+  assert.equal(grupo.sample[1].estadoEnCatalogo, 'no está');
 });
