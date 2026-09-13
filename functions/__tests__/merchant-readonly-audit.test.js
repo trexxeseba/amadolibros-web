@@ -8,6 +8,7 @@ import {
   countFeedItems,
   extractFeedIds,
   listProductsByIssue,
+  summarizeAllDestinations,
   summarizeDataSource,
   summarizeProducts,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -250,4 +251,26 @@ test('cruza cada rechazo contra el feed y el catálogo propios', () => {
   assert.equal(grupo.sample[0].estadoEnCatalogo, 'active');
   assert.equal(grupo.sample[1].enNuestroFeed, false, 'lo que Merchant conoce y el feed no tiene');
   assert.equal(grupo.sample[1].estadoEnCatalogo, 'no está');
+});
+
+test('resume todos los destinos, no sólo remarketing', () => {
+  const filas = summarizeAllDestinations([
+    { reportingContext: 'SHOPPING_ADS', country: 'UY', stats: { activeCount: 3000, disapprovedCount: 40 } },
+    { reportingContext: 'SHOPPING_ADS', country: 'UY', stats: { activeCount: 100, pendingCount: 5 } },
+    { reportingContext: 'DISPLAY_ADS', country: 'UY', stats: { activeCount: 3370, disapprovedCount: 321 } },
+    { reportingContext: 'FREE_LISTINGS', country: 'AR', stats: { activeCount: 12, expiringCount: 2 } },
+  ]);
+
+  assert.equal(filas.length, 3, 'una fila por destino y país, sumando repetidas');
+  assert.equal(filas[0].reportingContext, 'DISPLAY_ADS', 'ordena por activos');
+  assert.equal(filas[0].disapproved, 321);
+
+  const shopping = filas.find(f => f.reportingContext === 'SHOPPING_ADS');
+  assert.equal(shopping.active, 3100, 'suma las dos filas del mismo destino');
+  assert.equal(shopping.pending, 5);
+  assert.equal(shopping.disapproved, 40);
+
+  const gratuitas = filas.find(f => f.reportingContext === 'FREE_LISTINGS');
+  assert.equal(gratuitas.country, 'AR', 'no descarta otros países');
+  assert.equal(gratuitas.expiring, 2);
 });
