@@ -1,5 +1,66 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Merchant Center — diagnóstico real — 2026-09-13
+
+Primera lectura de la API real de Merchant desde que la Gran Apuesta se abrió
+el 2026-09-05. Cuenta `5330457716`, sólo GET, corrida
+[34783285537](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783285537),
+generado `2026-09-13T21:16:19Z`. Los cuatro endpoints (`accountIssues`,
+`dataSources`, `aggregateProductStatuses`, `products`) respondieron OK.
+
+| Métrica | Valor |
+| --- | ---: |
+| Productos procesados por Merchant | **6.984** |
+| Ofertas en el feed público | **3.689** |
+| Activos — Dynamic remarketing UY | **3.370** |
+| Rechazados | **321** |
+| Pendientes | **0** |
+| Próximos a vencer (3 y 7 días) | **0** |
+| Archivados | 56 |
+| Problemas de cuenta | **0** |
+
+**La brecha entre feed y activos queda explicada.** 3.689 − 3.370 = 319, y hay
+321 rechazados. Con 0 pendientes y 0 vencimientos, no hay nada que buscar en
+procesamiento ni en caducidad: la brecha **son los rechazos**. La alerta que
+motivó construir esta auditoría —caída de 3.745 a 2.981 activos, −20%— ya no
+aplica: hoy hay 3.370 y se recuperó sin intervención.
+
+**Causas de rechazo, por productos afectados:**
+
+| Código | Productos | Qué es |
+| --- | ---: | --- |
+| `personal_hardships_policy_violation` | **241** | Publicidad personalizada: penurias personales |
+| `sexual_interests_policy_violation` | 38 | Publicidad personalizada: intereses sexuales |
+| `restricted_nfs_policy_violation` | 37 | Contenido adulto restringido |
+| `identity_and_belief_policy_violation` | 20 | Publicidad personalizada: identidad y creencias |
+| `ebooks_policy_violation` | 16 | Libros digitales no admitidos |
+| `legal_restrictions_policy_violation` | 12 | Publicidad personalizada: restricciones legales |
+| `fake_documents_policy_violation` | 2 | Conducta deshonesta |
+| `illegal_drugs_policy_violation` | 2 | Drogas ilegales |
+
+Los motivos suman 368 sobre 321 productos: hay productos con más de un motivo.
+Sin bloquear a nadie (`NOT_IMPACTED`): 14 `image_link_internal_error`,
+2 `image_link_internal_error_fallback`, 2 `utf8_encoding_error` en descripción.
+
+**311 de los 321 son colisiones de categoría, no errores de datos.** Un fondo
+fuerte en psicología, autoayuda, duelo y adicciones choca con la política de
+publicidad personalizada de Google; el de esoterismo, con las de contenido
+adulto e identidad. No se arreglan corrigiendo un campo. El único quick win
+limpio y enteramente propio son los **16 ebooks**: si el sitio no vende libros
+digitales, no deberían viajar en el feed.
+
+**Tres fuentes primarias, y una es AUTOFEED.** `amadolibros.com` (AUTOFEED),
+`Content API` (API) y `PRODUCTS SOURCE 3` (FILE diaria desde
+`https://www.amadolibros.com/feed.xml`). Merchant procesó 6.984 productos y el
+feed controlado trae 3.689: **casi la mitad de lo que Merchant conoce no sale
+del feed que controlamos.** Es lo que plantea el issue abierto
+[#183](https://github.com/trexxeseba/amadolibros-web/issues/183) y ahora tiene
+cifras.
+
+**Límite de esta evidencia.** La auditoría lee el destino **Dynamic
+remarketing UY**, que es para el que llegó la alerta. **No mide Shopping ads
+ni fichas gratuitas.** No declarar Merchant Center entero verificado con esto.
+
 ## B12 verificado en Producción — 2026-09-13
 
 - **B12 dejó de estar pendiente.** El PR #325 se había fusionado el 2026-09-10
