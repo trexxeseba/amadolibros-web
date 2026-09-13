@@ -29,6 +29,16 @@ on:
       - '.github/workflows/sync-freshness.yml'
       - 'scripts/ops/sync-freshness-check.mjs'
       - 'functions/__tests__/sync-freshness-check.test.js'
+  # GitHub sólo registra `schedule` y `workflow_dispatch` desde la rama por
+  # defecto, así que hasta que esto llegue a main no hay forma de ejecutarlo a
+  # mano. Con el disparador por PR el chequeo se prueba a sí mismo contra
+  # producción antes de fusionarse, en vez de estrenarse a ciegas en el primer
+  # cron. Mismo patrón que merchant-readonly-audit.yml.
+  pull_request:
+    paths:
+      - '.github/workflows/sync-freshness.yml'
+      - 'scripts/ops/sync-freshness-check.mjs'
+      - 'functions/__tests__/sync-freshness-check.test.js'
 
 permissions:
   contents: read
