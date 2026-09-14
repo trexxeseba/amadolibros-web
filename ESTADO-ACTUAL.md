@@ -1,5 +1,59 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## AUTOFEED medido, hallazgo de Checkly explicado y «Salud» en el panel — 2026-09-14
+
+**De dónde salen los 6.984 productos que Merchant conoce** (corrida
+[34795946321](https://github.com/trexxeseba/amadolibros-web/actions/runs/34795946321),
+ids normalizados a mayúsculas, índice de pausados leído: 10.180 ids):
+
+| Fuente | Productos | En el feed | Activos fuera del feed | Pausados | Ni activos ni pausados |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `PRODUCTS SOURCE 3` (nuestro feed, FILE) | 3.692 | 3.687 | 0 | 4 | 1 |
+| `amadolibros.com` (AUTOFEED de Google) | 3.292 | **4** | **2.997** | **245** | **46** |
+
+- **El AUTOFEED publica casi exactamente lo que el feed excluye a propósito.**
+  De sus 3.292 productos, 2.997 son libros **activos** del catálogo que no
+  pasan el filtro del feed (imagen mínima, ISBN, moneda), 245 son pausados
+  («por encargo», cuya ficha no declara oferta) y 46 son ids que responden
+  **HTTP 404** —fantasmas de verdad, verificados con HEAD—. Sólo 4 se solapan
+  con el feed. Es por esto que Shopping ads muestra 6.698 activos y no 3.687.
+- **Los 3.292 ids llegan en minúscula** (`mlu887797526`). En Merchant son
+  ofertas distintas de las `MLU…` del feed. Para el sitio son la misma página:
+  `/libro/mlu…` responde 301 hacia la canónica.
+- **Corrección de una cifra intermedia que informé mal.** Una corrida anterior
+  de esta misma sesión dio «3.292 ni activos ni pausados» y llegué a decir que
+  eran publicaciones que ya no existían. Era un defecto de la auditoría:
+  comparaba ids sin normalizar mayúsculas y no coincidía nada. Los 301 lo
+  delataron. Quedó corregido y con prueba.
+- **La decisión que abre esto es comercial, no técnica**: apagar el AUTOFEED
+  quita ~3.000 libros de Shopping y fichas gratuitas —los que nuestro filtro
+  no deja salir— pero también deja de mostrar 291 que no deberían mostrarse
+  (245 por encargo sin oferta y 46 inexistentes). La alternativa es llevar
+  esos 2.997 activos al feed propio, con nuestros datos, y recién entonces
+  apagar el automático. Ninguna de las dos se ejecuta sin autorización de
+  Seba. Cifras para [#183](https://github.com/trexxeseba/amadolibros-web/issues/183).
+
+**El hallazgo `IMAGEN_VISIBLE_NO_CARGA` del monitoreo Checkly, explicado.**
+Fue **una sola corrida** del recorrido de navegador, a las 01:47:15 UTC del
+2026-09-09 (diagnóstico
+[34300731264](https://github.com/trexxeseba/amadolibros-web/actions/runs/34300731264)):
+imágenes visibles no listas en 8 segundos. Esa hora cae **12 horas antes** del
+merge de #333 y #336 (14:25 UTC), el arreglo del índice de portadas que llevó
+la mediana del handler de 4.388 a 709 ms; en ese momento estaba documentada
+una espera fría de hasta 3.992 ms por portada. La auditoría productiva del
+2026-09-12 midió 48/48 portadas cargadas con espera máxima de 1.506 ms en
+escritorio y 452 ms en móvil. Conclusión: hallazgo real, causa conocida,
+resuelto el mismo día. **Lo que no se pudo ver desde acá**: qué dice ese
+recorrido *hoy*, porque sigue corriendo cada 120 minutos dentro de Checkly y
+sus resultados no llegan a ninguna persona (ver `docs/monitoreo-deteccion-de-fallas.md`).
+
+**Sección «Salud» en `/panel`.** El estado del sync se lee de KV con la misma
+regla que el correo diario (`functions/_shared/health-rules.js`), y la última
+corrida de los siete reportes que importan se consulta a GitHub sólo en
+Producción (`PANEL_SALUD_REMOTO`), con caché de 10 minutos en KV. Cada número
+lleva su fecha al lado; un reporte verde pero viejo va en amarillo. Sin red en
+tests ni en Preview.
+
 ## Merchant Center — diagnóstico real — 2026-09-13
 
 Primera lectura de la API real de Merchant desde que la Gran Apuesta se abrió
