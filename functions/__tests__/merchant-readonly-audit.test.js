@@ -353,27 +353,31 @@ test('un id en minúscula del autofeed coincide con el MLU del feed y del catál
 
 // «¿Por qué los excluí?» se contesta con la MISMA función que decide el feed,
 // no con una reconstrucción.
-test('el desglose de exclusiones agrupa por el motivo real y da ejemplos', () => {
-  // Ids con la forma real MLU\d+: feedBlockerReason descarta primero por id,
-  // así que un fixture con MLU_ALGO mediría "id inválido" y no el motivo.
-  const libro = { permalink: 'https://x', status: 'active', price: 100, currency_id: 'UYU', isbn: '9780306406157', author: 'A' };
+test('el desglose de exclusiones recorre las tres etapas del feed', () => {
+  // Ids con la forma real MLU\d+: feedBlockerReason descarta primero por id.
+  const base = { permalink: 'https://x', status: 'active', price: 100, currency_id: 'UYU', isbn: '9780306406157', author: 'A', condition: 'new' };
   const catalog = new Map([
-    ['MLU101', { title: 'Sin stock', status: 'active', item: { ...libro, id: 'MLU101', available_quantity: 0 } }],
-    ['MLU102', { title: 'Sin moneda', status: 'active', item: { ...libro, id: 'MLU102', available_quantity: 2, currency_id: 'USD' } }],
-    ['MLU103', { title: 'Otro sin stock', status: 'active', item: { ...libro, id: 'MLU103', available_quantity: 0 } }],
-    ['MLU104', { title: 'Pausado', status: 'paused', item: { ...libro, id: 'MLU104', status: 'paused', available_quantity: 0 } }],
-    ['MLU105', { title: 'Elegible', status: 'active', item: { ...libro, id: 'MLU105', available_quantity: 5 } }],
+    // Etapa 1: no pasan la regla comercial.
+    ['MLU101', { title: 'Sin stock', status: 'active', item: { ...base, id: 'MLU101', available_quantity: 0 } }],
+    ['MLU102', { title: 'Sin moneda', status: 'active', item: { ...base, id: 'MLU102', available_quantity: 2, currency_id: 'USD' } }],
+    // Etapa 3: mismo ISBN+condición que MLU200, que sí está en el feed.
+    ['MLU103', { title: 'Duplicado por ISBN', status: 'active', item: { ...base, id: 'MLU103', available_quantity: 2 } }],
+    // Sobrevive las tres y aun así falta: portada u otra causa no verificable.
+    ['MLU104', { title: 'Elegible ausente', status: 'active', item: { ...base, id: 'MLU104', available_quantity: 2, isbn: '9780262033848' } }],
+    // Ya publicado: es el ganador del ISBN y no debe contarse como excluido.
+    ['MLU200', { title: 'Publicado', status: 'active', item: { ...base, id: 'MLU200', available_quantity: 9 } }],
   ]);
   const productos = [...catalog.keys()].map(offerId => ({ offerId: offerId.toLowerCase(), dataSource: 'auto' }));
 
-  const filas = summarizeFeedExclusions(productos, { feedIds: new Set(), catalog });
+  const filas = summarizeFeedExclusions(productos, { feedIds: new Set(['MLU200']), catalog });
   const motivos = Object.fromEntries(filas.map(f => [f.motivo, f.total]));
 
-  assert.equal(motivos['sin stock'], 2, 'agrupa por motivo, con ids en minúscula');
+  assert.equal(motivos['sin stock'], 1);
   assert.equal(motivos['sin moneda UYU'], 1);
-  assert.equal(filas.reduce((s, f) => s + f.total, 0), 3, 'ni el pausado ni el elegible inventan un motivo');
-  assert.equal(filas[0].motivo, 'sin stock', 'ordena por cantidad');
-  assert.ok(filas[0].muestra.some(m => m.title === 'Sin stock'));
+  assert.equal(motivos['duplicado: otra edición con el mismo ISBN ya está publicada'], 1,
+    'el que pierde contra el publicado se reporta como duplicado, no como "falta portada"');
+  assert.equal(motivos['pasa la regla comercial — falta por portada u otro motivo no verificable desde acá'], 1);
+  assert.equal(filas.reduce((s, f) => s + f.total, 0), 4, 'el publicado no cuenta como excluido');
 });
 
 test('un libro ya presente en el feed no aparece como excluido', () => {

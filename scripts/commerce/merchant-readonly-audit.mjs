@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 // panel. Importarlas en vez de copiarlas es lo que garantiza que este reporte
 // diga por qué un libro NO está en el feed según la regla real, y no según
 // una reconstrucción que mañana quede vieja.
-import { isEligibleForFeed } from '../../functions/feed.xml.js';
+import { dedupeByGtinAndCondition, isEligibleForFeed } from '../../functions/feed.xml.js';
 import { feedBlockerReason } from '../../functions/_shared/panel-data.js';
 
 const API_ROOT = 'https://merchantapi.googleapis.com';
@@ -421,35 +421,67 @@ export function summarizeSourceOverlap(products = [], { feedIds = null, catalog 
 }
 
 // ¿Por qué un libro ACTIVO no está en nuestro feed? El AUTOFEED publica justo
-// esos, así que la pregunta «¿por qué los excluí?» se contesta agrupando por
-// el motivo real que devuelve feedBlockerReason. Se listan títulos de muestra
-// porque un conteo no deja decidir nada: para saber si conviene rescatarlos
-// hay que ver qué libros son.
+// esos, así que la pregunta «¿por qué los excluí?» hay que contestarla con el
+// motivo real de cada uno.
+//
+// El feed aplica TRES filtros en fila, no uno:
+//   1. isEligibleForFeed  — activo, con stock, precio, moneda UYU y que sea libro.
+//   2. calidad de portada — COVER_GOOGLE_QUALITY_GATE descarta lo que no llega
+//      al mínimo de imagen de Google.
+//   3. dedupeByGtinAndCondition — una sola oferta por ISBN+condición.
+//
+// Contar sólo el primero daba 297 sobre ~2.700 y dejaba la impresión falsa de
+// que casi todos eran no-libros. Acá se reproduce la cadena: 1 y 3 se calculan
+// con las funciones reales; 2 NO se puede verificar desde acá —vive en el
+// manifiesto privado de portadas en R2— así que lo que sobrevive a 1 y 3 y aun
+// así falta en el feed se reporta como tal, sin afirmar la causa.
 export function summarizeFeedExclusions(products = [], { feedIds = null, catalog = null, limitPorMotivo = 5 } = {}) {
   if (!catalog) return [];
-  const porMotivo = new Map();
-  const vistos = new Set();
 
+  // Universo: los activos del catálogo que Merchant conoce y no están en el feed.
+  const candidatos = [];
+  const vistos = new Set();
   for (const product of products) {
     const offerId = normalizeOfferId(product.offerId || product.name);
     if (!offerId || vistos.has(offerId)) continue;
     if (feedIds && feedIds.has(offerId)) continue;
-
     const entrada = catalog.get(offerId);
-    const item = entrada?.item;
-    if (!item || asText(entrada.status) !== 'active') continue;
-    // Si ya es elegible, su ausencia del feed no se explica por la regla:
-    // no se inventa un motivo.
-    if (isEligibleForFeed(item)) continue;
-
+    if (!entrada?.item || asText(entrada.status) !== 'active') continue;
     vistos.add(offerId);
-    const motivo = feedBlockerReason(item);
+    candidatos.push({ offerId, entrada, item: entrada.item });
+  }
+
+  const porMotivo = new Map();
+  const anotar = (motivo, offerId, title) => {
     const fila = porMotivo.get(motivo) || { motivo, total: 0, muestra: [] };
     fila.total += 1;
-    if (fila.muestra.length < limitPorMotivo) {
-      fila.muestra.push({ offerId, title: entrada.title || '(sin título)' });
-    }
+    if (fila.muestra.length < limitPorMotivo) fila.muestra.push({ offerId, title: title || '(sin título)' });
     porMotivo.set(motivo, fila);
+  };
+
+  // Etapa 1.
+  const pasaronEtapa1 = [];
+  for (const c of candidatos) {
+    if (isEligibleForFeed(c.item)) pasaronEtapa1.push(c);
+    else anotar(feedBlockerReason(c.item), c.offerId, c.entrada.title);
+  }
+
+  // Etapa 3: se deduplica el conjunto elegible COMPLETO —los que están en el
+  // feed más estos— porque el ganador de cada ISBN puede ser justamente el que
+  // sí se publicó. Deduplicar sólo los ausentes diría que ninguno sobra.
+  const enFeed = [];
+  for (const [id, entrada] of catalog) {
+    if (feedIds?.has(id) && entrada?.item && isEligibleForFeed(entrada.item)) enFeed.push(entrada.item);
+  }
+  const universo = [...enFeed, ...pasaronEtapa1.map(c => c.item)];
+  const sobrevivientes = new Set(dedupeByGtinAndCondition(universo).map(item => normalizeOfferId(item.id)));
+
+  for (const c of pasaronEtapa1) {
+    if (!sobrevivientes.has(c.offerId)) {
+      anotar('duplicado: otra edición con el mismo ISBN ya está publicada', c.offerId, c.entrada.title);
+    } else {
+      anotar('pasa la regla comercial — falta por portada u otro motivo no verificable desde acá', c.offerId, c.entrada.title);
+    }
   }
 
   return [...porMotivo.values()].sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo));
