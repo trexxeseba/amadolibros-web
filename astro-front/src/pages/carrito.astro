@@ -1863,7 +1863,36 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       } catch (_) { return null; }
     }
 
+    // Guardar en cada tecla salía caro: cada pulsación leía los siete campos,
+    // leía el carrito, parseaba el borrador anterior y volvía a serializar
+    // todo contra sessionStorage, que es sincrónico y bloquea la pantalla.
+    // Cloudflare Web Analytics lo midió en producción el 2026-09-14: escribir
+    // en #buyer-name tardó 1.808 ms en responder (INP), nueve veces el límite
+    // aceptable de 200 ms, y justo en el carrito.
+    //
+    // Ahora el tecleo sólo PROGRAMA el guardado. Lo que no cambia es cuándo
+    // queda guardado de verdad: al salir del campo (change), al irse de la
+    // página (pagehide), al pasar a segundo plano —el salto a WhatsApp, que es
+    // el caso que este borrador existe para sobrevivir— y en cada llamada
+    // directa a saveDraft() de los pasos del checkout. Cualquiera de ésas
+    // cancela el guardado pendiente y escribe en el acto, así que la ventana
+    // de riesgo nunca queda abierta al terminar de tipear.
+    var DRAFT_SAVE_DEBOUNCE_MS = 400;
+    var draftSaveTimer = null;
+
+    function scheduleDraftSave() {
+      if (draftSaveTimer !== null) clearTimeout(draftSaveTimer);
+      draftSaveTimer = setTimeout(function () {
+        draftSaveTimer = null;
+        saveDraft();
+      }, DRAFT_SAVE_DEBOUNCE_MS);
+    }
+
     function saveDraft() {
+      if (draftSaveTimer !== null) {
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = null;
+      }
       if (!window.AmadoCart) return;
       var values = {};
       for (var i = 0; i < draftFieldIds.length; i++) {
@@ -1922,7 +1951,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
     for (var draftIndex = 0; draftIndex < draftFieldIds.length; draftIndex++) {
       var draftField = document.getElementById(draftFieldIds[draftIndex]);
       if (draftField) {
-        draftField.addEventListener('input', saveDraft);
+        draftField.addEventListener('input', scheduleDraftSave);
         draftField.addEventListener('change', saveDraft);
       }
     }
@@ -1931,6 +1960,12 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       radio.addEventListener('change', clearDeliveryError);
     });
     window.addEventListener('pagehide', saveDraft);
+    // pagehide no dispara de forma confiable cuando el sistema manda la pestaña
+    // a segundo plano; visibilitychange sí, y ése es exactamente el salto a
+    // WhatsApp que el borrador tiene que sobrevivir.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') saveDraft();
+    });
 
     // ── PICKUP-CX-1 ──────────────────────────────────────────────────────
     var pickupAckBox = document.getElementById('pickup-ack-box');
