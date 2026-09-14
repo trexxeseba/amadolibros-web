@@ -11,6 +11,7 @@ import {
   summarizeAllDestinations,
   summarizeDataSource,
   summarizeProducts,
+  summarizeSourceOverlap,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
 
 test('cuenta únicamente ofertas item del feed', () => {
@@ -273,4 +274,43 @@ test('resume todos los destinos, no sólo remarketing', () => {
   const gratuitas = filas.find(f => f.reportingContext === 'FREE_LISTINGS');
   assert.equal(gratuitas.country, 'AR', 'no descarta otros países');
   assert.equal(gratuitas.expiring, 2);
+});
+
+// La pregunta que decide si conviene apagar el AUTOFEED: ¿publica lo mismo que
+// el feed (duplicados con datos ajenos) o justo lo que el feed excluyó?
+test('el solapamiento por fuente separa duplicados de excluidos, y activos de muertos', () => {
+  const productos = [
+    { offerId: 'MLU_FEED', dataSource: 'src/feed' },
+    { offerId: 'MLU_FEED', dataSource: 'src/auto' },          // duplicado: Google lo tiene dos veces
+    { offerId: 'MLU_EXCLUIDO_ACTIVO', dataSource: 'src/auto' }, // activo, pero fuera del feed
+    { offerId: 'MLU_PAUSADO', dataSource: 'src/auto' },
+    { offerId: 'MLU_FANTASMA', dataSource: 'src/auto' },       // Merchant lo conoce, el catálogo ya no
+  ];
+  const filas = summarizeSourceOverlap(productos, {
+    feedIds: new Set(['MLU_FEED']),
+    catalog: new Map([
+      ['MLU_FEED', { status: 'active' }],
+      ['MLU_EXCLUIDO_ACTIVO', { status: 'active' }],
+      ['MLU_PAUSADO', { status: 'paused' }],
+    ]),
+  });
+
+  const auto = filas.find(f => f.dataSource === 'src/auto');
+  assert.equal(auto.total, 4);
+  assert.equal(auto.enFeed, 1, 'el duplicado cuenta como solapado');
+  assert.equal(auto.fueraDelFeed, 3);
+  assert.equal(auto.fueraActivos, 1);
+  assert.equal(auto.fueraPausados, 1);
+  assert.equal(auto.fueraSinCatalogo, 1);
+
+  const feed = filas.find(f => f.dataSource === 'src/feed');
+  assert.equal(feed.enFeed, 1);
+  assert.equal(feed.fueraDelFeed, 0);
+});
+
+test('sin feed ni catálogo el solapamiento no inventa: todo queda como fuera del feed y sin catálogo', () => {
+  const [fila] = summarizeSourceOverlap([{ offerId: 'X', dataSource: 's' }]);
+  assert.equal(fila.enFeed, 0);
+  assert.equal(fila.fueraDelFeed, 1);
+  assert.equal(fila.fueraSinCatalogo, 1);
 });
