@@ -36,6 +36,14 @@ function isUy(value) {
   return upper(value) === 'UY';
 }
 
+// Google devuelve algunas ofertas con el id en minúscula (mlu887797526) y el
+// catálogo, el feed y el índice de pausados usan MLU887797526. Comparar sin
+// normalizar hace que NADA coincida y que 3.292 productos reales parezcan
+// fantasmas. Toda comparación de ids pasa por acá.
+function normalizeOfferId(value) {
+  return asText(value).toUpperCase();
+}
+
 function safeFetchUri(value) {
   const raw = asText(value);
   if (!raw) return null;
@@ -62,7 +70,7 @@ export function countFeedItems(xml) {
 export function extractFeedIds(xml) {
   const ids = new Set();
   for (const match of String(xml || '').matchAll(/<g:id>([\s\S]*?)<\/g:id>/gi)) {
-    const id = asText(match[1]);
+    const id = normalizeOfferId(match[1]);
     if (id) ids.add(id);
   }
   return ids;
@@ -329,7 +337,7 @@ export function listProductsByIssue(products = [], { limitPerIssue = 25, codes =
       current.total += 1;
       if (current.sample.length < limitPerIssue) {
         const attributes = product.attributes || {};
-        const offerId = asText(product.offerId) || asText(product.name) || null;
+        const offerId = normalizeOfferId(product.offerId || product.name) || null;
         const fromCatalog = catalog && offerId ? catalog.get(offerId) : null;
         current.sample.push({
           offerId,
@@ -364,7 +372,8 @@ export function summarizeSourceOverlap(products = [], { feedIds = null, catalog 
 
   for (const product of products) {
     const fuente = asText(product.dataSource) || '(sin fuente)';
-    const offerId = asText(product.offerId) || asText(product.name);
+    const offerIdCrudo = asText(product.offerId) || asText(product.name);
+    const offerId = normalizeOfferId(offerIdCrudo);
     const fila = porFuente.get(fuente) || {
       dataSource: fuente,
       total: 0,
@@ -373,12 +382,17 @@ export function summarizeSourceOverlap(products = [], { feedIds = null, catalog 
       fueraActivos: 0,
       fueraPausados: 0,
       fueraSinCatalogo: 0,
+      // Cuántos ids llegaron en minúscula: en Merchant son ofertas DISTINTAS de
+      // las del feed aunque sean el mismo libro. Es el dato que explica el
+      // autofeed.
+      idsEnMinuscula: 0,
       // Hasta cinco ids de los que no están en ningún catálogo, para poder
       // preguntarle a la web qué responde por ellos. Un conteo dice cuántos;
       // sólo la página dice si son fantasmas de verdad.
       muestraFantasmas: [],
     };
     fila.total += 1;
+    if (offerIdCrudo && offerIdCrudo !== offerId) fila.idsEnMinuscula += 1;
 
     if (feedIds && feedIds.has(offerId)) {
       fila.enFeed += 1;
@@ -607,6 +621,12 @@ function reportMarkdown(report) {
       lines.push(`| ${markdownEscape(etiqueta)} | ${markdownEscape(source?.input || '—')} | ${row.count} | ${celda(s?.enFeed)} | ${celda(s?.fueraDelFeed)} | ${celda(s?.fueraActivos)} | ${celda(s?.fueraPausados)} | ${celda(s?.fueraSinCatalogo)} |`);
     }
     for (const s of report.sourceOverlap || []) {
+      if (!s.idsEnMinuscula) continue;
+      const id = String(s.dataSource || '').split('/').pop();
+      const source = fuentePorId.get(s.dataSource) || fuentePorId.get(id);
+      lines.push('', `${markdownEscape(source?.displayName || s.dataSource)}: ${s.idsEnMinuscula} de ${s.total} ids llegan en minúscula (mlu…). Para comparar se normalizan a MLU…, pero en Merchant son ofertas distintas de las del feed: el mismo libro dos veces, con datos de dos orígenes.`);
+    }
+    for (const s of report.sourceOverlap || []) {
       if (!s.fantasmasEnLaWeb?.length) continue;
       const id = String(s.dataSource || '').split('/').pop();
       const source = fuentePorId.get(s.dataSource) || fuentePorId.get(id);
@@ -711,7 +731,7 @@ export async function main() {
       const data = await response.json();
       const map = new Map();
       for (const item of Array.isArray(data?.items) ? data.items : []) {
-        const id = asText(item?.id);
+        const id = normalizeOfferId(item?.id);
         if (id) map.set(id, { title: asText(item?.title) || null, status: asText(item?.status) || null });
       }
       return map;
@@ -744,7 +764,7 @@ export async function main() {
       if (index?.schema_version !== 1 || !Array.isArray(index.items)) throw new Error('índice con forma inesperada');
       const ids = new Set();
       for (const row of index.items) {
-        const id = asText(Array.isArray(row) ? row[0] : row?.id);
+        const id = normalizeOfferId(Array.isArray(row) ? row[0] : row?.id);
         if (id) ids.add(id);
       }
       return { ok: true, version: asText(descriptor.version) || null, ids };

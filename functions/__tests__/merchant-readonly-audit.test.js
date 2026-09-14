@@ -336,3 +336,16 @@ test('el solapamiento guarda hasta cinco ids fantasma para preguntarle a la web'
   assert.equal(fila.muestraFantasmas.length, 5);
   assert.deepEqual(fila.muestraFantasmas, ['MLU_F0', 'MLU_F1', 'MLU_F2', 'MLU_F3', 'MLU_F4']);
 });
+
+// Google devuelve ofertas con el id en minúscula; el catálogo usa MLU… Sin
+// normalizar, 3.292 productos reales parecían fantasmas.
+test('un id en minúscula del autofeed coincide con el MLU del feed y del catálogo', () => {
+  const [fila] = summarizeSourceOverlap(
+    [{ offerId: 'mlu123', dataSource: 'auto' }, { offerId: 'mlu999', dataSource: 'auto' }],
+    { feedIds: extractFeedIds('<item><g:id>MLU123</g:id></item>'), catalog: new Map([['MLU123', { status: 'active' }]]), pausedIds: new Set(['MLU999']) },
+  );
+  assert.equal(fila.enFeed, 1, 'mlu123 es MLU123');
+  assert.equal(fila.fueraPausados, 1, 'mlu999 es el pausado MLU999');
+  assert.equal(fila.fueraSinCatalogo, 0);
+  assert.equal(fila.idsEnMinuscula, 2, 'y queda contado que llegaron en minúscula');
+});
