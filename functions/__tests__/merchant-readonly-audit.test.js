@@ -328,3 +328,11 @@ test('el índice de pausados separa «por encargo» de «desaparecido»', () => 
   assert.equal(fila.fueraPausados, 1);
   assert.equal(fila.fueraSinCatalogo, 1);
 });
+
+test('el solapamiento guarda hasta cinco ids fantasma para preguntarle a la web', () => {
+  const productos = Array.from({ length: 8 }, (_, i) => ({ offerId: `MLU_F${i}`, dataSource: 'auto' }));
+  const [fila] = summarizeSourceOverlap(productos, { feedIds: new Set(), catalog: new Map(), pausedIds: new Set() });
+  assert.equal(fila.fueraSinCatalogo, 8);
+  assert.equal(fila.muestraFantasmas.length, 5);
+  assert.deepEqual(fila.muestraFantasmas, ['MLU_F0', 'MLU_F1', 'MLU_F2', 'MLU_F3', 'MLU_F4']);
+});

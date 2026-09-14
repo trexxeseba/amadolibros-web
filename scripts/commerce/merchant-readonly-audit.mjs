@@ -373,6 +373,10 @@ export function summarizeSourceOverlap(products = [], { feedIds = null, catalog 
       fueraActivos: 0,
       fueraPausados: 0,
       fueraSinCatalogo: 0,
+      // Hasta cinco ids de los que no están en ningún catálogo, para poder
+      // preguntarle a la web qué responde por ellos. Un conteo dice cuántos;
+      // sólo la página dice si son fantasmas de verdad.
+      muestraFantasmas: [],
     };
     fila.total += 1;
 
@@ -384,7 +388,10 @@ export function summarizeSourceOverlap(products = [], { feedIds = null, catalog 
       const pausado = (enCatalogo && asText(enCatalogo.status) === 'paused') || Boolean(pausedIds && pausedIds.has(offerId));
       if (enCatalogo && asText(enCatalogo.status) === 'active') fila.fueraActivos += 1;
       else if (pausado) fila.fueraPausados += 1;
-      else fila.fueraSinCatalogo += 1;
+      else {
+        fila.fueraSinCatalogo += 1;
+        if (offerId && fila.muestraFantasmas.length < 5) fila.muestraFantasmas.push(offerId);
+      }
     }
     porFuente.set(fuente, fila);
   }
@@ -599,6 +606,15 @@ function reportMarkdown(report) {
       const celda = valor => (s ? String(valor) : '—');
       lines.push(`| ${markdownEscape(etiqueta)} | ${markdownEscape(source?.input || '—')} | ${row.count} | ${celda(s?.enFeed)} | ${celda(s?.fueraDelFeed)} | ${celda(s?.fueraActivos)} | ${celda(s?.fueraPausados)} | ${celda(s?.fueraSinCatalogo)} |`);
     }
+    for (const s of report.sourceOverlap || []) {
+      if (!s.fantasmasEnLaWeb?.length) continue;
+      const id = String(s.dataSource || '').split('/').pop();
+      const source = fuentePorId.get(s.dataSource) || fuentePorId.get(id);
+      lines.push('', `Muestra de «ni activos ni pausados» de ${markdownEscape(source?.displayName || s.dataSource)}, consultados en la web:`, '');
+      for (const f of s.fantasmasEnLaWeb) {
+        lines.push(`- \`${markdownEscape(f.id)}\` → ${f.http == null ? `sin respuesta (${markdownEscape(f.error || '')})` : `HTTP ${f.http}`}`);
+      }
+    }
   }
 
   if (report.productsByIssue?.length) {
@@ -744,6 +760,26 @@ export async function main() {
         pausedIds: pausedIndex.ids,
       })
     : [];
+
+  // ¿Qué responde la tienda por un producto que Google cree activo y que no
+  // está en ningún catálogo? Un 404 confirma el fantasma; un 200 obliga a
+  // mirar qué le estamos mostrando a Google. HEAD y sin seguir redirecciones:
+  // no descarga páginas y no toca nada.
+  const siteBase = asText(process.env.MERCHANT_SITE_BASE) || 'https://www.amadolibros.com';
+  for (const fila of sourceOverlap) {
+    fila.fantasmasEnLaWeb = await Promise.all(fila.muestraFantasmas.map(async id => {
+      try {
+        const response = await fetch(`${siteBase}/libro/${encodeURIComponent(id)}`, {
+          method: 'HEAD',
+          redirect: 'manual',
+          signal: AbortSignal.timeout(20_000),
+        });
+        return { id, http: response.status };
+      } catch (error) {
+        return { id, http: null, error: asText(error?.message) || 'error de red' };
+      }
+    }));
+  }
   const alert = {
     observedAt: '2026-08-17T00:20:00-03:00',
     previousActive: 3745,
