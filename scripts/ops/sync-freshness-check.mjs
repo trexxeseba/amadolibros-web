@@ -15,6 +15,12 @@
  * Solo lectura: un GET. No dispara syncs, no escribe KV, no despliega.
  */
 
+import { evaluateSyncStatus } from '../../functions/_shared/health-rules.js';
+
+// La regla vive en functions/_shared/health-rules.js, compartida con el panel.
+// Se re-exporta para que las pruebas y el informe diario sigan importándola de acá.
+export { evaluateSyncStatus };
+
 const DEFAULT_STATUS_URL = 'https://www.amadolibros.com/api/status';
 // El cron del Worker corre una vez por día (07:15 UTC). 26 horas deja margen
 // para un arranque demorado sin dejar pasar un día entero sin publicar; es el
@@ -23,61 +29,6 @@ const DEFAULT_MAX_AGE_HOURS = 26;
 
 function asText(value) {
   return String(value ?? '').trim();
-}
-
-export function evaluateSyncStatus(body, { maxAgeHours = DEFAULT_MAX_AGE_HOURS, now = new Date() } = {}) {
-  const problemas = [];
-  const notas = [];
-
-  const worker = body?.worker || {};
-  const catalog = body?.catalog || {};
-
-  const lastOk = asText(worker.last_ok);
-  const lastOkMs = lastOk ? Date.parse(lastOk) : NaN;
-  const edadHoras = Number.isFinite(lastOkMs)
-    ? Math.round(((now.getTime() - lastOkMs) / 3_600_000) * 10) / 10
-    : null;
-
-  if (!lastOk) {
-    problemas.push('El Worker nunca registró un sync exitoso (sync:last_ok vacío).');
-  } else if (!Number.isFinite(lastOkMs)) {
-    problemas.push(`sync:last_ok no es una fecha legible: ${lastOk}`);
-  } else if (edadHoras > maxAgeHours) {
-    problemas.push(`El último sync exitoso fue hace ${edadHoras} h, más que el máximo de ${maxAgeHours} h.`);
-  }
-
-  if (worker.has_error === true) {
-    problemas.push('El Worker dejó registrado un error en el último sync (sync:last_error presente).');
-  }
-  if (worker.possibly_stuck === true) {
-    problemas.push('Hay un sync empezado que no terminó: quedó trabado.');
-  }
-  if (catalog.available === false) {
-    problemas.push('catalog.json no está disponible en R2.');
-  }
-  if (catalog.meta_available === false) {
-    problemas.push('meta.json no está disponible en R2.');
-  }
-
-  // `in_progress` sin `possibly_stuck` es un sync corriendo ahora mismo: no es
-  // una falla, pero conviene decirlo para que nadie lea mal una edad alta.
-  if (worker.in_progress === true && worker.possibly_stuck !== true) {
-    notas.push('Hay un sync en curso en este momento.');
-  }
-  if (Array.isArray(body?.warnings) && body.warnings.length) {
-    notas.push(`Avisos del endpoint: ${body.warnings.join(', ')}`);
-  }
-
-  return {
-    ok: problemas.length === 0,
-    edadHoras,
-    lastOk: lastOk || null,
-    totalItems: catalog.total_items ?? null,
-    estadoDeclarado: asText(body?.status) || null,
-    saludDeclarada: body?.healthy === true,
-    problemas,
-    notas,
-  };
 }
 
 export function buildSummary(veredicto, url) {

@@ -42,6 +42,7 @@ import {
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
+import { healthSection } from '../_shared/panel-health.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
 import {
   NOTICE_EVENT_TYPE,
@@ -146,6 +147,7 @@ function sidebar(activo = 'tablero') {
     { id: 'pendientes', href: '/panel#pendientes', texto: 'Para hacer', icono: '◉' },
     { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos', icono: '❑' },
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
+    { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
     { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },
   ];
   return `<nav class="lateral" aria-label="Secciones del panel">
@@ -905,6 +907,8 @@ ${sectionOrError(data.orders, orders => `
     <small>no salen en Google</small>
   </article>`)}
 </section>`)}
+
+${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.catalog?.ok ? data.catalog.data : null }))}
 
 <section class="card grafico" id="facturacion">
   <div class="card-cabeza">

@@ -314,3 +314,17 @@ test('sin feed ni catálogo el solapamiento no inventa: todo queda como fuera de
   assert.equal(fila.fueraDelFeed, 1);
   assert.equal(fila.fueraSinCatalogo, 1);
 });
+
+// catalog.json trae sólo activos; los pausados viven en otro índice. Un pausado
+// no es un fantasma: es inventario por encargo, y hay que contarlo aparte.
+test('el índice de pausados separa «por encargo» de «desaparecido»', () => {
+  const [fila] = summarizeSourceOverlap(
+    [
+      { offerId: 'MLU_PAUSADO_EN_INDICE', dataSource: 'auto' },
+      { offerId: 'MLU_FANTASMA', dataSource: 'auto' },
+    ],
+    { feedIds: new Set(), catalog: new Map(), pausedIds: new Set(['MLU_PAUSADO_EN_INDICE']) },
+  );
+  assert.equal(fila.fueraPausados, 1);
+  assert.equal(fila.fueraSinCatalogo, 1);
+});

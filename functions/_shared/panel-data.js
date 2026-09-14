@@ -17,6 +17,7 @@
  */
 
 import { fetchCatalog } from './catalog.js';
+import { loadHealth } from './panel-health.js';
 import { isEligibleForFeed } from '../feed.xml.js';
 
 const RECENT_ORDERS_LIMIT = 20;
@@ -391,13 +392,16 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     ? section(() => loader(db))
     : Promise.resolve({ ok: false, error: 'ORDERS_DB no está disponible en este entorno.' }));
 
-  const [orders, revenue, stuck, waitlist, crawl, catalog] = await Promise.all([
+  const [orders, revenue, stuck, waitlist, crawl, catalog, salud] = await Promise.all([
     withDb(database => loadOrdersOverview(database, { now })),
     withDb(database => loadRevenueByMonth(database, { now })),
     withDb(database => loadStuck(database, { now })),
     withDb(database => loadWaitlist(database)),
     withDb(database => loadCrawl(database, { now })),
     section(() => loadCatalogSummary(context)),
+    // Sync (KV) y reportes automáticos (GitHub, si está encendido). Nunca
+    // tira: lo que no se pudo leer se muestra como tal.
+    section(() => loadHealth(context, { now: new Date(now) })),
   ]);
 
   return {
@@ -409,5 +413,6 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     waitlist,
     crawl,
     catalog,
+    salud,
   };
 }

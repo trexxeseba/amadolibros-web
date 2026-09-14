@@ -103,3 +103,8 @@ STOCK_WAITLIST_TURNSTILE_SITE_KEY = "0x4AAAAAAD_Ul8KGae_hdWwj"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"
 GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
+# Sección «Salud» de /panel: habilita la consulta a la API de GitHub para
+# mostrar la última corrida de los reportes automáticos (cacheada 10 min en
+# KV). Sólo en Producción: en Preview, tests y dev el panel no sale a
+# Internet y la sección lo dice. El estado del sync se lee de KV siempre.
+PANEL_SALUD_REMOTO = "true"

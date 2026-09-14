@@ -15,92 +15,21 @@
  * Solo lectura: GET a /api/status y GET a la API de GitHub.
  */
 
-import { evaluateSyncStatus } from './sync-freshness-check.mjs';
+import {
+  WORKFLOWS_VIGILADOS,
+  evaluarWorkflows,
+  evaluateSyncStatus,
+} from '../../functions/_shared/health-rules.js';
+
+// Las reglas viven en functions/_shared/health-rules.js, compartidas con el
+// panel. Se re-exportan para que las pruebas sigan importándolas de acá.
+export { WORKFLOWS_VIGILADOS, evaluarWorkflows };
 
 const DEFAULT_STATUS_URL = 'https://www.amadolibros.com/api/status';
 const DEFAULT_REPO = 'trexxeseba/amadolibros-web';
 
-/**
- * `maxDias: null` significa "no mirar la antigüedad": deploy.yml corre cuando
- * hay un push y pasar una semana sin publicar no es una falla.
- * `rama` filtra a main donde el workflow también corre en PRs, para no leer
- * como "última corrida" la de una rama cualquiera.
- */
-export const WORKFLOWS_VIGILADOS = [
-  { archivo: 'deploy.yml', nombre: 'Deploy a producción', maxDias: null, rama: 'main' },
-  { archivo: 'sync-freshness.yml', nombre: 'Frescura del sync', maxDias: 2, rama: 'main' },
-  { archivo: 'checkout-funnel-report.yml', nombre: 'Embudo de checkout', maxDias: 2, rama: 'main' },
-  { archivo: 'gsc-inspection-rotation.yml', nombre: 'Indexación en Google', maxDias: 2, rama: 'main' },
-  { archivo: 'full-commerce-audit.yml', nombre: 'Auditoría comercial', maxDias: 9, rama: 'main' },
-  { archivo: 'gsc-export.yml', nombre: 'Tráfico de búsqueda', maxDias: 9, rama: 'main' },
-  { archivo: 'bing-webmaster-report.yml', nombre: 'Bing Webmaster', maxDias: 9, rama: 'main' },
-];
-
 function asText(value) {
   return String(value ?? '').trim();
-}
-
-function dias(desdeIso, now) {
-  const ms = Date.parse(asText(desdeIso));
-  if (!Number.isFinite(ms)) return null;
-  return Math.round(((now.getTime() - ms) / 86_400_000) * 10) / 10;
-}
-
-/**
- * Convierte la última corrida de cada workflow en un veredicto legible.
- * `corridas` es un mapa archivo → {conclusion, created_at} | null.
- */
-export function evaluarWorkflows(corridas, { now = new Date(), vigilados = WORKFLOWS_VIGILADOS } = {}) {
-  const filas = [];
-  const problemas = [];
-  const sinConsultar = [];
-
-  for (const wf of vigilados) {
-    const lectura = corridas?.[wf.archivo] ?? null;
-
-    // «No pude preguntar» y «nunca corrió» son cosas distintas y hay que
-    // decirlas distinto. Confundirlas convierte un corte de red momentáneo en
-    // siete avisos de que tus reportes están muertos — y un aviso que grita en
-    // falso una vez es un aviso que no se lee nunca más.
-    if (lectura && lectura.ok === false) {
-      filas.push({ nombre: wf.nombre, estado: 'no se pudo consultar', dias: null, ok: false });
-      sinConsultar.push(wf.nombre);
-      continue;
-    }
-
-    const corrida = lectura?.corrida ?? null;
-
-    if (!corrida) {
-      filas.push({ nombre: wf.nombre, estado: 'sin corridas', dias: null, ok: false });
-      problemas.push(`«${wf.nombre}» no tiene ninguna corrida registrada.`);
-      continue;
-    }
-
-    const conclusion = asText(corrida.conclusion) || 'sin conclusión';
-    const antiguedad = dias(corrida.created_at, now);
-    // `skipped` y `cancelled` no son fallas: no se avisa por ellas, pero
-    // tampoco cuentan como verde, así que se muestran tal cual.
-    const fallo = conclusion === 'failure' || conclusion === 'timed_out';
-    const viejo = wf.maxDias != null && antiguedad != null && antiguedad > wf.maxDias;
-
-    if (fallo) problemas.push(`«${wf.nombre}» falló en su última corrida (hace ${antiguedad} días).`);
-    if (viejo) problemas.push(`«${wf.nombre}» no corre hace ${antiguedad} días (máximo esperado: ${wf.maxDias}).`);
-
-    filas.push({ nombre: wf.nombre, estado: conclusion, dias: antiguedad, ok: !fallo && !viejo });
-  }
-
-  // Si no se pudo consultar ninguno, el problema es uno solo —la API no
-  // respondió— y no uno por reporte. Un correo con siete avisos que en
-  // realidad son el mismo hecho es ruido.
-  if (sinConsultar.length && sinConsultar.length === vigilados.length) {
-    problemas.push('No se pudo consultar la API de GitHub: esta vez no hay datos de ningún reporte automático.');
-  } else {
-    for (const nombre of sinConsultar) {
-      problemas.push(`No se pudo consultar el estado de «${nombre}».`);
-    }
-  }
-
-  return { filas, problemas, sinConsultar };
 }
 
 export function construirDigest({ estadoSync, workflows, now = new Date() }) {
