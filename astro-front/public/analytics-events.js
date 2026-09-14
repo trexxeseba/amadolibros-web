@@ -95,6 +95,62 @@
     try { storage.setItem(key, '1'); } catch (_error) {}
   }
 
+  // ── Espejo al píxel de Meta ───────────────────────────────────────────────
+  //
+  // Hasta ahora el sitio no le mandaba un solo evento a Meta. En 90 días sus
+  // campañas registraron 0 compras, 0 agregados al carrito y 0 checkouts — no
+  // porque no pasara nada, sino porque no había quién se lo contara. Sin eso
+  // Meta sólo puede optimizar por "quién abre una conversación", que es lo
+  // único que ve por su cuenta, y no por quién compra.
+  //
+  // Se espeja acá adentro, después de que trackCommerce ya decidió que el
+  // evento es válido y que no está repetido, por dos motivos: hay una sola
+  // definición de qué es una compra para las dos mediciones, y la deduplicación
+  // que ya existe para GA4 vale igual para Meta sin escribirla de nuevo.
+  //
+  // Si el píxel no está cargado —falta PUBLIC_META_PIXEL_ID, o el build es de
+  // Preview— fbq no existe y todo esto no hace nada. GA4 sigue igual.
+  var META_EVENT_NAMES = {
+    view_item: 'ViewContent',
+    add_to_cart: 'AddToCart',
+    begin_checkout: 'InitiateCheckout',
+    purchase: 'Purchase',
+  };
+
+  function metaContents(items) {
+    return items.map(function (item) {
+      var entry = { id: item.item_id, quantity: item.quantity };
+      if (typeof item.price === 'number') entry.item_price = item.price;
+      return entry;
+    });
+  }
+
+  function trackMetaCommerce(eventName, params) {
+    if (typeof window.fbq !== 'function') return false;
+    var metaEvent = META_EVENT_NAMES[eventName];
+    if (!metaEvent) return false;
+
+    var contents = metaContents(params.items);
+    var payload = {
+      content_type: 'product',
+      content_ids: contents.map(function (entry) { return entry.id; }),
+      contents: contents,
+      currency: params.currency,
+    };
+    if (typeof params.value === 'number') payload.value = params.value;
+
+    // eventID deja que Meta descarte el duplicado el día que la misma compra
+    // se mande también desde el servidor (Conversions API). Agregarlo ahora
+    // cuesta una línea; agregarlo después es descubrir las compras contadas
+    // dos veces.
+    if (eventName === 'purchase' && params.transaction_id) {
+      window.fbq('track', metaEvent, payload, { eventID: String(params.transaction_id) });
+      return true;
+    }
+    window.fbq('track', metaEvent, payload);
+    return true;
+  }
+
   function trackCommerce(eventName, options) {
     options = options || {};
     if (!ECOMMERCE_EVENTS.has(eventName)) return false;
@@ -138,6 +194,7 @@
     }
 
     window.gtag('event', eventName, params);
+    trackMetaCommerce(eventName, params);
     if (dedupeKey) {
       var storage = eventName === 'purchase' ? window.localStorage : window.sessionStorage;
       storageSet(storage, 'amado_ga4_' + dedupeKey);
@@ -271,6 +328,18 @@
     params.transport_type = 'beacon';
 
     window.gtag('event', 'whatsapp_click', params);
+
+    // Dos tercios del presupuesto de Meta van a campañas que mandan a
+    // WhatsApp, y de los que llegan al sitio por un aviso y recién después
+    // escriben, Meta no veía ninguno. Contact es el evento estándar para esto.
+    // No cubre a quien va del aviso directo a WhatsApp sin pasar por el sitio:
+    // ese clic no ocurre acá y no hay forma de medirlo desde el navegador.
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'Contact', {
+        content_name: params.origen,
+        content_category: params.page_type,
+      });
+    }
   }
 
   // BLOQUEANTE PR #310 — punto 1: mide en qué etapa se traba un comprador
@@ -341,6 +410,7 @@
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
+    trackMetaCommerce: trackMetaCommerce,
     trackCheckoutError: trackCheckoutError,
     trackStockWaitlistCreated: trackStockWaitlistCreated,
     getMeasurementContext: getMeasurementContext,

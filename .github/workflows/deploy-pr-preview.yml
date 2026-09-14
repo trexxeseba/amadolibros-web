@@ -38,6 +38,7 @@ jobs:
         env:
           PUBLIC_INDEXABLE: 'false'
           PUBLIC_GA_ID: ''
+          PUBLIC_META_PIXEL_ID: ''
           PUBLIC_CHECKOUT_ENABLED: 'false'
           PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'

@@ -203,6 +203,10 @@ jobs:
         env:
           PUBLIC_INDEXABLE: 'true'
           PUBLIC_GA_ID: G-SDX45VEPP3
+          # Variable de repositorio, no secret: el id del píxel viaja en el
+          # HTML, no hay nada que esconder. Mientras no esté cargada llega
+          # vacía y el build sale sin píxel — sin romper el deploy.
+          PUBLIC_META_PIXEL_ID: ${{ vars.META_PIXEL_ID }}
           # PUBLIC_CHECKOUT_ENABLED en 'true' (2-N-H1): el build renderiza el
           # flujo de pago online. El backend tiene su propio interruptor
           # (CHECKOUT_ENABLED en wrangler.toml) — los dos deben estar en true
