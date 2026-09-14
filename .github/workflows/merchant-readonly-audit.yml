@@ -14,6 +14,15 @@ on:
       - 'scripts/commerce/merchant-readonly-audit.mjs'
       - 'functions/__tests__/merchant-readonly-audit.test.js'
   workflow_dispatch:
+    inputs:
+      issue_codes:
+        description: 'Causas a listar producto por producto, separadas por coma. Vacío = todas.'
+        required: false
+        type: string
+      sample_limit:
+        description: 'Máximo de productos listados por causa (vacío = 25)'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -62,6 +71,9 @@ jobs:
           MERCHANT_ACCOUNT_ID: '5330457716'
           MERCHANT_PUBLIC_FEED_URL: https://www.amadolibros.com/feed.xml
           MERCHANT_OUTPUT_DIR: artifacts/merchant
+          # Vacíos fuera de workflow_dispatch; el script cae a «todas» y 25.
+          MERCHANT_ISSUE_CODES: ${{ inputs.issue_codes }}
+          MERCHANT_ISSUE_SAMPLE_LIMIT: ${{ inputs.sample_limit }}
         run: node scripts/commerce/merchant-readonly-audit.mjs
 
       - name: Validate generated report
@@ -83,8 +95,12 @@ jobs:
       - name: Write run summary
         if: always()
         run: |
+          # tee, no `>>`: el diagnóstico va al resumen Y al log de la corrida.
+          # Mandarlo sólo al resumen lo dejaba encerrado ahí y en un artefacto
+          # zipeado, así que el dato existía pero nadie lo leía. El log se lee
+          # desde la API, sin descargar nada.
           if [ -f artifacts/merchant/report-summary.md ]; then
-            cat artifacts/merchant/report-summary.md >> "$GITHUB_STEP_SUMMARY"
+            cat artifacts/merchant/report-summary.md | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo '## Merchant Center — auditoría incompleta' >> "$GITHUB_STEP_SUMMARY"
             echo '' >> "$GITHUB_STEP_SUMMARY"

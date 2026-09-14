@@ -605,3 +605,64 @@ test('28. Merchant publica product_type jerárquico para una o varias rutas cura
     assert.match(xml, /<g:product_type>Libros &gt; Educación &gt; Pedagogía<\/g:product_type>/);
     assert.doesNotMatch(renderFeedItem(book()), /<g:product_type>/);
 });
+
+// Merchant rechazó dos fichas con `utf8_encoding_error [description]`. La
+// causa está acá: slice() corta por unidades UTF-16, así que un carácter
+// astral partido al medio deja un suplente solitario que no es UTF-8 válido.
+test('truncar nunca parte un carácter al medio', () => {
+    const conAstral = 'a'.repeat(19) + '\u{1F31F}' + ' resto del texto';
+    const cortado = truncateMerchantText(conAstral, 20);
+
+    const ultimo = cortado.charCodeAt(cortado.length - 1);
+    assert.equal(ultimo >= 0xD800 && ultimo <= 0xDBFF, false, 'no queda medio carácter al final');
+    assert.equal(
+        Buffer.from(cortado, 'utf8').toString('utf8'),
+        cortado,
+        'el texto truncado sobrevive una ida y vuelta por UTF-8',
+    );
+});
+
+test('truncar conserva entero el carácter astral que entra completo', () => {
+    const texto = 'ab \u{1F31F} cd efgh ijkl';
+    const cortado = truncateMerchantText(texto, 12);
+    assert.equal(cortado.includes('\u{1F31F}'), true, 'no se descarta lo que sí entraba');
+    assert.equal(Buffer.from(cortado, 'utf8').toString('utf8'), cortado);
+});
+
+test('truncar deja intacto el texto que no llega al tope', () => {
+    assert.equal(truncateMerchantText('¿Y La Abuela?', 150), '¿Y La Abuela?');
+});
+
+// Sin google_product_category, Google adivina el tipo de producto desde el
+// título y con este catálogo se equivoca: rechazó 16 libros de papel como
+// "libros digitales no admitidos". Es seguro fijarlo para todo el feed porque
+// isEligibleForFeed ya exige isBookProduct.
+test('cada ítem del feed declara la categoría de producto de Google', () => {
+    const xml = renderFeedItem({
+        id: 'MLU123',
+        title: 'Wider World 3 - Student’s Book + Ebook + Myenglishlab',
+        price: 1200,
+        status: 'active',
+        available_quantity: 1,
+        condition: 'new',
+        currency_id: 'UYU',
+    });
+
+    assert.match(xml, /<g:google_product_category>784<\/g:google_product_category>/);
+    assert.equal(
+        (xml.match(/<g:google_product_category>/g) || []).length,
+        1,
+        'una sola vez por ítem',
+    );
+});
+
+test('la categoría de Google no se confunde con product_type', () => {
+    const categoryData = {
+        items: { MLU123: [['c1', 's1']] },
+        categories: [{ id: 'c1', name: 'Psicología', subcategories: [{ id: 's1', name: 'Duelo' }] }],
+    };
+    const xml = renderFeedItem({ id: 'MLU123', title: 'Un libro', price: 1200, status: 'active', available_quantity: 1, currency_id: 'UYU' }, null, categoryData);
+
+    assert.match(xml, /<g:google_product_category>784<\/g:google_product_category>/);
+    assert.match(xml, /<g:product_type>Libros &gt; Psicología &gt; Duelo<\/g:product_type>/);
+});

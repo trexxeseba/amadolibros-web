@@ -31,6 +31,13 @@ const SESSION_KEY_LABEL = 'amado-panel-session-key-v1';
 // Freno de fuerza bruta: una contraseña compartida es adivinable a fuerza de
 // intentos, y el login es público. Se cuenta por IP en KV.
 const LOGIN_MAX_ATTEMPTS = 8;
+// Mínimo de la contraseña del panel. Baja de 12 a 8 a pedido de Seba: 12 era
+// incómoda de tipear a diario y la fuerza bruta acá no es el ataque realista.
+// Antes de comparar la contraseña hay que pasar Turnstile, y a los
+// LOGIN_MAX_ATTEMPTS intentos fallidos la IP queda bloqueada, así que un
+// atacante no puede probar en volumen. Lo que el mínimo sigue impidiendo es una
+// contraseña de tres letras cargada con apuro.
+const MIN_PASSWORD_LENGTH = 8;
 const LOGIN_WINDOW_SECONDS = 15 * 60;
 const LOGIN_ATTEMPTS_PREFIX = 'panel_login_fail:';
 
@@ -40,9 +47,10 @@ function cleanString(value) {
 
 export function resolvePanelConfig(env) {
   const password = cleanString(env?.PANEL_PASSWORD);
-  // Una contraseña corta con Turnstile delante sigue siendo débil; se exige un
-  // mínimo acá para que el panel no dependa de la disciplina de quien la cargue.
-  if (password.length < 12) return { ok: false };
+  // Se exige un mínimo acá para que el panel no dependa de la disciplina de
+  // quien la cargue. Detrás de esta puerta hay nombres, correos, teléfonos y
+  // direcciones de clientes: el mínimo protege a ellos, no al negocio.
+  if (password.length < MIN_PASSWORD_LENGTH) return { ok: false };
   return { ok: true, password };
 }
 
@@ -208,5 +216,6 @@ export const PANEL_AUTH_CONSTANTS = Object.freeze({
   SESSION_COOKIE_NAME,
   SESSION_TTL_SECONDS,
   LOGIN_MAX_ATTEMPTS,
+  MIN_PASSWORD_LENGTH,
   LOGIN_WINDOW_SECONDS,
 });

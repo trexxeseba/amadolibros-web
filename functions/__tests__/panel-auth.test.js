@@ -40,13 +40,20 @@ test('el panel falla cerrado: sin contraseña, o con una corta, no hay configura
   assert.equal(resolvePanelConfig(undefined).ok, false);
   assert.equal(resolvePanelConfig({}).ok, false);
   assert.equal(resolvePanelConfig({ PANEL_PASSWORD: '' }).ok, false);
-  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'corta' }).ok, false);
-  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(11) }).ok, false);
+  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'abc' }).ok, false);
+
+  // El mínimo se lee de la constante, no se repite acá: cuando cambie, este
+  // test sigue probando la regla vigente en vez de una cifra vieja. Lo que no
+  // se negocia es que exista un mínimo — detrás del panel hay nombres,
+  // correos, teléfonos y direcciones de clientes.
+  const minimo = PANEL_AUTH_CONSTANTS.MIN_PASSWORD_LENGTH;
+  assert.ok(minimo >= 8, 'el mínimo no puede quedar en un valor simbólico');
+  assert.equal(resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(minimo - 1) }).ok, false);
 
   // Una sola clave para configurar: no se pide ni se usa un segundo secret.
-  const valid = resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(12) });
+  const valid = resolvePanelConfig({ PANEL_PASSWORD: 'x'.repeat(minimo) });
   assert.equal(valid.ok, true);
-  assert.equal(valid.password, 'x'.repeat(12));
+  assert.equal(valid.password, 'x'.repeat(minimo));
   assert.equal('sessionSecret' in valid, false);
 });
 

@@ -73,6 +73,24 @@ const MAX_GALLERY_IMAGES = 16;
 const MAX_ADDITIONAL_IMAGE_LINKS = 10;
 const MAX_MERCHANT_DESCRIPTION_CHARS = 5000;
 
+// «Media > Books» en la taxonomía de productos de Google.
+//
+// Sin este atributo, Google clasifica cada producto adivinando a partir del
+// título y la descripción, y con este catálogo se equivoca: la auditoría del
+// 2026-09-13 encontró 16 libros de papel rechazados como
+// `ebooks_policy_violation` —"libros digitales no admitidos"— entre ellos
+// tres cursos de inglés que traen la palabra «Ebook» en el título porque
+// incluyen un código de acceso, y trece que ni siquiera la traen.
+//
+// Es seguro ponerlo fijo para todo el feed: `isEligibleForFeed` exige
+// `isBookProduct`, así que acá no entra nada que no sea un libro. Los mazos
+// de tarot y los juegos quedan fuera del feed por ese mismo filtro.
+//
+// No se promete que esto resuelva los 16 rechazos: lo verifica la auditoría
+// de Merchant viendo si esa causa baja a cero después de la próxima lectura
+// del feed.
+const GOOGLE_PRODUCT_CATEGORY_BOOKS = '784';
+
 export async function onRequest(context) {
     try {
         const [catalog, categoryData] = await Promise.all([
@@ -395,12 +413,24 @@ export function buildFeedDescription(item) {
     return sentence;
 }
 
+// slice() corta por unidades UTF-16, no por caracteres. Un emoji o cualquier
+// carácter fuera del BMP ocupa DOS unidades, así que un corte que cae justo en
+// el medio deja media letra: un suplente solitario. Eso no se puede codificar
+// en UTF-8, y Merchant rechaza la ficha con `utf8_encoding_error [description]`.
+// Se descarta esa mitad huérfana; perder un emoji al final de un texto ya
+// truncado no le cambia nada a nadie, y una ficha rechazada sí.
+function dropLoneSurrogate(text) {
+    const last = text.charCodeAt(text.length - 1);
+    return last >= 0xD800 && last <= 0xDBFF ? text.slice(0, -1) : text;
+}
+
 export function truncateMerchantText(value, maxChars) {
     const text = String(value || '').trim();
     if (text.length <= maxChars) return text;
     const clipped = text.slice(0, maxChars + 1);
     const boundary = clipped.lastIndexOf(' ');
-    return clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars).trim();
+    const cut = clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars);
+    return dropLoneSurrogate(cut).trim();
 }
 
 export function merchantImageLink(item, position = 0) {
@@ -546,7 +576,8 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>${additionalImageTags}` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
-        <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}${productTypeTags}
+        <g:condition>${escapeXml(cond)}</g:condition>
+        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${identifierExistsTag}${productTypeTags}
     </item>`;
 }
 

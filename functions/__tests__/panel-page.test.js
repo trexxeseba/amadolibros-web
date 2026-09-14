@@ -133,6 +133,11 @@ test('con sesión válida se ve el tablero, y el nombre del comprador va escapad
   const html = await response.text();
 
   assert.match(html, /Para hacer ahora/);
+  // La sección «Salud» está siempre, y en un entorno sin KV ni consulta
+  // remota lo dice en vez de salir a Internet desde una prueba.
+  assert.match(html, /id="salud"/);
+  assert.match(html, /Estado del sync no disponible/);
+  assert.match(html, /PANEL_SALUD_REMOTO/);
   assert.match(html, /AL-1001/);
   assert.match(html, /\$ 1[.,]?990/);
   // Lo pendiente sale como una tarea con su acción, no como una fila de tabla.

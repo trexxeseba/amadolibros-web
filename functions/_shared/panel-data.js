@@ -17,6 +17,7 @@
  */
 
 import { fetchCatalog } from './catalog.js';
+import { loadHealth } from './panel-health.js';
 import { isEligibleForFeed } from '../feed.xml.js';
 
 const RECENT_ORDERS_LIMIT = 20;
@@ -43,8 +44,11 @@ function cleanId(value) {
  * da isEligibleForFeed; esto sólo pone el motivo en palabras, en el mismo
  * orden en que esa función descarta. Hay un test que verifica que las dos
  * coincidan siempre: si alguien cambia la regla y no toca esto, falla.
+ *
+ * Exportada porque la auditoría de Merchant la usa para explicar, libro por
+ * libro, por qué un activo no entra al feed: una sola definición del motivo.
  */
-function feedBlockerReason(item) {
+export function feedBlockerReason(item) {
   if (!item?.permalink) return 'sin enlace a Mercado Libre';
   if (!/^MLU\d+$/.test(String(item?.id || ''))) return 'id inválido';
   if (!(Number(item?.available_quantity) > 0)) return 'sin stock';
@@ -391,13 +395,16 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     ? section(() => loader(db))
     : Promise.resolve({ ok: false, error: 'ORDERS_DB no está disponible en este entorno.' }));
 
-  const [orders, revenue, stuck, waitlist, crawl, catalog] = await Promise.all([
+  const [orders, revenue, stuck, waitlist, crawl, catalog, salud] = await Promise.all([
     withDb(database => loadOrdersOverview(database, { now })),
     withDb(database => loadRevenueByMonth(database, { now })),
     withDb(database => loadStuck(database, { now })),
     withDb(database => loadWaitlist(database)),
     withDb(database => loadCrawl(database, { now })),
     section(() => loadCatalogSummary(context)),
+    // Sync (KV) y reportes automáticos (GitHub, si está encendido). Nunca
+    // tira: lo que no se pudo leer se muestra como tal.
+    section(() => loadHealth(context, { now: new Date(now) })),
   ]);
 
   return {
@@ -409,5 +416,6 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     waitlist,
     crawl,
     catalog,
+    salud,
   };
 }

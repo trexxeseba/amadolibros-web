@@ -36,12 +36,14 @@ import {
   hasValidSession,
   loginAttemptsExceeded,
   recordFailedLogin,
+  PANEL_AUTH_CONSTANTS,
   resolvePanelConfig,
   sessionCookieHeader,
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
+import { healthSection } from '../_shared/panel-health.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
 import {
   NOTICE_EVENT_TYPE,
@@ -146,6 +148,7 @@ function sidebar(activo = 'tablero') {
     { id: 'pendientes', href: '/panel#pendientes', texto: 'Para hacer', icono: '◉' },
     { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos', icono: '❑' },
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
+    { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
     { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },
   ];
   return `<nav class="lateral" aria-label="Secciones del panel">
@@ -906,6 +909,8 @@ ${sectionOrError(data.orders, orders => `
   </article>`)}
 </section>`)}
 
+${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.catalog?.ok ? data.catalog.data : null }))}
+
 <section class="card grafico" id="facturacion">
   <div class="card-cabeza">
     <h2>Facturación cobrada</h2>
@@ -1083,7 +1088,7 @@ export async function onRequest(context) {
     // Sin contraseña no hay panel: ni login ni tablero. Nunca "abierto por defecto".
     return htmlResponse(
       layout('Panel no disponible', '<main class="card"><h1>Panel no disponible</h1>'
-        + '<p class="muted">Falta PANEL_PASSWORD en este entorno (mínimo 12 caracteres).</p></main>'),
+        + `<p class="muted">Falta PANEL_PASSWORD en este entorno (mínimo ${PANEL_AUTH_CONSTANTS.MIN_PASSWORD_LENGTH} caracteres).</p></main>`),
       { status: 503 },
     );
   }

@@ -29,11 +29,13 @@ prioridades — es el único vigente y reemplaza cualquier orden anterior:
    el mismo universo de 3.596). Detalle, reconciliación y bloqueo concreto en
    `ESTADO-ACTUAL.md`. Entrega en
    [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325) —
-   **sin mergear ni desplegar**, a la espera de aprobación de Seba.
-   **La verificación de Producción queda pendiente** hasta que haya merge y
-   deploy; el procedimiento ya está preparado (workflow «B12 — verificar en
-   Producción las fichas mejoradas», detalle en `ESTADO-ACTUAL.md`) y no
-   requiere trabajo nuevo.
+   **fusionado el 2026-09-10 y desplegado en Producción**.
+   **Verificado en Producción el 2026-09-13**, corrida
+   [34783054060](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783054060):
+   **475/475 fichas, 828 comprobaciones, 0 fallidas, 0 sin verificar, 0
+   pérdidas**. Son 475 y no las 481 del Preview porque el plan se recalcula
+   contra el catálogo vivo del día y seis de aquellas fichas ya no figuran
+   activas; ninguna falló ni perdió un campo.
 
 No iniciar ningún trabajo de los puntos 2-7 sin autorización explícita y
 separada de Seba. El detalle completo de cada uno (objetivo, criterio de
@@ -43,7 +45,11 @@ correspondientes, más abajo.
 ### Google Merchant Center — detalle de la Gran Apuesta activa
 
 - **Estado:** 🎯 EN CURSO — única Gran Apuesta activa del proyecto desde
-  el 2026-09-05.
+  el 2026-09-05. **La etapa de diagnóstico está cumplida el 2026-09-13**
+  (evidencia de API real y quick wins priorizados, más abajo). Lo que sigue
+  ya no es averiguar: es decidir qué hacer con los 311 rechazos por categoría
+  y con el AUTOFEED, y eso necesita autorización de Seba porque implica tocar
+  qué se publica.
 - **Responsable:** ChatGPT + Seba, con Claude Code para cambios técnicos
   si fueran necesarios (ningún cambio técnico está autorizado todavía;
   esta etapa es de diagnóstico).
@@ -59,9 +65,103 @@ correspondientes, más abajo.
   — nunca una inferencia desde el código o desde auditorías internas de
   B11 (esas ya existen, pero miden el feed propio, no el veredicto real
   de Merchant sobre ese feed).
-- **Avance registrado:** ninguno todavía — diagnóstico sin iniciar
-  formalmente. **No declarar Merchant Center verificado hasta tener esa
-  evidencia real.**
+- **Avance registrado:** **diagnóstico hecho el 2026-09-13** contra la
+  Merchant API real (cuenta `5330457716`, llamadas sólo GET), corrida
+  [34783285537](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783285537).
+  No es inferencia desde el repo: son los cuatro endpoints de Merchant
+  respondiendo OK. El detalle completo está en `ESTADO-ACTUAL.md`.
+
+  | | |
+  | --- | ---: |
+  | Productos que Merchant procesó | **6.984** |
+  | Ofertas en el feed público | **3.689** |
+  | Activos en Dynamic remarketing UY | **3.370** |
+  | Rechazados | **321** |
+  | Pendientes | **0** |
+  | Próximos a vencer | **0** |
+  | Problemas de cuenta | **0** |
+
+  **La brecha ya no es un misterio.** Entre el feed (3.689) y los activos
+  (3.370) hay 319, y hay 321 rechazados. Con pendientes en 0 y vencimientos
+  en 0, la brecha son **los rechazos y nada más**: no hay que buscar en
+  procesamiento ni en caducidad. La alerta que originó todo —caída de 3.745 a
+  2.981— ya no aplica: hoy hay 3.370 y se recuperó sin que nadie tocara nada.
+
+- **Quick wins, por productos afectados:**
+
+  | # | Causa | Productos | Qué tipo de problema es |
+  | ---: | --- | ---: | --- |
+  | 1 | `personal_hardships_policy_violation` | **241** | Política de publicidad personalizada: penurias personales. **El 75% de todos los rechazos es este solo motivo.** |
+  | 2 | `sexual_interests_policy_violation` | 38 | Publicidad personalizada: intereses sexuales |
+  | 3 | `restricted_nfs_policy_violation` | 37 | Contenido adulto restringido |
+  | 4 | `identity_and_belief_policy_violation` | 20 | Publicidad personalizada: identidad y creencias |
+  | 5 | `ebooks_policy_violation` | 16 | Libros digitales no admitidos |
+  | 6 | `legal_restrictions_policy_violation` | 12 | Publicidad personalizada: restricciones legales |
+  | 7 | `fake_documents_policy_violation` | 2 | Conducta deshonesta |
+  | 8 | `illegal_drugs_policy_violation` | 2 | Drogas ilegales |
+
+  Los motivos suman 368 sobre 321 productos: hay productos con más de un
+  motivo. Aparte, sin bloquear a nadie (`NOT_IMPACTED`): 14 imágenes sin
+  procesar, 2 con demora de procesamiento y 2 descripciones con UTF-8
+  inválido.
+
+  **Lectura comercial.** Los motivos 1 a 4 y el 6 —**348 de las 368
+  incidencias**, contadas en incidencias y no en productos, porque los 368
+  motivos caen sobre 321 productos y varios acumulan más de uno— son
+  colisiones de **categoría**, no errores de datos: un fondo fuerte en
+  psicología, autoayuda, duelo y adicciones choca de frente con la política de
+  publicidad personalizada, y el de esoterismo con las de contenido adulto e
+  identidad. No se arreglan corrigiendo un campo.
+
+  > **Corrección.** Escribí que el quick win era «sacar los 16 ebooks del
+  > feed». Es falso: **ninguno de los 16 es un ebook.** Los 16 están activos y
+  > los 16 están en nuestro feed; son libros de papel, con «Tapa Dura» y
+  > «Tapa Blanda» escritos en el propio título, que Google clasifica mal.
+  > Sacarlos habría sido esconder stock vendible por un error ajeno. Detalle
+  > producto por producto en `ESTADO-ACTUAL.md`.
+
+- **Quick wins reales, en orden de qué tan nuestro es el problema:**
+
+  1. **`utf8_encoding_error` (2 fichas) — era nuestro, ya está arreglado.**
+     `truncateMerchantText` cortaba con `slice()`, por unidades UTF-16, y
+     partía al medio los caracteres fuera del BMP. Quedaba medio carácter, que
+     no es UTF-8 válido. Reproducido, corregido y con pruebas de regresión.
+  2. **`ebooks_policy_violation` (16) — probablemente nuestro, sin probar.** El
+     feed publica `<g:product_type>` pero no `<g:google_product_category>`, que
+     es el atributo que declara explícitamente el tipo de producto. Es lo
+     primero a probar; no se promete que lo resuelva, y la verificación es la
+     auditoría viendo si bajan a 0.
+  3. **Cuatro clasificaciones absurdas — a disputar en consola.** «Conducta
+     deshonesta» sobre un libro de adolescencia y sobre uno de sobrevivientes
+     de cáncer de mama; «drogas ilegales» sobre *Cannabis Consciente* y sobre
+     una guía de rastreo. Son las familias de política más severas y no
+     conviene dejarlas acumular.
+  4. **Los 311 por categoría — decisión comercial, no técnica.** Implica
+     elegir qué se publica. No se toca sin autorización de Seba.
+
+- **Hallazgo que nadie estaba mirando: hay 3 fuentes primarias.**
+  `amadolibros.com` (**AUTOFEED**), `Content API` (API) y `PRODUCTS SOURCE 3`
+  (FILE, diaria, desde `https://www.amadolibros.com/feed.xml`). Merchant
+  procesó 6.984 productos y el feed controlado trae 3.689: **casi la mitad de
+  lo que Merchant conoce no sale del feed que controlamos.** Entra por el
+  rastreo automático o por la API. Es exactamente lo que plantea el issue
+  abierto [#183](https://github.com/trexxeseba/amadolibros-web/issues/183)
+  (MERCHANT-AUTOFEED-CUT) y ahora tiene cifras.
+  **Medido el 2026-09-14**, con el motivo real de cada exclusión: de los ~2.996
+  activos del AUTOFEED que no están en nuestro feed, **2.700 son duplicados
+  —otra edición con el mismo ISBN ya publicada— y 297 no son libros** (un CD,
+  una chapa de matrícula, un anillo de plata, un juego, un tarot). Ninguno
+  falta por portada. Más 207 pausados sin oferta y 40 que responden 404.
+  **Corrección**: antes escribí que apagarlo «quita ~3.000 libros de Shopping».
+  Es falso —salía de un desglose que sólo miraba la primera de las tres etapas
+  del feed—: apagarlo quita segundas copias de libros ya publicados, no libros
+  distintos. Es decisión de Seba. Detalle en `ESTADO-ACTUAL.md`.
+
+- **Límite honesto de este diagnóstico:** la auditoría lee el destino
+  **Dynamic remarketing UY**, que es para el que llegó la alerta. **No mide
+  Shopping ads ni fichas gratuitas.** Para el veredicto de Google sobre esos
+  destinos hace falta ampliar la auditoría o mirar la consola. No declarar
+  Merchant Center entero verificado con esta evidencia.
 
 ### Verificación GA4 post-checkout — EN ESPERA DE EVIDENCIA
 
