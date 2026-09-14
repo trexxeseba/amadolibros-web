@@ -632,3 +632,37 @@ test('truncar conserva entero el carácter astral que entra completo', () => {
 test('truncar deja intacto el texto que no llega al tope', () => {
     assert.equal(truncateMerchantText('¿Y La Abuela?', 150), '¿Y La Abuela?');
 });
+
+// Sin google_product_category, Google adivina el tipo de producto desde el
+// título y con este catálogo se equivoca: rechazó 16 libros de papel como
+// "libros digitales no admitidos". Es seguro fijarlo para todo el feed porque
+// isEligibleForFeed ya exige isBookProduct.
+test('cada ítem del feed declara la categoría de producto de Google', () => {
+    const xml = renderFeedItem({
+        id: 'MLU123',
+        title: 'Wider World 3 - Student’s Book + Ebook + Myenglishlab',
+        price: 1200,
+        status: 'active',
+        available_quantity: 1,
+        condition: 'new',
+        currency_id: 'UYU',
+    });
+
+    assert.match(xml, /<g:google_product_category>784<\/g:google_product_category>/);
+    assert.equal(
+        (xml.match(/<g:google_product_category>/g) || []).length,
+        1,
+        'una sola vez por ítem',
+    );
+});
+
+test('la categoría de Google no se confunde con product_type', () => {
+    const categoryData = {
+        items: { MLU123: [['c1', 's1']] },
+        categories: [{ id: 'c1', name: 'Psicología', subcategories: [{ id: 's1', name: 'Duelo' }] }],
+    };
+    const xml = renderFeedItem({ id: 'MLU123', title: 'Un libro', price: 1200, status: 'active', available_quantity: 1, currency_id: 'UYU' }, null, categoryData);
+
+    assert.match(xml, /<g:google_product_category>784<\/g:google_product_category>/);
+    assert.match(xml, /<g:product_type>Libros &gt; Psicología &gt; Duelo<\/g:product_type>/);
+});
