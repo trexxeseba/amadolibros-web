@@ -77,6 +77,9 @@ find functions scripts worker-sync -type f \( -name '*.js' -o -name '*.mjs' \) -
 step "Suite completa de tests"
 node --test worker-sync/__tests__/*.test.js
 node --test scripts/categorize/__tests__/*.test.js
+# scripts/__tests__ existía desde antes y no lo corría nadie: ocho pruebas
+# verdes que no defendían nada porque nunca se ejecutaban.
+node --test scripts/__tests__/*.test.js
 # Node 22.12 (runner fijado en CI/deploy) todavía mantiene node:sqlite detrás
 # de este flag. En Node >=22.13 el flag es inocuo y conserva la misma suite.
 node --experimental-sqlite --test functions/__tests__/*.test.js

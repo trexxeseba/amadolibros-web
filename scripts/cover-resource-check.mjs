@@ -4,6 +4,7 @@ import { gzipSync } from 'node:zlib';
 import { streamCoverManifest } from '../functions/_shared/cover-manifest-stream.js';
 import { isEligibleForFeed, dedupeByGtinAndCondition, filterItemsWithReadyPrimaryCover, renderFeedItem } from '../functions/feed.xml.js';
 import { coverManifestBudget, coverBudgetMessage } from '../functions/_shared/cover-manifest-budget.js';
+import { withWarmup } from './incident-worker-warmup.mjs';
 
 const base = process.env.INCIDENT_URL;
 const token = process.env.INCIDENT_TOKEN;
@@ -12,9 +13,9 @@ const output = 'artifacts/cover-resource';
 const screenshotIds = ['MLU634431651', 'MLU709390092', 'MLU690771648', 'MLU679987262'];
 const report = { head, observed_at: new Date().toISOString(), production_writes: 0, pages: [], images: [], failures: [] };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-async function request(path) {
+const request = withWarmup(async function pedir(path) {
     return fetch(new URL(path, base), { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(60_000) });
-}
+});
 async function imageCheck(path, immutable = false) {
     const start = Date.now();
     try {

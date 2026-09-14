@@ -5,6 +5,7 @@ import { prepareCoverIndex, readCoverIndex, COVER_INDEX_METADATA } from '../func
 import { isDeepStrictEqual } from 'node:util';
 import { isEligibleForFeed, dedupeByGtinAndCondition, filterItemsWithReadyPrimaryCover, renderFeedItem } from '../functions/feed.xml.js';
 import { coverManifestBudget, coverBudgetMessage } from '../functions/_shared/cover-manifest-budget.js';
+import { withWarmup } from './incident-worker-warmup.mjs';
 
 const base = process.env.INCIDENT_URL;
 const token = process.env.INCIDENT_TOKEN;
@@ -14,9 +15,9 @@ const screenshotIds = ['MLU1094451174', 'MLU634431651', 'MLU709390092', 'MLU6907
 const report = { head, observed_at: new Date().toISOString(), production_writes: 0, pages: [], images: [], comparison: [], failures: [] };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const median = values => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
-async function request(path, options = {}) {
+const request = withWarmup(async function pedir(path, options = {}) {
     return fetch(new URL(path, base), { ...options, headers: { authorization: `Bearer ${token}`, ...options.headers }, signal: AbortSignal.timeout(120_000) });
-}
+});
 function metrics(response) {
     return { status: response.status, manifest_reads: Number(response.headers.get('x-incident-manifest-reads')),
         r2_bytes: Number(response.headers.get('x-incident-r2-bytes')), heads: Number(response.headers.get('x-incident-heads')),
