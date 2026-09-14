@@ -393,6 +393,44 @@
     return true;
   }
 
+  // ── Búsquedas sin resultado ───────────────────────────────────────────────
+  //
+  // NO se emite un evento de búsqueda propio. GA4 ya dispara
+  // view_search_results solo, porque el sitio busca con ?q= y ése es uno de los
+  // parámetros que la Medición mejorada reconoce por defecto. Nunca se vio
+  // porque /catalogo no cargaba GA4; corregido eso, empieza a llegar sin que
+  // nadie lo programe. Agregar el nuestro sería contar cada búsqueda dos veces.
+  //
+  // Lo único que falta es la cantidad de resultados, y sólo interesa un caso:
+  // cero. Eso no lo duplica nadie.
+  //
+  // Tampoco se mide el autocompletado: escribe una consulta a la API por tecla
+  // y medir eso sería ruido, no demanda.
+  var SEARCH_TERM_MAX = 100;
+  // Texto libre escrito por una persona: puede traer un correo o un teléfono
+  // pegado sin querer. Se descarta la búsqueda entera en vez de mandar una
+  // versión "limpiada" — mismo criterio que error_code en checkout_error.
+  var POSIBLE_DATO_PERSONAL = /@|\d{6,}/;
+
+  function trackSearchWithoutResults() {
+    var nodo = document.querySelector('[data-search-term]');
+    if (!nodo || typeof nodo.getAttribute !== 'function') return false;
+
+    var termino = String(nodo.getAttribute('data-search-term') || '').trim();
+    var resultados = Number(nodo.getAttribute('data-search-results'));
+    if (!termino || !isFinite(resultados) || resultados > 0) return false;
+    if (POSIBLE_DATO_PERSONAL.test(termino)) return false;
+
+    window.gtag('event', 'search_no_results', {
+      search_term: termino.slice(0, SEARCH_TERM_MAX),
+      // Cero resultados con un filtro puesto no es lo mismo que cero sin
+      // filtros: uno puede ser un catálogo que no tiene el libro y el otro una
+      // categoría mal elegida.
+      has_filters: nodo.getAttribute('data-search-filtered') === '1',
+    });
+    return true;
+  }
+
   function attachWaitlistSuccessTracking() {
     if (typeof document.getElementById !== 'function' || typeof window.MutationObserver !== 'function') return;
     var form = document.getElementById('aviso-stock');
@@ -449,13 +487,19 @@
     ensureMetaPixel: ensureMetaPixel,
     trackCheckoutError: trackCheckoutError,
     trackStockWaitlistCreated: trackStockWaitlistCreated,
+    trackSearchWithoutResults: trackSearchWithoutResults,
     getMeasurementContext: getMeasurementContext,
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachWaitlistSuccessTracking, { once: true });
-  } else {
+  function alCargarElDocumento() {
     attachWaitlistSuccessTracking();
+    trackSearchWithoutResults();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', alCargarElDocumento, { once: true });
+  } else {
+    alCargarElDocumento();
   }
 
   document.addEventListener('click', function (event) {

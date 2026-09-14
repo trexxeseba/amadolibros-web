@@ -39,7 +39,7 @@
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
-import { measurementHeadHtml } from './_shared/measurement.js';
+import { measurementHeadHtml, searchResultsAttrs } from './_shared/measurement.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
@@ -1078,7 +1078,7 @@ export async function onRequest(ctx) {
   ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
   <h1>${heading}</h1>
-  <p class="sub">${subText}</p>
+  <p class="sub"${searchResultsAttrs({ safeQuery: safeQ, totalResults, filtered: Boolean(categoria || subcategoria || disponibilidad) })}>${subText}</p>
   ${totalResults > 0
     ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
     : `<div class="empty">${emptyMessage}</div>`
