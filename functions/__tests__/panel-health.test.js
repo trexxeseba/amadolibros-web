@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { deriveSyncWorkerState } from '../_shared/health-rules.js';
+import { WORKFLOWS_VIGILADOS, deriveSyncWorkerState } from '../_shared/health-rules.js';
 import { fechaCorta, healthSection, loadHealth } from '../_shared/panel-health.js';
 
 const AHORA = new Date('2026-09-13T21:00:00.000Z');
@@ -91,7 +91,11 @@ test('encendido y sin caché consulta una vez por reporte y guarda el resultado'
   );
   assert.equal(salud.reportes.disponible, true);
   assert.equal(salud.reportes.desdeCache, false);
-  assert.equal(fetchFn.llamadas.length, 7, 'una consulta por workflow vigilado');
+  assert.equal(
+    fetchFn.llamadas.length,
+    WORKFLOWS_VIGILADOS.length,
+    'una consulta por workflow vigilado',
+  );
   assert.ok(fetchFn.llamadas.every(u => u.includes('branch=main')), 'siempre la rama main');
   assert.equal(kv.puts.length, 1);
   assert.equal(kv.puts[0].key, 'panel:salud:workflows');

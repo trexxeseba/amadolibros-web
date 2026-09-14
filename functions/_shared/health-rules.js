@@ -129,7 +129,6 @@ export const WORKFLOWS_VIGILADOS = [
   { archivo: 'gsc-inspection-rotation.yml', nombre: 'Indexación en Google', maxDias: 2, rama: 'main' },
   { archivo: 'full-commerce-audit.yml', nombre: 'Auditoría comercial', maxDias: 9, rama: 'main' },
   { archivo: 'gsc-export.yml', nombre: 'Tráfico de búsqueda', maxDias: 9, rama: 'main' },
-  { archivo: 'bing-webmaster-report.yml', nombre: 'Bing Webmaster', maxDias: 9, rama: 'main' },
 ];
 
 function dias(desdeIso, now) {
