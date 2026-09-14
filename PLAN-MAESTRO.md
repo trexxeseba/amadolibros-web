@@ -147,13 +147,15 @@ correspondientes, más abajo.
   rastreo automático o por la API. Es exactamente lo que plantea el issue
   abierto [#183](https://github.com/trexxeseba/amadolibros-web/issues/183)
   (MERCHANT-AUTOFEED-CUT) y ahora tiene cifras.
-  **Medido el 2026-09-14** (ids normalizados, índice de pausados leído): de
-  los 3.292 productos del AUTOFEED, **2.997 son activos que el feed excluye a
-  propósito**, 245 son pausados sin oferta y 46 responden 404; sólo 4 se
-  solapan con el feed. Apagarlo quita ~3.000 libros de Shopping y fichas
-  gratuitas; dejarlo muestra 291 que no deberían verse. La salida limpia es
-  llevar esos 2.997 al feed propio y recién después apagar el automático.
-  Es decisión de Seba. Detalle en `ESTADO-ACTUAL.md`.
+  **Medido el 2026-09-14**, con el motivo real de cada exclusión: de los ~2.996
+  activos del AUTOFEED que no están en nuestro feed, **2.700 son duplicados
+  —otra edición con el mismo ISBN ya publicada— y 297 no son libros** (un CD,
+  una chapa de matrícula, un anillo de plata, un juego, un tarot). Ninguno
+  falta por portada. Más 207 pausados sin oferta y 40 que responden 404.
+  **Corrección**: antes escribí que apagarlo «quita ~3.000 libros de Shopping».
+  Es falso —salía de un desglose que sólo miraba la primera de las tres etapas
+  del feed—: apagarlo quita segundas copias de libros ya publicados, no libros
+  distintos. Es decisión de Seba. Detalle en `ESTADO-ACTUAL.md`.
 
 - **Límite honesto de este diagnóstico:** la auditoría lee el destino
   **Dynamic remarketing UY**, que es para el que llegó la alerta. **No mide

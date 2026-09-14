@@ -11,12 +11,33 @@ ids normalizados a mayúsculas, índice de pausados leído: 10.180 ids):
 | `PRODUCTS SOURCE 3` (nuestro feed, FILE) | 3.692 | 3.687 | 0 | 4 | 1 |
 | `amadolibros.com` (AUTOFEED de Google) | 3.292 | **4** | **2.997** | **245** | **46** |
 
-- **El AUTOFEED publica casi exactamente lo que el feed excluye a propósito.**
-  De sus 3.292 productos, 2.997 son libros **activos** del catálogo que no
-  pasan el filtro del feed (imagen mínima, ISBN, moneda), 245 son pausados
-  («por encargo», cuya ficha no declara oferta) y 46 son ids que responden
-  **HTTP 404** —fantasmas de verdad, verificados con HEAD—. Sólo 4 se solapan
-  con el feed. Es por esto que Shopping ads muestra 6.698 activos y no 3.687.
+- **El AUTOFEED publica sobre todo duplicados de libros que ya publicamos.**
+  De sus ~3.264 productos, ~2.996 son activos del catálogo fuera del feed, y el
+  desglose por el motivo real (corrida
+  [34832626849](https://github.com/trexxeseba/amadolibros-web/actions/runs/34832626849))
+  dice exactamente por qué:
+
+  | Motivo | Libros |
+  | --- | ---: |
+  | **Duplicado: otra edición con el mismo ISBN ya está publicada** | **2.700** |
+  | **No se reconoce como libro** | **297** |
+  | Pasa la regla comercial y falta por portada u otra causa | **0** |
+
+  Los 297 son, textualmente, un CD de Rage Against The Machine, una chapa de
+  matrícula antigua de Montevideo, un anillo de plata 925, un juego de mesa y
+  un tarot. El filtro hace lo que debe. Los 2.700 son el mismo libro que ya
+  está en el feed, publicado otra vez con datos que Google scrapeó. Sumado a
+  207 pausados sin oferta y 40 ids que responden **HTTP 404**, esto es lo que
+  infla Shopping ads a 6.698 «activos» sobre ~3.690 libros distintos.
+
+  > **Corrección de lo que escribí antes.** Dije que el AUTOFEED «publica lo
+  > que el feed excluye a propósito» y que apagarlo «quita ~3.000 libros de
+  > Shopping». Las dos cosas están mal. La primera versión del desglose sólo
+  > evaluaba `isEligibleForFeed` y no contaba las otras dos etapas del feed
+  > (calidad de portada y deduplicación por ISBN), así que atribuí a exclusión
+  > deliberada lo que en realidad son duplicados. **Apagarlo no quita libros
+  > distintos de Shopping**: quita segundas copias de libros que el feed ya
+  > publica, más 297 no-libros, 207 pausados y 40 fantasmas.
 - **Los 3.292 ids llegan en minúscula** (`mlu887797526`). En Merchant son
   ofertas distintas de las `MLU…` del feed. Para el sitio son la misma página:
   `/libro/mlu…` responde 301 hacia la canónica.
@@ -25,13 +46,17 @@ ids normalizados a mayúsculas, índice de pausados leído: 10.180 ids):
   eran publicaciones que ya no existían. Era un defecto de la auditoría:
   comparaba ids sin normalizar mayúsculas y no coincidía nada. Los 301 lo
   delataron. Quedó corregido y con prueba.
-- **La decisión que abre esto es comercial, no técnica**: apagar el AUTOFEED
-  quita ~3.000 libros de Shopping y fichas gratuitas —los que nuestro filtro
-  no deja salir— pero también deja de mostrar 291 que no deberían mostrarse
-  (245 por encargo sin oferta y 46 inexistentes). La alternativa es llevar
-  esos 2.997 activos al feed propio, con nuestros datos, y recién entonces
-  apagar el automático. Ninguna de las dos se ejecuta sin autorización de
-  Seba. Cifras para [#183](https://github.com/trexxeseba/amadolibros-web/issues/183).
+- **Qué significa para la decisión.** Con el desglose real, apagar el AUTOFEED
+  ya no tiene el costo que le atribuí: no se pierde cobertura de libros
+  distintos, se pierden duplicados. Lo que sí conviene medir antes de decidir
+  es si esas segundas copias están trayendo tráfico por su cuenta —eso se ve
+  en el rendimiento por oferta dentro de Merchant, que esta auditoría no lee—.
+  Y queda una pregunta abierta que no es del AUTOFEED sino nuestra: si de
+  ~6.390 ofertas activas de libros el feed publica una por ISBN+condición,
+  2.700 copias quedan sin publicar por diseño; si varias tienen precios muy
+  distintos, puede convenir revisar qué copia gana la deduplicación. Nada de
+  esto se ejecuta sin autorización de Seba. Cifras para
+  [#183](https://github.com/trexxeseba/amadolibros-web/issues/183).
 
 **El hallazgo `IMAGEN_VISIBLE_NO_CARGA` del monitoreo Checkly, explicado.**
 Fue **una sola corrida** del recorrido de navegador, a las 01:47:15 UTC del
