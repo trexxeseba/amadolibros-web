@@ -77,6 +77,29 @@ jobs:
             exit 1
           fi
 
+      # Cuando esto falla, el único dato que llegaba a una persona era
+      # "HTTP 502". El motivo real —clave rechazada, acceso de API sin
+      # habilitar, sitio que no figura en la cuenta— viene en el cuerpo, y el
+      # cuerpo moría en un artefacto comprimido que nadie abre. Mismo criterio
+      # que el resto de los reportes: lo que se lee es el log.
+      - name: Mostrar el diagnóstico cuando la consulta falla
+        if: steps.fetch.outputs.http_status != '200'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # El camino de éxito ya verifica que ninguna respuesta arrastre la
+          # apikey. El de error merece el mismo guardián y no la confianza de
+          # haber leído el código: un secreto que pasó por un log dejó de serlo.
+          if jq -e '([.. | objects | has("apikey")] | any) or ([.. | strings | contains("apikey")] | any)' \
+               bing-webmaster-summary.json >/dev/null; then
+            echo "No se imprime el diagnóstico: el cuerpo contiene una apikey."
+            exit 0
+          fi
+
+          echo '── Diagnóstico devuelto por el Worker ──'
+          jq '.' bing-webmaster-summary.json
+
       - name: Build human-readable and CSV reports
         if: steps.fetch.outputs.http_status == '200'
         shell: bash
