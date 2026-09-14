@@ -210,6 +210,11 @@ jobs:
           PUBLIC_CHECKOUT_ENABLED: 'true'
           PUBLIC_TURNSTILE_SITE_KEY: ${{ steps.ts_config.outputs.site_key }}
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: ${{ steps.ts_config.outputs.allowed_hosts }}
+          # CUENTA-1 · Client ID web de Google. Es un dato público: viaja en
+          # la página, así que es variable de repositorio y no secreto. Si no
+          # está definida, queda vacía y el bloque de cuenta no se muestra —
+          # el checkout funciona igual que antes.
+          PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
         run: npm run build
 
       - name: Sync Resend secret to Cloudflare Pages

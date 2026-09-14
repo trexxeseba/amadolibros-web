@@ -41,6 +41,9 @@ jobs:
           PUBLIC_CHECKOUT_ENABLED: 'false'
           PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
+          # CUENTA-1 · ver el comentario en deploy.yml. Vacía mientras no
+          # exista la variable: el bloque de cuenta no aparece.
+          PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
         run: npm run build
 
       - name: Run universal image pipeline in R2 Preview
