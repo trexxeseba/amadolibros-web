@@ -339,3 +339,31 @@ test('pedido.astro: purchase usa el pedido autenticado y se emite antes de vacia
     'purchase debe registrarse antes de limpiar el carrito',
   );
 });
+
+// El tecleo en el checkout no puede escribir en sessionStorage por cada tecla.
+// Cloudflare Web Analytics midió #buyer-name en 1.808 ms de INP el 2026-09-14,
+// nueve veces el límite de 200 ms, porque cada pulsación serializaba el
+// borrador entero de forma sincrónica. Estos tests fijan las dos mitades del
+// arreglo: que tipear difiera el guardado, y que ninguna de las salidas reales
+// —salir del campo, irse de la página, pasar a segundo plano— lo difiera.
+test('carrito.astro: tipear difiere el guardado del borrador', () => {
+  assert.match(carritoAstro, /var DRAFT_SAVE_DEBOUNCE_MS = \d+;/);
+  assert.match(carritoAstro, /addEventListener\('input', scheduleDraftSave\)/);
+  assert.doesNotMatch(
+    carritoAstro,
+    /addEventListener\('input', saveDraft\)/,
+    'guardar en cada tecla es el defecto que este test existe para impedir',
+  );
+});
+
+test('carrito.astro: el borrador se escribe ya al salir, al irse y al pasar a segundo plano', () => {
+  assert.match(carritoAstro, /addEventListener\('change', saveDraft\)/);
+  assert.match(carritoAstro, /addEventListener\('pagehide', saveDraft\)/);
+  assert.match(carritoAstro, /visibilityState === 'hidden'\) saveDraft\(\)/);
+  // Un guardado inmediato tiene que cancelar el pendiente: si no, el diferido
+  // pisaría después con datos viejos lo que acaba de escribirse.
+  assert.match(
+    carritoAstro,
+    /function saveDraft\(\) \{\s*\n\s*if \(draftSaveTimer !== null\) \{\s*\n\s*clearTimeout\(draftSaveTimer\);/,
+  );
+});
