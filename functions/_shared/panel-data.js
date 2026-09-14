@@ -44,8 +44,11 @@ function cleanId(value) {
  * da isEligibleForFeed; esto sólo pone el motivo en palabras, en el mismo
  * orden en que esa función descarta. Hay un test que verifica que las dos
  * coincidan siempre: si alguien cambia la regla y no toca esto, falla.
+ *
+ * Exportada porque la auditoría de Merchant la usa para explicar, libro por
+ * libro, por qué un activo no entra al feed: una sola definición del motivo.
  */
-function feedBlockerReason(item) {
+export function feedBlockerReason(item) {
   if (!item?.permalink) return 'sin enlace a Mercado Libre';
   if (!/^MLU\d+$/.test(String(item?.id || ''))) return 'id inválido';
   if (!(Number(item?.available_quantity) > 0)) return 'sin stock';

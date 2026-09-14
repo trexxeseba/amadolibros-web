@@ -2,6 +2,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+// Las MISMAS funciones que deciden el feed y que explican el motivo en el
+// panel. Importarlas en vez de copiarlas es lo que garantiza que este reporte
+// diga por qué un libro NO está en el feed según la regla real, y no según
+// una reconstrucción que mañana quede vieja.
+import { isEligibleForFeed } from '../../functions/feed.xml.js';
+import { feedBlockerReason } from '../../functions/_shared/panel-data.js';
+
 const API_ROOT = 'https://merchantapi.googleapis.com';
 const DEFAULT_ACCOUNT_ID = '5330457716';
 const DEFAULT_FEED_URL = 'https://www.amadolibros.com/feed.xml';
@@ -413,6 +420,41 @@ export function summarizeSourceOverlap(products = [], { feedIds = null, catalog 
   return [...porFuente.values()].sort((a, b) => b.total - a.total || a.dataSource.localeCompare(b.dataSource));
 }
 
+// ¿Por qué un libro ACTIVO no está en nuestro feed? El AUTOFEED publica justo
+// esos, así que la pregunta «¿por qué los excluí?» se contesta agrupando por
+// el motivo real que devuelve feedBlockerReason. Se listan títulos de muestra
+// porque un conteo no deja decidir nada: para saber si conviene rescatarlos
+// hay que ver qué libros son.
+export function summarizeFeedExclusions(products = [], { feedIds = null, catalog = null, limitPorMotivo = 5 } = {}) {
+  if (!catalog) return [];
+  const porMotivo = new Map();
+  const vistos = new Set();
+
+  for (const product of products) {
+    const offerId = normalizeOfferId(product.offerId || product.name);
+    if (!offerId || vistos.has(offerId)) continue;
+    if (feedIds && feedIds.has(offerId)) continue;
+
+    const entrada = catalog.get(offerId);
+    const item = entrada?.item;
+    if (!item || asText(entrada.status) !== 'active') continue;
+    // Si ya es elegible, su ausencia del feed no se explica por la regla:
+    // no se inventa un motivo.
+    if (isEligibleForFeed(item)) continue;
+
+    vistos.add(offerId);
+    const motivo = feedBlockerReason(item);
+    const fila = porMotivo.get(motivo) || { motivo, total: 0, muestra: [] };
+    fila.total += 1;
+    if (fila.muestra.length < limitPorMotivo) {
+      fila.muestra.push({ offerId, title: entrada.title || '(sin título)' });
+    }
+    porMotivo.set(motivo, fila);
+  }
+
+  return [...porMotivo.values()].sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo));
+}
+
 export function buildDiagnosis({ alert, feedCount, dataSources, accountIssues, aggregate, products }) {
   const facts = [];
   const hypotheses = [];
@@ -620,6 +662,23 @@ function reportMarkdown(report) {
       const celda = valor => (s ? String(valor) : '—');
       lines.push(`| ${markdownEscape(etiqueta)} | ${markdownEscape(source?.input || '—')} | ${row.count} | ${celda(s?.enFeed)} | ${celda(s?.fueraDelFeed)} | ${celda(s?.fueraActivos)} | ${celda(s?.fueraPausados)} | ${celda(s?.fueraSinCatalogo)} |`);
     }
+    if (report.feedExclusions?.length) {
+      const total = report.feedExclusions.reduce((suma, fila) => suma + fila.total, 0);
+      lines.push(
+        '',
+        `### Por qué ${total} libros activos no están en nuestro feed`,
+        '',
+        'Motivo según `feedBlockerReason`, la misma función que usa el panel. Son los que el AUTOFEED publica por su cuenta.',
+        '',
+        '| Motivo | Libros | Ejemplos |',
+        '| --- | ---: | --- |',
+      );
+      for (const fila of report.feedExclusions) {
+        const ejemplos = fila.muestra.map(m => `${markdownEscape(m.title)} (\`${markdownEscape(m.offerId)}\`)`).join('; ');
+        lines.push(`| ${markdownEscape(fila.motivo)} | ${fila.total} | ${ejemplos || '—'} |`);
+      }
+    }
+
     for (const s of report.sourceOverlap || []) {
       if (!s.idsEnMinuscula) continue;
       const id = String(s.dataSource || '').split('/').pop();
@@ -732,7 +791,7 @@ export async function main() {
       const map = new Map();
       for (const item of Array.isArray(data?.items) ? data.items : []) {
         const id = normalizeOfferId(item?.id);
-        if (id) map.set(id, { title: asText(item?.title) || null, status: asText(item?.status) || null });
+        if (id) map.set(id, { title: asText(item?.title) || null, status: asText(item?.status) || null, item });
       }
       return map;
     } catch {
@@ -772,6 +831,13 @@ export async function main() {
       return { ok: false, error: asText(error?.message) || 'error desconocido', ids: null };
     }
   })();
+
+  const feedExclusions = byName.products.ok
+    ? summarizeFeedExclusions(byName.products.data || [], {
+        feedIds: publicFeed.ok ? publicFeed.ids : null,
+        catalog,
+      })
+    : [];
 
   const sourceOverlap = byName.products.ok
     ? summarizeSourceOverlap(byName.products.data || [], {
@@ -838,6 +904,7 @@ export async function main() {
     products,
     productsByIssue,
     sourceOverlap,
+    feedExclusions,
     pausedIndex: { ok: pausedIndex.ok, version: pausedIndex.version ?? null, total: pausedIndex.ids ? pausedIndex.ids.size : null, error: pausedIndex.error ?? null },
     diagnosis: buildDiagnosis({
       alert,

@@ -10,6 +10,7 @@ import {
   listProductsByIssue,
   summarizeAllDestinations,
   summarizeDataSource,
+  summarizeFeedExclusions,
   summarizeProducts,
   summarizeSourceOverlap,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
@@ -348,4 +349,35 @@ test('un id en minúscula del autofeed coincide con el MLU del feed y del catál
   assert.equal(fila.fueraPausados, 1, 'mlu999 es el pausado MLU999');
   assert.equal(fila.fueraSinCatalogo, 0);
   assert.equal(fila.idsEnMinuscula, 2, 'y queda contado que llegaron en minúscula');
+});
+
+// «¿Por qué los excluí?» se contesta con la MISMA función que decide el feed,
+// no con una reconstrucción.
+test('el desglose de exclusiones agrupa por el motivo real y da ejemplos', () => {
+  // Ids con la forma real MLU\d+: feedBlockerReason descarta primero por id,
+  // así que un fixture con MLU_ALGO mediría "id inválido" y no el motivo.
+  const libro = { permalink: 'https://x', status: 'active', price: 100, currency_id: 'UYU', isbn: '9780306406157', author: 'A' };
+  const catalog = new Map([
+    ['MLU101', { title: 'Sin stock', status: 'active', item: { ...libro, id: 'MLU101', available_quantity: 0 } }],
+    ['MLU102', { title: 'Sin moneda', status: 'active', item: { ...libro, id: 'MLU102', available_quantity: 2, currency_id: 'USD' } }],
+    ['MLU103', { title: 'Otro sin stock', status: 'active', item: { ...libro, id: 'MLU103', available_quantity: 0 } }],
+    ['MLU104', { title: 'Pausado', status: 'paused', item: { ...libro, id: 'MLU104', status: 'paused', available_quantity: 0 } }],
+    ['MLU105', { title: 'Elegible', status: 'active', item: { ...libro, id: 'MLU105', available_quantity: 5 } }],
+  ]);
+  const productos = [...catalog.keys()].map(offerId => ({ offerId: offerId.toLowerCase(), dataSource: 'auto' }));
+
+  const filas = summarizeFeedExclusions(productos, { feedIds: new Set(), catalog });
+  const motivos = Object.fromEntries(filas.map(f => [f.motivo, f.total]));
+
+  assert.equal(motivos['sin stock'], 2, 'agrupa por motivo, con ids en minúscula');
+  assert.equal(motivos['sin moneda UYU'], 1);
+  assert.equal(filas.reduce((s, f) => s + f.total, 0), 3, 'ni el pausado ni el elegible inventan un motivo');
+  assert.equal(filas[0].motivo, 'sin stock', 'ordena por cantidad');
+  assert.ok(filas[0].muestra.some(m => m.title === 'Sin stock'));
+});
+
+test('un libro ya presente en el feed no aparece como excluido', () => {
+  const item = { id: 'MLU101', permalink: 'https://x', status: 'active', price: 100, currency_id: 'UYU', isbn: '9780306406157', author: 'A', available_quantity: 0 };
+  const catalog = new Map([['MLU101', { title: 'T', status: 'active', item }]]);
+  assert.equal(summarizeFeedExclusions([{ offerId: 'MLU101' }], { feedIds: new Set(['MLU101']), catalog }).length, 0);
 });
