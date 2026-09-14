@@ -138,3 +138,13 @@ test('un evento que no es de compra no inventa nada en Meta', () => {
   assert.equal(api.trackMetaCommerce('checkout_error', { items: [], currency: 'UYU' }), false);
   assert.equal(eventosMeta(fbqCalls).length, 0);
 });
+
+test('mientras el id del píxel esté vacío, no se le pide nada a Facebook', () => {
+  // El interruptor: META_PIXEL_ID vacío en analytics-events.js. Es lo único
+  // que falta para que el píxel empiece a medir, y hasta entonces el sitio se
+  // comporta como si Meta no existiera.
+  const { api, ventana } = cargar({ conPixel: false });
+
+  assert.equal(api.ensureMetaPixel(), false);
+  assert.equal(ventana.fbq, undefined, 'no se define fbq ni se carga fbevents.js');
+});

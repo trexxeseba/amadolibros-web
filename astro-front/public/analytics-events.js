@@ -2,6 +2,16 @@
   'use strict';
 
   var MEASUREMENT_ID = 'G-SDX45VEPP3';
+
+  // El id del píxel de Meta vive acá, al lado del de GA4 y por el mismo motivo:
+  // este archivo terminó siendo el único punto de medición del sitio, y se
+  // carga tanto en las páginas que arma Astro como en las que arma un Function
+  // de Cloudflare. Viaja en el HTML, así que no es un secreto.
+  //
+  // VACÍO = APAGADO. Mientras no tenga el id real, el navegador no le pide un
+  // solo byte a Facebook. Cargarlo acá es lo único que falta para que el píxel
+  // empiece a medir.
+  var META_PIXEL_ID = '';
   var PRODUCTION_HOSTS = new Set(['amadolibros.com', 'www.amadolibros.com']);
 
   if (!PRODUCTION_HOSTS.has(window.location.hostname)) return;
@@ -405,12 +415,38 @@
     });
   }
 
+  // Cargador oficial de Meta, copiado tal cual a propósito: es el contrato que
+  // ellos soportan y reescribirlo "más lindo" rompe la medición en silencio.
+  // Deja un fbq() que encola llamadas y trae fbevents.js asincrónico, así los
+  // eventos disparados antes de que cargue no se pierden.
+  function ensureMetaPixel() {
+    if (!META_PIXEL_ID) return false;
+    if (typeof window.fbq === 'function') return true;
+
+    /* eslint-disable */
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window,document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
+
+    window.fbq('init', META_PIXEL_ID);
+    window.fbq('track', 'PageView');
+    return true;
+  }
+
   ensureGoogleTag();
+  ensureMetaPixel();
 
   window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
     trackMetaCommerce: trackMetaCommerce,
+    ensureMetaPixel: ensureMetaPixel,
     trackCheckoutError: trackCheckoutError,
     trackStockWaitlistCreated: trackStockWaitlistCreated,
     getMeasurementContext: getMeasurementContext,

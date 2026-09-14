@@ -34,10 +34,6 @@ cd "$REPO_ROOT"
 readonly PRODUCTION_TURNSTILE_SITE_KEY='0x4AAAAAAD_Ul8KGae_hdWwj'
 readonly PRODUCTION_TURNSTILE_ALLOWED_HOSTS='amadolibros.com,www.amadolibros.com'
 readonly PREVIEW_TURNSTILE_SITE_KEY='0x4AAAAAAD6E9kz8K3comwjj'
-# Id falso a propósito: acá sólo se verifica el cableado —que con id se
-# renderice y sin id no—. El real se carga como variable del repositorio y no
-# tiene por qué estar escrito en el repo.
-readonly TEST_META_PIXEL_ID='000000000000000'
 
 if [[ "${1:-}" == "--print-turnstile-config" ]]; then
   echo "site_key=${PRODUCTION_TURNSTILE_SITE_KEY}"
@@ -125,13 +121,6 @@ grep -q 'data-online-checkout="disabled"' "$CART_OFF"
 has_rendered_element_with_id "$CART_OFF" 'btn-wa-order'
 echo "  OK: checkout apagado — sin controles de pago, WhatsApp presente."
 
-# Este build no define PUBLIC_META_PIXEL_ID, así que sirve de control del caso
-# apagado: sin id, el navegador no le tiene que pedir un solo byte a Facebook.
-# Es la misma garantía que protege al Preview, que tampoco la define.
-! grep -q 'connect\.facebook\.net' "$CART_OFF"
-! grep -q 'facebook\.com/tr' "$CART_OFF"
-echo "  OK: sin id de píxel, el build no carga nada de Meta."
-
 rm -rf astro-front/dist
 
 # ── 5. Build con checkout ON ──────────────────────────────────────────────
@@ -142,7 +131,6 @@ step "Build — checkout ON (config pública de Turnstile igual a Producción)"
   PUBLIC_INDEXABLE=true \
   PUBLIC_GA_ID=G-SDX45VEPP3 \
   PUBLIC_CHECKOUT_ENABLED=true \
-  PUBLIC_META_PIXEL_ID="$TEST_META_PIXEL_ID" \
   PUBLIC_TURNSTILE_SITE_KEY="$PRODUCTION_TURNSTILE_SITE_KEY" \
   PUBLIC_TURNSTILE_ALLOWED_HOSTS="$PRODUCTION_TURNSTILE_ALLOWED_HOSTS" \
   npm run build
@@ -161,15 +149,6 @@ has_rendered_element_with_id "$CART_ON" 'btn-wa-order'
 grep -q "$PRODUCTION_TURNSTILE_SITE_KEY" "$CART_ON"
 ! grep -q "$PREVIEW_TURNSTILE_SITE_KEY" "$CART_ON"
 echo "  OK: checkout encendido — controles y Turnstile de Producción presentes, Preview ausente."
-
-# Con id, el píxel tiene que llegar al HTML servido. Se verifica sobre el mismo
-# build de arriba en vez de hacer un tercero: el píxel y el checkout son
-# independientes, y dos builds alcanzan para cubrir los dos casos del píxel.
-grep -q 'connect\.facebook\.net' "$CART_ON"
-grep -q "fbq('init', \"$TEST_META_PIXEL_ID\")" "$CART_ON" \
-  || grep -q "$TEST_META_PIXEL_ID" "$CART_ON"
-grep -q "$TEST_META_PIXEL_ID" astro-front/dist/index.html
-echo "  OK: con id de píxel, Meta queda instalado en las páginas servidas."
 
 rm -rf astro-front/dist
 

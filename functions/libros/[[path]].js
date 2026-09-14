@@ -14,6 +14,7 @@ import {
     waFloatHtml,
     WA_FLOAT_STYLES,
 } from '../_shared/brand.js';
+import { measurementHeadHtml } from '../_shared/measurement.js';
 import { findSeoCategory, SEO_CATEGORIES } from '../_shared/seo-categories.js';
 import {
     bookCoverUrl,
@@ -352,7 +353,7 @@ function errorPage(status, title, message) {
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(title)} — Amado Libros</title>
 <meta name="robots" content="noindex, nofollow">
-${faviconHeadHtml()}
+${faviconHeadHtml()}${measurementHeadHtml()}
 <style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f8f5ef;color:#18120e}.error{min-height:70vh;display:grid;place-items:center;padding:2rem}.error-card{max-width:640px;background:#fff;border:1px solid #e2dbd0;border-radius:1rem;padding:2rem;text-align:center}.error-card h1{margin:.25rem 0 1rem}.error-actions{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:1.5rem}.error-actions a{padding:.75rem 1rem;border-radius:.6rem;background:#18120e;color:#fff;text-decoration:none}</style>
 </head><body>${headerHtml()}<main class="error"><section class="error-card"><p>${status}</p><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p><div class="error-actions"><a href="/catalogo">Buscar en el catálogo</a><a href="/">Volver al inicio</a></div></section></main>${footerHtml()}</body></html>`;
     return new Response(html, {
@@ -494,7 +495,7 @@ function renderPage({ category, categoryData, items, isPreview, hasUnexpectedPar
   <meta name="description" content="${escapeHtml(pageDescription)}">
   <meta name="robots" content="${robots}">
   <link rel="canonical" href="${canonical}">
-  ${faviconHeadHtml()}
+  ${faviconHeadHtml()}${measurementHeadHtml()}
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_UY">
   <meta property="og:url" content="${canonical}">

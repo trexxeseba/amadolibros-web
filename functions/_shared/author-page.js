@@ -6,6 +6,7 @@ import {
   waFloatHtml,
   WA_FLOAT_STYLES,
 } from './brand.js';
+import { measurementHeadHtml } from './measurement.js';
 import { slugify } from './slug.js';
 import { authorPageById, matchesAuthor } from './seo-authors.js';
 import {
@@ -146,7 +147,7 @@ export function renderAuthorPage(author, items, useCloudflareImages = true) {
   <meta name="description" content="${escapeHtml(metaDescription)}">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
-  ${faviconHeadHtml()}
+  ${faviconHeadHtml()}${measurementHeadHtml()}
   <meta property="og:type" content="website">
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
   <meta property="og:title" content="${escapeHtml(pageTitle)} | Amado Libros">

@@ -49,6 +49,7 @@ import {
     waFloatHtml,
     WA_FLOAT_STYLES,
 } from '../_shared/brand.js';
+import { measurementHeadHtml } from '../_shared/measurement.js';
 import {
     buildBookWhatsAppMessage,
     whatsappHref,
@@ -390,7 +391,7 @@ function notFound() {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Libro no encontrado — Amado Libros</title>
   <meta name="robots" content="noindex">
-  ${faviconHeadHtml()}
+  ${faviconHeadHtml()}${measurementHeadHtml()}
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          max-width:600px;margin:4rem auto;padding:1rem;text-align:center;color:#1e293b}
@@ -740,7 +741,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <meta name="description" content="${metaDesc}">
   <meta name="robots" content="${isPreview || (!inStock && !indexWhenPaused) ? 'noindex, follow' : 'index, follow'}">
   <link rel="canonical" href="${canonicalUrl}">
-  ${faviconHeadHtml()}
+  ${faviconHeadHtml()}${measurementHeadHtml()}
 
   <meta property="og:type"        content="product">
   <meta property="og:url"         content="${canonicalUrl}">

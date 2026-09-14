@@ -8,6 +8,7 @@ import {
   waFloatHtml,
   WA_FLOAT_STYLES,
 } from '../_shared/brand.js';
+import { measurementHeadHtml } from '../_shared/measurement.js';
 import {
   dedupeSpecialtyItems,
   findSeoSpecialty,
@@ -145,7 +146,7 @@ export async function onRequest(ctx) {
 
   const html = `<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(specialty.title)}</title><meta name="description" content="${escapeHtml(specialty.description)}"><meta name="robots" content="${robots}">
-<link rel="canonical" href="${canonical}">${faviconHeadHtml()}
+<link rel="canonical" href="${canonical}">${faviconHeadHtml()}${measurementHeadHtml()}
 <meta property="og:type" content="website"><meta property="og:locale" content="es_UY"><meta property="og:site_name" content="${BRAND.name}">
 <meta property="og:title" content="${escapeHtml(specialty.title)}"><meta property="og:description" content="${escapeHtml(specialty.description)}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${BASE}${BRAND.logo}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(specialty.title)}"><meta name="twitter:description" content="${escapeHtml(specialty.description)}"><meta name="twitter:image" content="${BASE}${BRAND.logo}">

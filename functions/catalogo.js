@@ -39,6 +39,7 @@
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
+import { measurementHeadHtml } from './_shared/measurement.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
@@ -993,7 +994,7 @@ export async function onRequest(ctx) {
   <meta name="twitter:title" content="${pageTitle}">
   <meta name="twitter:description" content="${metaDescription}">
   <meta name="twitter:image" content="${BASE}/images/logo-amado.webp">
-  ${faviconHeadHtml()}
+  ${faviconHeadHtml()}${measurementHeadHtml()}
   ${jsonLd}
   <style>
     ${DELIVERY_BADGE_STYLES}

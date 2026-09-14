@@ -14,6 +14,7 @@ import {
     WA_FLOAT_STYLES,
     waHref,
 } from './_shared/brand.js';
+import { measurementHeadHtml } from './_shared/measurement.js';
 import { SEO_SPECIALTIES, specialtyPath } from './_shared/seo-specialties.js';
 import { buildWhatsAppMessage } from '../shared/whatsapp-messages.js';
 
@@ -93,7 +94,7 @@ export async function onRequest() {
   <meta name="description" content="${DESCRIPTION}">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="${canonical}">
-  ${faviconHeadHtml()}
+  ${faviconHeadHtml()}${measurementHeadHtml()}
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_UY">
   <meta property="og:site_name" content="${BRAND.name}">
