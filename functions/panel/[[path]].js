@@ -36,6 +36,7 @@ import {
   hasValidSession,
   loginAttemptsExceeded,
   recordFailedLogin,
+  PANEL_AUTH_CONSTANTS,
   resolvePanelConfig,
   sessionCookieHeader,
   timingSafeEqual,
@@ -1087,7 +1088,7 @@ export async function onRequest(context) {
     // Sin contraseña no hay panel: ni login ni tablero. Nunca "abierto por defecto".
     return htmlResponse(
       layout('Panel no disponible', '<main class="card"><h1>Panel no disponible</h1>'
-        + '<p class="muted">Falta PANEL_PASSWORD en este entorno (mínimo 12 caracteres).</p></main>'),
+        + `<p class="muted">Falta PANEL_PASSWORD en este entorno (mínimo ${PANEL_AUTH_CONSTANTS.MIN_PASSWORD_LENGTH} caracteres).</p></main>`),
       { status: 503 },
     );
   }
