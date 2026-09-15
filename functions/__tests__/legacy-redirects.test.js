@@ -165,6 +165,39 @@ test('categorías legacy mapeadas redirigen a una landing SEO real', async () =>
     );
 });
 
+// SEO-410-MOBILE-DIAGNOSTIC-1: /categoria-producto/biblias devolvía 410 con
+// `cache-control: public, max-age=86400` mientras /libros/biblias existía y
+// respondía 200. Un recurso de Google Ads apuntado a la URL vieja quedaba
+// rechazado por "destino no operativo" durante un día entero.
+test('la categoría legacy de biblias redirige en vez de devolver 410', async () => {
+    assert.equal(LEGACY_CATEGORY_MAP.biblias, '/libros/biblias');
+
+    const response = await legacyResponseForRequest(
+        contextFor('/categoria-producto/biblias/'),
+    );
+
+    assert.equal(response.status, 301);
+    assert.equal(
+        response.headers.get('location'),
+        'https://www.amadolibros.com/libros/biblias',
+    );
+});
+
+// La causa de fondo no era esa entrada faltante sino que nada obligaba a que
+// el mapa apuntara a algo que existe. Un destino roto manda a 404 al visitante
+// y desperdicia el 301; uno faltante lo manda a 410. Esto cubre las dos.
+test('cada destino del mapa legacy apunta a una página que existe', async () => {
+    const { SEO_CATEGORIES } = await import('../_shared/seo-categories.js');
+    const categorias = new Set(SEO_CATEGORIES.map(categoria => categoria.id));
+
+    for (const [slug, destino] of Object.entries(LEGACY_CATEGORY_MAP)) {
+        if (destino === '/catalogo') continue;
+        const id = destino.startsWith('/libros/') ? destino.slice('/libros/'.length) : null;
+        assert.ok(id, `${slug} apunta a ${destino}, que no es /catalogo ni /libros/<categoria>`);
+        assert.ok(categorias.has(id), `${slug} apunta a /libros/${id}, que no es una categoría vigente`);
+    }
+});
+
 test('categoría legacy sin equivalencia confiable devuelve 410', async () => {
     const response = await legacyResponseForRequest(
         contextFor('/categoria-producto/categoria-imposible/'),
