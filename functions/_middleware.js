@@ -40,6 +40,11 @@ export const LEGACY_CATEGORY_MAP = Object.freeze({
     'psicologia': '/libros/psicologia',
     'desarrollo-personal': '/libros/desarrollo-personal',
     'religion-espiritualidad': '/libros/religion-espiritualidad',
+    // SEO-410-MOBILE-DIAGNOSTIC-1: faltaba, y por eso /categoria-producto/biblias
+    // devolvía 410 con un día de caché mientras /libros/biblias existía y
+    // respondía 200. La equivalencia es inequívoca — misma categoría, mismo
+    // contenido—, así que corresponde 301 y no 410.
+    'biblias': '/libros/biblias',
 });
 
 function withoutTrailingSlash(pathname) {
