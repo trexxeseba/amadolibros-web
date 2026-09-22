@@ -198,6 +198,50 @@ test('cada destino del mapa legacy apunta a una página que existe', async () =>
     }
 });
 
+// Las subcategorías existen hoy (/libros/psicologia/psicoanalisis y siete
+// más) pero su URL legacy caía en el mismo 410 que la paginación.
+test('las subcategorías legacy redirigen a su equivalente anidado', async () => {
+    const casos = [
+        ['/categoria-producto/biblias/reina-valera/', '/libros/biblias/reina-valera'],
+        ['/categoria-producto/psicologia/psicoanalisis/', '/libros/psicologia/psicoanalisis'],
+        ['/categoria-producto/esoterismo-tarot/mazos/', '/libros/esoterismo-tarot/mazos'],
+    ];
+
+    for (const [origen, destino] of casos) {
+        const response = await legacyResponseForRequest(contextFor(origen));
+        assert.equal(response.status, 301, origen);
+        assert.equal(response.headers.get('location'), `https://www.amadolibros.com${destino}`, origen);
+    }
+});
+
+// La paginación legacy SÍ debe seguir en 410: el número de página histórico
+// no garantiza el mismo conjunto ni el mismo orden de libros.
+//
+// Honestidad sobre el alcance: intenté romper esto de tres formas —quitando
+// la comparación con 'page', aflojando el patrón a (.+) y con la ruta de dos
+// segmentos /novelas/page— y la prueba siguió en verde en las tres. Lo que
+// realmente protege la paginación es que la redirección exige un acierto en
+// LEGACY_CATEGORY_MAP y ninguna clave termina en /page. O sea que esto fija
+// el comportamiento, no una línea; cazaría un rediseño que redirija sin
+// consultar el mapa, que es el error que importa.
+test('resolver subcategorías no se come la paginación legacy', async () => {
+    for (const path of [
+        '/categoria-producto/novelas/page/2/',
+        '/categoria-producto/novelas/page/',
+        '/categoria-producto/biblias/page/',
+    ]) {
+        const response = await legacyResponseForRequest(contextFor(path));
+        assert.equal(response.status, 410, path);
+    }
+});
+
+test('una subcategoría inventada sigue devolviendo 410', async () => {
+    const response = await legacyResponseForRequest(
+        contextFor('/categoria-producto/inventada/tambien-inventada/'),
+    );
+    assert.equal(response.status, 410);
+});
+
 test('categoría legacy sin equivalencia confiable devuelve 410', async () => {
     const response = await legacyResponseForRequest(
         contextFor('/categoria-producto/categoria-imposible/'),
