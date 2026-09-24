@@ -65,9 +65,11 @@ jobs:
           retention-days: 30
 
       - name: Commitear el informe
-        # En `main` sólo queda el artefacto: el informe no justifica commits
-        # automáticos en la rama por defecto.
-        if: env.TARGET_BRANCH != 'main'
+        # Sólo a mano: en un PR, el commit del bot quedaba como head sin CI
+        # (los commits de GITHUB_TOKEN no disparan workflows) y bloqueaba el
+        # merge; en `main` el informe no justifica commits automáticos. En los
+        # demás casos queda en el resumen y en el artefacto de la corrida.
+        if: github.event_name == 'workflow_dispatch' && env.TARGET_BRANCH != 'main'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
