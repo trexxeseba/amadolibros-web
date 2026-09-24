@@ -343,7 +343,15 @@ async function fetchJson(url, {
       signal: controller.signal,
     });
     if (!response?.ok) {
-      const error = new Error(`HTTP ${response?.status || 0}`);
+      // El motivo que da la API (p. ej. «Quota exceeded … per day») distingue
+      // la cuota diaria de un límite por minuto; sin él, un 429 no se puede
+      // diagnosticar después.
+      let reason = '';
+      try {
+        const body = await response.json();
+        reason = clean(body?.error?.message || body?.error?.errors?.[0]?.reason).slice(0, 200);
+      } catch {}
+      const error = new Error(`HTTP ${response?.status || 0}${reason ? ` — ${reason}` : ''}`);
       error.status = Number(response?.status) || 0;
       error.retryAfter = clean(response?.headers?.get?.('retry-after')) || null;
       throw error;

@@ -29,6 +29,11 @@ on:
         required: true
         default: functions/_shared/book-enrichment-facts-lote-01.js
         type: string
+      google_books_budget:
+        description: Consultas a Google Books en esta corrida (la cuota del proyecto es diaria)
+        required: false
+        default: '900'
+        type: string
 
 permissions:
   contents: write
@@ -96,7 +101,11 @@ jobs:
           # restantes. Se baja el presupuesto para no quemar la cuota de golpe
           # y se reparte entre lotes; las bibliotecas nacionales cubren de
           # sobra mientras tanto.
-          GOOGLE_BOOKS_BUDGET: '400'
+          # La cuota de Google Books se renueva una vez por día. Todos los 429
+          # anteriores ocurrieron el 2026-09-06, el mismo día en que otra corrida
+          # ya la había gastado: se consulta hasta el presupuesto y lo que falte
+          # queda para la corrida del día siguiente (el caché no repite nada).
+          GOOGLE_BOOKS_BUDGET: ${{ inputs.google_books_budget || '900' }}
           GOOGLE_BOOKS_CONCURRENCY: '1'
           GOOGLE_BOOKS_DELAY_MS: '2000'
           GOOGLE_BOOKS_RETRY_ATTEMPTS: '4'
