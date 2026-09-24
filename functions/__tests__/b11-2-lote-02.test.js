@@ -14,12 +14,24 @@ test('B11.2 lote 02 resuelve 12 ISBN nuevos del pool REVISAR con consenso cruzad
   assert.equal(new Set(BOOK_FACT_ENRICHMENTS_B11_2_LOTE_02.map(entry => entry.isbn)).size, 12);
   for (const entry of BOOK_FACT_ENRICHMENTS_B11_2_LOTE_02) {
     assert.equal(validateBookEnrichment(entry), true, entry.isbn);
-    assert.equal(getBookEnrichmentByIsbn(entry.isbn), entry);
+    // Un lote posterior puede COMPLETAR la edición (fusión), nunca pisar lo
+    // que este lote verificó: cada dato suyo sigue igual en el registro.
+    const registered = getBookEnrichmentByIsbn(entry.isbn);
+    assert.ok(registered, entry.isbn);
+    for (const [field, value] of Object.entries(entry.facts)) {
+      if (field === 'bibliographic') {
+        for (const [key, bibValue] of Object.entries(value)) {
+          assert.deepEqual(registered.facts.bibliographic[key], bibValue, `${entry.isbn} ${key}`);
+        }
+      } else {
+        assert.deepEqual(registered.facts[field], value, `${entry.isbn} ${field}`);
+      }
+    }
     for (const source of entry.provenance) {
       assert.match(source.url, /^https:\/\//);
     }
   }
-  assert.equal(listBookEnrichments().length, 1790);
+  assert.equal(listBookEnrichments().length, 1878);
 });
 
 test('B11.2 lote 02 no repite ningún ISBN ya resuelto en el lote 01', () => {
