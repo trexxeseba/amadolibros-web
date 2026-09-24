@@ -29,6 +29,11 @@ on:
         required: true
         default: functions/_shared/book-enrichment-facts-lote-01.js
         type: string
+      recover_run_id:
+        description: Sólo recuperar y commitear la evidencia del artefacto de esta corrida (sin investigar ni gastar cuota)
+        required: false
+        default: ''
+        type: string
       google_books_budget:
         description: Consultas a Google Books en esta corrida (la cuota del proyecto es diaria)
         required: false
@@ -38,6 +43,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  actions: read
 
 concurrency:
   group: b11-batch-research-${{ github.ref }}
@@ -52,6 +58,8 @@ jobs:
       LIMIT: ${{ inputs.limit }}
       OUTPUT_DIR: ${{ inputs.output_dir }}
       FACTS_OUTPUT: ${{ inputs.facts_output }}
+      RECOVER_RUN_ID: ${{ inputs.recover_run_id }}
+      CACHE_FILE: artifacts/book-intelligence/b12-source-cache.json.gz
 
     steps:
       - name: Checkout
@@ -65,11 +73,13 @@ jobs:
           node-version: '22.12.0'
 
       - name: Validate research pipeline without network
+        if: env.RECOVER_RUN_ID == ''
         run: |
           node --check scripts/seo/book-intelligence-research-run.mjs
           node --check scripts/seo/book-intelligence-project.mjs
 
       - name: Authenticate Google Books through Workload Identity
+        if: env.RECOVER_RUN_ID == ''
         id: google_auth
         uses: google-github-actions/auth@v3
         with:
@@ -81,6 +91,7 @@ jobs:
           create_credentials_file: false
 
       - name: Research N exact ISBN editions
+        if: env.RECOVER_RUN_ID == ''
         # Tope propio, más corto que el del job. Si el job entero agota su
         # timeout, GitHub lo cancela y los pasos `if: always()` NO corren, así
         # que la evidencia se perdería igual. Acotando el paso, la corrida
@@ -129,6 +140,7 @@ jobs:
         run: node scripts/seo/book-intelligence-research-run.mjs --limit "$LIMIT"
 
       - name: Project verified facts module
+        if: env.RECOVER_RUN_ID == ''
         run: |
           set -euo pipefail
           EXPECTED="$(node -e "console.log(require('./${OUTPUT_DIR}/isbn-1000-manifest.json').entries.length)")"
@@ -170,6 +182,7 @@ jobs:
         id: project
 
       - name: Sanity-check generated module has no commercial data
+        if: env.RECOVER_RUN_ID == ''
         run: |
           set -euo pipefail
           node --check "$FACTS_OUTPUT"
@@ -177,6 +190,17 @@ jobs:
             echo "El módulo generado contiene datos comerciales prohibidos." >&2
             exit 1
           fi
+
+      # Recuperación: la corrida 36030274743 investigó bien y perdió el push.
+      # Esto trae su artefacto y lo commitea sin volver a consultar fuentes.
+      - name: Recuperar evidencia de una corrida anterior
+        if: env.RECOVER_RUN_ID != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: b12-evidencia-${{ env.RECOVER_RUN_ID }}
+          run-id: ${{ env.RECOVER_RUN_ID }}
+          github-token: ${{ github.token }}
+          path: .
 
       - name: Publish job summary
         if: always()
@@ -204,7 +228,7 @@ jobs:
           name: b12-evidencia-${{ github.run_id }}
           path: |
             ${{ env.OUTPUT_DIR }}/
-            artifacts/book-intelligence/b12-source-cache.json
+            ${{ env.CACHE_FILE }}
             ${{ env.FACTS_OUTPUT }}
           if-no-files-found: warn
           retention-days: 30
@@ -221,6 +245,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$OUTPUT_DIR"
           [ -f "$FACTS_OUTPUT" ] && git add "$FACTS_OUTPUT" || true
+          # El caché es lo caro de conseguir (la cuota de Google Books es
+          # diaria): se commitea junto con la evidencia. Si quedaba sin
+          # commitear, además, el rebase del reintento se negaba a correr.
+          [ -f "$CACHE_FILE" ] && git add "$CACHE_FILE" || true
           if git diff --cached --quiet; then
             echo "Sin cambios para commitear."
             exit 0
@@ -236,7 +264,7 @@ jobs:
               exit 0
             fi
             echo "Push rechazado; reintegrando lo que llegó a la rama (intento $intento)."
-            git pull --rebase origin "${{ github.ref_name }}"
+            git pull --rebase --autostash origin "${{ github.ref_name }}"
           done
           echo "No se pudo publicar la evidencia tras 3 intentos; queda en el artefacto de la corrida." >&2
           exit 1
