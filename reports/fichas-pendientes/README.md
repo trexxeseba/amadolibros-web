@@ -1,6 +1,6 @@
 # Fichas activas que faltan enriquecer
 
-Generado 2026-09-24T17:34:26.456Z sobre el catálogo del 2026-09-24T07:18:50.699Z.
+Generado 2026-09-24T17:41:50.939Z sobre el catálogo del 2026-09-24T07:18:50.699Z.
 
 | | Fichas |
 | --- | ---: |
