@@ -31,29 +31,29 @@ function catalog(count = 3200) {
   };
 }
 
-test('prepara 3000 ediciones v2 y conserva las primeras 1000 como cohorte v1', () => {
+test('prepara todas las ediciones elegibles en v2 y conserva las primeras 1000 como cohorte v1', () => {
   const value = catalog(3200);
   const syncMeta = {};
   const { cohort, legacyCohort, metrics } = prepareShowcaseCatalog(value, syncMeta);
 
   assert.equal(cohort.schema_version, 2);
-  assert.equal(cohort.total, 3000);
-  assert.equal(cohort.ids.length, 3000);
-  assert.equal(new Set(cohort.ids).size, 3000);
+  assert.equal(cohort.total, 3200);
+  assert.equal(cohort.ids.length, 3200);
+  assert.equal(new Set(cohort.ids).size, 3200);
   assert.equal(legacyCohort.schema_version, 1);
   assert.equal(legacyCohort.total, 1000);
   assert.deepEqual(legacyCohort.ids, cohort.ids.slice(0, 1000));
-  assert.equal(metrics.selected_items, 3000);
-  assert.equal(value.items.filter(entry => entry.showcase_rank).length, 3000);
-  assert.equal(value.data_quality.showcase_selection.selected_items, 3000);
-  assert.equal(syncMeta.showcase_selection.selected_items, 3000);
+  assert.equal(metrics.selected_items, 3200);
+  assert.equal(value.items.filter(entry => entry.showcase_rank).length, 3200);
+  assert.equal(value.data_quality.showcase_selection.selected_items, 3200);
+  assert.equal(syncMeta.showcase_selection.selected_items, 3200);
   assert.equal(syncMeta.showcase_selection.legacy_selected_items, 1000);
   assert.deepEqual(
     value.items
       .filter(entry => entry.showcase_rank)
       .map(entry => entry.showcase_rank)
       .sort((a, b) => a - b),
-    Array.from({ length: 3000 }, (_, index) => index + 1),
+    Array.from({ length: 3200 }, (_, index) => index + 1),
   );
 });
 
@@ -179,10 +179,10 @@ test('publica staging, valida readback y promueve v1 antes de v2', async () => {
   const v2 = JSON.parse(objects.get('showcase/v2/cohort.json'));
   const liveCatalog = JSON.parse(objects.get('catalog.json'));
   assert.equal(v1.total, 1000);
-  assert.equal(v2.total, 3000);
+  assert.equal(v2.total, 3005);
   assert.deepEqual(v1.ids, v2.ids.slice(0, 1000));
-  assert.equal(liveCatalog.data_quality.showcase_selection.selected_items, 3000);
-  assert.equal(syncMeta.showcase_selection.selected_items, 3000);
+  assert.equal(liveCatalog.data_quality.showcase_selection.selected_items, 3005);
+  assert.equal(syncMeta.showcase_selection.selected_items, 3005);
   assert.equal(writes[6].options.httpMetadata.cacheControl, 'public, max-age=300');
   assert.equal(writes[7].options.httpMetadata.cacheControl, 'public, max-age=300');
 });

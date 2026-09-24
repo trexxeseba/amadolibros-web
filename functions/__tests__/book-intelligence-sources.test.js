@@ -377,3 +377,16 @@ test('toda fuente del plan es cacheable y tiene TTL propio', () => {
     assert.doesNotThrow(() => mergeSourceCache({}, '9780062273208', source, []), source);
   }
 });
+
+test('un 429 de Google Books conserva el motivo que da la API', async () => {
+  const fetchImpl = async () => ({
+    ok: false,
+    status: 429,
+    headers: { get: () => null },
+    json: async () => ({ error: { message: "Quota exceeded for quota metric 'Queries' and limit 'Queries per day'" } }),
+  });
+  await assert.rejects(
+    fetchGoogleBooksEvidence(ISBN, { apiKey: 'k', fetchImpl, retryAttempts: 1 }),
+    error => /^HTTP 429 — Quota exceeded .*per day/.test(error.message) && error.status === 429,
+  );
+});

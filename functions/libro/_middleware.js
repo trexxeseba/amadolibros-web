@@ -15,6 +15,7 @@ import { getBookEnrichmentByIsbn } from '../_shared/book-enrichment-registry.js'
 import { TAROT_MERCH_TAGS } from '../_shared/tarot-merch-tags.js';
 import { buildTagLookup } from '../_shared/tarot-hub-modules.js';
 import { normalizeCategoryPaths } from '../_shared/category-paths.js';
+import { SEO_CATEGORIES, findSeoCategory } from '../_shared/seo-categories.js';
 
 const PRODUCT_PATH_RE = /^\/libro\/(MLU\d+)(?:\/|$)/i;
 const BREADCRUMB_RE = /<nav>\s*<a href="\/">Inicio<\/a>\s*›\s*<span>/;
@@ -141,7 +142,39 @@ function showcaseStyles() {
   `;
 }
 
-function enrichCatalogBreadcrumbSchema(html) {
+function seoCategoryChild(parentId, classificationId) {
+  if (!parentId || !classificationId) return null;
+  // Las sublandings con `tarotFilter` separan mazos de libros de estudio con
+  // una regla propia; la clasificación sola no alcanza para elegir entre ellas.
+  return SEO_CATEGORIES.find(category =>
+    category.parentId === parentId && !category.tarotFilter &&
+    (category.classificationId === classificationId ||
+     (Array.isArray(category.classificationIds) && category.classificationIds.includes(classificationId)))) || null;
+}
+
+/**
+ * Traduce la clasificación del libro a la cadena de landings SEO que ya
+ * existen (sólo la allowlist de seo-categories.js; nunca inventa una URL).
+ * «Psicología › Psicoanálisis» le dice a Google dónde vive la ficha dentro
+ * del sitio mucho mejor que un «Catálogo» genérico, igual para todas.
+ */
+export function categoryTrailForPaths(paths) {
+  for (const [categoryId, subcategoryId] of normalizeCategoryPaths(paths)) {
+    const top = findSeoCategory(categoryId);
+    if (!top || top.parentId) continue;
+    const trail = [top];
+    const child = seoCategoryChild(top.id, subcategoryId);
+    if (child) {
+      trail.push(child);
+      const grandchild = seoCategoryChild(child.id, subcategoryId);
+      if (grandchild) trail.push(grandchild);
+    }
+    return trail.map(category => ({ name: category.name, path: `/libros/${category.id}` }));
+  }
+  return [];
+}
+
+function enrichCatalogBreadcrumbSchema(html, trail) {
   return html.replace(JSON_LD_RE, (full, rawJson) => {
     let schema;
     try {
@@ -153,32 +186,39 @@ function enrichCatalogBreadcrumbSchema(html) {
       return full;
     }
     const current = schema.itemListElement.at(-1);
+    const middle = trail.map((step, index) => ({
+      '@type': 'ListItem',
+      position: index + 2,
+      name: step.name,
+      item: `${BASE}${step.path}`,
+    }));
     schema.itemListElement = [
       { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${BASE}/` },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'Catálogo',
-        item: `${BASE}${CATALOG_PATH}`,
-      },
-      { ...current, position: 3 },
+      ...middle,
+      { ...current, position: middle.length + 2 },
     ];
     return `<script type="application/ld+json">${serializeSchema(schema)}</script>`;
   });
 }
 
-export function enrichActiveCatalogBreadcrumbHtml(html) {
+export function enrichActiveCatalogBreadcrumbHtml(html, categoryTrail = []) {
   const source = String(html || '');
   if (!source.includes(ACTIVE_PAGE_MARKER)) return source;
 
-  let result = source;
-  if (!result.includes(`<a href="${CATALOG_PATH}">Catálogo</a>`)) {
-    result = result.replace(
-      BREADCRUMB_RE,
-      `<nav>\n  <a href="/">Inicio</a> ›\n  <a href="${CATALOG_PATH}">Catálogo</a> ›\n  <span>`,
-    );
-  }
-  return enrichCatalogBreadcrumbSchema(result);
+  const trail = Array.isArray(categoryTrail) && categoryTrail.length
+    ? categoryTrail
+    : [{ name: 'Catálogo', path: CATALOG_PATH }];
+  const links = trail
+    .map(step => `  <a href="${escapeHtml(step.path)}">${escapeHtml(step.name)}</a> ›\n`)
+    .join('');
+  // BREADCRUMB_RE sólo coincide con «Inicio › <span>»: una ficha ya
+  // enriquecida no vuelve a tocarse, así que la función es idempotente.
+  const result = source.replace(
+    BREADCRUMB_RE,
+    `<nav>\n  <a href="/">Inicio</a> ›\n${links}  <span>`,
+  );
+  if (result === source) return source;
+  return enrichCatalogBreadcrumbSchema(result, trail);
 }
 
 function enrichBreadcrumbSchema(html) {
@@ -572,10 +612,10 @@ function responseWithBody(response, body) {
   });
 }
 
-async function classificationTagsForProduct(context, productId) {
+async function categoryPathsForProduct(context, productId) {
   const now = Date.now();
   if (categoryTagsMemory.items && categoryTagsMemory.expiresAt > now) {
-    return normalizeCategoryPaths(categoryTagsMemory.items[productId]).flat();
+    return normalizeCategoryPaths(categoryTagsMemory.items[productId]);
   }
 
   try {
@@ -603,7 +643,7 @@ async function classificationTagsForProduct(context, productId) {
       expiresAt: now + CATEGORY_TAGS_CACHE_TTL_MS,
       items: payload.items,
     };
-    return normalizeCategoryPaths(payload.items[productId]).flat();
+    return normalizeCategoryPaths(payload.items[productId]);
   } catch {
     return [];
   }
@@ -620,7 +660,11 @@ export async function onRequest(context) {
   }
 
   const html = await response.clone().text();
-  const withCatalogBreadcrumb = enrichActiveCatalogBreadcrumbHtml(html);
+  const isActivePage = html.includes(ACTIVE_PAGE_MARKER);
+  const categoryPaths = isActivePage ? await categoryPathsForProduct(context, productId) : [];
+  const classificationTags = categoryPaths.flat();
+  const categoryTrail = categoryTrailForPaths(categoryPaths);
+  const withCatalogBreadcrumb = enrichActiveCatalogBreadcrumbHtml(html, categoryTrail);
   const withByRequestCx = enrichByRequestProductHtml(withCatalogBreadcrumb, productId);
 
   let withAutomaticShowcase = withByRequestCx;
@@ -630,7 +674,6 @@ export async function onRequest(context) {
     // haya quedado dentro de la cohorte general de 3.000 fichas.
     const extractedItem = productItemFromProductHtml(withByRequestCx, productId);
     const hasVerifiedEnrichment = Boolean(getBookEnrichmentByIsbn(extractedItem?.isbn));
-    const classificationTags = await classificationTagsForProduct(context, productId);
     const isPriorityVertical = classificationTags.some(tag =>
       ['biblia', 'reina-valera', 'esoterismo-tarot'].includes(String(tag || '')));
     const selected = hasVerifiedEnrichment || isPriorityVertical ||
@@ -639,7 +682,7 @@ export async function onRequest(context) {
       withAutomaticShowcase = enrichAutomaticProductShowcaseHtml(
         withByRequestCx,
         productId,
-        { classificationTags, tarotMerchTag: tarotTagForProduct(productId) },
+        { classificationTags, categoryTrail, tarotMerchTag: tarotTagForProduct(productId) },
       );
     }
   }

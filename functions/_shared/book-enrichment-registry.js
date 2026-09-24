@@ -14,6 +14,7 @@ import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B11_2_LOTE_03 } from './
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01 } from './book-enrichment-facts-qw3a2-lote-01.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_01 } from './book-enrichment-facts-b12-lote-01.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_02 } from './book-enrichment-facts-b12-lote-02.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_04 } from './book-enrichment-facts-b12-lote-04.js';
 import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
@@ -612,6 +613,22 @@ for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_02) {
     throw new Error(`ISBN duplicado dentro del lote B12 02: ${record.isbn}.`);
   }
   b12Lote02Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
+}
+
+// Lote B12 04: primera corrida con Google Books disponible desde el
+// 2026-09-06 (611 coincidencias exactas). Mismo criterio de fusión: completa
+// ediciones ya investigadas sin pisar datos verificados. (El 03 no aportó
+// ninguna edición y no tiene módulo.)
+const b12Lote04Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_04) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote04Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 04: ${record.isbn}.`);
+  }
+  b12Lote04Seen.add(record.isbn);
   ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
 }
 

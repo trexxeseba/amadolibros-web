@@ -1,5 +1,38 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Fichas: categorías, ficha ampliada y Google Books de vuelta — 2026-09-24
+
+Autorizado por Seba en el chat («todo lo que mejore, adelante»). PR
+[#360](https://github.com/trexxeseba/amadolibros-web/pull/360).
+
+- **Google Books volvió.** Los HTTP 429 eran de un solo día (2026-09-06, cuota
+  diaria gastada por otra corrida) y nunca se volvió a correr. Corrida
+  [36030274743](https://github.com/trexxeseba/amadolibros-web/actions/runs/36030274743):
+  611 coincidencias exactas, 1 error. Lote `b12-lote-04`: **294 ISBN** con datos
+  verificados, 88 nuevos en el registro (**1.790 → 1.878**) y 206 completados.
+  Por campo: páginas 231, editorial 103, año 52, temas 10, autor 2.
+- **La corrida perdió el push** (caché sin commitear bloqueaba el rebase) y el
+  artefacto no llevaba el caché (`.json` en vez de `.json.gz`). Se corrigió el
+  workflow y se agregó `recover_run_id` para recuperar una corrida sin gastar
+  cuota. El caché de Google Books de ese día se perdió: la corrida siguiente
+  repite parte de esos ISBN.
+- **Presupuesto diario:** `google_books_budget` (900 por defecto). Quedan ~3.300
+  ISBN; a 900 por día son ~4 corridas, o una si se sube la cuota del proyecto
+  `amado-libros-analytics` (pedido a Seba).
+- **Miga de pan con categoría real** (`Inicio › Psicología › Psicoanálisis`) y
+  enlaces de la ficha ampliada a landings indexables (categoría y autor). Meta
+  description con editorial, año y páginas.
+- **Ficha ampliada para todas las ediciones activas:** tope de cohorte 3.000 →
+  10.000, sin tocar la deduplicación por ISBN+condición.
+- **1.298 fichas activas salen de «otros-libros»** por clasificación asistida
+  por título (sólo confianza alta; muestra de 105 revisada sin errores).
+  «otros-libros» 7.143 → 5.909. Fuente: `scripts/categorize/assisted-classifications.json`,
+  que `run.js` respeta detrás de las correcciones manuales. Las 1.287 de
+  confianza media o baja quedan en `artifacts/categorize/asistida-2026-09-24`.
+- **Informe semanal de fichas pendientes** (`reports/fichas-pendientes/`):
+  6.770 activas; completas 456 → 558; sin categoría 2.875 → 1.585.
+
+
 ## AUTOFEED medido, hallazgo de Checkly explicado y «Salud» en el panel — 2026-09-14
 
 **De dónde salen los 6.984 productos que Merchant conoce** (corrida

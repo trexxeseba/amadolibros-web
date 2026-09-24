@@ -26,13 +26,46 @@ const CLASSIFICATIONS_PATH = path.join(__dirname, 'data', 'classifications.json'
 const SUMMARY_PATH = path.join(__dirname, 'last-run-summary.json');
 const OUT_PATH = path.join(__dirname, '..', '..', 'astro-front', 'public', 'data', 'active-categories.json');
 
+// Solo categorías/subcategorías con al menos un producto público (activo o
+// pausado) — nunca un menú con opciones vacías.
+export function summarizeCategories(counts, subCounts) {
+  return CATEGORIES
+    .filter(c => counts[c.id] > 0)
+    .map(c => ({
+      id: c.id,
+      name: c.name,
+      count: counts[c.id],
+      subcategories: (c.subcategories || [])
+        .filter(s => subCounts[`${c.id}/${s.id}`] > 0)
+        .map(s => ({ id: s.id, name: s.name, count: subCounts[`${c.id}/${s.id}`] })),
+    }));
+}
+
+// Cuenta cada categoría una vez por MLU y cada subcategoría por ruta.
+export function countCategoryPaths(items) {
+  const counts = {};
+  const subCounts = {};
+  for (const paths of Object.values(items)) {
+    const seenCategories = new Set();
+    for (const [categoryId, subcategoryId] of paths) {
+      if (!seenCategories.has(categoryId)) {
+        counts[categoryId] = (counts[categoryId] || 0) + 1;
+        seenCategories.add(categoryId);
+      }
+      if (subcategoryId) {
+        const key = `${categoryId}/${subcategoryId}`;
+        subCounts[key] = (subCounts[key] || 0) + 1;
+      }
+    }
+  }
+  return { counts, subCounts };
+}
+
 function main() {
   const results = JSON.parse(readFileSync(CLASSIFICATIONS_PATH, 'utf8'));
   const summary = JSON.parse(readFileSync(SUMMARY_PATH, 'utf8'));
 
   const items = {}; // schema v2: mlu -> [[categoryId, subcategoryId?], ...]
-  const counts = {}; // categoryId -> count
-  const subCounts = {}; // "categoryId/subcategoryId" -> count
 
   for (const r of results) {
     if ((r.status !== 'active' && r.status !== 'paused') || !r.primaryCategoryId) continue;
@@ -54,32 +87,10 @@ function main() {
       paths.push(subcategoryId ? [categoryId, subcategoryId] : [categoryId]);
     }
     items[r.mlu] = paths;
-
-    const seenCategories = new Set();
-    for (const [categoryId, subcategoryId] of paths) {
-      if (!seenCategories.has(categoryId)) {
-        counts[categoryId] = (counts[categoryId] || 0) + 1;
-        seenCategories.add(categoryId);
-      }
-      if (subcategoryId) {
-        const key = `${categoryId}/${subcategoryId}`;
-        subCounts[key] = (subCounts[key] || 0) + 1;
-      }
-    }
   }
 
-  // Solo categorías/subcategorías con al menos un producto público (activo o
-  // pausado) — nunca un menú con opciones vacías.
-  const categories = CATEGORIES
-    .filter(c => counts[c.id] > 0)
-    .map(c => ({
-      id: c.id,
-      name: c.name,
-      count: counts[c.id],
-      subcategories: (c.subcategories || [])
-        .filter(s => subCounts[`${c.id}/${s.id}`] > 0)
-        .map(s => ({ id: s.id, name: s.name, count: subCounts[`${c.id}/${s.id}`] })),
-    }));
+  const { counts, subCounts } = countCategoryPaths(items);
+  const categories = summarizeCategories(counts, subCounts);
 
   const out = {
     schema_version: 2,
@@ -97,4 +108,6 @@ function main() {
   console.log(`[export-active-categories] tamaño: ${(json.length / 1024).toFixed(1)} KB`);
 }
 
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}
