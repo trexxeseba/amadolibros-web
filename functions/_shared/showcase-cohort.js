@@ -5,7 +5,7 @@ export const SHOWCASE_COHORT_V2_URL = `${R2_BASE}/showcase/v2/cohort.json`;
 export const SHOWCASE_COHORT_V1_URL = `${R2_BASE}/showcase/v1/cohort.json`;
 export const SHOWCASE_COHORT_URL = SHOWCASE_COHORT_V2_URL;
 export const LEGACY_SHOWCASE_COHORT_LIMIT = 1000;
-export const SHOWCASE_COHORT_LIMIT = 3000;
+export const SHOWCASE_COHORT_LIMIT = 10000;
 
 // Sólo permite comprobar el renderer en un Preview anterior al primer sync que
 // publique la cohorte. Producción jamás usa esta lista de respaldo.

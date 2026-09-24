@@ -40,7 +40,7 @@ function validShowcasePayload(payload, { schemaVersion, limit }) {
 
 /**
  * Marca las mejores ediciones activas y genera dos punteros livianos:
- * - v2: hasta 3.000 fichas, consumida por Pages nuevo;
+ * - v2: hasta 10.000 fichas (todas las ediciones elegibles), consumida por Pages nuevo;
  * - v1: primeras 1.000, compatible con Pages anterior y rollback inmediato.
  */
 export function prepareShowcaseCatalog(catalog, syncMeta = null) {
