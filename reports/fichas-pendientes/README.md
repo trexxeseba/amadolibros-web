@@ -1,38 +1,38 @@
 # Fichas activas que faltan enriquecer
 
-Generado 2026-09-24T17:29:41.663Z sobre el catálogo del 2026-09-24T07:18:50.699Z.
+Generado 2026-09-24T17:34:26.456Z sobre el catálogo del 2026-09-24T07:18:50.699Z.
 
 | | Fichas |
 | --- | ---: |
 | Fichas activas vendibles | **6770** |
-| Con los seis datos básicos | 456 |
-| **Les falta al menos un dato** | **6314** (3366 ISBN distintos) |
-| Ya en el registro de enriquecimiento | 3278 |
-| Sin ficha ampliada (texto automático) | 1763 |
+| Con los seis datos básicos | 558 |
+| **Les falta al menos un dato** | **6212** (3306 ISBN distintos) |
+| Ya en el registro de enriquecimiento | 3430 |
+| Sin ficha ampliada (texto automático) | 1704 |
 | Sin categoría (otros-libros / sin clasificar) | 1585 |
 
 ## Qué dato falta
 
 | Dato | Fichas sin el dato |
 | --- | ---: |
-| autor | 453 |
-| editorial | 2529 |
-| páginas | 4888 |
-| año | 1628 |
+| autor | 451 |
+| editorial | 2389 |
+| páginas | 4477 |
+| año | 1554 |
 | idioma | 93 |
-| temas | 5898 |
+| temas | 5886 |
 
 ## Por qué sigue pendiente (y qué hacer)
 
 | Motivo | Fichas | Qué hacer |
 | --- | ---: | --- |
-| `falta_google_books` | 6210 | Google Books todavía no se consultó para este ISBN: lo cubren las próximas corridas diarias. |
+| `falta_google_books` | 6108 | Google Books todavía no se consultó para este ISBN: lo cubren las próximas corridas diarias. |
 | `sin_isbn_valido` | 93 | Sin ISBN válido: no se puede buscar por edición. Hay que cargar el ISBN en MercadoLibre o completar a mano. |
 | `evidencia_insuficiente` | 4 | Hay evidencia, pero no alcanza la regla de publicación (dos fuentes o una oficial, sin conflicto). |
 | `ninguna_fuente_lo_conoce` | 4 | Ninguna fuente conoce el ISBN: completar a mano o con otra fuente. |
 | `enriquecida_incompleta` | 3 | Ya enriquecida, pero las fuentes no traen los datos que faltan. |
 
-ISBN que todavía esperan Google Books: **3360** (a 900 por día, 4 corridas).
+ISBN que todavía esperan Google Books: **3300** (a 900 por día, 4 corridas).
 
 ## Las 40 primeras por prioridad
 
