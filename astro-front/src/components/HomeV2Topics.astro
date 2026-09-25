@@ -50,19 +50,32 @@ const topics = [
     mark: 'Aa',
   },
   {
-    title: 'Libros agotados',
-    eyebrow: 'Lo que no aparece fácil',
-    href: '/libros-agotados-importados-uruguay',
+    title: 'Desarrollo personal',
+    eyebrow: 'Hábitos, bienestar y constelaciones',
+    href: '/libros/desarrollo-personal',
     tone: 'ink',
-    mark: '?',
+    mark: '∞',
   },
 ];
 
+// Accesos compactos al resto de los rubros que ya existen. Si el tema tiene
+// landing propia se usa; si no, el filtro del catálogo. La lista completa,
+// con subtemas y disponibilidad, vive en /temas.
 const moreTopics = [
+  { title: 'Historia', href: '/catalogo?categoria=historia' },
+  { title: 'Educación', href: '/catalogo?categoria=educacion' },
+  { title: 'Cómics y manga', href: '/catalogo?categoria=comics-manga' },
+  { title: 'Arte y diseño', href: '/catalogo?categoria=arte-diseno-fotografia' },
+  { title: 'Negocios y economía', href: '/catalogo?categoria=negocios-economia' },
+  { title: 'Filosofía y sociedad', href: '/catalogo?categoria=filosofia-ciencias-sociales' },
+  { title: 'Ciencia y tecnología', href: '/catalogo?categoria=ciencia-tecnologia' },
+  { title: 'Familia y crianza', href: '/catalogo?categoria=familia-crianza' },
+  { title: 'Cocina', href: '/catalogo?categoria=cocina-gastronomia' },
+  { title: 'Religión', href: '/libros/religion-espiritualidad' },
   { title: 'Cábala y Kabbalah', href: '/libros/esoterismo-tarot/cabala-kabbalah' },
   { title: 'Juegos y actividades', href: '/libros/juegos-actividades' },
-  { title: 'Constelaciones familiares', href: '/catalogo?categoria=desarrollo-personal&subcategoria=constelaciones-familiares' },
 ];
+
 ---
 
 <section id="v2-temas" class="v2-topics" aria-labelledby="v2-topics-title">
@@ -71,7 +84,7 @@ const moreTopics = [
       <p>Temas</p>
       <h2 id="v2-topics-title">Todo empieza por una curiosidad.</h2>
     </div>
-    <a href="/catalogo">Ver todos los libros <span aria-hidden="true">→</span></a>
+    <a href="/temas">Ver todos los temas <span aria-hidden="true">→</span></a>
   </div>
 
   <div class="v2-topic-grid">
@@ -87,8 +100,17 @@ const moreTopics = [
     ))}
   </div>
   <nav class="v2-more-topics" aria-label="Más temas para explorar">
-    {moreTopics.map(topic => <a href={topic.href}>{topic.title}<span aria-hidden="true">↗</span></a>)}
+    {moreTopics.map(topic => <a href={topic.href}>{topic.title}</a>)}
+    <a class="v2-all-topics" href="/temas">Ver todos los temas <span aria-hidden="true">→</span></a>
   </nav>
+
+  <aside class="v2-rare-books" aria-label="Búsqueda de libros agotados">
+    <div>
+      <strong>¿Buscás un libro agotado o importado?</strong>
+      <span>Lo buscamos por título, autor, ISBN o foto y te confirmamos precio y plazo antes de avanzar.</span>
+    </div>
+    <a href="/libros-agotados-importados-uruguay">Pedir una búsqueda <span aria-hidden="true">→</span></a>
+  </aside>
 </section>
 
 <style>
@@ -154,7 +176,7 @@ const moreTopics = [
     display: inline-flex;
     align-items: center;
     gap: 0.7rem;
-    padding: 0.7rem 0.95rem;
+    padding: 0.55rem 0.85rem;
     border: 1px solid rgba(27, 23, 20, 0.2);
     border-radius: 0.6rem;
     color: #1b1714;
@@ -163,6 +185,55 @@ const moreTopics = [
   }
 
   .v2-more-topics a:hover { background: #f0e8dc; }
+
+  .v2-more-topics .v2-all-topics {
+    border-color: #1b1714;
+    background: #1b1714;
+    color: #fff8f0;
+  }
+
+  .v2-more-topics .v2-all-topics:hover { background: #3a302a; }
+
+  .v2-rare-books {
+    width: min(100%, 1360px);
+    margin: 1.5rem auto 0;
+    padding: 1.1rem 1.2rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem 1.5rem;
+    border: 1px dashed rgba(27, 23, 20, 0.35);
+    border-radius: 1rem;
+    background: #fff;
+  }
+
+  .v2-rare-books strong,
+  .v2-rare-books span { display: block; }
+
+  .v2-rare-books strong {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+  }
+
+  .v2-rare-books div span {
+    margin-top: 0.2rem;
+    color: #5c524a;
+    font-size: 0.88rem;
+  }
+
+  .v2-rare-books > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border-radius: 0.6rem;
+    background: #ef6844;
+    color: #1b1714;
+    font-size: 0.88rem;
+    font-weight: 850;
+  }
 
   .v2-topic {
     position: relative;

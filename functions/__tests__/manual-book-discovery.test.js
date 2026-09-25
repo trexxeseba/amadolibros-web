@@ -18,7 +18,7 @@ test('la portada V2 incorpora descubrimiento editorial mobile-first', () => {
   assert.match(home, /import HomeV2Topics/);
   assert.match(home, /<HomeV2Topics\s*\/>/);
   assert.match(topics, /Todo empieza por una curiosidad\./);
-  assert.equal((topics.match(/title: '/g) || []).length, 11); // Ocho temas principales y tres accesos específicos.
+  assert.equal((topics.match(/title: '/g) || []).length, 20); // Ocho temas principales y doce accesos compactos.
   assert.match(topics, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(topics, /@media \(min-width: 700px\)/);
   assert.match(topics, /@media \(min-width: 1100px\)/);
@@ -40,9 +40,12 @@ test('la portada ordena búsqueda, temas, libros e ideas en un recorrido coheren
 });
 
 test('los accesos editoriales cubren diferenciales concretos y conducen al formulario', () => {
-  for (const topic of ['Literatura y ficción', 'Psicología', 'Tarot y oráculos', 'Medicina y salud', 'Infantiles y juveniles', 'Biblias y espiritualidad', 'Idiomas', 'Libros agotados']) {
+  for (const topic of ['Literatura y ficción', 'Psicología', 'Tarot y oráculos', 'Medicina y salud', 'Infantiles y juveniles', 'Biblias y espiritualidad', 'Idiomas', 'Desarrollo personal', 'Historia', 'Educación', 'Cómics y manga', 'Arte y diseño', 'Negocios y economía']) {
     assert.match(topics, new RegExp(topic));
   }
+  // «Libros agotados» es un servicio, no un tema: tiene llamado propio.
+  assert.doesNotMatch(topics, /title: 'Libros agotados'/);
+  assert.match(topics, /v2-rare-books/);
   assert.match(hero, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(ideas, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(ideas, /No es una respuesta automática/i);
