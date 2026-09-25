@@ -110,12 +110,15 @@ function validIsbnKey(value = '') {
  * conserva siempre el primer representante.
  */
 // Selector de categorías: orden alfabético para encontrar un tema de un
-// vistazo; los rubros comodín («Otros libros», «Otros productos») van al
-// final y las categorías sin libros no se ofrecen.
+// vistazo; «Otros productos» va al final y las categorías sin libros no se
+// ofrecen. «Otros libros» no es un tema: no se ofrece salvo que ya venga
+// elegido en la URL (sus libros siguen en «Todos» y en la búsqueda).
 const CATCH_ALL_CATEGORY_IDS = new Set(['otros-libros', 'otros-productos']);
-export function sortCategoriesForSelect(categories) {
+const HIDDEN_FROM_SELECT_IDS = new Set(['otros-libros']);
+export function sortCategoriesForSelect(categories, selectedId = '') {
     return categories
         .filter(c => Number(c.count) > 0)
+        .filter(c => !HIDDEN_FROM_SELECT_IDS.has(c.id) || c.id === selectedId)
         .slice()
         .sort((a, b) => {
             const catchAll = Number(CATCH_ALL_CATEGORY_IDS.has(a.id)) - Number(CATCH_ALL_CATEGORY_IDS.has(b.id));
@@ -310,7 +313,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
   </form>`;
     }
     const catOptions = [`<option value=""${categoria ? '' : ' selected'}>Todos</option>`]
-        .concat(sortCategoriesForSelect(categories).map(c => {
+        .concat(sortCategoriesForSelect(categories, categoria).map(c => {
             const sel = c.id === categoria ? ' selected' : '';
             return `<option value="${escapeHtml(c.id)}"${sel}>${escapeHtml(c.name)} (${c.count})</option>`;
         })).join('\n      ');

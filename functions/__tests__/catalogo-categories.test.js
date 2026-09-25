@@ -430,7 +430,7 @@ test('en producción, un manifest de pausadas ausente/inválido no rompe /catalo
   assert.match(html, /El Género En Disputa/);
 });
 
-test('selector de categorías: alfabético, comodines al final y sin categorías vacías', async () => {
+test('selector de categorías: alfabético, sin «Otros libros», comodines al final y sin vacías', async () => {
   const { sortCategoriesForSelect } = await import('../catalogo.js');
   const sorted = sortCategoriesForSelect([
     { id: 'otros-libros', name: 'Otros libros', count: 9 },
@@ -440,5 +440,10 @@ test('selector de categorías: alfabético, comodines al final y sin categorías
     { id: 'derecho', name: 'Derecho', count: 0 },
     { id: 'educacion', name: 'Educación', count: 4 },
   ]);
-  assert.deepEqual(sorted.map(c => c.id), ['arte-diseno-fotografia', 'educacion', 'psicologia', 'otros-libros', 'otros-productos']);
+  assert.deepEqual(sorted.map(c => c.id), ['arte-diseno-fotografia', 'educacion', 'psicologia', 'otros-productos']);
+  const withSelected = sortCategoriesForSelect([
+    { id: 'otros-libros', name: 'Otros libros', count: 9 },
+    { id: 'psicologia', name: 'Psicología', count: 3 },
+  ], 'otros-libros');
+  assert.deepEqual(withSelected.map(c => c.id), ['psicologia', 'otros-libros']);
 });
