@@ -81,6 +81,14 @@ const jsonLd = {
 
   .home-v2-main { overflow: clip; }
 
+  /* El encabezado es fijo: sin este margen, al entrar por «Temas»,
+     «Recomendados» o «Ideas» el título de la sección quedaba debajo de él. */
+  .home-v2-main > section[id] { scroll-margin-top: 128px; }
+
+  @media (min-width: 960px) {
+    .home-v2-main > section[id] { scroll-margin-top: 104px; }
+  }
+
   ::selection {
     background: #ef6844;
     color: #1b1714;
