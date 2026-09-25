@@ -109,6 +109,21 @@ function validIsbnKey(value = '') {
  * El array ya llega ordenado por relevancia/criterio comercial, por eso se
  * conserva siempre el primer representante.
  */
+// Selector de categorías: orden alfabético para encontrar un tema de un
+// vistazo; los rubros comodín («Otros libros», «Otros productos») van al
+// final y las categorías sin libros no se ofrecen.
+const CATCH_ALL_CATEGORY_IDS = new Set(['otros-libros', 'otros-productos']);
+export function sortCategoriesForSelect(categories) {
+    return categories
+        .filter(c => Number(c.count) > 0)
+        .slice()
+        .sort((a, b) => {
+            const catchAll = Number(CATCH_ALL_CATEGORY_IDS.has(a.id)) - Number(CATCH_ALL_CATEGORY_IDS.has(b.id));
+            if (catchAll !== 0) return catchAll;
+            return String(a.name).localeCompare(String(b.name), 'es');
+        });
+}
+
 export function dedupeCatalogResults(items) {
     const seen = new Set();
     return items.filter(item => {
@@ -295,7 +310,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
   </form>`;
     }
     const catOptions = [`<option value=""${categoria ? '' : ' selected'}>Todos</option>`]
-        .concat(categories.map(c => {
+        .concat(sortCategoriesForSelect(categories).map(c => {
             const sel = c.id === categoria ? ' selected' : '';
             return `<option value="${escapeHtml(c.id)}"${sel}>${escapeHtml(c.name)} (${c.count})</option>`;
         })).join('\n      ');
