@@ -1,0 +1,51 @@
+name: Categorías — exportar «Otros libros»
+
+# Baja el catálogo público (activos + pausados) y deja en
+# artifacts/categorize/otros-libros/ la lista de libros que hoy caen en
+# «Otros libros», para revisarlos y ubicarlos en un tema existente.
+# Solo lectura sobre R2. Commitea el TSV únicamente en ramas claude/*,
+# nunca en main.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/categorize/export-otros-libros.mjs
+      - .github/workflows/otros-libros-export.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: otros-libros-export-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Exportar
+        run: node scripts/categorize/export-otros-libros.mjs
+      - name: Commitear la lista
+        if: startsWith(env.TARGET_BRANCH, 'claude/')
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts/categorize/otros-libros
+          if git diff --cached --quiet; then echo "Sin cambios."; exit 0; fi
+          git commit -m "Lista de «Otros libros» para revisar"
+          for intento in 1 2 3; do
+            if git push origin "HEAD:${TARGET_BRANCH}"; then exit 0; fi
+            git pull --rebase origin "${TARGET_BRANCH}"
+          done
+          exit 1
