@@ -80,6 +80,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1006823424",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1006888492",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -460,6 +470,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU1034320504",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1034333504",
     "type": "book",
     "primaryCategoryId": "literatura-ficcion",
@@ -630,6 +650,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU1041303238",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1041303410",
     "type": "book",
     "primaryCategoryId": "juegos-actividades",
@@ -678,6 +708,36 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU1041472400",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU1041524306",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU1041835110",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1041860778",
@@ -1110,6 +1170,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1094438362",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "ciencia-politica",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1096421868",
     "type": "book",
     "primaryCategoryId": "ciencia-tecnologia",
@@ -1200,6 +1270,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1195243950",
+    "type": "book",
+    "primaryCategoryId": "arte-diseno-fotografia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1199537518",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -1288,6 +1368,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU1205667076",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1205685748",
@@ -1850,6 +1940,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU1304642506",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1310999522",
     "type": "book",
     "primaryCategoryId": "negocios-economia",
@@ -1928,6 +2028,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU1317344512",
+    "type": "book",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "ingenio-pasatiempos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1317435288",
@@ -2070,6 +2180,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1330191560",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1330192396",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -2088,6 +2208,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU1333230130",
+    "type": "book",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "ingenio-pasatiempos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1346572834",
@@ -2240,6 +2370,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU1396920042",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "ciencia-politica",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1398580938",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -2390,6 +2530,26 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1412218384",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": "salud-mental",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU1412218416",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": "salud-mental",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1412218672",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -2398,6 +2558,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU1413218594",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1413218670",
@@ -2450,6 +2620,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1418743620",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1419692504",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -2458,6 +2638,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU1419875062",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1420573860",
@@ -2548,6 +2738,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU1426348166",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1428440904",
@@ -2780,6 +2980,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU1435128184",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU1435128188",
     "type": "book",
     "primaryCategoryId": "idiomas-aprendizaje",
@@ -2958,6 +3168,26 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU1445590282",
+    "type": "book",
+    "primaryCategoryId": "deportes",
+    "subcategoryId": "otros-deportes",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU1445603352",
+    "type": "book",
+    "primaryCategoryId": "deportes",
+    "subcategoryId": "otros-deportes",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1447039446",
@@ -3298,6 +3528,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU1472715344",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU1473077522",
@@ -4810,6 +5050,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU481229022",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU600539003",
     "type": "book",
     "primaryCategoryId": "religion-espiritualidad",
@@ -5368,6 +5618,26 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU603052066",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU603052069",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": "pedagogia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU603059295",
@@ -6900,6 +7170,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU609613327",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU609625880",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -7118,6 +7398,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU610567916",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU610606367",
@@ -7728,6 +8018,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU612003821",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU612009926",
@@ -8348,6 +8648,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU613083053",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU613083326",
@@ -9850,6 +10160,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU616917519",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU616949070",
     "type": "book",
     "primaryCategoryId": "ciencia-tecnologia",
@@ -10628,6 +10948,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU618743170",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU618744687",
@@ -12010,6 +12340,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU621791983",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU621792227",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -12540,6 +12880,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU623165613",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU623195825",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -12838,6 +13188,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU623609118",
+    "type": "book",
+    "primaryCategoryId": "derecho",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU623615157",
@@ -14028,6 +14388,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU625783473",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU625785975",
@@ -16040,6 +16410,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU628149822",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU628149824",
     "type": "book",
     "primaryCategoryId": "cocina-gastronomia",
@@ -17260,6 +17640,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU629529595",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU629531963",
     "type": "book",
     "primaryCategoryId": "literatura-ficcion",
@@ -18230,6 +18620,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU630193918",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU630201013",
     "type": "book",
     "primaryCategoryId": "religion-espiritualidad",
@@ -18308,6 +18708,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU630279426",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU630299144",
@@ -19780,6 +20190,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU632106421",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU632106423",
     "type": "book",
     "primaryCategoryId": "deportes",
@@ -20350,6 +20770,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU632616583",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU632616627",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -20918,6 +21348,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU633506450",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU633601261",
@@ -22360,6 +22800,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU636030618",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU636030668",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -22780,6 +23230,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU636105199",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU636105361",
     "type": "book",
     "primaryCategoryId": "comics-manga",
@@ -22838,6 +23298,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU636119088",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU636119090",
@@ -23508,6 +23978,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU636484429",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU636506972",
@@ -25130,6 +25610,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU638586727",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU638595637",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -25740,6 +26230,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU640027199",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU640050247",
     "type": "book",
     "primaryCategoryId": "ciencia-tecnologia",
@@ -26070,6 +26570,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU640506730",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU640541271",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -26180,6 +26690,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU640731909",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU640733291",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -26238,6 +26758,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU640770109",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU640785075",
@@ -26700,6 +27230,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU641753978",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU641797103",
     "type": "book",
     "primaryCategoryId": "educacion",
@@ -26708,6 +27248,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU641810087",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU641810121",
@@ -26860,6 +27410,26 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU642279971",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "emociones-vinculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU642291871",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU642303121",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -26918,6 +27488,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU642440215",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": "salud-mental",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU642449080",
@@ -27040,6 +27620,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU642674917",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU642801681",
     "type": "book",
     "primaryCategoryId": "juegos-actividades",
@@ -27058,6 +27648,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU642854169",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": "salud-mental",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU642923005",
@@ -27160,6 +27760,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU643045119",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU643166579",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -27200,6 +27810,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU643167057",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU643167107",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -27210,6 +27830,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU643179271",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": "pedagogia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU643192219",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -27218,6 +27848,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU643192365",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": "pedagogia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU643192433",
@@ -27790,6 +28430,26 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU643803359",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU643803473",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU643816911",
     "type": "book",
     "primaryCategoryId": "educacion",
@@ -27830,6 +28490,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU643829079",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU643835951",
     "type": "book",
     "primaryCategoryId": "ciencia-tecnologia",
@@ -27858,6 +28528,26 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU643854765",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU643855099",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU643855867",
@@ -28110,6 +28800,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU644201679",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU644204784",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -28230,6 +28930,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU644240451",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU644240597",
     "type": "book",
     "primaryCategoryId": "esoterismo-tarot",
@@ -28288,6 +28998,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU644288687",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU644297399",
@@ -28510,6 +29230,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU644431783",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU644431785",
     "type": "book",
     "primaryCategoryId": "historia",
@@ -28720,6 +29450,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU644654023",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU644675235",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -28920,6 +29660,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU644915051",
+    "type": "book",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "ingenio-pasatiempos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU644929521",
     "type": "book",
     "primaryCategoryId": "literatura-ficcion",
@@ -29080,6 +29830,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU644989801",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU645002047",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -29088,6 +29848,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU645015309",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU645015923",
@@ -29118,6 +29888,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU645028099",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU645054649",
@@ -29178,6 +29958,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU645211098",
+    "type": "book",
+    "primaryCategoryId": "idiomas-aprendizaje",
+    "subcategoryId": "ingles",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU645213671",
@@ -29338,6 +30128,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU645362242",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU645363347",
@@ -30400,6 +31200,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU647065606",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU647104518",
     "type": "book",
     "primaryCategoryId": "familia-crianza",
@@ -30438,6 +31248,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU647172375",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "ciencia-politica",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU647182634",
@@ -30628,6 +31448,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU647575043",
+    "type": "book",
+    "primaryCategoryId": "historia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU647695311",
@@ -31330,6 +32160,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU649303472",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU649303670",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -31358,6 +32198,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU649315996",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU649316022",
@@ -31860,6 +32710,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU649651194",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU649665300",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -32150,6 +33010,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU650213522",
+    "type": "book",
+    "primaryCategoryId": "historia",
+    "subcategoryId": "historia-mundial",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU650239128",
     "type": "book",
     "primaryCategoryId": "esoterismo-tarot",
@@ -32198,6 +33068,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU650381651",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU650387026",
@@ -32360,6 +33240,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU651009142",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU651058122",
     "type": "book",
     "primaryCategoryId": "religion-espiritualidad",
@@ -32388,6 +33278,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU651094636",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU651166384",
@@ -33080,6 +33980,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU651588660",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU651588724",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -33560,6 +34470,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU652059692",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU652060520",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -33600,6 +34520,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU652083500",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": "pedagogia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU652084784",
     "type": "book",
     "primaryCategoryId": "familia-crianza",
@@ -33618,6 +34548,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU652086270",
+    "type": "book",
+    "primaryCategoryId": "historia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU652086330",
@@ -33680,6 +34620,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU652097102",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicomotricidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU652098032",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -33708,6 +34658,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU652101118",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU652101134",
@@ -33908,6 +34868,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU652153292",
+    "type": "book",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "juegos-educativos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU652173330",
@@ -34290,6 +35260,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU652653502",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicologia-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU652656060",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -34490,6 +35470,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU652703159",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": "pedagogia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU652705502",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -34648,6 +35638,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU652772734",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU652772857",
@@ -35088,6 +36088,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU653391196",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU653391322",
@@ -36560,6 +37570,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU655277168",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU655285908",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -36588,6 +37608,26 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU655318814",
+    "type": "book",
+    "primaryCategoryId": "ciencia-tecnologia",
+    "subcategoryId": "fisica-quimica",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU655329372",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU655329378",
@@ -36870,6 +37910,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU655488176",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU655488186",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -36948,6 +37998,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU655838612",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU655865360",
@@ -37088,6 +38148,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU655971674",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU655979530",
@@ -37668,6 +38738,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU656696344",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU656702417",
@@ -38280,6 +39360,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU657787224",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU657811244",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -38408,6 +39498,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU657988520",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU657988530",
@@ -39760,6 +40860,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU659013242",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU659033780",
     "type": "book",
     "primaryCategoryId": "familia-crianza",
@@ -40318,6 +41428,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU660310638",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "poesia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU660310818",
@@ -41100,6 +42220,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU664345664",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU664371474",
     "type": "book",
     "primaryCategoryId": "religion-espiritualidad",
@@ -41260,6 +42390,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU664591790",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU664593882",
     "type": "book",
     "primaryCategoryId": "negocios-economia",
@@ -41418,6 +42558,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU665082160",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU665082534",
@@ -41588,6 +42738,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU665374872",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU665414048",
@@ -42248,6 +43408,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU668231852",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicologia-clinica",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU668244524",
@@ -43040,6 +44210,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU669866630",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU669870222",
     "type": "book",
     "primaryCategoryId": "esoterismo-tarot",
@@ -43108,6 +44288,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU669898790",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU669899234",
@@ -43750,6 +44940,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU671309750",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU671324028",
     "type": "book",
     "primaryCategoryId": "religion-espiritualidad",
@@ -43788,6 +44988,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU671761470",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoanalisis",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU671777186",
@@ -43988,6 +45198,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU672283570",
+    "type": "book",
+    "primaryCategoryId": "idiomas-aprendizaje",
+    "subcategoryId": "ingles",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU672350658",
@@ -44370,6 +45590,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU673178490",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU673178496",
     "type": "book",
     "primaryCategoryId": "negocios-economia",
@@ -44438,6 +45668,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU673266314",
+    "type": "book",
+    "primaryCategoryId": "comics-manga",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU673324015",
@@ -45720,6 +46960,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU678005216",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU678008880",
     "type": "book",
     "primaryCategoryId": "naturaleza-animales",
@@ -45818,6 +47068,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU678060612",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU678061649",
@@ -46100,6 +47360,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU679607330",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU679612916",
     "type": "book",
     "primaryCategoryId": "comics-manga",
@@ -46158,6 +47428,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU679658240",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU679670652",
@@ -47030,6 +48310,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU681817136",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU681822682",
     "type": "book",
     "primaryCategoryId": "negocios-economia",
@@ -47198,6 +48488,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU681908128",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU681913500",
@@ -47660,6 +48960,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU682808188",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU682808664",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -47698,6 +49008,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU682821228",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU682821352",
@@ -48280,6 +49600,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU684361366",
+    "type": "book",
+    "primaryCategoryId": "historia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU684382732",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -48288,6 +49618,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU684387332",
+    "type": "book",
+    "primaryCategoryId": "historia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU684399876",
@@ -48470,6 +49810,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU684472734",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU684473516",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -48600,6 +49950,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU684797962",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "otras-tradiciones",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU684798066",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -48668,6 +50028,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU684984350",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU684997296",
@@ -48788,6 +50158,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU685184012",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU685208846",
@@ -48968,6 +50348,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU685819164",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU685951752",
@@ -49240,6 +50630,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU686429780",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU686429802",
     "type": "book",
     "primaryCategoryId": "psicologia",
@@ -49348,6 +50748,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU686467704",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU686545266",
@@ -49608,6 +51018,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU687437352",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "ciencia-ficcion-fantasia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU687437426",
@@ -50160,6 +51580,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU688989388",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU688989460",
     "type": "book",
     "primaryCategoryId": "negocios-economia",
@@ -50488,6 +51918,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU690498854",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "sociologia-antropologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU690706632",
@@ -50890,6 +52330,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU692647026",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "poesia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU692647448",
     "type": "book",
     "primaryCategoryId": "educacion",
@@ -50950,6 +52400,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU692686168",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU692699016",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -50968,6 +52428,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU692737776",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU692737962",
@@ -51310,6 +52780,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU693489556",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU693502424",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -51568,6 +53048,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU694284620",
+    "type": "book",
+    "primaryCategoryId": "arte-diseno-fotografia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU694335892",
@@ -51890,6 +53380,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU695403148",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU695417186",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -52040,6 +53540,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU696157645",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU696185184",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -52088,6 +53598,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU696430538",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU696461037",
@@ -52530,6 +54050,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU698452503",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU698466025",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -52660,6 +54190,26 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU699813382",
+    "type": "book",
+    "primaryCategoryId": "ciencia-tecnologia",
+    "subcategoryId": "biologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU699822360",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "filosofia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU699835090",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -52668,6 +54218,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU699860006",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU699860580",
@@ -53090,6 +54650,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU700586078",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "revistas",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU700601704",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -53168,6 +54738,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU700740760",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU700747880",
@@ -53540,6 +55120,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU701277738",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU701306510",
     "type": "book",
     "primaryCategoryId": "literatura-ficcion",
@@ -53870,6 +55460,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU702434892",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU702445680",
     "type": "book",
     "primaryCategoryId": "literatura-ficcion",
@@ -53960,6 +55560,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU702499818",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU702510582",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -53990,6 +55600,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU702618496",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicologia-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU702709226",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -54018,6 +55638,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU702767670",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicologia-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU702785162",
@@ -54148,6 +55778,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU702939492",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU703013706",
@@ -54348,6 +55988,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU703852368",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU703988700",
@@ -54890,6 +56540,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU706723880",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU706724052",
     "type": "book",
     "primaryCategoryId": "historia",
@@ -54988,6 +56648,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU707072428",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU707085632",
@@ -55540,6 +57210,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU711272644",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU711325372",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -55828,6 +57508,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU714585818",
+    "type": "book",
+    "primaryCategoryId": "educacion",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU714604980",
@@ -56140,6 +57830,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU716947896",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU716964802",
     "type": "book",
     "primaryCategoryId": "historia",
@@ -56170,6 +57870,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU717104048",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU717107820",
     "type": "book",
     "primaryCategoryId": "historia",
@@ -56178,6 +57888,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU717181774",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU717182220",
@@ -56228,6 +57948,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU717728508",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU717732940",
@@ -56348,6 +58078,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU718021028",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU718175024",
@@ -56648,6 +58388,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU721130720",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU721203576",
@@ -56980,6 +58730,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU724936780",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU724937186",
     "type": "book",
     "primaryCategoryId": "desarrollo-personal",
@@ -57220,6 +58980,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU725600532",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU726489334",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -57438,6 +59208,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU728130222",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "autismo-neurodesarrollo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU728137418",
@@ -57940,6 +59720,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU730352002",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU730359662",
     "type": "book",
     "primaryCategoryId": "naturaleza-animales",
@@ -58360,6 +60150,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU733110974",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "revistas",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU733279842",
     "type": "book",
     "primaryCategoryId": "arte-diseno-fotografia",
@@ -58588,6 +60388,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU735433446",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU735452246",
@@ -59140,6 +60950,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU741548546",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU741639524",
     "type": "book",
     "primaryCategoryId": "familia-crianza",
@@ -59290,6 +61110,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU747021176",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU747437000",
     "type": "book",
     "primaryCategoryId": "filosofia-ciencias-sociales",
@@ -59348,6 +61178,26 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU748520752",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU748559372",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU749298286",
@@ -59940,6 +61790,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU761475244",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU761656936",
     "type": "other",
     "primaryCategoryId": "otros-productos",
@@ -60028,6 +61888,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU763819170",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU766245318",
@@ -61070,6 +62940,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU827095182",
+    "type": "other",
+    "primaryCategoryId": "otros-productos",
+    "subcategoryId": "papeleria-manualidades",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU833600600",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -61200,6 +63080,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU845034046",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU845034082",
     "type": "book",
     "primaryCategoryId": "negocios-economia",
@@ -61270,6 +63160,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU845099066",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU845146822",
     "type": "book",
     "primaryCategoryId": "historia",
@@ -61308,6 +63208,26 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU847042602",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
+    "mlu": "MLU847042604",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU847046376",
@@ -61780,6 +63700,16 @@
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
   },
   {
+    "mlu": "MLU863973534",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "poesia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU866414212",
     "type": "book",
     "primaryCategoryId": "infantil-juvenil",
@@ -61918,6 +63848,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-25 por título (Claude): dos lecturas independientes coinciden."
+  },
+  {
+    "mlu": "MLU873719712",
+    "type": "book",
+    "primaryCategoryId": "medicina-salud",
+    "subcategoryId": "salud-mental",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU874420796",
@@ -62810,6 +64750,16 @@
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
   },
   {
+    "mlu": "MLU898591212",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
+  },
+  {
     "mlu": "MLU898591238",
     "type": "book",
     "primaryCategoryId": "medicina-salud",
@@ -63368,6 +65318,16 @@
     "secondaryCategoryPaths": [],
     "tags": [],
     "note": "Clasificación asistida 2026-09-24 por título (Claude); confianza alta."
+  },
+  {
+    "mlu": "MLU951783602",
+    "type": "book",
+    "primaryCategoryId": "ciencia-tecnologia",
+    "subcategoryId": "biologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Clasificación asistida 2026-09-25 por título (Claude): desempate de una tercera lectura entre dos propuestas."
   },
   {
     "mlu": "MLU952199506",

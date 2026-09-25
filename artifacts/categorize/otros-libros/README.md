@@ -11,4 +11,5 @@ Los 3.124 restantes se volvieron a leer sin ver la primera clasificación. Se ub
 
 - Ubicados: **2.287** (2.249 por coincidencia, 38 por segunda lectura con confianza alta). Muestra al azar de 70 revisada.
 - Desacuerdo entre lecturas: 823 → siguen en «Otros libros»; están en `artifacts/categorize/doble-lectura-2026-09-25/desacuerdos.json` con las dos propuestas.
-- «Otros libros» queda en unos 850.
+- Desempate (tercera lectura entre las dos propuestas, «no se sabe» ante la duda): 196 ubicados más; 627 siguen sin tema claro.
+- «Otros libros» queda en 652 según el mapa de categorías (algo menos en el catálogo vivo).
