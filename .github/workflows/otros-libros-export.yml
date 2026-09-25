@@ -6,12 +6,11 @@ name: Categorías — exportar «Otros libros»
 # Solo lectura sobre R2. Commitea el TSV únicamente en ramas claude/*,
 # nunca en main.
 
+# Solo a mano: con `pull_request` volvía a correr en cada push del PR (el
+# filtro de rutas mira todo el diff del PR) y dejaba un commit del bot
+# como head.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - scripts/categorize/export-otros-libros.mjs
-      - .github/workflows/otros-libros-export.yml
 
 permissions:
   contents: write
