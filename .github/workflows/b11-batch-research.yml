@@ -123,7 +123,8 @@ jobs:
           BNE_BUDGET: '2276'
           BNE_CONCURRENCY: '3'
           BNE_DELAY_MS: '500'
-          OPEN_LIBRARY_BUDGET: '2276'
+          # Por ISBN desde que /api/books dejó de existir: cubre todo el universo.
+          OPEN_LIBRARY_BUDGET: '7000'
           OPEN_LIBRARY_CONCURRENCY: '2'
           # Bibliotecas nacionales adicionales. Son la fuente OFICIAL que
           # desbloquea los ISBN con una sola familia de evidencia, así que
