@@ -429,3 +429,21 @@ test('en producción, un manifest de pausadas ausente/inválido no rompe /catalo
   assert.doesNotMatch(html, /Diccionario Inglés Avanzado/);
   assert.match(html, /El Género En Disputa/);
 });
+
+test('selector de categorías: alfabético, sin «Otros libros», comodines al final y sin vacías', async () => {
+  const { sortCategoriesForSelect } = await import('../catalogo.js');
+  const sorted = sortCategoriesForSelect([
+    { id: 'otros-libros', name: 'Otros libros', count: 9 },
+    { id: 'psicologia', name: 'Psicología', count: 3 },
+    { id: 'otros-productos', name: 'Otros productos', count: 2 },
+    { id: 'arte-diseno-fotografia', name: 'Arte, diseño y fotografía', count: 1 },
+    { id: 'derecho', name: 'Derecho', count: 0 },
+    { id: 'educacion', name: 'Educación', count: 4 },
+  ]);
+  assert.deepEqual(sorted.map(c => c.id), ['arte-diseno-fotografia', 'educacion', 'psicologia', 'otros-productos']);
+  const withSelected = sortCategoriesForSelect([
+    { id: 'otros-libros', name: 'Otros libros', count: 9 },
+    { id: 'psicologia', name: 'Psicología', count: 3 },
+  ], 'otros-libros');
+  assert.deepEqual(withSelected.map(c => c.id), ['psicologia', 'otros-libros']);
+});
