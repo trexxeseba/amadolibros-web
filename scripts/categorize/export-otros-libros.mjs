@@ -34,7 +34,7 @@ export function otrosLibrosRows(snapshotItems, categoryItems, reviewed = new Set
       estado: item.status === 'paused' ? 'encargo' : 'disponible',
       revisado_antes: reviewed.has(mlu) ? 'si' : 'no',
       titulo: clean(item.title),
-      autor: clean(item.author),
+      autor: clean(item.author) || '-',
     });
   }
   return rows.sort((a, b) => a.mlu.localeCompare(b.mlu));
