@@ -1,8 +1,13 @@
 {
-  "generado": "2026-09-26T20:43:21.846Z",
-  "medidas": 17291,
-  "sin_medida": 0,
-  "horizontales": 0,
-  "horizontales_disponibles": 0,
-  "umbral_ancho_sobre_alto": 1.15
+  "generado": "2026-09-26T20:46:53.024Z",
+  "medidas": 17220,
+  "sin_medida": 71,
+  "horizontales": 630,
+  "horizontales_disponibles": 295,
+  "umbral_ancho_sobre_alto": 1.15,
+  "proporciones": {
+    "vertical (<0.9)": 14990,
+    "casi cuadrada (0.9–1.15)": 1600,
+    "horizontal (>1.15)": 630
+  }
 }
