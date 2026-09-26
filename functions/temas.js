@@ -22,6 +22,7 @@ import {
     WA_FLOAT_STYLES,
 } from './_shared/brand.js';
 import { SEO_CATEGORIES } from './_shared/seo-categories.js';
+import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
 import { normalizeCategoryPaths } from './_shared/category-paths.js';
 import { dedupeCatalogResults } from './catalogo.js';
 
@@ -332,6 +333,7 @@ export function renderTemasPage({ groups, catchAll, hasSplit }) {
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="${canonical}">
   ${faviconHeadHtml()}
+  ${SITE_FONTS_HEAD}
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_UY">
   <meta property="og:site_name" content="${BRAND.name}">
@@ -344,13 +346,7 @@ export function renderTemasPage({ groups, catchAll, hasSplit }) {
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:#fffaf3;color:#1b1714;line-height:1.55}
     a{color:inherit}
-    .site-header{background:#1b1714;color:#fff}
-    .header-inner{max-width:1200px;margin:0 auto;padding:.7rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
-    .brand-link{display:flex;align-items:center;gap:.6rem;text-decoration:none;font-weight:800}
-    .brand-link img{width:44px;height:44px;object-fit:contain}
-    .header-search{flex:1 1 260px;display:flex;gap:.4rem;min-width:0}
-    .header-search input{flex:1;min-width:0;padding:.6rem .8rem;border:0;border-radius:.55rem;font:inherit}
-    .header-search button{padding:.6rem .9rem;border:0;border-radius:.55rem;background:#ef6844;color:#1b1714;font-weight:800;cursor:pointer}
+    ${SITE_HEADER_STYLES}
     .crumbs{max-width:1200px;margin:0 auto;padding:1rem 1rem 0;color:#6b6157;font-size:.85rem}
     .crumbs a{color:#a94e3d;text-decoration:none}
     main{max-width:1200px;margin:0 auto;padding:1rem 1rem 3rem}
@@ -393,18 +389,7 @@ export function renderTemasPage({ groups, catchAll, hasSplit }) {
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand-link" href="/" aria-label="Amado Libros — inicio">
-        <img src="${BRAND.logo}" alt="${BRAND.logoAlt}" width="44" height="44">
-        <span>Amado Libros</span>
-      </a>
-      <form class="header-search" action="/catalogo" method="get" role="search">
-        <input type="search" name="q" placeholder="Título, autor, temática o ISBN" aria-label="Buscar libros">
-        <button type="submit">Buscar</button>
-      </form>
-    </div>
-  </header>
+  ${siteHeaderHtml({ current: 'temas' })}
   <nav class="crumbs" aria-label="Migas de pan"><a href="/">Inicio</a> › Todos los temas</nav>
   <main>
     <section class="intro">
@@ -434,6 +419,7 @@ export function renderTemasPage({ groups, catchAll, hasSplit }) {
   </main>
   ${footerHtml(undefined, canonical)}
   ${waFloatHtml(undefined, canonical)}
+  ${SITE_HEADER_SCRIPT}
 </body>
 </html>`;
 }

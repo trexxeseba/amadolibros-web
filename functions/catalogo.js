@@ -38,7 +38,8 @@
 
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
-import { BRAND, faviconHeadHtml } from './_shared/brand.js';
+import { faviconHeadHtml } from './_shared/brand.js';
+import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
@@ -469,25 +470,6 @@ function catalogPath({ q, categoria, subcategoria, disponibilidad, page }) {
     if (page && page > 1) params.set('page', String(page));
     const qs = params.toString();
     return qs ? `/catalogo?${qs}` : '/catalogo';
-}
-
-// Encabezado de marca: el catálogo se abre desde el menú «Libros» de la
-// portada, así que tiene que sentirse la misma tienda (logo, Temas, pedir un
-// libro, carrito) y no una página suelta con un «← volver».
-export function catalogHeaderHtml() {
-    return `<header class="site-header">
-  <div class="site-header-inner">
-    <a class="brand-link" href="/" aria-label="Amado Libros — inicio">
-      <img src="${BRAND.logo}" alt="${BRAND.logoAlt}" width="40" height="40">
-      <span>Amado Libros</span>
-    </a>
-    <nav class="site-nav" aria-label="Navegación principal">
-      <a href="/temas">Temas</a>
-      <a href="/pedir-libro/">Pedir un libro</a>
-      <a href="/carrito" aria-label="Ver carrito">Carrito</a>
-    </nav>
-  </div>
-</header>`;
 }
 
 // Temas a la vista: sin categoría elegida, una fila con todos los temas
@@ -1081,6 +1063,7 @@ export async function onRequest(ctx) {
   <meta name="twitter:description" content="${metaDescription}">
   <meta name="twitter:image" content="${BASE}/images/logo-amado.webp">
   ${faviconHeadHtml()}
+  ${SITE_FONTS_HEAD}
   ${jsonLd}
   <style>
     ${DELIVERY_BADGE_STYLES}
@@ -1089,13 +1072,7 @@ export async function onRequest(ctx) {
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#faf7f2;color:#1e293b;line-height:1.5}
     .wrap{max-width:1100px;margin:0 auto;padding:1.25rem 1rem 3rem}
-    .site-header{background:#18120e;color:#fff}
-    .site-header-inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
-    .brand-link{display:flex;align-items:center;gap:.55rem;color:#fff;text-decoration:none;font-weight:800}
-    .brand-link img{width:40px;height:40px;object-fit:contain}
-    .site-nav{display:flex;gap:1rem;font-size:.85rem;font-weight:700}
-    .site-nav a{color:#fff;text-decoration:none}
-    .site-nav a:hover{text-decoration:underline;text-underline-offset:.2em}
+    ${SITE_HEADER_STYLES}
     .topic-nav{margin:0 0 .75rem}
     .topic-nav-title{margin-bottom:.45rem;color:#a94e3d;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
     .topic-chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
@@ -1105,7 +1082,6 @@ export async function onRequest(ctx) {
     .topic-chip-all{border-color:#18120e}
     .topic-chip-back{color:#a94e3d}
     @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
-    @media(max-width:480px){.site-nav{gap:.7rem;font-size:.8rem}.brand-link span{display:none}}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
     .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
     .grid{display:grid;gap:1rem;
@@ -1174,7 +1150,7 @@ export async function onRequest(ctx) {
   </style>
 </head>
 <body>
-${catalogHeaderHtml()}
+${siteHeaderHtml({ current: 'libros', showSearch: false })}
 <div class="wrap">
   ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
   ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
@@ -1192,6 +1168,7 @@ ${catalogHeaderHtml()}
   </footer>
 </div>
 <script src="/search-autocomplete.js" defer></script>
+${SITE_HEADER_SCRIPT}
 </body>
 </html>`;
 
