@@ -66,6 +66,7 @@ import {
     responsiveImage,
 } from './_shared/cloudflare-images.js';
 import { matchesCategoryPath } from './_shared/category-paths.js';
+import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
 
 const MAX_RESULTS = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -412,9 +413,15 @@ const CAT_SELECT_STYLES = `
     .availability-tab.is-current{border-color:#18120e;background:#18120e;color:#fff}
     .availability-tab.is-current span{color:#e8ded3}
     .availability-tab:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
-    @media (max-width: 480px){
-      .filters-bar{flex-direction:column}
-      .filters-bar input[type=search],.cat-select-wrap select{width:100%}
+    /* Celular: buscador y botón en una sola fila; los temas ya están a la
+       vista como botones, así que los desplegables se ocultan (siguen en el
+       formulario y conservan la categoría al buscar). Así el primer libro
+       aparece en la primera pantalla. */
+    @media (max-width: 700px){
+      .filters-bar{flex-wrap:nowrap}
+      .filters-bar input[type=search]{min-width:0}
+      .filters-bar .cat-select-wrap{display:none}
+      .availability-tab{min-height:40px;padding:.4rem .5rem;font-size:.74rem}
     }
 `;
 
@@ -886,7 +893,10 @@ export async function onRequest(ctx) {
             ...cardCoverImageOptions(b.id),
         });
         const img = escapeHtml(image.src);
-        const title = escapeHtml(b.title);
+        // Título limpio para leer (sin «De Autor. Editorial X, Tapa Blanda»);
+        // el título fuente, el slug y la búsqueda no cambian.
+        const display = deriveBookDisplayTitle(b);
+        const title = escapeHtml(display.removedParts.length ? display.title : b.title);
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
@@ -1086,7 +1096,7 @@ export async function onRequest(ctx) {
     .site-nav{display:flex;gap:1rem;font-size:.85rem;font-weight:700}
     .site-nav a{color:#fff;text-decoration:none}
     .site-nav a:hover{text-decoration:underline;text-underline-offset:.2em}
-    .topic-nav{margin:0 0 1rem}
+    .topic-nav{margin:0 0 .75rem}
     .topic-nav-title{margin-bottom:.45rem;color:#a94e3d;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
     .topic-chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
     .topic-chip{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:.45rem .85rem;border:1px solid #d1c8be;border-radius:999px;background:#fff;color:#18120e;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
@@ -1115,6 +1125,8 @@ export async function onRequest(ctx) {
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
     .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+    .rc-card .delivery-today{padding:.2rem .5rem;font-size:.72rem;border-radius:.4rem}
+    .rc-card .delivery-today span{display:none}
     .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .rc-title-link{text-decoration:none;color:inherit}

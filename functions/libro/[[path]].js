@@ -766,9 +766,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-         background:#f8fafc;color:#1e293b;line-height:1.6}
-    a{color:#3b82f6}
-    .product-header{background:#1e293b;color:white;padding:.65rem 1.25rem;
+         background:#faf7f2;color:#1e293b;line-height:1.6}
+    a{color:#a94e3d}
+    .product-header{background:#18120e;color:white;padding:.65rem 1.25rem;
                     position:sticky;top:0;z-index:50;
                     box-shadow:0 2px 10px rgba(15,23,42,.18)}
     .header-inner{width:100%;max-width:1180px;margin:0 auto;display:grid;
@@ -810,23 +810,34 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       .brand-logo{width:38px;height:38px}
       .brand-name{font-size:1rem}
       .brand-tagline{display:none}
-      .header-search{grid-column:1/-1;height:42px}
+      .header-search{grid-column:1/-1;grid-row:2;height:42px}
+      .ssr-cart-link{grid-column:2;grid-row:1;justify-self:end}
       .header-search input{font-size:.86rem;padding-left:.9rem}
       .header-search button{min-width:76px;padding:0 .8rem;font-size:.8rem}
     }
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
-    nav a{color:#3b82f6;text-decoration:none}
+    nav a{color:#a94e3d;text-decoration:none}
     main{max-width:860px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:1fr;gap:1.75rem}
     @media(min-width:640px){main{grid-template-columns:280px 1fr}}
+    /* Celular: la tapa ocupaba toda la primera pantalla y el precio quedaba
+       dos pantallas abajo. Tapa centrada y contenida, miniaturas en una fila. */
+    @media(max-width:639px){
+      main{margin-top:1rem;gap:1.1rem}
+      .cover-main{width:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
+      .cover-btn{text-align:center}
+      .thumbs{max-width:none;justify-content:center;flex-wrap:nowrap;overflow-x:auto}
+      .thumb-btn{width:48px;height:48px}
+      .thumb-btn img{width:48px;height:48px}
+    }
     .cover-main{width:100%;max-width:260px;border-radius:.5rem;
                 box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
     .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
     .cover-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;border-radius:.5rem}
     .thumbs{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;max-width:260px}
     .thumb-btn{background:none;border:1px solid #e2e8f0;border-radius:.35rem;padding:0;cursor:pointer;overflow:hidden;width:56px;height:56px;flex-shrink:0}
-    .thumb-btn[aria-current="true"]{border:2px solid #3b82f6}
+    .thumb-btn[aria-current="true"]{border:2px solid #18120e}
     .thumb-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
     .thumb-btn img{width:56px;height:56px;object-fit:cover;display:block;background:white}
     .lb{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem}
@@ -890,9 +901,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
     .btn:hover{opacity:.85}
-    .btn-wa{background:#25d366;color:white}
-    .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
-              cursor:pointer;width:100%}
+    /* Jerarquía de compra: el carrito es la acción principal (sólido, alto
+       contraste); WhatsApp acompaña con contorno verde; Mercado Libre queda
+       tercero. Antes el carrito salmón claro parecía deshabilitado al lado
+       del verde de WhatsApp. */
+    .btn-wa{background:#fff;color:#117a37;border:1.5px solid #25d366}
+    .btn-wa:hover{background:#effaf3;opacity:1}
+    .btn-cart{background:#b4442a;color:#fff;border:none;font-family:inherit;
+              cursor:pointer;width:100%;font-size:1.02rem;padding:1rem 1.25rem}
+    .btn-cart:hover{background:#9a3a23;opacity:1}
     .btn-cart:disabled{opacity:.7;cursor:default}
     /* AL-WEB: Mercado Libre queda tercero y subordinado — sin relleno
        amarillo dominante, fuente más chica y peso menor que carrito/WhatsApp.
