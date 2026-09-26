@@ -22,7 +22,7 @@ test('1. La ficha muestra el logo gráfico real y la marca enlaza al inicio', ()
     // ya tiene aria-label, que sigue ganando como nombre accesible.
     assert.match(html, /<img src="\/images\/logo-amado\.webp" alt="Amado Libros" class="brand-logo"[^>]*fetchpriority="high">/);
     assert.doesNotMatch(html, /logo-amado\.png/);
-    assert.match(html, /<span class="brand-name">AMADO LIBROS<\/span>/);
+    assert.match(html, /<span class="brand-name">Amado Libros<\/span>/);
     assert.doesNotMatch(html, />📚 Amado Libros<\/a>/);
 });
 
@@ -36,7 +36,7 @@ test('2. El buscador de la ficha envía la consulta al catálogo', () => {
 
 test('3. Header conserva el carrito y el orden comercial marca → búsqueda → carrito', () => {
     const html = render();
-    const header = html.match(/<header class="product-header">[\s\S]*?<\/header>/)?.[0] || '';
+    const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0] || '';
     const brand = header.indexOf('class="brand-link"');
     const search = header.indexOf('class="header-search"');
     const cart = header.indexOf('id="ssr-cart-link"');
@@ -46,14 +46,23 @@ test('3. Header conserva el carrito y el orden comercial marca → búsqueda →
 
 test('4. En mobile el buscador ocupa una segunda fila completa sin ocultarse', () => {
     const html = render();
-    assert.match(html, /@media\(max-width:760px\)\{[\s\S]*?\.header-inner\{grid-template-columns:minmax\(0,1fr\) auto;/);
-    assert.match(html, /\.header-search\{grid-column:1\/-1;grid-row:2;height:42px\}/);
+    assert.match(html, /@media\(max-width:760px\)\{[\s\S]*?\.site-header \.header-inner\{grid-template-columns:minmax\(0,1fr\) auto;/);
+    assert.match(html, /\.site-header \.header-search\{grid-column:1\/-1;grid-row:2;height:42px\}/);
     // El carrito queda en la primera fila, junto al logo, y no ocupa una fila propia.
-    assert.match(html, /\.ssr-cart-link\{grid-column:2;grid-row:1;justify-self:end\}/);
+    assert.match(html, /\.site-header \.ssr-cart-link\{grid-column:2;grid-row:1;justify-self:end\}/);
     assert.doesNotMatch(html, /@media\(max-width:760px\)[\s\S]*?\.header-search\{[^}]*display:none/);
 });
 
 test('5. El header queda disponible al hacer scroll en la ficha', () => {
     const html = render();
-    assert.match(html, /\.product-header\{[^}]*position:sticky;top:0;z-index:50;/);
+    assert.match(html, /\.site-header\{position:sticky;top:0;z-index:50;/);
+});
+
+test('6. La ficha usa el encabezado único de la tienda con Libros, Temas, Pedir un libro y Nosotros', () => {
+    const html = render();
+    const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0] || '';
+    for (const [label, href] of [['Libros', '/catalogo'], ['Temas', '/temas'], ['Nosotros', '/quienes-somos/']]) {
+        assert.match(header, new RegExp(`href="${href.replace(/[/?]/g, '\\$&')}"[^>]*>${label}<`));
+    }
+    assert.match(header, /Pedir un libro/);
 });

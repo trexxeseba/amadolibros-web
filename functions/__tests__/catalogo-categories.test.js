@@ -449,10 +449,13 @@ test('selector de categorías: alfabético, sin «Otros libros», comodines al f
 });
 
 test('catálogo: encabezado de marca y temas a la vista en vez de «← Amado Libros»', async () => {
-  const { catalogHeaderHtml, topicNavHtml } = await import('../catalogo.js');
-  const header = catalogHeaderHtml();
+  const { topicNavHtml } = await import('../catalogo.js');
+  const { siteHeaderHtml } = await import('../_shared/site-header.js');
+  const header = siteHeaderHtml({ current: 'libros', showSearch: false });
   assert.match(header, /href="\/temas">Temas</);
+  assert.match(header, /href="\/catalogo" aria-current="page">Libros</);
   assert.match(header, /href="\/carrito"/);
+  assert.doesNotMatch(header, /class="header-search"/);
   const cats = [
     { id: 'historia', name: 'Historia', count: 5, subcategories: [{ id: 'historia-mundial', name: 'Historia mundial', count: 2 }, { id: 'vacia', name: 'Vacía', count: 0 }] },
     { id: 'psicologia', name: 'Psicología', count: 9, subcategories: [] },
