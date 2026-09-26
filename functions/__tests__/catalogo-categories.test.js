@@ -473,3 +473,25 @@ test('catálogo: encabezado de marca y temas a la vista en vez de «← Amado Li
   assert.match(inside, /class="topic-chip is-current" href="\/catalogo\?categoria=historia&amp;subcategoria=historia-mundial" aria-current="page">Historia mundial/);
   assert.doesNotMatch(inside, /Vacía/);
 });
+
+test('orden por precio: menor a mayor y mayor a menor, noindex y selector visible', async () => {
+  const asc = await (await catalogRequest(context('https://example.com/catalogo?orden=precio-asc', 'production'))).text();
+  const titlesAsc = ['Sin categoría conocida', 'Eva Luna Historias De Mujeres Varias', 'Manual De Filosofía Estoica', 'Vinilo The Beatles Abbey Road']
+    .map(t => asc.indexOf(t));
+  assert.ok(titlesAsc.every(i => i > -1), 'deben aparecer los títulos');
+  assert.deepEqual([...titlesAsc].sort((a, b) => a - b), titlesAsc, 'precios 500 < 600 < 650 < 700');
+  assert.match(asc, /<meta name="robots" content="noindex, follow">/);
+  assert.match(asc, /<select id="sort-select" name="orden"[^>]*>[\s\S]*value="precio-asc" selected/);
+  const desc = await (await catalogRequest(context('https://example.com/catalogo?orden=precio-desc', 'production'))).text();
+  assert.ok(desc.indexOf('El Género En Disputa') < desc.indexOf('Tarot De Los Ángeles'), '1000 antes que 900');
+  const bogus = await (await catalogRequest(context('https://example.com/catalogo?orden=cualquiera', 'production'))).text();
+  assert.match(bogus, /<meta name="robots" content="index, follow">/);
+});
+
+test('tapas primero: sin imagen o con imagen horizontal quedan después', async () => {
+  const { coverTier } = await import('../catalogo.js');
+  const flagged = new Set(['MLU2']);
+  assert.equal(coverTier({ id: 'MLU1', thumbnail: 'x.jpg' }, flagged), 0);
+  assert.equal(coverTier({ id: 'MLU2', thumbnail: 'x.jpg' }, flagged), 1);
+  assert.equal(coverTier({ id: 'MLU3', thumbnail: '', pictures: [] }, flagged), 2);
+});
