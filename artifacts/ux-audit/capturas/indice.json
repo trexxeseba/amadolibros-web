@@ -1,0 +1,170 @@
+[
+  {
+    "viewport": "movil",
+    "page": "portada",
+    "route": "/",
+    "status": 200,
+    "ms": 4505
+  },
+  {
+    "viewport": "movil",
+    "page": "catalogo",
+    "route": "/catalogo",
+    "status": 200,
+    "ms": 5526
+  },
+  {
+    "viewport": "movil",
+    "page": "catalogo-historia",
+    "route": "/catalogo?categoria=historia",
+    "status": 200,
+    "ms": 4790
+  },
+  {
+    "viewport": "movil",
+    "page": "busqueda",
+    "route": "/catalogo?q=harry+potter",
+    "status": 200,
+    "ms": 3688
+  },
+  {
+    "viewport": "movil",
+    "page": "busqueda-sin-resultados",
+    "route": "/catalogo?q=zzzqqq",
+    "status": 200,
+    "ms": 2539
+  },
+  {
+    "viewport": "movil",
+    "page": "temas",
+    "route": "/temas",
+    "status": 200,
+    "ms": 2831
+  },
+  {
+    "viewport": "movil",
+    "page": "landing-psicologia",
+    "route": "/libros/psicologia",
+    "status": 200,
+    "ms": 4344
+  },
+  {
+    "viewport": "movil",
+    "page": "pedir-libro",
+    "route": "/pedir-libro/",
+    "status": 200,
+    "ms": 2335
+  },
+  {
+    "viewport": "movil",
+    "page": "carrito",
+    "route": "/carrito",
+    "status": 200,
+    "ms": 2352
+  },
+  {
+    "viewport": "movil",
+    "page": "agotados",
+    "route": "/libros-agotados-importados-uruguay",
+    "status": 200,
+    "ms": 2222
+  },
+  {
+    "viewport": "movil",
+    "page": "ficha-1",
+    "route": "/libro/MLU477115649/la-mente-absorbente-del-nino-montessori",
+    "status": 200,
+    "ms": 4235
+  },
+  {
+    "viewport": "movil",
+    "page": "ficha-2",
+    "route": "/libro/MLU643719407/un-libro-celebrar-el-embarazo-album-bebe-recuerdos-juntos",
+    "status": 200,
+    "ms": 4438
+  },
+  {
+    "viewport": "compu",
+    "page": "portada",
+    "route": "/",
+    "status": 200,
+    "ms": 2958
+  },
+  {
+    "viewport": "compu",
+    "page": "catalogo",
+    "route": "/catalogo",
+    "status": 200,
+    "ms": 3970
+  },
+  {
+    "viewport": "compu",
+    "page": "catalogo-historia",
+    "route": "/catalogo?categoria=historia",
+    "status": 200,
+    "ms": 3700
+  },
+  {
+    "viewport": "compu",
+    "page": "busqueda",
+    "route": "/catalogo?q=harry+potter",
+    "status": 200,
+    "ms": 3454
+  },
+  {
+    "viewport": "compu",
+    "page": "busqueda-sin-resultados",
+    "route": "/catalogo?q=zzzqqq",
+    "status": 200,
+    "ms": 2390
+  },
+  {
+    "viewport": "compu",
+    "page": "temas",
+    "route": "/temas",
+    "status": 200,
+    "ms": 2125
+  },
+  {
+    "viewport": "compu",
+    "page": "landing-psicologia",
+    "route": "/libros/psicologia",
+    "status": 200,
+    "ms": 3817
+  },
+  {
+    "viewport": "compu",
+    "page": "pedir-libro",
+    "route": "/pedir-libro/",
+    "status": 200,
+    "ms": 2134
+  },
+  {
+    "viewport": "compu",
+    "page": "carrito",
+    "route": "/carrito",
+    "status": 200,
+    "ms": 2121
+  },
+  {
+    "viewport": "compu",
+    "page": "agotados",
+    "route": "/libros-agotados-importados-uruguay",
+    "status": 200,
+    "ms": 2042
+  },
+  {
+    "viewport": "compu",
+    "page": "ficha-1",
+    "route": "/libro/MLU477115649/la-mente-absorbente-del-nino-montessori",
+    "status": 200,
+    "ms": 3776
+  },
+  {
+    "viewport": "compu",
+    "page": "ficha-2",
+    "route": "/libro/MLU643719407/un-libro-celebrar-el-embarazo-album-bebe-recuerdos-juntos",
+    "status": 200,
+    "ms": 2502
+  }
+]
