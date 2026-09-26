@@ -13,6 +13,8 @@ import {
   emptySourceCache,
   fetchGoogleBooksEvidence,
   fetchOpenLibraryBatchEvidence,
+  fetchOpenLibraryIsbnEvidence,
+  buildOpenLibraryIsbnUrl,
   isSourceCacheFresh,
   mergeSourceCache,
   parseGoogleBooksEvidence,
@@ -300,26 +302,27 @@ test('fetchOpenLibraryBatchEvidence exige contacto identificable', async () => {
   );
 });
 
-test('fetchOpenLibraryBatchEvidence identifica User-Agent y usa una llamada multi-ISBN', async () => {
-  let requestedUrl = null;
-  let requestedOptions = null;
+test('fetchOpenLibraryBatchEvidence identifica User-Agent y pide cada edición', async () => {
+  // La Books API multi-ISBN (/api/books) dejó de existir (HTTP 404 desde
+  // 2026-09-25): cada ISBN se pide al endpoint de edición.
+  const requested = [];
   const records = await fetchOpenLibraryBatchEvidence([ISBN, ISBN_2], {
     contact: 'seo@example.test',
     userAgent: 'AmadoTest/1.0',
     fetchImpl: async (url, options) => {
-      requestedUrl = String(url);
-      requestedOptions = options;
-      return fakeResponse({
-        records: {
-          OL1: { isbns: [ISBN], data: { title: 'Libro uno', authors: [{ name: 'Autora' }] } },
-          OL2: { isbns: [ISBN_2], data: { title: 'Libro dos', authors: [{ name: 'Autor' }] } },
-        },
-      });
+      requested.push({ url: String(url), options });
+      const isbn = String(url).includes(ISBN_2) ? ISBN_2 : ISBN;
+      return fakeResponse({ title: `Libro ${isbn}`, isbn_13: [isbn] });
     },
   });
-  assert.equal(new URL(requestedUrl).searchParams.get('bibkeys'), `ISBN:${ISBN},ISBN:${ISBN_2}`);
-  assert.equal(requestedOptions.headers['user-agent'], 'AmadoTest/1.0 (seo@example.test)');
-  assert.equal(records.length, 2);
+  assert.deepEqual(requested.map(entry => entry.url), [
+    `https://openlibrary.org/isbn/${ISBN}.json`,
+    `https://openlibrary.org/isbn/${ISBN_2}.json`,
+  ]);
+  for (const entry of requested) {
+    assert.equal(entry.options.headers['user-agent'], 'AmadoTest/1.0 (seo@example.test)');
+  }
+  assert.deepEqual(records.map(record => record.isbn), [ISBN, ISBN_2]);
 });
 
 test('errores HTTP no se convierten en evidencia silenciosa', async () => {
@@ -389,4 +392,69 @@ test('un 429 de Google Books conserva el motivo que da la API', async () => {
     fetchGoogleBooksEvidence(ISBN, { apiKey: 'k', fetchImpl, retryAttempts: 1 }),
     error => /^HTTP 429 — Quota exceeded .*per day/.test(error.message) && error.status === 429,
   );
+});
+
+function jsonResponse(status, body) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => null },
+    json: async () => body,
+  };
+}
+
+test('Open Library se consulta por edición en /isbn/{isbn}.json', async () => {
+  assert.equal(buildOpenLibraryIsbnUrl(ISBN), `https://openlibrary.org/isbn/${ISBN}.json`);
+  const urls = [];
+  const fetchImpl = async url => {
+    urls.push(String(url));
+    return jsonResponse(200, {
+      key: '/books/OL1M',
+      title: 'Crimen y castigo',
+      publishers: ['Penguin'],
+      publish_date: '2003',
+      number_of_pages: 520,
+      languages: [{ key: '/languages/spa' }],
+      isbn_13: [ISBN],
+    });
+  };
+  const records = await fetchOpenLibraryIsbnEvidence(ISBN, { contact: 'https://example.test', fetchImpl });
+  assert.deepEqual(urls, [`https://openlibrary.org/isbn/${ISBN}.json`]);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].source, 'open_library');
+  assert.equal(records[0].isbn, ISBN);
+  assert.equal(records[0].publisher, 'Penguin');
+  assert.equal(records[0].pages, 520);
+  assert.equal(records[0].publication_year, '2003');
+  assert.equal(records[0].language, 'Español');
+});
+
+test('un 404 de Open Library es «sin datos», no un error que se reintenta', async () => {
+  const records = await fetchOpenLibraryIsbnEvidence(ISBN, {
+    contact: 'https://example.test',
+    fetchImpl: async () => jsonResponse(404, { error: 'notfound' }),
+  });
+  assert.deepEqual(records, []);
+  await assert.rejects(
+    fetchOpenLibraryIsbnEvidence(ISBN, {
+      contact: 'https://example.test',
+      fetchImpl: async () => jsonResponse(503, {}),
+    }),
+    error => error.status === 503,
+  );
+});
+
+test('la firma por lotes pide cada ISBN por separado', async () => {
+  const urls = [];
+  const records = await fetchOpenLibraryBatchEvidence([ISBN, ISBN_2], {
+    contact: 'https://example.test',
+    fetchImpl: async url => {
+      urls.push(String(url));
+      return String(url).includes(ISBN_2)
+        ? jsonResponse(404, {})
+        : jsonResponse(200, { title: 'X', publishers: ['Y'], isbn_13: [ISBN] });
+    },
+  });
+  assert.equal(urls.length, 2);
+  assert.deepEqual(records.map(record => record.isbn), [ISBN]);
 });

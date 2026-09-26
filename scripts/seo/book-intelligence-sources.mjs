@@ -393,22 +393,51 @@ export async function fetchGoogleBooksEvidence(isbn, {
   return [];
 }
 
-export async function fetchOpenLibraryBatchEvidence(isbns, {
+export function buildOpenLibraryIsbnUrl(isbn) {
+  const normalized = normalizeValidIsbn(isbn);
+  if (!normalized) throw new Error('ISBN inválido para Open Library.');
+  return `https://openlibrary.org/isbn/${normalized}.json`;
+}
+
+/**
+ * Registro de la EDICIÓN por ISBN. `/api/books` (Books API por lotes) dejó de
+ * existir: el 2026-09-25 respondió HTTP 404 a las 1.382 consultas, con uno o
+ * varios ISBN (sonda en book-source-probe.yml). `/isbn/{isbn}.json` sigue vivo
+ * y redirige al registro de la edición exacta. Un 404 ahí significa que Open
+ * Library no conoce ese ISBN: es un resultado («sin datos»), no un error.
+ */
+export async function fetchOpenLibraryIsbnEvidence(isbn, {
   fetchImpl,
   timeoutMs,
   userAgent = 'AmadoLibros-BookIntelligence/1.0',
   contact,
 } = {}) {
   if (!clean(contact)) throw new Error('Open Library requiere un contacto identificable para este cliente.');
-  const url = buildOpenLibraryBatchUrl(isbns);
-  const payload = await fetchJson(url, {
-    fetchImpl,
-    timeoutMs,
-    headers: {
-      'user-agent': `${clean(userAgent)} (${clean(contact)})`,
-    },
-  });
-  return parseOpenLibraryEvidence(payload, isbns);
+  const normalized = normalizeValidIsbn(isbn);
+  let edition;
+  try {
+    edition = await fetchJson(buildOpenLibraryIsbnUrl(normalized), {
+      fetchImpl,
+      timeoutMs,
+      headers: {
+        'user-agent': `${clean(userAgent)} (${clean(contact)})`,
+      },
+    });
+  } catch (error) {
+    if (error?.status === 404) return [];
+    throw error;
+  }
+  return parseOpenLibraryEvidence({ [`ISBN:${normalized}`]: edition }, [normalized]);
+}
+
+// Se conserva la firma por lotes que usa el orquestador, pero cada ISBN se
+// pide por separado al endpoint de edición.
+export async function fetchOpenLibraryBatchEvidence(isbns, options = {}) {
+  const records = [];
+  for (const isbn of isbns) {
+    records.push(...await fetchOpenLibraryIsbnEvidence(isbn, options));
+  }
+  return records;
 }
 
 export function emptySourceCache() {
