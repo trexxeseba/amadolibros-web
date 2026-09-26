@@ -1,0 +1,43 @@
+name: UX — capturas de producción
+
+# Capturas de la web en producción (celular y compu) para la auditoría de
+# experiencia de compra. Solo lectura. Corre al empujar el script en una rama
+# claude/ux-audit* y commitea las capturas en esa misma rama; los commits del
+# bot no disparan workflows, así que no hay bucle.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/ux-audit*']
+    paths:
+      - scripts/ux/capture-screens.mjs
+      - .github/workflows/ux-audit-screens.yml
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Instalar Playwright
+        run: |
+          npm install --no-save --no-package-lock playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: Capturar
+        run: node scripts/ux/capture-screens.mjs https://www.amadolibros.com
+      - name: Commitear capturas
+        if: startsWith(github.ref_name, 'claude/')
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts/ux-audit
+          git diff --cached --quiet && exit 0
+          git commit -m "Capturas de producción para la auditoría UX"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
