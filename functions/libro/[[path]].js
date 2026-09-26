@@ -782,9 +782,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       main{margin-top:1rem;gap:1.1rem}
       .cover-main{width:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
       .cover-btn{text-align:center}
-      .thumbs{max-width:none;justify-content:center;flex-wrap:nowrap;overflow-x:auto}
-      .thumb-btn{width:48px;height:48px}
-      .thumb-btn img{width:48px;height:48px}
+      main .thumbs{max-width:none;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
+                   scrollbar-width:none;padding-bottom:.2rem}
+      main .thumbs::-webkit-scrollbar{display:none}
+      main .thumb-btn{width:48px;height:48px}
+      main .thumb-btn img{width:48px;height:48px}
     }
     .cover-main{width:100%;max-width:260px;border-radius:.5rem;
                 box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
