@@ -92,8 +92,10 @@ test('5. Mercado Libre no usa el estilo visual principal (sin relleno amarillo d
     // mismo peso que carrito). Ahora: outline claro, fuente más chica.
     assert.doesNotMatch(html, /\.btn-ml\{background:#ffe600/);
     assert.match(html, /\.btn-ml\{background:#fff;color:#7a6a1f;border:1\.5px solid #e8dfa0;\s*font-size:\.82rem;font-weight:600/);
-    // Carrito sigue siendo el más fuerte: fondo sólido + ancho completo.
-    assert.match(html, /\.btn-cart\{background:#e49982;color:#fff;border:none;font-family:inherit;\s*cursor:pointer;width:100%\}/);
+    // Carrito sigue siendo el más fuerte: fondo sólido de alto contraste +
+    // ancho completo; WhatsApp pasa a contorno.
+    assert.match(html, /\.btn-cart\{background:#b4442a;color:#fff;border:none;font-family:inherit;\s*cursor:pointer;width:100%/);
+    assert.match(html, /\.btn-wa\{background:#fff;color:#117a37;border:1\.5px solid #25d366\}/);
 });
 
 test('6. El enlace de WhatsApp sigue siendo válido (wa.me + mensaje codificado)', () => {

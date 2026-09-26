@@ -47,7 +47,9 @@ test('3. Header conserva el carrito y el orden comercial marca → búsqueda →
 test('4. En mobile el buscador ocupa una segunda fila completa sin ocultarse', () => {
     const html = render();
     assert.match(html, /@media\(max-width:760px\)\{[\s\S]*?\.header-inner\{grid-template-columns:minmax\(0,1fr\) auto;/);
-    assert.match(html, /\.header-search\{grid-column:1\/-1;height:42px\}/);
+    assert.match(html, /\.header-search\{grid-column:1\/-1;grid-row:2;height:42px\}/);
+    // El carrito queda en la primera fila, junto al logo, y no ocupa una fila propia.
+    assert.match(html, /\.ssr-cart-link\{grid-column:2;grid-row:1;justify-self:end\}/);
     assert.doesNotMatch(html, /@media\(max-width:760px\)[\s\S]*?\.header-search\{[^}]*display:none/);
 });
 
