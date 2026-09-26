@@ -1,0 +1,31 @@
+name: Fichas — verificar en Producción miga de pan y ficha ampliada
+
+# Sólo lectura: pide una muestra de fichas activas a la web publicada y
+# comprueba la categoría en la miga de pan (visible y BreadcrumbList) y la
+# ficha ampliada. El resultado queda en el resumen de la corrida.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/lucid-lamport-vll9nh]
+    paths:
+      - scripts/seo/fichas-produccion-check.mjs
+      - .github/workflows/fichas-produccion-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Verificar fichas publicadas
+        run: node scripts/seo/fichas-produccion-check.mjs | tee resultado.md
+      - name: Resumen
+        if: always()
+        run: '[ -f resultado.md ] && cat resultado.md >> "$GITHUB_STEP_SUMMARY" || true'
