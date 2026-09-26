@@ -1,0 +1,39 @@
+name: Tapas — detectar imágenes que no son tapa
+
+# Mide la primera imagen de cada publicación y lista las horizontales
+# (banners, collages, estuches) para revisarlas en Mercado Libre. Solo
+# lectura sobre R2 y mlstatic. Corre al empujar el script en la rama
+# claude/covers-audit y commitea los resultados en esa rama.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/covers-audit']
+    paths:
+      - scripts/ux/cover-shape-audit.mjs
+      - .github/workflows/covers-audit.yml
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Medir tapas
+        run: node scripts/ux/cover-shape-audit.mjs
+      - name: Commitear resultados
+        if: github.ref_name == 'claude/covers-audit'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add artifacts/covers astro-front/public/data/cover-flags.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Tapas: publicaciones con imagen horizontal"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
