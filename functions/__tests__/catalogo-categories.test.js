@@ -447,3 +447,26 @@ test('selector de categorías: alfabético, sin «Otros libros», comodines al f
   ], 'otros-libros');
   assert.deepEqual(withSelected.map(c => c.id), ['psicologia', 'otros-libros']);
 });
+
+test('catálogo: encabezado de marca y temas a la vista en vez de «← Amado Libros»', async () => {
+  const { catalogHeaderHtml, topicNavHtml } = await import('../catalogo.js');
+  const header = catalogHeaderHtml();
+  assert.match(header, /href="\/temas">Temas</);
+  assert.match(header, /href="\/carrito"/);
+  const cats = [
+    { id: 'historia', name: 'Historia', count: 5, subcategories: [{ id: 'historia-mundial', name: 'Historia mundial', count: 2 }, { id: 'vacia', name: 'Vacía', count: 0 }] },
+    { id: 'psicologia', name: 'Psicología', count: 9, subcategories: [] },
+    { id: 'otros-libros', name: 'Otros libros', count: 50, subcategories: [] },
+    { id: 'derecho', name: 'Derecho', count: 0, subcategories: [] },
+  ];
+  const index = topicNavHtml({ categories: cats, disponibilidad: 'encargo' });
+  assert.match(index, /Explorá por tema/);
+  assert.ok(index.indexOf('Psicología') < index.indexOf('Historia'), 'los temas más grandes primero');
+  assert.match(index, /href="\/catalogo\?categoria=historia&amp;disponibilidad=encargo"/);
+  assert.doesNotMatch(index, /Otros libros|Derecho/);
+  assert.match(index, /href="\/temas">Todos los temas/);
+  const inside = topicNavHtml({ categories: cats, categoria: 'historia', subcategoria: 'historia-mundial' });
+  assert.match(inside, /← Todos los temas/);
+  assert.match(inside, /class="topic-chip is-current" href="\/catalogo\?categoria=historia&amp;subcategoria=historia-mundial" aria-current="page">Historia mundial/);
+  assert.doesNotMatch(inside, /Vacía/);
+});

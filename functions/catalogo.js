@@ -38,7 +38,7 @@
 
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
-import { faviconHeadHtml } from './_shared/brand.js';
+import { BRAND, faviconHeadHtml } from './_shared/brand.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
@@ -383,9 +383,14 @@ function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, a
 
 const CAT_SELECT_STYLES = `
     .filters-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem}
-    .filters-bar input[type=search]{flex:1;min-width:180px}
+    .filters-bar input[type=search]{flex:1;min-width:180px;min-height:44px;padding:.55rem .85rem;
+                      border:1px solid #d1c8be;border-radius:.5rem;font-size:.95rem;background:#fff;color:#1e293b}
+    .filters-bar input[type=search]:focus{outline:none;border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
+    .filters-bar button[type=submit]{min-height:44px;padding:.55rem 1.1rem;border:0;border-radius:.5rem;
+                      background:#18120e;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer}
+    .filters-bar button[type=submit]:hover{background:#3a302a}
     .cat-select-wrap{display:flex}
-    .cat-select-wrap select{padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
+    .cat-select-wrap select{min-height:44px;padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
                       font-size:.85rem;color:#1e293b;background:#fff;outline:none;max-width:100%}
     .cat-select-wrap select:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
     .clear-filters{display:inline-block;margin-bottom:1.25rem;font-size:.82rem;
@@ -457,6 +462,60 @@ function catalogPath({ q, categoria, subcategoria, disponibilidad, page }) {
     if (page && page > 1) params.set('page', String(page));
     const qs = params.toString();
     return qs ? `/catalogo?${qs}` : '/catalogo';
+}
+
+// Encabezado de marca: el catálogo se abre desde el menú «Libros» de la
+// portada, así que tiene que sentirse la misma tienda (logo, Temas, pedir un
+// libro, carrito) y no una página suelta con un «← volver».
+export function catalogHeaderHtml() {
+    return `<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand-link" href="/" aria-label="Amado Libros — inicio">
+      <img src="${BRAND.logo}" alt="${BRAND.logoAlt}" width="40" height="40">
+      <span>Amado Libros</span>
+    </a>
+    <nav class="site-nav" aria-label="Navegación principal">
+      <a href="/temas">Temas</a>
+      <a href="/pedir-libro/">Pedir un libro</a>
+      <a href="/carrito" aria-label="Ver carrito">Carrito</a>
+    </nav>
+  </div>
+</header>`;
+}
+
+// Temas a la vista: sin categoría elegida, una fila con todos los temas
+// (los más grandes primero) y el acceso a /temas; con categoría, sus
+// subtemas. Antes quedaban escondidos dentro del desplegable «Todos».
+// Los más grandes a la vista; el resto, a un toque en /temas.
+const TOPIC_NAV_LIMIT = 12;
+export function topicNavHtml({ categories = [], categoria = '', subcategoria = '', disponibilidad = '' }) {
+    if (!categories.length) return '';
+    if (!categoria) {
+        const topics = categories
+            .filter(c => Number(c.count) > 0 && c.id !== 'otros-libros' && c.id !== 'otros-productos')
+            .slice()
+            .sort((a, b) => Number(b.count) - Number(a.count))
+            .slice(0, TOPIC_NAV_LIMIT);
+        if (!topics.length) return '';
+        const links = topics.map(c =>
+            `<a class="topic-chip" href="${escapeHtml(catalogPath({ categoria: c.id, disponibilidad }))}">${escapeHtml(c.name)}</a>`
+        ).join('');
+        return `<nav class="topic-nav" aria-label="Explorar por tema">
+    <p class="topic-nav-title">Explorá por tema</p>
+    <div class="topic-chips">${links}<a class="topic-chip topic-chip-all" href="/temas">Todos los temas →</a></div>
+  </nav>`;
+    }
+    const selected = categories.find(c => c.id === categoria);
+    const subs = (selected?.subcategories || []).filter(s => Number(s.count) > 0);
+    const back = `<a class="topic-chip topic-chip-back" href="${escapeHtml(catalogPath({ disponibilidad }))}">← Todos los temas</a>`;
+    const all = `<a class="topic-chip${subcategoria ? '' : ' is-current'}" href="${escapeHtml(catalogPath({ categoria, disponibilidad }))}"${subcategoria ? '' : ' aria-current="page"'}>Todo ${escapeHtml(selected?.name || '')}</a>`;
+    const subLinks = subs.map(sub => {
+        const current = sub.id === subcategoria;
+        return `<a class="topic-chip${current ? ' is-current' : ''}" href="${escapeHtml(catalogPath({ categoria, subcategoria: sub.id, disponibilidad }))}"${current ? ' aria-current="page"' : ''}>${escapeHtml(sub.name)}</a>`;
+    }).join('');
+    return `<nav class="topic-nav" aria-label="Subtemas">
+    <div class="topic-chips">${back}${all}${subLinks}</div>
+  </nav>`;
 }
 
 // Ventana de páginas: primera, última, actual y sus vecinas inmediatas.
@@ -1020,9 +1079,23 @@ export async function onRequest(ctx) {
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#faf7f2;color:#1e293b;line-height:1.5}
     .wrap{max-width:1100px;margin:0 auto;padding:1.25rem 1rem 3rem}
-    nav{font-size:.875rem;margin-bottom:1.25rem}
-    nav a{color:#3b82f6;text-decoration:none}
-    nav a:hover{text-decoration:underline}
+    .site-header{background:#18120e;color:#fff}
+    .site-header-inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+    .brand-link{display:flex;align-items:center;gap:.55rem;color:#fff;text-decoration:none;font-weight:800}
+    .brand-link img{width:40px;height:40px;object-fit:contain}
+    .site-nav{display:flex;gap:1rem;font-size:.85rem;font-weight:700}
+    .site-nav a{color:#fff;text-decoration:none}
+    .site-nav a:hover{text-decoration:underline;text-underline-offset:.2em}
+    .topic-nav{margin:0 0 1rem}
+    .topic-nav-title{margin-bottom:.45rem;color:#a94e3d;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .topic-chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+    .topic-chip{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:.45rem .85rem;border:1px solid #d1c8be;border-radius:999px;background:#fff;color:#18120e;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
+    .topic-chip:hover{background:#f5efe6}
+    .topic-chip.is-current{border-color:#18120e;background:#18120e;color:#fff}
+    .topic-chip-all{border-color:#18120e}
+    .topic-chip-back{color:#a94e3d}
+    @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
+    @media(max-width:480px){.site-nav{gap:.7rem;font-size:.8rem}.brand-link span{display:none}}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
     .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
     .grid{display:grid;gap:1rem;
@@ -1089,8 +1162,9 @@ export async function onRequest(ctx) {
   </style>
 </head>
 <body>
+${catalogHeaderHtml()}
 <div class="wrap">
-  <nav><a href="/">← Amado Libros</a></nav>
+  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
   ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
   ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
