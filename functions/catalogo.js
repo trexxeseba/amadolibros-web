@@ -243,6 +243,68 @@ function commercialTier(b) {
     return 3;
 }
 
+// Tapas primero: una publicación sin imagen, o cuya primera imagen es
+// horizontal (banner, collage, estuche; ver scripts/ux/cover-shape-audit.mjs),
+// no debería abrir el catálogo. Solo desempata: nunca gana contra relevancia
+// ni contra disponibilidad.
+export function coverTier(book, landscapeIds) {
+    const hasImage = Boolean(book.thumbnail || book.image || (Array.isArray(book.pictures) && book.pictures.length));
+    if (!hasImage) return 2;
+    if (landscapeIds && landscapeIds.has(book.id)) return 1;
+    return 0;
+}
+
+export const SORT_OPTIONS = Object.freeze([
+    { value: '', label: 'Recomendados' },
+    { value: 'precio-asc', label: 'Precio: menor a mayor' },
+    { value: 'precio-desc', label: 'Precio: mayor a menor' },
+]);
+const SORT_VALUES = new Set(SORT_OPTIONS.map(o => o.value).filter(Boolean));
+
+export function sortSelectHtml({ q, categoria, subcategoria, disponibilidad, orden }) {
+    const hidden = Object.entries({ q, categoria, subcategoria, disponibilidad })
+        .filter(([, v]) => v)
+        .map(([k, v]) => `<input type="hidden" name="${k}" value="${escapeHtml(v)}">`)
+        .join('');
+    const options = SORT_OPTIONS.map(o =>
+        `<option value="${o.value}"${o.value === (orden || '') ? ' selected' : ''}>${o.label}</option>`
+    ).join('');
+    return `<form class="sort-form" action="/catalogo" method="get">
+    ${hidden}
+    <label for="sort-select">Ordenar</label>
+    <select id="sort-select" name="orden" onchange="this.form.submit()">${options}</select>
+    <noscript><button type="submit">Aplicar</button></noscript>
+  </form>`;
+}
+
+function numericPrice(book) {
+    const n = Number(book.price);
+    return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Mismo patrón de caché que active-categories: opcional, nunca rompe.
+async function fetchCoverFlags(ctx) {
+    try {
+        const url = new URL('/data/cover-flags.json', ctx.request.url).toString();
+        const cache = caches.default;
+        const cacheKey = new Request(url);
+        let response = await cache.match(cacheKey);
+        if (!response) {
+            const fetched = await fetch(url);
+            if (!fetched.ok) return new Set();
+            response = new Response(fetched.body, {
+                status: fetched.status,
+                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+            });
+            if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        }
+        const data = await response.json();
+        return new Set(Array.isArray(data?.landscape) ? data.landscape : []);
+    } catch {
+        return new Set();
+    }
+}
+
 function httpsImg(url) {
     return (url || '')
         .replace('http://', 'https://')
@@ -461,12 +523,13 @@ function parsePageParam(raw) {
 // Forma canónica de una URL del catálogo: siempre el mismo orden de
 // parámetros y sin `page` cuando es la primera. Se usa para el canonical y
 // para cada enlace de paginación, así una misma vista tiene una sola URL.
-function catalogPath({ q, categoria, subcategoria, disponibilidad, page }) {
+function catalogPath({ q, categoria, subcategoria, disponibilidad, orden, page }) {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (categoria) params.set('categoria', categoria);
     if (subcategoria) params.set('subcategoria', subcategoria);
     if (disponibilidad) params.set('disponibilidad', disponibilidad);
+    if (orden) params.set('orden', orden);
     if (page && page > 1) params.set('page', String(page));
     const qs = params.toString();
     return qs ? `/catalogo?${qs}` : '/catalogo';
@@ -683,6 +746,8 @@ export async function onRequest(ctx) {
             headers: { Location: `${clean.pathname}${clean.search}` },
         });
     }
+    const rawOrden = url.searchParams.get('orden')?.trim() ?? '';
+    const orden = SORT_VALUES.has(rawOrden) ? rawOrden : '';
     const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
     const rawSubcategoria = url.searchParams.get('subcategoria')?.trim() ?? '';
 
@@ -809,12 +874,26 @@ export async function onRequest(ctx) {
         if (disponibilidad === 'encargo') return b.status === 'paused';
         return true;
     });
+    const landscapeIds = categoryFeaturesEnabled ? await fetchCoverFlags(ctx) : new Set();
     const ranked = availabilityMatches
         .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
-            if (a.rank !== b.rank) return a.rank - b.rank;
+            if (orden) {
+                // Por precio: los que no tienen precio (encargo a cotizar) al final.
+                const pa = numericPrice(a.book);
+                const pb = numericPrice(b.book);
+                if (pa === null || pb === null) {
+                    if (pa !== pb) return pa === null ? 1 : -1;
+                } else if (pa !== pb) {
+                    return orden === 'precio-asc' ? pa - pb : pb - pa;
+                }
+            } else if (a.rank !== b.rank) {
+                return a.rank - b.rank;
+            }
             const tier = commercialTier(a.book) - commercialTier(b.book);
             if (tier !== 0) return tier;
+            const cover = coverTier(a.book, landscapeIds) - coverTier(b.book, landscapeIds);
+            if (cover !== 0) return cover;
             // CATALOGO-PAGINACION-1: desempate final por id. Sin esto el orden
             // de los empatados depende de la posición en el JSON de R2, que el
             // cron regenera a diario: al paginar, un mismo libro podría
@@ -1001,7 +1080,9 @@ export async function onRequest(ctx) {
     // Sin filtro: página de índice, indexable, con metadatos/JSON-LD ricos
     // para SEO (comportamiento previo). Con filtro: noindex, evita
     // contenido delgado/duplicado en resultados de búsqueda/categoría.
-    const isIndex = !hasFilter;
+    // Un orden distinto al recomendado es otra vista de la misma lista: no se
+    // indexa y canonicaliza al catálogo limpio.
+    const isIndex = !hasFilter && !orden;
     const metaDescription = isIndex
         ? page > 1
             ? `Página ${page} de ${totalPages} del catálogo de Amado Libros: títulos disponibles y por encargo, con envíos a todo Uruguay.`
@@ -1011,7 +1092,7 @@ export async function onRequest(ctx) {
     // que el crawler descubra las fichas enlazadas desde los resultados.
     const robotsMeta = isIndex
         ? 'index, follow'
-        : (rawQ || disponibilidad) ? 'noindex, follow' : 'noindex';
+        : (rawQ || disponibilidad || orden) ? 'noindex, follow' : 'noindex';
     // La secuencia limpia /catalogo?page=N tiene canonical propio. Las vistas
     // con búsqueda/categoría/subcategoría siguen noindex y canonicalizan al
     // catálogo limpio: no abrimos un segundo espacio SEO de filtros.
@@ -1023,7 +1104,7 @@ export async function onRequest(ctx) {
         totalPages,
         showCatalogShortcuts: isIndex,
         hrefFor: target => catalogPath({
-            q: rawQ, categoria, subcategoria, disponibilidad, page: target,
+            q: rawQ, categoria, subcategoria, disponibilidad, orden, page: target,
         }),
     });
     const jsonLd = isIndex
@@ -1084,6 +1165,11 @@ export async function onRequest(ctx) {
     @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
     .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
+    .results-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem 1rem;margin-bottom:.5rem}
+    .results-bar .sub{margin-bottom:0}
+    .sort-form{display:flex;align-items:center;gap:.45rem;font-size:.84rem;color:#4a3d30}
+    .sort-form label{font-weight:700}
+    .sort-form select{min-height:40px;padding:.4rem .6rem;border:1px solid #d1c8be;border-radius:.5rem;background:#fff;font-size:.84rem;color:#1e293b}
     .grid{display:grid;gap:1rem;
           grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
     @media(min-width:500px){.grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
@@ -1157,7 +1243,10 @@ ${siteHeaderHtml({ current: 'libros', showSearch: false })}
   ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
   <h1>${heading}</h1>
-  <p class="sub">${subText}</p>
+  <div class="results-bar">
+    <p class="sub">${subText}</p>
+    ${totalResults > 1 ? sortSelectHtml({ q: rawQ, categoria, subcategoria, disponibilidad, orden }) : ''}
+  </div>
   ${totalResults > 0
     ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
     : `<div class="empty">${emptyMessage}</div>`

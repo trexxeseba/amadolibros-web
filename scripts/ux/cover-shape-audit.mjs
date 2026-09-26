@@ -57,7 +57,12 @@ export function imageSize(buf) {
 function firstImage(item) {
   const pic = Array.isArray(item.pictures) && item.pictures[0];
   const url = (pic && (pic.secure_url || pic.url)) || item.thumbnail || item.image || '';
-  return String(url).replace(/^http:/, 'https:');
+  // Las miniaturas «-I» vienen rellenadas a un cuadrado; el catálogo muestra
+  // la original «-O» (ver httpsImg en functions/catalogo.js), que conserva la
+  // proporción real.
+  return String(url)
+    .replace(/^http:/, 'https:')
+    .replace(/-I\.(jpg|jpeg|png|webp)(?=($|\?))/i, '-O.$1');
 }
 
 async function measure(url) {
@@ -101,6 +106,10 @@ async function main() {
     horizontales: landscape.length,
     horizontales_disponibles: landscape.filter(r => r.item.status !== 'paused').length,
     umbral_ancho_sobre_alto: LANDSCAPE_RATIO,
+    proporciones: Object.fromEntries(
+      [['vertical (<0.9)', r => r < 0.9], ['casi cuadrada (0.9–1.15)', r => r >= 0.9 && r <= LANDSCAPE_RATIO], ['horizontal (>1.15)', r => r > LANDSCAPE_RATIO]]
+        .map(([label, test]) => [label, results.filter(x => x.size && test(x.size.w / x.size.h)).length]),
+    ),
   };
   writeFileSync('artifacts/covers/resumen.json', `${JSON.stringify(summary, null, 2)}\n`);
   mkdirSync(path.join('astro-front', 'public', 'data'), { recursive: true });
