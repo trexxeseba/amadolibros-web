@@ -15,6 +15,7 @@ import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_QW3A2_LOTE_01 } from './
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_01 } from './book-enrichment-facts-b12-lote-01.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_02 } from './book-enrichment-facts-b12-lote-02.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_04 } from './book-enrichment-facts-b12-lote-04.js';
+import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_05 } from './book-enrichment-facts-b12-lote-05.js';
 import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
@@ -629,6 +630,22 @@ for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_04) {
     throw new Error(`ISBN duplicado dentro del lote B12 04: ${record.isbn}.`);
   }
   b12Lote04Seen.add(record.isbn);
+  ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
+}
+
+// Lote B12 05: segunda corrida diaria de Google Books (905 ISBN ya
+// consultados en total). Sólo 2 ediciones pasan la regla de publicación:
+// Google Books encuentra el libro pero rara vez aporta la segunda familia de
+// fuente que falta, y Open Library respondió HTTP 404 a todo ese día.
+const b12Lote05Seen = new Set();
+for (const record of BOOK_FACT_ENRICHMENTS_B12_LOTE_05) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Enriquecimiento factual inválido para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  if (b12Lote05Seen.has(record.isbn)) {
+    throw new Error(`ISBN duplicado dentro del lote B12 05: ${record.isbn}.`);
+  }
+  b12Lote05Seen.add(record.isbn);
   ENRICHMENT_BY_ISBN.set(record.isbn, mergeFactEnrichment(ENRICHMENT_BY_ISBN.get(record.isbn), record));
 }
 

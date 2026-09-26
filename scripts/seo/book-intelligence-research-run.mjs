@@ -24,7 +24,7 @@ import {
   chunkOpenLibraryPlan,
   emptySourceCache,
   fetchGoogleBooksEvidence,
-  fetchOpenLibraryBatchEvidence,
+  fetchOpenLibraryIsbnEvidence,
   mergeSourceCache,
   planBookSourceResearch,
 } from './book-intelligence-sources.mjs';
@@ -492,14 +492,19 @@ export async function runResearch({
         if (googleDelayMs > 0) await new Promise(resolve => setTimeout(resolve, googleDelayMs));
       }
     }),
+    // Open Library se consulta ISBN por ISBN (su API por lotes ya no existe):
+    // un fallo queda en ese ISBN y no arrastra al resto del bloque.
     mapWithConcurrency(chunkOpenLibraryPlan(plan), openLibraryConcurrency, async chunk => {
-      const isbns = chunk.map(entry => entry.isbn);
-      try {
-        const records = await fetchOpenLibraryBatchEvidence(isbns, { contact: openLibraryContact });
-        return isbns.map(isbn => ({ isbn, ok: true, records: records.filter(record => record.isbn === isbn) }));
-      } catch (error) {
-        return isbns.map(isbn => ({ isbn, ok: false, records: [], error: error?.message || String(error) }));
+      const attempts = [];
+      for (const { isbn } of chunk) {
+        try {
+          const records = await fetchOpenLibraryIsbnEvidence(isbn, { contact: openLibraryContact });
+          attempts.push({ isbn, ok: true, records });
+        } catch (error) {
+          attempts.push({ isbn, ok: false, records: [], error: error?.message || String(error) });
+        }
       }
+      return attempts;
     }).then(attempts => attempts.flat()),
     mapWithConcurrency(plan.bne, bneConcurrency, async entry => {
       try {
