@@ -869,6 +869,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     /* AL-WEB: Mercado Libre queda tercero y subordinado — sin relleno
        amarillo dominante, fuente más chica y peso menor que carrito/WhatsApp.
        Sigue siendo un enlace funcional, solo pierde peso visual. */
+    .buy-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;
+             justify-content:space-between;gap:.75rem;padding:.6rem .9rem calc(.6rem + env(safe-area-inset-bottom,0px));
+             background:#fffcf6;border-top:1px solid #e6dccf;box-shadow:0 -6px 20px rgba(24,18,14,.12)}
+    .buy-bar[hidden]{display:none}
+    .buy-bar-price{display:flex;flex-direction:column;line-height:1.2}
+    .buy-bar-price strong{font-size:1.1rem;color:#18120e}
+    .buy-bar-price small{font-size:.72rem;color:#a94e3d;font-weight:700}
+    .buy-bar-btn{flex:0 0 auto;min-height:46px;padding:.7rem 1.1rem;border:0;border-radius:.6rem;
+                 background:#b4442a;color:#fff;font:inherit;font-size:.95rem;font-weight:800;cursor:pointer}
+    body.has-buy-bar{padding-bottom:78px}
+    body.has-buy-bar .wa-float{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
     .btn-ml{background:#fff;color:#7a6a1f;border:1.5px solid #e8dfa0;
             font-size:.82rem;font-weight:600;padding:.65rem 1.25rem}
     .btn-ml:hover{background:#fdf9e8;opacity:1}
@@ -968,8 +979,32 @@ ${siteHeaderHtml()}
 }());<\/script>
 
 ${footerHtml(undefined, canonicalUrl)}
+${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" hidden>
+  <div class="buy-bar-price"><strong>$${priceUY}</strong><small>o $${transferPrice} por transferencia</small></div>
+  <button type="button" class="buy-bar-btn" data-buy-bar>Agregar al carrito</button>
+</div>` : ''}
 ${waFloatHtml(waMessage, canonicalUrl)}
 
+<script>(function(){
+  // Barra de compra fija en el celular: aparece cuando el botón principal
+  // sale de la pantalla y lo dispara (misma lógica de carrito, sin duplicarla).
+  var bar=document.getElementById('buy-bar');
+  var main=document.querySelector('button.btn-cart[data-id]');
+  if(!bar||!main||!('IntersectionObserver' in window))return;
+  var mq=window.matchMedia('(max-width:760px)');
+  var mainVisible=true;
+  function sync(){
+    var show=mq.matches&&!mainVisible;
+    bar.hidden=!show;
+    document.body.classList.toggle('has-buy-bar',show);
+  }
+  new IntersectionObserver(function(entries){
+    mainVisible=entries[0].isIntersecting;
+    sync();
+  }).observe(main);
+  if(mq.addEventListener)mq.addEventListener('change',sync);
+  bar.querySelector('[data-buy-bar]').addEventListener('click',function(){main.click();});
+})();</script>
 <script>(function(){
   function updateBadge(n){
     var badge=document.getElementById('ssr-cart-badge');
