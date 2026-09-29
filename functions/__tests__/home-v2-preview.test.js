@@ -47,7 +47,9 @@ test('HOME-V2: el hero combina catálogo, búsqueda humana y movimiento accesibl
 test('HOME-V2: temas, tapas grandes, Amado Lee y servicio humano forman el recorrido', () => {
   assert.match(topics, /Todo empieza por una curiosidad\./);
   assert.match(topics, /Literatura y ficción/);
-  assert.match(topics, /Libros agotados/);
+  assert.match(topics, /Desarrollo personal/);
+  assert.match(topics, /href="\/libros-agotados-importados-uruguay">Pedir una búsqueda/);
+  assert.match(topics, /href="\/temas">Ver todos los temas/);
   assert.match(shelf, /Tapas que piden que las mires\./);
   assert.match(shelf, /responsiveBookCover/);
   assert.match(ideas, /Amado Lee/);

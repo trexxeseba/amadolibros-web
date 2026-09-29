@@ -17,6 +17,7 @@ import { findPreviewCover } from '../_shared/preview-cover.js';
  */
 
 import { slugify } from '../_shared/slug.js';
+import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/site-header.js';
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
@@ -766,67 +767,34 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-         background:#f8fafc;color:#1e293b;line-height:1.6}
-    a{color:#3b82f6}
-    .product-header{background:#1e293b;color:white;padding:.65rem 1.25rem;
-                    position:sticky;top:0;z-index:50;
-                    box-shadow:0 2px 10px rgba(15,23,42,.18)}
-    .header-inner{width:100%;max-width:1180px;margin:0 auto;display:grid;
-                  grid-template-columns:auto minmax(260px,680px) auto;
-                  align-items:center;gap:1rem}
-    .brand-link{display:flex;align-items:center;gap:.65rem;min-width:max-content;
-                color:white;text-decoration:none}
-    .brand-logo{width:44px;height:44px;display:block;object-fit:contain;
-                border-radius:50%;background:#fff;flex-shrink:0}
-    .brand-copy{display:flex;flex-direction:column;line-height:1.15}
-    .brand-name{font-size:1.05rem;font-weight:800;color:#fff}
-    .brand-tagline{color:#94a3b8;font-size:.72rem;margin-top:.2rem}
-    .header-search{width:100%;height:44px;display:flex;align-items:stretch;
-                   background:#fff;border:1px solid rgba(255,255,255,.2);
-                   border-radius:999px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.16)}
-    .header-search:focus-within{outline:3px solid rgba(228,153,130,.45);outline-offset:2px}
-    .header-search input{min-width:0;flex:1;border:0;background:#fff;color:#1e293b;
-                         padding:0 .25rem 0 1rem;font:inherit;font-size:.9rem;outline:0}
-    .header-search input::placeholder{color:#64748b}
-    .header-search button{min-width:88px;border:0;background:#e49982;color:#fff;
-                          padding:0 1rem;font:inherit;font-size:.85rem;font-weight:800;
-                          cursor:pointer}
-    .header-search button:hover{background:#d98972}
-    .header-search button:focus-visible{outline:3px solid #fff;outline-offset:-4px}
-    .ssr-cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;
-                   min-width:44px;min-height:44px;padding:.4rem .6rem;
-                   color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18);
-                   border-radius:999px;background:rgba(255,255,255,.08);
-                   text-decoration:none;flex-shrink:0;
-                   transition:background .15s,border-color .15s,color .15s}
-    .ssr-cart-link:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:#fff}
-    .ssr-cart-badge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;
-                    padding:0 4px;border-radius:999px;background:#e49982;color:#fff;
-                    font-size:.625rem;font-weight:700;line-height:17px;
-                    text-align:center;pointer-events:none}
-    @media(max-width:760px){
-      .product-header{padding:.55rem .85rem}
-      .header-inner{grid-template-columns:minmax(0,1fr) auto;gap:.55rem .75rem}
-      .brand-logo{width:38px;height:38px}
-      .brand-name{font-size:1rem}
-      .brand-tagline{display:none}
-      .header-search{grid-column:1/-1;height:42px}
-      .header-search input{font-size:.86rem;padding-left:.9rem}
-      .header-search button{min-width:76px;padding:0 .8rem;font-size:.8rem}
-    }
+         background:#faf7f2;color:#1e293b;line-height:1.6}
+    a{color:#a94e3d}
+    ${SITE_HEADER_STYLES}
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
-    nav a{color:#3b82f6;text-decoration:none}
+    nav a{color:#a94e3d;text-decoration:none}
     main{max-width:860px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:1fr;gap:1.75rem}
     @media(min-width:640px){main{grid-template-columns:280px 1fr}}
+    /* Celular: la tapa ocupaba toda la primera pantalla y el precio quedaba
+       dos pantallas abajo. Tapa centrada y contenida, miniaturas en una fila. */
+    @media(max-width:639px){
+      main{margin-top:1rem;gap:1.1rem}
+      .cover-main{width:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
+      .cover-btn{text-align:center}
+      main .thumbs{max-width:none;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
+                   scrollbar-width:none;padding-bottom:.2rem}
+      main .thumbs::-webkit-scrollbar{display:none}
+      main .thumb-btn{width:48px;height:48px}
+      main .thumb-btn img{width:48px;height:48px}
+    }
     .cover-main{width:100%;max-width:260px;border-radius:.5rem;
                 box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
     .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
     .cover-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;border-radius:.5rem}
     .thumbs{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;max-width:260px}
     .thumb-btn{background:none;border:1px solid #e2e8f0;border-radius:.35rem;padding:0;cursor:pointer;overflow:hidden;width:56px;height:56px;flex-shrink:0}
-    .thumb-btn[aria-current="true"]{border:2px solid #3b82f6}
+    .thumb-btn[aria-current="true"]{border:2px solid #18120e}
     .thumb-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
     .thumb-btn img{width:56px;height:56px;object-fit:cover;display:block;background:white}
     .lb{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem}
@@ -890,13 +858,30 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
     .btn:hover{opacity:.85}
-    .btn-wa{background:#25d366;color:white}
-    .btn-cart{background:#e49982;color:#fff;border:none;font-family:inherit;
-              cursor:pointer;width:100%}
+    /* Jerarquía de compra: el carrito es la acción principal (sólido, alto
+       contraste); WhatsApp acompaña con contorno verde; Mercado Libre queda
+       tercero. Antes el carrito salmón claro parecía deshabilitado al lado
+       del verde de WhatsApp. */
+    .btn-wa{background:#fff;color:#117a37;border:1.5px solid #25d366}
+    .btn-wa:hover{background:#effaf3;opacity:1}
+    .btn-cart{background:#b4442a;color:#fff;border:none;font-family:inherit;
+              cursor:pointer;width:100%;font-size:1.02rem;padding:1rem 1.25rem}
+    .btn-cart:hover{background:#9a3a23;opacity:1}
     .btn-cart:disabled{opacity:.7;cursor:default}
     /* AL-WEB: Mercado Libre queda tercero y subordinado — sin relleno
        amarillo dominante, fuente más chica y peso menor que carrito/WhatsApp.
        Sigue siendo un enlace funcional, solo pierde peso visual. */
+    .buy-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;
+             justify-content:space-between;gap:.75rem;padding:.6rem .9rem calc(.6rem + env(safe-area-inset-bottom,0px));
+             background:#fffcf6;border-top:1px solid #e6dccf;box-shadow:0 -6px 20px rgba(24,18,14,.12)}
+    .buy-bar[hidden]{display:none}
+    .buy-bar-price{display:flex;flex-direction:column;line-height:1.2}
+    .buy-bar-price strong{font-size:1.1rem;color:#18120e}
+    .buy-bar-price small{font-size:.72rem;color:#a94e3d;font-weight:700}
+    .buy-bar-btn{flex:0 0 auto;min-height:46px;padding:.7rem 1.1rem;border:0;border-radius:.6rem;
+                 background:#b4442a;color:#fff;font:inherit;font-size:.95rem;font-weight:800;cursor:pointer}
+    body.has-buy-bar{padding-bottom:78px}
+    body.has-buy-bar .wa-float{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
     .btn-ml{background:#fff;color:#7a6a1f;border:1.5px solid #e8dfa0;
             font-size:.82rem;font-weight:600;padding:.65rem 1.25rem}
     .btn-ml:hover{background:#fdf9e8;opacity:1}
@@ -956,33 +941,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     ${FOOTER_STYLES}
     ${WA_FLOAT_STYLES}
   </style>
+  ${SITE_FONTS_HEAD}
 </head>
 <body>
 
-<header class="product-header">
-  <div class="header-inner">
-    <a href="/" class="brand-link" aria-label="Amado Libros — ir al inicio">
-      <img src="/images/logo-amado.webp" alt="Amado Libros" class="brand-logo" width="44" height="44" fetchpriority="high">
-      <span class="brand-copy">
-        <span class="brand-name">AMADO LIBROS</span>
-        <span class="brand-tagline">Tu librería para libros difíciles de ubicar</span>
-      </span>
-    </a>
-    <form class="header-search" action="/catalogo" method="get" role="search">
-      <input type="search" name="q" placeholder="Buscar por título, autor, temática o ISBN"
-             aria-label="Buscar por título, autor, temática o ISBN" autocomplete="off">
-      <button type="submit" aria-label="Buscar libros">Buscar</button>
-    </form>
-    <a href="/carrito" id="ssr-cart-link" class="ssr-cart-link" aria-label="Ver carrito">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-        <path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/>
-      </svg>
-      <span id="ssr-cart-badge" class="ssr-cart-badge" hidden aria-hidden="true">0</span>
-    </a>
-  </div>
-</header>
+${siteHeaderHtml()}
 
 <nav>
   <a href="/">Inicio</a> ›
@@ -1018,8 +981,32 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 }());<\/script>
 
 ${footerHtml(undefined, canonicalUrl)}
+${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" hidden>
+  <div class="buy-bar-price"><strong>$${priceUY}</strong><small>o $${transferPrice} por transferencia</small></div>
+  <button type="button" class="buy-bar-btn" data-buy-bar>Agregar al carrito</button>
+</div>` : ''}
 ${waFloatHtml(waMessage, canonicalUrl)}
 
+<script>(function(){
+  // Barra de compra fija en el celular: aparece cuando el botón principal
+  // sale de la pantalla y lo dispara (misma lógica de carrito, sin duplicarla).
+  var bar=document.getElementById('buy-bar');
+  var main=document.querySelector('button.btn-cart[data-id]');
+  if(!bar||!main||!('IntersectionObserver' in window))return;
+  var mq=window.matchMedia('(max-width:760px)');
+  var mainVisible=true;
+  function sync(){
+    var show=mq.matches&&!mainVisible;
+    bar.hidden=!show;
+    document.body.classList.toggle('has-buy-bar',show);
+  }
+  new IntersectionObserver(function(entries){
+    mainVisible=entries[0].isIntersecting;
+    sync();
+  }).observe(main);
+  if(mq.addEventListener)mq.addEventListener('change',sync);
+  bar.querySelector('[data-buy-bar]').addEventListener('click',function(){main.click();});
+})();</script>
 <script>(function(){
   function updateBadge(n){
     var badge=document.getElementById('ssr-cart-badge');

@@ -6,6 +6,8 @@ on:
     paths:
       - 'worker-sync/**'
       - 'functions/_shared/cover-public-index.js'
+      # El sync genera la cohorte de fichas ampliadas con este módulo.
+      - 'functions/_shared/showcase-ranking.js'
       - '.github/workflows/deploy-worker-sync.yml'
   workflow_dispatch:
     inputs:

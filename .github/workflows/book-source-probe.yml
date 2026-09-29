@@ -40,3 +40,20 @@ jobs:
       - name: Sondear alcance real
         continue-on-error: true
         run: node scripts/seo/book-intelligence-source-probe.mjs
+
+      # Open Library respondió HTTP 404 a las 1.382 consultas del 2026-09-25
+      # (el 2026-09-06 contestaba bien). Se prueban los tres endpoints por
+      # ISBN para saber cuál sigue vivo desde un runner de GitHub.
+      - name: Sondear Open Library
+        continue-on-error: true
+        run: |
+          UA='AmadoLibros-BookIntelligence/1.0 (https://www.amadolibros.com)'
+          for url in \
+            'https://openlibrary.org/api/books?bibkeys=ISBN:9788449331817,ISBN:9780140449136&jscmd=data&format=json' \
+            'https://openlibrary.org/api/books?bibkeys=ISBN:9788449331817&jscmd=data&format=json' \
+            'https://openlibrary.org/isbn/9780140449136.json' \
+            'https://openlibrary.org/search.json?isbn=9780140449136&fields=key,title,publisher,number_of_pages_median'; do
+            code=$(curl -sS -A "$UA" -L -o body.txt -w '%{http_code}' "$url" || echo ERR)
+            echo "$code  $url"
+            head -c 300 body.txt; echo; echo
+          done

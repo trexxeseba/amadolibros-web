@@ -148,7 +148,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             <div id="shipping-fields" class="shipping-fields" hidden>
               <div class="form-field">
                 <label for="delivery-address" class="form-label">Dirección <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="text" id="delivery-address" class="form-input"
+                <input type="text" id="delivery-address" name="shipping-address" class="form-input"
                   placeholder="Ej: Av. Italia 2000, Apto 3"
                   autocomplete="shipping street-address"
                   aria-describedby="err-delivery-address">
@@ -156,15 +156,15 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
               </div>
               <div class="form-field">
                 <label for="delivery-barrio" class="form-label">Barrio / Localidad <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="text" id="delivery-barrio" class="form-input"
+                <input type="text" id="delivery-barrio" name="shipping-locality" class="form-input"
                   placeholder="Ej: Pocitos, Centro, Malvín"
-                  autocomplete="shipping address-level3"
+                  autocomplete="shipping address-level2"
                   aria-describedby="err-delivery-barrio">
                 <span class="field-error" id="err-delivery-barrio" role="alert" hidden></span>
               </div>
               <div class="form-field">
                 <label for="delivery-departamento" class="form-label">Departamento <span class="form-req" aria-hidden="true">*</span></label>
-                <select id="delivery-departamento" class="form-input"
+                <select id="delivery-departamento" name="shipping-department" class="form-input"
                   autocomplete="shipping address-level1"
                   aria-describedby="err-delivery-departamento">
                   <option value="">Seleccioná tu departamento</option>
@@ -205,13 +205,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
             <div class="form-grid">
               <div class="form-field">
                 <label for="buyer-name" class="form-label">Nombre <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="text" id="buyer-name" class="form-input" autocomplete="name"
+                <input type="text" id="buyer-name" name="name" class="form-input" autocomplete="name"
                   aria-describedby="err-buyer-name">
                 <span class="field-error" id="err-buyer-name" role="alert" hidden></span>
               </div>
               <div class="form-field">
                 <label for="buyer-phone" class="form-label">WhatsApp / Teléfono <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="tel" id="buyer-phone" class="form-input"
+                <input type="tel" id="buyer-phone" name="tel" class="form-input"
                   placeholder="Ej: 099 123 456"
                   autocomplete="tel"
                   inputmode="tel"
@@ -221,7 +221,7 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
               </div>
               <div class="form-field">
                 <label for="buyer-email" class="form-label">Correo electrónico <span class="form-req" aria-hidden="true">*</span></label>
-                <input type="email" id="buyer-email" class="form-input"
+                <input type="email" id="buyer-email" name="email" class="form-input"
                   placeholder="tu@email.com"
                   autocomplete="email"
                   inputmode="email"
