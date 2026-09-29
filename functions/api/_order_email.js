@@ -242,6 +242,61 @@ function createTrackedSender({ fetchFn = globalThis.fetch, sleep = ms => new Pro
   };
 }
 
+/**
+ * Manda UN correo ya armado, con la misma red de seguridad que usan los
+ * correos del checkout: el envío se reclama en `order_events` con un id fijo,
+ * así que dos pedidos simultáneos no lo mandan dos veces, un reintento sabe
+ * que ya salió, y el intento queda escrito en el historial que muestra el
+ * panel — salga bien o salga mal.
+ *
+ * A diferencia de `createOrderEmailService`, acá el contenido lo arma quien
+ * llama. Se usa para los avisos que dispara una persona desde el panel, que
+ * no dependen del medio de pago ni del estado del checkout.
+ */
+export function createTrackedEmailSender({
+  // `fetchFn` se resuelve al mandar, no al construir: este sender se crea
+  // cuando se importa el módulo y ahí todavía no hay entorno de pedido.
+  fetchFn = null,
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  timeoutMs = REQUEST_TIMEOUT_MS,
+} = {}) {
+  return async function sendTrackedEmail({ db, env, orderId, to, email, eventId, eventType, now }) {
+    const config = emailConfig(env);
+    const recipient = cleanString(to).toLowerCase();
+    if (!config) return { ok: false, skipped: true, code: 'EMAIL_CONFIG_MISSING' };
+    if (!recipient) return { ok: false, skipped: true, code: 'RECIPIENT_MISSING' };
+
+    const claimed = await claim(db, eventId, orderId, eventType, now);
+    // `already_sent` no es un error: es la respuesta correcta a "avisale otra
+    // vez". El cliente no recibe dos correos iguales por un doble clic.
+    if (!claimed.ok) return { ok: true, skipped: true, reason: claimed.reason };
+
+    let result;
+    for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
+      result = await postEmail({
+        config, to: [recipient], email, idempotencyKey: eventId,
+        fetchFn: fetchFn || globalThis.fetch, timeoutMs,
+      });
+      if (result.ok || !result.retryable || attempt === MAX_SEND_ATTEMPTS) break;
+      await sleep(250 * (2 ** (attempt - 1)));
+    }
+
+    const state = result?.ok
+      ? {
+        status: 'sent', attempt: claimed.attempt, attempted_at: now.toISOString(),
+        sent_at: now.toISOString(), provider: 'resend', provider_id: result.providerId,
+      }
+      : {
+        status: 'failed', attempt: claimed.attempt, attempted_at: now.toISOString(),
+        failure_code: cleanString(result?.code) || 'RESEND_ERROR',
+      };
+    await updateClaim(db, eventId, claimed.payload, state).catch(() => {});
+    return result?.ok
+      ? { ok: true, providerId: result.providerId }
+      : { ok: false, code: state.failure_code };
+  };
+}
+
 export function createOrderEmailService(options = {}) {
   const sendTracked = createTrackedSender(options);
   return {

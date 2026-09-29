@@ -6,8 +6,13 @@ import {
   aggregateDynamicRemarketingUy,
   buildDiagnosis,
   countFeedItems,
+  extractFeedIds,
+  listProductsByIssue,
+  summarizeAllDestinations,
   summarizeDataSource,
+  summarizeFeedExclusions,
   summarizeProducts,
+  summarizeSourceOverlap,
 } from '../../scripts/commerce/merchant-readonly-audit.mjs';
 
 test('cuenta únicamente ofertas item del feed', () => {
@@ -123,4 +128,260 @@ test('la implementación no contiene llamadas de escritura a Merchant API', () =
   assert.doesNotMatch(source, /productInputs:insert|:fetch|triggeraction/i);
   assert.match(source, /merchantapi\.googleapis\.com/);
   assert.doesNotMatch(source, /\/v1beta\//);
+});
+
+test('lista los productos de cada causa, con tope y total real', () => {
+  const products = [
+    {
+      offerId: 'MLU111',
+      attributes: { title: 'Libro de duelo', link: 'https://www.amadolibros.com/libro/MLU111/duelo?utm=x' },
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'personal_hardships_policy_violation',
+          reportingContext: 'DISPLAY_ADS',
+          applicableCountries: ['UY'],
+        }],
+      },
+    },
+    {
+      offerId: 'MLU222',
+      attributes: { title: 'Otro de duelo', link: 'https://usuario:clave@www.amadolibros.com/libro/MLU222/otro' },
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'personal_hardships_policy_violation',
+          reportingContext: 'DISPLAY_ADS',
+          applicableCountries: ['UY'],
+        }],
+      },
+    },
+    {
+      offerId: 'MLU333',
+      attributes: { title: 'Fuera del destino' },
+      dataSource: 'accounts/533/dataSources/2',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'personal_hardships_policy_violation',
+          reportingContext: 'SHOPPING_ADS',
+          applicableCountries: ['UY'],
+        }],
+      },
+    },
+    {
+      offerId: 'MLU444',
+      attributes: { title: 'Fuera del país' },
+      dataSource: 'accounts/533/dataSources/2',
+      productStatus: {
+        itemLevelIssues: [{
+          code: 'ebooks_policy_violation',
+          reportingContext: 'DISPLAY_ADS',
+          applicableCountries: ['AR'],
+        }],
+      },
+    },
+  ];
+
+  const grupos = listProductsByIssue(products, { limitPerIssue: 1 });
+
+  assert.equal(grupos.length, 1, 'sólo la causa que aplica al destino y al país');
+  const duelo = grupos[0];
+  assert.equal(duelo.code, 'personal_hardships_policy_violation');
+  assert.equal(duelo.total, 2, 'el total cuenta todos, no sólo la muestra');
+  assert.equal(duelo.sample.length, 1, 'la muestra respeta el tope');
+  assert.equal(duelo.sample[0].offerId, 'MLU111');
+  assert.equal(duelo.sample[0].link, 'https://www.amadolibros.com/libro/MLU111/duelo');
+});
+
+test('el listado por causa nunca imprime credenciales del link', () => {
+  const grupos = listProductsByIssue([
+    {
+      offerId: 'MLU999',
+      attributes: { title: 'Con credenciales', link: 'https://usuario:clave@example.com/x?token=secreto' },
+      productStatus: {
+        itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+  ]);
+
+  const serializado = JSON.stringify(grupos);
+  assert.equal(serializado.includes('clave'), false);
+  assert.equal(serializado.includes('secreto'), false);
+  assert.equal(serializado.includes('usuario'), false);
+});
+
+test('extrae los g:id que viajan en el feed', () => {
+  const ids = extractFeedIds('<item><g:id>MLU1</g:id></item><item><g:id> MLU2 </g:id></item><item><g:id></g:id></item>');
+  assert.deepEqual([...ids].sort(), ['MLU1', 'MLU2']);
+});
+
+test('cruza cada rechazo contra el feed y el catálogo propios', () => {
+  const products = [
+    {
+      offerId: 'MLU_EN_FEED',
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+    {
+      offerId: 'MLU_FANTASMA',
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{ code: 'ebooks_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+    {
+      offerId: 'MLU_OTRA_CAUSA',
+      dataSource: 'accounts/533/dataSources/1',
+      productStatus: {
+        itemLevelIssues: [{ code: 'illegal_drugs_policy_violation', reportingContext: 'DISPLAY_ADS' }],
+      },
+    },
+  ];
+
+  const [grupo, ...resto] = listProductsByIssue(products, {
+    codes: ['ebooks_policy_violation'],
+    feedIds: new Set(['MLU_EN_FEED']),
+    catalog: new Map([['MLU_EN_FEED', { title: 'Un libro de papel', status: 'active' }]]),
+  });
+
+  assert.equal(resto.length, 0, 'el filtro por código deja fuera las demás causas');
+  assert.equal(grupo.total, 2);
+  assert.equal(grupo.sample[0].enNuestroFeed, true);
+  assert.equal(grupo.sample[0].title, 'Un libro de papel');
+  assert.equal(grupo.sample[0].estadoEnCatalogo, 'active');
+  assert.equal(grupo.sample[1].enNuestroFeed, false, 'lo que Merchant conoce y el feed no tiene');
+  assert.equal(grupo.sample[1].estadoEnCatalogo, 'no está');
+});
+
+test('resume todos los destinos, no sólo remarketing', () => {
+  const filas = summarizeAllDestinations([
+    { reportingContext: 'SHOPPING_ADS', country: 'UY', stats: { activeCount: 3000, disapprovedCount: 40 } },
+    { reportingContext: 'SHOPPING_ADS', country: 'UY', stats: { activeCount: 100, pendingCount: 5 } },
+    { reportingContext: 'DISPLAY_ADS', country: 'UY', stats: { activeCount: 3370, disapprovedCount: 321 } },
+    { reportingContext: 'FREE_LISTINGS', country: 'AR', stats: { activeCount: 12, expiringCount: 2 } },
+  ]);
+
+  assert.equal(filas.length, 3, 'una fila por destino y país, sumando repetidas');
+  assert.equal(filas[0].reportingContext, 'DISPLAY_ADS', 'ordena por activos');
+  assert.equal(filas[0].disapproved, 321);
+
+  const shopping = filas.find(f => f.reportingContext === 'SHOPPING_ADS');
+  assert.equal(shopping.active, 3100, 'suma las dos filas del mismo destino');
+  assert.equal(shopping.pending, 5);
+  assert.equal(shopping.disapproved, 40);
+
+  const gratuitas = filas.find(f => f.reportingContext === 'FREE_LISTINGS');
+  assert.equal(gratuitas.country, 'AR', 'no descarta otros países');
+  assert.equal(gratuitas.expiring, 2);
+});
+
+// La pregunta que decide si conviene apagar el AUTOFEED: ¿publica lo mismo que
+// el feed (duplicados con datos ajenos) o justo lo que el feed excluyó?
+test('el solapamiento por fuente separa duplicados de excluidos, y activos de muertos', () => {
+  const productos = [
+    { offerId: 'MLU_FEED', dataSource: 'src/feed' },
+    { offerId: 'MLU_FEED', dataSource: 'src/auto' },          // duplicado: Google lo tiene dos veces
+    { offerId: 'MLU_EXCLUIDO_ACTIVO', dataSource: 'src/auto' }, // activo, pero fuera del feed
+    { offerId: 'MLU_PAUSADO', dataSource: 'src/auto' },
+    { offerId: 'MLU_FANTASMA', dataSource: 'src/auto' },       // Merchant lo conoce, el catálogo ya no
+  ];
+  const filas = summarizeSourceOverlap(productos, {
+    feedIds: new Set(['MLU_FEED']),
+    catalog: new Map([
+      ['MLU_FEED', { status: 'active' }],
+      ['MLU_EXCLUIDO_ACTIVO', { status: 'active' }],
+      ['MLU_PAUSADO', { status: 'paused' }],
+    ]),
+  });
+
+  const auto = filas.find(f => f.dataSource === 'src/auto');
+  assert.equal(auto.total, 4);
+  assert.equal(auto.enFeed, 1, 'el duplicado cuenta como solapado');
+  assert.equal(auto.fueraDelFeed, 3);
+  assert.equal(auto.fueraActivos, 1);
+  assert.equal(auto.fueraPausados, 1);
+  assert.equal(auto.fueraSinCatalogo, 1);
+
+  const feed = filas.find(f => f.dataSource === 'src/feed');
+  assert.equal(feed.enFeed, 1);
+  assert.equal(feed.fueraDelFeed, 0);
+});
+
+test('sin feed ni catálogo el solapamiento no inventa: todo queda como fuera del feed y sin catálogo', () => {
+  const [fila] = summarizeSourceOverlap([{ offerId: 'X', dataSource: 's' }]);
+  assert.equal(fila.enFeed, 0);
+  assert.equal(fila.fueraDelFeed, 1);
+  assert.equal(fila.fueraSinCatalogo, 1);
+});
+
+// catalog.json trae sólo activos; los pausados viven en otro índice. Un pausado
+// no es un fantasma: es inventario por encargo, y hay que contarlo aparte.
+test('el índice de pausados separa «por encargo» de «desaparecido»', () => {
+  const [fila] = summarizeSourceOverlap(
+    [
+      { offerId: 'MLU_PAUSADO_EN_INDICE', dataSource: 'auto' },
+      { offerId: 'MLU_FANTASMA', dataSource: 'auto' },
+    ],
+    { feedIds: new Set(), catalog: new Map(), pausedIds: new Set(['MLU_PAUSADO_EN_INDICE']) },
+  );
+  assert.equal(fila.fueraPausados, 1);
+  assert.equal(fila.fueraSinCatalogo, 1);
+});
+
+test('el solapamiento guarda hasta cinco ids fantasma para preguntarle a la web', () => {
+  const productos = Array.from({ length: 8 }, (_, i) => ({ offerId: `MLU_F${i}`, dataSource: 'auto' }));
+  const [fila] = summarizeSourceOverlap(productos, { feedIds: new Set(), catalog: new Map(), pausedIds: new Set() });
+  assert.equal(fila.fueraSinCatalogo, 8);
+  assert.equal(fila.muestraFantasmas.length, 5);
+  assert.deepEqual(fila.muestraFantasmas, ['MLU_F0', 'MLU_F1', 'MLU_F2', 'MLU_F3', 'MLU_F4']);
+});
+
+// Google devuelve ofertas con el id en minúscula; el catálogo usa MLU… Sin
+// normalizar, 3.292 productos reales parecían fantasmas.
+test('un id en minúscula del autofeed coincide con el MLU del feed y del catálogo', () => {
+  const [fila] = summarizeSourceOverlap(
+    [{ offerId: 'mlu123', dataSource: 'auto' }, { offerId: 'mlu999', dataSource: 'auto' }],
+    { feedIds: extractFeedIds('<item><g:id>MLU123</g:id></item>'), catalog: new Map([['MLU123', { status: 'active' }]]), pausedIds: new Set(['MLU999']) },
+  );
+  assert.equal(fila.enFeed, 1, 'mlu123 es MLU123');
+  assert.equal(fila.fueraPausados, 1, 'mlu999 es el pausado MLU999');
+  assert.equal(fila.fueraSinCatalogo, 0);
+  assert.equal(fila.idsEnMinuscula, 2, 'y queda contado que llegaron en minúscula');
+});
+
+// «¿Por qué los excluí?» se contesta con la MISMA función que decide el feed,
+// no con una reconstrucción.
+test('el desglose de exclusiones recorre las tres etapas del feed', () => {
+  // Ids con la forma real MLU\d+: feedBlockerReason descarta primero por id.
+  const base = { permalink: 'https://x', status: 'active', price: 100, currency_id: 'UYU', isbn: '9780306406157', author: 'A', condition: 'new' };
+  const catalog = new Map([
+    // Etapa 1: no pasan la regla comercial.
+    ['MLU101', { title: 'Sin stock', status: 'active', item: { ...base, id: 'MLU101', available_quantity: 0 } }],
+    ['MLU102', { title: 'Sin moneda', status: 'active', item: { ...base, id: 'MLU102', available_quantity: 2, currency_id: 'USD' } }],
+    // Etapa 3: mismo ISBN+condición que MLU200, que sí está en el feed.
+    ['MLU103', { title: 'Duplicado por ISBN', status: 'active', item: { ...base, id: 'MLU103', available_quantity: 2 } }],
+    // Sobrevive las tres y aun así falta: portada u otra causa no verificable.
+    ['MLU104', { title: 'Elegible ausente', status: 'active', item: { ...base, id: 'MLU104', available_quantity: 2, isbn: '9780262033848' } }],
+    // Ya publicado: es el ganador del ISBN y no debe contarse como excluido.
+    ['MLU200', { title: 'Publicado', status: 'active', item: { ...base, id: 'MLU200', available_quantity: 9 } }],
+  ]);
+  const productos = [...catalog.keys()].map(offerId => ({ offerId: offerId.toLowerCase(), dataSource: 'auto' }));
+
+  const filas = summarizeFeedExclusions(productos, { feedIds: new Set(['MLU200']), catalog });
+  const motivos = Object.fromEntries(filas.map(f => [f.motivo, f.total]));
+
+  assert.equal(motivos['sin stock'], 1);
+  assert.equal(motivos['sin moneda UYU'], 1);
+  assert.equal(motivos['duplicado: otra edición con el mismo ISBN ya está publicada'], 1,
+    'el que pierde contra el publicado se reporta como duplicado, no como "falta portada"');
+  assert.equal(motivos['pasa la regla comercial — falta por portada u otro motivo no verificable desde acá'], 1);
+  assert.equal(filas.reduce((s, f) => s + f.total, 0), 4, 'el publicado no cuenta como excluido');
+});
+
+test('un libro ya presente en el feed no aparece como excluido', () => {
+  const item = { id: 'MLU101', permalink: 'https://x', status: 'active', price: 100, currency_id: 'UYU', isbn: '9780306406157', author: 'A', available_quantity: 0 };
+  const catalog = new Map([['MLU101', { title: 'T', status: 'active', item }]]);
+  assert.equal(summarizeFeedExclusions([{ offerId: 'MLU101' }], { feedIds: new Set(['MLU101']), catalog }).length, 0);
 });

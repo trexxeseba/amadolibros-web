@@ -1,5 +1,269 @@
 # ESTADO ACTUAL — B11: enriquecimiento editorial real (2.000 fichas)
 
+## Fichas: categorías, ficha ampliada y Google Books de vuelta — 2026-09-24
+
+Autorizado por Seba en el chat («todo lo que mejore, adelante»). PR
+[#360](https://github.com/trexxeseba/amadolibros-web/pull/360).
+
+- **Google Books volvió.** Los HTTP 429 eran de un solo día (2026-09-06, cuota
+  diaria gastada por otra corrida) y nunca se volvió a correr. Corrida
+  [36030274743](https://github.com/trexxeseba/amadolibros-web/actions/runs/36030274743):
+  611 coincidencias exactas, 1 error. Lote `b12-lote-04`: **294 ISBN** con datos
+  verificados, 88 nuevos en el registro (**1.790 → 1.878**) y 206 completados.
+  Por campo: páginas 231, editorial 103, año 52, temas 10, autor 2.
+- **La corrida perdió el push** (caché sin commitear bloqueaba el rebase) y el
+  artefacto no llevaba el caché (`.json` en vez de `.json.gz`). Se corrigió el
+  workflow y se agregó `recover_run_id` para recuperar una corrida sin gastar
+  cuota. El caché de Google Books de ese día se perdió: la corrida siguiente
+  repite parte de esos ISBN.
+- **Presupuesto diario:** `google_books_budget` (900 por defecto). Quedan ~3.300
+  ISBN; a 900 por día son ~4 corridas, o una si se sube la cuota del proyecto
+  `amado-libros-analytics` (pedido a Seba).
+- **Miga de pan con categoría real** (`Inicio › Psicología › Psicoanálisis`) y
+  enlaces de la ficha ampliada a landings indexables (categoría y autor). Meta
+  description con editorial, año y páginas.
+- **Ficha ampliada para todas las ediciones activas:** tope de cohorte 3.000 →
+  10.000, sin tocar la deduplicación por ISBN+condición.
+- **1.298 fichas activas salen de «otros-libros»** por clasificación asistida
+  por título (sólo confianza alta; muestra de 105 revisada sin errores).
+  «otros-libros» 7.143 → 5.909. Fuente: `scripts/categorize/assisted-classifications.json`,
+  que `run.js` respeta detrás de las correcciones manuales. Las 1.287 de
+  confianza media o baja quedan en `artifacts/categorize/asistida-2026-09-24`.
+- **Informe semanal de fichas pendientes** (`reports/fichas-pendientes/`):
+  6.770 activas; completas 456 → 558; sin categoría 2.875 → 1.585.
+
+
+## AUTOFEED medido, hallazgo de Checkly explicado y «Salud» en el panel — 2026-09-14
+
+**De dónde salen los 6.984 productos que Merchant conoce** (corrida
+[34795946321](https://github.com/trexxeseba/amadolibros-web/actions/runs/34795946321),
+ids normalizados a mayúsculas, índice de pausados leído: 10.180 ids):
+
+| Fuente | Productos | En el feed | Activos fuera del feed | Pausados | Ni activos ni pausados |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `PRODUCTS SOURCE 3` (nuestro feed, FILE) | 3.692 | 3.687 | 0 | 4 | 1 |
+| `amadolibros.com` (AUTOFEED de Google) | 3.292 | **4** | **2.997** | **245** | **46** |
+
+- **El AUTOFEED publica sobre todo duplicados de libros que ya publicamos.**
+  De sus ~3.264 productos, ~2.996 son activos del catálogo fuera del feed, y el
+  desglose por el motivo real (corrida
+  [34832626849](https://github.com/trexxeseba/amadolibros-web/actions/runs/34832626849))
+  dice exactamente por qué:
+
+  | Motivo | Libros |
+  | --- | ---: |
+  | **Duplicado: otra edición con el mismo ISBN ya está publicada** | **2.700** |
+  | **No se reconoce como libro** | **297** |
+  | Pasa la regla comercial y falta por portada u otra causa | **0** |
+
+  Los 297 son, textualmente, un CD de Rage Against The Machine, una chapa de
+  matrícula antigua de Montevideo, un anillo de plata 925, un juego de mesa y
+  un tarot. El filtro hace lo que debe. Los 2.700 son el mismo libro que ya
+  está en el feed, publicado otra vez con datos que Google scrapeó. Sumado a
+  207 pausados sin oferta y 40 ids que responden **HTTP 404**, esto es lo que
+  infla Shopping ads a 6.698 «activos» sobre ~3.690 libros distintos.
+
+  > **Corrección de lo que escribí antes.** Dije que el AUTOFEED «publica lo
+  > que el feed excluye a propósito» y que apagarlo «quita ~3.000 libros de
+  > Shopping». Las dos cosas están mal. La primera versión del desglose sólo
+  > evaluaba `isEligibleForFeed` y no contaba las otras dos etapas del feed
+  > (calidad de portada y deduplicación por ISBN), así que atribuí a exclusión
+  > deliberada lo que en realidad son duplicados. **Apagarlo no quita libros
+  > distintos de Shopping**: quita segundas copias de libros que el feed ya
+  > publica, más 297 no-libros, 207 pausados y 40 fantasmas.
+- **Los 3.292 ids llegan en minúscula** (`mlu887797526`). En Merchant son
+  ofertas distintas de las `MLU…` del feed. Para el sitio son la misma página:
+  `/libro/mlu…` responde 301 hacia la canónica.
+- **Corrección de una cifra intermedia que informé mal.** Una corrida anterior
+  de esta misma sesión dio «3.292 ni activos ni pausados» y llegué a decir que
+  eran publicaciones que ya no existían. Era un defecto de la auditoría:
+  comparaba ids sin normalizar mayúsculas y no coincidía nada. Los 301 lo
+  delataron. Quedó corregido y con prueba.
+- **Qué significa para la decisión.** Con el desglose real, apagar el AUTOFEED
+  ya no tiene el costo que le atribuí: no se pierde cobertura de libros
+  distintos, se pierden duplicados. Lo que sí conviene medir antes de decidir
+  es si esas segundas copias están trayendo tráfico por su cuenta —eso se ve
+  en el rendimiento por oferta dentro de Merchant, que esta auditoría no lee—.
+  Y queda una pregunta abierta que no es del AUTOFEED sino nuestra: si de
+  ~6.390 ofertas activas de libros el feed publica una por ISBN+condición,
+  2.700 copias quedan sin publicar por diseño; si varias tienen precios muy
+  distintos, puede convenir revisar qué copia gana la deduplicación. Nada de
+  esto se ejecuta sin autorización de Seba. Cifras para
+  [#183](https://github.com/trexxeseba/amadolibros-web/issues/183).
+
+**El hallazgo `IMAGEN_VISIBLE_NO_CARGA` del monitoreo Checkly, explicado.**
+Fue **una sola corrida** del recorrido de navegador, a las 01:47:15 UTC del
+2026-09-09 (diagnóstico
+[34300731264](https://github.com/trexxeseba/amadolibros-web/actions/runs/34300731264)):
+imágenes visibles no listas en 8 segundos. Esa hora cae **12 horas antes** del
+merge de #333 y #336 (14:25 UTC), el arreglo del índice de portadas que llevó
+la mediana del handler de 4.388 a 709 ms; en ese momento estaba documentada
+una espera fría de hasta 3.992 ms por portada. La auditoría productiva del
+2026-09-12 midió 48/48 portadas cargadas con espera máxima de 1.506 ms en
+escritorio y 452 ms en móvil. Conclusión: hallazgo real, causa conocida,
+resuelto el mismo día. **Lo que no se pudo ver desde acá**: qué dice ese
+recorrido *hoy*, porque sigue corriendo cada 120 minutos dentro de Checkly y
+sus resultados no llegan a ninguna persona (ver `docs/monitoreo-deteccion-de-fallas.md`).
+
+**Sección «Salud» en `/panel`.** El estado del sync se lee de KV con la misma
+regla que el correo diario (`functions/_shared/health-rules.js`), y la última
+corrida de los siete reportes que importan se consulta a GitHub sólo en
+Producción (`PANEL_SALUD_REMOTO`), con caché de 10 minutos en KV. Cada número
+lleva su fecha al lado; un reporte verde pero viejo va en amarillo. Sin red en
+tests ni en Preview.
+
+## Merchant Center — diagnóstico real — 2026-09-13
+
+Primera lectura de la API real de Merchant desde que la Gran Apuesta se abrió
+el 2026-09-05. Cuenta `5330457716`, sólo GET, corrida
+[34783285537](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783285537),
+generado `2026-09-13T21:16:19Z`. Los cuatro endpoints (`accountIssues`,
+`dataSources`, `aggregateProductStatuses`, `products`) respondieron OK.
+
+| Métrica | Valor |
+| --- | ---: |
+| Productos procesados por Merchant | **6.984** |
+| Ofertas en el feed público | **3.689** |
+| Activos — Dynamic remarketing UY | **3.370** |
+| Rechazados | **321** |
+| Pendientes | **0** |
+| Próximos a vencer (3 y 7 días) | **0** |
+| Archivados | 56 |
+| Problemas de cuenta | **0** |
+
+**La brecha entre feed y activos queda explicada.** 3.689 − 3.370 = 319, y hay
+321 rechazados. Con 0 pendientes y 0 vencimientos, no hay nada que buscar en
+procesamiento ni en caducidad: la brecha **son los rechazos**. La alerta que
+motivó construir esta auditoría —caída de 3.745 a 2.981 activos, −20%— ya no
+aplica: hoy hay 3.370 y se recuperó sin intervención.
+
+**Causas de rechazo, por productos afectados:**
+
+| Código | Productos | Qué es |
+| --- | ---: | --- |
+| `personal_hardships_policy_violation` | **241** | Publicidad personalizada: penurias personales |
+| `sexual_interests_policy_violation` | 38 | Publicidad personalizada: intereses sexuales |
+| `restricted_nfs_policy_violation` | 37 | Contenido adulto restringido |
+| `identity_and_belief_policy_violation` | 20 | Publicidad personalizada: identidad y creencias |
+| `ebooks_policy_violation` | 16 | Libros digitales no admitidos |
+| `legal_restrictions_policy_violation` | 12 | Publicidad personalizada: restricciones legales |
+| `fake_documents_policy_violation` | 2 | Conducta deshonesta |
+| `illegal_drugs_policy_violation` | 2 | Drogas ilegales |
+
+Los motivos suman 368 sobre 321 productos: hay productos con más de un motivo.
+Sin bloquear a nadie (`NOT_IMPACTED`): 14 `image_link_internal_error`,
+2 `image_link_internal_error_fallback`, 2 `utf8_encoding_error` en descripción.
+
+**348 de las 368 incidencias son colisiones de categoría, no errores de
+datos** — y se cuentan en incidencias, no en productos: los 368 motivos caen
+sobre 321 productos porque hay productos con más de un motivo, así que los 321
+no se reparten entre causas. Las otras 20 incidencias (16 ebooks, 2 documentos
+falsos, 2 drogas) son clasificación errónea. Un fondo
+fuerte en psicología, autoayuda, duelo y adicciones choca con la política de
+publicidad personalizada de Google; el de esoterismo, con las de contenido
+adulto e identidad. No se arreglan corrigiendo un campo.
+
+> **Corrección de algo que escribí mal hace unas horas.** Dije que «el único
+> quick win limpio son los 16 ebooks: no deberían viajar en el feed». Está
+> mal y el listado producto por producto lo desmiente: **ninguno de los 16 es
+> un ebook.** Los 16 están `active` en el catálogo y los 16 viajan en nuestro
+> feed. Son libros de papel —hay «Tapa Dura» y «Tapa Blanda» escritos en el
+> propio título— que Google clasifica como libro digital. Sacarlos del feed
+> habría sido esconder stock vendible por un error de Google.
+
+**Los 16 supuestos ebooks, con nombre y apellido** (corrida
+[34784222877](https://github.com/trexxeseba/amadolibros-web/actions/runs/34784222877)):
+tres de ellos —`MLU628456890` (Bright Ideas Starter · **Digital Pack**),
+`MLU629748753` (Wider World 3 · **Ebook** + MyEnglishLab) y `MLU711560890`
+(Close-up B1 · con **Ebook** y prácticas)— llevan la palabra en el título
+porque son cursos de inglés en papel que incluyen un código de acceso digital.
+Ahí Google lee «ebook» literal. Los otros trece no tienen ninguna palabra
+digital en el título: son novela, medicina, historia y psicoterapia, y la
+clasificación es sencillamente errónea.
+
+**Lo que falta en el feed.** Hoy se publica `<g:product_type>` pero **no**
+`<g:google_product_category>`. Es el único atributo que le dice a Google
+explícitamente de qué tipo de producto se trata, y es lo primero a probar
+contra esta causa. No se promete que lo resuelva: la verificación es la
+auditoría misma, viendo si esos 16 bajan a 0.
+
+**Cuatro clasificaciones absurdas que conviene disputar en consola:**
+`fake_documents_policy_violation` («conducta deshonesta») sobre *De Crisálida
+A Mariposa. Adolescencia* y sobre *Heroínas Compasivas. Vida Como
+Supervivientes Cáncer Mama`; e `illegal_drugs_policy_violation` sobre
+*Cannabis Consciente* y sobre *Guía Completa De Rastreo*. Son cuatro libros y
+son las familias de política más severas: no conviene dejarlas acumular.
+
+**Un defecto propio, real, encontrado y arreglado.** Los 2
+`utf8_encoding_error` en `[description]` no eran de Google: `truncateMerchantText`
+en `functions/feed.xml.js` cortaba con `slice()`, que trabaja por unidades
+UTF-16. Un carácter fuera del BMP ocupa dos, así que un corte en el medio
+dejaba **medio carácter** —un suplente solitario— que no se puede codificar en
+UTF-8. Reproducido y corregido, con tres pruebas de regresión. Se verifica
+solo: en la próxima auditoría después de que se publique el feed, esa causa
+tiene que pasar de 2 a 0.
+
+**Tres fuentes primarias, y una es AUTOFEED.** `amadolibros.com` (AUTOFEED),
+`Content API` (API) y `PRODUCTS SOURCE 3` (FILE diaria desde
+`https://www.amadolibros.com/feed.xml`). Merchant procesó 6.984 productos y el
+feed controlado trae 3.689: **casi la mitad de lo que Merchant conoce no sale
+del feed que controlamos.** Es lo que plantea el issue abierto
+[#183](https://github.com/trexxeseba/amadolibros-web/issues/183) y ahora tiene
+cifras.
+
+**Límite de esta evidencia.** La auditoría lee el destino **Dynamic
+remarketing UY**, que es para el que llegó la alerta. **No mide Shopping ads
+ni fichas gratuitas.** No declarar Merchant Center entero verificado con esto.
+
+## B12 verificado en Producción — 2026-09-13
+
+- **B12 dejó de estar pendiente.** El PR #325 se había fusionado el 2026-09-10
+  y estaba desplegado desde entonces, pero la verificación productiva nunca se
+  disparó: el workflow «B12 — verificar en Producción las fichas mejoradas»
+  tenía **cero corridas** tres días después del merge. Se corrió hoy.
+- Corrida [34783054060](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783054060)
+  sobre `a012874`, contra `https://www.amadolibros.com`, lado «antes» en
+  `d380374`: **475/475 fichas verificadas, 828 comprobaciones de campo, 0
+  fallidas, 0 sin verificar, 0 fichas que pierdan algún dato.** El gate de
+  evidencia positiva aprobó; no verificar nada nunca cuenta como éxito ahí.
+- **475 y no 481**: el plan se recalcula contra el catálogo vivo del día, y
+  seis de las 481 del Preview ya no figuran activas. Ninguna falló. El Preview
+  midió sobre el snapshot del 2026-09-06 y Producción sobre el del 2026-09-13;
+  ambas cifras son correctas para su día.
+- Este documento y `PLAN-MAESTRO.md` afirmaban, hasta hoy, que #325 seguía «en
+  Draft, sin mergear ni desplegar, esperando aprobación». Llevaban tres días
+  desactualizados y quedan corregidos en esta misma revisión. Las menciones a
+  #323 y #333 como borradores viven dentro de secciones fechadas del 6 y el 8
+  de septiembre, donde eran ciertas: no se reescriben.
+- Los dos reportes que ya existían pero eran ilegibles —Merchant Center y esta
+  misma verificación— ahora vuelcan su resumen **también al log de la corrida**,
+  no sólo al resumen y a un artefacto zipeado. El dato existía y nadie lo leía.
+
+## Imágenes publicadas y verificadas — 2026-09-09
+
+- #333 y #336 fusionados en main `305de731` con autorización completa de Seba. Pages `34363553956` success en el segundo intento; el primero cortó una comprobación GET por conexión reiniciada. Worker Sync `34363553916` success, catálogo 7.105 y 79.116 referencias en 256 fragmentos publicados; cero fallas del mirror. Checkout sin cambios.
+- Aceptación conjunta `9a1ab427`: CI `34362856125`, 1.720 pruebas y ambos builds; Preview `34362856257`; índice real `34362856142`, 154/154 imágenes, 4/4 páginas, 79.116 referencias preservadas y recuperación de escritura comprobada. Mediana del handler controlado 4.868 → 598 ms, no medición desde Uruguay.
+- Producción `34365186356`: Product.image presente en MLU651526046, cinco portadas HTTP 200/R2/public-index; 126 observaciones de imagen correctas en Chromium de escritorio y móvil, incluidas 48/48 portadas de Psicología en cada viewport. Muestra ampliada: 300/300 imágenes y 300/300 páginas correctas. Artefacto `10109592201` con JSON y capturas. No se afirma cobertura de todo dispositivo o del rastreo de Google.
+- Corrección del test: las portadas del inicio tienen animación continua; esperar inmovilidad era incorrecto. Se usa scroll nativo y se recorren las imágenes visibles también en móvil, conservando la animación y la detección de fallas.
+- Hallazgo adicional al verificar: el feed retuvo cuatro ofertas retiradas y 16 precios anteriores tras el sync. El catálogo interno admitía una hora de caché y el feed seis. Se reduce a 60 s cada caché mutable y se descartan copias cuya duración declarada exceda la nueva política, incluidas las horarias anteriores. El origen y los datos no se modifican; el checkout conserva su índice versionado. Prueba reproduce la copia antigua, la renovación y la reutilización acotada. Esta corrección final y el test de scroll se preparan en revisión; aceptación postpublicación pendiente en este registro.
+- Panel privado fuera del alcance. Evidencias de fallos intermedios conservadas; no se presenta la auditoría general en verde mientras existan diferencias del feed.
+
+## Historial: índice rápido y scroll verificados en Preview — 2026-09-08
+
+- Responsable: Codex. Esfuerzo: M. Trabajo operativo dentro de Google Merchant Center, única Gran Apuesta activa. Fuente de prioridades: PLAN-MAESTRO.md.
+- Producción conserva la recuperación #330, aprobada por Seba y fusionada en `0ae0a50` (deploy `34171140241`, 4/4 páginas y 104/104 imágenes válidas). La aceleración #333 sigue en Draft, sin merge ni despliegue productivo. Checkout intacto.
+- Rama `codex/cover-public-index`, desde main actualizado `0ae0a50`: cada portada resuelve su fragmento pequeño del índice público, en vez de descargar el manifiesto privado completo. Son 256 fragmentos inmutables por SHA, con límites de tamaño e integridad. Cubre todas las referencias existentes desde la primera sincronización y las nuevas automáticamente; conserva URLs, masters y calidad de imágenes. El feed mantiene su lector.
+- Publicación atómica: el puntero del índice se escribe en los metadatos del mismo PUT condicional que el manifiesto. Conflictos obligan a releer, combinar y reconstruir. Si el índice falta o está dañado se usa el lector anterior y se declara el fallback; una reconstrucción diaria repara los objetos derivados.
+- Escritura: lectura incremental y salida por bloques preservan todos los campos privados. Se libera la versión anterior antes de releer por conflicto. Sólo el error nativo exacto `Network connection lost.` del PUT condicional se recupera mediante lectura fresca y nuevo CAS, dentro de cuatro intentos totales. El resultado incierto y los reintentos quedan registrados; otros errores se propagan.
+- Aceptación del código `b97c534`, corrida `34230577186`: snapshot de 79.197.274 bytes, 59.733/59.733 referencias, 3.697/3.697 ofertas con XML idéntico, 154/154 comprobaciones de imágenes y 4/4 páginas. Las 149 peticiones de imagen del camino nuevo tuvieron cero GET del manifiesto global y cero fallback; las otras cinco son la comparación anterior.
+- Dos reconstrucciones completas verificadas. En la segunda se forzó un ETag incorrecto contra R2 nativo: R2 devolvió `Network connection lost.`, se confirmó el ETag aislado sin cambios y el escritor real releyó/reconstruyó/publicó con un reintento. No se presenta como una respuesta `null` nativa. El documento privado escrito es íntegramente equivalente al snapshot, salvo `updated_at` monotónico. Trazas finales `ok`, sin excepciones no recuperadas ni exceso de memoria; CPU 4.210 y 7.314 ms.
+- Velocidad del handler en Worker Cloudflare aislado, cachés frías y mismo snapshot: mediana 4.388 → 709 ms (−83,84%). No es una medición de navegador desde Uruguay. Evidencia por URL, bytes, SHA y tiempos en `docs/evidence/cover-index-2026-09-08.json`; fallos, recuperación y trazas en `docs/evidence/cover-index-resource-2026-09-08.json`. Snapshot/HTML en artefacto `10057684135` hasta 2026-12-07. Eliminados los 260 objetos temporales y el Worker, con confirmación; cero escrituras productivas.
+- Scroll real, corrida `34224677948`, código de navegador `b972d09`: las 48/48 portadas de Psicología entraron en pantalla y quedaron decodificadas, HTTP 200, cero errores y cero pendientes. Las 48 respuestas iniciales registraron índice público, cero GET global y ninguna cabecera de medición ausente.
+- Primera visita: 24 portadas tuvieron espera visible, máximo 3.992,5 ms. El recorrido incluyó pausas y regreso para cubrir filas saltadas; no fue un benchmark de scroll continuo. Segunda visita con caché: las 44 portadas posteriores a la primera fila estaban decodificadas antes de entrar en pantalla; las cuatro iniciales tardaron hasta 47,5 ms en confirmar `decode()`. Esto mide disponibilidad para dibujar, no el instante exacto de pintura. La latencia fría residual no se declara resuelta.
+- Alcance del navegador: Chrome remoto, 1363×936, renderer y atributos `loading`/`srcset`/`sizes` reales; Cloudflare Images nativo en un Worker aislado, distinto de la entrega productiva `/cdn-cgi/image`. Evidencia individual, original comprimido y capturas en `docs/evidence/cover-scroll-2026-09-08.*`. Ensayo limpiado: 260 objetos y Worker eliminados, artefacto `10055524508`, cero escrituras productivas. Los cambios posteriores afectan al escritor y sus comprobaciones, no al lector ni al observador de este ensayo.
+- Controles: 1.713 ejecuciones de pruebas y ambos builds pasaron con Node 22.12, igual que CI (`34230577156`). Incluyen equivalencia completa, JSON malformado, memoria acotada, liberación de versiones, escritura incierta antes/después de guardar, metadatos ganadores y límites de reintento. También se corrigió un fixture de catálogo que omitía el manifiesto productivo y dependía de red real. Los fallos intermedios están conservados; no se dieron por resueltos con una repetición afortunada.
+- Para producción falta aprobación expresa de Seba para merge y despliegue de #333. Después: esperar Pages, Worker Sync y su sincronización; comprobar `x-cover-index: public-index`, HTTP 200/bytes, catálogo y scroll en la web pública. No declarar la mejora publicada hasta esa verificación.
+
 Última actualización: 2026-09-03 — **B11 CERRADO**. El
 [PR #308](https://github.com/trexxeseba/amadolibros-web/pull/308) (Lote 03
 final) está **fusionado a `main` y verificado en Producción**. El circuito
@@ -28,15 +292,305 @@ devuelve 1.609 ISBN, y `artifacts/b11-2/state.json` contiene 556 entradas
 con `TERMINADO` 83, `SIN_DATOS` 31 y `REVISAR` 442 — el pool `REVISAR`
 completo de B11.1, ya sin ningún ISBN pendiente de intentar.
 
-## Trabajo pendiente que hereda de B11 (no iniciado)
+## B12 — enriquecimiento de fichas activas (2026-09-06)
 
-1. **PR técnico de limpieza de idiomas históricos**: auditar los 17
-   `bibliographic.language` multivaluados que siguen publicados en módulos
+**Resultado real: 481 fichas activas mejoradas.**
+
+Tres cosas distintas, que conviene no mezclar:
+
+| | Estado |
+| --- | --- |
+| **481 fichas verificadas en el Preview desplegado** | **HECHO.** Una por una, 841 comprobaciones, 0 fallidas, 0 sin verificar. |
+| **Verificación en Producción** | **HECHO — 2026-09-13.** Corrida [34783054060](https://github.com/trexxeseba/amadolibros-web/actions/runs/34783054060) sobre `a012874`: 475/475 fichas, 828 comprobaciones, 0 fallidas, 0 sin verificar, 0 pérdidas. |
+| **Meta de 1.000 fichas** | **PENDIENTE.** Se llegó a 481 y el circuito se agotó con las fuentes disponibles. Continúa después. |
+
+Todo esto está publicado: el
+[PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325) se **fusionó
+el 2026-09-10** y viaja en Producción desde ese deploy. La verificación
+productiva quedó tres días sin disparar y se corrió el **2026-09-13**: las
+fichas que el plan del día señala están verificadas en la web pública, 475 de
+475, con 828 comprobaciones de campo y ninguna pérdida.
+
+> **Por qué 475 y no 481.** No es que seis hayan fallado: ninguna falló. El
+> plan de verificación no es una lista congelada, se recalcula comparando la
+> ficha efectiva de antes de B12 contra la de hoy sobre el **catálogo vivo del
+> día**. Seis de aquellas 481 ya no figuran activas en el catálogo de hoy, así
+> que no hay ficha pública que mirar. El Preview midió 481 sobre el snapshot
+> del 2026-09-06; Producción midió 475 sobre el del 2026-09-13. Las dos cifras
+> son correctas para su día.
+
+> **Corrección de una cifra que informé mal.** Antes reporté 423 fichas. Ese
+> número salía de reconstruir el "antes" restándole al ítem los hechos del
+> lote —un supuesto— y además medía sólo dos de los tres módulos que trae el
+> PR: dejaba fuera el lote `qw3a2` (47 ediciones). La cifra correcta,
+> comparando la ficha efectiva de `main` contra la del PR sobre el mismo
+> snapshot congelado, es **481**.
+
+### Reconciliación contra `main`, mismo snapshot
+
+Base `main` **`d380374`**. Snapshot `catalog.json` `updated_at`
+**2026-09-06T11:37:55.003Z**, 7.104 fichas activas comparadas de los dos lados.
+Corrida documentada:
+[34067949689](https://github.com/trexxeseba/amadolibros-web/actions/runs/34067949689),
+head **`798a9de`**.
+
+**Cada push a la rama vuelve a correr esta medición sobre el head nuevo**, así
+que la corrida vigente es siempre la última de «B12 — reconciliar impacto y
+validar el Preview desplegado» en el PR; el head y el SHA desplegado de esa
+corrida están en la descripción del PR. Las cifras se repitieron idénticas en
+las tres últimas corridas. El snapshot se baja **una sola vez** y lo
+comparten los dos lados: si cada uno bajara el suyo, una actualización del
+catálogo en el medio invalidaría la comparación.
+
+| Métrica | Valor |
+| --- | ---: |
+| Registro de enriquecimiento en `main` | 1.609 |
+| Registro en el PR | **1.790** |
+| Crecimiento del registro | **+181** |
+| ISBN únicos con mejora | **268** |
+| **Fichas activas beneficiadas** | **481** |
+| — con ≥1 campo nuevo | 481 |
+| — con ≥3 campos nuevos | **105** |
+| Fichas que **pierden** algún campo | **0** |
+| Fichas presentes en un solo lado (diferencia de catálogo) | 0 |
+
+| CAMPO | +FICHAS |
+| --- | ---: |
+| Páginas | **+291** |
+| Temas | **+235** |
+| Editorial | **+158** |
+| Año de publicación | +135 |
+| Autor real | +16 |
+| Idioma | +6 |
+
+### Cómo se relacionan 227, 268, 274 y +181
+
+Son cuatro cifras distintas y conviene no confundirlas:
+
+| Cifra | Qué es |
+| --- | ---: |
+| 274 | Registros de investigación en los tres módulos (47 + 196 + 31) |
+| **268** | **ISBN únicos**: 6 registros repiten ISBN entre módulos |
+| **+181** | Ediciones **nuevas** en el registro |
+| 87 | ISBN que `main` ya tenía y a los que el PR les **completó** campos |
+
+El «227» que informé antes era la suma de registros de sólo dos módulos, y
+además contaba registros en vez de ISBN únicos. Los 268 ISBN únicos mejoran al
+menos una ficha viva cada uno; 268 − 181 = 87 son ediciones ya investigadas
+que ganaron campos que les faltaban, sin pisar ningún dato verificado.
+
+### Verificado en el Preview desplegado
+
+Probar el renderizador localmente no demuestra nada: sólo el Preview muestra si
+el dato llegó a la página que sirve Cloudflare.
+
+> **Corrección — mi primer verificador daba falsos positivos.** Buscaba cada
+> valor con `html.includes()` sobre el documento entero y, como el bloque
+> JSON-LD vive DENTRO del HTML, todo campo «aparecía visible» aunque la ficha
+> no lo mostrara. Además aprobaba con **una sola** de las dos comprobaciones,
+> hacía coincidir un número dentro de otro (496 dentro de 1496) y `topics` no
+> se comprobaba en absoluto. **El 481/481 que informé antes no probaba nada.**
+> El verificador se reescribió, se le agregaron pruebas que reproducen los
+> cuatro defectos, y la medición se repitió. Lo que sigue es el resultado de
+> la versión corregida.
+
+Qué comprueba hoy, campo por campo:
+
+- **Valor visible**: se lee **sólo** de la lista de detalles de la ficha
+  (`<div class="detail-row"><dt>Etiqueta</dt><dd>Valor</dd></div>`), que por
+  construcción excluye scripts, estilos y contenido no mostrado. Se compara el
+  valor **normalizado completo**, nunca un fragmento.
+- **Propiedad JSON-LD**, declarada según el contrato real del renderizador:
+  `author.name`, `publisher.name`, `numberOfPages`, `inLanguage`,
+  `bookFormat`, `bookEdition`, `datePublished`, `keywords`.
+- **Se exigen las dos** donde las dos corresponden. Cuando una no corresponde,
+  se registra como NO APLICA **con el motivo escrito**, jamás como aprobada
+  por omisión.
+- **Ningún campo esperado pasa con cero comprobaciones**: un campo mejorado
+  que no produjo comprobación se cuenta como `sin_comprobar` y **reprueba** la
+  ficha.
+- **Un HTTP 404 queda SIN VERIFICAR**, no fallido y tampoco atribuido al
+  catálogo: es un resultado propio, contado aparte.
+
+Corrida [34067949689](https://github.com/trexxeseba/amadolibros-web/actions/runs/34067949689),
+base `https://pr-325.amadolibros-web.pages.dev`. El SHA **realmente desplegado**
+es `798a9de` y no es un supuesto: la corrida espera a que concluya con éxito el
+check de despliegue **de ese mismo commit** y recién entonces valida.
+
+| | |
+| --- | ---: |
+| Fichas esperadas | 481 |
+| **Verificadas** (todas sus comprobaciones aprobadas) | **481** |
+| Fallidas | **0** |
+| Sin verificar (HTTP 404 u otro error) | **0** |
+| Comprobaciones de campo realizadas | **841** |
+
+| CAMPO | COMPROB. | VISIBLE OK | JSON-LD OK | JSON-LD N/A | FALLIDAS |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Páginas | 291 | 291 | 290 | **1** | 0 |
+| Temas | 235 | 235 | 235 | 0 | 0 |
+| Editorial | 158 | 158 | 158 | 0 | 0 |
+| Año de publicación | 135 | 135 | 135 | 0 | 0 |
+| Autor real | 16 | 16 | 16 | 0 | 0 |
+| Idioma | 6 | 6 | 6 | 0 | 0 |
+
+Las 841 comprobaciones son exactamente la suma de las mejoras por campo de la
+reconciliación: **cada mejora que el PR declara fue comprobada en la página
+servida**, ninguna quedó sin mirar.
+
+El único «no aplica» es **MLU644234684** (ISBN 9781572813458). El middleware de
+vidriera publica esa ficha como `Product` a secas —no como `Book`— y entonces
+BORRA a propósito `numberOfPages`, `bookFormat` y `bookEdition`. Es lo correcto:
+un producto que no es un libro no debe declarar páginas en schema.org. El dato
+sigue **visible** en la ficha y su comprobación visible aprobó. No se retiró
+ningún dato ni se aflojó ninguna exigencia para que el número cerrara.
+
+Evidencia por ficha —MLU, ISBN, campo, valor esperado, valor visible
+encontrado, valor JSON-LD y resultado— en el artefacto
+`b12-reconciliacion-34067949689` de esa corrida. Las cifras de arriba, además,
+quedan en el **resumen de la corrida**, que no vence con el artefacto.
+
+### Verificación de Producción — PENDIENTE, ya preparada
+
+El Preview demuestra que el dato llega a la página servida por Cloudflare,
+pero **no es Producción**. La comprobación equivalente contra
+`https://www.amadolibros.com` está preparada y **sólo se puede ejecutar
+después del merge y del deploy**: antes, Producción sirve el sitio anterior y
+la medición daría un falso negativo.
+
+**Qué hacer, después del merge:**
+
+1. Esperar a que termine bien el deploy de Producción del commit de merge
+   (workflow «Deploy to Cloudflare Pages», job `Deploy`).
+2. Ejecutar el workflow **«B12 — verificar en Producción las fichas
+   mejoradas»** (`workflow_dispatch` desde `main`). Sus valores por defecto ya
+   son los correctos:
+   - `commit_previo`: `d380374775db7b5d2ef80b09ae97351ccdcd88f9` — el estado de
+     `main` **anterior** a B12;
+   - `base_url`: `https://www.amadolibros.com`;
+   - `esperar_deploy`: activado, para que no mida un sitio viejo.
+3. Leer el resumen de la corrida y, si algo falla, el artefacto
+   `b12-produccion-<run_id>` (90 días), que trae el detalle por ficha.
+
+**Qué hace, y por qué es la misma vara que el Preview:**
+
+- Usa **el mismo verificador corregido** (`preview-ficha-validation.mjs`), con
+  el mismo contrato: valor visible leído **sólo** de la lista de detalles y
+  propiedad JSON-LD del renderizador, **exigidas ambas** donde ambas
+  corresponden, comparando el valor normalizado completo. Ningún campo
+  esperado pasa con cero comprobaciones.
+- El «antes» **no es una resta de hechos ni un supuesto**: es un `git worktree`
+  del commit previo a B12. Se calcula la ficha efectiva de los dos árboles
+  sobre **un único snapshot** del catálogo de Producción y se restan. Lo que
+  aparece es exactamente lo que B12 aportó.
+- **Informa las pérdidas**: cualquier ficha que deje de mostrar un campo que
+  antes mostraba se lista con su MLU, su ISBN y los campos perdidos, y
+  **hace fallar la corrida**.
+- Guarda **evidencia por ficha** —MLU, ISBN, campo, valor esperado, valor
+  visible encontrado, valor JSON-LD y resultado— en el artefacto.
+- Un **HTTP 404 queda SIN VERIFICAR**, no fallido, y **no se le atribuye
+  causa**: ni al catálogo, ni a una baja, ni a nada. Pero **tampoco se lo
+  excluye**: una ficha que no se pudo mirar no es una ficha aprobada, así que
+  **hace fallar la corrida** hasta que alguien la revise.
+- Es de **sólo lectura**: baja el catálogo público y pide las fichas. No
+  despliega, no fusiona, no escribe catálogo, no toca Merchant.
+- **Conserva el resumen y el artefacto aunque falle**: la evidencia de una
+  corrida fallida es justamente la que hace falta para entenderla.
+
+**Cuándo se aprueba, y sólo entonces:** todas las fichas esperadas
+verificadas, comprobaciones efectivas y ninguna pérdida. La decisión vive en
+`scripts/seo/verificacion-produccion-gate.mjs` —una sola implementación, que
+usan el workflow y las pruebas— y **falla** ante cualquiera de estas: plan
+vacío, cero comprobaciones, cero fichas verificadas, alguna ficha fallida,
+alguna ficha sin verificar, alguna pérdida de campo, un informe ausente o
+incompleto, o cifras que no suman.
+
+> **Se corrigió un criterio que aprobaba de más.** La primera versión de esta
+> compuerta daba por buenas tres corridas que no verifican nada: todas las
+> fichas en 404, todas en 500 y el plan vacío. Las tres terminaban en éxito e
+> imprimían «Producción verificada: 0 fichas». Ahora sólo se aprueba con
+> evidencia positiva; los siete casos —incluidos esos tres— están probados
+> contra la misma función que corre el workflow.
+
+Entre el cierre y el merge el catálogo cambia, así que el universo puede no
+dar exactamente 481. Eso **no se acepta en silencio**: la corrida falla y la
+diferencia se revisa ficha por ficha. El número no se fuerza a 481, pero
+tampoco se aprueba un número menor sin mirarlo.
+
+### Rendimiento por lote — el circuito se agotó
+
+| Lote | ISBN incorporados |
+| --- | ---: |
+| B12 01 | 196 |
+| B12 02 | 31 |
+| B12 03 | **0** |
+
+Los tres recorrieron el MISMO universo de 3.596 ediciones. El primero se llevó
+los casos con más evidencia y el tercero no encontró nada: con las fuentes de
+hoy, esto es el techo.
+
+### El bloqueo concreto
+
+De los 3.596 investigados, **2.488 (69%) tienen al menos una fuente exacta**,
+así que el problema no es cobertura:
+
+| Causa | ISBN |
+| --- | ---: |
+| Sin evidencia utilizable en ninguna fuente | 2.398 |
+| Conflicto de identidad (título o autor no coinciden con la fuente) | 638 |
+| Una sola familia de fuente (el gate exige dos, o una oficial) | 489 |
+| Evidencia cruzada pero los campos ya estaban completos | 71 |
+
+**El mayor freno recuperable es Google Books**: quedó en **4 de 3.596** con
+HTTP 429 en las tres corridas, incluso tras bajar el presupuesto de 1.500 a
+400. Es cuota diaria agotada, no un fallo de código; históricamente aportaba
+500-615 coincidencias exactas.
+
+Continuar por ahí queda **fuera de este cierre**: esperar el reset de cuota y
+volver a correr, con el caché compartido pidiendo sólo lo que falta. Los 489
+bloqueados por «una sola familia» exigen **sumar otro catálogo oficial**, no
+relajar el gate: bajar la exigencia publicaría datos con menos respaldo.
+
+### Qué se construyó
+
+- **Library of Congress y Deutsche Nationalbibliothek** como fuentes oficiales
+  (`national_library`, mismo nivel que BNE), gratis y sin API key. Sonda de
+  alcance previa: [34031761113](https://github.com/trexxeseba/amadolibros-web/actions/runs/34031761113).
+- **El selector mide huecos sobre la ficha efectiva**: antes excluía cualquier
+  ISBN del registro aunque le faltaran campos.
+- **Un lote posterior completa al anterior** sin pisar datos verificados.
+- **Caché compartido y comprimido**: una corrida bajó de 60 a 15 minutos.
+
+### Evidencia y reanudación
+
+El diff llegó a superar **1.006.814 líneas**; el 98% eran dos archivos por
+lote —el volcado de investigación y el caché de fuentes—. Hoy son **20.329**.
+La evidencia **no se movió fuera del repo**: se guarda comprimida (unas doce
+veces menos) en el mismo lugar, así que la reanudación de un lote sigue siendo
+automática con un `checkout`, sin credenciales ni vencimientos. Se verificó
+que cada archivo se recupera **idéntico** y que el caché comprimido
+efectivamente evita repedir lo ya conocido. El caché compartido y el del lote
+01 eran byte a byte el mismo archivo; quedó uno solo.
+
+**Sin sinopsis copiadas y sin datos comerciales.** Cada hecho conserva su
+fuente por campo (`provider`, `url`, `relationship: exact_edition`), verificado
+por test. Precio, stock, imágenes, slug y canonical no se tocan.
+
+Trabajo en [PR #325](https://github.com/trexxeseba/amadolibros-web/pull/325),
+**fusionado el 2026-09-10 y desplegado**. Está en Producción y verificado ahí
+el 2026-09-13: 475/475 fichas, 828 comprobaciones, 0 pérdidas.
+
+## Trabajo pendiente que hereda de B11
+
+1. **PR técnico de limpieza de idiomas históricos** (no iniciado): auditar los
+   17 `bibliographic.language` multivaluados que siguen publicados en módulos
    fusionados antes de la corrección de MARC 041 (13 en `facts-1000`, 2 en
    `facts-333`, 2 en B11.2 Lote 02). Detalle por ISBN más abajo.
-2. **B12**: se define después de esa limpieza. Cualquier avance de
-   enriquecimiento nuevo exige evidencia nueva (otra fuente o redacción
-   manual), no otra corrida del resolver.
+2. **B12**: ya no está por definirse — su primera tanda está entregada y
+   medida (sección de arriba). Lo que sigue pendiente es llegar a las 1.000
+   fichas, y para eso vale lo mismo que decía este punto: **cualquier avance
+   exige evidencia nueva** (otra fuente oficial, o el reset de cuota de Google
+   Books), no otra corrida del resolver sobre el mismo universo.
 
 ## B11 Lote 1 — TERMINADO (fusionado y verificado en Producción)
 
@@ -538,7 +1092,10 @@ criterio de aceptación, evidencia requerida) de cada punto en
 5. **Blindaje técnico de Amado — registrado, NO iniciado.**
 6. **Limpieza de los 17 `bibliographic.language` históricos** (heredado de
    B11) — **pausado.**
-7. **Definición de B12** (heredado de B11) — **pausado.**
+7. **B12 — enriquecimiento de fichas activas** (heredado de B11) — **EN
+   CURSO, primera tanda entregada**: 481 fichas activas mejoradas y
+   verificadas en el Preview desplegado. La meta de 1.000 sigue pendiente y
+   continúa después.
 
 Ninguno de los puntos 2-7 está autorizado para iniciar trabajo sin
 autorización explícita y separada de Seba.

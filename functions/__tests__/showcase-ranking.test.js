@@ -35,14 +35,14 @@ test('normaliza ISBN válidos y rechaza checksums falsos', () => {
   assert.equal(normalizeValidIsbn('1234567890128'), null);
 });
 
-test('el límite nuevo es 3000 y conserva el límite legado de 1000', () => {
-  assert.equal(DEFAULT_SHOWCASE_LIMIT, 3000);
+test('el límite cubre todas las ediciones elegibles y conserva el legado de 1000', () => {
+  assert.equal(DEFAULT_SHOWCASE_LIMIT, 10000);
   assert.equal(LEGACY_SHOWCASE_LIMIT, 1000);
 });
 
-test('selecciona hasta 3000 ediciones por defecto y asigna rango continuo', () => {
+test('selecciona hasta el límite pedido y asigna rango continuo', () => {
   const items = Array.from({ length: 3200 }, (_, index) => item(index));
-  const metrics = assignShowcaseRanking(items);
+  const metrics = assignShowcaseRanking(items, { limit: 3000 });
   const selected = items.filter(entry => entry.showcase_rank);
 
   assert.equal(metrics.schema_version, 2);

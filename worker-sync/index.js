@@ -310,21 +310,18 @@ async function publishPausedCatalog(env, {
       },
     });
 
-    let coverMirror = null;
-    if (scope === 'production') {
-      try {
-        coverMirror = await syncCoverMirror(env, catalog, {
-          limit: Math.max(20, Number(env.COVER_MIRROR_BATCH_SIZE) || 100),
-          includePaused: true,
-        });
-      } catch (error) {
-        console.warn(`[${errorLabel} catalog] Mirror de galerías pendiente: ${error.message}`);
-        coverMirror = {
-          status: 'error',
-          error: String(error?.message || 'Error').slice(0, 240),
-        };
-      }
-    }
+    // El espejo de portadas NO corre acá. Lo hace el cron `*/5 * * * *` con
+    // runCoverMirror, que ya recorre los pausados con su propio cursor — o sea
+    // que hacerlo también en esta ruta era trabajo duplicado.
+    //
+    // Duplicarlo no era gratis: se ejecutaba al final de un pedido que todavía
+    // tiene el catálogo entero en memoria (~17,8 MB, 17.249 ítems) más los 128
+    // bloques del índice pausado, y encima toca un índice público de ~31,6 MB
+    // repartido en 256 shards. Esa suma agotaba los recursos del isolate y
+    // Cloudflare mataba el pedido con 1102 ("Worker exceeded resource limits"),
+    // dejando el job de deploy en rojo aunque el catálogo ya estuviera
+    // publicado. Ver runs 34366493021 (1102 explícito) y 34409174184.
+    const coverMirror = { status: 'delegated-to-cron', cron: '*/5 * * * *' };
 
     const samplePaused = catalog.items.find(item => item.status === 'paused') || null;
     return {

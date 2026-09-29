@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
+import { deliveryBadgeHtml } from '../../../shared/delivery-badge.js';
 
 interface Book {
   id: string;
@@ -80,6 +81,7 @@ const shelfBooks = books.map(book => ({
               onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('v2-book-fallback')"
             />
           </a>
+          <div class="v2-book-delivery" set:html={deliveryBadgeHtml(book.status === 'active' && Number(book.available_quantity) > 0)} />
           <div class="v2-book-meta">
             <span>{String(index + 1).padStart(2, '0')}</span>
             <div>
@@ -217,6 +219,8 @@ const shelfBooks = books.map(book => ({
     gap: 0.7rem;
     margin-top: 0.9rem;
   }
+
+  .v2-book-delivery { margin-top: 0.9rem; }
 
   .v2-book-meta > span {
     color: #ff7651;

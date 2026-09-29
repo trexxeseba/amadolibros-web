@@ -3,19 +3,21 @@
     "mlu": "MLU664395476",
     "type": "book",
     "primaryCategoryId": "esoterismo-tarot",
-    "subcategoryId": null,
+    "subcategoryId": "astrologia",
     "secondaryCategoryIds": [],
-    "tags": ["Quirón"],
-    "note": "QA comercial 2026-08-23: Quirón corresponde a Esoterismo; Jesús es el nombre del autor, no una señal religiosa"
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
   },
   {
     "mlu": "MLU665203500",
     "type": "book",
     "primaryCategoryId": "esoterismo-tarot",
-    "subcategoryId": null,
+    "subcategoryId": "astrologia",
     "secondaryCategoryIds": [],
-    "tags": ["Quirón"],
-    "note": "QA comercial 2026-08-23: duplicado de la obra Quirón; mover a Esoterismo"
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
   },
   {
     "mlu": "MLU625778990",
@@ -23,7 +25,10 @@
     "primaryCategoryId": "comics-manga",
     "subcategoryId": null,
     "secondaryCategoryIds": [],
-    "tags": ["God of War", "Novela gráfica"],
+    "tags": [
+      "God of War",
+      "Novela gráfica"
+    ],
     "note": "QA bibliográfica 2026-08-23: ISBN 9788467949124; Norma Editorial, FNAC y Casa del Libro lo clasifican como cómic/novela gráfica"
   },
   {
@@ -32,7 +37,10 @@
     "primaryCategoryId": "comics-manga",
     "subcategoryId": null,
     "secondaryCategoryIds": [],
-    "tags": ["God of War", "Novela gráfica"],
+    "tags": [
+      "God of War",
+      "Novela gráfica"
+    ],
     "note": "QA bibliográfica 2026-08-23: duplicado del ISBN 9788467949124; corresponde a Cómics y manga"
   },
   {
@@ -41,8 +49,9 @@
     "primaryCategoryId": "esoterismo-tarot",
     "subcategoryId": "tarot-oraculos",
     "secondaryCategoryIds": [],
-    "tags": ["Self-Care", "Baraja"],
-    "note": "QA comercial 2026-08-23: Self-Care Cartas de sabiduría es una baraja/oráculo, no un libro religioso"
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
   },
   {
     "mlu": "MLU671959666",
@@ -50,8 +59,9 @@
     "primaryCategoryId": "esoterismo-tarot",
     "subcategoryId": "tarot-oraculos",
     "secondaryCategoryIds": [],
-    "tags": ["Self-Care", "Baraja"],
-    "note": "QA comercial 2026-08-23: duplicado del ISBN 9788411720267; corresponde a Tarot y oráculos"
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
   },
   {
     "mlu": "MLU706814770",
@@ -59,7 +69,10 @@
     "primaryCategoryId": "filosofia-ciencias-sociales",
     "subcategoryId": "filosofia",
     "secondaryCategoryIds": [],
-    "tags": ["Zen", "Arte marcial"],
+    "tags": [
+      "Zen",
+      "Arte marcial"
+    ],
     "note": "QA comercial 2026-08-23: La espada de la vida es filosofía zen aplicada al arte marcial"
   },
   {
@@ -68,7 +81,10 @@
     "primaryCategoryId": "filosofia-ciencias-sociales",
     "subcategoryId": "filosofia",
     "secondaryCategoryIds": [],
-    "tags": ["Zen", "Arte marcial"],
+    "tags": [
+      "Zen",
+      "Arte marcial"
+    ],
     "note": "QA comercial 2026-08-23: duplicado del ISBN 9781695869912; corresponde a Filosofía"
   },
   {
@@ -77,7 +93,10 @@
     "primaryCategoryId": "naturaleza-animales",
     "subcategoryId": "zoologia-animales",
     "secondaryCategoryIds": [],
-    "tags": ["Animales", "Zoología"],
+    "tags": [
+      "Animales",
+      "Zoología"
+    ],
     "note": "QA bibliográfica 2026-08-23: ISBN 9789876820868; librerías lo clasifican en Naturaleza/Zoología, no exclusivamente Caballos"
   },
   {
@@ -86,7 +105,10 @@
     "primaryCategoryId": "naturaleza-animales",
     "subcategoryId": "zoologia-animales",
     "secondaryCategoryIds": [],
-    "tags": ["Animales", "Zoología"],
+    "tags": [
+      "Animales",
+      "Zoología"
+    ],
     "note": "QA bibliográfica 2026-08-23: duplicado del ISBN 9789876820868; corresponde a Naturaleza y animales > Zoología"
   },
   {
@@ -95,7 +117,10 @@
     "primaryCategoryId": "religion-espiritualidad",
     "subcategoryId": "otras-tradiciones",
     "secondaryCategoryIds": [],
-    "tags": ["Rastafari", "Etiopía"],
+    "tags": [
+      "Rastafari",
+      "Etiopía"
+    ],
     "note": "QA bibliográfica 2026-08-23: Kebra Nagast es texto sagrado etíope/rastafari; separar de Biblias y catolicismo"
   },
   {
@@ -104,7 +129,10 @@
     "primaryCategoryId": "religion-espiritualidad",
     "subcategoryId": "otras-tradiciones",
     "secondaryCategoryIds": [],
-    "tags": ["Rastafari", "Etiopía"],
+    "tags": [
+      "Rastafari",
+      "Etiopía"
+    ],
     "note": "QA bibliográfica 2026-08-23: duplicado de Kebra Nagast; va a Otras tradiciones religiosas"
   },
   {
@@ -114,7 +142,11 @@
     "subcategoryId": "ciencia-politica",
     "secondaryCategoryIds": [],
     "secondaryCategoryPaths": [],
-    "tags": ["Emociones políticas", "Sociedad", "Política"],
+    "tags": [
+      "Emociones políticas",
+      "Sociedad",
+      "Política"
+    ],
     "note": "Curación comercial 2026-08-26: Gestionar las emociones políticas corresponde a Ciencia política; no debe aparecer en Psicología"
   },
   {
@@ -124,7 +156,10 @@
     "subcategoryId": "psicoterapia",
     "secondaryCategoryIds": [],
     "secondaryCategoryPaths": [],
-    "tags": ["Psicoterapia", "Narrativas terapéuticas"],
+    "tags": [
+      "Psicoterapia",
+      "Narrativas terapéuticas"
+    ],
     "note": "Curación comercial 2026-08-26: obra profesional de psicoterapia; el título se repara en el sync antes de publicarse"
   },
   {
@@ -134,7 +169,10 @@
     "subcategoryId": "dermatologia",
     "secondaryCategoryIds": [],
     "secondaryCategoryPaths": [],
-    "tags": ["Psoriasis", "Terapias complementarias"],
+    "tags": [
+      "Psoriasis",
+      "Terapias complementarias"
+    ],
     "note": "Curación comercial 2026-08-26: psoriasis corresponde a Medicina y salud > Dermatología; no debe aparecer en Psicología"
   },
   {
@@ -144,7 +182,2426 @@
     "subcategoryId": "informatica-software",
     "secondaryCategoryIds": [],
     "secondaryCategoryPaths": [],
-    "tags": ["Programación", "Ingeniería de software", "Calidad de código"],
+    "tags": [
+      "Programación",
+      "Ingeniería de software",
+      "Calidad de código"
+    ],
     "note": "Curación comercial 2026-08-26: Clean Code corresponde a Informática y desarrollo de software; Robert C. Martin se retira de Psicología"
+  },
+  {
+    "mlu": "MLU661851377",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cristianismo",
+      "Contemplación"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El Cristo interior: espiritualidad cristiana y teología; no tarot."
+  },
+  {
+    "mlu": "MLU643087668",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "educacion-menstrual",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "tarot-oraculos"
+      }
+    ],
+    "tags": [
+      "Menstruación",
+      "Pubertad",
+      "Libro y cartas oráculo"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Cielo tiene su luna: educación menstrual como tema principal; conserva Oráculos porque incluye un mazo."
+  },
+  {
+    "mlu": "MLU669963610",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "educacion-menstrual",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "tarot-oraculos"
+      }
+    ],
+    "tags": [
+      "Menstruación",
+      "Pubertad",
+      "Libro y cartas oráculo"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Duplicado de Cielo tiene su luna, ISBN 9789877782363, identificado en el registro de merchandising."
+  },
+  {
+    "mlu": "MLU643758459",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cábala"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El poder de la Kabbalah: se confirma su subcategoría específica."
+  },
+  {
+    "mlu": "MLU698362131",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Pensamiento crítico"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Pedro y la magia del pensamiento: lectura infantil y aprendizaje; magia en el título no define esoterismo."
+  },
+  {
+    "mlu": "MLU646991953",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cábala"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Sefer Yetzirah, El libro de la creación: se confirma Cábala y Kabbalah."
+  },
+  {
+    "mlu": "MLU650471127",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Cábala"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: El camino del kabbalista: se confirma Cábala y Kabbalah."
+  },
+  {
+    "mlu": "MLU706775946",
+    "type": "object",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "juegos-educativos",
+    "secondaryCategoryIds": [
+      "infantil-juvenil"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "infantil-juvenil",
+        "subcategoryId": "actividades-aprendizaje"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Kit de juegos de yoga infantil; nueva categoría Juegos y actividades."
+  },
+  {
+    "mlu": "MLU669972586",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Espiritualidad",
+      "Chakras"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: Anatomía del espíritu: espiritualidad y energía; no anatomía médica ni tarot."
+  },
+  {
+    "mlu": "MLU477509991",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "educacion-menstrual",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [
+      "Menstruación",
+      "Pubertad"
+    ],
+    "note": "Curación comercial autorizada 2026-09-12: La magia de Daniela: educación menstrual infantil; magia en el título no define esoterismo."
+  },
+  {
+    "mlu": "MLU613405055",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU617694745",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU628130108",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU638364881",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1034073554",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU650639594",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU651799860",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU693233792",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU694232976",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU695839630",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU664385598",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU878854302",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU672400514",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU672400354",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU653115467",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU653050579",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1183080364",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1183145074",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU690353420",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU690486004",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU645814631",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU701277664",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU638925813",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Bitácora espiritual con recorrido por el Árbol de la Vida; se conserva acceso secundario desde Cábala."
+  },
+  {
+    "mlu": "MLU882428548",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Bitácora espiritual con recorrido por el Árbol de la Vida; se conserva acceso secundario desde Cábala."
+  },
+  {
+    "mlu": "MLU669575388",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU669986444",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU634214333",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU660284788",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU824488230",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697963046",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU645814743",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU803909708",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU803766754",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "espiritualidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU845098800",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU845033746",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU693206902",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU693155252",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU736478622",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU736345110",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU711599128",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU650471169",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU704243474",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU624170939",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU656290288",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707242384",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU624079857",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU651865348",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU632980281",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU655905202",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU681866434",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU681879522",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU699813324",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU799138538",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU614917590",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU628156054",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1068776960",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1068776958",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "espiritualidad-energia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU673336280",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "emociones-vinculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU637978567",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "emociones-vinculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU618333089",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "emociones-vinculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU628161741",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "emociones-vinculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU717708380",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "emociones-vinculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Cuento infantil sobre reproducción asistida y diversidad familiar."
+  },
+  {
+    "mlu": "MLU697806509",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU889916618",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU656516418",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU632523741",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU654281768",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1411336706",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Novelas de la serie Caballo de Troya; el tema o autor no define esoterismo."
+  },
+  {
+    "mlu": "MLU1411362862",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Novelas de la serie Caballo de Troya; el tema o autor no define esoterismo."
+  },
+  {
+    "mlu": "MLU603208482",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Novelas de la serie Caballo de Troya; el tema o autor no define esoterismo."
+  },
+  {
+    "mlu": "MLU1444239490",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Novelas de la serie Caballo de Troya; el tema o autor no define esoterismo."
+  },
+  {
+    "mlu": "MLU681817316",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Novelas de la serie Caballo de Troya; el tema o autor no define esoterismo."
+  },
+  {
+    "mlu": "MLU681895218",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "novela",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Novelas de la serie Caballo de Troya; el tema o autor no define esoterismo."
+  },
+  {
+    "mlu": "MLU702084168",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU957401024",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU957401022",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU680201026",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU680475126",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697056700",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU633993797",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU659594040",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697017746",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU806458440",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU806900140",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU629592916",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU968306502",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU692751190",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU692737982",
+    "type": "book",
+    "primaryCategoryId": "religion-espiritualidad",
+    "subcategoryId": "yoga-meditacion",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU761306090",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU767573682",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697810743",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU644976285",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU644963323",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU823539448",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU823773476",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "hermetismo-alquimia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697307453",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707816048",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1242572016",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU636003240",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU654527206",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU638054644",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU658001384",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707855176",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707855178",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU627579066",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU655245898",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU635157654",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU652668348",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU664968934",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU666617440",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU690319272",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU690345164",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU708009688",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707855278",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU701351808",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU701181340",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU661209812",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU660998018",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707983764",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU724453360",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU701306350",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU742445028",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU643192235",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU643205029",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "cabala-kabbalah",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707881312",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU707790092",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "astrologia",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU845005408",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU845005406",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU640257207",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU640218253",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "cabala-kabbalah"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU804612402",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1038819632",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1473076566",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [
+      "desarrollo-personal"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "desarrollo-personal",
+        "subcategoryId": "constelaciones-familiares"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Libro de tarot con psicogenealogía y constelaciones, según portada y descripción; no mazo."
+  },
+  {
+    "mlu": "MLU640809987",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU682904878",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU845073128",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU693278768",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU695702472",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU699834588",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU700573106",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU608201824",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU651582722",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU644816005",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU693930594",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU665229240",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU634981681",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU643976951",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU673420988",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU729945432",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU657988462",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU616433535",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "tarot-oraculos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU889072360",
+    "type": "book",
+    "primaryCategoryId": "negocios-economia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Gestión y desarrollo de organizaciones, aunque el título incluya alma."
+  },
+  {
+    "mlu": "MLU887485328",
+    "type": "book",
+    "primaryCategoryId": "negocios-economia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Gestión y desarrollo de organizaciones, aunque el título incluya alma."
+  },
+  {
+    "mlu": "MLU1443557746",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "astrologia"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1443557748",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "magia-brujeria",
+    "secondaryCategoryIds": [
+      "esoterismo-tarot"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "esoterismo-tarot",
+        "subcategoryId": "astrologia"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU687202762",
+    "type": "book",
+    "primaryCategoryId": "historia",
+    "subcategoryId": "historia-argentina-uruguay",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Testimonios y dictadura argentina; alma no describe una materia esotérica."
+  },
+  {
+    "mlu": "MLU620114883",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoanalisis",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU631882817",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoanalisis",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU617210212",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoanalisis",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU658079426",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoanalisis",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU648663091",
+    "type": "book",
+    "primaryCategoryId": "naturaleza-animales",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Historia natural y cultural de los hongos, confirmada en el catálogo de Editorial Blume."
+  },
+  {
+    "mlu": "MLU648520319",
+    "type": "book",
+    "primaryCategoryId": "naturaleza-animales",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Historia natural y cultural de los hongos, confirmada en el catálogo de Editorial Blume."
+  },
+  {
+    "mlu": "MLU1044071548",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "cuento",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Colección de relatos de Ángeles Mastretta; se corrige por contenido, no por el título comercial que dice novela."
+  },
+  {
+    "mlu": "MLU1043941562",
+    "type": "book",
+    "primaryCategoryId": "literatura-ficcion",
+    "subcategoryId": "cuento",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Colección de relatos de Ángeles Mastretta; se corrige por contenido, no por el título comercial que dice novela."
+  },
+  {
+    "mlu": "MLU612569887",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [
+      "comics-manga"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "comics-manga",
+        "subcategoryId": null
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Cómic infantil de My Little Pony; magia forma parte de la ficción."
+  },
+  {
+    "mlu": "MLU628031190",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-infantil",
+    "secondaryCategoryIds": [
+      "comics-manga"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "comics-manga",
+        "subcategoryId": null
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Cómic infantil de My Little Pony; magia forma parte de la ficción."
+  },
+  {
+    "mlu": "MLU612950944",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [
+      "religion-espiritualidad"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "religion-espiritualidad",
+        "subcategoryId": "espiritualidad"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Agrupación comercial expresamente solicitada por Seba junto a Hellinger. Lectura espiritual complementaria, no se afirma que sea un manual de constelaciones."
+  },
+  {
+    "mlu": "MLU636005010",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [
+      "religion-espiritualidad"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "religion-espiritualidad",
+        "subcategoryId": "espiritualidad"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Agrupación comercial expresamente solicitada por Seba junto a Hellinger. Lectura espiritual complementaria, no se afirma que sea un manual de constelaciones."
+  },
+  {
+    "mlu": "MLU612957246",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU628795847",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU612983471",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU636069162",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697194312",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU925764074",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU925764076",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1044045622",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1044019592",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU713147068",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU712938804",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU661278697",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "ufologia-misterios",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU688184434",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "sufismo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU688182724",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "sufismo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU670107095",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "sufismo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU1296916364",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "sufismo",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU625823323",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU636069212",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "actividades-aprendizaje",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU653039303",
+    "type": "object",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "juegos-mesa-cartas",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU647233782",
+    "type": "object",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "juegos-educativos",
+    "secondaryCategoryIds": [
+      "infantil-juvenil"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "infantil-juvenil",
+        "subcategoryId": "actividades-aprendizaje"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Juego de 30 cartas didácticas, según Editorial Kairós."
+  },
+  {
+    "mlu": "MLU658066442",
+    "type": "object",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "juegos-educativos",
+    "secondaryCategoryIds": [
+      "infantil-juvenil"
+    ],
+    "secondaryCategoryPaths": [
+      {
+        "categoryId": "infantil-juvenil",
+        "subcategoryId": "actividades-aprendizaje"
+      }
+    ],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Juego de 30 cartas didácticas, según Editorial Kairós."
+  },
+  {
+    "mlu": "MLU647537051",
+    "type": "book",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "ingenio-pasatiempos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Libro de juegos de palabras STOP, Editorial Alma."
+  },
+  {
+    "mlu": "MLU647537049",
+    "type": "book",
+    "primaryCategoryId": "juegos-actividades",
+    "subcategoryId": "ingenio-pasatiempos",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Libro de juegos de palabras STOP, Editorial Alma."
+  },
+  {
+    "mlu": "MLU625847761",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Diario autobiográfico sobre la enfermedad y pérdida de su esposa, según sinopsis editorial; lectura sobre duelo."
+  },
+  {
+    "mlu": "MLU654868116",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Diario autobiográfico sobre la enfermedad y pérdida de su esposa, según sinopsis editorial; lectura sobre duelo."
+  },
+  {
+    "mlu": "MLU641163674",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "filosofia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Ensayo de crítica política y religiosa de Osho."
+  },
+  {
+    "mlu": "MLU656147680",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "filosofia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Ensayo de crítica política y religiosa de Osho."
+  },
+  {
+    "mlu": "MLU634769237",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU665057112",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU617230632",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU629964977",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU703345128",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU703410066",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU647342063",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU647404589",
+    "type": "book",
+    "primaryCategoryId": "psicologia",
+    "subcategoryId": "psicoterapia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU697305757",
+    "type": "book",
+    "primaryCategoryId": "infantil-juvenil",
+    "subcategoryId": "literatura-juvenil",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU706573878",
+    "type": "book",
+    "primaryCategoryId": "filosofia-ciencias-sociales",
+    "subcategoryId": "filosofia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Ensayos filosóficos sobre Deleuze, confirmados en Editorial Las Cuarenta."
+  },
+  {
+    "mlu": "MLU639585179",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "numerologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU694929519",
+    "type": "book",
+    "primaryCategoryId": "esoterismo-tarot",
+    "subcategoryId": "numerologia",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU695677580",
+    "type": "book",
+    "primaryCategoryId": "familia-crianza",
+    "subcategoryId": "maternidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU728216868",
+    "type": "book",
+    "primaryCategoryId": "familia-crianza",
+    "subcategoryId": "maternidad",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Revisión del título, portada y contenido de la edición enviada por Seba."
+  },
+  {
+    "mlu": "MLU620434303",
+    "type": "book",
+    "primaryCategoryId": "arte-diseno-fotografia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Libro sobre la realización cinematográfica de Animales fantásticos; magia alude a la película."
+  },
+  {
+    "mlu": "MLU654834570",
+    "type": "book",
+    "primaryCategoryId": "arte-diseno-fotografia",
+    "subcategoryId": null,
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Libro sobre la realización cinematográfica de Animales fantásticos; magia alude a la película."
+  },
+  {
+    "mlu": "MLU641891648",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Contenido y título explícitos de constelaciones familiares en el catálogo."
+  },
+  {
+    "mlu": "MLU697219848",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Contenido y título explícitos de constelaciones familiares en el catálogo."
+  },
+  {
+    "mlu": "MLU692266341",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Contenido y título explícitos de constelaciones familiares en el catálogo."
+  },
+  {
+    "mlu": "MLU697809225",
+    "type": "book",
+    "primaryCategoryId": "desarrollo-personal",
+    "subcategoryId": "constelaciones-familiares",
+    "secondaryCategoryIds": [],
+    "secondaryCategoryPaths": [],
+    "tags": [],
+    "note": "Curación autorizada 2026-09-12: Contenido y título explícitos de constelaciones familiares en el catálogo."
   }
 ]

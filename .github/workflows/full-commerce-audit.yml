@@ -51,7 +51,14 @@ jobs:
             echo "page_limit=0" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify production image index, Google image and desktop/mobile scroll
+        run: |
+          npm install --prefix "$RUNNER_TEMP/amado-image-qa" --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/amado-image-qa/node_modules/playwright/cli.js" install --with-deps chromium
+          node scripts/commerce/images-live-check.mjs "$RUNNER_TEMP/amado-image-qa/node_modules/playwright/index.mjs"
+
       - name: Run live catalog, feed, cover and page audit
+        if: ${{ !cancelled() }}
         env:
           COMMERCE_OUTPUT_DIR: artifacts/commerce
           COMMERCE_IMAGE_LIMIT: ${{ steps.scope.outputs.image_limit }}

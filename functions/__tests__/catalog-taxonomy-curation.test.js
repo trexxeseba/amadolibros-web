@@ -4,13 +4,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { normalizeCategoryPaths } from '../_shared/category-paths.js';
+import { TAXONOMY_VERSION } from '../../scripts/categorize/taxonomy.js';
 
 const dataPath = fileURLToPath(new URL('../../astro-front/public/data/active-categories.json', import.meta.url));
 const data = JSON.parse(readFileSync(dataPath, 'utf8'));
 
 test('el artefacto usa rutas múltiples V2 y conserva las versiones de reglas', () => {
   assert.equal(data.schema_version, 2);
-  assert.equal(data.taxonomy_version, 4);
+  assert.equal(data.taxonomy_version, TAXONOMY_VERSION);
   assert.equal(data.rules_version, 14);
   assert.ok(Object.values(data.items).some(paths => normalizeCategoryPaths(paths).length > 1));
 });

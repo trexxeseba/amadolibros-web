@@ -49,7 +49,7 @@ function classification(overrides = {}) {
   };
 }
 
-test('selecciona ISBN activos unicos, excluye enriquecidos y prioriza brechas', () => {
+test('selecciona ISBN activos unicos y prioriza brechas', () => {
   const result = selectResearchCohort({
     catalogItems: [
       catalogItem('MLU1', ISBN_A, { description: 'x'.repeat(900) }),
@@ -62,11 +62,48 @@ test('selecciona ISBN activos unicos, excluye enriquecidos y prioriza brechas', 
   });
 
   assert.equal(result.selected.length, 2);
-  assert.equal(result.eligible_unique_isbns, 2);
-  assert.equal(result.excluded_already_enriched, 1);
+  assert.equal(result.isbns_en_registro, 1);
   assert.equal(result.selected[0].isbn, ISBN_B);
   assert.equal(result.selected[0].id, 'MLU3');
   assert.deepEqual(result.selected[0].listing_ids, ['MLU2', 'MLU3']);
+});
+
+// Revisión de Astra: estar en el registro no es estar completo. Un ISBN ya
+// investigado que sigue sin `pages` ni `publisher` debe poder volver a
+// investigarse; sólo queda fuera si su ficha efectiva no tiene huecos.
+test('un ISBN del registro con campos incompletos sigue siendo candidato', () => {
+  const result = selectResearchCohort({
+    catalogItems: [catalogItem('MLU9', ISBN_C, { available_quantity: 5 })],
+    existingEnrichments: [{ isbn: ISBN_C }],
+    limit: 0,
+  });
+
+  assert.equal(result.isbns_en_registro, 1);
+  assert.equal(result.selected.length, 1);
+  assert.equal(result.selected[0].isbn, ISBN_C);
+  assert.equal(result.selected[0].already_in_registry, true);
+  assert.equal(result.reinvestigables_en_registro, 1);
+  assert.ok(result.selected[0].research.missing_fields.length > 0);
+});
+
+// ...y el ISBN sin ningún hueco pendiente no gasta cupo.
+test('un ISBN sin campos pendientes queda fuera del cohorte', () => {
+  const completo = catalogItem('MLU10', ISBN_A, {
+    author: 'Autora Real',
+    publisher: 'Editorial Real',
+    pages: 320,
+    bibliographic: {
+      language: 'Español',
+      format: 'Tapa blanda',
+      edition: '2.ª edición',
+      publication_year: '2019',
+      subjects: ['Narrativa'],
+    },
+  });
+  const result = selectResearchCohort({ catalogItems: [completo], existingEnrichments: [], limit: 0 });
+
+  assert.equal(result.selected.length, 0);
+  assert.equal(result.eligible_unique_isbns, 0);
 });
 
 test('temas oficiales cuentan como mejora SEO cuando la edición no los tenía', () => {

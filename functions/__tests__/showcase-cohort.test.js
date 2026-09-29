@@ -43,15 +43,15 @@ function payload(schemaVersion, count) {
   };
 }
 
-test('acepta v2 con hasta 3000 MLU y v1 con hasta 1000', () => {
-  const v2 = normalizeShowcaseCohort(payload(2, 3000));
+test('acepta v2 con hasta 10000 MLU y v1 con hasta 1000', () => {
+  const v2 = normalizeShowcaseCohort(payload(2, 10000));
   const v1 = normalizeShowcaseCohort(payload(1, 1000));
 
-  assert.equal(SHOWCASE_COHORT_LIMIT, 3000);
+  assert.equal(SHOWCASE_COHORT_LIMIT, 10000);
   assert.equal(LEGACY_SHOWCASE_COHORT_LIMIT, 1000);
   assert.ok(v2);
-  assert.equal(v2.total, 3000);
-  assert.equal(v2.ids.size, 3000);
+  assert.equal(v2.total, 10000);
+  assert.equal(v2.ids.size, 10000);
   assert.equal(v2.source, 'r2-v2');
   assert.ok(v1);
   assert.equal(v1.total, 1000);
@@ -80,7 +80,7 @@ test('rechaza versión desconocida, duplicados, IDs inválidos, total cruzado y 
     ids: ['MLU1'],
   }), null);
   assert.equal(normalizeShowcaseCohort(payload(1, 1001)), null);
-  assert.equal(normalizeShowcaseCohort(payload(2, 3001)), null);
+  assert.equal(normalizeShowcaseCohort(payload(2, 10001)), null);
 });
 
 test('Preview usa una muestra controlada sólo si faltan v2 y v1', async () => {

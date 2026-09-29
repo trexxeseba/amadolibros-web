@@ -12,7 +12,11 @@ export { isGenericAuthor } from './generic-author.js';
 import { isGenericAuthor } from './generic-author.js';
 
 export const LEGACY_SHOWCASE_LIMIT = 1000;
-export const DEFAULT_SHOWCASE_LIMIT = 3000;
+// Tope por encima del catálogo activo (~6.800 publicaciones, menos ediciones
+// únicas): la ficha ampliada sólo usa datos reales de la edición, así que la
+// alcanzan todas las ediciones elegibles. La deduplicación por ISBN+condición
+// sigue dejando una sola publicación por edición.
+export const DEFAULT_SHOWCASE_LIMIT = 10000;
 
 
 const PLACEHOLDER_PUBLISHERS = new Set([

@@ -1,4 +1,10 @@
-name: Checkout funnel daily and manual report
+name: Informe diario — embudo de checkout y salud de la web
+
+# Este workflow ya corría todos los días y calculaba el embudo, pero su
+# resultado moría en el resumen del job y en un ZIP. Ahora además revisa la
+# salud (sync y reportes automáticos) y manda todo por correo. Va acá y no en
+# un workflow aparte por dos razones: la consulta a D1 no se duplica, y llega
+# un solo correo por día en vez de dos.
 
 on:
   push:
@@ -23,6 +29,8 @@ on:
 
 permissions:
   contents: read
+  # Para leer la última corrida de los workflows vigilados con el token del job.
+  actions: read
 
 concurrency:
   group: checkout-funnel-report
@@ -116,3 +124,26 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Datos personales: no se consultan ni exportan" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deploy: no se dispara desde este workflow" >> "$GITHUB_STEP_SUMMARY"
+
+      # `always()` en los dos pasos que siguen: el día que la consulta a D1
+      # falle es justo el día en que hace falta que el correo salga igual,
+      # avisando qué se rompió, en vez de no llegar.
+      - name: Revisar la salud del sitio y de los reportes
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEALTH_DIGEST_OUTPUT: artifacts/commerce/salud.md
+        run: |
+          mkdir -p artifacts/commerce
+          node scripts/ops/health-digest.mjs
+
+      - name: Mandar el informe por correo
+        if: always()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # No son secretos: los mismos valores ya están en wrangler.toml.
+          REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
+          REPORT_EMAIL_TO: undiaes@gmail.com,adm@amadolibros.com
+          REPORT_EMAIL_SUBJECT: Amado Libros — informe diario
+          REPORT_EMAIL_FILES: artifacts/commerce/salud.md,artifacts/commerce/report-summary.md
+        run: node scripts/ops/send-report-email.mjs

@@ -1,0 +1,104 @@
+# Limpieza de Esoterismo y Tarot: primera tanda
+
+Solicitud de Seba: reclasificar los diez títulos de las capturas y crear subcategorías cuando hagan falta. Base inicial: main, `9bd89c29da40b2f2c7e52709960b033c49d7876c`. Actualizado sobre `f5079498285b9f11eade0ac82ff518229eb24deb` para conservar la corrección concurrente de ISBN/GTIN (#314).
+
+| Producto | MLU | Ubicación |
+| --- | --- | --- |
+| El Cristo interior | MLU661851377 | Religión y espiritualidad > Espiritualidad |
+| Cielo tiene su luna | MLU643087668 | Infantil y juvenil > Pubertad y educación menstrual; también Tarot y oráculos |
+| El poder de la Kabbalah | MLU643758459 | Esoterismo > Cábala y Kabbalah (confirmada) |
+| Pedro y la magia del pensamiento | MLU698362131 | Infantil y juvenil > Actividades y aprendizaje |
+| Sefer Yetzirah | MLU646991953 | Esoterismo > Cábala y Kabbalah (confirmada) |
+| El camino del kabbalista | MLU650471127 | Esoterismo > Cábala y Kabbalah (confirmada) |
+| Mi maleta de yoga | MLU706775946 | Infantil y juvenil > Actividades y aprendizaje |
+| Anatomía del espíritu | MLU669972586 | Esoterismo > Espiritualidad y energía |
+| La magia de Daniela | MLU477509991 | Infantil y juvenil > Pubertad y educación menstrual |
+| El yoga de Jesús | MLU613405055 | Religión y espiritualidad > Espiritualidad |
+
+Se incluye MLU669963610, duplicado de Cielo tiene su luna identificado por ISBN 9789877782363 en el artefacto existente. La edición incluye libro ilustrado y cartas oráculo: se corrige el formato para retirarla del bloque de libros de estudio. Cábala ya existía; se agregan únicamente Pubertad y educación menstrual y Espiritualidad y energía.
+
+Las correcciones manuales ganan al clasificador en futuras generaciones. El artefacto público conserva los 17.195 IDs, con ocho cambios de rutas (siete títulos y el duplicado); los otros tres títulos ya estaban bien clasificados. No se ejecuta una reclasificación global. Los contadores se calculan por producto y categoría, sin duplicar las categorías secundarias.
+
+Se agregan accesos a subcategorías en las páginas de Esoterismo y Tarot e Infantil y juvenil usando los filtros existentes de /catalogo. No se crean URLs SEO indexables, ni se cambian títulos, H1, slugs, autorías, precios, stock o descripciones comerciales. El formato de Cielo tiene su luna se corrige tanto en la fuente generadora como en el artefacto de merchandising existente.
+
+## Evidencia de contenido
+
+Se revisaron las descripciones de las diez fichas públicas el 12/09/2026. Las rutas se identifican por los MLU de la tabla en `https://www.amadolibros.com/libro/MLU.../`.
+
+- [El Cristo interior](https://www.amadolibros.com/libro/MLU661851377/javier-melloni-el-cristo-interior-teologia-y-meditacion): espiritualidad cristiana y contemplación.
+- [Cielo tiene su luna](https://www.amadolibros.com/libro/MLU643087668/primera-menstruacion-cielo-tiene-su-luna-libro-oraculo): primera menstruación, libro y cartas de introspección. [Composición del conjunto corroborada](https://saberesciclicos.empretienda.com.ar/libros/para-ninas-y-ninxs/cielo-tiene-su-luna-con-mazo-de-carta-oraculo-ma-eugenia-ortega).
+- [El poder de la Kabbalah](https://www.amadolibros.com/libro/MLU643758459/el-poder-de-la-kabbalah-rav-berg-cabala).
+- [Pedro y la magia del pensamiento](https://www.amadolibros.com/libro/MLU698362131/pedro-y-la-magia-del-pensamiento-pensamiento-critico): pensamiento crítico para lectores jóvenes.
+- [Sefer Yetzirah](https://www.amadolibros.com/libro/MLU646991953/sefer-yetzirah-el-libro-de-la-creacion-cabala-kabbalah).
+- [El camino del kabbalista](https://www.amadolibros.com/libro/MLU650471127/el-camino-del-kabbalista-de-yehuda-berg-editorial-kabbalah-p).
+- [Mi maleta de yoga](https://www.amadolibros.com/libro/MLU706775946/recurso-didactico-mi-maleta-de-yoga-ejercicios-y-relajacion): libro y actividades infantiles.
+- [Anatomía del espíritu](https://www.amadolibros.com/libro/MLU669972586/anatomia-del-espiritu-de-la-curacion-del-cuerpo-llega-a-trav): chakras y tradiciones espirituales. Clasificar el contenido no valida sus afirmaciones sobre salud.
+- [La magia de Daniela](https://www.amadolibros.com/libro/MLU477509991/la-magia-de-daniela-un-libro-para-entender-la-menstruacion): educación menstrual.
+- [El yoga de Jesús](https://www.amadolibros.com/libro/MLU613405055/libro-el-yoga-de-jesus-paramahansa-yogananda): interpretación espiritual de los Evangelios desde el yoga.
+
+## Verificación
+
+La prueba `functions/__tests__/esoterismo-cleanup.test.js` comprueba la permanencia de las correcciones, los contadores, la pertenencia de los diez títulos a las páginas renderizadas y el formato del oráculo. Las suites existentes cubren clasificación, rutas, navegación, merchandising y fichas.
+
+## Ampliación: Cábala Uruguay y entrega visible
+
+Pedido explícito de Seba: página de Kabbalah para Uruguay y distintivo literal «Te llega hoy».
+
+- Nueva landing `/libros/esoterismo-tarot/cabala-kabbalah`, alimentada por la subcategoría existente. Tiene título, H1, descripción, canonical, breadcrumbs, guía de compra y entrada automática en el sitemap de categorías. Se enlaza desde Esoterismo y la navegación de categorías.
+- Un distintivo compartido muestra «Te llega hoy» y «Montevideo» en los productos activos con stock de portada, catálogo, categorías y ficha. No aparece en productos por encargo o sin stock. Es un mensaje comercial fijo solicitado por el dueño; no calcula horario de corte, días hábiles ni disponibilidad de cadetería. No cambia las reglas de envío, checkout ni datos estructurados.
+- Los estilos se incluyen una sola vez por página, también en la portada Astro.
+- La portada productiva usa HomeV2Topics y HomeV2Shelf: allí se incorporan los tres accesos específicos y el sello en las siete fichas disponibles. Se conservan también los componentes anteriores para sus usos existentes.
+- Tras recibir «LISTO», se revisaron 220 publicaciones (incluidos duplicados y ediciones), con 170 cambios de rutas respecto de la primera tanda. El detalle antes/después está en `esoterismo-curation-2026-09-12.json`. Se conservan los 17.195 IDs públicos.
+- Las correcciones de la primera tanda se conservan. La ampliación queda en la misma PR Draft, sin merge ni publicación productiva.
+
+## Tanda completa y navegación
+
+- Cuatro accesos visibles: mazos de tarot, mazos de oráculo, libros de tarot/oráculos y libros de esoterismo. Las tres nuevas selecciones complementan la página de mazos existente.
+- Nueva categoría Juegos y actividades, con acceso desde la portada: incluye Mi maleta de yoga, El juego del ahora, Magic Rabbit y STOP. Los recursos infantiles conservan un acceso secundario por edad.
+- Constelaciones familiares queda dentro de Desarrollo personal, con Hellinger, Siegfried Essen y otros títulos explícitos. Principios místicos de Thomas Hübl se incluye por instrucción expresa de Seba como lectura complementaria, conservando además Espiritualidad. Tarot sistémico transgeneracional se puede encontrar desde ambas materias.
+- Yoga y meditación sale de la mezcla de esoterismo. Se agregan las divisiones temáticas requeridas por la tanda, manteniendo Sufismo y Cábala.
+- 27 publicaciones de tarot/oráculos reciben una corrección persistente de formato y sistema. Los conjuntos de mazo y libro revisados no figuran como libros de estudio. No se infieren idiomas, cantidades de cartas ni contenidos desconocidos.
+- Las tarjetas de Alma y Frin (MLU697305757) y Deleuze y la brujería (MLU706573878) amplían el encuadre en 1,65× y 1,72× respectivamente, conservando la proporción. Se aplica a tarjetas de portada, catálogo y categorías. Los archivos originales y las galerías no se editan.
+
+Fuentes editoriales consultadas para los casos ambiguos:
+
+- https://almalepik.com/nuestro-catalogo/ — Thomas Hübl y Bert Hellinger; la proximidad comercial no convierte Principios místicos en un manual técnico de constelaciones.
+- https://blume.net/naturaleza/2260-la-magia-de-los-hongos-9788419094834.html — historia natural y cultural de hongos.
+- https://www.lascuarentaeditorial.com.ar/productos/deleuze-y-la-brujeria-de-mark-fisher-y-matt-lee-digital/ — ensayos filosóficos de Matt Lee y Mark Fisher.
+- https://www.editorialsaban.com.ar/productos/amor-en-magdala-mario-saban/ — bitácora espiritual, con acceso secundario a Cábala.
+- https://www.editorialkairos.com/catalogo/p/el-juego-del-ahora — juego de cartas didácticas.
+
+Los títulos y descripciones originales de producto no se reescriben. La categorización describe la materia de las obras sin validar afirmaciones sobrenaturales ni terapéuticas.
+
+## Revisión de la vista previa: grilla simple
+
+Seba pidió quitar la introducción larga, el cuestionario y los módulos Para empezar, Clásicos, Para profundizar y Lenormand/Kipper. La página general pasa a una sola grilla con todas sus publicaciones; tarot y oráculos se muestran juntos. La clasificación curada, Cábala, Juegos y Constelaciones se conserva.
+
+- El selector ofrece Más nuevos, Más antiguos, Mayor precio y Menor precio. El orden se calcula sobre todo el universo antes de paginar y se conserva al cambiar de página. Cambiar el orden reinicia en la primera página.
+- Las fechas corresponden a `start_time`, la publicación en el catálogo, no al año de edición. Cuando el índice activo no incluye fechas, se toma únicamente ese dato del catálogo completo; stock, precio y pertenencia siguen viniendo del índice activo. Los registros sin fecha o precio se ubican al final.
+- No se presenta Más popular: el catálogo no aporta ventas ni visitas por producto. No se usa stock, antigüedad ni puntaje editorial como sustituto de popularidad.
+- La colección de mazos reúne tarot, oráculos, Lenormand y Kipper. `/libros/esoterismo-tarot/oraculos` redirige 301 a `/libros/esoterismo-tarot/mazos` y sale del sitemap. Los manuales y libros conservan sus URLs.
+- Las URLs de ordenamiento son noindex y mantienen canonical sin orden. Biblias y las demás categorías conservan sus guías.
+- Se amplía Aquarian (MLU693752792 y MLU693866286) 1,65×, Golden Marseille (MLU616949061) 1,70× y Universal Waite en lata (MLU644725123) 1,75×, según las capturas. Sólo cambia el encuadre de tarjeta, conservando proporciones y originales. Las fotos ampliadas solicitan variantes de hasta 960 px para evitar usar una miniatura al agrandarlas.
+- Aquarian incluye físicamente un mazo, tal como muestra la captura y el ISBN 9781572818460. Se corrige su formato persistente para que también aparezca en la colección compartida de cartas.
+- Se sustituyen las pruebas de render del cuestionario retirado por pruebas de la grilla, orden global, paginación, deduplicación, redirección, canonical y enriquecimiento de fechas sin alterar el inventario.
+
+Revisión de especialistas solicitada por Seba: acceso compacto a «Ver mazos de tarot y oráculos» junto al ordenamiento en la raíz; contador de productos y alcance breve también en las selecciones de cartas y libros. No se reintroducen guías, módulos ni animaciones parpadeantes.
+
+La revisión Cloudflare detectó que el orden cronológico parseaba el catálogo completo de 12,7 MB en cada SSR. Se agrega una proyección ID→fecha cacheada durante 60 s, sin precio ni stock: en los hits sólo se parsea ese mapa; en miss aún se consulta el catálogo completo. Un fallo no guarda mapas vacíos.
+
+
+## Corrección de la portada y mezcla de disponibilidad
+
+Seba señaló que el enlace principal todavía mezclaba libros y cartas. Ahora tanto `/libros/esoterismo-tarot` como `/libros/esoterismo-tarot/mazos` muestran exclusivamente mazos identificados. Dos accesos compactos y visibles, «Tarot y oráculos» y «Libros», mantienen clara la separación. `/libros/esoterismo-tarot/libros-esoterismo` reúne también los manuales de tarot; excluye mazos y productos de formato indeterminado ya etiquetados.
+
+Se comprobaron por ID las capturas: Kabbalah y Shabat, El mal de ojo, Más allá de ángeles y demonios, Introducción al Agni Yoga, Están aquí, Tarot: la llave de tu transformación y Luz de tungsteno. Sus libros salen de las dos entradas de mazos y se encuentran en Libros. Las materias internas, Cábala y los demás destinos curados se conservan.
+
+Por nuevo pedido expreso, estas selecciones incluyen los índices de disponibles y por encargo del entorno vigente. La vista inicial intercala ambos estados antes de paginar; no obliga a llegar al final de los disponibles para ver encargos. Los órdenes por fecha y precio siguen disponibles; donde el índice no aporta fecha o precio, esos registros se ubican al final de esos órdenes explícitos. No se inventan fechas ni cotizaciones.
+
+Los encargos muestran «Por encargo», consulta de precio/plazo y enlace a su ficha; no muestran «Te llega hoy», cuotas ni precios antiguos. Si un MLU o una edición repetida aparece disponible y por encargo, se conserva la publicación disponible. No se modifica el estado comercial del catálogo. Se agregan pruebas para las siete capturas, intercalado global, paginación sin pérdidas, separación por formato y lectura de ambos índices sin consultar el catálogo completo en la vista inicial.
+
+
+La comprobación final detectó cartas sin etiqueta de formato en la categoría general, que se estaban interpretando como libros. Se incorporan correcciones persistentes por ID/ISBN para 22 cartas de Arcángeles, Las 72 cartas de los Ángeles, Fin de Siècle Kipper, Los 72 nombres de Dios (baraja), Reiki Inspirational Cards, Meditando con los Ángeles II (libro + cartas), Pregúntale a un ángel (libro y cartas) y Baraja dorada de los Ángeles. El contenido de las fichas identifica los conjuntos; para Shariel y Reiki se contrastaron además [Granica/Kolima](https://granicaeditor.com/libro.asp?isbn=8437019107024) y [Lo Scarabeo](https://www.loscarabeo.com/en/products/reiki-inspirational-cards). No se trasladan dimensiones, precios ni promesas de esas fuentes.
+
+Las dos entradas de mazos ahora toman la categoría general y aplican el mismo filtro de formato, para incluir mazos reconocidos que antes carecían de la subcategoría tarot-oraculos. Las cartas de meditación conservan el tipo otro_sistema. Un producto sin etiqueta que se anuncia como mazo, baraja o conjunto de cartas no se presume libro. Se aplica la corrección de formato por ID o ISBN también a nuevas publicaciones de la misma edición.

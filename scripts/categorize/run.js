@@ -30,6 +30,12 @@ const DATA_DIR = path.join(__dirname, 'data');
 const SNAPSHOT_PATH = path.join(DATA_DIR, 'catalog-snapshot.json');
 const OUTPUT_PATH = path.join(DATA_DIR, 'classifications.json');
 const CORRECTIONS_PATH = path.join(__dirname, 'manual-corrections.json');
+// Clasificaciones asistidas: leídas título por título (sin API ni gasto) para
+// la cola larga que las reglas dejan en "otros-libros". Sólo entran las de
+// confianza alta. Pierden contra una corrección manual y ganan contra las
+// reglas; quedan identificadas con method "assisted" para poder auditarlas.
+const ASSISTED_PATH = path.join(__dirname, 'assisted-classifications.json');
+const ASSISTED_CONFIDENCE = 0.8;
 const SUMMARY_PATH = path.join(__dirname, 'last-run-summary.json');
 
 export function loadManualCorrections() {
@@ -38,6 +44,12 @@ export function loadManualCorrections() {
   const map = new Map();
   for (const correction of list) map.set(correction.mlu, correction);
   return map;
+}
+
+export function loadAssistedClassifications(assistedPath = ASSISTED_PATH) {
+  if (!assistedPath || !existsSync(assistedPath)) return new Map();
+  const list = JSON.parse(readFileSync(assistedPath, 'utf8'));
+  return new Map(list.map(entry => [entry.mlu, entry]));
 }
 
 function loadPreviousOutput(outputPath) {
@@ -54,7 +66,12 @@ function sameVersion(prev) {
   return prev && prev.taxonomyVersion === TAXONOMY_VERSION && prev.rulesVersion === RULES_VERSION;
 }
 
-export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, correctionsPath = CORRECTIONS_PATH } = {}) {
+export function run({
+  snapshotPath = SNAPSHOT_PATH,
+  outputPath = OUTPUT_PATH,
+  correctionsPath = CORRECTIONS_PATH,
+  assistedPath = correctionsPath === CORRECTIONS_PATH ? ASSISTED_PATH : null,
+} = {}) {
   if (!existsSync(snapshotPath)) {
     throw new Error(
       `No existe ${snapshotPath} — correr primero: node scripts/categorize/fetch-catalog.js`
@@ -64,6 +81,7 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
   const corrections = correctionsPath === CORRECTIONS_PATH
     ? loadManualCorrections()
     : new Map(JSON.parse(readFileSync(correctionsPath, 'utf8')).map(c => [c.mlu, c]));
+  const assisted = loadAssistedClassifications(assistedPath);
   const previous = loadPreviousOutput(outputPath);
 
   const seenMlu = new Set();
@@ -72,6 +90,7 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
   let reusedFromPrevious = 0;
   let reclassified = 0;
   let manualApplied = 0;
+  let assistedApplied = 0;
 
   for (const item of snapshot.items) {
     const mlu = item.id;
@@ -88,12 +107,21 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
     };
 
     const correction = corrections.get(mlu) || null;
+    const assistedEntry = assisted.get(mlu) || null;
     const prevResult = previous.get(mlu);
 
     let result;
     if (correction) {
       result = classify(record, correction);
       manualApplied += 1;
+    } else if (assistedEntry) {
+      result = {
+        ...classify(record, assistedEntry),
+        confidence: ASSISTED_CONFIDENCE,
+        method: 'assisted',
+        evidence: [assistedEntry.note || 'clasificación asistida por título'],
+      };
+      assistedApplied += 1;
     } else if (sameVersion(prevResult) && prevResult.method !== 'manual') {
       // Ya resuelto en una corrida anterior con la misma versión de reglas/
       // taxonomía y sin corrección manual pendiente — no se reclasifica.
@@ -116,7 +144,7 @@ export function run({ snapshotPath = SNAPSHOT_PATH, outputPath = OUTPUT_PATH, co
   mkdirSync(path.dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, JSON.stringify(results));
 
-  const summary = buildSummary(results, snapshot, { reusedFromPrevious, reclassified, manualApplied, errors });
+  const summary = buildSummary(results, snapshot, { reusedFromPrevious, reclassified, manualApplied, assistedApplied, errors });
   if (outputPath === OUTPUT_PATH) writeFileSync(SUMMARY_PATH, JSON.stringify(summary, null, 2));
 
   return { results, summary, errors };
@@ -144,6 +172,7 @@ function buildSummary(results, snapshot, meta) {
     reused_from_previous_run: meta.reusedFromPrevious,
     reclassified_this_run: meta.reclassified,
     manual_corrections_applied: meta.manualApplied,
+    assisted_classifications_applied: meta.assistedApplied || 0,
     by_type: byType,
     by_category: byCategory,
     by_subcategory: bySubcategory,

@@ -6,6 +6,7 @@
 // functions/_shared/brand.js; estas pruebas fallan si Footer.astro se edita
 // sin actualizar el módulo (o al revés), y si algún head pierde los iconos.
 import test from 'node:test';
+import { siteHeaderHtml } from '../_shared/site-header.js';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -163,7 +164,9 @@ test('14. no queda ninguna referencia al logo inexistente logo-amado.png', () =>
 
 test('15. el logo de la ficha existe, es el webp y tiene alt', () => {
     assert.ok(existsSync(root('astro-front/public' + BRAND.logo)), 'el webp debe existir');
-    const img = FICHA.match(/<img[^>]*brand-logo[^>]*>/);
+    // El encabezado de la ficha es el compartido de la tienda.
+    assert.match(FICHA, /siteHeaderHtml\(\)/);
+    const img = siteHeaderHtml().match(/<img[^>]*brand-logo[^>]*>/);
     assert.ok(img, 'la ficha debe tener el logo en el header');
     assert.match(img[0], /logo-amado\.webp/);
     assert.match(img[0], /alt="[^"]/, 'el logo necesita alt no vacío');

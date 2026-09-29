@@ -1,4 +1,5 @@
 import { googleReadyImage } from './_shared/image-source-policy.js';
+import { streamCoverManifest } from './_shared/cover-manifest-stream.js';
 /**
  * functions/feed.xml.js
  *
@@ -72,6 +73,24 @@ const MAX_GALLERY_IMAGES = 16;
 const MAX_ADDITIONAL_IMAGE_LINKS = 10;
 const MAX_MERCHANT_DESCRIPTION_CHARS = 5000;
 
+// «Media > Books» en la taxonomía de productos de Google.
+//
+// Sin este atributo, Google clasifica cada producto adivinando a partir del
+// título y la descripción, y con este catálogo se equivoca: la auditoría del
+// 2026-09-13 encontró 16 libros de papel rechazados como
+// `ebooks_policy_violation` —"libros digitales no admitidos"— entre ellos
+// tres cursos de inglés que traen la palabra «Ebook» en el título porque
+// incluyen un código de acceso, y trece que ni siquiera la traen.
+//
+// Es seguro ponerlo fijo para todo el feed: `isEligibleForFeed` exige
+// `isBookProduct`, así que acá no entra nada que no sea un libro. Los mazos
+// de tarot y los juegos quedan fuera del feed por ese mismo filtro.
+//
+// No se promete que esto resuelva los 16 rechazos: lo verifica la auditoría
+// de Merchant viendo si esa causa baja a cero después de la próxima lectura
+// del feed.
+const GOOGLE_PRODUCT_CATEGORY_BOOKS = '784';
+
 export async function onRequest(context) {
     try {
         const [catalog, categoryData] = await Promise.all([
@@ -92,7 +111,7 @@ export async function onRequest(context) {
         // de Amado Libros se mantiene deliberadamente limitado a libros.
         const commerciallyEligibleItems = items.filter(isEligibleForFeed);
         const requireImageQuality = context.env?.COVER_GOOGLE_QUALITY_GATE === 'true';
-        const coverManifest = await readMerchantCoverManifest(context);
+        const coverManifest = await readMerchantCoverManifest(context, commerciallyEligibleItems.map(item => item.id));
         const eligibleItems = coverManifest
             ? filterItemsWithReadyPrimaryCover(commerciallyEligibleItems, coverManifest, requireImageQuality)
             : commerciallyEligibleItems;
@@ -129,7 +148,8 @@ export async function onRequest(context) {
         return new Response(feed, {
             headers: {
                 "content-type": "application/xml;charset=UTF-8",
-                "cache-control": `public, max-age=${pendingCovers > 0 ? 300 : 21600}`,
+                "cache-control": 'public, max-age=60',
+                ...(catalog?.updated_at ? { 'x-amado-catalog-updated-at': String(catalog.updated_at) } : {}),
                 "x-amado-feed-cover-pending": String(pendingCovers),
             },
         });
@@ -393,12 +413,24 @@ export function buildFeedDescription(item) {
     return sentence;
 }
 
+// slice() corta por unidades UTF-16, no por caracteres. Un emoji o cualquier
+// carácter fuera del BMP ocupa DOS unidades, así que un corte que cae justo en
+// el medio deja media letra: un suplente solitario. Eso no se puede codificar
+// en UTF-8, y Merchant rechaza la ficha con `utf8_encoding_error [description]`.
+// Se descarta esa mitad huérfana; perder un emoji al final de un texto ya
+// truncado no le cambia nada a nadie, y una ficha rechazada sí.
+function dropLoneSurrogate(text) {
+    const last = text.charCodeAt(text.length - 1);
+    return last >= 0xD800 && last <= 0xDBFF ? text.slice(0, -1) : text;
+}
+
 export function truncateMerchantText(value, maxChars) {
     const text = String(value || '').trim();
     if (text.length <= maxChars) return text;
     const clipped = text.slice(0, maxChars + 1);
     const boundary = clipped.lastIndexOf(' ');
-    return clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars).trim();
+    const cut = clipped.slice(0, boundary >= Math.floor(maxChars * 0.7) ? boundary : maxChars);
+    return dropLoneSurrogate(cut).trim();
 }
 
 export function merchantImageLink(item, position = 0) {
@@ -481,17 +513,17 @@ export function filterItemsWithReadyPrimaryCover(items, manifest, requireQuality
     });
 }
 
-async function readMerchantCoverManifest(context) {
+async function readMerchantCoverManifest(context, productIds) {
     if (context?.env?.APP_ENV !== 'production' && context?.env?.COVER_GOOGLE_QUALITY_GATE !== 'true') return null;
     const bucket = context?.env?.COVER_R2;
     if (!bucket || typeof bucket.get !== 'function') {
         throw new Error('COVER_R2 no está disponible en producción; se conserva el feed anterior.');
     }
     const object = await bucket.get(COVER_MANIFEST_KEY);
-    if (!object || typeof object.text !== 'function') {
+    if (!object) {
         throw new Error('Manifest de portadas no disponible; se conserva el feed anterior.');
     }
-    const manifest = JSON.parse(await object.text());
+    const manifest = await streamCoverManifest(object, { productIds });
     if (!manifest || manifest.schema_version !== 1 || !manifest.entries ||
         typeof manifest.entries !== 'object' || Array.isArray(manifest.entries)) {
         throw new Error('Manifest de portadas inválido; se conserva el feed anterior.');
@@ -544,7 +576,8 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         ${imageLink ? `<g:image_link>${escapeXml(imageLink)}</g:image_link>${additionalImageTags}` : ''}
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
-        <g:condition>${escapeXml(cond)}</g:condition>${gtinTag}${identifierExistsTag}${productTypeTags}
+        <g:condition>${escapeXml(cond)}</g:condition>
+        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${identifierExistsTag}${productTypeTags}
     </item>`;
 }
 

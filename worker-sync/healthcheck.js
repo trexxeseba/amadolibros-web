@@ -62,7 +62,15 @@ export async function notifyHealthcheck(env, kind, {
   try {
     const response = await fetchFn(target, {
       method: 'POST',
-      redirect: 'error',
+      // 'manual', no 'error': el runtime de Cloudflare sólo acepta 'follow' y
+      // 'manual', y con 'error' la llamada tira antes de salir. El catch de
+      // abajo se la tragaba, así que el sync seguía en verde, el ping no salía
+      // nunca y el monitoreo avisaba "caído" todos los días. Un aviso que
+      // grita en falso a diario es peor que no tener aviso.
+      // 'manual' conserva la intención original —no seguir redirecciones a
+      // otro destino—: un 3xx vuelve como 3xx, `response.ok` es false y se
+      // registra http-error en vez de pingar a donde sea que apunte.
+      redirect: 'manual',
       signal: controller.signal,
     });
     if (!response?.ok) {

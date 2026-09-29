@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-25T17:37:41.918Z",
+  "cohort": {
+    "requested": 1000,
+    "researched": 3608,
+    "selected_updates": 2,
+    "unique_isbn": true,
+    "scope": "active_sellable_editions"
+  },
+  "metrics": {
+    "GREEN_FULL": 0,
+    "GREEN_FACTS": 2,
+    "REVIEW": 1167,
+    "NO_EVIDENCE": 2439,
+    "updated_count": 2,
+    "remaining_to_1000": 998,
+    "target_reached": false
+  },
+  "entries": [
+    {
+      "isbn": "9788410359239",
+      "representative_id": "MLU1504806406",
+      "listing_ids": [
+        "MLU1504806406"
+      ],
+      "title": "La Mujer Con El Tatuaje Anna Stuart Bolsillo",
+      "author": "ANNA STUART",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Newton Compton Editores",
+        "pages": 443
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789874729095",
+      "representative_id": "MLU602259072",
+      "listing_ids": [
+        "MLU602259072",
+        "MLU657257998"
+      ],
+      "title": "Niñez En Movimiento Del Adultocentrismo A La Emancipacion",
+      "author": "Morales, Santiago",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2019"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    }
+  ]
+}

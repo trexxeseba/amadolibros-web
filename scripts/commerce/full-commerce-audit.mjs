@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { inspectCoverBytes } from '../../worker-sync/cover-mirror.js';
 import { isBookProduct } from '../../functions/feed.xml.js';
+import { inspectProductImages } from '../../shared/product-image-audit.js';
 
 const DEFAULT_BASE_URL = 'https://www.amadolibros.com';
 const DEFAULT_CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
@@ -236,7 +237,10 @@ export function inspectProductHtml(html, requestedUrl, { expectIndexable = true 
   const canonical = htmlValue(html, /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i);
   const titleValue = htmlValue(html, /<title>([\s\S]*?)<\/title>/i);
   const h1 = htmlValue(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i).replace(/<[^>]+>/g, '').trim();
-  const productSchema = /"@type"\s*:\s*(?:"(?:Product|Book)"|\[[^\]]*"(?:Product|Book)")/i.test(html);
+  // Las fichas editoriales Book sin Product ya estaban admitidas. Esta
+  // comprobación agrega image a los Product, sin cambiar esa política.
+  const imageInspection = inspectProductImages(html, { allowBookOnly: true });
+  const productSchema = imageInspection.products.length > 0 || imageInspection.hasBook;
   const noindex = /\bnoindex\b/i.test(robots);
   const issues = [];
   if (expectIndexable && noindex) issues.push('NOINDEX_LIVE');
@@ -244,7 +248,7 @@ export function inspectProductHtml(html, requestedUrl, { expectIndexable = true 
   if (!canonical) issues.push('CANONICAL_MISSING');
   if (!titleValue) issues.push('TITLE_MISSING');
   if (!h1) issues.push('H1_MISSING');
-  if (!productSchema) issues.push('PRODUCT_SCHEMA_MISSING');
+  issues.push(...imageInspection.issues);
   let canonicalMatches = false;
   try { canonicalMatches = new URL(canonical).pathname === new URL(requestedUrl).pathname; } catch {}
   if (canonical && !canonicalMatches) issues.push('CANONICAL_PATH_MISMATCH');

@@ -7,6 +7,7 @@ import { orderHubPaginationEntries } from './_shared/order-hub.js';
 export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/`,
   `${BASE}/catalogo`,
+  `${BASE}/temas`,
   `${BASE}/pedir-libro/`,
   `${BASE}/como-identificar-edicion-correcta-isbn/`,
   `${BASE}/libros-agotados-importados-uruguay`,
