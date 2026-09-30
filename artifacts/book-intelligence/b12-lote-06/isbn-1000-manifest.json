@@ -1,21 +1,433 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-25T18:11:30.888Z",
+  "generated_at": "2026-09-30T18:43:15.113Z",
   "cohort": {
     "requested": 1000,
-    "researched": 3608,
-    "selected_updates": 0,
+    "researched": 3591,
+    "selected_updates": 12,
     "unique_isbn": true,
     "scope": "active_sellable_editions"
   },
   "metrics": {
-    "GREEN_FULL": 0,
-    "GREEN_FACTS": 0,
-    "REVIEW": 1596,
-    "NO_EVIDENCE": 2012,
-    "updated_count": 0,
-    "remaining_to_1000": 1000,
+    "GREEN_FULL": 5,
+    "GREEN_FACTS": 7,
+    "REVIEW": 1797,
+    "NO_EVIDENCE": 1782,
+    "updated_count": 12,
+    "remaining_to_1000": 988,
     "target_reached": false
   },
-  "entries": []
+  "entries": [
+    {
+      "isbn": "9789871239610",
+      "representative_id": "MLU649423220",
+      "listing_ids": [
+        "MLU632093893",
+        "MLU649423220"
+      ],
+      "title": "Introduccion A La Epistemologia Objetivista Ayn Rand",
+      "author": "Rand, Ayn",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2011"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788491713869",
+      "representative_id": "MLU910077130",
+      "listing_ids": [
+        "MLU907608712",
+        "MLU910077130"
+      ],
+      "title": "Intervención Neuropsicológica En Afasias Lenguaje Adquirido",
+      "author": "Pérez, Miguel Ángel",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 284,
+        "publication_year": "2019"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789872011802",
+      "representative_id": "MLU669575388",
+      "listing_ids": [
+        "MLU669575388",
+        "MLU669986444"
+      ],
+      "title": "Las Raíces Judías Del Cristianismo Mario J. Saban",
+      "author": "Mario Javier Saban",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Christianity"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Mario J. Saban"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Jewish Roots of Christianity, the"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788408137740",
+      "representative_id": "MLU479209670",
+      "listing_ids": [
+        "MLU479209670",
+        "MLU652002752"
+      ],
+      "title": "Batallas De Colores Herve Tullet",
+      "author": "Tullet, Hervé",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 64
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788466753548",
+      "representative_id": "MLU671336974",
+      "listing_ids": [
+        "MLU667409260",
+        "MLU671336974"
+      ],
+      "title": "El Misterio De La Habitacion Cerrada, De Emilio Calderon. Editorial Anaya En Español",
+      "author": "Calderón, Emilio",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Juvenile Fiction"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788467861334",
+      "representative_id": "MLU478295694",
+      "listing_ids": [
+        "MLU478295694",
+        "MLU633182755"
+      ],
+      "title": "Feliz Feroz",
+      "author": "El Hematocrítico",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Wolves"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788491220770",
+      "representative_id": "MLU666524764",
+      "listing_ids": [
+        "MLU666524764",
+        "MLU884196554"
+      ],
+      "title": "Nela Y El Ratón Pérez",
+      "author": "Alejandra Vallejo-Nagera",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 32
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788483108383",
+      "representative_id": "MLU617037469",
+      "listing_ids": [
+        "MLU617037469"
+      ],
+      "title": "La Escuela Moderna Ferrer Guardia Pedagogia Racionalista",
+      "author": null,
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Education"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 4,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 2,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788469601327",
+      "representative_id": "MLU682153960",
+      "listing_ids": [
+        "MLU682153960",
+        "MLU682218876"
+      ],
+      "title": "Libro Te Quiero, Abuela - Andreae, Giles - Abuelos Nietos",
+      "author": "Andreae, Giles",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Grandmothers"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788446032311",
+      "representative_id": "MLU717107820",
+      "listing_ids": [
+        "MLU716964802",
+        "MLU717107820"
+      ],
+      "title": "Libro La Invención Pueblo Judío Revisión Identidad Israelí",
+      "author": "Sand, Shlomo",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "History"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788427211636",
+      "representative_id": "MLU1043889914",
+      "listing_ids": [
+        "MLU1043889914",
+        "MLU1044240396"
+      ],
+      "title": "Tapa Dura Diario De Nikki 1 Crónicas Vida Poco Glamurosa",
+      "author": "RACHEL RENNEE RUSSELL",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Artists"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 1,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "google_books",
+            "field": "author",
+            "value": "Rachel Renée Russell"
+          },
+          {
+            "source": "google_books",
+            "field": "title",
+            "value": "Diario de Nikki 1: Crónicas de una vida muy poco glamurosa"
+          },
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Rachel Renée Russell"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Crónicas de una vida muy poco glamurosa"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Russell, Rachel Renée"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Crónicas de una vida muy poco glamurosa"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788416233083",
+      "representative_id": "MLU668189374",
+      "listing_ids": [
+        "MLU668189374"
+      ],
+      "title": "Cartas De La Medicina El Poder A Traves De Los Animales",
+      "author": "DAVID SAMS, JAMIE, CARSON",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2014"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "CARTAS DE LA MEDICINA, LAS"
+          }
+        ],
+        "edition_fields": [
+          "publisher",
+          "pages"
+        ]
+      }
+    }
+  ]
 }
