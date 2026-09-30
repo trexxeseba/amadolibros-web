@@ -260,6 +260,26 @@ export function publicationClass(classification, facts = verifiedFacts(classific
   return 'NO_EVIDENCE';
 }
 
+// Por qué un campo aprobado por la evidencia igual no se publica. Sin esto el
+// informe sólo dice «0 publicados» y no se puede saber dónde se pierde el dato:
+// la corrida del 2026-09-25 aprobó campos en 1.253 de 1.596 fichas y publicó
+// cero, y no había forma de distinguir «la evidencia no alcanzó» de «la ficha
+// ya lo tenía». Es sólo diagnóstico: no cambia ninguna decisión.
+export function motivosDeDescarte(classification, item) {
+  const faltantes = Array.isArray(item?.research?.missing_fields)
+    ? item.research.missing_fields
+    : null;
+  return Object.fromEntries(EDITION_FIELDS.flatMap(field => {
+    const aprobado = field === 'topics'
+      ? Boolean(classification?.work_fields_auto_publishable?.topics)
+      : Boolean(classification?.edition_fields_auto_publishable?.[field]);
+    if (!aprobado) return [];
+    const loNecesita = faltantes ? faltantes.includes(field) : !existingFact(item, field);
+    // Aprobado y necesario ya salió publicado; acá sólo interesa lo descartado.
+    return loNecesita ? [] : [[field, 'la_ficha_ya_lo_tiene']];
+  }));
+}
+
 export function buildResearchResult(item, classification, cache) {
   const facts = verifiedFacts(classification, item);
   return {
@@ -276,6 +296,15 @@ export function buildResearchResult(item, classification, cache) {
     reason: classification.reason,
     publication_class: publicationClass(classification, facts),
     verified_facts: facts,
+    // Diagnóstico: qué campos aprobó la evidencia y cuáles se descartaron
+    // después, con el motivo. Permite leer el informe sin reconstruir nada.
+    campos_aprobados: EDITION_FIELDS.filter(field => field === 'topics'
+      ? Boolean(classification?.work_fields_auto_publishable?.topics)
+      : Boolean(classification?.edition_fields_auto_publishable?.[field])),
+    campos_que_le_faltan_a_la_ficha: Array.isArray(item?.research?.missing_fields)
+      ? item.research.missing_fields
+      : null,
+    descartados_despues_de_aprobar: motivosDeDescarte(classification, item),
     exact_isbn_source_count: classification.exact_isbn_source_count,
     independent_work_source_count: classification.independent_work_source_count,
     identity_conflicts: classification.identity_conflicts,
