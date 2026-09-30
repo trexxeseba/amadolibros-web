@@ -13,7 +13,8 @@ import {
 } from '../api/_export_etl_logic.js';
 import { NOMBRE_CABECERA, crearExportHandler } from '../api/_export_etl_handler.js';
 import { TRANSFER_FACTOR } from '../api/_orders_logic.js';
-import { isEligibleForFeed } from '../feed.xml.js';
+import { isBookProduct, isEligibleForFeed } from '../feed.xml.js';
+import { applyBookEnrichment, getBookEnrichmentByIsbn } from '../_shared/book-enrichment-registry.js';
 
 function libro(patch = {}) {
   return {
@@ -94,6 +95,48 @@ test('un precio inválido no produce un precio de transferencia inventado', () =
   }
 });
 
+// El error que encontró Seba revisando el PR: el export redondeaba el precio
+// de tarjeta ANTES de calcular la transferencia. La ficha no lo hace.
+// Con 1000,5 el export daba 881 y la ficha muestra 880.
+test('con precios decimales la transferencia se calcula sobre el precio SIN redondear', () => {
+  // Regla de la ficha, copiada de functions/libro/[[path]].js:461,465:
+  //   const price = Number(item.price) || 0;
+  //   const transferAmount = Math.round(price * 0.88);
+  const comoLaFicha = precio => Math.round((Number(precio) || 0) * 0.88);
+  // Regla vieja, la que se corrige: redondear primero.
+  const comoEstabaAntes = precio => Math.round(Math.round(Number(precio)) * 0.88);
+
+  const divergentes = [1000.5, 1234.5, 1501.5];
+  for (const precio of divergentes) {
+    assert.equal(precioTransferencia(precio), comoLaFicha(precio), `precio ${precio}`);
+    assert.notEqual(precioTransferencia(precio), comoEstabaAntes(precio),
+      `precio ${precio}: si esto pasa, la prueba dejó de detectar el redondeo previo`);
+  }
+  // Números concretos, para que se lea qué diferencia hay sin ejecutar nada.
+  assert.equal(precioTransferencia(1000.5), 880, 'la ficha muestra 880, no 881');
+  assert.equal(precioTransferencia(1234.5), 1086);
+  assert.equal(precioTransferencia(1501.5), 1321);
+});
+
+test('el registro exportado conserva el precio de tarjeta tal cual lo tiene la ficha', () => {
+  const registro = aRegistroExportado(libro({ price: 1000.5 }));
+  assert.equal(registro.precio_tarjeta_uyu, 1000.5,
+    'la ficha usa Number(item.price); redondearlo acá desincroniza los dos precios');
+  assert.equal(registro.precio_transferencia_uyu, Math.round(1000.5 * 0.88));
+  assert.equal(registro.precio_transferencia_uyu, 880);
+});
+
+test('un precio no finito se excluye, no se exporta', () => {
+  // `Infinity > 0` es true: sin Number.isFinite, un precio corrupto pasaba el
+  // filtro y salía exportado con un número imposible.
+  for (const malo of [Infinity, -Infinity, NaN, 'gratis', null, undefined, {}]) {
+    assert.equal(motivoDeExclusion(libro({ price: malo })), 'sin_precio', String(malo));
+  }
+  const conInfinito = construirExport({ items: [libro({ price: Infinity })] });
+  assert.equal(conInfinito.totales.incluidos, 0);
+  assert.equal(conInfinito.totales.excluidos_por_motivo.sin_precio, 1);
+});
+
 // ─── Datos faltantes: se informan, no se suponen ─────────────────────────────
 
 test('la condición ausente es desconocida, NO usado', () => {
@@ -116,6 +159,80 @@ test('un ISBN inválido se informa como ausente, nunca crudo', () => {
     assert.equal(aRegistroExportado(libro({ isbn: malo })).isbn13, null, String(malo));
   }
   assert.equal(aRegistroExportado(libro()).isbn13, '9788437604572');
+});
+
+// ─── Paridad bibliográfica con la ficha ──────────────────────────────────────
+//
+// La ficha aplica applyBookEnrichment antes de mostrar autor e ISBN
+// (functions/libro/[[path]].js:1167). Sin eso, el export entregaría datos
+// crudos peores que los que ya están publicados.
+//
+// ISBN real del registro de enriquecimiento, con autoría verificada:
+// 9780738761169 -> 'Paola Gnaccolini'.
+const ISBN_ENRIQUECIDO = '9780738761169';
+
+test('el enriquecimiento completa la autoría ausente, igual que en la ficha', () => {
+  const conAutorGenerico = libro({
+    id: 'MLU200000001',
+    isbn: ISBN_ENRIQUECIDO,
+    author: 'Varios',
+  });
+  // Control: sin enriquecimiento, la autoría genérica se informa como ausente.
+  assert.equal(aRegistroExportado(conAutorGenerico).autor, null,
+    'control: crudo, el autor genérico queda en null');
+  // Control: el registro de enriquecimiento tiene la autoría verificada.
+  assert.equal(getBookEnrichmentByIsbn(ISBN_ENRIQUECIDO)?.facts?.author, 'Paola Gnaccolini',
+    'control: si este ISBN sale del registro, hay que elegir otro para la prueba');
+
+  const resultado = construirExport({ items: [conAutorGenerico] });
+  assert.equal(resultado.totales.incluidos, 1);
+  assert.equal(resultado.libros[0].autor, 'Paola Gnaccolini',
+    'el export tiene que entregar la misma autoría que muestra la ficha');
+  assert.equal(resultado.libros[0].isbn13, ISBN_ENRIQUECIDO);
+});
+
+test('el enriquecimiento se aplica ANTES de decidir si es libro', () => {
+  // Dominio que no es BOOKS + ISBN válido y ninguna señal bibliográfica: el
+  // filtro pide al menos una señal de apoyo, y el enriquecimiento la aporta.
+  const dudoso = {
+    id: 'MLU200000002',
+    title: 'Edición sin metadatos',
+    author: '',
+    isbn: ISBN_ENRIQUECIDO,
+    price: 500,
+    currency_id: 'UYU',
+    status: 'active',
+    available_quantity: 1,
+    condition: 'new',
+    domain_id: 'MLU-TAROT-DECKS',
+  };
+  assert.equal(motivoDeExclusion(dudoso), 'no_es_libro',
+    'control: crudo no pasa el filtro de libro');
+  assert.equal(isBookProduct(applyBookEnrichment(dudoso)), true,
+    'control: enriquecido sí lo pasa');
+
+  const resultado = construirExport({ items: [dudoso] });
+  assert.equal(resultado.totales.incluidos, 1,
+    'si el enriquecimiento corriera después del filtro, este libro se perdería');
+  assert.equal(resultado.totales.excluidos_por_motivo.no_es_libro, 0);
+});
+
+test('construirExport no muta el catálogo compartido', () => {
+  // El mismo objeto del catálogo alimenta la web; ensuciarlo acá sería una
+  // fuga de este export hacia las fichas.
+  const entrada = {
+    updated_at: '2026-09-30T07:15:00.000Z',
+    items: [
+      libro({ id: 'MLU200000001', isbn: ISBN_ENRIQUECIDO, author: 'Varios' }),
+      libro({ id: 'MLU200000003', status: 'paused' }),
+      libro(),
+    ],
+  };
+  const antes = JSON.parse(JSON.stringify(entrada));
+  construirExport(entrada);
+  assert.deepEqual(entrada, antes, 'el catálogo de entrada quedó modificado');
+  assert.equal(entrada.items[0].author, 'Varios',
+    'el enriquecimiento no puede escribir sobre el ítem original');
 });
 
 // ─── Campos: nada de más ─────────────────────────────────────────────────────

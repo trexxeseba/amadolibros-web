@@ -15,6 +15,7 @@
 //  - NO se inventa un ISBN. Si no hay uno válido, va `null`.
 
 import { TRANSFER_FACTOR } from './_orders_logic.js';
+import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
 import { isBookProduct } from '../feed.xml.js';
 import { isGenericAuthor, normalizeValidIsbn } from '../_shared/showcase-ranking.js';
 import { slugify } from '../_shared/slug.js';
@@ -42,7 +43,9 @@ export function motivoDeExclusion(item) {
   if (!item || !/^MLU\d+$/.test(String(item.id || ''))) return 'id_invalido';
   if (item.status !== 'active') return 'no_activo';
   if (!(Number(item.available_quantity) > 0)) return 'sin_stock';
-  if (!(Number(item.price) > 0)) return 'sin_precio';
+  const precio = Number(item.price);
+  // `Infinity > 0` es true: sin isFinite, un precio corrupto pasaba el filtro.
+  if (!Number.isFinite(precio) || !(precio > 0)) return 'sin_precio';
   const moneda = limpiar(item.currency || item.currency_id).toUpperCase();
   // No se infiere la moneda: un precio sin moneda declarada es ambiguo y
   // publicarlo como UYU sería suponer.
@@ -55,9 +58,14 @@ export function motivoDeExclusion(item) {
 
 // Misma regla y mismo redondeo que la ficha y que el checkout: se importa la
 // constante en vez de repetir el 0,88, que ya está copiado en cuatro archivos.
-export function precioTransferencia(precioTarjeta) {
-  const precio = Number(precioTarjeta);
-  if (!(precio > 0)) return null;
+//
+// El precio entra SIN redondear. La ficha hace `Number(item.price)` y sobre
+// ese valor aplica `Math.round(price * 0.88)` (libro/[[path]].js:461,465).
+// Redondear antes daba otro número con precios decimales: con 1000,5 daba 881
+// y la ficha muestra 880.
+export function precioTransferencia(precioSinRedondear) {
+  const precio = Number(precioSinRedondear);
+  if (!Number.isFinite(precio) || !(precio > 0)) return null;
   return Math.round(precio * TRANSFER_FACTOR);
 }
 
@@ -84,7 +92,9 @@ export function urlFichaDe(item) {
 }
 
 export function aRegistroExportado(item) {
-  const precioTarjeta = Math.round(Number(item.price));
+  // Sin redondear: es el mismo número que muestra la ficha, y es el que
+  // alimenta el cálculo de transferencia.
+  const precioTarjeta = Number(item.price);
   return {
     id: String(item.id),
     titulo: limpiar(item.title) || null,
@@ -105,9 +115,19 @@ export function construirExport(catalogo) {
   const libros = [];
 
   for (const item of items) {
-    const motivo = motivoDeExclusion(item);
+    // La ficha aplica applyBookEnrichment antes de mostrar autor e ISBN
+    // (libro/[[path]].js:1167). Sin esto, el export entregaría datos crudos
+    // peores que los publicados. Se aplica ANTES de evaluar las señales
+    // bibliográficas, porque el enriquecimiento puede ser justo lo que hace
+    // que un ítem se reconozca como libro.
+    //
+    // applyBookEnrichment no muta: devuelve el ítem tal cual si no hay
+    // enriquecimiento, y si lo hay construye objetos nuevos. Hay una prueba
+    // que lo fija, para que el catálogo compartido no se ensucie.
+    const enriquecido = applyBookEnrichment(item);
+    const motivo = motivoDeExclusion(enriquecido);
     if (motivo) { excluidos[motivo] += 1; continue; }
-    libros.push(aRegistroExportado(item));
+    libros.push(aRegistroExportado(enriquecido));
   }
 
   // La fecha tiene que ser la del catálogo, no la de la descarga. Si la
