@@ -1,0 +1,105 @@
+name: Biblio full catalog export
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_mode:
+        description: 'artifact_only: solo genera archivo; ftp_upload: sube normal; ftp_purge_replace: sube como purge and replace'
+        required: true
+        default: artifact_only
+        type: choice
+        options:
+          - artifact_only
+          - ftp_upload
+          - ftp_purge_replace
+      uyu_per_usd:
+        description: 'Pesos uruguayos por 1 USD para convertir precios'
+        required: true
+        default: '42'
+      markup:
+        description: 'Multiplicador sobre precio convertido a USD'
+        required: true
+        default: '1.30'
+      min_usd:
+        description: 'Precio mínimo USD por ficha'
+        required: true
+        default: '12'
+      include_non_books:
+        description: 'true sólo si se quiere exportar también productos sin señal bibliográfica'
+        required: true
+        default: 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biblio-full-catalog-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: Export Biblio catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Generate Biblio upload file
+        run: node scripts/biblio/export-full-catalog.mjs
+        env:
+          BIBLIO_UYU_PER_USD: ${{ inputs.uyu_per_usd }}
+          BIBLIO_MARKUP: ${{ inputs.markup }}
+          BIBLIO_MIN_USD: ${{ inputs.min_usd }}
+          BIBLIO_INCLUDE_NON_BOOKS: ${{ inputs.include_non_books }}
+
+      - name: Show summary
+        run: cat out/biblio/biblio-summary.json
+
+      - name: Upload export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: biblio-full-catalog-export
+          path: |
+            out/biblio/biblio-amado-full.txt
+            out/biblio/biblio-rejected.txt
+            out/biblio/biblio-isbn-duplicates.txt
+            out/biblio/biblio-summary.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload to Biblio FTP
+        if: ${{ inputs.upload_mode != 'artifact_only' }}
+        shell: bash
+        env:
+          BIBLIO_FTP_HOST: ${{ vars.BIBLIO_FTP_HOST || 'ftp.biblio.com' }}
+          BIBLIO_FTP_USERNAME: ${{ secrets.BIBLIO_FTP_USERNAME }}
+          BIBLIO_FTP_PASSWORD: ${{ secrets.BIBLIO_FTP_PASSWORD }}
+          UPLOAD_MODE: ${{ inputs.upload_mode }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BIBLIO_FTP_USERNAME:-}" ] || [ -z "${BIBLIO_FTP_PASSWORD:-}" ]; then
+            echo "Faltan secrets BIBLIO_FTP_USERNAME y/o BIBLIO_FTP_PASSWORD."
+            exit 1
+          fi
+
+          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          if [ "${UPLOAD_MODE}" = "ftp_purge_replace" ]; then
+            remote_file="amado_biblio_purge_${timestamp}.txt"
+          else
+            remote_file="amado_biblio_${timestamp}.txt"
+          fi
+
+          curl --fail --show-error --silent --ssl-reqd \
+            --user "${BIBLIO_FTP_USERNAME}:${BIBLIO_FTP_PASSWORD}" \
+            -T out/biblio/biblio-amado-full.txt \
+            "ftp://${BIBLIO_FTP_HOST}/${remote_file}"
+
+          echo "Uploaded ${remote_file} to ${BIBLIO_FTP_HOST}"
