@@ -5,6 +5,7 @@ import {
   buildResearchResult,
   buildVerifiedFactsManifest,
   mapWithConcurrency,
+  motivosDeDescarte,
   publicationClass,
   researchMarkdown,
   selectResearchCohort,
@@ -249,4 +250,50 @@ test('resumen declara 1.000 y deja claro que no despliega Produccion', () => {
   assert.match(markdown, /Investigados: 1000 ISBN/);
   assert.match(markdown, /GREEN_FACTS: 300/);
   assert.match(markdown, /no despliega Produccion/i);
+});
+
+// ─── Diagnóstico: por qué un campo aprobado no se publica ─────────────────────
+
+test('un campo aprobado que la ficha ya tiene se informa como descartado', () => {
+  const clasificacion = {
+    edition_fields_auto_publishable: { pages: true, publisher: true },
+    work_fields_auto_publishable: { topics: true },
+    edition_facts: { pages: { value: 320 }, publisher: { value: 'Anagrama' } },
+    work_facts: { topics: ['Novela histórica'] },
+  };
+  // La ficha sólo declara que le falta `pages`: los otros dos ya los tiene.
+  const item = { id: 'MLU1', isbn: '9788437604572', research: { missing_fields: ['pages'] } };
+
+  const motivos = motivosDeDescarte(clasificacion, item);
+  assert.deepEqual(motivos, {
+    publisher: 'la_ficha_ya_lo_tiene',
+    topics: 'la_ficha_ya_lo_tiene',
+  }, 'pages no aparece porque sí se publica');
+});
+
+test('un campo que la evidencia no aprobó no se informa como descartado', () => {
+  // Sin aprobación no hay nada que descartar: el motivo es la evidencia, y eso
+  // ya lo dicen edition_fact_conflicts y los conteos de fuentes.
+  const clasificacion = {
+    edition_fields_auto_publishable: { pages: false },
+    work_fields_auto_publishable: { topics: false },
+    edition_facts: { pages: { value: null } },
+    work_facts: { topics: [] },
+  };
+  const item = { id: 'MLU1', isbn: '9788437604572', research: { missing_fields: [] } };
+  assert.deepEqual(motivosDeDescarte(clasificacion, item), {});
+});
+
+test('sin missing_fields declarados se cae a mirar la ficha', () => {
+  const clasificacion = {
+    edition_fields_auto_publishable: { publisher: true },
+    work_fields_auto_publishable: { topics: false },
+    edition_facts: { publisher: { value: 'Anagrama' } },
+    work_facts: { topics: [] },
+  };
+  const yaLoTiene = { id: 'MLU1', isbn: '9788437604572', publisher: 'Anagrama' };
+  assert.deepEqual(motivosDeDescarte(clasificacion, yaLoTiene), { publisher: 'la_ficha_ya_lo_tiene' });
+
+  const leFalta = { id: 'MLU1', isbn: '9788437604572', publisher: '' };
+  assert.deepEqual(motivosDeDescarte(clasificacion, leFalta), {});
 });
