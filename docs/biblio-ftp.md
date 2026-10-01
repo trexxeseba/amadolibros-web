@@ -45,6 +45,7 @@ Reglas de datos de la primera carga:
 - `Publisher`: si el catálogo trae `AMADO LIBROS` (el vendedor, no una editorial) o `Genérica` / `Genérico` (placeholder de marca de Mercado Libre), queda vacío. La comparación ignora mayúsculas y acentos. La línea `Editorial:` de `Description` sigue la misma regla. No se inventa editorial sustituta.
 - `Binding`: vacío en todas las filas. Los valores del catálogo (`Papel`, `Físico`, `Vinilo`, `CD`) no son encuadernaciones reales. `Description` no incluye la línea `Encuadernación/formato:` mientras `Binding` esté vacío. El mapeo a Hardcover/Softcover queda para una carga posterior, sin inferencia.
 - Mazos de tarot, cartas y oráculos se exportan junto con los libros. Si alguno queda en `biblio-rejected.txt` con `not_book_signal`, se vuelve a correr con `include_non_books: true`; no se filtra por título ni por tags.
+- Música y video quedan fuera siempre, por dominio de Mercado Libre (`MUSIC_ALBUMS`, `ANTIQUE_MUSIC_ALBUMS`, `MUSIC_MOVIES_AND_TV_SERIES`, `PHYSICAL_MOVIES`): van a `biblio-rejected.txt` con `non_book_domain`, aunque tengan ISBN. `include_non_books` no los reincorpora. Las revistas (`MAGAZINES`) y los mazos (`TAROT_CARDS`, `BOARD_AND_CARD_GAMES`) siguen entrando.
 - El escritor TSV limpia tab, CR, LF, caracteres de control y separadores Unicode de línea en todas las celdas, y verifica que cada línea tenga exactamente las columnas del header. Si una línea no cumple, el script falla y el workflow no sube nada.
 
 ## Precio
