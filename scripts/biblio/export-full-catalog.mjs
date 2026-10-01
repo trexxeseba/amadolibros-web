@@ -34,6 +34,12 @@ const HEADERS = [
   'Image URL',
   'Catalog',
   'Keywords',
+  'Image URL 2',
+  'Image URL 3',
+  'Image URL 4',
+  'Image URL 5',
+  'Pages',
+  'First Edition',
 ];
 
 const REJECT_HEADERS = [
@@ -282,6 +288,9 @@ function toBiblioRow(item, sku) {
   const subjects = Array.isArray(verified.bibliographic?.subjects) ? verified.bibliographic.subjects : [];
   const description = buildDescription(item, { title, author, publisher, publicationDate, binding, language, isbn, condition, pages });
   const imageUrl = imageUrlFor(sku);
+  const pictureCount = Array.isArray(item.pictures) ? item.pictures.length : 1;
+  const extraImages = [2, 3, 4, 5].map((position) => (position <= pictureCount ? imageUrlFor(sku, position) : ''));
+  const firstEdition = /primera edicion|1a edicion|1ª edicion|first edition/u.test(itemText(item)) ? '1' : '0';
   const keywords = buildKeywords(item, { isbn, language, author, publisher, subjects });
 
   return {
@@ -302,6 +311,12 @@ function toBiblioRow(item, sku) {
     'Image URL': imageUrl,
     Catalog: 'Amado Libros Uruguay',
     Keywords: keywords,
+    'Image URL 2': extraImages[0],
+    'Image URL 3': extraImages[1],
+    'Image URL 4': extraImages[2],
+    'Image URL 5': extraImages[3],
+    Pages: pages ? String(pages) : '',
+    'First Edition': firstEdition,
   };
 }
 
@@ -515,13 +530,15 @@ function formatDimensions(dimensions) {
 
 function buildDescription(item, normalized) {
   const sheet = buildTechnicalSheet(item, normalized);
-  const limit = 3900;
+  const closing = closingCopy(normalized);
+  const limit = 4500;
+  const tail = `${sheet} ${closing}`;
   const narrative = cleanMarketplaceDescription(item?.description, normalized);
   if (!narrative || narrative.length < 40) {
-    return truncate(`${normalized.title}. ${sheet}`, limit);
+    return `${normalized.title}. ${tail}`.slice(0, limit).trim();
   }
-  const room = limit - sheet.length - 1;
-  return `${truncate(narrative, Math.max(room, 200))} ${sheet}`.slice(0, limit).trim();
+  const room = limit - tail.length - 1;
+  return `${truncate(narrative, Math.max(room, 200))} ${tail}`.slice(0, limit).trim();
 }
 
 function plausibleYear(raw) {
@@ -631,8 +648,40 @@ function normalizeLanguage(raw) {
   return map.get(key) || value;
 }
 
-function imageUrlFor(sku) {
-  return `${CANONICAL_BASE}/book-cover/${encodeURIComponent(sku)}/cover.jpg`;
+// Misma convención que el feed de Merchant: cover.jpg es la primera foto de
+// la ficha y cover-N.jpg la enésima, servidas por el sitio.
+function imageUrlFor(sku, position = 1) {
+  const file = position <= 1 ? 'cover.jpg' : `cover-${position}.jpg`;
+  return `${CANONICAL_BASE}/book-cover/${encodeURIComponent(sku)}/${file}`;
+}
+
+// Cierre de cada descripción para el comprador de Biblio (EEUU, Reino Unido,
+// Europa): idioma de la edición, origen y envío con seguimiento, embalaje,
+// búsqueda por encargo y agradecimiento. Primero en inglés, después en
+// español. Sin teléfono ni web: Biblio no admite datos de contacto en fichas.
+const EDITION_LINE = new Map([
+  ['Spanish', ['Spanish-language edition.', 'Edición en español.']],
+  ['English', ['English-language edition.', 'Edición en inglés.']],
+  ['French', ['French-language edition.', 'Edición en francés.']],
+  ['Italian', ['Italian-language edition.', 'Edición en italiano.']],
+  ['Portuguese', ['Portuguese-language edition.', 'Edición en portugués.']],
+  ['German', ['German-language edition.', 'Edición en alemán.']],
+]);
+
+function closingCopy(normalized) {
+  const [en, es] = EDITION_LINE.get(normalized.language) || ['', ''];
+  const used = normalized.condition === 'Used';
+  const english = [
+    en,
+    used ? 'Please check the photos for the condition of this copy.' : '',
+    'Ships from Uruguay with full tracking. Every book is individually wrapped with care and securely packed so it reaches you in excellent condition. Looking for a title you can\'t find? We source books on request. Thank you for letting us serve you. Amado Libros, Montevideo.',
+  ].filter(Boolean).join(' ');
+  const spanish = [
+    es,
+    used ? 'Las fotos muestran el estado real de este ejemplar.' : '',
+    'Enviamos desde Uruguay con seguimiento completo. Cada libro va envuelto con cuidado y bien protegido para que llegue a sus manos en excelentes condiciones. ¿Busca un título que no encuentra? Conseguimos libros por encargo. Gracias por permitirnos servirle. Amado Libros, Montevideo.',
+  ].filter(Boolean).join(' ');
+  return `${english} ${spanish}`;
 }
 
 function priceUsd(priceUyu) {

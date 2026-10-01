@@ -37,6 +37,9 @@ El archivo principal contiene:
 - Image URL
 - Catalog
 - Keywords
+- Image URL 2 a Image URL 5 (fotos adicionales de la ficha, `cover-N.jpg`; Biblio admite hasta 5 imágenes por artículo)
+- Pages
+- First Edition (1/0, solo si la ficha lo dice)
 
 El `Book ID` es el SKU estable de Mercado Libre (`MLU...`). No se cambia salvo que cambie el origen.
 
@@ -53,6 +56,7 @@ Reglas de datos de la primera carga:
 - `Description`: texto de la ficha de Mercado Libre (sinopsis, reseña) más una ficha técnica al final (autor, editorial, colección, año, idioma, medidas, materia, ISBN, estado, referencia). Del texto de Mercado Libre se quitan las líneas para el comprador uruguayo: envíos, retiro, WhatsApp, teléfonos, "por encargo", cierre de marca, precios, plazos. Si no queda texto útil, va título más ficha técnica.
 - Datos verificados por ISBN: el exportador lee el registro de hechos bibliográficos del sitio (`functions/_shared/book-enrichment-facts-*.js`, verificados en BNE y otras bibliotecas nacionales) y completa páginas, editorial y año cuando la ficha de Mercado Libre no los trae, y suma las materias a `Keywords`.
 - `Keywords`: autor, editorial, materia, colección, materias verificadas, idioma, ISBN y marca.
+- Cierre de `Description` (después de la ficha técnica), primero en inglés y después en español: idioma de la edición, envío desde Uruguay con seguimiento, embalaje, libros por encargo y agradecimiento. Los usados suman "Please check the photos for the condition of this copy". Sin teléfono ni web.
 - Sin fuente en el proyecto, quedan vacíos: peso, lugar de publicación, edición, ilustrador y la encuadernación de las fichas que no la mencionan.
 - `scripts/biblio/skip-skus.txt`: SKUs ya cargados a mano en Biblio con datos curados. El exportador los rechaza con `already_in_biblio` para que una carga masiva no los pise. La otra publicación del mismo ISBN se rechaza con `already_in_biblio_isbn` para no duplicar el libro.
 - Música, video y juegos de mesa quedan fuera siempre, por dominio de Mercado Libre (`MUSIC_ALBUMS`, `ANTIQUE_MUSIC_ALBUMS`, `MUSIC_MOVIES_AND_TV_SERIES`, `PHYSICAL_MOVIES`, `BOARD_AND_CARD_GAMES`): van a `biblio-rejected.txt` con `non_book_domain`, aunque tengan ISBN. `include_non_books` no los reincorpora. Las revistas (`MAGAZINES`) y los mazos (`TAROT_CARDS`) siguen entrando.
