@@ -215,14 +215,16 @@ function toBiblioRow(item, sku) {
     item.bibliographic?.editorial,
   ));
 
-  const publicationDate = cleanCell(firstText(
+  // Año del libro: solo el atributo bibliográfico "Año de publicación" cargado
+  // en la ficha, y solo si es un año plausible. Sin fallback a item.start_time
+  // (fecha de alta del aviso en Mercado Libre). Sin año real, queda vacío.
+  const publicationDate = plausibleYear(firstText(
     item.year,
     item.publication_year,
     item.publicationDate,
     item.bibliographic?.year,
+    item.bibliographic?.publication_year,
     item.bibliographic?.publication_date,
-    // Sin fallback a item.start_time: es la fecha en que se publicó el aviso en
-    // Mercado Libre, no el año del libro. Sin año real, queda vacío.
   ));
 
   // Primera carga: Binding vacío en todas las filas. El catálogo trae valores
@@ -244,7 +246,7 @@ function toBiblioRow(item, sku) {
   const price = priceUsd(Number(item.price));
   const description = buildDescription(item, { title, author, publisher, publicationDate, binding, language, isbn, condition });
   const imageUrl = imageUrlFor(sku);
-  const keywords = buildKeywords(item, { isbn, language });
+  const keywords = buildKeywords(item, { isbn, language, author, publisher });
 
   return {
     'Book ID': sku,
@@ -324,31 +326,123 @@ function isLikelyBook(item) {
   return signals >= 2;
 }
 
-function buildDescription(item, normalized) {
+// La descripción de Biblio se arma con el texto de la ficha de Mercado Libre
+// (sinopsis, autor, reseña) más una ficha técnica al final. Del texto de
+// Mercado Libre se quitan las líneas pensadas para el comprador uruguayo
+// (envíos, retiro, WhatsApp, "por encargo", cierre de marca, precios), que a
+// un comprador internacional no le dicen nada o lo confunden. Si no queda
+// texto útil, va solo la ficha técnica.
+const LOCAL_LINE_PATTERNS = [
+  /por encargo/u,
+  /amado libros/u,
+  /amado vintage/u,
+  /whats?app|wsp\b/u,
+  /mercado ?libre|mercado ?pago|mercado ?envios|tienda oficial|mercado lider/u,
+  /\benvio|\benvios\b|\bflex\b|correo\b|\bcadete/u,
+  /retir[aáo]/u,
+  /factura|garantia|devolucion/u,
+  /consult[aáe]/u,
+  /\bstock\b|disponib|demora|plazo|dias habiles|\bentrega|coordin/u,
+  /a las ordenes|seguinos|instagram|facebook|\bweb\b|www\.|https?:/u,
+  /\bpago\b|cuotas|precio|oferta|promo|descuento|\$|\busd\b|\buyu\b|pesos/u,
+  /uruguay|montevideo|interior del pais/u,
+  /\bpedido|importa(?:do|mos|cion)|traemos|conseguimos|encarg/u,
+  /\bsku\b|\bmlu\d+/u,
+  /\d{2,3}[\s.-]?\d{3}[\s.-]?\d{3}/u,
+];
+
+function cleanMarketplaceDescription(raw, normalized) {
+  const text = String(raw || '');
+  if (!text.trim()) return '';
+  const kept = [];
+  const titleKey = foldKey(normalized.title);
+  for (const line of text.split(/\r?\n+/u)) {
+    const clean = cleanCell(line.replace(/^[\s\-•·*–—>]+/u, ''));
+    if (!clean || clean.length < 3) continue;
+    const key = foldKey(clean);
+    if (LOCAL_LINE_PATTERNS.some((pattern) => pattern.test(key))) continue;
+    if (key === titleKey) continue;
+    if (/^[\p{So}\p{P}\s]+$/u.test(clean)) continue;
+    kept.push(/[.!?:;…)]$/u.test(clean) ? clean : `${clean}.`);
+  }
+  return kept.join(' ');
+}
+
+function foldKey(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/gu, '')
+    .toLowerCase()
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+function buildTechnicalSheet(item, normalized) {
+  const bibliographic = item?.bibliographic && typeof item.bibliographic === 'object'
+    ? item.bibliographic
+    : {};
   const parts = [];
-  if (normalized.title) parts.push(`Título: ${normalized.title}.`);
   if (normalized.author && normalized.author !== 'Unknown') parts.push(`Autor: ${normalized.author}.`);
   if (normalized.publisher) parts.push(`Editorial: ${normalized.publisher}.`);
-  if (normalized.publicationDate) parts.push(`Fecha/año: ${normalized.publicationDate}.`);
+  const collection = cleanCell(bibliographic.collection);
+  if (collection) parts.push(`Colección: ${collection}.`);
+  if (normalized.publicationDate) parts.push(`Año de publicación: ${normalized.publicationDate}.`);
   if (normalized.binding) parts.push(`Encuadernación/formato: ${normalized.binding}.`);
   if (normalized.language) parts.push(`Idioma: ${normalized.language}.`);
-  if (normalized.isbn) parts.push(`ISBN: ${normalized.isbn}.`);
   if (Number(item?.pages) > 0) parts.push(`${Number(item.pages)} páginas.`);
-  parts.push(`Estado informado por el catálogo: ${normalized.condition}.`);
-  parts.push(`SKU Amado/Mercado Libre: ${cleanSku(item?.id)}.`);
-  return truncate(parts.join(' '), 3900);
+  const size = formatDimensions(item?.dimensions);
+  if (size) parts.push(`Medidas: ${size}.`);
+  const genre = cleanCell(bibliographic.genre);
+  if (genre) parts.push(`Materia: ${genre}.`);
+  if (normalized.isbn) parts.push(`ISBN: ${normalized.isbn}.`);
+  parts.push(normalized.condition === 'Used'
+    ? 'Ejemplar usado en buen estado; consulte por detalles del estado antes de comprar.'
+    : 'Ejemplar nuevo.');
+  parts.push(`Referencia: ${cleanSku(item?.id)}.`);
+  return parts.join(' ');
+}
+
+function formatDimensions(dimensions) {
+  if (!dimensions || typeof dimensions !== 'object') return '';
+  const values = ['height', 'width', 'depth']
+    .map((key) => cleanCell(dimensions[key]))
+    .filter(Boolean);
+  return values.join(' x ');
+}
+
+function buildDescription(item, normalized) {
+  const sheet = buildTechnicalSheet(item, normalized);
+  const limit = 3900;
+  const narrative = cleanMarketplaceDescription(item?.description, normalized);
+  if (!narrative || narrative.length < 40) {
+    return truncate(`${normalized.title}. ${sheet}`, limit);
+  }
+  const room = limit - sheet.length - 1;
+  return `${truncate(narrative, Math.max(room, 200))} ${sheet}`.slice(0, limit).trim();
+}
+
+function plausibleYear(raw) {
+  const match = String(raw || '').match(/\b(1[4-9]\d{2}|20\d{2})\b/u);
+  if (!match) return '';
+  const year = Number(match[1]);
+  const maxYear = new Date().getUTCFullYear() + 1;
+  return year >= 1450 && year <= maxYear ? String(year) : '';
 }
 
 function buildKeywords(item, normalized) {
+  const bibliographic = item?.bibliographic && typeof item.bibliographic === 'object'
+    ? item.bibliographic
+    : {};
   const values = [
-    'Amado Libros',
-    'Uruguay',
+    normalized.author && normalized.author !== 'Unknown' ? normalized.author : '',
+    normalized.publisher,
+    cleanCell(bibliographic.genre),
+    cleanCell(bibliographic.collection),
     normalized.language,
     normalized.isbn ? `ISBN ${normalized.isbn}` : '',
-    cleanCell(item?.category_id),
-    cleanCell(item?.domain_id),
+    'Amado Libros',
   ];
-  return values.filter(Boolean).join('; ');
+  return [...new Set(values.filter(Boolean))].join('; ');
 }
 
 function normalizeCondition(raw) {
