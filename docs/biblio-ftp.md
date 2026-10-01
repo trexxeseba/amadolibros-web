@@ -40,6 +40,13 @@ El archivo principal contiene:
 
 El `Book ID` es el SKU estable de Mercado Libre (`MLU...`). No se cambia salvo que cambie el origen.
 
+Reglas de datos de la primera carga:
+
+- `Publisher`: si el catálogo trae `AMADO LIBROS` (el vendedor, no una editorial), queda vacío. La línea `Editorial:` de `Description` sigue la misma regla. No se inventa editorial sustituta.
+- `Binding`: vacío en todas las filas. Los valores del catálogo (`Papel`, `Físico`, `Vinilo`, `CD`) no son encuadernaciones reales. `Description` no incluye la línea `Encuadernación/formato:` mientras `Binding` esté vacío. El mapeo a Hardcover/Softcover queda para una carga posterior, sin inferencia.
+- Mazos de tarot, cartas y oráculos se exportan junto con los libros. Si alguno queda en `biblio-rejected.txt` con `not_book_signal`, se vuelve a correr con `include_non_books: true`; no se filtra por título ni por tags.
+- El escritor TSV limpia tab, CR, LF, caracteres de control y separadores Unicode de línea en todas las celdas, y verifica que cada línea tenga exactamente las columnas del header. Si una línea no cumple, el script falla y el workflow no sube nada.
+
 ## Precio
 
 Fórmula:

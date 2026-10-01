@@ -47,6 +47,16 @@ const REJECT_HEADERS = [
   'reason',
 ];
 
+// Todo lo que puede romper una fila en un archivo tab-delimited: tab, CR, LF,
+// resto de caracteres de control C0/C1 (incluye \v, \f y NEL U+0085) y los
+// separadores Unicode de línea/párrafo (U+2028, U+2029). Se limpian en cada
+// celda al escribir, y se vuelven a verificar sobre la línea ya armada (ahí
+// el tab es separador legítimo, por eso la segunda expresión lo excluye).
+// eslint-disable-next-line no-control-regex
+const FORBIDDEN_IN_CELL_ALL = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]+/gu;
+// eslint-disable-next-line no-control-regex
+const FORBIDDEN_IN_LINE = /[\u0000-\u0008\u000A-\u001F\u007F-\u009F\u2028\u2029]/u;
+
 main().catch((error) => {
   console.error(`[biblio-export] ${error.stack || error.message || error}`);
   process.exit(1);
@@ -154,7 +164,7 @@ function toBiblioRow(item, sku) {
     item.bibliographic?.authors,
   )) || 'Unknown';
 
-  const publisher = cleanCell(firstText(
+  const publisher = normalizePublisherForBiblio(firstText(
     item.publisher,
     item.editorial,
     item.bibliographic?.publisher,
@@ -170,12 +180,12 @@ function toBiblioRow(item, sku) {
     yearFromDate(item.start_time),
   ));
 
-  const binding = cleanCell(firstText(
-    item.binding,
-    item.format,
-    item.bibliographic?.binding,
-    item.bibliographic?.format,
-  ));
+  // Primera carga: Binding vacío en todas las filas. El catálogo trae valores
+  // que no son encuadernación ("Vinilo", "CD", "English", "Papel", "Físico")
+  // y Biblio los mostraría como formato. Sin inferencia de Hardcover/Softcover
+  // por idioma, categoría ni título: queda para una carga posterior con mapeo
+  // explícito. buildDescription no agrega la línea de formato si está vacío.
+  const binding = '';
 
   const language = normalizeLanguage(firstText(
     item.language,
@@ -274,6 +284,19 @@ function normalizeCondition(raw) {
   if (value === 'new') return 'New';
   if (value === 'used') return 'Used';
   return cleanCell(raw) || 'Used';
+}
+
+// Mercado Libre devuelve "AMADO LIBROS" (el vendedor) como editorial en las
+// fichas sin editorial real. Para Biblio eso es un dato falso: queda vacío,
+// tanto en la columna Publisher como en la línea "Editorial:" de Description.
+// No se inventa editorial sustituta.
+const SELLER_AS_PUBLISHER = new Set(['AMADO LIBROS']);
+
+function normalizePublisherForBiblio(value) {
+  const clean = cleanCell(value);
+  if (!clean) return '';
+  if (SELLER_AS_PUBLISHER.has(clean.toUpperCase())) return '';
+  return clean;
 }
 
 function normalizeLanguage(raw) {
@@ -413,13 +436,35 @@ function renderDelimited(headers, rows) {
   for (const row of rows) {
     lines.push(headers.map((header) => escapeTsv(row[header] ?? '')).join('\t'));
   }
+  assertDelimited(headers, lines);
   return `${lines.join('\n')}\n`;
+}
+
+// Última barrera antes de escribir el TXT: cada línea debe tener exactamente
+// las columnas del header y ningún carácter de salto/tab dentro de una celda.
+// Si falla, el script termina con error y el workflow no sube nada a Biblio.
+function assertDelimited(headers, lines) {
+  const expected = headers.length;
+  const problems = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (FORBIDDEN_IN_LINE.test(line)) {
+      problems.push(`línea ${i + 1}: contiene carácter de salto de línea o control`);
+    }
+    const columns = line.split('\t').length;
+    if (columns !== expected) {
+      problems.push(`línea ${i + 1}: ${columns} columnas, se esperaban ${expected}`);
+    }
+    if (problems.length >= 10) break;
+  }
+  if (problems.length > 0) {
+    throw new Error(`TSV inválido para Biblio:\n${problems.join('\n')}`);
+  }
 }
 
 function escapeTsv(value) {
   return String(value ?? '')
-    .replace(/\t+/gu, ' ')
-    .replace(/\r?\n|\r/gu, ' ')
+    .replace(FORBIDDEN_IN_CELL_ALL, ' ')
     .replace(/\s{2,}/gu, ' ')
     .trim();
 }
@@ -434,7 +479,7 @@ function cleanCell(value) {
   if (value == null) return '';
   if (typeof value === 'object') return '';
   return String(value)
-    .replace(/\r?\n|\r|\t/gu, ' ')
+    .replace(FORBIDDEN_IN_CELL_ALL, ' ')
     .replace(/\s{2,}/gu, ' ')
     .trim();
 }
