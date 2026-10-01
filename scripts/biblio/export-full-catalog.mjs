@@ -286,12 +286,13 @@ function toBiblioRow(item, sku) {
     : Number(verified.pages) > 0 ? Number(verified.pages)
       : pagesFromText(item);
   const subjects = Array.isArray(verified.bibliographic?.subjects) ? verified.bibliographic.subjects : [];
-  const description = buildDescription(item, { title, author, publisher, publicationDate, binding, language, isbn, condition, pages });
+  const theme = themeFor(item, { language });
+  const description = buildDescription(item, { title, author, publisher, publicationDate, binding, language, isbn, condition, pages, theme });
   const imageUrl = imageUrlFor(sku);
   const pictureCount = Array.isArray(item.pictures) ? item.pictures.length : 1;
   const extraImages = [2, 3, 4, 5].map((position) => (position <= pictureCount ? imageUrlFor(sku, position) : ''));
   const firstEdition = /primera edicion|1a edicion|1ª edicion|first edition/u.test(itemText(item)) ? '1' : '0';
-  const keywords = buildKeywords(item, { isbn, language, author, publisher, subjects });
+  const keywords = buildKeywords(item, { isbn, language, author, publisher, subjects, theme });
 
   return {
     'Book ID': sku,
@@ -309,7 +310,7 @@ function toBiblioRow(item, sku) {
     Quantity: String(quantity),
     Language: language,
     'Image URL': imageUrl,
-    Catalog: 'Amado Libros Uruguay',
+    Catalog: theme.catalog,
     Keywords: keywords,
     'Image URL 2': extraImages[0],
     'Image URL 3': extraImages[1],
@@ -445,7 +446,8 @@ function buildTechnicalSheet(item, normalized) {
   const size = formatDimensions(item?.dimensions);
   if (size) parts.push(`Medidas: ${size}.`);
   const genre = cleanCell(bibliographic.genre);
-  if (genre) parts.push(`Materia: ${genre}.`);
+  const themes = (normalized.theme?.themes || []).filter((t) => !/^(Spanish-language books|Libros en español)$/u.test(t)).slice(0, 4);
+  if (genre || themes.length) parts.push(`Materia: ${[genre, themes.join(', ')].filter(Boolean).join(' / ')}.`);
   if (normalized.isbn) parts.push(`ISBN: ${normalized.isbn}.`);
   if (normalized.condition === 'Used') {
     const detail = conditionFromText(item);
@@ -463,7 +465,7 @@ function buildTechnicalSheet(item, normalized) {
 function cleanTitle(item) {
   const raw = cleanCell(item?.showcase_display_title) || cleanCell(item?.title);
   return raw
-    .replace(/^(?:libro|libros)\s*[:\-–—]?\s+/iu, '')
+    .replace(/^(?:libro|libros)\s*[:\-–—]?\s+(?!(?:de|del|para|sobre|con|en|y|e|o|a|al)\b)/iu, '')
     .replace(/\s*[\-–—(]\s*usado\s*\)?\s*$/iu, '')
     .replace(/\s*\(cartone\)\s*/iu, ' ')
     .replace(/\s*[\-–—]\s*tapa (?:dura|blanda)\s*$/iu, '')
@@ -549,6 +551,77 @@ function plausibleYear(raw) {
   return year >= 1450 && year <= maxYear ? String(year) : '';
 }
 
+// Temáticas en inglés para el comprador de Biblio (EEUU, Reino Unido) a
+// partir del género de la ficha de Mercado Libre, el dominio y el título.
+// `catalog` sigue la taxonomía de navegación de Biblio; `themes` son
+// palabras clave temáticas que se suman a Keywords. Sin género conocido,
+// se cae al dominio y al idioma.
+const THEME_RULES = [
+  [/tarot|oraculo|adivinacion|cartomancia|lenormand/u, ['Tarot', 'Divination', 'Oracle Cards', 'New Age'], 'Religion, Philosophy and Metaphysics'],
+  [/esoter|astrolog|magia|ocultismo|espiritualidad|new age|reiki|chakra|angeles/u, ['Esoterica', 'Occult', 'Spirituality', 'New Age', 'Body, Mind & Spirit'], 'Religion, Philosophy and Metaphysics'],
+  [/religion|biblia|cristian|catolic|teolog|oracion|santos/u, ['Religion', 'Christianity', 'Bible', 'Theology'], 'Religion, Philosophy and Metaphysics'],
+  [/psicoanalisis|lacan|freud/u, ['Psychoanalysis', 'Psychology', 'Lacan', 'Freud'], 'Social Sciences, Biography and Genealogy'],
+  [/psicolog|psicoterap|psiquiatr|psicomotric/u, ['Psychology', 'Psychotherapy', 'Mental Health'], 'Social Sciences, Biography and Genealogy'],
+  [/filosofia/u, ['Philosophy'], 'Religion, Philosophy and Metaphysics'],
+  [/autoayuda|desarrollo personal|crecimiento personal|motivacion/u, ['Self-Help', 'Personal Development', 'Motivation'], 'Social Sciences, Biography and Genealogy'],
+  [/infantil|cuentos|album ilustrado|primeros lectores/u, ['Children\'s Books', 'Picture Books', 'Kids'], 'Children\'s Books'],
+  [/juvenil|young adult/u, ['Young Adult', 'Teen Fiction'], 'Children\'s Books'],
+  [/manga|comic|novela grafica|historieta/u, ['Manga', 'Comics', 'Graphic Novels'], 'Literature'],
+  [/poesia/u, ['Poetry'], 'Literature'],
+  [/novela|ficcion|literatura|narrativa|cuento|relatos|teatro|clasicos/u, ['Literature', 'Fiction', 'Novel'], 'Literature'],
+  [/historia|arqueolog|militar|guerra|uruguay/u, ['History', 'World History', 'Latin American History'], 'History'],
+  [/biografia|memoria|autobiografia/u, ['Biography', 'Memoir'], 'Social Sciences, Biography and Genealogy'],
+  [/derecho|politica|sociolog|antropolog|ciencias sociales|humanidades|economia|genero|feminismo/u, ['Social Sciences', 'Politics', 'Sociology', 'Law'], 'Social Sciences, Biography and Genealogy'],
+  [/negocios|finanzas|marketing|empresa|management|liderazgo|emprend/u, ['Business', 'Finance', 'Management', 'Leadership'], 'Business, Finance and the Law'],
+  [/salud|medicina|enfermeria|nutricion|bienestar|anatomia|fisioterap|odontolog|veterinar/u, ['Health', 'Medicine', 'Wellness', 'Nursing'], 'Science, Technology and Transportation'],
+  [/crianza|familia|embarazo|maternidad|paternidad|bebe/u, ['Parenting', 'Family', 'Pregnancy', 'Childcare'], 'Social Sciences, Biography and Genealogy'],
+  [/educacion|pedagog|escuela|docente|didactica|montessori|texto|academico|universitario|idiomas|ingles/u, ['Education', 'Teaching', 'Textbooks', 'Pedagogy'], 'Social Sciences, Biography and Genealogy'],
+  [/arte|cine|fotograf|diseno|arquitectura|moda|dibujo|pintura/u, ['Art', 'Design', 'Photography', 'Film', 'Architecture'], 'The Arts'],
+  [/musica|rock|jazz|tango|guitarra|partitura/u, ['Music'], 'The Arts'],
+  [/gastronomia|cocina|recetas|vino|reposteria/u, ['Cooking', 'Food & Wine', 'Recipes'], 'Cooking, Gardening and Domestic Arts'],
+  [/manualidades|tejido|crochet|costura|jardin|hogar|decoracion|bricolaje/u, ['Crafts', 'Hobbies', 'Gardening', 'Home'], 'Cooking, Gardening and Domestic Arts'],
+  [/deporte|futbol|ajedrez|yoga|fitness|caballo|equitacion|pesca|caza/u, ['Sports', 'Games', 'Recreation', 'Horses'], 'Sports, Games and Recreation'],
+  [/humor|satir/u, ['Humor', 'Satire'], 'Literature'],
+  [/ciencia|matematica|fisica|quimica|biolog|astronom|tecnolog|informatica|programacion|ingenieria|naturaleza|animales|aves|botanica/u, ['Science', 'Nature', 'Technology', 'Mathematics'], 'Science, Technology and Transportation'],
+  [/viaje|turismo|guia|mapa|atlas|geografia/u, ['Travel', 'Geography', 'Maps'], 'Travel and Exploration'],
+  [/diccionario|enciclopedia|consulta|referencia/u, ['Reference', 'Dictionaries', 'Encyclopedias'], 'Everything Else'],
+  [/revista|periodic|magazine/u, ['Magazines', 'Periodicals', 'Ephemera'], 'Ephemera'],
+];
+
+function themeFor(item, normalized) {
+  const bibliographic = item?.bibliographic && typeof item.bibliographic === 'object' ? item.bibliographic : {};
+  const domain = String(item?.domain_id || '').toUpperCase();
+  const genreKey = foldKey(`${bibliographic.genre || ''} ${bibliographic.collection || ''}`);
+  const titleKey = foldKey(item?.title);
+  const themes = [];
+  let catalog = '';
+  const apply = (text, max) => {
+    for (const [pattern, words, cat] of THEME_RULES) {
+      if (!pattern.test(text)) continue;
+      for (const w of words) if (!themes.includes(w)) themes.push(w);
+      if (!catalog) catalog = cat;
+      if (themes.length >= max) break;
+    }
+  };
+  if (domain.endsWith('TAROT_CARDS')) { apply('tarot', 9); }
+  if (domain.endsWith('MAGAZINES')) { apply('revista', 9); }
+  apply(genreKey, 9);
+  if (!catalog) apply(titleKey, 6);
+  if (!catalog) catalog = normalized.language === 'Spanish' ? 'Books in Spanish' : 'Everything Else';
+  const subjects = Array.isArray(bibliographic.subjects) ? bibliographic.subjects : [];
+  for (const subject of subjects.slice(0, 3)) {
+    const w = cleanCell(subject).replace(/\s+—.*$/u, '');
+    if (w && !themes.includes(w)) themes.push(w);
+  }
+  if (normalized.language === 'Spanish') {
+    for (const w of ['Spanish-language books', 'Libros en español']) if (!themes.includes(w)) themes.push(w);
+  }
+  if (/uruguay|montevideo|rioplatense|charrua/u.test(titleKey) || /uruguay/u.test(genreKey)) {
+    for (const w of ['Uruguay', 'Latin America', 'Río de la Plata']) if (!themes.includes(w)) themes.push(w);
+  }
+  return { catalog, themes };
+}
+
 function buildKeywords(item, normalized) {
   const bibliographic = item?.bibliographic && typeof item.bibliographic === 'object'
     ? item.bibliographic
@@ -558,6 +631,7 @@ function buildKeywords(item, normalized) {
     normalized.publisher,
     cleanCell(bibliographic.genre),
     cleanCell(bibliographic.collection),
+    ...(normalized.theme?.themes || []),
     ...(normalized.subjects || []).slice(0, 3).map((v) => cleanCell(v).replace(/\s+—.*$/u, '')),
     normalized.language,
     normalized.isbn ? `ISBN ${normalized.isbn}` : '',
