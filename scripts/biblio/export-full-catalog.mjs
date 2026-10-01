@@ -200,8 +200,8 @@ async function main() {
 }
 
 function toBiblioRow(item, sku) {
-  const title = cleanCell(item.title);
-  const author = cleanCell(firstText(
+  const title = cleanTitle(item);
+  const author = cleanAuthor(firstText(
     item.author,
     item.authors,
     item.bibliographic?.author,
@@ -232,7 +232,7 @@ function toBiblioRow(item, sku) {
   // y Biblio los mostraría como formato. Sin inferencia de Hardcover/Softcover
   // por idioma, categoría ni título: queda para una carga posterior con mapeo
   // explícito. buildDescription no agrega la línea de formato si está vacío.
-  const binding = '';
+  const binding = explicitBinding(item);
 
   const language = normalizeLanguage(firstText(
     item.language,
@@ -335,6 +335,7 @@ function isLikelyBook(item) {
 const LOCAL_LINE_PATTERNS = [
   /por encargo/u,
   /amado libros/u,
+  /somos amado|en amado\b|equipo amado/u,
   /amado vintage/u,
   /whats?app|wsp\b/u,
   /mercado ?libre|mercado ?pago|mercado ?envios|tienda oficial|mercado lider/u,
@@ -387,19 +388,86 @@ function buildTechnicalSheet(item, normalized) {
   const collection = cleanCell(bibliographic.collection);
   if (collection) parts.push(`Colección: ${collection}.`);
   if (normalized.publicationDate) parts.push(`Año de publicación: ${normalized.publicationDate}.`);
-  if (normalized.binding) parts.push(`Encuadernación/formato: ${normalized.binding}.`);
+  if (normalized.binding) parts.push(`Encuadernación: ${normalized.binding === 'Hardcover' ? 'tapa dura' : 'tapa blanda'}.`);
   if (normalized.language) parts.push(`Idioma: ${normalized.language}.`);
-  if (Number(item?.pages) > 0) parts.push(`${Number(item.pages)} páginas.`);
+  const pages = Number(item?.pages) > 0 ? Number(item.pages) : pagesFromText(item);
+  if (pages) parts.push(`${pages} páginas.`);
   const size = formatDimensions(item?.dimensions);
   if (size) parts.push(`Medidas: ${size}.`);
   const genre = cleanCell(bibliographic.genre);
   if (genre) parts.push(`Materia: ${genre}.`);
   if (normalized.isbn) parts.push(`ISBN: ${normalized.isbn}.`);
-  parts.push(normalized.condition === 'Used'
-    ? 'Ejemplar usado en buen estado; consulte por detalles del estado antes de comprar.'
-    : 'Ejemplar nuevo.');
+  if (normalized.condition === 'Used') {
+    const detail = conditionFromText(item);
+    parts.push(detail ? `Estado del ejemplar: ${detail}` : 'Ejemplar usado; ver fotografías.');
+  } else {
+    parts.push('Ejemplar nuevo.');
+  }
   parts.push(`Referencia: ${cleanSku(item?.id)}.`);
   return parts.join(' ');
+}
+
+// Título: la ficha de Mercado Libre antepone "Libro" o "Libro -" y a veces
+// cierra con "- Usado" para su buscador; en Biblio sobra. Se prefiere la
+// versión con mayúsculas corregidas (showcase_display_title) cuando existe.
+function cleanTitle(item) {
+  const raw = cleanCell(item?.showcase_display_title) || cleanCell(item?.title);
+  return raw
+    .replace(/^(?:libro|libros)\s*[:\-–—]?\s+/iu, '')
+    .replace(/\s*[\-–—(]\s*usado\s*\)?\s*$/iu, '')
+    .replace(/\s*\(cartone\)\s*/iu, ' ')
+    .replace(/\s*[\-–—]\s*tapa (?:dura|blanda)\s*$/iu, '')
+    .replace(/\s{2,}/gu, ' ')
+    .trim() || cleanCell(item?.title);
+}
+
+// Autor en mayúsculas sostenidas ("JIM KWIK") pasa a capitalizado. Solo si
+// toda la cadena está en mayúsculas; el resto se respeta tal cual.
+function cleanAuthor(value) {
+  const clean = cleanCell(value);
+  if (!clean) return '';
+  if (clean.length > 3 && clean === clean.toUpperCase() && clean !== clean.toLowerCase()) {
+    return clean.toLowerCase().replace(/(^|[\s\-'(.,])(\p{L})/gu, (m, pre, ch) => pre + ch.toUpperCase())
+      .replace(/\b(De|Del|La|Las|Los|Y|E|Van|Von|Da|Di|Le|Du)\b/gu, (m) => m.toLowerCase());
+  }
+  return clean;
+}
+
+function itemText(item) {
+  return foldKey(`${item?.title || ''} ${item?.description || ''}`);
+}
+
+// Encuadernación solo cuando la propia ficha lo dice; sin inferir.
+function explicitBinding(item) {
+  const text = itemText(item);
+  const hard = /tapa dura|cartone|hardcover|encuadernado en tela/u.test(text);
+  const soft = /tapa blanda|rustica|paperback|softcover/u.test(text);
+  if (hard && !soft) return 'Hardcover';
+  if (soft && !hard) return 'Softcover';
+  return '';
+}
+
+function pagesFromText(item) {
+  const match = itemText(item).match(/\b(\d{2,4})\s*(?:paginas|pags?\b|pp\b)/u);
+  if (!match) return 0;
+  const n = Number(match[1]);
+  return n >= 16 && n <= 3000 ? n : 0;
+}
+
+// Para usados: la frase de la ficha que describe el estado, si la hay.
+function conditionFromText(item) {
+  const text = cleanCell(item?.description);
+  if (!text) return '';
+  const sentences = text.split(/(?<=[.!?])\s+|\s*\n+\s*/u);
+  const hits = sentences.filter((sentence) => {
+    const key = foldKey(sentence);
+    return /\b(estado|desgaste|manch|subray|anotaci|lomo|hojas amarill|amarillent|sobrecubierta|rotur|falta|intacto|conservad)/u.test(key)
+      && !LOCAL_LINE_PATTERNS.some((pattern) => pattern.test(key))
+      && sentence.length <= 300;
+  });
+  if (!hits.length) return '';
+  const detail = hits.slice(0, 2).join(' ').trim();
+  return /[.!?]$/u.test(detail) ? detail : `${detail}.`;
 }
 
 function formatDimensions(dimensions) {
