@@ -286,16 +286,31 @@ function normalizeCondition(raw) {
   return cleanCell(raw) || 'Used';
 }
 
-// Mercado Libre devuelve "AMADO LIBROS" (el vendedor) como editorial en las
-// fichas sin editorial real. Para Biblio eso es un dato falso: queda vacío,
-// tanto en la columna Publisher como en la línea "Editorial:" de Description.
-// No se inventa editorial sustituta.
-const SELLER_AS_PUBLISHER = new Set(['AMADO LIBROS']);
+// Mercado Libre devuelve como editorial valores que no lo son: "AMADO LIBROS"
+// (el vendedor) y "Genérica"/"Genérico" (placeholder de marca de la ficha).
+// Para Biblio son datos falsos: quedan vacíos, tanto en la columna Publisher
+// como en la línea "Editorial:" de Description. No se inventa editorial
+// sustituta. La comparación es en mayúsculas y sin acentos ni espacios dobles,
+// para no depender de la variante que traiga cada ficha.
+const PLACEHOLDER_PUBLISHERS = new Set([
+  'AMADO LIBROS',
+  'GENERICA',
+  'GENERICO',
+]);
+
+function publisherKey(value) {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/gu, '')
+    .toUpperCase()
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
 
 function normalizePublisherForBiblio(value) {
   const clean = cleanCell(value);
   if (!clean) return '';
-  if (SELLER_AS_PUBLISHER.has(clean.toUpperCase())) return '';
+  if (PLACEHOLDER_PUBLISHERS.has(publisherKey(clean))) return '';
   return clean;
 }
 
