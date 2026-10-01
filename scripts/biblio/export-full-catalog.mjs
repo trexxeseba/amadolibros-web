@@ -86,14 +86,48 @@ async function main() {
   const seenSku = new Set();
   const isbnGroups = new Map();
 
+  // ISBN de las fichas ya cargadas a mano en Biblio: la otra publicación del
+  // mismo libro en Mercado Libre tampoco se exporta, para no duplicarlo.
+  const isbnAlreadyInBiblio = new Set(
+    sourceItems
+      .filter((item) => ALREADY_IN_BIBLIO.has(cleanSku(item?.id)))
+      .map((item) => normalizeIsbn(item?.isbn))
+      .filter(Boolean),
+  );
+
+  const candidates = [];
   for (const item of sourceItems) {
     const sku = cleanSku(item?.id);
-    const reason = rejectionReason(item, sku, seenSku);
+    let reason = rejectionReason(item, sku, seenSku);
+    if (!reason && isbnAlreadyInBiblio.has(normalizeIsbn(item?.isbn))) {
+      reason = 'already_in_biblio_isbn';
+    }
     if (reason) {
       rejected.push(rejectRow(item, reason));
       continue;
     }
     seenSku.add(sku);
+    candidates.push({ item, sku });
+  }
+
+  // Mercado Libre trae el mismo libro dos veces: la publicación propia y la
+  // publicación de catálogo (catalog_listing=true), con el mismo stock. A
+  // Biblio va una sola fila por libro: si un ISBN tiene al menos una
+  // publicación propia, las de catálogo se descartan. Los grupos sin
+  // publicación de catálogo no se tocan y quedan en biblio-isbn-duplicates.txt
+  // para revisión manual.
+  const isbnHasOwnListing = new Set(
+    candidates
+      .filter(({ item }) => item?.catalog_listing !== true)
+      .map(({ item }) => normalizeIsbn(item?.isbn))
+      .filter(Boolean),
+  );
+
+  for (const { item, sku } of candidates) {
+    if (item?.catalog_listing === true && isbnHasOwnListing.has(normalizeIsbn(item?.isbn))) {
+      rejected.push(rejectRow(item, 'duplicate_isbn_catalog_listing'));
+      continue;
+    }
 
     const row = toBiblioRow(item, sku);
     rows.push(row);
@@ -249,9 +283,10 @@ function rejectionReason(item, sku, seenSku) {
 }
 
 // Dominios de Mercado Libre que nunca van a Biblio aunque la ficha traiga ISBN
-// o señal bibliográfica: música y video (CDs, vinilos, DVDs). Es un dato de
-// categoría de la ficha, no un filtro por título ni por tags. Los mazos de
-// tarot/oráculo (MLU-TAROT_CARDS, MLU-BOARD_AND_CARD_GAMES) y las revistas
+// o señal bibliográfica: música y video (CDs, vinilos, DVDs) y juegos de mesa
+// (MLU-BOARD_AND_CARD_GAMES: puzzles, dominós, trivias; no trae mazos de
+// tarot). Es un dato de categoría de la ficha, no un filtro por título ni por
+// tags. Los mazos de tarot/oráculo (MLU-TAROT_CARDS) y las revistas
 // (MLU-MAGAZINES) no están acá: siguen entrando. Se aplica siempre, también
 // con include_non_books=true.
 const EXCLUDED_DOMAIN_SUFFIXES = [
@@ -259,6 +294,7 @@ const EXCLUDED_DOMAIN_SUFFIXES = [
   'ANTIQUE_MUSIC_ALBUMS',
   'MUSIC_MOVIES_AND_TV_SERIES',
   'PHYSICAL_MOVIES',
+  'BOARD_AND_CARD_GAMES',
 ];
 
 function isExcludedDomain(item) {
@@ -271,6 +307,9 @@ function isExcludedDomain(item) {
 function isLikelyBook(item) {
   const domain = String(item?.domain_id || '').trim().toUpperCase();
   if (/(?:^|[-_])BOOKS(?:$|[-_])/.test(domain)) return true;
+  // Los mazos de tarot/oráculo van a Biblio junto con los libros aunque la
+  // ficha no traiga autor, ISBN ni datos bibliográficos.
+  if (domain.replace(/^MLU-/u, '') === 'TAROT_CARDS') return true;
   if (normalizeIsbn(item?.isbn)) return true;
   const bibliographic = item?.bibliographic && typeof item.bibliographic === 'object'
     ? item.bibliographic
@@ -363,6 +402,12 @@ function normalizeLanguage(raw) {
     ['english', 'English'],
     ['inglés', 'English'],
     ['ingles', 'English'],
+    ['inglés internacional', 'English'],
+    ['ingles internacional', 'English'],
+    ['inglés americano', 'English'],
+    ['ingles americano', 'English'],
+    ['inglés británico', 'English'],
+    ['ingles britanico', 'English'],
     ['fr', 'French'],
     ['fre', 'French'],
     ['fra', 'French'],
