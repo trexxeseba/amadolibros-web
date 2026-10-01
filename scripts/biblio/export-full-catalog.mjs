@@ -470,7 +470,8 @@ function cleanTitle(item) {
     .replace(/\s*\(cartone\)\s*/iu, ' ')
     .replace(/\s*[\-–—]\s*tapa (?:dura|blanda)\s*$/iu, '')
     .replace(/\s{2,}/gu, ' ')
-    .trim() || cleanCell(item?.title);
+    .trim()
+    .replace(/^\p{Ll}/u, (ch) => ch.toUpperCase()) || cleanCell(item?.title);
 }
 
 // Autor en mayúsculas sostenidas ("JIM KWIK") pasa a capitalizado. Solo si
