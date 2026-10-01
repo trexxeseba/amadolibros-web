@@ -67,6 +67,35 @@ const ALREADY_IN_BIBLIO = new Set(
     .filter((line) => /^MLU\d+$/u.test(line)),
 );
 
+// Datos bibliográficos verificados por ISBN (Biblioteca Nacional de España y
+// otras bibliotecas nacionales) que el sitio ya usa para las fichas:
+// páginas, editorial, año y materias. Se cargan desde functions/_shared.
+const VERIFIED_FACTS = await loadVerifiedFacts();
+
+async function loadVerifiedFacts() {
+  const dir = new URL('../../functions/_shared/', import.meta.url);
+  const map = new Map();
+  let files = [];
+  try {
+    files = (await fs.readdir(dir)).filter((name) => /^book-enrichment-facts.*\.js$/u.test(name)).sort();
+  } catch {
+    return map;
+  }
+  for (const name of files) {
+    try {
+      const mod = await import(new URL(name, dir).href);
+      for (const entry of mod.BOOK_FACT_ENRICHMENTS || []) {
+        const isbn = normalizeIsbn(entry?.isbn);
+        if (!isbn || map.has(isbn) || !entry?.facts) continue;
+        map.set(isbn, entry.facts);
+      }
+    } catch (error) {
+      console.error(`[biblio-export] no se pudo leer ${name}: ${error.message}`);
+    }
+  }
+  return map;
+}
+
 main().catch((error) => {
   console.error(`[biblio-export] ${error.stack || error.message || error}`);
   process.exit(1);
@@ -201,6 +230,7 @@ async function main() {
 
 function toBiblioRow(item, sku) {
   const title = cleanTitle(item);
+  const verified = VERIFIED_FACTS.get(normalizeIsbn(item.isbn)) || {};
   const author = cleanAuthor(firstText(
     item.author,
     item.authors,
@@ -213,7 +243,7 @@ function toBiblioRow(item, sku) {
     item.editorial,
     item.bibliographic?.publisher,
     item.bibliographic?.editorial,
-  ));
+  )) || normalizePublisherForBiblio(verified.publisher);
 
   // Año del libro: solo el atributo bibliográfico "Año de publicación" cargado
   // en la ficha, y solo si es un año plausible. Sin fallback a item.start_time
@@ -225,6 +255,8 @@ function toBiblioRow(item, sku) {
     item.bibliographic?.year,
     item.bibliographic?.publication_year,
     item.bibliographic?.publication_date,
+    verified.bibliographic?.publication_year,
+    verified.publication_year,
   ));
 
   // Primera carga: Binding vacío en todas las filas. El catálogo trae valores
@@ -244,9 +276,13 @@ function toBiblioRow(item, sku) {
   const quantity = Math.max(1, Math.floor(Number(item.available_quantity) || 1));
   const condition = normalizeCondition(item.condition);
   const price = priceUsd(Number(item.price));
-  const description = buildDescription(item, { title, author, publisher, publicationDate, binding, language, isbn, condition });
+  const pages = Number(item.pages) > 0 ? Number(item.pages)
+    : Number(verified.pages) > 0 ? Number(verified.pages)
+      : pagesFromText(item);
+  const subjects = Array.isArray(verified.bibliographic?.subjects) ? verified.bibliographic.subjects : [];
+  const description = buildDescription(item, { title, author, publisher, publicationDate, binding, language, isbn, condition, pages });
   const imageUrl = imageUrlFor(sku);
-  const keywords = buildKeywords(item, { isbn, language, author, publisher });
+  const keywords = buildKeywords(item, { isbn, language, author, publisher, subjects });
 
   return {
     'Book ID': sku,
@@ -390,8 +426,7 @@ function buildTechnicalSheet(item, normalized) {
   if (normalized.publicationDate) parts.push(`Año de publicación: ${normalized.publicationDate}.`);
   if (normalized.binding) parts.push(`Encuadernación: ${normalized.binding === 'Hardcover' ? 'tapa dura' : 'tapa blanda'}.`);
   if (normalized.language) parts.push(`Idioma: ${normalized.language}.`);
-  const pages = Number(item?.pages) > 0 ? Number(item.pages) : pagesFromText(item);
-  if (pages) parts.push(`${pages} páginas.`);
+  if (normalized.pages) parts.push(`${normalized.pages} páginas.`);
   const size = formatDimensions(item?.dimensions);
   if (size) parts.push(`Medidas: ${size}.`);
   const genre = cleanCell(bibliographic.genre);
@@ -506,6 +541,7 @@ function buildKeywords(item, normalized) {
     normalized.publisher,
     cleanCell(bibliographic.genre),
     cleanCell(bibliographic.collection),
+    ...(normalized.subjects || []).slice(0, 3).map((v) => cleanCell(v).replace(/\s+—.*$/u, '')),
     normalized.language,
     normalized.isbn ? `ISBN ${normalized.isbn}` : '',
     'Amado Libros',
