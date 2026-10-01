@@ -57,6 +57,16 @@ const FORBIDDEN_IN_CELL_ALL = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]+/gu;
 // eslint-disable-next-line no-control-regex
 const FORBIDDEN_IN_LINE = /[\u0000-\u0008\u000A-\u001F\u007F-\u009F\u2028\u2029]/u;
 
+// SKUs ya cargados a mano en Biblio con datos curados (editorial, año, estado
+// del ejemplar). No se exportan para que una carga masiva no pise esas fichas.
+const SKIP_FILE = new URL('./skip-skus.txt', import.meta.url);
+const ALREADY_IN_BIBLIO = new Set(
+  (await fs.readFile(SKIP_FILE, 'utf8').catch(() => ''))
+    .split(/\r?\n/u)
+    .map((line) => line.replace(/#.*$/u, '').trim().toUpperCase())
+    .filter((line) => /^MLU\d+$/u.test(line)),
+);
+
 main().catch((error) => {
   console.error(`[biblio-export] ${error.stack || error.message || error}`);
   process.exit(1);
@@ -177,7 +187,8 @@ function toBiblioRow(item, sku) {
     item.publicationDate,
     item.bibliographic?.year,
     item.bibliographic?.publication_date,
-    yearFromDate(item.start_time),
+    // Sin fallback a item.start_time: es la fecha en que se publicó el aviso en
+    // Mercado Libre, no el año del libro. Sin año real, queda vacío.
   ));
 
   // Primera carga: Binding vacío en todas las filas. El catálogo trae valores
@@ -225,6 +236,7 @@ function toBiblioRow(item, sku) {
 function rejectionReason(item, sku, seenSku) {
   if (!sku) return 'missing_sku';
   if (seenSku.has(sku)) return 'duplicate_sku';
+  if (ALREADY_IN_BIBLIO.has(sku)) return 'already_in_biblio';
   if (!cleanCell(item?.title)) return 'missing_title';
   if (String(item?.status || '').trim().toLowerCase() !== 'active') return 'not_active';
   if (!(Number(item?.available_quantity) > 0)) return 'no_stock';
@@ -526,11 +538,6 @@ function firstText(...values) {
     if (cleaned) return cleaned;
   }
   return '';
-}
-
-function yearFromDate(value) {
-  const match = String(value || '').match(/\b(18|19|20)\d{2}\b/u);
-  return match ? match[0] : '';
 }
 
 function truncate(text, limit) {
