@@ -231,8 +231,29 @@ function rejectionReason(item, sku, seenSku) {
   if (!(Number(item?.price) > 0)) return 'missing_or_invalid_price';
   const currency = String(item?.currency || item?.currency_id || '').trim().toUpperCase();
   if (currency && currency !== 'UYU') return `unsupported_currency_${currency}`;
+  if (isExcludedDomain(item)) return 'non_book_domain';
   if (!INCLUDE_NON_BOOKS && !isLikelyBook(item)) return 'not_book_signal';
   return null;
+}
+
+// Dominios de Mercado Libre que nunca van a Biblio aunque la ficha traiga ISBN
+// o señal bibliográfica: música y video (CDs, vinilos, DVDs). Es un dato de
+// categoría de la ficha, no un filtro por título ni por tags. Los mazos de
+// tarot/oráculo (MLU-TAROT_CARDS, MLU-BOARD_AND_CARD_GAMES) y las revistas
+// (MLU-MAGAZINES) no están acá: siguen entrando. Se aplica siempre, también
+// con include_non_books=true.
+const EXCLUDED_DOMAIN_SUFFIXES = [
+  'MUSIC_ALBUMS',
+  'ANTIQUE_MUSIC_ALBUMS',
+  'MUSIC_MOVIES_AND_TV_SERIES',
+  'PHYSICAL_MOVIES',
+];
+
+function isExcludedDomain(item) {
+  const domain = String(item?.domain_id || '').trim().toUpperCase();
+  if (!domain) return false;
+  const suffix = domain.replace(/^MLU-/u, '');
+  return EXCLUDED_DOMAIN_SUFFIXES.includes(suffix);
 }
 
 function isLikelyBook(item) {
