@@ -43,5 +43,3 @@ precio_envío = (costo transportista + embalaje) / 0,785
 
 ## Pendiente de verificación
 Al abrir la matriz antes del ftp_upload, chequear solo: importes iguales a esta tabla y días internacionales 20–35 / 5–10 (los selectores de días se habían reseteado tras un guardado fallido el 17/9).
-
-Lo demás de tu plan queda igual: no tocar código, verificar matriz en BiblioDirect, artifact_only, revisar archivo, ftp_upload, purge_replace solo después.
