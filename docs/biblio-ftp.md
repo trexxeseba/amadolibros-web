@@ -42,6 +42,7 @@ El `Book ID` es el SKU estable de Mercado Libre (`MLU...`). No se cambia salvo q
 
 Reglas de datos de la primera carga:
 
+- `Publication Date`: usa únicamente campos bibliográficos, incluido `bibliographic.publication_year` del snapshot de R2. Nunca usa `start_time`, que es la fecha de creación del aviso en Mercado Libre. Si no hay fecha bibliográfica, la columna queda vacía y `Description` omite `Fecha/año:`; no se deduce un año del título.
 - `Publisher`: si el catálogo trae `AMADO LIBROS` (el vendedor, no una editorial) o `Genérica` / `Genérico` (placeholder de marca de Mercado Libre), queda vacío. La comparación ignora mayúsculas y acentos. La línea `Editorial:` de `Description` sigue la misma regla. No se inventa editorial sustituta.
 - `Binding`: vacío en todas las filas. Los valores del catálogo (`Papel`, `Físico`, `Vinilo`, `CD`) no son encuadernaciones reales. `Description` no incluye la línea `Encuadernación/formato:` mientras `Binding` esté vacío. El mapeo a Hardcover/Softcover queda para una carga posterior, sin inferencia.
 - Mazos de tarot, cartas y oráculos se exportan junto con los libros. Si alguno queda en `biblio-rejected.txt` con `not_book_signal`, se vuelve a correr con `include_non_books: true`; no se filtra por título ni por tags.

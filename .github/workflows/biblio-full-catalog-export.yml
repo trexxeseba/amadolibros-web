@@ -51,6 +51,9 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Test Biblio publication dates
+        run: node --test scripts/biblio/__tests__/export-full-catalog.test.mjs
+
       - name: Generate Biblio upload file
         run: node scripts/biblio/export-full-catalog.mjs
         env:

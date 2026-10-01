@@ -171,13 +171,16 @@ function toBiblioRow(item, sku) {
     item.bibliographic?.editorial,
   ));
 
+  // El snapshot de R2 guarda el año editorial en bibliographic.publication_year.
+  // start_time es el alta del aviso en Mercado Libre, no la fecha de la edición.
+  // Si no hay fecha bibliográfica, queda vacía (también en Description).
   const publicationDate = cleanCell(firstText(
     item.year,
     item.publication_year,
     item.publicationDate,
     item.bibliographic?.year,
+    item.bibliographic?.publication_year,
     item.bibliographic?.publication_date,
-    yearFromDate(item.start_time),
   ));
 
   // Primera carga: Binding vacío en todas las filas. El catálogo trae valores
@@ -526,11 +529,6 @@ function firstText(...values) {
     if (cleaned) return cleaned;
   }
   return '';
-}
-
-function yearFromDate(value) {
-  const match = String(value || '').match(/\b(18|19|20)\d{2}\b/u);
-  return match ? match[0] : '';
 }
 
 function truncate(text, limit) {
