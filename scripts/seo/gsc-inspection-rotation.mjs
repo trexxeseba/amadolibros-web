@@ -97,6 +97,31 @@ async function mapWithConcurrency(items, concurrency, mapper) {
   return results;
 }
 
+/**
+ * Aplana `richResultsResult` de la URL Inspection API: veredicto, tipos de
+ * resultado enriquecido detectados y problemas (únicos) con su severidad.
+ * Sin ese bloque la página no tiene datos estructurados reconocidos.
+ */
+export function flattenRichResults(richResultsResult) {
+  const detected = Array.isArray(richResultsResult?.detectedItems) ? richResultsResult.detectedItems : [];
+  const types = new Set();
+  const issues = new Set();
+  for (const group of detected) {
+    if (group?.richResultType) types.add(String(group.richResultType));
+    for (const entry of Array.isArray(group?.items) ? group.items : []) {
+      for (const issue of Array.isArray(entry?.issues) ? entry.issues : []) {
+        const message = String(issue?.issueMessage || '').trim();
+        if (message) issues.add(`${String(issue?.severity || 'UNKNOWN')}: ${message}`);
+      }
+    }
+  }
+  return {
+    richResultsVerdict: richResultsResult?.verdict || '',
+    richResultTypes: [...types].sort().join(' | '),
+    richResultIssues: [...issues].sort().join(' | '),
+  };
+}
+
 export async function inspectUrl(row, { siteUrl, accessToken, fetchFn = fetchWithRetry } = {}) {
   try {
     const response = await fetchFn(INSPECTION_ENDPOINT, {
@@ -120,6 +145,7 @@ export async function inspectUrl(row, { siteUrl, accessToken, fetchFn = fetchWit
       userCanonical: result.userCanonical || '',
       googleCanonical: result.googleCanonical || '',
       lastCrawlTime: result.lastCrawlTime || '',
+      ...flattenRichResults(response.inspectionResult?.richResultsResult),
       error: '',
     };
   } catch (error) {
@@ -135,6 +161,7 @@ export async function inspectUrl(row, { siteUrl, accessToken, fetchFn = fetchWit
       userCanonical: '',
       googleCanonical: '',
       lastCrawlTime: '',
+      ...flattenRichResults(null),
       error: String(error?.message || error),
     };
   }
@@ -154,6 +181,7 @@ export function summarizeInspectionRows(rows) {
     canonicalMismatch: 0,
     coverageStates: {},
     pageFetchStates: {},
+    richResults: { withDetectedItems: 0, withErrors: 0, verdicts: {}, types: {}, issues: {} },
     cohorts: {},
   };
   for (const row of rows) {
@@ -176,6 +204,16 @@ export function summarizeInspectionRows(rows) {
     increment(summary.coverageStates, row.coverageState);
     increment(summary.pageFetchStates, row.pageFetchState);
     increment(cohort.coverageStates, row.coverageState);
+    if (row.richResultTypes) {
+      summary.richResults.withDetectedItems += 1;
+      increment(summary.richResults.verdicts, row.richResultsVerdict);
+      for (const type of row.richResultTypes.split(' | ')) increment(summary.richResults.types, type);
+    }
+    if (row.richResultIssues) {
+      const rowIssues = row.richResultIssues.split(' | ');
+      if (rowIssues.some((issue) => issue.startsWith('ERROR: '))) summary.richResults.withErrors += 1;
+      for (const issue of rowIssues) increment(summary.richResults.issues, issue);
+    }
     if (row.userCanonical && row.googleCanonical && row.userCanonical !== row.googleCanonical) {
       summary.canonicalMismatch += 1;
     }
@@ -192,7 +230,8 @@ function csvCell(value) {
 function rowsToCsv(rows) {
   const headers = [
     'page', 'cohort', 'rotationIndex', 'verdict', 'coverageState', 'indexingState',
-    'robotsTxtState', 'pageFetchState', 'userCanonical', 'googleCanonical', 'lastCrawlTime', 'error',
+    'robotsTxtState', 'pageFetchState', 'userCanonical', 'googleCanonical', 'lastCrawlTime',
+    'richResultsVerdict', 'richResultTypes', 'richResultIssues', 'error',
   ];
   return `${headers.map(csvCell).join(',')}\n${rows.map((row) => headers.map((h) => csvCell(row[h])).join(',')).join('\n')}\n`;
 }
@@ -229,6 +268,22 @@ function summaryMarkdown({ date, siteUrl, selections, summary }) {
   lines.push('', '## Coverage states', '');
   for (const [state, count] of Object.entries(summary.coverageStates).sort((a, b) => b[1] - a[1])) {
     lines.push(`- ${state}: **${count}**`);
+  }
+  const rich = summary.richResults;
+  lines.push(
+    '',
+    '## Resultados enriquecidos',
+    '',
+    `- URLs con datos estructurados detectados: **${rich.withDetectedItems}/${summary.completed}**`,
+    `- URLs con errores de datos estructurados: **${rich.withErrors}**`,
+  );
+  for (const [type, count] of Object.entries(rich.types).sort((a, b) => b[1] - a[1])) {
+    lines.push(`- ${type}: **${count}**`);
+  }
+  const issues = Object.entries(rich.issues).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  if (issues.length) {
+    lines.push('', '### Problemas más frecuentes', '');
+    for (const [issue, count] of issues) lines.push(`- ${issue}: **${count}**`);
   }
   return `${lines.join('\n')}\n`;
 }
