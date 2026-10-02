@@ -6,16 +6,20 @@ if (!base || !/^https:\/\/pr-\d+\.amadolibros-web\.pages\.dev$/.test(base)) thro
 const out = 'artifacts/image-system';
 await mkdir(out, {recursive: true});
 const seed = JSON.parse(await readFile(out+'/r2-seed.json', 'utf8'));
-const rows = [];
+const rows = new Array(seed.entries.length);
 // All copies from the automatic batch are verified, including small images.
 // Small originals must remain honestly queued; they do not count as fixed.
-for (const entry of seed.entries) {
+async function verifyEntry(entry) {
   const row = {key: entry.key, status: entry.status, google_ready: entry.google_ready};
-  rows.push(row);
+  if (entry.status === 'deferred') {
+    row.ok = false;
+    row.error = 'Deferred work is not verified';
+    return row;
+  }
   if (entry.status === 'failed') {
     row.ok = Boolean(entry.error);
     row.queued_failure = true;
-    continue;
+    return row;
   }
   try {
     const path = `/book-cover/${entry.id}/${entry.position === 0 ? 'cover.jpg' : `cover-${entry.position+1}.jpg`}`;
@@ -36,14 +40,23 @@ for (const entry of seed.entries) {
       measured.width * measured.height > entry.previous.width * entry.previous.height);
     row.ok = true;
   } catch (error) { row.ok = false; row.error = error.message; }
+  return row;
 }
+let nextEntry = 0;
+await Promise.all(Array.from({length: Math.min(6, seed.entries.length)}, async () => {
+  while (nextEntry < seed.entries.length) {
+    const index = nextEntry++;
+    rows[index] = await verifyEntry(seed.entries[index]);
+  }
+}));
 const summary = {catalog_products: seed.catalog_products, catalog_images: seed.catalog_images,
   automatic_batch: rows.length, r2_verified: rows.filter(row => row.ok && row.preview).length,
   larger_than_catalog_source: rows.filter(row => row.source_improved).length,
   existing_masters_upgraded: rows.filter(row => row.master_upgraded).length,
   google_ready: rows.filter(row => row.ok && row.google_ready).length,
   queued_failures: rows.filter(row => row.queued_failure).length,
-  validation_failures: rows.filter(row => !row.ok).length, preflight: seed.preflight, quality: seed.quality};
+  validation_failures: rows.filter(row => !row.ok).length, preflight: seed.preflight, quality: seed.quality,
+  throughput: seed.throughput};
 await writeFile(out+'/live-report.json', JSON.stringify({generated_at: new Date().toISOString(), preview: base,
   catalog_updated_at: seed.catalog_updated_at, summary, rows}, null, 2));
 console.log(JSON.stringify(summary));

@@ -44,7 +44,7 @@ jobs:
         run: npm run build
 
       - name: Run universal image pipeline in R2 Preview
-        if: github.head_ref == 'codex/catalog-image-system'
+        if: (github.head_ref == 'codex/catalog-image-system' || github.head_ref == 'codex/image-throughput')
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -66,7 +66,13 @@ jobs:
           test -n "$SEED_URL"
           printf '%s' "$PREVIEW_SEED_TOKEN" | npx wrangler@3.114.17 secret put PREVIEW_SEED_TOKEN \
             --config worker-sync/image-system-preview.wrangler.toml --name "$SEED_NAME"
-          curl -fsS --retry 8 --retry-all-errors --retry-delay 3 --max-time 300 \
+          for attempt in 1 2 3 4 5 6 7 8; do
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 -H "Authorization: Bearer $PREVIEW_SEED_TOKEN" "$SEED_URL")
+            [ "$CODE" = "200" ] && break
+            sleep 3
+          done
+          test "$CODE" = "200"
+          curl -fsS --max-time 300 \
             -X POST -H "Authorization: Bearer $PREVIEW_SEED_TOKEN" "$SEED_URL" \
             > artifacts/image-system/r2-seed.json
           node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('artifacts/image-system/r2-seed.json')); if(r.entries.length===0 || r.result.status!=='completed')process.exit(1); console.log(JSON.stringify({bucket:r.bucket,verified:r.entries.length}));"
@@ -122,13 +128,13 @@ jobs:
         run: node scripts/commerce/product-image-preview-check.mjs
 
       - name: Verify exact native cover bytes on Preview
-        if: github.head_ref == 'codex/catalog-image-system'
+        if: (github.head_ref == 'codex/catalog-image-system' || github.head_ref == 'codex/image-throughput')
         env:
           QW2_PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         run: node scripts/seo/image-system-live-check.mjs
 
       - name: Upload verified native cover evidence
-        if: always() && github.head_ref == 'codex/catalog-image-system'
+        if: always() && (github.head_ref == 'codex/catalog-image-system' || github.head_ref == 'codex/image-throughput')
         uses: actions/upload-artifact@v4
         with:
           name: image-system-pr-${{ github.event.pull_request.number }}
