@@ -23,7 +23,7 @@ import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shar
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 // QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
 // inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
-import { normalizeIsbnToGtin } from '../feed.xml.js';
+import { isBookProduct, normalizeIsbnToGtin } from '../feed.xml.js';
 import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
@@ -124,6 +124,11 @@ function isValidDimensionValue(v) {
     const s = String(v).trim();
     return s !== '' && s !== '-1' && !s.startsWith('-1 ');
 }
+
+const NON_BOOK_SCHEMA_DROP = Object.freeze([
+    'isbn', 'author', 'publisher', 'numberOfPages', 'inLanguage', 'bookFormat',
+    'bookEdition', 'datePublished', 'genre', 'translator', 'illustrator',
+]);
 
 function normalizePublisher(publisher) {
     if (!publisher) return null;
@@ -561,9 +566,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         : '';
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
+    // SCHEMA-NON-BOOK-1: el catálogo también publica discos, revistas,
+    // mazos y antigüedades. Declararlos `Book` es un dato estructurado falso,
+    // así que se reusa la misma regla que ya deja fuera de Merchant a lo que
+    // no es libro. Sin oferta vendible un `Product` pelado dispara el error
+    // "falta offers, review o aggregateRating" en Search Console, por eso en
+    // ese caso queda como `Thing`. Los pausados no traen `domain_id`: sin
+    // dominio no hay evidencia de que no sea un libro y se mantiene `Book`.
+    const isBook = !String(item?.domain_id || '').trim() || isBookProduct(item);
     const schemaProduct = {
         '@context': 'https://schema.org',
-        '@type':    ['Product', 'Book'],
+        '@type':    isBook ? ['Product', 'Book'] : (sellableInCheckout ? 'Product' : 'Thing'),
         'name':     item.title,
         ...(images.length ? { image: images } : {}),
         'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
@@ -649,6 +662,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (enrichmentSchema?.bookEdition) schemaProduct.bookEdition = enrichmentSchema.bookEdition;
     if (enrichmentSchema?.datePublished) schemaProduct.datePublished = enrichmentSchema.datePublished;
     if (enrichmentSchema?.genre) schemaProduct.genre = enrichmentSchema.genre;
+    if (!isBook) {
+        // Propiedades que sólo existen para `Book`/`CreativeWork`. El `gtin`
+        // validado se conserva: es un identificador de producto, no de libro.
+        for (const key of NON_BOOK_SCHEMA_DROP) delete schemaProduct[key];
+    }
     if (schemaProduct.offers && item.condition === 'new') {
         schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
     } else if (schemaProduct.offers && item.condition === 'used') {
