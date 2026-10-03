@@ -94,7 +94,9 @@ export async function loadOrdersOverview(db, { now = Date.now() } = {}) {
     ),
     queryAll(
       db,
-      `SELECT COUNT(*) AS total, COALESCE(SUM(payable_total_uyu), 0) AS total_uyu
+      // Lo cobrado de verdad: una transferencia cobra menos que el total de
+      // lista. Los pedidos anteriores a paid_amount_uyu usan el total.
+      `SELECT COUNT(*) AS total, COALESCE(SUM(COALESCE(paid_amount_uyu, payable_total_uyu)), 0) AS total_uyu
          FROM orders
         WHERE payment_status = 'approved' AND paid_at >= ?`,
       [last30],
@@ -188,7 +190,7 @@ export async function loadRevenueByMonth(db, { now = Date.now() } = {}) {
     db,
     `SELECT substr(paid_at, 1, 7) AS month,
             COUNT(*) AS orders,
-            COALESCE(SUM(payable_total_uyu), 0) AS total_uyu
+            COALESCE(SUM(COALESCE(paid_amount_uyu, payable_total_uyu)), 0) AS total_uyu
        FROM orders
       WHERE payment_status = 'approved' AND paid_at >= ?
       GROUP BY month
@@ -346,7 +348,7 @@ export async function loadOrder(db, publicCode) {
             delivery_type, address, locality, department, delivery_notes,
             requested_delivery_date, requested_delivery_from, requested_delivery_to,
             products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, payable_total_uyu,
-            currency, payment_provider, payment_id,
+            currency, payment_provider, payment_id, paid_amount_uyu,
             created_at, paid_at, fulfilled_at, cancelled_at
        FROM orders
       WHERE public_code = ?
