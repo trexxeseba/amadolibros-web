@@ -36,6 +36,7 @@
  * garantizado.
  */
 
+import { isLikelyBot, recordSearchMiss } from './_shared/search-misses.js';
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
@@ -922,6 +923,14 @@ export async function onRequest(ctx) {
     }
 
     const page      = pageParam.page;
+    // INFORME-ANALITICO: una búsqueda sin filtros que no encontró nada es
+    // demanda sin atender. Sólo la primera página, sólo personas, sólo donde
+    // hay base de pedidos; nunca demora ni rompe la respuesta.
+    if (rawQ && totalResults === 0 && !categoria && !subcategoria && !disponibilidad
+        && ctx.env?.ORDERS_DB && typeof ctx.waitUntil === 'function'
+        && !isLikelyBot(ctx.request.headers.get('user-agent'))) {
+        ctx.waitUntil(recordSearchMiss({ db: ctx.env.ORDERS_DB, query: rawQ }));
+    }
     const offset    = (page - 1) * MAX_RESULTS;
     const limited   = filtered.slice(offset, offset + MAX_RESULTS);
     const rangeFrom = totalResults === 0 ? 0 : offset + 1;
