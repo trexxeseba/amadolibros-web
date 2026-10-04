@@ -14,6 +14,7 @@ on:
       - '.github/workflows/checkout-funnel-report.yml'
       - 'scripts/commerce/checkout-funnel-report.mjs'
       - 'functions/api/_transfer_options_handler.js'
+      - 'scripts/reports/daily/**'
   schedule:
     - cron: '37 11 * * *'
   workflow_dispatch:
@@ -31,6 +32,8 @@ permissions:
   contents: read
   # Para leer la última corrida de los workflows vigilados con el token del job.
   actions: read
+  # Para pedirle a Google un token de solo lectura de GA4 (qué pasó ayer).
+  id-token: write
 
 concurrency:
   group: checkout-funnel-report
@@ -125,6 +128,39 @@ jobs:
           echo "- Datos personales: no se consultan ni exportan" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deploy: no se dispara desde este workflow" >> "$GITHUB_STEP_SUMMARY"
 
+      # «Qué pasó ayer»: visitas, páginas y libros más vistos, origen y
+      # pedidos del día. Si Google o D1 fallan, el correo sale igual y dice
+      # «sin dato» en esa parte.
+      - name: Autenticar con Google (GA4, solo lectura)
+        id: google_auth
+        if: always()
+        continue-on-error: true
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
+
+      - name: Juntar lo que pasó ayer en la web
+        if: always()
+        continue-on-error: true
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DAILY_OUTPUT_DIR: artifacts/commerce
+        run: node scripts/reports/daily/fetch-activity.mjs
+
+      - name: Armar «Qué pasó ayer»
+        if: always()
+        env:
+          DAILY_OUTPUT_DIR: artifacts/commerce
+        run: node scripts/reports/daily/render-activity.mjs > /dev/null
+
       # `always()` en los dos pasos que siguen: el día que la consulta a D1
       # falle es justo el día en que hace falta que el correo salga igual,
       # avisando qué se rompió, en vez de no llegar.
@@ -145,5 +181,5 @@ jobs:
           REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
           REPORT_EMAIL_TO: undiaes@gmail.com,adm@amadolibros.com
           REPORT_EMAIL_SUBJECT: Amado Libros — informe diario
-          REPORT_EMAIL_FILES: artifacts/commerce/salud.md,artifacts/commerce/report-summary.md
+          REPORT_EMAIL_FILES: artifacts/commerce/actividad.md,artifacts/commerce/salud.md,artifacts/commerce/report-summary.md
         run: node scripts/ops/send-report-email.mjs

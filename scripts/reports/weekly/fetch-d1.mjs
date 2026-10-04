@@ -68,7 +68,7 @@ export function rowsFromWrangler(payload) {
   return Array.isArray(payload?.results) ? payload.results : [];
 }
 
-async function query(sql) {
+export async function query(sql) {
   const { stdout } = await run('npx', [
     '--yes', WRANGLER, 'd1', 'execute', 'ORDERS_DB', '--env', 'production', '--remote', '--json',
     '--command', sql.replace(/\s+/g, ' ').trim(),
