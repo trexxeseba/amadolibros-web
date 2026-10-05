@@ -21,7 +21,7 @@ const GA4_EVENTS = [
   'whatsapp_click', 'book_request_submitted', 'stock_waitlist_created',
 ];
 
-async function postJson(url, token, body) {
+export async function postJson(url, token, body) {
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const response = await fetch(url, {
@@ -38,7 +38,7 @@ async function postJson(url, token, body) {
   throw lastError;
 }
 
-function ga4Rows(response) {
+export function ga4Rows(response) {
   const dims = (response.dimensionHeaders || []).map(h => h.name);
   const mets = (response.metricHeaders || []).map(h => h.name);
   return (response.rows || []).map(row => Object.fromEntries([

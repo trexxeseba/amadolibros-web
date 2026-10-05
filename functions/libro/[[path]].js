@@ -791,14 +791,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#a94e3d;text-decoration:none}
-    main{max-width:860px;margin:1.5rem auto;padding:0 1rem;
+    main{max-width:940px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:1fr;gap:1.75rem}
-    @media(min-width:640px){main{grid-template-columns:330px 1fr}}
+    @media(min-width:640px){main{grid-template-columns:380px 1fr}}
     /* Celular: la tapa ocupaba toda la primera pantalla y el precio quedaba
        dos pantallas abajo. Tapa centrada y contenida, miniaturas en una fila. */
     @media(max-width:639px){
       main{margin-top:1rem;gap:1.1rem}
-      .cover-main{width:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
+      .cover-main{width:auto;height:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
       .cover-btn{text-align:center}
       main .thumbs{max-width:none;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
                    scrollbar-width:none;padding-bottom:.2rem}
@@ -806,15 +806,19 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       main .thumb-btn{width:48px;height:48px}
       main .thumb-btn img{width:48px;height:48px}
     }
-    .cover-main{width:100%;max-width:260px;border-radius:.5rem;
-                box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
+    /* height:auto es lo que mantiene la proporción real de la foto: sin eso
+       el alto del atributo (540) quedaba fijo y, al angostarse el ancho, la
+       tapa salía aplastada de costado. object-fit:contain cubre el caso en
+       que el máximo de alto recorta: se encoge entera, nunca se deforma. */
+    .cover-main{width:100%;height:auto;max-width:300px;max-height:min(70vh,520px);object-fit:contain;
+                border-radius:.5rem;box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
     .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
     .cover-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;border-radius:.5rem}
     .thumbs{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;max-width:260px}
     .thumb-btn{background:none;border:1px solid #e2e8f0;border-radius:.35rem;padding:0;cursor:pointer;overflow:hidden;width:56px;height:56px;flex-shrink:0}
     .thumb-btn[aria-current="true"]{border:2px solid #18120e}
     .thumb-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
-    .thumb-btn img{width:56px;height:56px;object-fit:cover;display:block;background:white}
+    .thumb-btn img{width:56px;height:56px;object-fit:contain;display:block;background:white}
     /* Computadora: las miniaturas en una columna a la izquierda de la tapa,
        a la vista sin bajar. Debajo quedaban en dos filas y no se notaba que
        había más fotos. En el celular siguen en una tira debajo (arriba). */

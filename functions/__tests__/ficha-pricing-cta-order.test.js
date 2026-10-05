@@ -233,3 +233,12 @@ test('con varias fotos, en computadora las miniaturas van en columna al costado 
     const single = renderPage(book(), 'un-libro', false, '');
     assert.match(single, /<div class="cover">/);
 });
+
+test('la tapa conserva su proporción: el alto se ajusta solo y nunca se estira', () => {
+    const html = renderPage(book(), 'un-libro', false, '');
+    // Sin height:auto el atributo height="540" fija el alto y la foto sale aplastada.
+    assert.match(html, /\.cover-main\{width:100%;height:auto;[^}]*object-fit:contain/);
+    assert.match(html, /\.cover-main\{width:auto;height:auto;max-width:100%;max-height:38vh/);
+    // Las miniaturas muestran la tapa entera, sin recortarla.
+    assert.match(html, /\.thumb-btn img\{width:56px;height:56px;object-fit:contain/);
+});
