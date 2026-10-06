@@ -1,0 +1,47 @@
+name: Deploy — ¿producción tiene lo último de main?
+
+# El 2026-10-05 el deploy de #386 se canceló seis veces en la cola de Actions
+# y tardó casi dos horas en llegar a producción. Una corrida `cancelled` no es
+# roja y nadie se enteró. Esto compara el commit que sirve producción
+# (/build.json, lo escribe deploy.yml) con main cada media hora:
+#
+# - al día, o con un deploy en curso: no hace nada;
+# - atrasado y sin reintento todavía: relanza deploy.yml una vez sobre main;
+# - atrasado aun después de relanzar: termina en rojo (y lo levanta el
+#   informe diario, que vigila este workflow).
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Para leer las corridas de deploy.yml y relanzarlo (workflow_dispatch es
+  # de los pocos eventos que el token del job sí puede disparar).
+  actions: write
+
+concurrency:
+  group: deploy-freshness
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Comparar producción con main
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Comparar y relanzar si hace falta
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DEPLOY_RETRY_ENABLED: 'true'
+        run: node scripts/ops/deploy-freshness-check.mjs

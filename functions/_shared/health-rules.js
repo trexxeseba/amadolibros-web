@@ -124,6 +124,7 @@ export function evaluateSyncStatus(body, { maxAgeHours = DEFAULT_MAX_AGE_HOURS, 
  */
 export const WORKFLOWS_VIGILADOS = [
   { archivo: 'deploy.yml', nombre: 'Deploy a producción', maxDias: null, rama: 'main' },
+  { archivo: 'deploy-freshness.yml', nombre: 'Producción al día con main', maxDias: 1, rama: 'main' },
   { archivo: 'sync-freshness.yml', nombre: 'Frescura del sync', maxDias: 2, rama: 'main' },
   { archivo: 'checkout-funnel-report.yml', nombre: 'Embudo de checkout', maxDias: 2, rama: 'main' },
   { archivo: 'gsc-inspection-rotation.yml', nombre: 'Indexación en Google', maxDias: 2, rama: 'main' },
@@ -204,4 +205,71 @@ export function evaluarWorkflows(corridas, { now = new Date(), vigilados = WORKF
   }
 
   return { filas, problemas, sinConsultar };
+}
+
+// Un deploy normal tarda ~10 minutos desde el push. 45 deja margen para una
+// cola de Actions lenta sin dejar pasar una tarde entera con producción vieja
+// (el 2026-10-05 el deploy de #386 se canceló seis veces y tardó dos horas en
+// publicarse sin que ningún aviso lo dijera).
+export const DEPLOY_TOLERANCIA_MIN = 45;
+
+function esBot(commit) {
+  const login = asText(commit?.author?.login || commit?.committer?.login);
+  return commit?.author?.type === 'Bot' || login.endsWith('[bot]');
+}
+
+/**
+ * ¿Lo que está en www.amadolibros.com es el último commit de main?
+ *
+ * - `shaProduccion`: el `sha` de /build.json (lo escribe deploy.yml), o vacío
+ *   si no se pudo leer.
+ * - `shaMain`: el último commit de main.
+ * - `pendientes`: los commits de main que producción no tiene, tal como los
+ *   devuelve la API de compare de GitHub (`commits[]`), o null si no se pudo
+ *   consultar.
+ *
+ * Los commits de bots (github-actions[bot] subiendo reportes) no cuentan: un
+ * push hecho con el token de Actions no dispara deploy.yml, así que nunca van
+ * a llegar solos a producción y no son un deploy atrasado.
+ *
+ * Un commit humano dentro de la tolerancia es un deploy en curso. Recién
+ * pasado ese plazo se vuelve una falla. El plazo se mide desde el commit
+ * pendiente más viejo: es cuánto hace que producción quedó atrás.
+ */
+export function evaluarDeployAlDia({
+  shaProduccion,
+  shaMain,
+  pendientes,
+  now = new Date(),
+  toleranciaMin = DEPLOY_TOLERANCIA_MIN,
+} = {}) {
+  const prod = asText(shaProduccion);
+  const head = asText(shaMain);
+  const base = { shaProduccion: prod || null, shaMain: head || null, minutos: null, pendientesHumanos: 0, problema: null };
+
+  // Sin alguno de los datos no hay veredicto. No se avisa como falla: el
+  // primer deploy después de este cambio todavía no publicó /build.json, y un
+  // corte de red no es «producción atrasada».
+  if (!prod || !head) return { ...base, estado: 'sin_dato', ok: true };
+  if (prod === head) return { ...base, estado: 'al_dia', ok: true };
+  if (!Array.isArray(pendientes)) return { ...base, estado: 'sin_dato', ok: true };
+
+  const humanos = pendientes.filter(commit => !esBot(commit));
+  if (!humanos.length) return { ...base, estado: 'al_dia', ok: true };
+
+  const fechas = humanos
+    .map(commit => Date.parse(asText(commit?.commit?.committer?.date)))
+    .filter(Number.isFinite);
+  const minutos = fechas.length ? Math.round((now.getTime() - Math.min(...fechas)) / 60_000) : null;
+  const conDatos = { ...base, minutos, pendientesHumanos: humanos.length };
+
+  if (minutos != null && minutos <= toleranciaMin) return { ...conDatos, estado: 'publicando', ok: true };
+
+  return {
+    ...conDatos,
+    estado: 'atrasado',
+    ok: false,
+    problema: `Producción no tiene los últimos cambios: publica ${prod.slice(0, 7)} y main está en ${head.slice(0, 7)}, `
+      + `con ${humanos.length} commit(s) sin publicar desde hace ${minutos ?? '?'} min.`,
+  };
 }
