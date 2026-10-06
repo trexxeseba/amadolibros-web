@@ -222,3 +222,23 @@ test('10. En celular hay una barra de compra fija que dispara el mismo botón de
     const paused = renderPage(book({ status: 'paused', available_quantity: 0 }), 'un-libro', false, '');
     assert.doesNotMatch(paused, /<div class="buy-bar"/);
 });
+
+test('con varias fotos, en computadora las miniaturas van en columna al costado de la tapa', () => {
+    const pics = [1, 2, 3].map(i => `https://http2.mlstatic.com/D_NQ_NP_${i}-MLU1-O.jpg`);
+    const multi = renderPage(book({ pictures: pics }), 'un-libro', false, '');
+    assert.match(multi, /<div class="cover has-thumbs">/);
+    assert.match(multi, /@media\(min-width:640px\)\{\s*\.cover\.has-thumbs\{display:flex;/);
+    assert.match(multi, /\.cover\.has-thumbs \.thumbs\{order:-1;flex-direction:column;/);
+    // Una sola foto: sin columna vacía.
+    const single = renderPage(book(), 'un-libro', false, '');
+    assert.match(single, /<div class="cover">/);
+});
+
+test('la tapa conserva su proporción: el alto se ajusta solo y nunca se estira', () => {
+    const html = renderPage(book(), 'un-libro', false, '');
+    // Sin height:auto el atributo height="540" fija el alto y la foto sale aplastada.
+    assert.match(html, /\.cover-main\{width:100%;height:auto;[^}]*object-fit:contain/);
+    assert.match(html, /\.cover-main\{width:auto;height:auto;max-width:100%;max-height:38vh/);
+    // Las miniaturas muestran la tapa entera, sin recortarla.
+    assert.match(html, /\.thumb-btn img\{width:56px;height:56px;object-fit:contain/);
+});

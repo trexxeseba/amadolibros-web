@@ -1,0 +1,93 @@
+---
+const indexable = import.meta.env.PUBLIC_INDEXABLE === "true";
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content={indexable ? "index, follow" : "noindex, nofollow"}>
+<link rel="canonical" href="https://www.amadolibros.com/en/libraries/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:site_name" content="Amado Libros">
+<meta property="og:title" content="Uruguayan and Rioplatense books for libraries | Amado Libros">
+<meta property="og:description" content="A family bookstore in Uruguay. New, antiquarian and rare books for library collections, with acquisition arrangements tailored to your needs.">
+<meta property="og:url" content="https://www.amadolibros.com/en/libraries/">
+<meta property="og:image" content="https://www.amadolibros.com/images/logo-amado.webp">
+<meta property="og:image:alt" content="Amado Libros: a cat reading a book">
+<meta name="twitter:card" content="summary">
+<title>Uruguayan and Rioplatense books for libraries | Amado Libros</title>
+<meta name="description" content="Amado Libros is a bookstore in Uruguay working with new, antiquarian and rare books. Blanket orders, approval plans and standing orders for Uruguayan and Rioplatense titles.">
+
+<link rel="icon" href="https://www.amadolibros.com/favicon-32x32.png?v2" sizes="32x32">
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap">
+<style>
+:root{--paper:#faf6ef;--surface:#fff;--ink:#1f1b18;--ink-2:#5a524b;--border:#e4dccf;--action:#b4442a;--header-bg:#1f1b18;--wa:#25d366}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;line-height:1.6}
+header{background:var(--header-bg);color:#fff}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+.bar{display:flex;align-items:center;gap:14px;padding:12px 0}
+.bar img{width:52px;height:auto;border-radius:50%;background:#fff}
+.bar b{font-family:"Playfair Display",Georgia,serif;font-size:1.25rem;letter-spacing:.01em}
+.bar span{display:block;font-size:.8rem;opacity:.75}
+h1,h2{font-family:"Playfair Display",Georgia,serif;line-height:1.2}
+h1{font-size:clamp(1.9rem,5vw,2.8rem);margin:.2em 0 .4em}
+h2{font-size:1.5rem;margin:1.6em 0 .5em}
+.hero{padding:48px 0 20px}
+.kicker{color:var(--action);font-weight:800;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+.lead{font-size:1.1rem;color:var(--ink-2);max-width:62ch}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:18px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card h3{margin:0 0 6px;font-size:1rem}
+.card p{margin:0;color:var(--ink-2);font-size:.95rem}
+.cta{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin:28px 0}
+.btn{display:inline-block;padding:12px 20px;border-radius:999px;font-weight:600;text-decoration:none;margin:6px 8px 0 0}
+.btn.p{background:var(--action);color:#fff}
+.btn.w{background:var(--wa);color:#073b1d}
+footer{background:var(--header-bg);color:#e9e2d8;margin-top:48px;padding:28px 0;font-size:.9rem}
+footer a{color:#fff}
+.skip-link{position:absolute;left:12px;top:-100px;background:#fff;color:var(--ink);padding:10px 16px;z-index:10;border-radius:6px}
+.skip-link:focus{top:12px}
+a:focus-visible{outline:3px solid var(--action);outline-offset:4px}
+header a:focus-visible,footer a:focus-visible{outline-color:#faf6ef}
+.btn{overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
+footer a{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header><div class="wrap bar">
+<a href="/" aria-label="Amado Libros home"><img src="/images/logo-amado.webp" width="480" height="475" alt="Amado Libros logo"></a>
+<div><b>Amado Libros</b><span>Bookstore &middot; Uruguay</span></div>
+</div></header>
+<main class="wrap" id="main-content">
+<section class="hero">
+<div class="kicker">For libraries and collections</div>
+<h1>Uruguayan and Rioplatense books for your library</h1>
+<p class="lead">Amado Libros is a bookstore in Uruguay working with new, antiquarian and rare books. We would be glad to be considered as a possible supplier of Uruguayan and Rioplatense titles for your collection.</p>
+</section>
+<h2>How we can work together</h2>
+<div class="cards">
+<div class="card"><h3>Blanket order</h3><p>A regular flow of titles in the subjects and formats you choose.</p></div>
+<div class="card"><h3>Approval plan</h3><p>Selections matched to your collecting profile, for you to review.</p></div>
+<div class="card"><h3>Standing order</h3><p>Ongoing supply of series, journals or publishers you follow.</p></div>
+<div class="card"><h3>Individual requests</h3><p>We search for specific titles on your list.</p></div>
+</div>
+<p>Every library works differently, so we would be happy to talk through these arrangements and adapt them to your needs.</p>
+<section class="cta" aria-labelledby="contact-title">
+<h2 id="contact-title" style="margin-top:0">Tell us what interests your collection</h2>
+<p>A first hello is always welcome, with no commitment.</p>
+<a class="btn p" href="mailto:sebastian@amadolibros.com">sebastian@amadolibros.com</a>
+<a class="btn w" href="https://wa.me/59899841325">WhatsApp +598 99 841 325</a>
+</section>
+<h2>About Amado Libros</h2>
+<p>A family bookstore in Montevideo, run by its owners. We care about recommending well and about every library having a good experience working with us.</p>
+</main>
+<footer><div class="wrap">
+<b>Amado Libros</b> &middot; Montevideo, Uruguay<br>
+<a href="mailto:sebastian@amadolibros.com">sebastian@amadolibros.com</a> &middot; WhatsApp +598 99 841 325 &middot; <a href="https://www.amadolibros.com/">amadolibros.com</a> &middot; <a href="https://www.instagram.com/amadolibros.uy/">@amadolibros.uy</a><br>
+&copy; 2026 Amado Libros
+</div></footer>
+</body></html>

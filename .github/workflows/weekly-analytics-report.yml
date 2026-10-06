@@ -1,0 +1,95 @@
+name: Informe semanal analítico
+
+# INFORME-ANALITICO: ventas, embudo, pagos, demanda sin atender, SEO y
+# catálogo de la última semana completa (lunes a domingo, Montevideo),
+# comparados con la semana anterior. Es un correo aparte del informe diario
+# de salud. Solo lee: D1 de producción, GA4 y Search Console.
+
+on:
+  schedule:
+    # Lunes 09:05 de Uruguay (UTC-3), después del sync de las 04:15.
+    - cron: '5 12 * * 1'
+  workflow_dispatch:
+    inputs:
+      send_email:
+        description: Mandar el correo (si no, queda solo en el resumen del job)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: weekly-analytics-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Armar y mandar el informe semanal
+    runs-on: ubuntu-latest
+    # Los secretos de Cloudflare y Resend viven en el entorno production,
+    # igual que en el informe diario.
+    environment:
+      name: production
+    timeout-minutes: 15
+    env:
+      WEEKLY_OUTPUT_DIR: artifacts/weekly
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Datos de pedidos, avisos, búsquedas y catálogo (D1)
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/reports/weekly/fetch-d1.mjs
+
+      - name: Autenticar con Google
+        id: google_auth
+        continue-on-error: true
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/webmasters.readonly
+          create_credentials_file: false
+
+      - name: Datos de GA4 y Search Console
+        continue-on-error: true
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+        run: node scripts/reports/weekly/fetch-google.mjs
+
+      - name: Armar el informe
+        run: |
+          node scripts/reports/weekly/render.mjs > /dev/null
+          cat "$WEEKLY_OUTPUT_DIR/informe-semanal.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar los datos del informe
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-semanal-${{ github.run_id }}
+          path: artifacts/weekly/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Mandar el correo
+        if: github.event_name == 'schedule' || inputs.send_email
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
+          REPORT_EMAIL_TO: undiaes@gmail.com,adm@amadolibros.com
+          REPORT_EMAIL_SUBJECT: Amado Libros — informe semanal
+          REPORT_EMAIL_FILES: artifacts/weekly/informe-semanal.md
+        run: node scripts/ops/send-report-email.mjs
