@@ -347,7 +347,7 @@ export function createMpWebhookHandler({
 
     // Meta (API de conversiones): sólo después de que D1 quedó en approved, y
     // fuera de la respuesta a Mercado Pago. El envío decide solo si corre
-    // (flag MARKETING_TRACKING_ENABLED + consentimiento del comprador) y es
+    // (flag META_TRACKING_ENABLED + consentimiento del comprador) y es
     // idempotente por pedido, así que un webhook repetido no duplica la compra.
     if (normalized === 'approved') {
       const meta = Promise.resolve()

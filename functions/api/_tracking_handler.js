@@ -6,28 +6,58 @@
  *                             evento que el Pixel acaba de disparar, con el
  *                             mismo event_id.
  *
- * Con MARKETING_TRACKING_ENABLED distinto de 'true' los dos responden «apagado»
+ * Con META_TRACKING_ENABLED distinto de 'true' los dos responden «apagado»
  * y no hacen nada. El POST sólo actúa si el navegador declara el
  * consentimiento de marketing, viene del mismo sitio y trae un evento de la
  * lista cerrada; Purchase no se acepta desde el navegador.
+ *
+ * consent='denied' con `revoke_codes` registra la retirada del
+ * consentimiento para esos pedidos: su compra ya no se manda a Meta.
+ *
+ * Límite de pedidos: RATE_LIMIT_PER_MINUTE por visitante (IP hasheada, nunca
+ * guardada en claro) y por isolate. Es una primera barrera; la definitiva es
+ * una regla de rate limiting de Cloudflare sobre /api/tracking/*.
  */
 
 import { resolveConfig } from './_env_config.js';
 import {
   BROWSER_CAPI_EVENTS,
+  EVENTS_WITHOUT_ITEMS,
   buildCustomData,
   buildServerEvent,
   buildUserData,
   metaConfig,
   postMetaEvents,
   publicTrackingConfig,
+  sanitizeEventUrl,
+  sha256Hex,
   validEventId,
   validFbc,
   validFbp,
 } from '../_shared/meta-capi.js';
-import { recordMetaAttribution } from '../_shared/purchase-tracking.js';
+import {
+  recordMetaAttribution,
+  revokeMetaAttribution,
+  sendMetaPurchase,
+} from '../_shared/purchase-tracking.js';
 
 const MAX_BODY_BYTES = 16384;
+export const RATE_LIMIT_PER_MINUTE = 60;
+
+/** Ventana fija por minuto, en memoria del isolate. Clave: hash de la IP. */
+export function createRateLimiter({ limit = RATE_LIMIT_PER_MINUTE, windowMs = 60_000, maxKeys = 5000 } = {}) {
+  const buckets = new Map();
+  return function allow(key, nowMs = Date.now()) {
+    const bucket = buckets.get(key);
+    if (!bucket || nowMs - bucket.start >= windowMs) {
+      if (buckets.size >= maxKeys) buckets.clear();
+      buckets.set(key, { start: nowMs, count: 1 });
+      return true;
+    }
+    bucket.count += 1;
+    return bucket.count <= limit;
+  };
+}
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -43,18 +73,11 @@ export function createTrackingConfigHandler() {
   };
 }
 
-function sameSiteUrl(raw, hostname) {
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== 'https:' || url.hostname !== hostname) return '';
-    url.hash = '';
-    return url.toString().slice(0, 1000);
-  } catch {
-    return '';
-  }
-}
-
-export function createTrackingMetaHandler({ fetchFn = globalThis.fetch, getNow = () => new Date() } = {}) {
+export function createTrackingMetaHandler({
+  fetchFn = globalThis.fetch,
+  getNow = () => new Date(),
+  rateLimiter = createRateLimiter(),
+} = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
     if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
@@ -73,6 +96,11 @@ export function createTrackingMetaHandler({ fetchFn = globalThis.fetch, getNow =
       if (originHost !== reqUrl.hostname) return json({ error: 'Origen no permitido.' }, 403);
     }
 
+    const visitor = await sha256Hex(`rl:${request.headers.get('CF-Connecting-IP') || 'unknown'}`);
+    if (!rateLimiter(visitor, getNow().getTime())) {
+      return json({ error: 'Demasiadas solicitudes.' }, 429, { 'Retry-After': '60' });
+    }
+
     let body;
     try {
       const text = await request.text();
@@ -83,20 +111,26 @@ export function createTrackingMetaHandler({ fetchFn = globalThis.fetch, getNow =
     }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Payload inválido.' }, 400);
 
+    // Retirada del consentimiento: los pedidos de este navegador dejan de
+    // poder mandar la compra. No se envía ningún evento.
+    if (body.consent === 'denied' && Array.isArray(body.revoke_codes) && env?.ORDERS_DB) {
+      const revoked = await revokeMetaAttribution({ db: env.ORDERS_DB, publicCodes: body.revoke_codes, now: getNow() })
+        .catch(() => ({ revoked: 0 }));
+      return json({ ok: true, revoked: revoked.revoked || 0 }, 202);
+    }
+
     // Sin consentimiento no se manda nada: ni el evento ni la atribución.
     if (body.consent !== 'granted') return json({ ok: true, skipped: 'no_consent' }, 202);
 
     const eventName = String(body.event_name || '');
     if (!BROWSER_CAPI_EVENTS.has(eventName)) return json({ error: 'Evento no permitido.' }, 400);
     if (!validEventId(body.event_id)) return json({ error: 'event_id inválido.' }, 400);
-    const eventSourceUrl = sameSiteUrl(body.event_source_url, reqUrl.hostname);
+    const eventSourceUrl = sanitizeEventUrl(body.event_source_url, reqUrl.hostname);
     if (!eventSourceUrl) return json({ error: 'URL inválida.' }, 400);
 
-    let customData;
-    if (eventName !== 'PageView') {
-      customData = buildCustomData({ items: body.items, value: body.value });
-      if (!customData) return json({ error: 'Items inválidos.' }, 400);
-    }
+    let customData = buildCustomData({ items: body.items, value: body.value }) || undefined;
+    if (!customData && !EVENTS_WITHOUT_ITEMS.has(eventName)) return json({ error: 'Items inválidos.' }, 400);
+    if (eventName === 'PageView') customData = undefined;
 
     const fbp = validFbp(body.fbp) ? body.fbp : '';
     const fbc = validFbc(body.fbc) ? body.fbc : '';
@@ -115,13 +149,18 @@ export function createTrackingMetaHandler({ fetchFn = globalThis.fetch, getNow =
     const work = (async () => {
       // Al iniciar el checkout se guarda, ligado al pedido, que el comprador
       // aceptó y sus cookies de Meta: la compra la manda después el servidor.
-      if (eventName === 'InitiateCheckout' && typeof body.public_code === 'string' && env?.ORDERS_DB) {
-        await recordMetaAttribution({
-          db: env.ORDERS_DB, publicCode: body.public_code, fbp, fbc, userAgent, now,
-        }).catch(() => {});
-      }
       const sent = await postMetaEvents(capi, [event], { fetchFn });
       if (!sent.ok) console.warn('[tracking] Meta rechazó el evento', { event: eventName, code: sent.code });
+      if (eventName === 'InitiateCheckout' && typeof body.public_code === 'string' && env?.ORDERS_DB) {
+        const recorded = await recordMetaAttribution({
+          db: env.ORDERS_DB, publicCode: body.public_code, fbp, fbc, userAgent, now,
+        }).catch(() => null);
+        // Si el pago ya se había confirmado antes de que llegara la
+        // atribución, la compra se recupera acá (es idempotente).
+        if (recorded?.ok) {
+          await sendMetaPurchase({ db: env.ORDERS_DB, env, orderId: recorded.orderId, now, fetchFn }).catch(() => {});
+        }
+      }
     })();
     if (typeof context.waitUntil === 'function') context.waitUntil(work);
     else await work;

@@ -15,6 +15,8 @@ import {
   sha256Hex,
 } from '../_shared/meta-capi.js';
 import {
+  MAX_ATTEMPTS,
+  processPendingMetaPurchases,
   purchaseEventId,
   purchaseValue,
   recordMetaAttribution,
@@ -26,8 +28,11 @@ import { createTrackingConfigHandler, createTrackingMetaHandler } from '../api/_
 
 const NOW = new Date('2026-10-06T15:00:00.000Z');
 const TOKEN = 'EAAB-secret-token-never-log';
+// Preview con código de eventos de prueba: el único modo en que un entorno
+// que no es producción manda algo a Meta.
 const ENV_ON = {
-  MARKETING_TRACKING_ENABLED: 'true',
+  META_TRACKING_ENABLED: 'true',
+  META_TEST_EVENT_CODE: 'TEST12345',
   META_PIXEL_ID: '123456789012345',
   META_CAPI_TOKEN: TOKEN,
   APP_ENV: 'preview',
@@ -106,11 +111,11 @@ function eventRow(db, id) {
 
 // ─── Flag y configuración ────────────────────────────────────────────────────
 
-test('apagado por defecto: sin MARKETING_TRACKING_ENABLED no hay Pixel ni CAPI', () => {
-  const { MARKETING_TRACKING_ENABLED, ...rest } = ENV_ON;
+test('apagado por defecto: sin META_TRACKING_ENABLED no hay Pixel ni CAPI', () => {
+  const { META_TRACKING_ENABLED, ...rest } = ENV_ON;
   assert.deepEqual(publicTrackingConfig(rest), { enabled: false });
   assert.equal(metaConfig(rest), null);
-  assert.deepEqual(publicTrackingConfig({ ...ENV_ON, MARKETING_TRACKING_ENABLED: 'false' }), { enabled: false });
+  assert.deepEqual(publicTrackingConfig({ ...ENV_ON, META_TRACKING_ENABLED: 'false' }), { enabled: false });
 });
 
 test('la configuración pública nunca expone el token', async () => {
@@ -123,7 +128,7 @@ test('la configuración pública nunca expone el token', async () => {
 test('producción no enciende la medición nueva desde wrangler.toml', () => {
   const toml = readFileSync('wrangler.toml', 'utf8');
   const production = toml.slice(toml.indexOf('[env.production.vars]'));
-  assert.doesNotMatch(production, /MARKETING_TRACKING_ENABLED/);
+  assert.doesNotMatch(production, /META_TRACKING_ENABLED|GA4_TRANSFER_PURCHASE_ENABLED/);
   assert.doesNotMatch(toml, /META_CAPI_TOKEN\s*=/);
 });
 
@@ -222,7 +227,7 @@ test('sin consentimiento, apagado u origen ajeno no se manda nada', async () => 
   const fetchFn = graphFetch();
   const h = createTrackingMetaHandler({ fetchFn, getNow: () => NOW });
   assert.equal((await h({ request: metaRequest({ ...VIEW_CONTENT, consent: 'denied' }), env: ENV_ON })).status, 202);
-  assert.equal((await h({ request: metaRequest(VIEW_CONTENT), env: { ...ENV_ON, MARKETING_TRACKING_ENABLED: '' } })).status, 202);
+  assert.equal((await h({ request: metaRequest(VIEW_CONTENT), env: { ...ENV_ON, META_TRACKING_ENABLED: '' } })).status, 202);
   assert.equal((await h({ request: metaRequest(VIEW_CONTENT, { origin: 'https://evil.example' }), env: ENV_ON })).status, 403);
   assert.equal(fetchFn.calls.length, 0);
 });
@@ -316,12 +321,19 @@ test('transferencia: value = cobrado con descuento menos envío', () => {
   assert.equal(purchaseValue({ payment_provider: 'mercado_pago', paid_amount_uyu: 1850, payable_total_uyu: 1850, shipping_cost_uyu: 250 }), 1600);
 });
 
-test('transferencia confirmada: GA4 purchase y Meta Purchase, una sola vez cada uno', async () => {
+const ENV_PROD = {
+  ...ENV_ON,
+  APP_ENV: 'production',
+  META_TEST_EVENT_CODE: '',
+  GA4_TRANSFER_PURCHASE_ENABLED: 'true',
+};
+
+test('transferencia confirmada en producción: GA4 purchase y Meta Purchase, una sola vez cada uno', async () => {
   const db = createD1();
   await withConsent(db, 'o-tr');
   const fetchFn = graphFetch();
-  await trackTransferPurchase({ db, env: ENV_ON, orderId: 'o-tr', now: NOW, fetchFn });
-  await trackTransferPurchase({ db, env: ENV_ON, orderId: 'o-tr', now: NOW, fetchFn });
+  await trackTransferPurchase({ db, env: ENV_PROD, orderId: 'o-tr', now: NOW, fetchFn });
+  await trackTransferPurchase({ db, env: ENV_PROD, orderId: 'o-tr', now: NOW, fetchFn });
   const ga4 = fetchFn.calls.filter(c => c.url.includes('google-analytics.com'));
   const meta = fetchFn.calls.filter(c => c.url.includes('graph.facebook.com'));
   assert.equal(ga4.length, 1);
@@ -334,15 +346,159 @@ test('transferencia confirmada: GA4 purchase y Meta Purchase, una sola vez cada 
   assert.equal(purchase.params.currency, 'UYU');
   assert.equal(purchase.params.items[0].item_id, 'MLU123456789');
   assert.equal(meta[0].body.data[0].custom_data.value, 1408);
+  assert.equal(meta[0].body.test_event_code, undefined);
 });
 
-test('transferencia con el flag apagado: no se manda nada', async () => {
+test('auditoría: un Preview con credenciales productivas no manda la transferencia al GA4 productivo', async () => {
   const db = createD1();
   const fetchFn = graphFetch();
-  const out = await trackTransferPurchase({ db, env: { GA4_MEASUREMENT_ID: 'G-SDX45VEPP3', GA4_API_SECRET: 'x' }, orderId: 'o-tr', now: NOW, fetchFn });
-  assert.equal(out.reason, 'disabled');
+  // Mismas credenciales de GA4 que producción y el interruptor encendido,
+  // pero APP_ENV=preview.
+  const out = await trackTransferPurchase({
+    db, env: { ...ENV_ON, GA4_TRANSFER_PURCHASE_ENABLED: 'true' }, orderId: 'o-tr', now: NOW, fetchFn,
+  });
+  assert.equal(out.ga4.reason, 'disabled');
+  assert.equal(fetchFn.calls.filter(c => c.url.includes('google-analytics.com')).length, 0);
+  assert.equal(eventRow(db, 'ga4-purchase:o-tr'), null);
+});
+
+test('auditoría: un Preview sin código de prueba no manda nada a Meta, aunque tenga el token', async () => {
+  assert.equal(metaConfig({ ...ENV_ON, META_TEST_EVENT_CODE: '' }), null);
+  const fetchFn = graphFetch();
+  await postMetaEvents(metaConfig(ENV_ON), [{ event_name: 'PageView' }], { fetchFn });
+  assert.equal(fetchFn.calls[0].body.test_event_code, 'TEST12345');
+});
+
+test('auditoría: GA4 de transferencias no depende del flag de Meta', async () => {
+  const db = createD1();
+  await withConsent(db, 'o-tr');
+  const fetchFn = graphFetch();
+  await trackTransferPurchase({ db, env: { ...ENV_PROD, META_TRACKING_ENABLED: '' }, orderId: 'o-tr', now: NOW, fetchFn });
+  assert.equal(fetchFn.calls.filter(c => c.url.includes('google-analytics.com')).length, 1);
+  assert.equal(fetchFn.calls.filter(c => c.url.includes('graph.facebook.com')).length, 0);
+
+  const db2 = createD1();
+  await withConsent(db2, 'o-tr');
+  const fetch2 = graphFetch();
+  await trackTransferPurchase({ db: db2, env: { ...ENV_PROD, GA4_TRANSFER_PURCHASE_ENABLED: '' }, orderId: 'o-tr', now: NOW, fetchFn: fetch2 });
+  assert.equal(fetch2.calls.filter(c => c.url.includes('google-analytics.com')).length, 0);
+  assert.equal(fetch2.calls.filter(c => c.url.includes('graph.facebook.com')).length, 1);
+});
+
+test('transferencia con todo apagado: no se manda nada', async () => {
+  const db = createD1();
+  const fetchFn = graphFetch();
+  const out = await trackTransferPurchase({ db, env: { GA4_MEASUREMENT_ID: 'G-SDX45VEPP3', GA4_API_SECRET: 'x', APP_ENV: 'production' }, orderId: 'o-tr', now: NOW, fetchFn });
+  assert.equal(out.ga4.reason, 'disabled');
+  assert.equal(out.meta.reason, 'disabled');
   assert.equal(fetchFn.calls.length, 0);
   assert.equal(eventRow(db, 'ga4-purchase:o-tr'), null);
+});
+
+// ─── Auditoría: orden de llegada, reintentos, consentimiento retirado ────────
+
+test('auditoría: webhook antes que la atribución → la compra se recupera al llegar InitiateCheckout', async () => {
+  const db = createD1();
+  const fetchFn = graphFetch();
+  // 1) Llega el webhook: todavía no hay consentimiento registrado.
+  assert.equal((await sendMetaPurchase({ db, env: ENV_ON, orderId: 'o-mp', now: NOW, fetchFn })).reason, 'no_consent');
+  // 2) Llega la atribución del checkout (mismo pedido, ya pagado).
+  db.sqlite.prepare("UPDATE orders SET created_at=? WHERE id='o-mp'").run('2026-10-06T14:50:00.000Z');
+  await createTrackingMetaHandler({ fetchFn, getNow: () => NOW })({
+    request: metaRequest({ ...VIEW_CONTENT, event_name: 'InitiateCheckout', event_id: 'initiate_checkout_AL-261006-MPMPMP', public_code: 'AL-261006-MPMPMP' }),
+    env: { ...ENV_ON, ORDERS_DB: db },
+  });
+  const purchases = fetchFn.calls.filter(c => c.body.data[0].event_name === 'Purchase');
+  assert.equal(purchases.length, 1);
+  assert.equal(purchases[0].body.data[0].event_id, 'purchase_AL-261006-MPMPMP');
+  assert.equal(eventRow(db, 'meta-purchase:o-mp').status, 'sent');
+});
+
+test('auditoría: el cron recupera compras con atribución tardía y no las duplica', async () => {
+  const db = createD1();
+  const fetchFn = graphFetch();
+  await sendMetaPurchase({ db, env: ENV_ON, orderId: 'o-mp', now: NOW, fetchFn });
+  await withConsent(db, 'o-mp');
+  const env = { ...ENV_ON, ORDERS_DB: db };
+  const first = await processPendingMetaPurchases(env, { now: NOW, fetchFn });
+  const second = await processPendingMetaPurchases(env, { now: NOW, fetchFn });
+  assert.equal(first.sent, 1);
+  assert.equal(second.processed, 0);
+  assert.equal(fetchFn.calls.length, 1);
+});
+
+test('auditoría: el cron reintenta los envíos fallidos hasta MAX_ATTEMPTS', async () => {
+  const db = createD1();
+  await withConsent(db, 'o-mp');
+  const env = { ...ENV_ON, ORDERS_DB: db };
+  let calls = 0;
+  const failing = async () => { calls += 1; return { ok: false, status: 503 }; };
+  for (let i = 0; i < MAX_ATTEMPTS + 3; i++) {
+    await processPendingMetaPurchases(env, { now: new Date(NOW.getTime() + i * 10 * 60 * 1000), fetchFn: failing });
+  }
+  assert.equal(calls, MAX_ATTEMPTS);
+  assert.equal(eventRow(db, 'meta-purchase:o-mp').status, 'failed');
+});
+
+test('auditoría: retirar el consentimiento en el servidor bloquea la compra de ese pedido', async () => {
+  const db = createD1();
+  await withConsent(db, 'o-mp');
+  const fetchFn = graphFetch();
+  const res = await createTrackingMetaHandler({ fetchFn, getNow: () => NOW })({
+    request: metaRequest({ consent: 'denied', revoke_codes: ['AL-261006-MPMPMP'] }),
+    env: { ...ENV_ON, ORDERS_DB: db },
+  });
+  assert.equal((await res.json()).revoked, 1);
+  assert.equal(eventRow(db, 'meta-attr:o-mp').consent, 'revoked');
+  assert.equal((await sendMetaPurchase({ db, env: ENV_ON, orderId: 'o-mp', now: NOW, fetchFn })).reason, 'no_consent');
+  assert.equal((await processPendingMetaPurchases({ ...ENV_ON, ORDERS_DB: db }, { now: NOW, fetchFn })).processed, 0);
+  assert.equal(fetchFn.calls.length, 0);
+});
+
+test('auditoría: una atribución tardía no rehabilita un pedido revocado', async () => {
+  const db = createD1();
+  const h = createTrackingMetaHandler({ fetchFn: graphFetch(), getNow: () => NOW });
+  await h({ request: metaRequest({ consent: 'denied', revoke_codes: ['AL-261006-OPENOP'] }), env: { ...ENV_ON, ORDERS_DB: db } });
+  await recordMetaAttribution({ db, publicCode: 'AL-261006-OPENOP', fbp: FBP, now: NOW });
+  assert.equal(eventRow(db, 'meta-attr:o-open').consent, 'revoked');
+});
+
+test('auditoría: la URL que llega a Meta sólo conserva parámetros de campaña', async () => {
+  const fetchFn = graphFetch();
+  await createTrackingMetaHandler({ fetchFn, getNow: () => NOW })({
+    request: metaRequest({
+      ...VIEW_CONTENT,
+      event_source_url: `https://${HOST}/catalogo?q=ana%40mail.com&tel=099123456&token=abc&utm_source=fb&fbclid=XYZ#frag`,
+    }),
+    env: ENV_ON,
+  });
+  const url = new URL(fetchFn.calls[0].body.data[0].event_source_url);
+  assert.deepEqual([...url.searchParams.keys()].sort(), ['fbclid', 'utm_source']);
+  assert.equal(url.hash, '');
+  assert.doesNotMatch(url.toString(), /ana|099123456|token/);
+});
+
+test('auditoría: límite de solicitudes por visitante', async () => {
+  const fetchFn = graphFetch();
+  const h = createTrackingMetaHandler({ fetchFn, getNow: () => NOW });
+  const statuses = [];
+  for (let i = 0; i < 62; i++) {
+    const req = metaRequest({ consent: 'granted', event_name: 'PageView', event_id: `page_view_${String(i).padStart(8, '0')}`, event_source_url: `https://${HOST}/` });
+    req.headers.set('CF-Connecting-IP', '203.0.113.7');
+    statuses.push((await h({ request: req, env: ENV_ON })).status);
+  }
+  assert.equal(statuses.filter(code => code === 202).length, 60);
+  assert.equal(statuses.at(-1), 429);
+});
+
+test('Contact sin productos se acepta; con ficha lleva content_ids', async () => {
+  const fetchFn = graphFetch();
+  const h = createTrackingMetaHandler({ fetchFn, getNow: () => NOW });
+  await h({ request: metaRequest({ consent: 'granted', event_name: 'Contact', event_id: 'contact_abcdef1234', event_source_url: `https://${HOST}/contacto/` }), env: ENV_ON });
+  await h({ request: metaRequest({ ...VIEW_CONTENT, event_name: 'Contact', event_id: 'contact_abcdef5678' }), env: ENV_ON });
+  assert.equal(fetchFn.calls[0].body.data[0].event_name, 'Contact');
+  assert.equal(fetchFn.calls[0].body.data[0].custom_data, undefined);
+  assert.deepEqual(fetchFn.calls[1].body.data[0].custom_data.content_ids, ['MLU123456789']);
 });
 
 test('GA4 purchase de Mercado Pago no cambia', async () => {
@@ -371,16 +527,28 @@ function browser({ config = { enabled: true, pixel_id: '123456789012345' }, cons
     fbq,
     localStorage: storage(local),
     sessionStorage: storage(new Map()),
-    location: { href: 'https://www.amadolibros.com/libro/MLU123456789/x', hostname: 'www.amadolibros.com' },
+    location: {
+      href: 'https://www.amadolibros.com/libro/MLU123456789/x?q=ana%40mail.com&utm_source=ig&code=AL-1',
+      hostname: 'www.amadolibros.com',
+      pathname: '/libro/MLU123456789/x',
+    },
     crypto: { getRandomValues: arr => arr.fill(7) },
   };
+  const listeners = {};
+  const footerList = { children: [], appendChild(el) { this.children.push(el); } };
   const document = {
     cookie,
     body: { appendChild: el => appended.push(el) },
     getElementById: id => appended.find(el => el.id === id) || null,
-    createElement: () => ({ style: {}, setAttribute() {}, addEventListener(_t, fn) { this.onclick = fn; } }),
+    createElement: () => ({
+      style: {}, attrs: {}, children: [],
+      setAttribute(k, v) { this.attrs[k] = v; },
+      appendChild(el) { this.children.push(el); },
+      addEventListener(_t, fn) { this.onclick = fn; },
+    }),
+    querySelector: sel => (sel === '.site-footer .footer-list' ? footerList : null),
     getElementsByTagName: () => [{ parentNode: { insertBefore() {} } }],
-    addEventListener() {},
+    addEventListener(type, fn) { (listeners[type] = listeners[type] || []).push(fn); },
   };
   const fetch = async (url, init) => {
     if (url === '/api/tracking/config') return { ok: true, json: async () => config };
@@ -388,7 +556,8 @@ function browser({ config = { enabled: true, pixel_id: '123456789012345' }, cons
     return { ok: true };
   };
   runInNewContext(metaScript, { window, document, fetch, URL, Uint8Array, Date, Math, JSON, Array, String, Number, RegExp, isFinite });
-  return { window, fbqCalls, posts, appended, local };
+  const click = target => (listeners.click || []).forEach(fn => fn({ target, preventDefault() {} }));
+  return { window, fbqCalls, posts, appended, local, click, footerList };
 }
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -453,6 +622,61 @@ test('navegador: rechazado, no carga nada', async () => {
   assert.equal(b.fbqCalls.length, 0);
   assert.equal(b.posts.length, 0);
   assert.equal(b.appended.length, 0);
+});
+
+test('auditoría navegador: aceptar y después rechazar corta Pixel y CAPI', async () => {
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  b.window.AmadoMetaQueue.push(['InitiateCheckout', { eventId: 'initiate_checkout_AL-261006-OPENOP', publicCode: 'AL-261006-OPENOP', items: [{ id: 'MLU123456789', price: 800 }] }]);
+  const tracksBefore = b.fbqCalls.filter(c => c[0] === 'track').length;
+  const postsBefore = b.posts.length;
+
+  b.window.AmadoMeta.choose('denied');
+  b.window.AmadoMetaQueue.push(['AddToCart', { value: 800, items: [{ id: 'MLU123456789', price: 800 }] }]);
+  b.window.AmadoMetaQueue.push(['Purchase', { publicCode: 'AL-261006-OPENOP', items: [{ id: 'MLU123456789', price: 800 }] }]);
+
+  assert.equal(b.fbqCalls.filter(c => c[0] === 'track').length, tracksBefore);
+  assert.ok(b.fbqCalls.some(c => c[0] === 'consent' && c[1] === 'revoke'));
+  const newPosts = b.posts.slice(postsBefore);
+  assert.equal(newPosts.length, 1, 'sólo la revocación');
+  assert.deepEqual(newPosts[0], { consent: 'denied', revoke_codes: ['AL-261006-OPENOP'] });
+});
+
+test('auditoría navegador: el pie ofrece cambiar la elección de cookies', async () => {
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  const li = b.footerList.children[0];
+  assert.ok(li, 'se agregó el enlace');
+  const link = li.children[0];
+  assert.equal(link.textContent, 'Cookies');
+  b.click({ closest: sel => (sel === '[data-cookie-preferences]' ? link : null) });
+  assert.equal(b.appended.at(-1).id, 'amado-consent');
+});
+
+test('auditoría navegador: clic en WhatsApp dispara Contact por Pixel y CAPI', async () => {
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  const anchor = { href: 'https://wa.me/59899841325?text=hola' };
+  b.click({ closest: sel => (sel === 'a[href]' ? anchor : null) });
+  const contact = b.fbqCalls.find(c => c[0] === 'track' && c[1] === 'Contact');
+  assert.ok(contact);
+  assert.equal(JSON.stringify(contact[2].content_ids), '["MLU123456789"]');
+  const post = b.posts.find(p => p.event_name === 'Contact');
+  assert.equal(post.event_id, contact[3].eventID);
+});
+
+test('auditoría navegador: la URL enviada al servidor sólo lleva parámetros de campaña', async () => {
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  const pageView = b.posts.find(p => p.event_name === 'PageView');
+  const url = new URL(pageView.event_source_url);
+  assert.deepEqual([...url.searchParams.keys()], ['utm_source']);
+});
+
+test('auditoría navegador: el Pixel no usa configuración automática', async () => {
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  assert.ok(b.fbqCalls.some(c => c[0] === 'set' && c[1] === 'autoConfig' && c[2] === false));
 });
 
 // ─── Las páginas emiten, sin tocar la lógica ─────────────────────────────────

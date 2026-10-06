@@ -1194,7 +1194,8 @@ export async function onRequest(context) {
       const transferFlash = await confirmTransfer({ db, order: found.order });
       // La compra se informa a GA4 y Meta sólo si la transferencia quedó
       // marcada; en segundo plano, para no demorar el panel. Idempotente por
-      // pedido y detrás de MARKETING_TRACKING_ENABLED.
+      // pedido; GA4 detrás de GA4_TRANSFER_PURCHASE_ENABLED (sólo producción)
+      // y Meta detrás de META_TRACKING_ENABLED, por separado.
       if (transferFlash.ok) {
         const tracking = trackTransferPurchase({ db, env: context.env, orderId: found.order.id })
           .catch(error => console.error('[panel] falló el envío de la compra', { error: error?.name || 'Error' }));

@@ -13,22 +13,30 @@
  * Consentimiento: Meta sólo recibe la compra si el comprador aceptó las
  * cookies de marketing. Esa aceptación queda registrada en la fila
  * `meta-attr:<order.id>`, que escribe /api/tracking/meta al iniciar el
- * checkout, sólo cuando el navegador ya tiene el consentimiento.
+ * checkout, sólo cuando el navegador ya tiene el consentimiento. Si después
+ * lo retira, la fila pasa a `revoked` y la compra ya no sale.
+ *
+ * Orden de llegada: si el webhook llega antes que la atribución, la compra
+ * queda en espera (no_consent) y se recupera de dos formas: al llegar la
+ * atribución, y en el cron de worker-sync (processPendingMetaPurchases), que
+ * además reintenta los envíos fallidos hasta MAX_ATTEMPTS.
  */
 
 import {
   buildCustomData,
   buildServerEvent,
   buildUserData,
+  isProductionEnv,
   metaConfig,
   postMetaEvents,
-  trackingEnabled,
 } from './meta-capi.js';
 import { sendGa4Purchase } from '../api/_ga4_measurement.js';
 
 const CLAIM_STALE_MS = 5 * 60 * 1000;
 const ATTRIBUTION_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const MAX_EVENT_AGE_S = 7 * 24 * 60 * 60;
+export const MAX_ATTEMPTS = 8;
+const DEFAULT_BATCH_LIMIT = 20;
 
 export const META_ATTRIBUTION_EVENT = 'meta_attribution';
 export const META_PURCHASE_EVENT = 'meta_purchase';
@@ -96,7 +104,32 @@ export async function recordMetaAttribution({ db, publicCode, fbp, fbc, userAgen
     }),
     now.toISOString(),
   ).run();
-  return { ok: true };
+  return { ok: true, orderId: order.id };
+}
+
+/**
+ * El comprador retiró el consentimiento: sus pedidos recientes dejan de
+ * poder mandar la compra a Meta. Lo ya enviado no se puede deshacer.
+ */
+export async function revokeMetaAttribution({ db, publicCodes, now = new Date() }) {
+  if (!db || !Array.isArray(publicCodes)) return { ok: false, revoked: 0 };
+  const codes = publicCodes.filter(code => /^AL-[0-9]{6}-[A-Z0-9]{6}$/.test(String(code))).slice(0, 20);
+  let revoked = 0;
+  for (const code of codes) {
+    const order = await db.prepare('SELECT id FROM orders WHERE public_code=?').bind(code).first();
+    if (!order) continue;
+    const payload = JSON.stringify({ consent: 'revoked', revoked_at: now.toISOString() });
+    // Si no había fila (el checkout no llegó a registrarla), se crea revocada
+    // para que una atribución tardía no la vuelva a habilitar.
+    await db.prepare(
+      'INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,?,?,?)'
+    ).bind(metaAttributionId(order.id), order.id, META_ATTRIBUTION_EVENT, payload, now.toISOString()).run();
+    const updated = await db.prepare(
+      'UPDATE order_events SET payload_json=? WHERE id=? AND event_type=?'
+    ).bind(payload, metaAttributionId(order.id), META_ATTRIBUTION_EVENT).run();
+    if (Number(updated?.meta?.changes) > 0) revoked += 1;
+  }
+  return { ok: true, revoked };
 }
 
 async function readAttribution(db, orderId) {
@@ -118,6 +151,7 @@ async function claimOutbox(db, eventId, orderId, eventType, now) {
   const state = parseJson(row?.payload_json);
   if (!state) return { ok: false, reason: 'outbox_missing' };
   if (state.status === 'sent') return { ok: false, reason: 'already_sent' };
+  if (state.status === 'failed' && Number(state.attempt) >= MAX_ATTEMPTS) return { ok: false, reason: 'max_attempts' };
   const attemptedAt = Date.parse(state.attempted_at || '');
   if (state.status === 'sending' && Number.isFinite(attemptedAt) &&
       now.getTime() - attemptedAt < CLAIM_STALE_MS) {
@@ -219,29 +253,73 @@ export async function sendMetaPurchase({ db, env, orderId, now = new Date(), fet
 // ─── Transferencia confirmada en el panel ────────────────────────────────────
 
 /**
+ * GA4 server-side de una transferencia: sólo en producción y con
+ * GA4_TRANSFER_PURCHASE_ENABLED. Independiente de Meta. Un Preview nunca
+ * manda compras al GA4 productivo aunque tenga sus credenciales.
+ */
+export function ga4TransferEnabled(env) {
+  return isProductionEnv(env) && String(env?.GA4_TRANSFER_PURCHASE_ENABLED || '').trim() === 'true';
+}
+
+/**
  * Lo que se dispara cuando el panel marca «Transferencia recibida»: GA4
- * (Measurement Protocol, mismo outbox que usa Mercado Pago) y Meta. Detrás
- * del flag, porque cambia lo que hoy mide GA4 en producción.
+ * (Measurement Protocol, mismo outbox que usa Mercado Pago) y Meta, cada uno
+ * con su propio interruptor.
  */
 export async function trackTransferPurchase({ db, env, orderId, now = new Date(), fetchFn = globalThis.fetch }) {
-  if (!trackingEnabled(env)) return { ok: true, skipped: true, reason: 'disabled' };
   const order = db ? await readOrder(db, orderId) : null;
   if (!order || order.payment_status !== 'approved' || order.payment_provider !== 'bank_transfer') {
     return { ok: true, skipped: true, reason: 'not_paid_by_transfer' };
   }
 
-  await db.prepare(
-    "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'ga4_purchase',?,?)"
-  ).bind(
-    `ga4-purchase:${order.id}`,
-    order.id,
-    JSON.stringify({ status: 'pending', transaction_id: order.public_code, queued_at: now.toISOString() }),
-    now.toISOString(),
-  ).run();
+  let ga4 = { ok: true, skipped: true, reason: 'disabled' };
+  if (ga4TransferEnabled(env)) {
+    await db.prepare(
+      "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'ga4_purchase',?,?)"
+    ).bind(
+      `ga4-purchase:${order.id}`,
+      order.id,
+      JSON.stringify({ status: 'pending', transaction_id: order.public_code, queued_at: now.toISOString() }),
+      now.toISOString(),
+    ).run();
+    ga4 = await sendGa4Purchase({ db, env, order, now, fetchFn });
+  }
 
-  const [ga4, meta] = await Promise.all([
-    sendGa4Purchase({ db, env, order, now, fetchFn }),
-    sendMetaPurchase({ db, env, orderId: order.id, now, fetchFn }),
-  ]);
+  const meta = await sendMetaPurchase({ db, env, orderId: order.id, now, fetchFn });
   return { ok: true, ga4, meta };
+}
+
+/**
+ * Cron (worker-sync): compras pagadas en los últimos 7 días, con
+ * consentimiento, que todavía no llegaron a Meta — porque el webhook llegó
+ * antes que la atribución o porque el envío falló. Tope de MAX_ATTEMPTS.
+ */
+export async function processPendingMetaPurchases(env, {
+  limit = DEFAULT_BATCH_LIMIT,
+  now = new Date(),
+  fetchFn = globalThis.fetch,
+} = {}) {
+  const db = env?.ORDERS_DB;
+  if (!db || !metaConfig(env)) return { status: 'skipped', reason: 'disabled', processed: 0 };
+  const since = new Date(now.getTime() - MAX_EVENT_AGE_S * 1000).toISOString();
+  const safeLimit = Math.min(50, Math.max(1, Math.floor(Number(limit) || DEFAULT_BATCH_LIMIT)));
+  const result = await db.prepare(
+    "SELECT o.id FROM orders o JOIN order_events a ON a.id = 'meta-attr:' || o.id " +
+    "WHERE o.payment_status='approved' AND o.paid_at >= ? " +
+    "AND json_extract(a.payload_json,'$.consent')='granted' " +
+    "AND NOT EXISTS (SELECT 1 FROM order_events p WHERE p.id = 'meta-purchase:' || o.id " +
+    "AND (json_extract(p.payload_json,'$.status')='sent' OR " +
+    "(json_extract(p.payload_json,'$.status')='failed' AND json_extract(p.payload_json,'$.attempt') >= ?))) " +
+    'ORDER BY o.paid_at LIMIT ?'
+  ).bind(since, MAX_ATTEMPTS, safeLimit).all();
+  const rows = Array.isArray(result?.results) ? result.results : [];
+  const summary = { status: 'completed', processed: 0, sent: 0, skipped: 0, failed: 0 };
+  for (const row of rows) {
+    const outcome = await sendMetaPurchase({ db, env, orderId: row.id, now, fetchFn });
+    summary.processed += 1;
+    if (outcome.ok && !outcome.skipped) summary.sent += 1;
+    else if (outcome.skipped) summary.skipped += 1;
+    else summary.failed += 1;
+  }
+  return summary;
 }

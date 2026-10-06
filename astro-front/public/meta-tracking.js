@@ -2,9 +2,16 @@
  * meta-tracking.js — Pixel de Meta + espejo server-side (API de conversiones).
  *
  * - No hace nada si /api/tracking/config dice que está apagado
- *   (MARKETING_TRACKING_ENABLED, apagado por defecto en producción).
- * - Nada se carga ni se envía sin el «Aceptar» del banner de cookies. La
- *   elección queda en localStorage; «Rechazar» descarta los eventos.
+ *   (META_TRACKING_ENABLED, apagado por defecto en producción).
+ * - Nada se carga ni se envía sin el «Aceptar» del banner de cookies. El
+ *   consentimiento se vuelve a mirar en CADA envío. La elección se puede
+ *   cambiar desde «Cookies» en el pie: al retirarla, el Pixel recibe
+ *   consent revoke y el servidor marca como revocados los pedidos de este
+ *   navegador, para que su compra no salga hacia Meta.
+ * - Las URL que se mandan a la API de conversiones llevan sólo parámetros de
+ *   campaña (utm_*, fbclid, gclid). El Pixel, por su cuenta, toma la URL de la
+ *   página: por eso las páginas no ponen datos personales en la URL.
+ * - Clic en WhatsApp → Contact.
  * - Cada evento sale dos veces con el MISMO event_id: fbq() en el navegador y
  *   POST /api/tracking/meta hacia la API de conversiones. Meta deduplica.
  * - Purchase sólo sale del navegador como Pixel; la versión server-side la
@@ -19,7 +26,12 @@
   var CONSENT_KEY = 'amado_marketing_consent';
   var CONFIG_KEY = 'amado_meta_config_v1';
   var PURCHASE_KEY_PREFIX = 'amado_meta_purchase_';
-  var EVENTS = { PageView: 1, ViewContent: 1, AddToCart: 1, InitiateCheckout: 1, Purchase: 1 };
+  var ORDERS_KEY = 'amado_meta_orders';
+  var EVENTS = { PageView: 1, ViewContent: 1, AddToCart: 1, InitiateCheckout: 1, Purchase: 1, Contact: 1 };
+  var NO_ITEMS = { PageView: 1, Contact: 1 };
+  var ALLOWED_URL_PARAMS = {
+    utm_source: 1, utm_medium: 1, utm_campaign: 1, utm_term: 1, utm_content: 1, utm_id: 1, fbclid: 1, gclid: 1,
+  };
 
   var pending = [];
   var config = null;
@@ -66,6 +78,36 @@
     }).join('');
   }
 
+  function cleanUrl(raw) {
+    try {
+      var url = new URL(raw);
+      Array.from(url.searchParams.keys()).forEach(function (key) {
+        if (!ALLOWED_URL_PARAMS[key]) url.searchParams.delete(key);
+      });
+      url.hash = '';
+      return url.toString();
+    } catch (_e) {
+      return '';
+    }
+  }
+
+  function rememberOrder(code) {
+    var list = [];
+    try { list = JSON.parse(storageGet(window.localStorage, ORDERS_KEY) || '[]'); } catch (_e) {}
+    if (!Array.isArray(list)) list = [];
+    if (list.indexOf(code) === -1) list.push(code);
+    storageSet(window.localStorage, ORDERS_KEY, JSON.stringify(list.slice(-10)));
+  }
+
+  function rememberedOrders() {
+    try {
+      var list = JSON.parse(storageGet(window.localStorage, ORDERS_KEY) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch (_e) {
+      return [];
+    }
+  }
+
   function slug(name) {
     return name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   }
@@ -104,24 +146,14 @@
     t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
     document,'script','https://connect.facebook.net/en_US/fbevents.js');
     /* eslint-enable */
+    // Sin «configuración automática»: el Pixel no rastrea botones ni formularios
+    // por su cuenta; sólo manda los eventos que esta página le pide.
+    window.fbq('set', 'autoConfig', false, pixelId);
     window.fbq('init', pixelId);
     pixelReady = true;
   }
 
-  function sendServer(name, eventId, data, custom) {
-    var body = {
-      consent: 'granted',
-      event_name: name,
-      event_id: eventId,
-      event_source_url: window.location.href.split('#')[0],
-      fbp: cookie('_fbp'),
-      fbc: fbc(),
-    };
-    if (custom) {
-      body.items = custom.contents.map(function (c) { return { id: c.id, quantity: c.quantity, price: c.item_price }; });
-      body.value = custom.value;
-    }
-    if (data.publicCode) body.public_code = String(data.publicCode);
+  function post(body) {
     try {
       fetch('/api/tracking/meta', {
         method: 'POST',
@@ -133,14 +165,33 @@
     } catch (_e) {}
   }
 
+  function sendServer(name, eventId, data, custom) {
+    var body = {
+      consent: 'granted',
+      event_name: name,
+      event_id: eventId,
+      event_source_url: cleanUrl(window.location.href),
+      fbp: cookie('_fbp'),
+      fbc: fbc(),
+    };
+    if (custom) {
+      body.items = custom.contents.map(function (c) { return { id: c.id, quantity: c.quantity, price: c.item_price }; });
+      body.value = custom.value;
+    }
+    if (data.publicCode) {
+      body.public_code = String(data.publicCode);
+      rememberOrder(body.public_code);
+    }
+    post(body);
+  }
+
   function emit(name, data) {
     data = data || {};
     if (!EVENTS[name]) return false;
-    var custom = null;
-    if (name !== 'PageView') {
-      custom = customData(data);
-      if (!custom) return false;
-    }
+    // El consentimiento se mira en cada envío, no sólo al cargar.
+    if (!config || !config.enabled || !pixelReady || consent() !== 'granted') return false;
+    var custom = name === 'PageView' ? null : customData(data);
+    if (!custom && !NO_ITEMS[name]) return false;
 
     var eventId;
     if (name === 'Purchase') {
@@ -170,14 +221,17 @@
   }
 
   function track(name, data) {
-    if (config && config.enabled && pixelReady) return emit(name, data);
-    if (consent() !== 'denied') pending.push([name, data]);
+    if (config && config.enabled && pixelReady && consent() === 'granted') return emit(name, data);
+    if (consent() !== 'denied' && !(config && !config.enabled)) pending.push([name, data]);
     return false;
   }
 
+  var revoked = false;
   function start() {
+    var firstLoad = !pixelReady;
     loadPixel(config.pixel_id);
-    emit('PageView', {});
+    if (revoked) { window.fbq('consent', 'grant'); revoked = false; }
+    if (firstLoad) emit('PageView', {});
     flush();
   }
 
@@ -187,10 +241,57 @@
   }
 
   function choose(value) {
+    var previous = consent();
     storageSet(window.localStorage, CONSENT_KEY, value);
     hideBanner();
-    if (value === 'granted') start();
-    else pending = [];
+    if (value === 'granted') {
+      if (config && config.enabled) start();
+      return;
+    }
+    pending = [];
+    if (previous === 'granted') {
+      if (pixelReady) { window.fbq('consent', 'revoke'); revoked = true; }
+      var codes = rememberedOrders();
+      if (codes.length) post({ consent: 'denied', revoke_codes: codes });
+      storageSet(window.localStorage, ORDERS_KEY, '[]');
+    }
+  }
+
+  function addPreferencesLink() {
+    if (document.querySelector && document.querySelector('[data-cookie-preferences]')) return;
+    var list = document.querySelector ? document.querySelector('.site-footer .footer-list') : null;
+    if (!list) return;
+    var li = document.createElement('li');
+    var link = document.createElement('a');
+    link.href = '#';
+    link.setAttribute('data-cookie-preferences', '');
+    link.textContent = 'Cookies';
+    li.appendChild(link);
+    list.appendChild(li);
+  }
+
+  function isWhatsAppUrl(href) {
+    try {
+      var url = new URL(href, window.location.href);
+      return url.protocol === 'whatsapp:' ||
+        ['wa.me', 'api.whatsapp.com', 'web.whatsapp.com'].indexOf(url.hostname.toLowerCase()) !== -1;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function onClick(event) {
+    var target = event.target;
+    var prefs = target && target.closest ? target.closest('[data-cookie-preferences]') : null;
+    if (prefs) {
+      if (event.preventDefault) event.preventDefault();
+      showBanner();
+      return;
+    }
+    var anchor = target && target.closest ? target.closest('a[href]') : null;
+    if (!anchor || !isWhatsAppUrl(anchor.href)) return;
+    var product = (window.location.pathname || '').match(/^\/libro\/(MLU\d+)(?:\/|$)/i);
+    track('Contact', product ? { items: [{ id: product[1], quantity: 1 }] } : {});
   }
 
   function showBanner() {
@@ -219,6 +320,9 @@
   function applyConfig(value) {
     config = value && value.enabled && /^\d{5,20}$/.test(String(value.pixel_id || '')) ? value : { enabled: false };
     if (!config.enabled) { pending = []; return; }
+    document.addEventListener('click', onClick, true);
+    if (document.body) addPreferencesLink();
+    else document.addEventListener('DOMContentLoaded', addPreferencesLink, { once: true });
     var current = consent();
     if (current === 'granted') start();
     else if (current === 'denied') pending = [];

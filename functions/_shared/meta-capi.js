@@ -4,9 +4,11 @@
  * Meta: Pixel (navegador) + API de conversiones (servidor), con el mismo
  * event_id en los dos lados para que Meta deduplique.
  *
- * Todo depende de MARKETING_TRACKING_ENABLED === 'true'. Sin eso, ni la
+ * Todo depende de META_TRACKING_ENABLED === 'true'. Sin eso, ni la
  * configuración pública ni el envío server-side existen: es el estado de
- * producción por defecto.
+ * producción por defecto. Fuera de producción (APP_ENV distinto de
+ * 'production') el servidor sólo envía con META_TEST_EVENT_CODE: un Preview
+ * nunca manda eventos reales al Pixel aunque tenga el token productivo.
  *
  * Datos personales: email y teléfono salen únicamente como SHA-256 de su
  * forma normalizada. No se envía la IP. El token (META_CAPI_TOKEN) viaja en
@@ -20,7 +22,20 @@ const REQUEST_TIMEOUT_MS = 5000;
 
 /** Eventos que el navegador puede pedir que se reenvíen por CAPI. Purchase no:
  *  la compra la manda solamente el servidor, desde el pago confirmado. */
-export const BROWSER_CAPI_EVENTS = new Set(['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout']);
+export const BROWSER_CAPI_EVENTS = new Set(['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'Contact']);
+
+/** Eventos que no necesitan productos (custom_data opcional). */
+export const EVENTS_WITHOUT_ITEMS = new Set(['PageView', 'Contact']);
+
+/**
+ * Parámetros de URL que sí pueden llegar a Meta: campaña y clic de anuncio.
+ * Todo lo demás (búsquedas, códigos de pedido, cualquier cosa que alguien
+ * pegue en la URL) se descarta antes de enviar.
+ */
+export const ALLOWED_URL_PARAMS = new Set([
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+  'fbclid', 'gclid',
+]);
 
 const PRODUCT_ID_RE = /^MLU\d{6,15}$/i;
 const EVENT_ID_RE = /^[A-Za-z0-9_.:-]{8,100}$/;
@@ -33,7 +48,28 @@ function cleanString(value) {
 }
 
 export function trackingEnabled(env) {
-  return cleanString(env?.MARKETING_TRACKING_ENABLED) === 'true';
+  return cleanString(env?.META_TRACKING_ENABLED) === 'true';
+}
+
+export function isProductionEnv(env) {
+  return cleanString(env?.APP_ENV) === 'production';
+}
+
+/** URL https del mismo host, sin fragmento y sólo con parámetros permitidos. */
+export function sanitizeEventUrl(raw, hostname) {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:' || (hostname && url.hostname !== hostname)) return '';
+    for (const key of [...url.searchParams.keys()]) {
+      if (!ALLOWED_URL_PARAMS.has(key)) url.searchParams.delete(key);
+    }
+    url.hash = '';
+    url.username = '';
+    url.password = '';
+    return url.toString().slice(0, 1000);
+  } catch {
+    return '';
+  }
 }
 
 /** Lo que el navegador necesita saber. Nunca incluye el token. */
@@ -49,10 +85,13 @@ export function metaConfig(env) {
   const token = cleanString(env?.META_CAPI_TOKEN);
   if (!pub.enabled || !token) return null;
   const testEventCode = cleanString(env?.META_TEST_EVENT_CODE);
+  const validTestCode = /^[A-Z0-9]{3,20}$/i.test(testEventCode);
+  // Aislamiento: fuera de producción sólo se envía como evento de prueba.
+  if (!isProductionEnv(env) && !validTestCode) return null;
   return {
     pixelId: pub.pixel_id,
     token,
-    ...(/^[A-Z0-9]{3,20}$/i.test(testEventCode) ? { testEventCode } : {}),
+    ...(validTestCode ? { testEventCode } : {}),
   };
 }
 

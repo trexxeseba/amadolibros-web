@@ -59,12 +59,14 @@ CANONICAL_ORIGIN  = "https://feature-2-n-e1-production-re.amadolibros-web.pages.
 STOCK_WAITLIST_TURNSTILE_SITE_KEY = "0x4AAAAAAD6E9kz8K3comwjj"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"
-# Medición Meta (Pixel + API de conversiones) y compra server-side extra de
-# GA4 (transferencias). Encendido sólo en Preview; en producción la variable
-# no existe = apagado. Además hace falta META_PIXEL_ID (variable) y
-# META_CAPI_TOKEN (secreto, cargado en Cloudflare, nunca en el repo). Para
-# probar sin ensuciar datos reales: META_TEST_EVENT_CODE (Eventos de prueba).
-MARKETING_TRACKING_ENABLED = "true"
+# Medición Meta (Pixel + API de conversiones). Encendido sólo en Preview; en
+# producción la variable no existe = apagado. Además hace falta META_PIXEL_ID
+# (variable) y META_CAPI_TOKEN (secreto, cargado en Cloudflare, nunca en el
+# repo). Fuera de producción el servidor sólo envía con META_TEST_EVENT_CODE
+# (Eventos de prueba de Meta): un Preview nunca manda eventos reales.
+# La compra server-side de GA4 para transferencias es otro interruptor
+# (GA4_TRANSFER_PURCHASE_ENABLED) y sólo actúa con APP_ENV=production.
+META_TRACKING_ENABLED = "true"
 
 # ── Producción (2-K-E2) ───────────────────────────────────────────────────
 # Base D1 propia, con database_id DISTINTO al de Preview — nunca reutilizar
