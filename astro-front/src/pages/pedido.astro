@@ -135,6 +135,18 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
               items: data.items,
             });
           }
+          // Meta Purchase (Pixel). event_id purchase_<código>: el mismo que
+          // usa el servidor al mandar la compra desde el webhook, así Meta
+          // cuenta una sola. Value sin envío, igual que GA4.
+          if (data && data.order && Array.isArray(data.items)) {
+            (window.AmadoMetaQueue = window.AmadoMetaQueue || []).push(['Purchase', {
+              publicCode: data.order.public_code || code,
+              value: Math.max(0, Number(data.order.payable_total_uyu) - Number(data.order.shipping_cost_uyu || 0)),
+              items: data.items.map(function (item) {
+                return { id: item.product_id, quantity: item.quantity, price: item.unit_price_uyu };
+              }),
+            }]);
+          }
           // Único punto donde se vacía el carrito: recién acá hay
           // confirmación real de pago aprobado, leída de D1 vía
           // /api/orders/status (nunca del simple regreso del navegador ni

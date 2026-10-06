@@ -505,6 +505,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         }],
     };
 
+    // Meta ViewContent: mismo libro y precio que view_item de GA4.
+    const viewContentMeta = {
+        ...(sellableInCheckout ? { value: price } : {}),
+        items: [{ id: item.id, quantity: 1, ...(sellableInCheckout ? { price } : {}) }],
+    };
+
     const detailRows = [
         displayAuthor ? detailRow('Autor', displayAuthor) : '',
         detailRow('ISBN', item.isbn),
@@ -1010,6 +1016,7 @@ ${siteHeaderHtml()}
   if(window.AmadoAnalytics&&typeof window.AmadoAnalytics.trackCommerce==='function'){
     window.AmadoAnalytics.trackCommerce('view_item',${safeJson(viewItemAnalytics)});
   }
+  (window.AmadoMetaQueue=window.AmadoMetaQueue||[]).push(['ViewContent',${safeJson(viewContentMeta)}]);
 }());<\/script>
 
 ${footerHtml(undefined, canonicalUrl)}

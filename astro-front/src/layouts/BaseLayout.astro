@@ -86,6 +86,9 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
     rel="stylesheet"
     href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap"
   >
+  <!-- Pixel de Meta + banner de cookies. No hace nada si /api/tracking/config
+       dice que está apagado (MARKETING_TRACKING_ENABLED). -->
+  <script src="/meta-tracking.js" defer></script>
   <script src="/cart.js" defer></script>
   <script src="/orders-guard.js" defer></script>
   <script src="/search-autocomplete.js" defer></script>

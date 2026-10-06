@@ -2083,7 +2083,28 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
       });
     }
 
+    // Meta InitiateCheckout: el mismo momento que begin_checkout de GA4 (con
+    // el pedido ya creado). Lleva el public_code para que el servidor ligue
+    // el consentimiento y las cookies de Meta al pedido y pueda mandar la
+    // compra cuando el pago se confirme. Sólo emite: no toca el checkout.
+    function trackMetaInitiateCheckout(eventName, order) {
+      if (eventName !== 'begin_checkout' || !order || !order.public_code || !window.AmadoCart) return;
+      var cart = window.AmadoCart.get();
+      var items = commerceItems(cart);
+      if (!items.length) return;
+      (window.AmadoMetaQueue = window.AmadoMetaQueue || []).push(['InitiateCheckout', {
+        eventId: 'initiate_checkout_' + order.public_code,
+        publicCode: order.public_code,
+        value: Math.max(0, Number(order.payable_total_uyu || 0) - Number(order.shipping_cost_uyu || 0)) ||
+          items.reduce(function (sum, item) { return sum + item.price * item.quantity; }, 0),
+        items: items.map(function (item) {
+          return { id: item.item_id, quantity: item.quantity, price: item.price };
+        }),
+      }]);
+    }
+
     function trackCommerce(eventName, order, paymentType, dedupePrefix) {
+      trackMetaInitiateCheckout(eventName, order);
       if (!window.AmadoAnalytics ||
           typeof window.AmadoAnalytics.trackCommerce !== 'function' ||
           !window.AmadoCart) return;
