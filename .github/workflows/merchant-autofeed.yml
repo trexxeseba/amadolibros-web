@@ -1,0 +1,110 @@
+name: Merchant Center — autofeed (leer, apagar o encender)
+
+# Apaga o enciende la «recopilación automática de datos del sitio web» de
+# Merchant Center (el autofeed), o simplemente informa cómo está.
+#
+# Por defecto LEE y no cambia nada. Para escribir hay que elegir la acción Y
+# escribir la palabra exacta de confirmación; sin eso, el script lee y termina.
+#
+# Autenticación: Workload Identity Federation, la misma que ya usa la
+# auditoría de sólo lectura. No hay claves guardadas en ninguna parte.
+#
+# Contexto de por qué existe: el autofeed publica ~3.264 productos, de los
+# cuales 2.700 son duplicados de libros que nuestro propio feed ya publica
+# (mismo ISBN, otra edición), 297 no son libros y 40 responden HTTP 404.
+# Medido en las corridas 34795946321 y 34832626849.
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'Qué hacer'
+        required: true
+        default: 'leer'
+        type: choice
+        options:
+          - leer
+          - apagar
+          - encender
+      confirmacion:
+        description: 'Para apagar escribí APAGAR. Para encender, ENCENDER. Vacío = sólo leer.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: merchant-autofeed
+  cancel-in-progress: false
+
+jobs:
+  autofeed:
+    name: Autofeed de Merchant Center
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validar el código y el contrato de confirmación
+        run: |
+          node --check scripts/commerce/merchant-autofeed.mjs
+          node --test functions/__tests__/merchant-autofeed.test.js
+
+      - name: Authenticate with Google through Workload Identity
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/content
+          create_credentials_file: false
+
+      - name: Leer y, si se confirmó, cambiar el autofeed
+        id: autofeed
+        continue-on-error: true
+        env:
+          MERCHANT_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          MERCHANT_ACCOUNT_ID: '5330457716'
+          MERCHANT_OUTPUT_DIR: artifacts/merchant-autofeed
+          MERCHANT_AUTOFEED_ACCION: ${{ inputs.accion }}
+          MERCHANT_AUTOFEED_CONFIRMACION: ${{ inputs.confirmacion }}
+        run: node scripts/commerce/merchant-autofeed.mjs
+
+      # El informe y el artefacto se conservan aunque la corrida falle: un 403
+      # de permisos es justamente lo que hay que poder leer después.
+      - name: Upload informe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: merchant-autofeed-${{ github.run_id }}
+          path: artifacts/merchant-autofeed/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Write run summary
+        if: always()
+        run: |
+          if [ -f artifacts/merchant-autofeed/report-summary.md ]; then
+            cat artifacts/merchant-autofeed/report-summary.md | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Autofeed de Merchant Center — sin informe' >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No se generó el informe. Revisar la autenticación Workload Identity, que la API Merchant esté habilitada y que la cuenta de servicio tenga acceso a Merchant Center.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Fallar si el paso de autofeed falló
+        if: steps.autofeed.outcome != 'success'
+        run: |
+          echo '::error::El paso de autofeed no terminó bien. El detalle está en el resumen y en el artefacto.'
+          exit 1

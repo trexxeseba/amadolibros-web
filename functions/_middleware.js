@@ -40,6 +40,21 @@ export const LEGACY_CATEGORY_MAP = Object.freeze({
     'psicologia': '/libros/psicologia',
     'desarrollo-personal': '/libros/desarrollo-personal',
     'religion-espiritualidad': '/libros/religion-espiritualidad',
+    // SEO-410-MOBILE-DIAGNOSTIC-1: faltaba, y por eso /categoria-producto/biblias
+    // devolvía 410 con un día de caché mientras /libros/biblias existía y
+    // respondía 200. La equivalencia es inequívoca — misma categoría, mismo
+    // contenido—, así que corresponde 301 y no 410.
+    'biblias': '/libros/biblias',
+    // Categorías anidadas. Un slug legacy que no figure acá sigue en 410, que
+    // es el comportamiento de hoy: sólo se redirige la equivalencia segura.
+    'esoterismo-tarot/mazos': '/libros/esoterismo-tarot/mazos',
+    'esoterismo-tarot/cabala-kabbalah': '/libros/esoterismo-tarot/cabala-kabbalah',
+    'esoterismo-tarot/libros-tarot-oraculos': '/libros/esoterismo-tarot/libros-tarot-oraculos',
+    'esoterismo-tarot/libros-esoterismo': '/libros/esoterismo-tarot/libros-esoterismo',
+    'psicologia/psicoanalisis': '/libros/psicologia/psicoanalisis',
+    'psicologia/psicomotricidad': '/libros/psicologia/psicomotricidad',
+    'psicologia/autismo': '/libros/psicologia/autismo',
+    'biblias/reina-valera': '/libros/biblias/reina-valera',
 });
 
 function withoutTrailingSlash(pathname) {
@@ -175,6 +190,18 @@ export async function legacyResponseForRequest(context, options = {}) {
         if (destination) return redirectFor(request, 'legacy_category_mapped', destination);
         return goneFor(request, 'legacy_category_unmapped');
     }
+    // Una categoría anidada tiene equivalencia exacta y hoy caía en el 410 de
+    // abajo junto con la paginación. Se excluye `page` a propósito: la
+    // paginación legacy SÍ sigue en 410, porque el número de página histórico
+    // no garantiza el mismo conjunto ni el mismo orden de libros.
+    const nestedMatch = path.match(/^\/categoria-producto\/([^/]+)\/([^/]+)$/);
+    if (nestedMatch && nestedMatch[2].toLowerCase() !== 'page') {
+        const parent = safeDecodeURIComponent(nestedMatch[1]).toLowerCase();
+        const child = safeDecodeURIComponent(nestedMatch[2]).toLowerCase();
+        const destination = LEGACY_CATEGORY_MAP[`${parent}/${child}`];
+        if (destination) return redirectFor(request, 'legacy_category_mapped', destination);
+    }
+
     if (/^\/categoria-producto(?:\/|$)/.test(path)) {
         return goneFor(request, 'legacy_category_pagination_or_nested');
     }
