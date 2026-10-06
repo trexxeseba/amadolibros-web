@@ -34,7 +34,7 @@ function asText(value) {
 
 export function construirDigest({ estadoSync, workflows, now = new Date() }) {
   const problemas = [...(estadoSync?.problemas || []), ...(workflows?.problemas || [])];
-  const lineas = ['# Amado Libros — informe diario', '', `_Generado ${now.toISOString()}_`, ''];
+  const lineas = ['# Salud de la web', '', `_Generado ${now.toISOString()}_`, ''];
 
   if (problemas.length) {
     lineas.push(`## ⚠️ Hay ${problemas.length} cosa(s) para mirar`, '');
