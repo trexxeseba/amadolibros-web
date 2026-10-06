@@ -75,13 +75,19 @@ export async function buildGa4PurchasePayload({ order, items, now = new Date() }
   const clientId = validClientId(order.ga_client_id) || await fallbackClientId(order.id);
   const sessionId = validSessionId(order.ga_session_id);
   const shipping = positiveMoney(order.shipping_cost_uyu);
-  const value = Math.max(0, positiveMoney(order.payable_total_uyu) - shipping);
+  // Una transferencia cobra el total con descuento (paid_amount_uyu); Mercado
+  // Pago cobra el total de lista. En los dos casos el value va sin envío.
+  const byTransfer = order.payment_provider === 'bank_transfer';
+  const paid = byTransfer && Number(order.paid_amount_uyu) > 0
+    ? positiveMoney(order.paid_amount_uyu)
+    : positiveMoney(order.payable_total_uyu);
+  const value = Math.max(0, paid - shipping);
   const params = {
     transaction_id: cleanString(order.public_code).slice(0, 100),
     currency: 'UYU',
     value,
     shipping,
-    payment_type: 'mercado_pago',
+    payment_type: byTransfer ? 'bank_transfer' : 'mercado_pago',
     engagement_time_msec: 1,
     items: normalizedItems,
   };
@@ -234,7 +240,7 @@ export async function processPendingGa4Purchases(env, {
   const result = await db.prepare(
     "SELECT e.id AS event_id,e.payload_json,o.id,o.public_code,o.ga_client_id,o.ga_session_id," +
     "o.products_total_uyu,o.pickup_discount_uyu,o.shipping_cost_uyu,o.payable_total_uyu," +
-    "o.currency,o.payment_id,o.paid_at " +
+    "o.currency,o.payment_id,o.paid_at,o.payment_provider,o.paid_amount_uyu " +
     "FROM order_events e JOIN orders o ON o.id=e.order_id " +
     "WHERE e.event_type='ga4_purchase' AND o.payment_status='approved' " +
     "AND COALESCE(json_extract(e.payload_json,'$.status'),'pending')!='sent' " +

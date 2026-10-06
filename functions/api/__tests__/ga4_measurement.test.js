@@ -28,7 +28,9 @@ function createD1() {
       payment_id TEXT,
       paid_at TEXT,
       ga_client_id TEXT,
-      ga_session_id INTEGER
+      ga_session_id INTEGER,
+      payment_provider TEXT,
+      paid_amount_uyu INTEGER
     );
     CREATE TABLE order_items (
       id TEXT PRIMARY KEY,
@@ -49,7 +51,9 @@ function createD1() {
     );
   `);
   sqlite.prepare(
-    'INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO orders (id,public_code,payment_status,products_total_uyu,pickup_discount_uyu,' +
+    'shipping_cost_uyu,payable_total_uyu,currency,payment_id,paid_at,ga_client_id,ga_session_id) ' +
+    'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
   ).run(
     'order-1', 'AL-260816-TEST', 'approved', 1600, 0, 250, 1850, 'UYU', '123',
     '2026-08-16T22:59:00.000Z', '123456789.987654321', 1786921140,
