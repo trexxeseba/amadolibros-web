@@ -51,6 +51,7 @@ import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
+import { sendDailyPanelDigest } from './daily-panel-digest.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
@@ -96,6 +97,14 @@ export default {
       ]));
       return;
     }
+    // Correo diario del panel (08:03 Montevideo; el segundo disparo, una hora
+    // después, solo actúa si el primero no llegó a mandarlo).
+    if (event?.cron === '3 11 * * *' || event?.cron === '3 12 * * *') {
+      ctx.waitUntil(sendDailyPanelDigest(env).then(result => {
+        console.log('[panel digest]', JSON.stringify(result));
+      }));
+      return;
+    }
     ctx.waitUntil(runSync(env, { source: 'cron' }));
   },
 
@@ -120,6 +129,13 @@ export default {
     if (request.method === 'GET' && url.pathname === '/bing-webmaster/summary') {
       const result = await getBingWebmasterReadOnlySummary(env);
       return json(result, result.status === 'error' ? 502 : 200);
+    }
+
+    // Prueba manual del correo diario: manda ahora, marcado [PRUEBA], sin tocar
+    // la reserva del día.
+    if (request.method === 'POST' && url.pathname === '/panel-digest-test') {
+      const result = await sendDailyPanelDigest(env, { test: true });
+      return json(result, result.status === 'sent' ? 200 : 502);
     }
 
     if (request.method === 'POST' && url.pathname === '/measure') {
