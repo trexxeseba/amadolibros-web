@@ -23,7 +23,7 @@ import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shar
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 // QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
 // inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
-import { normalizeIsbnToGtin } from '../feed.xml.js';
+import { isBookProduct, normalizeIsbnToGtin } from '../feed.xml.js';
 import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
 import { authorPathForName } from '../_shared/seo-authors.js';
@@ -125,6 +125,11 @@ function isValidDimensionValue(v) {
     return s !== '' && s !== '-1' && !s.startsWith('-1 ');
 }
 
+const NON_BOOK_SCHEMA_DROP = Object.freeze([
+    'isbn', 'author', 'publisher', 'numberOfPages', 'inLanguage', 'bookFormat',
+    'bookEdition', 'datePublished', 'genre', 'translator', 'illustrator',
+]);
+
 function normalizePublisher(publisher) {
     if (!publisher) return null;
     const s = String(publisher).trim();
@@ -184,7 +189,7 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
       <button type="button" class="lb-btn lb-next" aria-label="Imagen siguiente">&#8594;</button>`
         : '';
 
-    return `<div class="cover">
+    return `<div class="cover${multi ? ' has-thumbs' : ''}">
   <button type="button" class="cover-btn" id="gMainBtn" data-current-index="0" aria-label="Ampliar imagen de ${safeTitle}">
     <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage.src)}"${mainResponsiveAttrs} alt="${safeTitle}" loading="eager" decoding="async" fetchpriority="high" width="360" height="540" data-title="${safeTitle}">
   </button>
@@ -500,6 +505,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         }],
     };
 
+    // Meta ViewContent: mismo libro y precio que view_item de GA4.
+    const viewContentMeta = {
+        ...(sellableInCheckout ? { value: price } : {}),
+        items: [{ id: item.id, quantity: 1, ...(sellableInCheckout ? { price } : {}) }],
+    };
+
     const detailRows = [
         displayAuthor ? detailRow('Autor', displayAuthor) : '',
         detailRow('ISBN', item.isbn),
@@ -561,9 +572,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         : '';
 
     // JSON-LD — generado con JSON.stringify, nunca concatenación
+    // SCHEMA-NON-BOOK-1: el catálogo también publica discos, revistas,
+    // mazos y antigüedades. Declararlos `Book` es un dato estructurado falso,
+    // así que se reusa la misma regla que ya deja fuera de Merchant a lo que
+    // no es libro. Sin oferta vendible un `Product` pelado dispara el error
+    // "falta offers, review o aggregateRating" en Search Console, por eso en
+    // ese caso queda como `Thing`. Los pausados no traen `domain_id`: sin
+    // dominio no hay evidencia de que no sea un libro y se mantiene `Book`.
+    const isBook = !String(item?.domain_id || '').trim() || isBookProduct(item);
     const schemaProduct = {
         '@context': 'https://schema.org',
-        '@type':    ['Product', 'Book'],
+        '@type':    isBook ? ['Product', 'Book'] : (sellableInCheckout ? 'Product' : 'Thing'),
         'name':     item.title,
         ...(images.length ? { image: images } : {}),
         'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
@@ -649,6 +668,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (enrichmentSchema?.bookEdition) schemaProduct.bookEdition = enrichmentSchema.bookEdition;
     if (enrichmentSchema?.datePublished) schemaProduct.datePublished = enrichmentSchema.datePublished;
     if (enrichmentSchema?.genre) schemaProduct.genre = enrichmentSchema.genre;
+    if (!isBook) {
+        // Propiedades que sólo existen para `Book`/`CreativeWork`. El `gtin`
+        // validado se conserva: es un identificador de producto, no de libro.
+        for (const key of NON_BOOK_SCHEMA_DROP) delete schemaProduct[key];
+    }
     if (schemaProduct.offers && item.condition === 'new') {
         schemaProduct.offers.itemCondition = 'https://schema.org/NewCondition';
     } else if (schemaProduct.offers && item.condition === 'used') {
@@ -773,14 +797,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#a94e3d;text-decoration:none}
-    main{max-width:860px;margin:1.5rem auto;padding:0 1rem;
+    main{max-width:940px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:1fr;gap:1.75rem}
-    @media(min-width:640px){main{grid-template-columns:280px 1fr}}
+    @media(min-width:640px){main{grid-template-columns:380px 1fr}}
     /* Celular: la tapa ocupaba toda la primera pantalla y el precio quedaba
        dos pantallas abajo. Tapa centrada y contenida, miniaturas en una fila. */
     @media(max-width:639px){
       main{margin-top:1rem;gap:1.1rem}
-      .cover-main{width:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
+      .cover-main{width:auto;height:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
       .cover-btn{text-align:center}
       main .thumbs{max-width:none;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
                    scrollbar-width:none;padding-bottom:.2rem}
@@ -788,15 +812,29 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       main .thumb-btn{width:48px;height:48px}
       main .thumb-btn img{width:48px;height:48px}
     }
-    .cover-main{width:100%;max-width:260px;border-radius:.5rem;
-                box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
+    /* height:auto es lo que mantiene la proporción real de la foto: sin eso
+       el alto del atributo (540) quedaba fijo y, al angostarse el ancho, la
+       tapa salía aplastada de costado. object-fit:contain cubre el caso en
+       que el máximo de alto recorta: se encoge entera, nunca se deforma. */
+    .cover-main{width:100%;height:auto;max-width:300px;max-height:min(70vh,520px);object-fit:contain;
+                border-radius:.5rem;box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
     .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
     .cover-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;border-radius:.5rem}
     .thumbs{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;max-width:260px}
     .thumb-btn{background:none;border:1px solid #e2e8f0;border-radius:.35rem;padding:0;cursor:pointer;overflow:hidden;width:56px;height:56px;flex-shrink:0}
     .thumb-btn[aria-current="true"]{border:2px solid #18120e}
     .thumb-btn:focus-visible{outline:2px solid #3b82f6;outline-offset:2px}
-    .thumb-btn img{width:56px;height:56px;object-fit:cover;display:block;background:white}
+    .thumb-btn img{width:56px;height:56px;object-fit:contain;display:block;background:white}
+    /* Computadora: las miniaturas en una columna a la izquierda de la tapa,
+       a la vista sin bajar. Debajo quedaban en dos filas y no se notaba que
+       había más fotos. En el celular siguen en una tira debajo (arriba). */
+    @media(min-width:640px){
+      .cover.has-thumbs{display:flex;align-items:flex-start;gap:.6rem}
+      .cover.has-thumbs .cover-btn{flex:1;min-width:0}
+      .cover.has-thumbs .thumbs{order:-1;flex-direction:column;flex-wrap:nowrap;margin-top:0;
+              max-width:none;max-height:min(70vh,540px);overflow-y:auto;scrollbar-width:thin;
+              padding:2px;flex-shrink:0}
+    }
     .lb{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:1rem}
     .lb[hidden]{display:none}
     @media(prefers-reduced-motion:no-preference){.lb{animation:_lbi .15s ease}@keyframes _lbi{from{opacity:0}to{opacity:1}}}
@@ -978,6 +1016,7 @@ ${siteHeaderHtml()}
   if(window.AmadoAnalytics&&typeof window.AmadoAnalytics.trackCommerce==='function'){
     window.AmadoAnalytics.trackCommerce('view_item',${safeJson(viewItemAnalytics)});
   }
+  (window.AmadoMetaQueue=window.AmadoMetaQueue||[]).push(['ViewContent',${safeJson(viewContentMeta)}]);
 }());<\/script>
 
 ${footerHtml(undefined, canonicalUrl)}

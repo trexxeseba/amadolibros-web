@@ -10,16 +10,19 @@
  *   POST /panel/login   → Turnstile + contraseña → cookie de sesión firmada
  *   POST /panel/pedido/<código>/avisar → le manda al cliente el aviso de
  *                       retiro o de envío
+ *   POST /panel/pedido/<código>/transferencia → marca que la transferencia
+ *                       llegó al banco (ver _shared/panel-transfer.js)
  *   GET  /panel/ajustes → datos de retiro que salen en el correo al cliente
  *   POST /panel/ajustes → los guarda en KV
  *   POST /panel/logout  → borra la cookie
  *
  * Reglas que este archivo no puede romper:
- * - El panel NO toca el catálogo, los pedidos ni Mercado Libre. Precio, stock,
- *   título, slug, imágenes y estado del pedido se leen y nunca se escriben.
- *   Lo único que el panel escribe son los datos de retiro en KV y una fila de
- *   historial por cada aviso que le manda a un cliente. Un aviso no despacha
- *   el pedido ni le cambia el estado: sólo manda un correo y lo anota.
+ * - El panel NO toca el catálogo ni Mercado Libre. Precio, stock, título,
+ *   slug e imágenes se leen y nunca se escriben. Lo que el panel escribe: los
+ *   datos de retiro en KV, una fila de historial por cada aviso que le manda
+ *   a un cliente, y la marca «Transferencia recibida», que es lo único que
+ *   cambia el estado de un pedido (de pendiente a pagado por transferencia).
+ *   Un aviso no despacha el pedido ni le cambia el estado.
  * - Sin secrets configurados responde 503, nunca una versión "abierta".
  * - Todo lo que sale de D1 se escapa antes de entrar al HTML: los nombres y
  *   títulos los escribe gente de afuera y terminan en esta página.
@@ -28,6 +31,12 @@
  */
 
 import { verifyTurnstile } from '../api/_turnstile.js';
+import {
+  TRANSFER_CONFIRMED_EVENT,
+  confirmTransfer,
+  transferAmountFor,
+  transferBlockedReason,
+} from '../_shared/panel-transfer.js';
 import {
   clearFailedLogins,
   clearedSessionCookieHeader,
@@ -42,6 +51,7 @@ import {
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
+import { trackTransferPurchase } from '../_shared/purchase-tracking.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
 import { healthSection } from '../_shared/panel-health.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
@@ -561,7 +571,10 @@ function label(diccionario, valor) {
 }
 
 const EVENT_LABEL = {
+  created: 'Pedido creado',
   preference_created: 'Pago iniciado',
+  transfer_payment_info_viewed: 'Eligió transferencia y vio los datos bancarios',
+  [TRANSFER_CONFIRMED_EVENT]: 'Transferencia recibida (marcada en el panel)',
   payment_approved: 'Pago aprobado',
   payment_pending: 'Pago pendiente',
   payment_rejected: 'Pago rechazado',
@@ -629,7 +642,33 @@ function noticeCard(order, events, pickup, flash) {
 </section>`;
 }
 
-function orderPage(found, { pickup, flash = null } = {}) {
+/**
+ * «Transferencia recibida». Sólo aparece mientras el pedido espera el pago:
+ * un pedido ya cobrado muestra el resultado y no el botón.
+ */
+function transferCard(order, events, flash) {
+  const blocked = transferBlockedReason(order);
+  const flashHtml = flash ? `<p class="${flash.ok ? 'ok-box' : 'err'}">${escapeHtml(flash.message)}</p>` : '';
+  if (blocked) {
+    return flashHtml ? `<section class="card"><h2>Transferencia</h2>${flashHtml}</section>` : '';
+  }
+  const { amount, listTotal } = transferAmountFor(order);
+  const eligio = events.some(event => event.event_type === 'transfer_payment_info_viewed');
+  return `
+<section class="card">
+  <h2>¿Llegó la transferencia?</h2>
+  <p class="muted">${eligio ? 'El cliente eligió transferencia y vio los datos bancarios.' : 'El cliente no llegó a ver los datos bancarios en la web; puede haberlo coordinado por WhatsApp.'}
+    Monto por transferencia: <strong>${money(amount)}</strong> (lista ${money(listTotal)}).
+    ${order.status === 'expired' ? 'Figura vencido, pero se puede marcar igual.' : ''}</p>
+  ${flashHtml}
+  <form method="POST" action="/panel/pedido/${encodeURIComponent(order.public_code)}/transferencia"
+        onsubmit="return confirm('¿Confirmás que la transferencia de ${money(amount)} ya está en el banco?')">
+    <button type="submit">Transferencia recibida</button>
+  </form>
+</section>`;
+}
+
+function orderPage(found, { pickup, flash = null, transferFlash = null } = {}) {
   const { order, items, events } = found;
   const units = items.reduce((total, item) => total + Number(item.quantity || 0), 0);
   const esRetiro = order.delivery_type === 'pickup';
@@ -678,10 +717,12 @@ function orderPage(found, { pickup, flash = null } = {}) {
     <dt>Estado</dt><dd>${label(PAYMENT_STATUS_LABEL, order.payment_status)}</dd>
     <dt>Medio</dt><dd>${escapeHtml(order.payment_provider) || '—'}</dd>
     <dt>ID de pago</dt><dd>${escapeHtml(order.payment_id) || '—'}</dd>
-    <dt>Cobrado</dt><dd>${shortDate(order.paid_at)}</dd>
+    <dt>Cobrado</dt><dd>${shortDate(order.paid_at)}${order.paid_amount_uyu != null ? ` · ${money(order.paid_amount_uyu)}` : ''}</dd>
     <dt>Despachado</dt><dd>${shortDate(order.fulfilled_at)}</dd>
   </dl>
 </section>
+
+${transferCard(order, events, transferFlash)}
 
 ${noticeCard(order, events, pickup, flash)}
 
@@ -1116,9 +1157,10 @@ export async function onRequest(context) {
     return htmlResponse(settingsPage(await loadPickup(context.env)));
   }
 
-  const pedido = /^\/panel\/pedido\/([^/]+)(\/avisar)?$/.exec(path);
+  const pedido = /^\/panel\/pedido\/([^/]+)(\/avisar|\/transferencia)?$/.exec(path);
   if (pedido) {
-    const avisar = Boolean(pedido[2]);
+    const accion = pedido[2] ? pedido[2].slice(1) : '';
+    const avisar = Boolean(accion);
     const metodo = avisar ? 'POST' : 'GET';
     if (request.method !== metodo) return new Response('Method Not Allowed', { status: 405 });
     if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
@@ -1147,6 +1189,22 @@ export async function onRequest(context) {
 
     const pickup = await loadPickup(context.env);
     if (!avisar) return htmlResponse(orderPage(found, { pickup }));
+
+    if (accion === 'transferencia') {
+      const transferFlash = await confirmTransfer({ db, order: found.order });
+      // La compra se informa a GA4 y Meta sólo si la transferencia quedó
+      // marcada; en segundo plano, para no demorar el panel. Idempotente por
+      // pedido; GA4 detrás de GA4_TRANSFER_PURCHASE_ENABLED (sólo producción)
+      // y Meta detrás de META_TRACKING_ENABLED, por separado.
+      if (transferFlash.ok) {
+        const tracking = trackTransferPurchase({ db, env: context.env, orderId: found.order.id })
+          .catch(error => console.error('[panel] falló el envío de la compra', { error: error?.name || 'Error' }));
+        if (typeof context.waitUntil === 'function') context.waitUntil(tracking);
+        else await tracking;
+      }
+      const fresh = await loadOrder(db, found.order.public_code) || found;
+      return htmlResponse(orderPage(fresh, { pickup, transferFlash }), { status: transferFlash.ok ? 200 : 422 });
+    }
 
     const form = await request.formData();
     const flash = await sendNotice({

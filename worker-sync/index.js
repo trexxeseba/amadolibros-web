@@ -55,6 +55,8 @@ import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
+import { processPendingMetaPurchases } from '../functions/_shared/purchase-tracking.js';
+import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -83,6 +85,12 @@ export default {
         }),
         processPendingGa4Purchases(env).catch(error => {
           console.error('[GA4 purchase] Error de reintento', error?.name || 'Error');
+          return { status: 'error' };
+        }),
+        // Compras para Meta pendientes: llegaron antes que la atribución o el
+        // envío falló. No hace nada sin META_TRACKING_ENABLED.
+        processPendingMetaPurchases(env).catch(error => {
+          console.error('[Meta purchase] Error de reintento', error?.name || 'Error');
           return { status: 'error' };
         }),
       ]));
@@ -455,6 +463,7 @@ export async function runSync(env, options = {}, {
   readPreviousPublicCatalogFn = readPreviousPublicCatalog,
   submitIndexNowFn = submitIndexNow,
   syncCoverMirrorFn = syncCoverMirror,
+  recordCatalogSyncLogFn = recordCatalogSyncLog,
 } = {}) {
   const startedAt = new Date().toISOString();
   const source = options.source || 'unknown';
@@ -532,6 +541,17 @@ export async function runSync(env, options = {}, {
       }));
     }
 
+    // INFORME-ANALITICO: resumen de altas, bajas y cambios de precio/stock
+    // contra el catálogo anterior. Igual que IndexNow, nunca invalida un
+    // catálogo ya publicado.
+    let syncLog;
+    try {
+      syncLog = await recordCatalogSyncLogFn(env, buildCatalogDiff(previousCatalog, catalog), finishedAt);
+    } catch (error) {
+      console.error(`[Catalog sync log] Error: ${error?.message || 'Error'}`);
+      syncLog = { status: 'error', error: String(error?.message || 'Error').slice(0, 200) };
+    }
+
     // STOCK-AVISO-2: sólo después de que R2 confirmó la publicación. Un fallo
     // de correo queda registrado y reintentable, pero no convierte un catálogo
     // ya publicado correctamente en un sync fallido.
@@ -560,6 +580,7 @@ export async function runSync(env, options = {}, {
       indexnow:       indexNow,
       stock_notifications: stockNotifications,
       cover_mirror: coverMirror,
+      catalog_sync_log: syncLog,
     };
 
   } catch (err) {

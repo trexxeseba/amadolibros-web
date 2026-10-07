@@ -347,6 +347,14 @@
       });
     }
 
+    // Meta AddToCart: el mismo momento que add_to_cart de GA4.
+    if (added === true) {
+      (window.AmadoMetaQueue = window.AmadoMetaQueue || []).push(['AddToCart', {
+        value: item.price,
+        items: [{ id: item.id, quantity: 1, price: item.price }],
+      }]);
+    }
+
     var label = btn.querySelector('[data-cart-label]');
     if (!label) return;
     var orig = label.dataset.origText || label.textContent;

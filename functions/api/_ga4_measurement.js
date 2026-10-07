@@ -24,6 +24,16 @@ function analyticsConfig(env) {
   return { measurementId, apiSecret };
 }
 
+/**
+ * Compra GA4 server-side de transferencias: sólo en producción y con
+ * GA4_TRANSFER_PURCHASE_ENABLED. Vale para el primer envío y para los
+ * reintentos del cron. Mercado Pago no depende de esto.
+ */
+export function ga4TransferEnabled(env) {
+  return cleanString(env?.APP_ENV) === 'production' &&
+    cleanString(env?.GA4_TRANSFER_PURCHASE_ENABLED) === 'true';
+}
+
 function positiveMoney(value) {
   const number = Number(value);
   return Number.isFinite(number) && number >= 0
@@ -75,13 +85,19 @@ export async function buildGa4PurchasePayload({ order, items, now = new Date() }
   const clientId = validClientId(order.ga_client_id) || await fallbackClientId(order.id);
   const sessionId = validSessionId(order.ga_session_id);
   const shipping = positiveMoney(order.shipping_cost_uyu);
-  const value = Math.max(0, positiveMoney(order.payable_total_uyu) - shipping);
+  // Una transferencia cobra el total con descuento (paid_amount_uyu); Mercado
+  // Pago cobra el total de lista. En los dos casos el value va sin envío.
+  const byTransfer = order.payment_provider === 'bank_transfer';
+  const paid = byTransfer && Number(order.paid_amount_uyu) > 0
+    ? positiveMoney(order.paid_amount_uyu)
+    : positiveMoney(order.payable_total_uyu);
+  const value = Math.max(0, paid - shipping);
   const params = {
     transaction_id: cleanString(order.public_code).slice(0, 100),
     currency: 'UYU',
     value,
     shipping,
-    payment_type: 'mercado_pago',
+    payment_type: byTransfer ? 'bank_transfer' : 'mercado_pago',
     engagement_time_msec: 1,
     items: normalizedItems,
   };
@@ -234,12 +250,15 @@ export async function processPendingGa4Purchases(env, {
   const result = await db.prepare(
     "SELECT e.id AS event_id,e.payload_json,o.id,o.public_code,o.ga_client_id,o.ga_session_id," +
     "o.products_total_uyu,o.pickup_discount_uyu,o.shipping_cost_uyu,o.payable_total_uyu," +
-    "o.currency,o.payment_id,o.paid_at " +
+    "o.currency,o.payment_id,o.paid_at,o.payment_provider,o.paid_amount_uyu " +
     "FROM order_events e JOIN orders o ON o.id=e.order_id " +
     "WHERE e.event_type='ga4_purchase' AND o.payment_status='approved' " +
+    // Transferencias: sólo si su interruptor está encendido. Si no, la fila
+    // queda como está (no se consume) y Mercado Pago sigue igual.
+    "AND (COALESCE(o.payment_provider,'')!='bank_transfer' OR ?=1) " +
     "AND COALESCE(json_extract(e.payload_json,'$.status'),'pending')!='sent' " +
     'ORDER BY e.created_at LIMIT ?'
-  ).bind(safeLimit).all();
+  ).bind(ga4TransferEnabled(env) ? 1 : 0, safeLimit).all();
   const orders = Array.isArray(result?.results) ? result.results : [];
   const summary = { status: 'completed', processed: 0, sent: 0, skipped: 0, failed: 0 };
 

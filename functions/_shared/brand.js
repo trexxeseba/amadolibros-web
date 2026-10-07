@@ -117,6 +117,7 @@ export function faviconHeadHtml() {
         `<link rel="manifest" href="/site.webmanifest?${v}">`,
         '<script src="/whatsapp-messages.js"></script>',
         '<script src="/analytics-events.js"></script>',
+        '<script src="/meta-tracking.js" defer></script>',
     ].join('\n  ');
 }
 
