@@ -38,7 +38,11 @@ jobs:
         env:
           PUBLIC_INDEXABLE: 'false'
           PUBLIC_GA_ID: ''
-          PUBLIC_CHECKOUT_ENABLED: 'false'
+          # TEMPORAL (PR de medición Meta/GA4): checkout online encendido SÓLO en
+          # la vista previa de esta rama, con Mercado Pago en modo TEST, para ver
+          # InitiateCheckout y Purchase de punta a punta. Cualquier otro PR sigue
+          # con el checkout apagado. Quitar antes de sacar el PR de borrador.
+          PUBLIC_CHECKOUT_ENABLED: ${{ github.head_ref == 'agent/tracking-meta-ga4-1' && 'true' || 'false' }}
           PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAD6E9kz8K3comwjj'
           PUBLIC_TURNSTILE_ALLOWED_HOSTS: '.amadolibros-web.pages.dev'
         run: npm run build
