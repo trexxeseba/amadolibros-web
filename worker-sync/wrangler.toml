@@ -48,6 +48,7 @@ GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
 APP_ENV = "production"
 META_TRACKING_ENABLED = "true"
 META_PIXEL_ID = "262579181286891"
+GA4_TRANSFER_PURCHASE_ENABLED = "true"
 # META_CAPI_TOKEN: secreto, se carga en el panel de Cloudflare.
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
