@@ -122,9 +122,6 @@ GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
 # panel de Cloudflare, nunca acá.
 META_TRACKING_ENABLED = "true"
 META_PIXEL_ID = "262579181286891"
-# TEMPORAL (diagnóstico): con código de prueba los eventos del servidor van a
-# «Probar eventos» y no cuentan para campañas. QUITAR al terminar.
-META_TEST_EVENT_CODE = "TEST14961"
 # GA4: las ventas por transferencia (marcadas «recibida» en el panel) cuentan
 # como compra en Google Analytics. Independiente de Meta.
 GA4_TRANSFER_PURCHASE_ENABLED = "true"
