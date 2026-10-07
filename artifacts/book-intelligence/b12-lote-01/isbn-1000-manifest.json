@@ -1,0 +1,6258 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-06T13:58:08.284Z",
+  "cohort": {
+    "requested": 1000,
+    "researched": 3596,
+    "selected_updates": 196,
+    "unique_isbn": true,
+    "scope": "active_sellable_editions"
+  },
+  "metrics": {
+    "GREEN_FULL": 15,
+    "GREEN_FACTS": 181,
+    "REVIEW": 797,
+    "NO_EVIDENCE": 2603,
+    "updated_count": 196,
+    "remaining_to_1000": 804,
+    "target_reached": false
+  },
+  "entries": [
+    {
+      "isbn": "9789876306331",
+      "representative_id": "MLU636957383",
+      "listing_ids": [
+        "MLU636957383",
+        "MLU637062047"
+      ],
+      "title": "La Masculinidad Jones Daniel",
+      "author": "Jones, Daniel",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 79,
+        "publication_year": "2022"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501298109",
+      "representative_id": "MLU658217380",
+      "listing_ids": [
+        "MLU658217380",
+        "MLU659625406"
+      ],
+      "title": "Cuestion Del Arte En El Siglo Xxi Elena Oliveras Outlet",
+      "author": "Elena Oliveras",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 230
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9783863217662",
+      "representative_id": "MLU707743600",
+      "listing_ids": [
+        "MLU707743600"
+      ],
+      "title": "Coleccion Grandes Aventuras - Genios (11 Libros)",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Kahl, Marcel",
+        "publisher": "Mabuse",
+        "publication_year": "2026"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788470304538",
+      "representative_id": "MLU694168686",
+      "listing_ids": [
+        "MLU694168686",
+        "MLU694168688"
+      ],
+      "title": "Correspondencia Freud - Tomo Iii 1909-1914 Psicoanalisis",
+      "author": "Sigmund, Freud",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ed. Biblioteca Nueva"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789876090834",
+      "representative_id": "MLU687202762",
+      "listing_ids": [
+        "MLU687202762"
+      ],
+      "title": "El Alma De Verdugos Garzón Saramago Dictadura Argentina",
+      "author": "Garzón Baltasar y Romero Vicente",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Del Nuevo Extremo",
+        "pages": 597,
+        "publication_year": "2008",
+        "topics": [
+          "Disappeared persons — Argentina — History — 20th century.",
+          "Human rights — Argentina — History — 20th century.",
+          "Political persecution — Argentina — History — 20th century.",
+          "State-sponsored terrorism — Argentina — History — 20th century.",
+          "Terrorism — Argentina."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780547577098",
+      "representative_id": "MLU672067254",
+      "listing_ids": [
+        "MLU672067254",
+        "MLU672100154"
+      ],
+      "title": "Number The Stars Lois Lowry",
+      "author": "Lois Lowry",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 137,
+        "topics": [
+          "Fiction",
+          "Denmark — History — German occupation, 1940-1945 — Fiction.",
+          "Friendship — Fiction.",
+          "World War, 1939-1945 — Denmark — Juvenile fiction.",
+          "World War, 1939-1945 — Fiction.",
+          "World War, 1939-1945 — Jews — Rescue — Fiction."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 2,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789877352900",
+      "representative_id": "MLU622693364",
+      "listing_ids": [
+        "MLU622693364",
+        "MLU629940097"
+      ],
+      "title": "Siempre Estuve Ahí - Oliver Nash - Aguilar",
+      "author": "Oliver Nash",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Aguilar",
+        "pages": 285,
+        "topics": [
+          "Biographies.",
+          "Nash, Oliver",
+          "Trans men — Argentina — Biography.",
+          "Trans people — Argentina — Biography."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500760171",
+      "representative_id": "MLU665374872",
+      "listing_ids": [
+        "MLU665374872",
+        "MLU666149674"
+      ],
+      "title": "Humor Al Divan Tute",
+      "author": "Tute",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 158
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789878432540",
+      "representative_id": "MLU638951735",
+      "listing_ids": [
+        "MLU638951735",
+        "MLU693216866"
+      ],
+      "title": "Reinventar El Mundo Con Las Niñeces Magistris, Gabriela",
+      "author": "Magistris, Gabriela",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 220,
+        "topics": [
+          "Children — Attitudes",
+          "Children — Latin America — Social conditions",
+          "Children and adults",
+          "Latin America — Politics and government",
+          "Social change",
+          "Social justice"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789873951923",
+      "representative_id": "MLU605736920",
+      "listing_ids": [
+        "MLU605736920"
+      ],
+      "title": "Orillas - Poesías De Cinwololo - Sudestada",
+      "author": "Cinwololo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 157,
+        "publication_year": "2020"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9783038194491",
+      "representative_id": "MLU690855142",
+      "listing_ids": [
+        "MLU690855142",
+        "MLU713607848"
+      ],
+      "title": "Fin De Siecle Kipper En Español - Cartas Oráculo",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Marchetti, Ciro",
+        "language": "Español",
+        "publication_year": "2016"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9783905017946",
+      "representative_id": "MLU806417794",
+      "listing_ids": [
+        "MLU806417794"
+      ],
+      "title": "Cartas Tarot Cristales Gemas Oráculo Magia Deck Inglés",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "language": "Inglés"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "The Tarot of Gemstones and Crystals"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788499428048",
+      "representative_id": "MLU644227887",
+      "listing_ids": [
+        "MLU644227887",
+        "MLU692638800"
+      ],
+      "title": "Hitler: La Biografia Definitiva Libro Kershaw Cartone",
+      "author": "Ian Kershaw",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ediciones Península"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 2
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789873957703",
+      "representative_id": "MLU652593263",
+      "listing_ids": [
+        "MLU652593263",
+        "MLU652658025"
+      ],
+      "title": "Las Parturientas: Maternidad Real Relatos Gestación Kämpfer",
+      "author": "Kampfer, Agustina",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Octubre Editorial",
+        "pages": 171
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781580627566",
+      "representative_id": "MLU732255488",
+      "listing_ids": [
+        "MLU732216452",
+        "MLU732255488"
+      ],
+      "title": "Love & Respect Tips - Why Men Love Bitches Book",
+      "author": "Sherry Argov",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Adams Media Corp.",
+        "pages": 255,
+        "topics": [
+          "Dating (Social customs)",
+          "Man-woman relationships.",
+          "Mate selection.",
+          "Self-esteem in women.",
+          "Single women — Life skills guides."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501206463",
+      "representative_id": "MLU729817356",
+      "listing_ids": [
+        "MLU729817356",
+        "MLU729843168"
+      ],
+      "title": "Libro ¿la Democracia En Peligro? - Política Y Memes",
+      "author": "Ruocco, Juan",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Paidós",
+        "pages": 271,
+        "publication_year": "2023"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501298444",
+      "representative_id": "MLU887643768",
+      "listing_ids": [
+        "MLU887526932",
+        "MLU887643768"
+      ],
+      "title": "El Psicoanálisis En Debate: Reflexiones Contemporáneas",
+      "author": "Bleichmar, Silvia",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Paidós",
+        "pages": 702,
+        "topics": [
+          "Biology.",
+          "Language and languages.",
+          "Psychoanalysis and history.",
+          "Psychoanalysis."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789504984108",
+      "representative_id": "MLU648539655",
+      "listing_ids": [
+        "MLU648539655",
+        "MLU648669567"
+      ],
+      "title": "Te Serviré - Paula Bistagnino El Plan Opus Dei Sudamérica",
+      "author": "Paula Bistagnino",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Planeta",
+        "pages": 223,
+        "publication_year": "2024",
+        "topics": [
+          "Catholic Church — Societies, etc. — History",
+          "Catholic Church — South America — Corrupt practices",
+          "Gianoli Gainza, Elina",
+          "Opus Dei (Society) — Finance",
+          "Opus Dei (Society) — History"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789505568666",
+      "representative_id": "MLU652175091",
+      "listing_ids": [
+        "MLU652175091",
+        "MLU773259926"
+      ],
+      "title": "Poéticas Afectivas: Filosofía Y Emociones Virginia Cano",
+      "author": "Virginia Cano",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Galerna",
+        "pages": 165,
+        "topics": [
+          "Biographies.",
+          "Cano, Virginia.",
+          "Feminists — Argentina — Biography.",
+          "Sexual minorities — Biography."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789874159748",
+      "representative_id": "MLU845003786",
+      "listing_ids": [
+        "MLU845003786",
+        "MLU847042628"
+      ],
+      "title": "Japon Desde Una Capsula - Julian Varsavsky",
+      "author": "Julian Varsavsky",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Adriana Hidalgo Editora",
+        "pages": 349,
+        "publication_year": "2019",
+        "topics": [
+          "Hotels — Japan.",
+          "Robotics — Japan.",
+          "Sex — Japan.",
+          "Varsavsky, Julián — Travel — Japan.",
+          "Virtual reality — Japan."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780307352149",
+      "representative_id": "MLU687437322",
+      "listing_ids": [
+        "MLU643810345",
+        "MLU687437322"
+      ],
+      "title": "Quiet: The Power Of Introverts In A World That Can't Cain",
+      "author": "Cain, Susan",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Crown Publishers",
+        "pages": 333,
+        "topics": [
+          "Extraversion",
+          "Interpersonal relations",
+          "Introversion",
+          "Introverts"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780316311267",
+      "representative_id": "MLU684413554",
+      "listing_ids": [
+        "MLU684413554",
+        "MLU687071572"
+      ],
+      "title": "Libro: Set Your Voice Free - Roger Love, Donna Frazier",
+      "author": "Roger Love",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Little, Brown and Company",
+        "pages": 303,
+        "topics": [
+          "Singing, instruction and study",
+          "Voice",
+          "LANGUAGE ARTS & DISCIPLINES / General — Public speaking.",
+          "LANGUAGE ARTS & DISCIPLINES / Public Speaking.",
+          "MUSIC / Instruction & Study / Voice.",
+          "Performing arts — Acting & auditioning."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780452295728",
+      "representative_id": "MLU717133554",
+      "listing_ids": [
+        "MLU717133554",
+        "MLU717759846"
+      ],
+      "title": "Libro Anticáncer - Servan-schreiber Vida Saludable Nutrición",
+      "author": "David Servan-Schreiber MD PhD",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Penguin Books",
+        "pages": 274,
+        "publication_year": "2017",
+        "topics": [
+          "Cancer — Adjuvant treatment.",
+          "Cancer — Alternative treatment.",
+          "Cancer — Prevention."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780544445789",
+      "representative_id": "MLU714798756",
+      "listing_ids": [
+        "MLU714465596",
+        "MLU714798756"
+      ],
+      "title": "Estuche Lujo El Hobbit Y El Señor De Anillos J.r.r. Tolkien",
+      "author": "J R R Tolkien El Señor de los Anillos Hobbit And The Lord Of The Rings",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Houghton Mifflin Harcourt",
+        "topics": [
+          "Baggins, Frodo — Fiction.",
+          "Baggins, Frodo.",
+          "Fiction.",
+          "Middle Earth (Imaginary place)",
+          "Middle Earth (Imaginary place) — Fiction."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780811216029",
+      "representative_id": "MLU661265349",
+      "listing_ids": [
+        "MLU661265349",
+        "MLU661299047"
+      ],
+      "title": "Williams A Streetcar Named Desire Obra De Teatro",
+      "author": "Tennessee Williams",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "New Directions",
+        "pages": 192,
+        "topics": [
+          "Drama",
+          "Domestic drama.",
+          "Married people — Drama.",
+          "New Orleans (La.) — Drama.",
+          "Rape — Drama.",
+          "Sisters — Drama."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9780829771152",
+      "representative_id": "MLU799177672",
+      "listing_ids": [
+        "MLU799177672",
+        "MLU799255294"
+      ],
+      "title": "Biblia Referencia Thompson Rv Estudio Espiritual Tapa Dura",
+      "author": "Thompson",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Vida"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781401289089",
+      "representative_id": "MLU687398478",
+      "listing_ids": [
+        "MLU687398478",
+        "MLU951796624"
+      ],
+      "title": "The Sandman - Brief Lives",
+      "author": "Neil Gaiman",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publication_year": "2019",
+        "topics": [
+          "Comic books, strips, etc.",
+          "COMICS & GRAPHIC NOVELS / Fantasy."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9781421599427",
+      "representative_id": "MLU647899665",
+      "listing_ids": [
+        "MLU647899665",
+        "MLU647938503"
+      ],
+      "title": "Homestuck Volumen 4 - Edición De Colección En Inglés",
+      "author": "Andrew Hussie",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Comics (Graphic works)",
+          "End of the world.",
+          "Teenagers."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9781425828615",
+      "representative_id": "MLU695430056",
+      "listing_ids": [
+        "MLU695430056",
+        "MLU701225822"
+      ],
+      "title": "Animales Asombrosos Criaturas Prehistóricas Matematicas",
+      "author": "Saskia Lacey",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 32
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9781571898135",
+      "representative_id": "MLU707855278",
+      "listing_ids": [
+        "MLU707855278",
+        "MLU708009688"
+      ],
+      "title": "Conectarse Con Dios Yehuda Berg Kabbalah Conexion Diaria",
+      "author": "YEHUDA BERG",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 139,
+        "topics": [
+          "Cabala.",
+          "Devotional literature.",
+          "Judaism — Prayers and devotions.",
+          "Kavvanot (Cabala)",
+          "Prayers."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Berg, Yehudah"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Conectarse con Dios : libro de conexión diaria : tecnología para el alma"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9781645020097",
+      "representative_id": "MLU654321497",
+      "listing_ids": [
+        "MLU654296571",
+        "MLU654321497"
+      ],
+      "title": "The Invisible Rainbow Electricity And Life Firstenberg",
+      "author": "Arthur Firstenberg",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Chelsea Green Publishing",
+        "topics": [
+          "Electricity",
+          "Electricity--History",
+          "Electricity--Physiological effect",
+          "Electromagnetic fields--Environmental aspects",
+          "Electromagnetic fields--Health aspects",
+          "Electromagnetism--History"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9781974741229",
+      "representative_id": "MLU1346609454",
+      "listing_ids": [
+        "MLU1346609454",
+        "MLU1346609456"
+      ],
+      "title": "Akutami Jujutsu Kaisen Tomo 21 Manga Inglés",
+      "author": "V21",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Action and adventure comics.",
+          "Clubs.",
+          "Demonology.",
+          "Fantasy comics.",
+          "High school students.",
+          "Magic."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Gege Akutami"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Jujutsu Kaisen, Vol. 21"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Akutami, Gege"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9783822829721",
+      "representative_id": "MLU800776244",
+      "listing_ids": [
+        "MLU1260470270",
+        "MLU800776244"
+      ],
+      "title": "Living In The Countryside Vida Campo Inspirador",
+      "author": "B. STOELTIE",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Taschen",
+        "topics": [
+          "Bildband",
+          "Innenarchitektur",
+          "Landhaus"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Stoeltie, Barbara"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Living in the countryside : = Vivre à la campagne"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9783957611789",
+      "representative_id": "MLU683142048",
+      "listing_ids": [
+        "MLU1242482484",
+        "MLU683142048"
+      ],
+      "title": "Mr. Robot German Aleman",
+      "author": "Sam Esmail y Courtney Looney",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Lago"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9786079859664",
+      "representative_id": "MLU725028204",
+      "listing_ids": [
+        "MLU640354327",
+        "MLU725028204"
+      ],
+      "title": "Dolor, De Gadamer, Hans-georg. Editorial Paradiso Editores, Tapa Blanda En Español, 2020",
+      "author": "Gadamer, Hans-Georg",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Paradiso editores",
+        "topics": [
+          "Gadamer, Hans-Georg",
+          "Kontroverse",
+          "Schmerz"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9786316567017",
+      "representative_id": "MLU1034333504",
+      "listing_ids": [
+        "MLU1034333504",
+        "MLU685819164"
+      ],
+      "title": "Taller De Otoño, De Matamoro Blas. Serie N/a, Vol. Volumen Unico. Editorial Blatt & Rios, Tapa Blanda, Edición 1 En Español",
+      "author": "Blas Matamoro",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Blatt & Ríos",
+        "pages": 195,
+        "publication_year": "2023",
+        "topics": [
+          "Argentine fiction — 21st century",
+          "Fiction",
+          "Nouvelles",
+          "Old age",
+          "Roman argentin — 21e siècle",
+          "Romans"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788417371258",
+      "representative_id": "MLU692266341",
+      "listing_ids": [
+        "MLU692240531",
+        "MLU692266341"
+      ],
+      "title": "Ulsamer Sin Raíces No Hay Alas Constelaciones",
+      "author": "Ulsamer, Bertold",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Familienbeziehung",
+          "Psychodrama",
+          "Rollenspiel",
+          "Systemische Therapie"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788435010856",
+      "representative_id": "MLU868857336",
+      "listing_ids": [
+        "MLU868844412",
+        "MLU868857336"
+      ],
+      "title": "San Francisco De Asís Biografía Clásica Espiritual",
+      "author": "Hermann Hesse",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Edhasa"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788449322433",
+      "representative_id": "MLU689611626",
+      "listing_ids": [
+        "MLU689611626",
+        "MLU689637502"
+      ],
+      "title": "Arquetipos E Inconsciente Colectivos Psicologia Jung",
+      "author": "Jung, Carl G.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Analytische Psychologie",
+          "Ich",
+          "Unbewusstes"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 4,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 2,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Carl Gustav Jung, Julio Balderrama"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Las relaciones entre el yo y el inconsciente"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Jung, C. G."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Las relaciones entre el yo y el inconsciente"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788498742800",
+      "representative_id": "MLU725435312",
+      "listing_ids": [
+        "MLU725422124",
+        "MLU725435312"
+      ],
+      "title": "Calentadores Tejidos A Crochet - Moda Hecha A Mano",
+      "author": "Rath-Israel, Birgit",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Drac",
+        "publication_year": "2013"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500728997",
+      "representative_id": "MLU644777423",
+      "listing_ids": [
+        "MLU644777423",
+        "MLU693930822"
+      ],
+      "title": "Soda Stereo 82-97 Libro Iconico Agotado",
+      "author": "Sudamerican",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "publication_year": "2007",
+        "topics": [
+          "Illustrated works.",
+          "Rock musicians — Latin America — Pictorial works.",
+          "Soda Stéreo (Musical group) — Pictorial works."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Marcelo Fernández Bitar"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Fernández Bitar, Marcelo."
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500730952",
+      "representative_id": "MLU708009722",
+      "listing_ids": [
+        "MLU707816210",
+        "MLU708009722"
+      ],
+      "title": "Operación Traviata - Ceferino Reato: ¿quién Mató A Rucci?",
+      "author": "Ceferino Reato",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Sudamericana",
+        "pages": 390,
+        "topics": [
+          "Argentina — Politics and government — 1955-1983.",
+          "Organización Montoneros (Argentina)",
+          "Rucci, José Ignacio — Assassination."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500748353",
+      "representative_id": "MLU681579298",
+      "listing_ids": [
+        "MLU681527332",
+        "MLU681579298"
+      ],
+      "title": "Cristina Fernandez, La Verdadera Historia Di Marco Kirchner",
+      "author": "Di Marco Laura",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Sudamericana",
+        "pages": 314,
+        "topics": [
+          "Argentina — Politics and government — 2002-",
+          "Biographies.",
+          "Fernández de Kirchner, Cristina.",
+          "Presidents — Argentina — Biography."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500754620",
+      "representative_id": "MLU725395600",
+      "listing_ids": [
+        "MLU725395600",
+        "MLU725434768"
+      ],
+      "title": "Los Oesterheld - Alicia Beltrami / Fernanda Nicolini",
+      "author": "Alicia Beltrami / Fernanda Nicolini",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "pages": 409,
+        "topics": [
+          "Biographies.",
+          "Cartoonists — Argentina — Biography.",
+          "Disappeared persons — Argentina — Biography.",
+          "Oesterheld family.",
+          "Oesterheld, H. G.",
+          "Organización Montoneros (Argentina)"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500759298",
+      "representative_id": "MLU647780093",
+      "listing_ids": [
+        "MLU647780093",
+        "MLU647780095"
+      ],
+      "title": "Ceferino Reato - Salvo Que Me Muera Antes Política Argentina",
+      "author": "Ceferino Reato",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "SUDAMERICANA",
+        "pages": 412,
+        "topics": [
+          "Argentina — Politics and government — 2002-",
+          "Fernández de Kirchner, Cristina.",
+          "Kirchner, Néstor — Death and burial."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500768740",
+      "representative_id": "MLU697962552",
+      "listing_ids": [
+        "MLU645839745",
+        "MLU697962552"
+      ],
+      "title": "La Argentina Deseada - Jose Luis Espert",
+      "author": "José Luis Espert",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "topics": [
+          "Argentina — Economic conditions.",
+          "Argentina — Economic policy.",
+          "Argentina — Politics and government."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500768764",
+      "representative_id": "MLU1017747436",
+      "listing_ids": [
+        "MLU1017539392",
+        "MLU1017747436"
+      ],
+      "title": "Cerati Soda Stereo ALGún Tiempo Atrás Biografía",
+      "author": "Sergio Marchi",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "pages": 601,
+        "topics": [
+          "Biographies",
+          "Cerati, Gustavo",
+          "Rock musicians — Argentina — Biography",
+          "Singers — Argentina — Biography",
+          "Soda Stéreo (Musical group)"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501204063",
+      "representative_id": "MLU1012194688",
+      "listing_ids": [
+        "MLU1011675244",
+        "MLU1012194688"
+      ],
+      "title": "Valle Jamás Tan Cerca Novela Contemporánea",
+      "author": "Agustín Valle",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Paidós",
+        "pages": 326,
+        "publication_year": "2022"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789502321295",
+      "representative_id": "MLU697073170",
+      "listing_ids": [
+        "MLU697073170",
+        "MLU697073172"
+      ],
+      "title": "El Español La Argentina Estudios Gramaticales Tullio Angela",
+      "author": "Angela Di Tulio",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "EUDEBA",
+        "pages": 184,
+        "publication_year": "2013"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "ANGELA DI TULLIO"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Español de la argentina, el"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Di Tullio, Angela"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "El español de la Argentina : estudios gramaticales"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789502327419",
+      "representative_id": "MLU717143160",
+      "listing_ids": [
+        "MLU716935672",
+        "MLU717143160"
+      ],
+      "title": "1917 Revolución Rusa - Jorge Saborido Historia Y Legado",
+      "author": "SABORIDO, JORGE",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "EUDEBA",
+        "pages": 406
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789505078417",
+      "representative_id": "MLU645814743",
+      "listing_ids": [
+        "MLU645814743",
+        "MLU697963046"
+      ],
+      "title": "Sueños, Mensajeros Del Alma - Anselm Grün, Guido Kreppold",
+      "author": "Grün, Anselm",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Bonum",
+        "pages": 126,
+        "publication_year": "2008"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789506446857",
+      "representative_id": "MLU685990522",
+      "listing_ids": [
+        "MLU685990522",
+        "MLU686003666"
+      ],
+      "title": "Mala Sangre, De Giselle Krüger Familia Aterrador",
+      "author": "Giselle Krüger",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "PJ",
+        "pages": 218
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789873761126",
+      "representative_id": "MLU1041446020",
+      "listing_ids": [
+        "MLU1041380942",
+        "MLU1041446020"
+      ],
+      "title": "Libro Gnosis Y Tradiciones Sagradas Esoterismo Ocultismo",
+      "author": "Nante, Bernardo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "El Hilo de Ariadna",
+        "pages": 355,
+        "topics": [
+          "García Bazán, Francisco — Correspondence.",
+          "García Bazán, Francisco.",
+          "Gnosticism.",
+          "Plotinus."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789873818127",
+      "representative_id": "MLU863244382",
+      "listing_ids": [
+        "MLU863179650",
+        "MLU863244382"
+      ],
+      "title": "Szuchmacher Teatro Dirección Teatral Incapturable Libro",
+      "author": "Ruben Szuchumacher",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Reservoir Books",
+        "pages": 191,
+        "publication_year": "2015"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Szuchmacher, Rubén"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Lo incapturable"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789873975004",
+      "representative_id": "MLU706788802",
+      "listing_ids": [
+        "MLU706788802",
+        "MLU706814792"
+      ],
+      "title": "La Última Hazaña De Fangio: Los Torino En Nürburgring",
+      "author": "UDRY, GUSTAVO ADOLFO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Libros de la Fuente",
+        "pages": 294,
+        "publication_year": "2015",
+        "topics": [
+          "Fangio, Juan Manuel",
+          "Marathon de la Route (Automobile race)",
+          "Nürburgring (Automobile racetrack)",
+          "Renault Torino automobile — History."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789876143998",
+      "representative_id": "MLU679880186",
+      "listing_ids": [
+        "MLU679856036",
+        "MLU679880186"
+      ],
+      "title": "El Género Negro - Mempo Giardinelli - Literatura Policial",
+      "author": "Mempo Giardinelli",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Capital Intelectual",
+        "pages": 288
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789876293457",
+      "representative_id": "MLU887669810",
+      "listing_ids": [
+        "MLU887526750",
+        "MLU887669810"
+      ],
+      "title": "América Aborigen: Historia Y Pueblos Originales",
+      "author": "Mandrini, Raul",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Siglo Veintiuno Editores",
+        "pages": 287,
+        "publication_year": "2013"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789876296120",
+      "representative_id": "MLU715086980",
+      "listing_ids": [
+        "MLU715086980",
+        "MLU715111284"
+      ],
+      "title": "América Latina: Desigualdad Y Esperanza - Pablo Gentili",
+      "author": "Gentili, Pablo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Siglo Veintiuno Editores",
+        "pages": 317,
+        "publication_year": "2015",
+        "topics": [
+          "Education — Political aspects — Latin America.",
+          "Education — Social aspects — Latin America.",
+          "Education and state — Latin America.",
+          "Latin America — Social conditions — 21st century."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877026948",
+      "representative_id": "MLU863298174",
+      "listing_ids": [
+        "MLU863298174",
+        "MLU867725530"
+      ],
+      "title": "Aborto Y Misoprostol Guía Salud Reproductiva",
+      "author": "Mateo, Natacha",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "[Universidad Nacional de Rosario Editora]",
+        "pages": 321,
+        "publication_year": "2024",
+        "topics": [
+          "Abortifacients — History.",
+          "Abortion — Social aspects — Argentina.",
+          "Misoprostol — History."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789873951961",
+      "representative_id": "MLU697311445",
+      "listing_ids": [
+        "MLU697311445"
+      ],
+      "title": "Bitácora De Un Grito Zuleika Esnal Feminismo",
+      "author": "Zuleika Esnal",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Sudestada",
+        "pages": 157
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780425287668",
+      "representative_id": "MLU721470000",
+      "listing_ids": [
+        "MLU721470000"
+      ],
+      "title": "Libro Charlie Fábrica De Chocolate Roald Dahl Inglés Dura",
+      "author": "Dahl, Roald",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Puffin Books",
+        "pages": 15,
+        "topics": [
+          "Behavior — Fiction.",
+          "Children — Conduct of life — Juvenile fiction.",
+          "Children — Conduct of life.",
+          "Chocolate — Fiction.",
+          "Chocolate — Juvenile fiction.",
+          "Chocolate."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780715387320",
+      "representative_id": "MLU844990946",
+      "listing_ids": [
+        "MLU844990946"
+      ],
+      "title": "Libro Horse Driving Trials - Deporte Ecuestre Tom Coombs",
+      "author": "TOM COOMBS",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "David & Charles",
+        "pages": 192
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780718039509",
+      "representative_id": "MLU680747410",
+      "listing_ids": [
+        "MLU680747410"
+      ],
+      "title": "Jesus Always, Padded Hardcover Sarah Young",
+      "author": "Young, Sarah",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Thomas Nelson",
+        "pages": 384,
+        "topics": [
+          "Calendars.",
+          "Christian Life.",
+          "Christianity — Prayers and devotions.",
+          "Devotional calendars.",
+          "Devotional literature",
+          "Devotional literature, American."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781975360306",
+      "representative_id": "MLU698234425",
+      "listing_ids": [
+        "MLU698234425"
+      ],
+      "title": "Bungo Stray Dogs Beast Vol 4 Manga Final Acción Sobrenatural",
+      "author": "Kafka Asagiri",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Yen Press",
+        "topics": [
+          "Graphic novels."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788481647600",
+      "representative_id": "MLU693240134",
+      "listing_ids": [
+        "MLU693240134"
+      ],
+      "title": "Jung Dos Escritos Sobre Psicología Analítica",
+      "author": "C. G. Jung",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ed. Trotta"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500756105",
+      "representative_id": "MLU731526764",
+      "listing_ids": [
+        "MLU731526764"
+      ],
+      "title": "Ragendorfer Los Doblados Historia Argentina Reciente",
+      "author": "Ragendorfer, Ricardo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "pages": 285,
+        "topics": [
+          "Argentina — Politics and government — 1955-1983.",
+          "Guerrillas — Argentina — History — 20th century.",
+          "Infiltration (Military science)",
+          "Military intelligence — Argentina — History — 20th century."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789509265486",
+      "representative_id": "MLU695003655",
+      "listing_ids": [
+        "MLU695003655"
+      ],
+      "title": "Joselovsky Sáenz San La Muerte Literatura Argentina",
+      "author": "Sergio Joselovsky y Dalmiro Saenz",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ediciones de la Urraca",
+        "pages": 246
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877352795",
+      "representative_id": "MLU611393316",
+      "listing_ids": [
+        "MLU611393316",
+        "MLU648299688"
+      ],
+      "title": "Libro - Somos Lo Que Decimos - Charlie López",
+      "author": "López, Charlie",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 206
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500759144",
+      "representative_id": "MLU664347830",
+      "listing_ids": [
+        "MLU664347830",
+        "MLU665242562"
+      ],
+      "title": "Mama Antula, De Ana Maria Cabrera. Editorial Sudamericana",
+      "author": "Ana Maria Cabrera",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 175,
+        "topics": [
+          "Biographies.",
+          "Blessed — Argentina — Biography.",
+          "Nuns — Argentina — Biography.",
+          "Paz y Figueroa, María Antonia de"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789502326399",
+      "representative_id": "MLU636819874",
+      "listing_ids": [
+        "MLU636819874",
+        "MLU651513530"
+      ],
+      "title": "Niños, Niñas Y Adolescentes En Situación De Calle - Lenta",
+      "author": "Malena Lenta",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 214,
+        "publication_year": "2016",
+        "topics": [
+          "Discourse analysis — Argentina — Buenos Aires Metropolitan Area.",
+          "Homeless children — Argentina — Buenos Aires Metropolitan Area.",
+          "Homeless teenagers — Argentina — Buenos Aires Metropolitan Area."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789872360351",
+      "representative_id": "MLU617694745",
+      "listing_ids": [
+        "MLU617694745",
+        "MLU628130108"
+      ],
+      "title": "Libro - Sod 22 El Secreto - Saban Mario Javier",
+      "author": "SABAN MARIO JAVIER",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "M.J. Sabán",
+        "pages": 575
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789875387911",
+      "representative_id": "MLU479290713",
+      "listing_ids": [
+        "MLU479290713",
+        "MLU658066392"
+      ],
+      "title": "Niñez, Adolescencia Y Género Herramientas Interdisciplinaria",
+      "author": "Lucía Saavedra, Mónica Solís, María Eugenia Cuadra, Débora Tajer, Graciela Beatriz Reid, Mariana Gaba, Juliana Fernández Romeral, Alejandra Lo Russo, María Laura Lavarello, Rocío Fabbio, Susana De la Sovera DIRECTOR: Débora Tajer EDITORIAL: Noveduc",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 186,
+        "publication_year": "2020",
+        "topics": [
+          "Children — Health and hygiene.",
+          "Gender identity.",
+          "Teenagers — Health and hygiene."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877190687",
+      "representative_id": "MLU635604461",
+      "listing_ids": [
+        "MLU635604461",
+        "MLU668675568"
+      ],
+      "title": "Democracia, Hora Cero : Actores, Políticas Y Debates",
+      "author": "Claudia Feld / Marina Franco",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 411
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780064400558",
+      "representative_id": "MLU629901136",
+      "listing_ids": [
+        "MLU1343152882",
+        "MLU629901136"
+      ],
+      "title": "Charlotte S Web - Puffin **new Edition**",
+      "author": "White, E. B.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 147,
+        "topics": [
+          "Animals — Fiction.",
+          "Fantasy.",
+          "Latin language materials."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781107480568",
+      "representative_id": "MLU630062531",
+      "listing_ids": [
+        "MLU630062531",
+        "MLU653401624"
+      ],
+      "title": "Essential Grammar In Use Without Answers 4ºed - Murphy",
+      "author": "MURPHY, Raymond",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 319,
+        "publication_year": "2015",
+        "topics": [
+          "English language — Grammar — Problems, exercises, etc.",
+          "English language — Study and teaching (Elementary) — Foreign speakers.",
+          "English language — Textbooks for foreign speakers",
+          "Language arts (Elementary)"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 2,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781786272058",
+      "representative_id": "MLU672631172",
+      "listing_ids": [
+        "MLU672631172",
+        "MLU674681610"
+      ],
+      "title": "Tattoo Tarot : Ink & Intuition Diana Mcmahon Collis",
+      "author": "Diana Mcmahon Collis",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2018"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9786070721786",
+      "representative_id": "MLU637811709",
+      "listing_ids": [
+        "MLU637811709",
+        "MLU637927051"
+      ],
+      "title": "Los Hornos De Hitler Olga Lengyel",
+      "author": "Olga Lengyel",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2020"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788428500036",
+      "representative_id": "MLU648635514",
+      "listing_ids": [
+        "MLU648635514",
+        "MLU653401664"
+      ],
+      "title": "La Biblia Latinoamericana Tapa Dura",
+      "author": "Bernard Hurault",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "1974"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Ricciardi, Ramón."
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788430113309",
+      "representative_id": "MLU622394478",
+      "listing_ids": [
+        "MLU622394478",
+        "MLU651657824"
+      ],
+      "title": "Ejercicios De Contemplación Jalics, Franz",
+      "author": "FRANZ JALICS",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Beispielsammlung",
+          "Exerzitien",
+          "Gebet",
+          "Kontemplation"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 3
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788431538514",
+      "representative_id": "MLU621915871",
+      "listing_ids": [
+        "MLU621915871",
+        "MLU652695172"
+      ],
+      "title": "Carreras De Resistencia . Caballos Caballo Equitación",
+      "author": "Cornelia Koller",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2008"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789504977384",
+      "representative_id": "MLU634457955",
+      "listing_ids": [
+        "MLU634457955",
+        "MLU663199900"
+      ],
+      "title": "La Última Encrucijada Jorge Liotti",
+      "author": "Jorge Liotti",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 461,
+        "topics": [
+          "Argentina — Economic conditions — 2002-",
+          "Argentina — Politics and government — 2002-",
+          "Democracy — Argentina.",
+          "Political parties — Argentina."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789874003683",
+      "representative_id": "MLU634311642",
+      "listing_ids": [
+        "MLU634311642",
+        "MLU654449636"
+      ],
+      "title": "Márquez: Mariposas Porteñas - Paisaje Y Biodiversidad Urbana",
+      "author": "Fabio Márquez ; Jorge Freitas",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 71,
+        "topics": [
+          "Butterflies — Argentina — Buenos Aires — Pictorial works.",
+          "Butterflies — Argentina — Buenos Aires.",
+          "Illustrated works."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789874729095",
+      "representative_id": "MLU602259072",
+      "listing_ids": [
+        "MLU602259072",
+        "MLU657257998"
+      ],
+      "title": "Niñez En Movimiento Del Adultocentrismo A La Emancipacion",
+      "author": "Morales, Santiago",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 251
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789875456358",
+      "representative_id": "MLU618355470",
+      "listing_ids": [
+        "MLU618355470",
+        "MLU628130111"
+      ],
+      "title": "Libro - Graffiti Ninja - Osvaldo Aguirre - Norma",
+      "author": "Eduardo Gonzalez y Osvaldo Aguirre",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Grupo Editorial Norma",
+        "pages": 158,
+        "publication_year": "2013"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789876290777",
+      "representative_id": "MLU669387898",
+      "listing_ids": [
+        "MLU669387898",
+        "MLU669523756"
+      ],
+      "title": "Argentina Colonial Juan Carlos Garavaglia",
+      "author": "Fradkin Raúl O.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 276
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789876590617",
+      "representative_id": "MLU664399626",
+      "listing_ids": [
+        "MLU642572595",
+        "MLU664399626"
+      ],
+      "title": "Beata Maria Antonia De San Jose, Mamá Antula - Alfredo Sáenz",
+      "author": "Alfredo Saenz",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 66,
+        "publication_year": "2016",
+        "topics": [
+          "Biographies.",
+          "Jesuits — Biography.",
+          "Nuns — Argentina — Biography.",
+          "Paz y Figueroa, María Antonia de"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877712018",
+      "representative_id": "MLU659075586",
+      "listing_ids": [
+        "MLU637104893",
+        "MLU659075586"
+      ],
+      "title": "Pedagogía De Lo Cotidiano Paula Lo Celso Montessori",
+      "author": "PAULA LO CELSO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 224,
+        "publication_year": "2023",
+        "topics": [
+          "Early childhood education",
+          "Montessori method of education"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789878303666",
+      "representative_id": "MLU622688989",
+      "listing_ids": [
+        "MLU622688989",
+        "MLU654677868"
+      ],
+      "title": "Canto Rebelde. La Cancion De Protesta En Argentina - Califa",
+      "author": "Califa, Oche",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 233,
+        "topics": [
+          "Musical texts.",
+          "Protest songs — Latin America — History and criticism.",
+          "Protest songs — Latin America — Texts.",
+          "Protest songs — South America — History and criticism.",
+          "Protest songs — South America — Texts."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780593084649",
+      "representative_id": "MLU610389273",
+      "listing_ids": [
+        "MLU610389273",
+        "MLU658040418"
+      ],
+      "title": "Beyond Order : 12 More Rules For Life - Jordan B. -tapa Dura",
+      "author": "Jordan B Peterson",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 402,
+        "publication_year": "2021",
+        "topics": [
+          "Conduct of life."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780738701905",
+      "representative_id": "MLU639917680",
+      "listing_ids": [
+        "MLU633348703",
+        "MLU639917680"
+      ],
+      "title": "El Poder Milagroso De Los Salmos - Luz Stella Rozo",
+      "author": "Luz Stella Rozo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 342,
+        "publication_year": "2002",
+        "topics": [
+          "Bible. — Miscellanea.",
+          "Magic.",
+          "Trivia and miscellanea."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780977440016",
+      "representative_id": "MLU633063503",
+      "listing_ids": [
+        "MLU633063503",
+        "MLU638376899"
+      ],
+      "title": "Recovery Zone Sexual Adiccion Patrick Carnes Ingles",
+      "author": "Patrick J. Carnes",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2009",
+        "topics": [
+          "Addicts — Rehabilitation — Handbooks, manuals, etc.",
+          "Compulsive behavior — Treatment — Handbooks, manuals, etc.",
+          "Recovering addicts — Handbooks, manuals, etc."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9781982167288",
+      "representative_id": "MLU621163445",
+      "listing_ids": [
+        "MLU621163445",
+        "MLU651539574"
+      ],
+      "title": "Violet Bent Backwards Over The Grass Lana Del Rey Tapa Dura",
+      "author": "LANA DEL REY",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "2000-2099",
+          "Alternative rock musicians.",
+          "American poetry.",
+          "Del Rey, Lana",
+          "Pictorial works.",
+          "poetry."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9783836591072",
+      "representative_id": "MLU636684649",
+      "listing_ids": [
+        "MLU636684649",
+        "MLU637065821"
+      ],
+      "title": "The adidas Archive. The Footwear Collection",
+      "author": "Christian Habermeier",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2023"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788426727817",
+      "representative_id": "MLU646155316",
+      "listing_ids": [
+        "MLU646155316",
+        "MLU658027408"
+      ],
+      "title": "Familias Creadas Infantil Tratamiento Fertilidad Fiv",
+      "author": "NATIVIDAD PEREZ ALVAREZ",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 40,
+        "publication_year": "2020"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788472098855",
+      "representative_id": "MLU637339329",
+      "listing_ids": [
+        "MLU637339329",
+        "MLU638342199"
+      ],
+      "title": "Polémica Sobre La Conquista Española De América",
+      "author": "Sebastián Quesada Marco",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 209,
+        "publication_year": "2022",
+        "topics": [
+          "America — Discovery and exploration — Spanish.",
+          "Indians — First contact with other peoples.",
+          "Indians, Treatment of.",
+          "Latin America — History — To 1830."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788491115427",
+      "representative_id": "MLU635344749",
+      "listing_ids": [
+        "MLU635344749",
+        "MLU889929528"
+      ],
+      "title": "El Gran Libro Del Péndulo Markus Schirner",
+      "author": "Markus Schirner",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2020"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500757294",
+      "representative_id": "MLU637837701",
+      "listing_ids": [
+        "MLU637789389",
+        "MLU637837701"
+      ],
+      "title": "Entre Hitler Y Peron Juan B. Yofre",
+      "author": "Juan B. Yofre",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 223,
+        "publication_year": "2016",
+        "topics": [
+          "Admiral Graf Spee (Battleship)",
+          "Argentina — Politics and government — 1910-1943.",
+          "Prisoners of war — Argentina.",
+          "Prisoners of war — Germany.",
+          "River Plate, Battle of, 1939.",
+          "World War, 1939-1945 — Naval operations, British."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Yofre, Juan Bautista"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Entre Hitler y Perón : el hundimiento del Graf Spee y la llegada de los primeros Nazis a la Argentina"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9789500759441",
+      "representative_id": "MLU617070489",
+      "listing_ids": [
+        "MLU617070489",
+        "MLU628098259"
+      ],
+      "title": "Libro - Nací Para Ser Breve - Gabriela Massuh",
+      "author": "Gabriela Massuh",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Sudamericana",
+        "pages": 249,
+        "publication_year": "2017"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500762533",
+      "representative_id": "MLU635422837",
+      "listing_ids": [
+        "MLU635422837",
+        "MLU666968150"
+      ],
+      "title": "Indio Solari Recuerdos Que Mienten Un Poco Redonditos",
+      "author": "Indio Solari",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 863,
+        "topics": [
+          "Argentina.",
+          "Autobiographies.",
+          "Biographies.",
+          "Musiciens rock — Argentine — Biographies.",
+          "Rock musicians — Argentina — Biography.",
+          "Rock musicians — Argentina — Interviews."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500765190",
+      "representative_id": "MLU669453192",
+      "listing_ids": [
+        "MLU669453192",
+        "MLU669628056"
+      ],
+      "title": "Los Noventa La Argentina De Menem",
+      "author": "Corach, Carlos",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 670
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Menem, Eduardo"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789500766760",
+      "representative_id": "MLU661170458",
+      "listing_ids": [
+        "MLU661170458",
+        "MLU884157634"
+      ],
+      "title": "Masacre En El Comedor Ceferino Reato",
+      "author": "Ceferino Reato",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 318,
+        "publication_year": "2022",
+        "topics": [
+          "Argentina — History — Dirty War, 1976-1983",
+          "Argentina. Policía Federal. Superintendencia de Seguridad Federal",
+          "Bombings — Argentina — Buenos Aires — History — 20th century",
+          "Organización Montoneros (Argentina) — History"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501203363",
+      "representative_id": "MLU640521916",
+      "listing_ids": [
+        "MLU640521916",
+        "MLU651513658"
+      ],
+      "title": "Cambios Que Cambian Curricular Aula Escuela",
+      "author": "Sergio Siciliano",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 199,
+        "publication_year": "2021",
+        "topics": [
+          "Buenos Aires (Argentina : Province) — Education.",
+          "Education — Curricula — Argentina — Buenos Aires (Province)",
+          "Ethics."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789501297102",
+      "representative_id": "MLU603140512",
+      "listing_ids": [
+        "MLU603140512",
+        "MLU658027362"
+      ],
+      "title": "Libro Diversidad Y Genero En La Escuela Larralde",
+      "author": "Larralde Gabriel",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 301,
+        "publication_year": "2018",
+        "topics": [
+          "Gender identity in education — Argentina.",
+          "Literature — Study and teaching — Argentina.",
+          "Sex instruction — Argentina."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789502312859",
+      "representative_id": "MLU627797834",
+      "listing_ids": [
+        "MLU627797834",
+        "MLU655956694"
+      ],
+      "title": "Empresa Familiar Agropecuaria - Ducos, Maria Marta",
+      "author": "Ducos, Maria Marta",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 271,
+        "publication_year": "2003",
+        "topics": [
+          "Agriculture — Argentina.",
+          "Family farms — Argentina.",
+          "Family-owned business enterprises — Argentina."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789504966593",
+      "representative_id": "MLU664067626",
+      "listing_ids": [
+        "MLU1444639906",
+        "MLU664067626"
+      ],
+      "title": "Mama Antula Locatelli, Nunzia",
+      "author": "Locatelli, Nunzia",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 166,
+        "publication_year": "2019",
+        "topics": [
+          "Biographies.",
+          "Nuns — Argentina — Biography.",
+          "Paz y Figueroa, María Antonia de"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789504967774",
+      "representative_id": "MLU613253924",
+      "listing_ids": [
+        "MLU613253924",
+        "MLU632579979"
+      ],
+      "title": "Libro - Manifiesto Contra El Amor Romántico - Carla Castelo",
+      "author": "Castelo, Carla",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 267
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789505568376",
+      "representative_id": "MLU614532615",
+      "listing_ids": [
+        "MLU614532615",
+        "MLU628149521"
+      ],
+      "title": "Libro - Veintisiete Noches - Natalia Zito",
+      "author": "Natalia Zito",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Galerna",
+        "pages": 280
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789507547164",
+      "representative_id": "MLU615655628",
+      "listing_ids": [
+        "MLU615655628",
+        "MLU628149812"
+      ],
+      "title": "Libro - Rectangulo Y Flecha Gonzalez Poesia",
+      "author": "GONZALEZ CESAR",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ediciones Continente",
+        "pages": 105,
+        "publication_year": "2021"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789507866845",
+      "representative_id": "MLU623126429",
+      "listing_ids": [
+        "MLU623126429",
+        "MLU654806298"
+      ],
+      "title": "De La Mejor Manera De Ejercitar El Poder Sobre Las Mujeres",
+      "author": "Viviana Kuhne",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 127,
+        "topics": [
+          "Lex oppia.",
+          "Rome — Social conditions — 510-30 B.C.",
+          "Sumptuary laws (Roman law)",
+          "Women (Roman law)"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789508088178",
+      "representative_id": "MLU649517262",
+      "listing_ids": [
+        "MLU649517262",
+        "MLU654794526"
+      ],
+      "title": "Educación Sexual Escuela Propuestas Implementar Aula",
+      "author": "Andrea Travaini",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 89,
+        "publication_year": "2013"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Ferraro, Marcela V."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "La educación sexual integral va a la escuela : propuestas posibles para implementar en el aula"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789508922731",
+      "representative_id": "MLU1033930562",
+      "listing_ids": [
+        "MLU1033930562",
+        "MLU618431484"
+      ],
+      "title": "Participacion Social Para Que ?, De Eduardo Menendez. Editorial Lugar Editorial, Tapa Blanda En Español",
+      "author": "Eduardo Menendez",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 199
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789870609124",
+      "representative_id": "MLU631715169",
+      "listing_ids": [
+        "MLU631715169",
+        "MLU654488182"
+      ],
+      "title": "Variación En El Aula Lengua Linguistica Raiter Zullo",
+      "author": "Raiter Zullo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 122,
+        "publication_year": "2020"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Raiter, Alejandro"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789874441225",
+      "representative_id": "MLU638119808",
+      "listing_ids": [
+        "MLU638119808",
+        "MLU651575580"
+      ],
+      "title": "Galanes Inmaduros - Lutereau Luciano",
+      "author": "Luciano Lutereau",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 167,
+        "publication_year": "2022",
+        "topics": [
+          "Masculinity.",
+          "Middle-aged men — Psychology.",
+          "Middle-aged men — Sexual behavior."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789874816016",
+      "representative_id": "MLU661209812",
+      "listing_ids": [
+        "MLU660998018",
+        "MLU661209812"
+      ],
+      "title": "Daat El Conocimiento Las 44 Energias Saban Kabalah",
+      "author": "Mario Javier Saban",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 333,
+        "publication_year": "2021"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789875388000",
+      "representative_id": "MLU634314428",
+      "listing_ids": [
+        "MLU634314428",
+        "MLU652224558"
+      ],
+      "title": "La Docencia De Apoyo Para La Inclusion Y La Accesibilidad Ed",
+      "author": "Sanmartin, Gabriela",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 205,
+        "publication_year": "2021"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789876162623",
+      "representative_id": "MLU664371474",
+      "listing_ids": [
+        "MLU637052689",
+        "MLU664371474"
+      ],
+      "title": "Descalza Mama Antula Locatelli Nuncia",
+      "author": "Nunzia Locatelli, Cintia Suárez y Gisela García.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 157,
+        "publication_year": "2017",
+        "topics": [
+          "Biographies.",
+          "Nuns — Argentina — Biography.",
+          "Paz y Figueroa, María Antonia de"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877390186",
+      "representative_id": "MLU635007721",
+      "listing_ids": [
+        "MLU635007721",
+        "MLU665190508"
+      ],
+      "title": "La Luz Que No Puedes Ver Doerr",
+      "author": "Doerr, Anthony",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 658
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877450293",
+      "representative_id": "MLU674948508",
+      "listing_ids": [
+        "MLU674948508",
+        "MLU675006158"
+      ],
+      "title": "La Empresa Familiar Codigo Civil Y Comercial Dubois Ed. 2015",
+      "author": "Favier Dubois",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 431
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789877711141",
+      "representative_id": "MLU649782274",
+      "listing_ids": [
+        "MLU649782274",
+        "MLU654742878"
+      ],
+      "title": "Graciela Morgade Esi Y Formacion Docente.",
+      "author": "Graciela Morgade",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 274,
+        "publication_year": "2021"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789878011929",
+      "representative_id": "MLU623608679",
+      "listing_ids": [
+        "MLU623608679",
+        "MLU655865390"
+      ],
+      "title": "Viaje Transformacion Escuela - Steinberg Secundaria",
+      "author": "Cora Steinberg",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 263
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9789974015685",
+      "representative_id": "MLU645310620",
+      "listing_ids": [
+        "MLU645310620",
+        "MLU669899964"
+      ],
+      "title": "Cuerpo, Currículum Y Discurso.",
+      "author": "PAOLA DOGLIOTTI MORO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 159,
+        "publication_year": "2018",
+        "topics": [
+          "Physical education and training — Uruguay.",
+          "Physical education and training.",
+          "Uruguay."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788468250243",
+      "representative_id": "MLU679987262",
+      "listing_ids": [
+        "MLU679987262",
+        "MLU680039222"
+      ],
+      "title": "The Canterville Ghost - Life Skills Reading 3 & Training",
+      "author": "Wilde, Oscar",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 79
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Sellen, Derek"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788498794793",
+      "representative_id": "MLU724920708",
+      "listing_ids": [
+        "MLU724920708",
+        "MLU724920710"
+      ],
+      "title": "Libro Jung - Tipos Psicológicos Y Análisis Profundo",
+      "author": "Jung, Carl Gustav",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Persönlichkeitstyp",
+          "Psychologie",
+          "Typologie"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Jung, C. G."
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788420011097",
+      "representative_id": "MLU639239245",
+      "listing_ids": [
+        "MLU639239245",
+        "MLU677682032"
+      ],
+      "title": "Fisioterapia: Masaje Del Caballo Para Estar En Forma Editorial Acribia En Español Tapa Blanda 2018",
+      "author": "BEHLING, Silke / ZINK, Martina",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Hippologie",
+          "Massage",
+          "Pferd",
+          "Ratgeber",
+          "Reitpferd",
+          "Tiermedizin"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Silke Behling, Martina Zing, Jaime Esaín Escobar"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9780194419215",
+      "representative_id": "MLU637824793",
+      "listing_ids": [
+        "MLU1299647170",
+        "MLU1300310658",
+        "MLU637824793"
+      ],
+      "title": "Essential Dictionary 3rd Edition Dictionary Pack",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Oxford University Press",
+        "pages": 496,
+        "topics": [
+          "Dictionaries.",
+          "English language — Dictionaries.",
+          "English language."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Oxford Essential Dictionary"
+          }
+        ],
+        "edition_fields": [
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9780910034395",
+      "representative_id": "MLU701182578",
+      "listing_ids": [
+        "MLU1412218672",
+        "MLU701182578"
+      ],
+      "title": "Esperanza Para Hoy Alanon Al Anon Alcoholismo",
+      "author": "Grupos de Familia Al-Anon",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 379
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Al-Anon Family Group Headquarters, Inc"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Hope for today"
+          }
+        ],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9789507247392",
+      "representative_id": "MLU642923005",
+      "listing_ids": [
+        "MLU642923005",
+        "MLU701238866"
+      ],
+      "title": "Ana Quiroga - Puentes Hacia La Comunicación Musical",
+      "author": "Violeta H. de Gainza",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Lumen",
+        "topics": [
+          "Music — Latin America — Psychological aspects.",
+          "Music — Social aspects — Latin America.",
+          "Quiroga, Ana P. de"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Violeta Hemsy de Gainza"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Quiroga, Ana P. de"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Ana Quiroga : diáloga con Violeta Hemsy de Gainza."
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788417080044",
+      "representative_id": "MLU645136163",
+      "listing_ids": [
+        "MLU645136163",
+        "MLU645226735"
+      ],
+      "title": "El Libro Negro De Los Veterinarios Medicina Que Enferma",
+      "author": "Ziegler, Jutta",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Arzt",
+          "Ärztin",
+          "Kritik",
+          "Tierärztliche Behandlung",
+          "Tiermedizin"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9789507246524",
+      "representative_id": "MLU642961645",
+      "listing_ids": [
+        "MLU642961645",
+        "MLU643926623"
+      ],
+      "title": "Eduardo Pavlosvsky - Puentes Hacia La Comunicación Musical",
+      "author": "Violeta H. de Gainza",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Lumen"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Violeta Hemsy de Gainza"
+          },
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Eduardo Pavlovsky"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Hemsy de Gainza, Violeta."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Eduardo Pavlovsky : dialoga con Violeta H. de Gainza."
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788418182433",
+      "representative_id": "MLU646539027",
+      "listing_ids": [
+        "MLU646539027",
+        "MLU700760400"
+      ],
+      "title": "Galería De Retratos 100 Dibujos Para Colorear Disney",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2022"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788417440589",
+      "representative_id": "MLU696979076",
+      "listing_ids": [
+        "MLU696979076",
+        "MLU697092034"
+      ],
+      "title": "Nubes En La Cabeza Abuelos Nietos Demencia",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 42
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788417240226",
+      "representative_id": "MLU646965611",
+      "listing_ids": [
+        "MLU646913875",
+        "MLU646965611"
+      ],
+      "title": "Collecti Books: Chewbacca Star Wars Guerra Galaxias",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 61
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788415405733",
+      "representative_id": "MLU694155672",
+      "listing_ids": [
+        "MLU694155672",
+        "MLU694284620"
+      ],
+      "title": "Historia Los Fascismos Nazismo Hitler En El Cine Peliculas",
+      "author": "Jaime Noguera Martín",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Film",
+          "Geschichte",
+          "Hitler, Adolf",
+          "Verzeichnis"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788499201306",
+      "representative_id": "MLU647235993",
+      "listing_ids": [
+        "MLU647223261",
+        "MLU647235993"
+      ],
+      "title": "Jesús De Nazaret: Ratzinger Jerusalén Papa Benedicto",
+      "author": "Ratzinger (Benedicto XVI), Joseph",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Christologie",
+          "Jesus Christus",
+          "Katholische Theologie"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "author",
+            "value": "Joseph Ratzinger, Roberto H. Bernet, Leonardo Rodrìguez Dupla, J. Fernando Del Río, Gerardo Del Pozo Abejón"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Benedikt"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Desde la entrada en Jerusalén hasta la resurrección"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9789974481787",
+      "representative_id": "MLU819538002",
+      "listing_ids": [
+        "MLU819538002"
+      ],
+      "title": "Libro Sangre Y Barro - Guerras Y Revoluciones Uruguay",
+      "author": "Leonardo Borges",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "publisher": "Ediciones de la Plaza",
+        "topics": [
+          "Geschichte 1830-1904.",
+          "Uruguay — History — 1830-1875.",
+          "Uruguay — History — 1875-1904.",
+          "Uruguay — Politics and government — 1830-1875.",
+          "Uruguay — Politics and government — 1875-1904.",
+          "Uruguay."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788410670099",
+      "representative_id": "MLU1019989638",
+      "listing_ids": [
+        "MLU1017755546",
+        "MLU1019989638"
+      ],
+      "title": "Gaza: Crónica De Una Nakba Anunciada, De Vv.aa., Vol. 1. Editorial Los Libros De La Catarata, Tapa Blanda, Edición 1 En Español",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Álvarez-Ossorio, Ignacio"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788413111650",
+      "representative_id": "MLU684451990",
+      "listing_ids": [
+        "MLU684451990",
+        "MLU684464940"
+      ],
+      "title": "Glosario De Terminos Gramaticales Rae",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Bosque, Ignacio"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788410301351",
+      "representative_id": "MLU712964966",
+      "listing_ids": [
+        "MLU1241823202",
+        "MLU712964966"
+      ],
+      "title": "Libro Barbie Chef - La Biblioteca Rosa 5",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Barféty, Élisabeth"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788418008153",
+      "representative_id": "MLU647284569",
+      "listing_ids": [
+        "MLU647222539",
+        "MLU647284569"
+      ],
+      "title": "Cuentos De Navidad - Charles Dickens: Clásicos Ilustrados",
+      "author": null,
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 319
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9789878409146",
+      "representative_id": "MLU478016259",
+      "listing_ids": [
+        "MLU478016259",
+        "MLU625779438"
+      ],
+      "title": "Parir En Casa - Bárbara Lorenzo Parto Libro Crianza Embarazo",
+      "author": "BÁRBARA LORENZO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Sudestada"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780738746340",
+      "representative_id": "MLU650041302",
+      "listing_ids": [
+        "MLU650041302",
+        "MLU658092488"
+      ],
+      "title": "Everyday Witch Tarot",
+      "author": "Blake, Deborah",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Instructional and educational works.",
+          "Matériel d'éducation et de formation.",
+          "Sorcellerie.",
+          "Tarot.",
+          "Witchcraft."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Alba, Elisabeth"
+          }
+        ],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788492946280",
+      "representative_id": "MLU672475232",
+      "listing_ids": [
+        "MLU672475232",
+        "MLU673100224"
+      ],
+      "title": "Axel Honneth. Reconocimiento Y Menosprecio",
+      "author": "Axel Honneth",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Anerkennung",
+          "Begriff",
+          "Hegel, Georg Wilhelm Friedrich",
+          "Mead, George Herbert"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9789505566990",
+      "representative_id": "MLU614583373",
+      "listing_ids": [
+        "MLU614583373",
+        "MLU667334426"
+      ],
+      "title": "Libro - La Argentina Devorada - Jose Luis Espert",
+      "author": "José Luis Espert",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Argentina — Economic conditions — 21st century.",
+          "Argentina — Economic policy.",
+          "Argentina — Economics conditions — 19th century.",
+          "Argentina — Economics conditions — 20th century."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9789681313173",
+      "representative_id": "MLU476744305",
+      "listing_ids": [
+        "MLU476744121",
+        "MLU476744305"
+      ],
+      "title": "Psicogeometría - María Montessori",
+      "author": "María Montessori",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 338,
+        "topics": [
+          "Child psychology",
+          "Education",
+          "Montessori method of education"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788417851972",
+      "representative_id": "MLU720504356",
+      "listing_ids": [
+        "MLU720504356"
+      ],
+      "title": "Oráculo Espada De Luz Cartas Canalización Espiritual",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Valentine, Radleigh"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788419510174",
+      "representative_id": "MLU716306076",
+      "listing_ids": [
+        "MLU716306076"
+      ],
+      "title": "Oráculo Ángeles Y Auras - Set De 44 Cartas Y Tarot Español",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Valentine, Radleigh",
+        "language": "Español"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788419510310",
+      "representative_id": "MLU716280014",
+      "listing_ids": [
+        "MLU716280014"
+      ],
+      "title": "Baraja El Árbol De La Vida Oráculo Cábala 44 Cartas Tarot",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Wells, David",
+        "language": "Español"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788419510280",
+      "representative_id": "MLU716650328",
+      "listing_ids": [
+        "MLU716650328"
+      ],
+      "title": "Baraja Sabiduría Ancianos Espiritual Indígena Tarot Oraculo",
+      "author": null,
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Leonard, Shawn",
+        "language": "Español"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788433026088",
+      "representative_id": "MLU646539239",
+      "listing_ids": [
+        "MLU646539239",
+        "MLU646641645"
+      ],
+      "title": "Los Gestos De Oración Grün Cristianismo Jesus Dios Reepen",
+      "author": "Grün, Anselm",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 103
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788497348508",
+      "representative_id": "MLU645213841",
+      "listing_ids": [
+        "MLU645200957",
+        "MLU645213841"
+      ],
+      "title": "La Cuna Vacia: El Doloroso Proceso De Perder Un Embarazo",
+      "author": "Mónica Álvarez",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 333
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Claramunt, Maria Àngels"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788428827935",
+      "representative_id": "MLU644976277",
+      "listing_ids": [
+        "MLU644976277",
+        "MLU645015199"
+      ],
+      "title": "Jesús Maestro De Meditacion Espiritual Evangelio Jalics",
+      "author": "FRANZ JALICS",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 207
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788415862284",
+      "representative_id": "MLU709390092",
+      "listing_ids": [
+        "MLU709390092"
+      ],
+      "title": "Libro Nonsense - Colección Poemas Y Relatos De Edward Lear",
+      "author": "Edward Lear",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 282
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788415594963",
+      "representative_id": "MLU702133226",
+      "listing_ids": [
+        "MLU702071952",
+        "MLU702133226"
+      ],
+      "title": "Pequeña Libro De Mindfulness Para Niños Y No Tan Niños",
+      "author": "Comas, Sylvia",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 260
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9788471127839",
+      "representative_id": "MLU1428452954",
+      "listing_ids": [
+        "MLU1428452954",
+        "MLU1428478914"
+      ],
+      "title": "Le Bon Psicología De Las Masas Libro Psicología Social",
+      "author": "Le Bon, Gustave",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 129
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788495973818",
+      "representative_id": "MLU811904238",
+      "listing_ids": [
+        "MLU811904238",
+        "MLU811956238"
+      ],
+      "title": "Tao Y Longevidad: Secretos Antiedad De La Medicina Natural",
+      "author": "Angelo Druda",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "author": "Druda, Angelo",
+        "publisher": "Neo Person",
+        "pages": 283
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780062273208",
+      "representative_id": "MLU1497570376",
+      "listing_ids": [
+        "MLU1496875752",
+        "MLU1497570376"
+      ],
+      "title": "The Hard Thing About Hard Things Ben Horowitz",
+      "author": "Ben Horowitz",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 289,
+        "topics": [
+          "Entrepreneurship",
+          "Entreprenörskap",
+          "Framgångsrikt företagande",
+          "Klein- und mittelbetrieb",
+          "Management",
+          "Selbstständiger"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9780192767202",
+      "representative_id": "MLU709454496",
+      "listing_ids": [
+        "MLU709363578",
+        "MLU709454496"
+      ],
+      "title": "Oxford First Dictionary - Diccionario Infantil Vocabulario",
+      "author": "Oxford Dictionaries",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Oxford University Press"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Delahunty, Andrew"
+          }
+        ],
+        "edition_fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "isbn": "9781940265230",
+      "representative_id": "MLU729459140",
+      "listing_ids": [
+        "MLU729394448",
+        "MLU729459140"
+      ],
+      "title": "Search For Hidden Knowledge - Dolores Cannon - En Inglés",
+      "author": "DOLORES CANNON",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "topics": [
+          "Human-alien encounters",
+          "Hypnotism",
+          "Metaphysics",
+          "New Age movement",
+          "Reincarnation",
+          "Civilization — Extraterrestrial influences."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788413827261",
+      "representative_id": "MLU702352246",
+      "listing_ids": [
+        "MLU702352246",
+        "MLU767365754"
+      ],
+      "title": "Fisiología Respiratoria En Fisioterapia",
+      "author": "Krenek, Ernst",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Atemgymnastik",
+          "Atemwegskrankheit",
+          "Lungenkrankheit",
+          "Physiotherapie"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Krenek, Beate"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Krenek, Beate"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788428543101",
+      "representative_id": "MLU718032172",
+      "listing_ids": [
+        "MLU1314314618",
+        "MLU718032172"
+      ],
+      "title": "La Biblia De Mi Primera Comunión 60 Relatos Biblicos",
+      "author": "Jan Godfrey",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 141
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788441430624",
+      "representative_id": "MLU647354881",
+      "listing_ids": [
+        "MLU647354881",
+        "MLU647393297"
+      ],
+      "title": "Beneficios Del Colágeno Según Ana María Lajusticia",
+      "author": "ANA MARIA LAJUSTICIA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Edaf"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780199640942",
+      "representative_id": "MLU678095539",
+      "listing_ids": [
+        "MLU678095539",
+        "MLU695192669"
+      ],
+      "title": "Diccionario Oxford English Dictionary Ingles",
+      "author": "Oxford Dictionaries",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 864,
+        "topics": [
+          "Dictionaries",
+          "English language, dictionaries"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "open_library",
+            "field": "title",
+            "value": "Paperback Oxford English Dictionary"
+          },
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Waite, Maurice."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Paperback Oxford English dictionary."
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9780375703768",
+      "representative_id": "MLU1459114790",
+      "listing_ids": [
+        "MLU1459114790",
+        "MLU1459114792"
+      ],
+      "title": "House Of Leaves Mark Z Danielewski Libro Inglés Casa Hojas",
+      "author": "Mark Z Danielewski",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Pantheon Books"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9781455525447",
+      "representative_id": "MLU673709709",
+      "listing_ids": [
+        "MLU1227866748",
+        "MLU673709709"
+      ],
+      "title": "Las 15 Leyes Indispensables Del Crecimiento, De Maxwell, John. Editorial Center Street, Tapa Blanda En Español, 2013",
+      "author": "Maxwell, John",
+      "decision": "GREEN_FULL",
+      "facts": {
+        "pages": 272,
+        "topics": [
+          "Self-actualization (Psychology)",
+          "Self-consciousness (Awareness)",
+          "Self-perception",
+          "Actualización de sí mismo (Psicología)",
+          "Autopercepción.",
+          "Conciencia."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788418782435",
+      "representative_id": "MLU717029740",
+      "listing_ids": [
+        "MLU717029740",
+        "MLU717628402"
+      ],
+      "title": "Libro Vudú - Angélica Liddell Teatro Español Crudo",
+      "author": "Angélica Liddell",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Fiction.",
+          "Poetry."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788446025795",
+      "representative_id": "MLU1040161890",
+      "listing_ids": [
+        "MLU1040135904",
+        "MLU1040161890"
+      ],
+      "title": "Atlas Sexualidad | Educativo Anatomía Reproducción Haeberle",
+      "author": "HAEBERLE, ERWIN",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Entwicklungsbiologie",
+          "Fortpflanzung",
+          "Sexualität"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788446054481",
+      "representative_id": "MLU653090721",
+      "listing_ids": [
+        "MLU1094490288",
+        "MLU653090721"
+      ],
+      "title": "La Invención Jesús De Nazaret Cristianismo Antiguo Gnósticos",
+      "author": "Bermejo Rubio, Fernando",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 792
+      },
+      "evidence": {
+        "exact_isbn_source_count": 2,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 1,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788466330893",
+      "representative_id": "MLU640279747",
+      "listing_ids": [
+        "MLU640266671",
+        "MLU640279747"
+      ],
+      "title": "Libro La Ratesa - Gunter Grass",
+      "author": "Grass, Gunter",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Atomkriegsgefahr",
+          "Erzählende Literatur: Gegenwartsliteratur ab 1945",
+          "Fiktionale Darstellung"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "pages"
+        ]
+      }
+    },
+    {
+      "isbn": "9788466669740",
+      "representative_id": "MLU1410228840",
+      "listing_ids": [
+        "MLU1410228840",
+        "MLU1410228842"
+      ],
+      "title": "Zueco Cirujano De Las Almas Novela Histórica - Tapa Dura",
+      "author": "Zueco, Luis",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Chirurgiens — Romans, nouvelles, etc.",
+          "Espagne — Histoire — 1788-1808 (Charles IV) — Romans, nouvelles, etc.",
+          "Historical fiction.",
+          "Novelas históricas",
+          "Spain — History — Charles IV, 1788-1808 — Fiction.",
+          "Surgeons — Fiction."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher"
+        ]
+      }
+    },
+    {
+      "isbn": "9788467221855",
+      "representative_id": "MLU964798254",
+      "listing_ids": [
+        "MLU1435969302",
+        "MLU964798254"
+      ],
+      "title": "Kohlmeier Breviario Mitología Clásica 3 Tomos Tapa Dura",
+      "author": "Michael Köhlmeier",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Anthologie",
+          "Griechisch",
+          "Sage",
+          "Volksliteratur"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788498744033",
+      "representative_id": "MLU653371977",
+      "listing_ids": [
+        "MLU1371635444",
+        "MLU653371977"
+      ],
+      "title": "Granny Squares Diseños Actuales Patrones Fáciles Crochet",
+      "author": "Rosa P.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Anleitung"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 3,
+        "google_books_records": 0,
+        "open_library_records": 1,
+        "bne_records": 1,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": [
+          "author",
+          "publisher",
+          "publication_year"
+        ]
+      }
+    },
+    {
+      "isbn": "9788466373326",
+      "representative_id": "MLU1247958170",
+      "listing_ids": [
+        "MLU1247958170"
+      ],
+      "title": "La Montaña Mágica Thomas Mann Clásico Literatura Universal",
+      "author": "Mann, Thomas",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Penguin Random House Grupo Editorial, S.A.U."
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788491053705",
+      "representative_id": "MLU1472729392",
+      "listing_ids": [
+        "MLU1472729392"
+      ],
+      "title": "San Juan De La Cruz En Una Noche Oscura Poesía Mística",
+      "author": "SAN JUAN DE LA CRUZ",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Penguin Clásicos"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "John of the Cross"
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "En una noche oscura : poesía completa y selección de prosa"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788498741001",
+      "representative_id": "MLU697819357",
+      "listing_ids": [
+        "MLU697819357"
+      ],
+      "title": "Minis Amigurumi 22 Proyectos De Ganchillo Muñecos Bolgert",
+      "author": "Nelli Bolgert",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Drac"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788401037856",
+      "representative_id": "MLU655152661",
+      "listing_ids": [
+        "MLU655152661"
+      ],
+      "title": "Lee El Corazón De Auschwitz Novela Histórica Holocausto",
+      "author": "Darcy Lee",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 297
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788408050834",
+      "representative_id": "MLU1444918822",
+      "listing_ids": [
+        "MLU1444918822"
+      ],
+      "title": "Libro Historia Guerra Mundial Nazismo Martin Allen Hess 2004",
+      "author": "Martin Allen",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Biografie — 1941-1945",
+          "Biographie 1941-1945",
+          "Geschichte 1941-1945",
+          "Großbritannien",
+          "Hess, Rudolf"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788419764461",
+      "representative_id": "MLU1041523538",
+      "listing_ids": [
+        "MLU1041523538"
+      ],
+      "title": "Perón Biografía Argentina | Historia Peronismo Eva",
+      "author": "Fernando Alonso Barahona",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Argentina — Politics and government — 1943-1955.",
+          "Argentina — Politics and government — 1955-1983.",
+          "Biographies.",
+          "Perón, Juan Domingo",
+          "Peronism.",
+          "Presidents — Argentina — Biography."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788433517036",
+      "representative_id": "MLU783486672",
+      "listing_ids": [
+        "MLU783486672"
+      ],
+      "title": "Gramática Generativa: Teoría Y Análisis En Español Rivero",
+      "author": "VICTOR SANCHEZ DE ZVALA",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Editorial Labor"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Sánchez de Zavala, Víctor."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Estudios de gramática generativa"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788425437472",
+      "representative_id": "MLU615020084",
+      "listing_ids": [
+        "MLU615020084",
+        "MLU652056200"
+      ],
+      "title": "Libro - Trauma Precoz: El Embarazo - Franz Ruppert",
+      "author": "FRANZ RUPPERT",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Familienstellen",
+          "Ganzheitstherapie",
+          "Geburt",
+          "Komplexe posttraumatische Belastungsstörung",
+          "Posttraumatisches Stresssyndrom",
+          "Psychisches Trauma"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788433926180",
+      "representative_id": "MLU625386795",
+      "listing_ids": [
+        "MLU625386795",
+        "MLU636157094"
+      ],
+      "title": "Todo Messi. Ejercicios De Estilo. Jordi Puntí.",
+      "author": "Jordi Puntí.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 162,
+        "topics": [
+          "Argentina.",
+          "Biographies.",
+          "Biography.",
+          "Jugadores de fútbol — Argentina — Biografía.",
+          "Materiales en español.",
+          "Messi, Lionel"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788417241865",
+      "representative_id": "MLU624970612",
+      "listing_ids": [
+        "MLU624970612",
+        "MLU632116799"
+      ],
+      "title": "Las Cuatro Caras Del Héroe - Peñarrubia, Francisco",
+      "author": "PEÑARRUBIA, FRANCISCO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 398,
+        "topics": [
+          "Creative ability.",
+          "Four elements (Philosophy)",
+          "Mythology.",
+          "Self-knowledge, Theory of."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788475095868",
+      "representative_id": "MLU614865254",
+      "listing_ids": [
+        "MLU614865254",
+        "MLU628130044"
+      ],
+      "title": "Libro - El Contenido De Las Psicosis - Carl G. Jung",
+      "author": "Carl G Jung.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "Ed. Paidós"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Jung, C. G."
+          },
+          {
+            "source": "national_library",
+            "field": "title",
+            "value": "Psicogénesis de las enfermedades mentales : 2. : El contenido de las psicosis / [trad. de Ingrid G. Adam]"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788408234586",
+      "representative_id": "MLU626263749",
+      "listing_ids": [
+        "MLU626263749",
+        "MLU655969820"
+      ],
+      "title": "Reina: Bilogia Salvaje 2 Bebi Fernandez",
+      "author": "BEBI FERNÁNDEZ",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 319
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788411482813",
+      "representative_id": "MLU645879058",
+      "listing_ids": [
+        "MLU632805631",
+        "MLU645879058"
+      ],
+      "title": "Historia De Niños Tetralogia Lento Regreso 3 Handke",
+      "author": "Handke, Peter",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Erzählende Literatur: Gegenwartsliteratur ab 1945",
+          "Fiktionale Darstellung",
+          "Kind",
+          "Vater"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788415518938",
+      "representative_id": "MLU649319310",
+      "listing_ids": [
+        "MLU649319310",
+        "MLU651946600"
+      ],
+      "title": "Como Santa Teresa Acompaño Sufismo Mardia Pablo Dors",
+      "author": "MARDIA HERRERO",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publication_year": "2018"
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788415968443",
+      "representative_id": "MLU632980281",
+      "listing_ids": [
+        "MLU632980281",
+        "MLU655905202"
+      ],
+      "title": "La Fuerza Sanadora De Tus Ángeles Isabelle Von Fallois",
+      "author": "Isabelle Von Fallois",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Engel",
+          "Esoterik",
+          "Lebensführung",
+          "Medium"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788417547837",
+      "representative_id": "MLU625847797",
+      "listing_ids": [
+        "MLU625847797",
+        "MLU658001370"
+      ],
+      "title": "Historia De Las Matronas En España Dolores Ruiz Berdun",
+      "author": "DOLORES RUIZ BERDUN",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Childbirth — Spain — History.",
+          "Midwifery — Spain — History.",
+          "Midwives — Spain — History."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788423361694",
+      "representative_id": "MLU673637748",
+      "listing_ids": [
+        "MLU637940041",
+        "MLU673637748"
+      ],
+      "title": "La Espía De Cristal Pere Cervantes",
+      "author": "PERE CERVANTES",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 476
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788423361892",
+      "representative_id": "MLU629305644",
+      "listing_ids": [
+        "MLU629305644",
+        "MLU654519738"
+      ],
+      "title": "Enseñar Hablar Monstruo Origen Lenguaje",
+      "author": "Vales, José C.",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 373
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788434429253",
+      "representative_id": "MLU616052220",
+      "listing_ids": [
+        "MLU616052220",
+        "MLU656251140"
+      ],
+      "title": "Libro - El Dominio Mundial - Baños Bajo, Pedro",
+      "author": "Pedro Baños Bajo",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 366
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788467067378",
+      "representative_id": "MLU625166448",
+      "listing_ids": [
+        "MLU625166448",
+        "MLU669887136"
+      ],
+      "title": "Imaginar Un País. España En 2050",
+      "author": "Instituto Cervantes",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 198,
+        "topics": [
+          "Forecasting.",
+          "Spain — Forecasting.",
+          "Spain."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [
+          {
+            "source": "national_library",
+            "field": "author",
+            "value": "Carrasco, Jesús"
+          }
+        ],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788469848081",
+      "representative_id": "MLU476750663",
+      "listing_ids": [
+        "MLU476750663",
+        "MLU652279538"
+      ],
+      "title": "Ninfa Rota - Alfredo Gómez Cerdá - Premio Anaya 2019",
+      "author": "Alfredo Gómez Cerda",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 189
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788470024542",
+      "representative_id": "MLU639611409",
+      "listing_ids": [
+        "MLU1317657750",
+        "MLU639611409"
+      ],
+      "title": "Piloto De Stukas Hans-ulrich Rudel",
+      "author": "Hans-Ulrich Rudel",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Autobiografie",
+          "Autobiographie",
+          "Deutschland",
+          "Erlebnisbericht",
+          "Flugzeugführer",
+          "Geschichte 1939-1945"
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 0,
+        "dnb_records": 1
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788490607176",
+      "representative_id": "MLU625822987",
+      "listing_ids": [
+        "MLU625822987",
+        "MLU636030596"
+      ],
+      "title": "Cómo Explicarte El Mundo, Cris - Aberasturi, Andres",
+      "author": "ABERASTURI, ANDRES",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "publisher": "La Esfera de los Libros",
+        "pages": 200,
+        "topics": [
+          "Aberásturi, Andrés — Biography.",
+          "Aberásturi, Cris — Biography.",
+          "Biographies.",
+          "Children with cerebral palsy.",
+          "Diaries.",
+          "Father and child."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788497047685",
+      "representative_id": "MLU636910806",
+      "listing_ids": [
+        "MLU636910806",
+        "MLU651470726"
+      ],
+      "title": "Nacimientos Bajo Control : El Parto En Las Edades Moderna",
+      "author": "Sonia García Galán",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "pages": 190
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    },
+    {
+      "isbn": "9788425425998",
+      "representative_id": "MLU670050958",
+      "listing_ids": [
+        "MLU670050958"
+      ],
+      "title": "Diccionario Ideológico Rafael Del Moral",
+      "author": "del Moral, Rafael",
+      "decision": "GREEN_FACTS",
+      "facts": {
+        "topics": [
+          "Dictionaries.",
+          "Spanish language — Dictionaries.",
+          "Spanish language — Terms and phrases."
+        ]
+      },
+      "evidence": {
+        "exact_isbn_source_count": 1,
+        "google_books_records": 0,
+        "open_library_records": 0,
+        "bne_records": 0,
+        "loc_records": 1,
+        "dnb_records": 0
+      },
+      "conflicts": {
+        "identity": [],
+        "edition_fields": []
+      }
+    }
+  ]
+}

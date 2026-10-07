@@ -5,6 +5,7 @@ import {
   buildResearchResult,
   buildVerifiedFactsManifest,
   mapWithConcurrency,
+  motivosDeDescarte,
   publicationClass,
   researchMarkdown,
   selectResearchCohort,
@@ -49,7 +50,7 @@ function classification(overrides = {}) {
   };
 }
 
-test('selecciona ISBN activos unicos, excluye enriquecidos y prioriza brechas', () => {
+test('selecciona ISBN activos unicos y prioriza brechas', () => {
   const result = selectResearchCohort({
     catalogItems: [
       catalogItem('MLU1', ISBN_A, { description: 'x'.repeat(900) }),
@@ -62,11 +63,48 @@ test('selecciona ISBN activos unicos, excluye enriquecidos y prioriza brechas', 
   });
 
   assert.equal(result.selected.length, 2);
-  assert.equal(result.eligible_unique_isbns, 2);
-  assert.equal(result.excluded_already_enriched, 1);
+  assert.equal(result.isbns_en_registro, 1);
   assert.equal(result.selected[0].isbn, ISBN_B);
   assert.equal(result.selected[0].id, 'MLU3');
   assert.deepEqual(result.selected[0].listing_ids, ['MLU2', 'MLU3']);
+});
+
+// Revisión de Astra: estar en el registro no es estar completo. Un ISBN ya
+// investigado que sigue sin `pages` ni `publisher` debe poder volver a
+// investigarse; sólo queda fuera si su ficha efectiva no tiene huecos.
+test('un ISBN del registro con campos incompletos sigue siendo candidato', () => {
+  const result = selectResearchCohort({
+    catalogItems: [catalogItem('MLU9', ISBN_C, { available_quantity: 5 })],
+    existingEnrichments: [{ isbn: ISBN_C }],
+    limit: 0,
+  });
+
+  assert.equal(result.isbns_en_registro, 1);
+  assert.equal(result.selected.length, 1);
+  assert.equal(result.selected[0].isbn, ISBN_C);
+  assert.equal(result.selected[0].already_in_registry, true);
+  assert.equal(result.reinvestigables_en_registro, 1);
+  assert.ok(result.selected[0].research.missing_fields.length > 0);
+});
+
+// ...y el ISBN sin ningún hueco pendiente no gasta cupo.
+test('un ISBN sin campos pendientes queda fuera del cohorte', () => {
+  const completo = catalogItem('MLU10', ISBN_A, {
+    author: 'Autora Real',
+    publisher: 'Editorial Real',
+    pages: 320,
+    bibliographic: {
+      language: 'Español',
+      format: 'Tapa blanda',
+      edition: '2.ª edición',
+      publication_year: '2019',
+      subjects: ['Narrativa'],
+    },
+  });
+  const result = selectResearchCohort({ catalogItems: [completo], existingEnrichments: [], limit: 0 });
+
+  assert.equal(result.selected.length, 0);
+  assert.equal(result.eligible_unique_isbns, 0);
 });
 
 test('temas oficiales cuentan como mejora SEO cuando la edición no los tenía', () => {
@@ -212,4 +250,50 @@ test('resumen declara 1.000 y deja claro que no despliega Produccion', () => {
   assert.match(markdown, /Investigados: 1000 ISBN/);
   assert.match(markdown, /GREEN_FACTS: 300/);
   assert.match(markdown, /no despliega Produccion/i);
+});
+
+// ─── Diagnóstico: por qué un campo aprobado no se publica ─────────────────────
+
+test('un campo aprobado que la ficha ya tiene se informa como descartado', () => {
+  const clasificacion = {
+    edition_fields_auto_publishable: { pages: true, publisher: true },
+    work_fields_auto_publishable: { topics: true },
+    edition_facts: { pages: { value: 320 }, publisher: { value: 'Anagrama' } },
+    work_facts: { topics: ['Novela histórica'] },
+  };
+  // La ficha sólo declara que le falta `pages`: los otros dos ya los tiene.
+  const item = { id: 'MLU1', isbn: '9788437604572', research: { missing_fields: ['pages'] } };
+
+  const motivos = motivosDeDescarte(clasificacion, item);
+  assert.deepEqual(motivos, {
+    publisher: 'la_ficha_ya_lo_tiene',
+    topics: 'la_ficha_ya_lo_tiene',
+  }, 'pages no aparece porque sí se publica');
+});
+
+test('un campo que la evidencia no aprobó no se informa como descartado', () => {
+  // Sin aprobación no hay nada que descartar: el motivo es la evidencia, y eso
+  // ya lo dicen edition_fact_conflicts y los conteos de fuentes.
+  const clasificacion = {
+    edition_fields_auto_publishable: { pages: false },
+    work_fields_auto_publishable: { topics: false },
+    edition_facts: { pages: { value: null } },
+    work_facts: { topics: [] },
+  };
+  const item = { id: 'MLU1', isbn: '9788437604572', research: { missing_fields: [] } };
+  assert.deepEqual(motivosDeDescarte(clasificacion, item), {});
+});
+
+test('sin missing_fields declarados se cae a mirar la ficha', () => {
+  const clasificacion = {
+    edition_fields_auto_publishable: { publisher: true },
+    work_fields_auto_publishable: { topics: false },
+    edition_facts: { publisher: { value: 'Anagrama' } },
+    work_facts: { topics: [] },
+  };
+  const yaLoTiene = { id: 'MLU1', isbn: '9788437604572', publisher: 'Anagrama' };
+  assert.deepEqual(motivosDeDescarte(clasificacion, yaLoTiene), { publisher: 'la_ficha_ya_lo_tiene' });
+
+  const leFalta = { id: 'MLU1', isbn: '9788437604572', publisher: '' };
+  assert.deepEqual(motivosDeDescarte(clasificacion, leFalta), {});
 });

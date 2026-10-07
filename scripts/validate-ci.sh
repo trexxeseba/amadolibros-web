@@ -77,6 +77,10 @@ find functions scripts worker-sync -type f \( -name '*.js' -o -name '*.mjs' \) -
 step "Suite completa de tests"
 node --test worker-sync/__tests__/*.test.js
 node --test scripts/categorize/__tests__/*.test.js
+# scripts/__tests__ existía desde antes y no lo corría nadie: ocho pruebas
+# verdes que no defendían nada porque nunca se ejecutaban.
+node --test scripts/__tests__/*.test.js
+node --test scripts/reports/__tests__/*.test.js
 # Node 22.12 (runner fijado en CI/deploy) todavía mantiene node:sqlite detrás
 # de este flag. En Node >=22.13 el flag es inocuo y conserva la misma suite.
 node --experimental-sqlite --test functions/__tests__/*.test.js
@@ -86,6 +90,11 @@ node --experimental-sqlite --test functions/api/__tests__/*.test.js
 # ── 3. Dependencias de Astro ──────────────────────────────────────────────
 step "Instalar dependencias de astro-front"
 (cd astro-front && npm ci --no-audit --no-fund)
+
+# El test de empaquetado usa esbuild del lockfile de Astro. La misma prueba de
+# comportamiento ya corrió sin dependencias durante la suite nativa anterior.
+step "Observador QA — empaquetado real con esbuild keepNames"
+COVER_SCROLL_TEST_BUNDLE=true node --test worker-sync/__tests__/cover-scroll-observer.test.js
 
 # ── 4. Build con checkout OFF ─────────────────────────────────────────────
 step "Build — checkout OFF"

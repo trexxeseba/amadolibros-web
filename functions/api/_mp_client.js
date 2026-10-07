@@ -140,7 +140,17 @@ export async function getPayment(paymentId, accessToken, { fetch: f = globalThis
     external_reference: data.external_reference ?? null,
     order_id: data.order?.id ?? null,
     date_approved: data.date_approved ?? null,
+    // Motivo y medio del pago: sirven para separar un rechazo de tarjeta de
+    // un abandono en el informe semanal. Son códigos de Mercado Pago (p. ej.
+    // cc_rejected_insufficient_amount), nunca datos de la persona.
+    status_detail: mpCode(data.status_detail),
+    payment_method_id: mpCode(data.payment_method_id),
+    payment_type_id: mpCode(data.payment_type_id),
   };
+}
+
+function mpCode(value) {
+  return typeof value === 'string' && /^[a-z0-9_]{1,64}$/i.test(value) ? value : null;
 }
 
 export async function getMerchantOrder(merchantOrderId, accessToken, { fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {

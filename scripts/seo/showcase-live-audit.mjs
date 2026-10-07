@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { curatedIsRetired } from './showcase-curated-policy.mjs';
 
 import {
   SHOWCASE_COHORT_V1_URL,
@@ -184,6 +185,38 @@ function automaticSampleEligibility(result) {
   return null;
 }
 
+const SHOWCASE_CATALOG_URL = process.env.SHOWCASE_CATALOG_URL
+  || 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
+
+/**
+ * ¿El piloto curado sigue publicado y activo?
+ *
+ * Distingue dos cosas que hasta ahora eran la misma falla: que alguien haya
+ * roto la ficha escrita a mano (grave) y que ese libro ya no esté a la venta
+ * (normal, pasa con cualquier libro que se vende o se pausa).
+ *
+ * Devuelve `null`, no `false`, cuando el catálogo no se puede leer. Esa
+ * diferencia importa: sin catálogo NO se puede afirmar que el libro dejó de
+ * estar publicado, y la auditoría no debe perdonar un 404 por las dudas.
+ */
+async function curatedStillPublished(productId) {
+  try {
+    const response = await fetch(SHOWCASE_CATALOG_URL, {
+      headers: { 'user-agent': 'AmadoLibros-Showcase-Audit/2.0', 'cache-control': 'no-cache' },
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!response.ok) return null;
+    const catalog = await response.json();
+    const items = Array.isArray(catalog?.items) ? catalog.items : null;
+    // Un catálogo vacío o con otra forma no prueba nada.
+    if (!items || items.length === 0) return null;
+    const found = items.find(item => String(item?.id || '').toUpperCase() === productId);
+    return Boolean(found && found.status === 'active');
+  } catch {
+    return null;
+  }
+}
+
 async function selectAutomaticSamples() {
   const cohort = await fetchCohortCandidateIds();
   const ids = [...new Set([...cohort.ids, ...SHOWCASE_PREVIEW_SAMPLE_IDS])]
@@ -303,10 +336,35 @@ function inspectProduct(result, { curated = false } = {}) {
 async function main() {
   const selection = await selectAutomaticSamples();
   const curatedResult = await fetchProduct(CURATED_ID);
-  const products = [
-    ...selection.selected.map(result => inspectProduct(result)),
-    inspectProduct(curatedResult, { curated: true }),
-  ];
+  const automaticProducts = selection.selected.map(result => inspectProduct(result));
+  const curatedProduct = inspectProduct(curatedResult, { curated: true });
+
+  // El piloto curado deja de exigirse SOLO si se cumplen las tres condiciones,
+  // y cada una tapa una forma distinta de perdonar una falla real:
+  //   1. la ficha responde 404 — no es que este rota, es que no esta;
+  //   2. el catalogo dice que ese libro ya no esta activo, y el catalogo se
+  //      pudo leer de verdad (null = no se sabe, y entonces se exige igual);
+  //   3. el resto del sitio funciona: si las fichas automaticas tambien
+  //      fallan, el 404 es del sitio y no hay nada que perdonar.
+  // Si la ficha responde 200, se le exige exactamente lo mismo que antes.
+  const curatedPublished = curatedResult.status === 404
+    ? await curatedStillPublished(CURATED_ID)
+    : true;
+  const curatedRetired = curatedIsRetired({
+    status: curatedResult.status,
+    publishedInCatalog: curatedPublished,
+    automaticFailureCounts: automaticProducts.map(product => product.failures.length),
+  });
+
+  if (curatedRetired) {
+    curatedProduct.retired = true;
+    curatedProduct.retiredReason =
+      'el piloto curado ya no figura activo en el catálogo: su ficha no se exige';
+    curatedProduct.originalFailures = curatedProduct.failures;
+    curatedProduct.failures = [];
+  }
+
+  const products = [...automaticProducts, curatedProduct];
   const selectionFailures = selection.selected.length < SAMPLE_SIZE
     ? [`muestras automáticas insuficientes: ${selection.selected.length}/${SAMPLE_SIZE} después de ${selection.candidatesChecked} candidatos`]
     : [];
@@ -328,7 +386,13 @@ async function main() {
     skippedCandidates: selection.skipped,
     automaticSamples: automatic.length,
     automaticPassed: automatic.filter(product => product.failures.length === 0).length,
-    curatedPassed: products.find(product => product.curated)?.failures.length === 0,
+    curatedPassed: curatedProduct.failures.length === 0,
+    // Un piloto retirado NO es un piloto aprobado. Se informa aparte para que
+    // nadie lea "curatedPassed: true" y crea que la ficha curada sigue viva.
+    curatedRetired,
+    curatedRetiredReason: curatedRetired ? curatedProduct.retiredReason : null,
+    curatedStatus: curatedResult.status,
+    curatedPublished,
     failures,
     products,
   };
@@ -343,8 +407,15 @@ async function main() {
     automaticSamples: report.automaticSamples,
     automaticPassed: report.automaticPassed,
     curatedPassed: report.curatedPassed,
+    curatedRetired: report.curatedRetired,
     failures: report.failures.length,
   }));
+  if (curatedRetired) {
+    console.warn(
+      `AVISO: ${CURATED_ID} ya no está activo en el catálogo, así que su ficha `
+      + 'curada no se exigió. Si el piloto sigue importando, hay que publicarlo '
+      + 'de nuevo o elegir otro en CURATED_ID.');
+  }
   console.log(`Escrito: ${outputPath}`);
 
   if (failures.length) {

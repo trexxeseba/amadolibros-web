@@ -25,7 +25,7 @@ test('Tarot y Biblias enlazan sus landings consolidadas sin crear URLs caníbale
 });
 
 test('Cábala y Sufismo son accesos secundarios reales dentro de Esoterismo', () => {
-  assert.match(source, /subcategoria=cabala-kabbalah/);
+  assert.match(source, /href: '\/libros\/esoterismo-tarot\/cabala-kabbalah'/);
   assert.match(source, /subcategoria=sufismo/);
   assert.match(source, /name: 'Cábala y Kabbalah'/);
   assert.match(source, /name: 'Sufismo'/);

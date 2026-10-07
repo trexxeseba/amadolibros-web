@@ -49,7 +49,9 @@ test('el header editorial ofrece navegación comercial y cultural', () => {
 test('el recorrido posterior combina temas, tapas grandes, contenido y confianza', () => {
   assert.match(topicsAstro, /Todo empieza por una curiosidad\./);
   assert.match(topicsAstro, /Literatura y ficción/);
-  assert.match(topicsAstro, /Libros agotados/);
+  assert.match(topicsAstro, /Desarrollo personal/);
+  assert.match(topicsAstro, /href="\/libros-agotados-importados-uruguay">Pedir una búsqueda/);
+  assert.match(topicsAstro, /href="\/temas">Ver todos los temas/);
   assert.match(shelfAstro, /Tapas que piden que las mires\./);
   assert.match(shelfAstro, /responsiveBookCover/);
   assert.match(ideasAstro, /Amado Lee/);

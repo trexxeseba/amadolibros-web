@@ -1,0 +1,51 @@
+name: QW3A2 — impacto del lote sobre el catálogo efectivo
+
+# Sólo lectura: descarga el catálogo público y mide cuántos datos agrega el
+# lote sobre la ficha que YA se publica. No toca Merchant, no despliega, no
+# escribe en el catálogo.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/qw3a2-lote-impact.yml'
+      - 'scripts/seo/qw3a2-lote-impact.mjs'
+      - 'functions/_shared/book-enrichment-facts-qw3a2-lote-01.js'
+      - 'functions/__tests__/qw3a2-lote-impact.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  impact:
+    name: Medir el impacto real del lote
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Validar el medidor
+        run: |
+          node --check scripts/seo/qw3a2-lote-impact.mjs
+          node --test functions/__tests__/qw3a2-lote-impact.test.js
+
+      - name: Medir el impacto sobre el catálogo efectivo
+        env:
+          SEO_OUTPUT_DIR: artifacts/qw3a2
+        run: node scripts/seo/qw3a2-lote-impact.mjs
+
+      - name: Subir el informe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qw3a2-lote-impact-${{ github.run_id }}
+          path: artifacts/qw3a2/
+          if-no-files-found: warn
+          retention-days: 30

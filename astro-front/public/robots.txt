@@ -11,5 +11,6 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
+Disallow: /panel
 
 Sitemap: https://www.amadolibros.com/sitemap.xml

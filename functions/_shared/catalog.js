@@ -18,6 +18,10 @@ async function fetchJsonCached(ctx, url, maxAge, timingName = 'catalog_fetch') {
     const cacheKey = new Request(url);
     const cacheStartedAt = perfNow();
     let response = await cache.match(cacheKey);
+    // Retire a cached response whose lifetime exceeds the current policy,
+    // including one-hour catalog entries already stored before this deploy.
+    const storedMaxAge = Number(response?.headers.get('cache-control')?.match(/(?:^|[,\s])max-age=(\d+)/i)?.[1] || 0);
+    if (storedMaxAge > maxAge) response = null;
     const cacheStatus = response ? 'hit' : 'miss';
     recordPerf(ctx, `${timingName}_cache`, cacheStartedAt, { cache: cacheStatus });
     if (!response) {
@@ -105,7 +109,9 @@ async function fetchGzipJsonCached(ctx, url, maxAge, timingName) {
 }
 
 export async function fetchCatalog(ctx) {
-    return fetchJsonCached(ctx, CATALOG_URL, 3600, 'catalog');
+    // Price/stock updates must reach the feed and product pages promptly.
+    // Existing one-hour entries are retired by fetchJsonCached above.
+    return fetchJsonCached(ctx, CATALOG_URL, 60, 'catalog');
 }
 
 // CF-R2-2-BRIDGE: única fuente de verdad de "qué manifest le corresponde a
@@ -290,7 +296,7 @@ export async function fetchActiveIndex(ctx) {
 }
 
 // Stock y precios de checkout deben seguir el manifiesto vigente (60 s), no
-// catalog.json cacheado durante una hora. El índice activo es versionado y es
+// una copia independiente de catalog.json. El índice activo es versionado y es
 // la misma fuente que publica el sincronizador para Producción y Preview.
 export async function fetchCheckoutCatalog(ctx) {
     const activeIndex = await fetchActiveIndex(ctx);

@@ -1,4 +1,10 @@
-name: Checkout funnel daily and manual report
+name: Informe diario — embudo de checkout y salud de la web
+
+# Este workflow ya corría todos los días y calculaba el embudo, pero su
+# resultado moría en el resumen del job y en un ZIP. Ahora además revisa la
+# salud (sync y reportes automáticos) y manda todo por correo. Va acá y no en
+# un workflow aparte por dos razones: la consulta a D1 no se duplica, y llega
+# un solo correo por día en vez de dos.
 
 on:
   push:
@@ -8,6 +14,7 @@ on:
       - '.github/workflows/checkout-funnel-report.yml'
       - 'scripts/commerce/checkout-funnel-report.mjs'
       - 'functions/api/_transfer_options_handler.js'
+      - 'scripts/reports/daily/**'
   schedule:
     - cron: '37 11 * * *'
   workflow_dispatch:
@@ -23,6 +30,10 @@ on:
 
 permissions:
   contents: read
+  # Para leer la última corrida de los workflows vigilados con el token del job.
+  actions: read
+  # Para pedirle a Google un token de solo lectura de GA4 (qué pasó ayer).
+  id-token: write
 
 concurrency:
   group: checkout-funnel-report
@@ -79,7 +90,7 @@ jobs:
         run: |
           mkdir -p artifacts/commerce
           npx wrangler@3.114.17 d1 execute ORDERS_DB --env production --remote --json \
-            --command "WITH event_flags AS (SELECT order_id, MAX(CASE WHEN event_type='transfer_payment_info_viewed' THEN 1 ELSE 0 END) AS transfer_prepared, MAX(CASE WHEN event_type='preference_created' THEN 1 ELSE 0 END) AS mp_prepared FROM order_events WHERE event_type IN ('transfer_payment_info_viewed','preference_created') GROUP BY order_id) SELECT substr(o.created_at,1,10) AS date, o.delivery_type, COUNT(*) AS orders_created, COALESCE(SUM(o.payable_total_uyu),0) AS orders_value_uyu, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 OR COALESCE(f.mp_prepared,0)=1 THEN 1 ELSE 0 END) AS payment_selected_count, SUM(COALESCE(f.transfer_prepared,0)) AS transfer_prepared_count, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 THEN MAX(0, CAST(ROUND(o.products_total_uyu * 0.88) AS INTEGER) - o.pickup_discount_uyu + o.shipping_cost_uyu) ELSE 0 END) AS transfer_prepared_value_uyu, SUM(COALESCE(f.mp_prepared,0)) AS mp_prepared_count, SUM(CASE WHEN o.payment_status='approved' THEN 1 ELSE 0 END) AS checkout_approved_count, SUM(CASE WHEN o.payment_status='approved' THEN o.payable_total_uyu ELSE 0 END) AS checkout_approved_value_uyu, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 AND COALESCE(f.mp_prepared,0)=1 THEN 1 ELSE 0 END) AS both_methods_count FROM orders o LEFT JOIN event_flags f ON f.order_id=o.id WHERE substr(o.created_at,1,10) >= '$CHECKOUT_FUNNEL_START_DATE' AND substr(o.created_at,1,10) <= '$CHECKOUT_FUNNEL_END_DATE' GROUP BY substr(o.created_at,1,10), o.delivery_type ORDER BY date, o.delivery_type" \
+            --command "WITH event_flags AS (SELECT order_id, MAX(CASE WHEN event_type='transfer_payment_info_viewed' THEN 1 ELSE 0 END) AS transfer_prepared, MAX(CASE WHEN event_type='preference_created' THEN 1 ELSE 0 END) AS mp_prepared FROM order_events WHERE event_type IN ('transfer_payment_info_viewed','preference_created') GROUP BY order_id) SELECT substr(o.created_at,1,10) AS date, o.delivery_type, COUNT(*) AS orders_created, COALESCE(SUM(o.payable_total_uyu),0) AS orders_value_uyu, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 OR COALESCE(f.mp_prepared,0)=1 THEN 1 ELSE 0 END) AS payment_selected_count, SUM(COALESCE(f.transfer_prepared,0)) AS transfer_prepared_count, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 THEN MAX(0, CAST(ROUND(o.products_total_uyu * 0.88) AS INTEGER) - o.pickup_discount_uyu + o.shipping_cost_uyu) ELSE 0 END) AS transfer_prepared_value_uyu, SUM(COALESCE(f.mp_prepared,0)) AS mp_prepared_count, SUM(CASE WHEN o.payment_status='approved' AND COALESCE(o.payment_provider,'')<>'bank_transfer' THEN 1 ELSE 0 END) AS checkout_approved_count, SUM(CASE WHEN o.payment_status='approved' AND COALESCE(o.payment_provider,'')<>'bank_transfer' THEN o.payable_total_uyu ELSE 0 END) AS checkout_approved_value_uyu, SUM(CASE WHEN COALESCE(f.transfer_prepared,0)=1 AND COALESCE(f.mp_prepared,0)=1 THEN 1 ELSE 0 END) AS both_methods_count FROM orders o LEFT JOIN event_flags f ON f.order_id=o.id WHERE substr(o.created_at,1,10) >= '$CHECKOUT_FUNNEL_START_DATE' AND substr(o.created_at,1,10) <= '$CHECKOUT_FUNNEL_END_DATE' GROUP BY substr(o.created_at,1,10), o.delivery_type ORDER BY date, o.delivery_type" \
             > artifacts/commerce/checkout-funnel-raw.json
 
       - name: Build funnel report
@@ -116,3 +127,59 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Datos personales: no se consultan ni exportan" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deploy: no se dispara desde este workflow" >> "$GITHUB_STEP_SUMMARY"
+
+      # «Qué pasó ayer»: visitas, páginas y libros más vistos, origen y
+      # pedidos del día. Si Google o D1 fallan, el correo sale igual y dice
+      # «sin dato» en esa parte.
+      - name: Autenticar con Google (GA4, solo lectura)
+        id: google_auth
+        if: always()
+        continue-on-error: true
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
+
+      - name: Juntar lo que pasó ayer en la web
+        if: always()
+        continue-on-error: true
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DAILY_OUTPUT_DIR: artifacts/commerce
+        run: node scripts/reports/daily/fetch-activity.mjs
+
+      - name: Armar «Qué pasó ayer»
+        if: always()
+        env:
+          DAILY_OUTPUT_DIR: artifacts/commerce
+        run: node scripts/reports/daily/render-activity.mjs > /dev/null
+
+      # `always()` en los dos pasos que siguen: el día que la consulta a D1
+      # falle es justo el día en que hace falta que el correo salga igual,
+      # avisando qué se rompió, en vez de no llegar.
+      - name: Revisar la salud del sitio y de los reportes
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEALTH_DIGEST_OUTPUT: artifacts/commerce/salud.md
+        run: |
+          mkdir -p artifacts/commerce
+          node scripts/ops/health-digest.mjs
+
+      - name: Mandar el informe por correo
+        if: always()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # No son secretos: los mismos valores ya están en wrangler.toml.
+          REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
+          REPORT_EMAIL_TO: undiaes@gmail.com,adm@amadolibros.com
+          REPORT_EMAIL_SUBJECT: Amado Libros — informe diario
+          REPORT_EMAIL_FILES: artifacts/commerce/actividad.md,artifacts/commerce/salud.md,artifacts/commerce/report-summary.md
+        run: node scripts/ops/send-report-email.mjs

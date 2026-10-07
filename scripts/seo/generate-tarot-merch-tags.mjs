@@ -26,6 +26,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
+import { VERIFIED_TAROT_MERCH_CORRECTIONS } from '../../functions/_shared/tarot-merch-corrections.js';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -303,6 +304,24 @@ export function needsReview({ primaryType, format, text }) {
 // Clasificación de un ítem completo
 // ---------------------------------------------------------------------------
 
+// Revisión de la edición vendida, 2026-09-12: Cielo tiene su luna incluye
+// libro ilustrado y cartas oráculo. El título abreviado no basta para
+// reconocer el mazo. Conservamos esta corrección en futuras generaciones.
+// Evidencia: https://www.amadolibros.com/libro/MLU643087668/primera-menstruacion-cielo-tiene-su-luna-libro-oraculo
+// y https://saberesciclicos.empretienda.com.ar/libros/para-ninas-y-ninxs/cielo-tiene-su-luna-con-mazo-de-carta-oraculo-ma-eugenia-ortega
+const CIELO_ORACLE_IDS = new Set(['MLU643087668', 'MLU669963610']);
+
+export function applyVerifiedMerchCorrection(row) {
+  const correction = VERIFIED_TAROT_MERCH_CORRECTIONS.find(entry => entry.id === row.id || (entry.isbn && entry.isbn === row.isbn));
+  if (correction) {
+    const { id, isbn, ...fields } = correction;
+    return { ...row, ...fields };
+  }
+  if (!CIELO_ORACLE_IDS.has(row.id)) return row;
+  if (row.isbn && row.isbn !== '9789877782363') return row;
+  return { ...row, primary_type: 'oraculo', format: 'mazo', bundle: 'mazo_mas_guia' };
+}
+
 export function classifyItem(item, { restockedIds = new Set(), referenceDate = new Date() } = {}) {
   const text = combinedText(item);
   const primaryType = classifyPrimaryType(text);
@@ -314,7 +333,7 @@ export function classifyItem(item, { restockedIds = new Set(), referenceDate = n
   const editionStyle = classifyEditionStyle(text);
   const review = needsReview({ primaryType, format, text });
 
-  return {
+  return applyVerifiedMerchCorrection({
     id: item.id,
     title: item.title || null,
     author: item.author || null,
@@ -332,7 +351,7 @@ export function classifyItem(item, { restockedIds = new Set(), referenceDate = n
     is_restocked: restockedIds.has(item.id),
     needs_review: review.flag,
     review_reason: review.reason,
-  };
+  });
 }
 
 // ---------------------------------------------------------------------------

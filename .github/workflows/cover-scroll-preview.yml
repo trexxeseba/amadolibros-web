@@ -1,0 +1,112 @@
+name: Cover browser scroll preview
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+    paths:
+      - 'worker-sync/cover-scroll-*'
+      - 'scripts/deploy-cover-preview.sh'
+      - 'scripts/prepare-cover-scroll.mjs'
+      - '.github/workflows/cover-scroll-preview.yml'
+permissions:
+  contents: read
+concurrency:
+  # Each run owns a distinct Worker and R2 prefix; a corrected head need not
+  # wait for an earlier browser window to expire, and both clean up normally.
+  group: cover-scroll-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+jobs:
+  browser-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      INCIDENT_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+      WORKER_NAME: amado-cover-index-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Open browser window only on explicit QA commit
+        id: gate
+        run: |
+          SUBJECT=$(git log -1 --pretty=%s)
+          if [[ "$SUBJECT" == *"[scroll-qa]"* ]]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          node-version: '22.12.0'
+      - name: Deploy and prepare isolated scroll preview
+        if: steps.gate.outputs.enabled == 'true'
+        timeout-minutes: 5
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cover-scroll
+          INCIDENT_TOKEN=$(openssl rand -hex 32)
+          export INCIDENT_TOKEN
+          echo "::add-mask::$INCIDENT_TOKEN"
+          printf 'INCIDENT_TOKEN=%s\n' "$INCIDENT_TOKEN" >> "$GITHUB_ENV"
+          SCROLL_EXPIRES_AT=$(( ($(date +%s) + 1200) * 1000 ))
+          export SCROLL_EXPIRES_AT
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/cover-scroll-preview.wrangler.toml \
+            --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA" \
+            --var "ACCEPTANCE_NAME:$WORKER_NAME" --var "SCROLL_EXPIRES_AT:$SCROLL_EXPIRES_AT")
+          echo "$OUTPUT"
+          INCIDENT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$INCIDENT_URL"
+          export INCIDENT_URL
+          printf 'INCIDENT_URL=%s\n' "$INCIDENT_URL" >> "$GITHUB_ENV"
+          printf '%s' "$INCIDENT_TOKEN" | npx wrangler@3.114.17 secret put INCIDENT_TOKEN \
+            --config worker-sync/cover-scroll-preview.wrangler.toml --name "$WORKER_NAME"
+          # Persist only runtime outcomes, never request headers or tokens.
+          (npx wrangler@3.114.17 tail "$WORKER_NAME" --format json \
+            --config worker-sync/cover-scroll-preview.wrangler.toml \
+            2> artifacts/cover-scroll/tail-stderr.txt | \
+            jq --unbuffered '{outcome, cpuTime, wallTime, exceptions, scriptName}' \
+            > artifacts/cover-scroll/runtime-outcomes.jsonl) &
+          TRACE_PID=$!
+          trap 'kill "$TRACE_PID" 2>/dev/null || true' EXIT
+          sleep 5
+          node scripts/prepare-cover-scroll.mjs
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          name: cover-scroll-browser-${{ github.run_id }}
+          path: artifacts/cover-scroll/browser-info.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Browser verification window (8 minutes)
+        if: steps.gate.outputs.enabled == 'true'
+        timeout-minutes: 9
+        run: |
+          for i in $(seq 1 16); do sleep 30; done
+      - name: Remove isolated data and temporary Worker
+        if: always() && steps.gate.outputs.enabled == 'true'
+        timeout-minutes: 2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          result=0
+          if [ -n "${INCIDENT_URL:-}" ]; then
+            curl --max-time 45 -fsS -X DELETE -H "Authorization: Bearer $INCIDENT_TOKEN" \
+              "$INCIDENT_URL/cleanup" > artifacts/cover-scroll/index-cleanup.json || result=1
+          fi
+          curl --max-time 45 -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME" \
+            > artifacts/cover-scroll/worker-cleanup.json || result=1
+          exit "$result"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.gate.outputs.enabled == 'true'
+        with:
+          name: cover-scroll-cleanup-${{ github.run_id }}
+          path: artifacts/cover-scroll/
+          retention-days: 90
+          if-no-files-found: error

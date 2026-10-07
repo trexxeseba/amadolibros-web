@@ -13,10 +13,14 @@ import {
   emptySourceCache,
   fetchGoogleBooksEvidence,
   fetchOpenLibraryBatchEvidence,
+  fetchOpenLibraryIsbnEvidence,
+  buildOpenLibraryIsbnUrl,
   isSourceCacheFresh,
   mergeSourceCache,
   parseGoogleBooksEvidence,
   parseOpenLibraryEvidence,
+  CACHEABLE_SOURCES,
+  SOURCE_CACHE_TTL_MS,
   planBookSourceResearch,
 } from '../../scripts/seo/book-intelligence-sources.mjs';
 
@@ -298,26 +302,27 @@ test('fetchOpenLibraryBatchEvidence exige contacto identificable', async () => {
   );
 });
 
-test('fetchOpenLibraryBatchEvidence identifica User-Agent y usa una llamada multi-ISBN', async () => {
-  let requestedUrl = null;
-  let requestedOptions = null;
+test('fetchOpenLibraryBatchEvidence identifica User-Agent y pide cada edición', async () => {
+  // La Books API multi-ISBN (/api/books) dejó de existir (HTTP 404 desde
+  // 2026-09-25): cada ISBN se pide al endpoint de edición.
+  const requested = [];
   const records = await fetchOpenLibraryBatchEvidence([ISBN, ISBN_2], {
     contact: 'seo@example.test',
     userAgent: 'AmadoTest/1.0',
     fetchImpl: async (url, options) => {
-      requestedUrl = String(url);
-      requestedOptions = options;
-      return fakeResponse({
-        records: {
-          OL1: { isbns: [ISBN], data: { title: 'Libro uno', authors: [{ name: 'Autora' }] } },
-          OL2: { isbns: [ISBN_2], data: { title: 'Libro dos', authors: [{ name: 'Autor' }] } },
-        },
-      });
+      requested.push({ url: String(url), options });
+      const isbn = String(url).includes(ISBN_2) ? ISBN_2 : ISBN;
+      return fakeResponse({ title: `Libro ${isbn}`, isbn_13: [isbn] });
     },
   });
-  assert.equal(new URL(requestedUrl).searchParams.get('bibkeys'), `ISBN:${ISBN},ISBN:${ISBN_2}`);
-  assert.equal(requestedOptions.headers['user-agent'], 'AmadoTest/1.0 (seo@example.test)');
-  assert.equal(records.length, 2);
+  assert.deepEqual(requested.map(entry => entry.url), [
+    `https://openlibrary.org/isbn/${ISBN}.json`,
+    `https://openlibrary.org/isbn/${ISBN_2}.json`,
+  ]);
+  for (const entry of requested) {
+    assert.equal(entry.options.headers['user-agent'], 'AmadoTest/1.0 (seo@example.test)');
+  }
+  assert.deepEqual(records.map(record => record.isbn), [ISBN, ISBN_2]);
 });
 
 test('errores HTTP no se convierten en evidencia silenciosa', async () => {
@@ -340,4 +345,116 @@ test('mergeSourceCache versiona records/error por ISBN y fuente sin pisar la otr
   assert.equal(cache.entries[ISBN].google_books.records.length, 1);
   assert.equal(cache.entries[ISBN].open_library.error, 'sin match');
   assert.equal(cache.generated_at, fetchedAt);
+});
+
+// SOURCE-COVERAGE-4: Library of Congress y DNB entran al plan como cualquier
+// otra fuente, con su propio presupuesto y su propio cache.
+test('el plan reserva presupuesto propio para LoC y DNB', () => {
+  const plan = planBookSourceResearch(
+    [{ id: 'A', isbn: '9780062273208' }, { id: 'B', isbn: '9788496836693' }],
+    {},
+    { googleBooksBudget: 0, openLibraryBudget: 0, bneBudget: 0, locBudget: 2, dnbBudget: 1 },
+  );
+  assert.equal(plan.loc.length, 2);
+  assert.equal(plan.dnb.length, 1);
+  assert.equal(plan.google_books.length, 0);
+});
+
+test('sin presupuesto explícito las fuentes nuevas no consumen cuota', () => {
+  const plan = planBookSourceResearch([{ id: 'A', isbn: '9780062273208' }], {});
+  assert.deepEqual(plan.loc, []);
+  assert.deepEqual(plan.dnb, []);
+});
+
+// El lote 34032005445 falló con "Fuente no cacheable": LoC y DNB estaban
+// cableadas al orquestador pero no a la lista blanca del caché. Este test
+// ata las dos cosas para que no se separen otra vez.
+test('toda fuente del plan es cacheable y tiene TTL propio', () => {
+  const plan = planBookSourceResearch([{ id: 'A', isbn: '9780062273208' }], {}, {
+    googleBooksBudget: 1, openLibraryBudget: 1, bneBudget: 1, locBudget: 1, dnbBudget: 1,
+  });
+  const enElPlan = Object.keys(plan).filter(key => Array.isArray(plan[key]) && key !== 'entries');
+  for (const source of enElPlan) {
+    assert.ok(CACHEABLE_SOURCES.includes(source), `${source} no está en CACHEABLE_SOURCES`);
+    assert.ok(Number.isFinite(SOURCE_CACHE_TTL_MS[source]), `${source} no tiene TTL`);
+    assert.doesNotThrow(() => mergeSourceCache({}, '9780062273208', source, []), source);
+  }
+});
+
+test('un 429 de Google Books conserva el motivo que da la API', async () => {
+  const fetchImpl = async () => ({
+    ok: false,
+    status: 429,
+    headers: { get: () => null },
+    json: async () => ({ error: { message: "Quota exceeded for quota metric 'Queries' and limit 'Queries per day'" } }),
+  });
+  await assert.rejects(
+    fetchGoogleBooksEvidence(ISBN, { apiKey: 'k', fetchImpl, retryAttempts: 1 }),
+    error => /^HTTP 429 — Quota exceeded .*per day/.test(error.message) && error.status === 429,
+  );
+});
+
+function jsonResponse(status, body) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => null },
+    json: async () => body,
+  };
+}
+
+test('Open Library se consulta por edición en /isbn/{isbn}.json', async () => {
+  assert.equal(buildOpenLibraryIsbnUrl(ISBN), `https://openlibrary.org/isbn/${ISBN}.json`);
+  const urls = [];
+  const fetchImpl = async url => {
+    urls.push(String(url));
+    return jsonResponse(200, {
+      key: '/books/OL1M',
+      title: 'Crimen y castigo',
+      publishers: ['Penguin'],
+      publish_date: '2003',
+      number_of_pages: 520,
+      languages: [{ key: '/languages/spa' }],
+      isbn_13: [ISBN],
+    });
+  };
+  const records = await fetchOpenLibraryIsbnEvidence(ISBN, { contact: 'https://example.test', fetchImpl });
+  assert.deepEqual(urls, [`https://openlibrary.org/isbn/${ISBN}.json`]);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].source, 'open_library');
+  assert.equal(records[0].isbn, ISBN);
+  assert.equal(records[0].publisher, 'Penguin');
+  assert.equal(records[0].pages, 520);
+  assert.equal(records[0].publication_year, '2003');
+  assert.equal(records[0].language, 'Español');
+});
+
+test('un 404 de Open Library es «sin datos», no un error que se reintenta', async () => {
+  const records = await fetchOpenLibraryIsbnEvidence(ISBN, {
+    contact: 'https://example.test',
+    fetchImpl: async () => jsonResponse(404, { error: 'notfound' }),
+  });
+  assert.deepEqual(records, []);
+  await assert.rejects(
+    fetchOpenLibraryIsbnEvidence(ISBN, {
+      contact: 'https://example.test',
+      fetchImpl: async () => jsonResponse(503, {}),
+    }),
+    error => error.status === 503,
+  );
+});
+
+test('la firma por lotes pide cada ISBN por separado', async () => {
+  const urls = [];
+  const records = await fetchOpenLibraryBatchEvidence([ISBN, ISBN_2], {
+    contact: 'https://example.test',
+    fetchImpl: async url => {
+      urls.push(String(url));
+      return String(url).includes(ISBN_2)
+        ? jsonResponse(404, {})
+        : jsonResponse(200, { title: 'X', publishers: ['Y'], isbn_13: [ISBN] });
+    },
+  });
+  assert.equal(urls.length, 2);
+  assert.deepEqual(records.map(record => record.isbn), [ISBN]);
 });

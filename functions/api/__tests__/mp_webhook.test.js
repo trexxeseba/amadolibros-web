@@ -164,6 +164,7 @@ function handler({
   saleNotifier = async () => ({ ok: true }),
   orderEmails = { sendPaidCustomer: async () => ({ ok: true }) },
   purchaseAnalytics = { sendPurchase: async () => ({ ok: true }) },
+  metaPurchase = { sendPurchase: async () => ({ ok: true, skipped: true }) },
 } = {}) {
   return createMpWebhookHandler({
     mpClient: { getPayment, getMerchantOrder },
@@ -171,6 +172,7 @@ function handler({
     saleNotifier,
     orderEmails,
     purchaseAnalytics,
+    metaPurchase,
   });
 }
 
@@ -863,5 +865,102 @@ test('email-3: un fallo de notificación no revierte ni degrada el pago aprobado
     assert.equal(db_.batches.length, 1, 'el pago debe quedar aplicado antes del correo');
   } finally {
     console.error = originalError;
+  }
+});
+
+test('wh-46: el rechazo guarda el motivo y el medio de Mercado Pago, sin datos del pagador', async () => {
+  const bound = [];
+  const db_ = dbMock({ order: baseOrder({ payment_status: 'pending' }) });
+  const prepare = db_.prepare.bind(db_);
+  db_.prepare = sql => {
+    const st = prepare(sql);
+    return { bind: (...args) => { bound.push({ sql, args }); return st.bind(...args); } };
+  };
+  const h = handler({
+    getPayment: async () => basePayment({
+      status: 'rejected',
+      date_approved: null,
+      status_detail: 'cc_rejected_insufficient_amount',
+      payment_method_id: 'visa',
+      payment_type_id: 'credit_card',
+    }),
+  });
+  const res = await h({ request: makeReq(), env: { ...PREVIEW_ENV_CONFIG, MP_WEBHOOK_SECRET: TEST_SECRET, MP_ACCESS_TOKEN: TEST_TOKEN, ORDERS_DB: db_ } });
+  assert.equal(res.status, 200);
+  const insert = bound.find(row => row.sql.includes("'payment_rejected'"));
+  const payload = JSON.parse(insert.args[2]);
+  assert.equal(payload.status_detail, 'cc_rejected_insufficient_amount');
+  assert.equal(payload.payment_method_id, 'visa');
+  assert.equal(payload.payment_type_id, 'credit_card');
+  assert.deepEqual(Object.keys(payload).sort(), ['payment_id', 'payment_method_id', 'payment_type_id', 'status_detail']);
+});
+
+test('wh-47: el pago aprobado deja anotado el monto cobrado', async () => {
+  const bound = [];
+  const db_ = dbMock();
+  const prepare = db_.prepare.bind(db_);
+  db_.prepare = sql => {
+    const st = prepare(sql);
+    return { bind: (...args) => { bound.push({ sql, args }); return st.bind(...args); } };
+  };
+  const h = handler({ getPayment: async () => basePayment({ status: 'approved' }) });
+  await h({ request: makeReq(), env: { ...PREVIEW_ENV_CONFIG, MP_WEBHOOK_SECRET: TEST_SECRET, MP_ACCESS_TOKEN: TEST_TOKEN, ORDERS_DB: db_ } });
+  const update = bound.find(row => row.sql.startsWith('UPDATE orders'));
+  assert.match(update.sql, /paid_amount_uyu=\?/);
+  assert.ok(update.args.includes(3100));
+});
+
+// ── Meta Purchase desde el pago confirmado ──────────────────────────────────
+
+test('wh-meta-01: approved → la compra a Meta se pide una vez, con el id del pedido', async () => {
+  const calls = [];
+  const h = handler({
+    getPayment: async () => basePayment({ status: 'approved' }),
+    metaPurchase: { sendPurchase: async args => { calls.push(args); return { ok: true }; } },
+  });
+  const res = await h({ request: makeReq(), env: env() });
+  assert.equal(res.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].orderId, baseOrder().id);
+});
+
+test('wh-meta-02: pending, rejected o cancelled → no se pide la compra a Meta', async () => {
+  for (const status of ['pending', 'rejected', 'cancelled']) {
+    const calls = [];
+    const h = handler({
+      getPayment: async () => basePayment({ status }),
+      metaPurchase: { sendPurchase: async args => { calls.push(args); return { ok: true }; } },
+    });
+    await h({ request: makeReq(), env: env() });
+    assert.equal(calls.length, 0, status);
+  }
+});
+
+test('wh-meta-03: si Meta falla, Mercado Pago igual recibe 200', async () => {
+  const h = handler({
+    getPayment: async () => basePayment({ status: 'approved' }),
+    metaPurchase: { sendPurchase: async () => { throw new Error('boom'); } },
+  });
+  const res = await h({ request: makeReq(), env: env() });
+  assert.equal(res.status, 200);
+});
+
+test('wh-meta-04: con el envío real y el flag apagado no se toca la red', async () => {
+  let fetched = false;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { fetched = true; return { ok: true }; };
+  try {
+    const h = createMpWebhookHandler({
+      mpClient: { getPayment: async () => basePayment({ status: 'approved' }), getMerchantOrder: async () => ({ ok: false, code: 'NOT_FOUND' }) },
+      getNow: () => NOW,
+      saleNotifier: async () => ({ ok: true }),
+      orderEmails: { sendPaidCustomer: async () => ({ ok: true }) },
+      purchaseAnalytics: { sendPurchase: async () => ({ ok: true }) },
+    });
+    const res = await h({ request: makeReq(), env: env() });
+    assert.equal(res.status, 200);
+    assert.equal(fetched, false);
+  } finally {
+    globalThis.fetch = original;
   }
 });

@@ -1,0 +1,87 @@
+name: Fichas — qué falta enriquecer
+
+# Cruza el catálogo vivo con el registro de enriquecimiento, el caché de
+# fuentes, la clasificación y la cohorte de fichas ampliadas, y deja un
+# informe priorizado en reports/fichas-pendientes/. Sólo lectura sobre el
+# sitio: no despliega, no toca catálogo ni Merchant.
+#
+# `pull_request` existe porque `workflow_dispatch` sólo aparece una vez que
+# el workflow vive en la rama por defecto.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/seo/fichas-pendientes-report.mjs
+      - .github/workflows/fichas-pendientes-report.yml
+      - artifacts/book-intelligence/b12-source-cache.json.gz
+      - functions/_shared/book-enrichment-registry.js
+  schedule:
+    # Lunes 11:00 UTC: una foto semanal de lo pendiente.
+    - cron: '0 11 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fichas-pendientes-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: Informe de fichas pendientes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Generar informe
+        run: node scripts/seo/fichas-pendientes-report.mjs
+
+      - name: Publicar resumen
+        if: always()
+        run: |
+          if [ -f reports/fichas-pendientes/README.md ]; then
+            cat reports/fichas-pendientes/README.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Subir informe como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fichas-pendientes-${{ github.run_id }}
+          path: reports/fichas-pendientes/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commitear el informe
+        # Sólo a mano: en un PR, el commit del bot quedaba como head sin CI
+        # (los commits de GITHUB_TOKEN no disparan workflows) y bloqueaba el
+        # merge; en `main` el informe no justifica commits automáticos. En los
+        # demás casos queda en el resumen y en el artefacto de la corrida.
+        if: github.event_name == 'workflow_dispatch' && env.TARGET_BRANCH != 'main'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/fichas-pendientes
+          if git diff --cached --quiet; then
+            echo "Sin cambios en el informe."
+            exit 0
+          fi
+          git commit -m "Informe: fichas activas que faltan enriquecer"
+          for intento in 1 2 3; do
+            if git push origin "HEAD:${TARGET_BRANCH}"; then exit 0; fi
+            git pull --rebase origin "${TARGET_BRANCH}"
+          done
+          exit 1

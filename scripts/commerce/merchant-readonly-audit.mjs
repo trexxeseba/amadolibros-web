@@ -2,9 +2,23 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+// Las MISMAS funciones que deciden el feed y que explican el motivo en el
+// panel. Importarlas en vez de copiarlas es lo que garantiza que este reporte
+// diga por qué un libro NO está en el feed según la regla real, y no según
+// una reconstrucción que mañana quede vieja.
+import { dedupeByGtinAndCondition, isEligibleForFeed } from '../../functions/feed.xml.js';
+import { feedBlockerReason } from '../../functions/_shared/panel-data.js';
+
 const API_ROOT = 'https://merchantapi.googleapis.com';
 const DEFAULT_ACCOUNT_ID = '5330457716';
 const DEFAULT_FEED_URL = 'https://www.amadolibros.com/feed.xml';
+const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
+const DEFAULT_CATALOG_URL = `${R2_BASE}/catalog.json`;
+// catalog.json trae SÓLO activos. Los pausados («por encargo») viven en un
+// índice aparte, apuntado por este manifiesto. Sin leerlo, todo lo que no es
+// activo parece «desaparecido», y no es lo mismo un libro pausado que uno que
+// ya no existe: el primero es inventario por encargo, el segundo es un fantasma.
+const DEFAULT_PAUSED_MANIFEST_URL = `${R2_BASE}/catalog/manifest.json`;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function asText(value) {
@@ -29,6 +43,14 @@ function isUy(value) {
   return upper(value) === 'UY';
 }
 
+// Google devuelve algunas ofertas con el id en minúscula (mlu887797526) y el
+// catálogo, el feed y el índice de pausados usan MLU887797526. Comparar sin
+// normalizar hace que NADA coincida y que 3.292 productos reales parezcan
+// fantasmas. Toda comparación de ids pasa por acá.
+function normalizeOfferId(value) {
+  return asText(value).toUpperCase();
+}
+
 function safeFetchUri(value) {
   const raw = asText(value);
   if (!raw) return null;
@@ -46,6 +68,19 @@ function safeFetchUri(value) {
 
 export function countFeedItems(xml) {
   return [...String(xml || '').matchAll(/<item(?:\s|>)/gi)].length;
+}
+
+// Los `<g:id>` que realmente viajan en nuestro feed. Sirve para la única
+// pregunta que decide qué se puede hacer con un rechazo: si el producto entra
+// por el feed que controlamos o si Merchant lo conoce por otra fuente. En el
+// segundo caso, tocar el feed no lo cambia.
+export function extractFeedIds(xml) {
+  const ids = new Set();
+  for (const match of String(xml || '').matchAll(/<g:id>([\s\S]*?)<\/g:id>/gi)) {
+    const id = normalizeOfferId(match[1]);
+    if (id) ids.add(id);
+  }
+  return ids;
 }
 
 export function summarizeDataSource(source = {}) {
@@ -106,6 +141,40 @@ export function summarizeAccountIssue(issue = {}) {
         : [],
     })),
   };
+}
+
+// Todos los destinos, no sólo el que disparó la alerta. `aggregateProductStatuses`
+// ya devuelve una fila por (destino, país) con sus contadores: la auditoría
+// venía filtrando Dynamic remarketing UY y tirando el resto, que es justo lo
+// que hace falta para saber qué pasa en Shopping ads y en fichas gratuitas.
+// No agrega ninguna llamada: son los mismos datos ya descargados.
+export function summarizeAllDestinations(rows = []) {
+  const byKey = new Map();
+
+  for (const row of rows) {
+    const reportingContext = asText(row?.reportingContext) || '(sin destino)';
+    const country = asText(row?.country) || '(sin país)';
+    const key = `${reportingContext}|${country}`;
+    const stats = row?.stats || {};
+    const current = byKey.get(key) || {
+      reportingContext,
+      country,
+      active: 0,
+      pending: 0,
+      disapproved: 0,
+      expiring: 0,
+    };
+    current.active += asNumber(stats.activeCount);
+    current.pending += asNumber(stats.pendingCount);
+    current.disapproved += asNumber(stats.disapprovedCount);
+    current.expiring += asNumber(stats.expiringCount);
+    byKey.set(key, current);
+  }
+
+  return [...byKey.values()].sort((a, b) =>
+    b.active - a.active ||
+    a.reportingContext.localeCompare(b.reportingContext) ||
+    a.country.localeCompare(b.country));
 }
 
 export function aggregateDynamicRemarketingUy(rows = []) {
@@ -251,6 +320,171 @@ export function summarizeProducts(products = [], now = new Date()) {
       .sort((a, b) => b.products - a.products || a.code.localeCompare(b.code))
       .slice(0, 30),
   };
+}
+
+// Qué productos concretos arrastra cada causa. `summarizeProducts` sólo
+// cuenta, y con un número no se puede hacer nada: para decidir si 16 rechazos
+// por "ebooks" son libros digitales de verdad o papel mal clasificado hay que
+// poder mirarlos uno por uno. Mismos filtros que el agregado —destino Dynamic
+// remarketing y país UY— para que el total de acá y el de allá coincidan.
+export function listProductsByIssue(products = [], { limitPerIssue = 25, codes = null, feedIds = null, catalog = null } = {}) {
+  const byCode = new Map();
+  const wanted = codes && codes.length ? new Set(codes) : null;
+
+  for (const product of products) {
+    const status = product.productStatus || {};
+    for (const issue of Array.isArray(status.itemLevelIssues) ? status.itemLevelIssues : []) {
+      const countries = Array.isArray(issue.applicableCountries) ? issue.applicableCountries : [];
+      if (!isDynamicRemarketing(issue.reportingContext)) continue;
+      if (countries.length && !countries.some(isUy)) continue;
+
+      const key = asText(issue.code) || '(sin código)';
+      if (wanted && !wanted.has(key)) continue;
+      const current = byCode.get(key) || { code: key, total: 0, sample: [] };
+      current.total += 1;
+      if (current.sample.length < limitPerIssue) {
+        const attributes = product.attributes || {};
+        const offerId = normalizeOfferId(product.offerId || product.name) || null;
+        const fromCatalog = catalog && offerId ? catalog.get(offerId) : null;
+        current.sample.push({
+          offerId,
+          // Merchant no siempre devuelve el título procesado; el catálogo
+          // propio sí lo tiene, y es el nombre que una persona reconoce.
+          title: asText(attributes.title) || fromCatalog?.title || null,
+          // safeFetchUri, no la URL cruda: mismo saneado que las fuentes, así
+          // nada de lo que se imprime puede arrastrar credenciales ni tokens.
+          link: safeFetchUri(attributes.link),
+          dataSource: asText(product.dataSource) || null,
+          enNuestroFeed: feedIds && offerId ? feedIds.has(offerId) : null,
+          estadoEnCatalogo: fromCatalog ? (asText(fromCatalog.status) || 'sin estado') : (catalog ? 'no está' : null),
+        });
+      }
+      byCode.set(key, current);
+    }
+  }
+
+  return [...byCode.values()].sort((a, b) => b.total - a.total || a.code.localeCompare(b.code));
+}
+
+// ¿Lo que Google publica por su cuenta es lo mismo que mandamos, o es justo lo
+// que dejamos afuera? Merchant conoce 6.984 productos y el feed lleva 3.692; la
+// diferencia entra por el AUTOFEED (Google rastreando el sitio). La pregunta
+// que decide si conviene apagarlo es si esos productos se solapan con el feed
+// —duplicados con datos que no controlamos— o si son los que el filtro de
+// calidad excluyó a propósito, que Google sube igual por la puerta de atrás.
+// Se cruza además contra el catálogo propio para saber si lo que está fuera del
+// feed sigue activo, está pausado o directamente ya no existe.
+export function summarizeSourceOverlap(products = [], { feedIds = null, catalog = null, pausedIds = null } = {}) {
+  const porFuente = new Map();
+
+  for (const product of products) {
+    const fuente = asText(product.dataSource) || '(sin fuente)';
+    const offerIdCrudo = asText(product.offerId) || asText(product.name);
+    const offerId = normalizeOfferId(offerIdCrudo);
+    const fila = porFuente.get(fuente) || {
+      dataSource: fuente,
+      total: 0,
+      enFeed: 0,
+      fueraDelFeed: 0,
+      fueraActivos: 0,
+      fueraPausados: 0,
+      fueraSinCatalogo: 0,
+      // Cuántos ids llegaron en minúscula: en Merchant son ofertas DISTINTAS de
+      // las del feed aunque sean el mismo libro. Es el dato que explica el
+      // autofeed.
+      idsEnMinuscula: 0,
+      // Hasta cinco ids de los que no están en ningún catálogo, para poder
+      // preguntarle a la web qué responde por ellos. Un conteo dice cuántos;
+      // sólo la página dice si son fantasmas de verdad.
+      muestraFantasmas: [],
+    };
+    fila.total += 1;
+    if (offerIdCrudo && offerIdCrudo !== offerId) fila.idsEnMinuscula += 1;
+
+    if (feedIds && feedIds.has(offerId)) {
+      fila.enFeed += 1;
+    } else {
+      fila.fueraDelFeed += 1;
+      const enCatalogo = catalog ? catalog.get(offerId) : null;
+      const pausado = (enCatalogo && asText(enCatalogo.status) === 'paused') || Boolean(pausedIds && pausedIds.has(offerId));
+      if (enCatalogo && asText(enCatalogo.status) === 'active') fila.fueraActivos += 1;
+      else if (pausado) fila.fueraPausados += 1;
+      else {
+        fila.fueraSinCatalogo += 1;
+        if (offerId && fila.muestraFantasmas.length < 5) fila.muestraFantasmas.push(offerId);
+      }
+    }
+    porFuente.set(fuente, fila);
+  }
+
+  return [...porFuente.values()].sort((a, b) => b.total - a.total || a.dataSource.localeCompare(b.dataSource));
+}
+
+// ¿Por qué un libro ACTIVO no está en nuestro feed? El AUTOFEED publica justo
+// esos, así que la pregunta «¿por qué los excluí?» hay que contestarla con el
+// motivo real de cada uno.
+//
+// El feed aplica TRES filtros en fila, no uno:
+//   1. isEligibleForFeed  — activo, con stock, precio, moneda UYU y que sea libro.
+//   2. calidad de portada — COVER_GOOGLE_QUALITY_GATE descarta lo que no llega
+//      al mínimo de imagen de Google.
+//   3. dedupeByGtinAndCondition — una sola oferta por ISBN+condición.
+//
+// Contar sólo el primero daba 297 sobre ~2.700 y dejaba la impresión falsa de
+// que casi todos eran no-libros. Acá se reproduce la cadena: 1 y 3 se calculan
+// con las funciones reales; 2 NO se puede verificar desde acá —vive en el
+// manifiesto privado de portadas en R2— así que lo que sobrevive a 1 y 3 y aun
+// así falta en el feed se reporta como tal, sin afirmar la causa.
+export function summarizeFeedExclusions(products = [], { feedIds = null, catalog = null, limitPorMotivo = 5 } = {}) {
+  if (!catalog) return [];
+
+  // Universo: los activos del catálogo que Merchant conoce y no están en el feed.
+  const candidatos = [];
+  const vistos = new Set();
+  for (const product of products) {
+    const offerId = normalizeOfferId(product.offerId || product.name);
+    if (!offerId || vistos.has(offerId)) continue;
+    if (feedIds && feedIds.has(offerId)) continue;
+    const entrada = catalog.get(offerId);
+    if (!entrada?.item || asText(entrada.status) !== 'active') continue;
+    vistos.add(offerId);
+    candidatos.push({ offerId, entrada, item: entrada.item });
+  }
+
+  const porMotivo = new Map();
+  const anotar = (motivo, offerId, title) => {
+    const fila = porMotivo.get(motivo) || { motivo, total: 0, muestra: [] };
+    fila.total += 1;
+    if (fila.muestra.length < limitPorMotivo) fila.muestra.push({ offerId, title: title || '(sin título)' });
+    porMotivo.set(motivo, fila);
+  };
+
+  // Etapa 1.
+  const pasaronEtapa1 = [];
+  for (const c of candidatos) {
+    if (isEligibleForFeed(c.item)) pasaronEtapa1.push(c);
+    else anotar(feedBlockerReason(c.item), c.offerId, c.entrada.title);
+  }
+
+  // Etapa 3: se deduplica el conjunto elegible COMPLETO —los que están en el
+  // feed más estos— porque el ganador de cada ISBN puede ser justamente el que
+  // sí se publicó. Deduplicar sólo los ausentes diría que ninguno sobra.
+  const enFeed = [];
+  for (const [id, entrada] of catalog) {
+    if (feedIds?.has(id) && entrada?.item && isEligibleForFeed(entrada.item)) enFeed.push(entrada.item);
+  }
+  const universo = [...enFeed, ...pasaronEtapa1.map(c => c.item)];
+  const sobrevivientes = new Set(dedupeByGtinAndCondition(universo).map(item => normalizeOfferId(item.id)));
+
+  for (const c of pasaronEtapa1) {
+    if (!sobrevivientes.has(c.offerId)) {
+      anotar('duplicado: otra edición con el mismo ISBN ya está publicada', c.offerId, c.entrada.title);
+    } else {
+      anotar('pasa la regla comercial — falta por portada u otro motivo no verificable desde acá', c.offerId, c.entrada.title);
+    }
+  }
+
+  return [...porMotivo.values()].sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo));
 }
 
 export function buildDiagnosis({ alert, feedCount, dataSources, accountIssues, aggregate, products }) {
@@ -417,6 +651,99 @@ function reportMarkdown(report) {
     lines.push(`| ${markdownEscape(issue.code)} | ${issue.severity || '—'} | ${issue.productCount ?? issue.products ?? 0} | ${markdownEscape(issue.description || issue.detail || '—')} |`);
   }
 
+  if (report.allDestinations?.length) {
+    lines.push(
+      '',
+      '## Todos los destinos, no sólo remarketing',
+      '',
+      '| Destino | País | Activos | Pendientes | Rechazados | Por vencer |',
+      '| --- | --- | ---: | ---: | ---: | ---: |',
+    );
+    for (const row of report.allDestinations) {
+      lines.push(`| ${markdownEscape(row.reportingContext)} | ${markdownEscape(row.country)} | ${row.active} | ${row.pending} | ${row.disapproved} | ${row.expiring} |`);
+    }
+  }
+
+  if (report.products?.byDataSource?.length) {
+    // El conteo viene con el nombre de recurso (accounts/…/dataSources/123) y
+    // así no dice nada: hay que poder leer de un vistazo si esos productos los
+    // manda nuestro feed o los puso Google por su cuenta.
+    const fuentePorId = new Map();
+    for (const source of report.dataSources || []) {
+      if (source.name) fuentePorId.set(source.name, source);
+      if (source.dataSourceId) fuentePorId.set(source.dataSourceId, source);
+    }
+    const solapePorFuente = new Map((report.sourceOverlap || []).map(row => [row.dataSource, row]));
+    const pi = report.pausedIndex;
+    lines.push(
+      '',
+      '## De dónde salen los productos',
+      '',
+      pi?.ok
+        ? `Índice de pausados leído: ${pi.total} ids (versión ${pi.version || '—'}). catalog.json trae sólo activos; sin este índice, un pausado parecería desaparecido.`
+        : `Índice de pausados NO leído (${pi?.error || 'sin datos'}): la columna «ni activos ni pausados» puede estar inflada con pausados.`,
+      '',
+      '| Fuente | Entrada | Productos | En nuestro feed | Fuera del feed | …activos | …pausados (por encargo) | …ni activos ni pausados |',
+      '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    );
+    for (const row of report.products.byDataSource) {
+      const id = String(row.dataSource || '').split('/').pop();
+      const source = fuentePorId.get(row.dataSource) || fuentePorId.get(id);
+      const etiqueta = source ? `${source.displayName} (${id})` : row.dataSource;
+      const s = solapePorFuente.get(row.dataSource);
+      const celda = valor => (s ? String(valor) : '—');
+      lines.push(`| ${markdownEscape(etiqueta)} | ${markdownEscape(source?.input || '—')} | ${row.count} | ${celda(s?.enFeed)} | ${celda(s?.fueraDelFeed)} | ${celda(s?.fueraActivos)} | ${celda(s?.fueraPausados)} | ${celda(s?.fueraSinCatalogo)} |`);
+    }
+    if (report.feedExclusions?.length) {
+      const total = report.feedExclusions.reduce((suma, fila) => suma + fila.total, 0);
+      lines.push(
+        '',
+        `### Por qué ${total} libros activos no están en nuestro feed`,
+        '',
+        'Motivo según `feedBlockerReason`, la misma función que usa el panel. Son los que el AUTOFEED publica por su cuenta.',
+        '',
+        '| Motivo | Libros | Ejemplos |',
+        '| --- | ---: | --- |',
+      );
+      for (const fila of report.feedExclusions) {
+        const ejemplos = fila.muestra.map(m => `${markdownEscape(m.title)} (\`${markdownEscape(m.offerId)}\`)`).join('; ');
+        lines.push(`| ${markdownEscape(fila.motivo)} | ${fila.total} | ${ejemplos || '—'} |`);
+      }
+    }
+
+    for (const s of report.sourceOverlap || []) {
+      if (!s.idsEnMinuscula) continue;
+      const id = String(s.dataSource || '').split('/').pop();
+      const source = fuentePorId.get(s.dataSource) || fuentePorId.get(id);
+      lines.push('', `${markdownEscape(source?.displayName || s.dataSource)}: ${s.idsEnMinuscula} de ${s.total} ids llegan en minúscula (mlu…). Para comparar se normalizan a MLU…, pero en Merchant son ofertas distintas de las del feed: el mismo libro dos veces, con datos de dos orígenes.`);
+    }
+    for (const s of report.sourceOverlap || []) {
+      if (!s.fantasmasEnLaWeb?.length) continue;
+      const id = String(s.dataSource || '').split('/').pop();
+      const source = fuentePorId.get(s.dataSource) || fuentePorId.get(id);
+      lines.push('', `Muestra de «ni activos ni pausados» de ${markdownEscape(source?.displayName || s.dataSource)}, consultados en la web:`, '');
+      for (const f of s.fantasmasEnLaWeb) {
+        lines.push(`- \`${markdownEscape(f.id)}\` → ${f.http == null ? `sin respuesta (${markdownEscape(f.error || '')})` : `HTTP ${f.http}`}`);
+      }
+    }
+  }
+
+  if (report.productsByIssue?.length) {
+    lines.push('', '## Qué productos arrastra cada causa', '');
+    for (const group of report.productsByIssue) {
+      lines.push(`### ${group.code} — ${group.total} producto(s)`, '');
+      lines.push('| Oferta | Título | ¿En nuestro feed? | Estado en catálogo |', '| --- | --- | --- | --- |');
+      for (const row of group.sample) {
+        const enFeed = row.enNuestroFeed == null ? '—' : (row.enNuestroFeed ? 'sí' : 'NO');
+        lines.push(`| ${markdownEscape(row.offerId || '—')} | ${markdownEscape(row.title || '—')} | ${enFeed} | ${markdownEscape(row.estadoEnCatalogo || '—')} |`);
+      }
+      if (group.total > group.sample.length) {
+        lines.push(`| … | ${group.total - group.sample.length} más, no listados | | |`);
+      }
+      lines.push('');
+    }
+  }
+
   lines.push('', '## Endpoints', '');
   for (const endpoint of report.endpoints) {
     lines.push(`- ${endpoint.name}: ${endpoint.ok ? 'OK' : `ERROR ${endpoint.error?.httpStatus || ''} ${endpoint.error?.apiStatus || ''} — ${endpoint.error?.message || ''}`}`);
@@ -466,7 +793,7 @@ export async function main() {
       const response = await fetch(feedUrl, { signal: AbortSignal.timeout(60_000) });
       const xml = await response.text();
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return { ok: true, url: feedUrl, items: countFeedItems(xml), bytes: Buffer.byteLength(xml) };
+      return { ok: true, url: feedUrl, items: countFeedItems(xml), bytes: Buffer.byteLength(xml), ids: extractFeedIds(xml) };
     } catch (error) {
       return { ok: false, url: feedUrl, items: null, bytes: null, error: asText(error?.message) };
     }
@@ -476,6 +803,101 @@ export async function main() {
   const accountIssues = (byName.accountIssues.data || []).map(summarizeAccountIssue);
   const aggregate = finalizeAggregate(aggregateDynamicRemarketingUy(byName.aggregateProductStatuses.data || []));
   const products = byName.products.ok ? summarizeProducts(byName.products.data || [], new Date()) : null;
+  const limitPerIssue = Number(process.env.MERCHANT_ISSUE_SAMPLE_LIMIT) > 0
+    ? Number(process.env.MERCHANT_ISSUE_SAMPLE_LIMIT)
+    : 25;
+  const codes = asText(process.env.MERCHANT_ISSUE_CODES)
+    .split(',')
+    .map(value => asText(value))
+    .filter(Boolean);
+
+  // Catálogo propio: sólo para poner nombre y estado a cada MLU. Es el mismo
+  // objeto público que ya leen otras auditorías; si no responde, el listado
+  // sigue saliendo con el id pelado en vez de abortar.
+  const catalog = await (async () => {
+    const catalogUrl = asText(process.env.MERCHANT_CATALOG_URL) || DEFAULT_CATALOG_URL;
+    try {
+      const response = await fetch(catalogUrl, { signal: AbortSignal.timeout(120_000) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const map = new Map();
+      for (const item of Array.isArray(data?.items) ? data.items : []) {
+        const id = normalizeOfferId(item?.id);
+        if (id) map.set(id, { title: asText(item?.title) || null, status: asText(item?.status) || null, item });
+      }
+      return map;
+    } catch {
+      return null;
+    }
+  })();
+
+  const productsByIssue = byName.products.ok
+    ? listProductsByIssue(byName.products.data || [], {
+        limitPerIssue,
+        codes,
+        feedIds: publicFeed.ok ? publicFeed.ids : null,
+        catalog,
+      })
+    : [];
+  // Índice de pausados: manifiesto → descriptor.index_key → filas [id, título, …].
+  // Sólo lectura; si algo falla se sigue sin él y el reporte lo dice.
+  const pausedIndex = await (async () => {
+    const manifestUrl = asText(process.env.MERCHANT_PAUSED_MANIFEST_URL) || DEFAULT_PAUSED_MANIFEST_URL;
+    try {
+      const manifestResponse = await fetch(manifestUrl, { signal: AbortSignal.timeout(60_000) });
+      if (!manifestResponse.ok) throw new Error(`HTTP ${manifestResponse.status}`);
+      const manifest = await manifestResponse.json();
+      const descriptor = [manifest?.current, manifest?.previous].find(d => d && typeof d.index_key === 'string');
+      if (!descriptor) throw new Error('manifiesto sin index_key');
+      const indexResponse = await fetch(`${R2_BASE}/${descriptor.index_key}`, { signal: AbortSignal.timeout(120_000) });
+      if (!indexResponse.ok) throw new Error(`HTTP ${indexResponse.status} al leer el índice`);
+      const index = await indexResponse.json();
+      if (index?.schema_version !== 1 || !Array.isArray(index.items)) throw new Error('índice con forma inesperada');
+      const ids = new Set();
+      for (const row of index.items) {
+        const id = normalizeOfferId(Array.isArray(row) ? row[0] : row?.id);
+        if (id) ids.add(id);
+      }
+      return { ok: true, version: asText(descriptor.version) || null, ids };
+    } catch (error) {
+      return { ok: false, error: asText(error?.message) || 'error desconocido', ids: null };
+    }
+  })();
+
+  const feedExclusions = byName.products.ok
+    ? summarizeFeedExclusions(byName.products.data || [], {
+        feedIds: publicFeed.ok ? publicFeed.ids : null,
+        catalog,
+      })
+    : [];
+
+  const sourceOverlap = byName.products.ok
+    ? summarizeSourceOverlap(byName.products.data || [], {
+        feedIds: publicFeed.ok ? publicFeed.ids : null,
+        catalog,
+        pausedIds: pausedIndex.ids,
+      })
+    : [];
+
+  // ¿Qué responde la tienda por un producto que Google cree activo y que no
+  // está en ningún catálogo? Un 404 confirma el fantasma; un 200 obliga a
+  // mirar qué le estamos mostrando a Google. HEAD y sin seguir redirecciones:
+  // no descarga páginas y no toca nada.
+  const siteBase = asText(process.env.MERCHANT_SITE_BASE) || 'https://www.amadolibros.com';
+  for (const fila of sourceOverlap) {
+    fila.fantasmasEnLaWeb = await Promise.all(fila.muestraFantasmas.map(async id => {
+      try {
+        const response = await fetch(`${siteBase}/libro/${encodeURIComponent(id)}`, {
+          method: 'HEAD',
+          redirect: 'manual',
+          signal: AbortSignal.timeout(20_000),
+        });
+        return { id, http: response.status };
+      } catch (error) {
+        return { id, http: null, error: asText(error?.message) || 'error de red' };
+      }
+    }));
+  }
   const alert = {
     observedAt: '2026-08-17T00:20:00-03:00',
     previousActive: 3745,
@@ -502,13 +924,20 @@ export async function main() {
     generatedAt: new Date().toISOString(),
     accountId,
     alert,
-    publicFeed,
+    // Sin `ids`: es un Set con miles de entradas que sólo sirve durante la
+    // corrida y que JSON.stringify escribiría como `{}` igual.
+    publicFeed: { ...publicFeed, ids: undefined },
     endpoints: endpoints.map(row => ({ name: row.name, ok: row.ok, error: row.error })),
     dataSources,
     accountIssues,
     aggregateStatuses: byName.aggregateProductStatuses.ok ? byName.aggregateProductStatuses.data : null,
+    allDestinations: summarizeAllDestinations(byName.aggregateProductStatuses.data || []),
     dynamicRemarketingUy,
     products,
+    productsByIssue,
+    sourceOverlap,
+    feedExclusions,
+    pausedIndex: { ok: pausedIndex.ok, version: pausedIndex.version ?? null, total: pausedIndex.ids ? pausedIndex.ids.size : null, error: pausedIndex.error ?? null },
     diagnosis: buildDiagnosis({
       alert,
       feedCount: publicFeed.ok ? publicFeed.items : null,

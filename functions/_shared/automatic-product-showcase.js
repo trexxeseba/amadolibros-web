@@ -2,6 +2,7 @@
 // visible y útil. No inventa sinopsis, biografías, reseñas ni calificaciones.
 
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
+import { authorPathForName } from './seo-authors.js';
 
 const JSON_LD_RE = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
 const DETAIL_ROW_RE = /<div class="detail-row"><dt>([\s\S]*?)<\/dt><dd>([\s\S]*?)<\/dd><\/div>/g;
@@ -329,7 +330,7 @@ function contextualRequestHelp(item, classificationTags = []) {
   };
 }
 
-function buildLinks(item, classificationTags = []) {
+function buildLinks(item, classificationTags = [], categoryTrail = []) {
   const links = [];
   const tags = new Set(classificationTags.map(normalizedText).filter(Boolean));
   const author = !isGenericAuthor(item?.author) ? clean(item.author) : null;
@@ -354,11 +355,15 @@ function buildLinks(item, classificationTags = []) {
       links.push({ href: '/libros/esoterismo-tarot/mazos', label: 'Comparar mazos de tarot disponibles' });
     }
     links.push({ href: '/libros/esoterismo-tarot', label: 'Ver tarot, oráculos y libros de esoterismo' });
+  } else if (Array.isArray(categoryTrail) && categoryTrail.length) {
+    // La landing de la categoría es indexable; una búsqueda del catálogo no.
+    const category = categoryTrail.at(-1);
+    links.push({ href: category.path, label: `Ver más libros de ${category.name}` });
   }
 
   if (author) {
     links.push({
-      href: `/catalogo?q=${encodeURIComponent(author)}`,
+      href: authorPathForName(author) || `/catalogo?q=${encodeURIComponent(author)}`,
       label: `Ver otros libros de ${author}`,
     });
   }
@@ -387,8 +392,20 @@ function buildMetaDescription(item) {
   const title = clean(item.title);
   const author = !isGenericAuthor(item.author) ? clean(item.author) : null;
   const isbn = normalizeValidIsbn(item.isbn);
+  const bibliography = item?.bibliographic && typeof item.bibliographic === 'object'
+    ? item.bibliographic
+    : {};
+  // Los datos verificados de la edición distinguen el resultado en Google
+  // («Paidós, 2019, 320 págs.»); sin ninguno, se conserva el ISBN.
+  const editionFacts = [
+    realPublisher(item.publisher),
+    clean(bibliography.publication_year) || null,
+    positiveInteger(item.pages) ? `${positiveInteger(item.pages)} págs.` : null,
+  ].filter(Boolean);
   const identity = `Comprá ${title}${author ? ` de ${author}` : ''} en Uruguay.`;
-  const edition = isbn ? ` ISBN ${isbn}.` : '';
+  const edition = editionFacts.length
+    ? ` Edición ${editionFacts.join(', ')}${editionFacts.at(-1).endsWith('.') ? '' : '.'}`
+    : (isbn ? ` ISBN ${isbn}.` : '');
   return shortenByWord(
     `${identity}${edition} Consultá stock, 12% menos por transferencia, cuotas y envíos a todo el país.`,
     170,
@@ -502,6 +519,7 @@ export function buildAutomaticProductShowcase(item, {
   classificationTags = [],
   enrichment = null,
   tarotMerchTag = null,
+  categoryTrail = [],
 } = {}) {
   if (!item || typeof item !== 'object' || !clean(item.title)) return null;
   const verticalFacts = buildVerticalFacts(classificationTags, tarotMerchTag);
@@ -561,7 +579,7 @@ export function buildAutomaticProductShowcase(item, {
     schemaKind: tarotMerchTag?.format === 'mazo' && tarotMerchTag?.needs_review !== true
       ? 'product'
       : 'book',
-    links: editorial?.links || buildLinks(item, classificationTags),
+    links: editorial?.links || buildLinks(item, classificationTags, categoryTrail),
     requestHelp: contextualRequestHelp(item, classificationTags),
     sources: enrichment?.provenance || [],
     schemaDescription: editorial?.paragraphs?.join(' ') || schemaDescription,

@@ -1,0 +1,76 @@
+name: Sync de catálogo — ¿publicó hoy?
+
+# El estado del sync vive en KV y KV no se lee desde afuera de Cloudflare. Sin
+# esto, "¿el cron publicó?" sólo se puede contestar desde el dashboard, y en la
+# práctica nadie lo mira: un sync caído podía pasar días sin que se notara.
+# Un runner de Actions sí llega a producción, así que la pregunta se contesta
+# sola una vez por día y falla ruidosamente cuando la respuesta es que no.
+#
+# El cron del Worker corre 07:15 UTC. Este chequeo va 09:05 UTC, con casi dos
+# horas de margen para un sync lento, y así no confunde "todavía corriendo"
+# con "no publicó".
+
+on:
+  schedule:
+    - cron: '5 9 * * *'
+  workflow_dispatch:
+    inputs:
+      status_url:
+        description: 'Endpoint de estado a consultar'
+        required: false
+        type: string
+      max_age_hours:
+        description: 'Máximo de horas desde el último sync exitoso (vacío = 26)'
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-freshness.yml'
+      - 'scripts/ops/sync-freshness-check.mjs'
+      - 'functions/__tests__/sync-freshness-check.test.js'
+  # GitHub sólo registra `schedule` y `workflow_dispatch` desde la rama por
+  # defecto, así que hasta que esto llegue a main no hay forma de ejecutarlo a
+  # mano. Con el disparador por PR el chequeo se prueba a sí mismo contra
+  # producción antes de fusionarse, en vez de estrenarse a ciegas en el primer
+  # cron. Mismo patrón que merchant-readonly-audit.yml.
+  pull_request:
+    paths:
+      - '.github/workflows/sync-freshness.yml'
+      - 'scripts/ops/sync-freshness-check.mjs'
+      - 'functions/__tests__/sync-freshness-check.test.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-freshness
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Leer el estado del sync en producción
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Probar el evaluador antes de creerle
+        run: |
+          node --check scripts/ops/sync-freshness-check.mjs
+          node --test functions/__tests__/sync-freshness-check.test.js
+
+      # Un solo GET a un endpoint público. No dispara syncs, no escribe KV,
+      # no necesita credenciales y no despliega nada.
+      - name: Consultar el estado del sync
+        env:
+          SYNC_STATUS_URL: ${{ inputs.status_url }}
+          SYNC_MAX_AGE_HOURS: ${{ inputs.max_age_hours }}
+        run: node scripts/ops/sync-freshness-check.mjs

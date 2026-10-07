@@ -30,6 +30,7 @@ test('proyecta hechos exactos de fuente oficial sin texto ni datos comerciales',
     manifest: manifest(),
     cache: cache([{
       source: 'national_library',
+      source_provider: 'biblioteca_nacional_espana',
       source_url: 'https://catalogo.bne.es/record/1',
       isbn: ISBN,
       author: 'Meg Meeker',
@@ -123,6 +124,7 @@ test('la proyección compara códigos de idioma antiguos con la etiqueta normali
     manifest: manifest({ language: 'Español' }),
     cache: cache([{
       source: 'national_library',
+      source_provider: 'biblioteca_nacional_espana',
       source_url: 'https://catalogo.bne.es/record/1',
       isbn: ISBN,
       language: 'spa',
@@ -137,6 +139,7 @@ test('proyecta temas oficiales sin arrastrar la sinopsis fuente', () => {
     manifest: manifest({ topics: ['Educación', 'Familia'] }),
     cache: cache([{
       source: 'national_library',
+      source_provider: 'biblioteca_nacional_espana',
       source_url: 'https://catalogo.bne.es/record/1',
       isbn: ISBN,
       topics: ['Familia', 'Educación', 'Otro tema no seleccionado'],
@@ -147,4 +150,40 @@ test('proyecta temas oficiales sin arrastrar la sinopsis fuente', () => {
   assert.deepEqual(entries[0].facts.bibliographic.subjects, ['Educación', 'Familia']);
   assert.deepEqual(entries[0].provenance[0].fields, ['topics']);
   assert.equal(renderFactsModule(entries).includes('No debe proyectarse'), false);
+});
+
+// El lote 34032150352 perdió 53 minutos de investigación porque la proyección
+// leía sólo el caché de Google/Open Library/BNE y trataba a toda biblioteca
+// nacional como BNE. Estas pruebas fijan las dos correcciones.
+test('dos bibliotecas nacionales distintas cuentan como dos proveedores', () => {
+  const entries = projectVerifiedFacts({
+    manifest: manifest({ pages: 320 }),
+    cache: { entries: { [ISBN]: {
+      loc: { records: [{
+        source: 'national_library', source_provider: 'library_of_congress',
+        source_url: 'https://lccn.loc.gov/2013031234', isbn: ISBN, pages: 320,
+      }] },
+      dnb: { records: [{
+        source: 'national_library', source_provider: 'deutsche_nationalbibliothek',
+        source_url: 'https://d-nb.info/1234567X', isbn: ISBN, pages: 320,
+      }] },
+    } } },
+    expected: 1,
+  });
+  assert.equal(entries[0].facts.pages, 320);
+  const proveedores = new Set(entries[0].provenance.map(source => source.provider));
+  assert.ok(proveedores.has('Library of Congress'));
+  assert.ok(proveedores.has('Deutsche Nationalbibliothek'));
+  assert.equal(proveedores.size, 2);
+});
+
+test('una biblioteca nacional desconocida no se publica como oficial', () => {
+  assert.throws(() => projectVerifiedFacts({
+    manifest: manifest({ pages: 320 }),
+    cache: { entries: { [ISBN]: { loc: { records: [{
+      source: 'national_library', source_provider: 'catalogo_inventado',
+      source_url: 'https://ejemplo.test/1', isbn: ISBN, pages: 320,
+    }] } } } },
+    expected: 1,
+  }), /no conserva evidencia suficiente/);
 });

@@ -233,3 +233,33 @@ test('lanza un error claro si no existe el snapshot (no intenta llamar a producc
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('una clasificación asistida gana a las reglas y pierde contra la corrección manual', () => {
+  const dir = makeTempDir();
+  try {
+    const snapshotPath = writeSnapshot(dir, [
+      { id: 'MLU1', title: 'Realidades Y Experiencias', author: 'Alicia Levin', isbn: '9789500000000', status: 'active' },
+      { id: 'MLU2', title: 'Otro Libro Sin Pistas', author: 'Autora Cualquiera', status: 'active' },
+    ]);
+    const correctionsPath = writeCorrections(dir, [
+      { mlu: 'MLU2', type: 'book', primaryCategoryId: 'historia', note: 'manual' },
+    ]);
+    const assistedPath = path.join(dir, 'assisted.json');
+    writeFileSync(assistedPath, JSON.stringify([
+      { mlu: 'MLU1', type: 'book', primaryCategoryId: 'psicologia', subcategoryId: 'psicoanalisis', note: 'asistida' },
+      { mlu: 'MLU2', type: 'book', primaryCategoryId: 'psicologia', note: 'asistida' },
+    ]));
+    const { results, summary } = run({ snapshotPath, outputPath: path.join(dir, 'out.json'), correctionsPath, assistedPath });
+    const byMlu = Object.fromEntries(results.map(result => [result.mlu, result]));
+
+    assert.equal(byMlu.MLU1.primaryCategoryId, 'psicologia');
+    assert.equal(byMlu.MLU1.subcategoryId, 'psicoanalisis');
+    assert.equal(byMlu.MLU1.method, 'assisted');
+    assert.deepEqual(byMlu.MLU1.evidence, ['asistida']);
+    assert.equal(byMlu.MLU2.primaryCategoryId, 'historia');
+    assert.equal(byMlu.MLU2.method, 'manual');
+    assert.equal(summary.assisted_classifications_applied, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

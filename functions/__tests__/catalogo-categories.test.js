@@ -373,6 +373,7 @@ test('pausada muestra "Disponible por encargo" y CTA "Pedir este libro", nunca "
   const html = await res.text();
   assert.match(html, /Disponible por encargo/);
   assert.match(html, /Pedir este libro/);
+  assert.doesNotMatch(html, /Te llega hoy/);
   assert.doesNotMatch(html, /\bpaused\b/i);
   assert.doesNotMatch(html, /\bpausado\b/i);
   assert.doesNotMatch(html, /needsReview/);
@@ -401,6 +402,9 @@ test('a igual relevancia, la activa aparece antes que la pausada', async () => {
   const idxActive = html.indexOf('Manual De Filosofía Estoica'); // MLU9, activa
   const idxPaused = html.indexOf('Ensayo De Filosofía Moderna'); // MLU10, pausada
   assert.ok(idxActive !== -1 && idxPaused !== -1);
+  const activeCard = html.match(/<article class="rc-card">[\s\S]*?Manual De Filosofía Estoica[\s\S]*?<\/article>/)?.[0];
+  assert.match(activeCard || '', /Te llega hoy/);
+  assert.match(activeCard || '', /Montevideo/);
   assert.ok(idxActive < idxPaused, 'la activa debería listarse antes que la pausada en empate de relevancia');
 });
 
@@ -424,4 +428,113 @@ test('en producción, un manifest de pausadas ausente/inválido no rompe /catalo
   const html = await res.text();
   assert.doesNotMatch(html, /Diccionario Inglés Avanzado/);
   assert.match(html, /El Género En Disputa/);
+});
+
+test('selector de categorías: alfabético, sin «Otros libros», comodines al final y sin vacías', async () => {
+  const { sortCategoriesForSelect } = await import('../catalogo.js');
+  const sorted = sortCategoriesForSelect([
+    { id: 'otros-libros', name: 'Otros libros', count: 9 },
+    { id: 'psicologia', name: 'Psicología', count: 3 },
+    { id: 'otros-productos', name: 'Otros productos', count: 2 },
+    { id: 'arte-diseno-fotografia', name: 'Arte, diseño y fotografía', count: 1 },
+    { id: 'derecho', name: 'Derecho', count: 0 },
+    { id: 'educacion', name: 'Educación', count: 4 },
+  ]);
+  assert.deepEqual(sorted.map(c => c.id), ['arte-diseno-fotografia', 'educacion', 'psicologia', 'otros-productos']);
+  const withSelected = sortCategoriesForSelect([
+    { id: 'otros-libros', name: 'Otros libros', count: 9 },
+    { id: 'psicologia', name: 'Psicología', count: 3 },
+  ], 'otros-libros');
+  assert.deepEqual(withSelected.map(c => c.id), ['psicologia', 'otros-libros']);
+});
+
+test('catálogo: encabezado de marca y temas a la vista en vez de «← Amado Libros»', async () => {
+  const { topicNavHtml } = await import('../catalogo.js');
+  const { siteHeaderHtml } = await import('../_shared/site-header.js');
+  const header = siteHeaderHtml({ current: 'libros', showSearch: false });
+  assert.match(header, /href="\/temas">Temas</);
+  assert.match(header, /href="\/catalogo" aria-current="page">Libros</);
+  assert.match(header, /href="\/carrito"/);
+  assert.doesNotMatch(header, /class="header-search"/);
+  const cats = [
+    { id: 'historia', name: 'Historia', count: 5, subcategories: [{ id: 'historia-mundial', name: 'Historia mundial', count: 2 }, { id: 'vacia', name: 'Vacía', count: 0 }] },
+    { id: 'psicologia', name: 'Psicología', count: 9, subcategories: [] },
+    { id: 'otros-libros', name: 'Otros libros', count: 50, subcategories: [] },
+    { id: 'derecho', name: 'Derecho', count: 0, subcategories: [] },
+  ];
+  const index = topicNavHtml({ categories: cats, disponibilidad: 'encargo' });
+  assert.match(index, /Explorá por tema/);
+  assert.ok(index.indexOf('Psicología') < index.indexOf('Historia'), 'los temas más grandes primero');
+  assert.match(index, /href="\/catalogo\?categoria=historia&amp;disponibilidad=encargo"/);
+  assert.doesNotMatch(index, /Otros libros|Derecho/);
+  assert.match(index, /href="\/temas">Todos los temas/);
+  const inside = topicNavHtml({ categories: cats, categoria: 'historia', subcategoria: 'historia-mundial' });
+  assert.match(inside, /← Todos los temas/);
+  assert.match(inside, /class="topic-chip is-current" href="\/catalogo\?categoria=historia&amp;subcategoria=historia-mundial" aria-current="page">Historia mundial/);
+  assert.doesNotMatch(inside, /Vacía/);
+});
+
+test('orden por precio: menor a mayor y mayor a menor, noindex y selector visible', async () => {
+  const asc = await (await catalogRequest(context('https://example.com/catalogo?orden=precio-asc', 'production'))).text();
+  const titlesAsc = ['Sin categoría conocida', 'Eva Luna Historias De Mujeres Varias', 'Manual De Filosofía Estoica', 'Vinilo The Beatles Abbey Road']
+    .map(t => asc.indexOf(t));
+  assert.ok(titlesAsc.every(i => i > -1), 'deben aparecer los títulos');
+  assert.deepEqual([...titlesAsc].sort((a, b) => a - b), titlesAsc, 'precios 500 < 600 < 650 < 700');
+  assert.match(asc, /<meta name="robots" content="noindex, follow">/);
+  assert.match(asc, /<select id="sort-select" name="orden"[^>]*>[\s\S]*value="precio-asc" selected/);
+  const desc = await (await catalogRequest(context('https://example.com/catalogo?orden=precio-desc', 'production'))).text();
+  assert.ok(desc.indexOf('El Género En Disputa') < desc.indexOf('Tarot De Los Ángeles'), '1000 antes que 900');
+  const bogus = await (await catalogRequest(context('https://example.com/catalogo?orden=cualquiera', 'production'))).text();
+  assert.match(bogus, /<meta name="robots" content="index, follow">/);
+});
+
+test('tapas primero: sin imagen o con imagen horizontal quedan después', async () => {
+  const { coverTier } = await import('../catalogo.js');
+  const flagged = new Set(['MLU2']);
+  assert.equal(coverTier({ id: 'MLU1', thumbnail: 'x.jpg' }, flagged), 0);
+  assert.equal(coverTier({ id: 'MLU2', thumbnail: 'x.jpg' }, flagged), 1);
+  assert.equal(coverTier({ id: 'MLU3', thumbnail: '', pictures: [] }, flagged), 2);
+});
+
+// INFORME-ANALITICO: la búsqueda sin resultados queda anotada para el informe
+// semanal; con filtros, con resultados o desde un robot, no.
+function searchMissContext(url, { userAgent = 'Mozilla/5.0 (iPhone) Safari/604.1' } = {}) {
+  const writes = [];
+  const pending = [];
+  const db = { prepare: sql => ({ bind: (...params) => ({ run: async () => { writes.push({ sql, params }); } }) }) };
+  return {
+    writes,
+    pending,
+    ctx: {
+      request: new Request(url, { headers: { 'user-agent': userAgent } }),
+      params: {},
+      env: { APP_ENV: 'preview', ORDERS_DB: db },
+      waitUntil(promise) { pending.push(promise); },
+    },
+  };
+}
+
+test('una búsqueda sin resultados se anota normalizada; con resultados, filtro o robot no', async () => {
+  const miss = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv%20Inexistente');
+  const response = await catalogRequest(miss.ctx);
+  assert.match(await response.text(), /Sin resultados/);
+  await Promise.all(miss.pending);
+  const writes = miss.writes.filter(w => w.sql.includes('search_misses'));
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].params[1], 'zzxqv inexistente');
+
+  const hit = searchMissContext('https://amadolibros.com/catalogo?q=eva%20luna');
+  await catalogRequest(hit.ctx);
+  await Promise.all(hit.pending);
+  assert.equal(hit.writes.filter(w => w.sql.includes('search_misses')).length, 0);
+
+  const filtrada = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv&categoria=literatura-ficcion');
+  await catalogRequest(filtrada.ctx);
+  await Promise.all(filtrada.pending);
+  assert.equal(filtrada.writes.filter(w => w.sql.includes('search_misses')).length, 0);
+
+  const robot = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv', { userAgent: 'Googlebot/2.1' });
+  await catalogRequest(robot.ctx);
+  await Promise.all(robot.pending);
+  assert.equal(robot.writes.filter(w => w.sql.includes('search_misses')).length, 0);
 });

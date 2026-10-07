@@ -12,7 +12,10 @@ import {
 import { SEO_CATEGORIES } from '../_shared/seo-categories.js';
 
 const ITEMS = SEO_CATEGORIES.map((category, index) => ({
-    id: category.kind === 'tarot-decks' ? 'MLU624123456' : `MLU${index + 1}`,
+    id: category.id === 'esoterismo-tarot' ? 'MLU643087668' : category.kind === 'tarot-decks' ? 'MLU624123456'
+
+            : category.tarotFilter === 'study-books' ? 'MLU804612402'
+                : `MLU${index + 1}`,
     title: `Libro de prueba ${category.name}`,
     author: `Autor ${index + 1}`,
     price: 1000 + index,
@@ -89,8 +92,8 @@ test.beforeEach(() => {
 });
 
 test('la allowlist contiene las categorías base y las verticales comerciales aprobadas', () => {
-    assert.equal(SEO_CATEGORIES.length, 14);
-    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 14);
+    assert.equal(SEO_CATEGORIES.length, 18);
+    assert.equal(new Set(SEO_CATEGORIES.map(category => category.id)).size, 18);
     for (const category of SEO_CATEGORIES) {
         assert.match(category.title, /Uruguay.*\| Amado Libros$/);
         assert.ok(category.description.length >= 100);
@@ -126,7 +129,7 @@ test('la landing filtra productos por la categoría solicitada', async () => {
     assert.ok(html.includes(`href="https://www.amadolibros.com/libro/${psychologyItem.id}/`));
     assert.ok(html.includes(`/book-cover/${psychologyItem.id}/cover.jpg`));
     assert.match(html, /srcset="[^"]+240w,[^"]+360w,[^"]+480w"/);
-    assert.match(html, /<strong>1 título disponible ahora\.<\/strong> Los 791 títulos informados en la portada incluyen disponibles y libros que podemos buscar por encargo\./);
+    assert.match(html, /<strong>1 libro<\/strong> · 1 disponible · 0 por encargo/);
 });
 
 test('Biblias une Biblia y Reina-Valera, mientras Reina-Valera conserva su intención propia', async () => {
@@ -167,18 +170,15 @@ test('las landings bíblicas incluyen guía factual y una promesa logística con
     assert.doesNotMatch(html, /entrega gratis en el día en Uruguay/i);
 });
 
-test('la landing de mazos muestra sólo mazos de tarot verificados y su promesa comercial condicionada', async () => {
+test('la landing de mazos unifica tarot y oráculos sin guía ni agrupaciones', async () => {
     const response = await categoryRequest(context('esoterismo-tarot/mazos'));
     const html = await response.text();
-
     assert.equal(response.status, 200);
-    assert.match(html, /Mazos de tarot en Uruguay con entrega hoy en Montevideo/);
-    assert.match(html, /Libro de prueba Mazos de tarot/);
-    assert.match(html, /Los mazos con stock pueden coordinarse para entrega en el día/);
-    assert.match(html, /Envío \$250/);
-    assert.match(html, /Atención personalizada/);
-    assert.match(html, /Cómo elegir un mazo de tarot sin equivocarte de edición/);
-    assert.match(html, /"name":"Mazo de tarot"/);
+    assert.match(html, /Mazos de tarot y oráculos en Uruguay/);
+    assert.match(html, /Libro de prueba Mazos de tarot y oráculos/);
+    assert.match(html, /Te llega hoy/);
+    assert.match(html, /Ordenar por/);
+    assert.doesNotMatch(html, /Cómo elegir un mazo|tarot-module|tarot-finder/);
 });
 
 test('las landings bíblicas conservan el contrato responsive para celular', async () => {
@@ -187,8 +187,8 @@ test('las landings bíblicas conservan el contrato responsive para celular', asy
 
     assert.match(html, /<meta name="viewport" content="width=device-width,initial-scale=1">/);
     assert.match(html, /\.books-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-    assert.match(html, /@media\(max-width:620px\)\{\.header-inner/);
-    assert.match(html, /\.header-search\{grid-column:1\/-1;grid-row:2/);
+    assert.match(html, /<header class="site-header">/);
+    assert.match(html, /\.site-header \.header-search\{grid-column:1\/-1;grid-row:2/);
     assert.match(html, /\.bible-guide-head\{flex-direction:column\}/);
     assert.match(html, /\.bible-cross-link\{width:100%;justify-content:center\}/);
 });

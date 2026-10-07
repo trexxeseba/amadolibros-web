@@ -36,9 +36,13 @@
  * garantizado.
  */
 
+import { isLikelyBot, recordSearchMiss } from './_shared/search-misses.js';
 import { slugify } from './_shared/slug.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
+import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
+import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
+import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
 import {
     buildBookWhatsAppMessage,
     buildWhatsAppMessage,
@@ -64,6 +68,7 @@ import {
     responsiveImage,
 } from './_shared/cloudflare-images.js';
 import { matchesCategoryPath } from './_shared/category-paths.js';
+import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
 
 const MAX_RESULTS = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -107,6 +112,24 @@ function validIsbnKey(value = '') {
  * El array ya llega ordenado por relevancia/criterio comercial, por eso se
  * conserva siempre el primer representante.
  */
+// Selector de categorías: orden alfabético para encontrar un tema de un
+// vistazo; «Otros productos» va al final y las categorías sin libros no se
+// ofrecen. «Otros libros» no es un tema: no se ofrece salvo que ya venga
+// elegido en la URL (sus libros siguen en «Todos» y en la búsqueda).
+const CATCH_ALL_CATEGORY_IDS = new Set(['otros-libros', 'otros-productos']);
+const HIDDEN_FROM_SELECT_IDS = new Set(['otros-libros']);
+export function sortCategoriesForSelect(categories, selectedId = '') {
+    return categories
+        .filter(c => Number(c.count) > 0)
+        .filter(c => !HIDDEN_FROM_SELECT_IDS.has(c.id) || c.id === selectedId)
+        .slice()
+        .sort((a, b) => {
+            const catchAll = Number(CATCH_ALL_CATEGORY_IDS.has(a.id)) - Number(CATCH_ALL_CATEGORY_IDS.has(b.id));
+            if (catchAll !== 0) return catchAll;
+            return String(a.name).localeCompare(String(b.name), 'es');
+        });
+}
+
 export function dedupeCatalogResults(items) {
     const seen = new Set();
     return items.filter(item => {
@@ -221,6 +244,68 @@ function commercialTier(b) {
     return 3;
 }
 
+// Tapas primero: una publicación sin imagen, o cuya primera imagen es
+// horizontal (banner, collage, estuche; ver scripts/ux/cover-shape-audit.mjs),
+// no debería abrir el catálogo. Solo desempata: nunca gana contra relevancia
+// ni contra disponibilidad.
+export function coverTier(book, landscapeIds) {
+    const hasImage = Boolean(book.thumbnail || book.image || (Array.isArray(book.pictures) && book.pictures.length));
+    if (!hasImage) return 2;
+    if (landscapeIds && landscapeIds.has(book.id)) return 1;
+    return 0;
+}
+
+export const SORT_OPTIONS = Object.freeze([
+    { value: '', label: 'Recomendados' },
+    { value: 'precio-asc', label: 'Precio: menor a mayor' },
+    { value: 'precio-desc', label: 'Precio: mayor a menor' },
+]);
+const SORT_VALUES = new Set(SORT_OPTIONS.map(o => o.value).filter(Boolean));
+
+export function sortSelectHtml({ q, categoria, subcategoria, disponibilidad, orden }) {
+    const hidden = Object.entries({ q, categoria, subcategoria, disponibilidad })
+        .filter(([, v]) => v)
+        .map(([k, v]) => `<input type="hidden" name="${k}" value="${escapeHtml(v)}">`)
+        .join('');
+    const options = SORT_OPTIONS.map(o =>
+        `<option value="${o.value}"${o.value === (orden || '') ? ' selected' : ''}>${o.label}</option>`
+    ).join('');
+    return `<form class="sort-form" action="/catalogo" method="get">
+    ${hidden}
+    <label for="sort-select">Ordenar</label>
+    <select id="sort-select" name="orden" onchange="this.form.submit()">${options}</select>
+    <noscript><button type="submit">Aplicar</button></noscript>
+  </form>`;
+}
+
+function numericPrice(book) {
+    const n = Number(book.price);
+    return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Mismo patrón de caché que active-categories: opcional, nunca rompe.
+async function fetchCoverFlags(ctx) {
+    try {
+        const url = new URL('/data/cover-flags.json', ctx.request.url).toString();
+        const cache = caches.default;
+        const cacheKey = new Request(url);
+        let response = await cache.match(cacheKey);
+        if (!response) {
+            const fetched = await fetch(url);
+            if (!fetched.ok) return new Set();
+            response = new Response(fetched.body, {
+                status: fetched.status,
+                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+            });
+            if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        }
+        const data = await response.json();
+        return new Set(Array.isArray(data?.landscape) ? data.landscape : []);
+    } catch {
+        return new Set();
+    }
+}
+
 function httpsImg(url) {
     return (url || '')
         .replace('http://', 'https://')
@@ -293,7 +378,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
   </form>`;
     }
     const catOptions = [`<option value=""${categoria ? '' : ' selected'}>Todos</option>`]
-        .concat(categories.map(c => {
+        .concat(sortCategoriesForSelect(categories, categoria).map(c => {
             const sel = c.id === categoria ? ' selected' : '';
             return `<option value="${escapeHtml(c.id)}"${sel}>${escapeHtml(c.name)} (${c.count})</option>`;
         })).join('\n      ');
@@ -363,9 +448,14 @@ function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, a
 
 const CAT_SELECT_STYLES = `
     .filters-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem}
-    .filters-bar input[type=search]{flex:1;min-width:180px}
+    .filters-bar input[type=search]{flex:1;min-width:180px;min-height:44px;padding:.55rem .85rem;
+                      border:1px solid #d1c8be;border-radius:.5rem;font-size:.95rem;background:#fff;color:#1e293b}
+    .filters-bar input[type=search]:focus{outline:none;border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
+    .filters-bar button[type=submit]{min-height:44px;padding:.55rem 1.1rem;border:0;border-radius:.5rem;
+                      background:#18120e;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer}
+    .filters-bar button[type=submit]:hover{background:#3a302a}
     .cat-select-wrap{display:flex}
-    .cat-select-wrap select{padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
+    .cat-select-wrap select{min-height:44px;padding:.55rem .75rem;border:1px solid #d1c8be;border-radius:.5rem;
                       font-size:.85rem;color:#1e293b;background:#fff;outline:none;max-width:100%}
     .cat-select-wrap select:focus{border-color:#a8957e;box-shadow:0 0 0 3px rgba(168,149,126,.15)}
     .clear-filters{display:inline-block;margin-bottom:1.25rem;font-size:.82rem;
@@ -387,9 +477,15 @@ const CAT_SELECT_STYLES = `
     .availability-tab.is-current{border-color:#18120e;background:#18120e;color:#fff}
     .availability-tab.is-current span{color:#e8ded3}
     .availability-tab:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
-    @media (max-width: 480px){
-      .filters-bar{flex-direction:column}
-      .filters-bar input[type=search],.cat-select-wrap select{width:100%}
+    /* Celular: buscador y botón en una sola fila; los temas ya están a la
+       vista como botones, así que los desplegables se ocultan (siguen en el
+       formulario y conservan la categoría al buscar). Así el primer libro
+       aparece en la primera pantalla. */
+    @media (max-width: 700px){
+      .filters-bar{flex-wrap:nowrap}
+      .filters-bar input[type=search]{min-width:0}
+      .filters-bar .cat-select-wrap{display:none}
+      .availability-tab{min-height:40px;padding:.4rem .5rem;font-size:.74rem}
     }
 `;
 
@@ -428,15 +524,51 @@ function parsePageParam(raw) {
 // Forma canónica de una URL del catálogo: siempre el mismo orden de
 // parámetros y sin `page` cuando es la primera. Se usa para el canonical y
 // para cada enlace de paginación, así una misma vista tiene una sola URL.
-function catalogPath({ q, categoria, subcategoria, disponibilidad, page }) {
+function catalogPath({ q, categoria, subcategoria, disponibilidad, orden, page }) {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (categoria) params.set('categoria', categoria);
     if (subcategoria) params.set('subcategoria', subcategoria);
     if (disponibilidad) params.set('disponibilidad', disponibilidad);
+    if (orden) params.set('orden', orden);
     if (page && page > 1) params.set('page', String(page));
     const qs = params.toString();
     return qs ? `/catalogo?${qs}` : '/catalogo';
+}
+
+// Temas a la vista: sin categoría elegida, una fila con todos los temas
+// (los más grandes primero) y el acceso a /temas; con categoría, sus
+// subtemas. Antes quedaban escondidos dentro del desplegable «Todos».
+// Los más grandes a la vista; el resto, a un toque en /temas.
+const TOPIC_NAV_LIMIT = 12;
+export function topicNavHtml({ categories = [], categoria = '', subcategoria = '', disponibilidad = '' }) {
+    if (!categories.length) return '';
+    if (!categoria) {
+        const topics = categories
+            .filter(c => Number(c.count) > 0 && c.id !== 'otros-libros' && c.id !== 'otros-productos')
+            .slice()
+            .sort((a, b) => Number(b.count) - Number(a.count))
+            .slice(0, TOPIC_NAV_LIMIT);
+        if (!topics.length) return '';
+        const links = topics.map(c =>
+            `<a class="topic-chip" href="${escapeHtml(catalogPath({ categoria: c.id, disponibilidad }))}">${escapeHtml(c.name)}</a>`
+        ).join('');
+        return `<nav class="topic-nav" aria-label="Explorar por tema">
+    <p class="topic-nav-title">Explorá por tema</p>
+    <div class="topic-chips">${links}<a class="topic-chip topic-chip-all" href="/temas">Todos los temas →</a></div>
+  </nav>`;
+    }
+    const selected = categories.find(c => c.id === categoria);
+    const subs = (selected?.subcategories || []).filter(s => Number(s.count) > 0);
+    const back = `<a class="topic-chip topic-chip-back" href="${escapeHtml(catalogPath({ disponibilidad }))}">← Todos los temas</a>`;
+    const all = `<a class="topic-chip${subcategoria ? '' : ' is-current'}" href="${escapeHtml(catalogPath({ categoria, disponibilidad }))}"${subcategoria ? '' : ' aria-current="page"'}>Todo ${escapeHtml(selected?.name || '')}</a>`;
+    const subLinks = subs.map(sub => {
+        const current = sub.id === subcategoria;
+        return `<a class="topic-chip${current ? ' is-current' : ''}" href="${escapeHtml(catalogPath({ categoria, subcategoria: sub.id, disponibilidad }))}"${current ? ' aria-current="page"' : ''}>${escapeHtml(sub.name)}</a>`;
+    }).join('');
+    return `<nav class="topic-nav" aria-label="Subtemas">
+    <div class="topic-chips">${back}${all}${subLinks}</div>
+  </nav>`;
 }
 
 // Ventana de páginas: primera, última, actual y sus vecinas inmediatas.
@@ -457,13 +589,34 @@ function paginationWindow(page, totalPages) {
     return cells;
 }
 
+// Atajos editoriales para que el catálogo completo no dependa de recorrer
+// cientos de veces “Siguiente”. Repartimos 16 puntos de entrada de forma
+// uniforme entre la primera y la última página. En un catálogo de 400
+// páginas, cualquier tramo queda a no más de ~14 pasos de uno de estos
+// accesos, en vez de quedar a casi 200 desde un extremo.
+//
+// Los enlaces viven en un <details> visible y usable: en mobile ocupa una
+// sola línea hasta que la persona decide abrirlo, pero siguen siendo anchors
+// HTML server-side (sin JavaScript ni contenido exclusivo para crawlers).
+const CATALOG_SHORTCUT_COUNT = 16;
+
+function paginationShortcuts(totalPages) {
+    if (totalPages <= 9) return [];
+    const count = Math.min(CATALOG_SHORTCUT_COUNT, totalPages);
+    const pages = new Set();
+    for (let index = 0; index < count; index += 1) {
+        pages.add(1 + Math.round(index * (totalPages - 1) / (count - 1)));
+    }
+    return [...pages].sort((a, b) => a - b);
+}
+
 // Dos filas, pensadas para mobile primero:
 //   fila 1 → ‹ Anterior · Página N de M · Siguiente ›
 //   fila 2 → 1 … n-1 [n] n+1 … M
 // Todo son <a href> reales: la navegación funciona sin JavaScript. Los
 // extremos deshabilitados se renderizan como <span>, nunca como enlaces a
 // una página inexistente.
-function paginationHtml({ page, totalPages, hrefFor }) {
+function paginationHtml({ page, totalPages, hrefFor, showCatalogShortcuts = false }) {
     if (totalPages <= 1) return '';
 
     const prevControl = page > 1
@@ -484,6 +637,19 @@ function paginationHtml({ page, totalPages, hrefFor }) {
         return `<a class="pg-num" href="${escapeHtml(hrefFor(cell))}" aria-label="${label}">${cell}</a>`;
     }).join('');
 
+    const shortcutPages = showCatalogShortcuts ? paginationShortcuts(totalPages) : [];
+    const shortcuts = shortcutPages.length > 0
+        ? `<details class="pg-shortcuts">
+    <summary>Ir a otra parte del catálogo</summary>
+    <div class="pg-shortcut-links" aria-label="Accesos a tramos del catálogo">
+      ${shortcutPages.map(target => target === page
+            ? `<span class="pg-shortcut is-current" aria-current="page">Página ${target}</span>`
+            : `<a class="pg-shortcut" href="${escapeHtml(hrefFor(target))}">Página ${target}</a>`
+        ).join('')}
+    </div>
+  </details>`
+        : '';
+
     return `<nav class="pg" aria-label="Paginación de resultados">
   <div class="pg-row pg-main">
     ${prevControl}
@@ -491,6 +657,7 @@ function paginationHtml({ page, totalPages, hrefFor }) {
     ${nextControl}
   </div>
   <div class="pg-row pg-nums">${numbers}</div>
+  ${shortcuts}
 </nav>`;
 }
 
@@ -512,6 +679,18 @@ const PAGINATION_STYLES = `
     .pg-gap{border:0;background:none;color:#94a3b8;min-width:24px}
     .pg-status{flex:1;text-align:center;font-size:.8rem;color:#64748b}
     .pg-ctl:focus-visible,.pg-num:focus-visible{outline:2px solid #a94e3d;
+        outline-offset:2px}
+    .pg-shortcuts{margin-top:.25rem;border-top:1px solid #e2dbd0;padding-top:.65rem}
+    .pg-shortcuts summary{width:max-content;max-width:100%;margin:0 auto;cursor:pointer;
+        color:#4a3d30;font-size:.8rem;font-weight:700;list-style-position:inside}
+    .pg-shortcut-links{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem;
+        margin-top:.65rem}
+    .pg-shortcut{display:inline-flex;align-items:center;justify-content:center;
+        min-height:44px;padding:.35rem .6rem;border:1px solid #e2dbd0;border-radius:999px;
+        background:#fff;color:#4a3d30;font-size:.75rem;text-decoration:none}
+    .pg-shortcut:hover{background:#f5efe6}
+    .pg-shortcut.is-current{background:#18120e;color:#fff;border-color:#18120e}
+    .pg-shortcut:focus-visible,.pg-shortcuts summary:focus-visible{outline:2px solid #a94e3d;
         outline-offset:2px}
 `;
 
@@ -568,6 +747,8 @@ export async function onRequest(ctx) {
             headers: { Location: `${clean.pathname}${clean.search}` },
         });
     }
+    const rawOrden = url.searchParams.get('orden')?.trim() ?? '';
+    const orden = SORT_VALUES.has(rawOrden) ? rawOrden : '';
     const rawCategoria = url.searchParams.get('categoria')?.trim() ?? '';
     const rawSubcategoria = url.searchParams.get('subcategoria')?.trim() ?? '';
 
@@ -694,12 +875,26 @@ export async function onRequest(ctx) {
         if (disponibilidad === 'encargo') return b.status === 'paused';
         return true;
     });
+    const landscapeIds = categoryFeaturesEnabled ? await fetchCoverFlags(ctx) : new Set();
     const ranked = availabilityMatches
         .map(b => ({ book: b, rank: usedFuzzy ? RANK.FUZZY : relevanceRank(b, rankCtx) }))
         .sort((a, b) => {
-            if (a.rank !== b.rank) return a.rank - b.rank;
+            if (orden) {
+                // Por precio: los que no tienen precio (encargo a cotizar) al final.
+                const pa = numericPrice(a.book);
+                const pb = numericPrice(b.book);
+                if (pa === null || pb === null) {
+                    if (pa !== pb) return pa === null ? 1 : -1;
+                } else if (pa !== pb) {
+                    return orden === 'precio-asc' ? pa - pb : pb - pa;
+                }
+            } else if (a.rank !== b.rank) {
+                return a.rank - b.rank;
+            }
             const tier = commercialTier(a.book) - commercialTier(b.book);
             if (tier !== 0) return tier;
+            const cover = coverTier(a.book, landscapeIds) - coverTier(b.book, landscapeIds);
+            if (cover !== 0) return cover;
             // CATALOGO-PAGINACION-1: desempate final por id. Sin esto el orden
             // de los empatados depende de la posición en el JSON de R2, que el
             // cron regenera a diario: al paginar, un mismo libro podría
@@ -728,6 +923,14 @@ export async function onRequest(ctx) {
     }
 
     const page      = pageParam.page;
+    // INFORME-ANALITICO: una búsqueda sin filtros que no encontró nada es
+    // demanda sin atender. Sólo la primera página, sólo personas, sólo donde
+    // hay base de pedidos; nunca demora ni rompe la respuesta.
+    if (rawQ && totalResults === 0 && !categoria && !subcategoria && !disponibilidad
+        && ctx.env?.ORDERS_DB && typeof ctx.waitUntil === 'function'
+        && !isLikelyBot(ctx.request.headers.get('user-agent'))) {
+        ctx.waitUntil(recordSearchMiss({ db: ctx.env.ORDERS_DB, query: rawQ }));
+    }
     const offset    = (page - 1) * MAX_RESULTS;
     const limited   = filtered.slice(offset, offset + MAX_RESULTS);
     const rangeFrom = totalResults === 0 ? 0 : offset + 1;
@@ -757,9 +960,13 @@ export async function onRequest(ctx) {
             widths: [240, 360, 480],
             defaultWidth: 360,
             sizes: CARD_IMAGE_SIZES,
+            ...cardCoverImageOptions(b.id),
         });
         const img = escapeHtml(image.src);
-        const title = escapeHtml(b.title);
+        // Título limpio para leer (sin «De Autor. Editorial X, Tapa Blanda»);
+        // el título fuente, el slug y la búsqueda no cambian.
+        const display = deriveBookDisplayTitle(b);
+        const title = escapeHtml(display.removedParts.length ? display.title : b.title);
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
@@ -782,7 +989,7 @@ export async function onRequest(ctx) {
             : `<div class="rc-no-img">📚</div>`;
 
         const badge = available
-            ? `<span class="rc-badge available">Disponible</span>`
+            ? deliveryBadgeHtml(true)
             : isPaused
                 ? `<span class="rc-badge order">Disponible por encargo</span>`
                 : `<span class="rc-badge order">No disponible</span>`;
@@ -882,7 +1089,9 @@ export async function onRequest(ctx) {
     // Sin filtro: página de índice, indexable, con metadatos/JSON-LD ricos
     // para SEO (comportamiento previo). Con filtro: noindex, evita
     // contenido delgado/duplicado en resultados de búsqueda/categoría.
-    const isIndex = !hasFilter;
+    // Un orden distinto al recomendado es otra vista de la misma lista: no se
+    // indexa y canonicaliza al catálogo limpio.
+    const isIndex = !hasFilter && !orden;
     const metaDescription = isIndex
         ? page > 1
             ? `Página ${page} de ${totalPages} del catálogo de Amado Libros: títulos disponibles y por encargo, con envíos a todo Uruguay.`
@@ -892,7 +1101,7 @@ export async function onRequest(ctx) {
     // que el crawler descubra las fichas enlazadas desde los resultados.
     const robotsMeta = isIndex
         ? 'index, follow'
-        : (rawQ || disponibilidad) ? 'noindex, follow' : 'noindex';
+        : (rawQ || disponibilidad || orden) ? 'noindex, follow' : 'noindex';
     // La secuencia limpia /catalogo?page=N tiene canonical propio. Las vistas
     // con búsqueda/categoría/subcategoría siguen noindex y canonicalizan al
     // catálogo limpio: no abrimos un segundo espacio SEO de filtros.
@@ -902,8 +1111,9 @@ export async function onRequest(ctx) {
     const paginationBlock = paginationHtml({
         page,
         totalPages,
+        showCatalogShortcuts: isIndex,
         hrefFor: target => catalogPath({
-            q: rawQ, categoria, subcategoria, disponibilidad, page: target,
+            q: rawQ, categoria, subcategoria, disponibilidad, orden, page: target,
         }),
     });
     const jsonLd = isIndex
@@ -943,17 +1153,32 @@ export async function onRequest(ctx) {
   <meta name="twitter:description" content="${metaDescription}">
   <meta name="twitter:image" content="${BASE}/images/logo-amado.webp">
   ${faviconHeadHtml()}
+  ${SITE_FONTS_HEAD}
   ${jsonLd}
   <style>
+    ${DELIVERY_BADGE_STYLES}
+    ${CARD_COVER_FRAMING_STYLES}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          background:#faf7f2;color:#1e293b;line-height:1.5}
     .wrap{max-width:1100px;margin:0 auto;padding:1.25rem 1rem 3rem}
-    nav{font-size:.875rem;margin-bottom:1.25rem}
-    nav a{color:#3b82f6;text-decoration:none}
-    nav a:hover{text-decoration:underline}
+    ${SITE_HEADER_STYLES}
+    .topic-nav{margin:0 0 .75rem}
+    .topic-nav-title{margin-bottom:.45rem;color:#a94e3d;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .topic-chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+    .topic-chip{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:.45rem .85rem;border:1px solid #d1c8be;border-radius:999px;background:#fff;color:#18120e;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
+    .topic-chip:hover{background:#f5efe6}
+    .topic-chip.is-current{border-color:#18120e;background:#18120e;color:#fff}
+    .topic-chip-all{border-color:#18120e}
+    .topic-chip-back{color:#a94e3d}
+    @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
     .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
+    .results-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem 1rem;margin-bottom:.5rem}
+    .results-bar .sub{margin-bottom:0}
+    .sort-form{display:flex;align-items:center;gap:.45rem;font-size:.84rem;color:#4a3d30}
+    .sort-form label{font-weight:700}
+    .sort-form select{min-height:40px;padding:.4rem .6rem;border:1px solid #d1c8be;border-radius:.5rem;background:#fff;font-size:.84rem;color:#1e293b}
     .grid{display:grid;gap:1rem;
           grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
     @media(min-width:500px){.grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
@@ -971,6 +1196,8 @@ export async function onRequest(ctx) {
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
     .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
+    .rc-card .delivery-today{padding:.2rem .5rem;font-size:.72rem;border-radius:.4rem}
+    .rc-card .delivery-today span{display:none}
     .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .rc-title-link{text-decoration:none;color:inherit}
@@ -1018,13 +1245,17 @@ export async function onRequest(ctx) {
   </style>
 </head>
 <body>
+${siteHeaderHtml({ current: 'libros', showSearch: false })}
 <div class="wrap">
-  <nav><a href="/">← Amado Libros</a></nav>
+  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
   ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
   ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
   <h1>${heading}</h1>
-  <p class="sub">${subText}</p>
+  <div class="results-bar">
+    <p class="sub">${subText}</p>
+    ${totalResults > 1 ? sortSelectHtml({ q: rawQ, categoria, subcategoria, disponibilidad, orden }) : ''}
+  </div>
   ${totalResults > 0
     ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
     : `<div class="empty">${emptyMessage}</div>`
@@ -1035,6 +1266,7 @@ export async function onRequest(ctx) {
   </footer>
 </div>
 <script src="/search-autocomplete.js" defer></script>
+${SITE_HEADER_SCRIPT}
 </body>
 </html>`;
 

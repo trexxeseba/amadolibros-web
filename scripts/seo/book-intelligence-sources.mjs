@@ -15,6 +15,16 @@ export const SOURCE_CACHE_SCHEMA_VERSION = 1;
 export const GOOGLE_BOOKS_CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 export const OPEN_LIBRARY_CACHE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 export const BNE_CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+// Un registro MARC de biblioteca nacional es estable: se cachea un año, igual
+// que BNE.
+export const NATIONAL_LIBRARY_CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+export const SOURCE_CACHE_TTL_MS = Object.freeze({
+  google_books: GOOGLE_BOOKS_CACHE_TTL_MS,
+  open_library: OPEN_LIBRARY_CACHE_TTL_MS,
+  bne: BNE_CACHE_TTL_MS,
+  loc: NATIONAL_LIBRARY_CACHE_TTL_MS,
+  dnb: NATIONAL_LIBRARY_CACHE_TTL_MS,
+});
 export const OPEN_LIBRARY_MAX_ISBNS_PER_REQUEST = 20;
 export const DEFAULT_OPEN_LIBRARY_BATCH_BUDGET = 25;
 export const OPEN_LIBRARY_ADAPTER_VERSION = 2;
@@ -238,11 +248,7 @@ export function isSourceCacheFresh(cache, isbn, source, { now = Date.now() } = {
   if (source === 'open_library' && entry.adapter_version !== OPEN_LIBRARY_ADAPTER_VERSION) return false;
   const fetchedAt = Date.parse(entry.fetched_at);
   if (!Number.isFinite(fetchedAt)) return false;
-  const ttl = source === 'open_library'
-    ? OPEN_LIBRARY_CACHE_TTL_MS
-    : source === 'bne'
-      ? BNE_CACHE_TTL_MS
-      : GOOGLE_BOOKS_CACHE_TTL_MS;
+  const ttl = SOURCE_CACHE_TTL_MS[source] ?? GOOGLE_BOOKS_CACHE_TTL_MS;
   return now - fetchedAt >= 0 && now - fetchedAt < ttl;
 }
 
@@ -272,6 +278,8 @@ export function planBookSourceResearch(items, cache = {}, {
   googleBooksBudget = 300,
   openLibraryBudget = DEFAULT_OPEN_LIBRARY_BATCH_BUDGET,
   bneBudget = 0,
+  locBudget = 0,
+  dnbBudget = 0,
   now = Date.now(),
 } = {}) {
   const eligible = (Array.isArray(items) ? items : [])
@@ -296,6 +304,14 @@ export function planBookSourceResearch(items, cache = {}, {
   const bne = uniqueByIsbn
     .filter(item => !isSourceCacheFresh(cache, item.isbn, 'bne', { now }))
     .slice(0, Math.max(0, bneBudget));
+  const loc = uniqueByIsbn
+    .filter(item => !isSourceCacheFresh(cache, item.isbn, 'loc', { now }))
+    .slice(0, Math.max(0, locBudget));
+  const dnb = uniqueByIsbn
+    .filter(item => !isSourceCacheFresh(cache, item.isbn, 'dnb', { now }))
+    .slice(0, Math.max(0, dnbBudget));
+
+  const pending = source => uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, source, { now })).length;
 
   return {
     schema_version: 1,
@@ -303,9 +319,13 @@ export function planBookSourceResearch(items, cache = {}, {
     google_books: googleBooks.map(item => ({ id: item.id || null, isbn: item.isbn })),
     open_library: openLibrary.map(item => ({ id: item.id || null, isbn: item.isbn })),
     bne: bne.map(item => ({ id: item.id || null, isbn: item.isbn })),
-    cached_google_books: uniqueByIsbn.length - uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, 'google_books', { now })).length,
-    cached_open_library: uniqueByIsbn.length - uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, 'open_library', { now })).length,
-    cached_bne: uniqueByIsbn.length - uniqueByIsbn.filter(item => !isSourceCacheFresh(cache, item.isbn, 'bne', { now })).length,
+    loc: loc.map(item => ({ id: item.id || null, isbn: item.isbn })),
+    dnb: dnb.map(item => ({ id: item.id || null, isbn: item.isbn })),
+    cached_google_books: uniqueByIsbn.length - pending('google_books'),
+    cached_open_library: uniqueByIsbn.length - pending('open_library'),
+    cached_bne: uniqueByIsbn.length - pending('bne'),
+    cached_loc: uniqueByIsbn.length - pending('loc'),
+    cached_dnb: uniqueByIsbn.length - pending('dnb'),
   };
 }
 
@@ -323,7 +343,15 @@ async function fetchJson(url, {
       signal: controller.signal,
     });
     if (!response?.ok) {
-      const error = new Error(`HTTP ${response?.status || 0}`);
+      // El motivo que da la API (p. ej. «Quota exceeded … per day») distingue
+      // la cuota diaria de un límite por minuto; sin él, un 429 no se puede
+      // diagnosticar después.
+      let reason = '';
+      try {
+        const body = await response.json();
+        reason = clean(body?.error?.message || body?.error?.errors?.[0]?.reason).slice(0, 200);
+      } catch {}
+      const error = new Error(`HTTP ${response?.status || 0}${reason ? ` — ${reason}` : ''}`);
       error.status = Number(response?.status) || 0;
       error.retryAfter = clean(response?.headers?.get?.('retry-after')) || null;
       throw error;
@@ -365,22 +393,51 @@ export async function fetchGoogleBooksEvidence(isbn, {
   return [];
 }
 
-export async function fetchOpenLibraryBatchEvidence(isbns, {
+export function buildOpenLibraryIsbnUrl(isbn) {
+  const normalized = normalizeValidIsbn(isbn);
+  if (!normalized) throw new Error('ISBN inválido para Open Library.');
+  return `https://openlibrary.org/isbn/${normalized}.json`;
+}
+
+/**
+ * Registro de la EDICIÓN por ISBN. `/api/books` (Books API por lotes) dejó de
+ * existir: el 2026-09-25 respondió HTTP 404 a las 1.382 consultas, con uno o
+ * varios ISBN (sonda en book-source-probe.yml). `/isbn/{isbn}.json` sigue vivo
+ * y redirige al registro de la edición exacta. Un 404 ahí significa que Open
+ * Library no conoce ese ISBN: es un resultado («sin datos»), no un error.
+ */
+export async function fetchOpenLibraryIsbnEvidence(isbn, {
   fetchImpl,
   timeoutMs,
   userAgent = 'AmadoLibros-BookIntelligence/1.0',
   contact,
 } = {}) {
   if (!clean(contact)) throw new Error('Open Library requiere un contacto identificable para este cliente.');
-  const url = buildOpenLibraryBatchUrl(isbns);
-  const payload = await fetchJson(url, {
-    fetchImpl,
-    timeoutMs,
-    headers: {
-      'user-agent': `${clean(userAgent)} (${clean(contact)})`,
-    },
-  });
-  return parseOpenLibraryEvidence(payload, isbns);
+  const normalized = normalizeValidIsbn(isbn);
+  let edition;
+  try {
+    edition = await fetchJson(buildOpenLibraryIsbnUrl(normalized), {
+      fetchImpl,
+      timeoutMs,
+      headers: {
+        'user-agent': `${clean(userAgent)} (${clean(contact)})`,
+      },
+    });
+  } catch (error) {
+    if (error?.status === 404) return [];
+    throw error;
+  }
+  return parseOpenLibraryEvidence({ [`ISBN:${normalized}`]: edition }, [normalized]);
+}
+
+// Se conserva la firma por lotes que usa el orquestador, pero cada ISBN se
+// pide por separado al endpoint de edición.
+export async function fetchOpenLibraryBatchEvidence(isbns, options = {}) {
+  const records = [];
+  for (const isbn of isbns) {
+    records.push(...await fetchOpenLibraryIsbnEvidence(isbn, options));
+  }
+  return records;
 }
 
 export function emptySourceCache() {
@@ -391,13 +448,23 @@ export function emptySourceCache() {
   };
 }
 
+// Las fuentes que el caché resumible sabe guardar. Agregar un catálogo nuevo
+// exige sumarlo acá o su evidencia se descarta en silencio.
+export const CACHEABLE_SOURCES = Object.freeze([
+  'google_books',
+  'open_library',
+  'bne',
+  'loc',
+  'dnb',
+]);
+
 export function mergeSourceCache(cache, isbn, source, records, {
   fetchedAt = new Date().toISOString(),
   error = null,
 } = {}) {
   const normalized = normalizeValidIsbn(isbn);
   if (!normalized) throw new Error('ISBN inválido para caché.');
-  if (!['google_books', 'open_library', 'bne'].includes(source)) throw new Error('Fuente no cacheable.');
+  if (!CACHEABLE_SOURCES.includes(source)) throw new Error('Fuente no cacheable.');
   const next = JSON.parse(JSON.stringify(cache?.entries ? cache : emptySourceCache()));
   next.schema_version = SOURCE_CACHE_SCHEMA_VERSION;
   next.generated_at = fetchedAt;

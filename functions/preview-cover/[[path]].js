@@ -1,7 +1,4 @@
-import {
-    findPreviewCover,
-    previewCoverSummary,
-} from '../_shared/preview-cover.js';
+import { previewCoverSummary } from '../_shared/preview-cover.js';
 
 function notFound() {
     return new Response('Not found', {
@@ -37,20 +34,23 @@ export async function onRequest(context) {
     const [productId, rawPosition, filename] = parts;
     const position = Number(rawPosition);
     const fileMatch = /^([a-f0-9]{64})\.(jpg|png|webp)$/.exec(filename || '');
-    if (!fileMatch) return notFound();
-
-    const cover = await findPreviewCover(context, productId, position);
-    if (!cover || cover.sha256 !== fileMatch[1] || cover.extension !== fileMatch[2]) {
-        return notFound();
-    }
+    if (!fileMatch || !/^MLU\d+$/.test(productId) || !/^(?:[0-9]|1[0-5])$/.test(rawPosition) ||
+        !Number.isInteger(position)) return notFound();
+    // A content-addressed public URL already identifies its immutable object.
+    // The mutable catalog pointer is consulted when generating URLs, not when
+    // serving them. Previously every image decoded the entire mirror manifest.
+    const sha256 = fileMatch[1];
+    const extension = fileMatch[2];
+    const objectKey = `covers/v1/objects/${sha256}.${extension}`;
+    const mime = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
 
     try {
-        const object = await context.env.COVER_R2.get(cover.objectKey);
+        const object = await context.env.COVER_R2.get(objectKey);
         if (!object?.body) return notFound();
         const headers = new Headers({
-            'Content-Type': cover.mime,
+            'Content-Type': mime,
             'Cache-Control': 'public, max-age=31536000, immutable',
-            'ETag': `"${cover.sha256}"`,
+            'ETag': `"${sha256}"`,
             'X-Content-Type-Options': 'nosniff',
             'X-Amado-Cover-Source': context.env.APP_ENV === 'production'
                 ? 'r2-production'
