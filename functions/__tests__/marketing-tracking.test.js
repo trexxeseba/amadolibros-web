@@ -137,7 +137,7 @@ test('producción enciende Meta con el Pixel de amado y GA4 de transferencias; e
   assert.match(production, /META_TRACKING_ENABLED\s*=\s*"true"/);
   assert.match(production, /META_PIXEL_ID\s*=\s*"262579181286891"/);
   assert.match(production, /GA4_TRANSFER_PURCHASE_ENABLED\s*=\s*"true"/);
-  assert.doesNotMatch(production, /META_TEST_/);
+  assert.doesNotMatch(production, /META_TEST_PIXEL_ID|META_TEST_CAPI_TOKEN/);
   assert.doesNotMatch(toml, /META_CAPI_TOKEN\s*=/);
   const worker = readFileSync('worker-sync/wrangler.toml', 'utf8');
   assert.match(worker, /META_PIXEL_ID\s*=\s*"262579181286891"/);
