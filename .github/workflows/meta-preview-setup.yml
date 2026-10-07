@@ -1,0 +1,104 @@
+name: Meta — verificar el Pixel de pruebas (Preview)
+
+# Sólo lectura sobre Cloudflare, más un evento de prueba a Meta:
+#
+# 1. Lista qué secretos existen de verdad en Cloudflare Pages (Preview y
+#    Production). Sólo nombres: Cloudflare nunca devuelve los valores.
+# 2. Si wrangler.toml tiene META_TEST_PIXEL_ID y META_TEST_EVENT_CODE en
+#    Preview y existe el secreto de GitHub META_TEST_CAPI_TOKEN (entorno
+#    `preview`), manda UN PageView de prueba a la API de conversiones de Meta
+#    y muestra `events_received` (recepción real, del lado de Meta).
+#
+# No escribe nada en Cloudflare ni toca producción: no usa META_PIXEL_ID ni
+# META_CAPI_TOKEN, y el evento va con el código de prueba.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/meta-preview-setup.yml'
+      - 'wrangler.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meta-preview-setup
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    name: Verificar Pixel de pruebas
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Secretos que existen en Cloudflare Pages (sólo nombres)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          {
+            echo '## Secretos en Cloudflare Pages (amadolibros-web)'
+            for envname in preview production; do
+              echo ''
+              echo "### $envname"
+              echo '```'
+              npx wrangler@3.114.17 pages secret list --project-name amadolibros-web --env "$envname" 2>&1 \
+                | grep -E '^\s*-|No secrets|error|Error' || echo '(no se pudo listar)'
+              echo '```'
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Evento de prueba real a Meta (recepción)
+        env:
+          META_TEST_CAPI_TOKEN: ${{ secrets.META_TEST_CAPI_TOKEN }}
+        run: |
+          node --input-type=module -e '
+            import { readFileSync, appendFileSync } from "node:fs";
+            const summary = (line) => { console.log(line); appendFileSync(process.env.GITHUB_STEP_SUMMARY, line + "\n"); };
+            const toml = readFileSync("wrangler.toml", "utf8");
+            const preview = toml.slice(toml.indexOf("[env.preview.vars]"), toml.indexOf("[[env.production"));
+            const read = (name) => (preview.match(new RegExp("^" + name + "\\s*=\\s*\"([^\"]*)\"", "m")) || [])[1] || "";
+            const pixel = read("META_TEST_PIXEL_ID");
+            const code = read("META_TEST_EVENT_CODE");
+            const token = process.env.META_TEST_CAPI_TOKEN || "";
+            summary("## Prueba de recepción en Meta");
+            if (!/^\d{5,20}$/.test(pixel) || !code || !token) {
+              summary(`Falta algo: Pixel de pruebas ${pixel ? "ok" : "FALTA"}, código de prueba ${code ? "ok" : "FALTA"}, token ${token ? "ok" : "FALTA"}.`);
+              process.exit(0);
+            }
+            const body = {
+              data: [{
+                event_name: "PageView",
+                event_time: Math.floor(Date.now() / 1000),
+                event_id: "setup_check_" + process.env.GITHUB_RUN_ID,
+                action_source: "website",
+                event_source_url: "https://www.amadolibros.com/",
+                user_data: { client_user_agent: "amadolibros-meta-preview-setup" },
+              }],
+              test_event_code: code,
+              access_token: token,
+            };
+            const res = await fetch(`https://graph.facebook.com/v21.0/${pixel}/events`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (res.ok) {
+              summary(`Meta respondió HTTP ${res.status}: events_received=${json.events_received ?? "?"}. Debe verse en Eventos de prueba con el código ${code}.`);
+            } else {
+              const err = json.error || {};
+              summary(`Meta rechazó el evento: HTTP ${res.status}, código ${err.code ?? "?"} — ${String(err.message || "").slice(0, 200)}`);
+              process.exit(1);
+            }
+          '
