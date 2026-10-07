@@ -43,6 +43,9 @@ INDEXNOW_ENABLED = "true"
 INDEXNOW_KEY = "944e65e97fd0a8c242c495ccf458d3c3"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
+# El Worker sólo corre en producción. Lo lee la medición de Meta para no exigir
+# código de eventos de prueba; sin META_TRACKING_ENABLED no envía nada.
+APP_ENV = "production"
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
 # Binding name: CATALOG_R2

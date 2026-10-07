@@ -6,6 +6,7 @@ import { resolveConfig } from './_env_config.js';
 import { sendSaleNotification as defaultSendSaleNotification } from './_sale_notification.js';
 import { orderEmailService as defaultOrderEmailService } from './_order_email.js';
 import { sendGa4Purchase as defaultSendGa4Purchase } from './_ga4_measurement.js';
+import { sendMetaPurchase as defaultSendMetaPurchase } from '../_shared/purchase-tracking.js';
 
 const MAX_BODY_BYTES = 32768;
 
@@ -154,6 +155,7 @@ export function createMpWebhookHandler({
   saleNotifier = defaultSendSaleNotification,
   orderEmails  = defaultOrderEmailService,
   purchaseAnalytics = { sendPurchase: defaultSendGa4Purchase },
+  metaPurchase = { sendPurchase: defaultSendMetaPurchase },
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -341,6 +343,23 @@ export function createMpWebhookHandler({
 
       if (typeof context.waitUntil === 'function') context.waitUntil(notification);
       else await notification;
+    }
+
+    // Meta (API de conversiones): sólo después de que D1 quedó en approved, y
+    // fuera de la respuesta a Mercado Pago. El envío decide solo si corre
+    // (flag META_TRACKING_ENABLED + consentimiento del comprador) y es
+    // idempotente por pedido, así que un webhook repetido no duplica la compra.
+    if (normalized === 'approved') {
+      const meta = Promise.resolve()
+        .then(() => metaPurchase.sendPurchase({ db, env, orderId: order.id, now }))
+        .catch(error => {
+          console.error('[mp_webhook] falló el envío de la compra a Meta', {
+            order_id: order.id,
+            error: error?.name || 'Error',
+          });
+        });
+      if (typeof context.waitUntil === 'function') context.waitUntil(meta);
+      else await meta;
     }
 
     return json({ ok: true });

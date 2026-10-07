@@ -51,6 +51,7 @@ import {
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
+import { trackTransferPurchase } from '../_shared/purchase-tracking.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
 import { healthSection } from '../_shared/panel-health.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
@@ -1191,6 +1192,16 @@ export async function onRequest(context) {
 
     if (accion === 'transferencia') {
       const transferFlash = await confirmTransfer({ db, order: found.order });
+      // La compra se informa a GA4 y Meta sólo si la transferencia quedó
+      // marcada; en segundo plano, para no demorar el panel. Idempotente por
+      // pedido; GA4 detrás de GA4_TRANSFER_PURCHASE_ENABLED (sólo producción)
+      // y Meta detrás de META_TRACKING_ENABLED, por separado.
+      if (transferFlash.ok) {
+        const tracking = trackTransferPurchase({ db, env: context.env, orderId: found.order.id })
+          .catch(error => console.error('[panel] falló el envío de la compra', { error: error?.name || 'Error' }));
+        if (typeof context.waitUntil === 'function') context.waitUntil(tracking);
+        else await tracking;
+      }
       const fresh = await loadOrder(db, found.order.public_code) || found;
       return htmlResponse(orderPage(fresh, { pickup, transferFlash }), { status: transferFlash.ok ? 200 : 422 });
     }

@@ -55,6 +55,7 @@ import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
+import { processPendingMetaPurchases } from '../functions/_shared/purchase-tracking.js';
 import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import {
   addCompressedIndexes,
@@ -84,6 +85,12 @@ export default {
         }),
         processPendingGa4Purchases(env).catch(error => {
           console.error('[GA4 purchase] Error de reintento', error?.name || 'Error');
+          return { status: 'error' };
+        }),
+        // Compras para Meta pendientes: llegaron antes que la atribución o el
+        // envío falló. No hace nada sin META_TRACKING_ENABLED.
+        processPendingMetaPurchases(env).catch(error => {
+          console.error('[Meta purchase] Error de reintento', error?.name || 'Error');
           return { status: 'error' };
         }),
       ]));
