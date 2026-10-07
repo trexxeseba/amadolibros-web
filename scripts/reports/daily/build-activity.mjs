@@ -137,6 +137,45 @@ function originBlock(ga4) {
   return lines.join('\n') || 'Sin datos de origen.';
 }
 
+// Ciudades que en un sitio uruguayo casi siempre son servidores o rastreadores
+// (centros de datos), no compradores. Es una pista, no una prueba.
+const DATACENTER_CITIES = new Set(['Beijing', 'Harbin', 'Council Bluffs', 'Ashburn', 'Boardman', 'The Dalles', 'Lanzhou', 'Hangzhou']);
+
+function botBlock(ga4) {
+  const rows = (ga4.yesterday.cities || []).filter(r => DATACENTER_CITIES.has(r.city));
+  const total = rows.reduce((sum, r) => sum + Number(r.sessions || 0), 0);
+  if (!total) return '';
+  return `\n\nPosible tráfico automático (ciudades de centros de datos): ${total} visitas — ${rows.map(r => `${r.city} ${r.sessions}`).join(' · ')}. Es una pista, no una prueba.`;
+}
+
+function funnelBlock(ga4) {
+  const y = ga4.yesterday;
+  const sessions = Number(y.totals?.[0]?.sessions || 0);
+  // Con pocas visitas un porcentaje engaña: mismo criterio que el semanal.
+  if (sessions < 30) return '';
+  const steps = [
+    ['abrieron una ficha', event(y, 'view_item')],
+    ['agregaron al carrito', event(y, 'add_to_cart')],
+    ['crearon un pedido', event(y, 'begin_checkout')],
+  ];
+  return '\n\n**Embudo del día**: ' + steps.map(([label, n]) => `${n} ${label}`).join(' → ')
+    + ` (de ${fmtNumber(sessions)} visitas).`;
+}
+
+function pendingBlock(d1) {
+  const orders = rowsOf(d1.orders);
+  if (!orders) return '';
+  const open = orders.filter(o => o.status === 'open');
+  if (!open.length) return '';
+  const items = rowsOf(d1.items) || [];
+  const rows = open.map(order => {
+    const books = items.filter(i => i.order_id === order.id).map(i => shortTitle(i.title)).join('; ') || '—';
+    return [order.public_code, books, fmtMoney(order.payable_total_uyu), order.delivery_type === 'pickup' ? 'retiro' : 'envío'];
+  });
+  return ['', '**Para seguir hoy** (pedidos sin pagar: conviene escribirle al cliente)', '',
+    table(['Pedido', 'Libros', 'Total', 'Entrega'], rows)].join('\n');
+}
+
 function actionsBlock(ga4, d1) {
   const y = ga4 && !ga4.error ? ga4.yesterday : null;
   const w = ga4 && !ga4.error ? ga4.lastWeek : null;
@@ -159,7 +198,7 @@ function actionsBlock(ga4, d1) {
     lines.push('- Pedidos de aviso de stock: sin dato');
   }
 
-  const misses = rowsOf(d1.search_misses);
+  const misses = rowsOf(d1.search_misses)?.filter(r => !/^zzz/i.test(String(r.query || '').trim()));
   if (misses) {
     lines.push(misses.length
       ? `- Buscaron y no encontraron: ${misses.slice(0, 10).map(r => `«${r.query}»${Number(r.count) > 1 ? ` (${r.count})` : ''}`).join(', ')}`
@@ -206,15 +245,15 @@ export function buildActivityReport({ periods, ga4, d1 = {} }) {
     '# Amado Libros — informe diario',
     `Ayer, **${dayLabel(periods.yesterday.date)}**. Entre paréntesis, la diferencia con el ${dayLabel(periods.lastWeek.date)}.`,
     '## Visitas',
-    ga4Ok ? trafficBlock(ga4) : `Sin dato de GA4 (${reason}).`,
+    ga4Ok ? trafficBlock(ga4) + botBlock(ga4) : `Sin dato de GA4 (${reason}).`,
     '## Qué miraron',
     ga4Ok ? whatTheySawBlock(ga4) : 'Sin dato de GA4.',
     '## De dónde vinieron',
     ga4Ok ? originBlock(ga4) : 'Sin dato de GA4.',
     '## Qué hicieron',
-    actionsBlock(ga4Ok ? ga4 : null, d1),
+    actionsBlock(ga4Ok ? ga4 : null, d1) + (ga4Ok ? funnelBlock(ga4) : ''),
     '## Pedidos de ayer',
-    ordersBlock(d1, periods),
+    ordersBlock(d1, periods) + '\n' + pendingBlock(d1),
     '_GA4 cuenta lo que registra el navegador: quien usa bloqueador de anuncios no aparece. Los pedidos salen de la base y son la cifra real._',
   ].join('\n\n') + '\n';
 }
