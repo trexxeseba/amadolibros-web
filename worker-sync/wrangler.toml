@@ -46,6 +46,9 @@ GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
 # El Worker sólo corre en producción. Lo lee la medición de Meta para no exigir
 # código de eventos de prueba; sin META_TRACKING_ENABLED no envía nada.
 APP_ENV = "production"
+META_TRACKING_ENABLED = "true"
+META_PIXEL_ID = "262579181286891"
+# META_CAPI_TOKEN: secreto, se carga en el panel de Cloudflare.
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
 # Binding name: CATALOG_R2

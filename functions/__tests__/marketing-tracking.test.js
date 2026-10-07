@@ -131,11 +131,17 @@ test('la configuración pública nunca expone el token', async () => {
   assert.doesNotMatch(body, /EAAB|token/i);
 });
 
-test('producción no enciende la medición nueva desde wrangler.toml', () => {
+test('producción enciende Meta con el Pixel de amado; GA4 de transferencias sigue apagado; el token nunca está en el repo', () => {
   const toml = readFileSync('wrangler.toml', 'utf8');
   const production = toml.slice(toml.indexOf('[env.production.vars]'));
-  assert.doesNotMatch(production, /META_TRACKING_ENABLED|GA4_TRANSFER_PURCHASE_ENABLED/);
+  assert.match(production, /META_TRACKING_ENABLED\s*=\s*"true"/);
+  assert.match(production, /META_PIXEL_ID\s*=\s*"262579181286891"/);
+  assert.doesNotMatch(production, /GA4_TRANSFER_PURCHASE_ENABLED/);
+  assert.doesNotMatch(production, /META_TEST_/);
   assert.doesNotMatch(toml, /META_CAPI_TOKEN\s*=/);
+  const worker = readFileSync('worker-sync/wrangler.toml', 'utf8');
+  assert.match(worker, /META_PIXEL_ID\s*=\s*"262579181286891"/);
+  assert.doesNotMatch(worker, /META_CAPI_TOKEN\s*=/);
 });
 
 // ─── Datos personales ────────────────────────────────────────────────────────
