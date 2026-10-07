@@ -122,6 +122,9 @@ GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
 # panel de Cloudflare, nunca acá.
 META_TRACKING_ENABLED = "true"
 META_PIXEL_ID = "262579181286891"
+# GA4: las ventas por transferencia (marcadas «recibida» en el panel) cuentan
+# como compra en Google Analytics. Independiente de Meta.
+GA4_TRANSFER_PURCHASE_ENABLED = "true"
 # Cuenta con Google (CUENTA-1): Client ID web, dato público.
 GOOGLE_CLIENT_ID = "667747565315-gae311rp9pd3hndfnng7vrq2evkh4bk1.apps.googleusercontent.com"
 # Sección «Salud» de /panel: habilita la consulta a la API de GitHub para
