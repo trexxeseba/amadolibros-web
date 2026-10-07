@@ -58,6 +58,21 @@ jobs:
             done
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: ¿La vista previa tiene el Pixel encendido?
+        run: |
+          URL="https://pr-389.amadolibros-web.pages.dev"
+          {
+            echo '## Vista previa (pr-389)'
+            echo ''
+            echo '`/api/tracking/config` →'
+            echo '```'
+            curl -sS --max-time 30 "$URL/api/tracking/config" || echo '(no respondió)'
+            echo ''
+            echo '```'
+            echo "meta-tracking.js → HTTP $(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' "$URL/meta-tracking.js")"
+            echo "ficha de prueba → HTTP $(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' "$URL/")"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Evento de prueba real a Meta (recepción)
         env:
           META_TEST_CAPI_TOKEN: ${{ secrets.META_TEST_CAPI_TOKEN }}
