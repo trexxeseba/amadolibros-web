@@ -55,10 +55,7 @@ bucket_name = "amadolibros-images-preview"
 APP_ENV           = "preview"
 MP_COLLECTOR_ID   = "3559407834"
 CHECKOUT_ENABLED  = "true"
-# TEMPORAL (PR de medición Meta/GA4): vista previa de ESTA rama, para que
-# Mercado Pago devuelva al comprador y avise el pago a este despliegue (el que
-# tiene el código de Meta). Restaurar antes de sacar el PR de borrador: "https://feature-2-n-e1-production-re.amadolibros-web.pages.dev"
-CANONICAL_ORIGIN  = "https://pr-389.amadolibros-web.pages.dev"
+CANONICAL_ORIGIN  = "https://feature-2-n-e1-production-re.amadolibros-web.pages.dev"
 STOCK_WAITLIST_TURNSTILE_SITE_KEY = "0x4AAAAAAD6E9kz8K3comwjj"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"
