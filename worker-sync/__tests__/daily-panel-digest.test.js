@@ -74,3 +74,15 @@ test('si Resend falla, libera la reserva para que el segundo disparo reintente',
 test('sin configuración no manda nada y no rompe', async () => {
   assert.deepEqual(await sendDailyPanelDigest({}, { now: NOW, fetchFn: async () => { throw new Error('no debe llamar'); } }), { status: 'skipped', reason: 'config' });
 });
+
+test('una prueba manual marca el asunto, no gasta la reserva del día y no la libera si falla', async () => {
+  const env = ENV();
+  const subjects = [];
+  const fetchFn = async (url, init) => { subjects.push(JSON.parse(init.body).subject); return { ok: true, status: 200 }; };
+  assert.equal((await sendDailyPanelDigest(env, { now: NOW, fetchFn, test: true })).status, 'sent');
+  assert.match(subjects[0], /^\[PRUEBA\] Amado Libros — hoy:/);
+  assert.equal(env.AMADO_KV.m.size, 0);
+  // El correo real de la mañana sale igual.
+  assert.equal((await sendDailyPanelDigest(env, { now: NOW, fetchFn })).status, 'sent');
+  assert.doesNotMatch(subjects[1], /PRUEBA/);
+});

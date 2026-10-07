@@ -131,6 +131,13 @@ export default {
       return json(result, result.status === 'error' ? 502 : 200);
     }
 
+    // Prueba manual del correo diario: manda ahora, marcado [PRUEBA], sin tocar
+    // la reserva del día.
+    if (request.method === 'POST' && url.pathname === '/panel-digest-test') {
+      const result = await sendDailyPanelDigest(env, { test: true });
+      return json(result, result.status === 'sent' ? 200 : 502);
+    }
+
     if (request.method === 'POST' && url.pathname === '/measure') {
       const result = await runMeasure(env);
       return json(result, result.status === 'measured' ? 200 : 500);

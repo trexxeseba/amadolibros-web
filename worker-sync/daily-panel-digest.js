@@ -171,7 +171,7 @@ async function sendEmail({ apiKey, from, to, email, idempotencyKey }, fetchFn) {
  * `skipped`: ya se mandó hoy, o falta configuración. `failed`: Resend no lo
  * aceptó (la reserva se libera para que el segundo cron del día lo reintente).
  */
-export async function sendDailyPanelDigest(env, { now = new Date(), fetchFn = globalThis.fetch } = {}) {
+export async function sendDailyPanelDigest(env, { now = new Date(), fetchFn = globalThis.fetch, test = false } = {}) {
   const apiKey = cleanString(env?.RESEND_API_KEY);
   const from = cleanString(env?.SALES_NOTIFICATION_FROM);
   const to = recipients(env);
@@ -179,20 +179,25 @@ export async function sendDailyPanelDigest(env, { now = new Date(), fetchFn = gl
 
   const today = montevideoDay(now).date;
   const claimKey = `digest:panel:${today}`;
-  if (env.AMADO_KV) {
+  // Una prueba manual no gasta ni libera la reserva del día: el correo real de
+  // las 08:03 sale igual.
+  const useClaim = Boolean(env.AMADO_KV) && !test;
+  if (useClaim) {
     if (await env.AMADO_KV.get(claimKey)) return { status: 'skipped', reason: 'already_sent' };
     await env.AMADO_KV.put(claimKey, now.toISOString(), { expirationTtl: 3 * 86_400 });
   }
 
   try {
     const data = await loadDigestData(env.ORDERS_DB, now);
-    const result = await sendEmail({ apiKey, from, to, email: buildDigestEmail(data), idempotencyKey: `panel-digest/${today}` }, fetchFn);
+    const email = buildDigestEmail(data);
+    if (test) email.subject = `[PRUEBA] ${email.subject}`;
+    const result = await sendEmail({ apiKey, from, to, email, idempotencyKey: test ? `panel-digest-test/${now.toISOString()}` : `panel-digest/${today}` }, fetchFn);
     if (result.ok) return { status: 'sent', toShip: data.toShip.length, unpaid: data.unpaid.length };
-    if (env.AMADO_KV) await env.AMADO_KV.delete(claimKey);
+    if (useClaim) await env.AMADO_KV.delete(claimKey);
     console.warn('[panel digest] Resend no lo aceptó', { status: result.status, error: result.error });
     return { status: 'failed' };
   } catch (error) {
-    if (env.AMADO_KV) await env.AMADO_KV.delete(claimKey);
+    if (useClaim) await env.AMADO_KV.delete(claimKey);
     console.warn('[panel digest] error', error?.name || 'Error');
     return { status: 'failed' };
   }
