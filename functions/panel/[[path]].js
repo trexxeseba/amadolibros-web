@@ -52,6 +52,7 @@ import {
 } from '../_shared/panel-auth.js';
 import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
 import { trackTransferPurchase } from '../_shared/purchase-tracking.js';
+import { followUpLinks } from '../_shared/panel-followup.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
 import { healthSection } from '../_shared/panel-health.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
@@ -362,6 +363,9 @@ function layout(title, body, { nav = '' } = {}) {
            background:var(--acento); color:#fff; font:inherit; font-size:.9rem;
            font-weight:600; cursor:pointer; }
   button:hover { filter:brightness(1.08); }
+  a.btn { display:inline-block; margin:.5rem .5rem 0 0; padding:.6rem 1.15rem; border-radius:9px;
+          background:var(--acento); color:#fff; font-size:.9rem; font-weight:600; text-decoration:none; }
+  a.btn:hover { filter:brightness(1.08); }
   button[disabled] { background:var(--borde); color:var(--tinta-suave); cursor:not-allowed;
                      filter:none; }
   .logout, .linkbtn { background:none; color:var(--tinta-media);
@@ -668,6 +672,21 @@ function transferCard(order, events, flash) {
 </section>`;
 }
 
+function followUpCard(order, items) {
+  const links = followUpLinks(order, items);
+  if (!links) return '';
+  return `
+<section class="card">
+  <h2>Seguimiento: pedido sin pagar</h2>
+  <p class="muted">Escribile hoy, mientras todavía lo tiene presente. El mensaje ya está armado; lo revisás y tocás enviar.</p>
+  <p>
+    ${links.whatsapp ? `<a class="btn" href="${escapeHtml(links.whatsapp)}" target="_blank" rel="noopener">Escribirle por WhatsApp</a>` : '<span class="muted">Sin teléfono válido para WhatsApp.</span>'}
+    ${links.mailto ? `<a class="btn" href="${escapeHtml(links.mailto)}">Escribirle por correo</a>` : ''}
+  </p>
+  <p class="nota">“${escapeHtml(links.texto)}”</p>
+</section>`;
+}
+
 function orderPage(found, { pickup, flash = null, transferFlash = null } = {}) {
   const { order, items, events } = found;
   const units = items.reduce((total, item) => total + Number(item.quantity || 0), 0);
@@ -721,6 +740,8 @@ function orderPage(found, { pickup, flash = null, transferFlash = null } = {}) {
     <dt>Despachado</dt><dd>${shortDate(order.fulfilled_at)}</dd>
   </dl>
 </section>
+
+${followUpCard(order, items)}
 
 ${transferCard(order, events, transferFlash)}
 
