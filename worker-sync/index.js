@@ -51,6 +51,7 @@ import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
+import { sendDailyPanelDigest } from './daily-panel-digest.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
@@ -94,6 +95,14 @@ export default {
           return { status: 'error' };
         }),
       ]));
+      return;
+    }
+    // Correo diario del panel (08:03 Montevideo; el segundo disparo, una hora
+    // después, solo actúa si el primero no llegó a mandarlo).
+    if (event?.cron === '3 11 * * *' || event?.cron === '3 12 * * *') {
+      ctx.waitUntil(sendDailyPanelDigest(env).then(result => {
+        console.log('[panel digest]', JSON.stringify(result));
+      }));
       return;
     }
     ctx.waitUntil(runSync(env, { source: 'cron' }));
