@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   dayOrdinal,
+  flattenRichResults,
+  inspectUrl,
   parseIsoDate,
   rotationSlice,
   sitemapUrls,
@@ -71,4 +73,63 @@ test('resume PASS, errores, coverage y canonical mismatch por cohorte', () => {
   assert.equal(summary.cohorts.by_request.pass, 1);
   assert.equal(summary.cohorts.active.errors, 1);
   assert.equal(summary.coverageStates['Submitted and indexed'], 1);
+});
+
+const RICH_RESULTS_FIXTURE = {
+  verdict: 'PASS',
+  detectedItems: [
+    {
+      richResultType: 'Merchant listings',
+      items: [
+        { name: 'Libro', issues: [{ issueMessage: 'Missing field "priceValidUntil"', severity: 'WARNING' }] },
+        { name: 'Libro', issues: [{ issueMessage: 'Missing field "priceValidUntil"', severity: 'WARNING' }] },
+      ],
+    },
+    { richResultType: 'Breadcrumbs', items: [{ name: 'Sin nombre' }] },
+    {
+      richResultType: 'Product snippets',
+      items: [{ name: 'Libro', issues: [{ issueMessage: 'Missing field "image"', severity: 'ERROR' }] }],
+    },
+  ],
+};
+
+test('aplana tipos y problemas de resultados enriquecidos sin duplicar', () => {
+  assert.deepEqual(flattenRichResults(RICH_RESULTS_FIXTURE), {
+    richResultsVerdict: 'PASS',
+    richResultTypes: 'Breadcrumbs | Merchant listings | Product snippets',
+    richResultIssues: 'ERROR: Missing field "image" | WARNING: Missing field "priceValidUntil"',
+  });
+  assert.deepEqual(flattenRichResults(undefined), {
+    richResultsVerdict: '', richResultTypes: '', richResultIssues: '',
+  });
+});
+
+test('inspectUrl incorpora resultados enriquecidos y el resumen los cuenta', async () => {
+  const fetchFn = async () => ({
+    inspectionResult: {
+      indexStatusResult: { verdict: 'PASS', coverageState: 'Submitted and indexed' },
+      richResultsResult: RICH_RESULTS_FIXTURE,
+    },
+  });
+  const ok = await inspectUrl({ page: 'https://example.com/a', cohort: 'active', rotationIndex: 0 }, { siteUrl: 's', accessToken: 't', fetchFn });
+  assert.equal(ok.richResultTypes, 'Breadcrumbs | Merchant listings | Product snippets');
+
+  const plain = await inspectUrl(
+    { page: 'https://example.com/b', cohort: 'active', rotationIndex: 1 },
+    { siteUrl: 's', accessToken: 't', fetchFn: async () => ({ inspectionResult: { indexStatusResult: { verdict: 'NEUTRAL' } } }) },
+  );
+  assert.equal(plain.richResultTypes, '');
+
+  const failed = await inspectUrl(
+    { page: 'https://example.com/c', cohort: 'active', rotationIndex: 2 },
+    { siteUrl: 's', accessToken: 't', fetchFn: async () => { throw new Error('HTTP 429'); } },
+  );
+  assert.equal(failed.richResultIssues, '');
+  assert.equal(failed.error, 'HTTP 429');
+
+  const summary = summarizeInspectionRows([ok, plain, failed]);
+  assert.equal(summary.richResults.withDetectedItems, 1);
+  assert.equal(summary.richResults.withErrors, 1);
+  assert.equal(summary.richResults.types['Merchant listings'], 1);
+  assert.equal(summary.richResults.issues['WARNING: Missing field "priceValidUntil"'], 1);
 });

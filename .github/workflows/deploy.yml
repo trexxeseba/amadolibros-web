@@ -263,6 +263,26 @@ jobs:
           printf '%s' "$PANEL_PASSWORD" |
             npx wrangler@3.114.17 pages secret put PANEL_PASSWORD --project-name amadolibros-web
 
+      # Qué commit sirve producción, en un archivo público y sin datos
+      # sensibles. Lo lee deploy-freshness.yml para avisar (y relanzar una vez)
+      # cuando un deploy se cancela y main queda sin publicar.
+      - name: Write build.json
+        env:
+          BUILD_SHA: ${{ github.sha }}
+          BUILD_RUN_ID: ${{ github.run_id }}
+          BUILD_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            fs.writeFileSync("astro-front/dist/build.json", JSON.stringify({
+              sha: process.env.BUILD_SHA,
+              run_id: Number(process.env.BUILD_RUN_ID),
+              run_attempt: Number(process.env.BUILD_RUN_ATTEMPT),
+              built_at: new Date().toISOString(),
+            }) + "\n");
+          '
+          cat astro-front/dist/build.json
+
       - name: Deploy via Wrangler
         run: npx wrangler@3.114.17 pages deploy ./astro-front/dist --project-name amadolibros-web --branch main
         env:

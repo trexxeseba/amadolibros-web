@@ -495,3 +495,46 @@ test('tapas primero: sin imagen o con imagen horizontal quedan después', async 
   assert.equal(coverTier({ id: 'MLU2', thumbnail: 'x.jpg' }, flagged), 1);
   assert.equal(coverTier({ id: 'MLU3', thumbnail: '', pictures: [] }, flagged), 2);
 });
+
+// INFORME-ANALITICO: la búsqueda sin resultados queda anotada para el informe
+// semanal; con filtros, con resultados o desde un robot, no.
+function searchMissContext(url, { userAgent = 'Mozilla/5.0 (iPhone) Safari/604.1' } = {}) {
+  const writes = [];
+  const pending = [];
+  const db = { prepare: sql => ({ bind: (...params) => ({ run: async () => { writes.push({ sql, params }); } }) }) };
+  return {
+    writes,
+    pending,
+    ctx: {
+      request: new Request(url, { headers: { 'user-agent': userAgent } }),
+      params: {},
+      env: { APP_ENV: 'preview', ORDERS_DB: db },
+      waitUntil(promise) { pending.push(promise); },
+    },
+  };
+}
+
+test('una búsqueda sin resultados se anota normalizada; con resultados, filtro o robot no', async () => {
+  const miss = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv%20Inexistente');
+  const response = await catalogRequest(miss.ctx);
+  assert.match(await response.text(), /Sin resultados/);
+  await Promise.all(miss.pending);
+  const writes = miss.writes.filter(w => w.sql.includes('search_misses'));
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].params[1], 'zzxqv inexistente');
+
+  const hit = searchMissContext('https://amadolibros.com/catalogo?q=eva%20luna');
+  await catalogRequest(hit.ctx);
+  await Promise.all(hit.pending);
+  assert.equal(hit.writes.filter(w => w.sql.includes('search_misses')).length, 0);
+
+  const filtrada = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv&categoria=literatura-ficcion');
+  await catalogRequest(filtrada.ctx);
+  await Promise.all(filtrada.pending);
+  assert.equal(filtrada.writes.filter(w => w.sql.includes('search_misses')).length, 0);
+
+  const robot = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv', { userAgent: 'Googlebot/2.1' });
+  await catalogRequest(robot.ctx);
+  await Promise.all(robot.pending);
+  assert.equal(robot.writes.filter(w => w.sql.includes('search_misses')).length, 0);
+});

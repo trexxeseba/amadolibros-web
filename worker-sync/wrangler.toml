@@ -43,6 +43,12 @@ INDEXNOW_ENABLED = "true"
 INDEXNOW_KEY = "944e65e97fd0a8c242c495ccf458d3c3"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
+# El Worker sólo corre en producción. Lo lee la medición de Meta para no exigir
+# código de eventos de prueba; sin META_TRACKING_ENABLED no envía nada.
+APP_ENV = "production"
+META_TRACKING_ENABLED = "true"
+META_PIXEL_ID = "262579181286891"
+# META_CAPI_TOKEN: secreto, se carga en el panel de Cloudflare.
 
 # ── R2: destino del catálogo ──────────────────────────────────────────────────
 # Binding name: CATALOG_R2
@@ -68,7 +74,8 @@ binding = "IMAGES"
 binding = "AMADO_KV"
 id      = "6ea0ff4682d647118442a24fe384abc4"
 
-# D1 productiva: únicamente lee y actualiza solicitudes de aviso de stock.
+# D1 productiva: lee y actualiza solicitudes de aviso de stock y anota el
+# resumen de cada sync en catalog_sync_log (INFORME-ANALITICO).
 [[d1_databases]]
 binding = "ORDERS_DB"
 database_name = "amadolibros-orders-production"

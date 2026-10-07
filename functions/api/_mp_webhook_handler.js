@@ -6,6 +6,7 @@ import { resolveConfig } from './_env_config.js';
 import { sendSaleNotification as defaultSendSaleNotification } from './_sale_notification.js';
 import { orderEmailService as defaultOrderEmailService } from './_order_email.js';
 import { sendGa4Purchase as defaultSendGa4Purchase } from './_ga4_measurement.js';
+import { sendMetaPurchase as defaultSendMetaPurchase } from '../_shared/purchase-tracking.js';
 
 const MAX_BODY_BYTES = 32768;
 
@@ -49,15 +50,27 @@ function normalizeStatus(mpStatus) {
   return null;
 }
 
+// Lo que se guarda de cada notificación: el id del pago y los códigos de
+// Mercado Pago que explican el resultado. Sin datos del pagador.
+function paymentPayload(payment, extra = {}) {
+  return JSON.stringify({
+    payment_id: payment.id,
+    ...extra,
+    status_detail: payment.status_detail ?? null,
+    payment_method_id: payment.payment_method_id ?? null,
+    payment_type_id: payment.payment_type_id ?? null,
+  });
+}
+
 async function applyApproved(db, order, payment, now, queueAnalytics = false) {
   const eventId  = `mp:${payment.id}:approved`;
   const paidAt   = payment.date_approved || now.toISOString();
-  const payload  = JSON.stringify({ payment_id: payment.id, amount: payment.transaction_amount });
+  const payload  = paymentPayload(payment, { amount: payment.transaction_amount });
   const statements = [
     db.prepare(
-      "UPDATE orders SET payment_status='approved', status='paid', payment_id=?, paid_at=?, updated_at=? " +
-      "WHERE id=? AND payment_status!='approved'"
-    ).bind(String(payment.id), paidAt, now.toISOString(), order.id),
+      "UPDATE orders SET payment_status='approved', status='paid', payment_id=?, paid_at=?, " +
+      "paid_amount_uyu=?, updated_at=? WHERE id=? AND payment_status!='approved'"
+    ).bind(String(payment.id), paidAt, order.payable_total_uyu, now.toISOString(), order.id),
     db.prepare(
       "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'payment_approved',?,?)"
     ).bind(eventId, order.id, payload, now.toISOString()),
@@ -82,7 +95,7 @@ async function applyApproved(db, order, payment, now, queueAnalytics = false) {
 
 async function applyPending(db, order, payment, now) {
   const eventId = `mp:${payment.id}:pending`;
-  const payload = JSON.stringify({ payment_id: payment.id });
+  const payload = paymentPayload(payment);
   return db.batch([
     db.prepare(
       "UPDATE orders SET payment_status='pending', payment_id=?, updated_at=? " +
@@ -96,7 +109,7 @@ async function applyPending(db, order, payment, now) {
 
 async function applyRejected(db, order, payment, now) {
   const eventId = `mp:${payment.id}:rejected`;
-  const payload = JSON.stringify({ payment_id: payment.id });
+  const payload = paymentPayload(payment);
   return db.batch([
     db.prepare(
       "UPDATE orders SET payment_status='rejected', payment_id=?, updated_at=? " +
@@ -110,7 +123,7 @@ async function applyRejected(db, order, payment, now) {
 
 async function applyCancelled(db, order, payment, now) {
   const eventId = `mp:${payment.id}:cancelled`;
-  const payload = JSON.stringify({ payment_id: payment.id });
+  const payload = paymentPayload(payment);
   return db.batch([
     db.prepare(
       "UPDATE orders SET payment_status='cancelled', payment_id=?, updated_at=? " +
@@ -124,7 +137,7 @@ async function applyCancelled(db, order, payment, now) {
 
 async function applyRefunded(db, order, payment, now) {
   const eventId = `mp:${payment.id}:refunded`;
-  const payload = JSON.stringify({ payment_id: payment.id });
+  const payload = paymentPayload(payment);
   return db.batch([
     db.prepare(
       "UPDATE orders SET payment_status='refunded', payment_id=?, updated_at=? " +
@@ -142,6 +155,7 @@ export function createMpWebhookHandler({
   saleNotifier = defaultSendSaleNotification,
   orderEmails  = defaultOrderEmailService,
   purchaseAnalytics = { sendPurchase: defaultSendGa4Purchase },
+  metaPurchase = { sendPurchase: defaultSendMetaPurchase },
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -329,6 +343,23 @@ export function createMpWebhookHandler({
 
       if (typeof context.waitUntil === 'function') context.waitUntil(notification);
       else await notification;
+    }
+
+    // Meta (API de conversiones): sólo después de que D1 quedó en approved, y
+    // fuera de la respuesta a Mercado Pago. El envío decide solo si corre
+    // (flag META_TRACKING_ENABLED + consentimiento del comprador) y es
+    // idempotente por pedido, así que un webhook repetido no duplica la compra.
+    if (normalized === 'approved') {
+      const meta = Promise.resolve()
+        .then(() => metaPurchase.sendPurchase({ db, env, orderId: order.id, now }))
+        .catch(error => {
+          console.error('[mp_webhook] falló el envío de la compra a Meta', {
+            order_id: order.id,
+            error: error?.name || 'Error',
+          });
+        });
+      if (typeof context.waitUntil === 'function') context.waitUntil(meta);
+      else await meta;
     }
 
     return json({ ok: true });
