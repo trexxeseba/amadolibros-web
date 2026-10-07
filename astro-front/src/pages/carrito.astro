@@ -2919,6 +2919,9 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
         if (window.AmadoAnalytics) {
           window.AmadoAnalytics.trackWhatsApp({ ctaLocation: 'checkout_order' });
         }
+        // Meta Contact: este botón abre WhatsApp con window.open, no es un <a>,
+        // así que el detector de links de meta-tracking.js no lo ve.
+        (window.AmadoMetaQueue = window.AmadoMetaQueue || []).push(['Contact', {}]);
         window.open(
           waContext
             ? waContext.href(message)

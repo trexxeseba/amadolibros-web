@@ -685,6 +685,27 @@ test('auditoría navegador: clic en WhatsApp dispara Contact por Pixel y CAPI', 
   assert.equal(post.event_id, contact[3].eventID);
 });
 
+test('auditoría navegador: el botón de WhatsApp del carrito (window.open) también encola Contact', async () => {
+  const carrito = readFileSync('astro-front/src/pages/carrito.astro', 'utf8');
+  assert.match(carrito, /AmadoMetaQueue[\s\S]{0,80}\['Contact', \{\}\][\s\S]{0,40}window\.open\(/);
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  b.window.AmadoMetaQueue.push(['Contact', {}]);
+  const contact = b.fbqCalls.find(c => c[0] === 'track' && c[1] === 'Contact');
+  assert.ok(contact);
+  const post = b.posts.find(p => p.event_name === 'Contact');
+  assert.equal(post.event_id, contact[3].eventID);
+});
+
+test('auditoría navegador: PageView sale como evento estándar (sin objeto vacío)', async () => {
+  const b = browser({ consent: 'granted' });
+  await tick(); await tick();
+  const pageView = b.fbqCalls.find(c => c[0] === 'track' && c[1] === 'PageView');
+  assert.ok(pageView);
+  assert.equal(pageView[2], undefined);
+  assert.match(pageView[3].eventID, /^page_view_/);
+});
+
 test('auditoría navegador: la URL enviada al servidor sólo lleva parámetros de campaña', async () => {
   const b = browser({ consent: 'granted' });
   await tick(); await tick();

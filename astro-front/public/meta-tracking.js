@@ -208,7 +208,10 @@
       eventId = String(data.eventId || '') || randomId(slug(name));
     }
 
-    window.fbq('track', name, custom || {}, { eventID: eventId });
+    // PageView va sin parámetros: con un objeto vacío Meta puede listarlo como
+    // «evento personalizado» en vez de estándar.
+    if (custom) window.fbq('track', name, custom, { eventID: eventId });
+    else window.fbq('track', name, undefined, { eventID: eventId });
     if (name === 'Purchase') {
       storageSet(window.localStorage, PURCHASE_KEY_PREFIX + data.publicCode, '1');
     } else {
