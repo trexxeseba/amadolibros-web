@@ -214,7 +214,7 @@ jobs:
           # la página, así que es variable de repositorio y no secreto. Si no
           # está definida, queda vacía y el bloque de cuenta no se muestra —
           # el checkout funciona igual que antes.
-          PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          PUBLIC_GOOGLE_CLIENT_ID: '667747565315-gae311rp9pd3hndfnng7vrq2evkh4bk1.apps.googleusercontent.com'
         run: npm run build
 
       - name: Sync Resend secret to Cloudflare Pages
