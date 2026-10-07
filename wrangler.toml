@@ -118,6 +118,10 @@ STOCK_WAITLIST_TURNSTILE_SITE_KEY = "0x4AAAAAAD_Ul8KGae_hdWwj"
 SALES_NOTIFICATION_FROM = "Amado Libros <web@notificaciones.amadolibros.com>"
 SALES_NOTIFICATION_TO   = "undiaes@gmail.com,adm@amadolibros.com"
 GA4_MEASUREMENT_ID = "G-SDX45VEPP3"
+# Meta: Pixel de amado. El token META_CAPI_TOKEN es secreto y se carga en el
+# panel de Cloudflare, nunca acá.
+META_TRACKING_ENABLED = "true"
+META_PIXEL_ID = "262579181286891"
 # Sección «Salud» de /panel: habilita la consulta a la API de GitHub para
 # mostrar la última corrida de los reportes automáticos (cacheada 10 min en
 # KV). Sólo en Producción: en Preview, tests y dev el panel no sale a
