@@ -43,6 +43,7 @@ import {
 
 const MAX_BODY_BYTES = 16384;
 export const RATE_LIMIT_PER_MINUTE = 60;
+export const REVOKE_RATE_LIMIT_PER_MINUTE = 20;
 
 /** Ventana fija por minuto, en memoria del isolate. Clave: hash de la IP. */
 export function createRateLimiter({ limit = RATE_LIMIT_PER_MINUTE, windowMs = 60_000, maxKeys = 5000 } = {}) {
@@ -77,13 +78,13 @@ export function createTrackingMetaHandler({
   fetchFn = globalThis.fetch,
   getNow = () => new Date(),
   rateLimiter = createRateLimiter(),
+  // La revocación tiene su propio cupo: una ráfaga de eventos nunca puede
+  // dejar sin lugar a la retirada del consentimiento.
+  revokeRateLimiter = createRateLimiter({ limit: REVOKE_RATE_LIMIT_PER_MINUTE }),
 } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
     if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
-
-    const capi = metaConfig(env);
-    if (!capi) return json({ ok: true, skipped: 'disabled' }, 202);
 
     const config = resolveConfig(env);
     if (!config.ok) return json({ ok: true, skipped: 'disabled' }, 202);
@@ -96,11 +97,6 @@ export function createTrackingMetaHandler({
       if (originHost !== reqUrl.hostname) return json({ error: 'Origen no permitido.' }, 403);
     }
 
-    const visitor = await sha256Hex(`rl:${request.headers.get('CF-Connecting-IP') || 'unknown'}`);
-    if (!rateLimiter(visitor, getNow().getTime())) {
-      return json({ error: 'Demasiadas solicitudes.' }, 429, { 'Retry-After': '60' });
-    }
-
     let body;
     try {
       const text = await request.text();
@@ -111,12 +107,30 @@ export function createTrackingMetaHandler({
     }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Payload inválido.' }, 400);
 
-    // Retirada del consentimiento: los pedidos de este navegador dejan de
-    // poder mandar la compra. No se envía ningún evento.
-    if (body.consent === 'denied' && Array.isArray(body.revoke_codes) && env?.ORDERS_DB) {
-      const revoked = await revokeMetaAttribution({ db: env.ORDERS_DB, publicCodes: body.revoke_codes, now: getNow() })
-        .catch(() => ({ revoked: 0 }));
-      return json({ ok: true, revoked: revoked.revoked || 0 }, 202);
+    const visitor = await sha256Hex(`rl:${request.headers.get('CF-Connecting-IP') || 'unknown'}`);
+
+    // Retirada del consentimiento: camino propio, antes de mirar si Meta está
+    // encendido (una atribución `granted` no debe sobrevivir a un apagado y
+    // reencendido) y con su propio límite. Responde `confirmed: true` sólo
+    // cuando la base quedó escrita; el navegador reintenta hasta verlo.
+    if (body.consent === 'denied' && Array.isArray(body.revoke_codes)) {
+      if (!revokeRateLimiter(visitor, getNow().getTime())) {
+        return json({ error: 'Demasiadas solicitudes.' }, 429, { 'Retry-After': '60' });
+      }
+      if (!env?.ORDERS_DB) return json({ ok: false, confirmed: false }, 503);
+      try {
+        const result = await revokeMetaAttribution({ db: env.ORDERS_DB, publicCodes: body.revoke_codes, now: getNow() });
+        return json({ ok: true, confirmed: true, revoked: result.revoked || 0 }, 200);
+      } catch {
+        return json({ ok: false, confirmed: false }, 503);
+      }
+    }
+
+    const capi = metaConfig(env);
+    if (!capi) return json({ ok: true, skipped: 'disabled' }, 202);
+
+    if (!rateLimiter(visitor, getNow().getTime())) {
+      return json({ error: 'Demasiadas solicitudes.' }, 429, { 'Retry-After': '60' });
     }
 
     // Sin consentimiento no se manda nada: ni el evento ni la atribución.

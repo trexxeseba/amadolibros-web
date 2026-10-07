@@ -27,6 +27,9 @@
   var CONFIG_KEY = 'amado_meta_config_v1';
   var PURCHASE_KEY_PREFIX = 'amado_meta_purchase_';
   var ORDERS_KEY = 'amado_meta_orders';
+  // Pedidos cuya revocación todavía no confirmó el servidor. No se borran
+  // hasta ver `confirmed: true`: un 429 o un corte de red no la pierden.
+  var REVOKE_KEY = 'amado_meta_revoke_pending';
   var EVENTS = { PageView: 1, ViewContent: 1, AddToCart: 1, InitiateCheckout: 1, Purchase: 1, Contact: 1 };
   var NO_ITEMS = { PageView: 1, Contact: 1 };
   var ALLOWED_URL_PARAMS = {
@@ -252,9 +255,50 @@
     if (previous === 'granted') {
       if (pixelReady) { window.fbq('consent', 'revoke'); revoked = true; }
       var codes = rememberedOrders();
-      if (codes.length) post({ consent: 'denied', revoke_codes: codes });
-      storageSet(window.localStorage, ORDERS_KEY, '[]');
+      if (codes.length) {
+        var queued = readList(REVOKE_KEY);
+        codes.forEach(function (code) { if (queued.indexOf(code) === -1) queued.push(code); });
+        storageSet(window.localStorage, REVOKE_KEY, JSON.stringify(queued.slice(-20)));
+        storageSet(window.localStorage, ORDERS_KEY, '[]');
+      }
+      flushRevocations();
     }
+  }
+
+  function readList(key) {
+    try {
+      var list = JSON.parse(storageGet(window.localStorage, key) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch (_e) {
+      return [];
+    }
+  }
+
+  var revoking = false;
+  function flushRevocations() {
+    var codes = readList(REVOKE_KEY);
+    if (!codes.length || revoking) return Promise.resolve(false);
+    revoking = true;
+    return fetch('/api/tracking/meta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ consent: 'denied', revoke_codes: codes }),
+      keepalive: true,
+      credentials: 'same-origin',
+    }).then(function (response) {
+      return response.ok ? response.json() : null;
+    }).then(function (result) {
+      revoking = false;
+      if (!result || result.confirmed !== true) return false;
+      // Sólo se quitan los códigos que se mandaron; si mientras tanto se
+      // sumaron otros, quedan para el próximo intento.
+      var rest = readList(REVOKE_KEY).filter(function (code) { return codes.indexOf(code) === -1; });
+      storageSet(window.localStorage, REVOKE_KEY, JSON.stringify(rest));
+      return true;
+    }).catch(function () {
+      revoking = false;
+      return false;
+    });
   }
 
   function addPreferencesLink() {
@@ -347,8 +391,11 @@
   // Lo que las páginas encolaron antes de que cargara este script.
   var early = Array.isArray(window.AmadoMetaQueue) ? window.AmadoMetaQueue : [];
   window.AmadoMetaQueue = { push: function (entry) { if (entry) track(entry[0], entry[1]); } };
-  window.AmadoMeta = { track: track, consent: consent, choose: choose };
+  window.AmadoMeta = { track: track, consent: consent, choose: choose, flushRevocations: flushRevocations };
   early.forEach(function (entry) { track(entry[0], entry[1]); });
 
+  // Una revocación sin confirmar se reintenta en cada página, esté o no
+  // encendida la medición.
+  flushRevocations();
   loadConfig();
 })();

@@ -72,26 +72,50 @@ export function sanitizeEventUrl(raw, hostname) {
   }
 }
 
+/**
+ * Qué Pixel, token y código de prueba corresponden a este entorno.
+ *
+ * - Producción: META_PIXEL_ID + META_CAPI_TOKEN (código de prueba opcional).
+ * - Cualquier otro entorno: SÓLO un Pixel de pruebas separado
+ *   (META_TEST_PIXEL_ID + META_TEST_CAPI_TOKEN) y siempre con
+ *   META_TEST_EVENT_CODE. El Pixel y el token productivos se ignoran: un
+ *   Preview no puede mandar nada al Pixel real, ni desde el navegador ni
+ *   desde el servidor, aunque alguien los cargue ahí por error.
+ */
+function environmentCredentials(env) {
+  if (!trackingEnabled(env)) return null;
+  const testEventCode = cleanString(env?.META_TEST_EVENT_CODE);
+  const validTestCode = /^[A-Z0-9]{3,20}$/i.test(testEventCode);
+  if (isProductionEnv(env)) {
+    return {
+      pixelId: cleanString(env?.META_PIXEL_ID),
+      token: cleanString(env?.META_CAPI_TOKEN),
+      testEventCode: validTestCode ? testEventCode : '',
+    };
+  }
+  if (!validTestCode) return null;
+  return {
+    pixelId: cleanString(env?.META_TEST_PIXEL_ID),
+    token: cleanString(env?.META_TEST_CAPI_TOKEN),
+    testEventCode,
+  };
+}
+
 /** Lo que el navegador necesita saber. Nunca incluye el token. */
 export function publicTrackingConfig(env) {
-  const pixelId = cleanString(env?.META_PIXEL_ID);
-  if (!trackingEnabled(env) || !/^\d{5,20}$/.test(pixelId)) return { enabled: false };
-  return { enabled: true, pixel_id: pixelId };
+  const creds = environmentCredentials(env);
+  if (!creds || !/^\d{5,20}$/.test(creds.pixelId)) return { enabled: false };
+  return { enabled: true, pixel_id: creds.pixelId };
 }
 
 /** Configuración del envío server-side, o null si falta algo o está apagado. */
 export function metaConfig(env) {
-  const pub = publicTrackingConfig(env);
-  const token = cleanString(env?.META_CAPI_TOKEN);
-  if (!pub.enabled || !token) return null;
-  const testEventCode = cleanString(env?.META_TEST_EVENT_CODE);
-  const validTestCode = /^[A-Z0-9]{3,20}$/i.test(testEventCode);
-  // Aislamiento: fuera de producción sólo se envía como evento de prueba.
-  if (!isProductionEnv(env) && !validTestCode) return null;
+  const creds = environmentCredentials(env);
+  if (!creds || !/^\d{5,20}$/.test(creds.pixelId) || !creds.token) return null;
   return {
-    pixelId: pub.pixel_id,
-    token,
-    ...(validTestCode ? { testEventCode } : {}),
+    pixelId: creds.pixelId,
+    token: creds.token,
+    ...(creds.testEventCode ? { testEventCode: creds.testEventCode } : {}),
   };
 }
 

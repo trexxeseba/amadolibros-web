@@ -30,7 +30,9 @@ import {
   metaConfig,
   postMetaEvents,
 } from './meta-capi.js';
-import { sendGa4Purchase } from '../api/_ga4_measurement.js';
+import { ga4TransferEnabled, sendGa4Purchase } from '../api/_ga4_measurement.js';
+
+export { ga4TransferEnabled };
 
 const CLAIM_STALE_MS = 5 * 60 * 1000;
 const ATTRIBUTION_MAX_AGE_MS = 6 * 60 * 60 * 1000;
@@ -251,15 +253,6 @@ export async function sendMetaPurchase({ db, env, orderId, now = new Date(), fet
 }
 
 // ─── Transferencia confirmada en el panel ────────────────────────────────────
-
-/**
- * GA4 server-side de una transferencia: sólo en producción y con
- * GA4_TRANSFER_PURCHASE_ENABLED. Independiente de Meta. Un Preview nunca
- * manda compras al GA4 productivo aunque tenga sus credenciales.
- */
-export function ga4TransferEnabled(env) {
-  return isProductionEnv(env) && String(env?.GA4_TRANSFER_PURCHASE_ENABLED || '').trim() === 'true';
-}
 
 /**
  * Lo que se dispara cuando el panel marca «Transferencia recibida»: GA4

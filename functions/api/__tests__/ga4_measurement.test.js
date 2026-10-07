@@ -207,3 +207,65 @@ test('ga4-mp-5: genera client_id anónimo de respaldo y no falsea fechas de más
   assert.equal(Object.hasOwn(payload, 'timestamp_micros'), false);
   assert.equal(Object.hasOwn(payload.events[0].params, 'session_id'), false);
 });
+
+// ─── Transferencias: el cron respeta GA4_TRANSFER_PURCHASE_ENABLED ───────────
+
+function addFailedTransfer(db) {
+  db.sqlite.prepare(
+    'INSERT INTO orders (id,public_code,payment_status,products_total_uyu,pickup_discount_uyu,' +
+    'shipping_cost_uyu,payable_total_uyu,currency,paid_at,payment_provider,paid_amount_uyu) ' +
+    'VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+  ).run('order-tr', 'AL-260816-TRAN', 'approved', 1600, 0, 250, 1850, 'UYU',
+    '2026-08-16T22:59:00.000Z', 'bank_transfer', 1658);
+  db.sqlite.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?,?)')
+    .run('item-tr', 'order-tr', 'MLU999', 'Libro', 2, 800, 1600, NOW.toISOString());
+  db.sqlite.prepare('INSERT INTO order_events VALUES (?,?,?,?,?)').run(
+    'ga4-purchase:order-tr', 'order-tr', 'ga4_purchase',
+    JSON.stringify({ status: 'failed', attempt: 1, transaction_id: 'AL-260816-TRAN' }),
+    NOW.toISOString(),
+  );
+}
+
+function sentIds() {
+  const ids = [];
+  const fetchFn = async (_url, init) => {
+    ids.push(JSON.parse(init.body).events[0].params.transaction_id);
+    return new Response(null, { status: 204 });
+  };
+  return { ids, fetchFn };
+}
+
+test('ga4-transfer-1: con el interruptor apagado el cron no reintenta transferencias; Mercado Pago sigue igual', async () => {
+  const db = createD1();
+  addFailedTransfer(db);
+  const { ids, fetchFn } = sentIds();
+  await processPendingGa4Purchases(
+    { ...ENV, APP_ENV: 'production', ORDERS_DB: db },
+    { now: NOW, fetchFn },
+  );
+  assert.deepEqual(ids, ['AL-260816-TEST']);
+  const transfer = JSON.parse(db.sqlite.prepare("SELECT payload_json FROM order_events WHERE id='ga4-purchase:order-tr'").get().payload_json);
+  assert.equal(transfer.status, 'failed', 'la fila no se consume');
+});
+
+test('ga4-transfer-2: fuera de producción no se reintenta aunque el interruptor esté encendido', async () => {
+  const db = createD1();
+  addFailedTransfer(db);
+  const { ids, fetchFn } = sentIds();
+  await processPendingGa4Purchases(
+    { ...ENV, APP_ENV: 'preview', GA4_TRANSFER_PURCHASE_ENABLED: 'true', ORDERS_DB: db },
+    { now: NOW, fetchFn },
+  );
+  assert.deepEqual(ids, ['AL-260816-TEST']);
+});
+
+test('ga4-transfer-3: en producción con el interruptor encendido sí se reintenta', async () => {
+  const db = createD1();
+  addFailedTransfer(db);
+  const { ids, fetchFn } = sentIds();
+  await processPendingGa4Purchases(
+    { ...ENV, APP_ENV: 'production', GA4_TRANSFER_PURCHASE_ENABLED: 'true', ORDERS_DB: db },
+    { now: NOW, fetchFn },
+  );
+  assert.deepEqual(ids.sort(), ['AL-260816-TEST', 'AL-260816-TRAN']);
+});

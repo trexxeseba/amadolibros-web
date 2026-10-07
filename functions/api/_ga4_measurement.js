@@ -24,6 +24,16 @@ function analyticsConfig(env) {
   return { measurementId, apiSecret };
 }
 
+/**
+ * Compra GA4 server-side de transferencias: sólo en producción y con
+ * GA4_TRANSFER_PURCHASE_ENABLED. Vale para el primer envío y para los
+ * reintentos del cron. Mercado Pago no depende de esto.
+ */
+export function ga4TransferEnabled(env) {
+  return cleanString(env?.APP_ENV) === 'production' &&
+    cleanString(env?.GA4_TRANSFER_PURCHASE_ENABLED) === 'true';
+}
+
 function positiveMoney(value) {
   const number = Number(value);
   return Number.isFinite(number) && number >= 0
@@ -243,9 +253,12 @@ export async function processPendingGa4Purchases(env, {
     "o.currency,o.payment_id,o.paid_at,o.payment_provider,o.paid_amount_uyu " +
     "FROM order_events e JOIN orders o ON o.id=e.order_id " +
     "WHERE e.event_type='ga4_purchase' AND o.payment_status='approved' " +
+    // Transferencias: sólo si su interruptor está encendido. Si no, la fila
+    // queda como está (no se consume) y Mercado Pago sigue igual.
+    "AND (COALESCE(o.payment_provider,'')!='bank_transfer' OR ?=1) " +
     "AND COALESCE(json_extract(e.payload_json,'$.status'),'pending')!='sent' " +
     'ORDER BY e.created_at LIMIT ?'
-  ).bind(safeLimit).all();
+  ).bind(ga4TransferEnabled(env) ? 1 : 0, safeLimit).all();
   const orders = Array.isArray(result?.results) ? result.results : [];
   const summary = { status: 'completed', processed: 0, sent: 0, skipped: 0, failed: 0 };
 

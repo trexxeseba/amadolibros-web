@@ -30,11 +30,17 @@ const NOW = new Date('2026-10-06T15:00:00.000Z');
 const TOKEN = 'EAAB-secret-token-never-log';
 // Preview con código de eventos de prueba: el único modo en que un entorno
 // que no es producción manda algo a Meta.
+const PROD_PIXEL = '555555555555555';
+const PROD_TOKEN = 'EAAB-PRODUCTION-token';
 const ENV_ON = {
   META_TRACKING_ENABLED: 'true',
   META_TEST_EVENT_CODE: 'TEST12345',
-  META_PIXEL_ID: '123456789012345',
-  META_CAPI_TOKEN: TOKEN,
+  // Pixel de pruebas separado: lo único que usa un Preview.
+  META_TEST_PIXEL_ID: '123456789012345',
+  META_TEST_CAPI_TOKEN: TOKEN,
+  // Credenciales productivas cargadas por error en Preview: deben ignorarse.
+  META_PIXEL_ID: PROD_PIXEL,
+  META_CAPI_TOKEN: PROD_TOKEN,
   APP_ENV: 'preview',
   MP_COLLECTOR_ID: '3559407834',
   CANONICAL_ORIGIN: 'https://pr-1.amadolibros-web.pages.dev',
@@ -325,6 +331,8 @@ const ENV_PROD = {
   ...ENV_ON,
   APP_ENV: 'production',
   META_TEST_EVENT_CODE: '',
+  META_PIXEL_ID: '123456789012345',
+  META_CAPI_TOKEN: TOKEN,
   GA4_TRANSFER_PURCHASE_ENABLED: 'true',
 };
 
@@ -515,8 +523,15 @@ test('GA4 purchase de Mercado Pago no cambia', async () => {
 
 const metaScript = readFileSync('astro-front/public/meta-tracking.js', 'utf8');
 
-function browser({ config = { enabled: true, pixel_id: '123456789012345' }, consent = null, queue = [], cookie = `_fbp=${FBP}` } = {}) {
-  const local = new Map(consent ? [['amado_marketing_consent', consent]] : []);
+function browser({
+  config = { enabled: true, pixel_id: '123456789012345' },
+  consent = null,
+  queue = [],
+  cookie = `_fbp=${FBP}`,
+  revokeAnswers = [],
+  storage: initial = [],
+} = {}) {
+  const local = new Map([...(consent ? [['amado_marketing_consent', consent]] : []), ...initial]);
   const storage = map => ({ getItem: k => (map.has(k) ? map.get(k) : null), setItem: (k, v) => map.set(k, String(v)) });
   const fbqCalls = [];
   const posts = [];
@@ -552,8 +567,13 @@ function browser({ config = { enabled: true, pixel_id: '123456789012345' }, cons
   };
   const fetch = async (url, init) => {
     if (url === '/api/tracking/config') return { ok: true, json: async () => config };
-    posts.push(JSON.parse(init.body));
-    return { ok: true };
+    const body = JSON.parse(init.body);
+    posts.push(body);
+    if (body.revoke_codes) {
+      const answer = revokeAnswers.length ? revokeAnswers.shift() : { status: 200, confirmed: true };
+      return { ok: answer.status < 300, status: answer.status, json: async () => ({ confirmed: answer.confirmed }) };
+    }
+    return { ok: true, status: 202, json: async () => ({ ok: true }) };
   };
   runInNewContext(metaScript, { window, document, fetch, URL, Uint8Array, Date, Math, JSON, Array, String, Number, RegExp, isFinite });
   const click = target => (listeners.click || []).forEach(fn => fn({ target, preventDefault() {} }));
@@ -677,6 +697,102 @@ test('auditoría navegador: el Pixel no usa configuración automática', async (
   const b = browser({ consent: 'granted' });
   await tick(); await tick();
   assert.ok(b.fbqCalls.some(c => c[0] === 'set' && c[1] === 'autoConfig' && c[2] === false));
+});
+
+// ─── Segunda auditoría ───────────────────────────────────────────────────────
+
+test('auditoría 2: Preview sin código de prueba no entrega ningún Pixel al navegador', () => {
+  assert.deepEqual(publicTrackingConfig({ ...ENV_ON, META_TEST_EVENT_CODE: '' }), { enabled: false });
+  assert.equal(metaConfig({ ...ENV_ON, META_TEST_EVENT_CODE: '' }), null);
+});
+
+test('auditoría 2: Preview usa sólo el Pixel de pruebas, nunca el productivo', async () => {
+  assert.deepEqual(publicTrackingConfig(ENV_ON), { enabled: true, pixel_id: '123456789012345' });
+  const config = metaConfig(ENV_ON);
+  assert.equal(config.pixelId, '123456789012345');
+  assert.equal(config.token, TOKEN);
+  // Sin Pixel de pruebas, aunque estén el productivo y el código: apagado.
+  const { META_TEST_PIXEL_ID, ...withoutTestPixel } = ENV_ON;
+  assert.deepEqual(publicTrackingConfig(withoutTestPixel), { enabled: false });
+  const res = await createTrackingConfigHandler()({ request: new Request(`https://${HOST}/api/tracking/config`), env: ENV_ON });
+  assert.doesNotMatch(await res.text(), new RegExp(PROD_PIXEL));
+  const fetchFn = graphFetch();
+  await postMetaEvents(config, [{ event_name: 'PageView' }], { fetchFn });
+  assert.doesNotMatch(fetchFn.calls[0].url, new RegExp(PROD_PIXEL));
+  assert.notEqual(fetchFn.calls[0].body.access_token, PROD_TOKEN);
+});
+
+test('auditoría 2: producción usa el Pixel productivo y no necesita código de prueba', () => {
+  assert.deepEqual(publicTrackingConfig(ENV_PROD), { enabled: true, pixel_id: '123456789012345' });
+  assert.equal(metaConfig(ENV_PROD).testEventCode, undefined);
+  assert.deepEqual(publicTrackingConfig({ ...ENV_PROD, META_TRACKING_ENABLED: '' }), { enabled: false });
+});
+
+test('auditoría 2: la revocación no comparte el límite de los eventos', async () => {
+  const db = createD1();
+  await withConsent(db, 'o-mp');
+  const h = createTrackingMetaHandler({ fetchFn: graphFetch(), getNow: () => NOW });
+  const env = { ...ENV_ON, ORDERS_DB: db };
+  for (let i = 0; i < 61; i++) {
+    const req = metaRequest({ consent: 'granted', event_name: 'PageView', event_id: `page_view_${String(i).padStart(8, '0')}`, event_source_url: `https://${HOST}/` });
+    req.headers.set('CF-Connecting-IP', '203.0.113.9');
+    await h({ request: req, env });
+  }
+  const revoke = metaRequest({ consent: 'denied', revoke_codes: ['AL-261006-MPMPMP'] });
+  revoke.headers.set('CF-Connecting-IP', '203.0.113.9');
+  const res = await h({ request: revoke, env });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { ok: true, confirmed: true, revoked: 1 });
+  assert.equal(eventRow(db, 'meta-attr:o-mp').consent, 'revoked');
+});
+
+test('auditoría 2: la revocación se registra aunque Meta esté apagado', async () => {
+  const db = createD1();
+  await withConsent(db, 'o-mp');
+  const res = await createTrackingMetaHandler({ fetchFn: graphFetch(), getNow: () => NOW })({
+    request: metaRequest({ consent: 'denied', revoke_codes: ['AL-261006-MPMPMP'] }),
+    env: { ...ENV_ON, META_TRACKING_ENABLED: '', ORDERS_DB: db },
+  });
+  assert.equal((await res.json()).confirmed, true);
+  assert.equal(eventRow(db, 'meta-attr:o-mp').consent, 'revoked');
+});
+
+test('auditoría 2: si la base falla, la revocación no se confirma', async () => {
+  const broken = { prepare() { throw new Error('D1 caída'); } };
+  const res = await createTrackingMetaHandler({ fetchFn: graphFetch(), getNow: () => NOW })({
+    request: metaRequest({ consent: 'denied', revoke_codes: ['AL-261006-MPMPMP'] }),
+    env: { ...ENV_ON, ORDERS_DB: broken },
+  });
+  assert.equal(res.status, 503);
+  assert.equal((await res.json()).confirmed, false);
+});
+
+test('auditoría 2 navegador: una revocación rechazada (429) queda guardada y se reintenta hasta confirmarse', async () => {
+  const b = browser({
+    consent: 'granted',
+    storage: [['amado_meta_orders', JSON.stringify(['AL-261006-OPENOP'])]],
+    revokeAnswers: [{ status: 429 }, { status: 503, confirmed: false }, { status: 200, confirmed: true }],
+  });
+  await tick(); await tick();
+  b.window.AmadoMeta.choose('denied');
+  await tick(); await tick();
+  assert.equal(b.local.get('amado_meta_revoke_pending'), JSON.stringify(['AL-261006-OPENOP']), 'sigue pendiente tras el 429');
+  await b.window.AmadoMeta.flushRevocations();
+  assert.equal(b.local.get('amado_meta_revoke_pending'), JSON.stringify(['AL-261006-OPENOP']), 'sigue pendiente tras el 503');
+  await b.window.AmadoMeta.flushRevocations();
+  assert.equal(b.local.get('amado_meta_revoke_pending'), '[]', 'se borra sólo con confirmación');
+  assert.equal(b.posts.filter(p => p.revoke_codes).length, 3);
+});
+
+test('auditoría 2 navegador: una revocación pendiente se reenvía al cargar cualquier página', async () => {
+  const b = browser({
+    consent: 'denied',
+    config: { enabled: false },
+    storage: [['amado_meta_revoke_pending', JSON.stringify(['AL-261006-OPENOP'])]],
+  });
+  await tick(); await tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(b.posts[0])), { consent: 'denied', revoke_codes: ['AL-261006-OPENOP'] });
+  assert.equal(b.local.get('amado_meta_revoke_pending'), '[]');
 });
 
 // ─── Las páginas emiten, sin tocar la lógica ─────────────────────────────────
