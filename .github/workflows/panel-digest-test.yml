@@ -1,0 +1,41 @@
+name: Probar el correo diario del panel
+
+# Manda ahora el correo diario (marcado [PRUEBA]) a los destinatarios
+# configurados, sin tocar la reserva del correo real de las 08:03.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probar:
+    name: Mandar correo de prueba
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Pedirle al Worker que mande el correo
+        shell: bash
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SYNC_SECRET" ] || [ -z "$WORKER_SYNC_TRIGGER_URL" ]; then
+            echo "Falta SYNC_SECRET o WORKER_SYNC_TRIGGER_URL en el entorno production."
+            exit 1
+          fi
+          BASE_URL="${WORKER_SYNC_TRIGGER_URL%%/trigger*}"
+          if [[ "$BASE_URL" != https://* ]]; then
+            echo "WORKER_SYNC_TRIGGER_URL debe usar HTTPS."
+            exit 1
+          fi
+          HTTP_STATUS=$(curl --silent --show-error --max-time 60 \
+            --output result.json --write-out '%{http_code}' \
+            --request POST "${BASE_URL%/}/panel-digest-test" \
+            --header "Authorization: Bearer $SYNC_SECRET")
+          echo "HTTP $HTTP_STATUS"
+          cat result.json; echo
+          [ "$HTTP_STATUS" = "200" ]
