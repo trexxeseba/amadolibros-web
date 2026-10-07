@@ -94,3 +94,27 @@ test('un día sin pedidos lo dice en vez de mostrar una tabla vacía', () => {
   assert.match(md, /Ningún pedido nuevo ni pago ayer\./);
   assert.match(md, /Búsquedas sin resultados: ninguna/);
 });
+
+test('el informe muestra el embudo, los pedidos sin pagar y el tráfico que parece automático, y oculta las búsquedas de prueba', () => {
+  const md = buildActivityReport({
+    periods,
+    ga4: {
+      yesterday: day({ cities: [{ city: 'Montevideo', sessions: 90 }, { city: 'Beijing', sessions: 3 }, { city: 'Harbin', sessions: 2 }] }),
+      lastWeek: day(),
+    },
+    d1: { ...d1, search_misses: [{ query: 'zzzinexistente999', count: 4 }, { query: 'harry potter', count: 3 }] },
+  });
+  assert.match(md, /Embudo del día\*\*: 210 abrieron una ficha → 9 agregaron al carrito → 0 crearon un pedido \(de 140 visitas\)/);
+  assert.match(md, /Posible tráfico automático \(ciudades de centros de datos\): 5 visitas — Beijing 3 · Harbin 2/);
+  assert.match(md, /\*\*Para seguir hoy\*\*/);
+  assert.match(md, /\| AL-2 \| Ficciones \| \$ 1\.000 \| retiro \|/);
+  assert.doesNotMatch(md, /zzzinexistente/);
+  assert.match(md, /«harry potter» \(3\)/);
+});
+
+test('con pocas visitas no hay embudo y sin pedidos abiertos no hay «para seguir hoy»', () => {
+  const few = day({ totals: [{ sessions: 12, totalUsers: 10, newUsers: 5, screenPageViews: 30 }] });
+  const md = buildActivityReport({ periods, ga4: { yesterday: few, lastWeek: few }, d1: { ...d1, orders: [d1.orders[0]] } });
+  assert.doesNotMatch(md, /Embudo del día/);
+  assert.doesNotMatch(md, /Para seguir hoy/);
+});
