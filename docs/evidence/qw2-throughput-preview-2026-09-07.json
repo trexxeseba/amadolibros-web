@@ -1,0 +1,122 @@
+{
+  "owner": "Codex",
+  "effort": "M",
+  "base_main": "d380374775db7b5d2ef80b09ae97351ccdcd88f9",
+  "runs": [
+    {
+      "head": "aa8883b8ac1c1165d9ce93c5e11a402c39bf1e38",
+      "run": 34146777648,
+      "artifact": 10028070510,
+      "generated_at": "2026-09-07T17:20:29.304Z",
+      "summary": {
+        "catalog_products": 7100,
+        "catalog_images": 32541,
+        "automatic_batch": 300,
+        "r2_verified": 300,
+        "larger_than_catalog_source": 271,
+        "existing_masters_upgraded": 0,
+        "google_ready": 247,
+        "queued_failures": 0,
+        "validation_failures": 0,
+        "preflight": {
+          "production_read_only": true,
+          "commercially_eligible": 6786,
+          "current_feed": 3695,
+          "strict_500_feed": 3695,
+          "would_exclude": 0
+        },
+        "quality": {
+          "known_images": 525,
+          "discovery_pending": 32041,
+          "needs_better_source": 120,
+          "unavailable": 0,
+          "awaiting_first_copy": 32016
+        },
+        "throughput": {
+          "batches": 3,
+          "duration_ms": 112400,
+          "stop_reason": "batch-limit",
+          "origin_requests": 504,
+          "reference_probe_requests": 600,
+          "sources_fetched": 252,
+          "reused_from_manifest": 1,
+          "shared_in_batch": 47,
+          "pending_after_each_batch": [
+            32241,
+            32141,
+            32041
+          ],
+          "note": "reference_probe_requests is the number of probes the previous per-reference algorithm would attempt on these selected rows; it is not a timed baseline run"
+        }
+      }
+    },
+    {
+      "head": "93368f125ed1ba71b64a91e700fc0dedd885a40c",
+      "run": 34147238152,
+      "artifact": 10028161073,
+      "generated_at": "2026-09-07T17:24:18.519Z",
+      "summary": {
+        "catalog_products": 7100,
+        "catalog_images": 32541,
+        "automatic_batch": 300,
+        "r2_verified": 300,
+        "larger_than_catalog_source": 275,
+        "existing_masters_upgraded": 0,
+        "google_ready": 258,
+        "queued_failures": 0,
+        "validation_failures": 0,
+        "preflight": {
+          "production_read_only": true,
+          "commercially_eligible": 6786,
+          "current_feed": 3695,
+          "strict_500_feed": 3695,
+          "would_exclude": 0
+        },
+        "quality": {
+          "known_images": 825,
+          "discovery_pending": 31741,
+          "needs_better_source": 162,
+          "unavailable": 0,
+          "awaiting_first_copy": 31716
+        },
+        "throughput": {
+          "batches": 3,
+          "duration_ms": 104956,
+          "stop_reason": "batch-limit",
+          "origin_requests": 527,
+          "reference_probe_requests": 598,
+          "sources_fetched": 264,
+          "reused_from_manifest": 9,
+          "shared_in_batch": 27,
+          "pending_after_each_batch": [
+            31941,
+            31841,
+            31741
+          ],
+          "note": "reference_probe_requests is the number of probes the previous per-reference algorithm would attempt on these selected rows; it is not a timed baseline run"
+        }
+      }
+    }
+  ],
+  "rows_file": "qw2-throughput-preview-2026-09-07-rows.json.gz",
+  "rows_sha256": "39569e72db745465c1a55af54e8b05db50d6df4ca570d0eeb50d3c1e463fd44e",
+  "incident": {
+    "run": 34147238152,
+    "stage": "Audit protected Preview",
+    "product": "MLU632444697",
+    "failure": "production image HTTP 503",
+    "recheck_at": "2026-09-07T17:26:11Z",
+    "production_http": 200,
+    "production_source": "r2-production",
+    "production_width": 1200,
+    "production_height": 1177,
+    "production_sha256": "31038e7f71f17d6cde5f7b23fa1231ac9184dddd05ce506b7a06af4ca6619f1b",
+    "full_gate_rerun": "required before merge"
+  },
+  "limits": [
+    "Preview writes only; production preflight read-only.",
+    "reference_probe_requests is a per-reference calculation, not a timed old-code run.",
+    "Different automatic cohorts: do not infer runtime change from 112.4s versus 104.956s.",
+    "300 new Preview copies per run, zero existing masters upgraded; do not claim 600 production photos fixed."
+  ]
+}
