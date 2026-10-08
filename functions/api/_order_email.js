@@ -70,7 +70,7 @@ function totalsText(order, payment) {
 }
 
 const WHATSAPP_DISPLAY = '099 841 325';
-const PROMISE_TEXT = 'Nos importa que siempre quedes contento: hacemos lo imposible por resolverte cualquier problema.';
+const PROMISE_TEXT = 'Acompañamos tu compra de principio a fin y resolvemos cualquier inconveniente con vos.';
 
 function whatsappLink(order) {
   const message = `Hola, soy ${cleanString(order.buyer_name)}. Te mando el comprobante del pedido ${order.public_code}.`;
@@ -154,7 +154,7 @@ export function buildCustomerOrderEmail({ order, items, payment, accounts = [] }
     <p>${totals.map(line => escapeHtml(line)).join('<br>')}</p>
     <p><strong>Entrega:</strong> ${escapeHtml(delivery)}<br>${escapeHtml(timing)}</p>${accountsHtml}
     <p>${escapeHtml(state)}</p>
-    <p><em>${escapeHtml(PROMISE_TEXT)}</em></p>
+    <p>${escapeHtml(PROMISE_TEXT)}</p>
     <p>${escapeHtml(help)}</p>
   </body></html>`;
   return { subject, text, html };

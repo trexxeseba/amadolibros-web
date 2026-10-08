@@ -21,7 +21,7 @@ test('correo por transferencia: trae cuentas, importe exacto, WhatsApp con núme
   assert.match(text, /099 841 325/);
   assert.match(html, /href="https:\/\/wa\.me\/59899841325\?text=/);
   assert.match(text, /AL-TEST-1/);
-  assert.match(text, /hacemos lo imposible por resolverte cualquier problema/);
+  assert.match(text, /resolvemos cualquier inconveniente con vos/);
 });
 
 test('correo: plazo según destino y sin cuentas cuando el pago ya es con Mercado Pago', () => {
