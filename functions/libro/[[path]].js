@@ -197,7 +197,7 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
   <div id="glb" class="lb" role="dialog" aria-modal="true" aria-label="Galería de imágenes" tabindex="-1" hidden>
     <div class="lb-inner">
       <button type="button" class="lb-close" id="glbClose" aria-label="Cerrar galería">&#10005;</button>
-      <img class="lb-img" id="glbImg" src="${escapeHtml(mainImage.lightbox)}" alt="${safeTitle}" loading="eager" decoding="async">
+      <img class="lb-img" id="glbImg" alt="${safeTitle}" decoding="async">
       <p class="lb-counter" id="glbCounter" aria-live="polite" aria-atomic="true">Imagen 1 de ${images.length}</p>
       <div class="lb-nav">${navBtns}</div>
     </div>
