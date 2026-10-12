@@ -47,6 +47,9 @@ export function webpDimensions(bytes) {
 export async function handleImageVariants(request, env) {
   if (env.IMAGE_VARIANTS_WRITE_ENABLED !== 'true' || !env.COVER_R2) return json({ error: 'disabled' }, 404);
   const url = new URL(request.url); const bucket = env.COVER_R2;
+  // Preview puede leer masters productivos mediante un binding separado.
+  // Todos los PUT siguen dirigidos exclusivamente a COVER_R2 (Preview).
+  const masters = env.IMAGE_VARIANTS_SOURCE_R2 || bucket;
   const path = url.pathname.slice('/image-variants'.length).split('/').filter(Boolean);
   try {
     if (path[0] === 'progress' && path.length === 1) {
@@ -67,23 +70,23 @@ export async function handleImageVariants(request, env) {
       const productId = url.searchParams.get('product_id');
       if (productId) {
         if (!/^MLU\d+$/.test(productId)) return json({ error: 'invalid-product' }, 400);
-        const object = await bucket.get('covers/v1/manifest.json');
+        const object = await masters.get('covers/v1/manifest.json');
         if (!object) return json({ error: 'manifest-unavailable' }, 404);
         const manifest = await streamCoverManifest(object, { productIds: [productId] });
         const files = [...new Set(Object.values(manifest.entries).map(entry => entry.current?.object_key)
           .filter(key => typeof key === 'string' && key.startsWith('covers/v1/objects/') && MASTER_RE.test(key.slice('covers/v1/objects/'.length))))].slice(0, limit);
-        const objects = await Promise.all(files.map(async key => ({ file: key.slice('covers/v1/objects/'.length), size: (await bucket.head(key))?.size || 0 })));
+        const objects = await Promise.all(files.map(async key => ({ file: key.slice('covers/v1/objects/'.length), size: (await masters.head(key))?.size || 0 })));
         return json({ objects, cursor: null, recipes: IMAGE_VARIANTS });
       }
       const cursor = url.searchParams.get('cursor') || undefined;
       if (cursor && cursor.length > 2048) return json({ error: 'invalid-cursor' }, 400);
-      const listing = await bucket.list({ prefix: 'covers/v1/objects/', limit, cursor });
+      const listing = await masters.list({ prefix: 'covers/v1/objects/', limit, cursor });
       return json({ objects: listing.objects.filter(object => MASTER_RE.test(object.key.slice('covers/v1/objects/'.length)))
         .map(object => ({ file: object.key.slice('covers/v1/objects/'.length), size: object.size })),
         cursor: listing.truncated ? listing.cursor : null, recipes: IMAGE_VARIANTS });
     }
     if (path[0] === 'master' && path.length === 2 && MASTER_RE.test(path[1]) && request.method === 'GET') {
-      const object = await bucket.get(`covers/v1/objects/${path[1]}`);
+      const object = await masters.get(`covers/v1/objects/${path[1]}`);
       if (!object?.body || object.size > MAX_BYTES) return json({ error: 'master-unavailable' }, 404);
       return new Response(object.body, { headers: { 'cache-control': 'no-store', 'content-type': 'application/octet-stream' } });
     }
@@ -97,7 +100,7 @@ export async function handleImageVariants(request, env) {
     if (existing) return json({ error: 'invalid-existing-object' }, 409);
     const masterFile = request.headers.get('x-master-file') || '';
     if (MASTER_RE.exec(masterFile)?.[1] !== hash) return json({ error: 'invalid-master' }, 400);
-    const master = await bucket.get(`covers/v1/objects/${masterFile}`);
+    const master = await masters.get(`covers/v1/objects/${masterFile}`);
     if (!master?.body || master.size > MAX_BYTES) return json({ error: 'master-unavailable' }, 404);
     const original = new Uint8Array(await new Response(master.body).arrayBuffer());
     const sourceHash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', original))].map(v => v.toString(16).padStart(2, '0')).join('');

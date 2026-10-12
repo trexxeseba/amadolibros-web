@@ -37,7 +37,11 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
   async function call(path, options = {}, allowed = [200]) {
     const response = await fetchFn(new URL(path, base), { ...options, redirect: 'manual',
       signal: AbortSignal.timeout(60_000), headers: { authorization: `Bearer ${token}`, ...options.headers } });
-    if (!allowed.includes(response.status)) { await response.body?.cancel(); throw new Error(`image-api-http-${response.status}`); }
+    if (!allowed.includes(response.status)) {
+      const body = await response.json().catch(() => ({}));
+      const code = /^[a-z-]{1,80}$/.test(body.error || '') ? `-${body.error}` : '';
+      throw new Error(`image-api-http-${response.status}${code}`);
+    }
     return response;
   }
   const progress = resume ? await (await call('progress')).json() : { cursor: null };

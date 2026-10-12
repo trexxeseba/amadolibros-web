@@ -119,3 +119,16 @@ test('URLs de catálogo, miniaturas y zoom usan sólo recetas fijas; externos co
   assert.equal(permanentImageUrl(source,{width:999999}),source);
   assert.equal(permanentImageUrl('https://other.example/cover.jpg',{width:240}),'https://other.example/cover.jpg');
 });
+
+test('Preview lee el master productivo y escribe únicamente derivados en su bucket separado', async () => {
+  const source = new Bucket(), target = new Bucket(); const master = await fixture();
+  await source.put(`covers/v1/objects/${master.file}`, master.bytes);
+  await source.put('covers/v1/manifest.json', JSON.stringify({schema_version:1,entries:{'MLU1:0':{current:{object_key:`covers/v1/objects/${master.file}`}}}}));
+  const before = source.writes.slice();
+  const env={COVER_R2:target, IMAGE_VARIANTS_SOURCE_R2:source, IMAGE_VARIANTS_WRITE_ENABLED:'true'};
+  const result=await buildPermanentVariants({baseUrl:'https://test.example',token:'test-only',sharp,productId:'MLU1',resume:false,
+    fetchFn:(url,options)=>handleImageVariants(new Request(url,options),env)});
+  assert.deepEqual(result.failures,[]);assert.equal(result.created,IMAGE_VARIANTS.length);
+  assert.deepEqual(source.writes,before);
+  assert.ok(target.writes.every(key=>key.startsWith('covers/variants/')));
+});

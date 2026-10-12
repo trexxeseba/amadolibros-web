@@ -5,3 +5,8 @@ compatibility_date = "2024-09-23"
 [[r2_buckets]]
 binding = "COVER_R2"
 bucket_name = "amadolibros-images-preview"
+
+# Sólo lectura en el código: el escritor destino siempre es COVER_R2.
+[[r2_buckets]]
+binding = "IMAGE_VARIANTS_SOURCE_R2"
+bucket_name = "amadolibros-images-production"
