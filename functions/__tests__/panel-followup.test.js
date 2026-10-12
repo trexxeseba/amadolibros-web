@@ -13,9 +13,11 @@ test('arma el WhatsApp con el teléfono normalizado y un mensaje que pregunta, n
   const links = followUpLinks(order, items);
   assert.match(links.whatsapp, /^https:\/\/wa\.me\/59899123456\?text=/);
   const texto = decodeURIComponent(links.whatsapp.split('?text=')[1]);
-  assert.match(texto, /^Hola Ana! Soy de Amado Libros/);
-  assert.match(texto, /AL-261006-NLFHT2 \(Cuarenta Ladrones\)/);
-  assert.match(texto, /¿Tuviste algún problema/);
+  assert.match(texto, /^¡Hola, Ana! 👋 Te escribo de Amado Libros/);
+  assert.match(texto, /📚 Cuarenta Ladrones/);
+  assert.doesNotMatch(texto, /AL-261006-NLFHT2/);
+  assert.match(texto, /¿Todavía querés comprarlos\?/);
+  assert.match(texto, /10 % de descuento/);
   assert.doesNotMatch(texto, /cuenta|CBU|transfer/i);
 });
 

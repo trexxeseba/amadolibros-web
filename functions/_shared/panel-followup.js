@@ -10,9 +10,17 @@ import { normalizePhone } from './meta-capi.js';
 export function followUpLinks(order, items) {
   if (!order || order.payment_status === 'approved' || order.status !== 'open') return null;
   const nombre = String(order.buyer_name || '').trim().split(/\s+/)[0] || '';
-  const libros = (items || []).map(i => String(i.title || '').trim()).filter(Boolean).slice(0, 3).join(', ');
-  const saludo = nombre ? `Hola ${nombre}!` : 'Hola!';
-  const texto = `${saludo} Soy de Amado Libros. Vimos que dejaste armado tu pedido ${order.public_code}${libros ? ` (${libros})` : ''} y quedó sin pagar. ¿Tuviste algún problema o te puedo ayudar a completarlo? Si preferís otra forma de pago, avisame y lo resolvemos.`;
+  const libros = (items || []).map(i => String(i.title || '').trim()).filter(Boolean).slice(0, 3);
+  const saludo = nombre ? `¡Hola, ${nombre}!` : '¡Hola!';
+  const texto = [
+    `${saludo} 👋 Te escribo de Amado Libros.`,
+    libros.length
+      ? `Vimos que elegiste estos libros en nuestra tienda:\n\n${libros.map(t => `📚 ${t}`).join('\n')}`
+      : 'Vimos que elegiste unos libros en nuestra tienda.',
+    '¿Todavía querés comprarlos? Estamos a las órdenes para ayudarte con lo que necesites. Si preferís pagar de otra forma, avisame y lo coordinamos.',
+    'Además, si lo deseás, te hacemos un 10 % de descuento en tu pedido 🎁',
+    '¡Quedamos atentos! 😊',
+  ].join('\n\n');
   const phone = normalizePhone(order.buyer_phone);
   const email = String(order.buyer_email || '').trim();
   return {
