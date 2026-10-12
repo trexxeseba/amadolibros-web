@@ -44,7 +44,9 @@ for (const [index, source] of unique.entries()) {
   if (variant !== 'original-fallback') {
     derivedCount++;
     assert.equal(metadata.format, 'webp');
-    assert.match(response.headers.get('cache-control'), /immutable/);
+    // El middleware de seguridad fuerza no-store en todos los Preview.
+    // La caché immutable productiva se verifica en el test de la Function.
+    assert.match(response.headers.get('cache-control'), /no-store/);
     const second = Buffer.from(await (await get(source)).arrayBuffer());
     assert.equal(createHash('sha256').update(bytes).digest('hex'), createHash('sha256').update(second).digest('hex'));
     if (index < 3) await writeFile(`artifacts/image-variants/visual/variant-${index}.webp`, bytes);
