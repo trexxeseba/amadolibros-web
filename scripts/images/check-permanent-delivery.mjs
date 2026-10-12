@@ -6,9 +6,18 @@ import sharp from 'sharp';
 const base = new URL(process.env.COMMERCE_BASE_URL);
 assert.ok(base.protocol === 'https:' && /(?:^|\.)amadolibros-web\.pages\.dev$/.test(base.hostname));
 const get = async path => {
-  const response = await fetch(new URL(path, base), { redirect: 'manual', signal: AbortSignal.timeout(30_000) });
-  assert.equal(response.status, 200, `HTTP ${response.status}`);
-  return response;
+  let url = new URL(path, base);
+  for (let redirect = 0; redirect < 4; redirect++) {
+    assert.equal(url.origin, base.origin, 'Preview must not fetch production');
+    const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(30_000) });
+    if ([301, 302, 307, 308].includes(response.status)) {
+      const location = response.headers.get('location'); assert.ok(location);
+      await response.body?.cancel(); url = new URL(location, url); continue;
+    }
+    assert.equal(response.status, 200, `HTTP ${response.status}`);
+    return response;
+  }
+  throw new Error('too-many-redirects');
 };
 const home = await (await get('/')).text();
 assert.doesNotMatch(home, /\/cdn-cgi\/image\//);
