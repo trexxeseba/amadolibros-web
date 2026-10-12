@@ -12,7 +12,7 @@ class Bucket {
   constructor() { this.objects = new Map(); this.writes = []; }
   async get(key) {
     const object = this.objects.get(key); if (!object) return null;
-    return { body: object.bytes.slice(), size: object.bytes.length, ...object.options,
+    return { body: object.bytes.slice(), size: object.bytes.length, etag: object.etag, ...object.options,
       text: async () => Buffer.from(object.bytes).toString() };
   }
   async head(key) {
@@ -21,8 +21,10 @@ class Bucket {
   }
   async put(key, body, options = {}) {
     if (options.onlyIf?.etagDoesNotMatch === '*' && this.objects.has(key)) return null;
+    if (options.onlyIf?.etagMatches && this.objects.get(key)?.etag !== options.onlyIf.etagMatches) return null;
     const bytes = typeof body === 'string' ? Buffer.from(body) : new Uint8Array(body);
-    this.objects.set(key, { bytes, options }); this.writes.push(key); return { etag: key };
+    const etag = createHash('sha256').update(bytes).digest('hex');
+    this.objects.set(key, { bytes, options, etag }); this.writes.push(key); return { etag };
   }
   async list({ prefix, limit, cursor }) {
     const keys = [...this.objects.keys()].filter(k => k.startsWith(prefix)).sort();
@@ -131,4 +133,26 @@ test('Preview lee el master productivo y escribe únicamente derivados en su buc
   assert.deepEqual(result.failures,[]);assert.equal(result.created,IMAGE_VARIANTS.length);
   assert.deepEqual(source.writes,before);
   assert.ok(target.writes.every(key=>key.startsWith('covers/variants/')));
+});
+
+test('semilla Preview alinea masters e índice, conserva otros productos y jamás escribe el origen', async () => {
+  const source=new Bucket(), target=new Bucket(), master=await fixture();
+  const current={object_key:`covers/v1/objects/${master.file}`,sha256:master.hash,mime:'image/png',
+    source_url:'https://http2.mlstatic.com/real.png',width:1200,height:1800,bytes:master.bytes.length};
+  await source.put(current.object_key,master.bytes);
+  await source.put('covers/v1/manifest.json',JSON.stringify({schema_version:1,entries:{'MLU1:0':{product_id:'MLU1',position:0,current}}}));
+  await target.put('covers/v1/manifest.json',JSON.stringify({schema_version:1,entries:{'MLU2:0':{product_id:'MLU2',position:0,current}}}));
+  const before=source.writes.slice();
+  const env={COVER_R2:target,IMAGE_VARIANTS_SOURCE_R2:source,IMAGE_VARIANTS_WRITE_ENABLED:'true'};
+  const seed=ids=>new Request('https://test.example/image-variants/seed',{method:'POST',body:JSON.stringify({productIds:ids})});
+  assert.equal((await handleImageVariants(seed(['MLU1']),env)).status,200);
+  const manifest=await target.get('covers/v1/manifest.json');
+  assert.deepEqual(Object.keys(JSON.parse(await manifest.text()).entries).sort(),['MLU1:0','MLU2:0']);
+  assert.match(manifest.customMetadata.cover_index_v1,/^[a-f0-9]{64}$/);
+  assert.deepEqual(Buffer.from((await target.get(current.object_key)).body),master.bytes);
+  assert.equal((await handleImageVariants(seed(['MLU1']),env)).status,200);
+  assert.equal(target.writes.filter(key=>key===current.object_key).length,1);
+  assert.deepEqual(source.writes,before);
+  assert.equal((await handleImageVariants(seed(['MLU1']),{...env,IMAGE_VARIANTS_SOURCE_R2:undefined})).status,404);
+  assert.equal((await handleImageVariants(seed(['invalid']),env)).status,400);
 });

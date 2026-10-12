@@ -108,6 +108,8 @@ jobs:
           SAMPLE_ID=$(curl -fsS --retry 3 --max-time 30 \
             "https://pr-${{ github.event.pull_request.number }}.amadolibros-web.pages.dev/preview-cover/status" \
             | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s);if(!/^MLU\\d+$/.test(r.sample_product_id||''))process.exit(1);process.stdout.write(r.sample_product_id);});")
+          WORKER_SYNC_TRIGGER_URL="$SEED_URL" SYNC_SECRET="$PREVIEW_SEED_TOKEN" IMAGE_VARIANT_SAMPLE_PRODUCT_ID="$SAMPLE_ID" \
+            node scripts/images/seed-preview-variants.mjs > artifacts/image-variants/seed.json
           WORKER_SYNC_TRIGGER_URL="$SEED_URL" SYNC_SECRET="$PREVIEW_SEED_TOKEN" IMAGE_VARIANT_MASTER_LIMIT=20 IMAGE_VARIANT_SAMPLE_PRODUCT_ID="$SAMPLE_ID" \
             node scripts/images/build-permanent-variants.mjs > artifacts/image-variants/generation.json
           # Segundo recorrido: 0 transformaciones/descargas de masters ya listos.

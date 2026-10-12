@@ -1,6 +1,7 @@
 import { IMAGE_VARIANTS, imageVariant, variantObjectKey, VARIANT_VERSION } from '../shared/image-variants.js';
 import { inspectCoverBytes } from './cover-mirror.js';
 import { streamCoverManifest } from '../functions/_shared/cover-manifest-stream.js';
+import { prepareCoverIndex, COVER_INDEX_METADATA } from '../functions/_shared/cover-public-index.js';
 
 const MASTER_RE = /^([a-f0-9]{64})\.(jpg|png|webp)$/;
 const PROGRESS_KEY = `covers/variants/${VARIANT_VERSION}/progress.json`;
@@ -52,6 +53,44 @@ export async function handleImageVariants(request, env) {
   const masters = env.IMAGE_VARIANTS_SOURCE_R2 || bucket;
   const path = url.pathname.slice('/image-variants'.length).split('/').filter(Boolean);
   try {
+    if (path[0] === 'seed' && path.length === 1 && request.method === 'POST') {
+      // Sólo el Worker de Preview tiene un origen separado. El Worker
+      // productivo no puede activar esta operación mediante parámetros HTTP.
+      if (!env.IMAGE_VARIANTS_SOURCE_R2 || masters === bucket) return json({ error: 'preview-only' }, 404);
+      const { productIds } = JSON.parse(new TextDecoder().decode(await boundedBytes(request)));
+      if (!Array.isArray(productIds) || !productIds.length || productIds.length > 8 || productIds.some(id => !/^MLU\d+$/.test(id))) return json({ error: 'invalid-products' }, 400);
+      const sourceObject = await masters.get('covers/v1/manifest.json');
+      if (!sourceObject) return json({ error: 'manifest-unavailable' }, 404);
+      const selected = await streamCoverManifest(sourceObject, { productIds });
+      const entries = Object.fromEntries(Object.entries(selected.entries).filter(([,entry]) =>
+        /^covers\/v1\/objects\/[a-f0-9]{64}\.(jpg|png|webp)$/.test(entry.current?.object_key || '')));
+      for (const entry of Object.values(entries)) {
+        const key = entry.current.object_key;
+        if (await bucket.head(key)) continue;
+        const object = await masters.get(key);
+        if (!object?.body || object.size > MAX_BYTES) return json({ error: 'master-unavailable' }, 404);
+        const bytes = new Uint8Array(await new Response(object.body).arrayBuffer());
+        const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
+        if (hash !== entry.current.sha256) return json({ error:'master-hash-mismatch' },409);
+        await bucket.put(key,bytes,{onlyIf:{etagDoesNotMatch:'*'},httpMetadata:{contentType:entry.current.mime,cacheControl:'public, max-age=31536000, immutable'}});
+      }
+      // Semilla pequeña, CAS y unión: conserva muestras de otros trabajos.
+      for (let attempt=0;attempt<3;attempt++) {
+        const previous=await bucket.get('covers/v1/manifest.json');
+        if (previous?.size>MAX_BYTES) return json({error:'preview-manifest-too-large'},409);
+        const old=previous?JSON.parse(await previous.text()):{schema_version:1,entries:{}};
+        if(old.schema_version!==1 || !old.entries) return json({error:'invalid-preview-manifest'},409);
+        const next={...old,updated_at:new Date().toISOString(),entries:{...old.entries,...entries}};
+        const index=await prepareCoverIndex(bucket,next,null);
+        const stored=await bucket.put('covers/v1/manifest.json',JSON.stringify(next),{
+          onlyIf:previous?{etagMatches:previous.etag}:{etagDoesNotMatch:'*'},
+          httpMetadata:{contentType:'application/json',cacheControl:'no-store'},
+          customMetadata:{...(previous?.customMetadata||{}),[COVER_INDEX_METADATA]:index.hash},
+        });
+        if(stored!==null)return json({seeded:Object.keys(entries).length,productIds});
+      }
+      return json({error:'preview-seed-conflict'},409);
+    }
     if (path[0] === 'progress' && path.length === 1) {
       if (request.method === 'GET') {
         const object = await bucket.get(PROGRESS_KEY);
