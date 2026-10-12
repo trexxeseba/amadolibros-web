@@ -51,11 +51,11 @@ test('la ficha no solicita el zoom hasta abrirlo, y conserva calidad y navegaci√
   assert.deepEqual(requests, [], 'initial controller does not fetch the hidden zoom');
   nodes.gMainBtn.listeners.click();
   assert.equal(requests.length, 1);
-  assert.match(requests[0], /width=1024,quality=88/);
-  assert.match(requests[0], /cover\.jpg$/);
+  assert.match(requests[0], /variant=v1-1024-q88/);
+  assert.match(requests[0], /cover\.jpg\?variant=/);
   next.listeners.click();
-  assert.match(requests[1], /cover-2\.jpg$/);
-  assert.match(requests[1], /width=1024,quality=88/);
+  assert.match(requests[1], /cover-2\.jpg\?variant=/);
+  assert.match(requests[1], /variant=v1-1024-q88/);
   prev.listeners.click();
   assert.equal(requests[2], requests[0]);
   nodes.glbClose.listeners.click();

@@ -1,4 +1,5 @@
 import { BASE } from './catalog.js';
+import { permanentImageUrl } from '../../shared/image-variants.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
 const MAX_GALLERY_IMAGES = 16;
@@ -12,7 +13,8 @@ function positiveInteger(value) {
 function sameProductionZone(source) {
   try {
     const url = new URL(source, BASE);
-    return url.origin === BASE && !url.pathname.startsWith('/cdn-cgi/image/');
+    return (url.origin === BASE || /(?:^|\.)amadolibros-web\.pages\.dev$/.test(url.hostname)) &&
+      !url.pathname.startsWith('/cdn-cgi/image/');
   } catch {
     return false;
   }
@@ -33,9 +35,8 @@ export function bookCoverUrl(productId, position = 0) {
 }
 
 /**
- * URL de Cloudflare Images para una fuente de la propia zona. No transforma
- * hosts externos ni previews: esos conservan su URL original para no romper
- * entornos donde la zona no está habilitada.
+ * URL de archivo permanente para una fuente controlada. No transforma
+ * hosts externos. Las recetas ausentes conservan la fuente original.
  */
 export function cloudflareImageUrl(source, {
   width,
@@ -46,15 +47,7 @@ export function cloudflareImageUrl(source, {
   const targetWidth = positiveInteger(width);
   if (!targetWidth) return String(source);
   const targetQuality = Math.min(100, Math.max(1, positiveInteger(quality) || 85));
-  const sourceUrl = new URL(source, BASE);
-  const options = [
-    'format=auto',
-    `fit=${fit}`,
-    `width=${targetWidth}`,
-    `quality=${targetQuality}`,
-    'onerror=redirect',
-  ].join(',');
-  return `${BASE}/cdn-cgi/image/${options}${sourceUrl.pathname}${sourceUrl.search}`;
+  return permanentImageUrl(source, { width: targetWidth, quality: targetQuality, fit });
 }
 
 /**

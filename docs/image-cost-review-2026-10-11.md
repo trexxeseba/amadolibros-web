@@ -37,4 +37,14 @@ Las suscripciones se revisan después de comprobar dependencias y migración. La
 
 ## Estado
 
-Primera corrección preparada: zoom bajo demanda con prueba de controlador (entrada sin solicitud, apertura, siguiente/anterior, cierre y reapertura de la imagen elegida). La arquitectura de derivados permanentes queda especificada, todavía no implementada ni desplegada. No se modifica producción ni suscripciones desde esta revisión.
+Implementado en la rama del PR #400:
+
+- Zoom bajo demanda, manteniendo 1024 px/calidad 88.
+- Doce recetas WebP fijas que conservan todos los anchos y calidades usados actualmente, incluidos encuadres ampliados, sin recortar ni ampliar el master.
+- Generador offline con Sharp 0.34.5 y lockfile; verifica SHA del master, dimensiones y proporción. No llama a Cloudflare Images.
+- API del Worker protegida por el SYNC_SECRET existente; valida receta, origen por SHA, tamaño, dimensiones y publicación condicional inmutable. Pages sólo lee.
+- Catálogo/home/fichas usan URLs de recetas permanentes. Las galerías con master validado usan URLs por hash, evitando consultar el catálogo por cada imagen. Si falta un derivado, se sirve el original con caché breve y diagnóstico explícito, sin transformar ni escribir desde una visita.
+- Job horario acotado a 100 masters, cuatro fuentes en paralelo y cursor persistente. Cada barrido comprueba las versiones existentes; sólo procesa faltantes o hashes nuevos. Los errores conservan la entrega del original y vuelven a revisarse en el siguiente barrido. Un lote manual admite hasta 500 masters.
+- Validación real en R2 Preview para el producto de muestra de su manifiesto: generación, segundo recorrido sin nuevos archivos/descargas, entrega HTTP y evidencia de imágenes. Los objetos de Preview permanecen para revisión; el Worker temporal se elimina. Producción y suscripciones todavía sin modificar.
+
+La generación inicial tarda varios lotes. Antes de activar la entrega productiva se debe preparar cobertura suficiente para evitar que una cuadrícula descargue todos los masters grandes durante el backfill. El recorte medido del panel se comprueba después de desplegar; los cargos ya acumulados no se revierten.

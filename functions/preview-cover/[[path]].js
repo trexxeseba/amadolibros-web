@@ -1,4 +1,5 @@
 import { previewCoverSummary } from '../_shared/preview-cover.js';
+import { imageVariant, readImageVariant } from '../../shared/image-variants.js';
 
 function notFound() {
     return new Response('Not found', {
@@ -20,6 +21,10 @@ export async function onRequest(context) {
             status: 405,
             headers: { Allow: 'GET, HEAD', 'Cache-Control': 'no-store' },
         });
+    }
+    const variantId = new URL(context.request.url).searchParams.get('variant');
+    if (variantId !== null && !imageVariant(variantId)) {
+        return new Response('Invalid variant', { status: 400, headers: { 'Cache-Control': 'no-store' } });
     }
 
     const parts = pathParts(context);
@@ -45,17 +50,19 @@ export async function onRequest(context) {
     const mime = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
 
     try {
-        const object = await context.env.COVER_R2.get(objectKey);
+        const derived = variantId ? await readImageVariant(context.env.COVER_R2, sha256, variantId) : null;
+        const object = derived || await context.env.COVER_R2.get(objectKey);
         if (!object?.body) return notFound();
         const headers = new Headers({
-            'Content-Type': mime,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'ETag': `"${sha256}"`,
+            'Content-Type': derived ? 'image/webp' : mime,
+            'Cache-Control': variantId && !derived ? 'public, max-age=300' : 'public, max-age=31536000, immutable',
+            'ETag': `"${derived ? derived.customMetadata.sha256 : sha256}"`,
             'X-Content-Type-Options': 'nosniff',
             'X-Amado-Cover-Source': context.env.APP_ENV === 'production'
                 ? 'r2-production'
                 : 'r2-preview',
         });
+        if (variantId) headers.set('X-Cover-Variant', derived ? variantId : 'original-fallback');
         if (Number.isFinite(Number(object.size))) {
             headers.set('Content-Length', String(object.size));
         }

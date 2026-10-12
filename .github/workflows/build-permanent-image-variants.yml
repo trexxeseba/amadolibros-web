@@ -1,0 +1,41 @@
+name: Build permanent image variants
+
+on:
+  schedule:
+    - cron: '37 * * * *'
+  workflow_dispatch:
+    inputs:
+      master_limit:
+        description: 'Masters por lote (1–500); sólo genera recetas ausentes'
+        type: number
+        default: 100
+
+permissions:
+  contents: read
+
+concurrency:
+  group: permanent-image-variants-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: scripts/images/package-lock.json
+      - name: Install pinned image encoder
+        working-directory: scripts/images
+        run: npm ci --no-audit --no-fund
+      - name: Generate missing versions offline and publish to R2
+        env:
+          WORKER_SYNC_TRIGGER_URL: ${{ vars.WORKER_SYNC_TRIGGER_URL }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          IMAGE_VARIANT_MASTER_LIMIT: ${{ inputs.master_limit || 100 }}
+        run: node scripts/images/build-permanent-variants.mjs

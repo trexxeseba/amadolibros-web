@@ -23,10 +23,10 @@ test('construye una portada primaria controlada y rechaza IDs ajenos', () => {
   assert.equal(bookCoverUrl('../MLU123'), '');
 });
 
-test('genera una transformación segura en la zona productiva', () => {
+test('usa una receta permanente en la zona productiva', () => {
   assert.equal(
     cloudflareImageUrl(SOURCE, { width: 480, quality: 85 }),
-    'https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=480,quality=85,onerror=redirect/book-cover/MLU123456/cover.jpg',
+    'https://www.amadolibros.com/book-cover/MLU123456/cover.jpg?variant=v1-480-q85',
   );
 });
 
@@ -45,9 +45,9 @@ test('srcset ofrece anchos únicos y deja que el navegador elija uno', () => {
     defaultWidth: 360,
     sizes: '(max-width: 600px) 50vw, 280px',
   });
-  assert.match(image.src, /width=360/);
+  assert.match(image.src, /variant=v1-360-q85/);
   assert.deepEqual(
-    [...image.srcset.matchAll(/width=(\d+)/g)].map(match => Number(match[1])),
+    [...image.srcset.matchAll(/variant=v1-(\d+)-q85/g)].map(match => Number(match[1])),
     [240, 360, 480],
   );
   assert.equal(image.sizes, '(max-width: 600px) 50vw, 280px');

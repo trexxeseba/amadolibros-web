@@ -48,11 +48,9 @@ function slugify(text: string): string {
     .substring(0, 60);
 }
 
-// La home deja de entregar mlstatic directamente: usa la portada controlada
-// por Amado Libros (R2 primero) y Cloudflare elige el ancho/formato adecuado.
-// Cloudflare Pages Preview no expone /cdn-cgi/image y no debe incrustar la
-// variante optimizada del dominio productivo. En Preview usamos el proxy de
-// portada del mismo origen; Producción conserva Image Resizing y srcset.
+// Versiones permanentes de la portada controlada, con tamaños responsivos.
+// Preview sirve las mismas recetas desde su propio origen; si una versión
+// todavía no existe, el lector entrega el original sin transformación pagada.
 const isIndexableProduction = import.meta.env.PUBLIC_INDEXABLE === 'true';
 const cover = responsiveBookCover(book.id, { optimize: isIndexableProduction });
 

@@ -55,6 +55,7 @@ import { sendDailyPanelDigest } from './daily-panel-digest.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
+import { handleImageVariants } from './image-variants-api.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
 import { processPendingMetaPurchases } from '../functions/_shared/purchase-tracking.js';
 import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
@@ -124,6 +125,9 @@ export default {
 
     if (request.method === 'GET' && url.pathname === '/status') {
       return json(await readStatus(env));
+    }
+    if (url.pathname.startsWith('/image-variants/')) {
+      return handleImageVariants(request, env);
     }
 
     if (request.method === 'GET' && url.pathname === '/bing-webmaster/summary') {

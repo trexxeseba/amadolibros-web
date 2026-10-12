@@ -1,0 +1,7 @@
+name = "amado-image-variants-preview"
+main = "image-variants-preview.js"
+compatibility_date = "2024-09-23"
+
+[[r2_buckets]]
+binding = "COVER_R2"
+bucket_name = "amadolibros-images-preview"
