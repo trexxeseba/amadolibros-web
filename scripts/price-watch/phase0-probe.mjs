@@ -117,6 +117,7 @@ async function main() {
   };
   const results = Object.fromEntries(Object.keys(methods).map((m) => [m, { intentos: 0, ok_sin_token: 0, ok_con_token: 0, otros_vendedores: 0, status_sin_token: {}, status_con_token: {} }]));
   const shapes = {};
+  const errorSamples = {};
 
   for (const item of sample) {
     for (const [name, build] of Object.entries(methods)) {
@@ -127,6 +128,7 @@ async function main() {
       const anon = await get(url, null);
       r.status_sin_token[anon.status] = (r.status_sin_token[anon.status] || 0) + 1;
       if (anon.status === 200) r.ok_sin_token += 1;
+      else if (!errorSamples[name]) errorSamples[name] = { status: anon.status, body: anon.body ?? anon.error };
       let best = anon;
       if (auth.token) {
         const authed = await get(url, auth.token);
@@ -167,7 +169,11 @@ async function main() {
     `- Con catalog_product_id: ${report.inventory.con_catalog_product_id} · con ISBN: ${report.inventory.con_isbn}`,
     `- Auth: ${auth.note}`, `- Llamadas: ${stats.calls} · 429: ${stats.status429} · reintentos: ${stats.retries}`, '',
     '| Método | Intentos | OK sin token | OK con token | Con otros vendedores |', '| --- | ---: | ---: | ---: | ---: |',
-    ...Object.entries(results).map(([m, r]) => `| ${m} | ${r.intentos} | ${r.ok_sin_token} | ${r.ok_con_token} | ${r.otros_vendedores} |`)];
+    ...Object.entries(results).map(([m, r]) => `| ${m} | ${r.intentos} | ${r.ok_sin_token} | ${r.ok_con_token} | ${r.otros_vendedores} |`),
+    '', '### Códigos de estado sin token / con token', '',
+    ...Object.entries(results).map(([m, r]) => `- ${m}: sin token ${JSON.stringify(r.status_sin_token)}${auth.token ? ` · con token ${JSON.stringify(r.status_con_token)}` : ''}`),
+    '', '### Mensaje de error de ejemplo (sin token)', '',
+    ...Object.entries(errorSamples).map(([m, e]) => `- ${m}: HTTP ${e.status} ${JSON.stringify(e.body)?.slice(0, 220)}`)];
   await writeFile(`${OUT}/fase0-resumen.md`, `${lines.join('\n')}\n`);
   console.log(lines.join('\n'));
 }
