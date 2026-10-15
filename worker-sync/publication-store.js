@@ -50,7 +50,6 @@ export class PublicationStore {
   const results=await this.db.batch([
    this.stmt("UPDATE ml_pub_runs SET feed_id=?,index_json=?,state=CASE WHEN state IN ('paused','auth_error') THEN state WHEN approved_hash=policy_hash THEN 'publishing' ELSE 'preflight' END,updated_at=? WHERE id=? AND lease_until<? RETURNING id",feedId,index,now,id,now),
    this.stmt(`UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0 WHERE run_id=? AND state IN ('validated','retry','skipped_stock') AND ${guard}`,id,id,feedId,now),
-   this.stmt(`INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=? AND ${guard}`,id,feedId,id,feedId,now),
    this.stmt(`DELETE FROM ml_pub_index WHERE run_id=? AND ${guard}`,id,id,feedId,now),
   ]);
   if(!results[0].results?.length)throw new PublicationError('run_busy',409);
@@ -75,6 +74,6 @@ export class PublicationStore {
  async interrupted(id){await this.stmt("UPDATE ml_pub_jobs SET state='uncertain',error_code='interrupted_create' WHERE run_id=? AND state='creating'",id).run();return (await this.stmt("SELECT * FROM ml_pub_jobs WHERE run_id=? AND state='uncertain' LIMIT 5",id).all()).results;}
  async counts(id){return (await this.stmt('SELECT state,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? GROUP BY state',id).all()).results;}
  async nonce(id,expires,now){await this.stmt('DELETE FROM ml_pub_nonces WHERE expires_at<?',now).run();try{await this.stmt('INSERT INTO ml_pub_nonces(id,expires_at) VALUES(?,?)',id,expires).run();}catch{throw new PublicationError('request_already_used',409);}}
- async preview(id){return (await this.stmt("SELECT isbn,state,payload_json,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('validated','review','uncertain') ORDER BY state,isbn LIMIT 10",id).all()).results.map(x=>({...x,payload:x.payload_json?JSON.parse(x.payload_json):null,payload_json:undefined}));}
+ async preview(id){return (await this.stmt("SELECT isbn,state,payload_json,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('validated','review','uncertain') ORDER BY CASE state WHEN 'validated' THEN 0 WHEN 'review' THEN 1 ELSE 2 END,isbn LIMIT 10",id).all()).results.map(x=>({...x,payload:x.payload_json?JSON.parse(x.payload_json):null,payload_json:undefined}));}
  async summary(id){const r=id?await this.run(id):(await this.activeRun()??await this.stmt('SELECT * FROM ml_pub_runs ORDER BY created_at DESC LIMIT 1').first());if(!r)return {state:'no_active_run'};return {id:r.id,state:r.state,index:JSON.parse(r.index_json),policy_hash:r.policy_hash,approved:r.approved_hash===r.policy_hash,counts:await this.counts(r.id),feed_id:r.feed_id,daily_cap:r.daily_cap};}
 }

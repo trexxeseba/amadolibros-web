@@ -51,13 +51,18 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
    if(!Array.isArray(page.results)||page.results.some(id=>!/^MLU\d+$/.test(id)))throw new PublicationError('index_page_invalid',502);
    state.pending=page.results;state.scroll=page.scroll_id??null;
   }
-  const ids=state.pending.slice(0,20);
+  const ids=state.pending.slice(0,100),groups=[];
+  for(let i=0;i<ids.length;i+=20)groups.push(ids.slice(i,i+20));
+  // Read up to five independent multigets together, retaining 20 IDs per request.
   // The older /items?ids endpoint is deprecated from 25 Oct 2026.
-  const raw=await call(env,'/items/bulk?ids='+ids.join(','));
-  if(!Array.isArray(raw)||raw.length!==ids.length)throw new PublicationError('index_details_incomplete',502);
-  const remaining=new Set(ids),items=[];
-  for(const entry of raw){const b=entry.body;if((entry.code??entry.status_code)!==200||!b||String(b.seller_id)!==SELLER_ID||!remaining.has(b.id))throw new PublicationError('index_details_invalid',502);remaining.delete(b.id);items.push({id:b.id,isbn:itemIsbns(b),titleKey:normalizedTitle(b.title),status:b.status});}
-  if(remaining.size)throw new PublicationError('index_details_incomplete',502);
+  const items=(await Promise.all(groups.map(async group=>{
+   const raw=await call(env,'/items/bulk?ids='+group.join(','));
+   if(!Array.isArray(raw)||raw.length!==group.length)throw new PublicationError('index_details_incomplete',502);
+   const remaining=new Set(group),batch=[];
+   for(const entry of raw){const b=entry.body;if((entry.code??entry.status_code)!==200||!b||String(b.seller_id)!==SELLER_ID||!remaining.has(b.id))throw new PublicationError('index_details_invalid',502);remaining.delete(b.id);batch.push({id:b.id,isbn:itemIsbns(b),titleKey:normalizedTitle(b.title),status:b.status});}
+   if(remaining.size)throw new PublicationError('index_details_incomplete',502);
+   return batch;
+  }))).flat();
   state.pending=state.pending.slice(ids.length);state.seen+=ids.length;
   return {index:state,items};
  }

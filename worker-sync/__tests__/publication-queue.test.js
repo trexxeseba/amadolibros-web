@@ -82,6 +82,13 @@ test('a replacement supplier snapshot never reuses stock of an absent ISBN',asyn
  await f.store.saveIndex(f.runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});
  const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(result.counts.find(x=>x.state==='skipped_stock').n,2);
 });
+test('refreshing stock preserves the original batch and the preview prioritizes validated candidates',async t=>{
+ const f=await fixture(t),third={...books[0],isbn:'9780140328721',title:'Libro fuera del lote'},feedId=crypto.randomUUID();
+ await f.store.beginFeed(feedId,new Date(f.now).toISOString(),3,f.now);await f.store.importRows(feedId,[...books,third]);await f.store.commitFeed(feedId);await f.store.attachFeed(f.runId,feedId);
+ assert.equal((await f.store.counts(f.runId)).reduce((n,x)=>n+x.n,0),2);assert.equal((await f.store.stock(feedId,third.isbn)).isbn,third.isbn);
+ await f.store.job(f.runId,books[0].isbn,'review',{errorCode:'test_review'});await f.store.job(f.runId,books[1].isbn,'validated',{payload:{price:1200}});
+ assert.equal((await f.store.preview(f.runId))[0].state,'validated');
+});
 test('signed publication envelopes bind the complete body and reject changed content',async()=>{
  const keys=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']),publicKey=await crypto.subtle.exportKey('jwk',keys.publicKey),now=Date.now();
  const raw=JSON.stringify({action:'status',args:{}}),payload={v:1,iss:OPERATIONS_ISSUER,aud:'amado-mercadolibre-publication',method:'POST',path:'/operations/publication',seller_id:'440298103',iat:Math.floor(now/1000),exp:Math.floor(now/1000)+45,jti:crypto.randomUUID(),body_sha256:await sha256(raw)};
@@ -101,6 +108,16 @@ test('new bulk responses are matched by ID and an incomplete batch cannot finish
  };
  const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'});
  const result=await api.indexSlice({}, {status:'paused',scroll:null,pending:[],done:false,seen:0});assert.equal(result.items[0].isbn,books[1].isbn);assert.equal(result.index.seen,2);assert.equal(result.index.done,false);
+});
+test('index pages read at most five independent multigets with twenty IDs each',async()=>{
+ const ids=Array.from({length:100},(_,i)=>`MLU${900000000+i}`);let active=0,maxActive=0;
+ const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async url=>{
+  const u=new URL(url);if(u.pathname.includes('/items/search'))return Response.json({results:ids,scroll_id:'cursor'});
+  const group=u.searchParams.get('ids').split(',');assert.ok(group.length<=20);active++;maxActive=Math.max(maxActive,active);await new Promise(resolve=>setTimeout(resolve,1));active--;
+  return Response.json(group.reverse().map(id=>({code:200,body:{id,seller_id:440298103,status:'active',title:id,attributes:[]}})));
+ }});
+ const result=await api.indexSlice({}, {status:'active',scroll:null,pending:[],done:false,seen:0});
+ assert.equal(maxActive,5);assert.equal(result.items.length,100);assert.equal(new Set(result.items.map(x=>x.id)).size,100);assert.deepEqual(result.index.pending,[]);
 });
 test('an expired scroll after a cooldown restarts the status without claiming an incomplete index is done',async()=>{
  let restarted=false;
