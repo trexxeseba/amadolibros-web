@@ -100,6 +100,10 @@ test('transport follows no redirect and returns no credential or raw exception t
  const api=createPublicationMeli({tokenProvider:async()=>'private-token-test',fetcher:async(url,options)=>{assert.equal(options.redirect,'manual');throw Error('private-token-test');}});
  await assert.rejects(()=>api.account({}),error=>{assert.ok(error instanceof PublicationError);assert.doesNotMatch(error.message,/private-token/);return true;});
 });
+test('product diagnostics distinguish a missing identifier from a wrong domain without returning credentials',async()=>{
+ const api=createPublicationMeli({tokenProvider:async()=>'private-test-token',fetcher:async url=>new URL(url).pathname==='/products/search'?Response.json({paging:{total:1},results:[{id:'MLU900000000'}]}):Response.json({id:'MLU900000000',name:'Libro de prueba',domain_id:'MLU-BOOKS',attributes:[{id:'BOOK_TITLE',value_name:'Libro de prueba'}]})});
+ const result=await api.inspectProduct({},books[0].isbn);assert.equal(result.reported_isbn,null);assert.equal(result.domain_id,'MLU-BOOKS');assert.deepEqual(result.attribute_ids,['BOOK_TITLE']);assert.doesNotMatch(JSON.stringify(result),/private-test-token/);
+});
 test('new bulk responses are matched by ID and an incomplete batch cannot finish the index',async()=>{
  const fetcher=async url=>{
   const p=new URL(url).pathname;

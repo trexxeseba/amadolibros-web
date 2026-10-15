@@ -85,7 +85,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
   if(!['begin_feed','import_feed','commit_feed','create_run','attach_feed','status','tick','pause','approve','preview'].includes(action))throw new PublicationError('unknown_action');
   const s=store(env);
   if(action==='status'){try{return await s.summary(args.run_id);}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}}
-  if(action==='preview'){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');return {run_id:args.run_id,jobs:await s.preview(args.run_id)};}
+  if(action==='preview'){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const jobs=await s.preview(args.run_id),sample=jobs.find(j=>j.error_code==='product_isbn_or_domain_mismatch'&&/^(978|979)/.test(j.isbn));return {run_id:args.run_id,jobs,...(sample?{diagnostic:await api.inspectProduct(env,sample.isbn)}:{})};}
   if(action==='tick'){if(nonce){await initialize(env,s);await s.nonce(nonce.id,nonce.expires,now());}return tick(env,args.run_id);}
   await initialize(env,s);if(nonce)await s.nonce(nonce.id,nonce.expires,now());
   if(action==='begin_feed'){
