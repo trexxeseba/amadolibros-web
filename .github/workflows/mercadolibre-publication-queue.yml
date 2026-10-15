@@ -1,0 +1,71 @@
+name: Mercado Libre publication queue
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Controlar la cola; las altas requieren precios revisados y habilitación del Worker'
+        type: choice
+        options: [status, tick, pause, approve, refresh]
+        default: status
+      run_id:
+        description: 'ID del lote (vacío para consultar o continuar el activo)'
+        required: false
+        type: string
+      policy_hash:
+        description: 'Versión de precios revisada, obligatoria para aprobar'
+        required: false
+        type: string
+  schedule:
+    - cron: '*/10 * * * *'
+    - cron: '30 4 * * *'
+  pull_request:
+    paths:
+      - 'worker-sync/publication-*.js'
+      - 'worker-sync/__tests__/publication-queue.test.js'
+      - 'worker-sync/__tests__/helpers/sqlite-d1.js'
+      - 'scripts/mercadolibre/**'
+      - '.github/workflows/mercadolibre-publication-queue.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mercadolibre-publication-watchdog
+  cancel-in-progress: false
+
+jobs:
+  control:
+    if: github.ref == 'refs/heads/main' && vars.ML_PUBLISHER_AUTOMATION_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Continuar o consultar la cola
+        run: node scripts/mercadolibre/publisher-control.mjs
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          PUBLISHER_ACTION: ${{ inputs.action || (github.event.schedule == '30 4 * * *' && 'refresh' || 'tick') }}
+          PUBLISHER_RUN_ID: ${{ inputs.run_id }}
+          PUBLISHER_POLICY_HASH: ${{ inputs.policy_hash }}
+          PUBLISHER_CYCLES: '10'
+          SUPPLIER_FEED_URL: ${{ secrets.SUPPLIER_FEED_URL }}
+          SUPPLIER_FEED_AUTHORIZATION: ${{ secrets.SUPPLIER_FEED_AUTHORIZATION }}
+          SUPPLIER_WEIGHT_UNIT: ${{ vars.SUPPLIER_WEIGHT_UNIT || 'kg' }}
+          PUBLISHER_POLICY_JSON: ${{ secrets.PUBLISHER_POLICY_JSON }}
+  checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Verificar cola, idempotencia, stock y transporte
+        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/operations-read.test.js
+      - name: Verificar lector del proveedor
+        run: python3 -m py_compile scripts/mercadolibre/prepare-supplier-feed.py

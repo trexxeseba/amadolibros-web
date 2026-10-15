@@ -9,12 +9,15 @@ compatibility_date = "2024-09-23"
 
 # ── Cron: sincronización automática 1 vez por día — 07:15 UTC (04:15 Montevideo)
 [triggers]
-crons = ["15 7 * * *", "*/5 * * * *", "3 11 * * *", "3 12 * * *"]
+crons = ["15 7 * * *", "*/5 * * * *", "3 11 * * *", "3 12 * * *", "* * * * *"]
 
 # ── Variables no sensibles ────────────────────────────────────────────────────
 [vars]
 APP_ID          = "4741021817925208"
 USER_ID         = "440298103"
+# New runs always start in preflight. Only approval of their immutable price
+# policy enables creation. Set disabled for an additional global stop switch.
+ML_PUBLISHER_MODE = "enabled"
 # Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
 MIN_ACTIVE_ITEMS = "500"
 # Descripciones ML: endpoint individual. El primer lote vidriera acelera el

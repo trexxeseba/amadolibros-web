@@ -1,0 +1,55 @@
+import fs from 'node:fs/promises';
+import {mkdtemp} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {isIP} from 'node:net';
+const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes.workers.dev';
+const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
+const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
+const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
+const allowed=new Set(['status','tick','pause','approve','import','refresh']);if(!allowed.has(action))throw Error('Unsupported action');
+async function command(action,args={}){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
+ try{
+  const response=await fetch(new URL('/publisher/command',url),{method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},body:JSON.stringify({action,args}),redirect:'manual',signal:controller.signal});
+  const body=await response.json();if(!response.ok)throw Error(`Publisher ${action}: ${body.error||response.status}`);return body;
+ }finally{clearTimeout(timer);}
+}
+function summary(body){console.log(JSON.stringify({id:body.id,state:body.state,counts:body.counts,policy_hash:body.policy_hash,approved:body.approved,indexed:body.index?.seen,index_complete:body.index?.done,daily_cap:body.daily_cap}));}
+async function importFeed(input){
+ const previous=runId?{id:runId}:await command('status');
+ const targetRun=previous.id,feedId=crypto.randomUUID(),newRun=targetRun||crypto.randomUUID();
+ if(!Array.isArray(input.rows)||!input.rows.length)throw Error('Empty supplier feed');
+ await command('begin_feed',{feed_id:feedId,source_date:input.source_date,expected_rows:input.rows.length});
+ for(let i=0;i<input.rows.length;i+=200)await command('import_feed',{feed_id:feedId,rows:input.rows.slice(i,i+200)});
+ await command('commit_feed',{feed_id:feedId});
+ const result=targetRun?await command('attach_feed',{run_id:targetRun,feed_id:feedId}):await command('create_run',{run_id:newRun,feed_id:feedId,policy:input.policy,daily_cap:input.daily_cap??10000,preflight_limit:10});summary(result);
+}
+async function refreshFeed(){
+ const rawUrl=process.env.SUPPLIER_FEED_URL;
+ if(!rawUrl){console.log(JSON.stringify({state:'supplier_source_not_configured'}));return;}
+ let source;try{source=new URL(rawUrl);}catch{throw Error('Unsupported supplier source');}const host=source.hostname.replace(/^\[|\]$/g,'');
+ if(source.protocol!=='https:'||source.username||source.password||isIP(host)||host==='localhost'||/\.(local|internal)$/.test(host))throw Error('Unsupported supplier source');
+ const directory=await mkdtemp(join(tmpdir(),'amado-supplier-'));
+ try{
+  const headers={};if(process.env.SUPPLIER_FEED_AUTHORIZATION)headers.Authorization=process.env.SUPPLIER_FEED_AUTHORIZATION;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000);let bytes;
+  try{const response=await fetch(source,{headers,redirect:'manual',signal:controller.signal});if(!response.ok||!response.body)throw Error();const reader=response.body.getReader(),chunks=[];let size=0;while(true){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>64*1024*1024){await reader.cancel();throw Error();}chunks.push(value);}bytes=Buffer.concat(chunks);}catch{throw Error('Supplier download failed');}finally{clearTimeout(timer);}
+  const sourceFile=join(directory,'supplier.xlsx'),outputFile=join(directory,'feed.json');await fs.writeFile(sourceFile,bytes);
+  const parsed=spawnSync('python3',['scripts/mercadolibre/prepare-supplier-feed.py',sourceFile,outputFile,'--weight-unit',process.env.SUPPLIER_WEIGHT_UNIT||'kg'],{encoding:'utf8'});
+  if(parsed.status!==0)throw Error('Supplier workbook validation failed');
+  console.log(parsed.stdout.trim());await importFeed(JSON.parse(await fs.readFile(outputFile,'utf8')));
+ }finally{await fs.rm(directory,{recursive:true,force:true});}
+}
+if(action==='import'){
+ const file=process.env.PUBLISHER_FEED_FILE;if(!file)throw Error('PUBLISHER_FEED_FILE is required');
+ await importFeed(JSON.parse(await fs.readFile(file,'utf8')));
+}else if(action==='refresh'){
+ await refreshFeed();
+}else if(action==='approve'){
+ const hash=process.env.PUBLISHER_POLICY_HASH;if(!runId||!/^[a-f0-9]{64}$/.test(hash??''))throw Error('Run ID and reviewed policy hash are required');summary(await command('approve',{run_id:runId,policy_hash:hash}));
+}else if(action==='tick'){
+ const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
+ for(let i=0;i<cycles;i++){const result=await command('tick',{run_id:runId});summary(result);if(!['preflight','publishing','busy'].includes(result.state))break;}
+}else summary(await command(action,{run_id:runId}));
