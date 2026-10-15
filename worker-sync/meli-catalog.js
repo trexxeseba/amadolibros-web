@@ -42,7 +42,7 @@ const CATALOG_GALLERY_CACHE_KEY = 'catalog-product-galleries/v1/cache.json';
 const MAX_GALLERY_IMAGES = 16;
 const DESCRIPTION_MAX_CHARS = 5000;
 const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
-  'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id';
+  'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id,seller_custom_field';
 
 // Excepciones verificadas el 2026-08-11 sobre el catálogo productivo. Se
 // reemplaza sólo la secuencia dañada y únicamente para el ID afectado. Si el
@@ -210,6 +210,8 @@ export async function buildCatalog(env, accessToken, {
   const dataQuality = createDataQualitySummary();
   const catalogItems = rawItems
     .filter(raw => raw.status === 'active' || raw.status === 'paused')
+    // Supplier offers are published for ML with a lead time, not own-stock web inventory.
+    .filter(raw => !/^AMADO-AR-\d{13}$/.test(String(raw.seller_custom_field || '')))
     .map(raw => slimItem(raw, dataQuality));
 
   if (enrichDescriptions) {
