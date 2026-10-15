@@ -18,7 +18,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 const BASE_URL = (process.env.FICHAS_CHECK_BASE_URL || 'https://www.amadolibros.com').replace(/\/$/, '');
 const OUTPUT_DIR = process.env.FICHAS_CHECK_OUTPUT_DIR || 'artifacts/fichas-quality';
 const PRODUCT_ID = process.env.FICHAS_CHECK_PRODUCT_ID || 'MLU724888358';
-const PRODUCT_SLUG = process.env.FICHAS_CHECK_PRODUCT_SLUG || 'la-biblia-palabra-de-vida-verbo-divino';
+const PRODUCT_SLUG = process.env.FICHAS_CHECK_PRODUCT_SLUG || 'biblia-palabra-de-vida-verbo-divino-catolica-latinoamericana';
 
 // Autorías genéricas que nunca deben llegar al cliente.
 const GENERIC_RE = /desconocid[ao]|unknown\s+author|autor\s+no\s+especificado|sin\s+especificar|varios\s+autores|vv\.?\s*aa\.?/gi;
