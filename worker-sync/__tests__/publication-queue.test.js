@@ -48,7 +48,7 @@ test('an expired owner cannot overwrite job state or index progress of the next 
  await assert.rejects(()=>f.store.saveIndex(f.runId,{done:true},[],'old',f.now+301000),/lease_lost/);
 });
 test('preflight validates candidates and never calls item creation',async t=>{
- const f=await fixture(t);const result=await f.service.tick(f.env,f.runId);assert.equal(result.state,'ready');assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,2);assert.equal(result.counts.find(x=>x.state==='validated').n,2);
+ const f=await fixture(t);assert.equal((await f.store.nextJob(f.runId,f.now,false)).isbn,books[0].isbn);const result=await f.service.tick(f.env,f.runId);assert.equal(result.state,'ready');assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,2);assert.equal(result.counts.find(x=>x.state==='validated').n,2);
  await assert.rejects(()=>f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:'0'.repeat(64)}),/policy_hash_mismatch/);
 });
 test('approved runs create once, persist receipts, finish and do not repeat on another tick',async t=>{
