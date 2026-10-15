@@ -67,6 +67,12 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   return {index:state,items};
  }
  async function skuItems(env,isbn){const q=new URLSearchParams({sku:`AMADO-AR-${isbn}`,limit:'100'});const r=await call(env,`/users/${SELLER_ID}/items/search?${q}`);if(!Array.isArray(r.results)||r.results.some(id=>!/^MLU\d+$/.test(id)))throw new PublicationError('sku_lookup_invalid',502);return r.results;}
+ async function inspectProduct(env,input){
+  const isbn=canonicalIsbn(input),found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:isbn}));
+  const first=found.results?.[0],id=first?.id;if(!/^MLU\d+$/.test(id??''))return {requested_isbn:isbn,results:found.paging?.total??found.results?.length??null};
+  const product=await call(env,`/products/${id}`);
+  return {requested_isbn:isbn,results:found.paging?.total??found.results?.length??null,product_id:id,domain_id:product.domain_id??null,reported_isbn:itemIsbns(product),search_reported_isbn:itemIsbns(first),name:String(product.name??'').slice(0,250),attribute_ids:(product.attributes??[]).slice(0,60).map(a=>a.id),identifier_attributes:(product.attributes??[]).filter(a=>['GTIN','ISBN'].includes(a.id)).map(a=>({id:a.id,value_id:a.value_id??null,value_name:a.value_name??null,values:(a.values??[]).slice(0,5).map(v=>({id:v.id??null,name:v.name??null}))}))};
+ }
  async function prepare(env,row,policy,price){
   const seller=await account(env);
   const found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:row.isbn}));
@@ -110,5 +116,5 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==SELLER_ID)throw new MercadoLibreError('create_outcome_unknown',502);
   return result;
  }
- return {account,indexSlice,skuItems,prepare,create,call};
+ return {account,indexSlice,skuItems,prepare,create,call,inspectProduct};
 }
