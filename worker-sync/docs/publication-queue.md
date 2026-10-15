@@ -39,7 +39,33 @@ Un costo superior al previsto requiere revisar el precio; no se oculta el cargo.
 
 Se crean publicaciones tradicionales con `catalog_listing=false`. User Products
 usa `family_name` cuando el vendedor tiene `user_product_seller`; eso no activa
-Catálogo. Si Mercado Libre exige Catálogo para el producto, queda para revisión.
+Catálogo.
+
+### Catálogo obligatorio
+
+La política admite `catalogListing: false` (predeterminado) o
+`"required_only"`. El valor integra el `policy_hash`: habilitar Catálogo exige
+un lote nuevo con esa política y una aprobación nueva de su hash; ninguna
+aprobación anterior cubre altas de Catálogo. Con `required_only`:
+
+- Si el producto exacto del ISBN declara `listing_strategy = catalog_required`,
+  se prepara una publicación directa a Catálogo: el payload documentado
+  (título, fotos, atributos, SKU) más `catalog_listing: true` y el
+  `catalog_product_id` verificado. Se valida con `/items/validate` en preflight;
+  si Mercado Libre rechaza esa forma, el código oficial queda en el diagnóstico
+  del job como evidencia y el libro no se publica.
+- El `catalog_product_id` tiene que ser el producto cuyo GTIN es el ISBN del
+  proveedor, en dominio `MLU-BOOKS`, activo y sin variantes. Un producto con
+  hijos se resuelve únicamente si exactamente un hijo tiene ese GTIN. Cualquier
+  otra situación es revisión: `catalog_product_id_mismatch`,
+  `catalog_product_inactive`, `catalog_product_children_unresolved`,
+  `product_identity_mismatch`.
+- Si Catálogo no es obligatorio (`catalog_optional` u otro), la publicación
+  sigue siendo tradicional.
+
+Sin `required_only`, un producto con Catálogo obligatorio sigue quedando en
+`catalog_required_needs_review`. Un payload de Catálogo jamás se crea bajo una
+política que no lo aprobó (`catalog_payload_not_approved`).
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
 Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de
@@ -52,10 +78,63 @@ aplicación. Se respeta HTTP 429 y se difieren los reintentos.
 ## Idempotencia y recuperación
 
 La base asigna una concesión exclusiva por lote. Cada ISBN tiene una reserva
-única para la cuenta antes del POST de alta. Una respuesta perdida no dispara
-otro POST: se busca el SKU estable y se conserva el estado `uncertain` cuando
-todavía no se puede demostrar qué ocurrió. Los recibos publicados sobreviven a
-reinicios. Los errores transitorios anteriores al alta se reintentan con espera.
+única para la cuenta antes del POST de alta. Una respuesta perdida (timeout de
+30 segundos, transporte cortado, JSON inválido) no dispara otro POST: se busca
+el SKU estable y se conserva el estado `uncertain` cuando todavía no se puede
+demostrar qué ocurrió. La conciliación se repite con espera creciente (10
+minutos, 20, 40… hasta 6 horas) incluso cuando el lote ya terminó en
+`complete_with_review`: el cron la retoma solo y pasa el lote a `complete`
+cuando no queda nada por conciliar. Un SKU que nunca aparece sigue `uncertain`
+y se resuelve a mano. Los recibos publicados sobreviven a reinicios. Los
+errores transitorios anteriores al alta se reintentan con espera.
+
+`attach_feed` espera hasta 25 segundos a que el tick libere la concesión y el
+script de control reintenta `run_busy` durante varios minutos: un lote ocupado
+no pierde el snapshot diario.
+
+## Autorización de Mercado Libre
+
+La única fuente de verdad del OAuth es la tabla D1 `ml_oauth` (binding
+`ORDERS_DB`, compartido por el Worker y las Functions de Pages). Guarda el
+access token con el vencimiento real que devuelve Mercado Libre (`expires_in`),
+el refresh token rotativo y un lock. Sólo se renueva cuando faltan menos de
+cinco minutos para vencer; dos procesos nunca renuevan a la vez porque el lock
+es un UPDATE condicional en D1; el reemplazo del refresh token es atómico y
+condicionado al token exacto que se usó. No existe ningún refresh token en
+variables de entorno: el webhook de Pages usa el mismo módulo.
+
+Bootstrap: si `ml_oauth` está vacía, la primera llamada siembra el refresh
+token desde la clave KV `auth:refresh_token` del esquema anterior, una sola
+vez. Después KV no se lee ni se escribe. Si el refresh token se invalida
+(`auth_invalid_grant`) hace falta reautorizar la aplicación y cargar el nuevo
+token en `ml_oauth`; los lotes quedan en `auth_error` sin mandar libros a
+revisión. Los fallos transitorios de renovación (`auth_upstream_*`,
+`auth_transport`, `auth_lock_busy`) difieren el libro y se reintentan.
+
+## Stock posterior a la publicación
+
+Cada cinco minutos (`ML_STOCK_SYNC_MODE` distinto de `disabled`) el Worker
+compara las altas de la cola (recibos `published`, SKU `AMADO-AR-ISBN`) con el
+snapshot más reciente del proveedor:
+
+- ISBN con stock: estado deseado `active`.
+- ISBN ausente o sin stock: se registra la primera ausencia; se pausa recién
+  cuando la ausencia persiste más de `ML_STOCK_SYNC_GRACE_HOURS` (20) entre
+  snapshots frescos. Un snapshot vencido (más de 24 horas) o inexistente no
+  hace nada. Un snapshot que dejaría sin stock a más de
+  `ML_STOCK_SYNC_MAX_MISSING_PCT` de las altas se considera incompleto: no
+  avanza ausencias ni pausa.
+- Reactivación (`pause_and_reactivate`): sólo para pausas hechas por esta
+  sincronización o por agotamiento (cantidad 0); una pausa manual con stock no
+  se toca (`paused_externally`).
+- Nunca se cierra una publicación. Antes de cada PUT se lee el estado real en
+  `/items/bulk`; se verifica el SKU y el vendedor; un ítem `closed` o
+  `under_review` se deja como está. Lo aplicado queda registrado en
+  `ml_pub_stock_sync` y la corrida es idempotente. HTTP 429 difiere el resto.
+
+`GET /publisher/stock-sync` (con `SYNC_SECRET`) muestra conteos y errores;
+`POST /publisher/stock-sync` ejecuta una pasada acotada con el modo configurado.
+`report` permite revisar el estado deseado antes de habilitar las pausas.
 
 `complete` significa que no quedan pendientes. `complete_with_review` indica
 que además hay libros con problemas o resultados por conciliar. Las cantidades
@@ -89,7 +168,8 @@ privado se borra del runner al terminar y nunca se adjunta a los logs.
 
 ## Documentación oficial revisada
 
-- [Ítems y búsquedas](https://developers.mercadolibre.com.uy/es_ar/desarrollos-inmobiliarios/items-y-busquedas): migración del multiget a `/items/bulk` antes del 25/10/2026.
+- [Ítems y búsquedas](https://developers.mercadolibre.com.uy/es_ar/desarrollos-inmobiliarios/items-y-busquedas): migración del multiget a `/items/bulk` antes del 25/10/2026. El sync del catálogo, el lector de Operaciones y la cola ya usan `/items/bulk` y aceptan `status_code` + `body`.
+- [Publicación en Catálogo](https://developers.mercadolibre.com.uy/es_ar/publicacion-en-catalogo): publicación directa con `catalog_product_id` y `catalog_listing: true`.
 - [Búsqueda de productos](https://developers.mercadolibre.com.uy/en_us/items-and-searches/products-search).
 - [Costos de publicación](https://developers.mercadolibre.com.uy/en_us/items-and-searches/fees-for-listing).
 - [Validador](https://developers.mercadolibre.com.uy/es_co/validador-de-publicaciones).

@@ -6,7 +6,7 @@
  *
  * Flujo:
  *   1. fetchAllIds()  — scroll API para obtener IDs activos y pausados
- *   2. fetchDetails() — multi-get /items?ids= en batches de 20
+ *   2. fetchDetails() — multi-get /items/bulk?ids= en batches de 20
  *   3. buildCatalog() — slim_item, filtro de estados publicables, guarda mínima
  *
  * Esquema de salida (catalog.json):
@@ -31,7 +31,7 @@ import { applyVerifiedBookEnrichments } from './verified-book-enrichments.js';
 
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
-const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
+const DETAIL_BATCH     = 20;   // /items/bulk admite hasta 20 ids por request
 const DEFAULT_DESCRIPTION_ENRICH_LIMIT = 100;
 const DEFAULT_DESCRIPTION_REFRESH_DAYS = 90;
 const DEFAULT_DESCRIPTION_SLEEP_MS = 100;
@@ -312,14 +312,15 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
   for (let i = 0; i < ids.length; i += DETAIL_BATCH) {
     const batch     = ids.slice(i, i + DETAIL_BATCH);
     const batchNum  = Math.floor(i / DETAIL_BATCH) + 1;
-    const url       = `https://api.mercadolibre.com/items?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
+    // /items?ids= se discontinúa el 25/10/2026; /items/bulk responde
+    // [{ status_code, body }] (el multiget anterior usaba { code, body }).
+    const url       = `https://api.mercadolibre.com/items/bulk?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
 
     try {
       const data = await mlGet(url, accessToken, { ...mlGetDeps, retryBudget });
-      // data es un array de { code, body } o directamente el item
       const entries = Array.isArray(data) ? data : [data];
       for (const entry of entries) {
-        const item = (entry.code === 200 && entry.body) ? entry.body : entry;
+        const item = bulkEntryItem(entry);
         if (item && item.id) items.push(item);
       }
     } catch (err) {
@@ -338,6 +339,18 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
   }
 
   return items;
+}
+
+/**
+ * Normaliza una entrada de multiget. Acepta el formato nuevo de /items/bulk
+ * ({ status_code, body }), el anterior ({ code, body }) y un item suelto.
+ * Entradas con status distinto de 200 no aportan item: se omiten explícitamente.
+ */
+export function bulkEntryItem(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const status = entry.status_code ?? entry.code;
+  if (status !== undefined) return status === 200 && entry.body && typeof entry.body === 'object' ? entry.body : null;
+  return entry;
 }
 
 // ─── Transformación ───────────────────────────────────────────────────────────

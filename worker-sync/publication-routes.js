@@ -1,6 +1,8 @@
 import {OPERATIONS_PUBLIC_KEY,OPERATIONS_ISSUER} from './operations-read.js';
 import {PUBLICATION_PATH,SELLER_ID,PublicationError,sha256,safeCode} from './publication-policy.js';
 import {publicationService} from './publication-engine.js';
+import {publicationStockSync} from './publication-stock-sync.js';
+import {getAuthState} from './meli-auth.js';
 const response=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const decode=value=>Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(value.length/4)*4,'=')),c=>c.charCodeAt(0));
 async function boundedBody(request){
@@ -22,11 +24,18 @@ export async function verifyPublicationRequest(request,raw,{now=Date.now,publicK
   return {id:claims.jti,expires:claims.exp*1000};
  }catch{throw new PublicationError('unauthorized_or_expired',401);}
 }
-export function createPublicationRoutes({service=publicationService,verify=verifyPublicationRequest}={}){
+export function createPublicationRoutes({service=publicationService,verify=verifyPublicationRequest,stockSync=publicationStockSync,authState=getAuthState}={}){
  return async function handle(request,env,{admin=false}={}){
   try{
    const url=new URL(request.url);
    if(admin&&request.method==='GET'&&url.pathname==='/publisher/status')return response({...await service.command(env,'status',{run_id:url.searchParams.get('run_id')||undefined}),seller_id:SELLER_ID,action:'status',source:'Amado publication queue',read_only:true});
+   // OAuth state without credentials: confirms the D1 bootstrap and the real expiry.
+   if(admin&&request.method==='GET'&&url.pathname==='/publisher/auth'){try{return response({...await authState(env),seller_id:SELLER_ID,action:'auth_state',read_only:true});}catch(error){return response({error:error?.code??'auth_state_unavailable'},503);}}
+   // Stock sync: GET reports; POST runs one bounded pass under the configured ML_STOCK_SYNC_MODE.
+   if(admin&&url.pathname==='/publisher/stock-sync'){
+    if(request.method==='GET')return response({...await stockSync.status(env),seller_id:SELLER_ID,action:'stock_sync_status',read_only:true});
+    if(request.method==='POST')return response({...await stockSync.sync(env),seller_id:SELLER_ID,action:'stock_sync'});
+   }
    if(request.method!=='POST')throw new PublicationError('method_not_allowed',405);
    if(Number(request.headers.get('content-length'))>524288)throw new PublicationError('body_too_large',413);
    const raw=await boundedBody(request);

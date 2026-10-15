@@ -1,6 +1,6 @@
 # wrangler.toml - Configuración de AmadoLibros.com (Pages)
 # Pages es solo lectura. El Worker (worker-sync/) escribe el catálogo en R2.
-# IMPORTANTE: CLIENT_SECRET y REFRESH_TOKEN se configuran como secretos
+# IMPORTANTE: CLIENT_SECRET se configura como secreto (el refresh token vive en D1 ml_oauth, nunca en variables)
 # en el Dashboard de Cloudflare Pages > Settings > Environment Variables
 
 name = "amadolibros-web"

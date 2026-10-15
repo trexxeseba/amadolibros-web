@@ -38,7 +38,10 @@ export class PublicationStore {
  }
  async run(id){return this.stmt('SELECT * FROM ml_pub_runs WHERE id=?',id).first();}
  async activeRun(){return this.stmt("SELECT * FROM ml_pub_runs WHERE state IN ('preflight','publishing') ORDER BY created_at LIMIT 1").first();}
- async lease(id,token,now){return this.stmt(`UPDATE ml_pub_runs SET lease_id=?,lease_until=?,updated_at=? WHERE id=? AND state IN ('preflight','publishing') AND lease_until<? RETURNING *`,token,now+300_000,now,id,now).first();}
+ async lease(id,token,now){return this.stmt(`UPDATE ml_pub_runs SET lease_id=?,lease_until=?,updated_at=? WHERE id=? AND state IN ('preflight','publishing','complete_with_review') AND lease_until<? RETURNING *`,token,now+300_000,now,id,now).first();}
+ // A finished run that still holds uncertain creates keeps being reconciled by the cron.
+ async reconcilableRun(now){return this.stmt("SELECT r.* FROM ml_pub_runs r WHERE r.state='complete_with_review' AND EXISTS(SELECT 1 FROM ml_pub_jobs j WHERE j.run_id=r.id AND j.state='uncertain' AND j.next_at<=?) ORDER BY r.created_at LIMIT 1",now).first();}
+ async finishReview(id,token,now){await this.stmt("UPDATE ml_pub_runs SET state='complete',updated_at=? WHERE id=? AND state='complete_with_review' AND lease_id=? AND lease_until>? AND NOT EXISTS(SELECT 1 FROM ml_pub_jobs WHERE run_id=? AND state IN ('pending','validated','retry','creating','uncertain','review'))",now,id,token,now,id).run();}
  async release(id,token){await this.stmt('UPDATE ml_pub_runs SET lease_until=0,lease_id=NULL WHERE id=? AND lease_id=?',id,token).run();}
  async ownsLease(id,token,now){return Boolean(await this.stmt('SELECT id FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?',id,token,now).first());}
  async backoff(id,until,token){await this.stmt('UPDATE ml_pub_runs SET backoff_until=MAX(backoff_until,?) WHERE id=? AND lease_id=?',until,id,token).run();}
@@ -71,7 +74,7 @@ export class PublicationStore {
  async receiptState(seller,isbn,state,itemId=null){await this.stmt('UPDATE ml_pub_receipts SET state=?,item_id=COALESCE(?,item_id),updated_at=? WHERE seller_id=? AND isbn=?',state,itemId,Date.now(),seller,isbn).run();}
  async dayCreated(now){const date=new Date(now-3*3600000).toISOString().slice(0,10),start=Date.parse(date+'T03:00:00Z');return (await this.stmt('SELECT COUNT(*) n FROM ml_pub_receipts WHERE created_at>=?',start).first()).n;}
  async unfinished(id,publishing=true){return (await this.stmt("SELECT COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state IN ('pending','validated','retry') AND (?=1 OR state<>'validated')",id,publishing?1:0).first()).n;}
- async interrupted(id){await this.stmt("UPDATE ml_pub_jobs SET state='uncertain',error_code='interrupted_create' WHERE run_id=? AND state='creating'",id).run();return (await this.stmt("SELECT * FROM ml_pub_jobs WHERE run_id=? AND state='uncertain' LIMIT 5",id).all()).results;}
+ async interrupted(id,now=Date.now()){await this.stmt("UPDATE ml_pub_jobs SET state='uncertain',error_code='interrupted_create' WHERE run_id=? AND state='creating'",id).run();return (await this.stmt("SELECT * FROM ml_pub_jobs WHERE run_id=? AND state='uncertain' AND next_at<=? ORDER BY next_at,isbn LIMIT 5",id,now).all()).results;}
  async counts(id){return (await this.stmt('SELECT state,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? GROUP BY state',id).all()).results;}
  async retryLegacyIdentityReviews(id,token,now){await this.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code IN ('product_isbn_or_domain_mismatch','missing_product_metadata') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,token,now).run();}
  async nonce(id,expires,now){await this.stmt('DELETE FROM ml_pub_nonces WHERE expires_at<?',now).run();try{await this.stmt('INSERT INTO ml_pub_nonces(id,expires_at) VALUES(?,?)',id,expires).run();}catch{throw new PublicationError('request_already_used',409);}}

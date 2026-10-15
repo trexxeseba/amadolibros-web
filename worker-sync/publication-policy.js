@@ -30,8 +30,13 @@ export function validPolicy(raw) {
       p.deliveryUyu < 0 || p.minimumContributionUyu < 0 || p.minimumSaleUyu <= 0 || p.roundUyu <= 0 ||
       !Number.isInteger(p.availabilityDays) || p.availabilityDays < 0 || p.availabilityDays > 60 ||
       p.additionalPricePct < 0 || p.additionalPricePct > 1 || !['gold_special','gold_pro'].includes(raw.listingTypeId)) throw new PublicationError('invalid_policy');
-  return {...p, listingTypeId:raw.listingTypeId, catalogListing:false, currencyId:'UYU', condition:'new'};
+  // Catálogo obligatorio: sólo con la política explícita 'required_only'. El valor
+  // forma parte del hash, así que habilitarlo exige un lote y una aprobación nuevos.
+  const catalogListing = raw.catalogListing ?? false;
+  if (!CATALOG_LISTING_POLICIES.includes(catalogListing)) throw new PublicationError('invalid_policy');
+  return {...p, listingTypeId:raw.listingTypeId, catalogListing, currencyId:'UYU', condition:'new'};
 }
+export const CATALOG_LISTING_POLICIES = [false, 'required_only'];
 export function normalizeSupplierRow(raw) {
   const isbn = canonicalIsbn(raw?.isbn);
   const title = typeof raw.title === 'string' ? raw.title.trim() : '';

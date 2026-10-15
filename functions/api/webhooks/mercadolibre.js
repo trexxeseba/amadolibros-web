@@ -1,5 +1,11 @@
 // functions/api/webhooks/mercadolibre.js
 // Endpoint para recibir webhooks de MercadoLibre en tiempo real
+//
+// OAuth: usa el mismo módulo que el Worker de sync (D1 `ml_oauth`, lock fuerte,
+// refresh token rotativo de un solo uso). Ya no existe un REFRESH_TOKEN estático
+// en variables de entorno: ese camino paralelo rompía la rotación compartida.
+
+import { getAccessToken as getSharedAccessToken } from '../../../worker-sync/meli-auth.js';
 
 const APP_ID = '4741021817925208';
 const USER_ID = '440298103';
@@ -191,41 +197,8 @@ async function handleStockChange(resource, env) {
 }
 
 async function getAccessToken(env) {
-  console.log('🔐 Obteniendo token de acceso...');
-  
-  try {
-    const REFRESH_TOKEN = env.REFRESH_TOKEN;
-    const CLIENT_SECRET = env.CLIENT_SECRET;
-    
-    if (!REFRESH_TOKEN) {
-      throw new Error('REFRESH_TOKEN no está configurado');
-    }
-    if (!CLIENT_SECRET) {
-      throw new Error('CLIENT_SECRET no está configurado');
-    }
-    
-    console.log('✅ Credenciales disponibles');
-    
-    const response = await fetch('https://api.mercadolibre.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: APP_ID,
-        client_secret: CLIENT_SECRET,
-        refresh_token: REFRESH_TOKEN,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error obteniendo token: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Token obtenido correctamente');
-    return data.access_token;
-  } catch (error) {
-    console.error('❌ Error obteniendo token:', error.message);
-    throw error;
-  }
+  // Misma fuente de verdad que el Worker: nunca un refresh token de entorno.
+  const shared = Object.create(env);
+  if (!env.APP_ID) shared.APP_ID = APP_ID;
+  return getSharedAccessToken(shared);
 }
