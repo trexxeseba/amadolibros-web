@@ -61,7 +61,7 @@ function projectItem(raw) {
   };
 }
 
-export function createOperationsReader({ fetcher = globalThis.fetch, tokenProvider = getAccessToken, now = Date.now, publicKey = OPERATIONS_PUBLIC_KEY } = {}) {
+export function createOperationsReader({ fetcher = (...args) => globalThis.fetch(...args), tokenProvider = getAccessToken, now = Date.now, publicKey = OPERATIONS_PUBLIC_KEY } = {}) {
   let tokenCache = null;
   let pendingToken = null;
   async function token(env) {
