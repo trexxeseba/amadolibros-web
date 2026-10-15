@@ -47,6 +47,7 @@ import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-p
  */
 
 import { getAccessToken } from './meli-auth.js';
+import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
@@ -111,6 +112,12 @@ export default {
   // ── Manual trigger / status ─────────────────────────────────────────────────
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Owner-private Amado Operaciones: signed, short-lived, read-only requests.
+    // Uses its own public-key check and never returns Mercado Libre tokens.
+    if (url.pathname === OPERATIONS_PATH) {
+      return handleOperationsRead(request, env);
+    }
 
     // Validar SYNC_SECRET (común a todas las rutas protegidas)
     if (!env.SYNC_SECRET) {
