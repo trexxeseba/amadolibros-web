@@ -42,6 +42,8 @@ usa `family_name` cuando el vendedor tiene `user_product_seller`; eso no activa
 Catálogo. Si Mercado Libre exige Catálogo para el producto, queda para revisión.
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
+Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de
+stock propio: el sync no debe anunciar entrega inmediata para estos libros.
 
 El límite diario es un techo configurable de hasta 10.000 intentos, contado por
 día de Montevideo. No garantiza que Mercado Libre autorice ese volumen para esta

@@ -29,7 +29,7 @@ import {
   PRODUCTION_MANIFEST_KEY,
 } from '../paused-catalog.js';
 
-test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', async () => {
+test('sincroniza stock propio y pausados sin anunciar como disponibles las altas del proveedor', async () => {
   const originalFetch = globalThis.fetch;
   const urls = [];
 
@@ -39,7 +39,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     if (String(url).includes('/items/search')) {
       const status = new URL(String(url)).searchParams.get('status');
       return Response.json({
-        results: status === 'active' ? ['MLU1'] : ['MLU2'],
+        results: status === 'active' ? ['MLU1', 'MLU3'] : ['MLU2'],
         scroll_id: null,
       });
     }
@@ -61,6 +61,14 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
           available_quantity: 0, attributes: [], pictures: [],
         },
       },
+      {
+        code: 200,
+        body: {
+          id: 'MLU3', title: 'Proveedor con disponibilidad a 17 días', price: 1200,
+          status: 'active', available_quantity: 1, attributes: [], pictures: [],
+          seller_custom_field: 'AMADO-AR-9789502323060',
+        },
+      },
     ]);
   };
 
@@ -71,6 +79,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     assert.equal(catalog.active_total, 1);
     assert.equal(catalog.order_total, 1);
     assert.deepEqual(catalog.items.map(item => item.status), ['active', 'paused']);
+    assert.deepEqual(catalog.items.map(item => item.id), ['MLU1', 'MLU2']);
     assert.equal(catalog.items[0].catalog_listing, false);
     assert.equal(catalog.items[0].catalog_product_id, 'MLU-P1');
     assert.equal(catalog.items[0].currency, 'UYU');
@@ -83,6 +92,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     assert.ok(urls.some(url => url.includes('currency_id')));
     assert.ok(urls.some(url => url.includes('category_id')));
     assert.ok(urls.some(url => url.includes('domain_id')));
+    assert.ok(urls.some(url => url.includes('seller_custom_field')));
   } finally {
     globalThis.fetch = originalFetch;
   }
