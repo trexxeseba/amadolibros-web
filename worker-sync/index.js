@@ -48,6 +48,9 @@ import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-p
 
 import { getAccessToken } from './meli-auth.js';
 import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
+import { handlePublicationRoute } from './publication-routes.js';
+import { publicationService } from './publication-engine.js';
+import { PUBLICATION_PATH } from './publication-policy.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
@@ -76,6 +79,10 @@ export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
   async scheduled(event, env, ctx) {
     console.log(`[Worker] Cron trigger: ${new Date().toISOString()}`);
+    if (event?.cron === '* * * * *') {
+      ctx.waitUntil(publicationService.tick(env).catch(() => ({state:'publication_tick_failed'})));
+      return;
+    }
     if (event?.cron === '*/5 * * * *') {
       // Backfill autónomo: cada 5 minutos hasta cubrir todo. Una vez completo,
       // baja solo a una ejecución por hora para revalidar el ciclo de 30 días.
@@ -118,6 +125,7 @@ export default {
     if (url.pathname === OPERATIONS_PATH) {
       return handleOperationsRead(request, env);
     }
+    if (url.pathname === PUBLICATION_PATH) return handlePublicationRoute(request,env);
 
     // Validar SYNC_SECRET (común a todas las rutas protegidas)
     if (!env.SYNC_SECRET) {
@@ -128,6 +136,7 @@ export default {
     if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
       return json({ error: 'Unauthorized.' }, 401);
     }
+    if (url.pathname.startsWith('/publisher/')) return handlePublicationRoute(request,env,{admin:true});
 
     if (request.method === 'GET' && url.pathname === '/status') {
       return json(await readStatus(env));
