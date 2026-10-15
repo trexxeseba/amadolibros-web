@@ -15,6 +15,21 @@ async function signed(action, args = {}, claims = {}, signingKey = keys.privateK
 }
 function reader(fetcher, extra = {}) { return createOperationsReader({ fetcher, tokenProvider: async () => 'private-token-for-test', now, publicKey, ...extra }); }
 
+test('default transport preserves the Worker global fetch receiver', async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async function () {
+    assert.equal(this, globalThis);
+    calls++;
+    return Response.json({ id: 440298103, nickname: 'AMADOLIBROSCOMUY' });
+  };
+  try {
+    const run = createOperationsReader({ tokenProvider: async () => 'test-token', now, publicKey });
+    assert.equal((await run(await signed('cuenta'), env)).status, 200);
+    assert.equal(calls, 1);
+  } finally { globalThis.fetch = original; }
+});
+
 test('signed envelope binds issuer, audience, seller, expiry, method and route', async () => {
   assert.equal((await verifyOperationsRequest(await signed('cuenta'), { publicKey, now })).action, 'cuenta');
   for (const claims of [{ iss: 'other' }, { aud: 'other' }, { seller_id: '123' }, { path: '/trigger' }, { method: 'PUT' }, { exp: now()/1000 }, { exp: now()/1000+61 }, { iat: now()/1000+16 }, { jti: 'bad' }]) await assert.rejects(verifyOperationsRequest(await signed('cuenta', {}, claims), { publicKey, now }));
