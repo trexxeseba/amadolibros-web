@@ -1,5 +1,6 @@
 import { getAccessToken } from './meli-auth.js';
 import {SELLER_ID,PublicationError,canonicalIsbn,normalizedTitle} from './publication-policy.js';
+import {supplierBookMetadata} from './publication-book-metadata.js';
 
 export class MercadoLibreError extends PublicationError {
  constructor(code,status,retryAfter=0){super(code,status);this.retryAfter=retryAfter;}
@@ -11,7 +12,7 @@ function itemIsbns(item){
 }
 function picture(raw){
  if(typeof raw?.id==='string'&&/^[\w-]{5,150}$/.test(raw.id))return {id:raw.id};
- try{const u=new URL(raw?.secure_url??raw?.url);if(u.protocol==='https:'&&(u.hostname==='mlstatic.com'||u.hostname.endsWith('.mlstatic.com')))return {source:u.href};}catch{}
+ try{const u=new URL(raw?.secure_url??raw?.url??raw?.source);if(u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='mlstatic.com'||u.hostname.endsWith('.mlstatic.com')||(['sbslibreria.vteximg.com.br','sbslibreria.vtexassets.com'].includes(u.hostname)&&/^\/arquivos\/ids\/\d+(?:\/|-|$)/.test(u.pathname))))return {source:u.href};}catch{}
  return null;
 }
 export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,now=Date.now}={}){
@@ -82,16 +83,19 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
  async function prepare(env,row,policy,price){
   const seller=await account(env);
   const found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:row.isbn}));
-  if(!Array.isArray(found.results)||(typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1)throw new PublicationError(found.results?.length?'ambiguous_product_metadata':'missing_product_metadata',422);
-  const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);
-  const product=await call(env,`/products/${productId}`);
+  if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
+  const missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0);
+  if(!missing&&((typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1))throw new PublicationError('ambiguous_product_metadata',422);
+  let product;
+  if(missing)product=await supplierBookMetadata(row,{fetcher});
+  else{const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);product=await call(env,`/products/${productId}`);}
   // The detail endpoint can omit GTIN even when the exact-identifier search returns it.
-  const detailIsbn=itemIsbns(product),searchIsbn=itemIsbns(found.results[0]);
+  const detailIsbn=itemIsbns(product),searchIsbn=found.results[0]?itemIsbns(found.results[0]):null;
   if(product.domain_id!=='MLU-BOOKS'||(detailIsbn&&detailIsbn!==row.isbn)||(searchIsbn&&searchIsbn!==row.isbn)||(!detailIsbn&&!searchIsbn))throw new PublicationError('product_identity_mismatch',422);
   const binding=/(?:-|–)\s*(HB|PB)\s*$/i.exec(row.title)?.[1]?.toUpperCase();
   const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   if((binding==='HB'&&/blanda|rustica|paper|soft/.test(cover))||(binding==='PB'&&/dura|hard/.test(cover)))throw new PublicationError('book_binding_mismatch',422);
-  if(product.settings?.listing_strategy==='catalog_required'||found.results[0].settings?.listing_strategy==='catalog_required')throw new PublicationError('catalog_required_needs_review',422);
+  if(product.settings?.listing_strategy==='catalog_required'||found.results[0]?.settings?.listing_strategy==='catalog_required')throw new PublicationError('catalog_required_needs_review',422);
   let categoryId=product.category_id;
   if(!categoryId){const prediction=await call(env,'/sites/MLU/domain_discovery/search?'+new URLSearchParams({q:row.title,limit:'3'}));categoryId=Array.isArray(prediction)?prediction.find(x=>x.domain_id==='MLU-BOOKS')?.category_id:null;}
   if(!/^MLU\d+$/.test(categoryId??''))throw new PublicationError('missing_book_category',422);
