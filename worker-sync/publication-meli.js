@@ -1,10 +1,11 @@
-import { getAccessToken } from './meli-auth.js';
+import { getAccessToken, invalidateAccessToken, MeliAuthError } from './meli-auth.js';
 import {SELLER_ID,PublicationError,canonicalIsbn,normalizedTitle} from './publication-policy.js';
 import {supplierBookMetadata} from './publication-book-metadata.js';
 
 export class MercadoLibreError extends PublicationError {
  constructor(code,status,retryAfter=0){super(code,status);this.retryAfter=retryAfter;}
 }
+const MAX_CATALOG_CHILDREN=10;
 function itemIsbns(item){
  const values=(item.attributes??[]).filter(a=>['ISBN','GTIN'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]).filter(Boolean);
  for(const value of values)try{return canonicalIsbn(value);}catch{}
@@ -15,16 +16,32 @@ function picture(raw){
  try{const u=new URL(raw?.secure_url??raw?.url??raw?.source);if(u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='mlstatic.com'||u.hostname.endsWith('.mlstatic.com')||(['sbslibreria.vteximg.com.br','sbslibreria.vtexassets.com'].includes(u.hostname)&&/^\/arquivos\/ids\/\d+(?:\/|-|$)/.test(u.pathname))))return {source:u.href};}catch{}
  return null;
 }
-export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,now=Date.now}={}){
+// A prepared payload may only be created under the policy that produced it:
+// Catálogo exclusively with the explicit 'required_only' policy and a verified
+// product id; otherwise a traditional listing without any product binding.
+export function payloadPolicyMismatch(payload,policy){
+ if(!payload||typeof payload!=='object'||payload.currency_id!=='UYU'||payload.condition!=='new')return 'payload_policy_mismatch';
+ if(payload.catalog_listing===true)return policy?.catalogListing==='required_only'&&/^MLU\d+$/.test(payload.catalog_product_id??'')?null:'catalog_payload_not_approved';
+ return payload.catalog_listing===false&&payload.catalog_product_id===undefined?null:'payload_policy_mismatch';
+}
+export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={}}={}){
+ const requestTimeout=timeouts.request??12000,createTimeout=timeouts.create??30000;
  let cache=null,pending=null;
- async function token(env){if(cache&&cache.until>now())return cache.value;if(!pending)pending=tokenProvider(env).then(value=>{cache={value,until:now()+180000};return value;}).finally(()=>pending=null);return pending;}
+ const authFailure=error=>error instanceof MeliAuthError?new MercadoLibreError(error.code,error.retryable?503:401,error.retryAfter??0):new MercadoLibreError('auth_unavailable',503);
+ async function token(env){
+  // Short isolate cache; the stored token and its real expiry live in D1 (meli-auth.js).
+  if(cache&&cache.until>now())return cache.value;
+  if(!pending)pending=Promise.resolve().then(()=>tokenProvider(env)).then(value=>{if(typeof value!=='string'||!value)throw new MeliAuthError('auth_empty_token',{status:503,retryable:true});cache={value,until:now()+60000};return value;}).finally(()=>pending=null);
+  try{return await pending;}catch(error){throw authFailure(error);}
+ }
  async function call(env,path,{method='GET',body}={}){
-  const accessToken=await token(env),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  const accessToken=await token(env),controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),method==='POST'&&path==='/items'?createTimeout:requestTimeout);
   let res,data;
   try{
    res=await fetcher('https://api.mercadolibre.com'+path,{method,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',Accept:'application/json'},body:body?JSON.stringify(body):undefined,redirect:'manual',signal:controller.signal});
    if(!res.ok){
-    if(res.status===401)cache=null;
+    if(res.status===401){cache=null;try{await tokenInvalidator(env,accessToken);}catch{}}
     const error=new MercadoLibreError(`ml_http_${res.status}`,res.status,Math.min(3600,Math.max(0,Number(res.headers.get('retry-after'))||0)));
     error.stage=path==='/items/validate'?'item_validation':path.startsWith('/sites/MLU/listing_prices')?'listing_fees':path==='/items'?'item_creation':'metadata';
     try{const details=await res.json();error.validationCodes=(details.cause??[]).map(c=>c.code).filter(c=>typeof c==='string'&&/^(item|body|shipping|seller|category|user|catalog|product|pictures|request|validation)[._][a-z0-9_.-]{1,140}$/.test(c)).slice(0,10);}catch{}
@@ -66,7 +83,7 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
    const raw=await call(env,'/items/bulk?ids='+group.join(','));
    if(!Array.isArray(raw)||raw.length!==group.length)throw new PublicationError('index_details_incomplete',502);
    const remaining=new Set(group),batch=[];
-   for(const entry of raw){const b=entry.body;if((entry.code??entry.status_code)!==200||!b||String(b.seller_id)!==SELLER_ID||!remaining.has(b.id))throw new PublicationError('index_details_invalid',502);remaining.delete(b.id);batch.push({id:b.id,isbn:itemIsbns(b),titleKey:normalizedTitle(b.title),status:b.status});}
+   for(const entry of raw){const b=entry.body;if((entry.status_code??entry.code)!==200||!b||String(b.seller_id)!==SELLER_ID||!remaining.has(b.id))throw new PublicationError('index_details_invalid',502);remaining.delete(b.id);batch.push({id:b.id,isbn:itemIsbns(b),titleKey:normalizedTitle(b.title),status:b.status});}
    if(remaining.size)throw new PublicationError('index_details_incomplete',502);
    return batch;
   }))).flat();
@@ -78,7 +95,25 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   const isbn=canonicalIsbn(input),found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:isbn}));
   const first=found.results?.[0],id=first?.id;if(!/^MLU\d+$/.test(id??''))return {requested_isbn:isbn,results:found.paging?.total??found.results?.length??null};
   const product=await call(env,`/products/${id}`);
-  return {requested_isbn:isbn,results:found.paging?.total??found.results?.length??null,product_id:id,domain_id:product.domain_id??null,reported_isbn:itemIsbns(product),search_reported_isbn:itemIsbns(first),name:String(product.name??'').slice(0,250),attribute_ids:(product.attributes??[]).slice(0,60).map(a=>a.id),identifier_attributes:(product.attributes??[]).filter(a=>['GTIN','ISBN'].includes(a.id)).map(a=>({id:a.id,value_id:a.value_id??null,value_name:a.value_name??null,values:(a.values??[]).slice(0,5).map(v=>({id:v.id??null,name:v.name??null}))}))};
+  return {requested_isbn:isbn,results:found.paging?.total??found.results?.length??null,product_id:id,domain_id:product.domain_id??null,listing_strategy:product.settings?.listing_strategy??first?.settings?.listing_strategy??null,children:(product.children_ids??[]).length,reported_isbn:itemIsbns(product),search_reported_isbn:itemIsbns(first),name:String(product.name??'').slice(0,250),attribute_ids:(product.attributes??[]).slice(0,60).map(a=>a.id),identifier_attributes:(product.attributes??[]).filter(a=>['GTIN','ISBN'].includes(a.id)).map(a=>({id:a.id,value_id:a.value_id??null,value_name:a.value_name??null,values:(a.values??[]).slice(0,5).map(v=>({id:v.id??null,name:v.name??null}))}))};
+ }
+ // Catálogo obligatorio: el catalog_product_id debe ser exactamente el producto
+ // (o el único hijo) cuyo GTIN es el ISBN del proveedor. Cualquier duda es review.
+ async function resolveCatalogProduct(env,row,productId,product){
+  if(typeof product.id==='string'&&product.id!==productId)throw new PublicationError('catalog_product_id_mismatch',422);
+  const children=Array.isArray(product.children_ids)?product.children_ids:[];
+  if(!children.length){
+   if(product.status!==undefined&&product.status!=='active')throw new PublicationError('catalog_product_inactive',422);
+   return {id:productId,product};
+  }
+  if(children.length>MAX_CATALOG_CHILDREN||children.some(id=>!/^MLU\d+$/.test(String(id))))throw new PublicationError('catalog_product_children_unresolved',422);
+  const matches=[];
+  for(const childId of children){
+   const child=await call(env,`/products/${childId}`);
+   if(child.domain_id==='MLU-BOOKS'&&itemIsbns(child)===row.isbn&&!(Array.isArray(child.children_ids)&&child.children_ids.length)&&(child.status===undefined||child.status==='active'))matches.push({id:childId,product:child});
+  }
+  if(matches.length!==1)throw new PublicationError('catalog_product_children_unresolved',422);
+  return matches[0];
  }
  async function prepare(env,row,policy,price){
   const seller=await account(env);
@@ -86,16 +121,23 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
   const missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0);
   if(!missing&&((typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1))throw new PublicationError('ambiguous_product_metadata',422);
-  let product;
+  let product,productId=null;
   if(missing)product=await supplierBookMetadata(row,{fetcher});
-  else{const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);product=await call(env,`/products/${productId}`);}
+  else{productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);product=await call(env,`/products/${productId}`);}
   // The detail endpoint can omit GTIN even when the exact-identifier search returns it.
   const detailIsbn=itemIsbns(product),searchIsbn=found.results[0]?itemIsbns(found.results[0]):null;
   if(product.domain_id!=='MLU-BOOKS'||(detailIsbn&&detailIsbn!==row.isbn)||(searchIsbn&&searchIsbn!==row.isbn)||(!detailIsbn&&!searchIsbn))throw new PublicationError('product_identity_mismatch',422);
+  const strategy=product.settings?.listing_strategy??found.results[0]?.settings?.listing_strategy??null;
+  const catalogRequired=strategy==='catalog_required';
+  let catalogProductId=null;
+  if(catalogRequired){
+   if(policy.catalogListing!=='required_only')throw new PublicationError('catalog_required_needs_review',422);
+   const resolved=await resolveCatalogProduct(env,row,productId,product);
+   catalogProductId=resolved.id;product=resolved.product;
+  }
   const binding=/(?:-|–)\s*(HB|PB)\s*$/i.exec(row.title)?.[1]?.toUpperCase();
-  const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
   if((binding==='HB'&&/blanda|rustica|paper|soft/.test(cover))||(binding==='PB'&&/dura|hard/.test(cover)))throw new PublicationError('book_binding_mismatch',422);
-  if(product.settings?.listing_strategy==='catalog_required'||found.results[0]?.settings?.listing_strategy==='catalog_required')throw new PublicationError('catalog_required_needs_review',422);
   let categoryId=product.category_id;
   if(!categoryId){const prediction=await call(env,'/sites/MLU/domain_discovery/search?'+new URLSearchParams({q:row.title,limit:'3'}));categoryId=Array.isArray(prediction)?prediction.find(x=>x.domain_id==='MLU-BOOKS')?.category_id:null;}
   if(!/^MLU\d+$/.test(categoryId??''))throw new PublicationError('missing_book_category',422);
@@ -111,7 +153,9 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   const pictures=(product.pictures??[]).map(picture).filter(Boolean).slice(0,12);if(!pictures.length)throw new PublicationError('missing_verified_cover',422);
   const maxTitle=Number.isInteger(category.settings?.max_title_length)?Math.min(120,category.settings.max_title_length):60;
   const title=row.title.slice(0,maxTitle).trim();
-  const payload={site_id:'MLU',category_id:categoryId,price,currency_id:'UYU',available_quantity:1,buying_mode:'buy_it_now',listing_type_id:policy.listingTypeId,condition:'new',catalog_listing:false,seller_custom_field:`AMADO-AR-${row.isbn}`,pictures,attributes,
+  // Direct catalog listings keep the documented item fields (title, pictures,
+  // attributes) and add the verified product binding. /items/validate decides.
+  const payload={site_id:'MLU',category_id:categoryId,price,currency_id:'UYU',available_quantity:1,buying_mode:'buy_it_now',listing_type_id:policy.listingTypeId,condition:'new',catalog_listing:catalogRequired,...(catalogRequired?{catalog_product_id:catalogProductId}:{}),seller_custom_field:`AMADO-AR-${row.isbn}`,pictures,attributes,
    sale_terms:policy.availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${policy.availabilityDays} días`}]:[],shipping:{mode:'me2',local_pick_up:true,free_shipping:true}};
   if(seller.tags?.includes('user_product_seller'))payload.family_name=title;else payload.title=title;
   await verifyFees(env,payload,policy);
@@ -125,7 +169,7 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
  }
  async function create(env,payload,policy){
   // Revalidate the prepared payload and fees immediately before the single create.
-  if(payload.catalog_listing!==false||payload.currency_id!=='UYU'||payload.condition!=='new')throw new PublicationError('payload_policy_mismatch',422);
+  const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch)throw new PublicationError(mismatch,422);
   await account(env);await verifyFees(env,payload,policy);await call(env,'/items/validate',{method:'POST',body:payload});
   const result=await call(env,'/items',{method:'POST',body:payload});
   if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==SELLER_ID)throw new MercadoLibreError('create_outcome_unknown',502);

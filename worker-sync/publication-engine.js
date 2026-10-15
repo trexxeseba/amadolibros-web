@@ -1,24 +1,34 @@
 import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normalizeSupplierRow,validPolicy,policyHash,quoteMercadoLibre,stockIsFresh,safeCode} from './publication-policy.js';
 import {PublicationStore} from './publication-store.js';
-import {createPublicationMeli,MercadoLibreError} from './publication-meli.js';
+import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './publication-meli.js';
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 
-export function createPublicationService({api=createPublicationMeli(),storeFactory=env=>new PublicationStore(env.ORDERS_DB),now=Date.now}={}){
+export function createPublicationService({api=createPublicationMeli(),storeFactory=env=>new PublicationStore(env.ORDERS_DB),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000}={}){
  function store(env){if(String(env.USER_ID)!==SELLER_ID||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
  async function initialize(env,s){if(!initialized.has(env.ORDERS_DB)){await s.initialize();if(env.ORDERS_DB&&typeof env.ORDERS_DB==='object')initialized.add(env.ORDERS_DB);}}
  async function tick(env,runId){
   if(String(env.ML_PUBLISHER_MODE)==='disabled')return {state:'disabled'};
   const s=store(env);let run;
-  try{run=runId?await s.run(runId):await s.activeRun();}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}
+  try{run=runId?await s.run(runId):(await s.activeRun()??await s.reconcilableRun(now()));}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}
   if(!run)return {state:'no_active_run'};
-  if(!['preflight','publishing'].includes(run.state))return s.summary(run.id);
+  if(!['preflight','publishing','complete_with_review'].includes(run.state))return s.summary(run.id);
   if(run.backoff_until>now())return {id:run.id,state:'backoff',resume_at:new Date(run.backoff_until).toISOString()};
   const lease=crypto.randomUUID();run=await s.lease(run.id,lease,now());if(!run)return {state:'busy'};
   const deadline=now()+20000;let processed=0;
   const mark=(isbn,state,options={})=>s.job(run.id,isbn,state,{...options,leaseToken:lease,now:now()});
   const state=value=>s.setRunState(run.id,value,lease,now());
   try{
+   // Reconcile creates whose outcome was lost before anything else, regardless of
+   // the supplier snapshot: by stable SKU, with backoff, and never with a new POST.
+   for(const job of await s.interrupted(run.id,now())){
+    const receipt=await s.receipt(SELLER_ID,job.isbn);
+    if(receipt?.state==='published'){await mark(job.isbn,'published',{itemId:receipt.item_id});continue;}
+    const found=await api.skuItems(env,job.isbn);
+    if(found.length===1){await s.receiptState(SELLER_ID,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});continue;}
+    await mark(job.isbn,'uncertain',{errorCode:job.error_code??'interrupted_create',nextAt:now()+Math.min(6*3600000,600000*2**Math.min(job.attempts,6)),attempt:true});
+   }
+   if(run.state==='complete_with_review'){await s.finishReview(run.id,lease,now());return s.summary(run.id);}
    const feed=await s.feed(run.feed_id);
    if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now())){await state('stock_stale');return {state:'stock_stale'};}
    let index=JSON.parse(run.index_json);
@@ -29,12 +39,6 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    const publishing=run.state==='publishing'&&run.approved_hash===run.policy_hash;
    if(run.state==='publishing'&&!publishing)return {state:'publishing_not_enabled'};
    if(publishing&&await s.dayCreated(now())>=run.daily_cap)return {state:'daily_cap_reached'};
-   for(const job of await s.interrupted(run.id)){
-    const receipt=await s.receipt(SELLER_ID,job.isbn);
-    if(receipt?.state==='published'){await mark(job.isbn,'published',{itemId:receipt.item_id});continue;}
-    const found=await api.skuItems(env,job.isbn);
-    if(found.length===1){await s.receiptState(SELLER_ID,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});}
-   }
    const counts=await s.counts(run.id);let validated=counts.find(x=>x.state==='validated')?.n??0;
    if(!publishing&&validated>=run.preflight_limit){await state('ready');return s.summary(run.id);}
    processed=0;
@@ -62,6 +66,8 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      if(guardRun.state!=='publishing'||guardRun.approved_hash!==run.policy_hash||!await s.ownsLease(run.id,lease,now()))break;
      if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now())){await mark(row.isbn,'skipped_stock');continue;}
      if(quoteMercadoLibre(guardRow,policy).price!==payload.price){await mark(row.isbn,'pending',{payload:null});continue;}
+     // A catalog payload is only created under the approved 'required_only' policy.
+     const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
      const reserved=await s.reserve(SELLER_ID,row.isbn,run.id,now(),run.daily_cap,lease);
      if(!reserved){const existing=await s.receipt(SELLER_ID,row.isbn);if(existing)await mark(row.isbn,existing.state==='published'?'published':'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});else return {state:'daily_cap_reached'};continue;}
      await mark(row.isbn,'creating',{payload,attempt:true});
@@ -71,15 +77,22 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      await s.receiptState(SELLER_ID,row.isbn,'published',result.id);
      await mark(row.isbn,'published',{itemId:result.id});
     }catch(error){
+     // Transport, 5xx, 429 and retryable auth failures defer the book; an auth
+     // failure never counts as a book attempt nor sends it to review.
+     const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403);
      const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
      const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
-     await mark(job.isbn,retry?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:true,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[]}}}:{})});
-     if(error.status===401||error.status===403){await state('auth_error');break;}
+     await mark(job.isbn,retry||auth?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:!auth,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[]}}}:{})});
+     if(auth){await state('auth_error');break;}
      if(error.status===429){await s.backoff(run.id,nextAt,lease);break;}
     }
    }
    return s.summary(run.id);
-  }catch(error){if(error.status===429){const until=now()+Math.max(60000,error.retryAfter*1000||0);await s.backoff(run.id,until,lease);return {id:run.id,state:'backoff',resume_at:new Date(until).toISOString()};}throw error;}
+  }catch(error){
+   if(error.status===429){const until=now()+Math.max(60000,error.retryAfter*1000||0);await s.backoff(run.id,until,lease);return {id:run.id,state:'backoff',resume_at:new Date(until).toISOString()};}
+   // Retryable auth failures (lock busy, upstream 5xx) simply wait for the next tick.
+   if(error instanceof MercadoLibreError&&(error.status===401||error.status===403)){await state('auth_error');return {id:run.id,state:'auth_error',error:safeCode(error)};}
+   throw error;}
   finally{await s.release(run.id,lease);}
  }
  async function command(env,action,args={},nonce=null){
@@ -109,7 +122,13 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    await s.createRun({id:args.run_id,feedId:args.feed_id,policy,policyHash:hash,now:now(),dailyCap,preflightLimit});return s.summary(args.run_id);
   }
   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
-  if(action==='attach_feed'){const f=await s.feed(args.feed_id);if(f?.state!=='ready'||!stockIsFresh(f.source_date,now()))throw new PublicationError('invalid_feed');await s.attachFeed(args.run_id,args.feed_id);return s.summary(args.run_id);}
+  if(action==='attach_feed'){
+   const f=await s.feed(args.feed_id);if(f?.state!=='ready'||!stockIsFresh(f.source_date,now()))throw new PublicationError('invalid_feed');
+   // The tick holds the lease for a bounded time: wait for it instead of losing the daily snapshot.
+   const deadline=now()+attachWaitMs;
+   for(;;){try{await s.attachFeed(args.run_id,args.feed_id);break;}catch(error){if(error?.code!=='run_busy'||now()>=deadline)throw error;await sleep(1000);}}
+   return s.summary(args.run_id);
+  }
   if(action==='pause'){await s.setRunState(args.run_id,'paused');return s.summary(args.run_id);}
   if(action==='approve'){
    if(String(env.ML_PUBLISHER_MODE)==='disabled')throw new PublicationError('publishing_disabled',409);

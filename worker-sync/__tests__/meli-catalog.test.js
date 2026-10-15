@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildCatalog,
+  bulkEntryItem,
   CATALOG_PRODUCT_GALLERY_CACHE_KEY,
   createDataQualitySummary,
   enrichCatalogProductPictures,
@@ -811,4 +812,33 @@ test('publicar el catálogo productivo no toca el espejo de portadas: eso lo hac
   assert.equal(result.published, true);
   assert.deepEqual(coverAccess, [], 'publicar el catálogo no debe tocar COVER_R2');
   assert.deepEqual(result.cover_mirror, { status: 'delegated-to-cron', cron: '*/5 * * * *' });
+});
+
+test('los detalles se leen de /items/bulk y aceptan el formato status_code sin contar entradas fallidas', async () => {
+  const originalFetch = globalThis.fetch;
+  const urls = [];
+  globalThis.fetch = async url => {
+    urls.push(String(url));
+    if (String(url).includes('/items/search')) {
+      const status = new URL(String(url)).searchParams.get('status');
+      return Response.json({ results: status === 'active' ? ['MLU1', 'MLU2'] : [], scroll_id: null });
+    }
+    return Response.json([
+      { status_code: 200, body: { id: 'MLU1', title: 'Bulk', price: 1000, status: 'active', available_quantity: 1, attributes: [], pictures: [] } },
+      { status_code: 404, body: { message: 'not found', error: 'not_found' } },
+    ]);
+  };
+  try {
+    const catalog = await buildCatalog({ USER_ID: '123', MIN_ACTIVE_ITEMS: '1' }, 'token', { statuses: ['active'] });
+    assert.deepEqual(catalog.items.map(item => item.id), ['MLU1']);
+    const detail = urls.find(url => url.includes('ids='));
+    assert.match(detail, /^https:\/\/api\.mercadolibre\.com\/items\/bulk\?ids=MLU1,MLU2&attributes=/);
+    assert.ok(!urls.some(url => /\/items\?ids=/.test(url)));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(bulkEntryItem({ status_code: 200, body: { id: 'a' } }).id, 'a');
+  assert.equal(bulkEntryItem({ code: 200, body: { id: 'b' } }).id, 'b');
+  assert.equal(bulkEntryItem({ status_code: 500, body: { id: 'c' } }), null);
+  assert.equal(bulkEntryItem({ id: 'legacy' }).id, 'legacy');
 });

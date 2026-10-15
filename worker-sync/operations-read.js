@@ -126,7 +126,8 @@ export function createOperationsReader({ fetcher = (...args) => globalThis.fetch
         data = { estado_solicitado: args.estado ?? 'active', total: numberOrNull(raw.paging?.total), ids: raw.results, scroll_id: stringOrNull(raw.scroll_id), page_empty: raw.results.length === 0, note: 'Este es un lote de resultados. Una búsqueda incompleta no prueba la ausencia de un ISBN. El scroll debe continuarse hasta terminar.' };
       } else {
         const ids = [...new Set(args.ids)];
-        const raw = await ml('/items?ids=' + ids.join(','), accessToken);
+        // /items?ids= se discontinúa el 25/10/2026. /items/bulk responde status_code + body.
+        const raw = await ml('/items/bulk?ids=' + ids.join(','), accessToken);
         if (!Array.isArray(raw) || raw.length !== ids.length) throw new ReadError('Mercado Libre devolvió un lote incompleto.');
         const valid = new Set(ids);
         const returned = new Set();

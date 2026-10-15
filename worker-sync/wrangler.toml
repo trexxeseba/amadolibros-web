@@ -1,7 +1,7 @@
 # worker-sync/wrangler.toml
 # Worker independiente de sync — escribe catalog.json en R2.
 # Separado del proyecto Pages: no comparte código, solo comparte KV namespace
-# (auth:refresh_token) y R2 bucket (amadolibros-catalog).
+# (auth:refresh_token, sólo como semilla del OAuth en D1) y R2 bucket (amadolibros-catalog).
 
 name = "amadolibros-sync"
 main = "index.js"
@@ -33,6 +33,17 @@ ML_CATALOG_GALLERY_ENRICH_LIMIT = "300"
 ML_CATALOG_GALLERY_REFRESH_DAYS = "90"
 ML_CATALOG_GALLERY_SLEEP_MS = "75"
 ML_CATALOG_GALLERY_PRIORITY_IDS = "MLU63131903"
+# Sincronización de stock de las altas de la cola (SKU AMADO-AR-ISBN) contra el
+# snapshot vigente del proveedor. "disabled" no toca nada; "report" sólo registra
+# el estado deseado en D1; "pause_only" pausa; "pause_and_reactivate" además
+# reactiva con una unidad. Nunca cierra publicaciones. Una ausencia se pausa
+# recién cuando persiste más de ML_STOCK_SYNC_GRACE_HOURS entre snapshots, y un
+# snapshot que dejaría sin stock a más del porcentaje indicado se considera
+# incompleto y no pausa nada.
+ML_STOCK_SYNC_MODE = "disabled"
+ML_STOCK_SYNC_GRACE_HOURS = "20"
+ML_STOCK_SYNC_MAX_MISSING_PCT = "30"
+ML_STOCK_SYNC_BATCH = "60"
 # Copia incremental de portadas y galerías. El cron de 5 minutos completa el
 # primer backfill y luego baja automáticamente a mantenimiento horario para
 # cambios y revalidaciones de copias de más de 30 días.
@@ -74,7 +85,7 @@ bucket_name = "amadolibros-images-production"
 [images]
 binding = "IMAGES"
 
-# ── KV: compartido con Pages — solo para auth:refresh_token ──────────────────
+# ── KV: compartido con Pages — auth:refresh_token sólo como semilla inicial ──
 # NO escribir aquí catalog_index, item:*, catalog:full ni ningún esquema viejo.
 [[kv_namespaces]]
 binding = "AMADO_KV"
@@ -93,4 +104,6 @@ database_id = "6dc8dc3a-2d4f-4045-b428-14323c7b0bcd"
 # BING_WEBMASTER_API_KEY — secret de la API de Bing Webmaster Tools (solo lectura)
 # GA4_API_SECRET — secret de Measurement Protocol del stream productivo
 # RESEND_API_KEY — envío automático al cliente cuando vuelve el stock
-# (No hay env REFRESH_TOKEN — el token rotativo vive en KV: auth:refresh_token)
+# (No hay env REFRESH_TOKEN. El access token, su vencimiento real y el refresh
+#  token rotativo viven en D1 ml_oauth; KV auth:refresh_token sólo se lee una vez
+#  como semilla si la tabla está vacía. Ver worker-sync/meli-auth.js)

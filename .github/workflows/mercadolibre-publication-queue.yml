@@ -16,6 +16,11 @@ on:
         description: 'Versión de precios revisada, obligatoria para aprobar'
         required: false
         type: string
+      new_run:
+        description: 'Con refresh: crear un lote nuevo con la política vigente en vez de adjuntar el feed al lote existente'
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: '*/10 * * * *'
     - cron: '30 4 * * *'
@@ -52,6 +57,7 @@ jobs:
           PUBLISHER_ACTION: ${{ inputs.action || (github.event.schedule == '30 4 * * *' && 'refresh' || 'tick') }}
           PUBLISHER_RUN_ID: ${{ inputs.run_id }}
           PUBLISHER_POLICY_HASH: ${{ inputs.policy_hash }}
+          PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
           PUBLISHER_CYCLES: '10'
           SUPPLIER_FEED_URL: ${{ secrets.SUPPLIER_FEED_URL }}
           SUPPLIER_FEED_AUTHORIZATION: ${{ secrets.SUPPLIER_FEED_AUTHORIZATION }}

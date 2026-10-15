@@ -9,22 +9,34 @@ const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.worker
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
 const allowed=new Set(['status','tick','pause','approve','import','refresh']);if(!allowed.has(action))throw Error('Unsupported action');
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
  try{
   const response=await fetch(new URL('/publisher/command',url),{method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},body:JSON.stringify({action,args}),redirect:'manual',signal:controller.signal});
-  const body=await response.json();if(!response.ok)throw Error(`Publisher ${action}: ${body.error||response.status}`);return body;
+  const body=await response.json();if(!response.ok){const error=Error(`Publisher ${action}: ${body.error||response.status}`);error.code=body.error;throw error;}return body;
  }finally{clearTimeout(timer);}
+}
+// The Worker tick holds the run lease for up to ~30 s of every minute. A busy
+// run must not cost the daily snapshot: wait for the lease instead of failing.
+async function attachWhenFree(runId,feedId,{attempts=24,waitMs=15000}={}){
+ for(let attempt=1;;attempt++){
+  try{return await command('attach_feed',{run_id:runId,feed_id:feedId});}
+  catch(error){if(error.code!=='run_busy'||attempt>=attempts)throw error;console.log(JSON.stringify({state:'run_busy',attempt,retry_in_ms:waitMs}));await sleep(waitMs);}
+ }
 }
 function summary(body){console.log(JSON.stringify({id:body.id,state:body.state,counts:body.counts,policy_hash:body.policy_hash,approved:body.approved,indexed:body.index?.seen,index_complete:body.index?.done,daily_cap:body.daily_cap}));}
 async function importFeed(input){
- const previous=runId?{id:runId}:await command('status');
+ // PUBLISHER_NEW_RUN=true creates a fresh run (new policy, new approval) and
+ // leaves the existing run exactly as it is instead of attaching the feed to it.
+ const forceNewRun=process.env.PUBLISHER_NEW_RUN==='true';
+ const previous=forceNewRun?{}:runId?{id:runId}:await command('status');
  const targetRun=previous.id,feedId=crypto.randomUUID(),newRun=targetRun||crypto.randomUUID();
  if(!Array.isArray(input.rows)||!input.rows.length)throw Error('Empty supplier feed');
  await command('begin_feed',{feed_id:feedId,source_date:input.source_date,expected_rows:input.rows.length});
  for(let i=0;i<input.rows.length;i+=200)await command('import_feed',{feed_id:feedId,rows:input.rows.slice(i,i+200)});
  await command('commit_feed',{feed_id:feedId});
- const result=targetRun?await command('attach_feed',{run_id:targetRun,feed_id:feedId}):await command('create_run',{run_id:newRun,feed_id:feedId,policy:input.policy,daily_cap:input.daily_cap??10000,preflight_limit:10});summary(result);
+ const result=targetRun?await attachWhenFree(targetRun,feedId):await command('create_run',{run_id:newRun,feed_id:feedId,policy:input.policy,daily_cap:input.daily_cap??10000,preflight_limit:10});summary(result);
 }
 async function refreshFeed(){
  const rawUrl=process.env.SUPPLIER_FEED_URL;

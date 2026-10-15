@@ -81,7 +81,7 @@ test('paused search has explicit status and scroll and returns incomplete-page n
 test('item details validate ownership; UP and product association do not imply Catalog', async () => {
   const body = { id: 'MLU1234567', seller_id: 440298103, title: 'Book', catalog_listing: false, user_product_id: 'MLUU100', catalog_product_id: 'MLU100', attributes: [{ id: 'ISBN', value_name: '9789681313173' }] };
   for (const key of ['code','status_code']) {
-    const run = reader(async () => Response.json([{ [key]: 200, body }]));
+    const run = reader(async url => { assert.equal(new URL(url).pathname, '/items/bulk'); return Response.json([{ [key]: 200, body }]); });
     const data = await (await run(await signed('consultar_publicaciones', { ids: [body.id] }), env)).json();
     assert.equal(data.data.items[0].catalog_listing, false); assert.equal(data.data.items[0].isbn, '9789681313173');
     assert.equal(data.data.items[0].available_quantity, null);

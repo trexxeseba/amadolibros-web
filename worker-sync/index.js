@@ -50,6 +50,7 @@ import { getAccessToken } from './meli-auth.js';
 import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
 import { handlePublicationRoute } from './publication-routes.js';
 import { publicationService } from './publication-engine.js';
+import { publicationStockSync } from './publication-stock-sync.js';
 import { PUBLICATION_PATH } from './publication-policy.js';
 import { buildCatalog   } from './meli-catalog.js';
 import { publishToR2    } from './r2-publish.js';
@@ -101,6 +102,15 @@ export default {
         processPendingMetaPurchases(env).catch(error => {
           console.error('[Meta purchase] Error de reintento', error?.name || 'Error');
           return { status: 'error' };
+        }),
+        // Stock del proveedor para las altas de la cola: pausa/reactiva según el
+        // snapshot vigente. Inerte mientras ML_STOCK_SYNC_MODE sea "disabled".
+        publicationStockSync.sync(env).then(result => {
+          if (result?.state !== 'disabled') console.log('[stock sync]', JSON.stringify(result));
+          return result;
+        }).catch(error => {
+          console.error('[stock sync] Error', error?.code || error?.name || 'Error');
+          return { state: 'error' };
         }),
       ]));
       return;

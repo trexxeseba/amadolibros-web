@@ -221,3 +221,165 @@ test('legacy missing-metadata reviews retry once while a failed verified fallbac
  assert.deepEqual((await f.store.summary(f.runId)).review_reasons,[{error_code:'missing_verified_book_metadata',n:1}]);
  await f.service.tick(f.env,f.runId);assert.equal(f.calls.prepare,1);
 });
+
+// ── Catálogo obligatorio, OAuth tipado, attach_feed y POST incierto ──────────
+import {MeliAuthError} from '../meli-auth.js';
+import {validPolicy} from '../publication-policy.js';
+const catalogPolicy={...policy,catalogListing:'required_only'};
+function catalogFetcher({detail={},children={},searchAttributes=[{id:'GTIN',value_name:books[0].isbn}],validate=()=>new Response(null,{status:204})}={}){
+ const seen=[];
+ const fetcher=async(url,options={})=>{
+  const p=new URL(url).pathname;seen.push({path:p,method:options.method??'GET',body:options.body?JSON.parse(options.body):null});
+  if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:[]});
+  if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:searchAttributes,settings:{listing_strategy:'catalog_required'}}]});
+  if(p==='/products/MLU123456')return Response.json({id:'MLU123456',status:'active',domain_id:'MLU-BOOKS',category_id:'MLU12345',settings:{listing_strategy:'catalog_required'},attributes:[{id:'GTIN',value_name:books[0].isbn},{id:'BOOK_COVER',value_name:'Blanda'}],pictures:[{id:'123456-MLU999999'}],...detail});
+  if(p.startsWith('/products/'))return Response.json(children[p.slice('/products/'.length)]??{});
+  if(p==='/categories/MLU12345')return Response.json({settings:{listing_allowed:true,max_title_length:60},children_categories:[]});
+  if(p==='/categories/MLU12345/attributes')return Response.json([{id:'GTIN',tags:{}},{id:'SELLER_SKU',tags:{}},{id:'BOOK_COVER',tags:{}}]);
+  if(p==='/sites/MLU/listing_prices')return Response.json({currency_id:'UYU',listing_type_id:'gold_special',sale_fee_amount:100,listing_fee_amount:0});
+  if(p==='/items/validate')return validate(JSON.parse(options.body));
+  throw Error('Unexpected endpoint '+p);
+ };
+ return {fetcher,seen};
+}
+test('catalogListing is part of the policy hash and only accepts the explicit required_only value',async()=>{
+ assert.equal(await policyHash(policy),await policyHash({...policy,catalogListing:false}));
+ assert.notEqual(await policyHash(policy),await policyHash(catalogPolicy));
+ assert.equal(validPolicy(catalogPolicy).catalogListing,'required_only');assert.equal(validPolicy(policy).catalogListing,false);
+ for(const value of [true,'always','optional',1])assert.throws(()=>validPolicy({...policy,catalogListing:value}),/invalid_policy/);
+});
+test('catalog_required with the required_only policy prepares a validated catalog payload bound to the exact product',async()=>{
+ const {fetcher,seen}=catalogFetcher();
+ const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'}),payload=await api.prepare({},books[0],catalogPolicy,1200);
+ assert.equal(payload.catalog_listing,true);assert.equal(payload.catalog_product_id,'MLU123456');assert.equal(payload.title,books[0].title);assert.ok(payload.pictures.length);
+ assert.equal(payload.attributes.find(a=>a.id==='GTIN').value_name,books[0].isbn);assert.equal(payload.seller_custom_field,`AMADO-AR-${books[0].isbn}`);
+ const validated=seen.find(x=>x.path==='/items/validate');assert.equal(validated.body.catalog_product_id,'MLU123456');assert.equal(validated.body.catalog_listing,true);
+ assert.ok(!seen.some(x=>x.path==='/items'));
+ // Sin la política explícita el mismo producto sigue siendo revisión, nunca una alta tradicional.
+ await assert.rejects(()=>createPublicationMeli({fetcher,tokenProvider:async()=>'token'}).prepare({},books[0],policy,1200),/catalog_required_needs_review/);
+});
+test('catalog_optional products keep the traditional listing even with the required_only policy',async()=>{
+ const {fetcher}=catalogFetcher({detail:{settings:{listing_strategy:'catalog_optional'}}});
+ const seenSearch=async(url,options)=>{const p=new URL(url).pathname;if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:books[0].isbn}],settings:{listing_strategy:'catalog_optional'}}]});return fetcher(url,options);};
+ const payload=await createPublicationMeli({fetcher:seenSearch,tokenProvider:async()=>'token'}).prepare({},books[0],catalogPolicy,1200);
+ assert.equal(payload.catalog_listing,false);assert.equal(payload.catalog_product_id,undefined);
+});
+test('a wrong, inactive or GTIN-incompatible catalog product is review and never a catalog payload',async()=>{
+ const scenarios=[
+  ['catalog_product_id_mismatch',{detail:{id:'MLU999999'}}],
+  ['catalog_product_inactive',{detail:{status:'inactive'}}],
+  ['product_identity_mismatch',{detail:{attributes:[{id:'GTIN',value_name:books[1].isbn}]}}],
+  ['product_identity_mismatch',{detail:{attributes:[{id:'BOOK_COVER',value_name:'Blanda'}]},searchAttributes:[]}],
+ ];
+ for(const [code,options] of scenarios){
+  const {fetcher,seen}=catalogFetcher(options);
+  await assert.rejects(()=>createPublicationMeli({fetcher,tokenProvider:async()=>'token'}).prepare({},books[0],catalogPolicy,1200),new RegExp(code));
+  assert.ok(!seen.some(x=>x.path==='/items/validate'||x.path==='/items'));
+ }
+});
+test('a parent catalog product resolves to the single child with the supplier GTIN or stays in review',async()=>{
+ const child=(isbn,extra={})=>({domain_id:'MLU-BOOKS',status:'active',category_id:'MLU12345',attributes:[{id:'GTIN',value_name:isbn},{id:'BOOK_COVER',value_name:'Blanda'}],pictures:[{id:'123456-MLU999998'}],...extra});
+ const resolved=catalogFetcher({detail:{children_ids:['MLU1001','MLU1002'],attributes:[],pictures:[]},children:{MLU1001:child(books[1].isbn),MLU1002:child(books[0].isbn)}});
+ const payload=await createPublicationMeli({fetcher:resolved.fetcher,tokenProvider:async()=>'token'}).prepare({},books[0],catalogPolicy,1200);
+ assert.equal(payload.catalog_product_id,'MLU1002');assert.equal(payload.pictures[0].id,'123456-MLU999998');
+ for(const children of [{MLU1001:child(books[0].isbn),MLU1002:child(books[0].isbn)},{MLU1001:child(books[1].isbn),MLU1002:child(books[1].isbn)},{MLU1001:child(books[0].isbn,{children_ids:['MLU1003']}),MLU1002:child(books[1].isbn)},{MLU1001:child(books[0].isbn,{status:'inactive'}),MLU1002:child(books[1].isbn)}]){
+  const {fetcher,seen}=catalogFetcher({detail:{children_ids:Object.keys(children),attributes:[],pictures:[]},children});
+  await assert.rejects(()=>createPublicationMeli({fetcher,tokenProvider:async()=>'token'}).prepare({},books[0],catalogPolicy,1200),/catalog_product_children_unresolved/);
+  assert.ok(!seen.some(x=>x.path==='/items/validate'));
+ }
+});
+test('a failed catalog validation keeps the official codes as evidence for review',async t=>{
+ const {fetcher}=catalogFetcher({validate:()=>Response.json({cause:[{code:'item.catalog_listing.invalid',message:'x'}]},{status:400})});
+ const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'});
+ const f=await fixture(t,{rows:[books[0]],apiOverrides:{prepare:api.prepare}});
+ await f.store.db.prepare("UPDATE ml_pub_runs SET policy_json=?,policy_hash=? WHERE id=?").bind(JSON.stringify(validPolicy(catalogPolicy)),await policyHash(catalogPolicy),f.runId).run();
+ const result=await f.service.tick(f.env,f.runId);
+ assert.equal(result.review_reasons[0].error_code,'ml_http_400');
+ const job=await f.store.db.prepare('SELECT payload_json FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
+ assert.deepEqual(JSON.parse(job.payload_json).diagnostic,{stage:'item_validation',validation_codes:['item.catalog_listing.invalid']});
+});
+test('a catalog payload is never created under a policy that did not approve Catálogo',async t=>{
+ const f=await fixture(t,{rows:[books[0]]});await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
+ await f.store.job(f.runId,books[0].isbn,'validated',{payload:{price:quoteMercadoLibre(books[0],policy).price,currency_id:'UYU',condition:'new',catalog_listing:true,catalog_product_id:'MLU123456'}});
+ const result=await f.service.tick(f.env,f.runId);
+ assert.equal(f.calls.create,0);assert.deepEqual(result.review_reasons,[{error_code:'catalog_payload_not_approved',n:1}]);assert.equal(await f.store.receipt('440298103',books[0].isbn),null);
+ const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async()=>{throw Error('no network expected');}});
+ await assert.rejects(()=>api.create({},{price:1,currency_id:'UYU',condition:'new',catalog_listing:true,catalog_product_id:'MLU1'},policy),/catalog_payload_not_approved/);
+ await assert.rejects(()=>api.create({},{price:1,currency_id:'UYU',condition:'new',catalog_listing:false,catalog_product_id:'MLU1'},catalogPolicy),/payload_policy_mismatch/);
+});
+test('approval of a run with the Catálogo policy requires that exact hash',async t=>{
+ const f=await fixture(t);
+ const runId=crypto.randomUUID();await f.store.createRun({id:runId,feedId:f.feedId,policy:validPolicy(catalogPolicy),policyHash:await policyHash(catalogPolicy),now:f.now,dailyCap:10,preflightLimit:10});
+ await f.store.saveIndex(runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});await f.service.tick(f.env,runId);
+ const traditionalHash=await policyHash(policy),catalogHash=await policyHash(catalogPolicy);
+ await assert.rejects(()=>f.service.command(f.env,'approve',{run_id:runId,policy_hash:traditionalHash}),/policy_hash_mismatch/);
+ assert.equal((await f.service.command(f.env,'approve',{run_id:runId,policy_hash:catalogHash})).approved,true);
+});
+test('retryable auth failures defer the book and non-retryable ones stop the run without reviewing it',async t=>{
+ const retryable=createPublicationMeli({tokenProvider:async()=>{throw new MeliAuthError('auth_upstream_503',{status:503,retryable:true});},fetcher:async()=>{throw Error('unexpected');}});
+ let f=await fixture(t,{rows:[books[0]],apiOverrides:retryable});
+ assert.equal((await f.service.tick(f.env,f.runId)).state,'preflight');
+ let job=await f.store.db.prepare('SELECT * FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();assert.equal(job.state,'retry');assert.equal(job.error_code,'auth_upstream_503');assert.equal(job.attempts,1);
+ const fatal=createPublicationMeli({tokenProvider:async()=>{throw new MeliAuthError('auth_invalid_grant',{status:401,retryable:false});},fetcher:async()=>{throw Error('unexpected');}});
+ f=await fixture(t,{rows:[books[0]],apiOverrides:fatal});
+ assert.equal((await f.service.tick(f.env,f.runId)).state,'auth_error');
+ job=await f.store.db.prepare('SELECT * FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();assert.equal(job.state,'retry');assert.equal(job.attempts,0);
+ assert.deepEqual((await f.store.summary(f.runId)).review_reasons,[]);
+});
+test('a 401 from the API invalidates the cached token through the shared store',async()=>{
+ const invalidated=[];let tokens=0;
+ const api=createPublicationMeli({tokenProvider:async()=>`token-${++tokens}`,tokenInvalidator:async(env,token)=>{invalidated.push(token);},fetcher:async()=>new Response('',{status:401})});
+ await assert.rejects(()=>api.account({}),/ml_http_401/);assert.deepEqual(invalidated,['token-1']);
+ await assert.rejects(()=>api.account({}),/ml_http_401/);assert.equal(tokens,2);
+});
+test('attach_feed waits for a busy lease instead of losing the daily snapshot',async t=>{
+ const f=await fixture(t);
+ const newFeed=async()=>{const id=crypto.randomUUID();await f.store.beginFeed(id,new Date(f.now).toISOString(),2,f.now);await f.store.importRows(id,books);await f.store.commitFeed(id);return id;};
+ assert.ok(await f.store.lease(f.runId,'held',Date.now()));
+ let waits=0;
+ const patient=createPublicationService({api:f.api,storeFactory:()=>f.store,now:()=>f.clock.value,sleep:async()=>{waits++;await f.store.release(f.runId,'held');}});
+ const result=await patient.command(f.env,'attach_feed',{run_id:f.runId,feed_id:await newFeed()});
+ assert.equal(waits,1);assert.equal(result.state,'preflight');
+ assert.ok(await f.store.lease(f.runId,'held-again',Date.now()));
+ const impatient=createPublicationService({api:f.api,storeFactory:()=>f.store,now:()=>f.clock.value,attachWaitMs:2500,sleep:async()=>{f.clock.value+=1000;}});
+ const lateFeed=await newFeed();
+ await assert.rejects(()=>impatient.command(f.env,'attach_feed',{run_id:f.runId,feed_id:lateFeed}),/run_busy/);
+ assert.equal((await f.store.run(f.runId)).lease_id,'held-again');
+});
+test('a timed-out POST /items is uncertain, never repeated, and reconciled later by SKU without a duplicate',async t=>{
+ const posts=[];
+ const fetcher=async(url,options)=>{
+  const p=new URL(url).pathname;
+  if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU'});
+  if(p==='/sites/MLU/listing_prices')return Response.json({currency_id:'UYU',listing_type_id:'gold_special',sale_fee_amount:0,listing_fee_amount:0});
+  if(p==='/items/validate')return new Response(null,{status:204});
+  if(p==='/items'&&options.method==='POST'){posts.push(options.body);return new Promise((_,reject)=>options.signal.addEventListener('abort',()=>reject(Object.assign(Error('aborted'),{name:'AbortError'}))));}
+  throw Error('Unexpected endpoint '+p);
+ };
+ const real=createPublicationMeli({fetcher,tokenProvider:async()=>'token',timeouts:{create:20}});
+ const f=await fixture(t,{rows:[books[0]],apiOverrides:{create:real.create}});
+ await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
+ const first=await f.service.tick(f.env,f.runId);
+ assert.equal(posts.length,1);assert.equal(first.state,'complete_with_review');
+ assert.equal((await f.store.receipt('440298103',books[0].isbn)).state,'uncertain');
+ assert.equal((await f.store.db.prepare('SELECT error_code FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first()).error_code,'create_outcome_unknown');
+ // Search index not yet consistent: still uncertain, still no second POST.
+ await f.service.tick(f.env,f.runId);assert.equal(posts.length,1);assert.equal((await f.store.receipt('440298103',books[0].isbn)).state,'uncertain');
+ // The item appears under its SKU: the cron tick (no run id) reconciles it as published, still one POST.
+ f.api.skuItems=async()=>['MLU900000077'];
+ // While the uncertain job is inside its backoff window the cron tick has nothing due.
+ assert.deepEqual(await f.service.tick(f.env),{state:'no_active_run'});
+ f.clock.value+=25*60000;
+ const reconciled=await f.service.tick(f.env);assert.equal(reconciled.state,'complete');
+ const receipt=await f.store.receipt('440298103',books[0].isbn);assert.equal(receipt.state,'published');assert.equal(receipt.item_id,'MLU900000077');
+ assert.equal(posts.length,1);assert.equal((await f.store.counts(f.runId)).find(x=>x.state==='published').n,1);
+ await f.service.tick(f.env,f.runId);assert.equal(posts.length,1);assert.deepEqual(await f.service.tick(f.env),{state:'no_active_run'});
+});
+test('index slices accept the /items/bulk status_code shape and reject entries with other statuses',async()=>{
+ const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async url=>{
+  const u=new URL(url);if(u.pathname.includes('/items/search'))return Response.json({results:['MLU900000001','MLU900000002'],scroll_id:null});
+  assert.equal(u.pathname,'/items/bulk');
+  return Response.json([{status_code:200,body:{id:'MLU900000001',seller_id:440298103,status:'active',title:'Uno',attributes:[]}},{status_code:404,body:{id:'MLU900000002',seller_id:440298103,status:'active',title:'Dos',attributes:[]}}]);
+ }});
+ await assert.rejects(()=>api.indexSlice({},{status:'active',scroll:null,pending:[],done:false,seen:0}),/index_details_invalid/);
+});
