@@ -8,6 +8,7 @@ import {PublicationStore} from '../publication-store.js';
 import {createPublicationService} from '../publication-engine.js';
 import {canonicalIsbn,hasSupplierStock,quoteMercadoLibre,policyHash,sha256,PublicationError} from '../publication-policy.js';
 import {MercadoLibreError,createPublicationMeli} from '../publication-meli.js';
+import {supplierBookMetadata} from '../publication-book-metadata.js';
 import {verifyPublicationRequest} from '../publication-routes.js';
 import {OPERATIONS_ISSUER} from '../operations-read.js';
 
@@ -47,7 +48,7 @@ test('an expired owner cannot overwrite job state or index progress of the next 
  await assert.rejects(()=>f.store.saveIndex(f.runId,{done:true},[],'old',f.now+301000),/lease_lost/);
 });
 test('preflight validates candidates and never calls item creation',async t=>{
- const f=await fixture(t);const result=await f.service.tick(f.env,f.runId);assert.equal(result.state,'ready');assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,2);assert.equal(result.counts.find(x=>x.state==='validated').n,2);
+ const f=await fixture(t);assert.equal((await f.store.nextJob(f.runId,f.now,false)).isbn,books[0].isbn);const result=await f.service.tick(f.env,f.runId);assert.equal(result.state,'ready');assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,2);assert.equal(result.counts.find(x=>x.state==='validated').n,2);
  await assert.rejects(()=>f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:'0'.repeat(64)}),/policy_hash_mismatch/);
 });
 test('approved runs create once, persist receipts, finish and do not repeat on another tick',async t=>{
@@ -173,4 +174,50 @@ test('uses the exact search ISBN when detail omits it while blocking conflicts a
 test('only reviews from the corrected identity reader are retried and never uncertain creations',async t=>{
  const f=await fixture(t);await f.store.job(f.runId,books[0].isbn,'review',{errorCode:'product_isbn_or_domain_mismatch'});await f.store.job(f.runId,books[1].isbn,'uncertain',{errorCode:'create_outcome_unknown'});await f.service.tick(f.env,f.runId);
  const counts=await f.store.counts(f.runId);assert.equal(counts.find(x=>x.state==='validated').n,1);assert.equal(counts.find(x=>x.state==='uncertain').n,1);assert.equal(f.calls.create,0);
+});
+
+function supplierMetadata(isbn=books[0].isbn){return {ISBN:[isbn],Idioma:['Inglés Internacional'],Tapa:['Rústica'],Autor:['JULES VERNE'],Editorial:['Harper Collins'],'Cantidad de páginas':['352'],'Año de edición':['2017'],items:[{ean:'',isKit:false,images:[{imageUrl:'https://sbslibreria.vteximg.com.br/arquivos/ids/5707257/cover.jpg'}],sellers:[{sellerId:'1',commertialOffer:{Price:999999,AvailableQuantity:2,IsAvailable:true}}]}]};}
+test('missing ML metadata can use an exact supplier edition without sending ML credentials or using retail offers',async()=>{
+ let validated=false,external=0;
+ const api=createPublicationMeli({tokenProvider:async()=>'private-test-token',fetcher:async(url,options)=>{
+  const u=new URL(url),p=u.pathname;
+  if(u.hostname==='www.sbs.com.ar'){external++;assert.equal(options.headers.Authorization,undefined);assert.equal(options.redirect,'manual');assert.equal(u.searchParams.get('ft'),books[0].isbn);return Response.json([supplierMetadata()]);}
+  assert.equal(u.hostname,'api.mercadolibre.com');
+  if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU'});
+  if(p==='/products/search')return Response.json({paging:{total:0},results:[]});
+  if(p==='/sites/MLU/domain_discovery/search')return Response.json([{domain_id:'MLU-BOOKS',category_id:'MLU12345'}]);
+  if(p==='/categories/MLU12345')return Response.json({settings:{listing_allowed:true},children_categories:[]});
+  if(p==='/categories/MLU12345/attributes')return Response.json(['GTIN','SELLER_SKU','BOOK_TITLE','AUTHOR','BOOK_PUBLISHER','LANGUAGE','BOOK_COVER'].map(id=>({id,tags:{}})));
+  if(p==='/sites/MLU/listing_prices')return Response.json({currency_id:'UYU',listing_type_id:'gold_special',sale_fee_amount:100,listing_fee_amount:0});
+  if(p==='/items/validate'){validated=true;return new Response(null,{status:204});}
+  throw Error('Unexpected endpoint '+p);
+ }});
+ const payload=await api.prepare({},books[0],policy,1200);
+ assert.equal(external,1);assert.equal(validated,true);assert.equal(payload.price,1200);assert.equal(payload.available_quantity,1);assert.equal(payload.catalog_listing,false);
+ assert.equal(payload.attributes.find(a=>a.id==='LANGUAGE').value_name,'Inglés');assert.equal(payload.attributes.find(a=>a.id==='BOOK_COVER').value_name,'Blanda');assert.match(payload.pictures[0].source,/sbslibreria/);
+});
+test('supplier metadata refuses unverified ISBNs, conflicting SKUs, ambiguous formats and untrusted cover hosts',async()=>{
+ for(const change of [p=>{p.ISBN=[books[1].isbn];},p=>{p.ISBN='bad';},p=>{p.items[0].ean=books[1].isbn;},p=>{p.items.push(p.items[0]);},p=>{p.items[0].isKit=true;},p=>{p.items[0].images[0].imageUrl='https://untrusted.example/cover.jpg';},p=>{p.Idioma=['No determinado'];},p=>{p.items[0].sellers[0].commertialOffer.IsAvailable=false;}]){
+  const product=supplierMetadata();change(product);
+  await assert.rejects(()=>supplierBookMetadata(books[0],{fetcher:async()=>Response.json([product])}),error=>error instanceof PublicationError);
+ }
+ await assert.rejects(()=>supplierBookMetadata(books[0],{fetcher:async()=>{throw Error('private-test-token');}}),error=>{assert.equal(error.code,'missing_verified_book_metadata');assert.doesNotMatch(JSON.stringify(error),/private-test-token/);return true;});
+});
+test('required catalog and ambiguous ML matches never fall back to a traditional supplier listing',async()=>{
+ for(const scenario of ['catalog_required','ambiguous']){
+  const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async url=>{
+   const u=new URL(url);assert.equal(u.hostname,'api.mercadolibre.com');
+   if(u.pathname==='/users/me')return Response.json({id:440298103,site_id:'MLU'});
+   if(u.pathname==='/products/search')return Response.json({paging:{total:scenario==='ambiguous'?2:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:books[0].isbn}],settings:{listing_strategy:'catalog_required'}}]});
+   if(u.pathname==='/products/MLU123456')return Response.json({domain_id:'MLU-BOOKS',attributes:[]});
+   throw Error('Unexpected endpoint');
+  }});
+  await assert.rejects(()=>api.prepare({},books[0],policy,1200),scenario==='ambiguous'?/ambiguous_product_metadata/:/catalog_required_needs_review/);
+ }
+});
+test('legacy missing-metadata reviews retry once while a failed verified fallback stays in review',async t=>{
+ const f=await fixture(t);await f.store.job(f.runId,books[0].isbn,'review',{errorCode:'missing_product_metadata'});await f.store.job(f.runId,books[1].isbn,'review',{errorCode:'missing_verified_book_metadata'});
+ await f.service.tick(f.env,f.runId);assert.equal(f.calls.prepare,1);assert.equal((await f.store.counts(f.runId)).find(x=>x.state==='validated').n,1);
+ assert.deepEqual((await f.store.summary(f.runId)).review_reasons,[{error_code:'missing_verified_book_metadata',n:1}]);
+ await f.service.tick(f.env,f.runId);assert.equal(f.calls.prepare,1);
 });
