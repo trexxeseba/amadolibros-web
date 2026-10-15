@@ -82,6 +82,13 @@ test('a replacement supplier snapshot never reuses stock of an absent ISBN',asyn
  await f.store.saveIndex(f.runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});
  const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(result.counts.find(x=>x.state==='skipped_stock').n,2);
 });
+test('refreshing stock preserves the original batch and the preview prioritizes validated candidates',async t=>{
+ const f=await fixture(t),third={...books[0],isbn:'9780140328721',title:'Libro fuera del lote'},feedId=crypto.randomUUID();
+ await f.store.beginFeed(feedId,new Date(f.now).toISOString(),3,f.now);await f.store.importRows(feedId,[...books,third]);await f.store.commitFeed(feedId);await f.store.attachFeed(f.runId,feedId);
+ assert.equal((await f.store.counts(f.runId)).reduce((n,x)=>n+x.n,0),2);assert.equal((await f.store.stock(feedId,third.isbn)).isbn,third.isbn);
+ await f.store.job(f.runId,books[0].isbn,'review',{errorCode:'test_review'});await f.store.job(f.runId,books[1].isbn,'validated',{payload:{price:1200}});
+ assert.equal((await f.store.preview(f.runId))[0].state,'validated');
+});
 test('signed publication envelopes bind the complete body and reject changed content',async()=>{
  const keys=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']),publicKey=await crypto.subtle.exportKey('jwk',keys.publicKey),now=Date.now();
  const raw=JSON.stringify({action:'status',args:{}}),payload={v:1,iss:OPERATIONS_ISSUER,aud:'amado-mercadolibre-publication',method:'POST',path:'/operations/publication',seller_id:'440298103',iat:Math.floor(now/1000),exp:Math.floor(now/1000)+45,jti:crypto.randomUUID(),body_sha256:await sha256(raw)};

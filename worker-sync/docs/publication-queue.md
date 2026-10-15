@@ -23,6 +23,9 @@ público. El token de Mercado Libre sigue usando el mecanismo OAuth existente.
 Un nuevo snapshot se adjunta con `attach_feed`. Se renueva el índice de Mercado
 Libre y se recalculan las candidatas pendientes. Los ISBN ausentes del snapshot
 nuevo no conservan el stock anterior. Los libros ya publicados no se duplican.
+La actualización conserva los ISBN originales de la tanda: no agrega libros del
+listado nuevo. Para trabajar de a 1.000 se crea un snapshot de 1.000 ISBN por tanda;
+la siguiente tanda necesita su propio lote.
 La cola se pausa cuando la fuente supera 24 horas; para varios días de trabajo
 hay que proporcionar un listado actualizado cada día o conectar su descarga.
 
