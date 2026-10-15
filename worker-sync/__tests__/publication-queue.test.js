@@ -109,6 +109,16 @@ test('new bulk responses are matched by ID and an incomplete batch cannot finish
  const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'});
  const result=await api.indexSlice({}, {status:'paused',scroll:null,pending:[],done:false,seen:0});assert.equal(result.items[0].isbn,books[1].isbn);assert.equal(result.index.seen,2);assert.equal(result.index.done,false);
 });
+test('index pages read at most five independent multigets with twenty IDs each',async()=>{
+ const ids=Array.from({length:100},(_,i)=>`MLU${900000000+i}`);let active=0,maxActive=0;
+ const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async url=>{
+  const u=new URL(url);if(u.pathname.includes('/items/search'))return Response.json({results:ids,scroll_id:'cursor'});
+  const group=u.searchParams.get('ids').split(',');assert.ok(group.length<=20);active++;maxActive=Math.max(maxActive,active);await new Promise(resolve=>setTimeout(resolve,1));active--;
+  return Response.json(group.reverse().map(id=>({code:200,body:{id,seller_id:440298103,status:'active',title:id,attributes:[]}})));
+ }});
+ const result=await api.indexSlice({}, {status:'active',scroll:null,pending:[],done:false,seen:0});
+ assert.equal(maxActive,5);assert.equal(result.items.length,100);assert.equal(new Set(result.items.map(x=>x.id)).size,100);assert.deepEqual(result.index.pending,[]);
+});
 test('an expired scroll after a cooldown restarts the status without claiming an incomplete index is done',async()=>{
  let restarted=false;
  const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async url=>{
