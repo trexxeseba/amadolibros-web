@@ -22,7 +22,13 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   let res,data;
   try{
    res=await fetcher('https://api.mercadolibre.com'+path,{method,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',Accept:'application/json'},body:body?JSON.stringify(body):undefined,redirect:'manual',signal:controller.signal});
-   if(!res.ok){if(res.status===401)cache=null;throw new MercadoLibreError(`ml_http_${res.status}`,res.status,Math.min(3600,Math.max(0,Number(res.headers.get('retry-after'))||0)));}
+   if(!res.ok){
+    if(res.status===401)cache=null;
+    const error=new MercadoLibreError(`ml_http_${res.status}`,res.status,Math.min(3600,Math.max(0,Number(res.headers.get('retry-after'))||0)));
+    error.stage=path==='/items/validate'?'item_validation':path.startsWith('/sites/MLU/listing_prices')?'listing_fees':path==='/items'?'item_creation':'metadata';
+    try{const details=await res.json();error.validationCodes=(details.cause??[]).map(c=>c.code).filter(c=>typeof c==='string'&&/^(item|body|shipping|seller|category|user|catalog|product|pictures|request|validation)[._][a-z0-9_.-]{1,140}$/.test(c)).slice(0,10);}catch{}
+    throw error;
+   }
    if(res.status===204)return {};
    try{data=await res.json();}catch{throw new MercadoLibreError(method==='POST'&&path==='/items'?'create_outcome_unknown':'ml_invalid_json',502);}
   }catch(error){if(error instanceof MercadoLibreError)throw error;throw new MercadoLibreError(method==='POST'&&path==='/items'?'create_outcome_unknown':'ml_transport',503);}

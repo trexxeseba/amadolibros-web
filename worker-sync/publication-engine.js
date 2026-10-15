@@ -73,7 +73,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
     }catch(error){
      const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
      const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
-     await mark(job.isbn,retry?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:true});
+     await mark(job.isbn,retry?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:true,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[]}}}:{})});
      if(error.status===401||error.status===403){await state('auth_error');break;}
      if(error.status===429){await s.backoff(run.id,nextAt,lease);break;}
     }
