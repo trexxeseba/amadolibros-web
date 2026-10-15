@@ -79,7 +79,12 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!Array.isArray(found.results)||(typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1)throw new PublicationError(found.results?.length?'ambiguous_product_metadata':'missing_product_metadata',422);
   const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);
   const product=await call(env,`/products/${productId}`);
-  if(itemIsbns(product)!==row.isbn||product.domain_id!=='MLU-BOOKS')throw new PublicationError('product_isbn_or_domain_mismatch',422);
+  // The detail endpoint can omit GTIN even when the exact-identifier search returns it.
+  const detailIsbn=itemIsbns(product),searchIsbn=itemIsbns(found.results[0]);
+  if(product.domain_id!=='MLU-BOOKS'||(detailIsbn&&detailIsbn!==row.isbn)||(searchIsbn&&searchIsbn!==row.isbn)||(!detailIsbn&&!searchIsbn))throw new PublicationError('product_identity_mismatch',422);
+  const binding=/(?:-|–)\s*(HB|PB)\s*$/i.exec(row.title)?.[1]?.toUpperCase();
+  const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if((binding==='HB'&&/blanda|rustica|paper|soft/.test(cover))||(binding==='PB'&&/dura|hard/.test(cover)))throw new PublicationError('book_binding_mismatch',422);
   if(product.settings?.listing_strategy==='catalog_required'||found.results[0].settings?.listing_strategy==='catalog_required')throw new PublicationError('catalog_required_needs_review',422);
   let categoryId=product.category_id;
   if(!categoryId){const prediction=await call(env,'/sites/MLU/domain_discovery/search?'+new URLSearchParams({q:row.title,limit:'3'}));categoryId=Array.isArray(prediction)?prediction.find(x=>x.domain_id==='MLU-BOOKS')?.category_id:null;}

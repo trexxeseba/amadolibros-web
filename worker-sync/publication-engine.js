@@ -25,6 +25,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    while(!index.done&&now()<deadline&&processed<20){const slice=await api.indexSlice(env,index);index=await s.saveIndex(run.id,slice.index,slice.items,lease,now());processed++;}
    if(!index.done)return s.summary(run.id);
    const policy=validPolicy(JSON.parse(run.policy_json));
+   await s.retryLegacyIdentityReviews(run.id,lease,now());
    const publishing=run.state==='publishing'&&run.approved_hash===run.policy_hash;
    if(run.state==='publishing'&&!publishing)return {state:'publishing_not_enabled'};
    if(publishing&&await s.dayCreated(now())>=run.daily_cap)return {state:'daily_cap_reached'};
