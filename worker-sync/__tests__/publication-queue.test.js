@@ -100,6 +100,10 @@ test('transport follows no redirect and returns no credential or raw exception t
  const api=createPublicationMeli({tokenProvider:async()=>'private-token-test',fetcher:async(url,options)=>{assert.equal(options.redirect,'manual');throw Error('private-token-test');}});
  await assert.rejects(()=>api.account({}),error=>{assert.ok(error instanceof PublicationError);assert.doesNotMatch(error.message,/private-token/);return true;});
 });
+test('validation errors retain only bounded official codes and never upstream messages or credentials',async()=>{
+ const api=createPublicationMeli({tokenProvider:async()=>'private-test-token',fetcher:async()=>Response.json({cause:[{code:'item.attribute.missing_conditional_required',message:'private-test-token'},{code:'private-test-token',message:'private'}]},{status:400})});
+ await assert.rejects(()=>api.call({},'/items/validate',{method:'POST',body:{}}),error=>{assert.deepEqual(error.validationCodes,['item.attribute.missing_conditional_required']);assert.equal(error.stage,'item_validation');assert.doesNotMatch(JSON.stringify(error),/private-test-token/);return true;});
+});
 test('product diagnostics distinguish a missing identifier from a wrong domain without returning credentials',async()=>{
  const api=createPublicationMeli({tokenProvider:async()=>'private-test-token',fetcher:async url=>new URL(url).pathname==='/products/search'?Response.json({paging:{total:1},results:[{id:'MLU900000000'}]}):Response.json({id:'MLU900000000',name:'Libro de prueba',domain_id:'MLU-BOOKS',attributes:[{id:'BOOK_TITLE',value_name:'Libro de prueba'}]})});
  const result=await api.inspectProduct({},books[0].isbn);assert.equal(result.reported_isbn,null);assert.equal(result.domain_id,'MLU-BOOKS');assert.deepEqual(result.attribute_ids,['BOOK_TITLE']);assert.doesNotMatch(JSON.stringify(result),/private-test-token/);
@@ -147,4 +151,26 @@ test('UPP preparation uses family_name, keeps catalog_listing false and accepts 
  };
  const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'}),payload=await api.prepare({},books[0],policy,1000);
  assert.equal(payload.catalog_listing,false);assert.equal(payload.family_name,books[0].title);assert.equal(payload.title,undefined);assert.equal(payload.available_quantity,1);assert.ok(!seen.some(x=>x.path==='/items'));assert.equal(seen.filter(x=>x.method==='POST').length,1);
+});
+test('uses the exact search ISBN when detail omits it while blocking conflicts and binding mismatches',async()=>{
+ for(const scenario of ['search_identifier','conflicting_identifier','wrong_binding']){
+  const fetcher=async url=>{
+   const p=new URL(url).pathname;
+   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:[]});
+   if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:books[0].isbn}]}]});
+   if(p==='/products/MLU123456')return Response.json({domain_id:'MLU-BOOKS',category_id:'MLU12345',attributes:scenario==='conflicting_identifier'?[{id:'GTIN',value_name:books[1].isbn}]:[{id:'BOOK_COVER',value_name:'Blanda'}],pictures:[{id:'123456-MLU999999'}]});
+   if(p==='/categories/MLU12345')return Response.json({settings:{listing_allowed:true},children_categories:[]});
+   if(p==='/categories/MLU12345/attributes')return Response.json([{id:'GTIN',tags:{}},{id:'BOOK_COVER',tags:{}}]);
+   if(p==='/sites/MLU/listing_prices')return Response.json({currency_id:'UYU',listing_type_id:'gold_special',sale_fee_amount:100,listing_fee_amount:0});
+   if(p==='/items/validate')return new Response(null,{status:204});
+   throw Error('Unexpected endpoint');
+  };
+  const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'}),row={...books[0],title:scenario==='wrong_binding'?'Libro - HB':books[0].title};
+  if(scenario==='search_identifier')assert.equal((await api.prepare({},row,policy,1000)).attributes.find(a=>a.id==='GTIN').value_name,books[0].isbn);
+  else await assert.rejects(()=>api.prepare({},row,policy,1000),scenario==='wrong_binding'?/book_binding_mismatch/:/product_identity_mismatch/);
+ }
+});
+test('only reviews from the corrected identity reader are retried and never uncertain creations',async t=>{
+ const f=await fixture(t);await f.store.job(f.runId,books[0].isbn,'review',{errorCode:'product_isbn_or_domain_mismatch'});await f.store.job(f.runId,books[1].isbn,'uncertain',{errorCode:'create_outcome_unknown'});await f.service.tick(f.env,f.runId);
+ const counts=await f.store.counts(f.runId);assert.equal(counts.find(x=>x.state==='validated').n,1);assert.equal(counts.find(x=>x.state==='uncertain').n,1);assert.equal(f.calls.create,0);
 });

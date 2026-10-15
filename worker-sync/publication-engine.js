@@ -25,6 +25,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    while(!index.done&&now()<deadline&&processed<20){const slice=await api.indexSlice(env,index);index=await s.saveIndex(run.id,slice.index,slice.items,lease,now());processed++;}
    if(!index.done)return s.summary(run.id);
    const policy=validPolicy(JSON.parse(run.policy_json));
+   await s.retryLegacyIdentityReviews(run.id,lease,now());
    const publishing=run.state==='publishing'&&run.approved_hash===run.policy_hash;
    if(run.state==='publishing'&&!publishing)return {state:'publishing_not_enabled'};
    if(publishing&&await s.dayCreated(now())>=run.daily_cap)return {state:'daily_cap_reached'};
@@ -72,7 +73,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
     }catch(error){
      const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
      const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
-     await mark(job.isbn,retry?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:true});
+     await mark(job.isbn,retry?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:true,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[]}}}:{})});
      if(error.status===401||error.status===403){await state('auth_error');break;}
      if(error.status===429){await s.backoff(run.id,nextAt,lease);break;}
     }
