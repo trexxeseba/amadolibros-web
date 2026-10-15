@@ -107,3 +107,22 @@ test('token is reused briefly, invalidated on 401, and auth errors never reveal 
   const failing = reader(async () => { throw new Error('unused'); }, { tokenProvider: async () => { throw new Error('secret-refresh-token'); } });
   const response = await failing(await signed('cuenta'), env); assert.equal(response.status, 503); assert.doesNotMatch(await response.text(), /secret-refresh-token/);
 });
+
+test('transport uses a compatible AbortController and never follows a redirect with the token', async () => {
+  const run = reader(async (url, options) => {
+    assert.equal(options.redirect, 'manual');
+    assert.ok(options.signal instanceof AbortSignal);
+    return new Response(null, { status: 302, headers: { Location: 'https://untrusted.test' } });
+  });
+  const response = await run(await signed('cuenta'), env);
+  assert.equal(response.status, 502);
+  assert.match((await response.json()).error, /HTTP 302/);
+});
+
+test('safe transport diagnostics distinguish errors without returning exception text or tokens', async () => {
+  const run = reader(async () => { throw new TypeError('redirect mode unsupported: private-token-for-test'); });
+  const response = await run(await signed('cuenta'), env);
+  const body = await response.text();
+  assert.equal(JSON.parse(body).error_code, 'transport_redirect_error');
+  assert.doesNotMatch(body, /private-token-for-test|unsupported/);
+});

@@ -15,7 +15,7 @@ const ML_ORIGIN = 'https://api.mercadolibre.com';
 const encoder = new TextEncoder();
 
 class ReadError extends Error {
-  constructor(message, status = 502) { super(message); this.status = status; }
+  constructor(message, status = 502, code = 'read_error') { super(message); this.status = status; this.code = code; }
 }
 function response(data, status = 200) {
   return Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -75,8 +75,19 @@ export function createOperationsReader({ fetcher = (...args) => globalThis.fetch
   }
   async function ml(path, accessToken) {
     let res;
-    try { res = await fetcher(ML_ORIGIN + path, { method: 'GET', headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(15_000) }); }
-    catch { throw new ReadError('Mercado Libre no respondió a tiempo. Reintentá la consulta.'); }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+    try { res = await fetcher(ML_ORIGIN + path, { method: 'GET', headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' }, redirect: 'manual', signal: controller.signal }); }
+    catch (error) {
+      const text = String(error?.message ?? '');
+      const kind = error?.name === 'AbortError' || error?.name === 'TimeoutError' ? 'ml_timeout'
+        : /redirect/i.test(text) ? 'transport_redirect_error'
+        : /illegal invocation|incorrect this/i.test(text) ? 'transport_receiver_error'
+        : /AbortSignal|signal.*not|timeout.*not/i.test(text) ? 'transport_signal_error'
+        : /different request|I\/O/i.test(text) ? 'transport_request_context_error'
+        : error?.name === 'TypeError' ? 'transport_type_error' : 'transport_network_error';
+      throw new ReadError('No se pudo completar la conexión de lectura con Mercado Libre. Reintentá la consulta.', 502, kind);
+    } finally { clearTimeout(timer); }
     if (!res.ok) {
       if (res.status === 401) tokenCache = null;
       throw new ReadError(`Mercado Libre respondió HTTP ${res.status}. No se pudo confirmar la consulta.`, res.status === 429 ? 429 : 502);
@@ -130,7 +141,7 @@ export function createOperationsReader({ fetcher = (...args) => globalThis.fetch
       }
       return response({ source: 'Mercado Libre API', seller_id: SELLER_ID, app_id: APP_ID, action: payload.action, queried_at: new Date(now()).toISOString(), read_only: true, data });
     } catch (error) {
-      return response({ error: error instanceof ReadError ? error.message : 'No se pudo completar la consulta de Mercado Libre.' }, error instanceof ReadError ? error.status : 502);
+      return response({ error: error instanceof ReadError ? error.message : 'No se pudo completar la consulta de Mercado Libre.', error_code: error instanceof ReadError ? error.code : 'internal_error' }, error instanceof ReadError ? error.status : 502);
     }
   };
 }
