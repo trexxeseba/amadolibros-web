@@ -33,6 +33,10 @@ on:
         description: 'Con clone_preflight_catalog: días de disponibilidad (MANUFACTURING_TIME) para la política clonada, 1-60. Vacío conserva los del lote run_id. Cambia el policy_hash.'
         required: false
         type: string
+      daily_cap:
+        description: 'Con create_run_from_source: techo diario de altas reales tras aprobación (1-10000, default 1000).'
+        required: false
+        type: string
       item_id:
         description: 'Con shipping_diagnostic: publicación activa propia de referencia (MLU...). Sólo lectura.'
         required: false
