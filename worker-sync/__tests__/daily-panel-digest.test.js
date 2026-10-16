@@ -42,6 +42,7 @@ function dbMock() {
       return { bind() { return { async all() {
         if (sql.includes("payment_status = 'approved' AND fulfilled_at IS NULL")) return { results: ship };
         if (sql.includes("status = 'open'")) return { results: unpaid };
+        if (sql.includes('FROM search_misses')) return { results: [{ query: 'zzzinexistente999', count: 4 }, { query: 'norbert losche', count: 3 }, { query: '<b>x</b>', count: 1 }] };
         if (sql.includes('SUM(')) return { results: [{ n: 1, total: 2160 }] };
         return { results: [{ n: 2 }] };
       } }; } };
@@ -85,4 +86,19 @@ test('una prueba manual marca el asunto, no gasta la reserva del día y no la li
   // El correo real de la mañana sale igual.
   assert.equal((await sendDailyPanelDigest(env, { now: NOW, fetchFn })).status, 'sent');
   assert.doesNotMatch(subjects[1], /PRUEBA/);
+});
+
+test('el correo lista lo que buscaron y no estaba, sin las pruebas internas y escapado', () => {
+  const { text, html } = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0,
+    misses: [{ query: 'norbert losche', count: 3 }, { query: '<b>x</b>', count: 1 }] });
+  assert.match(text, /BUSCARON Y NO ENCONTRARON/);
+  assert.match(text, /«norbert losche» \(3 veces\)/);
+  assert.match(html, /«norbert losche»/);
+  assert.doesNotMatch(html, /<b>x<\/b>/);
+});
+
+test('la consulta de demanda se hace y filtra las búsquedas de prueba', async () => {
+  const { loadDigestData } = await import('../daily-panel-digest.js');
+  const data = await loadDigestData(dbMock(), NOW);
+  assert.deepEqual(data.misses.map(m => m.query), ['norbert losche', '<b>x</b>']);
 });
