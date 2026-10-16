@@ -6,7 +6,7 @@ on:
       action:
         description: 'Controlar la cola; las altas requieren precios revisados y habilitación del Worker'
         type: choice
-        options: [status, tick, pause, approve, refresh]
+        options: [status, tick, pause, approve, refresh, clone_preflight_catalog]
         default: status
       run_id:
         description: 'ID del lote (vacío para consultar o continuar el activo)'
@@ -21,6 +21,10 @@ on:
         required: false
         type: boolean
         default: false
+      preflight_limit:
+        description: 'Con clone_preflight_catalog: cuántos ISBN en catalog_required_needs_review del lote run_id validar (1-20, default 10). Nunca publica.'
+        required: false
+        type: string
   schedule:
     - cron: '*/10 * * * *'
     - cron: '30 4 * * *'
@@ -58,6 +62,7 @@ jobs:
           PUBLISHER_RUN_ID: ${{ inputs.run_id }}
           PUBLISHER_POLICY_HASH: ${{ inputs.policy_hash }}
           PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
+          PUBLISHER_PREFLIGHT_LIMIT: ${{ inputs.preflight_limit }}
           PUBLISHER_CYCLES: '10'
           SUPPLIER_FEED_URL: ${{ secrets.SUPPLIER_FEED_URL }}
           SUPPLIER_FEED_AUTHORIZATION: ${{ secrets.SUPPLIER_FEED_AUTHORIZATION }}

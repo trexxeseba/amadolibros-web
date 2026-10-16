@@ -1,8 +1,19 @@
-import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normalizeSupplierRow,validPolicy,policyHash,quoteMercadoLibre,stockIsFresh,safeCode} from './publication-policy.js';
+import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normalizeSupplierRow,validPolicy,policyHash,quoteMercadoLibre,stockIsFresh,safeCode,sha256} from './publication-policy.js';
 import {PublicationStore} from './publication-store.js';
 import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './publication-meli.js';
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
+// Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog'];
+export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
+const CLONE_PREFLIGHT_TICKS=6;
+// Deterministic run id: repeating the same request finds the same clone instead of creating another.
+export async function clonePreflightRunId(sourceRunId,policyHashValue,limit){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+export function clonePreflightJob(job){
+ const p=job.payload&&typeof job.payload==='object'?job.payload:{};
+ return {isbn:job.isbn,state:job.state,error_code:job.error_code??null,title:p.title??p.family_name??null,price:typeof p.price==='number'?p.price:null,catalog_listing:typeof p.catalog_listing==='boolean'?p.catalog_listing:null,catalog_product_id:p.catalog_product_id??null,validation:p.diagnostic??null};
+}
+const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:run.policy_json,policy_hash:run.policy_hash,approved_hash:run.approved_hash??null,daily_cap:run.daily_cap,preflight_limit:run.preflight_limit}):null;
 
 export function createPublicationService({api=createPublicationMeli(),storeFactory=env=>new PublicationStore(env.ORDERS_DB),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000}={}){
  function store(env){if(String(env.USER_ID)!==SELLER_ID||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
@@ -96,7 +107,9 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
   finally{await s.release(run.id,lease);}
  }
  async function command(env,action,args={},nonce=null){
-  if(!['begin_feed','import_feed','commit_feed','create_run','attach_feed','status','tick','pause','approve','preview'].includes(action))throw new PublicationError('unknown_action');
+  if(!['begin_feed','import_feed','commit_feed','create_run','attach_feed','status','tick','pause','approve','preview',...ADMIN_ONLY_ACTIONS].includes(action))throw new PublicationError('unknown_action');
+  // A signed (non-admin) request carries a nonce; admin requests never do.
+  if(ADMIN_ONLY_ACTIONS.includes(action)&&nonce)throw new PublicationError('admin_only_action',403);
   const s=store(env);
   if(action==='status'){try{return await s.summary(args.run_id);}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}}
   if(action==='preview'){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const jobs=await s.preview(args.run_id),sample=jobs.find(j=>j.error_code==='product_isbn_or_domain_mismatch'&&/^(978|979)/.test(j.isbn));return {run_id:args.run_id,jobs,...(sample?{diagnostic:await api.inspectProduct(env,sample.isbn)}:{})};}
@@ -120,6 +133,34 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    if(!Number.isInteger(dailyCap)||dailyCap<1||dailyCap>10000||!Number.isInteger(preflightLimit)||preflightLimit<1||preflightLimit>20)throw new PublicationError('invalid_run_limits');
    const hash=await policyHash(policy),existing=await s.run(args.run_id);if(existing){if(existing.feed_id!==args.feed_id||existing.policy_hash!==hash)throw new PublicationError('run_id_conflict',409);return s.summary(args.run_id);}
    await s.createRun({id:args.run_id,feedId:args.feed_id,policy,policyHash:hash,now:now(),dailyCap,preflightLimit});return s.summary(args.run_id);
+  }
+  if(action==='clone_preflight_catalog'){
+   // Preflight of Catálogo obligatorio over the ISBNs a source run left in review,
+   // with the source policy cloned field by field except catalogListing. The clone
+   // starts unapproved and this action only ticks it in preflight: GET lookups and
+   // /items/validate, never POST /items. The source run is read, never written.
+   if(!idOk(args.source_run_id))throw new PublicationError('invalid_run_id');
+   const limit=args.limit??10;if(!Number.isInteger(limit)||limit<1||limit>20)throw new PublicationError('invalid_run_limits');
+   const source=await s.run(args.source_run_id);if(!source)throw new PublicationError('source_run_not_found',404);
+   const sourceBefore=runFingerprint(source),sourceJobsBefore=JSON.stringify(await s.counts(source.id));
+   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only'});
+   const hash=await policyHash(policy);if(hash===source.policy_hash)throw new PublicationError('source_policy_already_catalog',409);
+   const feed=await s.feed(source.feed_id);if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
+   const newId=await clonePreflightRunId(source.id,hash,limit);
+   let run=await s.run(newId),created=false;
+   if(run){if(run.feed_id!==source.feed_id||run.policy_hash!==hash)throw new PublicationError('run_id_conflict',409);}
+   else{
+    const isbns=await s.catalogReviewCandidates(source.id,limit);if(!isbns.length)throw new PublicationError('no_catalog_review_candidates',409);
+    await s.cloneRun({id:newId,feedId:source.feed_id,policy,policyHash:hash,now:now(),dailyCap:limit,preflightLimit:limit,indexJson:source.index_json,sourceId:source.id},isbns);created=true;
+   }
+   // Bounded preflight ticks; a busy lease or any terminal state ends them.
+   let last=null;for(let i=0;i<CLONE_PREFLIGHT_TICKS;i++){last=await tick(env,newId);if(!['preflight'].includes(last.state))break;}
+   run=await s.run(newId);const jobs=(await s.jobs(newId)).map(clonePreflightJob);
+   const count=state=>jobs.filter(j=>j.state===state).length;
+   const sourceAfter=await s.run(source.id);
+   return {new_run_id:newId,source_run_id:source.id,created,policy_hash:hash,source_policy_hash:source.policy_hash,catalog_listing:policy.catalogListing,state:run.state,approved:run.approved_hash===run.policy_hash,preflight_limit:run.preflight_limit,
+    selected_isbns:jobs.map(j=>j.isbn),preflight:jobs,validated:count('validated'),review:count('review'),pending:count('pending')+count('retry'),published:count('published'),last_tick:last?.state??null,
+    source_run_intact:runFingerprint(sourceAfter)===sourceBefore&&JSON.stringify(await s.counts(source.id))===sourceJobsBefore,read_only_mercado_libre:true};
   }
   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
   if(action==='attach_feed'){

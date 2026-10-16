@@ -8,7 +8,7 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
-const allowed=new Set(['status','tick','pause','approve','import','refresh']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -61,6 +61,13 @@ if(action==='import'){
  await refreshFeed();
 }else if(action==='approve'){
  const hash=process.env.PUBLISHER_POLICY_HASH;if(!runId||!/^[a-f0-9]{64}$/.test(hash??''))throw Error('Run ID and reviewed policy hash are required');summary(await command('approve',{run_id:runId,policy_hash:hash}));
+}else if(action==='clone_preflight_catalog'){
+ // Catalog preflight over the review ISBNs of an existing run: new unapproved run, /items/validate only.
+ if(!runId)throw Error('Source run ID is required');
+ const limit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):10;
+ const result=await command('clone_preflight_catalog',{source_run_id:runId,limit});
+ console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
+ for(const job of result.preflight)console.log(JSON.stringify(job));
 }else if(action==='tick'){
  const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
  for(let i=0;i<cycles;i++){const result=await command('tick',{run_id:runId});summary(result);if(!['preflight','publishing','busy'].includes(result.state))break;}
