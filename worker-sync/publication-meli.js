@@ -6,6 +6,20 @@ export class MercadoLibreError extends PublicationError {
  constructor(code,status,retryAfter=0){super(code,status);this.retryAfter=retryAfter;}
 }
 const MAX_CATALOG_CHILDREN=10;
+const MAX_DOMAIN_CATEGORIES=20;
+// El listado de categorías de un dominio de Catálogo se lee a la defensiva:
+// sólo las cadenas MLU\d+ de los campos documentados se vuelven candidatas y
+// cualquier otra forma se ignora en lugar de adivinarse. La autoridad sobre
+// cada candidata sigue siendo /categories/{id}.
+export function domainCategoryIds(payload){
+ const entries=Array.isArray(payload)?payload:Array.isArray(payload?.categories)?payload.categories:[];
+ const ids=[];
+ for(const entry of entries){
+  const id=typeof entry==='string'?entry:entry?.category_id??entry?.id;
+  if(typeof id==='string'&&/^MLU\d+$/.test(id)&&!ids.includes(id))ids.push(id);
+ }
+ return ids;
+}
 function itemIsbns(item){
  const values=(item.attributes??[]).filter(a=>['ISBN','GTIN'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]).filter(Boolean);
  for(const value of values)try{return canonicalIsbn(value);}catch{}
@@ -115,6 +129,33 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(matches.length!==1)throw new PublicationError('catalog_product_children_unresolved',422);
   return matches[0];
  }
+// Catálogo necesita category_id. Cuando el producto no lo trae, el dominio ya
+// verificado como MLU-BOOKS lo convierte: /catalog_domains/{domain}/categories.
+// Cada candidata se confirma contra /categories/{id} — de MLU, publicable y
+// hoja — y la predicción por título sólo desempata entre esas candidatas, nunca
+// aporta una categoría propia. Si queda ambiguo es review, no una conjetura.
+ async function resolveDomainCategory(env,row,product){
+  const domainId=product.domain_id;
+  if(typeof domainId!=='string'||!/^MLU-[A-Z0-9_]{1,60}$/.test(domainId))throw new PublicationError('missing_book_category',422);
+  const ids=domainCategoryIds(await call(env,`/catalog_domains/${encodeURIComponent(domainId)}/categories`));
+  if(!ids.length)throw new PublicationError('missing_book_category',422);
+  if(ids.length>MAX_DOMAIN_CATEGORIES)throw new PublicationError('ambiguous_book_category',422);
+  const candidates=[];
+  for(const id of ids){
+   const category=await call(env,`/categories/${id}`);
+   if(category.id!==undefined&&category.id!==id)continue;
+   if(category.settings?.listing_allowed===false)continue;
+   if((category.children_categories??[]).length)continue;
+   candidates.push({id,category});
+  }
+  if(!candidates.length)throw new PublicationError('missing_book_category',422);
+  if(candidates.length===1)return candidates[0];
+  const prediction=await call(env,'/sites/MLU/domain_discovery/search?'+new URLSearchParams({q:row.title,limit:'3'}));
+  const predicted=Array.isArray(prediction)?prediction.find(x=>x?.domain_id===domainId&&candidates.some(c=>c.id===x?.category_id)):null;
+  const chosen=predicted?candidates.find(c=>c.id===predicted.category_id):null;
+  if(!chosen)throw new PublicationError('ambiguous_book_category',422);
+  return chosen;
+ }
  async function prepare(env,row,policy,price){
   const seller=await account(env);
   const found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:row.isbn}));
@@ -138,10 +179,14 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   const binding=/(?:-|–)\s*(HB|PB)\s*$/i.exec(row.title)?.[1]?.toUpperCase();
   const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
   if((binding==='HB'&&/blanda|rustica|paper|soft/.test(cover))||(binding==='PB'&&/dura|hard/.test(cover)))throw new PublicationError('book_binding_mismatch',422);
-  let categoryId=product.category_id;
+  let categoryId=product.category_id,resolvedCategory=null;
+  // La conversión por dominio es sólo para Catálogo obligatorio, donde el
+  // category_id es ineludible. Un alta tradicional (producto ausente en ML,
+  // metadata verificada del proveedor) conserva intacta su predicción por título.
+  if(!categoryId&&catalogRequired){const resolved=await resolveDomainCategory(env,row,product);categoryId=resolved.id;resolvedCategory=resolved.category;}
   if(!categoryId){const prediction=await call(env,'/sites/MLU/domain_discovery/search?'+new URLSearchParams({q:row.title,limit:'3'}));categoryId=Array.isArray(prediction)?prediction.find(x=>x.domain_id==='MLU-BOOKS')?.category_id:null;}
   if(!/^MLU\d+$/.test(categoryId??''))throw new PublicationError('missing_book_category',422);
-  const category=await call(env,`/categories/${categoryId}`);
+  const category=resolvedCategory??await call(env,`/categories/${categoryId}`);
   if(category.settings?.listing_allowed===false||(category.children_categories??[]).length)throw new PublicationError('category_not_leaf_or_not_allowed',422);
   const allowed=await call(env,`/categories/${categoryId}/attributes`);
   if(!Array.isArray(allowed))throw new PublicationError('category_attributes_invalid',502);
