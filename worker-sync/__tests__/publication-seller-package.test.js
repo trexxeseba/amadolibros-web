@@ -35,6 +35,7 @@ test('los cuatro atributos llegan a /items/validate aunque la categoría no los 
  const fetcher=async(url,options={})=>{
   const p=new URL(url).pathname;seen.push({path:p,method:options.method??'GET'});
   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:[]});
+  if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
   if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:row.isbn}],settings:{listing_strategy:'catalog_required'}}]});
   // El producto trae un peso de paquete propio: lo reemplaza la estimación.
   if(p==='/products/MLU123456')return Response.json({id:'MLU123456',status:'active',domain_id:'MLU-BOOKS',category_id:'MLU12345',settings:{listing_strategy:'catalog_required'},attributes:[{id:'GTIN',value_name:row.isbn},{id:'BOOK_COVER',value_name:'Blanda'},{id:'SELLER_PACKAGE_WEIGHT',value_name:'1 g'}],pictures:[{id:'123456-MLU999999'}]});

@@ -60,7 +60,9 @@ test('el diagnóstico sólo hace GET, no escribe en D1 y reporta cuenta, prefere
  const quote=f.seen.find(x=>x.path==='/users/440298103/shipping_options/free').query;
  assert.equal(quote.dimensions,'6x22x30,700');assert.equal(quote.item_price,'2199');assert.equal(quote.mode,'me2');assert.equal(quote.category_id,'MLU1196');
  // Lo que manda hoy el payload, incluida la disponibilidad de stock de la política del lote.
- assert.deepEqual(r.current_payload,{shipping:{mode:'me2',local_pick_up:true,free_shipping:true},sale_terms:[{id:'MANUFACTURING_TIME',value_name:'10 días'}]});
+ assert.deepEqual(r.current_payload,{shipping:'resolved by /items/validate over shipping_variants',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'10 días'}]});
+ // The variants prepare() will try come from the account preferences (default ME2 logistics).
+ assert.deepEqual(r.shipping_variants.map(v=>v.variant),['A','B','C']);assert.equal(r.shipping_variants[1].shipping.logistic_type,'xd_drop_off');
  assert.ok(!JSON.stringify(r).includes('token'));
 });
 

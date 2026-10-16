@@ -4,7 +4,7 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -96,7 +96,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403);
      const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
      const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
-     await mark(job.isbn,retry||auth?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:!auth,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[]}}}:{})});
+     await mark(job.isbn,retry||auth?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:!auth,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[],...(error.validationCauses?.length?{causes:error.validationCauses}:{}),...(error.shippingAttempts?{shipping_attempts:error.shippingAttempts}:{})}}}:{})});
      if(auth){await state('auth_error');break;}
      if(error.status===429){await s.backoff(run.id,nextAt,lease);break;}
     }
@@ -124,7 +124,18 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    // (MANUFACTURING_TIME) from the run's policy, to compare with the account.
    let availabilityDays=null;
    if(args.run_id!=null){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);availabilityDays=validPolicy(JSON.parse(run.policy_json)).availabilityDays??null;}
-   return {...result,current_payload:{shipping:{mode:'me2',local_pick_up:true,free_shipping:true},sale_terms:availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${availabilityDays} días`}]:(args.run_id!=null?[]:null)},read_only_mercado_libre:true};
+   return {...result,current_payload:{shipping:'resolved by /items/validate over shipping_variants',sale_terms:availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${availabilityDays} días`}]:(args.run_id!=null?[]:null)},read_only_mercado_libre:true};
+  }
+  if(action==='shipping_probe'){
+   // The queue's own prepare() on one supplier row of a run: GET lookups and
+   // /items/validate only, nothing stored, never POST /items.
+   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
+   const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);
+   const feedId=args.feed_id??run.feed_id;if(!idOk(feedId))throw new PublicationError('invalid_feed_id');
+   const isbn=canonicalIsbn(args.isbn),row=await s.stock(feedId,isbn);if(!row)throw new PublicationError('isbn_not_in_feed',404);
+   normalizeSupplierRow(row);const policy=validPolicy(JSON.parse(run.policy_json));
+   const result=await api.shippingProbe(env,row,policy,quoteMercadoLibre(row,policy).price);
+   return {run_id:run.id,feed_id:feedId,isbn,policy_hash:run.policy_hash,availability_days:policy.availabilityDays,...result,read_only_mercado_libre:true};
   }
   if(action==='status'){try{return await s.summary(args.run_id);}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}}
   if(action==='preview'){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const jobs=await s.preview(args.run_id),sample=jobs.find(j=>j.error_code==='product_isbn_or_domain_mismatch'&&/^(978|979)/.test(j.isbn));return {run_id:args.run_id,jobs,...(sample?{diagnostic:await api.inspectProduct(env,sample.isbn)}:{})};}

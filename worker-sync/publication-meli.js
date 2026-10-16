@@ -51,6 +51,33 @@ export function shippingSafe(value,depth=0){
  if(Array.isArray(value))return value.slice(0,25).map(v=>shippingSafe(v,depth+1));
  return Object.fromEntries(Object.entries(value).filter(([k])=>!PRIVATE_KEY.test(k)).slice(0,60).map(([k,v])=>[k,shippingSafe(v,depth+1)]));
 }
+// /items/validate causes kept for diagnostics: official code, bounded message
+// text and the field Mercado Libre points at. Never tokens or unbounded text.
+const CAUSE_CODE=/^(item|body|shipping|seller|category|user|catalog|product|pictures|request|validation)[._][a-z0-9_.-]{1,140}$/;
+export function validationCauses(causes,secrets=[]){
+ const redact=text=>{let out=text.replace(/Bearer\s+\S+/gi,'[token]').replace(/\b(APP_USR|TG)-[\w-]+/g,'[token]').replace(/[A-Za-z0-9_-]{32,}/g,'[redacted]');for(const s of secrets)if(typeof s==='string'&&s.length>=8)out=out.split(s).join('[token]');return out.slice(0,200);};
+ return (Array.isArray(causes)?causes:[]).slice(0,10).map(c=>({
+  code:CAUSE_CODE.test(String(c?.code??''))?String(c.code):'other',
+  type:typeof c?.type==='string'?c.type.slice(0,20):null,
+  message:typeof c?.message==='string'?redact(c.message):null,
+  department:typeof c?.department==='string'?c.department.slice(0,60):Array.isArray(c?.references)?c.references.filter(r=>typeof r==='string').slice(0,5).join(',').slice(0,120)||null:null}));
+}
+// Shipping comes from the account, never hardcoded: ME2 availability, mandatory
+// free shipping, current local pick-up and the real default ME2 logistics.
+export function shippingSettings(prefs){
+ const modes=Array.isArray(prefs?.modes)?prefs.modes:[];
+ const me2=(Array.isArray(prefs?.logistics)?prefs.logistics:[]).find(l=>l?.mode==='me2');
+ const types=Array.isArray(me2?.types)?me2.types.filter(t=>typeof t?.type==='string'&&/^[a-z_]{2,40}$/.test(t.type)&&t.status!=='inactive'):[];
+ return {me2Available:modes.includes('me2')&&!!me2,mandatoryFreeShipping:prefs?.mandatory_settings?.mode==='me2',localPickUp:prefs?.local_pick_up===true,logisticType:(types.find(t=>t.default===true)??types[0])?.type??null};
+}
+// Only configurations the account supports, in the order /items/validate tries
+// them. No tags (Mercado Libre derives them) and no invented free_methods.
+export function shippingVariants(settings){
+ const a={mode:'me2',local_pick_up:false,free_shipping:true,free_methods:[]};
+ if(!settings.logisticType)return [{variant:'A',shipping:a},{variant:'C',shipping:{...a,local_pick_up:true}}];
+ const b={...a,logistic_type:settings.logisticType};
+ return [{variant:'A',shipping:a},{variant:'B',shipping:b},{variant:'C',shipping:{...b,local_pick_up:true}}];
+}
 // A prepared payload may only be created under the policy that produced it:
 // Catálogo exclusively with the explicit 'required_only' policy and a verified
 // product id; otherwise a traditional listing without any product binding.
@@ -79,7 +106,7 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
     if(res.status===401){cache=null;try{await tokenInvalidator(env,accessToken);}catch{}}
     const error=new MercadoLibreError(`ml_http_${res.status}`,res.status,Math.min(3600,Math.max(0,Number(res.headers.get('retry-after'))||0)));
     error.stage=path==='/items/validate'?'item_validation':path.startsWith('/sites/MLU/listing_prices')?'listing_fees':path==='/items'?'item_creation':'metadata';
-    try{const details=await res.json();error.validationCodes=(details.cause??[]).map(c=>c.code).filter(c=>typeof c==='string'&&/^(item|body|shipping|seller|category|user|catalog|product|pictures|request|validation)[._][a-z0-9_.-]{1,140}$/.test(c)).slice(0,10);}catch{}
+    try{const details=await res.json();error.validationCodes=(details.cause??[]).map(c=>c.code).filter(c=>typeof c==='string'&&CAUSE_CODE.test(c)).slice(0,10);error.validationCauses=validationCauses(details.cause,[accessToken]);}catch{}
     throw error;
    }
    if(res.status===204)return {};
@@ -177,7 +204,35 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!chosen)throw new PublicationError('ambiguous_book_category',422);
   return chosen;
  }
- async function prepare(env,row,policy,price){
+ let prefsCache=null;
+ async function shippingPreferences(env){
+  if(prefsCache&&prefsCache.until>now())return prefsCache.value;
+  const settings=shippingSettings(await call(env,`/users/${SELLER_ID}/shipping_preferences`));
+  if(!settings.me2Available)throw new PublicationError('me2_not_available',422);
+  prefsCache={value:settings,until:now()+600000};return settings;
+ }
+ // /items/validate decides the shipping block over the complete payload: A, then
+ // B, then C, stopping at the first accepted one. A rejection that mentions no
+ // shipping cause stops the search (the variants would not change it). Never POST /items.
+ async function resolveShipping(env,payload,trace=null){
+  const settings=await shippingPreferences(env),attempts=[];
+  if(trace)trace.settings=settings;
+  for(const {variant,shipping} of shippingVariants(settings)){
+   const body={...payload,shipping};
+   try{await call(env,'/items/validate',{method:'POST',body});if(trace){trace.attempts=attempts;trace.variant=variant;}return body;}
+   catch(error){
+    if(!(error instanceof MercadoLibreError)||error.stage!=='item_validation'||error.status!==400)throw error;
+    const causes=error.validationCauses??[];attempts.push({variant,shipping,status:error.status,causes});
+    if(!causes.some(c=>/shipping/.test(c.code)))break;
+   }
+  }
+  const shippingRelated=attempts.some(a=>a.causes.some(c=>/shipping/.test(c.code)));
+  const error=new MercadoLibreError(shippingRelated?'shipping_not_validated':'ml_http_400',shippingRelated?422:400);
+  error.stage='item_validation';error.validationCodes=[...new Set(attempts.flatMap(a=>a.causes.map(c=>c.code)))].slice(0,10);error.validationCauses=attempts.flatMap(a=>a.causes).slice(0,10);error.shippingAttempts=attempts;error.shippingSettings=settings;
+  if(trace){trace.attempts=attempts;trace.variant=null;}
+  throw error;
+ }
+ async function prepare(env,row,policy,price,trace=null){
   const seller=await account(env);
   const found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:row.isbn}));
   if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
@@ -223,11 +278,17 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   // Direct catalog listings keep the documented item fields (title, pictures,
   // attributes) and add the verified product binding. /items/validate decides.
   const payload={site_id:'MLU',category_id:categoryId,price,currency_id:'UYU',available_quantity:1,buying_mode:'buy_it_now',listing_type_id:policy.listingTypeId,condition:'new',catalog_listing:catalogRequired,...(catalogRequired?{catalog_product_id:catalogProductId}:{}),seller_custom_field:`AMADO-AR-${row.isbn}`,pictures,attributes,
-   sale_terms:policy.availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${policy.availabilityDays} días`}]:[],shipping:{mode:'me2',local_pick_up:true,free_shipping:true}};
+   sale_terms:policy.availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${policy.availabilityDays} días`}]:[]};
   if(seller.tags?.includes('user_product_seller'))payload.family_name=title;else payload.title=title;
   await verifyFees(env,payload,policy);
-  await call(env,'/items/validate',{method:'POST',body:payload});
-  return payload;
+  return resolveShipping(env,payload,trace);
+ }
+ // Exactly prepare() on one supplier row, reporting which shipping variant
+ // /items/validate accepted or every attempt when none did. Nothing is stored.
+ async function shippingProbe(env,row,policy,price){
+  const trace={};
+  try{const payload=await prepare(env,row,policy,price,trace);return {validated:true,variant:trace.variant,shipping:payload.shipping,price:payload.price,sale_terms:payload.sale_terms,attempts:trace.attempts??[],settings:trace.settings??null};}
+  catch(error){return {validated:false,variant:null,error:error.code??'error',status:error.status??null,stage:error.stage??null,attempts:error.shippingAttempts??trace.attempts??[],causes:error.validationCauses??[],settings:error.shippingSettings??trace.settings??null};}
  }
  async function verifyFees(env,payload,policy){
   const fee=await call(env,'/sites/MLU/listing_prices?'+new URLSearchParams({price:String(payload.price),listing_type_id:policy.listingTypeId,category_id:payload.category_id,currency_id:'UYU'}));
@@ -254,7 +315,7 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
    account:me.ok?{ok:true,data:shippingSafe({site_id:me.data.site_id,tags:me.data.tags,shipping_modes:me.data.shipping_modes,status:{mercadoenvios:me.data.status?.mercadoenvios??null,sell:me.data.status?.sell??null,list:me.data.status?.list??null}})}:me,
    shipping_preferences:await read(`/users/${SELLER_ID}/shipping_preferences`),
    category_shipping_preferences:/^MLU\d+$/.test(categoryId)?await read(`/categories/${categoryId}/shipping_preferences`):null};
-  if(out.shipping_preferences.ok)out.shipping_preferences.data=shippingSafe(out.shipping_preferences.data);
+  if(out.shipping_preferences.ok){out.shipping_variants=shippingVariants(shippingSettings(out.shipping_preferences.data));out.shipping_preferences.data=shippingSafe(out.shipping_preferences.data);}
   if(out.category_shipping_preferences?.ok)out.category_shipping_preferences.data=shippingSafe(out.category_shipping_preferences.data);
   if(itemId){
    if(!/^MLU\d+$/.test(itemId))throw new PublicationError('invalid_item_id');
@@ -270,5 +331,5 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   }
   return out;
  }
- return {account,indexSlice,skuItems,prepare,create,call,inspectProduct,shippingDiagnostic};
+ return {account,indexSlice,skuItems,prepare,create,call,inspectProduct,shippingDiagnostic,shippingProbe};
 }

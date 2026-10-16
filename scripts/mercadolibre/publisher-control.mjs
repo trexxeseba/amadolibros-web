@@ -8,7 +8,7 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
-const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -76,6 +76,11 @@ if(action==='import'){
  // Read-only: GET lookups of the account's shipping configuration. Never publishes.
  const price=process.env.PUBLISHER_ITEM_PRICE?Number(process.env.PUBLISHER_ITEM_PRICE):undefined;
  const result=await command('shipping_diagnostic',{...(runId?{run_id:runId}:{}),...(process.env.PUBLISHER_ITEM_ID?{item_id:process.env.PUBLISHER_ITEM_ID}:{}),...(price!==undefined?{item_price:price}:{})});
+ console.log(JSON.stringify(result,null,1));
+}else if(action==='shipping_probe'){
+ // Same prepare() as the queue on one ISBN: /items/validate only, never publishes.
+ const isbn=process.env.PUBLISHER_ISBN;if(!runId||!isbn)throw Error('Run ID and ISBN are required');
+ const result=await command('shipping_probe',{run_id:runId,isbn,...(process.env.PUBLISHER_FEED_ID?{feed_id:process.env.PUBLISHER_FEED_ID}:{})});
  console.log(JSON.stringify(result,null,1));
 }else if(action==='tick'){
  const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
