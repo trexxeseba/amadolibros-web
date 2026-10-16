@@ -20,6 +20,7 @@ function fetcherFor({domainCategories,categories={},prediction=[],detail={},doma
  const fetcher=async(url,options={})=>{
   const p=new URL(url).pathname;seen.push({path:p,method:options.method??'GET'});
   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:[]});
+  if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
   if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:row.isbn}],settings:{listing_strategy:'catalog_required'}}]});
   if(p==='/products/MLU123456')return Response.json({id:'MLU123456',status:'active',domain_id:domainId,settings:{listing_strategy:'catalog_required'},attributes:[{id:'GTIN',value_name:row.isbn},{id:'BOOK_COVER',value_name:'Blanda'}],pictures:[{id:'123456-MLU999999'}],...detail});
   if(p===`/catalog_domains/${domainId}/categories`){if(domainCategories===undefined)throw Error('domain categories not stubbed');return Response.json(domainCategories);}

@@ -102,6 +102,18 @@ estimadas. No escribe en D1, no valida ni crea ítems, y quita datos personales
 y de ubicación de la respuesta. Devuelve además `current_payload` con el
 `shipping` y la disponibilidad de stock (`MANUFACTURING_TIME`) que manda hoy el
 payload para compararlos con la cuenta.
+El bloque `shipping` del payload no es fijo: `prepare()` lee y cachea
+`/users/{id}/shipping_preferences` (ME2 disponible, envío gratis obligatorio,
+retiro actual y la logística ME2 por defecto real) y prueba contra
+`/items/validate`, sobre el payload completo, las variantes A
+(`me2`, sin retiro, `free_shipping`, `free_methods: []`), B (A + `logistic_type`
+de las preferencias) y C (B con retiro), deteniéndose en la primera aceptada.
+No se mandan `tags` ni `free_methods` inventados. Si ninguna valida, el job queda
+en `review` con `shipping_not_validated` y `diagnostic.shipping_attempts`
+(variante, códigos y mensajes de cada intento). `shipping_probe` (sólo
+`SYNC_SECRET`; `action=shipping_probe` con `run_id`, `isbn` y opcional
+`feed_id`) corre exactamente ese `prepare()` sobre un ISBN del feed y devuelve
+la variante aceptada o todos los intentos, sin guardar nada ni publicar.
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
 Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de

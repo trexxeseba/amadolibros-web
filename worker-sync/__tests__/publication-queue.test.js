@@ -141,6 +141,7 @@ test('UPP preparation uses family_name, keeps catalog_listing false and accepts 
  const seen=[];
  const fetcher=async (url,options)=>{
   const p=new URL(url).pathname;seen.push({path:p,method:options.method,body:options.body});
+  if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:['user_product_seller']});
   if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',settings:{listing_strategy:'catalog_optional'}}]});
   if(p==='/products/MLU123456')return Response.json({domain_id:'MLU-BOOKS',category_id:'MLU12345',attributes:[{id:'GTIN',value_name:books[0].isbn}],pictures:[{id:'123456-MLU999999'}]});
@@ -157,6 +158,7 @@ test('uses the exact search ISBN when detail omits it while blocking conflicts a
  for(const scenario of ['search_identifier','conflicting_identifier','wrong_binding']){
   const fetcher=async url=>{
    const p=new URL(url).pathname;
+   if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
    if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:[]});
    if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:books[0].isbn}]}]});
    if(p==='/products/MLU123456')return Response.json({domain_id:'MLU-BOOKS',category_id:'MLU12345',attributes:scenario==='conflicting_identifier'?[{id:'GTIN',value_name:books[1].isbn}]:[{id:'BOOK_COVER',value_name:'Blanda'}],pictures:[{id:'123456-MLU999999'}]});
@@ -183,6 +185,7 @@ test('missing ML metadata can use an exact supplier edition without sending ML c
   const u=new URL(url),p=u.pathname;
   if(u.hostname==='www.sbs.com.ar'){external++;assert.equal(options.headers.Authorization,undefined);assert.equal(options.redirect,'manual');assert.equal(u.searchParams.get('ft'),books[0].isbn);return Response.json([supplierMetadata()]);}
   assert.equal(u.hostname,'api.mercadolibre.com');
+  if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU'});
   if(p==='/products/search')return Response.json({paging:{total:0},results:[]});
   if(p==='/sites/MLU/domain_discovery/search')return Response.json([{domain_id:'MLU-BOOKS',category_id:'MLU12345'}]);
@@ -207,6 +210,7 @@ test('required catalog and ambiguous ML matches never fall back to a traditional
  for(const scenario of ['catalog_required','ambiguous']){
   const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async url=>{
    const u=new URL(url);assert.equal(u.hostname,'api.mercadolibre.com');
+   if(u.pathname==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
    if(u.pathname==='/users/me')return Response.json({id:440298103,site_id:'MLU'});
    if(u.pathname==='/products/search')return Response.json({paging:{total:scenario==='ambiguous'?2:1},results:[{id:'MLU123456',attributes:[{id:'GTIN',value_name:books[0].isbn}],settings:{listing_strategy:'catalog_required'}}]});
    if(u.pathname==='/products/MLU123456')return Response.json({domain_id:'MLU-BOOKS',attributes:[]});
@@ -230,6 +234,7 @@ function catalogFetcher({detail={},children={},searchAttributes=[{id:'GTIN',valu
  const seen=[];
  const fetcher=async(url,options={})=>{
   const p=new URL(url).pathname;seen.push({path:p,method:options.method??'GET',body:options.body?JSON.parse(options.body):null});
+  if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU',tags:[]});
   if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU123456',attributes:searchAttributes,settings:{listing_strategy:'catalog_required'}}]});
   if(p==='/products/MLU123456')return Response.json({id:'MLU123456',status:'active',domain_id:'MLU-BOOKS',category_id:'MLU12345',settings:{listing_strategy:'catalog_required'},attributes:[{id:'GTIN',value_name:books[0].isbn},{id:'BOOK_COVER',value_name:'Blanda'}],pictures:[{id:'123456-MLU999999'}],...detail});
@@ -296,7 +301,10 @@ test('a failed catalog validation keeps the official codes as evidence for revie
  const result=await f.service.tick(f.env,f.runId);
  assert.equal(result.review_reasons[0].error_code,'ml_http_400');
  const job=await f.store.db.prepare('SELECT payload_json FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
- assert.deepEqual(JSON.parse(job.payload_json).diagnostic,{stage:'item_validation',validation_codes:['item.catalog_listing.invalid']});
+ const diagnostic=JSON.parse(job.payload_json).diagnostic;
+ assert.equal(diagnostic.stage,'item_validation');assert.deepEqual(diagnostic.validation_codes,['item.catalog_listing.invalid']);
+ // Causes and the shipping attempts are kept as bounded evidence for review.
+ assert.deepEqual(diagnostic.causes.map(c=>c.code),['item.catalog_listing.invalid']);assert.equal(diagnostic.shipping_attempts.length,1);assert.equal(diagnostic.shipping_attempts[0].variant,'A');
 });
 test('a catalog payload is never created under a policy that did not approve Catálogo',async t=>{
  const f=await fixture(t,{rows:[books[0]]});await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
@@ -350,6 +358,7 @@ test('a timed-out POST /items is uncertain, never repeated, and reconciled later
  const posts=[];
  const fetcher=async(url,options)=>{
   const p=new URL(url).pathname;
+  if(p==='/users/440298103/shipping_preferences')return Response.json({modes:['me2'],logistics:[{mode:'me2',types:[{type:'xd_drop_off',default:true,status:'active'}]}]});
   if(p==='/users/me')return Response.json({id:440298103,site_id:'MLU'});
   if(p==='/sites/MLU/listing_prices')return Response.json({currency_id:'UYU',listing_type_id:'gold_special',sale_fee_amount:0,listing_fee_amount:0});
   if(p==='/items/validate')return new Response(null,{status:204});
