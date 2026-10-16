@@ -7,6 +7,14 @@ name = "amadolibros-sync"
 main = "index.js"
 compatibility_date = "2024-09-23"
 
+# ── CPU: el sync completo (scroll + ~350 batches de /items/bulk + slim de ~7.000
+# items) excede los 30.000 ms de CPU por defecto de Workers Paid y Cloudflare lo
+# corta con error 1102 (deploy 96062d0, 16/10/2026). 300.000 ms es el máximo
+# configurable. Aplica también a la versión aislada de publicación del catálogo
+# (wrangler versions upload usa este mismo archivo). No cambia el wall time.
+[limits]
+cpu_ms = 300000
+
 # ── Cron: sincronización automática 1 vez por día — 07:15 UTC (04:15 Montevideo)
 [triggers]
 crons = ["15 7 * * *", "*/5 * * * *", "3 11 * * *", "3 12 * * *", "* * * * *"]
