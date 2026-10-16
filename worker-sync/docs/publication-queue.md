@@ -83,6 +83,12 @@ códigos oficiales. El lote fuente no se escribe: la respuesta incluye
 `source_run_intact` comparando política, hash, aprobación y conteos antes y
 después. Publicar lo validado exige, como siempre, `approve` humano del
 `policy_hash` nuevo.
+Con `feed_id` opcional (input `feed_id` del workflow) el lote nuevo usa ese feed
+fresco en lugar del feed del lote fuente, con un máximo de 5 ISBN (default 5).
+El feed debe ser fresco (24 h); si sigue en `importing` se cierra sólo si tiene
+exactamente `expected_rows` filas (si no, `feed_count_mismatch`). Cada ISBN
+seleccionado debe existir en ese feed con stock positivo o no se crea nada
+(`fresh_feed_missing_stock`). El feed entra en el id determinístico del lote.
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
 Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de

@@ -7,8 +7,11 @@ const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
+// A clone over an alternative fresh feed is a small, targeted preflight.
+export const CLONE_PREFLIGHT_FRESH_FEED_LIMIT=5;
 // Deterministic run id: repeating the same request finds the same clone instead of creating another.
-export async function clonePreflightRunId(sourceRunId,policyHashValue,limit){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+// An alternative feed is part of the identity, so it never collides with a clone over the source feed.
+export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
 export function clonePreflightJob(job){
  const p=job.payload&&typeof job.payload==='object'?job.payload:{};
  return {isbn:job.isbn,state:job.state,error_code:job.error_code??null,title:p.title??p.family_name??null,price:typeof p.price==='number'?p.price:null,catalog_listing:typeof p.catalog_listing==='boolean'?p.catalog_listing:null,catalog_product_id:p.catalog_product_id??null,validation:p.diagnostic??null};
@@ -139,26 +142,35 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    // with the source policy cloned field by field except catalogListing. The clone
    // starts unapproved and this action only ticks it in preflight: GET lookups and
    // /items/validate, never POST /items. The source run is read, never written.
+   // An optional feed_id runs the clone over a fresh supplier snapshot instead of
+   // the source feed; the source run keeps its own feed untouched.
    if(!idOk(args.source_run_id))throw new PublicationError('invalid_run_id');
-   const limit=args.limit??10;if(!Number.isInteger(limit)||limit<1||limit>20)throw new PublicationError('invalid_run_limits');
+   const freshFeedId=args.feed_id??null;if(freshFeedId!==null&&!idOk(freshFeedId))throw new PublicationError('invalid_feed_id');
+   const maxLimit=freshFeedId?CLONE_PREFLIGHT_FRESH_FEED_LIMIT:20;
+   const limit=args.limit??Math.min(10,maxLimit);if(!Number.isInteger(limit)||limit<1||limit>maxLimit)throw new PublicationError('invalid_run_limits');
    const source=await s.run(args.source_run_id);if(!source)throw new PublicationError('source_run_not_found',404);
    const sourceBefore=runFingerprint(source),sourceJobsBefore=JSON.stringify(await s.counts(source.id));
    const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only'});
    const hash=await policyHash(policy);if(hash===source.policy_hash)throw new PublicationError('source_policy_already_catalog',409);
-   const feed=await s.feed(source.feed_id);if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
-   const newId=await clonePreflightRunId(source.id,hash,limit);
+   const feedId=freshFeedId??source.feed_id;
+   let feed=await s.feed(feedId);
+   if(!feed||!['ready','importing'].includes(feed.state)||(feed.state==='importing'&&!freshFeedId)||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
+   // A fresh feed still importing is closed only when every expected row is loaded.
+   if(feed.state==='importing')feed=await s.commitFeed(feedId);
+   const newId=await clonePreflightRunId(source.id,hash,limit,freshFeedId);
    let run=await s.run(newId),created=false;
-   if(run){if(run.feed_id!==source.feed_id||run.policy_hash!==hash)throw new PublicationError('run_id_conflict',409);}
+   if(run){if(run.feed_id!==feedId||run.policy_hash!==hash)throw new PublicationError('run_id_conflict',409);}
    else{
     const isbns=await s.catalogReviewCandidates(source.id,limit);if(!isbns.length)throw new PublicationError('no_catalog_review_candidates',409);
-    await s.cloneRun({id:newId,feedId:source.feed_id,policy,policyHash:hash,now:now(),dailyCap:limit,preflightLimit:limit,indexJson:source.index_json,sourceId:source.id},isbns);created=true;
+    if(freshFeedId)for(const isbn of isbns){const row=await s.stock(feedId,isbn);if(!row||!hasSupplierStock(row.stock))throw new PublicationError('fresh_feed_missing_stock',409);}
+    await s.cloneRun({id:newId,feedId,policy,policyHash:hash,now:now(),dailyCap:limit,preflightLimit:limit,indexJson:source.index_json,sourceId:source.id},isbns);created=true;
    }
    // Bounded preflight ticks; a busy lease or any terminal state ends them.
    let last=null;for(let i=0;i<CLONE_PREFLIGHT_TICKS;i++){last=await tick(env,newId);if(!['preflight'].includes(last.state))break;}
    run=await s.run(newId);const jobs=(await s.jobs(newId)).map(clonePreflightJob);
    const count=state=>jobs.filter(j=>j.state===state).length;
    const sourceAfter=await s.run(source.id);
-   return {new_run_id:newId,source_run_id:source.id,created,policy_hash:hash,source_policy_hash:source.policy_hash,catalog_listing:policy.catalogListing,state:run.state,approved:run.approved_hash===run.policy_hash,preflight_limit:run.preflight_limit,
+   return {new_run_id:newId,source_run_id:source.id,created,feed_id:feedId,source_feed_id:source.feed_id,policy_hash:hash,source_policy_hash:source.policy_hash,catalog_listing:policy.catalogListing,state:run.state,approved:run.approved_hash===run.policy_hash,preflight_limit:run.preflight_limit,
     selected_isbns:jobs.map(j=>j.isbn),preflight:jobs,validated:count('validated'),review:count('review'),pending:count('pending')+count('retry'),published:count('published'),last_tick:last?.state??null,
     source_run_intact:runFingerprint(sourceAfter)===sourceBefore&&JSON.stringify(await s.counts(source.id))===sourceJobsBefore,read_only_mercado_libre:true};
   }
