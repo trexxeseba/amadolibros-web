@@ -21,7 +21,7 @@ async function fixture(t,{mode='pause_and_reactivate',published=ISBNS.slice(0,2)
  for(const [i,isbn] of published.entries()){assert.ok(await store.reserve(SELLER,isbn,runId,clock.value,10000));await store.receiptState(SELLER,isbn,'published',`MLU90000000${i+1}`);}
  const api={async call(env,path,{method='GET',body}={}){
   await new Promise(r=>setTimeout(r,2));
-  if(method==='GET'&&path.startsWith('/items/bulk?ids=')){const ids=new URL('https://x'+path).searchParams.get('ids').split(',');gets.push(ids);return ids.map(id=>items.has(id)?{status_code:200,body:items.get(id)}:{status_code:404,body:{id}});}
+  if(method==='GET'&&path.startsWith('/items/bulk?ids=')){const params=new URL('https://x'+path).searchParams;const ids=params.get('ids').split(',');const attributes=(params.get('attributes')||'').split(',');assert.ok(attributes.length>=5&&attributes.every(f=>f.startsWith('body.')),'/items/bulk attributes sin prefijo body.: '+params.get('attributes'));gets.push(ids);return ids.map(id=>items.has(id)?{status_code:200,body:items.get(id)}:{status_code:404,body:{id}});}
   if(method==='PUT'&&/^\/items\/MLU\d+$/.test(path)){const id=path.slice(7);puts.push({id,body});if(putResponder){const out=putResponder({id,body});if(out instanceof Error)throw out;}Object.assign(items.get(id),body);return items.get(id);}
   throw Error('Unexpected '+method+' '+path);
  }};
