@@ -60,7 +60,8 @@ on:
       - 'worker-sync/__tests__/publication-seller-package.test.js'
       - 'worker-sync/__tests__/publication-shipping-diagnostic.test.js'
       - 'worker-sync/__tests__/publication-shipping-resolver.test.js'
-      - 'worker-sync/__tests__/publication-validate-semantics.test.js'\n      - 'worker-sync/__tests__/publication-create-run-from-source.test.js'
+      - 'worker-sync/__tests__/publication-validate-semantics.test.js'
+      - 'worker-sync/__tests__/publication-create-run-from-source.test.js'
       - 'worker-sync/__tests__/helpers/sqlite-d1.js'
       - 'scripts/mercadolibre/**'
       - '.github/workflows/mercadolibre-publication-queue.yml'
@@ -93,7 +94,8 @@ jobs:
           PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
           PUBLISHER_PREFLIGHT_LIMIT: ${{ inputs.preflight_limit }}
           PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
-          PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}\n          PUBLISHER_DAILY_CAP: ${{ inputs.daily_cap }}
+          PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}
+          PUBLISHER_DAILY_CAP: ${{ inputs.daily_cap }}
           PUBLISHER_ITEM_ID: ${{ inputs.item_id }}
           PUBLISHER_ITEM_PRICE: ${{ inputs.item_price }}
           PUBLISHER_ISBN: ${{ inputs.isbn }}
