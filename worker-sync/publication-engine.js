@@ -4,14 +4,14 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
 export const CLONE_PREFLIGHT_FRESH_FEED_LIMIT=5;
 // Deterministic run id: repeating the same request finds the same clone instead of creating another.
 // An alternative feed is part of the identity, so it never collides with a clone over the source feed.
-export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}\nexport async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
 export function clonePreflightJob(job){
  const p=job.payload&&typeof job.payload==='object'?job.payload:{};
  return {isbn:job.isbn,state:job.state,error_code:job.error_code??null,title:p.title??p.family_name??null,price:typeof p.price==='number'?p.price:null,catalog_listing:typeof p.catalog_listing==='boolean'?p.catalog_listing:null,catalog_product_id:p.catalog_product_id??null,validation:p.diagnostic??null};
@@ -136,6 +136,33 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    normalizeSupplierRow(row);const policy=validPolicy(JSON.parse(run.policy_json));
    const result=await api.shippingProbe(env,row,policy,quoteMercadoLibre(row,policy).price);
    return {run_id:run.id,feed_id:feedId,isbn,policy_hash:run.policy_hash,availability_days:policy.availabilityDays,...result,read_only_mercado_libre:true};
+  }
+  if(action==='create_run_from_source'){
+   // Production-sized run over a fresh supplier feed, reusing the source run's
+   // exact commercial policy and overriding only explicitly reviewed fields.
+   // It always starts unapproved in preflight; this action never publishes.
+   if(!idOk(args.source_run_id)||!idOk(args.feed_id))throw new PublicationError('invalid_run_id');
+   const source=await s.run(args.source_run_id);if(!source)throw new PublicationError('source_run_not_found',404);
+   const sourceBefore=runFingerprint(source),sourceJobsBefore=JSON.stringify(await s.counts(source.id));
+   const availabilityDays=args.availability_days??null;
+   if(availabilityDays!==null&&(!Number.isInteger(availabilityDays)||availabilityDays<1||availabilityDays>60))throw new PublicationError('invalid_availability_days');
+   const dailyCap=args.daily_cap??1000,preflightLimit=args.preflight_limit??20;
+   if(!Number.isInteger(dailyCap)||dailyCap<1||dailyCap>10000||!Number.isInteger(preflightLimit)||preflightLimit<1||preflightLimit>20)throw new PublicationError('invalid_run_limits');
+   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{})});
+   const hash=await policyHash(policy);
+   let feed=await s.feed(args.feed_id);
+   if(!feed||!['ready','importing'].includes(feed.state)||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
+   if(feed.state==='importing')feed=await s.commitFeed(feed.id);
+   const newId=args.new_run_id??await createRunFromSourceId(source.id,hash,feed.id,dailyCap,preflightLimit);
+   if(!idOk(newId))throw new PublicationError('invalid_run_id');
+   let run=await s.run(newId),created=false;
+   if(run){
+    if(run.feed_id!==feed.id||run.policy_hash!==hash||run.daily_cap!==dailyCap||run.preflight_limit!==preflightLimit)throw new PublicationError('run_id_conflict',409);
+   }else{
+    await s.createRun({id:newId,feedId:feed.id,policy,policyHash:hash,now:now(),dailyCap,preflightLimit});created=true;
+   }
+   const sourceAfter=await s.run(source.id),summary=await s.summary(newId);
+   return {...summary,new_run_id:newId,source_run_id:source.id,created,feed_id:feed.id,availability_days:policy.availabilityDays,catalog_listing:policy.catalogListing,source_policy_hash:source.policy_hash,source_run_intact:runFingerprint(sourceAfter)===sourceBefore&&JSON.stringify(await s.counts(source.id))===sourceJobsBefore};
   }
   if(action==='status'){try{return await s.summary(args.run_id);}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}}
   if(action==='preview'){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const jobs=await s.preview(args.run_id),sample=jobs.find(j=>j.error_code==='product_isbn_or_domain_mismatch'&&/^(978|979)/.test(j.isbn));return {run_id:args.run_id,jobs,...(sample?{diagnostic:await api.inspectProduct(env,sample.isbn)}:{})};}
