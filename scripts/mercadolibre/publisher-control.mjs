@@ -8,7 +8,7 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
-const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -61,6 +61,16 @@ if(action==='import'){
  await refreshFeed();
 }else if(action==='approve'){
  const hash=process.env.PUBLISHER_POLICY_HASH;if(!runId||!/^[a-f0-9]{64}$/.test(hash??''))throw Error('Run ID and reviewed policy hash are required');summary(await command('approve',{run_id:runId,policy_hash:hash}));
+}else if(action==='create_run_from_source'){
+ if(!runId)throw Error('Source run ID is required');
+ const feedId=process.env.PUBLISHER_FEED_ID;if(!feedId)throw Error('Fresh feed ID is required');
+ const availabilityDays=process.env.PUBLISHER_AVAILABILITY_DAYS?Number(process.env.PUBLISHER_AVAILABILITY_DAYS):undefined;
+ const dailyCap=process.env.PUBLISHER_DAILY_CAP?Number(process.env.PUBLISHER_DAILY_CAP):1000;
+ const preflightLimit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):20;
+ const result=await command('create_run_from_source',{source_run_id:runId,feed_id:feedId,daily_cap:dailyCap,preflight_limit:preflightLimit,...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
+ console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,availability_days:result.availability_days,catalog_listing:result.catalog_listing,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,daily_cap:result.daily_cap,source_run_intact:result.source_run_intact,counts:result.counts}));
+ const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
+ for(let i=0;i<cycles;i++){const step=await command('tick',{run_id:result.new_run_id});summary(step);if(!['preflight','busy','backoff'].includes(step.state))break;}
 }else if(action==='clone_preflight_catalog'){
  // Catalog preflight over the review ISBNs of an existing run: new unapproved run, /items/validate only.
  if(!runId)throw Error('Source run ID is required');
