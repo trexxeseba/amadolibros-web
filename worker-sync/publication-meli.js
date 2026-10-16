@@ -30,6 +30,18 @@ function picture(raw){
  try{const u=new URL(raw?.secure_url??raw?.url??raw?.source);if(u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='mlstatic.com'||u.hostname.endsWith('.mlstatic.com')||(['sbslibreria.vteximg.com.br','sbslibreria.vtexassets.com'].includes(u.hostname)&&/^\/arquivos\/ids\/\d+(?:\/|-|$)/.test(u.pathname))))return {source:u.href};}catch{}
  return null;
 }
+// Mercado Libre may require the seller package even when the category does not
+// mark it required. Conservative estimate from the book weight: integer cm
+// (LENGTH largest side, WIDTH middle, HEIGHT thickness) and grams rounded up
+// to the next 100 g after adding 150 g of packaging.
+const PACKAGE_BANDS=[[.4,25,18,4],[.8,30,22,6],[1.5,35,25,10],[Infinity,40,30,15]];
+export const SELLER_PACKAGE_IDS=['SELLER_PACKAGE_HEIGHT','SELLER_PACKAGE_LENGTH','SELLER_PACKAGE_WIDTH','SELLER_PACKAGE_WEIGHT'];
+export function sellerPackageAttributes(weightKg){
+ if(!Number.isFinite(weightKg)||weightKg<=0)throw new PublicationError('invalid_weight',422);
+ const [,length,width,height]=PACKAGE_BANDS.find(([max])=>weightKg<=max);
+ const grams=Math.ceil((Math.round(weightKg*1000)+150)/100)*100;
+ return [{id:'SELLER_PACKAGE_HEIGHT',value_name:`${height} cm`},{id:'SELLER_PACKAGE_LENGTH',value_name:`${length} cm`},{id:'SELLER_PACKAGE_WIDTH',value_name:`${width} cm`},{id:'SELLER_PACKAGE_WEIGHT',value_name:`${grams} g`}];
+}
 // A prepared payload may only be created under the policy that produced it:
 // Catálogo exclusively with the explicit 'required_only' policy and a verified
 // product id; otherwise a traditional listing without any product binding.
@@ -191,10 +203,11 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   const allowed=await call(env,`/categories/${categoryId}/attributes`);
   if(!Array.isArray(allowed))throw new PublicationError('category_attributes_invalid',502);
   const attrIds=new Set(allowed.filter(a=>!a.tags?.read_only).map(a=>a.id));
-  const attributes=(product.attributes??[]).filter(a=>attrIds.has(a.id)&&!['GTIN','ISBN','SELLER_SKU'].includes(a.id)).map(a=>({id:a.id,...(a.value_id?{value_id:a.value_id}:{value_name:a.value_name})})).filter(a=>a.value_id||a.value_name);
+  const attributes=(product.attributes??[]).filter(a=>attrIds.has(a.id)&&!['GTIN','ISBN','SELLER_SKU',...SELLER_PACKAGE_IDS].includes(a.id)).map(a=>({id:a.id,...(a.value_id?{value_id:a.value_id}:{value_name:a.value_name})})).filter(a=>a.value_id||a.value_name);
   const identifier=attrIds.has('GTIN')?'GTIN':attrIds.has('ISBN')?'ISBN':null;if(!identifier)throw new PublicationError('isbn_attribute_missing',422);
   attributes.push({id:identifier,value_name:row.isbn});
   if(attrIds.has('SELLER_SKU'))attributes.push({id:'SELLER_SKU',value_name:`AMADO-AR-${row.isbn}`});
+  attributes.push(...sellerPackageAttributes(row.weightKg));
   const pictures=(product.pictures??[]).map(picture).filter(Boolean).slice(0,12);if(!pictures.length)throw new PublicationError('missing_verified_cover',422);
   const maxTitle=Number.isInteger(category.settings?.max_title_length)?Math.min(120,category.settings.max_title_length):60;
   const title=row.title.slice(0,maxTitle).trim();
