@@ -106,7 +106,14 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
     if(res.status===401){cache=null;try{await tokenInvalidator(env,accessToken);}catch{}}
     const error=new MercadoLibreError(`ml_http_${res.status}`,res.status,Math.min(3600,Math.max(0,Number(res.headers.get('retry-after'))||0)));
     error.stage=path==='/items/validate'?'item_validation':path.startsWith('/sites/MLU/listing_prices')?'listing_fees':path==='/items'?'item_creation':'metadata';
-    try{const details=await res.json();error.validationCodes=(details.cause??[]).map(c=>c.code).filter(c=>typeof c==='string'&&CAUSE_CODE.test(c)).slice(0,10);error.validationCauses=validationCauses(details.cause,[accessToken]);}catch{}
+    try{
+     const details=await res.json(),raw=Array.isArray(details.cause)?details.cause:[];
+     error.validationCodes=raw.map(c=>c?.code).filter(c=>typeof c==='string'&&CAUSE_CODE.test(c)).slice(0,10);error.validationCauses=validationCauses(raw,[accessToken]);
+     // Facts for the single /items/validate semantics, computed over every raw cause.
+     error.upstreamError=typeof details.error==='string'&&/^[a-z_.]{1,60}$/.test(details.error)?details.error:null;
+     error.causeCount=raw.length;error.onlyWarnings=raw.length>0&&raw.every(c=>c?.type==='warning');
+     error.structural=details.invalid_fields!==undefined||raw.some(c=>/^(body|request)[._]/.test(String(c?.code??'')));
+    }catch{}
     throw error;
    }
    if(res.status===204)return {};
@@ -211,15 +218,28 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!settings.me2Available)throw new PublicationError('me2_not_available',422);
   prefsCache={value:settings,until:now()+600000};return settings;
  }
+ // The one /items/validate semantics shared by prepare(), create() and the probe:
+ // HTTP 2xx is accepted; a 400 validation_error is accepted only when it carries
+ // causes and every one of them is a warning. An error cause, no causes, a
+ // structural body/request cause, auth, rate limit or 5xx stay failures.
+ async function validateItem(env,body){
+  try{await call(env,'/items/validate',{method:'POST',body});return {accepted:true,warnings:[]};}
+  catch(error){
+   const warningsOnly=error instanceof MercadoLibreError&&error.status===400&&error.stage==='item_validation'&&(error.upstreamError===null||error.upstreamError==='validation_error')&&error.causeCount>0&&error.onlyWarnings===true&&error.structural===false;
+   if(warningsOnly)return {accepted:true,warnings:error.validationCauses??[]};
+   throw error;
+  }
+ }
  // /items/validate decides the shipping block over the complete payload: A, then
  // B, then C, stopping at the first accepted one. A rejection that mentions no
  // shipping cause stops the search (the variants would not change it). Never POST /items.
+ // Warnings of the accepted variant travel in payload.diagnostic (stripped before any POST).
  async function resolveShipping(env,payload,trace=null){
   const settings=await shippingPreferences(env),attempts=[];
   if(trace)trace.settings=settings;
   for(const {variant,shipping} of shippingVariants(settings)){
    const body={...payload,shipping};
-   try{await call(env,'/items/validate',{method:'POST',body});if(trace){trace.attempts=attempts;trace.variant=variant;}return body;}
+   try{const {warnings}=await validateItem(env,body);if(trace){trace.attempts=attempts;trace.variant=variant;trace.warnings=warnings;}return warnings.length?{...body,diagnostic:{stage:'item_validation',warnings}}:body;}
    catch(error){
     if(!(error instanceof MercadoLibreError)||error.stage!=='item_validation'||error.status!==400)throw error;
     const causes=error.validationCauses??[];attempts.push({variant,shipping,status:error.status,causes});
@@ -287,7 +307,7 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
  // /items/validate accepted or every attempt when none did. Nothing is stored.
  async function shippingProbe(env,row,policy,price){
   const trace={};
-  try{const payload=await prepare(env,row,policy,price,trace);return {validated:true,variant:trace.variant,shipping:payload.shipping,price:payload.price,sale_terms:payload.sale_terms,attempts:trace.attempts??[],settings:trace.settings??null};}
+  try{const payload=await prepare(env,row,policy,price,trace);return {validated:true,variant:trace.variant,shipping:payload.shipping,price:payload.price,sale_terms:payload.sale_terms,warnings:trace.warnings??[],attempts:trace.attempts??[],settings:trace.settings??null};}
   catch(error){return {validated:false,variant:null,error:error.code??'error',status:error.status??null,stage:error.stage??null,attempts:error.shippingAttempts??trace.attempts??[],causes:error.validationCauses??[],settings:error.shippingSettings??trace.settings??null};}
  }
  async function verifyFees(env,payload,policy){
@@ -297,9 +317,11 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
  }
  async function create(env,payload,policy){
   // Revalidate the prepared payload and fees immediately before the single create.
-  const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch)throw new PublicationError(mismatch,422);
-  await account(env);await verifyFees(env,payload,policy);await call(env,'/items/validate',{method:'POST',body:payload});
-  const result=await call(env,'/items',{method:'POST',body:payload});
+  // Validation warnings kept for review never travel to Mercado Libre.
+  const {diagnostic,...body}=payload;
+  const mismatch=payloadPolicyMismatch(body,policy);if(mismatch)throw new PublicationError(mismatch,422);
+  await account(env);await verifyFees(env,body,policy);await validateItem(env,body);
+  const result=await call(env,'/items',{method:'POST',body});
   if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==SELLER_ID)throw new MercadoLibreError('create_outcome_unknown',502);
   return result;
  }
@@ -331,5 +353,5 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   }
   return out;
  }
- return {account,indexSlice,skuItems,prepare,create,call,inspectProduct,shippingDiagnostic,shippingProbe};
+ return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,shippingDiagnostic,shippingProbe};
 }

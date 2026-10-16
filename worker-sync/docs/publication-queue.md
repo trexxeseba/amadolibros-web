@@ -108,7 +108,14 @@ retiro actual y la logística ME2 por defecto real) y prueba contra
 `/items/validate`, sobre el payload completo, las variantes A
 (`me2`, sin retiro, `free_shipping`, `free_methods: []`), B (A + `logistic_type`
 de las preferencias) y C (B con retiro), deteniéndose en la primera aceptada.
-No se mandan `tags` ni `free_methods` inventados. Si ninguna valida, el job queda
+No se mandan `tags` ni `free_methods` inventados.
+`/items/validate` tiene una sola semántica (`validateItem`, usada por
+`prepare()`, por la revalidación de `create()` antes del único `POST /items` y
+por `shipping_probe`): 2xx acepta; un `400 validation_error` acepta sólo si trae
+causas y todas son `type: "warning"`; cualquier causa `error`, un 400 sin
+causas, un error estructural (`body.*`, `invalid_fields`), 401/403/429/5xx
+siguen siendo fallo. Los warnings de la variante aceptada quedan en
+`payload_json.diagnostic.warnings` del job y se quitan antes de cualquier POST. Si ninguna valida, el job queda
 en `review` con `shipping_not_validated` y `diagnostic.shipping_attempts`
 (variante, códigos y mensajes de cada intento). `shipping_probe` (sólo
 `SYNC_SECRET`; `action=shipping_probe` con `run_id`, `isbn` y opcional
