@@ -12,7 +12,7 @@
 //    registra lo aplicado. Un lock en D1 evita corridas superpuestas.
 import {SELLER_ID,PublicationError,hasSupplierStock,stockIsFresh,safeCode} from './publication-policy.js';
 import {createPublicationMeli,MercadoLibreError} from './publication-meli.js';
-import {bulkItemsPath} from './meli-bulk.js';
+import {bulkItemsPath,bulkEntryItem} from './meli-bulk.js';
 
 export const STOCK_SYNC_SCHEMA=[
  `CREATE TABLE IF NOT EXISTS ml_pub_stock_sync (seller_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,in_stock_at INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(seller_id,isbn))`,
@@ -79,7 +79,7 @@ export function createStockSync({api=createPublicationMeli(),now=Date.now}={}){
     try{entries=await api.call(env,bulkItemsPath(group.map(r=>r.item_id),ITEM_FIELDS));}
     catch(error){await deferAll(group,error);if(error.status===429){summary.state='backoff';break;}continue;}
     const bodies=new Map();
-    if(Array.isArray(entries))for(const entry of entries){if((entry.status_code??entry.code)===200&&entry.body&&typeof entry.body==='object')bodies.set(entry.body.id,entry.body);}
+    if(Array.isArray(entries))for(const entry of entries){const item=bulkEntryItem(entry);if(item&&item.id)bodies.set(item.id,item);}
     for(const row of group){
      const item=bodies.get(row.item_id);
      if(!item){await failed(row,'item_unavailable',TRANSIENT_BACKOFF_MS);summary.errors++;continue;}

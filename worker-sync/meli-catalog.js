@@ -28,7 +28,8 @@
  */
 
 import { applyVerifiedBookEnrichments } from './verified-book-enrichments.js';
-import { bulkAttributes } from './meli-bulk.js';
+import { bulkAttributes, bulkEntryItem } from './meli-bulk.js';
+export { bulkEntryItem };
 
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
@@ -318,7 +319,7 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
     const batchNum  = Math.floor(i / DETAIL_BATCH) + 1;
     // /items?ids= se discontinúa el 25/10/2026; /items/bulk responde
     // [{ status_code, body }] (el multiget anterior usaba { code, body }) y
-    // sus attributes van con prefijo body. (ver meli-bulk.js).
+    // sus attributes van con prefijo body. más status_code (ver meli-bulk.js).
     const url       = `https://api.mercadolibre.com/items/bulk?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
 
     try {
@@ -344,18 +345,6 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
   }
 
   return items;
-}
-
-/**
- * Normaliza una entrada de multiget. Acepta el formato nuevo de /items/bulk
- * ({ status_code, body }), el anterior ({ code, body }) y un item suelto.
- * Entradas con status distinto de 200 no aportan item: se omiten explícitamente.
- */
-export function bulkEntryItem(entry) {
-  if (!entry || typeof entry !== 'object') return null;
-  const status = entry.status_code ?? entry.code;
-  if (status !== undefined) return status === 200 && entry.body && typeof entry.body === 'object' ? entry.body : null;
-  return entry;
 }
 
 // ─── Transformación ───────────────────────────────────────────────────────────

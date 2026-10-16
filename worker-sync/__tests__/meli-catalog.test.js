@@ -823,8 +823,10 @@ test('los detalles se leen de /items/bulk y aceptan el formato status_code sin c
       const status = new URL(String(url)).searchParams.get('status');
       return Response.json({ results: status === 'active' ? ['MLU1', 'MLU2'] : [], scroll_id: null });
     }
+    // Con attributes=body.* la API proyecta la entrada: MLU1 llega sin status_code
+    // (como en producción el 16/10) y MLU2 falla con status_code explícito.
     return Response.json([
-      { status_code: 200, body: { id: 'MLU1', title: 'Bulk', price: 1000, status: 'active', available_quantity: 1, attributes: [], pictures: [] } },
+      { body: { id: 'MLU1', title: 'Bulk', price: 1000, status: 'active', available_quantity: 1, attributes: [], pictures: [] } },
       { status_code: 404, body: { message: 'not found', error: 'not_found' } },
     ]);
   };
@@ -837,13 +839,15 @@ test('los detalles se leen de /items/bulk y aceptan el formato status_code sin c
     // /items/bulk exige body. en cada attribute; sin el prefijo devuelve cuerpos vacíos.
     const attributes = new URL(detail).searchParams.get('attributes').split(',');
     assert.ok(attributes.length > 5);
-    assert.deepEqual(attributes.filter(field => !field.startsWith('body.')), [], 'attributes sin prefijo body.');
+    assert.equal(attributes[0], 'status_code', 'la entrada debe conservar su status_code');
+    assert.deepEqual(attributes.slice(1).filter(field => !field.startsWith('body.')), [], 'attributes sin prefijo body.');
     assert.ok(attributes.includes('body.id') && attributes.includes('body.seller_custom_field'));
   } finally {
     globalThis.fetch = originalFetch;
   }
   assert.equal(bulkEntryItem({ status_code: 200, body: { id: 'a' } }).id, 'a');
   assert.equal(bulkEntryItem({ code: 200, body: { id: 'b' } }).id, 'b');
+  assert.equal(bulkEntryItem({ body: { id: 'projected' } }).id, 'projected');
   assert.equal(bulkEntryItem({ status_code: 500, body: { id: 'c' } }), null);
   assert.equal(bulkEntryItem({ id: 'legacy' }).id, 'legacy');
 });
