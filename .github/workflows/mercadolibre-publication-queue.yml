@@ -29,6 +29,10 @@ on:
         description: 'Con clone_preflight_catalog: feed fresco alternativo ya cargado (máximo 5 ISBN, default 5). Vacío usa el feed del lote run_id. Nunca publica.'
         required: false
         type: string
+      availability_days:
+        description: 'Con clone_preflight_catalog: días de disponibilidad (MANUFACTURING_TIME) para la política clonada, 1-60. Vacío conserva los del lote run_id. Cambia el policy_hash.'
+        required: false
+        type: string
       item_id:
         description: 'Con shipping_diagnostic: publicación activa propia de referencia (MLU...). Sólo lectura.'
         required: false
@@ -79,6 +83,7 @@ jobs:
           PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
           PUBLISHER_PREFLIGHT_LIMIT: ${{ inputs.preflight_limit }}
           PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
+          PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}
           PUBLISHER_ITEM_ID: ${{ inputs.item_id }}
           PUBLISHER_ITEM_PRICE: ${{ inputs.item_price }}
           PUBLISHER_CYCLES: '10'
@@ -95,6 +100,6 @@ jobs:
         with:
           node-version: '22.12.0'
       - name: Verificar cola, idempotencia, stock y transporte
-        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/publication-seller-package.test.js worker-sync/__tests__/publication-shipping-diagnostic.test.js worker-sync/__tests__/operations-read.test.js
+        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/publication-clone-preflight-availability.test.js worker-sync/__tests__/publication-seller-package.test.js worker-sync/__tests__/publication-shipping-diagnostic.test.js worker-sync/__tests__/operations-read.test.js
       - name: Verificar lector del proveedor
         run: python3 -m py_compile scripts/mercadolibre/prepare-supplier-feed.py

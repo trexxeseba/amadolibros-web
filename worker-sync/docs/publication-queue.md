@@ -89,6 +89,10 @@ El feed debe ser fresco (24 h); si sigue en `importing` se cierra sólo si tiene
 exactamente `expected_rows` filas (si no, `feed_count_mismatch`). Cada ISBN
 seleccionado debe existir en ese feed con stock positivo o no se crea nada
 (`fresh_feed_missing_stock`). El feed entra en el id determinístico del lote.
+Con `availability_days` opcional (input `availability_days` del workflow, 1-60)
+la política clonada lleva ese `availabilityDays` en lugar del del lote fuente,
+de modo que el payload manda `MANUFACTURING_TIME = N días` y el `policy_hash`
+(y la aprobación humana) cubre exactamente esos días. El lote fuente no cambia.
 `shipping_diagnostic` (sólo con `SYNC_SECRET`; `action=shipping_diagnostic` del
 workflow, opcionalmente con `run_id`, `item_id` de una publicación propia e
 `item_price`) es un diagnóstico de sólo lectura: GET a `/users/me`,
