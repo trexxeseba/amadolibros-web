@@ -367,7 +367,13 @@ function buildLinks(item, classificationTags = [], categoryTrail = []) {
       label: `Ver otros libros de ${author}`,
     });
   }
-  if (genre) {
+  // El «género» que trae Mercado Libre suele ser una ruta larga («Ciencias
+  // Humanas, Esoterismo y Ciencias Ocultas, Parapsicología») que nadie escribe:
+  // una búsqueda con ese texto no devuelve nada y el cliente cae en un callejón
+  // sin salida. Solo se ofrece cuando es un tema corto y de una sola pieza, y
+  // nunca si ya hay un enlace a la categoría real.
+  const hasCategoryLink = links.some(link => /^\/libros\//.test(link.href));
+  if (genre && !hasCategoryLink && genre.length <= 30 && !/[,;/>]/.test(genre)) {
     links.push({
       href: `/catalogo?q=${encodeURIComponent(genre)}`,
       label: `Explorar libros de ${genre}`,
