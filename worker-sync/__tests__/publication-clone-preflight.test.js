@@ -144,7 +144,7 @@ test('/items/validate rejections stay in review with the official codes and noth
 
 test('the action is admin only, validates its inputs and refuses sources without candidates or already on Catálogo',async t=>{
  const f=await fixture(t);
- assert.deepEqual(ADMIN_ONLY_ACTIONS,['clone_preflight_catalog','shipping_diagnostic','shipping_probe']);
+ assert.deepEqual(ADMIN_ONLY_ACTIONS,['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source']);
  await assert.rejects(()=>f.service.command(f.env,'clone_preflight_catalog',{source_run_id:f.sourceId},{id:crypto.randomUUID(),expires:f.now+60000}),/admin_only_action/);
  await assert.rejects(()=>f.service.command(f.env,'clone_preflight_catalog',{source_run_id:'not-a-run'}),/invalid_run_id/);
  await assert.rejects(()=>f.service.command(f.env,'clone_preflight_catalog',{source_run_id:f.sourceId,limit:21}),/invalid_run_limits/);
