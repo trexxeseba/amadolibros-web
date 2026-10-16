@@ -1,3 +1,5 @@
+import { WHATSAPP_NUMBER } from '../../shared/whatsapp-messages.js';
+
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const REQUEST_TIMEOUT_MS = 7000;
 const MAX_SEND_ATTEMPTS = 3;
@@ -67,17 +69,46 @@ function totalsText(order, payment) {
   return lines;
 }
 
-export function buildCustomerOrderEmail({ order, items, payment }) {
+const WHATSAPP_DISPLAY = '099 841 325';
+const PROMISE_TEXT = 'Acompañamos tu compra de principio a fin y resolvemos cualquier inconveniente con vos.';
+
+function whatsappLink(order) {
+  const message = `Hola, soy ${cleanString(order.buyer_name)}. Te mando el comprobante del pedido ${order.public_code}.`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+// Plazos tomados de la página /envios (no se inventan acá): en Montevideo la
+// entrega puede ser en el día; al interior despachamos y llega en 2 a 5 días hábiles.
+function deliveryTimeText(order) {
+  if (order.delivery_type === 'pickup') {
+    return 'Te escribimos por WhatsApp apenas tu libro esté listo para retirar.';
+  }
+  if (cleanString(order.department).toLowerCase() === 'montevideo') {
+    return 'En Montevideo la entrega puede ser en el día, según zona y horario; lo coordinamos por WhatsApp.';
+  }
+  return 'Al interior despachamos por DAC u otra agencia y llega en 2 a 5 días hábiles.';
+}
+
+function accountLines(accounts) {
+  return (Array.isArray(accounts) ? accounts : []).map(account =>
+    `${account.name} · ${account.account_label}: ${account.account_number} · Titular: ${account.holder}`);
+}
+
+export function buildCustomerOrderEmail({ order, items, payment, accounts = [] }) {
   const transfer = payment.method === 'bank_transfer';
   const subject = transfer
     ? `Recibimos tu pedido ${order.public_code} — pendiente de transferencia`
     : `Pago confirmado — pedido ${order.public_code}`;
   const heading = transfer ? 'Recibimos tu pedido' : 'Tu pago fue confirmado';
   const state = transfer
-    ? 'El pedido queda pendiente hasta que Amado Libros confirme el comprobante por WhatsApp.'
+    ? 'El pedido queda pendiente hasta que Amado Libros confirme el comprobante por WhatsApp. Apenas lo recibimos, confirmamos tu pago y reservamos tus libros.'
     : 'El pago con Mercado Pago fue aprobado. Vamos a coordinar la entrega contigo.';
   const totals = totalsText(order, payment);
   const delivery = deliveryText(order);
+  const timing = deliveryTimeText(order);
+  const accountsText = transfer ? accountLines(accounts) : [];
+  const waLink = whatsappLink(order);
+  const help = `Si necesitás ayuda, respondé este correo o escribinos por WhatsApp al ${WHATSAPP_DISPLAY}.`;
 
   const text = [
     heading,
@@ -91,10 +122,26 @@ export function buildCustomerOrderEmail({ order, items, payment }) {
     ...totals,
     '',
     `Entrega: ${delivery}`,
+    timing,
     '',
+    ...(accountsText.length > 0 ? [
+      'Cómo pagar por transferencia (elegí la cuenta que te quede más cómoda):',
+      ...accountsText.map(line => `- ${line}`),
+      `Importe exacto: ${formatMoney(payment.total_uyu)} UYU`,
+      `Cuando termines, mandanos el comprobante por WhatsApp: ${waLink}`,
+      '',
+    ] : []),
     state,
-    'Si necesitás ayuda, respondé este correo o escribinos por WhatsApp.',
+    '',
+    PROMISE_TEXT,
+    help,
   ].join('\n');
+
+  const accountsHtml = accountsText.length > 0 ? `
+    <h2 style="font-size:17px;margin-top:24px">Cómo pagar por transferencia</h2>
+    <p>Elegí la cuenta que te quede más cómoda. Importe exacto: <strong>${escapeHtml(formatMoney(payment.total_uyu))} UYU</strong>.</p>
+    <ul style="padding-left:18px">${accounts.map(account => `<li style="margin-bottom:6px"><strong>${escapeHtml(account.name)}</strong> · ${escapeHtml(account.account_label)}: <strong>${escapeHtml(account.account_number)}</strong> · Titular: ${escapeHtml(account.holder)}</li>`).join('')}</ul>
+    <p><a href="${escapeHtml(waLink)}" style="display:inline-block;padding:12px 18px;background:#1a7a48;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">Enviar comprobante por WhatsApp</a></p>` : '';
 
   const html = `<!doctype html><html lang="es"><body style="font-family:Arial,sans-serif;color:#222;line-height:1.5">
     <h1 style="font-size:22px">${escapeHtml(heading)}</h1>
@@ -105,9 +152,10 @@ export function buildCustomerOrderEmail({ order, items, payment }) {
       <tbody>${itemRows(items)}</tbody>
     </table>
     <p>${totals.map(line => escapeHtml(line)).join('<br>')}</p>
-    <p><strong>Entrega:</strong> ${escapeHtml(delivery)}</p>
+    <p><strong>Entrega:</strong> ${escapeHtml(delivery)}<br>${escapeHtml(timing)}</p>${accountsHtml}
     <p>${escapeHtml(state)}</p>
-    <p>Si necesitás ayuda, respondé este correo o escribinos por WhatsApp.</p>
+    <p>${escapeHtml(PROMISE_TEXT)}</p>
+    <p>${escapeHtml(help)}</p>
   </body></html>`;
   return { subject, text, html };
 }
@@ -206,7 +254,7 @@ async function readItems(db, orderId) {
 }
 
 function createTrackedSender({ fetchFn = globalThis.fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
-  return async function send({ db, env, order, payment, now, audience }) {
+  return async function send({ db, env, order, payment, now, audience, accounts }) {
     const config = emailConfig(env);
     const customer = audience === 'customer';
     const recipient = customer ? [cleanString(order.buyer_email).toLowerCase()] : config?.internalTo;
@@ -225,7 +273,7 @@ function createTrackedSender({ fetchFn = globalThis.fetch, sleep = ms => new Pro
       return { ok: false, code: 'ORDER_ITEMS_UNAVAILABLE' };
     }
     const email = customer
-      ? buildCustomerOrderEmail({ order, items, payment })
+      ? buildCustomerOrderEmail({ order, items, payment, accounts })
       : buildInternalTransferEmail({ order, items, payment });
 
     let result;

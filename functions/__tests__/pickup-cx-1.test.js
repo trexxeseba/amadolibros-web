@@ -115,24 +115,24 @@ test('9. la aceptación forma parte de la identidad del pedido', () => {
 
 const CARRITO = read('astro-front/src/pages/carrito.astro');
 
-test('10. el checkout muestra nombre, horario, aviso y checkbox', () => {
+test('10. el checkout muestra nombre, horario y aviso de retiro (la casilla queda oculta)', () => {
     assert.ok(CARRITO.includes(PICKUP.name), 'nombre del pick up');
     assert.ok(CARRITO.includes('Lunes a viernes, de 8 a 17 h'), 'horario');
-    assert.match(CARRITO, /Para evitar que vengas en vano/, 'aviso destacado');
-    assert.match(CARRITO, /id="pickup-ack"/, 'checkbox');
-    assert.match(CARRITO, /Entiendo que debo esperar la confirmación por WhatsApp/);
+    assert.match(CARRITO, /Te escribimos por WhatsApp apenas tu libro esté listo para\s+retirar/, 'aviso visible');
+    assert.match(CARRITO, /id="pickup-ack" class="sr-only"/, 'casilla oculta que sostiene el contrato con el servidor');
+    assert.doesNotMatch(CARRITO, /Entiendo que debo esperar/, 'ya no se pide un clic de aceptación');
 });
 
-test('11. el error va junto al checkbox, es anunciado y recibe el foco', () => {
+test('11. el error de retiro sigue anunciado y recibe el foco', () => {
     assert.match(CARRITO, /id="err-pickup-ack"[^>]*role="alert"/);
-    assert.match(CARRITO, /aria-describedby="err-pickup-ack"/);
+    assert.match(CARRITO, /aria-describedby="pickup-ack-notice err-pickup-ack"/);
     assert.match(CARRITO, /pickupAck\.focus\(\)/);
     assert.match(CARRITO, /setAttribute\('aria-invalid', 'true'\)/);
 });
 
-test('12. cambiar a envío oculta el bloque y limpia la aceptación', () => {
+test('12. elegir retiro da por leído el aviso y cambiar a envío lo limpia', () => {
     assert.match(CARRITO, /function syncPickupAck\(\)/);
-    assert.match(CARRITO, /pickupAck\.checked = false/);
+    assert.match(CARRITO, /pickupAck\.checked = isPickup/);
 });
 
 test('13. el checkout no continúa al pago sin aceptación', () => {

@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
+import { buildWhatsAppMessage, whatsappHref } from '../../../shared/whatsapp-messages.js';
 
 const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
 
@@ -21,6 +22,13 @@ const turnstileAllowedHosts = (import.meta.env.PUBLIC_TURNSTILE_ALLOWED_HOSTS ||
 // cuenta no se muestra y la compra como invitado sigue igual: nunca se
 // simula un ingreso ni se anuncia una función que no está configurada.
 const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
+
+// Ayuda desde el checkout: mismo número y mismo armado de mensaje que el resto del sitio.
+const helpWhatsappHref = whatsappHref(buildWhatsAppMessage({
+  motive: 'Ayuda con mi compra',
+  page: '/carrito',
+  closing: 'Estoy completando una compra y necesito una mano. ¿Podrían ayudarme? Gracias.',
+}));
 ---
 <BaseLayout
   title="Tu carrito — Amado Libros"
@@ -52,8 +60,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
       <!-- Estado: vacío -->
       <div id="cart-empty" class="cart-state-msg" hidden>
-        <div class="empty-icon" aria-hidden="true">🛒</div>
-        <p class="empty-text">Tu carrito está vacío.</p>
+                <p class="empty-text">Tu carrito está vacío.</p>
         <a href="/catalogo" id="btn-empty-back" class="btn-empty-back">← Ver el catálogo</a>
       </div>
 
@@ -71,7 +78,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
             <details id="cart-summary-panel" class="cart-summary-panel">
               <summary class="cart-summary-toggle">
                 <span class="cart-summary-toggle-text">
-                  🛒 Tu compra · <span id="cart-summary-count">0</span> libro(s) · <span id="cart-summary-total">$&nbsp;0</span>
+                  Tu compra · <span id="cart-summary-count">0</span> libro(s) · <span id="cart-summary-total">$&nbsp;0</span>
                 </span>
                 <span class="cart-summary-chevron" aria-hidden="true">Ver resumen</span>
               </summary>
@@ -125,21 +132,6 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
               </label>
             </div>
 
-            <!-- PICKUP-CX-1: aviso y aceptación obligatoria. Solo visible con
-                 retiro seleccionado; al pasar a envío se oculta y se limpia. -->
-            <div id="pickup-ack-box" class="pickup-ack" hidden>
-              <p class="pickup-ack-notice">
-                Para evitar que vengas en vano, esperá nuestra confirmación por
-                WhatsApp antes de venir. Te avisaremos apenas tu pedido esté
-                pronto para retirar.
-              </p>
-              <label class="pickup-ack-label" for="pickup-ack">
-                <input type="checkbox" id="pickup-ack" aria-describedby="err-pickup-ack">
-                <span>Entiendo que debo esperar la confirmación por WhatsApp antes de ir a retirar.</span>
-              </label>
-              <span class="field-error" id="err-pickup-ack" role="alert" hidden></span>
-            </div>
-
             <div class="delivery-opts-rest">
               <label class="delivery-opt">
                 <input type="radio" name="delivery" value="shipping">
@@ -150,6 +142,19 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 </span>
               </label>
             </div>
+
+            <!-- PICKUP-CX-1: aviso de retiro. Al elegir retiro queda visible
+                 y el pedido viaja con pickup_ack=true (el servidor lo exige);
+                 la casilla sigue en el DOM, oculta y tildada por el script, para
+                 no cambiar el contrato con /api/orders ni el borrador. -->
+            <div id="pickup-ack-box" class="pickup-ack" hidden>
+              <p class="pickup-ack-notice" id="pickup-ack-notice">
+                Te escribimos por WhatsApp apenas tu libro esté listo para
+                retirar, así venís justo cuando te esperamos.
+              </p>
+              <input type="checkbox" id="pickup-ack" class="sr-only" tabindex="-1" aria-describedby="pickup-ack-notice err-pickup-ack">
+              <span class="field-error" id="err-pickup-ack" role="alert" hidden></span>
+            </div>
             <span class="field-error delivery-error" id="err-delivery" role="alert" hidden></span>
             <div id="shipping-fields" class="shipping-fields" hidden>
               <div class="form-field">
@@ -157,6 +162,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 <input type="text" id="delivery-address" name="shipping-address" class="form-input"
                   placeholder="Ej: Av. Italia 2000, Apto 3"
                   autocomplete="shipping street-address"
+                  autocapitalize="words" enterkeyhint="next"
                   aria-describedby="err-delivery-address">
                 <span class="field-error" id="err-delivery-address" role="alert" hidden></span>
               </div>
@@ -165,6 +171,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 <input type="text" id="delivery-barrio" name="shipping-locality" class="form-input"
                   placeholder="Ej: Pocitos, Centro, Malvín"
                   autocomplete="shipping address-level2"
+                  autocapitalize="words" enterkeyhint="next"
                   aria-describedby="err-delivery-barrio">
                 <span class="field-error" id="err-delivery-barrio" role="alert" hidden></span>
               </div>
@@ -183,7 +190,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                   <option>Florida</option>
                   <option>Lavalleja</option>
                   <option>Maldonado</option>
-                  <option>Montevideo</option>
+                  <option selected>Montevideo</option>
                   <option>Paysandú</option>
                   <option>Río Negro</option>
                   <option>Rivera</option>
@@ -207,33 +214,13 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           <!-- Datos del comprador -->
           <section class="cart-section">
             <h2 class="cart-section-h2">Tus datos</h2>
-            <p class="buyer-note">Mientras completás el pedido, recordamos estos datos sólo en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
+            <p class="buyer-note">Mientras completás el pedido, guardamos estos datos en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
 
-            <!-- CUENTA-1 · Identificarse es OPCIONAL: el formulario de abajo
-                 está disponible desde el primer momento y la compra como
-                 invitado no cambia. Todo este bloque queda oculto si no hay
-                 Client ID de Google configurado. -->
-            <div class="cuenta-bloque" id="cuenta-bloque" hidden>
-              <div id="cuenta-anonima">
-                <p class="cuenta-nota">¿Ya compraste antes y guardaste tus datos? Podés traerlos.</p>
-                <div id="cuenta-boton-google"></div>
-              </div>
-              <div id="cuenta-identificada" hidden>
-                <p class="cuenta-nota">
-                  Entraste como <strong id="cuenta-email"></strong>.
-                  <button type="button" class="cuenta-enlace" id="cuenta-salir">Salir</button>
-                </p>
-                <div class="cuenta-acciones">
-                  <button type="button" class="cuenta-accion" id="cuenta-usar" hidden>Usar mis datos guardados</button>
-                  <button type="button" class="cuenta-accion" id="cuenta-guardar">Guardar estos datos para la próxima</button>
-                </div>
-              </div>
-              <p class="cuenta-aviso" id="cuenta-aviso" role="status" aria-live="polite"></p>
-            </div>
             <div class="form-grid">
               <div class="form-field">
                 <label for="buyer-name" class="form-label">Nombre <span class="form-req" aria-hidden="true">*</span></label>
                 <input type="text" id="buyer-name" name="name" class="form-input" autocomplete="name"
+                  autocapitalize="words" enterkeyhint="next"
                   aria-describedby="err-buyer-name">
                 <span class="field-error" id="err-buyer-name" role="alert" hidden></span>
               </div>
@@ -242,9 +229,9 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 <input type="tel" id="buyer-phone" name="tel" class="form-input"
                   placeholder="Ej: 099 123 456"
                   autocomplete="tel"
-                  inputmode="tel"
+                  inputmode="tel" enterkeyhint="next"
                   aria-describedby="buyer-phone-help err-buyer-phone">
-                <span class="field-help" id="buyer-phone-help">Lo usamos únicamente para coordinar tu pedido y la entrega.</span>
+                <span class="field-help" id="buyer-phone-help">Lo usamos para coordinar tu pedido y la entrega.</span>
                 <span class="field-error" id="err-buyer-phone" role="alert" hidden></span>
               </div>
               <div class="form-field">
@@ -252,7 +239,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 <input type="email" id="buyer-email" name="email" class="form-input"
                   placeholder="tu@email.com"
                   autocomplete="email"
-                  inputmode="email"
+                  inputmode="email" autocapitalize="none" spellcheck="false" enterkeyhint="done"
                   maxlength="254"
                   required
                   aria-describedby="buyer-email-help err-buyer-email">
@@ -329,14 +316,37 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
             {checkoutEnabled && (
               <>
-                <p class="checkout-reassurance">
-                  Primero verificamos precio y stock. Tu carrito no se vacía hasta
-                  que el pago quede confirmado.
-                </p>
+                <section class="trust-box" aria-label="Tu compra está cuidada">
+                  <ul class="trust-list">
+                    <li>
+                      <strong>5 días hábiles para arrepentirte.</strong>
+                      <a href="/devoluciones" target="_blank">Ver devoluciones</a>
+                    </li>
+                    <li>
+                      <strong>Entrega en el día en Montevideo; interior en 2 a 5 días hábiles.</strong>
+                      <a href="/envios" target="_blank">Ver envíos</a>
+                    </li>
+                    <li>
+                      <strong>Primero verificamos precio y stock.</strong>
+                      Tu carrito se vacía cuando el pago queda confirmado.
+                    </li>
+                  </ul>
+                  <div class="trust-pay" aria-label="Medios de pago">
+                    <span class="trust-pay-chip">Transferencia BROU</span>
+                    <span class="trust-pay-chip">Transferencia Itaú</span>
+                    <img src="/images/pagos/mercadopago.svg" alt="Mercado Pago" width="28" height="28" loading="lazy">
+                    <img src="/images/pagos/visa.svg" alt="Visa" width="40" height="28" loading="lazy">
+                    <img src="/images/pagos/mastercard.svg" alt="Mastercard" width="28" height="28" loading="lazy">
+                  </div>
+                  <p class="trust-promise">
+                    Acompañamos tu compra de principio a fin y resolvemos cualquier inconveniente con vos.
+                  </p>
+                  <a class="trust-help" href={helpWhatsappHref} target="_blank" rel="noopener noreferrer">
+                    ¿Dudas? Escribinos por WhatsApp al 099 841 325
+                  </a>
+                </section>
                 <p class="checkout-policy-links">
                   Al continuar aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
-                  Consultá <a href="/envios" target="_blank">envíos</a> y
-                  <a href="/devoluciones" target="_blank">devoluciones</a>.
                 </p>
                 <p class="checkout-personal-note">
                   Somos una librería familiar y esta web también la hacemos nosotros. Si necesitás ayuda, escribinos por WhatsApp y te ayudamos a completar la compra.
@@ -362,6 +372,27 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 </p>
               </>
             )}
+            <!-- CUENTA-1 · Identificarse es OPCIONAL: el formulario de abajo
+             está disponible desde el primer momento y la compra como
+             invitado no cambia. Todo este bloque queda oculto si no hay
+             Client ID de Google configurado. -->
+        <div class="cuenta-bloque" id="cuenta-bloque" hidden>
+          <div id="cuenta-anonima">
+            <p class="cuenta-nota">¿Ya compraste antes? Traé tus datos guardados.</p>
+            <div id="cuenta-boton-google"></div>
+          </div>
+          <div id="cuenta-identificada" hidden>
+            <p class="cuenta-nota">
+              Entraste como <strong id="cuenta-email"></strong>.
+              <button type="button" class="cuenta-enlace" id="cuenta-salir">Salir</button>
+            </p>
+            <div class="cuenta-acciones">
+              <button type="button" class="cuenta-accion" id="cuenta-usar" hidden>Usar mis datos guardados</button>
+              <button type="button" class="cuenta-accion" id="cuenta-guardar">Guardar estos datos para la próxima</button>
+            </div>
+          </div>
+          <p class="cuenta-aviso" id="cuenta-aviso" role="status" aria-live="polite"></p>
+        </div>
           </section>
 
           </div><!-- /.checkout-left -->
@@ -1514,6 +1545,21 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     }
   }
   /* CUENTA-1 · bloque opcional de cuenta */
+  /* ── Confianza junto al botón de pagar ── */
+  .trust-box { margin: 1rem 0 .75rem; padding: .9rem 1rem; border: 1px solid #e6dccb;
+    border-radius: .75rem; background: #fffaf2; }
+  .trust-list { list-style: none; margin: 0 0 .75rem; padding: 0; display: grid; gap: .5rem;
+    font-size: .9rem; line-height: 1.45; color: #4a3b2f; }
+  .trust-list a { color: #a94e3d; font-weight: 600; margin-left: .25rem; white-space: nowrap; }
+  .trust-pay { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 .75rem; }
+  .trust-pay img { display: block; height: 28px; width: auto; }
+  .trust-pay-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 .6rem;
+    border: 1px solid #d9cdb9; border-radius: 999px; background: #fff; font-size: .8rem; color: #4a3b2f; }
+  .trust-promise { margin: 0 0 .6rem; font-size: .9rem; line-height: 1.5; color: #4a3b2f; }
+  .trust-help { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700;
+    color: #1a7a48; text-decoration: underline; }
+  .trust-help:focus-visible, .trust-list a:focus-visible { outline: 2px solid #a94e3d; outline-offset: 2px; }
+  .cart-pay-section .cuenta-bloque { margin: .75rem 0 0; background: transparent; border-style: dashed; }
   .cuenta-bloque { margin: 0 0 1.25rem; padding: .9rem 1rem; border: 1px solid #dfe3e8;
     border-radius: .5rem; background: #fafbfc; }
   .cuenta-nota { margin: 0 0 .6rem; font-size: .93rem; color: #444; }
@@ -1707,10 +1753,50 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       var invalids = document.querySelectorAll('[aria-invalid="true"]');
       for (var j = 0; j < invalids.length; j++) { invalids[j].removeAttribute('aria-invalid'); }
     }
+    // Validación en línea: mismos mensajes y mismas reglas que al enviar.
+    var INLINE_RULES = {
+      'buyer-name':  { msg: 'Por favor ingresá tu nombre.', ok: function (v) { return v.trim().length > 0; } },
+      'buyer-phone': { msg: 'Por favor ingresá tu teléfono o WhatsApp.', ok: function (v) { return v.trim().length > 0; } },
+      'buyer-email': { msg: 'Ingresá un correo válido para recibir la confirmación.',
+                       ok: function (v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); } },
+      'delivery-address':      { ship: true, msg: 'Por favor ingresá la dirección de entrega.', ok: function (v) { return v.trim().length > 0; } },
+      'delivery-barrio':       { ship: true, msg: 'Por favor ingresá la localidad.', ok: function (v) { return v.trim().length > 0; } },
+      'delivery-departamento': { ship: true, msg: 'Por favor seleccioná el departamento.', ok: function (v) { return v.trim().length > 0; } }
+    };
+    function paintInlineError(fieldId, show) {
+      var rule = INLINE_RULES[fieldId];
+      var field = document.getElementById(fieldId);
+      var errEl = document.getElementById('err-' + fieldId);
+      if (!rule || !field || !errEl) return;
+      errEl.textContent = show ? rule.msg : '';
+      errEl.hidden = !show;
+      if (show) field.setAttribute('aria-invalid', 'true');
+      if (!show) field.removeAttribute('aria-invalid');
+    }
+    function validateInlineField(fieldId) {
+      var rule = INLINE_RULES[fieldId];
+      var field = document.getElementById(fieldId);
+      if (!rule || !field) return;
+      if (rule.ship && getDeliveryType() !== 'shipping') return;
+      paintInlineError(fieldId, !rule.ok(field.value || ''));
+    }
+    function paintAllInlineErrors() {
+      Object.keys(INLINE_RULES).forEach(function (id) { validateInlineField(id); });
+    }
+    Object.keys(INLINE_RULES).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', function () { validateInlineField(id); });
+      el.addEventListener('input', function () {
+        if (el.getAttribute('aria-invalid') === 'true') validateInlineField(id);
+      });
+    });
     function showFieldError(fieldId, message) {
       var field = document.getElementById(fieldId);
       var errEl = document.getElementById('err-' + fieldId);
       if (errEl) { errEl.textContent = message; errEl.hidden = false; }
+      // Al enviar, se muestran todos los errores juntos (el foco va al primero).
+      paintAllInlineErrors();
       if (field) {
         field.setAttribute('aria-invalid', 'true');
         if (typeof field.scrollIntoView === 'function') {
@@ -2283,9 +2369,10 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     function syncPickupAck() {
       var isPickup = getDeliveryType() === 'pickup';
       if (pickupAckBox) pickupAckBox.hidden = !isPickup;
-      if (!isPickup && pickupAck) {
-        pickupAck.checked = false;
-        clearPickupAckError();
+      if (pickupAck) {
+        // El aviso de retiro es informativo: se da por leído al elegir retiro.
+        pickupAck.checked = isPickup;
+        if (!isPickup) clearPickupAckError();
       }
     }
 
