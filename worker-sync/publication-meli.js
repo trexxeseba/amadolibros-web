@@ -42,6 +42,15 @@ export function sellerPackageAttributes(weightKg){
  const grams=Math.ceil((Math.round(weightKg*1000)+150)/100)*100;
  return [{id:'SELLER_PACKAGE_HEIGHT',value_name:`${height} cm`},{id:'SELLER_PACKAGE_LENGTH',value_name:`${length} cm`},{id:'SELLER_PACKAGE_WIDTH',value_name:`${width} cm`},{id:'SELLER_PACKAGE_WEIGHT',value_name:`${grams} g`}];
 }
+// Shipping diagnostics return Mercado Libre data with personal and location
+// fields removed, bounded in depth, array length and string size.
+const PRIVATE_KEY=/^(lat|lon|latitude|longitude|geolocation|name|state|country|comment|comments)$|^state_|address|street|zip|phone|email|contact|nickname|first_name|last_name|identification|city|neighborhood|receiver|sender|token/i;
+export function shippingSafe(value,depth=0){
+ if(value===null||typeof value!=='object')return typeof value==='string'?value.slice(0,120):value;
+ if(depth>=6)return '[truncated]';
+ if(Array.isArray(value))return value.slice(0,25).map(v=>shippingSafe(v,depth+1));
+ return Object.fromEntries(Object.entries(value).filter(([k])=>!PRIVATE_KEY.test(k)).slice(0,60).map(([k,v])=>[k,shippingSafe(v,depth+1)]));
+}
 // A prepared payload may only be created under the policy that produced it:
 // Catálogo exclusively with the explicit 'required_only' policy and a verified
 // product id; otherwise a traditional listing without any product binding.
@@ -233,5 +242,33 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==SELLER_ID)throw new MercadoLibreError('create_outcome_unknown',502);
   return result;
  }
- return {account,indexSlice,skuItems,prepare,create,call,inspectProduct};
+ // Read-only shipping diagnostic: GET requests only, each one reported on its
+ // own so a refused endpoint never hides the others.
+ async function shippingDiagnostic(env,{itemId=null,itemPrice=null,weightKg=.495,categoryId='MLU1196',logisticType=null}={}){
+  const read=async path=>{try{return {ok:true,data:await call(env,path)};}catch(error){return {ok:false,error:error.code??'ml_error',status:error.status??null,validation_codes:error.validationCodes??[]};}};
+  const pack=Object.fromEntries(sellerPackageAttributes(weightKg).map(a=>[a.id,parseInt(a.value_name,10)]));
+  const dimensions=`${pack.SELLER_PACKAGE_HEIGHT}x${pack.SELLER_PACKAGE_WIDTH}x${pack.SELLER_PACKAGE_LENGTH},${pack.SELLER_PACKAGE_WEIGHT}`;
+  const me=await read('/users/me');
+  if(me.ok&&(String(me.data.id)!==SELLER_ID||me.data.site_id!=='MLU'))throw new PublicationError('seller_mismatch',403);
+  const out={seller_id:SELLER_ID,dimensions,
+   account:me.ok?{ok:true,data:shippingSafe({site_id:me.data.site_id,tags:me.data.tags,shipping_modes:me.data.shipping_modes,status:{mercadoenvios:me.data.status?.mercadoenvios??null,sell:me.data.status?.sell??null,list:me.data.status?.list??null}})}:me,
+   shipping_preferences:await read(`/users/${SELLER_ID}/shipping_preferences`),
+   category_shipping_preferences:/^MLU\d+$/.test(categoryId)?await read(`/categories/${categoryId}/shipping_preferences`):null};
+  if(out.shipping_preferences.ok)out.shipping_preferences.data=shippingSafe(out.shipping_preferences.data);
+  if(out.category_shipping_preferences?.ok)out.category_shipping_preferences.data=shippingSafe(out.category_shipping_preferences.data);
+  if(itemId){
+   if(!/^MLU\d+$/.test(itemId))throw new PublicationError('invalid_item_id');
+   const item=await read(`/items/${itemId}?attributes=id,seller_id,price,category_id,listing_type_id,catalog_listing,status,shipping,sale_terms`);
+   if(item.ok&&String(item.data.seller_id)!==SELLER_ID)throw new PublicationError('item_seller_mismatch',403);
+   out.reference_item=item.ok?{ok:true,data:shippingSafe(item.data)}:item;
+  }
+  if(Number.isFinite(itemPrice)&&itemPrice>0){
+   const q=new URLSearchParams({dimensions,item_price:String(itemPrice),listing_type_id:'gold_special',mode:'me2',condition:'new',currency_id:'UYU',verbose:'true'});
+   if(/^MLU\d+$/.test(categoryId))q.set('category_id',categoryId);if(logisticType)q.set('logistic_type',logisticType);
+   const free=await read(`/users/${SELLER_ID}/shipping_options/free?${q}`);
+   out.free_shipping_quote=free.ok?{ok:true,data:shippingSafe(free.data)}:free;
+  }
+  return out;
+ }
+ return {account,indexSlice,skuItems,prepare,create,call,inspectProduct,shippingDiagnostic};
 }

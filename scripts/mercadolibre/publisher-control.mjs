@@ -8,7 +8,7 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
-const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -70,6 +70,11 @@ if(action==='import'){
  const result=await command('clone_preflight_catalog',{source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{})});
  console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
  for(const job of result.preflight)console.log(JSON.stringify(job));
+}else if(action==='shipping_diagnostic'){
+ // Read-only: GET lookups of the account's shipping configuration. Never publishes.
+ const price=process.env.PUBLISHER_ITEM_PRICE?Number(process.env.PUBLISHER_ITEM_PRICE):undefined;
+ const result=await command('shipping_diagnostic',{...(runId?{run_id:runId}:{}),...(process.env.PUBLISHER_ITEM_ID?{item_id:process.env.PUBLISHER_ITEM_ID}:{}),...(price!==undefined?{item_price:price}:{})});
+ console.log(JSON.stringify(result,null,1));
 }else if(action==='tick'){
  const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
  for(let i=0;i<cycles;i++){const result=await command('tick',{run_id:runId});summary(result);if(!['preflight','publishing','busy'].includes(result.state))break;}

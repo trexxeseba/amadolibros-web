@@ -4,7 +4,7 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -114,6 +114,18 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
   // A signed (non-admin) request carries a nonce; admin requests never do.
   if(ADMIN_ONLY_ACTIONS.includes(action)&&nonce)throw new PublicationError('admin_only_action',403);
   const s=store(env);
+  // Read-only: GET lookups of the account's shipping configuration, no D1 writes.
+  if(action==='shipping_diagnostic'){
+   const itemPrice=args.item_price==null?null:Number(args.item_price),weightKg=args.weight_kg==null?.495:Number(args.weight_kg);
+   if(args.item_id!=null&&!/^MLU\d+$/.test(String(args.item_id)))throw new PublicationError('invalid_item_id');
+   if((itemPrice!==null&&!(itemPrice>0&&itemPrice<10000000))||!(weightKg>0&&weightKg<=30)||(args.logistic_type!=null&&!/^[a-z_]{2,40}$/.test(String(args.logistic_type))))throw new PublicationError('invalid_diagnostic_args');
+   const result=await api.shippingDiagnostic(env,{itemId:args.item_id??null,itemPrice,weightKg,categoryId:args.category_id??'MLU1196',logisticType:args.logistic_type??null});
+   // What the prepared payload sends today, including "Disponibilidad de stock"
+   // (MANUFACTURING_TIME) from the run's policy, to compare with the account.
+   let availabilityDays=null;
+   if(args.run_id!=null){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);availabilityDays=validPolicy(JSON.parse(run.policy_json)).availabilityDays??null;}
+   return {...result,current_payload:{shipping:{mode:'me2',local_pick_up:true,free_shipping:true},sale_terms:availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${availabilityDays} días`}]:(args.run_id!=null?[]:null)},read_only_mercado_libre:true};
+  }
   if(action==='status'){try{return await s.summary(args.run_id);}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}}
   if(action==='preview'){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const jobs=await s.preview(args.run_id),sample=jobs.find(j=>j.error_code==='product_isbn_or_domain_mismatch'&&/^(978|979)/.test(j.isbn));return {run_id:args.run_id,jobs,...(sample?{diagnostic:await api.inspectProduct(env,sample.isbn)}:{})};}
   if(action==='tick'){if(nonce){await initialize(env,s);await s.nonce(nonce.id,nonce.expires,now());}return tick(env,args.run_id);}
