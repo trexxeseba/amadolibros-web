@@ -67,8 +67,10 @@ if(action==='import'){
  // PUBLISHER_FEED_ID optionally runs the clone over a fresh supplier feed (max 5 ISBN).
  const feedId=process.env.PUBLISHER_FEED_ID||undefined;
  const limit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):feedId?5:10;
- const result=await command('clone_preflight_catalog',{source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{})});
- console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
+ // PUBLISHER_AVAILABILITY_DAYS optionally overrides availabilityDays in the cloned policy (changes the policy_hash).
+ const availabilityDays=process.env.PUBLISHER_AVAILABILITY_DAYS?Number(process.env.PUBLISHER_AVAILABILITY_DAYS):undefined;
+ const result=await command('clone_preflight_catalog',{source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{}),...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
+ console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,availability_days:result.availability_days,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
  for(const job of result.preflight)console.log(JSON.stringify(job));
 }else if(action==='shipping_diagnostic'){
  // Read-only: GET lookups of the account's shipping configuration. Never publishes.

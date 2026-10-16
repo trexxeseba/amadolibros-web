@@ -162,7 +162,11 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    const limit=args.limit??Math.min(10,maxLimit);if(!Number.isInteger(limit)||limit<1||limit>maxLimit)throw new PublicationError('invalid_run_limits');
    const source=await s.run(args.source_run_id);if(!source)throw new PublicationError('source_run_not_found',404);
    const sourceBefore=runFingerprint(source),sourceJobsBefore=JSON.stringify(await s.counts(source.id));
-   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only'});
+   // Optional explicit availability override: part of the cloned policy, so the
+   // policy_hash (and the human approval) covers exactly those days.
+   const availabilityDays=args.availability_days??null;
+   if(availabilityDays!==null&&(!Number.isInteger(availabilityDays)||availabilityDays<1||availabilityDays>60))throw new PublicationError('invalid_availability_days');
+   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{})});
    const hash=await policyHash(policy);if(hash===source.policy_hash)throw new PublicationError('source_policy_already_catalog',409);
    const feedId=freshFeedId??source.feed_id;
    let feed=await s.feed(feedId);
@@ -182,7 +186,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    run=await s.run(newId);const jobs=(await s.jobs(newId)).map(clonePreflightJob);
    const count=state=>jobs.filter(j=>j.state===state).length;
    const sourceAfter=await s.run(source.id);
-   return {new_run_id:newId,source_run_id:source.id,created,feed_id:feedId,source_feed_id:source.feed_id,policy_hash:hash,source_policy_hash:source.policy_hash,catalog_listing:policy.catalogListing,state:run.state,approved:run.approved_hash===run.policy_hash,preflight_limit:run.preflight_limit,
+   return {new_run_id:newId,source_run_id:source.id,created,feed_id:feedId,source_feed_id:source.feed_id,availability_days:policy.availabilityDays,policy_hash:hash,source_policy_hash:source.policy_hash,catalog_listing:policy.catalogListing,state:run.state,approved:run.approved_hash===run.policy_hash,preflight_limit:run.preflight_limit,
     selected_isbns:jobs.map(j=>j.isbn),preflight:jobs,validated:count('validated'),review:count('review'),pending:count('pending')+count('retry'),published:count('published'),last_tick:last?.state??null,
     source_run_intact:runFingerprint(sourceAfter)===sourceBefore&&JSON.stringify(await s.counts(source.id))===sourceJobsBefore,read_only_mercado_libre:true};
   }
