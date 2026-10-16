@@ -11,7 +11,8 @@ const CLONE_PREFLIGHT_TICKS=6;
 export const CLONE_PREFLIGHT_FRESH_FEED_LIMIT=5;
 // Deterministic run id: repeating the same request finds the same clone instead of creating another.
 // An alternative feed is part of the identity, so it never collides with a clone over the source feed.
-export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}\nexport async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+export async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
 export function clonePreflightJob(job){
  const p=job.payload&&typeof job.payload==='object'?job.payload:{};
  return {isbn:job.isbn,state:job.state,error_code:job.error_code??null,title:p.title??p.family_name??null,price:typeof p.price==='number'?p.price:null,catalog_listing:typeof p.catalog_listing==='boolean'?p.catalog_listing:null,catalog_product_id:p.catalog_product_id??null,validation:p.diagnostic??null};
