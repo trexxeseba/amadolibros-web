@@ -66,6 +66,23 @@ aprobación anterior cubre altas de Catálogo. Con `required_only`:
 Sin `required_only`, un producto con Catálogo obligatorio sigue quedando en
 `catalog_required_needs_review`. Un payload de Catálogo jamás se crea bajo una
 política que no lo aprobó (`catalog_payload_not_approved`).
+
+#### Preflight de Catálogo a partir de un lote existente
+
+`clone_preflight_catalog` (sólo con `SYNC_SECRET`, nunca por el sobre firmado
+de Operaciones; `action=clone_preflight_catalog` del workflow con `run_id` =
+lote fuente y `preflight_limit` 1-20) toma hasta N ISBN que el lote fuente dejó
+en `review` con `catalog_required_needs_review`, clona su `policy_json` campo
+por campo cambiando únicamente `catalogListing: "required_only"` y crea un lote
+nuevo sobre el mismo snapshot, en `preflight`, sin aprobar, con `daily_cap` y
+`preflight_limit` iguales a N. El id del lote nuevo es determinístico (fuente +
+hash + N): repetir la solicitud devuelve el mismo lote sin duplicarlo. La acción
+sólo corre ticks de preflight (búsquedas GET, comisiones y `/items/validate`);
+jamás `POST /items`. Los rechazos de `/items/validate` quedan en `review` con los
+códigos oficiales. El lote fuente no se escribe: la respuesta incluye
+`source_run_intact` comparando política, hash, aprobación y conteos antes y
+después. Publicar lo validado exige, como siempre, `approve` humano del
+`policy_hash` nuevo.
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
 Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de

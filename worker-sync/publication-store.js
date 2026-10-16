@@ -36,6 +36,18 @@ export class PublicationStore {
    this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?`,run.id,run.feedId),
   ]);
  }
+ // Catalog preflight clone: a new run over the same snapshot that holds only the
+ // ISBNs the source run left in catalog_required_needs_review. The source run,
+ // its policy and its jobs are never written; the ML index is copied as-is.
+ async catalogReviewCandidates(id,limit){return (await this.stmt("SELECT isbn FROM ml_pub_jobs WHERE run_id=? AND state='review' AND error_code='catalog_required_needs_review' ORDER BY isbn LIMIT ?",id,limit).all()).results.map(r=>r.isbn);}
+ async cloneRun(run,isbns){
+  await this.db.batch([
+   this.stmt(`INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'preflight',?,?,?,?,?)`,run.id,run.feedId,JSON.stringify(run.policy),run.policyHash,run.now,run.now,run.indexJson,run.dailyCap,run.preflightLimit),
+   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,value,'pending' FROM json_each(?)`,run.id,JSON.stringify(isbns)),
+   this.stmt(`INSERT INTO ml_pub_index(run_id,item_id,isbn,title_key,status) SELECT ?,item_id,isbn,title_key,status FROM ml_pub_index WHERE run_id=?`,run.id,run.sourceId),
+  ]);
+ }
+ async jobs(id){return (await this.stmt('SELECT isbn,state,error_code,item_id,attempts,payload_json FROM ml_pub_jobs WHERE run_id=? ORDER BY isbn',id).all()).results.map(x=>({...x,payload:x.payload_json?JSON.parse(x.payload_json):null,payload_json:undefined}));}
  async run(id){return this.stmt('SELECT * FROM ml_pub_runs WHERE id=?',id).first();}
  async activeRun(){return this.stmt("SELECT * FROM ml_pub_runs WHERE state IN ('preflight','publishing') ORDER BY created_at LIMIT 1").first();}
  async lease(id,token,now){return this.stmt(`UPDATE ml_pub_runs SET lease_id=?,lease_until=?,updated_at=? WHERE id=? AND state IN ('preflight','publishing','complete_with_review') AND lease_until<? RETURNING *`,token,now+300_000,now,id,now).first();}
