@@ -834,6 +834,11 @@ test('los detalles se leen de /items/bulk y aceptan el formato status_code sin c
     const detail = urls.find(url => url.includes('ids='));
     assert.match(detail, /^https:\/\/api\.mercadolibre\.com\/items\/bulk\?ids=MLU1,MLU2&attributes=/);
     assert.ok(!urls.some(url => /\/items\?ids=/.test(url)));
+    // /items/bulk exige body. en cada attribute; sin el prefijo devuelve cuerpos vacíos.
+    const attributes = new URL(detail).searchParams.get('attributes').split(',');
+    assert.ok(attributes.length > 5);
+    assert.deepEqual(attributes.filter(field => !field.startsWith('body.')), [], 'attributes sin prefijo body.');
+    assert.ok(attributes.includes('body.id') && attributes.includes('body.seller_custom_field'));
   } finally {
     globalThis.fetch = originalFetch;
   }

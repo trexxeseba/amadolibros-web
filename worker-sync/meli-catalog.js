@@ -28,6 +28,7 @@
  */
 
 import { applyVerifiedBookEnrichments } from './verified-book-enrichments.js';
+import { bulkAttributes } from './meli-bulk.js';
 
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
@@ -41,8 +42,11 @@ const DEFAULT_GALLERY_SLEEP_MS = 75;
 const CATALOG_GALLERY_CACHE_KEY = 'catalog-product-galleries/v1/cache.json';
 const MAX_GALLERY_IMAGES = 16;
 const DESCRIPTION_MAX_CHARS = 5000;
-const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
+// campos que necesita slim_item + AUTHOR + enriched fields
+export const ML_ITEM_FIELDS =
   'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id,seller_custom_field';
+// /items/bulk exige el prefijo body. en cada campo de attributes.
+export const ML_ATTRIBUTES = bulkAttributes(ML_ITEM_FIELDS);
 
 // Excepciones verificadas el 2026-08-11 sobre el catálogo productivo. Se
 // reemplaza sólo la secuencia dañada y únicamente para el ID afectado. Si el
@@ -313,7 +317,8 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
     const batch     = ids.slice(i, i + DETAIL_BATCH);
     const batchNum  = Math.floor(i / DETAIL_BATCH) + 1;
     // /items?ids= se discontinúa el 25/10/2026; /items/bulk responde
-    // [{ status_code, body }] (el multiget anterior usaba { code, body }).
+    // [{ status_code, body }] (el multiget anterior usaba { code, body }) y
+    // sus attributes van con prefijo body. (ver meli-bulk.js).
     const url       = `https://api.mercadolibre.com/items/bulk?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
 
     try {
