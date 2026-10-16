@@ -64,9 +64,11 @@ if(action==='import'){
 }else if(action==='clone_preflight_catalog'){
  // Catalog preflight over the review ISBNs of an existing run: new unapproved run, /items/validate only.
  if(!runId)throw Error('Source run ID is required');
- const limit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):10;
- const result=await command('clone_preflight_catalog',{source_run_id:runId,limit});
- console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
+ // PUBLISHER_FEED_ID optionally runs the clone over a fresh supplier feed (max 5 ISBN).
+ const feedId=process.env.PUBLISHER_FEED_ID||undefined;
+ const limit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):feedId?5:10;
+ const result=await command('clone_preflight_catalog',{source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{})});
+ console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
  for(const job of result.preflight)console.log(JSON.stringify(job));
 }else if(action==='tick'){
  const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));

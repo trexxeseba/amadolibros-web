@@ -25,6 +25,10 @@ on:
         description: 'Con clone_preflight_catalog: cuántos ISBN en catalog_required_needs_review del lote run_id validar (1-20, default 10). Nunca publica.'
         required: false
         type: string
+      feed_id:
+        description: 'Con clone_preflight_catalog: feed fresco alternativo ya cargado (máximo 5 ISBN, default 5). Vacío usa el feed del lote run_id. Nunca publica.'
+        required: false
+        type: string
   schedule:
     - cron: '*/10 * * * *'
     - cron: '30 4 * * *'
@@ -32,6 +36,7 @@ on:
     paths:
       - 'worker-sync/publication-*.js'
       - 'worker-sync/__tests__/publication-queue.test.js'
+      - 'worker-sync/__tests__/publication-clone-preflight*.test.js'
       - 'worker-sync/__tests__/helpers/sqlite-d1.js'
       - 'scripts/mercadolibre/**'
       - '.github/workflows/mercadolibre-publication-queue.yml'
@@ -63,6 +68,7 @@ jobs:
           PUBLISHER_POLICY_HASH: ${{ inputs.policy_hash }}
           PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
           PUBLISHER_PREFLIGHT_LIMIT: ${{ inputs.preflight_limit }}
+          PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
           PUBLISHER_CYCLES: '10'
           SUPPLIER_FEED_URL: ${{ secrets.SUPPLIER_FEED_URL }}
           SUPPLIER_FEED_AUTHORIZATION: ${{ secrets.SUPPLIER_FEED_AUTHORIZATION }}
@@ -77,6 +83,6 @@ jobs:
         with:
           node-version: '22.12.0'
       - name: Verificar cola, idempotencia, stock y transporte
-        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/operations-read.test.js
+        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/operations-read.test.js
       - name: Verificar lector del proveedor
         run: python3 -m py_compile scripts/mercadolibre/prepare-supplier-feed.py
