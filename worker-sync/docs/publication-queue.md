@@ -89,6 +89,15 @@ El feed debe ser fresco (24 h); si sigue en `importing` se cierra sólo si tiene
 exactamente `expected_rows` filas (si no, `feed_count_mismatch`). Cada ISBN
 seleccionado debe existir en ese feed con stock positivo o no se crea nada
 (`fresh_feed_missing_stock`). El feed entra en el id determinístico del lote.
+`shipping_diagnostic` (sólo con `SYNC_SECRET`; `action=shipping_diagnostic` del
+workflow, opcionalmente con `run_id`, `item_id` de una publicación propia e
+`item_price`) es un diagnóstico de sólo lectura: GET a `/users/me`,
+`/users/{id}/shipping_preferences`, `/categories/MLU1196/shipping_preferences`,
+el ítem de referencia y la cotización de envío gratis ME2 con las medidas
+estimadas. No escribe en D1, no valida ni crea ítems, y quita datos personales
+y de ubicación de la respuesta. Devuelve además `current_payload` con el
+`shipping` y la disponibilidad de stock (`MANUFACTURING_TIME`) que manda hoy el
+payload para compararlos con la cuenta.
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
 Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de
