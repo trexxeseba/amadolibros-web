@@ -58,7 +58,7 @@ test('approved runs create once, persist receipts, finish and do not repeat on a
 test('stock zero, stale feeds and existing paused ISBNs prevent item creation',async t=>{
  const f=await fixture(t,{rows:[{...books[0],stock:'0'},books[1]]});
  await f.store.saveIndex(f.runId,JSON.parse((await f.store.run(f.runId)).index_json),[{id:'MLU900000009',isbn:books[1].isbn,titleKey:'',status:'paused'}]);
- const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,0);assert.ok(result.counts.some(x=>x.state==='skipped_stock'));assert.ok(result.counts.some(x=>x.state==='skipped_duplicate'));
+ const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,0);assert.ok(result.counts.some(x=>x.state==='skipped_stock_uncertain'));assert.ok(result.counts.some(x=>x.state==='skipped_duplicate'));
  f.clock.value+=25*3600000;assert.equal((await f.service.tick(f.env,f.runId)).state,'ready');
 });
 test('a fresh active run pauses if its supplier snapshot expires',async t=>{
@@ -81,7 +81,7 @@ test('a replacement supplier snapshot never reuses stock of an absent ISBN',asyn
  const f=await fixture(t);await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
  const feedId=crypto.randomUUID();await f.store.beginFeed(feedId,new Date(f.now).toISOString(),1,f.now);await f.store.importRows(feedId,[{...books[0],stock:'0'}]);await f.store.commitFeed(feedId);await f.store.attachFeed(f.runId,feedId);
  await f.store.saveIndex(f.runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});
- const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(result.counts.find(x=>x.state==='skipped_stock').n,2);
+ const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(result.counts.find(x=>x.state==='skipped_stock_uncertain').n,2);
 });
 test('refreshing stock preserves the original batch and the preview prioritizes validated candidates',async t=>{
  const f=await fixture(t),third={...books[0],isbn:'9780140328721',title:'Libro fuera del lote'},feedId=crypto.randomUUID();
