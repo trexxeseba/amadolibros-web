@@ -6,7 +6,7 @@ on:
       action:
         description: 'Controlar la cola; las altas requieren precios revisados y habilitación del Worker'
         type: choice
-        options: [status, tick, pause, approve, refresh, clone_preflight_catalog, create_run_from_source, audit_availability_terms, shipping_diagnostic, shipping_probe]
+        options: [status, tick, pause, approve, refresh, clone_preflight_catalog, create_run_from_source, audit_availability_terms, shipping_diagnostic, shipping_probe, queue_kick]
         default: status
       run_id:
         description: 'ID del lote (vacío para consultar o continuar el activo)'
@@ -35,6 +35,10 @@ on:
         type: string
       daily_cap:
         description: 'Con create_run_from_source: techo diario de altas reales tras aprobación (1-10000, default 1000).'
+        required: false
+        type: string
+      target_published:
+        description: 'Con create_run_from_source: objetivo exacto de publicaciones reales (1-10000). Vacío procesa todo el feed.'
         required: false
         type: string
       item_id:
@@ -97,6 +101,7 @@ jobs:
           PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
           PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}
           PUBLISHER_DAILY_CAP: ${{ inputs.daily_cap }}
+          PUBLISHER_TARGET_PUBLISHED: ${{ inputs.target_published }}
           PUBLISHER_ITEM_ID: ${{ inputs.item_id }}
           PUBLISHER_ITEM_PRICE: ${{ inputs.item_price }}
           PUBLISHER_ISBN: ${{ inputs.isbn }}
