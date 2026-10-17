@@ -19,7 +19,7 @@ jobs:
           node-version: '22.12.0'
       - uses: actions/checkout@v4
         with:
-          ref: f6329c1
+          ref: f6329c104242a413c7e85d6a3d732ae12f631fc7
           path: frozen-inputs
       - uses: actions/download-artifact@v4
         with:
