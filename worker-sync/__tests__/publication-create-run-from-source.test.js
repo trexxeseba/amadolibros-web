@@ -43,6 +43,21 @@ test('creates an unapproved production-sized run from the exact source policy wi
  assert.equal(run.policy_hash,expectedHash);assert.equal(r.new_run_id,await createRunFromSourceId(f.sourceRun,expectedHash,f.freshFeed,1000,20));
 });
 
+test('persists target_published as a separate run target and includes it in deterministic identity',async t=>{
+ const f=await fixture(t);
+ const args={source_run_id:f.sourceRun,feed_id:f.freshFeed,availability_days:18,daily_cap:1000,preflight_limit:20,target_published:2};
+ const result=await f.service.command(f.env,'create_run_from_source',args);
+ const target=await f.store.target(result.new_run_id);
+ assert.equal(target.target_published,2);
+ assert.equal(result.target_published,2);
+ assert.equal(result.target_remaining,2);
+ const hash=(await f.store.run(result.new_run_id)).policy_hash;
+ assert.equal(result.new_run_id,await createRunFromSourceId(f.sourceRun,hash,f.freshFeed,1000,20,2));
+ const noTarget=await createRunFromSourceId(f.sourceRun,hash,f.freshFeed,1000,20,null);
+ assert.notEqual(result.new_run_id,noTarget);
+ await assert.rejects(()=>f.service.command(f.env,'create_run_from_source',{...args,target_published:4}),/target_exceeds_feed/);
+});
+
 test('is idempotent and refuses incomplete or stale feeds',async t=>{
  const f=await fixture(t);
  const args={source_run_id:f.sourceRun,feed_id:f.freshFeed,availability_days:18,daily_cap:1000,preflight_limit:20};

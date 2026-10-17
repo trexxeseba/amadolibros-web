@@ -26,6 +26,9 @@ USER_ID         = "440298103"
 # New runs always start in preflight. Only approval of their immutable price
 # policy enables creation. Set disabled for an additional global stop switch.
 ML_PUBLISHER_MODE = "enabled"
+# Cola continua para altas ML: un consumidor a la vez en la primera etapa.
+# Mantiene el lease/D1 actual y elimina la espera entre ticks del cron.
+ML_PUBLISH_QUEUE_ENABLED = "true"
 # Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
 MIN_ACTIVE_ITEMS = "500"
 # Descripciones ML: endpoint individual. El primer lote vidriera acelera el
@@ -80,6 +83,23 @@ GA4_TRANSFER_PURCHASE_ENABLED = "true"
 # Binding name: CATALOG_R2
 # Bucket real:  amadolibros-catalog (mismo que usa local_sync.py)
 # URL pública:  https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/
+# ── Mercado Libre publisher queue ────────────────────────────────────────────
+# Un único work-token se autoencadena mientras el run siga en publishing.
+# max_concurrency=1 conserva serializados los POST /items; luego se puede medir
+# y aumentar sin cambiar la semántica D1/receipts.
+[[queues.producers]]
+binding = "ML_PUBLISH_QUEUE"
+queue = "amado-ml-publish"
+
+[[queues.consumers]]
+queue = "amado-ml-publish"
+max_batch_size = 1
+max_batch_timeout = 1
+max_retries = 10
+dead_letter_queue = "amado-ml-publish-dlq"
+max_concurrency = 1
+retry_delay = 30
+
 [[r2_buckets]]
 binding     = "CATALOG_R2"
 bucket_name = "amadolibros-catalog"
