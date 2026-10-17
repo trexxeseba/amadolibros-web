@@ -3,6 +3,7 @@ import {mkdtemp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {isIP} from 'node:net';
 const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes.workers.dev';
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
@@ -27,6 +28,7 @@ async function attachWhenFree(runId,feedId,{attempts=24,waitMs=15000}={}){
 }
 function summary(body){console.log(JSON.stringify({id:body.id,state:body.state,counts:body.counts,policy_hash:body.policy_hash,approved:body.approved,indexed:body.index?.seen,index_complete:body.index?.done,daily_cap:body.daily_cap,target_published:body.target_published,target_remaining:body.target_remaining,queued:body.queued}));}
 async function importFeed(input){
+ const refreshOnly=process.env.PUBLISHER_REFRESH_ONLY==='true';
  // PUBLISHER_NEW_RUN=true creates a fresh run (new policy, new approval) and
  // leaves the existing run exactly as it is instead of attaching the feed to it.
  const forceNewRun=process.env.PUBLISHER_NEW_RUN==='true';
@@ -36,7 +38,17 @@ async function importFeed(input){
  await command('begin_feed',{feed_id:feedId,source_date:input.source_date,expected_rows:input.rows.length});
  for(let i=0;i<input.rows.length;i+=200)await command('import_feed',{feed_id:feedId,rows:input.rows.slice(i,i+200)});
  await command('commit_feed',{feed_id:feedId});
+ if(refreshOnly){console.log(JSON.stringify({state:'feed_ready',feed_id:feedId,source_date:input.source_date,rows:input.rows.length}));return {feed_id:feedId,source_date:input.source_date,rows:input.rows.length};}
  const result=targetRun?await attachWhenFree(targetRun,feedId):await command('create_run',{run_id:newRun,feed_id:feedId,policy:input.policy,daily_cap:input.daily_cap??10000,preflight_limit:10});summary(result);
+}
+function sampleSupplierInput(input){
+ const requested=Number(process.env.PUBLISHER_SAMPLE_SIZE||0);
+ if(!Number.isInteger(requested)||requested<=0||requested>=input.rows.length)return input;
+ const seed=String(process.env.PUBLISHER_SAMPLE_SEED||'amado');
+ const ranked=input.rows.map(row=>({row,score:createHash('sha256').update(seed+'\0'+row.isbn).digest('hex')}))
+  .sort((a,b)=>a.score.localeCompare(b.score)).slice(0,requested).map(x=>x.row);
+ console.log(JSON.stringify({state:'sampled_supplier_feed',source_rows:input.rows.length,selected_rows:ranked.length,seed}));
+ return {...input,rows:ranked};
 }
 async function refreshFeed(){
  const rawUrl=process.env.SUPPLIER_FEED_URL;
@@ -51,7 +63,7 @@ async function refreshFeed(){
   const sourceFile=join(directory,'supplier.xlsx'),outputFile=join(directory,'feed.json');await fs.writeFile(sourceFile,bytes);
   const parsed=spawnSync('python3',['scripts/mercadolibre/prepare-supplier-feed.py',sourceFile,outputFile,'--weight-unit',process.env.SUPPLIER_WEIGHT_UNIT||'kg'],{encoding:'utf8'});
   if(parsed.status!==0)throw Error('Supplier workbook validation failed');
-  console.log(parsed.stdout.trim());await importFeed(JSON.parse(await fs.readFile(outputFile,'utf8')));
+  console.log(parsed.stdout.trim());const input=sampleSupplierInput(JSON.parse(await fs.readFile(outputFile,'utf8')));await importFeed(input);
  }finally{await fs.rm(directory,{recursive:true,force:true});}
 }
 if(action==='import'){
