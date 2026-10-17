@@ -25,10 +25,13 @@ try{
  const prefix='/zones/'+zone.id;
  const all=await api(prefix+'/rulesets');
  const entry=all.find(r=>r.phase===rulesetPhase&&r.kind==='zone');
- const before=entry?await api(prefix+'/rulesets/'+entry.id):null;
+ let before=entry?await api(prefix+'/rulesets/'+entry.id):null;
  report.before=before;report.zone_account_matched=true;
  if(process.env.CONTAINMENT_MODE==='apply'){
-  if(!before)throw Error('missing-entrypoint-inspect-first');
+  if(!before){
+   before=await api(prefix+'/rulesets','POST',{name:'Image cost containment redirects',kind:'zone',phase:rulesetPhase,rules:[]});
+   report.created_entrypoint=before.id;
+  }
   const created=[];
   try{
    for(const root of ['book-cover','preview-cover']){
