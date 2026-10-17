@@ -112,6 +112,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const { default: sharp } = await import('sharp');
   const cardPlan = process.env.IMAGE_VARIANT_CARD_PLAN
     ? JSON.parse(await readFile(process.env.IMAGE_VARIANT_CARD_PLAN, 'utf8')) : null;
+  if (!cardPlan && !process.env.IMAGE_VARIANT_SAMPLE_PRODUCT_ID)
+    throw new Error('approved-card-plan-required');
   if (cardPlan && process.env.IMAGE_VARIANT_WRITE_APPROVAL !== cardPlan.masters_sha256)
     throw new Error('explicit-card-plan-write-approval-required');
   const result = await buildPermanentVariants({

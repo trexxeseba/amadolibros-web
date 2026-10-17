@@ -67,7 +67,7 @@ test('frozen inputs select only position zero, deduplicate and exclude inactive/
   const plan=fixture(), entries={}, items=[], ids=[];
   for(let i=0;i<2790;i++) {
     const id='MLU'+i, master=plan.masters[i%2788]; ids.push(id);
-    const current={object_key:'covers/v1/objects/'+master.file,sha256:master.file.slice(0,64),bytes:master.size,source_url:'https://example.com/'+i+'.jpg'};
+    const current={object_key:'covers/v1/objects/'+master.file,sha256:master.file.slice(0,64),bytes:master.size,source_url:'https://http2.mlstatic.com/'+i+'.jpg'};
     entries[id+':0']={current}; entries[id+':1']={current:{object_key:'gallery-invalid'}};
     items.push({id,status:'active',available_quantity:1,pictures:[current.source_url]});
   }

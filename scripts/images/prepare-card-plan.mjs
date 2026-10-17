@@ -3,13 +3,12 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { CARD_RECIPES, validateCardPlan } from './build-permanent-variants.mjs';
+import { normalizeSourceUrl } from '../../functions/_shared/preview-cover.js';
 
 function sourceUrl(value) {
-  const url = new URL(value);
-  url.protocol = 'https:';
-  url.pathname = url.pathname.replace(/-I\.(jpg|jpeg|png|webp)$/, '-O.$1');
-  url.hash = '';
-  return url.href;
+  const normalized = normalizeSourceUrl(value);
+  if (!normalized) throw new Error('invalid-master-source');
+  return normalized;
 }
 
 export function prepareCardPlan(manifest, catalog, externalIds) {

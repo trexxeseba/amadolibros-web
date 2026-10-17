@@ -201,7 +201,7 @@ test('Ficha productiva entrega el proxy propio con srcset de archivos permanente
     thumbnail: '',
     permalink: 'https://articulo.mercadolibre.com.uy/test',
   }, 'libro-responsivo', false, '', productionSrc);
-  assert.match(html, /class="cover-main"[^>]+\/book-cover\/.*variant=v1-480-q85/);
+  assert.match(html, /class="cover-main"[^>]+\/cdn-cgi\/image\/[^\s"]*width=480/);
   assert.match(html, /srcset="[^"]+320w,[^"]+480w,[^"]+768w,[^"]+1024w"/);
-  assert.match(html, /book-cover\/MLU123456789\/cover\.jpg\?variant=v1-/);
+  assert.match(html, /cdn-cgi\/image\/.*book-cover\/MLU123456789\/cover\.jpg/);
 });

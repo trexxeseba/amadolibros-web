@@ -25,7 +25,7 @@ test('construye una portada primaria controlada y rechaza IDs ajenos', () => {
 
 test('usa una receta permanente en la zona productiva', () => {
   assert.equal(
-    cloudflareImageUrl(SOURCE, { width: 480, quality: 85 }),
+    cloudflareImageUrl(SOURCE, { width: 480, quality: 85, permanent: true }),
     'https://www.amadolibros.com/book-cover/MLU123456/cover.jpg?variant=v1-480-q85',
   );
 });
@@ -44,6 +44,7 @@ test('srcset ofrece anchos únicos y deja que el navegador elija uno', () => {
     widths: [480, 240, 480, 360],
     defaultWidth: 360,
     sizes: '(max-width: 600px) 50vw, 280px',
+    permanent: true,
   });
   assert.match(image.src, /variant=v1-360-q85/);
   assert.deepEqual(
@@ -51,4 +52,11 @@ test('srcset ofrece anchos únicos y deja que el navegador elija uno', () => {
     [240, 360, 480],
   );
   assert.equal(image.sizes, '(max-width: 600px) 50vw, 280px');
+});
+
+test('fichas, zoom y tarjetas sin cobertura conservan la entrega anterior por defecto', () => {
+  for (const [width, quality] of [[96,82],[120,85],[180,85],[240,85],[320,85],[480,85],[720,85],[768,85],[960,85],[1024,88]]) {
+    assert.equal(cloudflareImageUrl(SOURCE,{width,quality}),
+      `https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=${width},quality=${quality},onerror=redirect/book-cover/MLU123456/cover.jpg`);
+  }
 });

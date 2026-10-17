@@ -1,0 +1,54 @@
+CORRECCIONES DEL NO-GO — 2026-10-17
+
+B1: Helpers Functions y Astro restauran exactamente la composicion de URLs
+anterior al PR como modo por defecto: /cdn-cgi/image/ para zona productiva,
+fuente original para hosts externos/Preview. No se emiten ?variant por defecto.
+El build productivo de home comprobo presencia de la ruta anterior y cero
+URLs de variantes. Fichas, zoom, relacionados, por-encargo y home quedan en
+ese modo durante el primer canario. El zoom sigue sin src oculto al cargar.
+
+B2/B3: Primer alcance web ACOTADO al catalogo dinamico. Solo una tarjeta
+activa con stock y source_url completo puede solicitar variantes. Debe pasar:
+- APP_ENV production, flag de lectura true y nombre de bucket productivo.
+- Resolver vigente por indice publico, sin legacy-fallback.
+- Tres HEAD de variantes con MIME WebP, master_sha256, recipe y SHA validos.
+Solo entonces se emiten URLs inmutables 240/360/480 q85 de ese master.
+No se generan imagenes en visitas. Fuentes nuevas, deriva de hash, pausados,
+variantes faltantes, excepciones R2 o metadata invalida conservan su entrega
+anterior. Las seis tarjetas ampliadas quedan afuera para preservar 720/960.
+La home estatica sigue fuera de este primer canario: no se declara migrada.
+El HTML del canario usa no-store y x-card-variants-ready; no se inventa un
+umbral de fallback del 1%. Antes de habilitar se debe acordar el muestreo y
+pausar ante cualquier original-fallback dentro del alcance seleccionado.
+
+B4: findPreviewCover y el constructor del plan usan la misma normalizacion,
+en ambos lados: URL ML valida, HTTPS, sin fragmento, -I a -O.
+La auditoria offline ejecuta el resolver REAL con el formato real del indice
+publico y los insumos congelados. Resultado local: 2790/2790 portadas,
+8370 pares producto/receta = 8364 pares hash/receta unicos. No solicita imagenes.
+La segunda pasada remota es estrictamente GET: un objeto ausente detiene el
+proceso antes de descargar masters, encodar o subir. Valida bytes y metadata
+de las 8364 variantes y alimenta esa evidencia al mismo resolver offline.
+https://github.com/trexxeseba/amadolibros-web/actions/runs/39037088403
+El resultado remoto se agrega al cierre cuando termine; no darlo por aprobado
+solo por el exito del join offline.
+
+B5: Se quitan del PR web el catalogo congelado de 396 KB, su recuperador de
+insumos, el workflow de escritura staged y el workflow de generacion global
+por cron. Siguen preservados en la rama auxiliar de ejecucion; no se borran
+datos ni variantes R2. La CLI del generador rechaza una corrida general sin
+plan aprobado (las muestras Preview explicitas conservan su uso).
+El chequeo Preview ahora prueba entrega dormida y zoom, sin solicitar todas
+las imagenes ni confundir su bucket con produccion. La prueba de R2 productivo
+queda en la segunda pasada autenticada, separada del Preview web.
+
+B6: No se cancela Images transformations ni se modifica WAF. No se fusiona,
+no se activa la lectura y no se despliega produccion. El rollback completo
+sigue siendo el deployment previo; el flag false corregido vuelve a URLs
+anteriores para nuevas respuestas del catalogo, no al master como plan original.
+
+PRUEBAS LOCALES
+1737/1737 Functions + helpers Astro; 18/18 generador/encoder/idempotencia.
+Build Astro normal y PUBLIC_INDEXABLE=true aprobados. Flag productivo false.
+Falta cerrar segunda pasada y CI/Preview del commit remoto definitivo antes
+de pedir autorizacion del canario. Esto no declara GO productivo global.

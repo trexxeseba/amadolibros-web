@@ -1,4 +1,9 @@
 PASO DE ACTIVACION PREPARADO — PENDIENTE DE APROBACION
+ACTUALIZACION: leer card-canary-review-fixes.txt antes de este plan historico.
+El primer canario ahora se limita al catalogo dinamico con cobertura verificada;
+home/fichas/zoom/pausados permanecen en la entrega anterior. El flag false
+restaura las URLs anteriores en nuevas respuestas, no el fallback original
+descrito en la primera version del PR. La activacion global sigue NO-GO.
 2026-10-17. No ejecutar este procedimiento hasta la aprobacion del usuario.
 
 GENERACION CERRADA

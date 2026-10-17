@@ -107,6 +107,7 @@ bucket_name = "amadolibros-images-production"
 # siguen sin declararse acá — son secrets. RESEND_API_KEY tampoco se declara:
 # el workflow lo sincroniza como secret cifrado antes de cada deploy.
 [env.production.vars]
+COVER_R2_BUCKET_NAME = "amadolibros-images-production"
 # Enable only after coverage and delivery verification, independently of generation.
 IMAGE_VARIANTS_READ_ENABLED = "false"
 APP_ENV           = "production"

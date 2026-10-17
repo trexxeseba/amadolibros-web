@@ -1,5 +1,4 @@
 import { cardCoverImageOptions } from '../../../shared/card-cover-framing.js';
-import { permanentImageUrl } from '../../../shared/image-variants.js';
 
 const BASE = 'https://www.amadolibros.com';
 const PRODUCT_ID_RE = /^MLU\d+$/;
@@ -22,7 +21,8 @@ export function cloudflareImageUrl(source, width, quality = 85) {
   if (sourceUrl.origin !== BASE || sourceUrl.pathname.startsWith('/cdn-cgi/image/')) {
     return String(source);
   }
-  return permanentImageUrl(source, { width: targetWidth, quality });
+  const options = `format=auto,fit=scale-down,width=${targetWidth},quality=${quality},onerror=redirect`;
+  return `${BASE}/cdn-cgi/image/${options}${sourceUrl.pathname}${sourceUrl.search}`;
 }
 
 export function responsiveBookCover(productId, { optimize = true } = {}) {
@@ -38,12 +38,9 @@ export function responsiveBookCover(productId, { optimize = true } = {}) {
     const localSource = `${sourceUrl.pathname}${sourceUrl.search}`;
     return {
       source: localSource,
-      src: new URL(cloudflareImageUrl(source, defaultWidth)).pathname + new URL(cloudflareImageUrl(source, defaultWidth)).search,
-      srcset: widths.map(width => {
-        const url = new URL(cloudflareImageUrl(source, width));
-        return `${url.pathname}${url.search} ${width}w`;
-      }).join(', '),
-      sizes,
+      src: localSource,
+      srcset: '',
+      sizes: '',
     };
   }
   return {

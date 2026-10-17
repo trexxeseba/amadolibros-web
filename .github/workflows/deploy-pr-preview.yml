@@ -130,7 +130,7 @@ jobs:
           QW2_PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         run: node scripts/seo/image-system-live-check.mjs
 
-      - name: Verify permanent image delivery on Preview
+      - name: Verify dormant delivery and lazy zoom on Preview
         if: github.head_ref == 'codex/image-cost-zoom-on-demand'
         env:
           COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}

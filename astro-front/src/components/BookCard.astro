@@ -48,9 +48,8 @@ function slugify(text: string): string {
     .substring(0, 60);
 }
 
-// Versiones permanentes de la portada controlada, con tamaños responsivos.
-// Preview sirve las mismas recetas desde su propio origen; si una versión
-// todavía no existe, el lector entrega el original sin transformación pagada.
+// Home remains on its pre-migration delivery path. The initial permanent
+// variant canary is limited to verified cards in the dynamic catalog.
 const isIndexableProduction = import.meta.env.PUBLIC_INDEXABLE === 'true';
 const cover = responsiveBookCover(book.id, { optimize: isIndexableProduction });
 

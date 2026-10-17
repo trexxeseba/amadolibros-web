@@ -63,6 +63,11 @@ export async function onRequest(context) {
                 : 'r2-preview',
         });
         if (variantId) headers.set('X-Cover-Variant', derived ? variantId : 'original-fallback');
+        if (derived) {
+            headers.set('X-Cover-Source', 'r2-variant');
+            headers.set('X-Cover-Index', 'content-addressed');
+            if (context.env.COVER_R2_BUCKET_NAME) headers.set('X-Cover-Bucket', context.env.COVER_R2_BUCKET_NAME);
+        }
         if (Number.isFinite(Number(object.size))) {
             headers.set('Content-Length', String(object.size));
         }

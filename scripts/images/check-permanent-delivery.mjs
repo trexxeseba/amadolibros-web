@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
-import sharp from 'sharp';
 
 const base = new URL(process.env.COMMERCE_BASE_URL);
 assert.ok(base.protocol === 'https:' && /(?:^|\.)amadolibros-web\.pages\.dev$/.test(base.hostname));
@@ -20,6 +18,7 @@ const get = async path => {
   throw new Error('too-many-redirects');
 };
 const home = await (await get('/')).text();
+const catalog = await (await get('/catalogo')).text();
 assert.doesNotMatch(home, /\/cdn-cgi\/image\//);
 const cover = await (await get('/preview-cover/status')).json();
 assert.ok(cover.sample_product_id);
@@ -27,33 +26,13 @@ const page = await (await get(`/libro/${cover.sample_product_id}`)).text();
 assert.doesNotMatch(page, /\/cdn-cgi\/image\//);
 const zoomTag = page.match(/<img[^>]*id="glbImg"[^>]*>/)?.[0];
 assert.ok(zoomTag); assert.doesNotMatch(zoomTag, /\s(?:src|srcset)=/);
-const sources = [...page.matchAll(/https:\/\/[^\s"<>]+\/preview-cover\/MLU\d+\/\d+\/[a-f0-9]{64}\.(?:jpg|png|webp)\?variant=v1-\d+-q\d+/g)]
-  .map(m => m[0]);
-assert.ok(sources.length, 'versioned gallery URLs missing');
-const unique = [...new Set(sources)];
-const report = { base: base.origin, product: cover.sample_product_id, checkedAt: new Date().toISOString(), images: [] };
-await mkdir('artifacts/image-variants/visual', { recursive: true });
-let derivedCount = 0;
-for (const [index, source] of unique.entries()) {
-  const response = await get(source);
-  const bytes = Buffer.from(await response.arrayBuffer());
-  const metadata = await sharp(bytes).metadata();
-  const variant = response.headers.get('x-cover-variant');
-  report.images.push({ path: new URL(source).pathname + new URL(source).search,
-    mime: response.headers.get('content-type'), variant, bytes: bytes.length, width: metadata.width, height: metadata.height });
-  if (variant !== 'original-fallback') {
-    derivedCount++;
-    assert.equal(metadata.format, 'webp');
-    // El middleware de seguridad fuerza no-store en todos los Preview.
-    // La caché immutable productiva se verifica en el test de la Function.
-    assert.match(response.headers.get('cache-control'), /no-store/);
-    const second = Buffer.from(await (await get(source)).arrayBuffer());
-    assert.equal(createHash('sha256').update(bytes).digest('hex'), createHash('sha256').update(second).digest('hex'));
-    if (index < 3) await writeFile(`artifacts/image-variants/visual/variant-${index}.webp`, bytes);
-  }
-}
-assert.ok(derivedCount > 0, 'real persisted variants must be delivered');
-const originalUrl = new URL(unique[0]); originalUrl.search = '';
-await writeFile('artifacts/image-variants/visual/original.bin', Buffer.from(await (await get(originalUrl.href)).arrayBuffer()));
-await writeFile('artifacts/image-variants/delivery.json', JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ product: report.product, checked: report.images.length, derivedCount }));
+// Preview uses its separate bucket; it must not claim production coverage.
+// In the dormant rollout, gallery/home URLs remain on their previous paths.
+for (const html of [home,catalog,page]) assert.doesNotMatch(html,/\?variant=v1-/);
+await mkdir('artifacts/image-variants', {recursive:true});
+const dormantReport={base:base.origin,mode:'dormant-delivery',pages:3,hidden_zoom_has_src:false,
+  variant_urls_emitted:0,image_requests:0,production_coverage_verified:false};
+await writeFile('artifacts/image-variants/delivery.json',JSON.stringify(dormantReport,null,2));
+console.log(JSON.stringify(dormantReport));
+// The authenticated second-pass job separately validates actual production
+// WebP bytes and runs the real resolver. Do not infer that from Preview.
