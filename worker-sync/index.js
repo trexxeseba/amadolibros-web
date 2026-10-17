@@ -50,6 +50,7 @@ import { getAccessToken } from './meli-auth.js';
 import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
 import { handlePublicationRoute } from './publication-routes.js';
 import { publicationService } from './publication-engine.js';
+import { createPublicationQueueHandler, publicationQueueEnabled } from './publication-queue.js';
 import { publicationStockSync } from './publication-stock-sync.js';
 import { PUBLICATION_PATH } from './publication-policy.js';
 import { buildCatalog   } from './meli-catalog.js';
@@ -75,13 +76,18 @@ import {
 
 export const STOCK1_PREVIEW_CATALOG_KEY = PAUSED_MANIFEST_KEY;
 export const PRODUCTION_CATALOG_KEY = PRODUCTION_MANIFEST_KEY;
+const handlePublicationQueue = createPublicationQueueHandler(publicationService);
 
 export default {
   // ── Cron trigger ────────────────────────────────────────────────────────────
   async scheduled(event, env, ctx) {
     console.log(`[Worker] Cron trigger: ${new Date().toISOString()}`);
     if (event?.cron === '* * * * *') {
-      ctx.waitUntil(publicationService.tick(env).catch(() => ({state:'publication_tick_failed'})));
+      // Queue mode removes the minute-by-minute idle gap. Keep the cron as an
+      // automatic fallback only when the Queue binding/flag is unavailable.
+      if (!publicationQueueEnabled(env)) {
+        ctx.waitUntil(publicationService.tick(env).catch(() => ({state:'publication_tick_failed'})));
+      }
       return;
     }
     if (event?.cron === '*/5 * * * *') {
@@ -124,6 +130,11 @@ export default {
       return;
     }
     ctx.waitUntil(runSync(env, { source: 'cron' }));
+  },
+
+  // ── Queue consumer: one durable work token keeps the publisher running ─────
+  async queue(batch, env, ctx) {
+    ctx.waitUntil(handlePublicationQueue(batch, env));
   },
 
   // ── Manual trigger / status ─────────────────────────────────────────────────
