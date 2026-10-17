@@ -1,5 +1,6 @@
 import {readFile,writeFile} from 'node:fs/promises';
 import {createCipheriv,randomBytes,publicEncrypt,constants} from 'node:crypto';
+import {isDeepStrictEqual} from 'node:util';
 const token=process.env.CLOUDFLARE_ADMIN_API_TOKEN,account=process.env.CLOUDFLARE_ACCOUNT_ID;
 const report={checked_at:new Date().toISOString(),mode:process.env.CONTAINMENT_MODE,events:[],rules:[],tests:[]};
 const rulesetPhase='http_request_dynamic_redirect';
@@ -39,7 +40,7 @@ try{
     const rule={ref,description:'Temporary cover transformation containment - originals',expression:'(http.host in {"www.amadolibros.com" "amadolibros.com"} and http.request.method in {"GET" "HEAD"} and http.request.uri.path wildcard "/cdn-cgi/image/*/'+root+'/*")',action:'redirect',action_parameters:{from_value:{target_url:{expression:'wildcard_replace(http.request.uri.path, "/cdn-cgi/image/*/'+root+'/*", "https://www.amadolibros.com/'+root+'/${2}")'},status_code:302,preserve_query_string:false}},enabled:false};
     const existing=before.rules?.find(r=>r.ref===ref);
     if(existing){
-     if(existing.enabled!==false||existing.expression!==rule.expression||JSON.stringify(existing.action_parameters)!==JSON.stringify(rule.action_parameters))throw Error('existing-containment-review-required');
+     if(existing.enabled!==false||existing.action!==rule.action||existing.expression!==rule.expression||!isDeepStrictEqual(existing.action_parameters,rule.action_parameters))throw Error('existing-containment-review-required');
     }
     const updated=existing?before:await api(prefix+'/rulesets/'+before.id+'/rules','POST',rule);
     const added=updated.rules.find(r=>r.ref===ref);if(!added)throw Error('created-rule-not-returned');
@@ -53,7 +54,7 @@ try{
    for(const old of before.rules||[]){
     if(created.some(r=>r.id===old.id))continue;
     const kept=after.rules.find(r=>r.id===old.id);
-    for(const field of ['expression','action','action_parameters','enabled'])if(JSON.stringify(kept?.[field])!==JSON.stringify(old[field]))throw Error('existing-rule-changed');
+    for(const field of ['expression','action','action_parameters','enabled'])if(!isDeepStrictEqual(kept?.[field],old[field]))throw Error('existing-rule-changed');
    }
    // A bounded pair of real checks, not an image inventory. Never follow a transform redirect automatically.
    const samples=JSON.parse(await readFile('scripts/images/cf-containment-samples.json','utf8'));
