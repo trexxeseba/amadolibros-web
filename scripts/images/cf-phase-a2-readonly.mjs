@@ -17,7 +17,7 @@ const schema=await request('graphql_schema','/graphql','{__schema{types{name fie
 const types=schema.data?.__schema?.types||[];
 const unwrap=t=>!t?undefined:t.name||unwrap(t.ofType);
 const accountType=types.find(t=>t.name==='account');
-const node=types.find(t=>t.name===unwrap(accountType?.fields.find(f=>f.name==='workersInvocationsAdaptive')?.type));
+const node=types.find(t=>t.name==='AccountWorkersInvocationsAdaptive');
 const fieldType=n=>types.find(t=>t.name===unwrap(node?.fields.find(f=>f.name===n)?.type));
 const sums=fieldType('sum')?.fields?.map(f=>f.name)||[];
 const dims=fieldType('dimensions')?.fields?.map(f=>f.name)||[];

@@ -1,5 +1,5 @@
 name: Cloudflare requested follow-up evidence - read only
-# Select analytics data types separately from dataset settings.
+# Use the verified AccountWorkersInvocationsAdaptive schema node.
 on:
   push:
     branches: [codex/r2-card-inventory-29c5dce]
