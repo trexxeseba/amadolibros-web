@@ -259,7 +259,7 @@ export async function onRequest(context) {
     const finish = response => {
         const securedResponse = withSecurityHeaders(response);
         if (isMeliOAuth) {
-            securedResponse.headers.set('Referrer-Policy', 'no-referrer');
+            securedResponse.headers.set('Referrer-Policy', url.pathname === '/panel/meli-vintage' ? 'same-origin' : 'no-referrer');
             securedResponse.headers.set('Cache-Control', 'no-store');
             securedResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
             securedResponse.headers.set('X-Frame-Options', 'DENY');

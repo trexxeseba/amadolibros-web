@@ -29,7 +29,9 @@ explícita por seller; este cambio no implementa renovación automática de Vint
 State de un solo uso, caducidad de diez minutos, cookie HttpOnly/Secure/Lax,
 PKCE S256, inicio protegido por sesión y Origin, identidad contrastada con el
 user_id del intercambio. Respuestas sin tokens, sin scripts ni recursos externos,
-no-store/noindex/no-referrer. Middleware excluye estas rutas de analytics y reglas
+no-store/noindex. El callback usa no-referrer; el formulario inicial usa same-origin
+para que el POST nativo conserve Origin y pase la validación CSRF estricta.
+Middleware excluye estas rutas de analytics y reglas
 legacy. Los errores remotos no se imprimen ni se reflejan.
 
 Antes de habilitar: revisar y desplegar este cambio de Pages; verificar bindings
