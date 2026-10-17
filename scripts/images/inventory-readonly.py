@@ -27,6 +27,23 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 OPENER = urllib.request.build_opener(NoRedirect)
 
 
+class ReadFailure(RuntimeError):
+    def __init__(self, status, reason, errors):
+        super().__init__(f'read-http-{status}')
+        self.status = status
+        self.reason = reason
+        self.errors = errors
+
+
+def sanitized(value):
+    text = str(value)
+    for name in ('CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'GH_TOKEN'):
+        secret = os.environ.get(name)
+        if secret:
+            text = text.replace(secret, '[redacted]')
+    return re.sub(r'https?://\S+', '[URL omitted]', text)[:400]
+
+
 def read(url, headers=None, allow_signed_redirect=False):
     # This module issues GET only. Never forward auth to a redirected host.
     request = urllib.request.Request(url, headers=headers or {}, method='GET')
@@ -39,8 +56,17 @@ def read(url, headers=None, allow_signed_redirect=False):
             if urllib.parse.urlparse(target).scheme != 'https':
                 raise RuntimeError('invalid-artifact-redirect')
             return read(target)
-        # Avoid printing credential-bearing request headers or account URLs.
-        raise RuntimeError(f'read-http-{error.code}') from None
+        # Publish only explicit API error code/message fields, never raw bodies,
+        # request headers, account IDs or credential-bearing URLs.
+        errors = []
+        if urllib.parse.urlsplit(url).hostname == 'api.cloudflare.com':
+            try:
+                body = json.loads(error.read(65536))
+                errors = [{'code': row.get('code'), 'message': sanitized(row.get('message', ''))}
+                          for row in body.get('errors', []) if isinstance(row, dict)]
+            except (ValueError, AttributeError):
+                pass
+        raise ReadFailure(error.code, sanitized(error.reason), errors) from None
 
 
 def main():
@@ -145,7 +171,12 @@ try:
 except Exception as error:
     message = str(error) if isinstance(error, RuntimeError) else type(error).__name__
     summary = {'status': 'blocked', 'reason': message, 'bucket': BUCKET,
-               'required_permission': 'Workers R2 Storage Read on the existing Actions token',
+               'endpoint': 'GET https://api.cloudflare.com/client/v4/accounts/<CLOUDFLARE_ACCOUNT_ID>/r2/buckets/' + BUCKET + '/objects?prefix=covers%2Fvariants%2Fv1%2F&per_page=1000',
+               'account_source': 'existing Actions secret CLOUDFLARE_ACCOUNT_ID (not disclosed)',
+               'account_id_format_valid': bool(re.fullmatch('[a-fA-F0-9]{32}', os.environ.get('CLOUDFLARE_ACCOUNT_ID', ''))),
+               'candidate_permission': 'Workers R2 Storage Read; missing permission is not established by HTTP status alone',
                'production_writes': 0, 'image_requests': 0, 'deployments': 0}
+    if isinstance(error, ReadFailure):
+        summary.update(http_status=error.status, http_reason=error.reason, cloudflare_errors=error.errors)
     print(json.dumps(summary))
     sys.exit(1)
