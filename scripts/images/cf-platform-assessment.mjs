@@ -13,7 +13,7 @@ async function get(name,path,select=x=>x){
  }catch{results.push({name,transport_error:true});}
 }
 const root='/accounts/'+account;
-const projects=await get('pages_projects',root+'/pages/projects?per_page=100',rows=>rows.map(p=>({name:p.name,subdomain:p.subdomain,domains:p.domains,production_branch:p.production_branch,source_type:p.source?.type,configs:Object.fromEntries(Object.entries(p.deployment_configs||{}).map(([env,c])=>[env,{binding_groups:Object.keys(c).filter(k=>/bindings|namespaces|databases|buckets/.test(k)),env_keys:Object.keys(c.env_vars||{}),kv:Object.keys(c.kv_namespaces||{}),d1:Object.keys(c.d1_databases||{}),r2:Object.keys(c.r2_buckets||{}),services:Object.keys(c.services||{}),limits:c.limits,placement:c.placement,compatibility_date:c.compatibility_date}]))})));
+const projects=await get('pages_projects',root+'/pages/projects',rows=>rows.map(p=>({name:p.name,subdomain:p.subdomain,domains:p.domains,production_branch:p.production_branch,source_type:p.source?.type,configs:Object.fromEntries(Object.entries(p.deployment_configs||{}).map(([env,c])=>[env,{binding_groups:Object.keys(c).filter(k=>/bindings|namespaces|databases|buckets/.test(k)),env_keys:Object.keys(c.env_vars||{}),kv:Object.keys(c.kv_namespaces||{}),d1:Object.keys(c.d1_databases||{}),r2:Object.keys(c.r2_buckets||{}),services:Object.keys(c.services||{}),limits:c.limits,placement:c.placement,compatibility_date:c.compatibility_date}]))})));
 await get('workers_scripts',root+'/workers/scripts',rows=>rows.map(x=>({id:x.id,created_on:x.created_on,modified_on:x.modified_on})));
 await get('r2_buckets',root+'/r2/buckets');
 await get('d1_databases',root+'/d1/database?per_page=100',rows=>rows.map(x=>({name:x.name,uuid:x.uuid,num_tables:x.num_tables,file_size:x.file_size})));

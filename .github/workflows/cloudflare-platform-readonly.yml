@@ -27,3 +27,5 @@ jobs:
           path: ${{ runner.temp }}/cf-platform.encrypted.json
           if-no-files-found: error
           retention-days: 1
+
+# Use documented default pagination for Pages projects.
