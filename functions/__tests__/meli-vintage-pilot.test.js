@@ -67,6 +67,29 @@ test('pilot validates without creation, requires exact sample approval and creat
  await assert.rejects(()=>f.pilot.approve(f.env,args),/sample_changed/);
 });
 
+test('complete fresh uploads can prepare Vintage without a Libros run; incomplete uploads stay hidden and cannot commit',async t=>{
+ const f=await fixture(t),feed=crypto.randomUUID(),before=await f.s.jobs(f.source);
+ await f.s.beginFeed(feed,new Date(f.clock.value).toISOString(),f.rows.length,f.clock.value);
+ await f.s.importRows(feed,f.rows.slice(0,-1));
+ assert.ok(!(await f.pilot.sources(f.env)).feeds.some(x=>x.id===feed));
+ await assert.rejects(()=>f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed}),/feed_count_mismatch/);
+ assert.equal((await f.s.feed(feed)).state,'importing');
+ assert.equal((await f.pilot.snapshot(f.env)).run,null);
+ await f.s.importRows(feed,f.rows.slice(-1));
+ assert.ok((await f.pilot.sources(f.env)).feeds.some(x=>x.id===feed));
+ assert.equal((await f.s.feed(feed)).state,'importing');
+ f.api.account=async()=>({id:books,site_id:'MLU'});
+ await assert.rejects(()=>f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed}),/seller_mismatch/);
+ assert.equal((await f.s.feed(feed)).state,'importing');
+ f.api.account=async()=>({id:vintage,site_id:'MLU'});
+ const state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed});
+ assert.equal((await f.s.feed(feed)).state,'ready');
+ assert.equal(state.run.state,'ready');assert.equal(state.sample.length,5);
+ assert.equal(f.calls.create.length,0);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) n FROM ml_pub_runs').get().n,1);
+ assert.deepEqual(await f.s.jobs(f.source),before);
+});
+
 test('stale stock or wrong identity prevents approval/preparation',async t=>{
  const f=await fixture(t);
  f.api.account=async()=>({id:books,site_id:'MLU'});
