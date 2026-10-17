@@ -199,11 +199,19 @@ test('missing ML metadata can use an exact supplier edition without sending ML c
  assert.equal(external,1);assert.equal(validated,true);assert.equal(payload.price,1200);assert.equal(payload.available_quantity,1);assert.equal(payload.catalog_listing,false);
  assert.equal(payload.attributes.find(a=>a.id==='LANGUAGE').value_name,'Inglés');assert.equal(payload.attributes.find(a=>a.id==='BOOK_COVER').value_name,'Blanda');assert.match(payload.pictures[0].source,/sbslibreria/);
 });
-test('supplier metadata refuses unverified ISBNs, conflicting SKUs, ambiguous formats and untrusted cover hosts',async()=>{
- for(const change of [p=>{p.ISBN=[books[1].isbn];},p=>{p.ISBN='bad';},p=>{p.items[0].ean=books[1].isbn;},p=>{p.items.push(p.items[0]);},p=>{p.items[0].isKit=true;},p=>{p.items[0].images[0].imageUrl='https://untrusted.example/cover.jpg';},p=>{p.Idioma=['No determinado'];},p=>{p.items[0].sellers[0].commertialOffer.IsAvailable=false;}]){
+test('supplier metadata is strict about identity and stock but optional descriptive fields may be omitted',async()=>{
+ for(const change of [p=>{p.ISBN=[books[1].isbn];},p=>{p.ISBN='bad';},p=>{p.items[0].ean=books[1].isbn;},p=>{p.items.push(p.items[0]);},p=>{p.items[0].isKit=true;},p=>{p.items[0].sellers[0].commertialOffer.IsAvailable=false;}]){
   const product=supplierMetadata();change(product);
   await assert.rejects(()=>supplierBookMetadata(books[0],{fetcher:async()=>Response.json([product])}),error=>error instanceof PublicationError);
  }
+ const sparse=supplierMetadata();sparse.items[0].images[0].imageUrl='https://untrusted.example/cover.jpg';sparse.Idioma=['No determinado'];sparse.Tapa=['No determinada'];sparse.Autor=[];sparse.Editorial=[];
+ const metadata=await supplierBookMetadata({...books[0],author:'',publisher:''},{fetcher:async()=>Response.json([sparse])});
+ assert.deepEqual(metadata.pictures,[]);
+ assert.equal(metadata.attributes.find(a=>a.id==='LANGUAGE'),undefined);
+ assert.equal(metadata.attributes.find(a=>a.id==='BOOK_COVER'),undefined);
+ assert.equal(metadata.attributes.find(a=>a.id==='AUTHOR'),undefined);
+ assert.equal(metadata.attributes.find(a=>a.id==='BOOK_PUBLISHER'),undefined);
+ assert.equal(metadata.attributes.find(a=>a.id==='GTIN').value_name,books[0].isbn);
  await assert.rejects(()=>supplierBookMetadata(books[0],{fetcher:async()=>{throw Error('private-test-token');}}),error=>{assert.equal(error.code,'missing_verified_book_metadata');assert.doesNotMatch(JSON.stringify(error),/private-test-token/);return true;});
 });
 test('required catalog and ambiguous ML matches never fall back to a traditional supplier listing',async()=>{
