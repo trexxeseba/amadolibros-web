@@ -364,10 +364,10 @@ test('a catalog payload is never created under a policy that did not approve Cat
  await assert.rejects(()=>api.create({},{price:1,currency_id:'UYU',condition:'new',catalog_listing:false,catalog_product_id:'MLU1'},catalogPolicy),/payload_policy_mismatch/);
 });
 test('approval of a run with the Catálogo policy requires that exact hash',async t=>{
- const f=await fixture(t);
- const runId=crypto.randomUUID();await f.store.createRun({id:runId,feedId:f.feedId,policy:validPolicy(catalogPolicy),policyHash:await policyHash(catalogPolicy),now:f.now,dailyCap:10,preflightLimit:10});
- await f.store.saveIndex(runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});await f.service.tick(f.env,runId);
- const traditionalHash=await policyHash(policy),catalogHash=await policyHash(catalogPolicy);
+ const f=await fixture(t),runId=f.runId,catalogHash=await policyHash(catalogPolicy);
+ await f.store.db.prepare('UPDATE ml_pub_runs SET policy_json=?,policy_hash=? WHERE id=?').bind(JSON.stringify(validPolicy(catalogPolicy)),catalogHash,runId).run();
+ await f.service.tick(f.env,runId);
+ const traditionalHash=await policyHash(policy);
  await assert.rejects(()=>f.service.command(f.env,'approve',{run_id:runId,policy_hash:traditionalHash}),/policy_hash_mismatch/);
  assert.equal((await f.service.command(f.env,'approve',{run_id:runId,policy_hash:catalogHash})).approved,true);
 });
