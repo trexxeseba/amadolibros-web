@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 33c87df1dd3514d13006777e7284f794023fe8c5
+          ref: 76ea0e85ab166a78f63bb9de1a3331fb23106fb6
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
@@ -70,7 +70,7 @@ jobs:
           const iv=randomBytes(12), cipher=createCipheriv('aes-256-gcm',key,iv);
           const encrypted=Buffer.concat([cipher.update(readiness.text,'utf8'),cipher.final()]);
           await writeFile(root+'/card-readiness.encrypted.json',JSON.stringify({schema:'encrypted-card-readiness-v1',iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:encrypted.toString('base64')}),{mode:0o600});
-          const summary={commit:'33c87df1dd3514d13006777e7284f794023fe8c5',...result,
+          const summary={commit:'76ea0e85ab166a78f63bb9de1a3331fb23106fb6',...result,
             evidence_run:39037088403,image_requests_this_job:0,readiness_bytes:Buffer.byteLength(readiness.text),readiness_sha256:readiness.digest};
           await writeFile(root+'/card-readiness-summary.json',JSON.stringify(summary));
           console.log(JSON.stringify(summary));
