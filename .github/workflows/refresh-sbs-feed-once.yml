@@ -25,21 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/mercadolibre/publisher-control.mjs | tee /tmp/sbs-refresh.log
-          FEED_ID="$(python3 - <<'PY'
-import json
-feed=None
-for raw in open('/tmp/sbs-refresh.log', encoding='utf-8'):
-    try:
-        row=json.loads(raw)
-    except Exception:
-        continue
-    if row.get('state')=='feed_ready':
-        feed=row.get('feed_id')
-if not feed:
-    raise SystemExit('feed_ready not found')
-print(feed)
-PY
-)"
+          FEED_ID="$(node -e "const fs=require('fs');let feed='';for(const raw of fs.readFileSync('/tmp/sbs-refresh.log','utf8').split(/\r?\n/)){try{const row=JSON.parse(raw);if(row.state==='feed_ready')feed=row.feed_id||feed}catch{}}if(!feed)process.exit(2);process.stdout.write(feed)")"
           echo "feed_id=$FEED_ID" >> "$GITHUB_OUTPUT"
         env:
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
