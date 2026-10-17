@@ -131,6 +131,13 @@ test('refresh mismatch never selects or updates a Libros grant',async t=>{
  assert.equal(db.sqlite.prepare('SELECT refresh_token FROM ml_oauth').get().refresh_token,'libros-refresh-unchanged');
 });
 
+test('a transient identity lookup failure preserves the rotated Vintage refresh token',async t=>{
+ const db=await authFixture(t),provider=createVintageTokenProvider({fetcher:async(url)=>url.endsWith('/oauth/token')?Response.json({user_id:vintage,access_token:'new-vintage-token',refresh_token:'rotated-vintage-refresh',expires_in:21600}):Response.json({error:'unavailable'},{status:503})});
+ await assert.rejects(()=>provider.getAccessToken({ORDERS_DB:db,MELI_VINTAGE_CLIENT_SECRET:'secret'}),/vintage_auth_upstream/);
+ assert.equal(db.sqlite.prepare('SELECT refresh_token FROM ml_oauth_sellers').get().refresh_token,'rotated-vintage-refresh');
+ assert.equal(db.sqlite.prepare('SELECT refresh_token FROM ml_oauth').get().refresh_token,'libros-refresh-unchanged');
+});
+
 test('pilot page requires panel session and rejects cross-origin POST before invoking the service',async()=>{
  const env={APP_ENV:'production',PANEL_PASSWORD:'a-test-password-long-enough'};
  const page=createVintagePilotPage({pilot:{prepare(){assert.fail('no service invocation');}}});

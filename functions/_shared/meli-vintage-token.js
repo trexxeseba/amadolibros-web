@@ -36,10 +36,16 @@ export function createVintageTokenProvider({fetcher=(...args)=>fetch(...args),no
    if(!row?.refresh_token)throw fail('vintage_authorization_missing');
    const data=await json('/oauth/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},body:new URLSearchParams({grant_type:'refresh_token',client_id:APP_ID,client_secret:secret,refresh_token:row.refresh_token})});
    if(String(data.user_id)!==VINTAGE_SELLER_ID||typeof data.access_token!=='string'||!data.access_token||typeof data.refresh_token!=='string'||!data.refresh_token||!(Number(data.expires_in)>0))throw fail('vintage_auth_identity_mismatch');
-   const user=await json('/users/me',{method:'GET',headers:{Authorization:'Bearer '+data.access_token,Accept:'application/json'}});
-   if(String(user.id)!==VINTAGE_SELLER_ID||user.site_id!=='MLU')throw fail('vintage_auth_identity_mismatch');
+   // The token endpoint's user_id already binds this rotation to Vintage.
+   // Persist the rotated refresh token before another upstream request: a
+   // transient /users/me outage must not discard a single-use replacement.
    const saved=await stmt(db,'UPDATE ml_oauth_sellers SET access_token=?,access_expires_at=?,refresh_token=? WHERE app_id=? AND seller_id=? AND refresh_token=? AND EXISTS(SELECT 1 FROM ml_oauth_seller_locks WHERE app_id=? AND seller_id=? AND owner=? AND until_ms>?) RETURNING seller_id',data.access_token,now()+Number(data.expires_in)*1000,data.refresh_token,APP_ID,VINTAGE_SELLER_ID,row.refresh_token,APP_ID,VINTAGE_SELLER_ID,owner,now()).first();
    if(!saved)throw fail('vintage_auth_rotation_conflict',true);
+   const user=await json('/users/me',{method:'GET',headers:{Authorization:'Bearer '+data.access_token,Accept:'application/json'}});
+   if(String(user.id)!==VINTAGE_SELLER_ID||user.site_id!=='MLU'){
+    await invalidateAccessToken(env,data.access_token);
+    throw fail('vintage_auth_identity_mismatch');
+   }
    return data.access_token;
   }finally{await stmt(db,'DELETE FROM ml_oauth_seller_locks WHERE app_id=? AND seller_id=? AND owner=?',APP_ID,VINTAGE_SELLER_ID,owner).run();}
  }
