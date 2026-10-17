@@ -13,6 +13,7 @@ jobs:
       - name: Verify existing token identity without exposing its value
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           python3 - <<'PY'
           import json, os, re, urllib.request, urllib.error
@@ -29,12 +30,16 @@ jobs:
               except urllib.error.HTTPError as error:
                   return error.code, {}
           http, data = get('user/tokens/verify')
+          base = 'user/tokens/'
+          if http != 200:
+              base = 'accounts/' + os.environ['CLOUDFLARE_ACCOUNT_ID'] + '/tokens/'
+              http, data = get(base + 'verify')
           result = data.get('result') or {}
           identity = result.get('id', '')
           output = {'verify_http': http, 'token_status': result.get('status')}
           if re.fullmatch(r'[0-9a-fA-F]{32}', identity):
               output['identity_verified'] = True
-              detail_http, detail = get('user/tokens/' + identity)
+              detail_http, detail = get(base + identity)
               output['name_lookup_http'] = detail_http
               name = (detail.get('result') or {}).get('name')
               if isinstance(name, str): output['matches_expected_name'] = name == 'amadolibros-web build token'
