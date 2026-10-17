@@ -205,3 +205,11 @@ test('Ficha productiva entrega el proxy propio con srcset de archivos permanente
   assert.match(html, /srcset="[^"]+320w,[^"]+480w,[^"]+768w,[^"]+1024w"/);
   assert.match(html, /cdn-cgi\/image\/.*book-cover\/MLU123456789\/cover\.jpg/);
 });
+
+
+test('transient storage failure is retryable, never a cacheable missing image', async () => {
+  const response = await coverRequest(ctx({path:[ID,'0',`${HASH}.jpg`],coverBucket:{async get(){throw new Error('storage unavailable');}}}));
+  assert.equal(response.status,503);
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  assert.equal(response.headers.get('retry-after'),'5');
+});

@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { findPreviewCover } from '../../functions/_shared/preview-cover.js';
 import { readyCardVariantSource, PRODUCTION_IMAGE_BUCKET, CARD_RECIPES } from '../../functions/_shared/card-variant-delivery.js';
 import { prepareCoverIndex, COVER_INDEX_METADATA } from '../../functions/_shared/cover-public-index.js';
+import { prepareCardReadiness } from './prepare-card-readiness.mjs';
 import { validateCardPlan } from './build-permanent-variants.mjs';
 
 // Uses the real runtime resolver and public-index format. This is an offline
@@ -42,9 +43,21 @@ export async function auditCardResolver({manifest,catalog,plan,verified=null}) {
     }
   }
   if(matched!==2790||pairs.size!==8364||context.data.coverIndex?.mode!=='public-index')throw new Error('runtime-resolver-audit-failed');
-  const ready=verified?(await Promise.all(catalog.items.map(item=>readyCardVariantSource(context,item)))).filter(Boolean).length:null;
+  if (verified) {
+    const readiness = prepareCardReadiness({manifest,catalog,plan,verified});
+    objects.set(readiness.key, readiness.text);
+    context.env.CARD_VARIANTS_INDEX_SHA256 = readiness.digest;
+    context.request = new Request('https://www.amadolibros.com/catalogo?_card_variants=1');
+  }
+  const ready=verified?(await Promise.all(catalog.items.map(async item=>{
+    const isolated={...context,data:context.data,env:{...context.env,CARD_VARIANTS_CANARY_IDS:item.id}};
+    return readyCardVariantSource(isolated,item);
+  }))).filter(Boolean).length:null;
   context.env.IMAGE_VARIANTS_READ_ENABLED='false';
-  if((await Promise.all(catalog.items.map(item=>readyCardVariantSource(context,item)))).some(Boolean))throw new Error('disabled-mode-emitted-variant');
+  if((await Promise.all(catalog.items.map(async item=>{
+    const isolated={...context,data:context.data,env:{...context.env,CARD_VARIANTS_CANARY_IDS:item.id}};
+    return readyCardVariantSource(isolated,item);
+  }))).some(Boolean))throw new Error('disabled-mode-emitted-variant');
   return {bucket:PRODUCTION_IMAGE_BUCKET,resolver_matched:matched,card_recipe_pairs:matched*3,
     unique_variants:pairs.size,index:context.data.coverIndex.mode,
     remotely_verified:Boolean(verified),canary_ready_cards:ready,production_writes:0};

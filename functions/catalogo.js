@@ -43,7 +43,7 @@ import { faviconHeadHtml } from './_shared/brand.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
-import { readyCardVariantSource } from './_shared/card-variant-delivery.js';
+import { readyCardVariantSource, cardCanaryRequest } from './_shared/card-variant-delivery.js';
 import {
     buildBookWhatsAppMessage,
     buildWhatsAppMessage,
@@ -1290,7 +1290,7 @@ ${SITE_HEADER_SCRIPT}
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
-            'cache-control': ctx.env?.IMAGE_VARIANTS_READ_ENABLED === 'true' ? 'no-store' : isIndex ? 'public, max-age=3600' : 'public, max-age=300',
+            'cache-control': cardCanaryRequest(ctx) ? 'no-store' : isIndex ? 'public, max-age=3600' : 'public, max-age=300',
             'x-card-variants-ready': String(readyCards.filter(Boolean).length),
             'server-timing': serverTiming,
             'x-cache-status': cacheStatus,

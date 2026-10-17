@@ -1,56 +1,52 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readyCardVariantSource, CARD_RECIPES, PRODUCTION_IMAGE_BUCKET } from '../_shared/card-variant-delivery.js';
-import { findPreviewCover } from '../_shared/preview-cover.js';
-import { prepareCoverIndex, COVER_INDEX_METADATA } from '../_shared/cover-public-index.js';
-import { responsiveImage } from '../_shared/cloudflare-images.js';
+import { createHash } from 'node:crypto';
+import { readyCardVariantSource, CARD_RECIPES, PRODUCTION_IMAGE_BUCKET, cardCanaryRequest } from '../_shared/card-variant-delivery.js';
 
-async function fixture() {
+function fixture() {
   const hash='a'.repeat(64), source='https://http2.mlstatic.com/D_TEST-O.jpg';
-  const manifest={schema_version:1,entries:{'MLU1:0':{product_id:'MLU1',position:0,current:{
-    object_key:`covers/v1/objects/${hash}.jpg`,sha256:hash,mime:'image/jpeg',source_url:'http://http2.mlstatic.com/D_TEST-I.jpg#old'}}}};
-  const objects=new Map(), variants=new Map();let heads=0;
-  const bucket={
-    async put(key,text){objects.set(key,text);return {};},
-    async get(key){const text=objects.get(key);return text?{size:Buffer.byteLength(text),text:async()=>text}:null;},
-    async head(key){heads++;if(key==='covers/v1/manifest.json')return {customMetadata:{[COVER_INDEX_METADATA]:root.hash}};return variants.get(key)||null;}
-  };
-  const root=await prepareCoverIndex(bucket,manifest);
-  for(const recipe of CARD_RECIPES) variants.set(`covers/variants/v1/${hash}/${recipe}.webp`,{
-    size:100,httpMetadata:{contentType:'image/webp'},customMetadata:{master_sha256:hash,recipe,sha256:'b'.repeat(64)}});
-  const ctx={request:new Request('https://www.amadolibros.com/catalogo'),env:{APP_ENV:'production',
-    IMAGE_VARIANTS_READ_ENABLED:'true',COVER_R2:bucket,COVER_R2_BUCKET_NAME:PRODUCTION_IMAGE_BUCKET},data:{}};
-  const item={id:'MLU1',status:'active',available_quantity:1,pictures:[source]};
-  return {ctx,item,variants,objects,hash,get heads(){return heads;}};
+  const index={schema:'verified-card-readiness-v1',bucket:PRODUCTION_IMAGE_BUCKET,recipes:CARD_RECIPES,
+    cards:{MLU1:{sha256:hash,extension:'jpg',source_url:'http://http2.mlstatic.com/D_TEST-I.jpg#old'}}};
+  let text=JSON.stringify(index), gets=0;
+  const digest=createHash('sha256').update(text).digest('hex');
+  const bucket={async get(key){gets++;assert.equal(key,`covers/card-readiness/v1/${digest}.json`);return {size:Buffer.byteLength(text),text:async()=>text};},
+    head(){throw new Error('HEAD forbidden');}};
+  const ctx={request:new Request('https://www.amadolibros.com/catalogo?_card_variants=1'),env:{APP_ENV:'production',
+    IMAGE_VARIANTS_READ_ENABLED:'true',CARD_VARIANTS_CANARY_IDS:'MLU1',CARD_VARIANTS_INDEX_SHA256:digest,
+    COVER_R2:bucket,COVER_R2_BUCKET_NAME:PRODUCTION_IMAGE_BUCKET},data:{}};
+  return {ctx,index,item:{id:'MLU1',status:'active',available_quantity:1,pictures:[source]},get gets(){return gets;},tamper(){text+=' ';}};
 }
 
-test('real resolver normalizes both stored and catalog URLs; complete variants emit three permanent card URLs',async()=>{
-  const f=await fixture();
-  const cover=await findPreviewCover(f.ctx,'MLU1',0,f.item.pictures[0]);assert.equal(cover.sha256,f.hash);
-  const source=await readyCardVariantSource(f.ctx,f.item);assert.ok(source);
-  const image=responsiveImage(source,{widths:[240,360,480],defaultWidth:360,permanent:true});
-  assert.equal((image.srcset.match(/variant=v1-/g)||[]).length,3);
-  assert.doesNotMatch(image.srcset,/cdn-cgi/);assert.equal(f.ctx.data.coverIndex.mode,'public-index');
+test('48 selections share one GET, zero HEAD; next request reuses immutable verified index',async()=>{
+  const f=fixture();
+  const result=await Promise.all(Array.from({length:48},()=>readyCardVariantSource(f.ctx,f.item)));
+  assert.ok(result.every(Boolean));assert.equal(f.gets,1);
+  f.ctx.data={};assert.ok(await readyCardVariantSource(f.ctx,f.item));assert.equal(f.gets,1);
 });
-
-test('disabled, wrong bucket, preview, paused, missing source and enlarged cards perform no variant selection',async()=>{
-  for(const change of [f=>f.ctx.env.IMAGE_VARIANTS_READ_ENABLED='false',f=>f.ctx.env.COVER_R2_BUCKET_NAME='amadolibros-images-preview',
+test('normal traffic, disabled, wrong bucket, preview, paused, no stock, enlarged, unselected do no reads',async()=>{
+  for(const change of [f=>f.ctx.request=new Request('https://www.amadolibros.com/catalogo'),
+    f=>f.ctx.env.IMAGE_VARIANTS_READ_ENABLED='false',f=>f.ctx.env.COVER_R2_BUCKET_NAME='amadolibros-images-preview',
     f=>f.ctx.env.APP_ENV='preview',f=>f.item.status='paused',f=>f.item.available_quantity=0,
-    f=>delete f.item.pictures,f=>f.item.id='MLU697305757']) {
-    const f=await fixture();change(f);assert.equal(await readyCardVariantSource(f.ctx,f.item),null);assert.equal(f.heads,0);
+    f=>delete f.item.pictures,f=>f.item.id='MLU697305757',f=>f.ctx.env.CARD_VARIANTS_CANARY_IDS='MLU2',
+    f=>f.ctx.env.CARD_VARIANTS_CANARY_IDS=Array.from({length:11},(_,i)=>'MLU'+i).join(',')]) {
+    const f=fixture();change(f);assert.equal(await readyCardVariantSource(f.ctx,f.item),null);assert.equal(f.gets,0);
   }
 });
-
-test('drift, incomplete variants and misleading 200/original metadata stay on legacy delivery',async()=>{
-  for(const change of [f=>f.item.pictures=['https://http2.mlstatic.com/changed-O.jpg'],
-    f=>f.variants.delete(f.variants.keys().next().value),
-    f=>f.variants.values().next().value.httpMetadata.contentType='image/jpeg',
-    f=>f.variants.values().next().value.customMetadata.recipe='original-fallback']) {
-    const f=await fixture();change(f);assert.equal(await readyCardVariantSource(f.ctx,f.item),null);
+test('missing pin, tampered bytes, missing index, errors, drift preserve previous delivery',async()=>{
+  for(const change of [f=>delete f.ctx.env.CARD_VARIANTS_INDEX_SHA256,f=>f.tamper(),
+    f=>f.ctx.env.COVER_R2.get=async()=>null,f=>f.ctx.env.COVER_R2.get=async()=>{throw new Error('R2 unavailable');},
+    f=>f.item.pictures=['https://http2.mlstatic.com/changed-O.jpg']]) {
+    const f=fixture();change(f);assert.equal(await readyCardVariantSource(f.ctx,f.item),null);
   }
 });
-
-test('legacy index fallback cannot activate permanent cards',async()=>{
-  const f=await fixture();f.objects.clear();
-  assert.equal(await readyCardVariantSource(f.ctx,f.item),null);
+test('hung readiness lookup returns legacy within bounded time and never poisons cache',async()=>{
+  const f=fixture(), original=f.ctx.env.COVER_R2.get;
+  f.ctx.env.COVER_R2.get=()=>new Promise(()=>{});
+  const start=performance.now();assert.equal(await readyCardVariantSource(f.ctx,f.item),null);
+  assert.ok(performance.now()-start<1000);
+  f.ctx.data={};f.ctx.env.COVER_R2.get=original;assert.ok(await readyCardVariantSource(f.ctx,f.item));
+});
+test('explicit canary marker required independently of read flag',()=>{
+  const f=fixture();assert.equal(cardCanaryRequest(f.ctx),true);
+  f.ctx.request=new Request('https://www.amadolibros.com/catalogo');assert.equal(cardCanaryRequest(f.ctx),false);
 });

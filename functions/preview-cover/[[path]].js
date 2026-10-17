@@ -51,6 +51,7 @@ export async function onRequest(context) {
 
     try {
         const derived = context.env.IMAGE_VARIANTS_READ_ENABLED === 'true' && variantId ? await readImageVariant(context.env.COVER_R2, sha256, variantId) : null;
+        if (variantId && !derived) console.warn(JSON.stringify({event:'card-variant-fallback', recipe:variantId, bucket:context.env.COVER_R2_BUCKET_NAME || 'unspecified'}));
         const object = derived || await context.env.COVER_R2.get(objectKey);
         if (!object?.body) return notFound();
         const headers = new Headers({
@@ -76,6 +77,7 @@ export async function onRequest(context) {
             headers,
         });
     } catch {
-        return notFound();
+        console.warn(JSON.stringify({event:'cover-storage-unavailable',variant:Boolean(variantId)}));
+        return new Response('Image temporarily unavailable', {status:503,headers:{'Cache-Control':'no-store','Retry-After':'5'}});
     }
 }
