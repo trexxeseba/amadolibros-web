@@ -29,12 +29,11 @@ async function bodyText(request){
  const all=new Uint8Array(size);let offset=0;for(const chunk of chunks){all.set(chunk,offset);offset+=chunk.byteLength;}return new TextDecoder().decode(all);
 }
 function argumentsFor(action,args){
- const commands={status:[],sources:[],prepare:['feed_id','source_run_id'],validate:['run_id'],approve:['run_id','policy_hash','sample_hash'],publish_approved:['run_id']};
+ const commands={status:[],sources:[],prepare:['feed_id','source_run_id'],validate:['run_id'],publish_approved:['run_id']};
  const fields=Object.hasOwn(commands,action)?commands[action]:null;
  if(!fields||!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(k=>!fields.includes(k)))fail('invalid_command');
  if(fields.includes('run_id')&&args.run_id!==RUN)fail('pilot_not_found',404);
  if(action==='prepare'&&['feed_id','source_run_id'].some(k=>typeof args[k]!=='string'||!/^[a-f0-9-]{36}$/.test(args[k])))fail('invalid_source');
- if(action==='approve'&&['policy_hash','sample_hash'].some(k=>typeof args[k]!=='string'||!/^[a-f0-9]{64}$/.test(args[k])))fail('sample_changed',409);
  return args;
 }
 function project(state){
@@ -59,7 +58,7 @@ export function createVintageOperations({pilot=vintagePilot,verify=verifyVintage
    else if(action==='status')data=project(await pilot.snapshot(env));
    else{
     await consume(env,nonce);
-    const method={prepare:'prepare',validate:'advance',approve:'approve',publish_approved:'publishApproved'}[action];
+    const method={prepare:'prepare',validate:'advance',publish_approved:'publishApproved'}[action];
     data=project(await pilot[method](env,args));
    }
    return response({...data,seller_id:VINTAGE_SELLER_ID,action,source:'Amado Vintage pilot',read_only:['sources','status'].includes(action),checked_at:new Date().toISOString()});

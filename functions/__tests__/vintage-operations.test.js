@@ -34,9 +34,9 @@ test('validation dispatches only preflight and rejects replay and foreign run ID
  assert.equal((await f.handle(await request('validate',{run_id:crypto.randomUUID()}))).status,404);
  assert.equal((await f.handle(await request('validate',{run_id,seller_id:'440298103'}))).status,400);
 });
-test('approval requires exact sample hashes and has a separate dispatch from validation',async()=>{
- const f=fixture();assert.equal((await f.handle(await request('approve',{run_id}))).status,409);assert.deepEqual(f.calls,[]);
- assert.equal((await f.handle(await request('approve',{run_id,policy_hash:'a'.repeat(64),sample_hash:'b'.repeat(64)}))).status,200);assert.deepEqual(f.calls,['approve']);
+test('the signed connector cannot approve even with valid exact sample hashes',async()=>{
+ const f=fixture();assert.equal((await f.handle(await request('approve',{run_id}))).status,400);assert.deepEqual(f.calls,[]);
+ assert.equal((await f.handle(await request('approve',{run_id,policy_hash:'a'.repeat(64),sample_hash:'b'.repeat(64)}))).status,400);assert.deepEqual(f.calls,[]);
 });
 test('unsigned and oversized requests cannot invoke pilot actions',async()=>{
  const f=fixture();
