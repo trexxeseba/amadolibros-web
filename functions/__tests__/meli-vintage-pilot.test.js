@@ -9,6 +9,7 @@ import { policyHash } from '../../worker-sync/publication-policy.js';
 import { createVintagePilotPage } from '../panel/meli-vintage-piloto.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
 import { runPreflight } from '../../astro-front/public/assets/meli-vintage-preflight.js';
+import { MercadoLibreError } from '../../worker-sync/publication-meli.js';
 
 const vintage='2341378249',books='440298103',app='4741021817925208';
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:40,freightUsdKg:10,laborUyu:0,margin:.2,mlFee:.15,deliveryUyu:200,minimumContributionUyu:100,minimumSaleUyu:1000,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
@@ -68,20 +69,24 @@ test('pilot validates without creation, requires exact sample approval and creat
  await assert.rejects(()=>f.pilot.approve(f.env,args),/sample_changed/);
 });
 
-test('complete fresh uploads can prepare Vintage without a Libros run; incomplete uploads stay hidden and cannot commit',async t=>{
+test('Vintage never commits supplier uploads, even complete ones, and only accepts ingestion-ready snapshots',async t=>{
  const f=await fixture(t),feed=crypto.randomUUID(),before=await f.s.jobs(f.source);
  await f.s.beginFeed(feed,new Date(f.clock.value).toISOString(),f.rows.length,f.clock.value);
  await f.s.importRows(feed,f.rows.slice(0,-1));
  assert.ok(!(await f.pilot.sources(f.env)).feeds.some(x=>x.id===feed));
- await assert.rejects(()=>f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed}),/feed_count_mismatch/);
+ await assert.rejects(()=>f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed}),/feed_not_ready_or_stale/);
  assert.equal((await f.s.feed(feed)).state,'importing');
  assert.equal((await f.pilot.snapshot(f.env)).run,null);
  await f.s.importRows(feed,f.rows.slice(-1));
- assert.ok((await f.pilot.sources(f.env)).feeds.some(x=>x.id===feed));
+ assert.ok(!(await f.pilot.sources(f.env)).feeds.some(x=>x.id===feed));
  assert.equal((await f.s.feed(feed)).state,'importing');
+ await assert.rejects(()=>f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed}),/feed_not_ready_or_stale/);
+ assert.equal((await f.s.feed(feed)).state,'importing');
+ // Only the separate ingestion flow changes the shared feed readiness.
+ await f.s.commitFeed(feed);
  f.api.account=async()=>({id:books,site_id:'MLU'});
  await assert.rejects(()=>f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed}),/seller_mismatch/);
- assert.equal((await f.s.feed(feed)).state,'importing');
+ assert.equal((await f.s.feed(feed)).state,'ready');
  f.api.account=async()=>({id:vintage,site_id:'MLU'});
  const state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:feed});
  assert.equal((await f.s.feed(feed)).state,'ready');
@@ -89,6 +94,50 @@ test('complete fresh uploads can prepare Vintage without a Libros run; incomplet
  assert.equal(f.calls.create.length,0);
  assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) n FROM ml_pub_runs').get().n,1);
  assert.deepEqual(await f.s.jobs(f.source),before);
+});
+
+test('changed or missing approved payloads go to review without rebuilding or creating those ISBNs',async t=>{
+ for(const mode of ['missing','changed','missing_seal'])await t.test(mode,async t=>{
+  const f=await fixture(t),state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed}),target=state.sample[1].isbn;
+  const prepared=f.calls.prepare.length,create=f.api.create;let changed=false;
+  f.api.create=async(...args)=>{
+   if(!changed){changed=true;
+    if(mode==='missing_seal')f.db.sqlite.prepare('DELETE FROM ml_vintage_pub_payload_seals WHERE run_id=? AND isbn=?').run(state.run.id,target);
+    else if(mode==='missing')f.db.sqlite.prepare('UPDATE ml_vintage_pub_jobs SET payload_json=NULL WHERE run_id=? AND isbn=?').run(state.run.id,target);
+    else f.db.sqlite.prepare("UPDATE ml_vintage_pub_jobs SET payload_json=json_set(payload_json,'$.category_id','UNREVIEWED') WHERE run_id=? AND isbn=?").run(state.run.id,target);
+   }
+   return create(...args);
+  };
+  await f.pilot.approve(f.env,{run_id:state.run.id,policy_hash:state.policy_hash,sample_hash:state.sample_hash});
+  assert.equal(f.calls.prepare.length,prepared);assert.equal(f.calls.create.length,4);
+  assert.ok(!f.calls.create.some(x=>x.seller_custom_field.endsWith(target)));
+  const job=f.db.sqlite.prepare('SELECT state,error_code FROM ml_vintage_pub_jobs WHERE run_id=? AND isbn=?').get(state.run.id,target);
+  assert.equal(job.state,'review');assert.match(job.error_code,/approved_payload_(missing|changed)/);
+ });
+});
+
+test('Vintage reconciles a lost create response by SKU without a second POST or a Libros receipt change',async t=>{
+ const f=await fixture(t),state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed}),before=await f.s.jobs(f.source);
+ const create=f.api.create;let lost=null;
+ f.api.create=async(...args)=>{const result=await create(...args);if(!lost){lost={isbn:args[1].seller_custom_field.slice(9),id:result.id};throw new MercadoLibreError('create_outcome_unknown',502);}return result;};
+ f.api.skuItems=async(_,isbn)=>lost?.isbn===isbn?[lost.id]:[];
+ await f.pilot.approve(f.env,{run_id:state.run.id,policy_hash:state.policy_hash,sample_hash:state.sample_hash});
+ assert.equal(f.calls.create.length,5);
+ await f.pilot.publishApproved(f.env,{run_id:state.run.id});
+ assert.equal(f.calls.create.length,5);
+ const final=await f.pilot.snapshot(f.env);assert.equal(final.summary.counts.find(x=>x.state==='published').n,5);
+ assert.equal(f.db.sqlite.prepare('SELECT state FROM ml_vintage_pub_receipts WHERE seller_id=? AND isbn=?').get(vintage,lost.isbn).state,'published');
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) n FROM ml_pub_receipts').get().n,0);assert.deepEqual(await f.s.jobs(f.source),before);
+});
+
+test('status reads a bounded sample and issue set even with thousands of payload-bearing jobs',async t=>{
+ const f=await fixture(t),state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed});
+ f.db.sqlite.prepare("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<2000) INSERT INTO ml_vintage_pub_jobs(run_id,isbn,state,payload_json) SELECT ?,printf('other-%05d',x),CASE WHEN x<=25 THEN 'review' ELSE 'pending' END,'{}' FROM n").run(state.run.id);
+ const prepare=f.db.prepare;let payloadRows=0;
+ f.db.prepare=sql=>{const statement=prepare(sql);return {...statement,bind(...args){const bound=statement.bind(...args);return {...bound,async all(){const data=await bound.all();payloadRows+=data.results.filter(x=>Object.hasOwn(x,'payload_json')).length;return data;}};}};};
+ const snapshot=await f.pilot.snapshot(f.env);
+ assert.equal(snapshot.sample.length,5);assert.equal(snapshot.issues.length,10);assert.equal(payloadRows,5);
+ assert.equal(snapshot.summary.counts.reduce((n,x)=>n+x.n,0),2008);
 });
 
 test('existing-listing progress is visible while supplier jobs remain pending, and busy pages offer no duplicate tick',async t=>{

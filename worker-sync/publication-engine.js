@@ -31,7 +31,7 @@ export function clonePreflightJob(job){
 }
 const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:run.policy_json,policy_hash:run.policy_hash,approved_hash:run.approved_hash??null,daily_cap:run.daily_cap,preflight_limit:run.preflight_limit}):null;
 
-export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000}={}){
+export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null}={}){
  const initialized=new WeakSet();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  function store(env){if(String(env.USER_ID)!==sellerId||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
@@ -99,15 +99,20 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
      if(bySku.length){await mark(row.isbn,'skipped_duplicate',{itemId:bySku[0]});continue;}
      const quote=quoteMercadoLibre(row,policy);
      let payload=job.payload_json?JSON.parse(job.payload_json):null;
+     if(publishing&&approvedPayloadGuard){
+      await approvedPayloadGuard(env,run,job,payload);
+      if(payload.price!==quote.price)throw new PublicationError('approved_payload_price_changed',409);
+     }
      if(!payload||payload.price!==quote.price)payload=await api.prepare(env,row,policy,quote.price);
      if(!publishing){await mark(row.isbn,'validated',{payload});validated++;if(validated>=run.preflight_limit){await state('ready');break;}continue;}
      // Check the source snapshot, run state and lease again after preparation.
      const guardRun=await s.run(run.id),guardRow=await s.stock(guardRun.feed_id,row.isbn),guardFeed=await s.feed(guardRun.feed_id);
      if(guardRun.state!=='publishing'||guardRun.approved_hash!==run.policy_hash||!await s.ownsLease(run.id,lease,now()))break;
      if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now())){await mark(row.isbn,'skipped_stock_uncertain');continue;}
-     if(quoteMercadoLibre(guardRow,policy).price!==payload.price){await mark(row.isbn,'pending',{payload:null});continue;}
+     if(quoteMercadoLibre(guardRow,policy).price!==payload.price){if(approvedPayloadGuard)throw new PublicationError('approved_payload_price_changed',409);await mark(row.isbn,'pending',{payload:null});continue;}
      // A catalog payload is only created under the approved 'required_only' policy.
      const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
+     if(approvedPayloadGuard)await approvedPayloadGuard(env,guardRun,job,payload);
      const reserved=await s.reserve(sellerId,row.isbn,run.id,now(),run.daily_cap,lease);
      if(!reserved){const existing=await s.receipt(sellerId,row.isbn);if(existing){const own=existing.run_id===run.id;if(existing.state==='published')await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:existing.item_id,errorCode:own?null:'existing_published_receipt'});else await mark(row.isbn,'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});}else return {state:'daily_cap_reached'};continue;}
      await mark(row.isbn,'creating',{payload,attempt:true});
