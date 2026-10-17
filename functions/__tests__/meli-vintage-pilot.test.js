@@ -14,7 +14,7 @@ const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:40,freightUsdKg:10,lab
 function database(t) {
  const sqlite=new DatabaseSync(':memory:');t.after(()=>sqlite.close());
  const statement=(sql,args=[])=>({sql,args,bind(...values){return statement(sql,values);},async first(){return sqlite.prepare(sql).get(...args)??null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
- return {prepare:sql=>statement(sql),async batch(statements){sqlite.exec('BEGIN');try{const out=statements.map(s=>{const prepared=sqlite.prepare(s.sql);if(prepared.columns().length)return {results:prepared.all(...s.args),meta:{changes:1}};return {results:[],meta:{changes:Number(prepared.run(...s.args).changes)}};});sqlite.exec('COMMIT');return out;}catch(e){sqlite.exec('ROLLBACK');throw e;}},sqlite};
+ return {prepare:sql=>statement(sql),async batch(statements){sqlite.exec('BEGIN');try{const out=statements.map(s=>{const prepared=sqlite.prepare(s.sql);if(/^\s*(SELECT|PRAGMA)\b|\bRETURNING\b/i.test(s.sql))return {results:prepared.all(...s.args),meta:{changes:1}};return {results:[],meta:{changes:Number(prepared.run(...s.args).changes)}};});sqlite.exec('COMMIT');return out;}catch(e){sqlite.exec('ROLLBACK');throw e;}},sqlite};
 }
 function isbn(index){const prefix='978950232'+String(index).padStart(3,'0');return prefix+((10-[...prefix].reduce((n,x,i)=>n+Number(x)*(i%2?3:1),0)%10)%10);}
 async function fixture(t) {
