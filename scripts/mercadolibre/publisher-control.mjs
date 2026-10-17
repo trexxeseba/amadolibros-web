@@ -9,7 +9,7 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
-const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick','pause_run_publications']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -95,6 +95,15 @@ if(action==='import'){
  const result=await command('clone_preflight_catalog',{source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{}),...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
  console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,availability_days:result.availability_days,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
  for(const job of result.preflight)console.log(JSON.stringify(job));
+}else if(action==='pause_run_publications'){
+ if(!runId)throw Error('Run ID is required');
+ let offset=0,total=0,paused=0,already=0;
+ for(;;){
+  const page=await command('pause_run_publications',{run_id:runId,offset,limit:50});
+  total+=page.scanned;paused+=page.paused;already+=page.already_paused;
+  if(page.next_offset==null)break;offset=page.next_offset;
+ }
+ console.log(JSON.stringify({run_id:runId,scanned:total,paused,already_paused:already}));
 }else if(action==='audit_availability_terms'){
  if(!runId)throw Error('Run ID is required');
  let offset=0,total=0,ok=0,missing=0,wrong=0;const mismatches=[];
