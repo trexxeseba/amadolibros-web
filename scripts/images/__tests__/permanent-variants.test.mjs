@@ -58,7 +58,7 @@ test('encoder real conserva proporción y no amplía fuentes pequeñas en ningun
 test('pipeline publica una vez por hash/receta, sirve bytes exactos y no genera en visitas ni cambio de mes', async () => {
   const bucket = new Bucket(); const master = await fixture();
   await bucket.put(`covers/v1/objects/${master.file}`, master.bytes);
-  const env = { COVER_R2: bucket, IMAGE_VARIANTS_WRITE_ENABLED: 'true', APP_ENV: 'preview', SYNC_SECRET: 'test-only' };
+  const env = { COVER_R2: bucket, IMAGE_VARIANTS_WRITE_ENABLED: 'true', IMAGE_VARIANTS_READ_ENABLED: 'true', APP_ENV: 'preview', SYNC_SECRET: 'test-only' };
   const fetchFn = async (url, options) => {
     assert.equal(options.headers.authorization, 'Bearer test-only');
     return handleImageVariants(new Request(url, options), env);
@@ -89,7 +89,7 @@ test('variante ausente/inaccesible entrega el original, con caché breve y sin e
   const bucket = new Bucket(); const master = await fixture(); await bucket.put(`covers/v1/objects/${master.file}`, master.bytes);
   const count = bucket.writes.length;
   const response = await publicCover({ request: new Request(`https://pr-400.amadolibros-web.pages.dev/preview-cover/MLU1/0/${master.file}?variant=v1-240-q85`),
-    params: { path:['MLU1','0',master.file] }, env:{ COVER_R2:bucket, APP_ENV:'preview' } });
+    params: { path:['MLU1','0',master.file] }, env:{ COVER_R2:bucket, IMAGE_VARIANTS_READ_ENABLED:'true', APP_ENV:'preview' } });
   assert.equal(response.status,200); assert.equal(response.headers.get('x-cover-variant'),'original-fallback');
   assert.equal(response.headers.get('content-type'),'image/png');
   assert.doesNotMatch(response.headers.get('cache-control'),/immutable/);
@@ -155,4 +155,32 @@ test('semilla Preview alinea masters e índice, conserva otros productos y jamá
   assert.deepEqual(source.writes,before);
   assert.equal((await handleImageVariants(seed(['MLU1']),{...env,IMAGE_VARIANTS_SOURCE_R2:undefined})).status,404);
   assert.equal((await handleImageVariants(seed(['invalid']),env)).status,400);
+});
+
+test('generar no activa la entrega: interruptor apagado sirve el original aun con variante existente', async () => {
+  const bucket = new Bucket(); const master = await fixture();
+  await bucket.put(`covers/v1/objects/${master.file}`, master.bytes);
+  const env = { COVER_R2: bucket, IMAGE_VARIANTS_WRITE_ENABLED: 'true', APP_ENV: 'production' };
+  await buildPermanentVariants({ baseUrl:'https://test.example', token:'test-only', sharp,
+    fetchFn:(url, options)=>handleImageVariants(new Request(url, options), env) });
+  const count = bucket.writes.length;
+  const response = await publicCover({ request:new Request(`https://www.amadolibros.com/preview-cover/MLU1/0/${master.file}?variant=v1-240-q85`),
+    params:{path:['MLU1','0',master.file]}, env });
+  assert.equal(response.headers.get('x-cover-variant'),'original-fallback');
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()),master.bytes);
+  assert.equal(bucket.writes.length,count);
+});
+
+test('una fuente fallida no avanza el cursor ni pierde el lote pendiente', async () => {
+  const calls=[];
+  const result=await buildPermanentVariants({baseUrl:'https://test.example',token:'test-only',sharp,
+    fetchFn: async (url, options) => {
+      calls.push([url.pathname, options.method || 'GET']);
+      if(url.pathname.endsWith('/progress')) return Response.json({cursor:'previous'});
+      if(url.pathname.endsWith('/masters')) return Response.json({objects:[{file:'a'.repeat(64)+'.jpg',size:1}],cursor:'next'});
+      if(options.method==='HEAD') return new Response(null,{status:404});
+      return new Response(null,{status:503});
+    }});
+  assert.equal(result.failures.length,1);
+  assert.equal(calls.filter(([path,method])=>path.endsWith('/progress') && method==='PUT').length,0);
 });

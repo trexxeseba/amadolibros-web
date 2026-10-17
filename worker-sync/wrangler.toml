@@ -59,7 +59,7 @@ COVER_MIRROR_BATCH_SIZE = "100"
 # No generar detalles de portadas automáticamente. Las fuentes insuficientes
 # quedan en covers/v1/quality-report.json para conseguir un original mejor.
 COVER_ALLOW_GENERATIVE_UPSCALE = "false"
-IMAGE_VARIANTS_WRITE_ENABLED = "true"
+IMAGE_VARIANTS_WRITE_ENABLED = "false"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 # Correo diario del panel: quién lo recibe (separados por coma).
 DAILY_DIGEST_TO = "undiaes@gmail.com,adm@amadolibros.com"

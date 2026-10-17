@@ -78,7 +78,7 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
   }));
   // Fuentes fallidas quedan pendientes para el próximo barrido; la web sigue
   // sirviendo sus originales. Una falla del listado/progreso falla todo el job.
-  if (resume) await call('progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: listing.cursor }) });
+  if (resume && result.failures.length === 0) await call('progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: listing.cursor }) });
   return result;
 }
 

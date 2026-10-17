@@ -50,7 +50,7 @@ export async function onRequest(context) {
     const mime = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
 
     try {
-        const derived = variantId ? await readImageVariant(context.env.COVER_R2, sha256, variantId) : null;
+        const derived = context.env.IMAGE_VARIANTS_READ_ENABLED === 'true' && variantId ? await readImageVariant(context.env.COVER_R2, sha256, variantId) : null;
         const object = derived || await context.env.COVER_R2.get(objectKey);
         if (!object?.body) return notFound();
         const headers = new Headers({

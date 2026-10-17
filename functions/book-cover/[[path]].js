@@ -97,12 +97,13 @@ export async function onRequest(ctx) {
   const storedCover = await findPreviewCover(ctx, id, position, source || null);
   // Content-aware cache: a new R2 master automatically stops using old cached bytes.
   const cacheUrl = new URL(`/book-cover/${id}/${filename}`, ctx.request.url);
+  cacheUrl.searchParams.set('delivery', ctx.env?.IMAGE_VARIANTS_READ_ENABLED === 'true' ? 'variants' : 'original');
   cacheUrl.searchParams.set('master', storedCover?.sha256 || source || 'missing');
   if (variantId) cacheUrl.searchParams.set('variant', variantId);
   const cacheKey = new Request(cacheUrl);
   const cached = await cache.match(cacheKey);
   if (cached) return withIndexStatus(ctx, cached);
-  const derived = variantId && storedCover
+  const derived = ctx.env?.IMAGE_VARIANTS_READ_ENABLED === 'true' && variantId && storedCover
     ? await readImageVariant(ctx.env.COVER_R2, storedCover.sha256, variantId) : null;
   let response = derived ? new Response(derived.body, { headers: {
     ...responseHeaders('r2-variant', 'image/webp', `"${derived.customMetadata.sha256}"`),

@@ -74,50 +74,6 @@ jobs:
             > artifacts/image-system/r2-seed.json
           node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('artifacts/image-system/r2-seed.json')); if(r.entries.length===0 || r.result.status!=='completed')process.exit(1); console.log(JSON.stringify({bucket:r.bucket,verified:r.entries.length}));"
 
-      - name: Generate permanent versions in isolated R2 Preview
-        if: github.head_ref == 'codex/image-cost-zoom-on-demand'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SEED_NAME: amado-image-variants-${{ github.run_id }}-${{ github.run_attempt }}
-        run: |
-          (cd scripts/images && npm ci --no-audit --no-fund)
-          mkdir -p artifacts/image-variants
-          PREVIEW_SEED_TOKEN=$(openssl rand -hex 32)
-          echo "::add-mask::$PREVIEW_SEED_TOKEN"
-          cleanup() {
-            curl -fsS -X DELETE \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$SEED_NAME" \
-              > artifacts/image-variants/temporary-worker-cleanup.json
-          }
-          trap cleanup EXIT
-          OUTPUT=$(npx wrangler@3.114.17 deploy --config worker-sync/image-variants-preview.wrangler.toml --name "$SEED_NAME")
-          SEED_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
-          test -n "$SEED_URL"
-          printf '%s' "$PREVIEW_SEED_TOKEN" | npx wrangler@3.114.17 secret put PREVIEW_SEED_TOKEN \
-            --config worker-sync/image-variants-preview.wrangler.toml --name "$SEED_NAME"
-          # Propagación sólo de la ruta autenticada, sin generar uso de Images.
-          for attempt in 1 2 3 4 5 6; do
-            CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
-              -H "Authorization: Bearer $PREVIEW_SEED_TOKEN" "$SEED_URL/image-variants/progress")
-            [ "$CODE" = "200" ] && break
-            sleep 5
-          done
-          test "$CODE" = "200"
-          SAMPLE_ID=$(curl -fsS --retry 3 --max-time 30 \
-            "https://pr-${{ github.event.pull_request.number }}.amadolibros-web.pages.dev/preview-cover/status" \
-            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s);if(!/^MLU\\d+$/.test(r.sample_product_id||''))process.exit(1);process.stdout.write(r.sample_product_id);});")
-          WORKER_SYNC_TRIGGER_URL="$SEED_URL" SYNC_SECRET="$PREVIEW_SEED_TOKEN" IMAGE_VARIANT_SAMPLE_PRODUCT_ID="$SAMPLE_ID" \
-            node scripts/images/seed-preview-variants.mjs > artifacts/image-variants/seed.json
-          WORKER_SYNC_TRIGGER_URL="$SEED_URL" SYNC_SECRET="$PREVIEW_SEED_TOKEN" IMAGE_VARIANT_MASTER_LIMIT=20 IMAGE_VARIANT_SAMPLE_PRODUCT_ID="$SAMPLE_ID" \
-            node scripts/images/build-permanent-variants.mjs > artifacts/image-variants/generation.json
-          # Segundo recorrido: 0 transformaciones/descargas de masters ya listos.
-          WORKER_SYNC_TRIGGER_URL="$SEED_URL" SYNC_SECRET="$PREVIEW_SEED_TOKEN" IMAGE_VARIANT_MASTER_LIMIT=20 IMAGE_VARIANT_SAMPLE_PRODUCT_ID="$SAMPLE_ID" \
-            node scripts/images/build-permanent-variants.mjs > artifacts/image-variants/reuse.json
-          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('artifacts/image-variants/generation.json')); if(!r.examined || r.failures.length)process.exit(1); console.log(JSON.stringify({examined:r.examined,created:r.created,existing:r.existing}));"
-          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('artifacts/image-variants/reuse.json')); if(r.created || r.sourcesDownloaded || r.failures.length)process.exit(1);"
-
       - name: Deploy isolated PR Preview
         id: deploy
         env:
