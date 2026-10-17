@@ -7,9 +7,15 @@ import { vintageTokens, VINTAGE_SELLER_ID } from './meli-vintage-token.js';
 export const PILOT_LIMIT=5;
 const uuid=value=>typeof value==='string'&&/^[a-f0-9-]{36}$/.test(value);
 const error=(code,status=409)=>new PublicationError(code,status);
+// Background/browser continuation can only lease preflight. A concurrent owner
+// approval cannot turn a "validate only" request into a publishing tick.
+class PreflightStore extends PublicationStore {
+ async lease(id,token,now){return this.stmt("UPDATE ml_pub_runs SET lease_id=?,lease_until=?,updated_at=? WHERE id=? AND state='preflight' AND lease_until<? RETURNING *",token,now+300000,now,id,now).first();}
+}
 export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_SELLER_ID,tokenProvider:vintageTokens.getAccessToken,tokenInvalidator:vintageTokens.invalidateAccessToken}),now=Date.now}={}) {
  const store=env=>new PublicationStore(env.ORDERS_DB,{sellerId:VINTAGE_SELLER_ID});
  const service=createPublicationService({sellerId:VINTAGE_SELLER_ID,api,storeFactory:store,now});
+ const preflightService=createPublicationService({sellerId:VINTAGE_SELLER_ID,api,storeFactory:env=>new PreflightStore(env.ORDERS_DB,{sellerId:VINTAGE_SELLER_ID}),now});
  // This pilot is deliberately manual: its run id never enters the Libros queue.
  const scoped=env=>({...env,USER_ID:VINTAGE_SELLER_ID,ML_PUBLISH_QUEUE_ENABLED:'false'});
  async function sources(env) {
@@ -28,7 +34,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   const run=await current(env);
   if(!run)return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:null};
   const s=store(env),policy=validPolicy(JSON.parse(run.policy_json)),index=JSON.parse(run.index_json);
-  const progress={phase:index.done?'books':'existing_listings',indexed:Number(index.seen)||0,index_complete:index.done===true,index_status:index.status==='paused'?'paused':'active',busy:Number(run.lease_until)>now(),lease_until:Number(run.lease_until)||0,backoff_until:Number(run.backoff_until)||0,updated_at:Number(run.updated_at)||0};
+  const progress={disabled:String(env.ML_PUBLISHER_MODE)==='disabled',phase:index.done?'books':'existing_listings',indexed:Number(index.seen)||0,index_complete:index.done===true,index_status:index.status==='paused'?'paused':'active',busy:Number(run.lease_until)>now(),lease_until:Number(run.lease_until)||0,backoff_until:Number(run.backoff_until)||0,updated_at:Number(run.updated_at)||0};
   const jobs=(await s.jobs(run.id)).filter(j=>['validated','published','uncertain','creating','review','retry'].includes(j.state));
   const sample=[];
   for(const job of jobs.filter(j=>['validated','published','uncertain','creating'].includes(j.state)).slice(0,5)) {
@@ -59,7 +65,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   const runId='23413782-4900-4000-8000-000000000005';
   try{await s.createRun({id:runId,feedId:feed_id,policy,policyHash:await policyHash(policy),now:now(),dailyCap:PILOT_LIMIT,preflightLimit:PILOT_LIMIT,targetPublished:PILOT_LIMIT});}
   catch(e){if(!(await s.run(runId)))throw e;}
-  await service.tick(scoped(env),runId);
+  await preflightService.tick(scoped(env),runId);
   return snapshot(env);
  }
  async function approve(env,{run_id,policy_hash,sample_hash}) {
@@ -74,13 +80,14 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   await service.tick(scoped(env),run_id);
   return snapshot(env);
  }
- async function advance(env,{run_id}) {
+ async function advance(env,{run_id},publishing=false) {
   const run=await current(env);
   if(!run||run.id!==run_id)throw error('pilot_not_found',404);
   if(run.daily_cap!==PILOT_LIMIT||run.preflight_limit!==PILOT_LIMIT||(await store(env).target(run.id))?.target_published!==PILOT_LIMIT)throw error('pilot_limit_mismatch');
-  await service.tick(scoped(env),run.id);
+  if(!publishing&&run.state!=='preflight')return snapshot(env);
+  await (publishing?service:preflightService).tick(scoped(env),run.id);
   return snapshot(env);
  }
- return {sources,snapshot,prepare,approve,advance};
+ return {sources,snapshot,prepare,approve,advance:(env,args)=>advance(env,args),publishApproved:(env,args)=>advance(env,args,true)};
 }
 export const vintagePilot=createVintagePilot();
