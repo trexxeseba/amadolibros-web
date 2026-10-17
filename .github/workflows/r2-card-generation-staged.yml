@@ -1,0 +1,52 @@
+name: R2 card generation - authorized staged run
+on:
+  push:
+    branches: [codex/r2-card-inventory-29c5dce]
+    paths: ['.github/workflows/r2-card-generation-staged.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: permanent-image-variants-production
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: scripts/images/package-lock.json
+      - name: Install existing pinned offline Sharp encoder
+        working-directory: scripts/images
+        run: npm ci --no-audit --no-fund
+      - name: Test scope, pilot gate, metadata, idempotency and encoder
+        run: node --test scripts/images/__tests__/card-plan.test.mjs scripts/images/__tests__/card-stage.test.mjs scripts/images/__tests__/permanent-variants.test.mjs
+      - name: Recover frozen inventory inputs without image requests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/images/fetch-frozen-card-inputs.py
+      - name: Seal exact approved selection from frozen public catalog and private manifest
+        run: node scripts/images/prepare-card-plan.mjs "$RUNNER_TEMP/card-manifest.json" scripts/images/card-catalog-frozen.json scripts/images/inventory-external-ids.json "$RUNNER_TEMP/private-card-plan.json"
+      - name: Generate 30, verify stored bytes, then complete only the approved 8364
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          IMAGE_VARIANT_CARD_PLAN: ${{ runner.temp }}/private-card-plan.json
+          IMAGE_VARIANT_WRITE_APPROVAL: d1e7fe6ef981169bfbe2ea3ab4182b058065ddd4770e1d15ceceaf512696d78c
+          CARD_PROGRESS_PATH: ${{ runner.temp }}/card-progress.encrypted.json
+          CARD_SUMMARY_PATH: ${{ runner.temp }}/card-summary.json
+        run: node scripts/images/r2-card-stage.mjs
+      - name: Save encrypted resumable journal and aggregate consumption only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: card-generation-progress-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/card-progress.encrypted.json
+            ${{ runner.temp }}/card-summary.json
+          if-no-files-found: warn
+          retention-days: 90
