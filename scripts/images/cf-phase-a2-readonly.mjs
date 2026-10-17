@@ -15,7 +15,7 @@ await request('billable_usage','/accounts/'+account+'/billable-usage?from=2026-0
 await request('pages_projects','/accounts/'+account+'/pages/projects');
 const schema=await request('graphql_schema','/graphql','{__schema{types{name fields{name type{kind name ofType{kind name ofType{kind name}}}}}}}');
 const types=schema.data?.__schema?.types||[];
-const unwrap=t=>t?.name||unwrap(t?.ofType);
+const unwrap=t=>!t?undefined:t.name||unwrap(t.ofType);
 const accountType=types.find(t=>t.fields?.some(f=>f.name==='workersInvocationsAdaptive'));
 const node=types.find(t=>t.name===unwrap(accountType?.fields.find(f=>f.name==='workersInvocationsAdaptive')?.type));
 const fieldType=n=>types.find(t=>t.name===unwrap(node?.fields.find(f=>f.name===n)?.type));
