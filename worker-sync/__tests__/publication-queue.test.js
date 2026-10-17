@@ -68,6 +68,17 @@ test('target_published stops exactly at the requested number and skips the remai
  assert.equal(f.calls.create,1);assert.equal(result.state,'complete');assert.equal(result.target_published,1);assert.equal(result.target_remaining,0);
  assert.equal(result.counts.find(x=>x.state==='published').n,1);assert.equal(result.counts.find(x=>x.state==='skipped_target_reached').n,1);
 });
+test('a published receipt from an older run is a duplicate and never counts toward the new target',async t=>{
+ const f=await fixture(t,{target:1});
+ const otherRun=crypto.randomUUID();
+ await f.store.db.prepare("INSERT INTO ml_pub_receipts(seller_id,isbn,state,item_id,run_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?)").bind('440298103',books[0].isbn,'published','MLU811111111',otherRun,f.now-1000,f.now-1000).run();
+ await f.service.tick(f.env,f.runId);
+ await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
+ const result=await f.service.tick(f.env,f.runId);
+ assert.equal(f.calls.create,1);assert.equal(result.target_remaining,0);
+ assert.equal(result.counts.find(x=>x.state==='published').n,1);
+ assert.equal(result.counts.find(x=>x.state==='skipped_duplicate').n,1);
+});
 test('stock zero, stale feeds and existing paused ISBNs prevent item creation',async t=>{
  const f=await fixture(t,{rows:[{...books[0],stock:'0'},books[1]]});
  await f.store.saveIndex(f.runId,JSON.parse((await f.store.run(f.runId)).index_json),[{id:'MLU900000009',isbn:books[1].isbn,titleKey:'',status:'paused'}]);
