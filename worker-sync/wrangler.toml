@@ -26,6 +26,12 @@ USER_ID         = "440298103"
 # New runs always start in preflight. Only approval of their immutable price
 # policy enables creation. Set disabled for an additional global stop switch.
 ML_PUBLISHER_MODE = "enabled"
+# Campaign tick: read-only preparation of up to N candidates in parallel, the
+# irreversible create stage serialized (1) and one tick holding the lease for
+# ML_PUBLISHER_TICK_MS. Raise only after measuring 429s in a real rehearsal.
+ML_PUBLISHER_PREPARE_CONCURRENCY = "3"
+ML_PUBLISHER_CREATE_CONCURRENCY = "1"
+ML_PUBLISHER_TICK_MS = "45000"
 # Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
 MIN_ACTIVE_ITEMS = "500"
 # Descripciones ML: endpoint individual. El primer lote vidriera acelera el

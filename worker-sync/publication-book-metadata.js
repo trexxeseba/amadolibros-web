@@ -39,16 +39,18 @@ export async function supplierBookMetadata(row,{fetcher=globalThis.fetch}={}){
  if(item.isKit||(item.ean&&canonicalIsbn(item.ean)!==row.isbn))throw new PublicationError('supplier_book_identity_mismatch',422);
  const offer=item.sellers?.find(seller=>seller.sellerId==='1')?.commertialOffer;
  if(offer&&(offer.IsAvailable===false||offer.AvailableQuantity===0))throw new PublicationError('supplier_stock_conflict',422);
+ // Optional metadata is never invented and never required by us: a verified
+ // value is sent, a missing one is omitted, and /items/validate decides what
+ // Mercado Libre actually requires. Identity (above) stays our own requirement.
  const pictures=(item.images??[]).map(image=>coverImage(image.imageUrl)).filter(Boolean).slice(0,12);
  const languageText=clean(first(product,'Idioma'));
  const languages=[[/^ingles(?:\s|$)/,'Inglés'],[/^espanol(?:\s|$)/,'Español'],[/^castellano(?:\s|$)/,'Español'],[/^frances(?:\s|$)/,'Francés'],[/^portugues(?:\s|$)/,'Portugués'],[/^aleman(?:\s|$)/,'Alemán'],[/^italiano(?:\s|$)/,'Italiano']];
- const language=languages.find(([pattern])=>pattern.test(languageText))?.[1];
+ const language=languages.find(([pattern])=>pattern.test(languageText))?.[1]??null;
  const bindingText=clean(first(product,'Tapa'));
  const binding=/^(rustica|blanda|paperback|softcover)$/.test(bindingText)?'Blanda':/^(dura|cartone|hardback|hardcover)$/.test(bindingText)?'Dura':null;
- if(!pictures.length||!language||!binding)throw new PublicationError('incomplete_supplier_book_metadata',422);
  const author=bounded(row.author)||bounded(first(product,'Autor')),publisher=bounded(row.publisher)||bounded(first(product,'Editorial'));
- if(!author||!publisher)throw new PublicationError('incomplete_supplier_book_metadata',422);
- const attributes=[{id:'GTIN',value_name:row.isbn},{id:'BOOK_TITLE',value_name:row.title.slice(0,300)},{id:'AUTHOR',value_name:author},{id:'BOOK_PUBLISHER',value_name:publisher},{id:'LANGUAGE',value_name:language},{id:'BOOK_COVER',value_name:binding}];
+ const attributes=[{id:'GTIN',value_name:row.isbn},{id:'BOOK_TITLE',value_name:row.title.slice(0,300)}];
+ for(const [id,value] of [['AUTHOR',author],['BOOK_PUBLISHER',publisher],['LANGUAGE',language],['BOOK_COVER',binding]])if(value)attributes.push({id,value_name:value});
  for(const [key,id,min,max] of [['Cantidad de páginas','PAGES_NUMBER',1,10000],['Año de edición','PUBLICATION_YEAR',1400,2100]]){
   const value=String(first(product,key)??'');if(/^\d{1,5}$/.test(value)&&Number(value)>=min&&Number(value)<=max)attributes.push({id,value_name:value});
  }

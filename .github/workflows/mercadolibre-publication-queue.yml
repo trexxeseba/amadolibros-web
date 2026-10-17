@@ -37,6 +37,10 @@ on:
         description: 'Con create_run_from_source: techo diario de altas reales tras aprobación (1-10000, default 1000).'
         required: false
         type: string
+      target_published:
+        description: 'Con create_run_from_source: objetivo de publicaciones reales (1-10000). El lote termina al alcanzarlo o agotar el pool; los demás quedan skipped_target_reached.'
+        required: false
+        type: string
       item_id:
         description: 'Con shipping_diagnostic: publicación activa propia de referencia (MLU...). Sólo lectura.'
         required: false
@@ -61,6 +65,9 @@ on:
       - 'worker-sync/__tests__/publication-shipping-diagnostic.test.js'
       - 'worker-sync/__tests__/publication-shipping-resolver.test.js'
       - 'worker-sync/__tests__/publication-validate-semantics.test.js'
+      - 'worker-sync/__tests__/publication-campaign.test.js'
+      - 'worker-sync/publication-book-metadata.js'
+      - 'worker-sync/wrangler.toml'
       - 'worker-sync/__tests__/publication-create-run-from-source.test.js'
       - 'worker-sync/__tests__/publication-availability-audit.test.js'
       - 'worker-sync/__tests__/helpers/sqlite-d1.js'
@@ -97,6 +104,7 @@ jobs:
           PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
           PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}
           PUBLISHER_DAILY_CAP: ${{ inputs.daily_cap }}
+          PUBLISHER_TARGET_PUBLISHED: ${{ inputs.target_published }}
           PUBLISHER_ITEM_ID: ${{ inputs.item_id }}
           PUBLISHER_ITEM_PRICE: ${{ inputs.item_price }}
           PUBLISHER_ISBN: ${{ inputs.isbn }}
@@ -114,6 +122,6 @@ jobs:
         with:
           node-version: '22.12.0'
       - name: Verificar cola, idempotencia, stock y transporte
-        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/publication-clone-preflight-availability.test.js worker-sync/__tests__/publication-seller-package.test.js worker-sync/__tests__/publication-shipping-diagnostic.test.js worker-sync/__tests__/publication-shipping-resolver.test.js worker-sync/__tests__/publication-validate-semantics.test.js worker-sync/__tests__/publication-create-run-from-source.test.js worker-sync/__tests__/publication-availability-audit.test.js worker-sync/__tests__/operations-read.test.js
+        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/publication-clone-preflight-availability.test.js worker-sync/__tests__/publication-seller-package.test.js worker-sync/__tests__/publication-shipping-diagnostic.test.js worker-sync/__tests__/publication-shipping-resolver.test.js worker-sync/__tests__/publication-validate-semantics.test.js worker-sync/__tests__/publication-create-run-from-source.test.js worker-sync/__tests__/publication-availability-audit.test.js worker-sync/__tests__/publication-campaign.test.js worker-sync/__tests__/operations-read.test.js
       - name: Verificar lector del proveedor
         run: python3 -m py_compile scripts/mercadolibre/prepare-supplier-feed.py

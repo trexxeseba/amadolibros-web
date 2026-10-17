@@ -4,7 +4,35 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','record_audit'];
+// Campaign loop limits: batches per tick, technical retries per book, and the
+// circuit breaker (same systemic error N times, or the same skip reason streaking).
+const MAX_BATCHES=10,MAX_TECHNICAL_RETRIES=5,SYSTEMIC_BREAKER=3,SKIP_STREAK_BREAKER=20;
+// A candidate's own deterministic problem: skip it and take the next one.
+const IDENTITY_CODES=new Set(['catalog_required_needs_review','ambiguous_product_metadata','product_identity_mismatch','product_id_invalid','catalog_product_id_mismatch','catalog_product_children_unresolved','catalog_product_inactive','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch','product_isbn_or_domain_mismatch','missing_product_metadata']);
+const CATEGORY_CODES=new Set(['missing_book_category','ambiguous_book_category','category_not_leaf_or_not_allowed','isbn_attribute_missing']);
+const REQUIREMENT_CODES=new Set(['shipping_not_validated','missing_verified_cover','incomplete_supplier_book_metadata']);
+const STOCK_CODES=new Set(['supplier_stock_conflict','invalid_supplier_price','invalid_weight','invalid_title','invalid_isbn']);
+// Everything else (auth, rate limit, transport, 5xx, fee/policy guards, unknown
+// codes) is technical or systemic: it never consumes the pool.
+export function classifyError(error){
+ if(error instanceof PublicationError){
+  if(IDENTITY_CODES.has(error.code))return 'skipped_identity';
+  if(CATEGORY_CODES.has(error.code))return 'skipped_category';
+  if(REQUIREMENT_CODES.has(error.code))return 'skipped_ml_requirement';
+  if(STOCK_CODES.has(error.code))return 'skipped_stock_uncertain';
+ }
+ if(error instanceof MercadoLibreError){
+  if(error.status===401||error.status===403)return 'auth';
+  if(error.status===429)return 'backoff';
+  if(error.status>=500||error.code==='ml_transport'||error.code==='auth_unavailable')return 'retry';
+  if(error.status===400&&error.stage==='item_validation')return 'skipped_ml_requirement';
+  if(error.status===404&&error.stage==='metadata')return 'skipped_identity';
+  return 'retry';
+ }
+ if(error instanceof PublicationError&&error.status>=500)return 'retry';
+ return 'systemic';
+}
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -12,7 +40,7 @@ export const CLONE_PREFLIGHT_FRESH_FEED_LIMIT=5;
 // Deterministic run id: repeating the same request finds the same clone instead of creating another.
 // An alternative feed is part of the identity, so it never collides with a clone over the source feed.
 export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
-export async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+export async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit,targetPublished=null){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}${targetPublished?`:${targetPublished}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
 export function clonePreflightJob(job){
  const p=job.payload&&typeof job.payload==='object'?job.payload:{};
  return {isbn:job.isbn,state:job.state,error_code:job.error_code??null,title:p.title??p.family_name??null,price:typeof p.price==='number'?p.price:null,catalog_listing:typeof p.catalog_listing==='boolean'?p.catalog_listing:null,catalog_product_id:p.catalog_product_id??null,validation:p.diagnostic??null};
@@ -22,15 +50,20 @@ const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:ru
 export function createPublicationService({api=createPublicationMeli(),storeFactory=env=>new PublicationStore(env.ORDERS_DB),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000}={}){
  function store(env){if(String(env.USER_ID)!==SELLER_ID||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
  async function initialize(env,s){if(!initialized.has(env.ORDERS_DB)){await s.initialize();if(env.ORDERS_DB&&typeof env.ORDERS_DB==='object')initialized.add(env.ORDERS_DB);}}
+ // Campaign knobs (Worker vars): read-only preparation runs in parallel, the
+ // irreversible create stage is serialized by default, and one tick keeps the
+ // lease for tickMs. Several ticks never run at once: the lease decides.
+ const knob=(value,min,max,fallback)=>{const n=Number(value);return Number.isInteger(n)&&n>=min&&n<=max?n:fallback;};
  async function tick(env,runId){
   if(String(env.ML_PUBLISHER_MODE)==='disabled')return {state:'disabled'};
+  const prepareConcurrency=knob(env.ML_PUBLISHER_PREPARE_CONCURRENCY,1,5,3),createConcurrency=knob(env.ML_PUBLISHER_CREATE_CONCURRENCY,1,2,1),tickMs=knob(env.ML_PUBLISHER_TICK_MS,5000,120000,45000);
   const s=store(env);let run;
   try{run=runId?await s.run(runId):(await s.activeRun()??await s.reconcilableRun(now()));}catch(error){if(/no such table/i.test(String(error?.message)))return {state:'not_initialized'};throw error;}
   if(!run)return {state:'no_active_run'};
   if(!['preflight','publishing','complete_with_review'].includes(run.state))return s.summary(run.id);
   if(run.backoff_until>now())return {id:run.id,state:'backoff',resume_at:new Date(run.backoff_until).toISOString()};
   const lease=crypto.randomUUID();run=await s.lease(run.id,lease,now());if(!run)return {state:'busy'};
-  const deadline=now()+20000;let processed=0;
+  const deadline=now()+tickMs;let processed=0;
   const mark=(isbn,state,options={})=>s.job(run.id,isbn,state,{...options,leaseToken:lease,now:now()});
   const state=value=>s.setRunState(run.id,value,lease,now());
   try{
@@ -54,54 +87,108 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    const publishing=run.state==='publishing'&&run.approved_hash===run.policy_hash;
    if(run.state==='publishing'&&!publishing)return {state:'publishing_not_enabled'};
    if(publishing&&await s.dayCreated(now())>=run.daily_cap)return {state:'daily_cap_reached'};
+   const target=await s.target(run.id);
    const counts=await s.counts(run.id);let validated=counts.find(x=>x.state==='validated')?.n??0;
    if(!publishing&&validated>=run.preflight_limit){await state('ready');return s.summary(run.id);}
-   processed=0;
-   while(now()<deadline&&processed<10){
-    const job=await s.nextJob(run.id,now(),publishing);if(!job){if(!await s.unfinished(run.id,publishing)){const terminal=await s.counts(run.id),needsReview=terminal.some(x=>['review','uncertain'].includes(x.state)&&x.n>0);await state(publishing?(needsReview?'complete_with_review':'complete'):'ready');}break;}
-    processed++;
+   // Shared by every candidate of this tick: the first stop reason wins, and the
+   // circuit breaker pauses the run when the same systemic error repeats or the
+   // same skip reason streaks abnormally (a bad pool, not bad books).
+   const flags={stop:null,reason:null,resume:0};
+   const breaker={codes:new Map(),lastSkip:null,streak:0};
+   let remaining=Infinity;
+   const systemic=async code=>{const n=(breaker.codes.get(code)??0)+1;breaker.codes.set(code,n);if(n>=SYSTEMIC_BREAKER&&!flags.stop){await state('paused');flags.stop='paused';flags.reason=code;}};
+   const skipped=async(isbn,skipState,code,extra={})=>{
+    await mark(isbn,skipState,{errorCode:code,...extra});
+    if(skipState==='skipped_duplicate'||!code)return;
+    if(breaker.lastSkip===code)breaker.streak++;else{breaker.lastSkip=code;breaker.streak=1;}
+    if(breaker.streak>=SKIP_STREAK_BREAKER&&!flags.stop){await state('paused');flags.stop='paused';flags.reason=code;}
+   };
+   const diagnostic=error=>error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[],...(error.validationCauses?.length?{causes:error.validationCauses}:{}),...(error.shippingAttempts?{shipping_attempts:error.shippingAttempts}:{})}}}:{};
+   // A book's own deterministic problem is a skip; anything technical or
+   // systemic defers the book and may pause the run, never burning the pool.
+   async function candidateError(job,error){
+    const kind=classifyError(error),code=safeCode(error);
+    if(kind==='auth'){await mark(job.isbn,'retry',{errorCode:code,nextAt:0,attempt:false});await state('auth_error');flags.stop='auth_error';flags.reason=code;return;}
+    if(kind==='backoff'){const until=now()+Math.max(60000,(error.retryAfter||0)*1000);await mark(job.isbn,'retry',{errorCode:code,nextAt:until,attempt:false});await s.backoff(run.id,until,lease);flags.stop='backoff';flags.resume=until;return;}
+    if(kind==='retry'){
+     if(job.attempts<MAX_TECHNICAL_RETRIES)await mark(job.isbn,'retry',{errorCode:code,nextAt:now()+Math.max((error.retryAfter||0)*1000,Math.min(3600000,30000*2**job.attempts)),attempt:true});
+     else await mark(job.isbn,'skipped_technical',{errorCode:code,attempt:true,...diagnostic(error)});
+     await systemic(code);return;
+    }
+    if(kind==='systemic'){
+     if(job.attempts<MAX_TECHNICAL_RETRIES)await mark(job.isbn,'retry',{errorCode:code,nextAt:now()+300000,attempt:true});
+     else await mark(job.isbn,'skipped_technical',{errorCode:code,attempt:true});
+     await systemic(code);return;
+    }
+    await skipped(job.isbn,kind,code,diagnostic(error));
+   }
+   // Stage 1 (read-only, parallel): stock, receipts, duplicates, metadata, fees
+   // and /items/validate. Returns a candidate ready to create, or nothing.
+   async function prepareCandidate(job){
     try{
+     if(flags.stop)return null;
      const freshRun=await s.run(run.id),freshFeed=await s.feed(freshRun.feed_id);
-     if(freshFeed?.state!=='ready'||!stockIsFresh(freshFeed.source_date,now())){await state('stock_stale');break;}
+     if(freshFeed?.state!=='ready'||!stockIsFresh(freshFeed.source_date,now())){flags.stop='stale';return null;}
      const row=await s.stock(freshRun.feed_id,job.isbn);
-     if(!row||!hasSupplierStock(row.stock)){await mark(job.isbn,'skipped_stock');continue;}
+     if(!row||!hasSupplierStock(row.stock)){await skipped(job.isbn,'skipped_stock_uncertain','supplier_stock_missing');return null;}
      normalizeSupplierRow(row);
      const receipt=await s.receipt(SELLER_ID,row.isbn);
-     if(receipt){await mark(row.isbn,receipt.state==='published'?'published':'uncertain',{itemId:receipt.item_id,errorCode:receipt.state==='published'?null:'existing_create_receipt'});continue;}
+     if(receipt){await mark(row.isbn,receipt.state==='published'?'published':'uncertain',{itemId:receipt.item_id,errorCode:receipt.state==='published'?null:'existing_create_receipt'});return null;}
      const duplicate=await s.existing(run.id,row.isbn,row.title);
-     if(duplicate){await mark(row.isbn,duplicate.isbn===row.isbn?'skipped_duplicate':'review',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
+     if(duplicate){await skipped(row.isbn,'skipped_duplicate',duplicate.isbn===row.isbn?null:'possible_title_duplicate',{itemId:duplicate.item_id});return null;}
      const bySku=await api.skuItems(env,row.isbn);
-     if(bySku.length){await mark(row.isbn,'skipped_duplicate',{itemId:bySku[0]});continue;}
+     if(bySku.length){await skipped(row.isbn,'skipped_duplicate',null,{itemId:bySku[0]});return null;}
      const quote=quoteMercadoLibre(row,policy);
      let payload=job.payload_json?JSON.parse(job.payload_json):null;
      if(!payload||payload.price!==quote.price)payload=await api.prepare(env,row,policy,quote.price);
-     if(!publishing){await mark(row.isbn,'validated',{payload});validated++;if(validated>=run.preflight_limit){await state('ready');break;}continue;}
-     // Check the source snapshot, run state and lease again after preparation.
-     const guardRun=await s.run(run.id),guardRow=await s.stock(guardRun.feed_id,row.isbn),guardFeed=await s.feed(guardRun.feed_id);
-     if(guardRun.state!=='publishing'||guardRun.approved_hash!==run.policy_hash||!await s.ownsLease(run.id,lease,now()))break;
-     if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now())){await mark(row.isbn,'skipped_stock');continue;}
-     if(quoteMercadoLibre(guardRow,policy).price!==payload.price){await mark(row.isbn,'pending',{payload:null});continue;}
-     // A catalog payload is only created under the approved 'required_only' policy.
-     const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
-     const reserved=await s.reserve(SELLER_ID,row.isbn,run.id,now(),run.daily_cap,lease);
-     if(!reserved){const existing=await s.receipt(SELLER_ID,row.isbn);if(existing)await mark(row.isbn,existing.state==='published'?'published':'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});else return {state:'daily_cap_reached'};continue;}
-     await mark(row.isbn,'creating',{payload,attempt:true});
-     let result;
-     try{result=await api.create(env,payload,policy);}
-     catch(error){await s.receiptState(SELLER_ID,row.isbn,'uncertain');await mark(row.isbn,'uncertain',{errorCode:safeCode(error)});if(error.status===429){await s.backoff(run.id,now()+Math.max(60000,error.retryAfter*1000||0),lease);break;}continue;}
-     await s.receiptState(SELLER_ID,row.isbn,'published',result.id);
-     await mark(row.isbn,'published',{itemId:result.id});
-    }catch(error){
-     // Transport, 5xx, 429 and retryable auth failures defer the book; an auth
-     // failure never counts as a book attempt nor sends it to review.
-     const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403);
-     const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
-     const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
-     await mark(job.isbn,retry||auth?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:!auth,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[],...(error.validationCauses?.length?{causes:error.validationCauses}:{}),...(error.shippingAttempts?{shipping_attempts:error.shippingAttempts}:{})}}}:{})});
-     if(auth){await state('auth_error');break;}
-     if(error.status===429){await s.backoff(run.id,nextAt,lease);break;}
-    }
+     if(!publishing){await mark(row.isbn,'validated',{payload});return {validated:true};}
+     return {job,row,payload};
+    }catch(error){await candidateError(job,error);return null;}
    }
+   // Stage 2 (irreversible, serialized by default): recheck stock, policy and
+   // lease, reserve the receipt, revalidate and the single POST /items.
+   async function createCandidate({job,row,payload}){
+    if(flags.stop)return;
+    const guardRun=await s.run(run.id),guardRow=await s.stock(guardRun.feed_id,row.isbn),guardFeed=await s.feed(guardRun.feed_id);
+    if(guardRun.state!=='publishing'||guardRun.approved_hash!==run.policy_hash||!await s.ownsLease(run.id,lease,now())){flags.stop='lease';return;}
+    if(!stockIsFresh(guardFeed?.source_date,now())){flags.stop='stale';return;}
+    if(!guardRow||!hasSupplierStock(guardRow.stock)){await skipped(row.isbn,'skipped_stock_uncertain','supplier_stock_missing');return;}
+    if(quoteMercadoLibre(guardRow,policy).price!==payload.price){await mark(row.isbn,'pending',{payload:null});return;}
+    // A catalog payload is only created under the approved 'required_only' policy.
+    const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'retry',{errorCode:mismatch,nextAt:now()+300000,attempt:true});await systemic(mismatch);return;}
+    if(remaining<=0)return;
+    const reserved=await s.reserve(SELLER_ID,row.isbn,run.id,now(),run.daily_cap,lease);
+    if(!reserved){const existing=await s.receipt(SELLER_ID,row.isbn);if(existing){await mark(row.isbn,existing.state==='published'?'published':'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});return;}flags.stop='daily_cap_reached';return;}
+    remaining--;
+    await mark(row.isbn,'creating',{payload,attempt:true});
+    let result;
+    try{result=await api.create(env,payload,policy);}
+    catch(error){await s.receiptState(SELLER_ID,row.isbn,'uncertain');await mark(row.isbn,'uncertain',{errorCode:safeCode(error)});if(error.status===429){const until=now()+Math.max(60000,(error.retryAfter||0)*1000);await s.backoff(run.id,until,lease);flags.stop='backoff';flags.resume=until;}return;}
+    await s.receiptState(SELLER_ID,row.isbn,'published',result.id);
+    await mark(row.isbn,'published',{itemId:result.id});
+   }
+   processed=0;
+   while(now()<deadline&&processed<MAX_BATCHES&&!flags.stop){
+    // target_published is exact: never prepare more candidates than remain.
+    if(publishing&&target!==null){
+     remaining=target-await s.publishedCount(run.id);
+     if(remaining<=0){await s.skipRemaining(run.id,lease,now());const terminal=await s.counts(run.id);await state(terminal.some(x=>x.state==='uncertain'&&x.n>0)?'complete_with_review':'complete');break;}
+    }
+    const n=Math.max(1,Math.min(prepareConcurrency,publishing?remaining:run.preflight_limit-validated));
+    const jobs=await s.nextJobs(run.id,now(),publishing,n);
+    if(!jobs.length){if(!await s.unfinished(run.id,publishing)){const terminal=await s.counts(run.id),needsReview=terminal.some(x=>['review','uncertain'].includes(x.state)&&x.n>0);await state(publishing?(needsReview?'complete_with_review':'complete'):'ready');}break;}
+    processed++;
+    const results=await Promise.all(jobs.map(prepareCandidate));
+    validated+=results.filter(r=>r?.validated).length;
+    if(!publishing&&validated>=run.preflight_limit){await state('ready');break;}
+    const candidates=results.filter(r=>r?.payload);
+    for(let i=0;i<candidates.length&&!flags.stop;i+=createConcurrency)await Promise.all(candidates.slice(i,i+createConcurrency).map(createCandidate));
+   }
+   if(flags.stop==='stale'){await state('stock_stale');return {state:'stock_stale'};}
+   if(flags.stop==='daily_cap_reached')return {state:'daily_cap_reached'};
+   if(flags.stop==='backoff')return {id:run.id,state:'backoff',resume_at:new Date(flags.resume).toISOString()};
+   if(flags.stop==='auth_error')return {id:run.id,state:'auth_error',error:flags.reason};
+   if(flags.stop==='paused')return {...await s.summary(run.id),state:'paused',breaker:flags.reason};
    return s.summary(run.id);
   }catch(error){
    if(error.status===429){const until=now()+Math.max(60000,error.retryAfter*1000||0);await s.backoff(run.id,until,lease);return {id:run.id,state:'backoff',resume_at:new Date(until).toISOString()};}
@@ -153,6 +240,18 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    const mismatches=checked.filter(x=>!x.ok);
    return {run_id:run.id,expected_days:expectedDays,total_published:total,offset,scanned:checked.length,ok:checked.length-mismatches.length,missing:mismatches.filter(x=>!x.has_term).length,wrong:mismatches.filter(x=>x.has_term).length,mismatches:mismatches.slice(0,50),next_offset:offset+checked.length<total?offset+checked.length:null,read_only_mercado_libre:true};
   }
+  if(action==='record_audit'){
+   // Stores the paginated availability audit (#427) of a finished campaign so
+   // status shows it once and the workflow never audits the same run twice.
+   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
+   const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);
+   const r=args.result&&typeof args.result==='object'?args.result:{};
+   const n=key=>Number.isInteger(r[key])&&r[key]>=0&&r[key]<=100000?r[key]:null;
+   const result={total_published:n('total_published'),expected_days:n('expected_days'),ok:n('ok'),missing:n('missing'),wrong:n('wrong'),mismatches:(Array.isArray(r.mismatches)?r.mismatches:[]).slice(0,100).map(m=>({isbn:String(m?.isbn??'').slice(0,13),item_id:/^MLU\d+$/.test(m?.item_id??'')?m.item_id:null,actual_days:Number.isInteger(m?.actual_days)?m.actual_days:null,has_term:m?.has_term===true}))};
+   if(Object.values(result).some(v=>v===null)||result.ok+result.missing+result.wrong!==result.total_published)throw new PublicationError('invalid_audit_result');
+   await s.recordAudit(run.id,result,now());
+   return {run_id:run.id,audit:await s.audit(run.id)};
+  }
   if(action==='shipping_probe'){
    // The queue's own prepare() on one supplier row of a run: GET lookups and
    // /items/validate only, nothing stored, never POST /items.
@@ -173,20 +272,22 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    const sourceBefore=runFingerprint(source),sourceJobsBefore=JSON.stringify(await s.counts(source.id));
    const availabilityDays=args.availability_days??null;
    if(availabilityDays!==null&&(!Number.isInteger(availabilityDays)||availabilityDays<1||availabilityDays>60))throw new PublicationError('invalid_availability_days');
-   const dailyCap=args.daily_cap??1000,preflightLimit=args.preflight_limit??20;
+   const dailyCap=args.daily_cap??1000,preflightLimit=args.preflight_limit??20,targetPublished=args.target_published??null;
    if(!Number.isInteger(dailyCap)||dailyCap<1||dailyCap>10000||!Number.isInteger(preflightLimit)||preflightLimit<1||preflightLimit>20)throw new PublicationError('invalid_run_limits');
+   if(targetPublished!==null&&(!Number.isInteger(targetPublished)||targetPublished<1||targetPublished>10000))throw new PublicationError('invalid_target_published');
    const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{})});
    const hash=await policyHash(policy);
    let feed=await s.feed(args.feed_id);
    if(!feed||!['ready','importing'].includes(feed.state)||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
    if(feed.state==='importing')feed=await s.commitFeed(feed.id);
-   const newId=args.new_run_id??await createRunFromSourceId(source.id,hash,feed.id,dailyCap,preflightLimit);
+   const newId=args.new_run_id??await createRunFromSourceId(source.id,hash,feed.id,dailyCap,preflightLimit,targetPublished);
    if(!idOk(newId))throw new PublicationError('invalid_run_id');
    let run=await s.run(newId),created=false;
    if(run){
-    if(run.feed_id!==feed.id||run.policy_hash!==hash||run.daily_cap!==dailyCap||run.preflight_limit!==preflightLimit)throw new PublicationError('run_id_conflict',409);
+    if(run.feed_id!==feed.id||run.policy_hash!==hash||run.daily_cap!==dailyCap||run.preflight_limit!==preflightLimit||(await s.target(newId))!==targetPublished)throw new PublicationError('run_id_conflict',409);
    }else{
-    await s.createRun({id:newId,feedId:feed.id,policy,policyHash:hash,now:now(),dailyCap,preflightLimit});created=true;
+    await s.createRun({id:newId,feedId:feed.id,policy,policyHash:hash,now:now(),dailyCap,preflightLimit});
+    if(targetPublished!==null)await s.setTarget(newId,targetPublished);created=true;
    }
    const sourceAfter=await s.run(source.id),summary=await s.summary(newId);
    return {...summary,new_run_id:newId,source_run_id:source.id,created,feed_id:feed.id,availability_days:policy.availabilityDays,catalog_listing:policy.catalogListing,source_policy_hash:source.policy_hash,source_run_intact:runFingerprint(sourceAfter)===sourceBefore&&JSON.stringify(await s.counts(source.id))===sourceJobsBefore};

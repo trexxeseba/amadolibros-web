@@ -1,4 +1,4 @@
-import { PublicationError, normalizedTitle } from './publication-policy.js';
+import { PublicationError, SELLER_ID, normalizedTitle } from './publication-policy.js';
 
 export const PUBLICATION_SCHEMA = [
  `CREATE TABLE IF NOT EXISTS ml_pub_feeds (id TEXT PRIMARY KEY,source_date TEXT NOT NULL,state TEXT NOT NULL,expected_rows INTEGER NOT NULL,created_at INTEGER NOT NULL)`,
@@ -12,6 +12,8 @@ export const PUBLICATION_SCHEMA = [
  `CREATE TABLE IF NOT EXISTS ml_pub_receipts (seller_id TEXT NOT NULL,isbn TEXT NOT NULL,state TEXT NOT NULL,item_id TEXT,run_id TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(seller_id,isbn))`,
  `CREATE INDEX IF NOT EXISTS ml_pub_receipts_day ON ml_pub_receipts(state,created_at)`,
  `CREATE TABLE IF NOT EXISTS ml_pub_nonces (id TEXT PRIMARY KEY,expires_at INTEGER NOT NULL)`,
+ `CREATE TABLE IF NOT EXISTS ml_pub_run_targets (run_id TEXT PRIMARY KEY,target_published INTEGER NOT NULL)`,
+ `CREATE TABLE IF NOT EXISTS ml_pub_audits (run_id TEXT PRIMARY KEY,audited_at INTEGER NOT NULL,result_json TEXT NOT NULL)`,
 ];
 
 export class PublicationStore {
@@ -33,9 +35,16 @@ export class PublicationStore {
  async createRun(run){
   await this.db.batch([
    this.stmt(`INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'preflight',?,?,?,?,?)`,run.id,run.feedId,JSON.stringify(run.policy),run.policyHash,run.now,run.now,JSON.stringify({status:'active',scroll:null,pending:[],done:false,seen:0}),run.dailyCap,run.preflightLimit),
-   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?`,run.id,run.feedId),
+   // A book this seller already published is skipped on entry: no pool spent on it.
+   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,s.isbn,CASE WHEN EXISTS(SELECT 1 FROM ml_pub_receipts r WHERE r.seller_id=? AND r.isbn=s.isbn AND r.state='published') THEN 'skipped_duplicate' ELSE 'pending' END FROM ml_pub_stock s WHERE s.feed_id=?`,run.id,SELLER_ID,run.feedId),
   ]);
  }
+ // Campaign target: the run completes at exactly this many real publications.
+ async target(id){const r=await this.stmt('SELECT target_published FROM ml_pub_run_targets WHERE run_id=?',id).first();return r?r.target_published:null;}
+ async setTarget(id,target){await this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published) VALUES(?,?) ON CONFLICT(run_id) DO UPDATE SET target_published=excluded.target_published',id,target).run();}
+ async skipRemaining(id,token,now){await this.stmt("UPDATE ml_pub_jobs SET state='skipped_target_reached',next_at=0 WHERE run_id=? AND state IN ('pending','validated','retry') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,token,now).run();}
+ async recordAudit(id,result,now){await this.stmt('INSERT INTO ml_pub_audits(run_id,audited_at,result_json) VALUES(?,?,?) ON CONFLICT(run_id) DO UPDATE SET audited_at=excluded.audited_at,result_json=excluded.result_json',id,now,JSON.stringify(result)).run();}
+ async audit(id){const r=await this.stmt('SELECT audited_at,result_json FROM ml_pub_audits WHERE run_id=?',id).first();return r?{audited_at:r.audited_at,...JSON.parse(r.result_json)}:null;}
  // Catalog preflight clone: a new run over the same snapshot that holds only the
  // ISBNs the source run left in catalog_required_needs_review. The source run,
  // its policy and its jobs are never written; the ML index is copied as-is.
@@ -64,7 +73,7 @@ export class PublicationStore {
   const guard="EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND feed_id=? AND lease_until<?)";
   const results=await this.db.batch([
    this.stmt("UPDATE ml_pub_runs SET feed_id=?,index_json=?,state=CASE WHEN state IN ('paused','auth_error') THEN state WHEN approved_hash=policy_hash THEN 'publishing' ELSE 'preflight' END,updated_at=? WHERE id=? AND lease_until<? RETURNING id",feedId,index,now,id,now),
-   this.stmt(`UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0 WHERE run_id=? AND state IN ('validated','retry','skipped_stock') AND ${guard}`,id,id,feedId,now),
+   this.stmt(`UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0 WHERE run_id=? AND state IN ('validated','retry','skipped_stock','skipped_stock_uncertain') AND ${guard}`,id,id,feedId,now),
    this.stmt(`DELETE FROM ml_pub_index WHERE run_id=? AND ${guard}`,id,id,feedId,now),
   ]);
   if(!results[0].results?.length)throw new PublicationError('run_busy',409);
@@ -78,7 +87,8 @@ export class PublicationStore {
   const results=await this.db.batch(statements);if(!results.at(-1).results?.length)throw new PublicationError('lease_lost',409);return JSON.parse(results.at(-1).results[0].index_json);
  }
  async existing(id,isbn,title){return this.stmt('SELECT item_id,isbn FROM ml_pub_index WHERE run_id=? AND (isbn=? OR (title_key<>\'\' AND title_key=?)) ORDER BY CASE WHEN isbn=? THEN 0 ELSE 1 END LIMIT 1',id,isbn,normalizedTitle(title),isbn).first();}
- async nextJob(id,now,publishing=true){return this.stmt("SELECT j.* FROM ml_pub_jobs j JOIN ml_pub_runs r ON r.id=j.run_id LEFT JOIN ml_pub_stock s ON s.feed_id=r.feed_id AND s.isbn=j.isbn WHERE j.run_id=? AND j.state IN ('pending','validated','retry') AND (?=1 OR j.state<>'validated') AND j.next_at<=? ORDER BY CASE j.state WHEN 'validated' THEN 0 ELSE 1 END,s.rowid,j.isbn LIMIT 1",id,publishing?1:0,now).first();}
+ async nextJob(id,now,publishing=true){return (await this.nextJobs(id,now,publishing,1))[0]??null;}
+ async nextJobs(id,now,publishing=true,limit=1){return (await this.stmt("SELECT j.* FROM ml_pub_jobs j JOIN ml_pub_runs r ON r.id=j.run_id LEFT JOIN ml_pub_stock s ON s.feed_id=r.feed_id AND s.isbn=j.isbn WHERE j.run_id=? AND j.state IN ('pending','validated','retry') AND (?=1 OR j.state<>'validated') AND j.next_at<=? ORDER BY CASE j.state WHEN 'validated' THEN 0 ELSE 1 END,s.rowid,j.isbn LIMIT ?",id,publishing?1:0,now,limit).all()).results;}
  async stock(feedId,isbn){const r=await this.stmt('SELECT data_json FROM ml_pub_stock WHERE feed_id=? AND isbn=?',feedId,isbn).first();return r?JSON.parse(r.data_json):null;}
  async job(id,isbn,state,{payload,itemId,errorCode,nextAt=0,attempt=false,leaseToken=null,now=Date.now()}={}){const r=await this.stmt('UPDATE ml_pub_jobs SET state=?,payload_json=COALESCE(?,payload_json),item_id=COALESCE(?,item_id),error_code=?,next_at=?,attempts=attempts+? WHERE run_id=? AND isbn=? AND (? IS NULL OR EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)) RETURNING isbn',state,payload?JSON.stringify(payload):null,itemId??null,errorCode??null,nextAt,attempt?1:0,id,isbn,leaseToken,id,leaseToken,now).first();if(!r)throw new PublicationError('lease_lost',409);}
  async receipt(seller,isbn){return this.stmt('SELECT * FROM ml_pub_receipts WHERE seller_id=? AND isbn=?',seller,isbn).first();}
@@ -95,5 +105,5 @@ export class PublicationStore {
  async retryLegacyIdentityReviews(id,token,now){await this.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code IN ('product_isbn_or_domain_mismatch','missing_product_metadata') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,token,now).run();}
  async nonce(id,expires,now){await this.stmt('DELETE FROM ml_pub_nonces WHERE expires_at<?',now).run();try{await this.stmt('INSERT INTO ml_pub_nonces(id,expires_at) VALUES(?,?)',id,expires).run();}catch{throw new PublicationError('request_already_used',409);}}
  async preview(id){return (await this.stmt("SELECT isbn,state,payload_json,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('validated','review','uncertain') ORDER BY CASE state WHEN 'validated' THEN 0 WHEN 'review' THEN 1 ELSE 2 END,isbn LIMIT 10",id).all()).results.map(x=>({...x,payload:x.payload_json?JSON.parse(x.payload_json):null,payload_json:undefined}));}
- async summary(id){const r=id?await this.run(id):(await this.activeRun()??await this.stmt('SELECT * FROM ml_pub_runs ORDER BY created_at DESC LIMIT 1').first());if(!r)return {state:'no_active_run'};const reviewReasons=(await this.stmt("SELECT error_code,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='review' GROUP BY error_code ORDER BY n DESC,error_code LIMIT 20",r.id).all()).results;return {id:r.id,state:r.state,index:JSON.parse(r.index_json),policy_hash:r.policy_hash,approved:r.approved_hash===r.policy_hash,counts:await this.counts(r.id),review_reasons:reviewReasons,feed_id:r.feed_id,daily_cap:r.daily_cap};}
+ async summary(id){const r=id?await this.run(id):(await this.activeRun()??await this.stmt('SELECT * FROM ml_pub_runs ORDER BY created_at DESC LIMIT 1').first());if(!r)return {state:'no_active_run'};const reviewReasons=(await this.stmt("SELECT error_code,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='review' GROUP BY error_code ORDER BY n DESC,error_code LIMIT 20",r.id).all()).results;return {id:r.id,state:r.state,index:JSON.parse(r.index_json),policy_hash:r.policy_hash,approved:r.approved_hash===r.policy_hash,counts:await this.counts(r.id),review_reasons:reviewReasons,feed_id:r.feed_id,daily_cap:r.daily_cap,target_published:await this.target(r.id),published:await this.publishedCount(r.id),audit:await this.audit(r.id)};}
 }

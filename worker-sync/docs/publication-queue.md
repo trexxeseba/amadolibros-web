@@ -121,6 +121,41 @@ en `review` con `shipping_not_validated` y `diagnostic.shipping_attempts`
 `SYNC_SECRET`; `action=shipping_probe` con `run_id`, `isbn` y opcional
 `feed_id`) corre exactamente ese `prepare()` sobre un ISBN del feed y devuelve
 la variante aceptada o todos los intentos, sin guardar nada ni publicar.
+#### Campaña: objetivo de publicaciones reales
+
+`create_run_from_source` con `target_published` (input `target_published`,
+1-10000) convierte el lote en una campaña: el pool es el feed fresco (por
+ejemplo 15.000 ISBN aleatorios con stock), el lote termina en `complete` al
+llegar exactamente a ese número de `published` reales o al agotar el pool, y
+los candidatos sobrantes quedan `skipped_target_reached`. `daily_cap` sigue
+siendo el techo diario de intentos y el tamaño del pool el máximo de intentos.
+Un libro ya publicado por el vendedor entra directamente como `skipped_duplicate`.
+
+Cada tick trabaja en dos etapas: la preparación de solo lectura (stock,
+receipts, duplicados, metadata, fees y `/items/validate`) corre en paralelo
+hasta `ML_PUBLISHER_PREPARE_CONCURRENCY` candidatos (3), nunca más de los que
+faltan para el objetivo; el tramo irreversible (recheck de stock, política y
+lease → `reserve` → `creating` → revalidación → único `POST /items` → receipt)
+corre con `ML_PUBLISHER_CREATE_CONCURRENCY` (1). El tick retiene el lease
+`ML_PUBLISHER_TICK_MS` (45 s); los ticks externos siguen devolviendo `busy`.
+
+Un candidato con un problema propio y determinístico se descarta y se toma el
+siguiente: `skipped_identity` (ISBN/producto no verificable), `skipped_category`,
+`skipped_ml_requirement` (`/items/validate` exige algo que no tenemos),
+`skipped_stock_uncertain`, `skipped_duplicate`. La metadata opcional (foto,
+idioma, tapa, autor, editorial) se envía cuando está verificada y se omite
+cuando falta; nunca se inventa. 429, 5xx, transporte y auth siguen siendo
+técnicos (`retry` con backoff, nunca gastan pool; tras 5 reintentos
+`skipped_technical`); los guards de fee/política, un `payload_policy_mismatch`
+o un código desconocido son sistémicos y, repetidos 3 veces en un tick, pausan
+el lote (`paused`, se reanuda con `approve` del mismo hash). Veinte descartes
+seguidos por el mismo motivo también pausan: es un pool malo, no libros malos.
+`uncertain` no cambia: SKU estable, jamás un POST a ciegas.
+
+Si el snapshot vence, `attach_feed` con un feed fresco que contenga al menos los
+ISBN pendientes vuelve a `publishing` solo porque `approved_hash` sigue igual.
+Al terminar, el workflow corre una vez la auditoría de #427 sobre todo lo
+publicado y la guarda (`record_audit`); `status` la muestra en `audit`.
 El primer alta ofrece una unidad: `+2` del proveedor es disponibilidad positiva,
 no una cantidad exacta ni stock propio para entrega inmediata.
 Las nuevas ofertas usan SKU `AMADO-AR-ISBN` y quedan fuera del catálogo web de

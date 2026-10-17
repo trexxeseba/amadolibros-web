@@ -292,12 +292,14 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   attributes.push({id:identifier,value_name:row.isbn});
   if(attrIds.has('SELLER_SKU'))attributes.push({id:'SELLER_SKU',value_name:`AMADO-AR-${row.isbn}`});
   attributes.push(...sellerPackageAttributes(row.weightKg));
-  const pictures=(product.pictures??[]).map(picture).filter(Boolean).slice(0,12);if(!pictures.length)throw new PublicationError('missing_verified_cover',422);
+  // Pictures are sent when verified ones exist; /items/validate decides whether
+  // Mercado Libre requires them for this listing.
+  const pictures=(product.pictures??[]).map(picture).filter(Boolean).slice(0,12);
   const maxTitle=Number.isInteger(category.settings?.max_title_length)?Math.min(120,category.settings.max_title_length):60;
   const title=row.title.slice(0,maxTitle).trim();
   // Direct catalog listings keep the documented item fields (title, pictures,
   // attributes) and add the verified product binding. /items/validate decides.
-  const payload={site_id:'MLU',category_id:categoryId,price,currency_id:'UYU',available_quantity:1,buying_mode:'buy_it_now',listing_type_id:policy.listingTypeId,condition:'new',catalog_listing:catalogRequired,...(catalogRequired?{catalog_product_id:catalogProductId}:{}),seller_custom_field:`AMADO-AR-${row.isbn}`,pictures,attributes,
+  const payload={site_id:'MLU',category_id:categoryId,price,currency_id:'UYU',available_quantity:1,buying_mode:'buy_it_now',listing_type_id:policy.listingTypeId,condition:'new',catalog_listing:catalogRequired,...(catalogRequired?{catalog_product_id:catalogProductId}:{}),seller_custom_field:`AMADO-AR-${row.isbn}`,...(pictures.length?{pictures}:{}),attributes,
    sale_terms:policy.availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${policy.availabilityDays} días`}]:[]};
   if(seller.tags?.includes('user_product_seller'))payload.family_name=title;else payload.title=title;
   await verifyFees(env,payload,policy);

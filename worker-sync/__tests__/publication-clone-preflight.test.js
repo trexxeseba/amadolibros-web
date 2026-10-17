@@ -131,10 +131,11 @@ test('/items/validate rejections stay in review with the official codes and noth
  const f=await fixture(t,{failValidate:failing});
  const result=await f.service.command(f.env,'clone_preflight_catalog',{source_run_id:f.sourceId});
  assert.equal(result.selected_isbns.length,10);
- assert.equal(result.review,2);assert.equal(result.validated,8);assert.equal(result.published,0);assert.equal(f.calls.create,0);
+ // A real /items/validate error is the book's own problem: skipped with the evidence, never a review tray.
+ assert.equal(result.review,0);assert.equal(result.preflight.filter(j=>j.state==='skipped_ml_requirement').length,2);assert.equal(result.validated,8);assert.equal(result.published,0);assert.equal(f.calls.create,0);
  for(const job of result.preflight.filter(j=>failing.has(j.isbn))){
-  assert.equal(job.state,'review');assert.equal(job.error_code,'ml_http_400');
-  assert.deepEqual(job.validation,{stage:'item_validation',validation_codes:['item.catalog_listing.invalid']});
+  assert.equal(job.state,'skipped_ml_requirement');assert.equal(job.error_code,'ml_http_400');
+  assert.equal(job.validation.stage,'item_validation');assert.deepEqual(job.validation.validation_codes,['item.catalog_listing.invalid']);
   assert.equal(job.catalog_product_id,null);
  }
  assert.equal(result.state,'ready');assert.equal(result.approved,false);assert.equal(result.source_run_intact,true);
@@ -144,7 +145,7 @@ test('/items/validate rejections stay in review with the official codes and noth
 
 test('the action is admin only, validates its inputs and refuses sources without candidates or already on Catálogo',async t=>{
  const f=await fixture(t);
- assert.deepEqual(ADMIN_ONLY_ACTIONS,['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms']);
+ assert.deepEqual(ADMIN_ONLY_ACTIONS,['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','record_audit']);
  await assert.rejects(()=>f.service.command(f.env,'clone_preflight_catalog',{source_run_id:f.sourceId},{id:crypto.randomUUID(),expires:f.now+60000}),/admin_only_action/);
  await assert.rejects(()=>f.service.command(f.env,'clone_preflight_catalog',{source_run_id:'not-a-run'}),/invalid_run_id/);
  await assert.rejects(()=>f.service.command(f.env,'clone_preflight_catalog',{source_run_id:f.sourceId,limit:21}),/invalid_run_limits/);

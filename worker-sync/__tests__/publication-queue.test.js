@@ -58,7 +58,7 @@ test('approved runs create once, persist receipts, finish and do not repeat on a
 test('stock zero, stale feeds and existing paused ISBNs prevent item creation',async t=>{
  const f=await fixture(t,{rows:[{...books[0],stock:'0'},books[1]]});
  await f.store.saveIndex(f.runId,JSON.parse((await f.store.run(f.runId)).index_json),[{id:'MLU900000009',isbn:books[1].isbn,titleKey:'',status:'paused'}]);
- const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,0);assert.ok(result.counts.some(x=>x.state==='skipped_stock'));assert.ok(result.counts.some(x=>x.state==='skipped_duplicate'));
+ const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(f.calls.prepare,0);assert.ok(result.counts.some(x=>x.state==='skipped_stock_uncertain'));assert.ok(result.counts.some(x=>x.state==='skipped_duplicate'));
  f.clock.value+=25*3600000;assert.equal((await f.service.tick(f.env,f.runId)).state,'ready');
 });
 test('a fresh active run pauses if its supplier snapshot expires',async t=>{
@@ -71,7 +71,8 @@ test('an ambiguous create is quarantined and never blindly retried',async t=>{
 });
 test('rate limits defer work without declaring the queue complete',async t=>{
  const f=await fixture(t,{rows:[books[0]]});f.api.prepare=async()=>{throw new MercadoLibreError('ml_http_429',429,120);};
- assert.equal((await f.service.tick(f.env,f.runId)).state,'preflight');const job=await f.store.nextJob(f.runId,f.now+121000,false);assert.equal(job.state,'retry');assert.ok(job.next_at>=f.now+120000);assert.equal(f.calls.create,0);assert.equal((await f.service.tick(f.env,f.runId)).state,'backoff');
+ // The tick reports the backoff; the run itself stays in preflight.
+ assert.equal((await f.service.tick(f.env,f.runId)).state,'backoff');assert.equal((await f.store.run(f.runId)).state,'preflight');const job=await f.store.nextJob(f.runId,f.now+121000,false);assert.equal(job.state,'retry');assert.ok(job.next_at>=f.now+120000);assert.equal(f.calls.create,0);assert.equal((await f.service.tick(f.env,f.runId)).state,'backoff');
 });
 test('nonce reuse is rejected in persistent storage',async t=>{
  const f=await fixture(t);const id=crypto.randomUUID();await f.store.nonce(id,f.now+60000,f.now);await assert.rejects(()=>f.store.nonce(id,f.now+60000,f.now),/request_already_used/);
@@ -81,7 +82,7 @@ test('a replacement supplier snapshot never reuses stock of an absent ISBN',asyn
  const f=await fixture(t);await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
  const feedId=crypto.randomUUID();await f.store.beginFeed(feedId,new Date(f.now).toISOString(),1,f.now);await f.store.importRows(feedId,[{...books[0],stock:'0'}]);await f.store.commitFeed(feedId);await f.store.attachFeed(f.runId,feedId);
  await f.store.saveIndex(f.runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});
- const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(result.counts.find(x=>x.state==='skipped_stock').n,2);
+ const result=await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,0);assert.equal(result.counts.find(x=>x.state==='skipped_stock_uncertain').n,2);
 });
 test('refreshing stock preserves the original batch and the preview prioritizes validated candidates',async t=>{
  const f=await fixture(t),third={...books[0],isbn:'9780140328721',title:'Libro fuera del lote'},feedId=crypto.randomUUID();
@@ -200,10 +201,14 @@ test('missing ML metadata can use an exact supplier edition without sending ML c
  assert.equal(payload.attributes.find(a=>a.id==='LANGUAGE').value_name,'Inglés');assert.equal(payload.attributes.find(a=>a.id==='BOOK_COVER').value_name,'Blanda');assert.match(payload.pictures[0].source,/sbslibreria/);
 });
 test('supplier metadata refuses unverified ISBNs, conflicting SKUs, ambiguous formats and untrusted cover hosts',async()=>{
- for(const change of [p=>{p.ISBN=[books[1].isbn];},p=>{p.ISBN='bad';},p=>{p.items[0].ean=books[1].isbn;},p=>{p.items.push(p.items[0]);},p=>{p.items[0].isKit=true;},p=>{p.items[0].images[0].imageUrl='https://untrusted.example/cover.jpg';},p=>{p.Idioma=['No determinado'];},p=>{p.items[0].sellers[0].commertialOffer.IsAvailable=false;}]){
+ for(const change of [p=>{p.ISBN=[books[1].isbn];},p=>{p.ISBN='bad';},p=>{p.items[0].ean=books[1].isbn;},p=>{p.items.push(p.items[0]);},p=>{p.items[0].isKit=true;},p=>{p.items[0].sellers[0].commertialOffer.IsAvailable=false;}]){
   const product=supplierMetadata();change(product);
   await assert.rejects(()=>supplierBookMetadata(books[0],{fetcher:async()=>Response.json([product])}),error=>error instanceof PublicationError);
  }
+ // Optional metadata is omitted, never invented and never a reason to refuse the book.
+ const partial=supplierMetadata();partial.Idioma=['No determinado'];partial.items[0].images[0].imageUrl='https://untrusted.example/cover.jpg';
+ const meta=await supplierBookMetadata(books[0],{fetcher:async()=>Response.json([partial])});
+ assert.ok(!meta.attributes.some(a=>a.id==='LANGUAGE'));assert.deepEqual(meta.pictures,[]);
  await assert.rejects(()=>supplierBookMetadata(books[0],{fetcher:async()=>{throw Error('private-test-token');}}),error=>{assert.equal(error.code,'missing_verified_book_metadata');assert.doesNotMatch(JSON.stringify(error),/private-test-token/);return true;});
 });
 test('required catalog and ambiguous ML matches never fall back to a traditional supplier listing',async()=>{
@@ -299,8 +304,10 @@ test('a failed catalog validation keeps the official codes as evidence for revie
  const f=await fixture(t,{rows:[books[0]],apiOverrides:{prepare:api.prepare}});
  await f.store.db.prepare("UPDATE ml_pub_runs SET policy_json=?,policy_hash=? WHERE id=?").bind(JSON.stringify(validPolicy(catalogPolicy)),await policyHash(catalogPolicy),f.runId).run();
  const result=await f.service.tick(f.env,f.runId);
- assert.equal(result.review_reasons[0].error_code,'ml_http_400');
- const job=await f.store.db.prepare('SELECT payload_json FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
+ // A real validation error is the book's own problem: skipped, with the evidence kept.
+ assert.equal(result.counts.find(x=>x.state==='skipped_ml_requirement').n,1);assert.deepEqual(result.review_reasons,[]);
+ const job=await f.store.db.prepare('SELECT payload_json,error_code FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
+ assert.equal(job.error_code,'ml_http_400');
  const diagnostic=JSON.parse(job.payload_json).diagnostic;
  assert.equal(diagnostic.stage,'item_validation');assert.deepEqual(diagnostic.validation_codes,['item.catalog_listing.invalid']);
  // Causes and the shipping attempts are kept as bounded evidence for review.
@@ -310,7 +317,10 @@ test('a catalog payload is never created under a policy that did not approve Cat
  const f=await fixture(t,{rows:[books[0]]});await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
  await f.store.job(f.runId,books[0].isbn,'validated',{payload:{price:quoteMercadoLibre(books[0],policy).price,currency_id:'UYU',condition:'new',catalog_listing:true,catalog_product_id:'MLU123456'}});
  const result=await f.service.tick(f.env,f.runId);
- assert.equal(f.calls.create,0);assert.deepEqual(result.review_reasons,[{error_code:'catalog_payload_not_approved',n:1}]);assert.equal(await f.store.receipt('440298103',books[0].isbn),null);
+ // A policy guard is systemic, never a reason to burn the book: it is deferred, not skipped.
+ assert.equal(f.calls.create,0);assert.deepEqual(result.review_reasons,[]);assert.equal(await f.store.receipt('440298103',books[0].isbn),null);
+ const guarded=await f.store.db.prepare('SELECT state,error_code FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
+ assert.equal(guarded.state,'retry');assert.equal(guarded.error_code,'catalog_payload_not_approved');
  const api=createPublicationMeli({tokenProvider:async()=>'token',fetcher:async()=>{throw Error('no network expected');}});
  await assert.rejects(()=>api.create({},{price:1,currency_id:'UYU',condition:'new',catalog_listing:true,catalog_product_id:'MLU1'},policy),/catalog_payload_not_approved/);
  await assert.rejects(()=>api.create({},{price:1,currency_id:'UYU',condition:'new',catalog_listing:false,catalog_product_id:'MLU1'},catalogPolicy),/payload_policy_mismatch/);
