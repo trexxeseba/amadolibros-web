@@ -26,7 +26,7 @@ async function fixture(t, options = {}) {
     finally { sqlite.close(); }
   });
   const clock = { value: 1700000000000 }, calls = [];
-  const env = { APP_ENV: 'production', ORDERS_DB: db, CLIENT_SECRET: 'test-secret', PANEL_PASSWORD: 'test-password', AMADO_KV: new Proxy({}, { get() { throw Error('Legacy KV must never be used'); } }) };
+  const env = { APP_ENV: 'production', ORDERS_DB: db, MELI_VINTAGE_CLIENT_SECRET: 'test-secret', CLIENT_SECRET: 'books-secret-canary', PANEL_PASSWORD: 'test-password', AMADO_KV: new Proxy({}, { get() { throw Error('Legacy KV must never be used'); } }) };
   const session = await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD));
   const fetcher = async (url, init) => {
     calls.push({ url, init });
@@ -38,6 +38,7 @@ async function fixture(t, options = {}) {
       assert.equal(body.get('grant_type'), 'authorization_code');
       assert.equal(body.get('redirect_uri'), CALLBACK);
       assert.equal(body.get('client_id'), APP_ID);
+      assert.equal(body.get('client_secret'), 'test-secret');
       assert.ok(body.get('code_verifier'));
       if (options.tokenError) return Response.json({ error: options.tokenError, message: 'test-secret and vintage-refresh-secret must not leak' }, { status: 400 });
       if (options.tokenRedirect) return new Response('', { status: 302, headers: { location: 'https://attacker.test/collect' } });
@@ -109,6 +110,20 @@ test('the native form keeps a same-site Origin through middleware; null and fore
     assert.equal(rejected.status, 403);
   }
   assert.equal(f.calls.length, 0);
+});
+
+test('Vintage requires its dedicated secret and never falls back to the existing Libros secret', async t => {
+  const f = await fixture(t);
+  delete f.env.MELI_VINTAGE_CLIENT_SECRET;
+  const request = () => new Request(START, { headers: { cookie: `amado_panel_session=${f.session}` } });
+  const response = await f.run(request());
+  assert.equal(response.status, 503);
+  assert.match(await response.text(), /MELI_VINTAGE_CLIENT_SECRET/);
+  assert.equal(f.calls.length, 0);
+  f.env.MELI_VINTAGE_CLIENT_SECRET = '  test-secret\n';
+  const flow = await f.start();
+  assert.equal((await f.run(new Request(flow.callback, { headers: { cookie: flow.cookie } }))).status, 200);
+  assert.equal(f.env.CLIENT_SECRET, 'books-secret-canary');
 });
 
 test('plain callback makes no API calls or database changes', async t => {

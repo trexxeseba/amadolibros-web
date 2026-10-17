@@ -86,7 +86,9 @@ export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now 
       return page('Diagnóstico de transporte', `<p>Consulta pública de conexión: <strong>${escape(publicTransportCache.result)}</strong>.</p><p>Esta comprobación no utiliza credenciales, no autoriza cuentas ni accede a la base de datos.</p>`);
     }
     const db = env?.ORDERS_DB;
-    if (!db?.prepare || !env?.CLIENT_SECRET || (env.APP_ID && String(env.APP_ID) !== APP_ID)) return page('Conexión pendiente de configuración', '<p>Falta configurar el acceso de la app en el servidor. No se modificó ninguna autorización.</p>', 503);
+    // Dedicated binding: never read or overwrite the Libros CLIENT_SECRET.
+    const clientSecret = typeof env?.MELI_VINTAGE_CLIENT_SECRET === 'string' ? env.MELI_VINTAGE_CLIENT_SECRET.trim() : '';
+    if (!db?.prepare || !clientSecret || (env.APP_ID && String(env.APP_ID) !== APP_ID)) return page('Conexión pendiente de configuración', '<p>Configurá MELI_VINTAGE_CLIENT_SECRET en Cloudflare Pages Production con la clave existente de la app 4741021817925208. No cambies CLIENT_SECRET ni regeneres la clave de la app. No se modificó ninguna autorización.</p>', 503);
     if (url.pathname === START_PATH) {
       const panel = resolvePanelConfig(env);
       if (!panel.ok || !await hasValidSession(request, await deriveSessionSecret(panel.password))) return page('Ingresá al panel de Amado', `<p><a href="/panel">Abrir el panel</a>. Después volvé a esta página en la misma ventana de Chrome donde está abierta Amado Vintage.</p>`, 401);
@@ -95,7 +97,7 @@ export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now 
         // refresh a grant, or create tokens. Never reuse the user's real code.
         let result;
         try {
-          await json('https://api.mercadolibre.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: APP_ID, client_secret: env.CLIENT_SECRET, redirect_uri: CALLBACK, code: 'amado-vintage-diagnostic-deliberately-invalid-code', code_verifier: 'amado-vintage-diagnostic-invalid-code-verifier-43-characters' }) });
+          await json('https://api.mercadolibre.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: APP_ID, client_secret: clientSecret, redirect_uri: CALLBACK, code: 'amado-vintage-diagnostic-deliberately-invalid-code', code_verifier: 'amado-vintage-diagnostic-invalid-code-verifier-43-characters' }) });
           result = 'Respuesta inesperada: detener la conexión y revisar el servidor.';
         } catch (error) {
           result = failureSummary(error);
@@ -137,7 +139,7 @@ export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now 
       const code = url.searchParams.get('code');
       if (url.searchParams.has('error') || !code || code.length > 2048) return page('Autorización cancelada', '<p>No se guardó ninguna credencial.</p>', 400, headers);
       stage = 'token_exchange';
-      const tokens = await json('https://api.mercadolibre.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: APP_ID, client_secret: env.CLIENT_SECRET, redirect_uri: CALLBACK, code, code_verifier: pending.verifier }) });
+      const tokens = await json('https://api.mercadolibre.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: APP_ID, client_secret: clientSecret, redirect_uri: CALLBACK, code, code_verifier: pending.verifier }) });
       stage = 'token_payload';
       if (!tokens.access_token || !tokens.refresh_token || !Number.isFinite(Number(tokens.expires_in)) || Number(tokens.expires_in) <= 0) throw new Error('invalid_tokens');
       stage = 'user_identity';
