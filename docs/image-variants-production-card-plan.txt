@@ -1,0 +1,75 @@
+CIERRE DEL INVENTARIO Y GENERACION ACOTADA — 2026-10-17
+
+Resultado productivo medido, baseline 29c5dce:
+https://github.com/trexxeseba/amadolibros-web/actions/runs/39000202243
+8225 tarjetas externas cruzadas; 2790 activas; 2788 hashes unicos;
+0 referencias activas sin correspondencia; 8364 variantes ausentes;
+0 variantes validas/invalidas/no verificadas bajo el prefijo inventariado.
+Recetas: v1-240-q85, v1-360-q85, v1-480-q85.
+Los masters productivos fueron comprobados en la auditoria previa; este
+listado de variantes no repite HEAD de originales. Preview tiene otro bucket.
+0 escrituras productivas, 0 imagenes solicitadas por el job, 0 despliegues.
+
+Preparado en el generador EXISTENTE:
+- IMAGE_VARIANT_CARD_PLAN exige un plan cerrado de exactamente 2788 hashes.
+- Valida bucket productivo, baseline, recetas, formato, tamano y SHA del listado.
+- Usa directamente los masters del plan: no lista masters ni lee/escribe el
+  cursor global. No selecciona historicos ni posiciones de galeria.
+- HEAD usa la API privada del escritor, que valida metadata master/receta/SHA;
+  no usa el endpoint publico con original-fallback ni /cdn-cgi/image/.
+- Reutiliza objetos validos; comprueba SHA del master descargado; PUT condicional
+  impide sobrescrituras y duplicados. Reintentar el mismo plan es idempotente.
+- CLI exige IMAGE_VARIANT_WRITE_APPROVAL igual al digest del plan.
+- Lectura web productiva false y escritor productivo false siguen intactos.
+
+Pendiente concreto ANTES de escribir:
+El job de inventario guardo solo agregados, no el listado de hashes. No existe
+todavia un plan sellado real en este checkout. No presentar el total como si
+fuera el listado. prepare-card-plan.mjs consume PRIVADAMENTE manifest y catalogo
+congelados usados por el inventario (updated_at 03:10:32.644Z / 03:10:21.984Z,
+2026-10-17), mas los 8225 IDs. Solo acepta 2790 activas / 2788 hashes; valida
+referencia actual de posicion cero y origen; deduplica antes de guardar el plan.
+Se necesita recuperar esos insumos congelados, especialmente el catalogo de
+esa hora que el job no conservo; un catalogo vivo diferente se rechaza.
+Si no se recupera, hay que aprobar un nuevo snapshot de seleccion y comparar
+su diferencia con el alcance auditado, sin inventar que es el mismo listado.
+No subir listado ni manifest productivo a logs/artifacts publicos.
+
+El escritor actual exige IMAGE_VARIANTS_WRITE_ENABLED=true, hoy false. Esta
+preparacion NO lo habilita. La autorizacion de objetos no autoriza por si sola
+un despliegue: bajo la restriccion actual no ejecutar hasta disponer de una
+via de escritura existente habilitada y validada, o aprobacion separada para
+habilitar el escritor aislado. No ampliar permisos ni crear credenciales.
+
+Preparacion local (no genera imagenes ni escribe R2):
+node scripts/images/prepare-card-plan.mjs manifest.json catalog.json external-ids.json private-plan.json
+Ejecucion posterior autorizada: IMAGE_VARIANT_CARD_PLAN=ruta privada al plan;
+IMAGE_VARIANT_WRITE_APPROVAL=digest aprobado; WORKER_SYNC_TRIGGER_URL y SYNC_SECRET
+existentes; node scripts/images/build-permanent-variants.mjs.
+No ejecutar el modo general del cron para este alcance.
+
+Tiempo y costo incremental (estimaciones, no factura ni ahorro confirmado):
+- Encoder medido previamente: 12 masters, 81 ms/master para estas 3 recetas;
+  85023 bytes/master derivados. Extrapolacion: 237044124 bytes (~237 MB).
+- 1–2 horas de extremo a extremo con 4 masters concurrentes: supuesto de
+  latencia remota 0.5–1 s; PUT no medido. Encoder puro ~226 s secuenciales.
+- Generacion: 8364 PUT Class A; ~27880 Class B por HEAD de variante, GET de
+  fuente y validacion del escritor. Verificacion adicional 8364 GET variantes
+  (~237 MB), validando SHA/contenido/metadata, sin fallback publico.
+- Operaciones R2 nominales incl. verificacion: ~USD 0.051 sin cuotas/redondeos.
+- Almacenamiento: ~USD 0.00356/mes nominal; cerca de USD 0.015 si ese incremento
+  cruza una unidad GB-mes facturable. Sin costo de egreso R2 Standard.
+- Runner ubuntu-latest estandar en repositorio publico: USD 0.
+- Worker ~27880 solicitudes incluyendo verificacion: ~USD 0.00836 nominal
+  mas CPU aun no medida. No se suma una nueva suscripcion.
+- Total nominal ~USD 0.06 + CPU; incremento real puede ser cero con cuotas o
+  alcanzar ~USD 4.86 + CPU si cruza simultaneamente unidades A/B; no se conoce
+  consumo mensual de cuenta. Reintentos no incluidos. No usarlo como tope firme.
+https://developers.cloudflare.com/r2/pricing/
+https://developers.cloudflare.com/workers/platform/pricing/
+https://docs.github.com/en/billing/concepts/product-billing/github-actions
+
+Aceptacion posterior: 8364 objetos validos por hash/receta/contenido, cero
+ausentes/invalidos, y segunda pasada cero creados. Solo entonces solicitar
+activacion separada. Rollback antes de activar: detener el generador; mantener
+lectura false; conservar derivados. No borrar imagenes ni cancelar servicios.

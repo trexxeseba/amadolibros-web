@@ -1,8 +1,26 @@
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { readFile } from 'node:fs/promises';
 import { IMAGE_VARIANTS } from '../../shared/image-variants.js';
 
 const MAX_BYTES = 8 * 1024 * 1024;
+export const CARD_RECIPES = Object.freeze(['v1-240-q85', 'v1-360-q85', 'v1-480-q85']);
+export function validateCardPlan(plan, expectedMasters = 2788) {
+  if (plan?.schema !== 'active-card-variants-v1' || plan.bucket !== 'amadolibros-images-production' ||
+      plan.baseline !== '29c5dce82ce807fdcd58d3c49c21fc64dc2b5cea' ||
+      JSON.stringify(plan.recipes) !== JSON.stringify(CARD_RECIPES) ||
+      !Array.isArray(plan.masters) || plan.masters.length !== expectedMasters) throw new Error('invalid-card-plan');
+  const hashes = new Set();
+  for (const master of plan.masters) {
+    const match = /^([a-f0-9]{64})\.(jpg|png|webp)$/.exec(master.file || '');
+    if (!match || hashes.has(match[1]) || !Number.isSafeInteger(master.size) || master.size <= 0 || master.size > MAX_BYTES)
+      throw new Error('invalid-card-master');
+    hashes.add(match[1]);
+  }
+  const digest = createHash('sha256').update(JSON.stringify(plan.masters)).digest('hex');
+  if (digest !== plan.masters_sha256) throw new Error('card-plan-digest-mismatch');
+  return plan.masters;
+}
 export async function createVariant(bytes, recipe, sharp) {
   const image = sharp(bytes, { limitInputPixels: 40_000_000, failOn: 'warning' });
   const metadata = await image.metadata();
@@ -29,7 +47,12 @@ async function readBounded(response) {
 }
 
 export async function buildPermanentVariants({ baseUrl, token, limit = 100,
-  fetchFn = fetch, sharp, resume = true, productId = null } = {}) {
+  fetchFn = fetch, sharp, resume = true, productId = null, cardPlan = null } = {}) {
+  // Validate before any remote request. A scoped run never reads the global
+  // master listing or its cursor, and cannot expand into galleries/history.
+  const plannedMasters = cardPlan ? validateCardPlan(cardPlan) : null;
+  if (plannedMasters && productId) throw new Error('conflicting-master-selection');
+  const recipes = plannedMasters ? CARD_RECIPES.map(id => IMAGE_VARIANTS.find(r => r.id === id)) : IMAGE_VARIANTS;
   const base = new URL(baseUrl);
   if (base.protocol !== 'https:' || base.username || base.password || !token) throw new Error('invalid-builder-config');
   base.pathname = '/image-variants/'; base.search = ''; base.hash = '';
@@ -44,16 +67,16 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
     }
     return response;
   }
-  const progress = resume ? await (await call('progress')).json() : { cursor: null };
+  const progress = !plannedMasters && resume ? await (await call('progress')).json() : { cursor: null };
   const query = new URLSearchParams({ limit: String(boundedLimit) });
   if (progress.cursor) query.set('cursor', progress.cursor);
   if (productId) query.set('product_id', productId);
-  const listing = await (await call(`masters?${query}`)).json();
+  const listing = plannedMasters ? { objects: plannedMasters, cursor: null } : await (await call(`masters?${query}`)).json();
   const result = { examined: listing.objects.length, sourcesDownloaded: 0, created: 0, existing: 0, failures: [], nextCursor: listing.cursor };
   async function processMaster(master) {
     const hash = master.file.split('.')[0]; let bytes = null;
     try {
-      for (const recipe of IMAGE_VARIANTS) {
+      for (const recipe of recipes) {
         const path = `${hash}/${recipe.id}`;
         const head = await call(path, { method: 'HEAD' }, [200, 404]);
         if (head.status === 200) { result.existing++; continue; }
@@ -78,17 +101,22 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
   }));
   // No avanzar el lote si falla una fuente: el próximo intento reutiliza los
   // objetos completados. Una fuente inválida persistente requiere revisión.
-  if (resume && result.failures.length === 0) await call('progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: listing.cursor }) });
+  if (!plannedMasters && resume && result.failures.length === 0) await call('progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: listing.cursor }) });
   return result;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { default: sharp } = await import('sharp');
+  const cardPlan = process.env.IMAGE_VARIANT_CARD_PLAN
+    ? JSON.parse(await readFile(process.env.IMAGE_VARIANT_CARD_PLAN, 'utf8')) : null;
+  if (cardPlan && process.env.IMAGE_VARIANT_WRITE_APPROVAL !== cardPlan.masters_sha256)
+    throw new Error('explicit-card-plan-write-approval-required');
   const result = await buildPermanentVariants({
     baseUrl: process.env.WORKER_SYNC_TRIGGER_URL, token: process.env.SYNC_SECRET,
     limit: process.env.IMAGE_VARIANT_MASTER_LIMIT, sharp,
     productId: process.env.IMAGE_VARIANT_SAMPLE_PRODUCT_ID || null,
     resume: !process.env.IMAGE_VARIANT_SAMPLE_PRODUCT_ID,
+    cardPlan,
   });
   console.log(JSON.stringify(result, null, 2));
   if (result.failures.length) process.exitCode = 1;
