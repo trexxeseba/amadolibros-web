@@ -1,0 +1,27 @@
+name: Audit ML Queue trial 20 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-queue-trial-20-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Audit all 20 published items for 18-day availability
+        run: node scripts/mercadolibre/publisher-control.mjs
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          PUBLISHER_ACTION: audit_availability_terms
+          PUBLISHER_RUN_ID: 75f0d434-210c-f2cf-79bd-a19d6a2de5b0

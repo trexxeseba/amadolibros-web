@@ -34,7 +34,7 @@ export class PublicationStore {
  async createRun(run){
   const statements=[
    this.stmt(`INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'preflight',?,?,?,?,?)`,run.id,run.feedId,JSON.stringify(run.policy),run.policyHash,run.now,run.now,JSON.stringify({status:'active',scroll:null,pending:[],done:false,seen:0}),run.dailyCap,run.preflightLimit),
-   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state,error_code,item_id) SELECT ?,s.isbn,CASE WHEN r.isbn IS NULL THEN 'pending' ELSE 'skipped_duplicate' END,CASE WHEN r.isbn IS NULL THEN NULL ELSE 'existing_receipt' END,r.item_id FROM ml_pub_stock s LEFT JOIN ml_pub_receipts r ON r.seller_id=? AND r.isbn=s.isbn WHERE s.feed_id=?`,run.id,SELLER_ID,run.feedId),
+   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state,error_code,item_id) SELECT ?,s.isbn,CASE WHEN r.isbn IS NOT NULL THEN 'skipped_duplicate' WHEN EXISTS(SELECT 1 FROM ml_pub_jobs h WHERE h.isbn=s.isbn) THEN 'skipped_history' ELSE 'pending' END,CASE WHEN r.isbn IS NOT NULL THEN 'existing_receipt' WHEN EXISTS(SELECT 1 FROM ml_pub_jobs h WHERE h.isbn=s.isbn) THEN 'previously_processed' ELSE NULL END,r.item_id FROM ml_pub_stock s LEFT JOIN ml_pub_receipts r ON r.seller_id=? AND r.isbn=s.isbn WHERE s.feed_id=?`,run.id,SELLER_ID,run.feedId),
   ];
   if(Number.isInteger(run.targetPublished))statements.push(this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published,created_at) VALUES(?,?,?)',run.id,run.targetPublished,run.now));
   await this.db.batch(statements);

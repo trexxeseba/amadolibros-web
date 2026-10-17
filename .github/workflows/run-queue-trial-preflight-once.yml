@@ -1,0 +1,33 @@
+name: Run ML Queue trial preflight once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/run-queue-trial-preflight-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Create 50-pool / target-20 Queue trial in preflight only
+        run: node scripts/mercadolibre/publisher-control.mjs
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          PUBLISHER_ACTION: create_run_from_source
+          PUBLISHER_RUN_ID: eb70a953-6504-4359-b109-b4c18be38fc0
+          PUBLISHER_FEED_ID: 946b3372-051e-47e5-8aa4-a5e1578b2e02
+          PUBLISHER_AVAILABILITY_DAYS: '18'
+          PUBLISHER_DAILY_CAP: '1000'
+          PUBLISHER_PREFLIGHT_LIMIT: '20'
+          PUBLISHER_TARGET_PUBLISHED: '20'
+          PUBLISHER_CYCLES: '10'
