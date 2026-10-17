@@ -95,7 +95,7 @@ export class PublicationStore {
   return (await this.stmt("SELECT isbn,item_id FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL ORDER BY isbn LIMIT ? OFFSET ?",id,limit,offset).all()).results;
  }
  async publishedCount(id){return (await this.stmt("SELECT COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL",id).first()).n;}
- async target(id){return this.stmt('SELECT target_published FROM ml_pub_run_targets WHERE run_id=?',id).first();}
+ async target(id){try{return await this.stmt('SELECT target_published FROM ml_pub_run_targets WHERE run_id=?',id).first();}catch(error){if(/no such table/i.test(String(error?.message)))return null;throw error;}}
  async skipRemainingAtTarget(id,leaseToken,now){await this.stmt("UPDATE ml_pub_jobs SET state='skipped_target_reached',error_code=NULL,next_at=0 WHERE run_id=? AND state IN ('pending','validated','retry') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,leaseToken,now).run();}
  async retryLegacyIdentityReviews(id,token,now){await this.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code IN ('product_isbn_or_domain_mismatch','missing_product_metadata') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,token,now).run();}
  async nonce(id,expires,now){await this.stmt('DELETE FROM ml_pub_nonces WHERE expires_at<?',now).run();try{await this.stmt('INSERT INTO ml_pub_nonces(id,expires_at) VALUES(?,?)',id,expires).run();}catch{throw new PublicationError('request_already_used',409);}}
