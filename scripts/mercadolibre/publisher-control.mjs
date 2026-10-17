@@ -8,7 +8,7 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
-const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -25,7 +25,7 @@ async function attachWhenFree(runId,feedId,{attempts=24,waitMs=15000}={}){
   catch(error){if(error.code!=='run_busy'||attempt>=attempts)throw error;console.log(JSON.stringify({state:'run_busy',attempt,retry_in_ms:waitMs}));await sleep(waitMs);}
  }
 }
-function summary(body){console.log(JSON.stringify({id:body.id,state:body.state,counts:body.counts,policy_hash:body.policy_hash,approved:body.approved,indexed:body.index?.seen,index_complete:body.index?.done,daily_cap:body.daily_cap}));}
+function summary(body){console.log(JSON.stringify({id:body.id,state:body.state,counts:body.counts,policy_hash:body.policy_hash,approved:body.approved,indexed:body.index?.seen,index_complete:body.index?.done,daily_cap:body.daily_cap,target_published:body.target_published,target_remaining:body.target_remaining,queued:body.queued}));}
 async function importFeed(input){
  // PUBLISHER_NEW_RUN=true creates a fresh run (new policy, new approval) and
  // leaves the existing run exactly as it is instead of attaching the feed to it.
@@ -67,8 +67,9 @@ if(action==='import'){
  const availabilityDays=process.env.PUBLISHER_AVAILABILITY_DAYS?Number(process.env.PUBLISHER_AVAILABILITY_DAYS):undefined;
  const dailyCap=process.env.PUBLISHER_DAILY_CAP?Number(process.env.PUBLISHER_DAILY_CAP):1000;
  const preflightLimit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):20;
- const result=await command('create_run_from_source',{source_run_id:runId,feed_id:feedId,daily_cap:dailyCap,preflight_limit:preflightLimit,...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
- console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,availability_days:result.availability_days,catalog_listing:result.catalog_listing,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,daily_cap:result.daily_cap,source_run_intact:result.source_run_intact,counts:result.counts}));
+ const targetPublished=process.env.PUBLISHER_TARGET_PUBLISHED?Number(process.env.PUBLISHER_TARGET_PUBLISHED):undefined;
+ const result=await command('create_run_from_source',{source_run_id:runId,feed_id:feedId,daily_cap:dailyCap,preflight_limit:preflightLimit,...(availabilityDays!==undefined?{availability_days:availabilityDays}:{}),...(targetPublished!==undefined?{target_published:targetPublished}:{})});
+ console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,availability_days:result.availability_days,catalog_listing:result.catalog_listing,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,daily_cap:result.daily_cap,target_published:result.target_published,target_remaining:result.target_remaining,source_run_intact:result.source_run_intact,counts:result.counts}));
  const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
  for(let i=0;i<cycles;i++){const step=await command('tick',{run_id:result.new_run_id});summary(step);if(!['preflight','busy','backoff'].includes(step.state))break;}
 }else if(action==='clone_preflight_catalog'){
