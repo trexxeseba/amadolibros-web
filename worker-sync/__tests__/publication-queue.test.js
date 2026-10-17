@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {sqliteD1} from './helpers/sqlite-d1.js';
 import {PublicationStore} from '../publication-store.js';
-import {createPublicationService} from '../publication-engine.js';
+import {createPublicationService,candidateSkipState} from '../publication-engine.js';
 import {canonicalIsbn,hasSupplierStock,quoteMercadoLibre,policyHash,sha256,PublicationError} from '../publication-policy.js';
 import {MercadoLibreError,createPublicationMeli} from '../publication-meli.js';
 import {supplierBookMetadata} from '../publication-book-metadata.js';
@@ -27,6 +27,13 @@ async function fixture(t,{rows=books,cap=10000,target=null,apiOverrides={}}={}){
  return {store,service,env,runId,feedId,now,calls,clock,api};
 }
 
+test('deterministic candidate problems become skip states while policy/system problems stay visible',()=>{
+ assert.equal(candidateSkipState(new PublicationError('ambiguous_product_metadata',422)),'skipped_identity');
+ assert.equal(candidateSkipState(new PublicationError('missing_book_category',422)),'skipped_category');
+ assert.equal(candidateSkipState(new PublicationError('supplier_stock_conflict',422)),'skipped_stock_uncertain');
+ assert.equal(candidateSkipState(new MercadoLibreError('ml_http_400',400)),'skipped_ml_requirement');
+ assert.equal(candidateSkipState(new PublicationError('payload_policy_mismatch',422)),null);
+});
 test('ISBN, stock and minimum pricing preserve supplier meaning',()=>{
  assert.equal(canonicalIsbn('978-950-23-2306-0'),'9789502323060');
  assert.throws(()=>canonicalIsbn('9789502323061'),/invalid_isbn/);
