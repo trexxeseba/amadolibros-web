@@ -36,9 +36,12 @@ try{
   try{
    for(const root of ['book-cover','preview-cover']){
     const ref='image_cost_containment_'+root.replaceAll('-','_');
-    if(before.rules?.some(r=>r.ref===ref))throw Error('existing-containment-review-required');
     const rule={ref,description:'Temporary cover transformation containment - originals',expression:'(http.host in {"www.amadolibros.com" "amadolibros.com"} and http.request.method in {"GET" "HEAD"} and http.request.uri.path wildcard "/cdn-cgi/image/*/'+root+'/*")',action:'redirect',action_parameters:{from_value:{target_url:{expression:'wildcard_replace(http.request.uri.path, "/cdn-cgi/image/*/'+root+'/*", "https://www.amadolibros.com/'+root+'/${2}")'},status_code:302,preserve_query_string:false}},enabled:false};
-    const updated=await api(prefix+'/rulesets/'+before.id+'/rules','POST',rule);
+    const existing=before.rules?.find(r=>r.ref===ref);
+    if(existing){
+     if(existing.enabled!==false||existing.expression!==rule.expression||JSON.stringify(existing.action_parameters)!==JSON.stringify(rule.action_parameters))throw Error('existing-containment-review-required');
+    }
+    const updated=existing?before:await api(prefix+'/rulesets/'+before.id+'/rules','POST',rule);
     const added=updated.rules.find(r=>r.ref===ref);if(!added)throw Error('created-rule-not-returned');
     created.push({id:added.id,rule});report.rules.push({id:added.id,ref,enabled:false});
    }
@@ -48,11 +51,19 @@ try{
    }
    const after=await api(prefix+'/rulesets/'+before.id);report.after=after;
    for(const old of before.rules||[]){
+    if(created.some(r=>r.id===old.id))continue;
     const kept=after.rules.find(r=>r.id===old.id);
     for(const field of ['expression','action','action_parameters','enabled'])if(JSON.stringify(kept?.[field])!==JSON.stringify(old[field]))throw Error('existing-rule-changed');
    }
    // A bounded pair of real checks, not an image inventory. Never follow a transform redirect automatically.
    const samples=JSON.parse(await readFile('scripts/images/cf-containment-samples.json','utf8'));
+   if(process.env.CONTAINMENT_PROPAGATION_MS){
+    const ms=Number(process.env.CONTAINMENT_PROPAGATION_MS);
+    if(!Number.isFinite(ms)||ms<0||ms>45000)throw Error('invalid-propagation-wait');
+    console.log('Waiting for edge configuration propagation');
+    await new Promise(resolve=>setTimeout(resolve,ms));
+    report.trace=await api('/accounts/'+account+'/request-tracer/trace','POST',{method:'GET',url:'https://www.amadolibros.com'+samples[0]});
+   }
    for(const sample of samples){
     const transformed='https://www.amadolibros.com'+sample;
     const expected='https://www.amadolibros.com/'+sample.split('/').slice(4).join('/');
