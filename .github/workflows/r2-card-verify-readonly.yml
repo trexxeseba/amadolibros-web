@@ -1,0 +1,51 @@
+name: R2 card second pass - read only
+on:
+  push:
+    branches: [codex/r2-card-inventory-29c5dce]
+    paths: ['.github/workflows/r2-card-verify-readonly.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: permanent-image-variants-production
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Install pinned decoder
+        working-directory: scripts/images
+        run: npm ci --no-audit --no-fund
+      - name: Test read-only enforcement and resolver
+        run: node --test scripts/images/__tests__/card-stage.test.mjs functions/__tests__/preview-cover.test.js
+      - name: Recover exact frozen manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/images/fetch-frozen-card-inputs.py
+      - name: Rebuild sealed plan without image requests
+        run: node scripts/images/prepare-card-plan.mjs "$RUNNER_TEMP/card-manifest.json" scripts/images/card-catalog-frozen.json scripts/images/inventory-external-ids.json "$RUNNER_TEMP/private-card-plan.json"
+      - name: Verify all stored WebP and run real runtime resolver against frozen scope
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          IMAGE_VARIANT_CARD_PLAN: ${{ runner.temp }}/private-card-plan.json
+          CARD_VERIFY_ONLY: 'true'
+          CARD_RESOLVER_MANIFEST: ${{ runner.temp }}/card-manifest.json
+          CARD_RESOLVER_CATALOG: scripts/images/card-catalog-frozen.json
+          CARD_PROGRESS_PATH: ${{ runner.temp }}/card-verify.encrypted.json
+          CARD_SUMMARY_PATH: ${{ runner.temp }}/card-verify-summary.json
+        run: node scripts/images/r2-card-stage.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: card-second-pass-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/card-verify.encrypted.json
+            ${{ runner.temp }}/card-verify-summary.json
+          if-no-files-found: warn
+          retention-days: 90

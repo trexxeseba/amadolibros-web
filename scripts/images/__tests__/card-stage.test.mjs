@@ -53,12 +53,20 @@ test('pilot validates 30 stored variants before remaining; retry creates nothing
     if(!f.plan.masters.slice(0,10).some(m=>m.file.startsWith(hash)) && args[1].startsWith('covers/variants')) assert.ok(pilotPassed);
     return f.s3(...args);
   };
-  const run=()=>runCardStages({plan:f.plan,s3,sharp,approvedDigest:f.plan.masters_sha256,
+  const run=(verifyOnly=false)=>runCardStages({plan:f.plan,s3,sharp,approvedDigest:f.plan.masters_sha256,verifyOnly,
     checkpoint:async state=>{saves++;if(state.pilot_passed)pilotPassed=true;},
     report:row=>assert.equal(row.verified_variants,30)});
   const first=await run();assert.equal(first.stage,'completed');assert.equal(first.created,30);
   assert.equal(Object.keys(first.completed).length,8364);assert.equal(f.writes.length,30);assert.ok(saves>=8364);
-  const second=await run();assert.equal(second.created,0);assert.equal(f.writes.length,30);
+  const second=await run(true);assert.equal(second.created,0);assert.equal(second.existing,8364);assert.equal(f.writes.length,30);
+});
+
+test('read-only pass stops on missing variant without downloading masters or encoding/uploading',async()=>{
+  const f=await fixture();let saved;
+  await assert.rejects(runCardStages({plan:f.plan,s3:f.s3,sharp,verifyOnly:true,approvedDigest:f.plan.masters_sha256,
+    checkpoint:async state=>{saved=structuredClone(state);}}),/generation-stage-failed/);
+  assert.equal(f.writes.length,0);assert.equal(saved.source_downloads,0);
+  assert.ok(saved.failures.every(row=>row.reason==='missing-variant-read-only'));
 });
 
 test('bad stored metadata stops pilot, preserves checkpoint and never touches remaining masters',async()=>{

@@ -46,7 +46,7 @@ async function bounded(response) {
   return Buffer.concat(chunks);
 }
 
-export async function runCardStages({plan, s3, sharp, checkpoint = async()=>{}, report = ()=>{}, pilotCount=10, approvedDigest=PLAN_SHA}) {
+export async function runCardStages({plan, s3, sharp, checkpoint = async()=>{}, report = ()=>{}, pilotCount=10, approvedDigest=PLAN_SHA, verifyOnly=false}) {
   const masters=validateCardPlan(plan);
   if(plan.masters_sha256!==approvedDigest) throw new Error('unapproved-plan');
   const allowed=new Map(masters.map(master=>[master.file.slice(0,64),master]));
@@ -95,7 +95,11 @@ export async function runCardStages({plan, s3, sharp, checkpoint = async()=>{}, 
     if(options.method==='HEAD') {
       // Check the actual stored bytes and metadata, never a public fallback route.
       const response=await s3('GET',key);
-      if(response.status===404) {await response.body?.cancel();return new Response(null,{status:404});}
+      if(response.status===404) {
+        await response.body?.cancel();
+        if(verifyOnly)throw new Error('missing-variant-read-only');
+        return new Response(null,{status:404});
+      }
       await inspect(response,hash,recipe);
       state.existing++; return new Response(null,{status:200});
     }
@@ -149,7 +153,8 @@ async function main() {
   const {default:sharp}=await import('sharp');
   const plan=JSON.parse(await readFile(process.env.IMAGE_VARIANT_CARD_PLAN,'utf8'));
   validateCardPlan(plan);
-  if(plan.masters_sha256!==PLAN_SHA || process.env.IMAGE_VARIANT_WRITE_APPROVAL!==PLAN_SHA) throw new Error('unapproved-plan');
+  const verifyOnly=process.env.CARD_VERIFY_ONLY==='true';
+  if(plan.masters_sha256!==PLAN_SHA || !verifyOnly&&process.env.IMAGE_VARIANT_WRITE_APPROVAL!==PLAN_SHA) throw new Error('unapproved-plan');
   const token=process.env.CLOUDFLARE_API_TOKEN, account=process.env.CLOUDFLARE_ACCOUNT_ID;
   if(!token||!/^[a-f0-9]{32}$/.test(account||'')) throw new Error('existing-secrets-unavailable');
   // Obtain the existing account token identifier solely for S3 authentication.
@@ -173,6 +178,7 @@ async function main() {
     if(Date.now()-lastLog>30000){lastLog=Date.now();console.log(JSON.stringify({stage:state.stage,created:state.created,verified:Object.keys(state.completed).length,existing:state.existing,errors:state.failures.length}));}
   });
   const s3=async(method,key,body,headers)=>{
+    if(verifyOnly&&method!=='GET')throw new Error('read-only-transport-rejected-write');
     // No DELETE, listing, arbitrary bucket, original PUT or progress PUT possible.
     if(!['GET','PUT'].includes(method)||method==='PUT'&&!/^covers\/variants\/v1\/[a-f0-9]{64}\/v1-(240|360|480)-q85\.webp$/.test(key)) throw new Error('s3-operation-out-of-scope');
     const signed=signedS3Request({account,accessKey,secretKey,bucket:plan.bucket,key,method,body,headers});
@@ -183,7 +189,16 @@ async function main() {
     return response;
   };
   let failure;
-  try {await runCardStages({plan,s3,sharp,checkpoint,report:value=>console.log(JSON.stringify(value))});}
+  let resolverAudit;
+  try {
+    await runCardStages({plan,s3,sharp,checkpoint,verifyOnly,report:value=>console.log(JSON.stringify(value))});
+    if(verifyOnly&&process.env.CARD_RESOLVER_MANIFEST){
+      const {auditCardResolver}=await import('./audit-card-resolver.mjs');
+      resolverAudit=await auditCardResolver({plan,verified:savedState.completed,
+        manifest:JSON.parse(await readFile(process.env.CARD_RESOLVER_MANIFEST,'utf8')),
+        catalog:JSON.parse(await readFile(process.env.CARD_RESOLVER_CATALOG,'utf8'))});
+    }
+  }
   catch(error){failure=error;}
   const cpu=process.cpuUsage(cpuStarted);
   const summary={stage:savedState?.stage||'not-started',pilot_passed:savedState?.pilot_passed||false,
@@ -192,7 +207,7 @@ async function main() {
     bytes_stored:savedState?.bytes_uploaded||0,counters,elapsed_ms:Math.round(performance.now()-started),
     encode_ms:Math.round(savedState?.encode_ms||0),cpu_ms:Math.round((cpu.user+cpu.system)/1000),
     error_reasons:[...new Set(savedState?.failures.map(row=>row.reason)||[])],
-    web_read_activated:false,deployments:0};
+    web_read_activated:false,deployments:0,verify_only:verifyOnly,resolver_audit:resolverAudit};
   await writeFile(process.env.CARD_SUMMARY_PATH,JSON.stringify(summary,null,2));
   console.log(JSON.stringify(summary));
   if(failure)process.exitCode=1;
