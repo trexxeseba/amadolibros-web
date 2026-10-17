@@ -133,8 +133,8 @@ export default {
   },
 
   // ── Queue consumer: one durable work token keeps the publisher running ─────
-  async queue(batch, env, ctx) {
-    ctx.waitUntil(handlePublicationQueue(batch, env));
+  async queue(batch, env) {
+    await handlePublicationQueue(batch, env);
   },
 
   // ── Manual trigger / status ─────────────────────────────────────────────────
