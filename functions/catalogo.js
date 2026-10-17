@@ -1292,6 +1292,7 @@ ${SITE_HEADER_SCRIPT}
             'content-type':  'text/html;charset=UTF-8',
             'cache-control': cardCanaryRequest(ctx) ? 'no-store' : isIndex ? 'public, max-age=3600' : 'public, max-age=300',
             'x-card-variants-ready': String(readyCards.filter(Boolean).length),
+            'x-card-variants-mode': cardCanaryRequest(ctx) ? 'explicit-canary' : 'legacy',
             'server-timing': serverTiming,
             'x-cache-status': cacheStatus,
             'x-perf-cache-hits': String(ctx.data.perf.cache.hit),

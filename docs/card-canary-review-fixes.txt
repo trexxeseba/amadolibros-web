@@ -52,3 +52,52 @@ PRUEBAS LOCALES
 Build Astro normal y PUBLIC_INDEXABLE=true aprobados. Flag productivo false.
 Falta cerrar segunda pasada y CI/Preview del commit remoto definitivo antes
 de pedir autorizacion del canario. Esto no declara GO productivo global.
+
+ACTUALIZACION POST REVISION DEL COMMIT 9fe1906
+La segunda pasada termino: 8364 existentes, 0 creadas, 0 PUT, 0 errores.
+Run https://github.com/trexxeseba/amadolibros-web/actions/runs/39037088403
+El resolver del commit anterior termino: 2790 portadas, 2787 tarjetas elegibles.
+Run https://github.com/trexxeseba/amadolibros-web/actions/runs/39037824539
+Estas conclusiones sustituyen las notas anteriores de ejecuciones pendientes.
+
+Se reemplazan los 3 HEAD por tarjeta por un indice privado de disponibilidad.
+El builder local exige las 8364 evidencias individuales del checkpoint verificado,
+el plan acordado y los snapshots congelados. No acepta totales como evidencia.
+Produce un archivo local, no hace peticiones ni publica R2 ni regenera variantes.
+Runtime exige SHA256 del contenido y bucket productivo. Una lectura GET adicional
+compartida por peticion fria; cero HEAD de variantes. Cache por binding/digest en
+el isolate, sin prometer cache compartida entre isolates. Espera maxima nueva:
+150 ms; no cancela la operacion R2 subyacente. Fallos/timeouts no guardan resultados
+tardios. Las lecturas del indice de portadas preexistente permanecen.
+
+CANARIO EXPLICITO, AUN DESACTIVADO
+Requiere flag true, CARD_VARIANTS_INDEX_SHA256 y CARD_VARIANTS_CANARY_IDS con
+hasta 10 IDs acordados, activos, con stock, sin tarjeta ampliada. Solo URLs
+/catalogo?...&_card_variants=1. Trafico normal mantiene cache 300/3600 s y entrega
+anterior incluso con flag true. Solo URLs explicitas usan no-store. No es muestreo
+aleatorio ni activacion de 2787 tarjetas. Se informa x-card-variants-mode/ready.
+Cambios de fuente o indice invalido conservan entrega anterior.
+Una variante ausente puede servir original: HTTP 200 no basta. Exigir
+X-Cover-Source:r2-variant, X-Cover-Variant:receta, X-Cover-Index:content-addressed,
+X-Cover-Bucket:amadolibros-images-production y Content-Type:image/webp.
+Evento card-variant-fallback sin IDs/URLs; error total R2 devuelve 503 no-store
+Retry-After:5. El respaldo no asegura disponibilidad si el mismo bucket falla.
+No hay alarma externa automatizada instalada ni medicion de latencia productiva.
+
+PASOS POSTERIORES, REQUIEREN APROBACION ANTES DE PRODUCCION
+1. Construir indice desde evidencia descifrada en Actions; conservarlo cifrado.
+2. Revisar digest/bytes/10 IDs. Pedir autorizacion para publicar UN objeto
+   covers/card-readiness/v1/<digest>.json con If-None-Match:*. La autorizacion
+   anterior de variantes no incluia publicar este nuevo indice.
+3. Aprobar merge/deploy dormido separado: flag false y pin/IDs vacios.
+4. Aprobar configuracion del canario; probar trafico normal y URLs explicitas.
+   Comprobar tres recetas por tarjeta seleccionada y observar eventos/headers.
+   Pausar ante cualquier fallback, 5xx o discrepancia del alcance seleccionado.
+   Medir TTFB p50/p95 pareado normal/canario cold/warm y acordar presupuesto
+   aceptable antes de declarar GO de rendimiento. Preview usa otro bucket.
+5. Rollback: flag false o IDs vacios para volver a URLs anteriores. Rollback
+   completo mediante deployment previo; mantener Images disponible.
+
+Pruebas locales: 1739 Functions/Astro y 20 scripts aprobadas; build Astro aprobado.
+CI/Preview y prueba del nuevo indice con evidencia productiva se registran en PR.
+No se escribe R2 productivo, ni se fusiona, activa o despliega produccion.
