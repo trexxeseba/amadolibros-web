@@ -4,6 +4,18 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 import {enqueuePublicationWork} from './publication-queue.js';
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
+const IDENTITY_SKIP=new Set(['catalog_required_needs_review','ambiguous_product_metadata','product_identity_mismatch','catalog_product_id_mismatch','catalog_product_inactive','catalog_product_children_unresolved','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch']);
+const CATEGORY_SKIP=new Set(['missing_book_category','ambiguous_book_category','category_not_leaf_or_not_allowed']);
+const STOCK_SKIP=new Set(['supplier_stock_conflict']);
+const ML_REQUIREMENT_SKIP=new Set(['ml_http_400','shipping_not_validated','isbn_attribute_missing','missing_verified_cover','incomplete_supplier_book_metadata']);
+export function candidateSkipState(error){
+ const code=safeCode(error);
+ if(IDENTITY_SKIP.has(code))return 'skipped_identity';
+ if(CATEGORY_SKIP.has(code))return 'skipped_category';
+ if(STOCK_SKIP.has(code))return 'skipped_stock_uncertain';
+ if(ML_REQUIREMENT_SKIP.has(code))return 'skipped_ml_requirement';
+ return null;
+}
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
 export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
@@ -76,12 +88,12 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      const freshRun=await s.run(run.id),freshFeed=await s.feed(freshRun.feed_id);
      if(freshFeed?.state!=='ready'||!stockIsFresh(freshFeed.source_date,now())){await state('stock_stale');break;}
      const row=await s.stock(freshRun.feed_id,job.isbn);
-     if(!row||!hasSupplierStock(row.stock)){await mark(job.isbn,'skipped_stock');continue;}
+     if(!row||!hasSupplierStock(row.stock)){await mark(job.isbn,'skipped_stock_uncertain');continue;}
      normalizeSupplierRow(row);
      const receipt=await s.receipt(SELLER_ID,row.isbn);
      if(receipt){await mark(row.isbn,receipt.state==='published'?'published':'uncertain',{itemId:receipt.item_id,errorCode:receipt.state==='published'?null:'existing_create_receipt'});continue;}
      const duplicate=await s.existing(run.id,row.isbn,row.title);
-     if(duplicate){await mark(row.isbn,duplicate.isbn===row.isbn?'skipped_duplicate':'review',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
+     if(duplicate){await mark(row.isbn,'skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
      const bySku=await api.skuItems(env,row.isbn);
      if(bySku.length){await mark(row.isbn,'skipped_duplicate',{itemId:bySku[0]});continue;}
      const quote=quoteMercadoLibre(row,policy);
@@ -91,7 +103,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      // Check the source snapshot, run state and lease again after preparation.
      const guardRun=await s.run(run.id),guardRow=await s.stock(guardRun.feed_id,row.isbn),guardFeed=await s.feed(guardRun.feed_id);
      if(guardRun.state!=='publishing'||guardRun.approved_hash!==run.policy_hash||!await s.ownsLease(run.id,lease,now()))break;
-     if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now())){await mark(row.isbn,'skipped_stock');continue;}
+     if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now())){await mark(row.isbn,'skipped_stock_uncertain');continue;}
      if(quoteMercadoLibre(guardRow,policy).price!==payload.price){await mark(row.isbn,'pending',{payload:null});continue;}
      // A catalog payload is only created under the approved 'required_only' policy.
      const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
@@ -109,7 +121,8 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403);
      const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
      const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
-     await mark(job.isbn,retry||auth?'retry':'review',{errorCode:safeCode(error),nextAt,attempt:!auth,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[],...(error.validationCauses?.length?{causes:error.validationCauses}:{}),...(error.shippingAttempts?{shipping_attempts:error.shippingAttempts}:{})}}}:{})});
+     const skipState=!retry&&!auth?candidateSkipState(error):null;
+     await mark(job.isbn,retry||auth?'retry':skipState??'review',{errorCode:safeCode(error),nextAt,attempt:!auth,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[],...(error.validationCauses?.length?{causes:error.validationCauses}:{}),...(error.shippingAttempts?{shipping_attempts:error.shippingAttempts}:{})}}}:{})});
      if(auth){await state('auth_error');break;}
      if(error.status===429){await s.backoff(run.id,nextAt,lease);break;}
     }
