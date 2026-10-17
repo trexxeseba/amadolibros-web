@@ -9,6 +9,14 @@ export const PLAN_SHA = 'd1e7fe6ef981169bfbe2ea3ab4182b058065ddd4770e1d15ceceaf5
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const hmac = (key, data) => createHmac('sha256',key).update(data).digest();
 const MAX_BYTES = 8 * 1024 * 1024;
+export function serializedCheckpoint(save) {
+  let pending=Promise.resolve();
+  return state=>{
+    const next=pending.then(()=>save(state));
+    pending=next;
+    return next;
+  };
+}
 
 export function signedS3Request({ account, accessKey, secretKey, bucket, key, method, body, headers = {}, now = new Date() }) {
   if (!/^[a-f0-9]{32}$/.test(account) || !/^[a-f0-9]{32}$/.test(accessKey)) throw new Error('invalid-s3-config');
@@ -153,7 +161,7 @@ async function main() {
   const counters={GET:0,PUT:0,bytes_downloaded:0,bytes_uploaded:0,statuses:{}};
   const started=performance.now(), cpuStarted=process.cpuUsage();
   let savedState=null,lastLog=0;
-  async function checkpoint(state) {
+  const checkpoint=serializedCheckpoint(async state=>{
     savedState=state;
     // Durable journal contains private hashes: encrypt before artifact upload.
     const key=createHash('sha256').update('amado-card-journal-v1\0'+token).digest(), iv=randomBytes(12);
@@ -163,7 +171,7 @@ async function main() {
     const path=process.env.CARD_PROGRESS_PATH;
     await writeFile(path+'.tmp',envelope,{mode:0o600});await rename(path+'.tmp',path);
     if(Date.now()-lastLog>30000){lastLog=Date.now();console.log(JSON.stringify({stage:state.stage,created:state.created,verified:Object.keys(state.completed).length,existing:state.existing,errors:state.failures.length}));}
-  }
+  });
   const s3=async(method,key,body,headers)=>{
     // No DELETE, listing, arbitrary bucket, original PUT or progress PUT possible.
     if(!['GET','PUT'].includes(method)||method==='PUT'&&!/^covers\/variants\/v1\/[a-f0-9]{64}\/v1-(240|360|480)-q85\.webp$/.test(key)) throw new Error('s3-operation-out-of-scope');

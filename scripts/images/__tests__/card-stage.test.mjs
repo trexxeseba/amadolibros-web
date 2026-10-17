@@ -2,9 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import sharp from 'sharp';
-import {runCardStages,signedS3Request} from '../r2-card-stage.mjs';
+import {runCardStages,signedS3Request,serializedCheckpoint} from '../r2-card-stage.mjs';
 import {CARD_RECIPES} from '../build-permanent-variants.mjs';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+
+test('concurrent completions serialize durable checkpoints without temp file races',async()=>{
+  let active=0,maximum=0;const saved=[];
+  const checkpoint=serializedCheckpoint(async state=>{
+    active++;maximum=Math.max(maximum,active);
+    await new Promise(resolve=>setTimeout(resolve,1));saved.push(state);active--;
+  });
+  await Promise.all(Array.from({length:120},(_,i)=>checkpoint(i)));
+  assert.equal(maximum,1);assert.deepEqual(saved,Array.from({length:120},(_,i)=>i));
+});
 
 async function fixture() {
   const masters=Array.from({length:2788},(_,i)=>({file:i.toString(16).padStart(64,'0')+'.png',size:100}));
