@@ -49,13 +49,16 @@ async function verifiedIndex(ctx) {
 }
 
 export async function readyCardVariantSource(ctx, item, currentCoverUrl) {
+  // Search uses the active compact index: its primary source is thumbnail.
+  // A full record with missing pictures must still fail closed.
+  const primarySource = Array.isArray(item.pictures) ? item.pictures[0] : item.thumbnail;
   if (!cardCanaryRequest(ctx) || !ctx.env.CARD_VARIANTS_CANARY_IDS.split(',').includes(item.id) ||
       item.status !== 'active' || !(item.available_quantity > 0) ||
-      cardCoverImageOptions(item.id).widths || !item.pictures?.[0]) return null;
+      cardCoverImageOptions(item.id).widths || !primarySource) return null;
   ctx.data ||= {};
   const index = await verifiedIndex(ctx);
   const row = index?.cards[item.id];
-  const source = normalizeSourceUrl(item.pictures[0]);
+  const source = normalizeSourceUrl(primarySource);
   if (!row || !HASH.test(row.sha256 || '') || !['jpg','png','webp'].includes(row.extension) ||
       !source || source !== normalizeSourceUrl(row.source_url)) return null;
   const url = new URL(`/preview-cover/${item.id}/0/${row.sha256}.${row.extension}`, ctx.request.url);
