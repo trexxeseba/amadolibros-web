@@ -3,6 +3,7 @@ import {PUBLICATION_PATH,SELLER_ID,PublicationError,sha256,safeCode} from './pub
 import {publicationService} from './publication-engine.js';
 import {publicationStockSync} from './publication-stock-sync.js';
 import {getAuthState} from './meli-auth.js';
+import {sbsStockCommand} from './sbs-supplier-stock.js';
 const response=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const decode=value=>Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(value.length/4)*4,'=')),c=>c.charCodeAt(0));
 async function boundedBody(request){
@@ -24,10 +25,19 @@ export async function verifyPublicationRequest(request,raw,{now=Date.now,publicK
   return {id:claims.jti,expires:claims.exp*1000};
  }catch{throw new PublicationError('unauthorized_or_expired',401);}
 }
-export function createPublicationRoutes({service=publicationService,verify=verifyPublicationRequest,stockSync=publicationStockSync,authState=getAuthState}={}){
+export function createPublicationRoutes({service=publicationService,verify=verifyPublicationRequest,stockSync=publicationStockSync,authState=getAuthState,supplier=sbsStockCommand}={}){
  return async function handle(request,env,{admin=false}={}){
   try{
    const url=new URL(request.url);
+   if(url.pathname==='/publisher/sbs-stock'){
+    if(!admin)throw new PublicationError('unauthorized',401);
+    if(request.method==='GET')return response({...await supplier(env,'status'),source:'SBS',read_only:true});
+    if(request.method!=='POST')throw new PublicationError('method_not_allowed',405);
+    if(!request.headers.get('content-type')?.startsWith('application/json'))throw new PublicationError('invalid_content_type',415);
+    let input;try{input=JSON.parse(await boundedBody(request));}catch(e){if(e instanceof PublicationError)throw e;throw new PublicationError('invalid_json');}
+    if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!['action','args'].includes(k)))throw new PublicationError('invalid_command');
+    return response({...await supplier(env,input.action,input.args??{}),source:'SBS',publication_writes:false});
+   }
    if(admin&&request.method==='GET'&&url.pathname==='/publisher/status')return response({...await service.command(env,'status',{run_id:url.searchParams.get('run_id')||undefined}),seller_id:SELLER_ID,action:'status',source:'Amado publication queue',read_only:true});
    // OAuth state without credentials: confirms the D1 bootstrap and the real expiry.
    if(admin&&request.method==='GET'&&url.pathname==='/publisher/auth'){try{return response({...await authState(env),seller_id:SELLER_ID,action:'auth_state',read_only:true});}catch(error){return response({error:error?.code??'auth_state_unavailable'},503);}}
