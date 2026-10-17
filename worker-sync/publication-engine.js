@@ -2,7 +2,6 @@ import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normali
 import {PublicationStore} from './publication-store.js';
 import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './publication-meli.js';
 import {enqueuePublicationWork} from './publication-queue.js';
-const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 const IDENTITY_SKIP=new Set(['catalog_required_needs_review','ambiguous_product_metadata','product_identity_mismatch','catalog_product_id_mismatch','catalog_product_inactive','catalog_product_children_unresolved','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch']);
 const CATEGORY_SKIP=new Set(['missing_book_category','ambiguous_book_category','category_not_leaf_or_not_allowed']);
@@ -32,8 +31,10 @@ export function clonePreflightJob(job){
 }
 const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:run.policy_json,policy_hash:run.policy_hash,approved_hash:run.approved_hash??null,daily_cap:run.daily_cap,preflight_limit:run.preflight_limit}):null;
 
-export function createPublicationService({api=createPublicationMeli(),storeFactory=env=>new PublicationStore(env.ORDERS_DB),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000}={}){
- function store(env){if(String(env.USER_ID)!==SELLER_ID||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
+export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000}={}){
+ const initialized=new WeakSet();
+ if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
+ function store(env){if(String(env.USER_ID)!==sellerId||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
  async function initialize(env,s){if(!initialized.has(env.ORDERS_DB)){await s.initialize();if(env.ORDERS_DB&&typeof env.ORDERS_DB==='object')initialized.add(env.ORDERS_DB);}}
  async function tick(env,runId){
   if(String(env.ML_PUBLISHER_MODE)==='disabled')return {state:'disabled'};
@@ -50,10 +51,10 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    // Reconcile creates whose outcome was lost before anything else, regardless of
    // the supplier snapshot: by stable SKU, with backoff, and never with a new POST.
    for(const job of await s.interrupted(run.id,now())){
-    const receipt=await s.receipt(SELLER_ID,job.isbn);
+    const receipt=await s.receipt(sellerId,job.isbn);
     if(receipt?.state==='published'){await mark(job.isbn,'published',{itemId:receipt.item_id});continue;}
     const found=await api.skuItems(env,job.isbn);
-    if(found.length===1){await s.receiptState(SELLER_ID,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});continue;}
+    if(found.length===1){await s.receiptState(sellerId,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});continue;}
     await mark(job.isbn,'uncertain',{errorCode:job.error_code??'interrupted_create',nextAt:now()+Math.min(6*3600000,600000*2**Math.min(job.attempts,6)),attempt:true});
    }
    if(run.state==='complete_with_review'){await s.finishReview(run.id,lease,now());return s.summary(run.id);}
@@ -90,7 +91,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      const row=await s.stock(freshRun.feed_id,job.isbn);
      if(!row||!hasSupplierStock(row.stock)){await mark(job.isbn,'skipped_stock_uncertain');continue;}
      normalizeSupplierRow(row);
-     const receipt=await s.receipt(SELLER_ID,row.isbn);
+     const receipt=await s.receipt(sellerId,row.isbn);
      if(receipt){const own=receipt.run_id===run.id;if(receipt.state==='published'){await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:receipt.item_id,errorCode:own?null:'existing_published_receipt'});}else await mark(row.isbn,'uncertain',{itemId:receipt.item_id,errorCode:'existing_create_receipt'});continue;}
      const duplicate=await s.existing(run.id,row.isbn,row.title);
      if(duplicate){await mark(row.isbn,'skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
@@ -107,13 +108,13 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      if(quoteMercadoLibre(guardRow,policy).price!==payload.price){await mark(row.isbn,'pending',{payload:null});continue;}
      // A catalog payload is only created under the approved 'required_only' policy.
      const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
-     const reserved=await s.reserve(SELLER_ID,row.isbn,run.id,now(),run.daily_cap,lease);
-     if(!reserved){const existing=await s.receipt(SELLER_ID,row.isbn);if(existing){const own=existing.run_id===run.id;if(existing.state==='published')await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:existing.item_id,errorCode:own?null:'existing_published_receipt'});else await mark(row.isbn,'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});}else return {state:'daily_cap_reached'};continue;}
+     const reserved=await s.reserve(sellerId,row.isbn,run.id,now(),run.daily_cap,lease);
+     if(!reserved){const existing=await s.receipt(sellerId,row.isbn);if(existing){const own=existing.run_id===run.id;if(existing.state==='published')await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:existing.item_id,errorCode:own?null:'existing_published_receipt'});else await mark(row.isbn,'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});}else return {state:'daily_cap_reached'};continue;}
      await mark(row.isbn,'creating',{payload,attempt:true});
      let result;
      try{result=await api.create(env,payload,policy);}
-     catch(error){await s.receiptState(SELLER_ID,row.isbn,'uncertain');await mark(row.isbn,'uncertain',{errorCode:safeCode(error)});if(error.status===429){await s.backoff(run.id,now()+Math.max(60000,error.retryAfter*1000||0),lease);break;}continue;}
-     await s.receiptState(SELLER_ID,row.isbn,'published',result.id);
+     catch(error){await s.receiptState(sellerId,row.isbn,'uncertain');await mark(row.isbn,'uncertain',{errorCode:safeCode(error)});if(error.status===429){await s.backoff(run.id,now()+Math.max(60000,error.retryAfter*1000||0),lease);break;}continue;}
+     await s.receiptState(sellerId,row.isbn,'published',result.id);
      await mark(row.isbn,'published',{itemId:result.id});
     }catch(error){
      // Transport, 5xx, 429 and retryable auth failures defer the book; an auth
@@ -167,7 +168,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
     const byId=new Map(group.map(x=>[x.item_id,x.isbn]));
     return raw.map(entry=>{
      const body=entry?.body,status=entry?.status_code??entry?.code;
-     if(status!==200||!body||String(body.seller_id)!==SELLER_ID||!byId.has(body.id))throw new PublicationError('availability_audit_invalid',502);
+     if(status!==200||!body||String(body.seller_id)!==sellerId||!byId.has(body.id))throw new PublicationError('availability_audit_invalid',502);
      const term=(Array.isArray(body.sale_terms)?body.sale_terms:[]).find(t=>t?.id==='MANUFACTURING_TIME')??null;
      const value=term?.value_name??term?.value_struct?.number??null;
      const parsed=typeof value==='number'?value:Number((String(value??'').match(/\d+/)||[])[0]??NaN);
