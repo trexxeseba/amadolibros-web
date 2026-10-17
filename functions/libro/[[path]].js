@@ -421,7 +421,7 @@ function notFound() {
 // Render HTML completo de la ficha
 // ---------------------------------------------------------------------------
 
-export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = [], googleImages = null, permanentSources = null) {
+export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = [], googleImages = null) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     // B11: los textos alternativos describen la portada sin arrastrar una
@@ -447,12 +447,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const originalSources = normalizeImages(item);
     const catalogSources = coverSources(item);
     const sourceImages = normalizeImages(item, previewCoverSrc);
-    const images       = permanentSources || (isPreview
+    const images       = isPreview
         ? sourceImages
         : sourceImages.map((source, position) => {
             const catalogPosition = catalogSources.indexOf(originalSources[position]);
             return catalogPosition >= 0 ? bookCoverUrl(item.id, catalogPosition) : source;
-        }));
+        });
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],
@@ -1240,18 +1240,10 @@ export async function onRequest(context) {
         ? selectRelatedBooks(catalog.items, item)
         : [];
 
-    const positions = originalImages.map(source => coverSources(item).indexOf(source));
-    const copies = coversEnabled
-        ? await Promise.all(originalImages.map((source, index) => findPreviewCover(context, item.id, positions[index], source)))
-        : [];
-    const permanentSources = originalImages.map((source, index) => {
-        const copy = copies[index];
-        if (copy) return new URL(`/preview-cover/${item.id}/${positions[index]}/${copy.sha256}.${copy.extension}`, navigationBase).toString();
-        if (positions[index] >= 0) return new URL(`/book-cover/${item.id}/${positions[index] === 0 ? 'cover.jpg' : `cover-${positions[index] + 1}.jpg`}`, navigationBase).toString();
-        return source;
-    });
     let googleImages = null;
     if (context.env?.COVER_GOOGLE_QUALITY_GATE === 'true') {
+        const positions = originalImages.map(source => coverSources(item).indexOf(source));
+        const copies = await Promise.all(originalImages.map((source, index) => findPreviewCover(context, item.id, positions[index], source)));
         googleImages = copies
             .map((copy, index) => ({ current: copy?.entry?.current, index }))
             .filter(candidate => googleReadyImage(candidate.current))
@@ -1269,7 +1261,7 @@ export async function onRequest(context) {
                 navigationBase).toString());
     }
     const renderStartedAt = perfNow();
-    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks, googleImages, permanentSources);
+    const html = renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc || '', relatedBooks, googleImages);
     recordPerf(context, 'render', renderStartedAt);
 
     const totalDuration = Math.round((perfNow() - requestStartedAt) * 100) / 100;

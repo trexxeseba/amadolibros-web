@@ -131,7 +131,7 @@ jobs:
         run: node scripts/seo/image-system-live-check.mjs
 
       - name: Verify dormant delivery and lazy zoom on Preview
-        if: github.head_ref == 'codex/image-cost-zoom-on-demand'
+        if: github.head_ref == 'codex/image-cost-zoom-on-demand' || github.head_ref == 'codex/image-delivery-rollback-cache'
         env:
           COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
         run: |
@@ -139,7 +139,7 @@ jobs:
           node scripts/images/check-permanent-delivery.mjs
 
       - name: Upload permanent image evidence
-        if: always() && github.head_ref == 'codex/image-cost-zoom-on-demand'
+        if: always() && (github.head_ref == 'codex/image-cost-zoom-on-demand' || github.head_ref == 'codex/image-delivery-rollback-cache')
         uses: actions/upload-artifact@v4
         with:
           name: permanent-image-variants-pr-${{ github.event.pull_request.number }}
