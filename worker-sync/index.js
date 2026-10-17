@@ -83,11 +83,9 @@ export default {
   async scheduled(event, env, ctx) {
     console.log(`[Worker] Cron trigger: ${new Date().toISOString()}`);
     if (event?.cron === '* * * * *') {
-      // Queue mode removes the minute-by-minute idle gap. Keep the cron as an
-      // automatic fallback only when the Queue binding/flag is unavailable.
-      if (!publicationQueueEnabled(env)) {
-        ctx.waitUntil(publicationService.tick(env).catch(() => ({state:'publication_tick_failed'})));
-      }
+      // Queue is the fast path; the minute cron remains a low-frequency
+      // watchdog. The D1 lease guarantees that only one publisher owns a run.
+      ctx.waitUntil(publicationService.tick(env).catch(() => ({state:'publication_tick_failed'})));
       return;
     }
     if (event?.cron === '*/5 * * * *') {
