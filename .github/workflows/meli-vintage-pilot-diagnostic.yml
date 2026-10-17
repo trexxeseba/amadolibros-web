@@ -1,7 +1,8 @@
 name: Vintage pilot diagnostic
 
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - '.github/workflows/meli-vintage-pilot-diagnostic.yml'
   workflow_dispatch:
@@ -11,12 +12,12 @@ permissions:
 
 jobs:
   read-progress:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: production
     steps:
-      # Read the trusted production binding configuration, not PR code.
+      # Production access follows the repository's main-only environment rule.
       - uses: actions/checkout@v4
         with:
           ref: main
