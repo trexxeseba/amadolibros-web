@@ -47,10 +47,13 @@ async function readBounded(response) {
 }
 
 export async function buildPermanentVariants({ baseUrl, token, limit = 100,
-  fetchFn = fetch, sharp, resume = true, productId = null, cardPlan = null } = {}) {
+  fetchFn = fetch, sharp, resume = true, productId = null, cardPlan = null,
+  cardStart = 0, cardCount = 2788, stopOnFailure = false } = {}) {
   // Validate before any remote request. A scoped run never reads the global
   // master listing or its cursor, and cannot expand into galleries/history.
   const plannedMasters = cardPlan ? validateCardPlan(cardPlan) : null;
+  if (plannedMasters && (!Number.isSafeInteger(cardStart) || !Number.isSafeInteger(cardCount) ||
+      cardStart < 0 || cardCount < 1 || cardStart + cardCount > plannedMasters.length)) throw new Error('invalid-card-range');
   if (plannedMasters && productId) throw new Error('conflicting-master-selection');
   const recipes = plannedMasters ? CARD_RECIPES.map(id => IMAGE_VARIANTS.find(r => r.id === id)) : IMAGE_VARIANTS;
   const base = new URL(baseUrl);
@@ -71,7 +74,7 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
   const query = new URLSearchParams({ limit: String(boundedLimit) });
   if (progress.cursor) query.set('cursor', progress.cursor);
   if (productId) query.set('product_id', productId);
-  const listing = plannedMasters ? { objects: plannedMasters, cursor: null } : await (await call(`masters?${query}`)).json();
+  const listing = plannedMasters ? { objects: plannedMasters.slice(cardStart, cardStart + cardCount), cursor: null } : await (await call(`masters?${query}`)).json();
   const result = { examined: listing.objects.length, sourcesDownloaded: 0, created: 0, existing: 0, failures: [], nextCursor: listing.cursor };
   async function processMaster(master) {
     const hash = master.file.split('.')[0]; let bytes = null;
@@ -97,7 +100,7 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
   }
   let nextMaster = 0;
   await Promise.all(Array.from({ length: Math.min(4, listing.objects.length) }, async () => {
-    while (nextMaster < listing.objects.length) await processMaster(listing.objects[nextMaster++]);
+    while (nextMaster < listing.objects.length && !(stopOnFailure && result.failures.length)) await processMaster(listing.objects[nextMaster++]);
   }));
   // No avanzar el lote si falla una fuente: el próximo intento reutiliza los
   // objetos completados. Una fuente inválida persistente requiere revisión.

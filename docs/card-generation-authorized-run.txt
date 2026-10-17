@@ -1,0 +1,47 @@
+2026-10-17 — Ejecucion autorizada, sin despliegue ni activacion de lectura.
+
+Se recuperaron los insumos congelados exactos: audit-catalog.json local con
+updated_at 2026-10-17T03:10:21.984Z y manifest del artifact 12087843537,
+integridad SHA verificada contra report.json y baseline 29c5dce.
+El plan reproduce 2790 tarjetas activas / 2788 masters y las tres recetas.
+SHA-256 del listado de masters aprobado:
+d1e7fe6ef981169bfbe2ea3ab4182b058065ddd4770e1d15ceceaf512696d78c
+Este digest no contiene claves individuales ni credenciales.
+
+El job reconstruye el plan solo en el runner, desde el artifact existente y
+una seleccion minima del catalogo ya publico (IDs, disponibilidad, URL primaria).
+No publica manifest, listado de hashes, imagenes o rutas R2 individuales.
+
+Sharp 0.34.5 ejecuta el encoder existente en Node fuera del Worker. El adaptador
+usa S3 directo con los secretos existentes de Actions: obtiene internamente el
+ID necesario para autenticar y deriva la clave S3 del mismo token segun la
+documentacion R2; no crea credenciales, no consulta nombres/permisos del token,
+no amplifica permisos ni cambia flags o despliegues del sitio.
+https://developers.cloudflare.com/r2/api/tokens/#get-s3-api-credentials-from-an-api-token
+
+Piloto: primeros 10 masters del plan ordenado, 30 destinos maximos. Comprueba
+los originales por SHA durante su descarga (no repite HEAD). Crea con
+If-None-Match:* y metadata de hash master, receta, SHA bytes, dimensiones y
+dimensiones fuente; formato WebP y proporcion se verifican con Sharp.
+Lee cada variante realmente guardada y comprueba cabeceras, bytes, SHA,
+formato y dimensiones. Solo tras 30 verificaciones pasa a los 2778 restantes.
+Objeto existente valido se verifica y reutiliza; invalido detiene el proceso,
+no se sobrescribe. No hay DELETE, listado historico ni PUT de masters.
+
+Avance: checkpoint atomico tras cada variante validada, cifrado AES-256-GCM
+con clave derivada del secreto existente; artefacto cifrado de 90 dias y resumen
+publico SOLO agregado. Tambien las variantes con metadata son avance durable:
+una reejecucion reconstruye su avance verificandolas sin regenerar existentes.
+El piloto se vuelve a validar al reanudar. Los fallos detienen nuevas fuentes;
+las operaciones ya en vuelo (hasta 4 masters) pueden terminar. Sin reintentos
+automaticos destructivos ni ampliacion del alcance.
+
+Consumo reportado: GET/PUT intentados por status, bytes de transferencia,
+bytes almacenados nuevos, fuentes descargadas, tiempo encoder/CPU/total,
+creadas/existentes/verificadas y errores. Son operaciones observadas, no una
+lectura del uso facturable ni confirmacion de ahorro.
+
+Pruebas locales: 16/16 pasan. Incluyen barrera del piloto, metadata incorrecta,
+plan alterado, exclusiones, idempotencia y encoder real.
+Lectura productiva false y writer Worker false permanecen intactos. PR400
+no se fusiona, no se publica codigo a main ni se ejecutan deploys productivos.
