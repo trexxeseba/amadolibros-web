@@ -1,0 +1,42 @@
+name: Cloudflare token identity - read only
+on:
+  push:
+    branches: [codex/r2-card-inventory-29c5dce]
+    paths: ['.github/workflows/cloudflare-token-identity.yml']
+permissions:
+  contents: read
+jobs:
+  identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify existing token identity without exposing its value
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request, urllib.error
+          token = os.environ['CLOUDFLARE_API_TOKEN']
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args, **kwargs): return None
+          opener = urllib.request.build_opener(NoRedirect)
+          def get(path):
+              request = urllib.request.Request('https://api.cloudflare.com/client/v4/' + path,
+                  headers={'Authorization': 'Bearer ' + token, 'User-Agent': 'amado-token-identity/1.0'}, method='GET')
+              try:
+                  with opener.open(request, timeout=30) as response:
+                      return response.status, json.load(response)
+              except urllib.error.HTTPError as error:
+                  return error.code, {}
+          http, data = get('user/tokens/verify')
+          result = data.get('result') or {}
+          identity = result.get('id', '')
+          output = {'verify_http': http, 'token_status': result.get('status')}
+          if re.fullmatch(r'[0-9a-fA-F]{32}', identity):
+              output['identity_verified'] = True
+              detail_http, detail = get('user/tokens/' + identity)
+              output['name_lookup_http'] = detail_http
+              name = (detail.get('result') or {}).get('name')
+              if isinstance(name, str): output['matches_expected_name'] = name == 'amadolibros-web build token'
+          print(json.dumps(output))
+          PY
