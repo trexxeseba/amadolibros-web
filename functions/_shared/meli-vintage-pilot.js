@@ -53,6 +53,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   const runId='23413782-4900-4000-8000-000000000005';
   try{await s.createRun({id:runId,feedId:feed_id,policy,policyHash:await policyHash(policy),now:now(),dailyCap:PILOT_LIMIT,preflightLimit:PILOT_LIMIT,targetPublished:PILOT_LIMIT});}
   catch(e){if(!(await s.run(runId)))throw e;}
+  await service.tick(scoped(env),runId);
   return snapshot(env);
  }
  async function approve(env,{run_id,policy_hash,sample_hash}) {
@@ -64,6 +65,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   const guard="EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND state='ready' AND policy_hash=? AND lease_until<?)";
   await s.stmt("UPDATE ml_pub_jobs SET state='skipped_pilot_limit',error_code=NULL WHERE run_id=? AND state IN ('pending','retry','validated') AND isbn NOT IN (SELECT value FROM json_each(?)) AND "+guard,run_id,JSON.stringify(isbns),run_id,policy_hash,now()).run();
   await service.command(scoped(env),'approve',{run_id,policy_hash});
+  await service.tick(scoped(env),run_id);
   return snapshot(env);
  }
  async function advance(env,{run_id}) {

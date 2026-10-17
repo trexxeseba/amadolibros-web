@@ -37,7 +37,7 @@ test('Vintage run history, receipts, indexes and counts are isolated from Libros
  await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed});
  const run=(await f.pilot.snapshot(f.env)).run;
  assert.equal((await v.run(run.id)).seller_id,vintage);
- assert.equal((await v.jobs(run.id)).find(x=>x.isbn===isbn).state,'pending');
+ assert.equal((await v.jobs(run.id)).find(x=>x.isbn===isbn).state,'validated');
  assert.equal(await v.receipt(vintage,isbn),null);
  assert.deepEqual(await f.s.jobs(f.source),before);
  assert.equal(await v.dayCreated(f.clock.value),0);assert.equal(await f.s.dayCreated(f.clock.value),1);
@@ -56,7 +56,7 @@ test('pilot validates without creation, requires exact sample approval and creat
  await assert.rejects(()=>f.pilot.approve(f.env,{...args,sample_hash:'tampered'}),/sample_changed/);
  const approved=state.sample.map(j=>j.isbn).sort();
  await f.pilot.approve(f.env,args);
- assert.equal(f.calls.create.length,0);
+ assert.equal(f.calls.create.length,5);
  await f.pilot.advance(f.env,{run_id:state.run.id});
  await f.pilot.advance(f.env,{run_id:state.run.id});
  assert.equal(f.calls.create.length,5);

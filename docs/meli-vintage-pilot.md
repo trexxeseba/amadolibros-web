@@ -7,8 +7,8 @@ La cuenta destino queda fijada a AMADO_VINTAGE, seller 2341378249, app 474102181
 ## Procedimiento
 1. Elegir un snapshot ready con fecha real de stock de menos de 24 horas y la política comercial de un lote de referencia.
 2. Preparar y continuar validando. No crea publicaciones: se completa el índice activo/pausado de Vintage y se validan cinco candidatas.
-3. Revisar títulos, ISBN, precio UYU, política y disponibilidad. Aprobar la muestra exacta.
-4. Presionar Publicar / continuar. Se crean únicamente esos cinco ISBN. Actualizar estado o continuar si una llamada termina antes del lote.
+3. Revisar títulos, ISBN, precio UYU, política y disponibilidad. Aprobar la muestra exacta e iniciar sus altas.
+4. Actualizar estado o presionar continuar si una llamada termina antes del lote. Se crean únicamente esos cinco ISBN.
 5. Revisar los IDs reales. No existe continuidad automática hacia 10.000.
 
 Los lotes, jobs, índices, recibos, nonces, límites y targets de Vintage usan el namespace fijo ml_vintage_pub_. Se reutilizan solo las tablas de snapshots ml_pub_feeds/ml_pub_stock en lectura desde este flujo. El historial previo de Libros no excluye libros de Vintage. La columna seller_id del nuevo esquema de runs incluye un CHECK fijo. El servicio Libros conserva los nombres originales por defecto.
