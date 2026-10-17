@@ -24,7 +24,7 @@ jobs:
           run-id: 39045624433
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/approved-readiness
-      - name: Publish one approved immutable JSON object and verify stored bytes
+      - name: Verify actual decoded bytes; publish only if the approved object is absent
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

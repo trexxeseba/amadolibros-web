@@ -34,13 +34,18 @@ export function validateReadiness(bytes) {
 export async function publishReadiness({bytes, s3, approval}) {
   if (approval !== READINESS_SHA) throw new Error('readiness-write-not-approved');
   validateReadiness(bytes);
-  let gets = 0, puts = 0, created = false;
+  let gets = 0, puts = 0, created = false, transfer = {};
   async function inspect(response) {
     if (response.status !== 200 || response.headers.get('content-type') !== 'application/json' ||
         response.headers.get('x-amz-meta-sha256') !== READINESS_SHA ||
         response.headers.get('x-amz-meta-schema') !== 'verified-card-readiness-v1')
       throw new Error('stored-readiness-response-mismatch');
-    if (Number(response.headers.get('content-length')) !== BYTES) throw new Error('stored-readiness-size-mismatch');
+    // Fetch can decode a compressed response while retaining wire Content-Length.
+    // The authoritative length/checksum below apply to the actual decoded bytes.
+    const length=response.headers.get('content-length'), encoding=response.headers.get('content-encoding');
+    transfer={content_encoding:encoding || 'identity',declared_content_length:length === null ? null : Number(length)};
+    if (length !== null && (!encoding || encoding === 'identity') && Number(length) !== BYTES)
+      throw new Error('stored-readiness-size-mismatch');
     const chunks=[];let size=0;
     for await (const chunk of response.body) {
       size+=chunk.length;if(size>BYTES)throw new Error('stored-readiness-too-large');chunks.push(chunk);
@@ -65,7 +70,7 @@ export async function publishReadiness({bytes, s3, approval}) {
     const stored = await s3('GET',READINESS_KEY); gets++;await inspect(stored);
   }
   return {schema:'card-readiness-publication-v1',bucket:READINESS_BUCKET,key:READINESS_KEY,
-    sha256:READINESS_SHA,bytes:BYTES,created,verified:true,GET:gets,PUT:puts,
+    sha256:READINESS_SHA,bytes:BYTES,created,verified:true,GET:gets,PUT:puts,transfer,
     image_writes:0,web_read_activated:false,production_deployments:0};
 }
 
