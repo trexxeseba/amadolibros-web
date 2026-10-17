@@ -28,11 +28,12 @@ OPENER = urllib.request.build_opener(NoRedirect)
 
 
 class ReadFailure(RuntimeError):
-    def __init__(self, status, reason, errors):
+    def __init__(self, status, reason, errors, response_info):
         super().__init__(f'read-http-{status}')
         self.status = status
         self.reason = reason
         self.errors = errors
+        self.response_info = response_info
 
 
 def sanitized(value):
@@ -46,7 +47,7 @@ def sanitized(value):
 
 def read(url, headers=None, allow_signed_redirect=False):
     # This module issues GET only. Never forward auth to a redirected host.
-    request = urllib.request.Request(url, headers=headers or {}, method='GET')
+    request = urllib.request.Request(url, headers={'User-Agent': 'amado-r2-readonly-inventory/1.0', **(headers or {})}, method='GET')
     try:
         with OPENER.open(request, timeout=60) as response:
             return response.read()
@@ -59,14 +60,26 @@ def read(url, headers=None, allow_signed_redirect=False):
         # Publish only explicit API error code/message fields, never raw bodies,
         # request headers, account IDs or credential-bearing URLs.
         errors = []
+        response_info = {}
         if urllib.parse.urlsplit(url).hostname == 'api.cloudflare.com':
+            raw_body = error.read(65536).decode('utf-8', errors='replace')
+            response_info = {'content_type': error.headers.get('content-type'),
+                             'server': error.headers.get('server'),
+                             'request_id': error.headers.get('cf-ray')}
             try:
-                body = json.loads(error.read(65536))
+                body = json.loads(raw_body)
                 errors = [{'code': row.get('code'), 'message': sanitized(row.get('message', ''))}
                           for row in body.get('errors', []) if isinstance(row, dict)]
             except (ValueError, AttributeError):
-                pass
-        raise ReadFailure(error.code, sanitized(error.reason), errors) from None
+                title = re.search(r'<title[^>]*>(.*?)</title>', raw_body, re.I | re.S)
+                heading = re.search(r'<h1[^>]*>(.*?)</h1>', raw_body, re.I | re.S)
+                if title or heading:
+                    response_info['message'] = sanitized(' | '.join(re.sub('<[^>]+>', '', match.group(1)).strip() for match in (title, heading) if match))
+                elif 'text/plain' in (error.headers.get('content-type') or ''):
+                    response_info['message'] = sanitized(raw_body.strip())
+                else:
+                    response_info['message'] = 'No JSON error code/message or HTML title returned'
+        raise ReadFailure(error.code, sanitized(error.reason), errors, response_info) from None
 
 
 def main():
@@ -177,6 +190,6 @@ except Exception as error:
                'candidate_permission': 'Workers R2 Storage Read; missing permission is not established by HTTP status alone',
                'production_writes': 0, 'image_requests': 0, 'deployments': 0}
     if isinstance(error, ReadFailure):
-        summary.update(http_status=error.status, http_reason=error.reason, cloudflare_errors=error.errors)
+        summary.update(http_status=error.status, http_reason=error.reason, cloudflare_errors=error.errors, response_info=error.response_info)
     print(json.dumps(summary))
     sys.exit(1)
