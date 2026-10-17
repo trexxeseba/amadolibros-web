@@ -32,7 +32,7 @@ export async function supplierBookMetadata(row,{fetcher=globalThis.fetch}={}){
  const matches=products.filter(product=>Array.isArray(product?.ISBN)&&product.ISBN.some(value=>{try{return canonicalIsbn(value)===row.isbn;}catch{return false;}}));
  if(matches.length!==1)throw new PublicationError(matches.length?'ambiguous_supplier_book_metadata':'missing_verified_book_metadata',422);
  const product=matches[0];
- // Multiple retail SKUs can represent different formats. Do not borrow a cover
+ // Multiple retail SKUs can represent different formats. Do not borrow metadata
  // from a neighbouring edition or infer an ISBN from a search position.
  if(!Array.isArray(product.items)||product.items.length!==1)throw new PublicationError('ambiguous_supplier_book_metadata',422);
  const item=product.items[0];
@@ -45,10 +45,15 @@ export async function supplierBookMetadata(row,{fetcher=globalThis.fetch}={}){
  const language=languages.find(([pattern])=>pattern.test(languageText))?.[1];
  const bindingText=clean(first(product,'Tapa'));
  const binding=/^(rustica|blanda|paperback|softcover)$/.test(bindingText)?'Blanda':/^(dura|cartone|hardback|hardcover)$/.test(bindingText)?'Dura':null;
- if(!pictures.length||!language||!binding)throw new PublicationError('incomplete_supplier_book_metadata',422);
  const author=bounded(row.author)||bounded(first(product,'Autor')),publisher=bounded(row.publisher)||bounded(first(product,'Editorial'));
- if(!author||!publisher)throw new PublicationError('incomplete_supplier_book_metadata',422);
- const attributes=[{id:'GTIN',value_name:row.isbn},{id:'BOOK_TITLE',value_name:row.title.slice(0,300)},{id:'AUTHOR',value_name:author},{id:'BOOK_PUBLISHER',value_name:publisher},{id:'LANGUAGE',value_name:language},{id:'BOOK_COVER',value_name:binding}];
+ // Identity is strict; descriptive metadata is best-effort. Missing optional
+ // fields are omitted and Mercado Libre /items/validate is the authority on
+ // whether the listing really requires them.
+ const attributes=[{id:'GTIN',value_name:row.isbn},{id:'BOOK_TITLE',value_name:row.title.slice(0,300)}];
+ if(author)attributes.push({id:'AUTHOR',value_name:author});
+ if(publisher)attributes.push({id:'BOOK_PUBLISHER',value_name:publisher});
+ if(language)attributes.push({id:'LANGUAGE',value_name:language});
+ if(binding)attributes.push({id:'BOOK_COVER',value_name:binding});
  for(const [key,id,min,max] of [['Cantidad de páginas','PAGES_NUMBER',1,10000],['Año de edición','PUBLICATION_YEAR',1400,2100]]){
   const value=String(first(product,key)??'');if(/^\d{1,5}$/.test(value)&&Number(value)>=min&&Number(value)<=max)attributes.push({id,value_name:value});
  }

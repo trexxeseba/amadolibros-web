@@ -40,6 +40,15 @@ jobs:
         with:
           node-version: '22.12.0'
 
+      - name: Ensure Mercado Libre Queues exist
+        run: |
+          cd worker-sync
+          npx wrangler@3 queues info amado-ml-publish >/dev/null 2>&1 || npx wrangler@3 queues create amado-ml-publish
+          npx wrangler@3 queues info amado-ml-publish-dlq >/dev/null 2>&1 || npx wrangler@3 queues create amado-ml-publish-dlq
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy amadolibros-sync Worker
         run: |
           cd worker-sync
