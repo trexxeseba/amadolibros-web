@@ -32,3 +32,4 @@ jobs:
           path: ${{ runner.temp }}/cf-containment.encrypted.json
           if-no-files-found: error
           retention-days: 1
+# Rule comparison tolerates API object ordering.
