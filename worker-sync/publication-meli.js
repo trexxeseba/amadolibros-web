@@ -86,7 +86,9 @@ export function payloadPolicyMismatch(payload,policy){
  if(payload.catalog_listing===true)return policy?.catalogListing==='required_only'&&/^MLU\d+$/.test(payload.catalog_product_id??'')?null:'catalog_payload_not_approved';
  return payload.catalog_listing===false&&payload.catalog_product_id===undefined?null:'payload_policy_mismatch';
 }
-export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={}}={}){
+export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={}}={}){
+ if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
+ if(sellerId!==SELLER_ID&&tokenProvider===getAccessToken)throw new PublicationError('seller_token_provider_required',503);
  const requestTimeout=timeouts.request??12000,createTimeout=timeouts.create??30000;
  let cache=null,pending=null;
  const authFailure=error=>error instanceof MeliAuthError?new MercadoLibreError(error.code,error.retryable?503:401,error.retryAfter??0):new MercadoLibreError('auth_unavailable',503);
@@ -96,8 +98,8 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   if(!pending)pending=Promise.resolve().then(()=>tokenProvider(env)).then(value=>{if(typeof value!=='string'||!value)throw new MeliAuthError('auth_empty_token',{status:503,retryable:true});cache={value,until:now()+60000};return value;}).finally(()=>pending=null);
   try{return await pending;}catch(error){throw authFailure(error);}
  }
- async function call(env,path,{method='GET',body}={}){
-  const accessToken=await token(env),controller=new AbortController();
+ async function call(env,path,{method='GET',body,pinnedToken}={}){
+  const accessToken=pinnedToken??await token(env),controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),method==='POST'&&path==='/items'?createTimeout:requestTimeout);
   let res,data;
   try{
@@ -122,21 +124,21 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   finally{clearTimeout(timer);}
   return data;
  }
- async function account(env){const x=await call(env,'/users/me');if(String(x.id)!==SELLER_ID||x.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);return x;}
+ async function account(env){const x=await call(env,'/users/me');if(String(x.id)!==sellerId||x.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);return x;}
  async function indexSlice(env,index){
   const state=structuredClone(index);
   if(state.done)return {index:state,items:[]};
   if(!state.pending.length){
    const query=new URLSearchParams({search_type:'scan',status:state.status,limit:'100'});if(state.scroll)query.set('scroll_id',state.scroll);
    let page;
-   try{page=await call(env,`/users/${SELLER_ID}/items/search?${query}`);}
+   try{page=await call(env,`/users/${sellerId}/items/search?${query}`);}
    catch(error){
     // Scrolls expire after five minutes. A rate-limit cooldown may outlive one;
     // restart this status and deduplicate IDs rather than skipping unseen books.
     if(!state.scroll||![400,404,410].includes(error.status))throw error;
-    state.scroll=null;query.delete('scroll_id');page=await call(env,`/users/${SELLER_ID}/items/search?${query}`);
+    state.scroll=null;query.delete('scroll_id');page=await call(env,`/users/${sellerId}/items/search?${query}`);
    }
-   if(page.seller_id!==undefined&&String(page.seller_id)!==SELLER_ID)throw new PublicationError('index_seller_mismatch',502);
+   if(page.seller_id!==undefined&&String(page.seller_id)!==sellerId)throw new PublicationError('index_seller_mismatch',502);
    if(page.results===null||(Array.isArray(page.results)&&!page.results.length)){
     if(state.status==='active')return {index:{status:'paused',scroll:null,pending:[],done:false,seen:state.seen},items:[]};
     return {index:{...state,done:true,completedAt:new Date(now()).toISOString()},items:[]};
@@ -152,14 +154,14 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
    const raw=await call(env,'/items/bulk?ids='+group.join(','));
    if(!Array.isArray(raw)||raw.length!==group.length)throw new PublicationError('index_details_incomplete',502);
    const remaining=new Set(group),batch=[];
-   for(const entry of raw){const b=entry.body;if((entry.status_code??entry.code)!==200||!b||String(b.seller_id)!==SELLER_ID||!remaining.has(b.id))throw new PublicationError('index_details_invalid',502);remaining.delete(b.id);batch.push({id:b.id,isbn:itemIsbns(b),titleKey:normalizedTitle(b.title),status:b.status});}
+   for(const entry of raw){const b=entry.body;if((entry.status_code??entry.code)!==200||!b||String(b.seller_id)!==sellerId||!remaining.has(b.id))throw new PublicationError('index_details_invalid',502);remaining.delete(b.id);batch.push({id:b.id,isbn:itemIsbns(b),titleKey:normalizedTitle(b.title),status:b.status});}
    if(remaining.size)throw new PublicationError('index_details_incomplete',502);
    return batch;
   }))).flat();
   state.pending=state.pending.slice(ids.length);state.seen+=ids.length;
   return {index:state,items};
  }
- async function skuItems(env,isbn){const q=new URLSearchParams({sku:`AMADO-AR-${isbn}`,limit:'100'});const r=await call(env,`/users/${SELLER_ID}/items/search?${q}`);if(!Array.isArray(r.results)||r.results.some(id=>!/^MLU\d+$/.test(id)))throw new PublicationError('sku_lookup_invalid',502);return r.results;}
+ async function skuItems(env,isbn){const q=new URLSearchParams({sku:`AMADO-AR-${isbn}`,limit:'100'});const r=await call(env,`/users/${sellerId}/items/search?${q}`);if(!Array.isArray(r.results)||r.results.some(id=>!/^MLU\d+$/.test(id)))throw new PublicationError('sku_lookup_invalid',502);return r.results;}
  async function inspectProduct(env,input){
   const isbn=canonicalIsbn(input),found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:isbn}));
   const first=found.results?.[0],id=first?.id;if(!/^MLU\d+$/.test(id??''))return {requested_isbn:isbn,results:found.paging?.total??found.results?.length??null};
@@ -214,7 +216,7 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
  let prefsCache=null;
  async function shippingPreferences(env){
   if(prefsCache&&prefsCache.until>now())return prefsCache.value;
-  const settings=shippingSettings(await call(env,`/users/${SELLER_ID}/shipping_preferences`));
+  const settings=shippingSettings(await call(env,`/users/${sellerId}/shipping_preferences`));
   if(!settings.me2Available)throw new PublicationError('me2_not_available',422);
   prefsCache={value:settings,until:now()+600000};return settings;
  }
@@ -320,9 +322,12 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   // Validation warnings kept for review never travel to Mercado Libre.
   const {diagnostic,...body}=payload;
   const mismatch=payloadPolicyMismatch(body,policy);if(mismatch)throw new PublicationError(mismatch,422);
-  await account(env);await verifyFees(env,body,policy);await validateItem(env,body);
-  const result=await call(env,'/items',{method:'POST',body});
-  if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==SELLER_ID)throw new MercadoLibreError('create_outcome_unknown',502);
+  await verifyFees(env,body,policy);await validateItem(env,body);
+  const pinnedToken=await token(env);
+  const identity=await call(env,'/users/me',{pinnedToken});
+  if(String(identity.id)!==sellerId||identity.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);
+  const result=await call(env,'/items',{method:'POST',body,pinnedToken});
+  if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==sellerId)throw new MercadoLibreError('create_outcome_unknown',502);
   return result;
  }
  // Read-only shipping diagnostic: GET requests only, each one reported on its
@@ -332,23 +337,23 @@ export function createPublicationMeli({fetcher=(...args)=>globalThis.fetch(...ar
   const pack=Object.fromEntries(sellerPackageAttributes(weightKg).map(a=>[a.id,parseInt(a.value_name,10)]));
   const dimensions=`${pack.SELLER_PACKAGE_HEIGHT}x${pack.SELLER_PACKAGE_WIDTH}x${pack.SELLER_PACKAGE_LENGTH},${pack.SELLER_PACKAGE_WEIGHT}`;
   const me=await read('/users/me');
-  if(me.ok&&(String(me.data.id)!==SELLER_ID||me.data.site_id!=='MLU'))throw new PublicationError('seller_mismatch',403);
-  const out={seller_id:SELLER_ID,dimensions,
+  if(me.ok&&(String(me.data.id)!==sellerId||me.data.site_id!=='MLU'))throw new PublicationError('seller_mismatch',403);
+  const out={seller_id:sellerId,dimensions,
    account:me.ok?{ok:true,data:shippingSafe({site_id:me.data.site_id,tags:me.data.tags,shipping_modes:me.data.shipping_modes,status:{mercadoenvios:me.data.status?.mercadoenvios??null,sell:me.data.status?.sell??null,list:me.data.status?.list??null}})}:me,
-   shipping_preferences:await read(`/users/${SELLER_ID}/shipping_preferences`),
+   shipping_preferences:await read(`/users/${sellerId}/shipping_preferences`),
    category_shipping_preferences:/^MLU\d+$/.test(categoryId)?await read(`/categories/${categoryId}/shipping_preferences`):null};
   if(out.shipping_preferences.ok){out.shipping_variants=shippingVariants(shippingSettings(out.shipping_preferences.data));out.shipping_preferences.data=shippingSafe(out.shipping_preferences.data);}
   if(out.category_shipping_preferences?.ok)out.category_shipping_preferences.data=shippingSafe(out.category_shipping_preferences.data);
   if(itemId){
    if(!/^MLU\d+$/.test(itemId))throw new PublicationError('invalid_item_id');
    const item=await read(`/items/${itemId}?attributes=id,seller_id,price,category_id,listing_type_id,catalog_listing,status,shipping,sale_terms`);
-   if(item.ok&&String(item.data.seller_id)!==SELLER_ID)throw new PublicationError('item_seller_mismatch',403);
+   if(item.ok&&String(item.data.seller_id)!==sellerId)throw new PublicationError('item_seller_mismatch',403);
    out.reference_item=item.ok?{ok:true,data:shippingSafe(item.data)}:item;
   }
   if(Number.isFinite(itemPrice)&&itemPrice>0){
    const q=new URLSearchParams({dimensions,item_price:String(itemPrice),listing_type_id:'gold_special',mode:'me2',condition:'new',currency_id:'UYU',verbose:'true'});
    if(/^MLU\d+$/.test(categoryId))q.set('category_id',categoryId);if(logisticType)q.set('logistic_type',logisticType);
-   const free=await read(`/users/${SELLER_ID}/shipping_options/free?${q}`);
+   const free=await read(`/users/${sellerId}/shipping_options/free?${q}`);
    out.free_shipping_quote=free.ok?{ok:true,data:shippingSafe(free.data)}:free;
   }
   return out;
