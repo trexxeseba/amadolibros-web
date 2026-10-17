@@ -5,7 +5,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {isIP} from 'node:net';
-import {stockIsFresh} from '../../worker-sync/publication-policy.js';
+import {stockIsFresh,normalizeSupplierRow} from '../../worker-sync/publication-policy.js';
 
 export const SBS_SOURCE='https://sbs-distribuidora-lista.s3.sa-east-1.amazonaws.com/Listado+completo+de+libros.xlsx';
 const destination='https://amadolibros-sync.undiaes.workers.dev/publisher/sbs-stock';
@@ -39,6 +39,8 @@ export async function refreshSbsStock({env=process.env,fetchImpl=fetch,parse=par
  const input=await parse(bytes,{env});
  if(!stockIsFresh(input.source_date,now()))throw problem('supplier_stock_stale_or_future',{source_date:input.source_date,last_modified:lastModified});
  if(!Array.isArray(input.rows)||!input.rows.length||input.rows.length>250000)throw problem('invalid_supplier_rows');
+ try{input.rows=input.rows.map(normalizeSupplierRow);}catch{throw problem('invalid_supplier_rows');}
+ if(new Set(input.rows.map(row=>row.isbn)).size!==input.rows.length)throw problem('duplicate_supplier_rows');
  // No run lookup, ML token, feed attachment, publication or queue tick.
  if(!env.SYNC_SECRET)throw problem('supplier_ingestion_secret_not_configured');
  const hash=createHash('sha256').update(bytes).digest('hex');

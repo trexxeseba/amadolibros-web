@@ -52,7 +52,8 @@ export function createSbsStock({now=Date.now}={}){
   }
   const count=await stmt('SELECT COUNT(*) n FROM sbs_supplier_stock WHERE feed_id=?',feed.id).first();
   if(count.n!==feed.expected_rows)throw new PublicationError('supplier_feed_count_mismatch',409);
-  await stmt("UPDATE sbs_supplier_feeds SET state='ready',checked_at=? WHERE id=?",now(),feed.id).run();
+  const committed=await stmt("UPDATE sbs_supplier_feeds SET state='ready',checked_at=? WHERE id=? AND expected_rows=(SELECT COUNT(*) FROM sbs_supplier_stock WHERE feed_id=?) RETURNING id",now(),feed.id,feed.id).first();
+  if(!committed)throw new PublicationError('supplier_feed_count_mismatch',409);
   return {state:'ready',feed_id:feed.id,source_date:feed.source_date,rows:count.n};
  };
 }
