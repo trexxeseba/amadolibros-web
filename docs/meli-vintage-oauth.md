@@ -42,6 +42,18 @@ callback falla después de intercambiar el código, revisar el estado antes de
 reautorizar: los códigos son de un solo uso. No reutilizar manualmente códigos
 en chats o URLs.
 
+Para diagnosticar sin otra autorización, entrar con sesión del panel a
+`/panel/meli-vintage?diagnostico=1`. Envía un código de prueba deliberadamente
+inválido al endpoint de tokens y sólo muestra el estado HTTP y códigos de error
+permitidos; no usa códigos reales, refresh tokens ni hace escrituras en D1.
+`invalid_client` indica rechazo de la identidad de app/clave; `invalid_grant`
+por sí solo no demuestra que la clave sea válida, porque el orden de validación
+lo determina Mercado Libre. No regenerar la clave de la app ni borrar grants.
+Los fallos del callback muestran una etapa fija (`token_exchange`,
+`user_identity`, `credential_save`, etc.) y nunca reflejan mensajes remotos,
+excepciones, SQL, códigos OAuth, state o tokens. Los logs contienen sólo esa
+etapa y el código saneado.
+
 Validación local: `node --test functions/__tests__/meli-vintage-oauth.test.js`.
 Las APIs de ML se simulan. Ninguna prueba usa secretos reales, llama a ML ni
 accede a la base de producción.
