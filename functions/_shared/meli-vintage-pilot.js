@@ -3,6 +3,7 @@ import { createPublicationService } from '../../worker-sync/publication-engine.j
 import { createPublicationMeli } from '../../worker-sync/publication-meli.js';
 import { validPolicy, policyHash, stockIsFresh, sha256, PublicationError } from '../../worker-sync/publication-policy.js';
 import { vintageTokens, VINTAGE_SELLER_ID } from './meli-vintage-token.js';
+import { initializeSbsStock } from '../../worker-sync/sbs-supplier-stock.js';
 
 export const PILOT_LIMIT=5;
 const uuid=value=>typeof value==='string'&&/^[a-f0-9-]{36}$/.test(value);
@@ -10,7 +11,18 @@ const error=(code,status=409)=>new PublicationError(code,status);
 // Background/browser continuation can only lease preflight. A concurrent owner
 // approval cannot turn a "validate only" request into a publishing tick.
 class VintageStore extends PublicationStore {
- async initialize(){await super.initialize();await this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_payload_seals (run_id TEXT NOT NULL,isbn TEXT NOT NULL,policy_hash TEXT NOT NULL,payload_hash TEXT NOT NULL,sample_hash TEXT NOT NULL,PRIMARY KEY(run_id,isbn))').run();}
+ scoped(sql){
+  // New supplier snapshots are private to Vintage. Old pilots can still read
+  // their immutable shared snapshot without rewriting any Libros record.
+  if(/^\s*(INSERT(?: OR \w+)? INTO|UPDATE|DELETE FROM)\s+ml_pub_(feeds|stock)\b/i.test(sql))throw error('supplier_snapshots_read_only');
+  if(!this.hasSupplierStock)return super.scoped(sql);
+  return super.scoped(sql)
+   .replace(/\bml_pub_feeds\b/g,"(SELECT id,source_date,state,expected_rows,created_at FROM sbs_supplier_feeds UNION ALL SELECT id,source_date,state,expected_rows,created_at FROM ml_pub_feeds old WHERE NOT EXISTS(SELECT 1 FROM sbs_supplier_feeds fresh WHERE fresh.id=old.id))")
+   .replace(/\bml_pub_stock\b/g,"(SELECT rowid,feed_id,isbn,data_json FROM sbs_supplier_stock UNION ALL SELECT rowid,feed_id,isbn,data_json FROM ml_pub_stock old WHERE NOT EXISTS(SELECT 1 FROM sbs_supplier_feeds fresh WHERE fresh.id=old.feed_id))");
+ }
+ async discoverSupplierStock(){this.hasSupplierStock=Boolean(await this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sbs_supplier_feeds'").first());}
+ async feed(id){await this.discoverSupplierStock();return super.feed(id);}
+ async initialize(){await initializeSbsStock(this.db);this.hasSupplierStock=true;await super.initialize();await this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_payload_seals (run_id TEXT NOT NULL,isbn TEXT NOT NULL,policy_hash TEXT NOT NULL,payload_hash TEXT NOT NULL,sample_hash TEXT NOT NULL,PRIMARY KEY(run_id,isbn))').run();}
 }
 class PreflightStore extends VintageStore {
  async lease(id,token,now){return this.stmt("UPDATE ml_pub_runs SET lease_id=?,lease_until=?,updated_at=? WHERE id=? AND state='preflight' AND lease_until<? RETURNING *",token,now+300000,now,id,now).first();}
@@ -30,8 +42,9 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
  const scoped=env=>({...env,USER_ID:VINTAGE_SELLER_ID,ML_PUBLISH_QUEUE_ENABLED:'false'});
  async function sources(env) {
   const db=env.ORDERS_DB;
+  const supplierStore=store(env);await supplierStore.discoverSupplierStock();
   // Feed readiness belongs to ingestion. Vintage only reads published snapshots.
-  const feeds=(await db.prepare("SELECT id,source_date,expected_rows FROM ml_pub_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 10").all()).results;
+  const feeds=(await supplierStore.stmt("SELECT id,source_date,expected_rows FROM ml_pub_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 10").all()).results;
   const rows=(await db.prepare('SELECT id,policy_json,created_at FROM ml_pub_runs ORDER BY created_at DESC LIMIT 10').all()).results;
   return {feeds:feeds.filter(f=>stockIsFresh(f.source_date,now())),policies:rows.map(r=>({id:r.id,policy:validPolicy(JSON.parse(r.policy_json))}))};
  }
@@ -42,7 +55,8 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
  async function snapshot(env) {
   const run=await current(env);
   if(!run)return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:null};
-  const s=store(env),policy=validPolicy(JSON.parse(run.policy_json)),index=JSON.parse(run.index_json);
+  const s=store(env);await s.discoverSupplierStock();
+  const policy=validPolicy(JSON.parse(run.policy_json)),index=JSON.parse(run.index_json);
   const progress={disabled:String(env.ML_PUBLISHER_MODE)==='disabled',phase:index.done?'books':'existing_listings',indexed:Number(index.seen)||0,index_complete:index.done===true,index_status:index.status==='paused'?'paused':'active',busy:Number(run.lease_until)>now(),lease_until:Number(run.lease_until)||0,backoff_until:Number(run.backoff_until)||0,updated_at:Number(run.updated_at)||0};
   const jobs=(await s.stmt("SELECT j.isbn,j.state,j.item_id,j.payload_json,s.data_json FROM ml_pub_jobs j LEFT JOIN ml_pub_stock s ON s.feed_id=? AND s.isbn=j.isbn WHERE j.run_id=? AND j.state IN ('validated','published','uncertain','creating') ORDER BY j.isbn LIMIT 5",run.feed_id,run.id).all()).results;
   const issues=(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','retry','uncertain') ORDER BY isbn LIMIT 10",run.id).all()).results;

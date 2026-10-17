@@ -55,7 +55,6 @@ on:
         type: string
   schedule:
     - cron: '*/10 * * * *'
-    - cron: '30 4 * * *'
   pull_request:
     paths:
       - 'worker-sync/publication-*.js'
@@ -94,13 +93,12 @@ jobs:
         run: node scripts/mercadolibre/publisher-control.mjs
         env:
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
-          PUBLISHER_ACTION: ${{ inputs.action || (github.event.schedule == '30 4 * * *' && 'refresh' || 'tick') }}
+          PUBLISHER_ACTION: ${{ inputs.action || 'tick' }}
           PUBLISHER_RUN_ID: ${{ inputs.run_id }}
           PUBLISHER_POLICY_HASH: ${{ inputs.policy_hash }}
           PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
-          # Scheduled SBS refresh imports a fresh immutable feed only. It never
-          # reattaches or creates a publication run by itself.
-          PUBLISHER_REFRESH_ONLY: ${{ github.event_name == 'schedule' && github.event.schedule == '30 4 * * *' && 'true' || 'false' }}
+          # SBS automation has its own isolated ingestion workflow.
+          PUBLISHER_REFRESH_ONLY: 'false'
           PUBLISHER_PREFLIGHT_LIMIT: ${{ inputs.preflight_limit }}
           PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
           PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}
