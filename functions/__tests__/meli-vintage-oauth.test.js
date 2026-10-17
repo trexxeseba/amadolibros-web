@@ -38,6 +38,7 @@ async function fixture(t, options = {}) {
       assert.equal(body.get('redirect_uri'), CALLBACK);
       assert.equal(body.get('client_id'), APP_ID);
       assert.ok(body.get('code_verifier'));
+      if (options.tokenError) return Response.json({ error: options.tokenError, message: 'test-secret and vintage-refresh-secret must not leak' }, { status: 400 });
       return Response.json({ access_token: 'vintage-access-secret', refresh_token: 'vintage-refresh-secret', expires_in: 3600, user_id: options.tokenSeller || options.seller || 123456789 });
     }
     assert.equal(url, 'https://api.mercadolibre.com/users/me');
@@ -156,4 +157,28 @@ test('middleware keeps callback codes out of analytics and legacy routing', asyn
   assert.equal(await response.text(), 'callback');
   assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
   assert.equal(scheduled, 0);
+});
+
+test('authenticated diagnostic uses only a deliberately invalid code, with no token renewal or database writes', async t => {
+  const f = await fixture(t, { tokenError: 'invalid_client' });
+  assert.equal((await f.run(new Request(`${START}?diagnostico=1`))).status, 401);
+  assert.equal(f.calls.length, 0);
+  const response = await f.run(new Request(`${START}?diagnostico=1`, { headers: { cookie: `amado_panel_session=${f.session}` } }));
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /HTTP 400 · invalid_client/);
+  assert.doesNotMatch(html, /test-secret|vintage-refresh-secret/);
+  assert.equal(f.calls.length, 1);
+  assert.equal(new URLSearchParams(f.calls[0].init.body).get('code'), 'amado-vintage-diagnostic-deliberately-invalid-code');
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name LIKE 'ml_oauth_%'").get().n, 0);
+});
+
+test('callback failures report only their stage, HTTP status and allowlisted error code', async t => {
+  const f = await fixture(t, { tokenError: 'invalid_client' }), flow = await f.start();
+  const response = await f.run(new Request(flow.callback, { headers: { cookie: flow.cookie } }));
+  const html = await response.text();
+  assert.equal(response.status, 503);
+  assert.match(html, /token_exchange · HTTP 400 · invalid_client/);
+  assert.doesNotMatch(html, /test-secret|vintage-refresh-secret|test-code/);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM ml_oauth_sellers').get().n, 0);
 });
