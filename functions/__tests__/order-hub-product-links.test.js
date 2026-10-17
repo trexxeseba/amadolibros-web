@@ -119,10 +119,11 @@ test('si el título volvió a stock, no se lo etiqueta ni enlaza como por encarg
   assert.equal(enrichByRequestProductHtml(original, productId), original);
 });
 
-test('una ficha pausada fuera de la cohorte recibe el plazo sin enlaces SEO', () => {
+test('una ficha pausada fuera de la cohorte recibe el llamado a WhatsApp sin enlaces SEO', () => {
   const html = enrichByRequestProductHtml(productHtml(), 'MLU999999999999');
 
-  assert.match(html, /Demora estimada: 15 a 20 días desde la confirmación\./);
+  assert.match(html, /Escribinos por WhatsApp y lo consultamos\./);
+  assert.doesNotMatch(html, /Demora estimada|15 a 20 días/);
   assert.doesNotMatch(html, /class="order-hub-links"/);
   assert.doesNotMatch(html, /href="\/libros-por-encargo/);
 
