@@ -1,4 +1,5 @@
 name: R2 card generation - authorized staged run
+# Resume the identical sealed plan; existing variants are verified and reused.
 on:
   push:
     branches: [codex/r2-card-inventory-29c5dce]
