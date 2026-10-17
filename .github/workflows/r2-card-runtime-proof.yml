@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 9fe190601195493590f81f6438bed70c3d7b102e
+          ref: 33c87df1dd3514d13006777e7284f794023fe8c5
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
@@ -38,12 +38,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           node --input-type=module <<'JS'
-          import {readFile,appendFile} from 'node:fs/promises';
+          import {readFile,appendFile,writeFile} from 'node:fs/promises';
           import {gunzipSync} from 'node:zlib';
-          import {createHash,createDecipheriv} from 'node:crypto';
+          import {createHash,createDecipheriv,createCipheriv,randomBytes} from 'node:crypto';
           import assert from 'node:assert/strict';
           import {prepareCardPlan} from './scripts/images/prepare-card-plan.mjs';
           import {auditCardResolver} from './scripts/images/audit-card-resolver.mjs';
+          import {prepareCardReadiness} from './scripts/images/prepare-card-readiness.mjs';
+          globalThis.fetch=()=>{throw new Error('network forbidden during evidence reuse');};
           const json=async p=>JSON.parse(await readFile(p,'utf8'));
           const root=process.env.RUNNER_TEMP;
           const raw=gunzipSync(await readFile(root+'/frozen-manifest/manifest-snapshot.json.gz'));
@@ -64,8 +66,22 @@ jobs:
           assert.equal(journal.state.created,0);
           assert.equal(journal.counters.PUT,0);
           const result=await auditCardResolver({manifest,catalog,plan,verified:journal.state.completed});
-          const summary={commit:'9fe190601195493590f81f6438bed70c3d7b102e',...result,
-            evidence_run:39037088403,image_requests_this_job:0};
+          const readiness=prepareCardReadiness({manifest,catalog,plan,verified:journal.state.completed});
+          const iv=randomBytes(12), cipher=createCipheriv('aes-256-gcm',key,iv);
+          const encrypted=Buffer.concat([cipher.update(readiness.text,'utf8'),cipher.final()]);
+          await writeFile(root+'/card-readiness.encrypted.json',JSON.stringify({schema:'encrypted-card-readiness-v1',iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:encrypted.toString('base64')}),{mode:0o600});
+          const summary={commit:'33c87df1dd3514d13006777e7284f794023fe8c5',...result,
+            evidence_run:39037088403,image_requests_this_job:0,readiness_bytes:Buffer.byteLength(readiness.text),readiness_sha256:readiness.digest};
+          await writeFile(root+'/card-readiness-summary.json',JSON.stringify(summary));
           console.log(JSON.stringify(summary));
           await appendFile(process.env.GITHUB_STEP_SUMMARY,'```json\n'+JSON.stringify(summary,null,2)+'\n```\n');
           JS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: card-readiness-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/card-readiness.encrypted.json
+            ${{ runner.temp }}/card-readiness-summary.json
+          if-no-files-found: error
+          retention-days: 30
