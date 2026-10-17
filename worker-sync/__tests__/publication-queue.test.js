@@ -14,12 +14,12 @@ import {OPERATIONS_ISSUER} from '../operations-read.js';
 
 const policy={supplierDiscount:.2,arsPerUyu:40,usdPerUyu:40,freightUsdKg:10,laborUyu:0,margin:.2,mlFee:.15,deliveryUyu:200,minimumContributionUyu:100,minimumSaleUyu:1000,roundUyu:10,availabilityDays:10,additionalPricePct:0,listingTypeId:'gold_special'};
 const books=[{isbn:'9789502323060',title:'Libro de prueba uno',listArs:10000,weightKg:.2,stock:'+2'},{isbn:'9786075272795',title:'Libro de prueba dos',listArs:20000,weightKg:.3,stock:'1'}];
-async function fixture(t,{rows=books,cap=10000,apiOverrides={}}={}){
+async function fixture(t,{rows=books,cap=10000,target=null,apiOverrides={}}={}){
  const dir=await mkdtemp(join(tmpdir(),'amado-queue-test-'));t.after(()=>rm(dir,{recursive:true,force:true}));
  const db=sqliteD1(join(dir,'queue.sqlite')),store=new PublicationStore(db),now=Date.now(),feedId=crypto.randomUUID(),runId=crypto.randomUUID();
  const env={ORDERS_DB:db,USER_ID:'440298103',APP_ID:'4741021817925208',ML_PUBLISHER_MODE:'enabled'};
  await store.initialize();await store.beginFeed(feedId,new Date(now).toISOString(),rows.length,now);await store.importRows(feedId,rows);await store.commitFeed(feedId);
- await store.createRun({id:runId,feedId,policy,policyHash:await policyHash(policy),now,dailyCap:cap,preflightLimit:10});
+ await store.createRun({id:runId,feedId,policy,policyHash:await policyHash(policy),now,dailyCap:cap,preflightLimit:10,...(target!==null?{targetPublished:target}:{})});
  await store.saveIndex(runId,{status:'paused',scroll:null,pending:[],done:true,seen:0,completedAt:new Date(now).toISOString()});
  const calls={create:0,prepare:0,sku:0};
  const api={async skuItems(){calls.sku++;return [];},async prepare(env,row,p,price){calls.prepare++;return {price,currency_id:'UYU',condition:'new',catalog_listing:false,seller_custom_field:`AMADO-AR-${row.isbn}`};},async create(){calls.create++;return {id:`MLU90000000${calls.create}`,seller_id:440298103};},...apiOverrides};
@@ -54,6 +54,12 @@ test('preflight validates candidates and never calls item creation',async t=>{
 test('approved runs create once, persist receipts, finish and do not repeat on another tick',async t=>{
  const f=await fixture(t);await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
  const result=await f.service.tick(f.env,f.runId);assert.equal(result.state,'complete');assert.equal(f.calls.create,2);await f.service.tick(f.env,f.runId);assert.equal(f.calls.create,2);
+});
+test('target_published stops exactly at the requested number and skips the remaining pool',async t=>{
+ const f=await fixture(t,{target:1});await f.service.tick(f.env,f.runId);await f.service.command(f.env,'approve',{run_id:f.runId,policy_hash:await policyHash(policy)});
+ const result=await f.service.tick(f.env,f.runId);
+ assert.equal(f.calls.create,1);assert.equal(result.state,'complete');assert.equal(result.target_published,1);assert.equal(result.target_remaining,0);
+ assert.equal(result.counts.find(x=>x.state==='published').n,1);assert.equal(result.counts.find(x=>x.state==='skipped_target_reached').n,1);
 });
 test('stock zero, stale feeds and existing paused ISBNs prevent item creation',async t=>{
  const f=await fixture(t,{rows:[{...books[0],stock:'0'},books[1]]});
