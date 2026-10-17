@@ -12,10 +12,13 @@ el código con PKCE, consulta `GET /users/me`, comprueba el correo y el site MLU
 rechaza seller `440298103` y AMADOLIBROS COMUY y muestra el seller_id confirmado.
 
 Se requiere `APP_ENV=production`, el binding D1 `ORDERS_DB`, `PANEL_PASSWORD` y
-`CLIENT_SECRET` de esta misma app configurados en **Cloudflare Pages Production**.
-Que el Worker tenga CLIENT_SECRET no demuestra que Pages también lo tenga.
-No copiar secretos al repositorio, al chat ni a capturas. No cambiar CLIENT_SECRET
-de la app: cargar el existente en Pages si falta. APP_ID es fijo; si se configura
+`MELI_VINTAGE_CLIENT_SECRET` de esta misma app configurados en **Cloudflare Pages Production**.
+La variable nueva contiene una copia de la clave YA EXISTENTE de la app
+4741021817925208. No regenerar la clave en Developers. No editar ni borrar el
+CLIENT_SECRET existente de Pages o del Worker de Libros. Vintage no lo lee ni
+lo usa como fallback. Se elimina espacio externo accidental al leer la copia.
+Que el Worker tenga CLIENT_SECRET no demuestra que Pages tenga la copia correcta.
+No copiar secretos al repositorio, al chat ni a capturas. APP_ID es fijo; si se configura
 también en Pages debe coincidir.
 
 Las dos tablas adicionales se crean al iniciar el flujo. `ml_oauth_sellers` usa
