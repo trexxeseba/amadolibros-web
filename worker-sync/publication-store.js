@@ -88,6 +88,10 @@ export class PublicationStore {
  async unfinished(id,publishing=true){return (await this.stmt("SELECT COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state IN ('pending','validated','retry') AND (?=1 OR state<>'validated')",id,publishing?1:0).first()).n;}
  async interrupted(id,now=Date.now()){await this.stmt("UPDATE ml_pub_jobs SET state='uncertain',error_code='interrupted_create' WHERE run_id=? AND state='creating'",id).run();return (await this.stmt("SELECT * FROM ml_pub_jobs WHERE run_id=? AND state='uncertain' AND next_at<=? ORDER BY next_at,isbn LIMIT 5",id,now).all()).results;}
  async counts(id){return (await this.stmt('SELECT state,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? GROUP BY state',id).all()).results;}
+ async publishedItems(id,offset=0,limit=100){
+  return (await this.stmt("SELECT isbn,item_id FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL ORDER BY isbn LIMIT ? OFFSET ?",id,limit,offset).all()).results;
+ }
+ async publishedCount(id){return (await this.stmt("SELECT COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL",id).first()).n;}
  async retryLegacyIdentityReviews(id,token,now){await this.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code IN ('product_isbn_or_domain_mismatch','missing_product_metadata') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,token,now).run();}
  async nonce(id,expires,now){await this.stmt('DELETE FROM ml_pub_nonces WHERE expires_at<?',now).run();try{await this.stmt('INSERT INTO ml_pub_nonces(id,expires_at) VALUES(?,?)',id,expires).run();}catch{throw new PublicationError('request_already_used',409);}}
  async preview(id){return (await this.stmt("SELECT isbn,state,payload_json,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('validated','review','uncertain') ORDER BY CASE state WHEN 'validated' THEN 0 WHEN 'review' THEN 1 ELSE 2 END,isbn LIMIT 10",id).all()).results.map(x=>({...x,payload:x.payload_json?JSON.parse(x.payload_json):null,payload_json:undefined}));}

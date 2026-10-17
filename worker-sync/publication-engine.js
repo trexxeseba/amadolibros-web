@@ -4,7 +4,7 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -126,6 +126,32 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    let availabilityDays=null;
    if(args.run_id!=null){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);availabilityDays=validPolicy(JSON.parse(run.policy_json)).availabilityDays??null;}
    return {...result,current_payload:{shipping:'resolved by /items/validate over shipping_variants',sale_terms:availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${availabilityDays} días`}]:(args.run_id!=null?[]:null)},read_only_mercado_libre:true};
+  }
+  if(action==='audit_availability_terms'){
+   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
+   const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);
+   const policy=validPolicy(JSON.parse(run.policy_json)),expectedDays=args.expected_days??policy.availabilityDays;
+   const offset=args.offset??0,limit=args.limit??100;
+   if(!Number.isInteger(expectedDays)||expectedDays<1||expectedDays>60||!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||limit<1||limit>200)throw new PublicationError('invalid_audit_args');
+   const rows=await s.publishedItems(run.id,offset,limit),total=await s.publishedCount(run.id);
+   const groups=[];for(let i=0;i<rows.length;i+=20)groups.push(rows.slice(i,i+20));
+   const checked=(await Promise.all(groups.map(async group=>{
+    const ids=group.map(x=>x.item_id);
+    const raw=await api.call(env,'/items/bulk?ids='+ids.join(','));
+    if(!Array.isArray(raw)||raw.length!==ids.length)throw new PublicationError('availability_audit_incomplete',502);
+    const byId=new Map(group.map(x=>[x.item_id,x.isbn]));
+    return raw.map(entry=>{
+     const body=entry?.body,status=entry?.status_code??entry?.code;
+     if(status!==200||!body||String(body.seller_id)!==SELLER_ID||!byId.has(body.id))throw new PublicationError('availability_audit_invalid',502);
+     const term=(Array.isArray(body.sale_terms)?body.sale_terms:[]).find(t=>t?.id==='MANUFACTURING_TIME')??null;
+     const value=term?.value_name??term?.value_struct?.number??null;
+     const parsed=typeof value==='number'?value:Number((String(value??'').match(/\d+/)||[])[0]??NaN);
+     const actualDays=Number.isFinite(parsed)?parsed:null;
+     return {isbn:byId.get(body.id),item_id:body.id,actual_days:actualDays,has_term:!!term,ok:actualDays===expectedDays};
+    });
+   }))).flat();
+   const mismatches=checked.filter(x=>!x.ok);
+   return {run_id:run.id,expected_days:expectedDays,total_published:total,offset,scanned:checked.length,ok:checked.length-mismatches.length,missing:mismatches.filter(x=>!x.has_term).length,wrong:mismatches.filter(x=>x.has_term).length,mismatches:mismatches.slice(0,50),next_offset:offset+checked.length<total?offset+checked.length:null,read_only_mercado_libre:true};
   }
   if(action==='shipping_probe'){
    // The queue's own prepare() on one supplier row of a run: GET lookups and

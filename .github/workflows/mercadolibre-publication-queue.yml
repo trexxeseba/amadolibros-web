@@ -6,7 +6,7 @@ on:
       action:
         description: 'Controlar la cola; las altas requieren precios revisados y habilitación del Worker'
         type: choice
-        options: [status, tick, pause, approve, refresh, clone_preflight_catalog, create_run_from_source, shipping_diagnostic, shipping_probe]
+        options: [status, tick, pause, approve, refresh, clone_preflight_catalog, create_run_from_source, audit_availability_terms, shipping_diagnostic, shipping_probe]
         default: status
       run_id:
         description: 'ID del lote (vacío para consultar o continuar el activo)'
@@ -62,6 +62,7 @@ on:
       - 'worker-sync/__tests__/publication-shipping-resolver.test.js'
       - 'worker-sync/__tests__/publication-validate-semantics.test.js'
       - 'worker-sync/__tests__/publication-create-run-from-source.test.js'
+      - 'worker-sync/__tests__/publication-availability-audit.test.js'
       - 'worker-sync/__tests__/helpers/sqlite-d1.js'
       - 'scripts/mercadolibre/**'
       - '.github/workflows/mercadolibre-publication-queue.yml'
@@ -113,6 +114,6 @@ jobs:
         with:
           node-version: '22.12.0'
       - name: Verificar cola, idempotencia, stock y transporte
-        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/publication-clone-preflight-availability.test.js worker-sync/__tests__/publication-seller-package.test.js worker-sync/__tests__/publication-shipping-diagnostic.test.js worker-sync/__tests__/publication-shipping-resolver.test.js worker-sync/__tests__/publication-validate-semantics.test.js worker-sync/__tests__/publication-create-run-from-source.test.js worker-sync/__tests__/operations-read.test.js
+        run: node --test worker-sync/__tests__/publication-queue.test.js worker-sync/__tests__/publication-clone-preflight.test.js worker-sync/__tests__/publication-clone-preflight-fresh-feed.test.js worker-sync/__tests__/publication-clone-preflight-availability.test.js worker-sync/__tests__/publication-seller-package.test.js worker-sync/__tests__/publication-shipping-diagnostic.test.js worker-sync/__tests__/publication-shipping-resolver.test.js worker-sync/__tests__/publication-validate-semantics.test.js worker-sync/__tests__/publication-create-run-from-source.test.js worker-sync/__tests__/publication-availability-audit.test.js worker-sync/__tests__/operations-read.test.js
       - name: Verificar lector del proveedor
         run: python3 -m py_compile scripts/mercadolibre/prepare-supplier-feed.py
