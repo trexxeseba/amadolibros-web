@@ -1,0 +1,34 @@
+name: Vintage pilot diagnostic
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/meli-vintage-pilot-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read-progress:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      # Production access follows the repository's main-only environment rule.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Read Vintage progress counters only
+        working-directory: worker-sync
+        run: |
+          npx wrangler@3 d1 execute amadolibros-orders-production --remote --json --command "SELECT id,state,json_extract(index_json,'$.status') AS index_status,json_extract(index_json,'$.seen') AS indexed,json_extract(index_json,'$.done') AS index_complete,json_array_length(json_extract(index_json,'$.pending')) AS detail_pending,updated_at,lease_until,backoff_until,approved_hash=policy_hash AS approved FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000000005'; SELECT state,error_code,COUNT(*) AS jobs FROM ml_vintage_pub_jobs WHERE run_id='23413782-4900-4000-8000-000000000005' GROUP BY state,error_code;"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
