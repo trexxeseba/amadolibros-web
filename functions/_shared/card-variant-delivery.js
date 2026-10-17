@@ -48,7 +48,7 @@ async function verifiedIndex(ctx) {
   return ctx.data.cardVariantIndex;
 }
 
-export async function readyCardVariantSource(ctx, item) {
+export async function readyCardVariantSource(ctx, item, currentCoverUrl) {
   if (!cardCanaryRequest(ctx) || !ctx.env.CARD_VARIANTS_CANARY_IDS.split(',').includes(item.id) ||
       item.status !== 'active' || !(item.available_quantity > 0) ||
       cardCoverImageOptions(item.id).widths || !item.pictures?.[0]) return null;
@@ -58,5 +58,9 @@ export async function readyCardVariantSource(ctx, item) {
   const source = normalizeSourceUrl(item.pictures[0]);
   if (!row || !HASH.test(row.sha256 || '') || !['jpg','png','webp'].includes(row.extension) ||
       !source || source !== normalizeSourceUrl(row.source_url)) return null;
-  return new URL(`/preview-cover/${item.id}/0/${row.sha256}.${row.extension}`, ctx.request.url).href;
+  const url = new URL(`/preview-cover/${item.id}/0/${row.sha256}.${row.extension}`, ctx.request.url);
+  // Reuse the catalog's already resolved current cover: same-source hash drift
+  // must not activate an old readiness entry. No extra R2 lookup here.
+  try { if (new URL(currentCoverUrl, ctx.request.url).pathname !== url.pathname) return null; } catch { return null; }
+  return url.href;
 }

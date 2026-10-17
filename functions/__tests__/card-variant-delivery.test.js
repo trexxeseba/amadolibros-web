@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readyCardVariantSource, CARD_RECIPES, PRODUCTION_IMAGE_BUCKET, cardCanaryRequest } from '../_shared/card-variant-delivery.js';
+import { readyCardVariantSource as selectSource, CARD_RECIPES, PRODUCTION_IMAGE_BUCKET, cardCanaryRequest } from '../_shared/card-variant-delivery.js';
 
+function readyCardVariantSource(ctx,item) { return selectSource(ctx,item,`https://www.amadolibros.com/preview-cover/${item.id}/0/${'a'.repeat(64)}.jpg`); }
 function fixture() {
   const hash='a'.repeat(64), source='https://http2.mlstatic.com/D_TEST-O.jpg';
   const index={schema:'verified-card-readiness-v1',bucket:PRODUCTION_IMAGE_BUCKET,recipes:CARD_RECIPES,
@@ -49,4 +50,10 @@ test('hung readiness lookup returns legacy within bounded time and never poisons
 test('explicit canary marker required independently of read flag',()=>{
   const f=fixture();assert.equal(cardCanaryRequest(f.ctx),true);
   f.ctx.request=new Request('https://www.amadolibros.com/catalogo');assert.equal(cardCanaryRequest(f.ctx),false);
+});
+
+test('same source with newer current master hash cannot select stale readiness',async()=>{
+  const f=fixture();
+  assert.equal(await selectSource(f.ctx,f.item,`https://www.amadolibros.com/preview-cover/MLU1/0/${'c'.repeat(64)}.jpg`),null);
+  assert.equal(await selectSource(f.ctx,f.item,null),null);
 });

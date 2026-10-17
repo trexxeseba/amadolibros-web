@@ -49,14 +49,16 @@ export async function auditCardResolver({manifest,catalog,plan,verified=null}) {
     context.env.CARD_VARIANTS_INDEX_SHA256 = readiness.digest;
     context.request = new Request('https://www.amadolibros.com/catalogo?_card_variants=1');
   }
-  const ready=verified?(await Promise.all(catalog.items.map(async item=>{
+  const ready=verified?(await Promise.all(catalog.items.map(async (item,i)=>{
     const isolated={...context,data:context.data,env:{...context.env,CARD_VARIANTS_CANARY_IDS:item.id}};
-    return readyCardVariantSource(isolated,item);
+    const cover=resolved[i];
+    return readyCardVariantSource(isolated,item,cover ? `/preview-cover/${item.id}/0/${cover.sha256}.${cover.extension}` : null);
   }))).filter(Boolean).length:null;
   context.env.IMAGE_VARIANTS_READ_ENABLED='false';
-  if((await Promise.all(catalog.items.map(async item=>{
+  if((await Promise.all(catalog.items.map(async (item,i)=>{
     const isolated={...context,data:context.data,env:{...context.env,CARD_VARIANTS_CANARY_IDS:item.id}};
-    return readyCardVariantSource(isolated,item);
+    const cover=resolved[i];
+    return readyCardVariantSource(isolated,item,cover ? `/preview-cover/${item.id}/0/${cover.sha256}.${cover.extension}` : null);
   }))).some(Boolean))throw new Error('disabled-mode-emitted-variant');
   return {bucket:PRODUCTION_IMAGE_BUCKET,resolver_matched:matched,card_recipe_pairs:matched*3,
     unique_variants:pairs.size,index:context.data.coverIndex.mode,

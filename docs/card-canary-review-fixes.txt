@@ -98,6 +98,10 @@ PASOS POSTERIORES, REQUIEREN APROBACION ANTES DE PRODUCCION
 5. Rollback: flag false o IDs vacios para volver a URLs anteriores. Rollback
    completo mediante deployment previo; mantener Images disponible.
 
-Pruebas locales: 1739 Functions/Astro y 20 scripts aprobadas; build Astro aprobado.
+Pruebas locales: 1740 Functions/Astro y 20 scripts aprobadas; build Astro aprobado.
 CI/Preview y prueba del nuevo indice con evidencia productiva se registran en PR.
 No se escribe R2 productivo, ni se fusiona, activa o despliega produccion.
+
+El runtime cruza ademas el hash del indice con la portada vigente ya resuelta
+por el catalogo. Una portada reemplazada conservando su URL fuente tampoco
+activa una entrada antigua; no se agregan lecturas para comprobarlo.

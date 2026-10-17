@@ -950,7 +950,7 @@ export async function onRequest(ctx) {
         }))
         : Array(limited.length).fill(null);
 
-    const readyCards = await Promise.all(limited.map(b => readyCardVariantSource(ctx, b)));
+    const readyCards = await Promise.all(limited.map((b, idx) => readyCardVariantSource(ctx, b, r2Covers[idx])));
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
         const rawHref = `${previewBase}/libro/${b.id}/${slug}`;
