@@ -126,14 +126,14 @@ test('repeating the same request returns the same clone without duplicating runs
  assert.notEqual(third.new_run_id,first.new_run_id);assert.equal(third.selected_isbns.length,2);assert.deepEqual(await f.snapshot(),before);
 });
 
-test('/items/validate rejections stay in review with the official codes and nothing is published',async t=>{
+test('/items/validate rejections are skipped with the official codes and nothing is published',async t=>{
  const failing=new Set([catalogBooks[0].isbn,catalogBooks[3].isbn]);
  const f=await fixture(t,{failValidate:failing});
  const result=await f.service.command(f.env,'clone_preflight_catalog',{source_run_id:f.sourceId});
  assert.equal(result.selected_isbns.length,10);
- assert.equal(result.review,2);assert.equal(result.validated,8);assert.equal(result.published,0);assert.equal(f.calls.create,0);
+ assert.equal(result.review,0);assert.equal(result.validated,8);assert.equal(result.published,0);assert.equal(f.calls.create,0);
  for(const job of result.preflight.filter(j=>failing.has(j.isbn))){
-  assert.equal(job.state,'review');assert.equal(job.error_code,'ml_http_400');
+  assert.equal(job.state,'skipped_ml_requirement');assert.equal(job.error_code,'ml_http_400');
   assert.deepEqual(job.validation,{stage:'item_validation',validation_codes:['item.catalog_listing.invalid']});
   assert.equal(job.catalog_product_id,null);
  }
