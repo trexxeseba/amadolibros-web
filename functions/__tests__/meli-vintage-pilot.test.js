@@ -8,6 +8,7 @@ import { createPublicationMeli } from '../../worker-sync/publication-meli.js';
 import { policyHash } from '../../worker-sync/publication-policy.js';
 import { createVintagePilotPage } from '../panel/meli-vintage-piloto.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
+import { runPreflight } from '../../astro-front/public/assets/meli-vintage-preflight.js';
 
 const vintage='2341378249',books='440298103',app='4741021817925208';
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:40,freightUsdKg:10,laborUyu:0,margin:.2,mlFee:.15,deliveryUyu:200,minimumContributionUyu:100,minimumSaleUyu:1000,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
@@ -108,7 +109,56 @@ test('existing-listing progress is visible while supplier jobs remain pending, a
  assert.ok(html.includes('comprobación en curso'));
  assert.ok(!html.includes('name="action" value="advance"'));
  assert.ok(!html.includes('opaque-private-scroll'));assert.ok(!html.includes('test-owner'));
+ const progressResponse=await page({request:new Request('https://www.amadolibros.com/panel/meli-vintage-piloto?format=progress',{headers:{cookie}}),env});
+ const progress=await progressResponse.json();assert.equal(progress.indexed,1);assert.equal(progress.busy,true);
+ assert.ok(!JSON.stringify(progress).includes('opaque-private-scroll'));assert.equal(progress.policy,undefined);assert.equal(progress.sample,undefined);
  assert.equal(reads,1);assert.equal(f.calls.create.length,0);
+});
+
+test('validate-only continuation cannot lease publishing even when approval races the state lookup',async t=>{
+ const f=await fixture(t);const state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed});
+ f.db.sqlite.prepare("UPDATE ml_vintage_pub_runs SET state='preflight' WHERE id=?").run(state.run.id);
+ const prepare=f.db.prepare;let raced=false;
+ f.db.prepare=sql=>{
+  const statement=prepare(sql);
+  if(!sql.includes("state='preflight' AND lease_until"))return statement;
+  return {bind(...args){return {async first(){
+   raced=true;f.db.sqlite.prepare("UPDATE ml_vintage_pub_runs SET state='publishing',approved_hash=policy_hash WHERE id=?").run(state.run.id);
+   return statement.bind(...args).first();
+  }};}};
+ };
+ await f.pilot.advance(f.env,{run_id:state.run.id});
+ assert.equal(raced,true);assert.equal(f.calls.create.length,0);
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) n FROM ml_vintage_pub_receipts').get().n,0);
+});
+
+test('automatic continuation only sends preflight actions and stops at a ready or publishing state',async()=>{
+ const posts=[],states=[{state:'preflight',run_id:'pilot',busy:false},{state:'preflight',run_id:'pilot',busy:false},{state:'ready',run_id:'pilot'}];
+ const result=await runPreflight({initial:new URLSearchParams({action:'prepare'}),post:async body=>posts.push(body.get('action')),read:async()=>states.shift()});
+ assert.equal(result.state,'ready');assert.deepEqual(posts,['prepare','advance','advance']);
+ const after=[];const terminal=await runPreflight({initial:new URLSearchParams({action:'advance'}),post:async body=>after.push(body.get('action')),read:async()=>({state:'publishing',run_id:'pilot'})});
+ assert.equal(terminal.state,'publishing');assert.deepEqual(after,['advance']);
+ await assert.rejects(()=>runPreflight({initial:new URLSearchParams({action:'approve'}),post:async()=>assert.fail('no approval'),read:async()=>({})}),/preflight_action_required/);
+});
+
+test('automatic continuation waits out a busy lease and respects stop and step limits',async()=>{
+ let waits=0,posts=0;
+ const states=[{state:'preflight',run_id:'pilot',busy:true},{state:'preflight',run_id:'pilot',busy:false},{state:'ready',run_id:'pilot'}];
+ await runPreflight({initial:new URLSearchParams({action:'advance'}),post:async()=>posts++,read:async()=>states.shift(),wait:async()=>waits++});
+ assert.equal(posts,2);assert.equal(waits,1);
+ let count=0;
+ const limited=await runPreflight({initial:new URLSearchParams({action:'advance'}),post:async()=>count++,read:async()=>({state:'preflight',run_id:'pilot'}),maxSteps:2});
+ assert.equal(limited.reason,'limit');assert.equal(count,2);
+ await runPreflight({initial:new URLSearchParams({action:'advance'}),post:async()=>assert.fail('stopped'),read:async()=>assert.fail('stopped'),stopped:()=>true});
+});
+
+test('loading the browser helper binds a user action without starting network requests',async()=>{
+ const originalDocument=globalThis.document,originalFetch=globalThis.fetch;let calls=0,listeners=0;
+ const node=()=>({setAttribute(){},after(){},addEventListener(){}});
+ globalThis.document={createElement:node,querySelector:()=>node(),querySelectorAll:()=>[{addEventListener(){listeners++;}}]};
+ globalThis.fetch=async()=>{calls++;throw Error('no request on page load');};
+ try{await import('../../astro-front/public/assets/meli-vintage-preflight.js?load-only');assert.equal(calls,0);assert.equal(listeners,1);}
+ finally{if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;globalThis.fetch=originalFetch;}
 });
 
 test('stale stock or wrong identity prevents approval/preparation',async t=>{
