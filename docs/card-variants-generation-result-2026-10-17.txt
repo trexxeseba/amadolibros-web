@@ -1,0 +1,88 @@
+RESULTADO CERRADO — GENERACION DE VARIANTES DE TARJETA EN R2 PRODUCTIVO
+2026-10-17, Montevideo. Sin merge, despliegue productivo o activacion web.
+
+Ejecucion final SUCCESS:
+https://github.com/trexxeseba/amadolibros-web/actions/runs/39001078812
+Commit ejecutado: 5c9d50ec85725f4a399737af476ab017fdcdd1d7.
+Resultado final registrado: 2026-10-17T04:34:21.733Z (01:34:21 Montevideo).
+Avance cifrado y resumen agregado:
+https://github.com/trexxeseba/amadolibros-web/actions/runs/39001078812/artifacts/12089753227
+Retencion del artifact hasta 2027-01-15. No contiene claves/manifest en claro.
+
+ALCANCE Y VERIFICACION
+2788 masters unicos de las 2790 tarjetas activas seleccionadas; solo portada
+posicion cero. Plan sellado desde el catalogo y manifest del inventario original.
+Digest: d1e7fe6ef981169bfbe2ea3ab4182b058065ddd4770e1d15ceceaf512696d78c.
+Bucket destino: amadolibros-images-production. Preview no fue llenado ni usado
+para inferir cobertura productiva. Sin historicos ni galerias secundarias.
+Recetas exactas: v1-240-q85, v1-360-q85, v1-480-q85.
+
+Piloto: 30/30 objetos guardados verificados antes de continuar.
+Total final: 8364/8364 destinos verificados; cero pendientes o errores finales.
+Sharp 0.34.5 corre en Node en GitHub Actions, fuera del Worker.
+Cada objeto se recupero directamente de S3 y se verifico:
+- Content-Type image/webp y decodificacion real WebP en Sharp.
+- Ancho min(ancho original, receta), sin ampliar; alto proporcional +/-1 pixel.
+- Metadatos master_sha256, recipe, sha256, width, height y dimensiones fuente.
+- SHA-256 de los bytes almacenados igual al registrado; metadata ligada al master.
+Los masters descargados tambien se comprobaron contra SHA y tamano del plan.
+No se acepto HTTP 200 por si solo, no se usaron fallbacks publicos para verificar.
+No se solicitaron transformaciones /cdn-cgi/image/.
+
+INCIDENTE Y REANUDACION
+Primera corrida: piloto aprobado; 113 creadas y verificadas. Se detuvo por una
+carrera al renombrar el archivo temporal del checkpoint (ENOENT), no por un
+error de imagen. No se oculto ni se contaron faltantes como exitosos.
+https://github.com/trexxeseba/amadolibros-web/actions/runs/39000940695
+Se serializo el guardado del avance y se agrego una prueba de concurrencia.
+17/17 pruebas pasaron localmente y en Actions antes de reanudar.
+Reanudacion: 113 existentes verificadas y reutilizadas; 8251 nuevas creadas.
+Acumulado: exactamente 8364 PUT exitosos, sin regenerar las existentes.
+Todas las escrituras usaron If-None-Match:*; no hubo sobrescrituras ni DELETE.
+Avance cifrado AES-256-GCM guardado tras cada verificacion, con actualizacion
+atomica; las variantes con metadata tambien permiten reconstruir el avance.
+
+CONSUMO MEDIDO ACUMULADO (DOS CORRIDAS)
+PUT intentados/exitosos: 8364.
+GET intentados: 19630; incluye comprobaciones de ausencia, originales, lectura
+posterior de variantes y revalidacion de las 113 existentes al reanudar.
+404 esperados: 8364 comprobaciones de variantes aun ausentes antes de crearlas;
+no son faltantes finales. Todas las otras respuestas S3 registradas fueron 200.
+Bytes nuevos almacenados/subidos: 217410350 (217.41 MB decimales; 207.34 MiB).
+Suma Content-Length de respuestas: 696130414 bytes. Es telemetria de cabeceras,
+no una medicion exacta de trafico de red; incluye cuerpos 404 cancelados.
+Tiempo activo de generacion acumulado: 1907403 ms = 31 min 47.4 s.
+Tiempo en toBuffer del encoder: 313566 ms = 5 min 13.6 s.
+CPU del proceso Node/Sharp: 512796 ms = 8 min 32.8 s.
+La diferencia incluye espera de red, verificacion y guardado de checkpoints.
+Solicitudes al Worker para generar/verificar: 0. Transformaciones de pago: 0
+en este proceso. No representa una medicion del ahorro de la web en produccion.
+
+COSTO INCREMENTAL, USD
+Equivalente R2 Standard sin cuotas/redondeo:
+8364 A x 4.50/1M + 19630 B x 0.36/1M = 0.0447048 en operaciones.
+Almacenamiento incremental de mes completo: 0.21741035 GB x 0.015 = 0.003261/mes.
+Egreso R2 Standard: gratuito. Runner estandar ubuntu-latest en repo publico:
+minutos de ejecucion gratuitos; CPU de Sharp no se factura como CPU de Worker.
+Artifacts guardados de ambas corridas: 1661844 bytes comprimidos; si excedieran
+la cuota de almacenamiento Actions, equivalente ~USD 0.00042/mes a 0.25/GB-mes
+(~0.00125 por 90 dias), distinto del costo del runner.
+La factura REAL no se comprobo: cuotas compartidas y redondeos por cuenta
+pueden absorber el incremento o disparar otra unidad facturable. No prometer
+ahorro ni costo final de factura usando solo estos equivalentes.
+https://developers.cloudflare.com/r2/pricing/
+https://docs.github.com/en/billing/concepts/product-billing/github-actions
+
+ESTADO DE LA WEB Y REVERSIBILIDAD
+No se activo IMAGE_VARIANTS_READ_ENABLED en produccion; sigue false en el
+codigo preparado. No se habilito el writer del Worker, que sigue false.
+No se fusiono PR400, no se desplego produccion, no se cambiaron WAF/servicios.
+Los cambios del generador quedaron publicados solo en la rama auxiliar de
+ejecucion y copiados al checkout local del PR; no se empujo la rama del PR.
+El alcance de 8364 objetos esta listo para la etapa de activacion posterior;
+no demuestra cobertura de todas las portadas o galerias de la web.
+Antes de activar: revisar el enlace del catalogo a estos masters y la entrega
+de variantes bajo la configuracion a aprobar; la activacion requiere decision
+separada. No se presupone que la web actual ya haya dejado de transformar.
+Reversion ahora: mantener lectura desactivada y conservar los derivados; no
+hay necesidad de borrar imagenes ni cancelar servicios. No hay job pendiente.

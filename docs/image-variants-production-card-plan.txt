@@ -22,24 +22,32 @@ Preparado en el generador EXISTENTE:
 - CLI exige IMAGE_VARIANT_WRITE_APPROVAL igual al digest del plan.
 - Lectura web productiva false y escritor productivo false siguen intactos.
 
-Pendiente concreto ANTES de escribir:
-El job de inventario guardo solo agregados, no el listado de hashes. No existe
-todavia un plan sellado real en este checkout. No presentar el total como si
-fuera el listado. prepare-card-plan.mjs consume PRIVADAMENTE manifest y catalogo
-congelados usados por el inventario (updated_at 03:10:32.644Z / 03:10:21.984Z,
-2026-10-17), mas los 8225 IDs. Solo acepta 2790 activas / 2788 hashes; valida
-referencia actual de posicion cero y origen; deduplica antes de guardar el plan.
-Se necesita recuperar esos insumos congelados, especialmente el catalogo de
-esa hora que el job no conservo; un catalogo vivo diferente se rechaza.
-Si no se recupera, hay que aprobar un nuevo snapshot de seleccion y comparar
-su diferencia con el alcance auditado, sin inventar que es el mismo listado.
-No subir listado ni manifest productivo a logs/artifacts publicos.
+ACTUALIZACION TRAS AUTORIZACION DEL USUARIO:
+Se encontro audit-catalog.json local con el timestamp exacto y se recupero
+el manifest congelado del artifact 12087843537. Se verifico su SHA contra
+report.json y el baseline 29c5dce. El plan real reproduce los 2788 masters.
+Digest del listado: d1e7fe6ef981169bfbe2ea3ab4182b058065ddd4770e1d15ceceaf512696d78c.
+El plan y manifest quedan privados; solo se publica el digest y totales.
 
-El escritor actual exige IMAGE_VARIANTS_WRITE_ENABLED=true, hoy false. Esta
-preparacion NO lo habilita. La autorizacion de objetos no autoriza por si sola
-un despliegue: bajo la restriccion actual no ejecutar hasta disponer de una
-via de escritura existente habilitada y validada, o aprobacion separada para
-habilitar el escritor aislado. No ampliar permisos ni crear credenciales.
+No se habilito ni desplego el escritor Worker. r2-card-stage.mjs adapta el
+encoder existente a S3 directo, autenticando con el token ya configurado y
+sin ampliar permisos ni crear credenciales. Sharp corre fuera del Worker.
+El flujo usa If-None-Match:* y comprueba bytes y metadata realmente guardados.
+Genera/verifica primero 10 masters (30 variantes); solo tras aprobar ese
+piloto continua con los 2778 restantes. Un fallo detiene nuevas fuentes.
+Los objetos existentes validos se verifican y reutilizan, no se regeneran.
+El avance se guarda atomico y cifrado antes de publicar el artifact.
+
+Primera ejecucion: piloto aprobado, 113 creadas y verificadas; paro por
+concurrencia al renombrar el checkpoint temporal. No fue un error de imagen.
+Se corrigio serializando las escrituras del checkpoint; prueba de concurrencia
+agregada y 17/17 pruebas pasan localmente y en Actions antes de reanudar.
+Primera ejecucion: https://github.com/trexxeseba/amadolibros-web/actions/runs/39000940695
+Reanudacion: https://github.com/trexxeseba/amadolibros-web/actions/runs/39001078812
+Consumo inicial: 264 GET, 113 PUT, 2977952 bytes almacenados, 32.661 s;
+El resultado final esta cerrado en card-variants-generation-result-2026-10-17.txt:
+8364 verificadas, 8251 nuevas en reanudacion + 113 existentes reutilizadas,
+0 errores finales. Total: 217410350 bytes, 8364 PUT y 19630 GET.
 
 Preparacion local (no genera imagenes ni escribe R2):
 node scripts/images/prepare-card-plan.mjs manifest.json catalog.json external-ids.json private-plan.json
@@ -60,10 +68,11 @@ Tiempo y costo incremental (estimaciones, no factura ni ahorro confirmado):
 - Almacenamiento: ~USD 0.00356/mes nominal; cerca de USD 0.015 si ese incremento
   cruza una unidad GB-mes facturable. Sin costo de egreso R2 Standard.
 - Runner ubuntu-latest estandar en repositorio publico: USD 0.
-- Worker ~27880 solicitudes incluyendo verificacion: ~USD 0.00836 nominal
-  mas CPU aun no medida. No se suma una nueva suscripcion.
-- Total nominal ~USD 0.06 + CPU; incremento real puede ser cero con cuotas o
-  alcanzar ~USD 4.86 + CPU si cruza simultaneamente unidades A/B; no se conoce
+- La ejecucion autorizada usa S3 directo: cero solicitudes al Worker para
+  generar o verificar. CPU de Sharp queda en el runner estandar gratuito.
+- La estimacion previa con Worker queda reemplazada por los contadores reales
+  de GET/PUT del adaptador S3. El incremento real puede ser cero con cuotas o
+  alcanzar ~USD 4.86 si cruza simultaneamente unidades A/B; no se conoce
   consumo mensual de cuenta. Reintentos no incluidos. No usarlo como tope firme.
 https://developers.cloudflare.com/r2/pricing/
 https://developers.cloudflare.com/workers/platform/pricing/
