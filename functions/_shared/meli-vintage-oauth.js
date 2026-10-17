@@ -17,9 +17,17 @@ const base64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).repl
 const hash = async text => base64(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
 const random = () => base64(crypto.getRandomValues(new Uint8Array(32)));
 const cookie = (value, maxAge) => `${COOKIE}=${value}; Path=/meli-vintage-callback; Max-Age=${maxAge}; Secure; HttpOnly; SameSite=Lax`;
-const SAFE_ERRORS = new Set(['invalid_client', 'invalid_grant', 'invalid_request', 'invalid_scope', 'unsupported_grant_type', 'local_rate_limited']);
+const SAFE_ERRORS = new Set(['invalid_client', 'invalid_grant', 'invalid_request', 'invalid_scope', 'unsupported_grant_type', 'local_rate_limited', 'upstream_redirect', 'invalid_json']);
 class UpstreamFailure extends Error {
   constructor(status, code) { super('upstream_rejected'); this.status = status; this.safeCode = SAFE_ERRORS.has(code) ? code : 'upstream_rejected'; }
+}
+class TransportFailure extends Error {
+  constructor(code) { super('transport_failed'); this.safeCode = code; }
+}
+function failureSummary(error) {
+  if (error instanceof UpstreamFailure) return `HTTP ${error.status} · ${error.safeCode}`;
+  if (error instanceof TransportFailure) return error.safeCode;
+  return 'server_error';
 }
 
 function page(title, body, status = 200, extraHeaders = {}) {
@@ -29,21 +37,54 @@ function page(title, body, status = 200, extraHeaders = {}) {
 }
 
 export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now = Date.now } = {}) {
+  let publicTransportCache = null;
   const statement = (db, sql, ...args) => db.prepare(sql).bind(...args);
   async function schema(db) { await db.batch(SCHEMA.map(sql => db.prepare(sql))); }
   async function json(url, options) {
-    const response = await fetcher(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(15000) });
-    if (!response.ok) {
-      let data; try { data = await response.json(); } catch { data = null; }
-      throw new UpstreamFailure(response.status, data?.error);
-    }
-    return response.json();
+    // Match the existing Worker transport. Never follow a redirect with secrets.
+    // Keep the timeout active until the response body has also been consumed.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      let response;
+      try { response = await fetcher(url, { ...options, redirect: 'manual', signal: controller.signal }); }
+      catch (error) {
+        // Inspect messages only to select a fixed category; never echo them.
+        const message = String(error?.message || '');
+        const category = controller.signal.aborted ? 'request_timeout'
+          : /certificate|\bTLS\b|\bSSL\b/i.test(message) ? 'tls_error'
+          : /getaddrinfo|\bDNS\b|name resolution/i.test(message) ? 'dns_error'
+          : /redirect mode|not implemented|unsupported|is not a function/i.test(message) ? 'request_setup_error'
+          : 'fetch_error';
+        throw new TransportFailure(category);
+      }
+      if (response.status >= 300 && response.status < 400) throw new UpstreamFailure(response.status, 'upstream_redirect');
+      let data;
+      try { data = await response.json(); }
+      catch {
+        if (controller.signal.aborted) throw new TransportFailure('response_timeout');
+        throw new UpstreamFailure(response.status, 'invalid_json');
+      }
+      if (!response.ok) throw new UpstreamFailure(response.status, data?.error);
+      return data;
+    } finally { clearTimeout(timer); }
   }
   return async function onRequest({ request, env }) {
     const url = new URL(request.url);
     if (url.origin !== ORIGIN || env?.APP_ENV !== 'production') return page('No disponible', '<p>Esta conexión se realiza desde la web principal de Amado.</p>', 403);
     if (![START_PATH, '/meli-vintage-callback'].includes(url.pathname)) return page('No encontrado', '', 404);
     if (!['GET', 'POST'].includes(request.method) || (url.pathname === '/meli-vintage-callback' && request.method !== 'GET')) return page('Método no permitido', '', 405);
+    if (url.pathname === '/meli-vintage-callback' && url.searchParams.get('transporte') === '1' && !url.searchParams.has('code') && !url.searchParams.has('state')) {
+      // Fixed public GET only; no app secret, seller token, code, or D1 access.
+      // One check per isolate/minute. No caller-selected URL or request headers.
+      if (!publicTransportCache || publicTransportCache.expires <= now()) {
+        let result;
+        try { await json('https://api.mercadolibre.com/sites/MLU', { method: 'GET', headers: { Accept: 'application/json' } }); result = 'HTTP 200 · JSON'; }
+        catch (error) { result = failureSummary(error); }
+        publicTransportCache = { result, expires: now() + 60000 };
+      }
+      return page('Diagnóstico de transporte', `<p>Consulta pública de conexión: <strong>${escape(publicTransportCache.result)}</strong>.</p><p>Esta comprobación no utiliza credenciales, no autoriza cuentas ni accede a la base de datos.</p>`);
+    }
     const db = env?.ORDERS_DB;
     if (!db?.prepare || !env?.CLIENT_SECRET || (env.APP_ID && String(env.APP_ID) !== APP_ID)) return page('Conexión pendiente de configuración', '<p>Falta configurar el acceso de la app en el servidor. No se modificó ninguna autorización.</p>', 503);
     if (url.pathname === START_PATH) {
@@ -52,12 +93,12 @@ export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now 
       if (request.method === 'GET' && url.searchParams.get('diagnostico') === '1') {
         // Use an intentionally invalid code: this cannot authorize a seller,
         // refresh a grant, or create tokens. Never reuse the user's real code.
-        let result = 'El servidor no pudo obtener una respuesta.';
+        let result;
         try {
           await json('https://api.mercadolibre.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: APP_ID, client_secret: env.CLIENT_SECRET, redirect_uri: CALLBACK, code: 'amado-vintage-diagnostic-deliberately-invalid-code', code_verifier: 'amado-vintage-diagnostic-invalid-code-verifier-43-characters' }) });
           result = 'Respuesta inesperada: detener la conexión y revisar el servidor.';
         } catch (error) {
-          if (error instanceof UpstreamFailure) result = `HTTP ${error.status} · ${error.safeCode}`;
+          result = failureSummary(error);
         }
         return page('Diagnóstico de conexión', `<p>Respuesta del servicio de autorización: <strong>${escape(result)}</strong>.</p><p>Se utilizó un código de prueba inválido. No se autorizó ninguna cuenta ni se renovaron credenciales.</p><p>Este resultado por sí solo no confirma que la clave sea correcta. Compartí este mensaje para revisar el siguiente paso.</p>`);
       }
@@ -112,7 +153,7 @@ export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now 
       if (!inserted) return page('La cuenta ya tiene una autorización guardada', '<p>No se reemplazaron sus credenciales. Revisá la conexión existente antes de volver a autorizar.</p>', 409, headers);
       return page('Amado Vintage conectada', `<p>Cuenta verificada mediante <code>GET /users/me</code>: <strong>${escape(nickname)}</strong>.</p><p>seller_id: <strong>${escape(seller)}</strong></p><p>La autorización se guardó por app y seller, separada de Amado Libros. No se modificaron publicaciones.</p>`, 200, headers);
     } catch (error) {
-      const reason = error instanceof UpstreamFailure ? `HTTP ${error.status} · ${error.safeCode}` : 'server_error';
+      const reason = failureSummary(error);
       // Do not print exception messages, request URLs, codes, state, or tokens.
       console.warn(JSON.stringify({ event: 'meli_vintage_oauth_failed', stage, reason }));
       return page('No se pudo completar la conexión', `<p>La conexión no quedó confirmada. No se reemplazaron credenciales existentes.</p><p>Diagnóstico: <strong>${escape(stage)} · ${escape(reason)}</strong>.</p><p>Revisá el servidor antes de volver a autorizar.</p>`, 503, { 'Set-Cookie': cookie('', 0) });

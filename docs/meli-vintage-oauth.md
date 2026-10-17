@@ -54,6 +54,16 @@ Los fallos del callback muestran una etapa fija (`token_exchange`,
 excepciones, SQL, códigos OAuth, state o tokens. Los logs contienen sólo esa
 etapa y el código saneado.
 
+La comprobación pública `/meli-vintage-callback?transporte=1` hace exclusivamente
+GET `https://api.mercadolibre.com/sites/MLU`, sin credenciales ni acceso a D1, con
+caché de un minuto por instancia. No acepta URLs, headers ni vendedores elegidos
+por quien consulta. Permite verificar el transporte sin una sesión del panel.
+El transporte usa AbortController, timer de 15 s que cubre también la lectura de
+JSON y redirect manual como el Worker existente: los 3xx se rechazan sin seguir
+el destino. Distingue timeout, DNS, TLS, configuración de solicitud, error de
+fetch y respuesta no JSON mediante categorías fijas; no desactiva controles TLS
+ni expone detalles remotos.
+
 Validación local: `node --test functions/__tests__/meli-vintage-oauth.test.js`.
 Las APIs de ML se simulan. Ninguna prueba usa secretos reales, llama a ML ni
 accede a la base de producción.
