@@ -1,0 +1,64 @@
+PASO DE ACTIVACION PREPARADO — PENDIENTE DE APROBACION
+2026-10-17. No ejecutar este procedimiento hasta la aprobacion del usuario.
+
+GENERACION CERRADA
+2788 hashes, tres recetas 240/360/480 q85, 8364/8364 variantes verificadas.
+Piloto 30/30 aprobado; 113 objetos reutilizados tras reanudar, sin regeneracion.
+Errores pendientes: cero. Avance cifrado guardado; 17/17 pruebas aprobadas.
+https://github.com/trexxeseba/amadolibros-web/actions/runs/39001078812
+Detalle: card-variants-generation-result-2026-10-17.txt.
+
+ESTADO ACTUAL
+PR400 sigue sin fusionar. La rama local contiene el generador y cierre; esos
+ultimos commits no se publicaron en la rama del PR. La ejecucion ocurrio en
+la rama auxiliar codex/r2-card-inventory-29c5dce, sin despliegues productivos.
+En wrangler.toml, [env.production.vars], IMAGE_VARIANTS_READ_ENABLED=false.
+En worker-sync/wrangler.toml, IMAGE_VARIANTS_WRITE_ENABLED=false.
+La generacion por cron no se habilita como parte de esta activacion.
+Ninguna accion pendiente de escritura R2 para el alcance ya completado.
+
+CAMBIO EXACTO A APROBAR PARA ACTIVAR
+En wrangler.toml, SOLO dentro de [env.production.vars]:
+- IMAGE_VARIANTS_READ_ENABLED = "false"
++ IMAGE_VARIANTS_READ_ENABLED = "true"
+No se aplico este cambio. No modificar el interruptor de escritura del Worker,
+el cron ni otros ajustes del sitio. No tocar WAF, logos, analitica o servicios.
+
+SECUENCIA PROPUESTA, TODAVIA NO EJECUTADA
+1. Publicar en PR400 los cambios locales del generador y los informes, con la
+   lectura productiva aun false; ejecutar CI y Preview del commit definitivo.
+   No repetir la generacion ni ampliar el inventario.
+2. Verificar en Preview que las tarjetas acordadas resuelvan a sus masters
+   controlados en lugar de devolver directamente URLs externas. Preview usa
+   amadolibros-images-preview: sus faltantes no invalidan ni prueban cobertura
+   del bucket productivo. Para validar entrega con los objetos productivos,
+   usar un entorno de prueba con binding de SOLO LECTURA al bucket productivo,
+   autorizado para ese fin; no copiar masters ni variantes por defecto.
+3. Revisar el diff de activacion anterior y pedir aprobacion expresa para
+   fusionar PR400 y permitir el despliegue productivo que dispara main. Ese
+   despliegue debe incluir el codigo de entrega y la variable true juntos.
+   Un cambio aislado de variable sobre el codigo viejo no prueba la migracion.
+4. Solo tras aprobacion: aplicar el diff, pasar CI y fusionar/desplegar por el
+   workflow existente. No lanzar el workflow de generacion.
+5. Comprobar inicio, catalogo, fichas y zoom en desktop/mobile. Para las tres
+   recetas acordadas exigir Content-Type image/webp, x-cover-source=r2-variant,
+   x-cover-variant igual a la receta, ETag SHA y proporcion correcta; un 200
+   con original-fallback no aprueba el caso. Usar muestras representativas,
+   luego HTML deduplicado para cobertura; no cargar todo el catalogo en browser.
+   Zoom oculto: sin src ni solicitud anticipada hasta abrirlo.
+   No exigir variantes de zoom/galeria que no fueron parte de este lote: si
+   faltan, documentar su fallback original sin declararlas cubiertas.
+6. Revisar rutas efectivamente solicitadas y uso facturable antes de afirmar
+   ahorro. El exito de generacion no demuestra por si solo ahorro de la web.
+
+ALCANCE DE LA APROBACION FUTURA
+La aprobacion solicitada en esa etapa debe mencionar fusion y despliegue de
+PR400 y activacion de lectura. La autorizacion de generacion ya usada no se
+interpreta como autorizacion para ninguna de esas tres acciones.
+No se solicita generar de nuevo las 8364 variantes.
+
+REVERSION
+Restaurar IMAGE_VARIANTS_READ_ENABLED=false en produccion mediante el mismo
+procedimiento aprobado de despliegue. El cache separa modo variants/original.
+Conservar todos los objetos R2; no borrar imagenes ni cancelar servicios.
+Mientras la lectura permanece desactivada, no hace falta revertir la generacion.
