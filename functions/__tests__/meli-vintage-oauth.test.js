@@ -30,7 +30,8 @@ async function fixture(t, options = {}) {
   const session = await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD));
   const fetcher = async (url, init) => {
     calls.push({ url, init });
-    assert.equal(init.redirect, 'error');
+    assert.equal(init.redirect, 'manual');
+    assert.ok(init.signal instanceof AbortSignal);
     if (url === 'https://api.mercadolibre.com/oauth/token') {
       assert.equal(init.method, 'POST');
       const body = new URLSearchParams(init.body);
@@ -39,6 +40,7 @@ async function fixture(t, options = {}) {
       assert.equal(body.get('client_id'), APP_ID);
       assert.ok(body.get('code_verifier'));
       if (options.tokenError) return Response.json({ error: options.tokenError, message: 'test-secret and vintage-refresh-secret must not leak' }, { status: 400 });
+      if (options.tokenRedirect) return new Response('', { status: 302, headers: { location: 'https://attacker.test/collect' } });
       return Response.json({ access_token: 'vintage-access-secret', refresh_token: 'vintage-refresh-secret', expires_in: 3600, user_id: options.tokenSeller || options.seller || 123456789 });
     }
     assert.equal(url, 'https://api.mercadolibre.com/users/me');
@@ -182,3 +184,48 @@ test('callback failures report only their stage, HTTP status and allowlisted err
   assert.doesNotMatch(html, /test-secret|vintage-refresh-secret|test-code/);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM ml_oauth_sellers').get().n, 0);
 });
+
+test('a token endpoint redirect is never followed with app credentials', async t => {
+  const f = await fixture(t, { tokenRedirect: true }), flow = await f.start();
+  const response = await f.run(new Request(flow.callback, { headers: { cookie: flow.cookie } }));
+  const html = await response.text();
+  assert.equal(response.status, 503);
+  assert.match(html, /token_exchange · HTTP 302 · upstream_redirect/);
+  assert.doesNotMatch(html, /attacker|test-secret/);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM ml_oauth_sellers').get().n, 0);
+});
+
+test('public transport probe is a fixed credential-free GET, cached for one minute, with no database dependency', async () => {
+  const calls = [], clock = { value: 1000 };
+  const handler = createVintageOAuth({ now: () => clock.value, fetcher: async (url, init) => {
+    calls.push(url);
+    assert.equal(url, 'https://api.mercadolibre.com/sites/MLU');
+    assert.equal(init.method, 'GET'); assert.equal(init.redirect, 'manual');
+    assert.deepEqual(init.headers, { Accept: 'application/json' });
+    assert.equal(init.body, undefined);
+    return Response.json({ id: 'MLU' });
+  } });
+  const request = () => new Request(`${CALLBACK}?transporte=1&url=https://attacker.test`);
+  const env = { APP_ENV: 'production' };
+  assert.match(await (await handler({ request: request(), env })).text(), /HTTP 200 · JSON/);
+  await handler({ request: request(), env }); assert.equal(calls.length, 1);
+  clock.value += 60001;
+  await handler({ request: request(), env }); assert.equal(calls.length, 2);
+});
+
+for (const [responder, expected] of [
+  [async () => { throw Error('DNS lookup failed with secret-test-value'); }, 'dns_error'],
+  [async () => { throw Error('certificate validation failed secret-test-value'); }, 'tls_error'],
+  [async () => { throw Error('redirect mode not implemented secret-test-value'); }, 'request_setup_error'],
+  [async () => { throw Error('opaque secret-test-value'); }, 'fetch_error'],
+  [async () => new Response('secret-test-value', { status: 200 }), 'HTTP 200 · invalid_json'],
+]) {
+  test(`transport diagnostics distinguish ${expected} without echoing raw errors or bodies`, async () => {
+    const handler = createVintageOAuth({ fetcher: responder });
+    const response = await handler({ request: new Request(`${CALLBACK}?transporte=1`), env: { APP_ENV: 'production' } });
+    const html = await response.text();
+    assert.ok(html.includes(expected));
+    assert.doesNotMatch(html, /secret-test-value/);
+  });
+}
