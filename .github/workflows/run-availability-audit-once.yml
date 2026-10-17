@@ -1,0 +1,27 @@
+name: Audit ML availability once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/run-availability-audit-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Audit 18-day manufacturing time
+        run: node scripts/mercadolibre/publisher-control.mjs
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          PUBLISHER_ACTION: audit_availability_terms
+          PUBLISHER_RUN_ID: df9edc17-0df0-b6d1-b116-c3142eb1446c
