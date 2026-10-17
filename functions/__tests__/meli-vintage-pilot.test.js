@@ -90,6 +90,27 @@ test('complete fresh uploads can prepare Vintage without a Libros run; incomplet
  assert.deepEqual(await f.s.jobs(f.source),before);
 });
 
+test('existing-listing progress is visible while supplier jobs remain pending, and busy pages offer no duplicate tick',async t=>{
+ const f=await fixture(t);let reads=0;
+ f.api.indexSlice=async(e,index)=>{reads++;f.clock.value+=21000;return {index:{...index,done:false,status:'paused',scroll:'opaque-private-scroll'},items:[{id:'MLU123456789',isbn:null,titleKey:'anotherbook',status:'active'}]};};
+ let state=await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed});
+ assert.equal(state.progress.indexed,1);assert.equal(state.progress.phase,'existing_listings');
+ assert.equal(state.summary.counts.find(x=>x.state==='pending').n,8);
+ assert.equal(f.calls.create.length,0);assert.equal(f.calls.prepare.length,0);
+ const v=new PublicationStore(f.db,{sellerId:vintage});await v.lease(state.run.id,'test-owner',f.clock.value);
+ state=await f.pilot.snapshot(f.env);assert.equal(state.progress.busy,true);
+ const password='local-progress-test-password',env={...f.env,APP_ENV:'production',PANEL_PASSWORD:password};
+ const cookie=sessionCookieHeader(await createSessionToken(await deriveSessionSecret(password))).split(';')[0];
+ const page=createVintagePilotPage({pilot:f.pilot});
+ const response=await page({request:new Request('https://www.amadolibros.com/panel/meli-vintage-piloto',{headers:{cookie}}),env});
+ const html=await response.text();assert.equal(response.status,200);
+ assert.ok(html.includes('Publicaciones revisadas: <strong>1</strong>'));
+ assert.ok(html.includes('comprobación en curso'));
+ assert.ok(!html.includes('name="action" value="advance"'));
+ assert.ok(!html.includes('opaque-private-scroll'));assert.ok(!html.includes('test-owner'));
+ assert.equal(reads,1);assert.equal(f.calls.create.length,0);
+});
+
 test('stale stock or wrong identity prevents approval/preparation',async t=>{
  const f=await fixture(t);
  f.api.account=async()=>({id:books,site_id:'MLU'});

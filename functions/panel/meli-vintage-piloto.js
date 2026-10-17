@@ -49,11 +49,18 @@ export function createVintagePilotPage({pilot=vintagePilot}={}) {
     for(const source of sources.policies)body+='<details><summary>'+esc(source.id)+'</summary>'+policyHtml(source.policy)+'</details>';
     return html('Prueba de Amado Vintage',body);
    }
-   body+='<p>Lote: <code>'+esc(state.run.id)+'</code><br>Estado: <strong>'+label(state.run.state)+'</strong>. Stock del proveedor: '+esc(state.feed?.source_date)+'.</p>'+policyHtml(state.policy);
+   body+='<p>Lote: <code>'+esc(state.run.id)+'</code><br>Estado: <strong>'+label(state.run.state)+'</strong>. Stock del proveedor: '+esc(state.feed?.source_date)+'.</p>';
+   if(state.progress){
+    const p=state.progress;
+    body+='<p><strong>'+(p.index_complete?'Revisión de publicaciones existentes terminada.':'Revisando publicaciones '+(p.index_status==='paused'?'pausadas':'activas')+' de Vintage para evitar duplicados.')+'</strong><br>Publicaciones revisadas: <strong>'+esc(p.indexed)+'</strong>. Los libros del proveedor se validan después de completar esta revisión.</p>';
+    if(p.busy)body+='<p>Hay una comprobación en curso. Usá Actualizar estado para ver su avance. Si se interrumpió, se podrá continuar al vencer la reserva, a las '+esc(new Date(p.lease_until).toLocaleTimeString('es-UY',{timeZone:'America/Montevideo'}))+'.</p>';
+    if(p.backoff_until>Date.now())body+='<p>Mercado Libre pidió una pausa. Podrá continuar a las '+esc(new Date(p.backoff_until).toLocaleTimeString('es-UY',{timeZone:'America/Montevideo'}))+'.</p>';
+   }
+   body+=policyHtml(state.policy);
    body+='<div class="table"><table><thead><tr><th>Título / ISBN</th><th>Precio UYU</th><th>Estado</th></tr></thead><tbody>'+state.sample.map(j=>'<tr><td>'+esc(j.title)+'<small>'+esc(j.isbn)+'</small></td><td>$ '+esc(j.price)+'</td><td>'+esc(j.state)+(j.item_id?'<small><a href="https://articulo.mercadolibre.com.uy/'+esc(j.item_id.replace('MLU','MLU-'))+'">'+esc(j.item_id)+'</a></small>':'')+'</td></tr>').join('')+'</tbody></table></div>';
-   body+='<p>Avance: '+state.summary.counts.map(x=>esc(x.state)+': '+esc(x.n)).join(' · ')+'.</p>';
+   body+='<p>Libros del proveedor: '+state.summary.counts.map(x=>label(x.state)+': '+esc(x.n)).join(' · ')+'.</p>';
    if(state.can_approve)body+='<p>Revisá los cinco títulos, precios y condiciones. Al aprobar comenzará la publicación real de estos cinco ISBN en Amado Vintage.</p>'+form('approve',{run_id:state.run.id,policy_hash:state.policy_hash,sample_hash:state.sample_hash},'Aprobar precios y publicar estos 5 en Vintage');
-   if(state.run.state==='preflight')body+=form('advance',{run_id:state.run.id},'Continuar validando, sin publicar');
+   if(state.run.state==='preflight'&&!state.progress?.busy&&!(state.progress?.backoff_until>Date.now()))body+=form('advance',{run_id:state.run.id},'Continuar validando, sin publicar');
    if(state.run.state==='publishing')body+='<p>Los cinco títulos están aprobados. El siguiente paso crea publicaciones reales en Vintage hasta el límite de cinco.</p>'+form('advance',{run_id:state.run.id},'Publicar / continuar los 5 aprobados en Vintage');
    if(['complete','complete_with_review'].includes(state.run.state))body+='<p>La prueba terminó. No se avanzará a los 10.000 automáticamente.</p>';
    if(state.issues.length)body+='<p>Casos para revisar: '+state.issues.map(j=>esc(j.isbn)+': '+esc(j.error)).join(' · ')+'.</p>';

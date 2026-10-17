@@ -27,7 +27,8 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
  async function snapshot(env) {
   const run=await current(env);
   if(!run)return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:null};
-  const s=store(env),policy=validPolicy(JSON.parse(run.policy_json));
+  const s=store(env),policy=validPolicy(JSON.parse(run.policy_json)),index=JSON.parse(run.index_json);
+  const progress={phase:index.done?'books':'existing_listings',indexed:Number(index.seen)||0,index_complete:index.done===true,index_status:index.status==='paused'?'paused':'active',busy:Number(run.lease_until)>now(),lease_until:Number(run.lease_until)||0,backoff_until:Number(run.backoff_until)||0,updated_at:Number(run.updated_at)||0};
   const jobs=(await s.jobs(run.id)).filter(j=>['validated','published','uncertain','creating','review','retry'].includes(j.state));
   const sample=[];
   for(const job of jobs.filter(j=>['validated','published','uncertain','creating'].includes(j.state)).slice(0,5)) {
@@ -36,7 +37,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   }
   const manifest=sample.filter(j=>j.state==='validated').map(j=>({isbn:j.isbn,payload:j.payload}));
   const sampleHash=await sha256(JSON.stringify({seller_id:VINTAGE_SELLER_ID,run_id:run.id,policy_hash:run.policy_hash,manifest}));
-  return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:{id:run.id,state:run.state},policy,policy_hash:run.policy_hash,feed:await s.feed(run.feed_id),summary:await s.summary(run.id),sample,sample_hash:sampleHash,can_approve:run.state==='ready'&&manifest.length===PILOT_LIMIT&&stockIsFresh((await s.feed(run.feed_id))?.source_date,now()),issues:jobs.filter(j=>['review','retry','uncertain'].includes(j.state)).slice(0,10).map(j=>({isbn:j.isbn,error:j.error_code,state:j.state}))};
+  return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:{id:run.id,state:run.state},progress,policy,policy_hash:run.policy_hash,feed:await s.feed(run.feed_id),summary:await s.summary(run.id),sample,sample_hash:sampleHash,can_approve:run.state==='ready'&&manifest.length===PILOT_LIMIT&&stockIsFresh((await s.feed(run.feed_id))?.source_date,now()),issues:jobs.filter(j=>['review','retry','uncertain'].includes(j.state)).slice(0,10).map(j=>({isbn:j.isbn,error:j.error_code,state:j.state}))};
  }
  async function prepare(env,{source_run_id,feed_id}) {
   if(!uuid(source_run_id)||!uuid(feed_id))throw error('invalid_source',400);
