@@ -6,7 +6,7 @@
  *
  * Flujo:
  *   1. fetchAllIds()  — scroll API para obtener IDs activos y pausados
- *   2. fetchDetails() — multi-get /items?ids= en batches de 20
+ *   2. fetchDetails() — multi-get /items/bulk?ids= en batches de 20
  *   3. buildCatalog() — slim_item, filtro de estados publicables, guarda mínima
  *
  * Esquema de salida (catalog.json):
@@ -28,10 +28,12 @@
  */
 
 import { applyVerifiedBookEnrichments } from './verified-book-enrichments.js';
+import { bulkAttributes, bulkEntryItem } from './meli-bulk.js';
+export { bulkEntryItem };
 
 const SCROLL_SLEEP_MS  = 350;  // delay entre páginas de scroll (cortesía ML)
 const DETAIL_SLEEP_MS  = 250;  // delay entre batches de detalles
-const DETAIL_BATCH     = 20;   // ML multi-get soporta hasta 20 ids por request
+const DETAIL_BATCH     = 20;   // /items/bulk admite hasta 20 ids por request
 const DEFAULT_DESCRIPTION_ENRICH_LIMIT = 100;
 const DEFAULT_DESCRIPTION_REFRESH_DAYS = 90;
 const DEFAULT_DESCRIPTION_SLEEP_MS = 100;
@@ -41,8 +43,11 @@ const DEFAULT_GALLERY_SLEEP_MS = 75;
 const CATALOG_GALLERY_CACHE_KEY = 'catalog-product-galleries/v1/cache.json';
 const MAX_GALLERY_IMAGES = 16;
 const DESCRIPTION_MAX_CHARS = 5000;
-const ML_ATTRIBUTES    =       // campos que necesita slim_item + AUTHOR + enriched fields
-  'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id';
+// campos que necesita slim_item + AUTHOR + enriched fields
+export const ML_ITEM_FIELDS =
+  'id,title,price,currency_id,status,available_quantity,thumbnail,pictures,permalink,start_time,attributes,condition,category_id,domain_id,catalog_listing,catalog_product_id,seller_custom_field';
+// /items/bulk exige el prefijo body. en cada campo de attributes.
+export const ML_ATTRIBUTES = bulkAttributes(ML_ITEM_FIELDS);
 
 // Excepciones verificadas el 2026-08-11 sobre el catálogo productivo. Se
 // reemplaza sólo la secuencia dañada y únicamente para el ID afectado. Si el
@@ -210,6 +215,8 @@ export async function buildCatalog(env, accessToken, {
   const dataQuality = createDataQualitySummary();
   const catalogItems = rawItems
     .filter(raw => raw.status === 'active' || raw.status === 'paused')
+    // Supplier offers are published for ML with a lead time, not own-stock web inventory.
+    .filter(raw => !/^AMADO-AR-\d{13}$/.test(String(raw.seller_custom_field || '')))
     .map(raw => slimItem(raw, dataQuality));
 
   if (enrichDescriptions) {
@@ -310,14 +317,16 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
   for (let i = 0; i < ids.length; i += DETAIL_BATCH) {
     const batch     = ids.slice(i, i + DETAIL_BATCH);
     const batchNum  = Math.floor(i / DETAIL_BATCH) + 1;
-    const url       = `https://api.mercadolibre.com/items?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
+    // /items?ids= se discontinúa el 25/10/2026; /items/bulk responde
+    // [{ status_code, body }] (el multiget anterior usaba { code, body }) y
+    // sus attributes van con prefijo body. más status_code (ver meli-bulk.js).
+    const url       = `https://api.mercadolibre.com/items/bulk?ids=${batch.join(',')}&attributes=${ML_ATTRIBUTES}`;
 
     try {
       const data = await mlGet(url, accessToken, { ...mlGetDeps, retryBudget });
-      // data es un array de { code, body } o directamente el item
       const entries = Array.isArray(data) ? data : [data];
       for (const entry of entries) {
-        const item = (entry.code === 200 && entry.body) ? entry.body : entry;
+        const item = bulkEntryItem(entry);
         if (item && item.id) items.push(item);
       }
     } catch (err) {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildCatalog,
+  bulkEntryItem,
   CATALOG_PRODUCT_GALLERY_CACHE_KEY,
   createDataQualitySummary,
   enrichCatalogProductPictures,
@@ -29,7 +30,7 @@ import {
   PRODUCTION_MANIFEST_KEY,
 } from '../paused-catalog.js';
 
-test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', async () => {
+test('sincroniza stock propio y pausados sin anunciar como disponibles las altas del proveedor', async () => {
   const originalFetch = globalThis.fetch;
   const urls = [];
 
@@ -39,7 +40,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     if (String(url).includes('/items/search')) {
       const status = new URL(String(url)).searchParams.get('status');
       return Response.json({
-        results: status === 'active' ? ['MLU1'] : ['MLU2'],
+        results: status === 'active' ? ['MLU1', 'MLU3'] : ['MLU2'],
         scroll_id: null,
       });
     }
@@ -61,6 +62,14 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
           available_quantity: 0, attributes: [], pictures: [],
         },
       },
+      {
+        code: 200,
+        body: {
+          id: 'MLU3', title: 'Proveedor con disponibilidad a 17 días', price: 1200,
+          status: 'active', available_quantity: 1, attributes: [], pictures: [],
+          seller_custom_field: 'AMADO-AR-9789502323060',
+        },
+      },
     ]);
   };
 
@@ -71,6 +80,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     assert.equal(catalog.active_total, 1);
     assert.equal(catalog.order_total, 1);
     assert.deepEqual(catalog.items.map(item => item.status), ['active', 'paused']);
+    assert.deepEqual(catalog.items.map(item => item.id), ['MLU1', 'MLU2']);
     assert.equal(catalog.items[0].catalog_listing, false);
     assert.equal(catalog.items[0].catalog_product_id, 'MLU-P1');
     assert.equal(catalog.items[0].currency, 'UYU');
@@ -83,6 +93,7 @@ test('sincroniza activos y pausados, y conserva la guarda sobre disponibles', as
     assert.ok(urls.some(url => url.includes('currency_id')));
     assert.ok(urls.some(url => url.includes('category_id')));
     assert.ok(urls.some(url => url.includes('domain_id')));
+    assert.ok(urls.some(url => url.includes('seller_custom_field')));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -801,4 +812,42 @@ test('publicar el catálogo productivo no toca el espejo de portadas: eso lo hac
   assert.equal(result.published, true);
   assert.deepEqual(coverAccess, [], 'publicar el catálogo no debe tocar COVER_R2');
   assert.deepEqual(result.cover_mirror, { status: 'delegated-to-cron', cron: '*/5 * * * *' });
+});
+
+test('los detalles se leen de /items/bulk y aceptan el formato status_code sin contar entradas fallidas', async () => {
+  const originalFetch = globalThis.fetch;
+  const urls = [];
+  globalThis.fetch = async url => {
+    urls.push(String(url));
+    if (String(url).includes('/items/search')) {
+      const status = new URL(String(url)).searchParams.get('status');
+      return Response.json({ results: status === 'active' ? ['MLU1', 'MLU2'] : [], scroll_id: null });
+    }
+    // Con attributes=body.* la API proyecta la entrada: MLU1 llega sin status_code
+    // (como en producción el 16/10) y MLU2 falla con status_code explícito.
+    return Response.json([
+      { body: { id: 'MLU1', title: 'Bulk', price: 1000, status: 'active', available_quantity: 1, attributes: [], pictures: [] } },
+      { status_code: 404, body: { message: 'not found', error: 'not_found' } },
+    ]);
+  };
+  try {
+    const catalog = await buildCatalog({ USER_ID: '123', MIN_ACTIVE_ITEMS: '1' }, 'token', { statuses: ['active'] });
+    assert.deepEqual(catalog.items.map(item => item.id), ['MLU1']);
+    const detail = urls.find(url => url.includes('ids='));
+    assert.match(detail, /^https:\/\/api\.mercadolibre\.com\/items\/bulk\?ids=MLU1,MLU2&attributes=/);
+    assert.ok(!urls.some(url => /\/items\?ids=/.test(url)));
+    // /items/bulk exige body. en cada attribute; sin el prefijo devuelve cuerpos vacíos.
+    const attributes = new URL(detail).searchParams.get('attributes').split(',');
+    assert.ok(attributes.length > 5);
+    assert.equal(attributes[0], 'status_code', 'la entrada debe conservar su status_code');
+    assert.deepEqual(attributes.slice(1).filter(field => !field.startsWith('body.')), [], 'attributes sin prefijo body.');
+    assert.ok(attributes.includes('body.id') && attributes.includes('body.seller_custom_field'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(bulkEntryItem({ status_code: 200, body: { id: 'a' } }).id, 'a');
+  assert.equal(bulkEntryItem({ code: 200, body: { id: 'b' } }).id, 'b');
+  assert.equal(bulkEntryItem({ body: { id: 'projected' } }).id, 'projected');
+  assert.equal(bulkEntryItem({ status_code: 500, body: { id: 'c' } }), null);
+  assert.equal(bulkEntryItem({ id: 'legacy' }).id, 'legacy');
 });
