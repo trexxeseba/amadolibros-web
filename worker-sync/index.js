@@ -50,7 +50,7 @@ import { getAccessToken } from './meli-auth.js';
 import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
 import { handlePublicationRoute } from './publication-routes.js';
 import { publicationService } from './publication-engine.js';
-import { createPublicationQueueHandler, publicationQueueEnabled } from './publication-queue.js';
+import { createPublicationQueueHandler } from './publication-queue.js';
 import { publicationStockSync } from './publication-stock-sync.js';
 import { PUBLICATION_PATH } from './publication-policy.js';
 import { buildCatalog   } from './meli-catalog.js';
