@@ -12,6 +12,7 @@ export const PUBLICATION_SCHEMA = [
  `CREATE TABLE IF NOT EXISTS ml_pub_receipts (seller_id TEXT NOT NULL,isbn TEXT NOT NULL,state TEXT NOT NULL,item_id TEXT,run_id TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(seller_id,isbn))`,
  `CREATE INDEX IF NOT EXISTS ml_pub_receipts_day ON ml_pub_receipts(state,created_at)`,
  `CREATE TABLE IF NOT EXISTS ml_pub_nonces (id TEXT PRIMARY KEY,expires_at INTEGER NOT NULL)`,
+ `CREATE TABLE IF NOT EXISTS ml_pub_run_targets (run_id TEXT PRIMARY KEY,target_published INTEGER NOT NULL,created_at INTEGER NOT NULL)`,
 ];
 
 export class PublicationStore {
@@ -31,10 +32,12 @@ export class PublicationStore {
   if(!result)throw new PublicationError('feed_count_mismatch',409);return result;
  }
  async createRun(run){
-  await this.db.batch([
+  const statements=[
    this.stmt(`INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'preflight',?,?,?,?,?)`,run.id,run.feedId,JSON.stringify(run.policy),run.policyHash,run.now,run.now,JSON.stringify({status:'active',scroll:null,pending:[],done:false,seen:0}),run.dailyCap,run.preflightLimit),
    this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?`,run.id,run.feedId),
-  ]);
+  ];
+  if(Number.isInteger(run.targetPublished))statements.push(this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published,created_at) VALUES(?,?,?)',run.id,run.targetPublished,run.now));
+  await this.db.batch(statements);
  }
  // Catalog preflight clone: a new run over the same snapshot that holds only the
  // ISBNs the source run left in catalog_required_needs_review. The source run,
@@ -92,8 +95,10 @@ export class PublicationStore {
   return (await this.stmt("SELECT isbn,item_id FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL ORDER BY isbn LIMIT ? OFFSET ?",id,limit,offset).all()).results;
  }
  async publishedCount(id){return (await this.stmt("SELECT COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL",id).first()).n;}
+ async target(id){return this.stmt('SELECT target_published FROM ml_pub_run_targets WHERE run_id=?',id).first();}
+ async skipRemainingAtTarget(id,leaseToken,now){await this.stmt("UPDATE ml_pub_jobs SET state='skipped_target_reached',error_code=NULL,next_at=0 WHERE run_id=? AND state IN ('pending','validated','retry') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,leaseToken,now).run();}
  async retryLegacyIdentityReviews(id,token,now){await this.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code IN ('product_isbn_or_domain_mismatch','missing_product_metadata') AND EXISTS(SELECT 1 FROM ml_pub_runs WHERE id=? AND lease_id=? AND lease_until>?)",id,id,token,now).run();}
  async nonce(id,expires,now){await this.stmt('DELETE FROM ml_pub_nonces WHERE expires_at<?',now).run();try{await this.stmt('INSERT INTO ml_pub_nonces(id,expires_at) VALUES(?,?)',id,expires).run();}catch{throw new PublicationError('request_already_used',409);}}
  async preview(id){return (await this.stmt("SELECT isbn,state,payload_json,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('validated','review','uncertain') ORDER BY CASE state WHEN 'validated' THEN 0 WHEN 'review' THEN 1 ELSE 2 END,isbn LIMIT 10",id).all()).results.map(x=>({...x,payload:x.payload_json?JSON.parse(x.payload_json):null,payload_json:undefined}));}
- async summary(id){const r=id?await this.run(id):(await this.activeRun()??await this.stmt('SELECT * FROM ml_pub_runs ORDER BY created_at DESC LIMIT 1').first());if(!r)return {state:'no_active_run'};const reviewReasons=(await this.stmt("SELECT error_code,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='review' GROUP BY error_code ORDER BY n DESC,error_code LIMIT 20",r.id).all()).results;return {id:r.id,state:r.state,index:JSON.parse(r.index_json),policy_hash:r.policy_hash,approved:r.approved_hash===r.policy_hash,counts:await this.counts(r.id),review_reasons:reviewReasons,feed_id:r.feed_id,daily_cap:r.daily_cap};}
+ async summary(id){const r=id?await this.run(id):(await this.activeRun()??await this.stmt('SELECT * FROM ml_pub_runs ORDER BY created_at DESC LIMIT 1').first());if(!r)return {state:'no_active_run'};const reviewReasons=(await this.stmt("SELECT error_code,COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state='review' GROUP BY error_code ORDER BY n DESC,error_code LIMIT 20",r.id).all()).results,target=await this.target(r.id),published=await this.publishedCount(r.id);return {id:r.id,state:r.state,index:JSON.parse(r.index_json),policy_hash:r.policy_hash,approved:r.approved_hash===r.policy_hash,counts:await this.counts(r.id),review_reasons:reviewReasons,feed_id:r.feed_id,daily_cap:r.daily_cap,target_published:target?.target_published??null,target_remaining:target?Math.max(0,target.target_published-published):null};}
 }
