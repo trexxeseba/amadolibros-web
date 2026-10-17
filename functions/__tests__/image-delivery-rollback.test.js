@@ -26,14 +26,14 @@ test('HEAD miss caches full object without emptying subsequent GET',async()=>{
  const f=fixture(),head=await cover(f.context('HEAD'));assert.equal((await head.arrayBuffer()).byteLength,0);
  const get=await cover(f.context());assert.equal(get.headers.get('x-cover-cache'),'HIT');assert.deepEqual(new Uint8Array(await get.arrayBuffer()),bytes);assert.equal(f.reads.length,1);
 });
-test('missing, invalid metadata or R2 error redirects to equivalent transformation, never downloads master or caches fallback',async()=>{
+test('missing, invalid metadata or R2 error redirects directly to original without paid transformation or caching fallback',async()=>{
  for(const mode of ['missing','mime','hash','error']){
   const f=fixture(),original=f.env.COVER_R2.get;
   f.env.COVER_R2.get=async key=>{if(mode==='error')throw Error('unavailable');const o=await original(key);if(mode==='missing')return null;if(mode==='mime')o.httpMetadata.contentType='image/jpeg';if(mode==='hash')o.customMetadata.master_sha256='c'.repeat(64);return o;};
   const r=await cover(f.context());assert.equal(r.status,302);
-  const location=r.headers.get('location');assert.match(location,/^https:\/\/www\.amadolibros\.com\/cdn-cgi\/image\//);assert.match(location,/fit=scale-down,width=240,quality=85/);
+  const location=r.headers.get('location');assert.equal(location,`https://www.amadolibros.com/preview-cover/${id}/0/${hash}.jpg`);assert.doesNotMatch(location,/cdn-cgi\/image/);
   assert.ok(location.endsWith(`/preview-cover/${id}/0/${hash}.jpg`));assert.doesNotMatch(location,/variant=/);
-  assert.equal(r.headers.get('x-cover-variant'),'legacy-transform-fallback');assert.match(r.headers.get('cache-control'),/max-age=60/);assert.equal(f.puts.length,0);assert.ok(f.reads.every(k=>k===variantKey));
+  assert.equal(r.headers.get('x-cover-variant'),'original-fallback');assert.equal(r.headers.get('x-cover-source'),'r2-original-redirect');assert.match(r.headers.get('cache-control'),/max-age=60/);assert.equal(f.puts.length,0);assert.ok(f.reads.every(k=>k===variantKey));
  }
 });
 test('Preview missing variant never redirects to production or serves original',async()=>{

@@ -1,5 +1,4 @@
 import { previewCoverSummary } from '../_shared/preview-cover.js';
-import { cloudflareImageUrl } from '../_shared/cloudflare-images.js';
 import { BASE } from '../_shared/catalog.js';
 import { imageVariant, readImageVariant } from '../../shared/image-variants.js';
 
@@ -74,11 +73,11 @@ export async function onRequest(context) {
                 return new Response('Variant unavailable in Preview', {status:503,headers:{
                     'Cache-Control':'no-store','Retry-After':'5','X-Cover-Variant':'unavailable'}});
             }
-            const recipe = imageVariant(variantId);
             const masterUrl = `${BASE}/preview-cover/${productId}/${position}/${sha256}.${extension}`;
-            const location = cloudflareImageUrl(masterUrl,{width:recipe.width,quality:recipe.quality,fit:'scale-down'});
-            return new Response(null,{status:302,headers:{Location:location,'Cache-Control':'public, max-age=60',
-                'X-Cover-Variant':'legacy-transform-fallback','X-Cover-Source':'legacy-transform-redirect'}});
+            // Missing precomputed objects must never create a paid transformation,
+            // even if the temporary zone redirect rules are later removed.
+            return new Response(null,{status:302,headers:{Location:masterUrl,'Cache-Control':'public, max-age=60',
+                'X-Cover-Variant':'original-fallback','X-Cover-Source':'r2-original-redirect'}});
         }
         const object = derived || await context.env.COVER_R2.get(objectKey);
         if (!object?.body) return notFound();

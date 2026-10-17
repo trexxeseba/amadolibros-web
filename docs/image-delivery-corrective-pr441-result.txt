@@ -1,0 +1,60 @@
+CORRECCION DE ENTREGA DE IMAGENES — PR #441 — 17/10/2026
+https://github.com/trexxeseba/amadolibros-web/pull/441
+Base revisada f165f3447871d0bdfad35cb80e43646c31353c05; correccion posterior de respaldo directo pendiente de nueva CI.
+Rama codex/image-delivery-rollback-cache, basada en main 4b18bdb.
+PR en borrador, sin fusionar ni desplegar produccion.
+
+Fuentes de fichas restauradas a las anteriores a #400. El diff de la ficha
+contra aa6a7c2 solo quita src/loading=eager del zoom oculto.
+URLs inmutables de variantes existentes se sirven con bandera apagada.
+La bandera sigue controlando emision de URLs nuevas en el catalogo.
+Variante ausente/invalida/inaccesible: produccion responde 302 directamente al
+master inmutable sin query variant, sin invocar transformaciones pagas.
+Preview responde 503 no-store sin redirigir a produccion ni servir el original.
+Cache API por entorno/bucket/hash/receta solo guarda WebP validado. GET/HEAD,
+fallos de cache y respaldos estan cubiertos; no se cachean redirecciones/errores.
+La cache no elimina invocaciones de Functions; no se afirma ahorro facturable.
+
+PRUEBAS
+1772 tests Functions/Astro y 20 scripts aprobados; build Astro aprobado.
+CI https://github.com/trexxeseba/amadolibros-web/actions/runs/39056017983
+Preview https://github.com/trexxeseba/amadolibros-web/actions/runs/39056018052
+Preview exacto https://db075ad9.amadolibros-web.pages.dev
+CI, aceptacion de recursos y Preview completo SUCCESS.
+Ocho regresiones nuevas, incluyendo el handler real de ficha y fuentes completas.
+Chequeo Preview: inicio/catalogo/ficha sin URLs de variantes, zoom sin src/srcset,
+una variante deliberadamente ausente 503, sin redireccion a produccion.
+
+COMPROBACION MANUAL POSTERIOR DEL CACHE REAL EN PREVIEW
+Una variante ya existente: WebP real v1-240-q85, 240x370, 27988 bytes,
+checksum SHA256 igual al ETag, source r2-variant y origen r2-preview.
+HEAD posterior con espera de 500 ms devuelve X-Cover-Cache:HIT.
+Cero escrituras R2; cero solicitudes a produccion; no se generaron fixtures.
+El artifact automatizado marca HIT no probado porque solo cubre la prueba
+negativa. La prueba manual posterior agrega evidencia sin alterar el artifact.
+No se extrapola a cobertura, latencia o uso facturable de produccion.
+
+PENDIENTE
+Revision independiente y autorizacion expresa antes de fusionar/desplegar.
+Despues del despliegue autorizado: verificar fuentes completas de fichas y
+variantes existentes/cache con bandera apagada en produccion. Activar emision
+requiere aprobacion separada, muestra concreta y criterios de observacion.
+No se cambian flags, pin ni IDs; canario productivo sigue apagado.
+No se modifican WAF, logos, analitica ni servicios; no se borran imagenes.
+La auditoria comercial completa anterior tuvo timeout y no se declara aprobada.
+
+ACTUALIZACION DE VELOCIDAD Y COSTO
+La contencion productiva por Single Redirects sigue independiente y activa.
+El respaldo de variantes deja de depender de esas reglas para evitar costos:
+302 directo a master, X-Cover-Variant original-fallback. Sin cambios de flags.
+19 pruebas de entrega/canary/resolver y 11 pruebas de generador/readiness pasan.
+Muestra Preview db075ad9, un master, cuatro GET, cero escrituras R2:
+original JPEG 257367 bytes (1024x1580); WebP 240=27988 (240x370),
+360=44806 (360x555), 480=59118 (480x741). Reduccion 89.13/82.59/77.03%.
+Sharp decodifica las cuatro; recetas y SHA256/ETag coinciden para variantes.
+No demuestra cobertura productiva, LCP ni latencia comparable: cache mixta
+(HIT para 240, MISS para 360/480); Preview fuerza Cache-Control no-store.
+Siguiente paso productivo requiere aprobacion: desplegar correccion con lectura
+apagada, verificar entrega/cache, elegir <=10 IDs activos con hash actual
+y cobertura en indice productivo; despues autorizar canary separado.
+No activar con reglas que seleccionen solo por width; no tocar galerias/feed.
