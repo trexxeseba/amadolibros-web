@@ -1,10 +1,11 @@
 import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normalizeSupplierRow,validPolicy,policyHash,quoteMercadoLibre,stockIsFresh,safeCode,sha256} from './publication-policy.js';
 import {PublicationStore} from './publication-store.js';
 import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './publication-meli.js';
+import {enqueuePublicationWork} from './publication-queue.js';
 const initialized=new WeakSet();
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -12,7 +13,7 @@ export const CLONE_PREFLIGHT_FRESH_FEED_LIMIT=5;
 // Deterministic run id: repeating the same request finds the same clone instead of creating another.
 // An alternative feed is part of the identity, so it never collides with a clone over the source feed.
 export async function clonePreflightRunId(sourceRunId,policyHashValue,limit,feedId=null){const h=await sha256(`clone_preflight_catalog:${sourceRunId}:${policyHashValue}:${limit}${feedId?`:${feedId}`:''}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
-export async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
+export async function createRunFromSourceId(sourceRunId,policyHashValue,feedId,dailyCap,preflightLimit,targetPublished=null){const h=await sha256(`create_run_from_source:${sourceRunId}:${policyHashValue}:${feedId}:${dailyCap}:${preflightLimit}:${targetPublished??'none'}`);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
 export function clonePreflightJob(job){
  const p=job.payload&&typeof job.payload==='object'?job.payload:{};
  return {isbn:job.isbn,state:job.state,error_code:job.error_code??null,title:p.title??p.family_name??null,price:typeof p.price==='number'?p.price:null,catalog_listing:typeof p.catalog_listing==='boolean'?p.catalog_listing:null,catalog_product_id:p.catalog_product_id??null,validation:p.diagnostic??null};
@@ -54,10 +55,21 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
    const publishing=run.state==='publishing'&&run.approved_hash===run.policy_hash;
    if(run.state==='publishing'&&!publishing)return {state:'publishing_not_enabled'};
    if(publishing&&await s.dayCreated(now())>=run.daily_cap)return {state:'daily_cap_reached'};
+   const target=await s.target(run.id);
+   const finishTarget=async()=>{
+    if(!publishing||!target)return false;
+    if(await s.publishedCount(run.id)<target.target_published)return false;
+    await s.skipRemainingAtTarget(run.id,lease,now());
+    const terminal=await s.counts(run.id),needsReview=terminal.some(x=>['review','uncertain','creating'].includes(x.state)&&x.n>0);
+    await state(needsReview?'complete_with_review':'complete');
+    return true;
+   };
+   if(await finishTarget())return s.summary(run.id);
    const counts=await s.counts(run.id);let validated=counts.find(x=>x.state==='validated')?.n??0;
    if(!publishing&&validated>=run.preflight_limit){await state('ready');return s.summary(run.id);}
    processed=0;
    while(now()<deadline&&processed<10){
+    if(await finishTarget())break;
     const job=await s.nextJob(run.id,now(),publishing);if(!job){if(!await s.unfinished(run.id,publishing)){const terminal=await s.counts(run.id),needsReview=terminal.some(x=>['review','uncertain'].includes(x.state)&&x.n>0);await state(publishing?(needsReview?'complete_with_review':'complete'):'ready');}break;}
     processed++;
     try{
