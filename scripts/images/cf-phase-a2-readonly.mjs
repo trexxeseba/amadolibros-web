@@ -17,7 +17,9 @@ const schema=await request('graphql_schema','/graphql','{__schema{types{name fie
 const types=schema.data?.__schema?.types||[];
 const unwrap=t=>!t?undefined:t.name||unwrap(t.ofType);
 const accountType=types.find(t=>t.name==='account');
-const node=types.find(t=>t.name==='AccountWorkersInvocationsAdaptive');
+const pages=process.env.CF_METRICS_DATASET==='pages';
+const dataset=pages?'pagesFunctionsInvocationsAdaptiveGroups':'workersInvocationsAdaptive';
+const node=types.find(t=>t.name===(pages?'AccountPagesFunctionsInvocationsAdaptiveGroups':'AccountWorkersInvocationsAdaptive'));
 const fieldType=n=>types.find(t=>t.name===unwrap(node?.fields.find(f=>f.name===n)?.type));
 const sums=fieldType('sum')?.fields?.map(f=>f.name)||[];
 const dims=fieldType('dimensions')?.fields?.map(f=>f.name)||[];
@@ -27,8 +29,8 @@ if(sums.includes('requests')&&dims.includes('scriptName')){
  const end=new Date(),date=new Date('2026-09-15T00:00:00Z');
  while(date<end){
   const next=new Date(Math.min(+date+86400000,+end));
-  const query=`{viewer{accounts(filter:{accountTag:"${account}"}){workersInvocationsAdaptive(limit:10000,filter:{datetime_geq:"${date.toISOString()}",datetime_lt:"${next.toISOString()}"}){dimensions{scriptName}sum{${selected.join(' ')}}}}}}`;
-  await request('workers_daily:'+date.toISOString().slice(0,10),'/graphql',query);
+  const query=`{viewer{accounts(filter:{accountTag:"${account}"}){${dataset}(limit:10000,filter:{datetime_geq:"${date.toISOString()}",datetime_lt:"${next.toISOString()}"}){dimensions{scriptName}sum{${selected.join(' ')}}${pages?'quantiles{cpuTimeP50 cpuTimeP99}':''}}}}}`;
+  await request((pages?'pages_daily:':'workers_daily:')+date.toISOString().slice(0,10),'/graphql',query);
   date.setUTCDate(date.getUTCDate()+1);
  }
 }

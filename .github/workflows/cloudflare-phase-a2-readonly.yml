@@ -1,5 +1,5 @@
 name: Cloudflare requested follow-up evidence - read only
-# Use the verified AccountWorkersInvocationsAdaptive schema node.
+# Collect Pages separately; its schema offers CPU quantiles, not CPU sums.
 on:
   push:
     branches: [codex/r2-card-inventory-29c5dce]
@@ -29,6 +29,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CARD_READINESS_ARTIFACT: ${{ runner.temp }}/readiness
           CF_USAGE_OUTPUT: ${{ runner.temp }}/phase-a2.encrypted.json
+          CF_METRICS_DATASET: pages
         run: node scripts/images/cf-phase-a2-readonly.mjs
       - uses: actions/upload-artifact@v4
         with:
