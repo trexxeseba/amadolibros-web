@@ -76,8 +76,8 @@ export async function buildPermanentVariants({ baseUrl, token, limit = 100,
   await Promise.all(Array.from({ length: Math.min(4, listing.objects.length) }, async () => {
     while (nextMaster < listing.objects.length) await processMaster(listing.objects[nextMaster++]);
   }));
-  // Fuentes fallidas quedan pendientes para el próximo barrido; la web sigue
-  // sirviendo sus originales. Una falla del listado/progreso falla todo el job.
+  // No avanzar el lote si falla una fuente: el próximo intento reutiliza los
+  // objetos completados. Una fuente inválida persistente requiere revisión.
   if (resume && result.failures.length === 0) await call('progress', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: listing.cursor }) });
   return result;
 }
