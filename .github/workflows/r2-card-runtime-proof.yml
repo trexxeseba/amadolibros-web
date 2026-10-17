@@ -1,0 +1,71 @@
+name: Card runtime proof - reuse verified evidence
+on:
+  push:
+    branches: [codex/r2-card-inventory-29c5dce]
+    paths: ['.github/workflows/r2-card-runtime-proof.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 9fe190601195493590f81f6438bed70c3d7b102e
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - uses: actions/checkout@v4
+        with:
+          ref: f6329c1
+          path: frozen-inputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: cover-index-38997881346
+          run-id: 38997881346
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/frozen-manifest
+      - uses: actions/download-artifact@v4
+        with:
+          name: card-second-pass-39037088403
+          run-id: 39037088403
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/verified-evidence
+      - name: Resolve exact PR commit using authenticated evidence, no image requests or writes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile,appendFile} from 'node:fs/promises';
+          import {gunzipSync} from 'node:zlib';
+          import {createHash,createDecipheriv} from 'node:crypto';
+          import assert from 'node:assert/strict';
+          import {prepareCardPlan} from './scripts/images/prepare-card-plan.mjs';
+          import {auditCardResolver} from './scripts/images/audit-card-resolver.mjs';
+          const json=async p=>JSON.parse(await readFile(p,'utf8'));
+          const root=process.env.RUNNER_TEMP;
+          const raw=gunzipSync(await readFile(root+'/frozen-manifest/manifest-snapshot.json.gz'));
+          const baseline=await json(root+'/frozen-manifest/report.json');
+          assert.equal(createHash('sha256').update(raw).digest('hex'),baseline.snapshot.manifest_sha256);
+          assert.equal(baseline.head,'29c5dce82ce807fdcd58d3c49c21fc64dc2b5cea');
+          const manifest=JSON.parse(raw);
+          const catalog=await json('frozen-inputs/scripts/images/card-catalog-frozen.json');
+          const ids=await json('frozen-inputs/scripts/images/inventory-external-ids.json');
+          const plan=prepareCardPlan(manifest,catalog,ids);
+          const envelope=await json(root+'/verified-evidence/card-verify.encrypted.json');
+          const key=createHash('sha256').update('amado-card-journal-v1\0'+process.env.CLOUDFLARE_API_TOKEN).digest();
+          const decipher=createDecipheriv('aes-256-gcm',key,Buffer.from(envelope.iv,'base64'));
+          decipher.setAuthTag(Buffer.from(envelope.tag,'base64'));
+          const journal=JSON.parse(Buffer.concat([decipher.update(Buffer.from(envelope.data,'base64')),decipher.final()]));
+          assert.equal(journal.state.plan_sha256,plan.masters_sha256);
+          assert.equal(journal.state.stage,'completed');
+          assert.equal(journal.state.created,0);
+          assert.equal(journal.counters.PUT,0);
+          const result=await auditCardResolver({manifest,catalog,plan,verified:journal.state.completed});
+          const summary={commit:'9fe190601195493590f81f6438bed70c3d7b102e',...result,
+            evidence_run:39037088403,image_requests_this_job:0};
+          console.log(JSON.stringify(summary));
+          await appendFile(process.env.GITHUB_STEP_SUMMARY,'```json\n'+JSON.stringify(summary,null,2)+'\n```\n');
+          JS
