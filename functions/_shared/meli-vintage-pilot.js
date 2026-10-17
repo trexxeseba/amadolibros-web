@@ -14,7 +14,9 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
  const scoped=env=>({...env,USER_ID:VINTAGE_SELLER_ID,ML_PUBLISH_QUEUE_ENABLED:'false'});
  async function sources(env) {
   const db=env.ORDERS_DB;
-  const feeds=(await db.prepare("SELECT id,source_date,expected_rows FROM ml_pub_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 10").all()).results;
+  // The stock-loading connector leaves a feed importing. Offer it only once
+  // every declared ISBN has arrived; merely viewing this page never commits it.
+  const feeds=(await db.prepare("SELECT f.id,f.source_date,f.expected_rows FROM ml_pub_feeds f WHERE f.state='ready' OR (f.state='importing' AND f.expected_rows=(SELECT COUNT(*) FROM ml_pub_stock s WHERE s.feed_id=f.id)) ORDER BY f.source_date DESC LIMIT 10").all()).results;
   const rows=(await db.prepare('SELECT id,policy_json,created_at FROM ml_pub_runs ORDER BY created_at DESC LIMIT 10').all()).results;
   return {feeds:feeds.filter(f=>stockIsFresh(f.source_date,now())),policies:rows.map(r=>({id:r.id,policy:validPolicy(JSON.parse(r.policy_json))}))};
  }
@@ -43,10 +45,13 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   // Read the commercial policy and shared stock; never write the source run.
   const source=await env.ORDERS_DB.prepare('SELECT policy_json FROM ml_pub_runs WHERE id=?').bind(source_run_id).first();
   if(!source)throw error('source_run_not_found',404);
-  const feed=await s.feed(feed_id);
-  if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now()))throw error('stale_feed');
+  let feed=await s.feed(feed_id);
+  if(!feed||!['ready','importing'].includes(feed.state)||!stockIsFresh(feed.source_date,now()))throw error('stale_feed');
   const identity=await api.account(env);
   if(String(identity.id)!==VINTAGE_SELLER_ID||identity.site_id!=='MLU')throw error('seller_mismatch',403);
+  // Atomic count guard in commitFeed rejects partial uploads. No Libros run is
+  // created, resumed or attached; only this new shared snapshot becomes ready.
+  if(feed.state==='importing')feed=await s.commitFeed(feed_id);
   const policy=validPolicy(JSON.parse(source.policy_json));
   // A single deterministic pilot prevents double clicks/concurrent requests from
   // creating additional batches. Five validated books, then explicit approval.

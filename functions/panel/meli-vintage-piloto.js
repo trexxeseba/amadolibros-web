@@ -40,7 +40,11 @@ export function createVintagePilotPage({pilot=vintagePilot}={}) {
    let body='<p>Cuenta de destino: <strong>AMADO_VINTAGE · seller 2341378249</strong>. Prueba limitada a <strong>5 publicaciones</strong>.</p>';
    if(!state.run) {
     const sources=await pilot.sources(env);
-    if(!sources.feeds.length||!sources.policies.length)return html('Prueba de Amado Vintage',body+'<p>Falta un snapshot vigente del proveedor o una política comercial de referencia. No se inició ninguna publicación.</p>');
+    if(!sources.feeds.length||!sources.policies.length){
+     if(!sources.feeds.length)body+='<p>Falta cargar un archivo vigente del proveedor y completar su importación. El stock debe tener menos de 24 horas.</p>';
+     if(!sources.policies.length)body+='<p>Falta una política comercial de referencia para calcular y revisar los precios.</p>';
+     return html('Prueba de Amado Vintage',body+'<p>No se inició ninguna publicación.</p>');
+    }
     body+='<p>Elegí el stock y la política de referencia. Preparar solo consulta y valida en Mercado Libre; después se mostrarán los cinco títulos y precios.</p><form method="post" action="'+PATH+'">'+hidden('action','prepare')+'<label>Stock del proveedor<br><select name="feed_id">'+sources.feeds.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.source_date)+' · '+esc(f.expected_rows)+' ISBN</option>').join('')+'</select></label><br><label>Política del lote de referencia<br><select name="source_run_id">'+sources.policies.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.id)+' · '+esc(p.policy.availabilityDays)+' días · recargo '+pct(p.policy.additionalPricePct)+'</option>').join('')+'</select></label><br><button>Preparar la muestra de 5, sin publicar</button></form><p>Políticas disponibles:</p>';
     for(const source of sources.policies)body+='<details><summary>'+esc(source.id)+'</summary>'+policyHtml(source.policy)+'</details>';
     return html('Prueba de Amado Vintage',body);
