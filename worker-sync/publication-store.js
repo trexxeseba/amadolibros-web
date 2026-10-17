@@ -16,9 +16,19 @@ export const PUBLICATION_SCHEMA = [
 ];
 
 export class PublicationStore {
- constructor(db) { if(!db)throw new PublicationError('database_not_configured',503);this.db=db; }
- stmt(sql,...args){return this.db.prepare(sql).bind(...args);}
- async initialize(){await this.db.batch(PUBLICATION_SCHEMA.map(sql=>this.db.prepare(sql)));}
+ constructor(db,{sellerId=SELLER_ID}={}) {
+  if(!db)throw new PublicationError('database_not_configured',503);
+  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
+  this.db=db;this.sellerId=sellerId;
+ }
+ // The fixed Vintage namespace isolates runs, job history, receipts, leases and
+ // counters. Only immutable supplier snapshots are shared with Libros.
+ scoped(sql){return this.sellerId===SELLER_ID?sql:sql.replace(/\bml_pub_(?!feeds\b|stock\b)([a-z_]+)\b/g,'ml_vintage_pub_$1');}
+ stmt(sql,...args){return this.db.prepare(this.scoped(sql)).bind(...args);}
+ async initialize(){
+  const schema=this.sellerId===SELLER_ID?PUBLICATION_SCHEMA:PUBLICATION_SCHEMA.filter(sql=>!/^CREATE TABLE IF NOT EXISTS ml_pub_(feeds|stock)\b/.test(sql)).map(sql=>sql.replace('ml_pub_runs (','ml_pub_runs (seller_id TEXT NOT NULL DEFAULT \'2341378249\' CHECK(seller_id=\'2341378249\'),'));
+  await this.db.batch(schema.map(sql=>this.db.prepare(this.scoped(sql))));
+ }
  async feed(id){return this.stmt('SELECT * FROM ml_pub_feeds WHERE id=?',id).first();}
  async beginFeed(id,date,expected,now){await this.stmt("INSERT INTO ml_pub_feeds(id,source_date,state,expected_rows,created_at) VALUES(?,?,'importing',?,?)",id,date,expected,now).run();}
  async importRows(id,rows){
@@ -34,7 +44,7 @@ export class PublicationStore {
  async createRun(run){
   const statements=[
    this.stmt(`INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'preflight',?,?,?,?,?)`,run.id,run.feedId,JSON.stringify(run.policy),run.policyHash,run.now,run.now,JSON.stringify({status:'active',scroll:null,pending:[],done:false,seen:0}),run.dailyCap,run.preflightLimit),
-   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state,error_code,item_id) SELECT ?,s.isbn,CASE WHEN r.isbn IS NOT NULL THEN 'skipped_duplicate' WHEN EXISTS(SELECT 1 FROM ml_pub_jobs h WHERE h.isbn=s.isbn) THEN 'skipped_history' ELSE 'pending' END,CASE WHEN r.isbn IS NOT NULL THEN 'existing_receipt' WHEN EXISTS(SELECT 1 FROM ml_pub_jobs h WHERE h.isbn=s.isbn) THEN 'previously_processed' ELSE NULL END,r.item_id FROM ml_pub_stock s LEFT JOIN ml_pub_receipts r ON r.seller_id=? AND r.isbn=s.isbn WHERE s.feed_id=?`,run.id,SELLER_ID,run.feedId),
+   this.stmt(`INSERT INTO ml_pub_jobs(run_id,isbn,state,error_code,item_id) SELECT ?,s.isbn,CASE WHEN r.isbn IS NOT NULL THEN 'skipped_duplicate' WHEN EXISTS(SELECT 1 FROM ml_pub_jobs h WHERE h.isbn=s.isbn) THEN 'skipped_history' ELSE 'pending' END,CASE WHEN r.isbn IS NOT NULL THEN 'existing_receipt' WHEN EXISTS(SELECT 1 FROM ml_pub_jobs h WHERE h.isbn=s.isbn) THEN 'previously_processed' ELSE NULL END,r.item_id FROM ml_pub_stock s LEFT JOIN ml_pub_receipts r ON r.seller_id=? AND r.isbn=s.isbn WHERE s.feed_id=?`,run.id,this.sellerId,run.feedId),
   ];
   if(Number.isInteger(run.targetPublished))statements.push(this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published,created_at) VALUES(?,?,?)',run.id,run.targetPublished,run.now));
   await this.db.batch(statements);
