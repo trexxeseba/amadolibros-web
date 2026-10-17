@@ -91,7 +91,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      if(!row||!hasSupplierStock(row.stock)){await mark(job.isbn,'skipped_stock_uncertain');continue;}
      normalizeSupplierRow(row);
      const receipt=await s.receipt(SELLER_ID,row.isbn);
-     if(receipt){await mark(row.isbn,receipt.state==='published'?'published':'uncertain',{itemId:receipt.item_id,errorCode:receipt.state==='published'?null:'existing_create_receipt'});continue;}
+     if(receipt){const own=receipt.run_id===run.id;if(receipt.state==='published'){await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:receipt.item_id,errorCode:own?null:'existing_published_receipt'});}else await mark(row.isbn,'uncertain',{itemId:receipt.item_id,errorCode:'existing_create_receipt'});continue;}
      const duplicate=await s.existing(run.id,row.isbn,row.title);
      if(duplicate){await mark(row.isbn,'skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
      const bySku=await api.skuItems(env,row.isbn);
@@ -108,7 +108,7 @@ export function createPublicationService({api=createPublicationMeli(),storeFacto
      // A catalog payload is only created under the approved 'required_only' policy.
      const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
      const reserved=await s.reserve(SELLER_ID,row.isbn,run.id,now(),run.daily_cap,lease);
-     if(!reserved){const existing=await s.receipt(SELLER_ID,row.isbn);if(existing)await mark(row.isbn,existing.state==='published'?'published':'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});else return {state:'daily_cap_reached'};continue;}
+     if(!reserved){const existing=await s.receipt(SELLER_ID,row.isbn);if(existing){const own=existing.run_id===run.id;if(existing.state==='published')await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:existing.item_id,errorCode:own?null:'existing_published_receipt'});else await mark(row.isbn,'uncertain',{itemId:existing.item_id,errorCode:'receipt_already_reserved'});}else return {state:'daily_cap_reached'};continue;}
      await mark(row.isbn,'creating',{payload,attempt:true});
      let result;
      try{result=await api.create(env,payload,policy);}
