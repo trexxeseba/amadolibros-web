@@ -98,6 +98,9 @@ jobs:
           PUBLISHER_RUN_ID: ${{ inputs.run_id }}
           PUBLISHER_POLICY_HASH: ${{ inputs.policy_hash }}
           PUBLISHER_NEW_RUN: ${{ inputs.new_run == true && 'true' || 'false' }}
+          # Scheduled SBS refresh imports a fresh immutable feed only. It never
+          # reattaches or creates a publication run by itself.
+          PUBLISHER_REFRESH_ONLY: ${{ github.event_name == 'schedule' && github.event.schedule == '30 4 * * *' && 'true' || 'false' }}
           PUBLISHER_PREFLIGHT_LIMIT: ${{ inputs.preflight_limit }}
           PUBLISHER_FEED_ID: ${{ inputs.feed_id }}
           PUBLISHER_AVAILABILITY_DAYS: ${{ inputs.availability_days }}

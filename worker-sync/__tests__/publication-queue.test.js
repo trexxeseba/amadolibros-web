@@ -68,6 +68,21 @@ test('target_published stops exactly at the requested number and skips the remai
  assert.equal(f.calls.create,1);assert.equal(result.state,'complete');assert.equal(result.target_published,1);assert.equal(result.target_remaining,0);
  assert.equal(result.counts.find(x=>x.state==='published').n,1);assert.equal(result.counts.find(x=>x.state==='skipped_target_reached').n,1);
 });
+test('an ISBN processed by an older run is skipped from a new campaign even without a receipt',async t=>{
+ const dir=await mkdtemp(join(tmpdir(),'amado-history-skip-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+ const db=sqliteD1(join(dir,'queue.sqlite')),store=new PublicationStore(db),now=Date.now();
+ await store.initialize();
+ const feed1=crypto.randomUUID(),run1=crypto.randomUUID(),feed2=crypto.randomUUID(),run2=crypto.randomUUID();
+ await store.beginFeed(feed1,new Date(now).toISOString(),1,now);await store.importRows(feed1,[books[0]]);await store.commitFeed(feed1);
+ await store.createRun({id:run1,feedId:feed1,policy,policyHash:await policyHash(policy),now,dailyCap:10,preflightLimit:1});
+ await store.job(run1,books[0].isbn,'review',{errorCode:'ambiguous_product_metadata'});
+ await store.beginFeed(feed2,new Date(now+1).toISOString(),2,now+1);await store.importRows(feed2,books);await store.commitFeed(feed2);
+ await store.createRun({id:run2,feedId:feed2,policy,policyHash:await policyHash(policy),now:now+1,dailyCap:10,preflightLimit:1,targetPublished:1});
+ const jobs=await store.jobs(run2);
+ const prior=jobs.find(j=>j.isbn===books[0].isbn),fresh=jobs.find(j=>j.isbn===books[1].isbn);
+ assert.equal(prior.state,'skipped_history');assert.equal(prior.error_code,'previously_processed');
+ assert.equal(fresh.state,'pending');
+});
 test('a published receipt from an older run is a duplicate and never counts toward the new target',async t=>{
  const f=await fixture(t,{target:1});
  const otherRun=crypto.randomUUID();
@@ -349,10 +364,10 @@ test('a catalog payload is never created under a policy that did not approve Cat
  await assert.rejects(()=>api.create({},{price:1,currency_id:'UYU',condition:'new',catalog_listing:false,catalog_product_id:'MLU1'},catalogPolicy),/payload_policy_mismatch/);
 });
 test('approval of a run with the Catálogo policy requires that exact hash',async t=>{
- const f=await fixture(t);
- const runId=crypto.randomUUID();await f.store.createRun({id:runId,feedId:f.feedId,policy:validPolicy(catalogPolicy),policyHash:await policyHash(catalogPolicy),now:f.now,dailyCap:10,preflightLimit:10});
- await f.store.saveIndex(runId,{status:'paused',scroll:null,pending:[],done:true,seen:0});await f.service.tick(f.env,runId);
- const traditionalHash=await policyHash(policy),catalogHash=await policyHash(catalogPolicy);
+ const f=await fixture(t),runId=f.runId,catalogHash=await policyHash(catalogPolicy);
+ await f.store.db.prepare('UPDATE ml_pub_runs SET policy_json=?,policy_hash=? WHERE id=?').bind(JSON.stringify(validPolicy(catalogPolicy)),catalogHash,runId).run();
+ await f.service.tick(f.env,runId);
+ const traditionalHash=await policyHash(policy);
  await assert.rejects(()=>f.service.command(f.env,'approve',{run_id:runId,policy_hash:traditionalHash}),/policy_hash_mismatch/);
  assert.equal((await f.service.command(f.env,'approve',{run_id:runId,policy_hash:catalogHash})).approved,true);
 });
