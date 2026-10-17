@@ -42,7 +42,9 @@ export function createVintageOAuth({ fetcher = (...args) => fetch(...args), now 
     if (url.pathname === START_PATH) {
       const panel = resolvePanelConfig(env);
       if (!panel.ok || !await hasValidSession(request, await deriveSessionSecret(panel.password))) return page('Ingresá al panel de Amado', `<p><a href="/panel">Abrir el panel</a>. Después volvé a esta página en la misma ventana de Chrome donde está abierta Amado Vintage.</p>`, 401);
-      if (request.method === 'GET') return page('Conectar Amado Vintage', `<p>Antes de continuar, comprobá que Mercado Libre muestre <strong>AMADO VINTAGE</strong>. Si muestra AMADOLIBROS COMUY, detenete.</p><p>Se conservará la conexión de Amado Libros. Este proceso no modifica publicaciones.</p><form method="post" action="${START_PATH}"><label>Correo de la cuenta Amado Vintage<br><input name="email" type="email" maxlength="254" required autocomplete="email"></label><br><button>Continuar a Mercado Libre</button></form>`);
+      // no-referrer makes browsers send Origin: null on a native form POST.
+      // Keep the exact Origin check below; allow origin only within this site.
+      if (request.method === 'GET') return page('Conectar Amado Vintage', `<p>Antes de continuar, comprobá que Mercado Libre muestre <strong>AMADO VINTAGE</strong>. Si muestra AMADOLIBROS COMUY, detenete.</p><p>Se conservará la conexión de Amado Libros. Este proceso no modifica publicaciones.</p><form method="post" action="${START_PATH}"><label>Correo de la cuenta Amado Vintage<br><input name="email" type="email" maxlength="254" required autocomplete="email"></label><br><button>Continuar a Mercado Libre</button></form>`, 200, { 'Referrer-Policy': 'same-origin' });
       if (request.headers.get('origin') !== ORIGIN || !request.headers.get('content-type')?.startsWith('application/x-www-form-urlencoded')) return page('Solicitud inválida', '', 403);
       if (Number(request.headers.get('content-length')) > 2048) return page('Solicitud inválida', '', 413);
       const rawBody = await request.text();

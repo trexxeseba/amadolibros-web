@@ -94,6 +94,20 @@ test('no session, cross-origin POST, preview and wrong app cannot begin authoriz
   assert.equal(f.calls.length, 0);
 });
 
+test('the native form keeps a same-site Origin through middleware; null and foreign origins remain rejected', async t => {
+  const f = await fixture(t);
+  const request = new Request(START, { headers: { cookie: `amado_panel_session=${f.session}` } });
+  const response = await middleware({ request, env: f.env, next: () => f.run(request), waitUntil() { throw Error('No OAuth analytics'); } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('referrer-policy'), 'same-origin');
+  assert.match(await response.text(), /<form method="post"/);
+  for (const origin of ['null', 'https://attacker.test', '']) {
+    const rejected = await f.run(new Request(START, { method: 'POST', headers: { cookie: `amado_panel_session=${f.session}`, origin, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ email: expectedEmail }) }));
+    assert.equal(rejected.status, 403);
+  }
+  assert.equal(f.calls.length, 0);
+});
+
 test('plain callback makes no API calls or database changes', async t => {
   const f = await fixture(t);
   assert.equal((await f.run(new Request(CALLBACK))).status, 200);
