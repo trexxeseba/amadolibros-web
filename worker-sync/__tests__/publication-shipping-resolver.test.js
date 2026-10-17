@@ -135,9 +135,9 @@ async function queue(t,meli){
 test('el clone de Catálogo guarda cada intento de shipping en el diagnóstico y deja el lote fuente intacto',async t=>{
  const meli=meliFor({accept:()=>false});const q=await queue(t,meli);const before=await q.snapshot();
  const result=await q.service.command(q.env,'clone_preflight_catalog',{source_run_id:q.sourceId,limit:3,availability_days:18});
- assert.equal(result.validated,0);assert.equal(result.review,3);assert.equal(result.published,0);assert.equal(result.approved,false);assert.equal(result.source_run_intact,true);
+ assert.equal(result.validated,0);assert.equal(result.review,0);assert.equal(result.published,0);assert.equal(result.approved,false);assert.equal(result.source_run_intact,true);
  for(const job of result.preflight){
-  assert.equal(job.state,'review');assert.equal(job.error_code,'shipping_not_validated');
+  assert.equal(job.state,'skipped_ml_requirement');assert.equal(job.error_code,'shipping_not_validated');
   assert.deepEqual(job.validation.shipping_attempts.map(a=>a.variant),['A','B','C']);
   assert.equal(job.validation.shipping_attempts[2].shipping.local_pick_up,true);
   assert.equal(job.validation.causes[0].message,'El usuario perdió ME1');
