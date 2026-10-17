@@ -1,4 +1,5 @@
 import { BASE } from './catalog.js';
+import { permanentImageUrl } from '../../shared/image-variants.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
 const MAX_GALLERY_IMAGES = 16;
@@ -41,7 +42,10 @@ export function cloudflareImageUrl(source, {
   width,
   quality = 85,
   fit = 'scale-down',
+  permanent = false,
 } = {}) {
+  if (permanent && fit === 'scale-down' && Number(quality) === 85 && [240, 360, 480].includes(Number(width)))
+    return permanentImageUrl(source, { width: Number(width), quality: 85, fit });
   if (!source || !sameProductionZone(source)) return String(source || '');
   const targetWidth = positiveInteger(width);
   if (!targetWidth) return String(source);
@@ -67,16 +71,18 @@ export function responsiveImage(source, {
   sizes = '100vw',
   quality = 85,
   fit = 'scale-down',
+  permanent = false,
 } = {}) {
   const normalizedWidths = [...new Set(widths.map(positiveInteger).filter(Boolean))]
     .sort((a, b) => a - b);
   const fallbackWidth = positiveInteger(defaultWidth) || normalizedWidths.at(-1) || 480;
-  const src = cloudflareImageUrl(source, { width: fallbackWidth, quality, fit });
-  if (!sameProductionZone(source) || normalizedWidths.length === 0) {
+  const options = { quality, fit, permanent };
+  const src = cloudflareImageUrl(source, { width: fallbackWidth, ...options });
+  if ((!sameProductionZone(source) && !permanent) || normalizedWidths.length === 0) {
     return { src, srcset: '', sizes: '' };
   }
   const srcset = normalizedWidths
-    .map(width => `${cloudflareImageUrl(source, { width, quality, fit })} ${width}w`)
+    .map(width => `${cloudflareImageUrl(source, { width, ...options })} ${width}w`)
     .join(', ');
   return { src, srcset, sizes };
 }

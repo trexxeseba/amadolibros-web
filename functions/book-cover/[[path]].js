@@ -1,5 +1,6 @@
 import { fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
+import { imageVariant, readImageVariant } from '../../shared/image-variants.js';
 
 const PRODUCT_ID_RE = /^MLU\d+$/;
 const COVER_FILE_RE = /^cover(?:-([2-9]|1[0-6]))?\.jpg$/;
@@ -75,6 +76,10 @@ export async function onRequest(ctx) {
   if (!['GET', 'HEAD'].includes(ctx.request.method)) {
     return new Response('Method Not Allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
   }
+  const variantId = new URL(ctx.request.url).searchParams.get('variant');
+  if (variantId !== null && !imageVariant(variantId)) {
+    return new Response('Invalid variant', { status: 400, headers: { 'cache-control': 'no-store' } });
+  }
   const parts = Array.isArray(ctx.params.path) ? ctx.params.path : [ctx.params.path].filter(Boolean);
   const id = String(parts[0] || '').toUpperCase();
   const coverMatch = COVER_FILE_RE.exec(String(parts[1] || ''));
@@ -92,11 +97,18 @@ export async function onRequest(ctx) {
   const storedCover = await findPreviewCover(ctx, id, position, source || null);
   // Content-aware cache: a new R2 master automatically stops using old cached bytes.
   const cacheUrl = new URL(`/book-cover/${id}/${filename}`, ctx.request.url);
+  cacheUrl.searchParams.set('delivery', ctx.env?.IMAGE_VARIANTS_READ_ENABLED === 'true' ? 'variants' : 'original');
   cacheUrl.searchParams.set('master', storedCover?.sha256 || source || 'missing');
+  if (variantId) cacheUrl.searchParams.set('variant', variantId);
   const cacheKey = new Request(cacheUrl);
   const cached = await cache.match(cacheKey);
   if (cached) return withIndexStatus(ctx, cached);
-  let response = await r2CoverResponse(ctx, storedCover);
+  const derived = ctx.env?.IMAGE_VARIANTS_READ_ENABLED === 'true' && variantId && storedCover
+    ? await readImageVariant(ctx.env.COVER_R2, storedCover.sha256, variantId) : null;
+  let response = derived ? new Response(derived.body, { headers: {
+    ...responseHeaders('r2-variant', 'image/webp', `"${derived.customMetadata.sha256}"`),
+    'x-cover-variant': variantId,
+  } }) : await r2CoverResponse(ctx, storedCover);
 
   if (!response && source) {
     const imageResponse = await fetch(source, {
@@ -117,6 +129,9 @@ export async function onRequest(ctx) {
       status: 404,
       headers: { 'cache-control': 'public, max-age=300', 'x-cover-source': 'missing' },
     });
+  }
+  if (variantId && !derived) {
+    response.headers.set('x-cover-variant', 'original-fallback');
   }
   if (typeof ctx.waitUntil === 'function') ctx.waitUntil(cache.put(cacheKey, response.clone()));
   return withIndexStatus(ctx, response);

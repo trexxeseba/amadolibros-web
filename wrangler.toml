@@ -52,6 +52,7 @@ bucket_name = "amadolibros-images-preview"
 # origen canónico incorrecto hasta que 2-N-E2 resuelva ese alcance (ver
 # docs/environments.md, sección "Riesgos pendientes").
 [env.preview.vars]
+IMAGE_VARIANTS_READ_ENABLED = "true"
 APP_ENV           = "preview"
 MP_COLLECTOR_ID   = "3559407834"
 CHECKOUT_ENABLED  = "true"
@@ -106,6 +107,12 @@ bucket_name = "amadolibros-images-production"
 # siguen sin declararse acá — son secrets. RESEND_API_KEY tampoco se declara:
 # el workflow lo sincroniza como secret cifrado antes de cada deploy.
 [env.production.vars]
+# Dormant canary: pin a verified readiness index and at most ten product IDs only after approval.
+CARD_VARIANTS_INDEX_SHA256 = ""
+CARD_VARIANTS_CANARY_IDS = ""
+COVER_R2_BUCKET_NAME = "amadolibros-images-production"
+# Enable only after coverage and delivery verification, independently of generation.
+IMAGE_VARIANTS_READ_ENABLED = "false"
 APP_ENV           = "production"
 # QW2: preflight real 2026-09-06 conserva 3697/3697 ofertas; secundarios
 # sin master >=500 se omiten del feed/JSON-LD, sin ocultar galería web.

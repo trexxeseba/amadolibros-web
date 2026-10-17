@@ -1,0 +1,6 @@
+{
+  "name": "amado-permanent-image-builder",
+  "private": true,
+  "type": "module",
+  "dependencies": { "sharp": "0.34.5" }
+}

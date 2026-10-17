@@ -446,7 +446,7 @@ test('cover index: stable route updates telemetry on cached bytes after fallback
     assert.equal(bucket.gets.filter(key => key === row.current.object_key).length, 1);
     assert.equal(bucket.gets.includes(COVER_MANIFEST_KEY), false);
 
-    const imageCacheUrl = `https://example.test/book-cover/MLU100/cover.jpg?master=${digest}`;
+    const imageCacheUrl = `https://example.test/book-cover/MLU100/cover.jpg?delivery=original&master=${digest}`;
     assert.ok(storedResponses.has(imageCacheUrl), 'Actual stable handler must have cached the master bytes');
     // Also exercise an already cached response containing old telemetry. The
     // per-request observation must overwrite it instead of trusting its age.

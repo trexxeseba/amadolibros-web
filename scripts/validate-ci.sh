@@ -87,6 +87,10 @@ node --experimental-sqlite --test functions/__tests__/*.test.js
 node --test astro-front/src/lib/__tests__/*.test.js
 node --experimental-sqlite --test functions/api/__tests__/*.test.js
 
+step "Encoder de imágenes permanentes — generación, publicación y lectura real"
+(cd scripts/images && npm ci --no-audit --no-fund)
+node --test scripts/images/__tests__/*.test.mjs
+
 # ── 3. Dependencias de Astro ──────────────────────────────────────────────
 step "Instalar dependencias de astro-front"
 (cd astro-front && npm ci --no-audit --no-fund)

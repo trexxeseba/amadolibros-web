@@ -8,7 +8,7 @@ const MANIFEST_CACHE_PATH = '/__amado-cache/cover-selection-v2';
 const OBJECT_KEY_RE = /^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/;
 const PRODUCT_ID_RE = /^MLU\d+$/;
 
-function normalizeSourceUrl(raw) {
+export function normalizeSourceUrl(raw) {
     if (typeof raw !== 'string' || raw.trim() === '') return null;
     try {
         const url = new URL(raw.trim());
@@ -16,6 +16,7 @@ function normalizeSourceUrl(raw) {
         if (!(hostname === 'mlstatic.com' || hostname.endsWith('.mlstatic.com')) ||
             !['http:', 'https:'].includes(url.protocol)) return null;
         url.protocol = 'https:';
+        url.pathname = url.pathname.replace(/-I\.(jpg|jpeg|png|webp)$/i, '-O.$1');
         url.hash = '';
         return url.toString();
     } catch {
@@ -133,9 +134,9 @@ export async function findPreviewCover(ctx, productId, position = 0, sourceUrl =
     // manifest validado/refrescado por el piloto.
     if (sourceUrl !== null) {
         const normalized = normalizeSourceUrl(sourceUrl);
-        if (!normalized || normalized !== current.entry.current.source_url) return null;
+        if (!normalized || normalized !== normalizeSourceUrl(current.entry.current.source_url)) return null;
     }
-    return current;
+    return { ...current, indexMode: manifest.read_stats?.mode || 'legacy-fallback' };
 }
 
 export async function previewCoverUrl(ctx, productId, position = 0, sourceUrl = null) {

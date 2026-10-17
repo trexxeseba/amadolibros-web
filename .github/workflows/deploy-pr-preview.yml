@@ -130,6 +130,23 @@ jobs:
           QW2_PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         run: node scripts/seo/image-system-live-check.mjs
 
+      - name: Verify dormant delivery and lazy zoom on Preview
+        if: github.head_ref == 'codex/image-cost-zoom-on-demand'
+        env:
+          COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          (cd scripts/images && npm ci --no-audit --no-fund)
+          node scripts/images/check-permanent-delivery.mjs
+
+      - name: Upload permanent image evidence
+        if: always() && github.head_ref == 'codex/image-cost-zoom-on-demand'
+        uses: actions/upload-artifact@v4
+        with:
+          name: permanent-image-variants-pr-${{ github.event.pull_request.number }}
+          path: artifacts/image-variants/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Upload verified native cover evidence
         if: always() && github.head_ref == 'codex/catalog-image-system'
         uses: actions/upload-artifact@v4
