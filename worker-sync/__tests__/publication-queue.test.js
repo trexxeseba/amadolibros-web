@@ -325,17 +325,18 @@ test('a parent catalog product resolves to the single child with the supplier GT
   assert.ok(!seen.some(x=>x.path==='/items/validate'));
  }
 });
-test('a failed catalog validation keeps the official codes as evidence for review',async t=>{
+test('a failed catalog validation skips the candidate and keeps official diagnostic codes',async t=>{
  const {fetcher}=catalogFetcher({validate:()=>Response.json({cause:[{code:'item.catalog_listing.invalid',message:'x'}]},{status:400})});
  const api=createPublicationMeli({fetcher,tokenProvider:async()=>'token'});
  const f=await fixture(t,{rows:[books[0]],apiOverrides:{prepare:api.prepare}});
  await f.store.db.prepare("UPDATE ml_pub_runs SET policy_json=?,policy_hash=? WHERE id=?").bind(JSON.stringify(validPolicy(catalogPolicy)),await policyHash(catalogPolicy),f.runId).run();
  const result=await f.service.tick(f.env,f.runId);
- assert.equal(result.review_reasons[0].error_code,'ml_http_400');
- const job=await f.store.db.prepare('SELECT payload_json FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
+ assert.equal(result.review_reasons.length,0);
+ const job=await f.store.db.prepare('SELECT state,error_code,payload_json FROM ml_pub_jobs WHERE run_id=?').bind(f.runId).first();
+ assert.equal(job.state,'skipped_ml_requirement');assert.equal(job.error_code,'ml_http_400');
  const diagnostic=JSON.parse(job.payload_json).diagnostic;
  assert.equal(diagnostic.stage,'item_validation');assert.deepEqual(diagnostic.validation_codes,['item.catalog_listing.invalid']);
- // Causes and the shipping attempts are kept as bounded evidence for review.
+ // Causes and shipping attempts stay as bounded evidence even though the candidate is skipped.
  assert.deepEqual(diagnostic.causes.map(c=>c.code),['item.catalog_listing.invalid']);assert.equal(diagnostic.shipping_attempts.length,1);assert.equal(diagnostic.shipping_attempts[0].variant,'A');
 });
 test('a catalog payload is never created under a policy that did not approve Catálogo',async t=>{
