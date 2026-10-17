@@ -27,6 +27,7 @@ async function attachWhenFree(runId,feedId,{attempts=24,waitMs=15000}={}){
 }
 function summary(body){console.log(JSON.stringify({id:body.id,state:body.state,counts:body.counts,policy_hash:body.policy_hash,approved:body.approved,indexed:body.index?.seen,index_complete:body.index?.done,daily_cap:body.daily_cap,target_published:body.target_published,target_remaining:body.target_remaining,queued:body.queued}));}
 async function importFeed(input){
+ const refreshOnly=process.env.PUBLISHER_REFRESH_ONLY==='true';
  // PUBLISHER_NEW_RUN=true creates a fresh run (new policy, new approval) and
  // leaves the existing run exactly as it is instead of attaching the feed to it.
  const forceNewRun=process.env.PUBLISHER_NEW_RUN==='true';
@@ -36,6 +37,7 @@ async function importFeed(input){
  await command('begin_feed',{feed_id:feedId,source_date:input.source_date,expected_rows:input.rows.length});
  for(let i=0;i<input.rows.length;i+=200)await command('import_feed',{feed_id:feedId,rows:input.rows.slice(i,i+200)});
  await command('commit_feed',{feed_id:feedId});
+ if(refreshOnly){console.log(JSON.stringify({state:'feed_ready',feed_id:feedId,source_date:input.source_date,rows:input.rows.length}));return {feed_id:feedId,source_date:input.source_date,rows:input.rows.length};}
  const result=targetRun?await attachWhenFree(targetRun,feedId):await command('create_run',{run_id:newRun,feed_id:feedId,policy:input.policy,daily_cap:input.daily_cap??10000,preflight_limit:10});summary(result);
 }
 async function refreshFeed(){
