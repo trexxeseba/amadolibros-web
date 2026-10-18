@@ -78,6 +78,10 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   if(existing&&!validateOnly&&['paused','auth_error','stock_stale'].includes(existing.state))await s.stmt("UPDATE ml_pub_runs SET state='publishing' WHERE id=? AND lease_until<?",BULK_RUN,Date.now()).run();
   if(!existing){
    await s.createRun({id:BULK_RUN,feedId:c.feed_id,policy,policyHash:c.policy_hash,now:Date.now()});
+   if(Array.isArray(c.inventory)&&c.inventory_checkpoint){
+    await s.saveIndex(BULK_RUN,c.inventory_checkpoint,c.inventory.map(x=>({id:x.item_id,isbn:x.isbn,titleKey:x.title_key,status:x.status})));
+    for(const x of c.identifiers??[])await db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_identifiers VALUES(?,?,?)').bind(BULK_RUN,x.isbn,x.item_id).run();
+   }
    for(const r of c.receipts??[])if(r.run_id===BULK_RUN)await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});
    if(validateOnly)await s.stmt("UPDATE ml_pub_runs SET state='preflight',approved_hash=NULL,preflight_limit=? WHERE id=?",validateOnly,BULK_RUN).run();
   }
@@ -92,7 +96,8 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
     if(!Array.isArray(page.results)||page.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('inventory_invalid');
     next.pending=page.results;next.scroll=page.scroll_id??null;
    }
-   const ids=next.pending.slice(0,100),items=[];
+   const consumed=next.pending.slice(0,100),ids=[],items=[];
+   for(const id of consumed)if(!await s.stmt('SELECT item_id FROM ml_pub_index WHERE run_id=? AND item_id=?',BULK_RUN,id).first())ids.push(id);
    for(let i=0;i<ids.length;i+=20){
     const group=ids.slice(i,i+20),result=await api.call(e,'/items/bulk?ids='+group.join(',')),remaining=new Set(group);
     if(!Array.isArray(result)||result.length!==group.length)throw new Error('inventory_incomplete');
@@ -101,7 +106,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
      for(const isbn of isbns)await db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_identifiers VALUES(?,?,?)').bind(BULK_RUN,isbn,item.id).run();
     }
    }
-   return {index:{...next,pending:next.pending.slice(ids.length),seen:next.seen+items.length},items};
+   return {index:{...next,pending:next.pending.slice(consumed.length),seen:next.seen+items.length},items};
   },async skuItems(e,isbn){const ids=new Set(await api.skuItems(e,isbn)),q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),result=await api.call(e,`/users/${SELLER}/items/search?${q}`);if(!Array.isArray(result.results)||result.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('sku_lookup_invalid');result.results.forEach(x=>ids.add(x));return [...ids];}};
   const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');

@@ -23,7 +23,9 @@ export function createLocalAccess({now=Date.now,tokens=vintageTokens}={}){
   await env.ORDERS_DB.prepare('INSERT INTO ml_vintage_local_access VALUES(1,?,?,1,0) ON CONFLICT(id) DO UPDATE SET key_hash=excluded.key_hash,expires_at=excluded.expires_at,enabled=1,last_at=0').bind(await sha256(key),expires).run();
   const source=await env.ORDERS_DB.prepare('SELECT source_sha256 FROM sbs_supplier_feeds WHERE id=?').bind(feed.id).first();
   const receipts=(await s.stmt('SELECT seller_id,isbn,state,item_id,run_id,created_at,updated_at FROM ml_pub_receipts WHERE seller_id=?',VINTAGE_SELLER_ID).all()).results;
-  return {version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key,expires_at:expires,seller_id:VINTAGE_SELLER_ID,app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:run.policy_hash,feed_id:feed.id,source_date:feed.source_date,source_sha256:source?.source_sha256,receipts};
+  const inventory=(await s.stmt('SELECT item_id,isbn,title_key,status FROM ml_pub_index WHERE run_id=?',BULK_RUN).all()).results;
+  const identifiers=(await env.ORDERS_DB.prepare('SELECT isbn,item_id FROM ml_vintage_bulk_identifiers WHERE run_id=?').bind(BULK_RUN).all()).results;
+  return {version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key,expires_at:expires,seller_id:VINTAGE_SELLER_ID,app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:run.policy_hash,feed_id:feed.id,source_date:feed.source_date,source_sha256:source?.source_sha256,receipts,inventory,identifiers,inventory_checkpoint:JSON.parse(run.index_json)};
  }
  async function command(env,key,action,args={}){
   if(typeof key!=='string'||!/^[a-f0-9]{64}$/.test(key))fail('invalid_local_access',401);
