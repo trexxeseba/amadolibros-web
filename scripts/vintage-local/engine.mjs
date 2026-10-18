@@ -46,8 +46,17 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false;
- const limited=createVintageBulkFetch();
- api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
+ const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
+ const watched=async(url,options)=>{
+  const response=await limited(env,url,options);
+  try{
+   if(response.status===429)await fs.appendFile(rateLog,JSON.stringify({at:new Date().toISOString(),method:options?.method??'GET',endpoint:new URL(url).pathname.replace(/\d+/g,'#'),retry_after:response.headers.get('retry-after')})+'\n');
+   else if(response.status>=400&&(options?.method??'GET')==='POST'&&/quota_exceeded|max_limit_publish/.test(await response.clone().text()))listingQuotaHit=true;
+  }catch{}
+  return response;
+ };
+ api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
    if(validateOnly)throw new Error('validation_cannot_reserve');
@@ -116,9 +125,9 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
-   if(failedReadback)status.state='stopped_item_readback_failed';
+   if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
-   if(failedReadback)break;
+   if(failedReadback||listingQuotaHit)break;
    if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
    const activeRun=await s.run(BULK_RUN);
    let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
@@ -126,7 +135,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  return {state:failedReadback?'stopped_item_readback_failed':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
+  return {state:failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
  }finally{db.close();}
 }
 async function main(){

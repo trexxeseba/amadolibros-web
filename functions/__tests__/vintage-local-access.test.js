@@ -80,3 +80,38 @@ test('local engine validates without POST and resumes a saved publication databa
  assert.equal(posts,4,'a failed readback must stop before creating another item');
  assert.equal(JSON.parse(await fs.readFile(path.join(temp,'readback-failure','status.json'),'utf8')).state,'stopped_item_readback_failed');
 });
+
+async function engineHarness(t,{create}){
+ const fs=await import('node:fs/promises'),os=await import('node:os'),path=await import('node:path');
+ const temp=await fs.mkdtemp(path.join(os.tmpdir(),'amado-vintage-local-test-'));
+ t.after(async()=>{if(path.dirname(temp)!==os.tmpdir()||!path.basename(temp).startsWith('amado-vintage-local-test-'))throw Error('unsafe_test_cleanup');await fs.rm(temp,{recursive:true,force:true});});
+ const {run}=await import('../../scripts/vintage-local/engine.mjs'),source=new Date().toISOString(),hash=await policyHash(policy),connection=path.join(temp,'connection.json');
+ await fs.writeFile(connection,JSON.stringify({version:1,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'a'.repeat(64),expires_at:Date.now()+86400000,policy,policy_hash:hash,feed_id:crypto.randomUUID(),source_date:source,source_sha256:'e'.repeat(64),receipts:[]}));
+ const rows=['9786075272795','9788410235861','9789502323060','9789502418513','9789878136912'].map(isbn=>({isbn,title:'Test '+isbn,listArs:40000,weightKg:.5,stock:'2'})),reserved=new Map();
+ const broker=async(action,args)=>{
+  if(action==='status')return {daily_created:5+reserved.size,daily_cap:3000,published_total:5};
+  if(action==='reserve'){if(reserved.has(args.isbn))return {reserved:false,receipt:reserved.get(args.isbn)};reserved.set(args.isbn,{isbn:args.isbn,state:'creating',run_id:BULK_RUN,created_at:Date.now(),updated_at:Date.now()});return {reserved:true};}
+  if(action==='report'){Object.assign(reserved.get(args.isbn),args);return {recorded:true};}throw Error('unexpected broker action');
+ };
+ const apiFactory=opts=>({async account(){return {id:'2341378249',site_id:'MLU'};},async call(){return {results:[]};},async skuItems(){return [];},async prepare(e,row,p,price){return {title:row.title,price,currency_id:'UYU',condition:'new',catalog_listing:false,seller_custom_field:'AMADO-AR-'+row.isbn};},create:(e,p)=>create(opts,p)});
+ return {run,temp,path,fs,options:{excel:'unused',connection,directory:temp,onStatus:()=>{},readWorkbook:async()=>({rows,source_date:source,source_sha256:'e'.repeat(64)}),apiFactory,brokerFactory:()=>broker,waitFor:async()=>{}}};
+}
+
+test('local engine records which endpoint answered 429 without ids or query text',async t=>{
+ const {MercadoLibreError}=await import('../../worker-sync/publication-meli.js'),realFetch=globalThis.fetch;t.after(()=>{globalThis.fetch=realFetch;});
+ globalThis.fetch=async()=>new Response('{}',{status:429,headers:{'retry-after':'7'}});
+ const h=await engineHarness(t,{async create(opts){await opts.fetcher('https://api.mercadolibre.com/items/MLU123456?isbn=9786075272795',{method:'GET'});throw new MercadoLibreError('ml_http_429',429,7);}});
+ await h.run({...h.options,target:8,limitNew:1});
+ const lines=(await h.fs.readFile(h.path.join(h.temp,'rate-limit-events.jsonl'),'utf8')).trim().split('\n').map(x=>JSON.parse(x));
+ assert.equal(lines.length,1);assert.equal(lines[0].endpoint,'/items/MLU#');assert.equal(lines[0].method,'GET');assert.equal(lines[0].retry_after,'7');assert.ok(!JSON.stringify(lines).includes('9786075272795'));
+});
+
+test('local engine stops when Mercado Libre refuses creation for the listing quota',async t=>{
+ const {MercadoLibreError}=await import('../../worker-sync/publication-meli.js'),realFetch=globalThis.fetch;t.after(()=>{globalThis.fetch=realFetch;});
+ globalThis.fetch=async()=>new Response(JSON.stringify({message:'quota',error:'validation_error',status:400,cause:[{code:'item.max_limit_publish'}]}),{status:400,headers:{'Content-Type':'application/json'}});
+ let creates=0;
+ const h=await engineHarness(t,{async create(opts){creates++;await opts.fetcher('https://api.mercadolibre.com/items',{method:'POST',body:'{}'});throw new MercadoLibreError('ml_http_400',400);}});
+ const result=await h.run({...h.options,target:1000});
+ assert.equal(result.state,'stopped_listing_quota');assert.equal(creates,1,'no further create after the quota refusal');
+ assert.equal(JSON.parse(await h.fs.readFile(h.path.join(h.temp,'status.json'),'utf8')).state,'stopped_listing_quota');
+});

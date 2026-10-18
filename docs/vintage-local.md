@@ -48,7 +48,11 @@ Default state folder: `%LOCALAPPDATA%/Amado/VintagePublisher`, outside OneDrive.
 `validation.sqlite` is separate from `publisher.sqlite`; validation never sends
 `POST /items`. The validated sample is saved in `items.preview.json`.
 `status.json` and redirected console output contain counts and bounded error codes,
-never credentials. Restart with the same directory to preserve progress. A hard
+never credentials. Every real Mercado Libre 429 is appended to `rate-limit-events.jsonl`
+(time, method, endpoint with ids replaced by `#`, Retry-After; no query text or tokens), to
+learn which call causes it. A creation refused for the listing quota (`item.max_limit_publish`
+or `user.quota_exceeded`) stops the process with state `stopped_listing_quota` instead of
+trying every remaining ISBN. Restart with the same directory to preserve progress. A hard
 process termination can leave a five-minute lease, which is allowed to expire.
 
 The engine scans all listing statuses, canonicalizes ISBNs, checks both SKU query
