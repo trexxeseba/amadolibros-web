@@ -1,0 +1,228 @@
+name: Card generation pilot v2 - Preview only (manual)
+# Piloto de variantes v2 (Cloudflare Images). SOLO manual (workflow_dispatch), SOLO Preview.
+# Producción: cero escrituras, cero despliegues, cero activación. Tope: 32 intentos nuevos.
+# Tres fases independientes; cada una exige la confirmación escrita.
+#   usage-check : captura de solo lectura del uso facturable y conversión estricta a informe.
+#   propose     : elige los 10 masters (+1 para cupo agotado) y publica su digest. No genera nada.
+#   pilot       : con el digest aprobado, ejecuta el piloto, lo verifica y compara con Sharp.
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Fase a ejecutar
+        type: choice
+        required: true
+        options: [usage-check, propose, pilot]
+      confirm:
+        description: Escribir exactamente PREVIEW-ONLY-32-ATTEMPTS
+        type: string
+        required: true
+      manifest_run_id:
+        description: "propose: run que contiene el manifest congelado (inventario existente)"
+        type: string
+        default: '38997881346'
+      manifest_artifact:
+        description: "propose: nombre del artifact con el manifest"
+        type: string
+        default: cover-index-38997881346
+      manifest_file:
+        description: "propose: ruta del manifest dentro del artifact (si no existe, falla listando el contenido)"
+        type: string
+        default: manifest.json
+      proposal_run_id:
+        description: "pilot: run de la fase propose cuyo digest se aprobó"
+        type: string
+        default: ''
+      plan_digest:
+        description: "pilot: digest SHA-256 aprobado del plan de 10 masters"
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: card-generation-pilot
+  cancel-in-progress: false
+env:
+  NODE_VERSION: '22.12.0'
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: github.event.repository.fork == false
+    steps:
+      - name: Require the written confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRM" = "PREVIEW-ONLY-32-ATTEMPTS" || { echo 'Confirmation text does not match' >&2; exit 1; }
+
+  usage-check:
+    needs: guard
+    if: inputs.phase == 'usage-check'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Read-only usage capture and strict conversion (fails closed)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pilot
+          node scripts/images/capture-images-usage.mjs artifacts/pilot/usage-raw.json artifacts/pilot/usage-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pilot-usage-${{ github.run_id }}
+          path: artifacts/pilot/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  propose:
+    needs: guard
+    if: inputs.phase == 'propose'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --prefix scripts/images --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.manifest_artifact }}
+          run-id: ${{ inputs.manifest_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: inputs/manifest
+      - name: Select the pilot masters (existing manifest + read-only probe; no general inventory)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER_NAME: amado-cover-fix-${{ github.run_id }}-${{ github.run_attempt }}
+          MANIFEST_FILE: ${{ inputs.manifest_file }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pilot
+          if [[ ! -f "inputs/manifest/$MANIFEST_FILE" || "$MANIFEST_FILE" == *..* ]]; then
+            echo "Manifest not found in the artifact. Contents:" >&2; find inputs/manifest -type f | head -50 >&2; exit 1
+          fi
+          PILOT_TOKEN=$(openssl rand -hex 32); export PILOT_TOKEN
+          echo "::add-mask::$PILOT_TOKEN"
+          cleanup() {
+            curl -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME" \
+              > artifacts/pilot/temporary-worker-cleanup.json || true
+          }
+          trap cleanup EXIT
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/card-generation-preview.wrangler.toml --var "PILOT_BUILD_SHA:$GITHUB_SHA")
+          PILOT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$PILOT_URL"; export PILOT_URL
+          printf '%s' "$PILOT_TOKEN" | npx wrangler@3.114.17 secret put PILOT_TOKEN --config worker-sync/card-generation-preview.wrangler.toml --name "$WORKER_NAME"
+          for attempt in $(seq 1 20); do
+            if curl -fsS -H "Authorization: Bearer $PILOT_TOKEN" "$PILOT_URL/ready" | grep -q "$GITHUB_SHA"; then break; fi
+            test "$attempt" -lt 20 || { echo 'Preview Worker not ready' >&2; exit 1; }
+            sleep 3
+          done
+          node scripts/images/select-pilot-masters.mjs "inputs/manifest/$MANIFEST_FILE" artifacts/pilot/selection.json | tee artifacts/pilot/selection-summary.json
+          {
+            echo '### Pilot masters proposed (NOT generated)'
+            echo '```json'; cat artifacts/pilot/selection-summary.json; echo; echo '```'
+            echo 'Approve the `pilot_digest` above, then run phase `pilot` with this run id and that digest.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pilot-selection-${{ github.run_id }}
+          path: artifacts/pilot/
+          if-no-files-found: error
+          retention-days: 30
+
+  pilot:
+    needs: guard
+    if: inputs.phase == 'pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Require an approved digest and its proposal run
+        env:
+          PROPOSAL_RUN_ID: ${{ inputs.proposal_run_id }}
+          PLAN_DIGEST: ${{ inputs.plan_digest }}
+        run: |
+          set -euo pipefail
+          [[ "$PROPOSAL_RUN_ID" =~ ^[0-9]+$ ]] || { echo 'proposal_run_id required' >&2; exit 1; }
+          [[ "$PLAN_DIGEST" =~ ^[a-f0-9]{64}$ ]] || { echo 'plan_digest must be the approved SHA-256' >&2; exit 1; }
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --prefix scripts/images --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: pilot-selection-${{ inputs.proposal_run_id }}
+          run-id: ${{ inputs.proposal_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: inputs/selection
+      - name: Verify the selection is exactly the approved plan
+        env:
+          PLAN_DIGEST: ${{ inputs.plan_digest }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e "
+            import { createHash } from 'node:crypto'; import { readFileSync } from 'node:fs';
+            const { pilot, exhaustion } = JSON.parse(readFileSync('inputs/selection/selection.json', 'utf8'));
+            const digest = plan => createHash('sha256').update(JSON.stringify(plan.items)).digest('hex');
+            if (digest(pilot) !== pilot.items_sha256 || pilot.items_sha256 !== process.env.PLAN_DIGEST) { console.error('Selection does not match the approved digest'); process.exit(1); }
+            if (digest(exhaustion) !== exhaustion.items_sha256 || pilot.items.length !== 10 || exhaustion.items.length !== 1) { console.error('Unexpected plan size'); process.exit(1); }
+          "
+      - name: Run, verify and compare (Preview only, at most 32 new attempts)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER_NAME: amado-cover-fix-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pilot
+          # 1) Consumo previo de la cuenta: si no se puede comprobar, NO se genera nada.
+          node scripts/images/capture-images-usage.mjs artifacts/pilot/usage-raw.json artifacts/pilot/usage-report.json
+          PILOT_TOKEN=$(openssl rand -hex 32); export PILOT_TOKEN
+          echo "::add-mask::$PILOT_TOKEN"
+          cleanup() {
+            curl -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME" \
+              > artifacts/pilot/temporary-worker-cleanup.json || true
+          }
+          trap cleanup EXIT
+          OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/card-generation-preview.wrangler.toml --var "PILOT_BUILD_SHA:$GITHUB_SHA")
+          PILOT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$PILOT_URL"; export PILOT_URL
+          export PILOT_BUILD_SHA="$GITHUB_SHA"
+          printf '%s' "$PILOT_TOKEN" | npx wrangler@3.114.17 secret put PILOT_TOKEN --config worker-sync/card-generation-preview.wrangler.toml --name "$WORKER_NAME"
+          # 2) Producción antes (solo lectura): ETag del manifest, para comprobar que no cambió.
+          for attempt in $(seq 1 20); do
+            if curl -fsS -H "Authorization: Bearer $PILOT_TOKEN" "$PILOT_URL/ready" | grep -q "$GITHUB_SHA"; then break; fi
+            test "$attempt" -lt 20 || { echo 'Preview Worker not ready' >&2; exit 1; }
+            sleep 3
+          done
+          # 3) Piloto + verificación objeto por objeto + reanudación + cupo agotado.
+          node scripts/images/card-generation-pilot-check.mjs inputs/selection/selection.json artifacts/pilot/usage-report.json artifacts/pilot/pilot-report.json
+          # 4) Comparación con Sharp (mismos bytes de master) y hojas de contacto.
+          node scripts/images/compare-sharp-pilot.mjs inputs/selection/selection.json artifacts/pilot/comparison
+          {
+            echo '### Pilot result (Preview only)'
+            echo '```json'; node -e "const r=require('./artifacts/pilot/pilot-report.json'); console.log(JSON.stringify({ok:r.ok,consumed:r.consumed,succeeded:r.succeeded,failed:r.failed,failed_step:r.failed_step||null},null,2))"; echo '```'
+            echo 'Review `comparison/comparison.json` and the contact sheets before any further step.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pilot-result-${{ github.run_id }}
+          path: artifacts/pilot/
+          if-no-files-found: error
+          retention-days: 30

@@ -6,9 +6,9 @@ import { initLedger, readLedger, runGeneration, periodOf, ledgerKey, USAGE_SOURC
 // bucket lanza antes de tocar R2.
 export const PREVIEW_BUCKET = 'amadolibros-images-preview';
 export const SOURCE_BUCKET = 'amadolibros-images-production';
-export const PILOT_MAX_NEW_ATTEMPTS = 100; // el piloto jamás puede reservar más intentos nuevos que esto
-export const PILOT_PLAN_MAX_ITEMS = 20;
-export const PILOT_RUN_LIMIT_MAX = 40;
+export const PILOT_MAX_NEW_ATTEMPTS = 32; // el piloto jamás puede reservar más intentos nuevos que esto (30 + 2 para el ensayo de cupo agotado)
+export const PILOT_PLAN_MAX_ITEMS = 10;
+export const PILOT_RUN_LIMIT_MAX = 32;
 const V2_KEY = /^covers\/variants\/v2\/[a-f0-9]{64}\/v2-(?:240|360|480)-q85\.webp$/;
 const LEDGER_KEY = /^covers\/generation-ledger\/v2\/\d{4}-\d{2}\/ledger\.json$/;
 const SOURCE_READ_KEY = /^covers\/(?:v1\/objects\/[a-f0-9]{64}\.(?:jpg|png|webp)|variants\/v1\/[a-f0-9]{64}\/v1-\d+-q\d+\.webp)$/;
@@ -30,7 +30,8 @@ export function sourceFacade(bucket) {
   const allowed = key => SOURCE_READ_KEY.test(key);
   return {
     get: key => allowed(key) ? bucket.get(key) : deny('get', key),
-    head: key => allowed(key) ? bucket.head(key) : deny('head', key),
+    // HEAD (nunca GET) del manifest: sólo para comprobar antes/después que producción no cambió.
+    head: key => allowed(key) || key === 'covers/v1/manifest.json' ? bucket.head(key) : deny('head', key),
   };
 }
 
@@ -79,6 +80,29 @@ export default {
         if (!found?.body) return json({ error: 'not-found' }, 404);
         return new Response(found.body, { headers: { 'content-type': 'image/webp', 'cache-control': 'no-store',
           'x-variant-metadata': JSON.stringify(found.customMetadata || {}) } });
+      }
+      if (url.pathname === '/production-etag' && request.method === 'GET') {
+        const head = await source.head('covers/v1/manifest.json');
+        return json({ etag: head?.etag ?? null, size: head?.size ?? null });
+      }
+      // Sólo lectura de producción para la propuesta y la comparación: ¿qué recetas v1 existen
+      // para este master? (HEAD de tres claves; sin listar el bucket).
+      const probe = /^\/probe-v1\/([a-f0-9]{64})$/.exec(url.pathname);
+      if (probe && request.method === 'GET') {
+        const present = [];
+        for (const width of [240, 360, 480]) {
+          const id = `v1-${width}-q85`;
+          const head = await source.head(`covers/variants/v1/${probe[1]}/${id}.webp`);
+          if (head?.size > 0 && head.customMetadata?.master_sha256 === probe[1] && head.customMetadata.recipe === id) present.push(id);
+        }
+        return json({ hash: probe[1], present });
+      }
+      // El master original, para que la comparación con Sharp parta de los mismos bytes.
+      const master = /^\/master\/([a-f0-9]{64}\.(?:jpg|png|webp))$/.exec(url.pathname);
+      if (master && request.method === 'GET') {
+        const found = await source.get(`covers/v1/objects/${master[1]}`);
+        if (!found?.body || found.size > 8 * 1024 * 1024) return json({ error: 'not-found' }, 404);
+        return new Response(found.body, { headers: { 'content-type': 'application/octet-stream', 'cache-control': 'no-store' } });
       }
       return json({ error: 'not-found' }, 404);
     } catch (error) {

@@ -70,16 +70,52 @@ export function selectPilotMasters({ manifest, v1Inventory }) {
     candidates: pool.length };
 }
 
+// Sin inventario general: se parte del manifest ya existente y sólo se sondea (HEAD de
+// tres claves v1, vía la fachada de solo lectura del Worker de Preview) a los masters
+// elegidos. Si alguno ya tiene v1 se descarta y se vuelve a elegir. Cada hash se sondea
+// una sola vez; el total queda acotado por rondas × 11.
+export async function selectWithProbe({ manifest, probe, maxRounds = 6 }) {
+  const known = new Set(), probed = new Set();
+  for (let round = 1; round <= maxRounds; round++) {
+    const selection = selectPilotMasters({ manifest, v1Inventory: known });
+    const fresh = [...selection.pilot.items, ...selection.exhaustion.items].map(item => item.file.slice(0, 64)).filter(hash => !probed.has(hash));
+    let changed = false;
+    for (const hash of fresh) {
+      probed.add(hash);
+      const present = await probe(hash);
+      for (const id of present) { known.add(`${hash}/${id}`); changed = true; }
+    }
+    if (!changed) return { ...selection, probes: probed.size, rounds: round };
+  }
+  throw new Error('pilot-selection-did-not-converge');
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [manifestPath, inventoryPath, outputPath] = process.argv.slice(2);
-  if (!outputPath) throw new Error('usage: select-pilot-masters manifest.json v1-inventory-keys.json pilot-selection.json');
+  const [manifestPath, outputPath, inventoryPath] = process.argv.slice(2);
+  if (!manifestPath || !outputPath) throw new Error('usage: select-pilot-masters manifest.json pilot-selection.json [v1-inventory-keys.json]  (PILOT_URL + PILOT_TOKEN enable the read-only probe)');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  const keys = JSON.parse(await readFile(inventoryPath, 'utf8'));
-  const v1Inventory = new Set(keys.map(key => /^covers\/variants\/v1\/([a-f0-9]{64})\/(v1-\d+-q\d+)\.webp$/.exec(key))
-    .filter(Boolean).map(m => `${m[1]}/${m[2]}`));
-  const selection = selectPilotMasters({ manifest, v1Inventory });
+  let selection;
+  if (process.env.PILOT_URL) {
+    const base = new URL(process.env.PILOT_URL);
+    if (base.protocol !== 'https:' || base.username || !process.env.PILOT_TOKEN) throw new Error('invalid-probe-config');
+    const probe = async hash => {
+      const response = await fetch(new URL(`/probe-v1/${hash}`, base), { headers: { authorization: `Bearer ${process.env.PILOT_TOKEN}` }, redirect: 'manual', signal: AbortSignal.timeout(30_000) });
+      if (!response.ok) throw new Error(`probe-http-${response.status}`);
+      const body = await response.json();
+      if (body.hash !== hash || !Array.isArray(body.present) || !body.present.every(id => /^v1-\d+-q\d+$/.test(id))) throw new Error('probe-invalid-response');
+      return body.present;
+    };
+    selection = await selectWithProbe({ manifest, probe });
+  } else {
+    if (!inventoryPath) throw new Error('v1-inventory-or-probe-required');
+    const keys = JSON.parse(await readFile(inventoryPath, 'utf8'));
+    const v1Inventory = new Set(keys.map(key => /^covers\/variants\/v1\/([a-f0-9]{64})\/(v1-\d+-q\d+)\.webp$/.exec(key))
+      .filter(Boolean).map(m => `${m[1]}/${m[2]}`));
+    selection = selectPilotMasters({ manifest, v1Inventory });
+  }
   await writeFile(outputPath, JSON.stringify(selection), { flag: 'wx', mode: 0o600 });
-  console.log(JSON.stringify({ candidates: selection.candidates, pilot_items: selection.pilot.items.length,
-    pilot_digest: selection.pilot.items_sha256, exhaustion_digest: selection.exhaustion.items_sha256,
-    strata: selection.strata, production_requests: 0, production_writes: 0 }));
+  console.log(JSON.stringify({ candidates: selection.candidates, probes: selection.probes ?? null, pilot_items: selection.pilot.items.length,
+    pilot_hashes: selection.pilot.items.map(i => i.file), pilot_digest: selection.pilot.items_sha256,
+    exhaustion_hashes: selection.exhaustion.items.map(i => i.file), exhaustion_digest: selection.exhaustion.items_sha256,
+    strata: selection.strata, production_writes: 0 }));
 }

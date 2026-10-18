@@ -77,13 +77,14 @@ test('facades enforce the exact allow-list: previews write only ledger + v2; pro
 
 test('pilot ledger and plan sizes are capped inside the Worker itself', async () => {
   const f = setup();
-  for (const cap of [PILOT_MAX_NEW_ATTEMPTS + 1, 0, 1.5, '32', 30_000, undefined]) assert.equal((await f.call('/init', { method: 'POST', body: { maxNewAttempts: cap, usage: f.usage } })).status, 400, String(cap));
+  assert.equal(PILOT_MAX_NEW_ATTEMPTS, 32);
+  for (const cap of [PILOT_MAX_NEW_ATTEMPTS + 1, 100, 0, 1.5, '32', 30_000, undefined]) assert.equal((await f.call('/init', { method: 'POST', body: { maxNewAttempts: cap, usage: f.usage } })).status, 400, String(cap));
   assert.equal((await f.call('/init', { method: 'POST', body: { maxNewAttempts: 32, usage: { ...f.usage, source: 'typed' } } })).status, 400);
   assert.equal((await f.call('/init', { method: 'POST', body: { maxNewAttempts: 32 } })).status, 400);
   assert.deepEqual([...f.preview.store.keys()], [], 'nothing written by rejected requests');
-  const big = { ...f.plan, items: Array.from({ length: 21 }, () => f.plan.items[0]) };
+  const big = { ...f.plan, items: Array.from({ length: 11 }, () => f.plan.items[0]) };
   assert.equal((await f.call('/run', { method: 'POST', body: { plan: big, approval: 'x', usage: f.usage, limit: 5 } })).status, 400);
-  assert.equal((await f.call('/run', { method: 'POST', body: { plan: f.plan, approval: f.plan.items_sha256, usage: f.usage, limit: 41 } })).status, 400);
+  assert.equal((await f.call('/run', { method: 'POST', body: { plan: f.plan, approval: f.plan.items_sha256, usage: f.usage, limit: 33 } })).status, 400);
   assert.equal(images.calls, 0);
 });
 
@@ -109,4 +110,26 @@ test('end to end in Preview shape: init, run, resume; only ledger and v2 keys ar
   assert.ok(f.production.log.every(([, k]) => /^covers\/(v1\/objects|variants\/v1)\//.test(k)), 'production reads limited to masters and v1');
   assert.equal((await f.call('/delete', { method: 'POST', body: {} })).status, 404);
   assert.equal((await f.call('/ready', { method: 'POST', body: {} })).status, 404);
+});
+
+test('read-only helpers: v1 probe and master download expose nothing else and never write', async () => {
+  const f = setup(); const h = f.hash;
+  f.production.store.set(`covers/variants/v1/${h}/v1-360-q85.webp`, { bytes: new Uint8Array([1]), etag: 'x', customMetadata: { master_sha256: h, recipe: 'v1-360-q85' } });
+  f.production.store.set(`covers/variants/v1/${h}/v1-240-q85.webp`, { bytes: new Uint8Array([1]), etag: 'y', customMetadata: { master_sha256: 'e'.repeat(64), recipe: 'v1-240-q85' } });
+  const probe = await (await f.call(`/probe-v1/${h}`)).json();
+  assert.deepEqual(probe, { hash: h, present: ['v1-360-q85'] }, 'metadata must match the master and recipe');
+  const master = await f.call(`/master/${h}.png`);
+  assert.equal(master.status, 200); assert.equal(sha(new Uint8Array(await master.arrayBuffer())), h);
+  assert.equal((await f.call(`/master/${h}.gif`)).status, 404); assert.equal((await f.call('/master/../manifest.json')).status, 404);
+  assert.equal((await f.call(`/probe-v1/${h}`, { method: 'POST', body: {} })).status, 404);
+  assert.equal(f.production.log.filter(([op]) => !['get', 'head'].includes(op)).length, 0);
+  assert.deepEqual(f.preview.log, []);
+});
+
+test('production manifest can only be HEADed (never read) to prove nothing changed', async () => {
+  const f = setup(); f.production.store.set('covers/v1/manifest.json', { bytes: new Uint8Array([1, 2, 3]), etag: 'etag-1' });
+  assert.deepEqual(await (await f.call('/production-etag')).json(), { etag: 'etag-1', size: 3 });
+  assert.throws(() => sourceFacade(f.production).get('covers/v1/manifest.json'), /pilot-operation-denied/);
+  assert.deepEqual(f.production.log, [['head', 'covers/v1/manifest.json']]);
+  assert.equal((await f.call('/production-etag', { method: 'POST', body: {} })).status, 404);
 });

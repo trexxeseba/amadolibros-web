@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import {
   CF_CARD_VARIANTS, CF_ENCODER, CF_VARIANT_VERSION, VARIANT_VERSION, imageVariant, variantObjectKey, variantVersion,
 } from '../shared/image-variants.js';
@@ -30,7 +29,9 @@ const RECIPES = CF_CARD_VARIANTS.map(r => r.id);
 
 export const ledgerKey = period => `covers/generation-ledger/v2/${period}/ledger.json`;
 export const periodOf = now => new Date(now).toISOString().slice(0, 7);
-const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+// Web Crypto (no node:crypto): el Worker no depende de nodejs_compat.
+const sha256 = async data => [...new Uint8Array(await crypto.subtle.digest('SHA-256', typeof data === 'string' ? new TextEncoder().encode(data) : data))]
+  .map(b => b.toString(16).padStart(2, '0')).join('');
 const isCount = value => Number.isSafeInteger(value) && value >= 0;
 const stop = (reason, result) => { result.stopped = reason; return result; };
 
@@ -38,6 +39,7 @@ function validateLedger(ledger, period) {
   const ok = ledger?.schema === LEDGER_SCHEMA && ledger.period === period && ledger.encoder === CF_ENCODER &&
     Number.isSafeInteger(ledger.cap_attempts) && ledger.cap_attempts >= 1 && ledger.cap_attempts <= GENERATION_CAP_CEILING &&
     (ledger.max_new_attempts === undefined || (Number.isSafeInteger(ledger.max_new_attempts) && ledger.max_new_attempts >= 1 && ledger.max_new_attempts <= ledger.cap_attempts)) &&
+    (ledger.usage_floor === undefined || (isCount(ledger.usage_floor?.billed) && isCount(ledger.usage_floor.consumed_at) && ledger.usage_floor.consumed_at <= ledger.consumed)) &&
     isCount(ledger.prior_consumed) && isCount(ledger.consumed) && isCount(ledger.succeeded) && isCount(ledger.failed) &&
     ledger.failures && typeof ledger.failures === 'object' && !Array.isArray(ledger.failures) &&
     Object.keys(ledger.failures).length <= MAX_FAILURE_RECORDS &&
@@ -80,6 +82,8 @@ export async function initLedger(bucket, { now, capAttempts, maxNewAttempts, usa
   if (priorConsumed > capAttempts) throw new Error('invalid-prior-consumed');
   const ledger = { schema: LEDGER_SCHEMA, period, encoder: CF_ENCODER, cap_attempts: capAttempts, prior_consumed: priorConsumed,
     ...(maxNewAttempts === undefined ? {} : { max_new_attempts: maxNewAttempts }),
+    // Piso persistente: lo más alto observado de la cuenta; un informe posterior menor jamás lo baja.
+    usage_floor: { billed: priorConsumed, consumed_at: 0 },
     prior_source: usage.source, prior_observed_at: usage.observed_at, prior_raw_sha256: usage.raw_sha256,
     consumed: 0, succeeded: 0, failed: 0, failures: {}, lease: null,
     progress: { plan_sha256: null, next_index: 0, updated_at: at }, created_at: at, updated_at: at };
@@ -89,7 +93,7 @@ export async function initLedger(bucket, { now, capAttempts, maxNewAttempts, usa
   return ledger;
 }
 
-export function validateGenerationPlan(plan, approval) {
+export async function validateGenerationPlan(plan, approval) {
   if (plan?.schema !== 'card-generation-plan-v2' || JSON.stringify(plan.recipes) !== JSON.stringify(RECIPES) ||
       !Array.isArray(plan.items) || plan.items.length < 1 || plan.items.length > 10_000) throw new Error('invalid-plan');
   const seen = new Set();
@@ -100,7 +104,7 @@ export function validateGenerationPlan(plan, approval) {
         !item.recipes.every(id => RECIPES.includes(id))) throw new Error('invalid-plan-item');
     seen.add(match[1]);
   }
-  const digest = sha256(JSON.stringify(plan.items));
+  const digest = await sha256(JSON.stringify(plan.items));
   if (digest !== plan.items_sha256 || approval !== digest) throw new Error('plan-not-approved');
   return digest;
 }
@@ -143,7 +147,7 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
   if (!bucket || !sourceBucket || typeof images?.input !== 'function' || typeof holder !== 'string' || !holder ||
       !Number.isSafeInteger(limit) || limit < 1 || limit > 500) return stop('invalid-configuration', result);
   let planDigest;
-  try { planDigest = validateGenerationPlan(plan, approval); } catch (error) { return stop(error.message, result); }
+  try { planDigest = await validateGenerationPlan(plan, approval); } catch (error) { return stop(error.message, result); }
   const period = periodOf(clock());
   // Otros usos de Images también gastan el mismo cupo: sin un informe de uso
   // fresco del período no se genera nada (antes de leer masters o llamar a Images).
@@ -182,12 +186,15 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
         else { l.failed++; l.failures[stale.key] = { n: (l.failures[stale.key]?.n || 0) + 1, last_error: 'interrupted', at: l.updated_at }; }
       }
       l.lease = { holder, expires_at: leaseUntil(), pending: null };
+      // Piso persistente del consumo observado: sólo sube. Un informe menor (retraso,
+      // reintento de consulta, datos parciales) no libera cupo ya observado como gastado.
+      const floorNow = l.usage_floor ? l.usage_floor.billed + (l.consumed - l.usage_floor.consumed_at) : 0;
+      if (!l.usage_floor || usage.billed_transformations > floorNow) l.usage_floor = { billed: usage.billed_transformations, consumed_at: l.consumed };
       l.last_usage = { billed_transformations: usage.billed_transformations, observed_at: usage.observed_at, raw_sha256: usage.raw_sha256 };
       if (l.progress.plan_sha256 !== planDigest) l.progress = { plan_sha256: planDigest, next_index: 0, updated_at: l.updated_at };
     });
   } catch (error) { return stop(error.message === 'ledger-conflict' ? 'ledger-conflict' : 'ledger-unavailable', result); }
 
-  const consumedAtStart = state.ledger.consumed;
   const start = state.ledger.progress.next_index;
   const end = Math.min(plan.items.length, start + MAX_ITEMS_SCANNED_PER_RUN);
   let frontier = null; // primer índice no resuelto de forma definitiva
@@ -215,18 +222,18 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
 
         // Si cruzamos medianoche UTC del último día, ningún intento nuevo se carga al mes anterior.
         if (periodOf(clock()) !== period) { unresolved = true; result.stopped = 'period-changed'; break; }
-        // Gasto efectivo: lo que sabemos que gastamos o lo que la cuenta informó
-        // más lo que gastamos desde esa observación, lo mayor. La facturación puede
-        // retrasarse: ese margen es lo que cubre la reserva de USD 5.
-        const spent = Math.max(state.ledger.prior_consumed + state.ledger.consumed,
-          usage.billed_transformations + (state.ledger.consumed - consumedAtStart));
+        // Gasto efectivo: lo que sabemos que gastamos o el piso observado de la cuenta
+        // más lo gastado desde entonces, lo mayor. La facturación puede retrasarse:
+        // ese margen es lo que cubre la reserva de USD 5.
+        const floor = state.ledger.usage_floor;
+        const spent = Math.max(state.ledger.prior_consumed + state.ledger.consumed, floor.billed + (state.ledger.consumed - floor.consumed_at));
         if (spent + 1 > state.ledger.cap_attempts || state.ledger.consumed + 1 > (state.ledger.max_new_attempts ?? state.ledger.cap_attempts)) { unresolved = true; result.stopped = 'budget-exhausted'; break; }
         // Fuente validada antes de reservar: una fuente inválida no gasta cupo.
         if (!master) {
           const object = await sourceBucket.get(`covers/v1/objects/${item.file}`);
           const bytes = object?.body && object.size <= MAX_MASTER_BYTES ? new Uint8Array(await new Response(object.body).arrayBuffer()) : null;
           let info = null;
-          try { info = bytes && bytes.length === item.size && sha256(bytes) === hash ? inspectCoverBytes(bytes, MIME[extension]) : null; } catch { info = null; }
+          try { info = bytes && bytes.length === item.size && await sha256(bytes) === hash ? inspectCoverBytes(bytes, MIME[extension]) : null; } catch { info = null; }
           if (!info || (item.width && (item.width !== info.width || item.height !== info.height))) {
             result.failures.push({ ref: item.file, reason: 'master-invalid' }); break; // sin gasto; requiere revisión manual
           }
@@ -243,7 +250,7 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
           let live = null;
           const bytes = await timed((async () => {
             const out = await images.input(new Response(master.bytes).body)
-              .transform({ width, fit: 'scale-down' }).output({ format: 'image/webp', quality: 85 });
+              .transform({ width, fit: 'scale-down' }).output({ format: 'image/webp', quality: 85, anim: false });
             const response = out.response(); live = response;
             if (!response?.ok || response.headers.get('content-type')?.split(';')[0] !== 'image/webp') throw new Error(`images-http-${response?.status || 500}`);
             // La lectura completa del cuerpo cuenta dentro del mismo plazo.
@@ -254,7 +261,7 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
           const expectedWidth = Math.min(master.info.width, width);
           const expectedHeight = Math.max(1, Math.round(master.info.height * expectedWidth / master.info.width));
           if (dimensions.width !== expectedWidth || Math.abs(dimensions.height - expectedHeight) > 1) throw new Error('dimensions-or-aspect-ratio-mismatch');
-          const digest = sha256(bytes);
+          const digest = await sha256(bytes);
           const stored = await bucket.put(key, bytes, {
             onlyIf: { etagDoesNotMatch: '*' },
             httpMetadata: { contentType: 'image/webp', cacheControl: 'public, max-age=31536000, immutable' },

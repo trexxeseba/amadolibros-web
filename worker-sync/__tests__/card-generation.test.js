@@ -129,7 +129,7 @@ test('happy path: attempts are persisted before Images, v2 keys/metadata exact, 
   assert.equal(small.customMetadata.encoder, 'cloudflare-images'); assert.equal(small.customMetadata.recipe, 'v2-480-q85');
   assert.equal(small.customMetadata.master_sha256, hash); assert.equal(small.customMetadata.sha256, sha(small.bytes));
   assert.equal(small.httpMetadata.contentType, 'image/webp');
-  assert.ok(f.images.calls.every(c => c.output.format === 'image/webp' && c.output.quality === 85 && c.transform.fit === 'scale-down'));
+  assert.ok(f.images.calls.every(c => c.output.format === 'image/webp' && c.output.quality === 85 && c.output.anim === false && c.transform.fit === 'scale-down'));
   // Only the ledger and v2 variant keys were ever written, only to the preview bucket.
   assert.ok(f.preview.log.filter(([op]) => op === 'put').every(([, k]) => k === ledgerKey('2026-10') || k.startsWith('covers/variants/v2/')));
   assert.equal(f.production.log.filter(([op]) => op === 'put').length, 0, 'source bucket is read-only');
@@ -281,7 +281,7 @@ test('closed plan: unapproved, tampered, duplicated or open-ended plans never ru
     p => { p.items[0].file = '../x.png'; }, p => { p.items = []; }, p => { p.schema = 'x'; }, p => { p.items[0].size = 9e9; }];
   for (const mutate of bad) {
     const p = structuredClone(f.plan); mutate(p); p.items_sha256 = sha(JSON.stringify(p.items));
-    assert.throws(() => validateGenerationPlan(p, p.items_sha256), /invalid-plan|plan-not-approved/);
+    await assert.rejects(validateGenerationPlan(p, p.items_sha256), /invalid-plan|plan-not-approved/);
   }
   assert.equal(f.images.calls.length, 0);
 });
@@ -405,4 +405,42 @@ test('relative cap: a pilot ledger may spend at most maxNewAttempts even when th
   const tampered = JSON.parse(new TextDecoder().decode(entry.bytes)); tampered.max_new_attempts = 101; // above the ceiling => invalid ledger
   h.preview.store.set(key, { ...entry, bytes: new TextEncoder().encode(JSON.stringify(tampered)) });
   assert.equal((await h.run({ usage: usageReport(T0, 0) })).stopped, 'ledger-unavailable');
+});
+
+test('persistent floor: a later, lower usage report never frees allowance already observed as spent', async () => {
+  const f = setup({ cap: 10, prior: 0 }); await f.init();
+  const first = await f.run({ usage: usageReport(T0, 9), limit: 5 });
+  assert.equal(first.attempts, 1); assert.equal(first.stopped, 'budget-exhausted');
+  assert.deepEqual((await f.ledger()).usage_floor, { billed: 9, consumed_at: 0 });
+  for (const lower of [3, 0, 9, 8]) {
+    const again = await f.run({ usage: usageReport(T0, lower), limit: 5 });
+    assert.equal(again.attempts, 0, `report of ${lower} after 9 must not reopen budget`);
+    assert.equal(again.stopped, 'budget-exhausted');
+  }
+  assert.equal(f.images.calls.length, 1);
+  const ledger = await f.ledger();
+  assert.equal(ledger.usage_floor.billed, 9, 'floor kept'); assert.equal(ledger.last_usage.billed_transformations, 8, 'audit trail keeps the latest report');
+  // A higher report raises the floor.
+  await f.run({ usage: usageReport(T0, 10) }); // equals floor 9 + our 1 attempt: nothing new, floor unchanged
+  assert.deepEqual((await f.ledger()).usage_floor, { billed: 9, consumed_at: 0 });
+  await f.run({ usage: usageReport(T0, 11) });
+  assert.deepEqual((await f.ledger()).usage_floor, { billed: 11, consumed_at: 1 }, 'a higher account report raises the floor');
+});
+
+test('persistent floor counts our own attempts since the observation and survives restarts', async () => {
+  const f = setup({ cap: 12, prior: 0 }); await f.init();
+  const a = await f.run({ usage: usageReport(T0, 8), limit: 2 });
+  assert.equal(a.attempts, 2);
+  // Account still reports 8 (billing lag): the floor plus our two attempts is 10, so only two more fit.
+  const b = await f.run({ usage: usageReport(T0, 8), limit: 10 });
+  assert.equal(b.attempts, 2); assert.equal(b.stopped, 'budget-exhausted');
+  assert.equal(f.images.calls.length, 4);
+});
+
+test('a ledger with a corrupted floor is invalid and stops generation', async () => {
+  const f = setup(); await f.init();
+  const key = ledgerKey('2026-10'); const entry = f.preview.store.get(key);
+  const ledger = JSON.parse(new TextDecoder().decode(entry.bytes)); ledger.usage_floor = { billed: -1, consumed_at: 0 };
+  f.preview.store.set(key, { ...entry, bytes: new TextEncoder().encode(JSON.stringify(ledger)) });
+  assert.equal((await f.run()).stopped, 'ledger-unavailable'); assert.equal(f.images.calls.length, 0);
 });
