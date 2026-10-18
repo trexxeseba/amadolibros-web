@@ -87,3 +87,18 @@ $('minimum').addEventListener('click',async()=>{
  }catch(error){$('minimum-result').textContent=error.message+' Las tandas siguen pausadas. Volvé a comprobar para continuar.';}
  finally{busy=false;$('minimum').disabled=false;$('start').disabled=!feed&&!state?.run;}
 });
+
+$('availability').addEventListener('click',async()=>{
+ if(busy)return;stop();busy=true;$('availability').disabled=true;
+ try{
+  render(await request('pause',{run_id:run}));
+  for(let i=0;i<5;i++){
+   const result=await request('repair_availability',{run_id:run});render(result);
+   if(result.availability_error){$('availability-result').textContent='Mercado Libre no confirmó el cambio: '+JSON.stringify(result.availability_error)+'. Las tandas siguen pausadas.';break;}
+   $('availability-result').textContent=result.availability_checked?`${result.availability_checked.item_id}: 18 días confirmados. Faltan ${result.availability_checked.remaining}.`:'Comprobando disponibilidad…';
+   if(result.availability_complete){$('availability-result').textContent='Las cinco tienen 18 días confirmados en Mercado Libre. Verificá las cinco del piloto antes de continuar las tandas.';break;}
+   await new Promise(resolve=>setTimeout(resolve,2000));
+  }
+ }catch(error){$('availability-result').textContent=error.message+' Las tandas siguen pausadas.';}
+ finally{busy=false;$('availability').disabled=false;$('start').disabled=!feed&&!state?.run;}
+});

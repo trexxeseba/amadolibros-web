@@ -142,7 +142,8 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
     const ids=(item.attributes??[]).filter(a=>['ISBN','GTIN','EAN'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]).filter(Boolean);
     const matches=ids.some(value=>{try{return canonicalIsbn(value)===job.isbn;}catch{return false;}})||item.seller_custom_field==='AMADO-AR-'+job.isbn||(item.attributes??[]).some(a=>a.id==='SELLER_SKU'&&a.value_name==='AMADO-AR-'+job.isbn);
     const checks={seller:String(item.seller_id)===VINTAGE_SELLER_ID,identity:item.id===job.item_id&&matches,price:item.price===job.price&&item.currency_id==='UYU',quantity:item.available_quantity===1,availability:(item.sale_terms??[]).some(t=>t.id==='MANUFACTURING_TIME'&&(Number(t.value_struct?.number)===before.policy.availabilityDays||parseInt(t.value_name,10)===before.policy.availabilityDays)),active:item.status==='active'};
-    result={ok:Object.values(checks).every(Boolean),item_id:job.item_id,status:item.status,price:item.price,quantity:item.available_quantity,checks};
+    const availability=(item.sale_terms??[]).find(t=>t.id==='MANUFACTURING_TIME');
+    result={ok:Object.values(checks).every(Boolean),item_id:job.item_id,status:item.status,price:item.price,quantity:item.available_quantity,availability:{expected_days:before.policy.availabilityDays,value_name:availability?.value_name??null,value_struct:availability?.value_struct??null},checks};
    }catch(e){result={ok:false,item_id:job.item_id,error:e instanceof PublicationError?e.code:'verification_unavailable'};}
    await s.stmt('INSERT INTO ml_pub_verifications(run_id,isbn,checked_at,result_json) VALUES(?,?,?,?) ON CONFLICT(run_id,isbn) DO UPDATE SET checked_at=excluded.checked_at,result_json=excluded.result_json',run_id,job.isbn,now(),JSON.stringify(result)).run();
    if(result.error)break;

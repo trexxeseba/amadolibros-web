@@ -15,6 +15,7 @@ const SCHEMA=[
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_identifiers (run_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,PRIMARY KEY(run_id,isbn,item_id))",
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_cache (url TEXT PRIMARY KEY,expires_at INTEGER NOT NULL,response_json TEXT NOT NULL)",
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_policy_amendments (run_id TEXT NOT NULL,old_hash TEXT NOT NULL,new_hash TEXT NOT NULL,old_policy_json TEXT NOT NULL,new_policy_json TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(run_id,new_hash))",
+ "CREATE TABLE IF NOT EXISTS ml_vintage_pub_availability_amendments (run_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,before_json TEXT NOT NULL,after_json TEXT,state TEXT NOT NULL,checked_at INTEGER NOT NULL,PRIMARY KEY(run_id,isbn))",
 ];
 const initialized=new WeakSet();
 export class VintageBulkStore extends VintageStore {
@@ -105,6 +106,36 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
  const scoped=env=>({...env,USER_ID:VINTAGE_SELLER_ID,ML_PUBLISH_QUEUE_ENABLED:'false'});
  const service=createPublicationService({sellerId:VINTAGE_SELLER_ID,api:bulkApi,storeFactory:store,now,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
  const supplier=createSbsStock({now});
+ async function repairAvailability(env,s){
+  const run=await s.run(BULK_RUN),pilot=await s.run(PILOT_RUN),lock=crypto.randomUUID();
+  if(run?.state!=='paused'||pilot?.state!=='complete')fail('pause_before_availability_change');
+  const leased=await s.stmt("UPDATE ml_pub_runs SET lease_id=?,lease_until=? WHERE id=? AND state='paused' AND lease_until<? RETURNING id",lock,now()+300000,BULK_RUN,now()).first();
+  if(!leased)fail('run_busy');
+  try{
+   const days=JSON.parse(pilot.policy_json).availabilityDays;
+   if(days!==18)fail('availability_policy_changed');
+   const job=await s.stmt("SELECT j.isbn,j.item_id FROM ml_pub_jobs j LEFT JOIN ml_pub_availability_amendments a ON a.run_id=j.run_id AND a.isbn=j.isbn AND a.item_id=j.item_id WHERE j.run_id=? AND j.state='published' AND (a.state IS NULL OR a.state!='confirmed') ORDER BY j.isbn LIMIT 1",PILOT_RUN).first();
+   if(!job)return {...await status(env),availability_complete:true};
+   if(!/^MLU\d+$/.test(job.item_id))fail('invalid_item_id');
+   const me=await api.call(env,'/users/me');if(String(me.id)!==VINTAGE_SELLER_ID||me.site_id!=='MLU')fail('seller_mismatch',403);
+   const path='/items/'+job.item_id,term=item=>(item.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME'),value=item=>Number(term(item)?.value_struct?.number??parseInt(term(item)?.value_name,10));
+   const check=item=>{if(item.id!==job.item_id||String(item.seller_id)!==VINTAGE_SELLER_ID||!identifiers(item).includes(job.isbn))fail('availability_item_identity_mismatch',403);requireVintagePrice(item);};
+   const before=await api.call(env,path);check(before);
+   const safeTerm=item=>({value_name:term(item)?.value_name??null,value_struct:term(item)?.value_struct??null});
+   await s.stmt("INSERT INTO ml_pub_availability_amendments VALUES(?,?,?,?,NULL,'checking',?) ON CONFLICT(run_id,isbn) DO UPDATE SET state='checking',checked_at=excluded.checked_at",PILOT_RUN,job.isbn,job.item_id,JSON.stringify(safeTerm(before)),now()).run();
+   let after=before;
+   if(value(before)!==days){
+    await s.stmt('DELETE FROM ml_pub_verifications WHERE run_id=? AND isbn=?',PILOT_RUN,job.isbn).run();
+    try{await api.call(env,path,{method:'PUT',body:{sale_terms:[{id:'MANUFACTURING_TIME',value_name:days+' días'}]}});}
+    catch(e){return {...await status(env),availability_complete:false,availability_error:{item_id:job.item_id,code:e instanceof PublicationError?e.code:'availability_request_failed',status:e.status??503,before:safeTerm(before)}};}
+    after=await api.call(env,path);check(after);
+    if(value(after)!==days||after.price!==before.price)return {...await status(env),availability_complete:false,availability_error:{item_id:job.item_id,code:'availability_update_not_confirmed',before:safeTerm(before),after:safeTerm(after)}};
+   }
+   await s.stmt("UPDATE ml_pub_availability_amendments SET after_json=?,state='confirmed',checked_at=? WHERE run_id=? AND isbn=? AND item_id=?",JSON.stringify(safeTerm(after)),now(),PILOT_RUN,job.isbn,job.item_id).run();
+   const count=await s.stmt("SELECT COUNT(*) n FROM ml_pub_availability_amendments WHERE run_id=? AND state='confirmed'",PILOT_RUN).first();
+   return {...await status(env),availability_complete:count.n===5,availability_checked:{item_id:job.item_id,days,remaining:5-count.n}};
+  }finally{await s.release(BULK_RUN,lock);}
+ }
  async function applyMinimum(env,s){
   const run=await s.run(BULK_RUN),lock=crypto.randomUUID();
   if(run&&run.state!=='paused')fail('pause_before_price_change');
@@ -159,6 +190,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
   if(['begin','import','commit'].includes(action))return supplier(env,action,args);
   await s.initialize();
   if(action==='apply_minimum'){if(args.run_id!==BULK_RUN)fail('bulk_not_found',404);return applyMinimum(env,s);}
+  if(action==='repair_availability'){if(args.run_id!==BULK_RUN)fail('bulk_not_found',404);return repairAvailability(env,s);}
   if(action==='start'){
    if(!uuid(args.feed_id))fail('invalid_feed_id',400);
    const pilot=await s.run(PILOT_RUN),pilotTarget=await s.target(PILOT_RUN);
