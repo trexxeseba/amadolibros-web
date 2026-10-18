@@ -19,6 +19,7 @@ const EMAIL_TIMEOUT_MS = 7000;
 const PANEL_URL = 'https://www.amadolibros.com/panel';
 const UNPAID_WINDOW_DAYS = 7;
 const MAX_ROWS = 15;
+const MAX_MISSES = 8;
 const URUGUAY_OFFSET_MS = 3 * 60 * 60 * 1000; // UTC-3 todo el año
 
 function cleanString(value) {
@@ -55,7 +56,7 @@ async function all(db, sql, params = []) {
 export async function loadDigestData(db, now = new Date()) {
   const yesterday = montevideoDay(now, 1);
   const since = new Date(now.getTime() - UNPAID_WINDOW_DAYS * 86_400_000).toISOString();
-  const [toShip, unpaid, sold, created] = await Promise.all([
+  const [toShip, unpaid, sold, created, misses] = await Promise.all([
     all(db, `SELECT public_code, buyer_name, delivery_type, payable_total_uyu, paid_at FROM orders
               WHERE payment_status = 'approved' AND fulfilled_at IS NULL AND cancelled_at IS NULL
               ORDER BY paid_at ASC LIMIT 100`),
@@ -65,6 +66,9 @@ export async function loadDigestData(db, now = new Date()) {
     all(db, `SELECT COUNT(*) AS n, COALESCE(SUM(COALESCE(paid_amount_uyu, payable_total_uyu)), 0) AS total FROM orders
               WHERE payment_status = 'approved' AND paid_at >= ? AND paid_at < ?`, [yesterday.startIso, yesterday.endIso]),
     all(db, `SELECT COUNT(*) AS n FROM orders WHERE created_at >= ? AND created_at < ?`, [yesterday.startIso, yesterday.endIso]),
+    // Demanda sin atender: lo que buscaron ayer y no estaba. Sin datos de la
+    // persona (la tabla solo guarda el texto y un contador).
+    all(db, `SELECT query, count FROM search_misses WHERE date = ? ORDER BY count DESC, query ASC LIMIT 30`, [yesterday.date]).catch(() => []),
   ]);
   return {
     yesterday,
@@ -73,6 +77,8 @@ export async function loadDigestData(db, now = new Date()) {
     soldCount: Number(sold[0]?.n || 0),
     soldTotal: Number(sold[0]?.total || 0),
     createdCount: Number(created[0]?.n || 0),
+    // Las pruebas internas («zzz…») no son demanda.
+    misses: misses.filter(row => !/^zzz/i.test(cleanString(row.query))).slice(0, MAX_MISSES),
   };
 }
 
@@ -111,6 +117,11 @@ export function buildDigestEmail(data) {
     ...(unpaid.length > MAX_ROWS ? [`  … y ${unpaid.length - MAX_ROWS} más en el panel.`] : []),
     unpaid.length ? '  En cada pedido hay un botón para escribirle por WhatsApp con el mensaje ya armado.' : '',
     '',
+    ...(data.misses?.length ? [
+      `BUSCARON Y NO ENCONTRARON — oportunidades para conseguir (${data.misses.length})`,
+      ...data.misses.map(r => `- «${r.query}»${Number(r.count) > 1 ? ` (${r.count} veces)` : ''}`),
+      '',
+    ] : []),
     'AYER',
     `- Pedidos nuevos: ${data.createdCount}`,
     `- Ventas cobradas: ${data.soldCount}${data.soldCount ? ` (${money(data.soldTotal)})` : ''}`,
@@ -136,6 +147,8 @@ export function buildDigestEmail(data) {
     ${section('Para despachar', ship.length, ship, 'Nada pendiente. ¡Todo despachado!')}
     ${section('Sin pagar: escribile al cliente', unpaid.length, unpaid, 'Ninguno. Todos los pedidos están pagos.', r => PROVIDER[r.payment_provider] || '')}
     ${unpaid.length ? '<p style="font-size:13px;color:#666">En cada pedido hay un botón para escribirle por WhatsApp con el mensaje ya armado.</p>' : ''}
+    ${data.misses?.length ? `<h2 style="font-size:17px;margin:24px 0 6px">Buscaron y no encontraron <span style="color:#888;font-weight:normal">(oportunidades para conseguir)</span></h2>
+    <ul style="margin:4px 0;padding-left:20px">${data.misses.map(r => `<li>«${escapeHtml(r.query)}»${Number(r.count) > 1 ? ` <span style="color:#888">(${escapeHtml(r.count)} veces)</span>` : ''}</li>`).join('')}</ul>` : ''}
     <h2 style="font-size:17px;margin:24px 0 6px">Ayer</h2>
     <p style="margin:4px 0">Pedidos nuevos: <strong>${data.createdCount}</strong><br>
        Ventas cobradas: <strong>${data.soldCount}</strong>${data.soldCount ? ` (${escapeHtml(money(data.soldTotal))})` : ''}</p>
