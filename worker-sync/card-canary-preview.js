@@ -37,7 +37,7 @@ export default {async fetch(request,env,execution){
   if(!ids.split(',').includes(id))return new Response('ID outside batch',{status:400});
   const cover=await findPreviewCover(ctx,id,0,source);
   const current=cover?`https://card-canary.amadolibros-web.pages.dev/preview-cover/${id}/0/${cover.sha256}.${cover.extension}`:null;
-  const item={id,status:'active',available_quantity:1,pictures:[source]};
+  const item={id,status:request.headers.get('x-candidate-status')||'active',available_quantity:request.headers.get('x-candidate-status')==='paused'?0:1,pictures:[source]};
   return Response.json({full:await readyCardVariantSource(ctx,item,current),compact:await readyCardVariantSource(ctx,{...item,pictures:undefined,thumbnail:source},current),current_hash:cover?.sha256||null,index:ctx.env.CARD_VARIANTS_INDEX_SHA256});
  }
  let r;
