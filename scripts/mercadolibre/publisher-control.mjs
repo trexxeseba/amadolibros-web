@@ -52,7 +52,7 @@ function sampleSupplierInput(input){
 }
 async function refreshFeed(){
  const rawUrl=process.env.SUPPLIER_FEED_URL;
- if(!rawUrl){console.log(JSON.stringify({state:'supplier_source_not_configured'}));return;}
+ if(!rawUrl)throw Error('SUPPLIER_FEED_URL is not configured');
  let source;try{source=new URL(rawUrl);}catch{throw Error('Unsupported supplier source');}const host=source.hostname.replace(/^\[|\]$/g,'');
  if(source.protocol!=='https:'||source.username||source.password||isIP(host)||host==='localhost'||/\.(local|internal)$/.test(host))throw Error('Unsupported supplier source');
  const directory=await mkdtemp(join(tmpdir(),'amado-supplier-'));

@@ -10,9 +10,23 @@ import { createVintagePilotPage } from '../panel/meli-vintage-piloto.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
 import { runPreflight } from '../../astro-front/public/assets/meli-vintage-preflight.js';
 import { MercadoLibreError } from '../../worker-sync/publication-meli.js';
+import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 
 const vintage='2341378249',books='440298103',app='4741021817925208';
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:40,freightUsdKg:10,laborUyu:0,margin:.2,mlFee:.15,deliveryUyu:200,minimumContributionUyu:100,minimumSaleUyu:1000,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
+
+test('Vintage can read new isolated SBS stock without changing the stock selected by Libros',async t=>{
+ const f=await fixture(t),feed_id=crypto.randomUUID(),supplier=createSbsStock({now:()=>f.clock.value});
+ const dump=()=>JSON.stringify(['ml_pub_feeds','ml_pub_stock','ml_pub_runs','ml_pub_jobs','ml_pub_receipts'].map(table=>f.db.sqlite.prepare(`SELECT * FROM ${table}`).all()));
+ const before=dump();
+ await supplier(f.env,'begin',{feed_id,source_date:new Date(f.clock.value).toISOString(),source_sha256:'e'.repeat(64),expected_rows:f.rows.length});
+ await supplier(f.env,'import',{feed_id,rows:f.rows});await supplier(f.env,'commit',{feed_id});
+ const sources=await f.pilot.sources(f.env);assert.ok(sources.feeds.some(feed=>feed.id===feed_id));
+ await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id});
+ const snapshot=await f.pilot.snapshot(f.env);assert.equal(snapshot.feed.id,feed_id);assert.ok(snapshot.sample.length>0);
+ assert.equal(dump(),before);assert.equal(f.calls.create.length,0);
+ assert.equal((await f.s.stmt("SELECT id FROM ml_pub_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 1").first()).id,f.feed);
+});
 function database(t) {
  const sqlite=new DatabaseSync(':memory:');t.after(()=>sqlite.close());
  const statement=(sql,args=[])=>({sql,args,bind(...values){return statement(sql,values);},async first(){return sqlite.prepare(sql).get(...args)??null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
