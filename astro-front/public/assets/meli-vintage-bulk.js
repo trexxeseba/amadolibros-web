@@ -1,3 +1,4 @@
+import {importBulkRows} from './meli-vintage-bulk-import.mjs';
 const path='/panel/meli-vintage-lote',run='23413782-4900-4000-8000-000000010000';
 const $=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=null,feed=localStorage.getItem('vintage-bulk-feed'),running=false,busy=false,timer=null,batchStart=null;
@@ -38,7 +39,7 @@ async function loop(){
 }
 async function parse(file){
  if(!file||!file.name.toLowerCase().endsWith('.xlsx')||file.size>64*1024*1024)throw Error('Elegí el Excel de stock de SBS, de hasta 64 MB.');
- const buffer=await file.arrayBuffer(),worker=new Worker('/assets/meli-vintage-stock-worker.js',{type:'module'});
+ const buffer=await file.arrayBuffer(),worker=new Worker('/assets/meli-vintage-bulk-worker.js',{type:'module'});
  return new Promise((resolve,reject)=>{const end=()=>{clearTimeout(timeout);worker.terminate();},timeout=setTimeout(()=>{end();reject(Error('El Excel tardó demasiado en leerse.'));},120000);
  worker.onmessage=({data})=>{end();data.ok?resolve(data.result):reject(Error(data.error));};worker.onerror=()=>{end();reject(Error('No se pudo leer el Excel.'));};worker.postMessage({buffer,full:true},[buffer]);});
 }
@@ -53,7 +54,7 @@ $('load').addEventListener('click',async()=>{
   feed=`${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
   const begin=await request('begin',{feed_id:feed,source_date:input.source_date,source_sha256:hash,expected_rows:input.rows.length});
   if(begin.state!=='ready'){
-   for(let offset=0;offset<input.rows.length;offset+=200){await request('import',{feed_id:feed,rows:input.rows.slice(offset,offset+200)});$('upload').textContent=`Importando stock privado de Vintage: ${Math.min(offset+200,input.rows.length)} / ${input.rows.length} ISBN. Todavía no publica.`;}
+   await importBulkRows({rows:input.rows,feed_id:feed,send:request,onProgress:(done,total)=>{$('upload').textContent=`Importando stock privado de Vintage: ${done} / ${total} ISBN. Todavía no publica.`;}});
    await request('commit',{feed_id:feed});
   }
   localStorage.setItem('vintage-bulk-feed',feed);
