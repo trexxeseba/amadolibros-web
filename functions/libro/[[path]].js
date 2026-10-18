@@ -732,11 +732,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         Consultar si podemos conseguirlo
       </a>
       ${waitlistSiteKey ? `<form class="waitlist-form" id="aviso-stock" novalidate>
-        <label for="waitlist-email">O dejanos tu correo y te avisamos si vuelve</label>
+        <label for="waitlist-email">O dejanos tu WhatsApp o correo y te avisamos</label>
         <div class="waitlist-row">
-          <input id="waitlist-email" name="email" type="email" inputmode="email"
+          <input id="waitlist-email" name="email" type="text" inputmode="email"
                  autocomplete="email" maxlength="254" required
-                 placeholder="tu@email.com">
+                 placeholder="099 123 456 o tu@email.com">
           <button class="btn btn-waitlist" type="submit">Avisame cuando llegue</button>
         </div>
         <div class="waitlist-hp" aria-hidden="true">
@@ -1084,7 +1084,7 @@ ${!inStock && waitlistSiteKey ? `
     var email=form.elements.email.value.trim();
     var tokenInput=form.querySelector('input[name="cf-turnstile-response"]');
     var token=tokenInput?tokenInput.value:'';
-    if(!email){show('Ingresá tu correo.','is-error');form.elements.email.focus();return;}
+    if(!email){show('Ingresá tu WhatsApp o correo.','is-error');form.elements.email.focus();return;}
     if(!token){show('Completá la verificación antes de continuar.','is-error');return;}
     button.disabled=true;
     button.textContent='Guardando…';
