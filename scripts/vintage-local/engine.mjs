@@ -45,7 +45,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  if(!stockIsFresh(input.source_date)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
- let api,tokenCache=null;
+ let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false;
  const limited=createVintageBulkFetch();
  api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  class LocalStore extends VintageBulkStore{
@@ -53,11 +53,12 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    if(validateOnly)throw new Error('validation_cannot_reserve');
    const result=await broker('reserve',{isbn,policy_hash:c.policy_hash});
    if(!result.reserved){const r=result.receipt;if(r)await this.stmt('INSERT OR IGNORE INTO ml_pub_receipts VALUES(?,?,?,?,?,?,?)',SELLER,r.isbn,r.state,r.item_id??null,r.run_id,r.created_at,r.updated_at).run();return null;}
+   reservationsThisProcess++;
    return super.reserve(seller,isbn,runId,now,cap,lease);
   }
   async receiptState(seller,isbn,state,itemId=null){
    if(state==='published'){
-    const row=await this.stock(c.feed_id,isbn);checkCreated(await api.call(env,'/items/'+itemId),isbn,quoteMercadoLibre(row,policy).price);
+    try{const row=await this.stock(c.feed_id,isbn);checkCreated(await api.call(env,'/items/'+itemId),isbn,quoteMercadoLibre(row,policy).price);}catch(error){failedReadback=true;throw error;}
    }
    await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});return super.receiptState(seller,isbn,state,itemId);
   }
@@ -113,9 +114,11 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
   for(;;){
    const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);if(remote.daily_created>=1000&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
-   if(!validateOnly&&(remote.published_total>=target||limitNew&&remote.published_total-start>=limitNew))break;
+   if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
+   if(failedReadback)status.state='stopped_item_readback_failed';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
+   if(failedReadback)break;
    if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
    const activeRun=await s.run(BULK_RUN);
    let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=1000?60000:0);
@@ -123,7 +126,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  return {state:(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
+  return {state:failedReadback?'stopped_item_readback_failed':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
  }finally{db.close();}
 }
 async function main(){

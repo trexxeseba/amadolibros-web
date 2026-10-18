@@ -36,6 +36,20 @@ async function fixture(t){
  const books=()=>JSON.stringify(['ml_pub_runs','ml_pub_jobs','ml_pub_receipts','ml_pub_feeds','ml_pub_stock'].map(table=>db.sqlite.prepare('SELECT * FROM '+table).all()));
  return {db,env,s,clock,rows,feed,hash,bulk,args,api,calls,books};
 }
+test('35 percent amendment changes only unreserved Vintage jobs and preserves published prices and Books',async t=>{
+ const f=await fixture(t),books=f.books(),pilot=JSON.stringify(await f.s.run(PILOT_RUN));
+ await f.bulk.command(f.env,'start',f.args);
+ await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});
+ await f.bulk.command(f.env,'pause',{run_id:BULK_RUN});
+ const published=JSON.stringify((await f.s.stmt("SELECT * FROM ml_pub_jobs WHERE run_id=? AND state='published'",BULK_RUN).all()).results);
+ const result=await f.bulk.command(f.env,'apply_margin_35',{run_id:BULK_RUN});
+ assert.equal(JSON.parse((await f.s.run(BULK_RUN)).policy_json).margin,.35);
+ assert.equal(f.books(),books);assert.equal(JSON.stringify(await f.s.run(PILOT_RUN)),pilot);
+ assert.equal(JSON.stringify((await f.s.stmt("SELECT * FROM ml_pub_jobs WHERE run_id=? AND state='published'",BULK_RUN).all()).results),published);
+ await f.bulk.command(f.env,'start',{feed_id:f.feed,policy_hash:result.policy_hash});
+ assert.equal((await f.s.run(BULK_RUN)).state,'publishing');
+});
+
 test('bulk preserves Books and pilot, excludes five receipts, retains pilot overflow, targets 9995 additional, and sends one create per tick',async t=>{
  const f=await fixture(t),before=f.books();let state=await f.bulk.command(f.env,'start',f.args);
  assert.equal(state.summary.target_published,9995);assert.equal(state.published_total,5);assert.equal(f.calls.create.length,0);
@@ -76,6 +90,9 @@ test('persistent limiter spaces requests and honors HTTP-date Retry-After withou
  await rate(env,'https://api.mercadolibre.com/test',{});await rate(env,'https://api.mercadolibre.com/test',{});await rate(env,'https://api.mercadolibre.com/test',{});
  assert.ok(sent[1]-sent[0]>=2000);assert.ok(sent[2]-sent[1]>=2000);assert.ok(sleeps.length>=2);
  await assert.rejects(()=>rate(env,'https://api.mercadolibre.com/test',{}),e=>e.status===429&&e.retryAfter>=239);assert.equal(sent.length,3);
+ assert.equal((await db.prepare('SELECT strikes FROM ml_vintage_bulk_rate WHERE id=1').first()).strikes,1);
+ clock.value+=250000;await rate(env,'https://api.mercadolibre.com/test',{});
+ assert.equal((await db.prepare('SELECT strikes FROM ml_vintage_bulk_rate WHERE id=1').first()).strikes,0);
 });
 test('the campaign stops at exactly 10000 including the pilot and never promotes the remaining candidates',async t=>{
  const f=await fixture(t);await f.bulk.command(f.env,'start',f.args);

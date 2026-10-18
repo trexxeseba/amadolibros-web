@@ -89,6 +89,16 @@ $('minimum').addEventListener('click',async()=>{
  finally{busy=false;$('minimum').disabled=false;$('start').disabled=!feed&&!state?.run;}
 });
 
+$('margin')?.addEventListener('click',async()=>{
+ if(busy)return;stop();busy=true;$('margin').disabled=true;
+ try{
+  render(await request('pause',{run_id:run}));
+  render(await request('apply_margin_35',{run_id:run}));
+  $('margin-result').textContent='Margen 35% aplicado a pendientes. Lo ya publicado conserva su precio. Continuá cuando quieras.';
+ }catch(error){$('margin-result').textContent=error.message+' El lote sigue pausado.';}
+ finally{busy=false;$('margin').disabled=false;}
+});
+
 $('availability').addEventListener('click',async()=>{
  if(busy)return;stop();busy=true;$('availability').disabled=true;
  try{
