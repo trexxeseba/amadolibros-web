@@ -51,6 +51,7 @@ export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Da
    const again=await db.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
    if(again.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((again.cooldown-now())/1000));
    const response=await fetcher(url,options);
+   if(response.ok&&rate.strikes>0)await db.prepare('UPDATE ml_vintage_bulk_rate SET strikes=0 WHERE id=1 AND cooldown<=?').bind(now()).run();
    if(cacheable&&response.ok){try{const text=await response.clone().text();if(text.length<=524288){JSON.parse(text);await db.prepare('INSERT INTO ml_vintage_bulk_cache(url,expires_at,response_json) VALUES(?,?,?) ON CONFLICT(url) DO UPDATE SET expires_at=excluded.expires_at,response_json=excluded.response_json').bind(url,now()+1800000,text).run();}}catch{}}
    if(response.status===429){
     const header=response.headers.get('retry-after'),seconds=Number(header),serverWait=Number.isFinite(seconds)?seconds*1000:Math.max(0,Date.parse(header)-now())||0;
@@ -192,6 +193,24 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
   await s.initialize();
   if(action!=='pause'&&(await localExecutorState(env,now())).active)fail('local_executor_active_pause_it_first');
   if(action==='apply_minimum'){if(args.run_id!==BULK_RUN)fail('bulk_not_found',404);return applyMinimum(env,s);}
+  if(action==='apply_margin_35'){
+   if(args.run_id!==BULK_RUN)fail('bulk_not_found',404);
+   const run=await s.run(BULK_RUN),lock=crypto.randomUUID();
+   if(!run||run.state!=='paused')fail('pause_before_price_change');
+   const leased=await s.stmt("UPDATE ml_pub_runs SET lease_id=?,lease_until=? WHERE id=? AND state='paused' AND lease_until<? RETURNING id",lock,now()+300000,BULK_RUN,now()).first();
+   if(!leased)fail('run_busy');
+   try{
+    const unresolved=await s.stmt("SELECT COUNT(*) n FROM ml_pub_receipts WHERE run_id=? AND state!='published'",BULK_RUN).first();
+    if(unresolved.n)fail('reconcile_existing_receipts_before_margin_change');
+    const policy=vintagePolicy({...JSON.parse(run.policy_json),margin:.35}),hash=await policyHash(policy);
+    await env.ORDERS_DB.batch([
+     env.ORDERS_DB.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_policy_amendments VALUES(?,?,?,?,?,?)').bind(run.id,run.policy_hash,hash,run.policy_json,JSON.stringify(policy),now()),
+     s.stmt('UPDATE ml_pub_runs SET policy_json=?,policy_hash=?,approved_hash=?,updated_at=? WHERE id=? AND lease_id=?',JSON.stringify(policy),hash,hash,now(),run.id,lock),
+     s.stmt("UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0,error_code=NULL WHERE run_id=? AND item_id IS NULL AND state IN ('pending','validated','retry') AND NOT EXISTS(SELECT 1 FROM ml_vintage_pub_receipts r WHERE r.seller_id=? AND r.isbn=ml_vintage_pub_jobs.isbn)",run.id,VINTAGE_SELLER_ID),
+    ]);
+   }finally{await s.stmt('UPDATE ml_pub_runs SET lease_id=NULL,lease_until=0 WHERE id=? AND lease_id=?',BULK_RUN,lock).run();}
+   return {...await status(env),margin:.35,policy_hash:(await s.run(BULK_RUN)).policy_hash};
+  }
   if(action==='repair_availability'){if(args.run_id!==BULK_RUN)fail('bulk_not_found',404);return repairAvailability(env,s);}
   if(action==='start'){
    if(!uuid(args.feed_id))fail('invalid_feed_id',400);
@@ -199,7 +218,8 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
    if(pilot?.state!=='complete'||pilotTarget?.target_published!==5||await s.publishedCount(PILOT_RUN)!==5)fail('pilot_not_complete');
    const verified=await s.stmt('SELECT result_json FROM ml_pub_verifications WHERE run_id=?',PILOT_RUN).all();
    if(verified.results.length!==5||verified.results.some(v=>JSON.parse(v.result_json).ok!==true))fail('pilot_not_verified');
-   const policy=vintagePolicy(JSON.parse(pilot.policy_json)),hash=await policyHash(policy),feed=await s.feed(args.feed_id);
+   const currentRun=await s.run(BULK_RUN);
+   const policy=vintagePolicy(JSON.parse(currentRun?.policy_json??pilot.policy_json)),hash=await policyHash(policy),feed=await s.feed(args.feed_id);
    if(!feed||feed.state!=='ready'||!stockIsFresh(feed.source_date,now())||feed.expected_rows<10000)fail('bulk_feed_not_ready');
    if(args.policy_hash!==hash)fail('policy_changed');
    let run=await s.run(BULK_RUN);

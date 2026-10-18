@@ -75,4 +75,8 @@ test('local engine validates without POST and resumes a saved publication databa
  assert.equal(JSON.parse(await fs.readFile(path.join(temp,'items.preview.json'),'utf8')).filter(x=>x.state==='validated').length,3);
  result=await run({...options,limitNew:1});assert.equal(result.published_total,6);assert.equal(posts,1);
  result=await run(options);assert.equal(result.published_total,8);assert.equal(posts,3);assert.equal(new Set([...items.values()].map(x=>x.seller_custom_field)).size,3);
+ const unsafeApi={...api,async call(e,url){const value=await api.call(e,url);return url.startsWith('/items/')?{...value,status:'under_review'}:value;}};
+ await run({...options,directory:path.join(temp,'readback-failure'),target:1000,limitNew:3,apiFactory:()=>unsafeApi});
+ assert.equal(posts,4,'a failed readback must stop before creating another item');
+ assert.equal(JSON.parse(await fs.readFile(path.join(temp,'readback-failure','status.json'),'utf8')).state,'stopped_item_readback_failed');
 });
