@@ -10,7 +10,7 @@ const uuid=value=>typeof value==='string'&&/^[a-f0-9-]{36}$/.test(value);
 const error=(code,status=409)=>new PublicationError(code,status);
 // Background/browser continuation can only lease preflight. A concurrent owner
 // approval cannot turn a "validate only" request into a publishing tick.
-class VintageStore extends PublicationStore {
+export class VintageStore extends PublicationStore {
  scoped(sql){
   // New supplier snapshots are private to Vintage. Old pilots can still read
   // their immutable shared snapshot without rewriting any Libros record.

@@ -31,7 +31,7 @@ export function clonePreflightJob(job){
 }
 const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:run.policy_json,policy_hash:run.policy_hash,approved_hash:run.approved_hash??null,daily_cap:run.daily_cap,preflight_limit:run.preflight_limit}):null;
 
-export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null}={}){
+export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null,maxJobsPerTick=10,maxIndexSlicesPerTick=20}={}){
  const initialized=new WeakSet();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  function store(env){if(String(env.USER_ID)!==sellerId||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
@@ -61,7 +61,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    const feed=await s.feed(run.feed_id);
    if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now())){await state('stock_stale');return {state:'stock_stale'};}
    let index=JSON.parse(run.index_json);
-   while(!index.done&&now()<deadline&&processed<20){const slice=await api.indexSlice(env,index);index=await s.saveIndex(run.id,slice.index,slice.items,lease,now());processed++;}
+   while(!index.done&&now()<deadline&&processed<maxIndexSlicesPerTick){const slice=await api.indexSlice(env,index);index=await s.saveIndex(run.id,slice.index,slice.items,lease,now());processed++;}
    if(!index.done)return s.summary(run.id);
    const policy=validPolicy(JSON.parse(run.policy_json));
    await s.retryLegacyIdentityReviews(run.id,lease,now());
@@ -81,7 +81,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    const counts=await s.counts(run.id);let validated=counts.find(x=>x.state==='validated')?.n??0;
    if(!publishing&&validated>=run.preflight_limit){await state('ready');return s.summary(run.id);}
    processed=0;
-   while(now()<deadline&&processed<10){
+   while(now()<deadline&&processed<maxJobsPerTick){
     if(await finishTarget())break;
     const job=await s.nextJob(run.id,now(),publishing);if(!job){if(!await s.unfinished(run.id,publishing)){const terminal=await s.counts(run.id),needsReview=terminal.some(x=>['review','uncertain'].includes(x.state)&&x.n>0);await state(publishing?(needsReview?'complete_with_review':'complete'):'ready');}break;}
     processed++;

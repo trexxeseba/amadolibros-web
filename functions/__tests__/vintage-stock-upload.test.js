@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {deflateRawSync} from 'node:zlib';
-import {readSelectedStock,sourceDate} from '../../astro-front/public/assets/meli-vintage-xlsx.mjs';
+import {readSelectedStock,readFullStock,sourceDate} from '../../astro-front/public/assets/meli-vintage-xlsx.mjs';
 import {createVintageStockUpload} from '../panel/meli-vintage-stock.js';
 import {createVintagePilotPage} from '../panel/meli-vintage-piloto.js';
 import {createSessionToken,deriveSessionSecret,sessionCookieHeader} from '../_shared/panel-auth.js';
@@ -38,6 +38,11 @@ test('browser reader extracts exactly five rows, real source date and decoded sh
  assert.throws(()=>sourceDate('31/2/2026 01:00:00'),/invalid_supplier_date/);
 });
 
+test('full workbook parsing keeps real dates and excludes conflicting duplicate ISBNs',()=>{
+ const complete=readFullStock(workbook());assert.equal(complete.rows.length,5);assert.equal(complete.source_date,'2026-10-18T01:04:23-03:00');
+ const duplicate=readFullStock(workbook({duplicate:true}));assert.equal(duplicate.rows.length,4);assert.equal(duplicate.duplicate_isbns,1);assert.ok(!duplicate.rows.some(r=>r.isbn===isbns[0]));
+ assert.throws(()=>readFullStock(workbook({priceOnly:true})),/stock_columns_or_date_missing/);
+});
 test('browser reader refuses price lists, missing books, duplicates, missing stock and corrupt ZIP',()=>{
  for(const [options,code] of [[{priceOnly:true},'stock_columns_or_date_missing'],[{missing:true},'selected_isbn_missing'],[{duplicate:true},'duplicate_selected_isbn'],[{stock:'0'},'selected_book_without_stock']])assert.throws(()=>readSelectedStock(workbook(options),isbns),new RegExp(code));
  assert.throws(()=>readSelectedStock(Buffer.from('invalid zip'),isbns),/invalid_or_oversized_workbook/);

@@ -1,0 +1,145 @@
+import {VintageStore} from './meli-vintage-pilot.js';
+import {vintageTokens,VINTAGE_SELLER_ID} from './meli-vintage-token.js';
+import {createPublicationService} from '../../worker-sync/publication-engine.js';
+import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publication-meli.js';
+import {PublicationError,policyHash,validPolicy,stockIsFresh,canonicalIsbn,normalizedTitle} from '../../worker-sync/publication-policy.js';
+import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
+
+export const BULK_RUN='23413782-4900-4000-8000-000000010000';
+export const PILOT_RUN='23413782-4900-4000-8000-000000000005';
+const fail=(code,status=409)=>{throw new PublicationError(code,status);};
+const uuid=x=>typeof x==='string'&&/^[a-f0-9-]{36}$/.test(x);
+const SCHEMA=[
+ "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_rate (id INTEGER PRIMARY KEY CHECK(id=1),next_at INTEGER NOT NULL DEFAULT 0,cooldown INTEGER NOT NULL DEFAULT 0,strikes INTEGER NOT NULL DEFAULT 0)",
+ "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_identifiers (run_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,PRIMARY KEY(run_id,isbn,item_id))",
+ "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_cache (url TEXT PRIMARY KEY,expires_at INTEGER NOT NULL,response_json TEXT NOT NULL)",
+];
+const initialized=new WeakSet();
+export class VintageBulkStore extends VintageStore {
+ async initialize(){if(initialized.has(this.db)){this.hasSupplierStock=true;return;}await super.initialize();await this.db.batch(SCHEMA.map(sql=>this.db.prepare(sql)));await this.db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_rate(id) VALUES(1)').run();initialized.add(this.db);}
+ async createRun(r){
+  // Pilot candidates excluded by its five-book cap remain eligible. Only an
+  // actual seller receipt or the live inventory excludes an ISBN here.
+  await this.db.batch([
+   this.stmt("INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,approved_hash,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'publishing',?,?,?,?,1000,1)",r.id,r.feedId,JSON.stringify(r.policy),r.policyHash,r.policyHash,r.now,r.now,JSON.stringify({status:'all',scroll:null,pending:[],done:false,seen:0})),
+   this.stmt("INSERT INTO ml_pub_jobs(run_id,isbn,state,error_code,item_id) SELECT ?,s.isbn,CASE WHEN r.isbn IS NULL THEN 'pending' ELSE 'skipped_duplicate' END,CASE WHEN r.isbn IS NULL THEN NULL ELSE 'existing_receipt' END,r.item_id FROM ml_pub_stock s LEFT JOIN ml_pub_receipts r ON r.seller_id=? AND r.isbn=s.isbn WHERE s.feed_id=?",r.id,VINTAGE_SELLER_ID,r.feedId),
+   this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published,created_at) VALUES(?,?,?)',r.id,9995,r.now),
+  ]);
+ }
+ async existing(id,isbn,title){return await this.db.prepare('SELECT item_id,isbn FROM ml_vintage_bulk_identifiers WHERE run_id=? AND isbn=? LIMIT 1').bind(id,isbn).first()??await super.existing(id,isbn,title);}
+}
+
+// A persistent seller-wide request clock prevents bursts across tabs/isolates.
+// It is an application budget (30 requests/minute), not a claimed ML limit.
+export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random}={}){
+ let tail=Promise.resolve();
+ return (env,url,options)=>{
+  const task=tail.then(async()=>{
+   const db=env.ORDERS_DB,rate=await db.prepare('SELECT * FROM ml_vintage_bulk_rate WHERE id=1').first();
+   if(rate.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((rate.cooldown-now())/1000));
+   const parsed=new URL(url),cacheable=(options.method??'GET')==='GET'&&parsed.origin==='https://api.mercadolibre.com'&&(/^\/categories\/MLU\d+(?:\/attributes)?$/.test(parsed.pathname)||/^\/catalog_domains\/MLU-[A-Z_]+\/categories$/.test(parsed.pathname));
+   if(cacheable){const cached=await db.prepare('SELECT response_json FROM ml_vintage_bulk_cache WHERE url=? AND expires_at>?').bind(url,now()).first();if(cached)return new Response(cached.response_json,{headers:{'Content-Type':'application/json'}});}
+   const slot=await db.prepare('UPDATE ml_vintage_bulk_rate SET next_at=MAX(next_at,?)+2000 WHERE id=1 AND cooldown<=? RETURNING next_at').bind(now(),now()).first();
+   if(!slot)throw new MercadoLibreError('vintage_rate_cooldown',429,120);
+   const wait=slot.next_at-2000-now();
+   if(wait>30000)throw new MercadoLibreError('vintage_rate_budget',429,Math.ceil(wait/1000));
+   if(wait>0)await sleep(wait);
+   const again=await db.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
+   if(again.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((again.cooldown-now())/1000));
+   const response=await fetcher(url,options);
+   if(cacheable&&response.ok){try{const text=await response.clone().text();if(text.length<=524288){JSON.parse(text);await db.prepare('INSERT INTO ml_vintage_bulk_cache(url,expires_at,response_json) VALUES(?,?,?) ON CONFLICT(url) DO UPDATE SET expires_at=excluded.expires_at,response_json=excluded.response_json').bind(url,now()+1800000,text).run();}}catch{}}
+   if(response.status===429){
+    const header=response.headers.get('retry-after'),seconds=Number(header),serverWait=Number.isFinite(seconds)?seconds*1000:Math.max(0,Date.parse(header)-now())||0;
+    const until=now()+Math.max(serverWait,Math.min(3600000,120000*2**Math.min(rate.strikes,5)))+Math.floor(random()*15000);
+    await db.prepare('UPDATE ml_vintage_bulk_rate SET cooldown=MAX(cooldown,?),strikes=MIN(strikes+1,6) WHERE id=1').bind(until).run();
+   }
+   return response;
+  });
+  tail=task.catch(()=>{});return task;
+ };
+}
+function identifiers(item){
+ const candidates=[...(item.attributes??[]).filter(a=>['ISBN','GTIN','EAN','SELLER_SKU'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]),item.seller_custom_field,...(item.variations??[]).flatMap(v=>[v.seller_custom_field,...(v.attributes??[]).filter(a=>['ISBN','GTIN','EAN','SELLER_SKU'].includes(a.id)).map(a=>a.value_name)])];
+ const out=new Set();for(const value of candidates){if(!value)continue;try{out.add(canonicalIsbn(String(value).replace(/^AMADO-AR-/,'')));}catch{}}
+ return [...out];
+}
+export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,random}={}){
+ const limited=createVintageBulkFetch({now,fetcher,sleep,random});let activeEnv;
+ const api=providedApi??createPublicationMeli({sellerId:VINTAGE_SELLER_ID,tokenProvider:vintageTokens.getAccessToken,tokenInvalidator:vintageTokens.invalidateAccessToken,now,timeouts:{request:60000,create:60000},fetcher:(url,options)=>limited(activeEnv,url,options)});
+ const bulkApi={...api,
+  prepare:(...args)=>api.prepare(...args),
+  create:(...args)=>api.create(...args),
+  async indexSlice(env,index){
+   if(providedApi)return api.indexSlice(env,index);
+   const next=structuredClone(index);
+   if(!next.pending.length){
+    const q=new URLSearchParams({search_type:'scan',limit:'100'});if(next.scroll)q.set('scroll_id',next.scroll);
+    let page;try{page=await api.call(env,`/users/${VINTAGE_SELLER_ID}/items/search?${q}`);}catch(e){if(next.scroll&&[400,404,410].includes(e.status)){q.delete('scroll_id');next.scroll=null;page=await api.call(env,`/users/${VINTAGE_SELLER_ID}/items/search?${q}`);}else throw e;}
+    if(page.seller_id!==undefined&&String(page.seller_id)!==VINTAGE_SELLER_ID)fail('index_seller_mismatch',502);
+    if(page.results===null||Array.isArray(page.results)&&!page.results.length)return {index:{...next,done:true,completedAt:new Date(now()).toISOString()},items:[]};
+    if(!Array.isArray(page.results)||page.results.some(id=>!/^MLU\d+$/.test(id)))fail('index_page_invalid',502);
+    next.pending=page.results;next.scroll=page.scroll_id??null;
+   }
+   // One multiget per tick, no parallel inventory bursts. Scan all statuses.
+   const ids=next.pending.slice(0,20),raw=await api.call(env,'/items/bulk?ids='+ids.join(','));
+   if(!Array.isArray(raw)||raw.length!==ids.length)fail('index_details_incomplete',502);
+   const remaining=new Set(ids),items=[],writes=[];
+   for(const entry of raw){const b=entry.body;if((entry.status_code??entry.code)!==200||!b||String(b.seller_id)!==VINTAGE_SELLER_ID||!remaining.delete(b.id))fail('index_details_invalid',502);
+    const isbns=identifiers(b);items.push({id:b.id,isbn:isbns[0]??null,titleKey:normalizedTitle(b.title??b.family_name),status:b.status});
+    for(const isbn of isbns)writes.push(env.ORDERS_DB.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_identifiers(run_id,isbn,item_id) VALUES(?,?,?)').bind(BULK_RUN,isbn,b.id));
+   }
+   if(remaining.size)fail('index_details_incomplete',502);if(writes.length)await env.ORDERS_DB.batch(writes);
+   next.pending=next.pending.slice(ids.length);next.seen+=ids.length;return {index:next,items};
+  },
+  async skuItems(env,isbn){
+   if(providedApi)return api.skuItems(env,isbn);
+   const result=new Set(await api.skuItems(env,isbn));
+   const q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),data=await api.call(env,`/users/${VINTAGE_SELLER_ID}/items/search?${q}`);
+   if(!Array.isArray(data.results)||data.results.some(id=>!/^MLU\d+$/.test(id)))fail('sku_lookup_invalid',502);
+   data.results.forEach(id=>result.add(id));return [...result];
+  },
+ };
+ const store=env=>new VintageBulkStore(env.ORDERS_DB,{sellerId:VINTAGE_SELLER_ID});
+ const scoped=env=>({...env,USER_ID:VINTAGE_SELLER_ID,ML_PUBLISH_QUEUE_ENABLED:'false'});
+ const service=createPublicationService({sellerId:VINTAGE_SELLER_ID,api:bulkApi,storeFactory:store,now,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
+ const supplier=createSbsStock({now});
+ async function status(env){
+  const s=store(env),exists=await env.ORDERS_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ml_vintage_pub_runs'").first(),run=exists?await s.run(BULK_RUN):null;
+  if(!run){const pilot=exists?await s.run(PILOT_RUN):null;return {seller_id:VINTAGE_SELLER_ID,target_total:10000,pilot_published:5,run:null,policy_hash:pilot?.policy_hash};}
+  await s.discoverSupplierStock();const summary=await s.summary(run.id),feed=await s.feed(run.feed_id);
+  const rate=await env.ORDERS_DB.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
+  const daily=await s.dayCreated(now()),date=new Date(now()-3*3600000).toISOString().slice(0,10),nextDay=Date.parse(date+'T03:00:00Z')+86400000;
+  return {seller_id:VINTAGE_SELLER_ID,target_total:10000,pilot_published:5,run:{id:run.id,state:run.state},published_total:5+await s.publishedCount(run.id),summary,source_date:feed?.source_date,stock_fresh:stockIsFresh(feed?.source_date,now()),busy:run.lease_until>now(),resume_at:Math.max(run.backoff_until||0,rate?.cooldown||0,daily>=1000?nextDay:0),daily_created:daily,issues:(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','uncertain') LIMIT 10",run.id).all()).results,recent:await s.publishedItems(run.id,Math.max(0,(await s.publishedCount(run.id))-10),10)};
+ }
+ async function command(env,action,args={}){
+  activeEnv=env;const s=store(env);
+  if(action==='status')return status(env);
+  if(['begin','import','commit'].includes(action))return supplier(env,action,args);
+  await s.initialize();
+  if(action==='start'){
+   if(!uuid(args.feed_id))fail('invalid_feed_id',400);
+   const pilot=await s.run(PILOT_RUN),pilotTarget=await s.target(PILOT_RUN);
+   if(pilot?.state!=='complete'||pilotTarget?.target_published!==5||await s.publishedCount(PILOT_RUN)!==5)fail('pilot_not_complete');
+   const verified=await s.stmt('SELECT result_json FROM ml_pub_verifications WHERE run_id=?',PILOT_RUN).all();
+   if(verified.results.length!==5||verified.results.some(v=>JSON.parse(v.result_json).ok!==true))fail('pilot_not_verified');
+   const policy=validPolicy(JSON.parse(pilot.policy_json)),hash=await policyHash(policy),feed=await s.feed(args.feed_id);
+   if(!feed||feed.state!=='ready'||!stockIsFresh(feed.source_date,now())||feed.expected_rows<10000)fail('bulk_feed_not_ready');
+   if(args.policy_hash!==hash)fail('policy_changed');
+   let run=await s.run(BULK_RUN);
+   if(!run){try{await s.createRun({id:BULK_RUN,feedId:feed.id,policy,policyHash:hash,now:now()});}catch(e){if(!await s.run(BULK_RUN))throw e;}run=await s.run(BULK_RUN);}
+   if(run.policy_hash!==hash)fail('policy_changed');
+   if(run.feed_id!==feed.id){
+    if(run.lease_until>now())fail('run_busy');
+    await s.attachFeed(run.id,feed.id);
+    await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,s.isbn,'pending' FROM ml_pub_stock s WHERE s.feed_id=? AND NOT EXISTS(SELECT 1 FROM ml_pub_receipts r WHERE r.seller_id=? AND r.isbn=s.isbn)",run.id,feed.id,VINTAGE_SELLER_ID).run();
+   }
+   if(['paused','stock_stale','auth_error'].includes(run.state))await s.stmt("UPDATE ml_pub_runs SET state='publishing',updated_at=? WHERE id=? AND lease_until<? AND approved_hash=policy_hash",now(),run.id,now()).run();
+   return status(env);
+  }
+  if(args.run_id!==BULK_RUN)fail('bulk_not_found',404);
+  if(action==='pause'){await s.stmt("UPDATE ml_pub_runs SET state='paused',updated_at=? WHERE id=?",now(),BULK_RUN).run();return status(env);}
+  if(action!=='tick')fail('invalid_bulk_action',400);
+  await service.tick(scoped(env),BULK_RUN);return status(env);
+ }
+ return {command,status};
+}
