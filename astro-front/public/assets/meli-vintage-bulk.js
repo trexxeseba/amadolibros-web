@@ -32,7 +32,7 @@ async function loop(){
   const batchComplete=after.published_total-batchStart>=25;
   if(batchComplete)batchStart=after.published_total;
   if(['complete','stock_stale','auth_error','paused'].includes(after.run?.state)){stop();return;}
-  timer=setTimeout(loop,batchComplete?60000:5000);
+  timer=setTimeout(loop,batchComplete?60000:after.summary?.index?.done?5000:1000);
  }catch(error){stop();$('state').textContent=error.message+' El avance quedó guardado. No repitas la aprobación.';}
  finally{busy=false;$('start').disabled=busy||!feed&&!state?.run;}
 }

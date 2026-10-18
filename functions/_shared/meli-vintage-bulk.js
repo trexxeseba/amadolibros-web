@@ -14,8 +14,9 @@ const SCHEMA=[
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_identifiers (run_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,PRIMARY KEY(run_id,isbn,item_id))",
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_cache (url TEXT PRIMARY KEY,expires_at INTEGER NOT NULL,response_json TEXT NOT NULL)",
 ];
+const initialized=new WeakSet();
 export class VintageBulkStore extends VintageStore {
- async initialize(){await super.initialize();await this.db.batch(SCHEMA.map(sql=>this.db.prepare(sql)));await this.db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_rate(id) VALUES(1)').run();}
+ async initialize(){if(initialized.has(this.db)){this.hasSupplierStock=true;return;}await super.initialize();await this.db.batch(SCHEMA.map(sql=>this.db.prepare(sql)));await this.db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_rate(id) VALUES(1)').run();initialized.add(this.db);}
  async createRun(r){
   // Pilot candidates excluded by its five-book cap remain eligible. Only an
   // actual seller receipt or the live inventory excludes an ISBN here.
