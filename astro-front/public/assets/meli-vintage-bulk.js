@@ -85,5 +85,5 @@ $('minimum').addEventListener('click',async()=>{
    await new Promise(resolve=>setTimeout(resolve,2000));
   }
  }catch(error){$('minimum-result').textContent=error.message+' Las tandas siguen pausadas. Volvé a comprobar para continuar.';}
- finally{busy=false;$('minimum').disabled=false;}
+ finally{busy=false;$('minimum').disabled=false;$('start').disabled=!feed&&!state?.run;}
 });

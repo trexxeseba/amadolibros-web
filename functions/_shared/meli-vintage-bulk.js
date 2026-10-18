@@ -117,7 +117,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
     if(hash!==run.policy_hash)await env.ORDERS_DB.batch([
      env.ORDERS_DB.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_policy_amendments VALUES(?,?,?,?,?,?)').bind(run.id,run.policy_hash,hash,run.policy_json,JSON.stringify(policy),now()),
      s.stmt('UPDATE ml_pub_runs SET policy_json=?,policy_hash=?,approved_hash=?,updated_at=? WHERE id=? AND lease_id=?',JSON.stringify(policy),hash,hash,now(),run.id,lock),
-     s.stmt("UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0,error_code=NULL WHERE run_id=? AND item_id IS NULL AND state IN ('pending','validated','retry')",run.id),
+     s.stmt("UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0,error_code=NULL WHERE run_id=? AND item_id IS NULL AND state IN ('pending','validated','retry') AND (payload_json IS NOT NULL OR state IN ('validated','retry'))",run.id),
     ]);
    }
    // One known campaign item per request. Keep the original sealed payload intact.
