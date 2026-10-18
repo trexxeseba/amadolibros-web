@@ -22,3 +22,7 @@ astro-front/.astro/
 # masiva (~17k registros): datos derivados, reproducibles desde R2 público,
 # no pertenecen al repositorio. Reglas, esquema y tests sí se versionan.
 scripts/categorize/data/
+
+# Private temporary Vintage connection and optional local runtime state
+vintage-local-connection*.json
+vintage-local-state/

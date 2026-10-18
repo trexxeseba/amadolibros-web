@@ -107,12 +107,13 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
   for(;;){
-   const remote=await broker('status');if(remote.daily_created>=1000&&!validateOnly){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
+   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);if(remote.daily_created>=1000&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&remote.published_total-start>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
    if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
-   let wait=Math.max(1000,(await s.run(BULK_RUN)).backoff_until-Date.now());
+   const activeRun=await s.run(BULK_RUN);
+   let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=1000?60000:0);
    if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,60000);}
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await pause(wait);
   }
