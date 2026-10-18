@@ -87,4 +87,3 @@ $('minimum').addEventListener('click',async()=>{
  }catch(error){$('minimum-result').textContent=error.message+' Las tandas siguen pausadas. Volvé a comprobar para continuar.';}
  finally{busy=false;$('minimum').disabled=false;}
 });
-

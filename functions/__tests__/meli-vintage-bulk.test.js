@@ -142,4 +142,3 @@ test('Vintage rejects any stale payload below 1600 before external calls',async(
  for(const price of [1200,1450,1599])await assert.rejects(()=>api.create({}, {price,currency_id:'UYU'},policy),/vintage_price_below_1600/);
  assert.equal(calls,0);
 });
-

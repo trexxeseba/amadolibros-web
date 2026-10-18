@@ -362,4 +362,3 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
  }
  return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,shippingDiagnostic,shippingProbe};
 }
-

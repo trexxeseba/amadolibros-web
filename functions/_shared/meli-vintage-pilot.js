@@ -199,4 +199,3 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
  return {sources,snapshot,prepare,approve,refreshStock,verifyPublished,advance:(env,args)=>advance(env,args),publishApproved:(env,args)=>advance(env,args,true)};
 }
 export const vintagePilot=createVintagePilot();
-

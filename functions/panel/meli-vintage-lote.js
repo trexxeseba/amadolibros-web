@@ -27,4 +27,3 @@ export function createVintageBulkPage({bulk}={}){
  };
 }
 export const onRequest=createVintageBulkPage();
-

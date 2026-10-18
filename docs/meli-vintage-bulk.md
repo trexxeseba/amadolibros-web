@@ -16,4 +16,3 @@ Todo el estado se guarda en `ml_vintage_*` y `sbs_supplier_*`. No se importan fe
 
 ## Minimum price
 Vintage has a hard minimum of UYU 1600 at policy calculation and the final item-create boundary. Books keeps its existing policy. The owner-only `apply_minimum` action requires a paused campaign, takes its lease, audits the old policy, clears only unpublished prepared payloads, and checks one known campaign item per request. It verifies seller and ISBN before a price-only PUT, reads back the actual price, and preserves all original payload seals and higher prices. Price amendments are separately audited and used for current pilot display/verification. Changed-price verification is invalidated until the five are rechecked; an uncertain PUT is read before retrying. Existing unrelated Vintage inventory is not repriced.
-

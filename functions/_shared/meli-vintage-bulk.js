@@ -187,4 +187,3 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
  }
  return {command,status};
 }
-

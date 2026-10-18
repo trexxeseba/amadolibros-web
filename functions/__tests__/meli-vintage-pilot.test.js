@@ -372,4 +372,3 @@ test('verification checks the five created listings in read-only ML calls and ex
  assert.equal(reads.length,5);assert.equal(verified.verified.filter(v=>v.ok).length,4);assert.equal(verified.verified.find(v=>!v.ok).checks.seller,false);
  assert.equal(f.calls.create.length,5);assert.equal(booksDump(f),before);
 });
-
