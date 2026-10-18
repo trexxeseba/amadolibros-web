@@ -115,3 +115,25 @@ test('local engine stops when Mercado Libre refuses creation for the listing quo
  assert.equal(result.state,'stopped_listing_quota');assert.equal(creates,1,'no further create after the quota refusal');
  assert.equal(JSON.parse(await h.fs.readFile(h.path.join(h.temp,'status.json'),'utf8')).state,'stopped_listing_quota');
 });
+
+async function pictureHarness(t,{pausedReads}){
+ const h=await engineHarness(t,{create:null});
+ const items=new Map(),waits=[];let posts=0,reads=0;
+ const base=h.options.apiFactory({});
+ const api={...base,async call(e,url){if(url.startsWith('/users/'))return {results:[]};reads++;const item=items.get(url.slice('/items/'.length));assert.ok(item);return reads<=pausedReads?{...item,status:'paused',sub_status:['picture_download_pending']}:{...item};},async create(e,p){posts++;const item={...p,id:'MLU'+posts,seller_id:'2341378249',available_quantity:1,status:'active',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};items.set(item.id,item);return item;}};
+ return {h,api,waits,get posts(){return posts;},options:{...h.options,apiFactory:()=>api,waitFor:async ms=>{waits.push(ms);}}};
+}
+
+test('readback waits for Mercado Libre to finish downloading pictures before accepting the item',async t=>{
+ const p=await pictureHarness(t,{pausedReads:2});
+ const result=await p.h.run({...p.options,target:8,limitNew:1});
+ assert.equal(result.published_total,6);assert.equal(p.posts,1);
+ assert.deepEqual(p.waits.filter(x=>x===10000),[10000,10000],'two bounded waits while pictures download');
+ assert.notEqual(result.state,'stopped_item_readback_failed');
+});
+
+test('readback still stops when the item stays paused after the bounded wait, or has another status',async t=>{
+ const p=await pictureHarness(t,{pausedReads:1000});
+ const result=await p.h.run({...p.options,target:1000});
+ assert.equal(result.state,'stopped_item_readback_failed');assert.equal(p.waits.filter(x=>x===10000).length,6);assert.equal(p.posts,1,'no second create after the failed readback');
+});

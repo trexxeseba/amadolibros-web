@@ -13,6 +13,7 @@ import {openDatabase} from './db.mjs';
 export const SELLER='2341378249';
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
 export function checkConfiguration(c){
  if(c?.version!==1||c.seller_id!==SELLER||c.app_id!=='4741021817925208'||c.run_id!==BULK_RUN||c.endpoint!==ENDPOINT||!/^[a-f0-9]{64}$/.test(c.key??''))throw new Error('invalid_vintage_connection');
  if(c.expires_at<=Date.now())throw new Error('vintage_connection_expired');
@@ -67,7 +68,16 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   }
   async receiptState(seller,isbn,state,itemId=null){
    if(state==='published'){
-    try{const row=await this.stock(c.feed_id,isbn);checkCreated(await api.call(env,'/items/'+itemId),isbn,quoteMercadoLibre(row,policy).price);}catch(error){failedReadback=true;throw error;}
+    try{
+     const row=await this.stock(c.feed_id,isbn),price=quoteMercadoLibre(row,policy).price;
+     // Mercado Libre downloads pictures after the create, so a new item is briefly paused for that
+     // reason only. Wait a bounded time for that exact state; any other mismatch fails at once.
+     for(let attempt=0;;attempt++){
+      const item=await api.call(env,'/items/'+itemId);
+      try{checkCreated(item,isbn,price);break;}
+      catch(error){if(attempt>=PICTURE_WAIT_TRIES||item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;await waitFor(PICTURE_WAIT_MS);}
+     }
+    }catch(error){failedReadback=true;throw error;}
    }
    await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});return super.receiptState(seller,isbn,state,itemId);
   }

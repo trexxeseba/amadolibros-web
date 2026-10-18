@@ -52,7 +52,10 @@ never credentials. Every real Mercado Libre 429 is appended to `rate-limit-event
 (time, method, endpoint with ids replaced by `#`, Retry-After; no query text or tokens), to
 learn which call causes it. A creation refused for the listing quota (`item.max_limit_publish`
 or `user.quota_exceeded`) stops the process with state `stopped_listing_quota` instead of
-trying every remaining ISBN. Restart with the same directory to preserve progress. A hard
+trying every remaining ISBN. The read-back after a create waits up to six 10-second checks while
+Mercado Libre reports the item as `paused` with `picture_download_pending` (it downloads the pictures
+after the create); any other mismatch, or still paused after that wait, stops the process with
+`stopped_item_readback_failed`. Restart with the same directory to preserve progress. A hard
 process termination can leave a five-minute lease, which is allowed to expire.
 
 The engine scans all listing statuses, canonicalizes ISBNs, checks both SKU query
