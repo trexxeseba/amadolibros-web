@@ -1,4 +1,4 @@
-import { IMAGE_VARIANTS, imageVariant, variantObjectKey, VARIANT_VERSION } from '../shared/image-variants.js';
+import { IMAGE_VARIANTS, imageVariant, variantObjectKey, variantVersion, VARIANT_VERSION } from '../shared/image-variants.js';
 import { inspectCoverBytes } from './cover-mirror.js';
 import { streamCoverManifest } from '../functions/_shared/cover-manifest-stream.js';
 import { prepareCoverIndex, COVER_INDEX_METADATA } from '../functions/_shared/cover-public-index.js';
@@ -130,6 +130,9 @@ export async function handleImageVariants(request, env) {
       return new Response(object.body, { headers: { 'cache-control': 'no-store', 'content-type': 'application/octet-stream' } });
     }
     if (path.length !== 2 || !/^[a-f0-9]{64}$/.test(path[0]) || !imageVariant(path[1])) return json({ error: 'invalid-path' }, 400);
+    // Esta vía escribe sólo v1 (Sharp). v2 (Cloudflare Images) únicamente lo
+    // escribe el generador con cupo persistente; nunca un PUT genérico.
+    if (variantVersion(path[1]) !== VARIANT_VERSION) return json({ error: 'recipe-version-not-writable' }, 400);
     const [hash, id] = path; const key = variantObjectKey(hash, id);
     const existing = await bucket.head(key);
     const validExisting = existing?.customMetadata?.master_sha256 === hash && existing.customMetadata.recipe === id && /^[a-f0-9]{64}$/.test(existing.customMetadata.sha256 || '');

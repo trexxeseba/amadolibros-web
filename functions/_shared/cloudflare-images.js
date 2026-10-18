@@ -43,9 +43,10 @@ export function cloudflareImageUrl(source, {
   quality = 85,
   fit = 'scale-down',
   permanent = false,
+  recipes = null,
 } = {}) {
   if (permanent && fit === 'scale-down' && Number(quality) === 85 && [240, 360, 480].includes(Number(width)))
-    return permanentImageUrl(source, { width: Number(width), quality: 85, fit });
+    return permanentImageUrl(source, { width: Number(width), quality: 85, fit, recipes });
   if (!source || !sameProductionZone(source)) return String(source || '');
   const targetWidth = positiveInteger(width);
   if (!targetWidth) return String(source);
@@ -72,11 +73,12 @@ export function responsiveImage(source, {
   quality = 85,
   fit = 'scale-down',
   permanent = false,
+  recipes = null,
 } = {}) {
   const normalizedWidths = [...new Set(widths.map(positiveInteger).filter(Boolean))]
     .sort((a, b) => a - b);
   const fallbackWidth = positiveInteger(defaultWidth) || normalizedWidths.at(-1) || 480;
-  const options = { quality, fit, permanent };
+  const options = { quality, fit, permanent, recipes };
   const src = cloudflareImageUrl(source, { width: fallbackWidth, ...options });
   if ((!sameProductionZone(source) && !permanent) || normalizedWidths.length === 0) {
     return { src, srcset: '', sizes: '' };

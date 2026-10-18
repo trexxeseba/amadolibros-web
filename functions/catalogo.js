@@ -43,7 +43,7 @@ import { faviconHeadHtml } from './_shared/brand.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
-import { readyCardVariantSource, cardCanaryRequest } from './_shared/card-variant-delivery.js';
+import { readyCardVariantSelection, cardCanaryRequest } from './_shared/card-variant-delivery.js';
 import {
     buildBookWhatsAppMessage,
     buildWhatsAppMessage,
@@ -950,7 +950,7 @@ export async function onRequest(ctx) {
         }))
         : Array(limited.length).fill(null);
 
-    const readyCards = await Promise.all(limited.map((b, idx) => readyCardVariantSource(ctx, b, r2Covers[idx])));
+    const readyCards = await Promise.all(limited.map((b, idx) => readyCardVariantSelection(ctx, b, r2Covers[idx])));
     const cards = limited.map((b, idx) => {
         const slug  = slugify(b.title);
         const rawHref = `${previewBase}/libro/${b.id}/${slug}`;
@@ -958,12 +958,13 @@ export async function onRequest(ctx) {
         const fallbackImage = ctx.env?.APP_ENV === 'production'
             ? bookCoverUrl(b.id)
             : httpsImg(b.pictures?.[0] || b.thumbnail || '');
-        const image = responsiveImage(readyCards[idx] || r2Covers[idx] || fallbackImage, {
+        const image = responsiveImage(readyCards[idx]?.url || r2Covers[idx] || fallbackImage, {
             widths: [240, 360, 480],
             defaultWidth: 360,
             sizes: CARD_IMAGE_SIZES,
             ...cardCoverImageOptions(b.id),
             permanent: Boolean(readyCards[idx]),
+            recipes: readyCards[idx]?.recipes || null,
         });
         const img = escapeHtml(image.src);
         // Título limpio para leer (sin «De Autor. Editorial X, Tapa Blanda»);
