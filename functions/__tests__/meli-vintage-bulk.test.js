@@ -142,3 +142,27 @@ test('Vintage rejects any stale payload below 1600 before external calls',async(
  for(const price of [1200,1450,1599])await assert.rejects(()=>api.create({}, {price,currency_id:'UYU'},policy),/vintage_price_below_1600/);
  assert.equal(calls,0);
 });
+
+
+test('availability repair updates only four mismatches to 18 days, preserves prices and Books, and re-reads a lost response',async t=>{
+ const f=await fixture(t),before=f.books();await f.bulk.command(f.env,'start',f.args);await f.bulk.command(f.env,'pause',{run_id:BULK_RUN});
+ const items=new Map(f.rows.slice(0,5).map((r,i)=>['/items/MLU'+(100+i),{id:'MLU'+(100+i),seller_id:seller,price:1600+i*100,currency_id:'UYU',seller_custom_field:'AMADO-AR-'+r.isbn,sale_terms:[{id:'MANUFACTURING_TIME',value_name:(i===2?'18':'19')+' días'}]}]));let puts=0,lost=true;
+ f.api.call=async(e,path,options={})=>{
+  if(path==='/users/me')return {id:seller,site_id:'MLU'};
+  const item=items.get(path);assert.ok(item);
+  if(options.method==='PUT'){assert.deepEqual(options.body,{sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]});puts++;item.sale_terms=options.body.sale_terms;if(lost){lost=false;throw new MercadoLibreError('lost_response',503);}}
+  return structuredClone(item);
+ };
+ let result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.code,'lost_response');
+ for(let i=0;i<6;i++){result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});if(result.availability_complete)break;}
+ assert.equal(result.availability_complete,true);assert.equal(puts,4);assert.deepEqual([...items.values()].map(x=>x.price),[1600,1700,1800,1900,2000]);assert.ok([...items.values()].every(x=>x.sale_terms[0].value_name==='18 días'));assert.equal(f.books(),before);
+});
+
+test('availability repair blocks another seller, and reports a rejected or ignored PUT without changing permissions or resuming',async t=>{
+ const f=await fixture(t);await f.bulk.command(f.env,'start',f.args);await f.bulk.command(f.env,'pause',{run_id:BULK_RUN});let puts=0;
+ const item={id:'MLU100',seller_id:'440298103',currency_id:'UYU',price:1600,seller_custom_field:'AMADO-AR-'+f.rows[0].isbn,sale_terms:[{id:'MANUFACTURING_TIME',value_name:'19 días'}]};let reject=true;
+ f.api.call=async(e,path,options={})=>{if(path==='/users/me')return {id:seller,site_id:'MLU'};if(options.method==='PUT'){puts++;if(reject)throw new MercadoLibreError('ml_http_403',403);}return structuredClone(item);};
+ await assert.rejects(()=>f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN}),/identity_mismatch/);assert.equal(puts,0);
+ item.seller_id=seller;let result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.status,403);assert.equal(result.availability_complete,false);
+ reject=false;result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.code,'availability_update_not_confirmed');assert.equal((await f.s.run(BULK_RUN)).state,'paused');
+});
