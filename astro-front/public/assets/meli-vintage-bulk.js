@@ -73,3 +73,18 @@ $('start').addEventListener('click',async()=>{
 $('pause').addEventListener('click',async()=>{stop();try{render(await request('pause',{run_id:run}));}catch(error){$('state').textContent=error.message;}});
 $('refresh').addEventListener('click',()=>refresh().catch(error=>{$('state').textContent=error.message;}));
 refresh().then(()=>{if(localStorage.getItem('vintage-bulk-running')==='true'&&state.run){running=true;void loop();}}).catch(error=>{$('state').textContent=error.message;});
+
+$('minimum').addEventListener('click',async()=>{
+ if(busy)return;stop();busy=true;$('minimum').disabled=true;
+ try{
+  render(await request('pause',{run_id:run}));
+  for(let i=0;i<10000;i++){
+   const result=await request('apply_minimum',{run_id:run});render(result);
+   $('minimum-result').textContent=result.minimum_checked?`${result.minimum_checked.item_id}: $${result.minimum_checked.price} UYU confirmado. Faltan ${result.minimum_checked.remaining}.`:'Comprobando precios…';
+   if(result.minimum_complete){$('minimum-result').textContent='Mínimo $1.600 aplicado al lote. Todos los precios publicados del piloto y lote cumplen. Las tandas siguen pausadas.';break;}
+   await new Promise(resolve=>setTimeout(resolve,2000));
+  }
+ }catch(error){$('minimum-result').textContent=error.message+' Las tandas siguen pausadas. Volvé a comprobar para continuar.';}
+ finally{busy=false;$('minimum').disabled=false;}
+});
+

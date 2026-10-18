@@ -15,7 +15,7 @@ function database(t){
  return {prepare:sql=>statement(sql),async batch(statements){sqlite.exec('BEGIN');try{const out=statements.map(s=>{const p=sqlite.prepare(s.sql);return /^(SELECT|PRAGMA)\b|\bRETURNING\b/i.test(s.sql)?{results:p.all(...s.args),meta:{changes:1}}:{results:[],meta:{changes:Number(p.run(...s.args).changes)}};});sqlite.exec('COMMIT');return out;}catch(e){sqlite.exec('ROLLBACK');throw e;}},sqlite};
 }
 function isbn(i){const stem='978'+String(i).padStart(9,'0');return stem+((10-[...stem].reduce((n,x,j)=>n+Number(x)*(j%2?3:1),0)%10)%10);}
-const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:42,freightUsdKg:15,laborUyu:0,margin:.23,mlFee:.17,deliveryUyu:270,minimumContributionUyu:200,minimumSaleUyu:1200,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
+const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:42,freightUsdKg:15,laborUyu:0,margin:.23,mlFee:.17,deliveryUyu:270,minimumContributionUyu:200,minimumSaleUyu:1600,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
 async function fixture(t){
  const db=database(t),clock={value:Date.now()},env={ORDERS_DB:db,APP_ID:'4741021817925208',USER_ID:'440298103',ML_PUBLISHER_MODE:'enabled'},s=new VintageBulkStore(db,{sellerId:seller});await new PublicationStore(db).initialize();await s.initialize();
  const feed=crypto.randomUUID(),hash=await policyHash(policy),supplier=createSbsStock({now:()=>clock.value});
@@ -96,3 +96,50 @@ test('bulk route requires panel session and same origin; no public start or shar
  for(const [requestOrigin,args] of [['https://evil.invalid',{}],[origin,{seller_id:'440298103'}]])assert.equal((await page({env,request:new Request(url,{method:'POST',headers:{cookie,origin:requestOrigin,'content-type':'application/json'},body:JSON.stringify({action:'start',args})})})).status,requestOrigin===origin?400:403);
  assert.equal(calls,0);
 });
+
+
+test('1600 floor amends only paused Vintage, raises two prices, preserves seals and Books, and reads before retrying an uncertain PUT',async t=>{
+ const f=await fixture(t),before=f.books();await f.bulk.command(f.env,'start',f.args);await f.bulk.command(f.env,'pause',{run_id:BULK_RUN});
+ const old={...policy,minimumSaleUyu:1200},oldHash=await policyHash(old);
+ await f.s.stmt('UPDATE ml_pub_runs SET policy_json=?,policy_hash=?,approved_hash=? WHERE id=?',JSON.stringify(old),oldHash,oldHash,BULK_RUN).run();
+ const prices=[1450,3390,1200,2680,1680],items=new Map();
+ for(let i=0;i<5;i++){
+  const item={id:'MLU'+(100+i),seller_id:seller,currency_id:'UYU',price:prices[i],seller_custom_field:'AMADO-AR-'+f.rows[i].isbn};items.set('/items/'+item.id,item);
+  await f.s.stmt('UPDATE ml_pub_jobs SET payload_json=? WHERE run_id=? AND isbn=?',JSON.stringify({price:prices[i],currency_id:'UYU'}),PILOT_RUN,f.rows[i].isbn).run();
+ }
+ const originalJobs=JSON.stringify(await f.s.jobs(PILOT_RUN)),puts=[];let lost=true;
+ f.api.call=async(e,path,options={})=>{
+  if(path==='/users/me')return {id:seller,site_id:'MLU'};
+  const item=items.get(path);assert.ok(item);
+  if(options.method==='PUT'){puts.push(item.id);assert.deepEqual(options.body,{price:1600});item.price=1600;if(lost){lost=false;throw new MercadoLibreError('lost_response',503);}}
+  return structuredClone(item);
+ };
+ await assert.rejects(()=>f.bulk.command(f.env,'apply_minimum',{run_id:BULK_RUN}),/lost_response/);
+ let result;for(let i=0;i<6;i++){result=await f.bulk.command(f.env,'apply_minimum',{run_id:BULK_RUN});if(result.minimum_complete)break;}
+ assert.equal(result.minimum_complete,true);assert.deepEqual([...items.values()].map(x=>x.price),[1600,3390,1600,2680,1680]);assert.equal(puts.length,2);
+ assert.equal((await f.s.run(BULK_RUN)).state,'paused');assert.equal(JSON.parse((await f.s.run(BULK_RUN)).policy_json).minimumSaleUyu,1600);
+ assert.equal(JSON.stringify(await f.s.jobs(PILOT_RUN)),originalJobs);assert.equal(f.books(),before);
+ await assert.rejects(()=>f.bulk.command(f.env,'start',f.args),/pilot_not_verified/);
+ for(let i=0;i<5;i++)await f.s.stmt('INSERT OR REPLACE INTO ml_pub_verifications VALUES(?,?,?,?)',PILOT_RUN,f.rows[i].isbn,f.clock.value,JSON.stringify({ok:true,price:Math.max(1600,prices[i])})).run();
+ await f.bulk.command(f.env,'start',f.args);await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.ok(f.calls.create[0].price>=1600);
+});
+
+test('price correction rejects another seller or ISBN before any PUT, and refuses an ignored price update',async t=>{
+ const f=await fixture(t);await f.bulk.command(f.env,'start',f.args);await f.bulk.command(f.env,'pause',{run_id:BULK_RUN});let puts=0;
+ const item={id:'MLU100',seller_id:'440298103',currency_id:'UYU',price:1200,seller_custom_field:'AMADO-AR-'+f.rows[0].isbn};
+ f.api.call=async(e,path,options={})=>{if(path==='/users/me')return {id:seller,site_id:'MLU'};if(options.method==='PUT')puts++;return {...item};};
+ await assert.rejects(()=>f.bulk.command(f.env,'apply_minimum',{run_id:BULK_RUN}),/identity_mismatch/);assert.equal(puts,0);
+ item.seller_id=seller;item.seller_custom_field='AMADO-AR-'+f.rows[9].isbn;
+ await assert.rejects(()=>f.bulk.command(f.env,'apply_minimum',{run_id:BULK_RUN}),/identity_mismatch/);assert.equal(puts,0);
+ item.seller_custom_field='AMADO-AR-'+f.rows[0].isbn;
+ await assert.rejects(()=>f.bulk.command(f.env,'apply_minimum',{run_id:BULK_RUN}),/not_confirmed/);assert.equal(puts,1);
+ assert.equal((await f.s.run(BULK_RUN)).state,'paused');
+});
+
+test('Vintage rejects any stale payload below 1600 before external calls',async()=>{
+ const {createPublicationMeli}=await import('../../worker-sync/publication-meli.js');let calls=0;
+ const api=createPublicationMeli({sellerId:seller,tokenProvider:async()=>'test-vintage',fetcher:async()=>{calls++;throw Error('unexpected network');}});
+ for(const price of [1200,1450,1599])await assert.rejects(()=>api.create({}, {price,currency_id:'UYU'},policy),/vintage_price_below_1600/);
+ assert.equal(calls,0);
+});
+
