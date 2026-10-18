@@ -55,3 +55,24 @@ test('local broker sends credentials only to its fixed endpoint and redacts unex
  const c={key:'a'.repeat(64)},seen=[],broker=makeBroker(c,{fetcher:async(url,options)=>{seen.push({url,options});return Response.json({error:'Bearer secret-goes-here'},{status:403});}});
  await assert.rejects(()=>broker('status'),/local_broker_rejected/);assert.equal(seen[0].url,'https://www.amadolibros.com/operations/vintage-local');assert.equal(seen[0].options.redirect,'manual');
 });
+
+
+test('local engine validates without POST and resumes a saved publication database without replaying created ISBNs',async t=>{
+ const fs=await import('node:fs/promises'),os=await import('node:os'),path=await import('node:path');
+ const temp=await fs.mkdtemp(path.join(os.tmpdir(),'amado-vintage-local-test-'));
+ t.after(async()=>{if(path.dirname(temp)!==os.tmpdir()||!path.basename(temp).startsWith('amado-vintage-local-test-'))throw Error('unsafe_test_cleanup');await fs.rm(temp,{recursive:true,force:true});});
+ const {run}=await import('../../scripts/vintage-local/engine.mjs'),source=new Date().toISOString(),hash=await policyHash(policy),connection=path.join(temp,'connection.json');
+ await fs.writeFile(connection,JSON.stringify({version:1,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'a'.repeat(64),expires_at:Date.now()+86400000,policy,policy_hash:hash,feed_id:crypto.randomUUID(),source_date:source,source_sha256:'e'.repeat(64),receipts:[]}));
+ const rows=['9786075272795','9788410235861','9789502323060','9789502418513','9789878136912'].map(isbn=>({isbn,title:'Test '+isbn,listArs:40000,weightKg:.5,stock:'2'})),items=new Map(),reserved=new Map();let posts=0;
+ const broker=async(action,args)=>{
+  if(action==='status')return {daily_created:5+reserved.size,published_total:5+[...reserved.values()].filter(x=>x.state==='published').length};
+  if(action==='reserve'){if(reserved.has(args.isbn))return {reserved:false,receipt:reserved.get(args.isbn)};reserved.set(args.isbn,{isbn:args.isbn,state:'creating',run_id:BULK_RUN,created_at:Date.now(),updated_at:Date.now()});return {reserved:true};}
+  if(action==='report'){Object.assign(reserved.get(args.isbn),args);return {recorded:true};}throw Error('unexpected broker action');
+ };
+ const api={async account(){return {id:'2341378249',site_id:'MLU'};},async call(e,url){if(url.startsWith('/users/'))return {results:[]};const item=items.get(url.slice('/items/'.length));assert.ok(item);return {...item};},async skuItems(e,isbn){return [...items.values()].filter(x=>x.seller_custom_field==='AMADO-AR-'+isbn).map(x=>x.id);},async prepare(e,row,p,price){return {title:row.title,price,currency_id:'UYU',condition:'new',catalog_listing:false,seller_custom_field:'AMADO-AR-'+row.isbn};},async create(e,p){posts++;const item={...p,id:'MLU'+posts,seller_id:'2341378249',available_quantity:1,status:'active',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};items.set(item.id,item);return item;}};
+ const options={excel:'unused',connection,directory:temp,target:8,onStatus:()=>{},readWorkbook:async()=>({rows,source_date:source,source_sha256:'e'.repeat(64)}),apiFactory:()=>api,brokerFactory:()=>broker,waitFor:async()=>{}};
+ let result=await run({...options,validateOnly:3});assert.equal(result.state,'ready');assert.equal(posts,0);assert.equal(reserved.size,0);
+ assert.equal(JSON.parse(await fs.readFile(path.join(temp,'items.preview.json'),'utf8')).filter(x=>x.state==='validated').length,3);
+ result=await run({...options,limitNew:1});assert.equal(result.published_total,6);assert.equal(posts,1);
+ result=await run(options);assert.equal(result.published_total,8);assert.equal(posts,3);assert.equal(new Set([...items.values()].map(x=>x.seller_custom_field)).size,3);
+});

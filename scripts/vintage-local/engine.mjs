@@ -37,17 +37,17 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,onStatus=console.log}){
+export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>10000||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
- const input=await inspectWorkbook(excel);
+ const input=await readWorkbook(excel);
  if(!stockIsFresh(input.source_date)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
- const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=makeBroker(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
+ const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null;
  const limited=createVintageBulkFetch();
- api=createPublicationMeli({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
+ api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
    if(validateOnly)throw new Error('validation_cannot_reserve');
@@ -120,7 +120,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    const activeRun=await s.run(BULK_RUN);
    let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=1000?60000:0);
    if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,60000);}
-   if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await pause(wait);
+   if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
   return {state:(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
