@@ -1,4 +1,4 @@
-name: Ten-card WebP canary and active coverage - Preview only
+name: Twenty-nine reused WebP covers - Preview only
 on:
   pull_request:
     branches: [main]
@@ -6,6 +6,9 @@ on:
       - '.github/workflows/card-canary-preview.yml'
       - 'worker-sync/card-canary-preview*'
       - 'scripts/images/card-canary-preview-check.mjs'
+      - 'scripts/images/card-reuse*'
+      - 'scripts/images/extend-card-readiness.mjs'
+      - 'functions/_shared/card-variant-delivery.js'
 permissions:
   contents: read
 concurrency:
@@ -32,14 +35,14 @@ jobs:
           WORKER_NAME: amado-cover-fix-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          mkdir -p artifacts/card-canary
+          mkdir -p artifacts/card-reuse
           INCIDENT_TOKEN=$(openssl rand -hex 32)
           export INCIDENT_TOKEN
           echo "::add-mask::$INCIDENT_TOKEN"
           cleanup() {
             curl -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME" \
-              > artifacts/card-canary/temporary-preview-cleanup.json
+              > artifacts/card-reuse/temporary-preview-cleanup.json
           }
           trap cleanup EXIT
           OUTPUT=$(bash scripts/deploy-cover-preview.sh --config worker-sync/card-canary-preview.wrangler.toml --var "INCIDENT_BUILD_SHA:$INCIDENT_BUILD_SHA")
@@ -47,11 +50,11 @@ jobs:
           test -n "$INCIDENT_URL"
           export INCIDENT_URL
           printf '%s' "$INCIDENT_TOKEN" | npx wrangler@3.114.17 secret put INCIDENT_TOKEN --config worker-sync/card-canary-preview.wrangler.toml --name "$WORKER_NAME"
-          node scripts/images/card-canary-preview-check.mjs
+          node scripts/images/card-reuse-preview-check.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: card-canary-${{ github.run_id }}
-          path: artifacts/card-canary/
+          name: card-reuse-${{ github.run_id }}
+          path: artifacts/card-reuse/
           if-no-files-found: error
           retention-days: 30

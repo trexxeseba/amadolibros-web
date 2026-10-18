@@ -3,6 +3,8 @@ import { cardCoverImageOptions } from '../../shared/card-cover-framing.js';
 
 export const CARD_RECIPES = Object.freeze(['v1-240-q85', 'v1-360-q85', 'v1-480-q85']);
 export const PRODUCTION_IMAGE_BUCKET = 'amadolibros-images-production';
+// Bounded headroom for the 29 aliases reusing already verified masters.
+export const MAX_CARD_READINESS_ENTRIES = 3000;
 const HASH = /^[a-f0-9]{64}$/;
 const cache = new WeakMap();
 const MAX_BYTES = 2_000_000;
@@ -36,7 +38,8 @@ async function verifiedIndex(ctx) {
         const index = JSON.parse(text);
         if (index.schema !== 'verified-card-readiness-v1' || index.bucket !== PRODUCTION_IMAGE_BUCKET ||
             JSON.stringify(index.recipes) !== JSON.stringify(CARD_RECIPES) || !index.cards ||
-            Object.keys(index.cards).length > 2790) return null;
+            typeof index.cards !== 'object' || Array.isArray(index.cards) ||
+            Object.keys(index.cards).length > MAX_CARD_READINESS_ENTRIES) return null;
         return index;
       })();
       const value = await Promise.race([read, new Promise(resolve => { timer = setTimeout(() => resolve(null), 150); })]);
