@@ -253,7 +253,7 @@ export async function onRequest(context) {
     const url = new URL(context.request.url);
     const isPreview = isPreviewUrl(url);
     // OAuth codes must never reach analytics, legacy routing or third parties.
-    const isMeliOAuth = ['/meli-vintage-callback', '/panel/meli-vintage', '/panel/meli-vintage-piloto', '/panel/meli-vintage-stock', '/panel/meli-vintage-lote', '/operations/vintage'].includes(url.pathname);
+    const isMeliOAuth = ['/meli-vintage-callback', '/panel/meli-vintage', '/panel/meli-vintage-piloto', '/panel/meli-vintage-stock', '/panel/meli-vintage-lote', '/operations/vintage', '/panel/meli-vintage-local', '/operations/vintage-local'].includes(url.pathname);
     const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
 
     const finish = response => {

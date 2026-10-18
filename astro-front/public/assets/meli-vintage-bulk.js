@@ -11,7 +11,7 @@ async function request(action,args){
 }
 function render(data){
  state=data;const count=data.published_total??5,counts=data.summary?.counts??[];
- const phase=data.run?.state==='publishing'&&!data.summary?.index?.done?'revisando publicaciones existentes':labels[data.run?.state]??'listo para cargar el Excel';
+ const phase=data.local_executor?.active?'controlado desde la PC':data.run?.state==='publishing'&&!data.summary?.index?.done?'revisando publicaciones existentes':labels[data.run?.state]??'listo para cargar el Excel';
  $('state').textContent=`${count.toLocaleString('es-UY')} de 10.000 publicadas en Vintage. Estado: ${phase}.`;
  $('details').textContent=data.run?`Stock ${data.stock_fresh?'vigente':'vencido'} · Inventario revisado: ${data.summary?.index?.seen??0} publicaciones · ${counts.map(x=>`${labels[x.state]??x.state}: ${x.n}`).join(' · ')}${data.resume_at>Date.now()?' · Próximo intento: '+new Date(data.resume_at).toLocaleString('es-UY'):''}`:'';
  $('items').innerHTML=(data.recent??[]).map(j=>`<p>${esc(j.isbn)} · <a target="_blank" rel="noopener" href="https://articulo.mercadolibre.com.uy/MLU-${esc(j.item_id.replace(/^MLU/,''))}">${esc(j.item_id)}</a></p>`).join('');
@@ -25,6 +25,7 @@ async function loop(){
  busy=true;
  try{
   const before=await request();render(before);
+  if(before.local_executor?.active){stop();return;}
   if(!before.run||!['publishing','complete_with_review'].includes(before.run.state)||!before.stock_fresh){stop();return;}
   if(before.resume_at>Date.now()){timer=setTimeout(loop,Math.min(60000,Math.max(1000,before.resume_at-Date.now())));return;}
   if(before.busy){timer=setTimeout(loop,15000);return;}

@@ -1,0 +1,12 @@
+import {deriveSessionSecret,hasValidSession,resolvePanelConfig} from '../_shared/panel-auth.js';
+import {createLocalAccess} from '../_shared/vintage-local-access.js';
+import {PublicationError,safeCode} from '../../worker-sync/publication-policy.js';
+export const onRequest=async({request,env})=>{
+ const origin='https://www.amadolibros.com',headers={'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'},config=resolvePanelConfig(env);
+ if(new URL(request.url).origin!==origin||env.APP_ENV!=='production')return new Response('No disponible',{status:403,headers});
+ if(!config.ok||!await hasValidSession(request,await deriveSessionSecret(config.password)))return new Response('Ingresá al panel',{status:401,headers});
+ if(request.method==='GET')return new Response('<!doctype html><html lang="es"><meta charset="utf-8"><title>Publicador local de Vintage</title><style>body{font:20px system-ui;max-width:850px;margin:40px auto;line-height:1.6}button{font:inherit;padding:16px}</style><h1>Publicador local de Vintage</h1><p>Destino exclusivo: AMADO_VINTAGE, seller 2341378249. Mínimo $1.600 UYU, disponibilidad 18 días y hasta 1.000 altas diarias.</p><p>Este paso pausa la ejecución del panel y habilita a tu PC hasta que venza el Excel. Descarga un archivo privado para obtener acceso temporal a Vintage y registrar los ISBN enviados. La clave de la app y el refresh token permanecen en el servidor. Amado Libros queda fuera.</p><p>No compartas el archivo de conexión. Usalo únicamente con el publicador local de Amado.</p><form method="post"><button>Habilitar la PC y descargar conexión de Vintage</button></form><a href="/panel/meli-vintage-lote">Volver al lote</a></html>',{headers:{...headers,'Content-Type':'text/html;charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"}});
+ if(request.method!=='POST'||request.headers.get('origin')!==origin)return new Response('Solicitud inválida',{status:403,headers});
+ try{return Response.json(await createLocalAccess().grant(env),{headers:{...headers,'Content-Disposition':'attachment; filename="vintage-local-connection.json"'}});}
+ catch(e){return new Response('No se pudo habilitar: '+safeCode(e)+'. Si el lote estaba trabajando, esperá a que termine el paso y volvé a intentar.',{status:e instanceof PublicationError?e.status:503,headers});}
+};
