@@ -57,6 +57,8 @@ async function ensurePreviewSchema(db) {
     pending = (async () => {
       await db.prepare(PREVIEW_TABLE_SQL).bind().run();
       await db.prepare(PREVIEW_UNIQUE_INDEX_SQL).bind().run();
+      await db.prepare(WHATSAPP_TABLE_SQL).bind().run();
+      await db.prepare(WHATSAPP_UNIQUE_INDEX_SQL).bind().run();
     })();
     previewSchemaPromises.set(db, pending);
   }
@@ -74,6 +76,36 @@ function normalizeEmail(value) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
   return email;
 }
+
+// Teléfono para WhatsApp: se guarda sólo con dígitos y código de país. Un
+// número uruguayo escrito local (09x xxx xxx / 9x xxx xxx) se completa con 598.
+export function normalizeWhatsapp(value) {
+  let digits = cleanString(value).replace(/[^\d]/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (/^0?9\d{7}$/.test(digits)) digits = `598${digits.replace(/^0/, '')}`;
+  if (digits.length < 10 || digits.length > 15) return null;
+  return digits;
+}
+
+const WHATSAPP_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS stock_waitlist_whatsapp (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL,
+  product_title TEXT NOT NULL,
+  whatsapp TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'waiting'
+    CHECK (status IN ('waiting','contacted','cancelled')),
+  source_url TEXT,
+  internal_notification_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (internal_notification_status IN ('pending','sent','failed','skipped')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`;
+
+const WHATSAPP_UNIQUE_INDEX_SQL = `
+CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_waitlist_whatsapp_waiting
+  ON stock_waitlist_whatsapp (product_id, whatsapp)
+  WHERE status = 'waiting'`;
 
 function resolveFormEnvironment(env) {
   const appEnv = cleanString(env?.APP_ENV);
@@ -118,7 +150,32 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-export function buildStockWaitlistEmail({ product, email, sourceUrl }) {
+export function buildStockWaitlistEmail({ product, email, whatsapp, sourceUrl }) {
+  if (whatsapp) {
+    const link = `https://wa.me/${whatsapp}`;
+    const subject = `Cliente dejó su WhatsApp — ${product.title}`;
+    const text = [
+      'Un cliente dejó su WhatsApp para un libro sin stock',
+      '',
+      `Libro: ${product.title}`,
+      `Mercado Libre ID: ${product.id}`,
+      `WhatsApp del cliente: +${whatsapp}`,
+      `Escribirle: ${link}`,
+      `Ficha: ${sourceUrl}`,
+    ].join('\n');
+    const html = `<!doctype html>
+<html lang="es">
+  <body style="font-family:Arial,sans-serif;color:#222;line-height:1.45">
+    <h1 style="font-size:22px">Un cliente dejó su WhatsApp</h1>
+    <p><strong>Libro:</strong> ${escapeHtml(product.title)}<br>
+       <strong>Mercado Libre ID:</strong> ${escapeHtml(product.id)}<br>
+       <strong>WhatsApp:</strong> +${escapeHtml(whatsapp)}</p>
+    <p><a href="${escapeHtml(link)}">Escribirle por WhatsApp</a> ·
+       <a href="${escapeHtml(sourceUrl)}">Abrir ficha del libro</a></p>
+  </body>
+</html>`;
+    return { subject, text, html };
+  }
   const subject = `Aviso de stock solicitado — ${product.title}`;
   const text = [
     'Nueva solicitud de aviso de stock',
@@ -141,7 +198,7 @@ export function buildStockWaitlistEmail({ product, email, sourceUrl }) {
   return { subject, text, html };
 }
 
-async function sendInternalNotification({ env, product, email, sourceUrl, waitlistId, fetchFn }) {
+async function sendInternalNotification({ env, product, email, whatsapp, sourceUrl, waitlistId, fetchFn }) {
   const config = resolveEmailConfig(env);
   if (!config) return { ok: false, skipped: true, code: 'EMAIL_CONFIG_MISSING' };
 
@@ -159,7 +216,7 @@ async function sendInternalNotification({ env, product, email, sourceUrl, waitli
       body: JSON.stringify({
         from: config.from,
         to: config.to,
-        ...buildStockWaitlistEmail({ product, email, sourceUrl }),
+        ...buildStockWaitlistEmail({ product, email, whatsapp, sourceUrl }),
       }),
       signal: controller.signal,
     });
@@ -180,10 +237,16 @@ async function sendInternalNotification({ env, product, email, sourceUrl, waitli
   return { ok: false, code: `RESEND_HTTP_${response.status}` };
 }
 
-async function recordNotificationResult(db, waitlistId, result, now) {
+async function recordNotificationResult(db, waitlistId, result, now, table = 'stock_waitlist') {
   const status = result.ok ? 'sent' : result.skipped ? 'skipped' : 'failed';
   const providerId = result.ok ? result.providerId : null;
   const errorCode = result.ok ? null : cleanString(result.code).slice(0, 80) || 'RESEND_ERROR';
+  if (table === 'stock_waitlist_whatsapp') {
+    await db.prepare(
+      'UPDATE stock_waitlist_whatsapp SET internal_notification_status=?, updated_at=? WHERE id=?'
+    ).bind(status, now.toISOString(), waitlistId).run();
+    return;
+  }
   await db.prepare(
     'UPDATE stock_waitlist SET internal_notification_status=?, internal_notification_id=?, ' +
     'internal_notification_error=?, updated_at=? WHERE id=?'
@@ -236,11 +299,12 @@ export function createStockWaitlistHandler({
 
     const productId = cleanString(body.product_id).toUpperCase();
     const email = normalizeEmail(body.email);
+    const whatsapp = email ? null : normalizeWhatsapp(body.whatsapp ?? body.email);
     if (!/^MLU\d+$/.test(productId)) {
       return json({ error: 'Libro inválido.' }, 400);
     }
-    if (!email) {
-      return json({ error: 'Ingresá un correo válido.' }, 400);
+    if (!email && !whatsapp) {
+      return json({ error: 'Ingresá un correo o un número de WhatsApp válido.' }, 400);
     }
 
     const formEnv = resolveFormEnvironment(env);
@@ -318,17 +382,18 @@ export function createStockWaitlistHandler({
       : `/libro/${product.id}`;
     const sourceUrl = new URL(request.url).origin + sourcePath;
 
+    const table = whatsapp ? 'stock_waitlist_whatsapp' : 'stock_waitlist';
     let inserted;
     try {
       inserted = await db.prepare(
-        'INSERT OR IGNORE INTO stock_waitlist ' +
-        '(id,product_id,product_title,email,status,source_url,internal_notification_status,created_at,updated_at) ' +
+        `INSERT OR IGNORE INTO ${table} ` +
+        `(id,product_id,product_title,${whatsapp ? 'whatsapp' : 'email'},status,source_url,internal_notification_status,created_at,updated_at) ` +
         "VALUES (?,?,?,?,'waiting',?,'pending',?,?)"
       ).bind(
         waitlistId,
         product.id,
         cleanString(product.title).slice(0, 500) || product.id,
-        email,
+        whatsapp || email,
         sourceUrl,
         now.toISOString(),
         now.toISOString()
@@ -347,12 +412,13 @@ export function createStockWaitlistHandler({
         env,
         product,
         email,
+        whatsapp,
         sourceUrl,
         waitlistId,
         fetchFn,
       });
       try {
-        await recordNotificationResult(db, waitlistId, result, getNow());
+        await recordNotificationResult(db, waitlistId, result, getNow(), table);
       } catch (error) {
         console.error('[stock-waitlist] notification state error', safeErrorName(error));
       }

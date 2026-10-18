@@ -55,7 +55,7 @@ async function all(db, sql, params = []) {
 export async function loadDigestData(db, now = new Date()) {
   const yesterday = montevideoDay(now, 1);
   const since = new Date(now.getTime() - UNPAID_WINDOW_DAYS * 86_400_000).toISOString();
-  const [toShip, unpaid, sold, created] = await Promise.all([
+  const [toShip, unpaid, sold, created, whatsapps] = await Promise.all([
     all(db, `SELECT public_code, buyer_name, delivery_type, payable_total_uyu, paid_at FROM orders
               WHERE payment_status = 'approved' AND fulfilled_at IS NULL AND cancelled_at IS NULL
               ORDER BY paid_at ASC LIMIT 100`),
@@ -65,6 +65,9 @@ export async function loadDigestData(db, now = new Date()) {
     all(db, `SELECT COUNT(*) AS n, COALESCE(SUM(COALESCE(paid_amount_uyu, payable_total_uyu)), 0) AS total FROM orders
               WHERE payment_status = 'approved' AND paid_at >= ? AND paid_at < ?`, [yesterday.startIso, yesterday.endIso]),
     all(db, `SELECT COUNT(*) AS n FROM orders WHERE created_at >= ? AND created_at < ?`, [yesterday.startIso, yesterday.endIso]),
+    // La tabla llega con la migración 0013; antes de aplicarla el resumen sigue funcionando.
+    all(db, `SELECT whatsapp, product_title FROM stock_waitlist_whatsapp
+              WHERE status = 'waiting' ORDER BY created_at DESC LIMIT 100`).catch(() => []),
   ]);
   return {
     yesterday,
@@ -73,6 +76,7 @@ export async function loadDigestData(db, now = new Date()) {
     soldCount: Number(sold[0]?.n || 0),
     soldTotal: Number(sold[0]?.total || 0),
     createdCount: Number(created[0]?.n || 0),
+    whatsapps,
   };
 }
 
@@ -90,9 +94,11 @@ function line(row, extra = '') {
 export function buildDigestEmail(data) {
   const ship = data.toShip;
   const unpaid = data.unpaid;
+  const wa = data.whatsapps || [];
   const parts = [];
   if (ship.length) parts.push(`${ship.length} para despachar`);
   if (unpaid.length) parts.push(`${unpaid.length} sin pagar`);
+  if (wa.length) parts.push(`${wa.length} ${wa.length === 1 ? 'cliente dejó' : 'clientes dejaron'} su WhatsApp`);
   const subject = parts.length
     ? `Amado Libros — hoy: ${parts.join(' y ')}`
     : 'Amado Libros — hoy no hay nada pendiente';
@@ -111,6 +117,12 @@ export function buildDigestEmail(data) {
     ...(unpaid.length > MAX_ROWS ? [`  … y ${unpaid.length - MAX_ROWS} más en el panel.`] : []),
     unpaid.length ? '  En cada pedido hay un botón para escribirle por WhatsApp con el mensaje ya armado.' : '',
     '',
+    ...(wa.length ? [
+      `DEJARON SU WHATSAPP — escribiles (${wa.length})`,
+      ...wa.slice(0, MAX_ROWS).map(r => `- +${r.whatsapp} · ${r.product_title} — https://wa.me/${r.whatsapp}`),
+      ...(wa.length > MAX_ROWS ? [`  … y ${wa.length - MAX_ROWS} más.`] : []),
+      '',
+    ] : []),
     'AYER',
     `- Pedidos nuevos: ${data.createdCount}`,
     `- Ventas cobradas: ${data.soldCount}${data.soldCount ? ` (${money(data.soldTotal)})` : ''}`,
@@ -136,6 +148,8 @@ export function buildDigestEmail(data) {
     ${section('Para despachar', ship.length, ship, 'Nada pendiente. ¡Todo despachado!')}
     ${section('Sin pagar: escribile al cliente', unpaid.length, unpaid, 'Ninguno. Todos los pedidos están pagos.', r => PROVIDER[r.payment_provider] || '')}
     ${unpaid.length ? '<p style="font-size:13px;color:#666">En cada pedido hay un botón para escribirle por WhatsApp con el mensaje ya armado.</p>' : ''}
+    ${wa.length ? `<h2 style="font-size:17px;margin:24px 0 6px">Dejaron su WhatsApp: escribiles <span style="color:#888;font-weight:normal">(${wa.length})</span></h2>
+    <table style="border-collapse:collapse;width:100%;font-size:14px">${wa.slice(0, MAX_ROWS).map(r => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee"><a href="https://wa.me/${escapeHtml(r.whatsapp)}" style="color:#a94e3d;font-weight:bold;text-decoration:none">+${escapeHtml(r.whatsapp)}</a></td><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(r.product_title)}</td></tr>`).join('')}</table>` : ''}
     <h2 style="font-size:17px;margin:24px 0 6px">Ayer</h2>
     <p style="margin:4px 0">Pedidos nuevos: <strong>${data.createdCount}</strong><br>
        Ventas cobradas: <strong>${data.soldCount}</strong>${data.soldCount ? ` (${escapeHtml(money(data.soldTotal))})` : ''}</p>
