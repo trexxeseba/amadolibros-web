@@ -245,7 +245,7 @@ test('final identity gate blocks POST /items with Libros and pins the verified t
   if(url.endsWith('/users/me')){clock+=120000;return Response.json({id:requests.some(r=>r.path==='/items')?books:vintage,site_id:'MLU'});}
   return Response.json({id:'MLU123456789',seller_id:vintage});
  }});
- await api.create({}, {currency_id:'UYU',condition:'new',catalog_listing:false,price:1000,category_id:'MLU1196'},policy);
+ await api.create({}, {currency_id:'UYU',condition:'new',catalog_listing:false,price:1600,category_id:'MLU1196'},policy);
  assert.equal(requests.find(r=>r.path==='/users/me').auth,requests.find(r=>r.path==='/items').auth);
  const blocked=createPublicationMeli({sellerId:vintage,tokenProvider:async()=>'mock',fetcher:async(url)=>{
   if(url.endsWith('/users/me'))return Response.json({id:books,site_id:'MLU'});
@@ -253,7 +253,7 @@ test('final identity gate blocks POST /items with Libros and pins the verified t
   if(url.endsWith('/items/validate'))return new Response(null,{status:204});
   assert.fail('wrong account must never create');
  }});
- await assert.rejects(()=>blocked.create({}, {currency_id:'UYU',condition:'new',catalog_listing:false,price:1000,category_id:'MLU1196'},policy),/seller_mismatch/);
+ await assert.rejects(()=>blocked.create({}, {currency_id:'UYU',condition:'new',catalog_listing:false,price:1600,category_id:'MLU1196'},policy),/seller_mismatch/);
 });
 
 async function authFixture(t) {

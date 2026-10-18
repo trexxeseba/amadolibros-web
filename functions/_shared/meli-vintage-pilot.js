@@ -3,6 +3,7 @@ import { createPublicationService } from '../../worker-sync/publication-engine.j
 import { createPublicationMeli } from '../../worker-sync/publication-meli.js';
 import { validPolicy, policyHash, stockIsFresh, sha256, PublicationError, normalizeSupplierRow, hasSupplierStock, quoteMercadoLibre, canonicalIsbn } from '../../worker-sync/publication-policy.js';
 import { vintageTokens, VINTAGE_SELLER_ID } from './meli-vintage-token.js';
+import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
 import { initializeSbsStock, createSbsStock, readSbsDiagnostics, recordSbsAttempt } from '../../worker-sync/sbs-supplier-stock.js';
 
 export const PILOT_LIMIT=5;
@@ -26,6 +27,7 @@ export class VintageStore extends PublicationStore {
   this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_payload_seals (run_id TEXT NOT NULL,isbn TEXT NOT NULL,policy_hash TEXT NOT NULL,payload_hash TEXT NOT NULL,sample_hash TEXT NOT NULL,PRIMARY KEY(run_id,isbn))'),
   this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_pilot_selection (run_id TEXT NOT NULL,isbn TEXT NOT NULL,PRIMARY KEY(run_id,isbn))'),
   this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_verifications (run_id TEXT NOT NULL,isbn TEXT NOT NULL,checked_at INTEGER NOT NULL,result_json TEXT NOT NULL,PRIMARY KEY(run_id,isbn))'),
+  this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_price_amendments (run_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,original_price REAL NOT NULL,price REAL NOT NULL,state TEXT NOT NULL,checked_at INTEGER NOT NULL,PRIMARY KEY(run_id,isbn))'),
  ]);}
 }
 class PreflightStore extends VintageStore {
@@ -68,9 +70,12 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   const jobs=(await s.stmt("SELECT j.isbn,j.state,j.item_id,j.payload_json,s.data_json FROM ml_pub_jobs j LEFT JOIN ml_pub_stock s ON s.feed_id=? AND s.isbn=j.isbn WHERE j.run_id=? AND (j.state IN ('validated','published','uncertain','creating')"+selected+") ORDER BY j.isbn LIMIT 5",run.feed_id,run.id).all()).results;
   const issues=(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','retry','uncertain') ORDER BY isbn LIMIT 10",run.id).all()).results;
   const sample=[];
+  const hasAmendments=await env.ORDERS_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ml_vintage_pub_price_amendments'").first();
+  const amendments=hasAmendments?(await s.stmt("SELECT * FROM ml_pub_price_amendments WHERE run_id=? AND state='confirmed'",run.id).all()).results:[];
   for(const job of jobs) {
    const row=job.data_json?JSON.parse(job.data_json):null,payload=job.payload_json?JSON.parse(job.payload_json):{};
-   sample.push({isbn:job.isbn,title:row?.title??payload.title??payload.family_name??'',price:payload.price??null,state:job.state,item_id:job.item_id??null,payload});
+   const amendment=amendments.find(a=>a.isbn===job.isbn&&a.item_id===job.item_id);
+   sample.push({isbn:job.isbn,title:row?.title??payload.title??payload.family_name??'',price:amendment?.price??payload.price??null,state:job.state,item_id:job.item_id??null,payload});
   }
   const manifest=sample.filter(j=>j.state==='validated').map(j=>({isbn:j.isbn,payload:j.payload}));
   const sampleHash=await sha256(JSON.stringify({seller_id:VINTAGE_SELLER_ID,run_id:run.id,policy_hash:run.policy_hash,manifest}));
@@ -78,7 +83,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   const fresh=stockIsFresh(feed?.source_date,now());
   const hasVerifications=await env.ORDERS_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ml_vintage_pub_verifications'").first();
   const verified=hasVerifications?(await s.stmt('SELECT isbn,checked_at,result_json FROM ml_pub_verifications WHERE run_id=?',run.id).all()).results.map(r=>({isbn:r.isbn,checked_at:r.checked_at,...JSON.parse(r.result_json)})):[];
-  return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:{id:run.id,state:run.state},display_state:!fresh&&['ready','preflight','stock_stale'].includes(run.state)?'stock_stale':run.state,stock_fresh:fresh,stock_diagnostics:await readSbsDiagnostics(env.ORDERS_DB),verified,progress,policy,policy_hash:run.policy_hash,feed,summary:await s.summary(run.id),sample,sample_hash:sampleHash,can_upload:sample.length===PILOT_LIMIT&&!run.approved_hash&&['ready','preflight','stock_stale'].includes(run.state)&&sample.every(j=>!j.item_id)&&!progress.busy,can_approve:run.state==='ready'&&manifest.length===PILOT_LIMIT&&fresh,issues:issues.map(j=>({isbn:j.isbn,error:j.error_code,state:j.state}))};
+  return {seller_id:VINTAGE_SELLER_ID,limit:PILOT_LIMIT,run:{id:run.id,state:run.state},display_state:!fresh&&['ready','preflight','stock_stale'].includes(run.state)?'stock_stale':run.state,stock_fresh:fresh,stock_diagnostics:await readSbsDiagnostics(env.ORDERS_DB),verified,progress,policy:amendments.length&&run.state==='complete'?vintagePolicy(policy):policy,policy_hash:run.policy_hash,feed,summary:await s.summary(run.id),sample,sample_hash:sampleHash,can_upload:sample.length===PILOT_LIMIT&&!run.approved_hash&&['ready','preflight','stock_stale'].includes(run.state)&&sample.every(j=>!j.item_id)&&!progress.busy,can_approve:run.state==='ready'&&manifest.length===PILOT_LIMIT&&fresh,issues:issues.map(j=>({isbn:j.isbn,error:j.error_code,state:j.state}))};
  }
  async function refreshStock(env,args){
   let token=null,s=null,runId=null;
@@ -155,7 +160,7 @@ export function createVintagePilot({api=createPublicationMeli({sellerId:VINTAGE_
   if(!feed||feed.state!=='ready'||!stockIsFresh(feed.source_date,now()))throw error('feed_not_ready_or_stale');
   const identity=await api.account(env);
   if(String(identity.id)!==VINTAGE_SELLER_ID||identity.site_id!=='MLU')throw error('seller_mismatch',403);
-  const policy=validPolicy(JSON.parse(source.policy_json));
+  const policy=vintagePolicy(JSON.parse(source.policy_json));
   // A single deterministic pilot prevents double clicks/concurrent requests from
   // creating additional batches. Five validated books, then explicit approval.
   const runId='23413782-4900-4000-8000-000000000005';
