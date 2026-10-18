@@ -98,6 +98,27 @@ test('v2 index fails closed on incomplete or malformed selection and structure',
   assert.equal(recipesForSelection('110'), null);
 });
 
+test('non-string selections never throw and keep the original', async () => {
+  for (const code of [121, 111, 0, {}, [], ['1', '2', '1'], { includes: () => false }, null, undefined, true]) {
+    assert.doesNotThrow(() => recipesForSelection(code), String(code));
+    assert.equal(recipesForSelection(code), null);
+    const f = indexFixture('121', { masters: { [hash]: code } });
+    assert.equal(await readyCardVariantSelection(f.ctx, f.item, coverUrl), null, JSON.stringify(code));
+    assert.equal(await readyCardVariantSource(f.ctx, f.item, coverUrl), null);
+  }
+});
+
+test('builder rejects unsafe byte counts and empty or invalid version preference', () => {
+  const key = `${hash}/v2-360-q85`;
+  for (const bytes of [0, -1, 1.5, '100', NaN, Infinity, 8 * 1024 * 1024 + 1, Number.MAX_SAFE_INTEGER + 2, null])
+    assert.throws(() => build({ prefer: ['v2', 'v1'], mutate: i => { i.evidence[key].bytes = bytes; } }), /readiness-evidence-invalid/, String(bytes));
+  assert.doesNotThrow(() => build({ prefer: ['v2', 'v1'], mutate: i => { i.evidence[key].bytes = 8 * 1024 * 1024; } }));
+  for (const prefer of [[], ['v3'], ['v1', 'v1'], 'v1', null, ['v1', 'v2', 'v2']])
+    assert.throws(() => build({ prefer: prefer === null ? [] : prefer }), /readiness-input-invalid/, JSON.stringify(prefer));
+  // v1 only lacks 480px for this master: the card is excluded rather than published partially.
+  assert.equal(build({ prefer: ['v1'] }).cards, 0);
+});
+
 test('v2 index enforces its own entry budget; hash drift and source drift still fail closed', async () => {
   const many = Object.fromEntries(Array.from({ length: MAX_CARD_READINESS_V2_ENTRIES + 1 }, (_, i) => [`MLU${i + 2}`,
     { sha256: hash, extension: 'jpg', source_url: source }]));

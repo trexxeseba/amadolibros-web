@@ -9,6 +9,8 @@ import {
 
 const HASH = /^[a-f0-9]{64}$/;
 const EXTENSIONS = ['jpg', 'png', 'webp'];
+const MAX_VARIANT_BYTES = 8 * 1024 * 1024;
+const VERSIONS = [VARIANT_VERSION, CF_VARIANT_VERSION];
 
 // Evidencia de un objeto ya almacenado y releído (HEAD/GET de R2), nunca una
 // afirmación de que "debería existir". Falla en voz alta si algo no cuadra.
@@ -19,7 +21,7 @@ function validateEvidence(hash, recipe, master, evidence) {
   const width = Math.min(master.width, recipe.width);
   const height = Math.max(1, Math.round(master.height * width / master.width));
   if (evidence.recipe !== recipe.id || evidence.master_sha256 !== hash || !encoderOk ||
-      evidence.format !== 'webp' || !(evidence.bytes > 0) || !HASH.test(evidence.sha256 || '') ||
+      evidence.format !== 'webp' || !Number.isSafeInteger(evidence.bytes) || evidence.bytes < 1 || evidence.bytes > MAX_VARIANT_BYTES || !HASH.test(evidence.sha256 || '') ||
       evidence.width !== width || !Number.isInteger(evidence.height) || Math.abs(evidence.height - height) > 1)
     throw new Error('readiness-evidence-invalid');
 }
@@ -29,7 +31,8 @@ function validateEvidence(hash, recipe, master, evidence) {
 // defecto reutiliza v1 antes que v2) y no incluye tarjetas con cobertura
 // incompleta: esas siguen sirviendo el original.
 export function buildMixedCardReadiness({ cards, masters, evidence, prefer = [VARIANT_VERSION, CF_VARIANT_VERSION] }) {
-  if (!cards || !masters || !evidence || !prefer.every(v => [VARIANT_VERSION, CF_VARIANT_VERSION].includes(v)))
+  if (!cards || !masters || !evidence || !Array.isArray(prefer) || prefer.length < 1 ||
+      new Set(prefer).size !== prefer.length || !prefer.every(v => VERSIONS.includes(v)))
     throw new Error('readiness-input-invalid');
   const selection = {};
   const publishedMasters = {};
@@ -38,7 +41,7 @@ export function buildMixedCardReadiness({ cards, masters, evidence, prefer = [VA
   for (const hash of Object.keys(masters).sort()) {
     const master = masters[hash];
     if (!HASH.test(hash) || !EXTENSIONS.includes(master?.extension) ||
-        !Number.isInteger(master.width) || !Number.isInteger(master.height) || master.width < 1 || master.height < 1)
+        !Number.isSafeInteger(master.width) || !Number.isSafeInteger(master.height) || master.width < 1 || master.height < 1)
       throw new Error('readiness-master-invalid');
     let code = '';
     for (const width of CARD_WIDTHS) {

@@ -19,7 +19,7 @@ const MAX_BYTES = 2_000_000;
 const SELECTION = /^[0-2]{3}$/;
 
 export function recipesForSelection(code) {
-  if (!SELECTION.test(code || '') || code.includes('0')) return null;
+  if (typeof code !== 'string' || !SELECTION.test(code) || code.includes('0')) return null;
   return Object.fromEntries(CARD_WIDTHS.map((width, i) => [width, `v${code[i]}-${width}-q85`]));
 }
 
