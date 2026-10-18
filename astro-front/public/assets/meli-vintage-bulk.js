@@ -1,6 +1,7 @@
 const path='/panel/meli-vintage-lote',run='23413782-4900-4000-8000-000000010000';
 const $=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=null,feed=localStorage.getItem('vintage-bulk-feed'),running=false,busy=false,timer=null,batchStart=null;
+const labels={publishing:'publicando',paused:'pausado',stock_stale:'stock vencido',auth_error:'revisar conexión',complete:'terminado',complete_with_review:'terminado con casos para revisar',pending:'pendientes',published:'publicadas',validated:'validadas',skipped_duplicate:'ya existentes',skipped_target_reached:'fuera del objetivo',review:'para revisar',uncertain:'resultado por confirmar',retry:'en espera',skipped_identity:'edición sin confirmar',skipped_category:'categoría sin confirmar',skipped_ml_requirement:'requisitos pendientes',skipped_stock_uncertain:'sin stock confirmado'};
 async function request(action,args){
  const response=await fetch(action?path:path+'?format=status',{method:action?'POST':'GET',headers:action?{'Content-Type':'application/json'}:{},body:action?JSON.stringify({action,args}):undefined,credentials:'same-origin',signal:AbortSignal.timeout(120000)});
  if(response.status===401)throw Error('La sesión venció. Ingresá al panel y volvé a esta página.');
@@ -9,8 +10,9 @@ async function request(action,args){
 }
 function render(data){
  state=data;const count=data.published_total??5,counts=data.summary?.counts??[];
- $('state').textContent=`${count.toLocaleString('es-UY')} de 10.000 publicadas en Vintage. Estado: ${data.run?.state??'listo para cargar el Excel'}.`;
- $('details').textContent=data.run?`Stock ${data.stock_fresh?'vigente':'vencido'} · ${counts.map(x=>`${x.state}: ${x.n}`).join(' · ')}${data.resume_at>Date.now()?' · Próximo intento: '+new Date(data.resume_at).toLocaleString('es-UY'):''}`:'';
+ const phase=data.run?.state==='publishing'&&!data.summary?.index?.done?'revisando publicaciones existentes':labels[data.run?.state]??'listo para cargar el Excel';
+ $('state').textContent=`${count.toLocaleString('es-UY')} de 10.000 publicadas en Vintage. Estado: ${phase}.`;
+ $('details').textContent=data.run?`Stock ${data.stock_fresh?'vigente':'vencido'} · Inventario revisado: ${data.summary?.index?.seen??0} publicaciones · ${counts.map(x=>`${labels[x.state]??x.state}: ${x.n}`).join(' · ')}${data.resume_at>Date.now()?' · Próximo intento: '+new Date(data.resume_at).toLocaleString('es-UY'):''}`:'';
  $('items').innerHTML=(data.recent??[]).map(j=>`<p>${esc(j.isbn)} · <a target="_blank" rel="noopener" href="https://articulo.mercadolibre.com.uy/MLU-${esc(j.item_id.replace(/^MLU/,''))}">${esc(j.item_id)}</a></p>`).join('');
  $('issues').textContent=(data.issues??[]).map(j=>`${j.isbn}: ${j.error_code??j.state}`).join(' · ')||'Sin casos pendientes de revisión.';
  $('start').disabled=busy||!feed&&!data.run;
@@ -61,7 +63,7 @@ $('load').addEventListener('click',async()=>{
  finally{busy=false;$('load').disabled=false;$('start').disabled=!feed&&!state?.run;}
 });
 $('start').addEventListener('click',async()=>{
- if(busy)return;busy=true;$('start').disabled=true;
+ if(busy)return;stop();busy=true;$('start').disabled=true;
  try{await refresh();render(await request('start',{feed_id:feed??state.summary.feed_id,policy_hash:state.summary?.policy_hash??state.policy_hash}));running=true;localStorage.setItem('vintage-bulk-running','true');batchStart=state.published_total;}
  catch(error){$('state').textContent=error.message;}
  finally{busy=false;}
