@@ -9,6 +9,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/refresh-sbs-feed-once.yml'
+      - 'scripts/mercadolibre/refresh-sbs-stock.mjs'
+      - 'scripts/mercadolibre/prepare-supplier-feed.py'
 
 permissions:
   contents: read

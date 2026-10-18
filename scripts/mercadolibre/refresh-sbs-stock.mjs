@@ -68,8 +68,14 @@ export async function refreshSbsStock({env=process.env,fetchImpl=fetch,parse=par
 async function main(){
  let result;
  try{result=await refreshSbsStock();}
- catch(error){result={state:'failed',error:error.code||'supplier_refresh_failed',...error.detail,publication_writes:false};process.exitCode=1;}
+ catch(error){result={state:'failed',error:/^[a-z_]{1,80}$/.test(error.code??'')?error.code:'supplier_refresh_failed',...error.detail,publication_writes:false};process.exitCode=1;}
  console.log(JSON.stringify(result));
+ if(process.env.SYNC_SECRET){
+  try{
+   const response=await fetch(destination,{method:'POST',headers:{Authorization:`Bearer ${process.env.SYNC_SECRET}`,'Content-Type':'application/json'},body:JSON.stringify({action:'record_attempt',args:{kind:'automatic',state:result.state==='failed'?'failed':'success',source_date:result.source_date??null,error_code:result.error??null,feed_id:result.feed_id??null}}),redirect:'manual',signal:AbortSignal.timeout(15000)});
+   if(!response.ok)console.log(JSON.stringify({diagnostic:'supplier_attempt_not_recorded',http_status:response.status}));
+  }catch{console.log(JSON.stringify({diagnostic:'supplier_attempt_not_recorded'}));}
+ }
  if(process.env.GITHUB_STEP_SUMMARY)await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,`### Stock SBS\n\nEstado: **${result.state}**\n\n${result.error?`Motivo: ${result.error}\n\n`:''}Fecha del proveedor: ${result.source_date||'no disponible'}\n\nSolo ingresa stock para Vintage. No publica, no actualiza precios ni cambia publicaciones de Amado Libros.\n`);
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();
