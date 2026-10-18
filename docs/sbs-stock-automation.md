@@ -42,6 +42,37 @@ precios ni credenciales. No se guardan catálogos en logs, artefactos o Git.
 El último snapshot completo permanece intacto; su vigencia sigue venciendo
 normalmente y no se prolonga al descargarlo otra vez.
 
+El runner registra cada intento automático en `sbs_supplier_events`, con hora,
+fecha real y código de fallo. El panel Vintage muestra por separado esa última
+descarga y la última carga manual. Los diagnósticos se limitan a 100 registros y
+no incluyen catálogos, costos, direcciones privadas ni credenciales.
+
+## Carga manual para el piloto
+
+En `/panel/meli-vintage-piloto`, elegir el informe completo de stock `.xlsx` y
+pulsar **Cargar Excel y actualizar estos 5 ISBN**. El lector corre en un Web Worker
+del navegador, con fflate 0.8.3 servido desde el propio dominio y su licencia MIT.
+No usa CDN, evalúa fórmulas ni transmite el archivo completo. Extrae exclusivamente
+los cinco ISBN que muestra el piloto, sus datos y la fecha interna del proveedor.
+El servidor verifica sesión del panel, origen, cinco ISBN exactos, disponibilidad,
+vigencia y versión de la muestra. Las listas PVP no sustituyen un Excel de stock.
+
+La proyección de cinco filas tiene un ID independiente del snapshot automático
+completo. Solo se actualiza el lote Vintage no aprobado y sin recibos de creación.
+Una reserva y una transacción impiden cargas simultáneas o carreras con aprobación.
+El resto de candidatas queda fuera del piloto, sin reemplazos automáticos.
+
+Si costo, peso o metadatos cambian, se borran los payloads anteriores y se validan
+de nuevo los mismos cinco antes de mostrar aprobación. Si los datos coinciden,
+se preservan los payloads y precios revisados. Cargar no publica ni aprueba.
+La fecha vencida se muestra como **stock vencido**, aunque el lote estuviera ready.
+
+Después de publicar, el botón **Verificar publicaciones creadas en Mercado Libre**
+realiza hasta cinco GET autenticados con Vintage y comprueba seller, ISBN/SKU,
+precio, moneda, cantidad, disponibilidad y estado. No modifica los ítems. Un
+resultado no comprobado o discordante se muestra para revisión, nunca como éxito.
+La aprobación de los cinco precios continúa exclusivamente en el panel.
+
 El 17/10/2026 el enlace público seguía entregando un archivo con fecha interna
 25/08/2026 y Last-Modified 25/08/2026. Configurar el job no actualiza ese objeto
 en los servidores de SBS: hasta que su fuente entregue stock vigente, el resultado

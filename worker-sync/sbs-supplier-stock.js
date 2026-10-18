@@ -5,7 +5,20 @@ import {PublicationError, normalizeSupplierRow, stockIsFresh} from './publicatio
 export const SBS_SCHEMA = [
  `CREATE TABLE IF NOT EXISTS sbs_supplier_feeds (id TEXT PRIMARY KEY,source_date TEXT NOT NULL,source_sha256 TEXT NOT NULL UNIQUE,state TEXT NOT NULL CHECK(state IN ('importing','ready')),expected_rows INTEGER NOT NULL,created_at INTEGER NOT NULL,checked_at INTEGER NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS sbs_supplier_stock (feed_id TEXT NOT NULL,isbn TEXT NOT NULL,data_json TEXT NOT NULL,PRIMARY KEY(feed_id,isbn))`,
+ `CREATE TABLE IF NOT EXISTS sbs_supplier_events (id INTEGER PRIMARY KEY AUTOINCREMENT,checked_at INTEGER NOT NULL,kind TEXT NOT NULL,state TEXT NOT NULL,source_date TEXT,error_code TEXT,feed_id TEXT)`,
 ];
+export async function readSbsDiagnostics(db){
+ if(!await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sbs_supplier_events'").first())return {automatic:null,manual:null};
+ const latest=kind=>db.prepare('SELECT checked_at,kind,state,source_date,error_code,feed_id FROM sbs_supplier_events WHERE kind=? ORDER BY id DESC LIMIT 1').bind(kind).first();
+ return {automatic:await latest('automatic'),manual:await latest('manual')};
+}
+export async function recordSbsAttempt(db,{kind,state,source_date=null,error_code=null,feed_id=null},at=Date.now()){
+ if(!['automatic','manual'].includes(kind)||!['success','failed'].includes(state)||source_date!==null&&!Number.isFinite(Date.parse(source_date))||error_code!==null&&!/^[a-z_]{1,80}$/.test(error_code)||feed_id!==null&&!/^[a-f0-9-]{36}$/.test(feed_id))throw new PublicationError('invalid_supplier_event');
+ await initializeSbsStock(db);
+ await db.prepare('INSERT INTO sbs_supplier_events(checked_at,kind,state,source_date,error_code,feed_id) VALUES(?,?,?,?,?,?)').bind(at,kind,state,source_date,error_code,feed_id).run();
+ // Keep only recent diagnostics; never delete stock snapshots referenced by runs.
+ await db.prepare('DELETE FROM sbs_supplier_events WHERE id NOT IN (SELECT id FROM sbs_supplier_events ORDER BY id DESC LIMIT 100)').run();
+}
 export async function initializeSbsStock(db){
  if(!db)throw new PublicationError('database_not_configured',503);
  await db.batch(SBS_SCHEMA.map(sql=>db.prepare(sql)));
@@ -13,12 +26,13 @@ export async function initializeSbsStock(db){
 export function createSbsStock({now=Date.now}={}){
  return async function command(env,action,args={}){
   const db=env.ORDERS_DB;
-  if(!['status','begin','import','commit'].includes(action))throw new PublicationError('invalid_supplier_action');
+  if(!['status','begin','import','commit','record_attempt'].includes(action))throw new PublicationError('invalid_supplier_action');
   if(!args||typeof args!=='object'||Array.isArray(args))throw new PublicationError('invalid_supplier_arguments');
-  const fields={status:[],begin:['feed_id','source_date','source_sha256','expected_rows'],import:['feed_id','rows'],commit:['feed_id']}[action];
+  const fields={status:[],begin:['feed_id','source_date','source_sha256','expected_rows'],import:['feed_id','rows'],commit:['feed_id'],record_attempt:['kind','state','source_date','error_code','feed_id']}[action];
   if(Object.keys(args).some(k=>!fields.includes(k)))throw new PublicationError('invalid_supplier_arguments');
   await initializeSbsStock(db);
   const stmt=(sql,...values)=>db.prepare(sql).bind(...values);
+  if(action==='record_attempt'){await recordSbsAttempt(db,args,now());return {state:'recorded'};}
   if(action==='status'){
    const latest=await stmt("SELECT id,source_date,source_sha256,expected_rows,checked_at FROM sbs_supplier_feeds WHERE state='ready' ORDER BY source_date DESC,created_at DESC LIMIT 1").first();
    return {state:latest?'ready':'no_stock',fresh:stockIsFresh(latest?.source_date,now()),latest};
