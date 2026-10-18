@@ -26,8 +26,10 @@ const CATALOG_PATH = '/catalogo';
 const ACTIVE_PAGE_MARKER = 'class="badge in-stock"';
 const RELATED_BOOKS_MARKER = '<section class="related-books"';
 const ORDER_BOX_GENERIC_COPY = '<span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>';
-const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Demora estimada: 15 a 20 días desde la confirmación.</b> Salvo demoras del proveedor, courier o aduana.</span>
-      <span>Antes de avanzar verificamos disponibilidad, edición y precio.</span>`;
+// Sin plazo prometido: el cliente escribe por WhatsApp o deja su correo y lo
+// atendemos una persona. Se mantiene la clase `order-lead-time` (y su estilo)
+// porque la propia página usa esa marca para no enriquecerse dos veces.
+const ORDER_BOX_LEAD_TIME_COPY = `<span class="order-lead-time"><b>Escribinos por WhatsApp y lo consultamos.</b> Si preferís, dejá tu correo más abajo y te avisamos.</span>`;
 const ORDER_LEAD_TIME_STYLE_MARKER = '.order-box .order-lead-time{';
 const SHOWCASE_MARKER = 'class="product-showcase"';
 const SHOWCASE_STYLE_MARKER = '.product-showcase{';
