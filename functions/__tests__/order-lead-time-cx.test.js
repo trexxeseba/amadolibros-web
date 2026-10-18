@@ -43,16 +43,17 @@ function breadcrumbSchema(html) {
 }
 
 function assertLeadTime(html) {
-  assert.match(html, /Demora estimada: 15 a 20 días desde la confirmación\./);
-  assert.match(html, /Salvo demoras del proveedor, courier o aduana\./);
-  assert.match(html, /Antes de avanzar verificamos disponibilidad, edición y precio\./);
+  // Sin plazo prometido: WhatsApp o correo, y una persona responde.
+  assert.match(html, /Escribinos por WhatsApp y lo consultamos\./);
+  assert.match(html, /dejá tu correo más abajo y te avisamos\./);
+  assert.doesNotMatch(html, /Demora estimada|15 a 20 días|Salvo demoras del proveedor|Antes de avanzar verificamos/);
   assert.doesNotMatch(html, /Podemos intentar conseguirlo por encargo/);
   assert.doesNotMatch(html, /días hábiles|garantizad/i);
   assert.match(html, /class="order-lead-time"/);
   assert.match(html, /\.order-box \.order-lead-time\{font-weight:650\}/);
 }
 
-test('la ficha de la cohorte comunica el plazo y conserva el hub SEO', () => {
+test('la ficha de la cohorte invita a escribir por WhatsApp (sin plazo) y conserva el hub SEO', () => {
   const html = enrichByRequestProductHtml(productHtml(), COHORT_PRODUCT_ID);
 
   assertLeadTime(html);
@@ -113,7 +114,7 @@ test('el enriquecimiento es idempotente dentro y fuera de la cohorte', () => {
     const second = enrichByRequestProductHtml(first, productId);
 
     assert.equal(second, first);
-    assert.equal((second.match(/15 a 20 días/g) || []).length, 1);
+    assert.equal((second.match(/Escribinos por WhatsApp y lo consultamos\./g) || []).length, 1);
     assert.equal((second.match(/\.order-box \.order-lead-time\{/g) || []).length, 1);
   }
 });
