@@ -86,3 +86,13 @@ test('una prueba manual marca el asunto, no gasta la reserva del día y no la li
   assert.equal((await sendDailyPanelDigest(env, { now: NOW, fetchFn })).status, 'sent');
   assert.doesNotMatch(subjects[1], /PRUEBA/);
 });
+
+test('el correo lista los WhatsApp que dejaron los clientes', () => {
+  const { subject, text, html } = buildDigestEmail({
+    toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0,
+    whatsapps: [{ whatsapp: '59899123456', product_title: 'Libro raro' }],
+  });
+  assert.match(subject, /1 cliente dejó su WhatsApp/);
+  assert.match(text, /https:\/\/wa\.me\/59899123456/);
+  assert.match(html, /Libro raro/);
+});

@@ -33,9 +33,11 @@ function env(db, patch = {}) {
 
 function memoryDb({ duplicate = false } = {}) {
   const rows = new Map();
+  const waRows = new Map();
   const updates = [];
   return {
     rows,
+    waRows,
     updates,
     prepare(sql) {
       return {
@@ -47,6 +49,17 @@ function memoryDb({ duplicate = false } = {}) {
               }
               if (sql.includes('CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_waitlist')) {
                 return { meta: { changes: 0 } };
+              }
+              if (sql.includes('CREATE TABLE IF NOT EXISTS stock_waitlist_whatsapp')) {
+                return { meta: { changes: 0 } };
+              }
+              if (sql.startsWith('INSERT OR IGNORE INTO stock_waitlist_whatsapp')) {
+                const [id, productId, productTitle, whatsapp] = args;
+                waRows.set(id, { id, product_id: productId, product_title: productTitle, whatsapp });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.startsWith('UPDATE stock_waitlist_whatsapp SET')) {
+                return { meta: { changes: 1 } };
               }
               if (sql.startsWith('INSERT OR IGNORE INTO stock_waitlist')) {
                 if (duplicate) return { meta: { changes: 0 } };
@@ -318,4 +331,34 @@ test('stock-1: el correo escapa HTML y no confía en un título del navegador', 
   assert.match(email.subject, /Libro <agotado>/);
   assert.match(email.html, /Libro &lt;agotado&gt;/);
   assert.doesNotMatch(email.html, /Libro <agotado>/);
+});
+
+import { normalizeWhatsapp } from '../_stock_waitlist_handler.js';
+
+test('normalizeWhatsapp completa Uruguay y rechaza basura', () => {
+  assert.equal(normalizeWhatsapp('099 123 456'), '59899123456');
+  assert.equal(normalizeWhatsapp('+598 99 123 456'), '59899123456');
+  assert.equal(normalizeWhatsapp('0054 9 11 5555 1234'), '5491155551234');
+  assert.equal(normalizeWhatsapp('12345'), null);
+  assert.equal(normalizeWhatsapp('hola'), null);
+});
+
+test('guarda un WhatsApp en su tabla y avisa por correo con link a wa.me', async () => {
+  const db = memoryDb();
+  const hooks = {};
+  const handler = makeHandler({ pausedItem: PAUSED, hooks });
+  const { response, data } = await call(handler, db, validBody({ email: '099 123 456' }));
+  assert.equal(response.status, 201);
+  assert.equal(data.registered, true);
+  assert.equal(db.rows.size, 0);
+  const [row] = [...db.waRows.values()];
+  assert.equal(row.whatsapp, '59899123456');
+  assert.match(JSON.parse(hooks.emailArgs[1].body).text, /wa\.me\/59899123456/);
+});
+
+test('rechaza un contacto que no es correo ni WhatsApp', async () => {
+  const db = memoryDb();
+  const handler = makeHandler({ pausedItem: PAUSED });
+  const { response } = await call(handler, db, validBody({ email: 'hola' }));
+  assert.equal(response.status, 400);
 });
