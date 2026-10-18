@@ -1,52 +1,44 @@
-name: Refresh SBS feed once
+name: SBS stock refresh (no publication writes)
 
 on:
+  workflow_dispatch:
+  schedule:
+    # 02:17 and 14:17 Uruguay. Provider report dates remain authoritative.
+    - cron: '17 5,17 * * *'
   push:
     branches: [main]
     paths:
       - '.github/workflows/refresh-sbs-feed-once.yml'
+      - 'scripts/mercadolibre/refresh-sbs-stock.mjs'
+      - 'scripts/mercadolibre/prepare-supplier-feed.py'
 
 permissions:
   contents: read
 
+concurrency:
+  group: sbs-stock-ingestion
+  cancel-in-progress: false
+
 jobs:
   refresh:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
-      - name: Download, sample and import fresh SBS feed only
-        id: refresh
-        shell: bash
-        run: |
-          set -euo pipefail
-          node scripts/mercadolibre/publisher-control.mjs | tee /tmp/sbs-refresh.log
-          FEED_ID="$(node -e "const fs=require('fs');let feed='';for(const raw of fs.readFileSync('/tmp/sbs-refresh.log','utf8').split(/\r?\n/)){try{const row=JSON.parse(raw);if(row.state==='feed_ready')feed=row.feed_id||feed}catch{}}if(!feed)process.exit(2);process.stdout.write(feed)")"
-          echo "feed_id=$FEED_ID" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download and validate entire stock into isolated supplier tables
+        run: node scripts/mercadolibre/refresh-sbs-stock.mjs
         env:
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
-          PUBLISHER_ACTION: refresh
-          PUBLISHER_REFRESH_ONLY: 'true'
+          # The public link supplied by SBS is the runner default. Optional
+          # secret overrides it without disclosing a private supplier URL.
           SUPPLIER_FEED_URL: ${{ secrets.SUPPLIER_FEED_URL }}
           SUPPLIER_FEED_AUTHORIZATION: ${{ secrets.SUPPLIER_FEED_AUTHORIZATION }}
           SUPPLIER_WEIGHT_UNIT: ${{ vars.SUPPLIER_WEIGHT_UNIT || 'kg' }}
-          PUBLISHER_POLICY_JSON: ${{ secrets.PUBLISHER_POLICY_JSON }}
-          PUBLISHER_SAMPLE_SIZE: '20000'
-          PUBLISHER_SAMPLE_SEED: '2026101702'
-
-      - name: Create 10k target run in preflight only
-        run: node scripts/mercadolibre/publisher-control.mjs
-        env:
-          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
-          PUBLISHER_ACTION: create_run_from_source
-          PUBLISHER_RUN_ID: eb70a953-6504-4359-b109-b4c18be38fc0
-          PUBLISHER_FEED_ID: ${{ steps.refresh.outputs.feed_id }}
-          PUBLISHER_AVAILABILITY_DAYS: '18'
-          PUBLISHER_DAILY_CAP: '10000'
-          PUBLISHER_PREFLIGHT_LIMIT: '20'
-          PUBLISHER_TARGET_PUBLISHED: '10000'
-          PUBLISHER_CYCLES: '10'

@@ -10,9 +10,23 @@ import { createVintagePilotPage } from '../panel/meli-vintage-piloto.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
 import { runPreflight } from '../../astro-front/public/assets/meli-vintage-preflight.js';
 import { MercadoLibreError } from '../../worker-sync/publication-meli.js';
+import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 
 const vintage='2341378249',books='440298103',app='4741021817925208';
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:40,freightUsdKg:10,laborUyu:0,margin:.2,mlFee:.15,deliveryUyu:200,minimumContributionUyu:100,minimumSaleUyu:1000,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
+
+test('Vintage can read new isolated SBS stock without changing the stock selected by Libros',async t=>{
+ const f=await fixture(t),feed_id=crypto.randomUUID(),supplier=createSbsStock({now:()=>f.clock.value});
+ const dump=()=>JSON.stringify(['ml_pub_feeds','ml_pub_stock','ml_pub_runs','ml_pub_jobs','ml_pub_receipts'].map(table=>f.db.sqlite.prepare(`SELECT * FROM ${table}`).all()));
+ const before=dump();
+ await supplier(f.env,'begin',{feed_id,source_date:new Date(f.clock.value).toISOString(),source_sha256:'e'.repeat(64),expected_rows:f.rows.length});
+ await supplier(f.env,'import',{feed_id,rows:f.rows});await supplier(f.env,'commit',{feed_id});
+ const sources=await f.pilot.sources(f.env);assert.ok(sources.feeds.some(feed=>feed.id===feed_id));
+ await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id});
+ const snapshot=await f.pilot.snapshot(f.env);assert.equal(snapshot.feed.id,feed_id);assert.ok(snapshot.sample.length>0);
+ assert.equal(dump(),before);assert.equal(f.calls.create.length,0);
+ assert.equal((await f.s.stmt("SELECT id FROM ml_pub_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 1").first()).id,f.feed);
+});
 function database(t) {
  const sqlite=new DatabaseSync(':memory:');t.after(()=>sqlite.close());
  const statement=(sql,args=[])=>({sql,args,bind(...values){return statement(sql,values);},async first(){return sqlite.prepare(sql).get(...args)??null;},async all(){return {results:sqlite.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(sqlite.prepare(sql).run(...args).changes)}};}});
@@ -289,4 +303,72 @@ test('pilot page requires panel session and rejects cross-origin POST before inv
  const cookie=sessionCookieHeader(await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD))).split(';')[0];
  const request=new Request(url,{method:'POST',headers:{cookie,origin:'https://evil.invalid','content-type':'application/x-www-form-urlencoded'},body:'action=prepare'});
  assert.equal((await page({request,env})).status,403);
+});
+async function readyPilot(f){await f.pilot.prepare(f.env,{source_run_id:f.source,feed_id:f.feed});return f.pilot.advance(f.env,{run_id:(await f.pilot.snapshot(f.env)).run.id});}
+function stockUpload(f,state,overrides={}){return {run_id:state.run.id,feed_id:state.feed.id,sample_hash:state.sample_hash,source_date:new Date(f.clock.value).toISOString(),source_sha256:'a'.repeat(64),rows:state.sample.map(j=>({...f.rows.find(r=>r.isbn===j.isbn)})),...overrides};}
+const booksDump=f=>JSON.stringify(['ml_pub_feeds','ml_pub_stock','ml_pub_runs','ml_pub_jobs','ml_pub_receipts'].map(table=>f.db.sqlite.prepare(`SELECT * FROM ${table}`).all()));
+
+test('manual Excel refresh restores expired stock for exactly five, preserves prices and never writes Libros',async t=>{
+ const f=await fixture(t),ready=await readyPilot(f),before=booksDump(f),payloads=ready.sample.map(j=>j.payload),prepared=f.calls.prepare.length;
+ f.clock.value+=25*3600000;
+ const stale=await f.pilot.snapshot(f.env);assert.equal(stale.display_state,'stock_stale');assert.equal(stale.can_approve,false);assert.equal(stale.can_upload,true);
+ await f.pilot.refreshStock(f.env,stockUpload(f,stale));
+ const after=await f.pilot.snapshot(f.env);
+ assert.equal(after.stock_fresh,true);assert.equal(after.can_approve,true);assert.equal(after.sample.length,5);assert.deepEqual(after.sample.map(j=>j.payload),payloads);
+ assert.equal(after.sample_hash,ready.sample_hash);assert.equal(after.stock_diagnostics.manual.state,'success');
+ assert.equal(f.db.sqlite.prepare('SELECT COUNT(*) n FROM sbs_supplier_stock').get().n,5);
+ assert.equal((await f.pilot.sources(f.env)).feeds.find(feed=>feed.id===after.feed.id).expected_rows,5);
+ assert.equal(f.calls.prepare.length,prepared);assert.equal(f.calls.create.length,0);assert.equal(booksDump(f),before);
+ await assert.rejects(()=>f.pilot.refreshStock(f.env,stockUpload(f,stale)),/sample_changed/);
+});
+
+test('changed supplier cost revalidates only the same five and clears previous payloads before approval',async t=>{
+ const f=await fixture(t),ready=await readyPilot(f),args=stockUpload(f,ready),before=booksDump(f);
+ args.rows[0].listArs+=40000;
+ await f.pilot.refreshStock(f.env,args);
+ let state=await f.pilot.snapshot(f.env);assert.equal(state.run.state,'preflight');assert.equal(state.can_approve,false);
+ assert.equal(state.sample.length,5);assert.ok(state.sample.every(j=>j.state==='pending'&&j.price===null));
+ assert.deepEqual(state.sample.map(j=>j.isbn),ready.sample.map(j=>j.isbn));
+ state=await f.pilot.advance(f.env,{run_id:state.run.id});
+ assert.equal(state.run.state,'ready');assert.equal(state.sample.length,5);assert.notEqual(state.sample_hash,ready.sample_hash);
+ assert.deepEqual(state.sample.map(j=>j.isbn),ready.sample.map(j=>j.isbn));assert.equal(f.calls.create.length,0);assert.equal(booksDump(f),before);
+});
+
+test('invalid, unavailable or substituted stock does not change the pilot feed or jobs',async t=>{
+ for(const kind of ['old','missing','duplicate','out_of_stock','substitute'])await t.test(kind,async child=>{
+  const f=await fixture(child),state=await readyPilot(f),args=stockUpload(f,state);
+  if(kind==='old')args.source_date=new Date(f.clock.value-25*3600000).toISOString();
+  if(kind==='missing')args.rows.pop();
+  if(kind==='duplicate')args.rows[1]={...args.rows[0]};
+  if(kind==='out_of_stock')args.rows[0].stock='0';
+  if(kind==='substitute')args.rows[0]={...f.rows[7]};
+  const run=f.db.sqlite.prepare('SELECT * FROM ml_vintage_pub_runs').get(),jobs=f.db.sqlite.prepare('SELECT * FROM ml_vintage_pub_jobs').all();
+  await assert.rejects(()=>f.pilot.refreshStock(f.env,args));
+  assert.deepEqual(f.db.sqlite.prepare('SELECT * FROM ml_vintage_pub_runs').get(),run);assert.deepEqual(f.db.sqlite.prepare('SELECT * FROM ml_vintage_pub_jobs').all(),jobs);
+  assert.equal((await f.pilot.snapshot(f.env)).stock_diagnostics.manual.state,'failed');assert.equal(f.calls.create.length,0);
+ });
+});
+
+test('simultaneous stock loads cannot replace an active lease or publish anything',async t=>{
+ const f=await fixture(t),state=await readyPilot(f),args=stockUpload(f,state);
+ const results=await Promise.allSettled([f.pilot.refreshStock(f.env,args),f.pilot.refreshStock(f.env,args)]);
+ assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);
+ assert.equal((await f.pilot.snapshot(f.env)).sample.length,5);assert.equal(f.calls.create.length,0);
+});
+
+test('uploaded stock cannot modify an approved or already published pilot',async t=>{
+ const f=await fixture(t),state=await readyPilot(f),args=stockUpload(f,state);
+ await f.pilot.approve(f.env,{run_id:state.run.id,policy_hash:state.policy_hash,sample_hash:state.sample_hash});
+ await assert.rejects(()=>f.pilot.refreshStock(f.env,args),/sample_changed/);
+ assert.equal((await f.pilot.snapshot(f.env)).can_upload,false);assert.equal(f.calls.create.length,5);
+});
+
+test('verification checks the five created listings in read-only ML calls and exposes mismatches',async t=>{
+ const f=await fixture(t),state=await readyPilot(f);
+ await f.pilot.approve(f.env,{run_id:state.run.id,policy_hash:state.policy_hash,sample_hash:state.sample_hash});
+ const published=await f.pilot.snapshot(f.env),reads=[];
+ f.api.call=async(env,path)=>{reads.push(path);const j=published.sample.find(j=>path.includes(j.item_id));return {id:j.item_id,seller_id:reads.length===1?books:vintage,price:j.price,currency_id:'UYU',available_quantity:1,status:'active',seller_custom_field:'AMADO-AR-'+j.isbn,sale_terms:[{id:'MANUFACTURING_TIME',value_struct:{number:18}}]};};
+ const before=booksDump(f),verified=await f.pilot.verifyPublished(f.env,{run_id:state.run.id});
+ assert.equal(reads.length,5);assert.equal(verified.verified.filter(v=>v.ok).length,4);assert.equal(verified.verified.find(v=>!v.ok).checks.seller,false);
+ assert.equal(f.calls.create.length,5);assert.equal(booksDump(f),before);
 });

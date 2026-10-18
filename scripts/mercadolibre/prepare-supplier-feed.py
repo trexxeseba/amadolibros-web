@@ -41,7 +41,7 @@ def read_feed(path,weight_unit='kg'):
       inline=cell.find('m:is',NS);value=''.join(inline.itertext()) if inline is not None else ''
      values[col]=value
     if int(node.attrib.get('r','0'))<=10 and not source_date:
-     match=re.search(r'(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2})',str(values.get('A','')))
+     match=re.search(r'(\d{1,2}/\d{1,2}/\d{4}\s+\d{2}:\d{2}:\d{2})',str(values.get('A','')))
      if match:source_date=datetime.strptime(match.group(1),'%d/%m/%Y %H:%M:%S').replace(tzinfo=ZoneInfo('America/Argentina/Buenos_Aires')).isoformat()
     normalized={label(v):k for k,v in values.items() if v is not None}
     if all(k in normalized for k in ('isbn','titulo','precio','disponibilidad','peso')):header=normalized;node.clear();continue
@@ -63,6 +63,6 @@ def read_feed(path,weight_unit='kg'):
 if __name__=='__main__':
  parser=argparse.ArgumentParser();parser.add_argument('source');parser.add_argument('output');parser.add_argument('--weight-unit',choices=['kg','g'],default='kg');args=parser.parse_args()
  try:
-  result=read_feed(args.source,args.weight_unit);Path(args.output).write_text(json.dumps(result,ensure_ascii=False));print(json.dumps(result['source_summary']))
+  result=read_feed(args.source,args.weight_unit);Path(args.output).write_text(json.dumps(result,ensure_ascii=False),encoding='utf-8');print(json.dumps(result['source_summary']))
  except Exception:
   print('Supplier workbook could not be validated.',file=sys.stderr);sys.exit(1)
