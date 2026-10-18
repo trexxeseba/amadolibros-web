@@ -9,6 +9,8 @@ import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js'
 
 export const BULK_RUN='23413782-4900-4000-8000-000000010000';
 export const PILOT_RUN='23413782-4900-4000-8000-000000000005';
+// Daily creation cap. Raise in steps (1,000 -> 3,000 -> 10,000) while watching review cases.
+export const VINTAGE_DAILY_CAP=3000;
 const fail=(code,status=409)=>{throw new PublicationError(code,status);};
 const uuid=x=>typeof x==='string'&&/^[a-f0-9-]{36}$/.test(x);
 const SCHEMA=[
@@ -25,7 +27,7 @@ export class VintageBulkStore extends VintageStore {
   // Pilot candidates excluded by its five-book cap remain eligible. Only an
   // actual seller receipt or the live inventory excludes an ISBN here.
   await this.db.batch([
-   this.stmt("INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,approved_hash,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'publishing',?,?,?,?,1000,1)",r.id,r.feedId,JSON.stringify(r.policy),r.policyHash,r.policyHash,r.now,r.now,JSON.stringify({status:'all',scroll:null,pending:[],done:false,seen:0})),
+   this.stmt("INSERT INTO ml_pub_runs(id,feed_id,policy_json,policy_hash,state,approved_hash,created_at,updated_at,index_json,daily_cap,preflight_limit) VALUES(?,?,?,?,'publishing',?,?,?,?,?,1)",r.id,r.feedId,JSON.stringify(r.policy),r.policyHash,r.policyHash,r.now,r.now,JSON.stringify({status:'all',scroll:null,pending:[],done:false,seen:0}),VINTAGE_DAILY_CAP),
    this.stmt("INSERT INTO ml_pub_jobs(run_id,isbn,state,error_code,item_id) SELECT ?,s.isbn,CASE WHEN r.isbn IS NULL THEN 'pending' ELSE 'skipped_duplicate' END,CASE WHEN r.isbn IS NULL THEN NULL ELSE 'existing_receipt' END,r.item_id FROM ml_pub_stock s LEFT JOIN ml_pub_receipts r ON r.seller_id=? AND r.isbn=s.isbn WHERE s.feed_id=?",r.id,VINTAGE_SELLER_ID,r.feedId),
    this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published,created_at) VALUES(?,?,?)',r.id,9995,r.now),
   ]);
@@ -184,7 +186,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
   await s.discoverSupplierStock();const summary=await s.summary(run.id),feed=await s.feed(run.feed_id);
   const rate=await env.ORDERS_DB.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
   const daily=await s.dayCreated(now()),date=new Date(now()-3*3600000).toISOString().slice(0,10),nextDay=Date.parse(date+'T03:00:00Z')+86400000;
-  return {seller_id:VINTAGE_SELLER_ID,minimum_sale_uyu:VINTAGE_MINIMUM_UYU,target_total:10000,pilot_published:5,run:{id:run.id,state:run.state},local_executor,published_total:5+await s.publishedCount(run.id),summary,source_date:feed?.source_date,stock_fresh:stockIsFresh(feed?.source_date,now()),busy:run.lease_until>now(),resume_at:Math.max(run.backoff_until||0,rate?.cooldown||0,daily>=1000?nextDay:0),daily_created:daily,issues:(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','uncertain') LIMIT 10",run.id).all()).results,recent:await s.publishedItems(run.id,Math.max(0,(await s.publishedCount(run.id))-10),10)};
+  return {seller_id:VINTAGE_SELLER_ID,minimum_sale_uyu:VINTAGE_MINIMUM_UYU,target_total:10000,pilot_published:5,run:{id:run.id,state:run.state},local_executor,published_total:5+await s.publishedCount(run.id),summary,source_date:feed?.source_date,stock_fresh:stockIsFresh(feed?.source_date,now()),busy:run.lease_until>now(),resume_at:Math.max(run.backoff_until||0,rate?.cooldown||0,daily>=VINTAGE_DAILY_CAP?nextDay:0),daily_created:daily,daily_cap:VINTAGE_DAILY_CAP,issues:(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','uncertain') LIMIT 10",run.id).all()).results,recent:await s.publishedItems(run.id,Math.max(0,(await s.publishedCount(run.id))-10),10)};
  }
  async function command(env,action,args={}){
   activeEnv=env;const s=store(env);

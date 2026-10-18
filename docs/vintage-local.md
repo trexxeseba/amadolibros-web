@@ -8,7 +8,11 @@ Node 22.13+ (or Node 24) and Python 3 are required; no new packages are needed.
 The destination is fixed to seller 2341378249 and app 4741021817925208. Prices
 retain the approved policy, a UYU 1,600 floor and 18-day availability. The target
 defaults to 1,000 total campaign publications, including the five pilot items.
-The seller's existing receipts enforce the server-side 1,000-per-day cap.
+The seller's existing receipts enforce the server-side daily cap, defined once as
+`VINTAGE_DAILY_CAP` in `functions/_shared/meli-vintage-bulk.js` (currently 3,000) and
+reported to the engine through the `status` action. Raise it in steps (1,000 → 3,000 →
+10,000), reviewing the cases flagged for review and any 429 or moderation signal before
+each increase. Deploying the new value is a production change and needs owner approval.
 
 ## Authorization and handoff
 
@@ -55,7 +59,7 @@ active state and 18-day availability before confirming the receipt.
 
 Requests have a persistent two-second clock, cached static metadata and 429
 cooldowns. The first version sends one creation at a time; it does not assume
-four or five simultaneous requests are safe. There is a minute pause after 25
-creations. The PC must remain on and awake. Stale stock, an expired/revoked
+four or five simultaneous requests are safe. There is a 20-second pause after 25
+creations (it was 60 seconds; the pause was self-imposed, not a Mercado Libre limit). The PC must remain on and awake. Stale stock, an expired/revoked
 connection or an identity mismatch stops publishing. A fresh approved stock
 connection can replace an expired snapshot while retaining local receipts.
