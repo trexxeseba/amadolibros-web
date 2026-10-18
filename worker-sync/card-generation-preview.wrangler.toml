@@ -1,0 +1,28 @@
+# Piloto de variantes v2 (Cloudflare Images) — SOLO Preview, Worker temporal.
+# Se despliega con un nombre por ejecución (amado-card-gen-<run>-<intento>) y se
+# elimina al terminar. No se enlaza a rutas ni dominios de producción.
+name = "amado-card-gen-preview"
+main = "card-generation-preview.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+
+[vars]
+PILOT_MODE = "preview-card-generation"
+PREVIEW_BUCKET_NAME = "amadolibros-images-preview"
+SOURCE_BUCKET_NAME = "amadolibros-images-production"
+
+# ÚNICO bucket con escritura: Preview. El código sólo escribe el libro mayor y
+# covers/variants/v2/ (ver previewFacade).
+[[r2_buckets]]
+binding = "COVER_R2"
+bucket_name = "amadolibros-images-preview"
+
+# Producción, sólo lectura impuesta por sourceFacade (get/head de masters y v1).
+# Wrangler no puede declarar un binding R2 de solo lectura: la garantía es el
+# código y la prueba que verifica cero put/delete/list.
+[[r2_buckets]]
+binding = "PRODUCTION_COVERS_READONLY"
+bucket_name = "amadolibros-images-production"
+
+[images]
+binding = "IMAGES"

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
-  initLedger, readLedger, runGeneration, ledgerKey, periodOf, validateGenerationPlan,
+  initLedger, readLedger, USAGE_SOURCE, runGeneration, ledgerKey, periodOf, validateGenerationPlan,
   GENERATION_CAP_CEILING, RESERVE_ATTEMPTS, LEASE_MS, MAX_ITEM_ATTEMPTS,
 } from '../card-generation.js';
 import { variantObjectKey } from '../../shared/image-variants.js';
@@ -64,7 +64,10 @@ function fakeImages({ mode = 'ok' } = {}) {
     } }; } }; } };
 }
 
-function setup({ masters = [[800, 1200], [300, 450]], recipes = ['v2-240-q85', 'v2-360-q85', 'v2-480-q85'], mode, cap = 100, prior = 0 } = {}) {
+const usageReport = (nowMs, billed = 0, over = {}) => ({ source: USAGE_SOURCE, period: periodOf(nowMs), billed_transformations: billed,
+  observed_at: new Date(nowMs - 60_000).toISOString(), raw_sha256: 'f'.repeat(64), ...over });
+
+function setup({ start = T0, masters = [[800, 1200], [300, 450]], recipes = ['v2-240-q85', 'v2-360-q85', 'v2-480-q85'], mode, cap = 100, prior = 0 } = {}) {
   const preview = fakeBucket('preview'), production = fakeBucket('production-readonly');
   const items = masters.map(([width, height], i) => {
     const bytes = png(width, height, i); const hash = sha(bytes);
@@ -72,13 +75,13 @@ function setup({ masters = [[800, 1200], [300, 450]], recipes = ['v2-240-q85', '
     return { file: `${hash}.png`, size: bytes.length, width, height, recipes };
   });
   const plan = { schema: 'card-generation-plan-v2', recipes: ['v2-240-q85', 'v2-360-q85', 'v2-480-q85'], items, items_sha256: sha(JSON.stringify(items)) };
-  let clockMs = T0; const clock = () => clockMs;
+  let clockMs = start; const clock = () => clockMs;
   const images = fakeImages({ mode });
   const run = (extra = {}) => runGeneration({ bucket: preview, sourceBucket: production, images, plan, approval: plan.items_sha256,
-    clock, limit: 50, holder: 'job-' + Math.random(), ...extra });
+    usage: usageReport(clockMs, prior), clock, limit: 50, holder: 'job-' + Math.random(), ...extra });
   return { preview, production, plan, items, images, run, clock, advance: ms => { clockMs += ms; },
-    init: () => initLedger(preview, { now: T0, capAttempts: cap, priorConsumed: prior }),
-    ledger: async () => (await readLedger(preview, periodOf(clockMs))).ledger };
+    init: () => initLedger(preview, { now: start, capAttempts: cap, usage: usageReport(start, prior) }),
+    setClock: ms => { clockMs = ms; }, ledger: async () => (await readLedger(preview, periodOf(clockMs))).ledger };
 }
 
 test('budget constants: USD 15 generation = 30.000 attempts, USD 5 reserve is not usable', () => {
@@ -91,11 +94,17 @@ test('ledger must be created explicitly with prior consumption; generation witho
   const r = await f.run();
   assert.equal(r.stopped, 'ledger-missing'); assert.equal(f.images.calls.length, 0);
   assert.deepEqual(f.production.log, [], 'no master read');
-  for (const bad of [{ capAttempts: 30_001, priorConsumed: 0 }, { capAttempts: 0, priorConsumed: 0 }, { capAttempts: 100 },
-    { capAttempts: 100, priorConsumed: -1 }, { capAttempts: 100, priorConsumed: 101 }, { capAttempts: 100, priorConsumed: 1.5 }])
-    await assert.rejects(initLedger(f.preview, { now: T0, ...bad }), /invalid-/);
+  const ok = usageReport(T0, 0);
+  for (const bad of [{ capAttempts: 30_001, usage: ok }, { capAttempts: 0, usage: ok }, { capAttempts: 100 },
+    { capAttempts: 100, usage: usageReport(T0, 101) }, { capAttempts: 100, usage: usageReport(T0, 1.5) },
+    { capAttempts: 100, usage: usageReport(T0, -1) }, { capAttempts: 100, priorConsumed: 0 }, { capAttempts: 100, usage: { ...ok, source: 'typed-by-hand' } },
+    { capAttempts: 100, usage: { ...ok, raw_sha256: 'x' } }, { capAttempts: 100, usage: usageReport(T0, 0, { period: '2026-09' }) },
+    { capAttempts: 100, usage: usageReport(T0, 0, { observed_at: new Date(T0 - 25 * 3600e3).toISOString() }) },
+    { capAttempts: 100, usage: usageReport(T0, 0, { observed_at: new Date(T0 + 3600e3).toISOString() }) }])
+    await assert.rejects(initLedger(f.preview, { now: T0, ...bad }), /invalid-|usage-unavailable/);
   await f.init();
   await assert.rejects(f.init(), /ledger-exists/, 'second init can never reset the counter');
+  assert.equal((await f.ledger()).prior_source, USAGE_SOURCE); assert.equal((await f.ledger()).prior_raw_sha256, 'f'.repeat(64));
   assert.deepEqual([...f.preview.store.keys()], [ledgerKey('2026-10')]);
 });
 
@@ -180,7 +189,9 @@ test('if the ledger cannot be persisted, Images is never called (fail closed)', 
 test('a new month needs its own explicit ledger: no silent reuse of last month', async () => {
   const f = setup(); await f.init();
   f.advance(31 * 24 * 3600 * 1000);
-  const r = await f.run(); assert.equal(r.stopped, 'ledger-missing'); assert.equal(f.images.calls.length, 0);
+  assert.equal((await f.run({ usage: usageReport(T0, 0) })).stopped, 'usage-unavailable', 'last month usage report is not valid for the new period');
+  const r = await f.run({ usage: usageReport(T0 + 31 * 24 * 3600 * 1000, 0) });
+  assert.equal(r.stopped, 'ledger-missing'); assert.equal(f.images.calls.length, 0);
 });
 
 test('serialization: second job is refused while the lease is live; stale writer cannot spend; lease expiry allows takeover', async () => {
@@ -293,4 +304,105 @@ test('progress and ledger writes are serialized: a concurrent writer loses the C
     return realPut(k, v, o); };
   const r = await f.run();
   assert.equal(r.stopped, 'ledger-conflict'); assert.equal(f.images.calls.length, 0, 'lost CAS => no paid call');
+});
+
+test('usage report is mandatory, fresh and for this period: otherwise nothing is read or generated', async () => {
+  const f = setup(); await f.init();
+  const stale = usageReport(T0, 0, { observed_at: new Date(T0 - 25 * 3600e3).toISOString() });
+  for (const usage of [undefined, null, {}, stale, usageReport(T0, 0, { source: 'x' }), usageReport(T0, 0.5), usageReport(T0, -3),
+    usageReport(T0, 0, { period: '2026-09' }), usageReport(T0, 0, { raw_sha256: 'nope' }), usageReport(T0, '5'),
+    usageReport(T0, 0, { observed_at: new Date(T0 + 3600e3).toISOString() })]) {
+    const r = await f.run({ usage }); assert.equal(r.stopped, 'usage-unavailable', JSON.stringify(usage));
+  }
+  assert.equal(f.images.calls.length, 0); assert.deepEqual(f.production.log, []); assert.equal((await f.ledger()).consumed, 0);
+  assert.equal((await f.ledger()).lease, null, 'ledger untouched');
+});
+
+test('other Images usage counts against the same allowance: account-reported usage above the ledger blocks generation', async () => {
+  const f = setup({ cap: 10, prior: 0 }); await f.init();
+  const room = await f.run({ usage: usageReport(T0, 9), limit: 5 });
+  assert.equal(room.attempts, 1, 'only one attempt fits when the account already reports 9 of 10'); assert.equal(room.stopped, 'budget-exhausted');
+  const none = await f.run({ usage: usageReport(T0, 10) });
+  assert.equal(none.attempts, 0); assert.equal(none.stopped, 'budget-exhausted');
+  assert.equal(f.images.calls.length, 1);
+  assert.equal((await f.ledger()).last_usage.billed_transformations, 10);
+});
+
+test('crossing midnight of the last day stops before another transformation and never charges the old month', async () => {
+  const lastSecond = Date.parse('2026-10-31T23:59:58Z');
+  const f = setup({ start: lastSecond, masters: [[800, 1200]] }); await f.init();
+  const original = f.images.input.bind(f.images);
+  f.images.input = stream => { f.setClock(Date.parse('2026-11-01T00:00:01Z')); return original(stream); }; // the first call straddles the boundary
+  const usage = usageReport(lastSecond, 0);
+  const r = await f.run({ usage });
+  assert.equal(r.attempts, 1); assert.equal(r.created, 1, 'the in-flight attempt completes and is recorded in the month it was reserved');
+  assert.equal(r.stopped, 'period-changed'); assert.equal(f.images.calls.length, 1, 'no second paid call');
+  const keys = [...f.preview.store.keys()];
+  assert.ok(keys.includes(ledgerKey('2026-10'))); assert.ok(!keys.includes(ledgerKey('2026-11')), 'no ledger invented for the new month');
+  const ledger = await f.ledger.call(null).catch(() => null);
+  const october = JSON.parse(new TextDecoder().decode(f.preview.store.get(ledgerKey('2026-10')).bytes));
+  assert.equal(october.consumed, 1); assert.equal(october.lease, null);
+  assert.equal(october.progress.next_index, 0, 'unfinished item keeps the cursor');
+  assert.equal(r.complete, false);
+});
+
+test('the time limit covers reading the whole body, not only the first response', async () => {
+  const stuck = fakeImages(); 
+  const hangingBody = () => ({ input() { return { transform: () => ({ output: async () => ({ response: () => new Response(new ReadableStream({
+    start(controller) { controller.enqueue(webp(240, 360)); /* never closes */ } }), { headers: { 'content-type': 'image/webp' } }) }) }) }; } });
+  const f = setup({ masters: [[800, 1200]], recipes: ['v2-240-q85'] }); await f.init();
+  const started = performance.now();
+  const r = await f.run({ images: hangingBody(), imagesTimeoutMs: 40 });
+  assert.ok(performance.now() - started < 2000, 'returns promptly');
+  assert.equal(r.attempts, 1); assert.equal(r.failures[0].reason, 'images-timeout');
+  assert.equal([...f.preview.store.keys()].filter(k => k.includes('/variants/')).length, 0);
+  const ledger = await f.ledger(); assert.equal(ledger.consumed, 1); assert.equal(ledger.failed, 1); assert.equal(ledger.lease, null);
+  assert.ok(stuck);
+});
+
+test('oversized output bodies are cut off at the byte limit without being buffered', async () => {
+  const big = { input() { return { transform: () => ({ output: async () => ({ response: () => new Response(new ReadableStream({
+    pull(controller) { controller.enqueue(new Uint8Array(1024 * 1024)); } }), { headers: { 'content-type': 'image/webp' } }) }) }) }; } };
+  const f = setup({ masters: [[800, 1200]], recipes: ['v2-240-q85'] }); await f.init();
+  const r = await f.run({ images: big, imagesTimeoutMs: 2000 });
+  assert.equal(r.failures[0].reason, 'output-size-invalid'); assert.equal((await f.ledger()).consumed, 1);
+});
+
+test('a later failure in the same book never clears the retry mark of an earlier one', async () => {
+  const f = setup({ masters: [[800, 1200], [800, 1200]], recipes: ['v2-240-q85', 'v2-360-q85'], mode: 'throw' }); await f.init();
+  const [hash] = f.items[0].file.split('.');
+  // 360 already failed once (one retry left would be 0 after this run); 240 has never failed.
+  const key = ledgerKey('2026-10'); const entry = f.preview.store.get(key);
+  const seeded = JSON.parse(new TextDecoder().decode(entry.bytes));
+  seeded.failures[`${hash}/v2-360-q85`] = { n: MAX_ITEM_ATTEMPTS - 1, last_error: 'images-error', at: 'x' };
+  f.preview.store.set(key, { ...entry, bytes: new TextEncoder().encode(JSON.stringify(seeded)) });
+  const r = await f.run({ limit: 2 });
+  assert.equal(r.attempts, 2); const ledger = await f.ledger();
+  assert.equal(ledger.failures[`${hash}/v2-240-q85`].n, 1, '240 still has a retry left');
+  assert.equal(ledger.failures[`${hash}/v2-360-q85`].n, MAX_ITEM_ATTEMPTS, '360 is now exhausted (resolved)');
+  assert.equal(ledger.progress.next_index, 0, 'cursor must stay on the book that still needs a retry');
+  assert.equal(r.complete, false);
+  // Next run retries only the pending recipe, then the book is finally resolved.
+  f.images.calls.length = 0;
+  const next = await f.run({ limit: 5 });
+  assert.equal(next.attempts, 3, '240 retry on book 1 (360 is exhausted) + both recipes of book 2');
+  assert.equal(f.images.calls[0].transform.width, 240);
+  assert.equal((await f.ledger()).failures[`${hash}/v2-240-q85`].n, MAX_ITEM_ATTEMPTS);
+});
+
+test('relative cap: a pilot ledger may spend at most maxNewAttempts even when the account-wide ceiling has room', async () => {
+  const f = setup(); 
+  await initLedger(f.preview, { now: T0, capAttempts: 30_000, maxNewAttempts: 4, usage: usageReport(T0, 5_000) });
+  const r = await f.run({ usage: usageReport(T0, 5_000) });
+  assert.equal(r.attempts, 4); assert.equal(r.stopped, 'budget-exhausted'); assert.equal(f.images.calls.length, 4);
+  const again = await f.run({ usage: usageReport(T0, 5_004) });
+  assert.equal(again.attempts, 0); assert.equal(again.stopped, 'budget-exhausted');
+  const ledger = await f.ledger(); assert.equal(ledger.max_new_attempts, 4); assert.equal(ledger.prior_consumed, 5_000);
+  const g = setup();
+  for (const bad of [0, 1.5, 30_001, '4', -1]) await assert.rejects(initLedger(g.preview, { now: T0, capAttempts: 30_000, maxNewAttempts: bad, usage: usageReport(T0, 0) }), /invalid-max-new-attempts/, String(bad));
+  const h = setup(); await initLedger(h.preview, { now: T0, capAttempts: 100, maxNewAttempts: 50, usage: usageReport(T0, 0) });
+  const key = ledgerKey('2026-10'); const entry = h.preview.store.get(key);
+  const tampered = JSON.parse(new TextDecoder().decode(entry.bytes)); tampered.max_new_attempts = 101; // above the ceiling => invalid ledger
+  h.preview.store.set(key, { ...entry, bytes: new TextEncoder().encode(JSON.stringify(tampered)) });
+  assert.equal((await h.run({ usage: usageReport(T0, 0) })).stopped, 'ledger-unavailable');
 });

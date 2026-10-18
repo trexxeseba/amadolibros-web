@@ -37,6 +37,7 @@ const stop = (reason, result) => { result.stopped = reason; return result; };
 function validateLedger(ledger, period) {
   const ok = ledger?.schema === LEDGER_SCHEMA && ledger.period === period && ledger.encoder === CF_ENCODER &&
     Number.isSafeInteger(ledger.cap_attempts) && ledger.cap_attempts >= 1 && ledger.cap_attempts <= GENERATION_CAP_CEILING &&
+    (ledger.max_new_attempts === undefined || (Number.isSafeInteger(ledger.max_new_attempts) && ledger.max_new_attempts >= 1 && ledger.max_new_attempts <= ledger.cap_attempts)) &&
     isCount(ledger.prior_consumed) && isCount(ledger.consumed) && isCount(ledger.succeeded) && isCount(ledger.failed) &&
     ledger.failures && typeof ledger.failures === 'object' && !Array.isArray(ledger.failures) &&
     Object.keys(ledger.failures).length <= MAX_FAILURE_RECORDS &&
@@ -52,13 +53,34 @@ export async function readLedger(bucket, period) {
   return { ledger: validateLedger(JSON.parse(await object.text()), period), etag: object.etag };
 }
 
-// Creación explícita, una sola vez por período. `priorConsumed` es obligatorio:
-// intentos ya gastados en el período por cualquier otro uso; nunca se asume 0.
-export async function initLedger(bucket, { now, capAttempts, priorConsumed }) {
+// Informe de uso de transformaciones del período, obtenido de la cuenta con el
+// acceso ya configurado (nunca tipeado a mano ni asumido en 0). `raw_sha256`
+// liga el número a la captura cruda que lo respalda.
+export const USAGE_SOURCE = 'cloudflare-billable-usage';
+export const MAX_USAGE_AGE_MS = 24 * 3600 * 1000;
+export function validateUsageReport(usage, nowMs, period) {
+  const observed = Date.parse(usage?.observed_at);
+  if (usage?.source !== USAGE_SOURCE || usage.period !== period || !isCount(usage.billed_transformations) ||
+      !HASH.test(usage.raw_sha256 || '') || !Number.isFinite(observed) ||
+      observed > nowMs + 5 * 60_000 || nowMs - observed > MAX_USAGE_AGE_MS) throw new Error('usage-unavailable');
+  return usage;
+}
+
+// Creación explícita, una sola vez por período. El consumo previo sale del
+// informe de uso validado: nunca se asume 0.
+// `capAttempts`: techo ABSOLUTO de transformaciones de la cuenta en el mes (incluye
+// el consumo previo). `maxNewAttempts`: tope RELATIVO, inmutable, de intentos que
+// este libro mayor puede reservar (el piloto lo usa para quedar en ~32).
+export async function initLedger(bucket, { now, capAttempts, maxNewAttempts, usage }) {
   if (!Number.isSafeInteger(capAttempts) || capAttempts < 1 || capAttempts > GENERATION_CAP_CEILING) throw new Error('invalid-cap');
-  if (!isCount(priorConsumed) || priorConsumed > capAttempts) throw new Error('invalid-prior-consumed');
   const period = periodOf(now), at = new Date(now).toISOString();
+  validateUsageReport(usage, now, period);
+  if (maxNewAttempts !== undefined && (!Number.isSafeInteger(maxNewAttempts) || maxNewAttempts < 1 || maxNewAttempts > capAttempts)) throw new Error('invalid-max-new-attempts');
+  const priorConsumed = usage.billed_transformations;
+  if (priorConsumed > capAttempts) throw new Error('invalid-prior-consumed');
   const ledger = { schema: LEDGER_SCHEMA, period, encoder: CF_ENCODER, cap_attempts: capAttempts, prior_consumed: priorConsumed,
+    ...(maxNewAttempts === undefined ? {} : { max_new_attempts: maxNewAttempts }),
+    prior_source: usage.source, prior_observed_at: usage.observed_at, prior_raw_sha256: usage.raw_sha256,
     consumed: 0, succeeded: 0, failed: 0, failures: {}, lease: null,
     progress: { plan_sha256: null, next_index: 0, updated_at: at }, created_at: at, updated_at: at };
   const stored = await bucket.put(ledgerKey(period), JSON.stringify(ledger), {
@@ -94,13 +116,28 @@ function validVariantHead(head, hash, id) {
 const KNOWN_ERRORS = /^(images-timeout|images-http-\d{3}|output-size-invalid|dimensions-or-aspect-ratio-mismatch|invalid-webp)$/;
 const errorCode = error => KNOWN_ERRORS.test(error?.message || '') ? error.message : 'images-error';
 
+// Lectura acotada del cuerpo: nunca más de `max` bytes en memoria.
+async function readBounded(response, max) {
+  if (!response.body) throw new Error('output-size-invalid');
+  const reader = response.body.getReader(); const chunks = []; let total = 0;
+  while (true) {
+    const { done, value } = await reader.read(); if (done) break;
+    total += value.length;
+    if (total > max) { await reader.cancel().catch(() => {}); throw new Error('output-size-invalid'); }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total); let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+  return bytes;
+}
+
 async function timed(promise, ms, label) {
   let timer;
   try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label)), ms); })]); }
   finally { clearTimeout(timer); }
 }
 
-export async function runGeneration({ bucket, sourceBucket, images, plan, approval, clock = Date.now, limit = 20, holder,
+export async function runGeneration({ bucket, sourceBucket, images, plan, approval, usage, clock = Date.now, limit = 20, holder,
   imagesTimeoutMs = IMAGES_TIMEOUT_MS }) {
   const result = { attempts: 0, created: 0, existing: 0, skipped: [], failures: [], conflicts: [], stopped: null };
   if (!bucket || !sourceBucket || typeof images?.input !== 'function' || typeof holder !== 'string' || !holder ||
@@ -108,6 +145,9 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
   let planDigest;
   try { planDigest = validateGenerationPlan(plan, approval); } catch (error) { return stop(error.message, result); }
   const period = periodOf(clock());
+  // Otros usos de Images también gastan el mismo cupo: sin un informe de uso
+  // fresco del período no se genera nada (antes de leer masters o llamar a Images).
+  try { validateUsageReport(usage, clock(), period); } catch { return stop('usage-unavailable', result); }
   let state;
   try { state = await readLedger(bucket, period); } catch (error) { return stop(error.message === 'ledger-missing' ? 'ledger-missing' : 'ledger-unavailable', result); }
 
@@ -142,10 +182,12 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
         else { l.failed++; l.failures[stale.key] = { n: (l.failures[stale.key]?.n || 0) + 1, last_error: 'interrupted', at: l.updated_at }; }
       }
       l.lease = { holder, expires_at: leaseUntil(), pending: null };
+      l.last_usage = { billed_transformations: usage.billed_transformations, observed_at: usage.observed_at, raw_sha256: usage.raw_sha256 };
       if (l.progress.plan_sha256 !== planDigest) l.progress = { plan_sha256: planDigest, next_index: 0, updated_at: l.updated_at };
     });
   } catch (error) { return stop(error.message === 'ledger-conflict' ? 'ledger-conflict' : 'ledger-unavailable', result); }
 
+  const consumedAtStart = state.ledger.consumed;
   const start = state.ledger.progress.next_index;
   const end = Math.min(plan.items.length, start + MAX_ITEMS_SCANNED_PER_RUN);
   let frontier = null; // primer índice no resuelto de forma definitiva
@@ -171,7 +213,14 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
         if ((state.ledger.failures[ref]?.n || 0) >= MAX_ITEM_ATTEMPTS) { result.skipped.push({ ref, reason: 'retry-limit' }); continue; }
         if (result.attempts >= limit) { unresolved = true; result.stopped = 'run-limit'; break; }
 
-        if (state.ledger.prior_consumed + state.ledger.consumed + 1 > state.ledger.cap_attempts) { unresolved = true; result.stopped = 'budget-exhausted'; break; }
+        // Si cruzamos medianoche UTC del último día, ningún intento nuevo se carga al mes anterior.
+        if (periodOf(clock()) !== period) { unresolved = true; result.stopped = 'period-changed'; break; }
+        // Gasto efectivo: lo que sabemos que gastamos o lo que la cuenta informó
+        // más lo que gastamos desde esa observación, lo mayor. La facturación puede
+        // retrasarse: ese margen es lo que cubre la reserva de USD 5.
+        const spent = Math.max(state.ledger.prior_consumed + state.ledger.consumed,
+          usage.billed_transformations + (state.ledger.consumed - consumedAtStart));
+        if (spent + 1 > state.ledger.cap_attempts || state.ledger.consumed + 1 > (state.ledger.max_new_attempts ?? state.ledger.cap_attempts)) { unresolved = true; result.stopped = 'budget-exhausted'; break; }
         // Fuente validada antes de reservar: una fuente inválida no gasta cupo.
         if (!master) {
           const object = await sourceBucket.get(`covers/v1/objects/${item.file}`);
@@ -191,14 +240,16 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
         // 2) Transformar. Todo error ya está contado como intento consumido.
         let outcome = null, error = null;
         try {
-          const response = await timed((async () => {
+          let live = null;
+          const bytes = await timed((async () => {
             const out = await images.input(new Response(master.bytes).body)
               .transform({ width, fit: 'scale-down' }).output({ format: 'image/webp', quality: 85 });
-            return out.response();
-          })(), imagesTimeoutMs, 'images-timeout');
-          if (!response?.ok || response.headers.get('content-type')?.split(';')[0] !== 'image/webp') throw new Error(`images-http-${response?.status || 500}`);
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          if (!bytes.length || bytes.length > MAX_VARIANT_BYTES) throw new Error('output-size-invalid');
+            const response = out.response(); live = response;
+            if (!response?.ok || response.headers.get('content-type')?.split(';')[0] !== 'image/webp') throw new Error(`images-http-${response?.status || 500}`);
+            // La lectura completa del cuerpo cuenta dentro del mismo plazo.
+            return readBounded(response, MAX_VARIANT_BYTES);
+          })(), imagesTimeoutMs, 'images-timeout').catch(async failure => { await live?.body?.cancel?.().catch(() => {}); throw failure; });
+          if (!bytes.length) throw new Error('output-size-invalid');
           const dimensions = webpDimensions(bytes);
           const expectedWidth = Math.min(master.info.width, width);
           const expectedHeight = Math.max(1, Math.round(master.info.height * expectedWidth / master.info.width));
@@ -221,7 +272,8 @@ export async function runGeneration({ bucket, sourceBucket, images, plan, approv
           if (error) { l.failed++; l.failures[ref] = { n: (l.failures[ref]?.n || 0) + 1, last_error: error, at: l.updated_at }; }
           else { l.succeeded++; delete l.failures[ref]; }
         });
-        if (error) { result.failures.push({ ref, reason: error }); unresolved = (state.ledger.failures[ref]?.n || 0) < MAX_ITEM_ATTEMPTS; }
+        // `||=`: un fallo posterior del mismo libro nunca borra la marca de otro que aún admite reintento.
+        if (error) { result.failures.push({ ref, reason: error }); unresolved ||= (state.ledger.failures[ref]?.n || 0) < MAX_ITEM_ATTEMPTS; }
         else if (outcome === 'created') result.created++; else result.existing++;
       }
       if (unresolved && frontier === null) frontier = index;
