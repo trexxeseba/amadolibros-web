@@ -77,9 +77,15 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
      for(let attempt=0;;attempt++){
       const item=await api.call(env,'/items/'+itemId);
       try{checkCreated(item,isbn,price);break;}
-      catch(error){if(attempt>=PICTURE_WAIT_TRIES||item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;await waitFor(PICTURE_WAIT_MS);}
+      catch(error){
+       if(item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;
+       // Pictures still downloading after the wait: defer this book (the service retries it without a new POST
+       // and reconciles it by SKU) instead of stopping the whole run. Any other mismatch still stops it.
+       if(attempt>=PICTURE_WAIT_TRIES)throw new MercadoLibreError('created_item_pending_pictures',503);
+       await waitFor(PICTURE_WAIT_MS);
+      }
      }
-    }catch(error){failedReadback=true;throw error;}
+    }catch(error){if(error.code!=='created_item_pending_pictures')failedReadback=true;throw error;}
    }
    await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});return super.receiptState(seller,isbn,state,itemId);
   }
