@@ -94,3 +94,9 @@ python scripts/vintage_local.py --excel '<new SBS Excel>' --connection '<connect
   `ml_vintage_stock_sync`; `stock-sync-report.json` in the state folder lists the paused/reactivated ISBNs.
 - It needs the connection and the process lock, so run it when the publisher is stopped (for example at
   each restart with the new daily Excel).
+
+## Slowing the request clock (`VINTAGE_SPACING_MS`)
+
+The shared request clock leaves 2,000 ms between Mercado Libre calls. If 429s cluster, set the environment
+variable `VINTAGE_SPACING_MS` (for example `3500`) before starting the publisher to leave more room. It can
+only slow the clock: values under 2,000 or over 60,000 make the process refuse to start.

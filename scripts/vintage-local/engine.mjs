@@ -49,7 +49,9 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false;
- const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ // VINTAGE_SPACING_MS can only slow the shared request clock (2000-60000 ms); the default stays 2000.
+ const spacingMs=process.env.VINTAGE_SPACING_MS?Number(process.env.VINTAGE_SPACING_MS):2000;
+ const limited=createVintageBulkFetch({spacingMs}),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
   const response=await limited(env,url,options);

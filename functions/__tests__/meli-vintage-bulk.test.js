@@ -183,3 +183,11 @@ test('availability repair blocks another seller, and reports a rejected or ignor
  item.seller_id=seller;let result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.status,403);assert.equal(result.availability_complete,false);
  reject=false;result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.code,'availability_update_not_confirmed');assert.equal((await f.s.run(BULK_RUN)).state,'paused');
 });
+
+test('request clock can be slowed with spacingMs but never below the approved 2 s',async t=>{
+ const db=database(t),s=new VintageBulkStore(db,{sellerId:seller});await s.initialize();const env={ORDERS_DB:db},clock={value:Date.now()},sent=[];
+ const rate=createVintageBulkFetch({spacingMs:3500,now:()=>clock.value,sleep:async ms=>{clock.value+=ms;},random:()=>0,fetcher:async()=>{sent.push(clock.value);return new Response('{}');}});
+ await rate(env,'https://api.mercadolibre.com/test',{});await rate(env,'https://api.mercadolibre.com/test',{});await rate(env,'https://api.mercadolibre.com/test',{});
+ assert.ok(sent[1]-sent[0]>=3500&&sent[2]-sent[1]>=3500,'consecutive requests are at least 3.5 s apart');
+ for(const bad of [1999,500,60001,2500.5,'3000'])assert.throws(()=>createVintageBulkFetch({spacingMs:bad}),/invalid_vintage_spacing/);
+});
