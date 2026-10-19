@@ -110,6 +110,7 @@ export function buildAudit({ items, mode = 'mirror', priority = {} }) {
     const status = auditItem(item, mode);
     const missing = BOOK_ATTRIBUTES.filter(spec => status[spec.key] === 'falta').map(spec => spec.key);
     const extra = priority[item.id] || {};
+    const sold = Number(extra.sold ?? item.sold_quantity) || 0;
     const stock = Number(item.available_quantity) || 0;
     return {
       id: item.id,
@@ -118,10 +119,10 @@ export function buildAudit({ items, mode = 'mirror', priority = {} }) {
       catalog_listing: item.catalog_listing === true,
       stock,
       visits: Number(extra.visits) || 0,
-      sold: Number(extra.sold) || 0,
+      sold,
       status,
       missing,
-      score: priorityScore({ missing, stock, visits: Number(extra.visits) || 0, sold: Number(extra.sold) || 0, catalogListing: item.catalog_listing === true }),
+      score: priorityScore({ missing, stock, visits: Number(extra.visits) || 0, sold, catalogListing: item.catalog_listing === true }),
     };
   });
   rows.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
