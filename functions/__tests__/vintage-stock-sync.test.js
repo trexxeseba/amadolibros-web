@@ -65,6 +65,15 @@ test('a mass disappearance is treated as a broken file: nothing is paused',async
  assert.equal(result.suspicious_feed,true);assert.equal(result.paused,0);assert.equal(f.puts.length,0);
 });
 
+test('a suspicious workbook cannot execute pauses left queued by an earlier report',async t=>{
+ const f=await fixture(t,{published:20});
+ const previous=await f.run({mode:'report',rows:workbook([0])});assert.equal(previous.would_pause,1);
+ const before=JSON.stringify((await f.db.prepare('SELECT * FROM ml_vintage_stock_sync ORDER BY isbn').all()).results);
+ const result=await f.run({rows:workbook([0,1,2,3,4,5,6,7,8,9])});
+ assert.equal(result.suspicious_feed,true);assert.equal(f.puts.length,0);assert.equal(f.itemOf(0).status,'active');
+ assert.equal(JSON.stringify((await f.db.prepare('SELECT * FROM ml_vintage_stock_sync ORDER BY isbn').all()).results),before);
+});
+
 test('items that are not ours by seller and SKU are skipped, not paused',async t=>{
  const f=await fixture(t);f.itemOf(1).seller_custom_field='OTHER-SKU';f.itemOf(2).seller_id=440298103;
  const result=await f.run({rows:workbook([1,2,3])});

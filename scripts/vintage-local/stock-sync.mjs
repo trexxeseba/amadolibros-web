@@ -37,15 +37,16 @@ export async function syncStock({db,api,env,rows,sourceDate,mode='report',graceH
  const inStock=new Set(published.filter(r=>hasSupplierStock(stock.get(r.isbn))).map(r=>r.isbn)),missing=published.length-inStock.size;
  // A mass disappearance looks like a broken file, not like sell-outs: report it, pause nothing.
  const suspicious=published.length>=MIN_PUBLISHED_FOR_GUARD&&missing*100>published.length*maxMissingPct,graceMs=graceHours*3600000,updates=[];
+ const summary={state:'synced',mode,feed_date:sourceDate,published:published.length,missing,suspicious_feed:suspicious,paused:0,activated:0,unchanged:0,skipped:0,errors:0,paused_isbns:[],activated_isbns:[],skipped_by_reason:{}};
+ // Do not apply even previously queued work, or advance the feed checkpoint, from a suspect file.
+ if(suspicious)return {...summary,state:'suspicious_feed',would_pause:0};
  for(const r of published){
   const prev=previous.get(r.isbn);
   if(inStock.has(r.isbn)){updates.push([r.isbn,r.item_id,'active',0,feedTime]);continue;}
-  if(suspicious)continue;
   const since=prev?.missing_since||feedTime;
   updates.push([r.isbn,r.item_id,feedTime-since>=graceMs?'paused':(prev?.desired_status??null),since,prev?.in_stock_at??0]);
  }
  for(let i=0;i<updates.length;i+=200)await db.batch(updates.slice(i,i+200).map(u=>db.prepare(UPSERT).bind(...u,feedIso,startedAt)));
- const summary={state:'synced',mode,feed_date:sourceDate,published:published.length,missing,suspicious_feed:suspicious,paused:0,activated:0,unchanged:0,skipped:0,errors:0,paused_isbns:[],activated_isbns:[],skipped_by_reason:{}};
  const wanted=mode==='pause_only'?['paused']:['paused','active'];
  const dueSql=`SELECT * FROM ml_vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY updated_at,isbn LIMIT ?`;
  if(mode==='report'){

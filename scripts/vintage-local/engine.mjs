@@ -11,10 +11,11 @@ import {VintageBulkStore,createVintageBulkFetch,BULK_RUN} from '../../functions/
 import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
 import {openDatabase} from './db.mjs';
 import {syncStock as syncSupplierStock,STOCK_SYNC_MODES} from './stock-sync.mjs';
+import {createRequestTelemetry} from './telemetry.mjs';
 export const SELLER='2341378249';
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
+const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000,READBACK_RETRY_MS=120000;
 export function checkConfiguration(c){
  if(c?.version!==1||c.seller_id!==SELLER||c.app_id!=='4741021817925208'||c.run_id!==BULK_RUN||c.endpoint!==ENDPOINT||!/^[a-f0-9]{64}$/.test(c.key??''))throw new Error('invalid_vintage_connection');
  if(c.expires_at<=Date.now())throw new Error('vintage_connection_expired');
@@ -49,18 +50,27 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false;
- const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ const telemetry=createRequestTelemetry(directory),limited=createVintageBulkFetch({onEvent:telemetry.record});let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
   const response=await limited(env,url,options);
   try{
-   if(response.status===429)await fs.appendFile(rateLog,JSON.stringify({at:new Date().toISOString(),method:options?.method??'GET',endpoint:new URL(url).pathname.replace(/\d+/g,'#'),retry_after:response.headers.get('retry-after')})+'\n');
-   else if(response.status>=400&&(options?.method??'GET')==='POST'&&/quota_exceeded|max_limit_publish/.test(await response.clone().text()))listingQuotaHit=true;
+   if(response.status>=400&&(options?.method??'GET')==='POST'&&/quota_exceeded|max_limit_publish/.test(await response.clone().text()))listingQuotaHit=true;
   }catch{}
   return response;
  };
  api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ const rawApi=api;
+ api={...rawApi,
+  prepare:(e,row,...args)=>telemetry.withBook(row.isbn,'prepare',()=>rawApi.prepare(e,row,...args)),
+  create:(e,payload,...args)=>telemetry.withBook(identifiers(payload)[0],'create',()=>rawApi.create(e,payload,...args)),
+ };
  class LocalStore extends VintageBulkStore{
+  async interrupted(id,now){
+   // The daily create cap must not prevent verification of an already reserved item.
+   await this.stmt("UPDATE ml_pub_jobs SET state='uncertain' WHERE run_id=? AND state='retry' AND error_code='created_item_pending_pictures' AND next_at<=? AND EXISTS(SELECT 1 FROM ml_pub_receipts r WHERE r.seller_id=? AND r.isbn=ml_pub_jobs.isbn AND r.run_id=? AND r.state IN ('creating','uncertain'))",id,now,SELLER,id).run();
+   return super.interrupted(id,now);
+  }
   async reserve(seller,isbn,runId,now,cap,lease){
    if(validateOnly)throw new Error('validation_cannot_reserve');
    const result=await broker('reserve',{isbn,policy_hash:c.policy_hash});
@@ -69,6 +79,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    return super.reserve(seller,isbn,runId,now,cap,lease);
   }
   async receiptState(seller,isbn,state,itemId=null){
+   return telemetry.withBook(isbn,'readback',async()=>{
    if(state==='published'){
     try{
      const row=await this.stock(c.feed_id,isbn),price=quoteMercadoLibre(row,policy).price;
@@ -79,15 +90,27 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
       try{checkCreated(item,isbn,price);break;}
       catch(error){
        if(item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;
+       // Pending pictures may defer only the active-state check, never a different seller/ISBN/price.
+       checkCreated({...item,status:'active'},isbn,price);
+       if(item.sub_status.some(value=>value!=='picture_download_pending'))throw error;
        // Pictures still downloading after the wait: defer this book (the service retries it without a new POST
        // and reconciles it by SKU) instead of stopping the whole run. Any other mismatch still stops it.
-       if(attempt>=PICTURE_WAIT_TRIES)throw new MercadoLibreError('created_item_pending_pictures',503);
+       if(attempt>=PICTURE_WAIT_TRIES)throw new MercadoLibreError('created_item_pending_pictures',503,READBACK_RETRY_MS/1000);
        await waitFor(PICTURE_WAIT_MS);
       }
      }
-    }catch(error){if(error.code!=='created_item_pending_pictures')failedReadback=true;throw error;}
+    }catch(error){
+     telemetry.mark(isbn,error.code==='created_item_pending_pictures'?'pending_pictures':'readback_failed');
+     if(error.code==='created_item_pending_pictures'){
+      // Reconciliation runs outside the shared service's per-new-book catch. Save a future due
+      // time here too, preserving the known item id and receipt that prevent a second POST.
+      await this.job(BULK_RUN,isbn,'uncertain',{itemId,errorCode:error.code,nextAt:Date.now()+READBACK_RETRY_MS});
+     }else failedReadback=true;
+     throw error;
+    }
    }
-   await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});return super.receiptState(seller,isbn,state,itemId);
+   await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});const result=await super.receiptState(seller,isbn,state,itemId);telemetry.mark(isbn,state);return result;
+   });
   }
  }
  const s=new LocalStore(db,{sellerId:SELLER});
@@ -135,7 +158,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
     }
    }
    return {index:{...next,pending:next.pending.slice(consumed.length),seen:next.seen+items.length},items};
-  },async skuItems(e,isbn){const ids=new Set(await api.skuItems(e,isbn)),q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),result=await api.call(e,`/users/${SELLER}/items/search?${q}`);if(!Array.isArray(result.results)||result.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('sku_lookup_invalid');result.results.forEach(x=>ids.add(x));return [...ids];}};
+  },async skuItems(e,isbn){return telemetry.withBook(isbn,'duplicates',async()=>{const ids=new Set(await api.skuItems(e,isbn)),q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),result=await api.call(e,`/users/${SELLER}/items/search?${q}`);if(!Array.isArray(result.results)||result.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('sku_lookup_invalid');result.results.forEach(x=>ids.add(x));return [...ids];});}};
   const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   // Pause the listings SBS no longer offers before publishing anything new (own report, own table).
@@ -146,22 +169,27 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    if(syncOnly)return {state:'stock_sync_done',stock_sync:sync.state,published_total:5+await s.publishedCount(BULK_RUN)};
   }
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
+  const deferredReadbacks=()=>s.stmt("SELECT COUNT(*) n,MIN(next_at) due FROM ml_pub_jobs WHERE run_id=? AND state IN ('retry','uncertain') AND error_code='created_item_pending_pictures'",BULK_RUN).first();
   for(;;){
-   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
+   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0)||(await deferredReadbacks()).n>0;const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
-   const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
+   let result;
+   try{result=await service.tick(env,BULK_RUN);}
+   catch(error){if(error.code!=='created_item_pending_pictures')throw error;result={state:'reconciliation_deferred'};}
+   const telemetryOk=await telemetry.flush(),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),deferred=await deferredReadbacks(),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:summary.state==='complete_with_review'&&deferred.n?'reconciliation_waiting':result.state??summary.state,...(!telemetryOk?{telemetry_write_failed:true}:{})};
    if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
    if(failedReadback||listingQuotaHit)break;
-   if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
+   if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete'].includes(summary.state)||summary.state==='complete_with_review'&&!deferred.n)break;
    const activeRun=await s.run(BULK_RUN);
    let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
+   if(summary.state==='complete_with_review'&&deferred.n)wait=Math.max(wait,Math.min(60000,Math.max(1000,deferred.due-Date.now())));
    if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,20000);}
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
   return {state:failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
- }finally{db.close();}
+ }finally{await telemetry.flush();db.close();}
 }
 async function main(){
  const args=process.argv.slice(2),get=name=>args[args.indexOf(name)+1];
