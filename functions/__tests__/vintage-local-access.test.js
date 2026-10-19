@@ -143,3 +143,45 @@ test('a book whose pictures take longer than the wait is deferred without a seco
  assert.equal(states.review,undefined,'a deferred book is not sent to review');assert.equal(states.retry,3);
  assert.equal(JSON.parse(await p.h.fs.readFile(p.h.path.join(p.h.temp,'status.json'),'utf8')).state!=='stopped_item_readback_failed',true);
 });
+
+test('--sync-stock runs before publishing, writes its report, and --sync-only never creates anything',async t=>{
+ let creates=0;
+ const h=await engineHarness(t,{async create(){creates++;throw new Error('must_not_create');}});
+ const result=await h.run({...h.options,target:8,syncStock:'report',syncOnly:true});
+ assert.equal(result.state,'stock_sync_done');assert.equal(result.stock_sync,'workbook_incomplete','a 5-row workbook is refused by the sync');assert.equal(creates,0);
+ const report=JSON.parse(await h.fs.readFile(h.path.join(h.temp,'stock-sync-report.json'),'utf8'));
+ assert.equal(report.state,'workbook_incomplete');assert.equal(typeof report.at,'string');
+ await assert.rejects(()=>h.run({...h.options,target:8,syncStock:'delete_everything',syncOnly:true}),/invalid_stock_sync_mode/);
+});
+
+async function reconcileHarness(t,{pausedReads}){
+ const h=await engineHarness(t,{create:null});
+ const items=new Map(),waits=[],state={pausedReads};let posts=0,reads=0;
+ const base=h.options.apiFactory({});
+ const api={...base,
+  async call(e,url){if(url.startsWith('/users/'))return {results:[]};reads++;const item=items.get(url.slice('/items/'.length));assert.ok(item);return reads<=state.pausedReads?{...item,status:'paused',sub_status:['picture_download_pending']}:{...item};},
+  async skuItems(e,isbn){return [...items.values()].filter(x=>x.seller_custom_field==='AMADO-AR-'+isbn).map(x=>x.id);},
+  async create(e,p){posts++;const item={...p,id:'MLU'+posts,seller_id:'2341378249',available_quantity:1,status:'active',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};items.set(item.id,item);return item;}};
+ const jobs=async sql=>{const {DatabaseSync}=await import('node:sqlite');const db=new DatabaseSync(h.path.join(h.temp,'publisher.sqlite'));try{return db.prepare(sql).all();}finally{db.close();}};
+ const forceUncertain=async()=>{const {DatabaseSync}=await import('node:sqlite');const db=new DatabaseSync(h.path.join(h.temp,'publisher.sqlite'));db.prepare("UPDATE ml_vintage_pub_jobs SET state='uncertain',next_at=0,error_code='interrupted_create' WHERE state='retry'").run();db.close();};
+ return {h,jobs,forceUncertain,waits,get posts(){return posts;},options:{...h.options,apiFactory:()=>api,waitFor:async ms=>{waits.push(ms);}}};
+}
+
+test('reconciling a created book whose pictures finish later publishes it and the run keeps going',async t=>{
+ const r=await reconcileHarness(t,{pausedReads:14}); // 7 reads defer the create; the next 7 make the first reconcile fail; then it is active
+ await r.h.run({...r.options,target:8,limitNew:1});
+ assert.equal((await r.jobs("SELECT state FROM ml_vintage_pub_jobs WHERE item_id IS NOT NULL OR state='retry'")).filter(x=>x.state==='retry').length,1,'first run defers the book');
+ await r.forceUncertain();
+ const result=await r.h.run({...r.options,target:8,limitNew:1});
+ assert.notEqual(result.state,'stopped_item_readback_failed');
+ assert.equal((await r.jobs("SELECT state FROM ml_vintage_pub_jobs WHERE item_id='MLU1'"))[0].state,'published','reconciled by SKU once active');
+ assert.equal(r.posts,2,'the deferred book is never created twice; only one further book is created');
+});
+
+test('a reconciled book whose pictures never finish stops the run with the read-back status instead of crashing or hanging',async t=>{
+ const r=await reconcileHarness(t,{pausedReads:100000});
+ await r.h.run({...r.options,target:8,limitNew:1});
+ await r.forceUncertain();
+ const result=await r.h.run({...r.options,target:1000});
+ assert.equal(result.state,'stopped_item_readback_failed');assert.equal(r.posts,1,'no new create while the earlier book cannot be confirmed');
+});
