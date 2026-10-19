@@ -69,26 +69,41 @@ de Libros, las credenciales y las publicaciones reales quedan fuera del diff.
 
 ### Validación de la versión integrada
 
-- Suite completa de `functions/__tests__/*.test.js`: **1.818 aprobadas, cero fallas**.
-- Suite `worker-sync/__tests__/publication*.test.js`: **116 aprobadas, cero fallas**.
-  Son **1.934 pruebas** entre ambos grupos. La selección específica Vintage y
-  publicación también terminó con **227 aprobadas** (subconjunto, no se suman).
-- Sintaxis JS/MJS del validador, compilación del lanzador Python y
-  `git diff --check`: correctos. Las pruebas usan dobles de API; no se publicaron
-  libros reales desde este entorno.
-- `bash scripts/validate-ci.sh` **no terminó en verde**. En Node 24.19.0 pasó
-  sintaxis y ejecutó 308 pruebas de Worker: 307 aprobadas y una falla en
-  `cover-mirror-retention.test.js`, caso `CAS retry releases each failed manifest
-  graph before reading the next version`. Su comprobación de retención de
-  objetos falló. Ese archivo y el código de `worker-sync` están sin cambios
-  respecto de #459. Se observó un pase aislado en la otra copia y una falla
-  aislada en la integración; eso no identifica la causa. El script terminó en
-  ese punto y **no verificó los builds** posteriores. CI fija Node 22.12; no se
-  presenta esta ejecución local como equivalente a un CI completo aprobado.
+**Actualización del 18/10 a las 22:59 Uruguay: validador completo aprobado.**
+Se ejecutó el script oficial con Node **22.12.0**, la versión fijada por CI:
 
-El PR sigue en borrador. Queda pendiente resolver o validar ese freno general
-antes de considerar aprobada la entrega completa para producción; esta rama no
-modifica el Worker de Libros para resolverlo.
+```sh
+npx --yes --package=node@22.12.0 --call 'bash scripts/validate-ci.sh'
+```
+
+- **2.570 pruebas aprobadas**, cero fallas y cero omitidas. Incluye las 308 del
+  Worker y las 1.818 de functions; las pruebas específicas previas son
+  subconjuntos y no se suman de nuevo.
+- Ambos builds, checkout apagado y encendido, correctos. El script terminó con
+  `Validación completa OK` y código de salida 0.
+- Sintaxis JS/MJS, compilación del lanzador Python y `git diff --check` correctos.
+  Las pruebas usan dobles de API; no se publicaron libros reales desde este entorno.
+
+La ejecución inicial con Node 24.19.0 había fallado en la comprobación de retención
+de `cover-mirror-retention.test.js`. Con el entorno fijado por CI, esa prueba y
+todo el validador pasaron sin editar el Worker ni su prueba. Se conserva la
+observación inicial como límite de esa ejecución, no como un bloqueo vigente
+del validador en Node 22.12. La validación fue local; no se presenta como un
+workflow ejecutado en GitHub Actions.
+
+El código verificado corresponde al commit `3039f39c5f1a8b5ac223734270baaa30d7584b8b`.
+El PR sigue en borrador para revisión y conserva las restricciones de fusión y
+reinicio del operador.
+
+### Acceso para el piloto Excel
+
+En esta continuación, el único Chrome conectado mostraba Amado Libros y su lista
+de cuentas vinculadas solo ofrecía **Agregar cuenta**. Se abrió esa ruta en otra
+pestaña: Mercado Libre pidió iniciar sesión. Se dejó la pantalla de ingreso de
+Vintage abierta para el operador. No se cambió la cuenta activa, no se ingresaron
+credenciales y no se descargó ni cargó una plantilla de Libros como si fuera de
+Vintage. El piloto de 20 requiere primero esa sesión y la plantilla oficial
+descargada desde Vintage.
 
 ## 2. Hipótesis y límites de la evidencia
 
