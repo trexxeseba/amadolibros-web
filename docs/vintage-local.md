@@ -70,3 +70,27 @@ four or five simultaneous requests are safe. There is a 20-second pause after 25
 creations (it was 60 seconds; the pause was self-imposed, not a Mercado Libre limit). The PC must remain on and awake. Stale stock, an expired/revoked
 connection or an identity mismatch stops publishing. A fresh approved stock
 connection can replace an expired snapshot while retaining local receipts.
+
+## Pausing sold-out books (`--sync-stock`)
+
+In SBS's Excel a sold-out book simply disappears (`Disponibilidad` is only `+2`, `2` or `1`, never `0`).
+`scripts/vintage-local/stock-sync.mjs` compares the ISBNs Vintage has published (local receipts) with the
+current Excel and pauses on Mercado Libre the ones SBS no longer offers. It is modelled on
+`worker-sync/publication-stock-sync.js` (Amado Libros), which it does not use or change.
+
+```powershell
+python scripts/vintage_local.py --excel '<new SBS Excel>' --connection '<connection>' --sync-stock report --sync-only
+python scripts/vintage_local.py --excel '<new SBS Excel>' --connection '<connection>' --sync-stock pause_and_reactivate
+```
+
+- `report` only lists what it would pause. `pause_only` pauses. `pause_and_reactivate` also brings back a
+  book that returns to the Excel, but only one this process paused (or one left at quantity 0): a manual
+  pause stays manual. `--sync-only` stops after the sync; without it publishing continues afterwards.
+- Pausing is immediate (no grace period) because delivery is 18 days. Nothing is ever closed or deleted.
+- Nothing is paused for a stale file (over 24 h), a workbook with fewer than 40,000 rows, a file older than the
+  last synced one, or when more than 10% of the published books disappear at once (looks like a broken file:
+  it only reports). Only items of seller 2341378249 with SKU `AMADO-AR-<ISBN>` are touched.
+- A 429 stops the sync and the pending items are retried on the next run. Progress lives in the local table
+  `ml_vintage_stock_sync`; `stock-sync-report.json` in the state folder lists the paused/reactivated ISBNs.
+- It needs the connection and the process lock, so run it when the publisher is stopped (for example at
+  each restart with the new daily Excel).

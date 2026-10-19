@@ -137,3 +137,13 @@ test('readback still stops when the item stays paused after the bounded wait, or
  const result=await p.h.run({...p.options,target:1000});
  assert.equal(result.state,'stopped_item_readback_failed');assert.equal(p.waits.filter(x=>x===10000).length,6);assert.equal(p.posts,1,'no second create after the failed readback');
 });
+
+test('--sync-stock runs before publishing, writes its report, and --sync-only never creates anything',async t=>{
+ let creates=0;
+ const h=await engineHarness(t,{async create(){creates++;throw new Error('must_not_create');}});
+ const result=await h.run({...h.options,target:8,syncStock:'report',syncOnly:true});
+ assert.equal(result.state,'stock_sync_done');assert.equal(result.stock_sync,'workbook_incomplete','a 5-row workbook is refused by the sync');assert.equal(creates,0);
+ const report=JSON.parse(await h.fs.readFile(h.path.join(h.temp,'stock-sync-report.json'),'utf8'));
+ assert.equal(report.state,'workbook_incomplete');assert.equal(typeof report.at,'string');
+ await assert.rejects(()=>h.run({...h.options,target:8,syncStock:'delete_everything',syncOnly:true}),/invalid_stock_sync_mode/);
+});

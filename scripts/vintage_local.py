@@ -19,6 +19,9 @@ def main():
     parser.add_argument("--validate-only", type=int, default=0)
     parser.add_argument("--limit-new", type=int, default=0)
     parser.add_argument("--inspect", action="store_true")
+    parser.add_argument("--sync-stock", choices=["report", "pause_only", "pause_and_reactivate"],
+                        help="antes de publicar, pausa lo que SBS ya no ofrece (report = solo informa)")
+    parser.add_argument("--sync-only", action="store_true", help="sincroniza el stock y termina, sin publicar")
     args = parser.parse_args()
     if not args.inspect and not args.connection:
         parser.error("falta --connection (archivo privado descargado del panel)")
@@ -51,6 +54,10 @@ def main():
             command += ["--validate-only", str(args.validate_only)]
         if args.limit_new:
             command += ["--limit-new", str(args.limit_new)]
+        if args.sync_stock:
+            command += ["--sync-stock", args.sync_stock]
+        if args.sync_only:
+            command += ["--sync-only"]
     try:
         return subprocess.call(command)
     except KeyboardInterrupt:
