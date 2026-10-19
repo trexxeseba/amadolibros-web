@@ -22,7 +22,7 @@ const TRANSIENT_BACKOFF_MS=300000,LONG_BACKOFF_MS=86400000,SAMPLE=200;
 export const SCHEMA='CREATE TABLE IF NOT EXISTS ml_vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,in_stock_at INTEGER NOT NULL DEFAULT 0,feed_date TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0)';
 const UPSERT='INSERT INTO ml_vintage_stock_sync(isbn,item_id,desired_status,missing_since,in_stock_at,feed_date,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(isbn) DO UPDATE SET item_id=excluded.item_id,desired_status=excluded.desired_status,missing_since=excluded.missing_since,in_stock_at=excluded.in_stock_at,feed_date=excluded.feed_date,updated_at=excluded.updated_at';
 
-export async function syncStock({db,api,env,rows,sourceDate,mode='report',graceHours=0,maxMissingPct=10,batch=60,now=Date.now}){
+export async function syncStock({db,api,env,rows,sourceDate,mode='report',graceHours=0,maxMissingPct=10,batch=500,now=Date.now}){
  if(!STOCK_SYNC_MODES.includes(mode))throw new PublicationError('invalid_stock_sync_mode',400);
  const startedAt=now();
  if(!stockIsFresh(sourceDate,startedAt))return {state:'feed_stale'};
@@ -47,7 +47,7 @@ export async function syncStock({db,api,env,rows,sourceDate,mode='report',graceH
  for(let i=0;i<updates.length;i+=200)await db.batch(updates.slice(i,i+200).map(u=>db.prepare(UPSERT).bind(...u,feedIso,startedAt)));
  const summary={state:'synced',mode,feed_date:sourceDate,published:published.length,missing,suspicious_feed:suspicious,paused:0,activated:0,unchanged:0,skipped:0,errors:0,paused_isbns:[],activated_isbns:[],skipped_by_reason:{}};
  const wanted=mode==='pause_only'?['paused']:['paused','active'];
- const dueSql=`SELECT * FROM ml_vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY updated_at,isbn LIMIT ?`;
+ const dueSql=`SELECT * FROM ml_vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY CASE desired_status WHEN 'paused' THEN 0 ELSE 1 END,updated_at,isbn LIMIT ?`; // pauses first: a sold-out book must not wait behind the baseline check of the rest
  if(mode==='report'){
   const pending=(await db.prepare("SELECT isbn,item_id FROM ml_vintage_stock_sync WHERE desired_status='paused' AND (applied_status IS NULL OR applied_status<>'paused') ORDER BY isbn").all()).results;
   return {...summary,state:'reported',would_pause:pending.length,would_pause_isbns:pending.slice(0,SAMPLE).map(r=>r.isbn)};

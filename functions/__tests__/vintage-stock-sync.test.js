@@ -88,3 +88,11 @@ test('a 429 while pausing stops and retries later instead of continuing',async t
  f.state.failPut=null;const retried=await f.run({rows:workbook([2,3]),now:()=>NOW+10*60*1000});
  assert.equal(retried.paused,2);
 });
+
+test('a sold-out book is paused in the first run even when many in-stock books are checked first',async t=>{
+ const f=await fixture(t,{published:10});
+ // batch smaller than the published list: the missing ISBN sorts last, yet pauses must come first
+ const result=await f.run({mode:'pause_and_reactivate',batch:3,rows:workbook([9])});
+ assert.equal(result.paused,1);assert.deepEqual(result.paused_isbns,[isbnOf(9)]);assert.equal(f.itemOf(9).status,'paused');
+ assert.equal(result.unchanged,2,'the rest of the batch is the baseline check of in-stock books');
+});
