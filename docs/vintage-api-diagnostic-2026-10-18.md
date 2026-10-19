@@ -1,7 +1,7 @@
 # Publicador Vintage: diagnóstico y entrega para revisión
 
-Fecha: 18/10/2026, America/Montevideo. Base revisada: PR #458,
-`da6fdf7150b1ead722fd03b9f87d61bef4048dd5`. Rama de trabajo independiente:
+Fecha: 18/10/2026, America/Montevideo. Base funcional integrada: PR #459,
+`417564494e9f7035e94692815e40cf69768d97ee`, que incluye #458. Rama de entrega independiente:
 `codex/vintage-catalog-telemetry`. No se modificó la carpeta del proceso activo,
 no se reinició el publicador y no se fusionaron #458 ni #459.
 
@@ -36,6 +36,59 @@ Los cuatro registros con endpoint, su ausencia de Retry-After y el quinto evento
 aproximado proceden del informe suministrado por Seba; no se leyeron los archivos
 del motor en la PC. El lote de 440 y su relanzamiento a las 21:43 también son
 datos del operador, no estados nuevos comprobados desde este entorno.
+
+### Resultado nuevo de la continuación
+
+En la revisión iniciada a las 22:38 Uruguay se leyó y actualizó el panel autenticado
+de Vintage: **555 confirmadas** (550 del lote + cinco del piloto), control desde la
+PC y **seis resultados por confirmar**. Son 115 confirmadas más que el último
+corte de 440 aportado por el operador. Esta lectura proviene del registro del
+panel, no de una nueva consulta individual a las 555 publicaciones. No se
+accionaron los botones de carga, inicio, pausa, precios o disponibilidad.
+
+La integración con #459 se preparó en otra carpeta aislada y detectó dos fallas
+reproducibles que se corrigieron en la rama de entrega:
+
+1. Una publicación que seguía pendiente durante la **reconciliación** podía
+   lanzar el error diferible fuera de la captura por libro y terminar el motor.
+   Ahora conserva el item ID y la reserva, fija un próximo intento a dos minutos
+   y continúa. También espera la reconciliación al finalizar las candidatas en
+   lugar de tratarla como una revisión terminada. Una prueba con demora simulada
+   de cinco minutos termina con cinco publicaciones y exactamente cinco POST,
+   sin duplicados; antes del arreglo esa misma prueba fallaba. Otra prueba
+   confirma que alcanzar el tope diario de altas tampoco bloquea esta lectura
+   posterior: verifica la reserva existente sin otro POST.
+2. Un Excel con una desaparición masiva de títulos podía ejecutar pausas que
+   habían quedado pendientes desde un informe anterior. Ahora el archivo
+   sospechoso bloquea todo trabajo de stock y no adelanta el registro del feed.
+   La prueba con una pausa previamente encolada reproducía un PUT indebido y,
+   después del arreglo, comprueba cero PUT y estado local conservado.
+
+Los cambios están en el motor local y el sincronizador local Vintage. El Worker
+de Libros, las credenciales y las publicaciones reales quedan fuera del diff.
+
+### Validación de la versión integrada
+
+- Suite completa de `functions/__tests__/*.test.js`: **1.818 aprobadas, cero fallas**.
+- Suite `worker-sync/__tests__/publication*.test.js`: **116 aprobadas, cero fallas**.
+  Son **1.934 pruebas** entre ambos grupos. La selección específica Vintage y
+  publicación también terminó con **227 aprobadas** (subconjunto, no se suman).
+- Sintaxis JS/MJS del validador, compilación del lanzador Python y
+  `git diff --check`: correctos. Las pruebas usan dobles de API; no se publicaron
+  libros reales desde este entorno.
+- `bash scripts/validate-ci.sh` **no terminó en verde**. En Node 24.19.0 pasó
+  sintaxis y ejecutó 308 pruebas de Worker: 307 aprobadas y una falla en
+  `cover-mirror-retention.test.js`, caso `CAS retry releases each failed manifest
+  graph before reading the next version`. Su comprobación de retención de
+  objetos falló. Ese archivo y el código de `worker-sync` están sin cambios
+  respecto de #459. Se observó un pase aislado en la otra copia y una falla
+  aislada en la integración; eso no identifica la causa. El script terminó en
+  ese punto y **no verificó los builds** posteriores. CI fija Node 22.12; no se
+  presenta esta ejecución local como equivalente a un CI completo aprobado.
+
+El PR sigue en borrador. Queda pendiente resolver o validar ese freno general
+antes de considerar aprobada la entrega completa para producción; esta rama no
+modifica el Worker de Libros para resolverlo.
 
 ## 2. Hipótesis y límites de la evidencia
 
@@ -190,12 +243,11 @@ vieja que borre recibos de altas ya creadas.
 
 ## Activación de esta rama
 
-Después de revisar el PR, integrar el commit probado en una copia nueva del
-checkout elegido para el siguiente reinicio. Si se va a usar #459, incorporar
-también esta entrega allí y resolver el posible conflicto de `engine.mjs`
-**antes** del corte; #459 incluye sincronización de stock que esta base no agrega.
-No ejecutar dos motores apuntando a la misma campaña. No fusionar #458/#459 como
-consecuencia automática de aceptar este diagnóstico.
+La rama reúne la versión de #459 y las mejoras del PR #461; sus conflictos de
+motor, pruebas y documentación ya están resueltos en la copia aislada. Después
+de revisar el PR, usar el commit probado en un checkout nuevo para el siguiente
+reinicio. No ejecutar dos motores apuntando a la misma campaña. Preparar esta
+integración no fusiona #458/#459 a main ni ejecuta la sincronización de stock.
 
 La ventana indicada por el operador es 19/10 a la 01:04 Uruguay (04:04 UTC),
 cuando se renuevan Excel y conexión. Este documento no programa ni ejecuta ese

@@ -144,6 +144,16 @@ test('a book whose pictures take longer than the wait is deferred without a seco
  assert.equal(JSON.parse(await p.h.fs.readFile(p.h.path.join(p.h.temp,'status.json'),'utf8')).state!=='stopped_item_readback_failed',true);
 });
 
+test('--sync-stock runs before publishing, writes its report, and --sync-only never creates anything',async t=>{
+ let creates=0;
+ const h=await engineHarness(t,{async create(){creates++;throw new Error('must_not_create');}});
+ const result=await h.run({...h.options,target:8,syncStock:'report',syncOnly:true});
+ assert.equal(result.state,'stock_sync_done');assert.equal(result.stock_sync,'workbook_incomplete','a 5-row workbook is refused by the sync');assert.equal(creates,0);
+ const report=JSON.parse(await h.fs.readFile(h.path.join(h.temp,'stock-sync-report.json'),'utf8'));
+ assert.equal(report.state,'workbook_incomplete');assert.equal(typeof report.at,'string');
+ await assert.rejects(()=>h.run({...h.options,target:8,syncStock:'delete_everything',syncOnly:true}),/invalid_stock_sync_mode/);
+});
+
 test('pending pictures cannot hide a seller mismatch or a second moderation reason',async t=>{
  for(const mismatch of [{seller_id:'440298103'},{sub_status:['picture_download_pending','forbidden']}]){
   const p=await pictureHarness(t,{pausedReads:1000}),read=p.api.call;
@@ -152,3 +162,34 @@ test('pending pictures cannot hide a seller mismatch or a second moderation reas
   assert.equal(result.state,'stopped_item_readback_failed');assert.equal(p.posts,1);
  }
 });
+
+test('reconciliation can defer a still-pending created item repeatedly, finish later and never create it twice',async t=>{
+ await deferredRecovery(t,3000);
+});
+
+test('hitting the daily create cap still reconciles a reserved book without another POST',async t=>{
+ await deferredRecovery(t,10);
+});
+
+async function deferredRecovery(t,dailyCap){
+ const actualNow=Date.now;let clock=actualNow();Date.now=()=>clock;t.after(()=>{Date.now=actualNow;});
+ const h=await engineHarness(t,{create:null}),items=new Map();let posts=0;
+ const base=h.options.apiFactory({}),matches=isbn=>[...items.values()].filter(x=>x.seller_custom_field==='AMADO-AR-'+isbn).map(x=>x.id);
+ const api={...base,
+  async skuItems(e,isbn){return matches(isbn);},
+  async call(e,url){
+   if(url.startsWith('/users/')){const sku=new URL('https://example.invalid'+url).searchParams.get('seller_sku');return {results:sku?matches(sku.replace('AMADO-AR-','')):[]};}
+   const item=items.get(url.slice('/items/'.length));assert.ok(item);
+   return item.ready_at>clock?{...item,status:'paused',sub_status:['picture_download_pending']}:{...item};
+  },
+  async create(e,payload){posts++;const item={...payload,id:'MLU'+posts,seller_id:'2341378249',available_quantity:1,status:'active',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}],ready_at:posts===1?clock+300000:clock};items.set(item.id,item);return item;},
+ };
+ const rawBroker=h.options.brokerFactory(),statuses=[],started=clock;
+ const broker=async(action,args)=>{const result=await rawBroker(action,args);return action==='status'?{...result,daily_cap:dailyCap}:result;};
+ const result=await h.run({...h.options,brokerFactory:()=>broker,apiFactory:()=>api,waitFor:async ms=>{clock+=ms;if(clock-started>900000)throw new Error('reconciliation did not converge');},onStatus:line=>statuses.push(JSON.parse(line)),target:1000});
+ assert.equal(result.published_total,10,JSON.stringify({result,states:statuses.map(x=>x.state),posts,elapsed:clock-started}));assert.equal(posts,5);
+ if(dailyCap===3000){assert.equal(result.state,'complete');assert.ok(statuses.some(x=>x.state==='reconciliation_waiting'));}
+ const {DatabaseSync}=await import('node:sqlite'),db=new DatabaseSync(h.path.join(h.temp,'publisher.sqlite'),{readOnly:true});
+ const receipts=db.prepare('SELECT state,COUNT(*) n FROM ml_vintage_pub_receipts GROUP BY state').all();db.close();
+ assert.deepEqual(receipts.map(x=>({state:x.state,n:x.n})),[{state:'published',n:5}]);
+}
