@@ -14,7 +14,7 @@ import {syncStock as syncSupplierStock,STOCK_SYNC_MODES} from './stock-sync.mjs'
 export const SELLER='2341378249';
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
+const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000,MAX_PICTURE_TICKS=20;
 export function checkConfiguration(c){
  if(c?.version!==1||c.seller_id!==SELLER||c.app_id!=='4741021817925208'||c.run_id!==BULK_RUN||c.endpoint!==ENDPOINT||!/^[a-f0-9]{64}$/.test(c.key??''))throw new Error('invalid_vintage_connection');
  if(c.expires_at<=Date.now())throw new Error('vintage_connection_expired');
@@ -147,11 +147,20 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    const {paused_isbns,activated_isbns,would_pause_isbns,skipped_by_reason,...counts}=sync;onStatus(JSON.stringify({stock_sync:counts,skipped_by_reason}));
    if(syncOnly)return {state:'stock_sync_done',stock_sync:sync.state,published_total:5+await s.publishedCount(BULK_RUN)};
   }
-  const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
+  const start=5+await s.publishedCount(BULK_RUN);let batchStart=start,picturesWaits=0;
   for(;;){
    const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
-   const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
+   let result;
+   try{result=await service.tick(env,BULK_RUN);picturesWaits=0;}
+   catch(error){
+    // A created book whose pictures are still downloading (met while reconciling) is simply retried on the next
+    // tick. Only after many consecutive ticks do we stop, with the usual read-back status, instead of waiting forever.
+    if(error?.code!=='created_item_pending_pictures')throw error;
+    if(++picturesWaits>MAX_PICTURE_TICKS)failedReadback=true;
+    result={state:'pending_pictures'};
+   }
+   const summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
    if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
    if(failedReadback||listingQuotaHit)break;
