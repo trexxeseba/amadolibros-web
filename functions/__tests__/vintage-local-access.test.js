@@ -132,8 +132,14 @@ test('readback waits for Mercado Libre to finish downloading pictures before acc
  assert.notEqual(result.state,'stopped_item_readback_failed');
 });
 
-test('readback still stops when the item stays paused after the bounded wait, or has another status',async t=>{
+test('a book whose pictures take longer than the wait is deferred without a second create and does not stop the run',async t=>{
+ const {DatabaseSync}=await import('node:sqlite');
  const p=await pictureHarness(t,{pausedReads:1000});
- const result=await p.h.run({...p.options,target:1000});
- assert.equal(result.state,'stopped_item_readback_failed');assert.equal(p.waits.filter(x=>x===10000).length,6);assert.equal(p.posts,1,'no second create after the failed readback');
+ const result=await p.h.run({...p.options,target:1000,limitNew:3});
+ assert.notEqual(result.state,'stopped_item_readback_failed');assert.equal(p.posts,3,'each of the three books is created exactly once');
+ assert.equal(p.waits.filter(x=>x===10000).length,18,'six bounded waits per book, then it is deferred');
+ const db=new DatabaseSync(p.h.path.join(p.h.temp,'publisher.sqlite'),{readOnly:true});
+ const states=Object.fromEntries(db.prepare("SELECT state,COUNT(*) n FROM ml_vintage_pub_jobs WHERE state IN ('retry','review','uncertain','published') GROUP BY state").all().map(r=>[r.state,r.n]));db.close();
+ assert.equal(states.review,undefined,'a deferred book is not sent to review');assert.equal(states.retry,3);
+ assert.equal(JSON.parse(await p.h.fs.readFile(p.h.path.join(p.h.temp,'status.json'),'utf8')).state!=='stopped_item_readback_failed',true);
 });
