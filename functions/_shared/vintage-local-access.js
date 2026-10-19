@@ -1,4 +1,4 @@
-import {VintageBulkStore,BULK_RUN,PILOT_RUN} from './meli-vintage-bulk.js';
+import {VintageBulkStore,BULK_RUN,PILOT_RUN,VINTAGE_DAILY_CAP} from './meli-vintage-bulk.js';
 import {vintageTokens,VINTAGE_SELLER_ID} from './meli-vintage-token.js';
 import {PublicationError,canonicalIsbn,sha256,stockIsFresh,policyHash} from '../../worker-sync/publication-policy.js';
 import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
@@ -46,7 +46,7 @@ export function createLocalAccess({now=Date.now,tokens=vintageTokens}={}){
    if(!stockIsFresh(feed?.source_date,now())||!row||!/^\+?\d+$/.test(String(row.stock))||Number(row.stock)<=0)fail('supplier_stock_stale_or_missing');
    const job=await s.stmt('SELECT state FROM ml_pub_jobs WHERE run_id=? AND isbn=?',BULK_RUN,isbn).first();
    if(!job)fail('isbn_outside_campaign');
-   const reserved=await s.reserve(VINTAGE_SELLER_ID,isbn,BULK_RUN,now(),1000);
+   const reserved=await s.reserve(VINTAGE_SELLER_ID,isbn,BULK_RUN,now(),VINTAGE_DAILY_CAP);
    return {reserved:Boolean(reserved),receipt:reserved??await s.receipt(VINTAGE_SELLER_ID,isbn)};
   }
   if(action==='report'){
@@ -58,7 +58,7 @@ export function createLocalAccess({now=Date.now,tokens=vintageTokens}={}){
     s.stmt('UPDATE ml_pub_jobs SET state=?,item_id=COALESCE(?,item_id),error_code=? WHERE run_id=? AND isbn=?',args.state,args.item_id??null,args.state==='uncertain'?'local_create_uncertain':null,BULK_RUN,isbn),
    ]);return {recorded:true};
   }
-  if(action==='status')return {seller_id:VINTAGE_SELLER_ID,published_total:5+await s.publishedCount(BULK_RUN),daily_created:await s.dayCreated(now()),expires_at:access.expires_at};
+  if(action==='status')return {seller_id:VINTAGE_SELLER_ID,published_total:5+await s.publishedCount(BULK_RUN),daily_created:await s.dayCreated(now()),daily_cap:VINTAGE_DAILY_CAP,expires_at:access.expires_at};
   fail('invalid_local_action',400);
  }
  return {grant,command};

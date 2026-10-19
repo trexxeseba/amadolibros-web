@@ -13,6 +13,7 @@ import {openDatabase} from './db.mjs';
 export const SELLER='2341378249';
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
 export function checkConfiguration(c){
  if(c?.version!==1||c.seller_id!==SELLER||c.app_id!=='4741021817925208'||c.run_id!==BULK_RUN||c.endpoint!==ENDPOINT||!/^[a-f0-9]{64}$/.test(c.key??''))throw new Error('invalid_vintage_connection');
  if(c.expires_at<=Date.now())throw new Error('vintage_connection_expired');
@@ -46,8 +47,17 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false;
- const limited=createVintageBulkFetch();
- api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
+ const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
+ const watched=async(url,options)=>{
+  const response=await limited(env,url,options);
+  try{
+   if(response.status===429)await fs.appendFile(rateLog,JSON.stringify({at:new Date().toISOString(),method:options?.method??'GET',endpoint:new URL(url).pathname.replace(/\d+/g,'#'),retry_after:response.headers.get('retry-after')})+'\n');
+   else if(response.status>=400&&(options?.method??'GET')==='POST'&&/quota_exceeded|max_limit_publish/.test(await response.clone().text()))listingQuotaHit=true;
+  }catch{}
+  return response;
+ };
+ api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
    if(validateOnly)throw new Error('validation_cannot_reserve');
@@ -58,7 +68,22 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   }
   async receiptState(seller,isbn,state,itemId=null){
    if(state==='published'){
-    try{const row=await this.stock(c.feed_id,isbn);checkCreated(await api.call(env,'/items/'+itemId),isbn,quoteMercadoLibre(row,policy).price);}catch(error){failedReadback=true;throw error;}
+    try{
+     const row=await this.stock(c.feed_id,isbn),price=quoteMercadoLibre(row,policy).price;
+     // Mercado Libre downloads pictures after the create, so a new item is briefly paused for that
+     // reason only. Wait a bounded time for that exact state; any other mismatch fails at once.
+     for(let attempt=0;;attempt++){
+      const item=await api.call(env,'/items/'+itemId);
+      try{checkCreated(item,isbn,price);break;}
+      catch(error){
+       if(item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;
+       // Pictures still downloading after the wait: defer this book (the service retries it without a new POST
+       // and reconciles it by SKU) instead of stopping the whole run. Any other mismatch still stops it.
+       if(attempt>=PICTURE_WAIT_TRIES)throw new MercadoLibreError('created_item_pending_pictures',503);
+       await waitFor(PICTURE_WAIT_MS);
+      }
+     }
+    }catch(error){if(error.code!=='created_item_pending_pictures')failedReadback=true;throw error;}
    }
    await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});return super.receiptState(seller,isbn,state,itemId);
   }
@@ -113,20 +138,20 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
   for(;;){
-   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);if(remote.daily_created>=1000&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
+   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
-   if(failedReadback)status.state='stopped_item_readback_failed';
+   if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
-   if(failedReadback)break;
+   if(failedReadback||listingQuotaHit)break;
    if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
    const activeRun=await s.run(BULK_RUN);
-   let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=1000?60000:0);
-   if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,60000);}
+   let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
+   if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,20000);}
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  return {state:failedReadback?'stopped_item_readback_failed':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
+  return {state:failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
  }finally{db.close();}
 }
 async function main(){
