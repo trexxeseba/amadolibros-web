@@ -143,3 +143,12 @@ test('a book whose pictures take longer than the wait is deferred without a seco
  assert.equal(states.review,undefined,'a deferred book is not sent to review');assert.equal(states.retry,3);
  assert.equal(JSON.parse(await p.h.fs.readFile(p.h.path.join(p.h.temp,'status.json'),'utf8')).state!=='stopped_item_readback_failed',true);
 });
+
+test('pending pictures cannot hide a seller mismatch or a second moderation reason',async t=>{
+ for(const mismatch of [{seller_id:'440298103'},{sub_status:['picture_download_pending','forbidden']}]){
+  const p=await pictureHarness(t,{pausedReads:1000}),read=p.api.call;
+  p.api.call=async(...args)=>{const item=await read(...args);return args[1].startsWith('/items/')?{...item,...mismatch}:item;};
+  const result=await p.h.run({...p.options,target:1000,limitNew:3});
+  assert.equal(result.state,'stopped_item_readback_failed');assert.equal(p.posts,1);
+ }
+});

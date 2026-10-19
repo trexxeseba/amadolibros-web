@@ -54,8 +54,9 @@ learn which call causes it. A creation refused for the listing quota (`item.max_
 or `user.quota_exceeded`) stops the process with state `stopped_listing_quota` instead of
 trying every remaining ISBN. The read-back after a create waits up to six 10-second checks while
 Mercado Libre reports the item as `paused` with `picture_download_pending` (it downloads the pictures
-after the create); any other mismatch, or still paused after that wait, stops the process with
-`stopped_item_readback_failed`. Restart with the same directory to preserve progress. A hard
+after the create). After that bounded wait the book is deferred for reconciliation, without another
+create. A different seller, ISBN, price, quantity, currency, availability or moderation reason still
+stops the process with `stopped_item_readback_failed`. Restart with the same directory to preserve progress. A hard
 process termination can leave a five-minute lease, which is allowed to expire.
 
 The engine scans all listing statuses, canonicalizes ISBNs, checks both SKU query
@@ -70,3 +71,51 @@ four or five simultaneous requests are safe. There is a 20-second pause after 25
 creations (it was 60 seconds; the pause was self-imposed, not a Mercado Libre limit). The PC must remain on and awake. Stale stock, an expired/revoked
 connection or an identity mismatch stops publishing. A fresh approved stock
 connection can replace an expired snapshot while retaining local receipts.
+
+## Request measurement and catalog budget
+
+`request-counts.jsonl`, next to `rate-limit-events.jsonl`, contains additive
+`minute_delta` rows by method/endpoint and `book_delta` rows for the books processed
+in that tick. The book key is kept only in memory. Neither file contains ISBNs,
+seller/item/product IDs, query strings, request bodies, headers or credentials.
+Only the sanitized `Retry-After` value is kept for a real 429. No new dependency is needed.
+
+Network attempts, transport failures and cache hits are counted separately **inside**
+the limiter, so cached categories/attributes do not inflate API consumption. Startup
+inventory and account checks are in the minute totals; later reconciliation has its
+own book observation. The per-new-book mean covers the tick that sent `POST /items`,
+not all future reconciliation calls. Broker traffic and OAuth refreshes performed
+on the server are outside these local ML data-endpoint counters.
+If `status.json` reports `telemetry_write_failed`, fix the logging problem before
+using that window as complete evidence; publication results are preserved.
+
+Summarize the actual records after the next authorized restart:
+
+```powershell
+node scripts/vintage-local/metrics.mjs --directory "$env:LOCALAPPDATA/Amado/VintagePublisher"
+```
+
+The global clock remains **2 seconds**. `/products/search` also has a persistent
+**5-second** minimum between searches, a conservative budget of our own, not a claim
+about Mercado Libre's quota. Strikes are per method/endpoint. Only a successful
+network response on that same endpoint clears them; a cache hit or a successful
+`/users/me` cannot clear search strikes. Existing global cooldowns remain honored.
+
+Positive exact-ISBN searches and active book-product details are cached for five
+minutes. Empty/ambiguous searches, inactive products and failures are not cached.
+Static categories/attributes retain their 30-minute cache. Identity, item readback,
+fees and validations are never cached. This mainly saves retries: a new ISBN still
+requires its own catalog search, even when its final `catalog_listing` is false,
+because prepare uses the result to verify the edition and obtain required metadata.
+
+No production requests were sent to benchmark the new code. The fake-server trace
+over the real API implementation gives 15 calls with cold metadata and 12 for the
+next unique ISBN with warm categories/attributes. The production mean remains to
+be measured. Twelve calls with a 2-second global spacing imply at most about 150
+new books/hour in a sustained stream before other overhead; these changes do not
+establish a capacity of 250 books/hour.
+
+See `docs/vintage-api-diagnostic-2026-10-18.md` for the evidence, quota-request draft,
+app separation plan and activation notes. Keep this branch isolated until the owner
+reviews it; neither an existing publicador nor PR #458/#459 is restarted or merged
+by preparing these changes.

@@ -6,6 +6,8 @@ import {PublicationError,policyHash,stockIsFresh,canonicalIsbn,normalizedTitle} 
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {vintagePolicy,requireVintagePrice,VINTAGE_MINIMUM_UYU} from '../../worker-sync/vintage-pricing.js';
 import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js';
+import {createVintageBulkFetch,ENDPOINT_RATE_SCHEMA} from './vintage-request-budget.js';
+export {createVintageBulkFetch} from './vintage-request-budget.js';
 
 export const BULK_RUN='23413782-4900-4000-8000-000000010000';
 export const PILOT_RUN='23413782-4900-4000-8000-000000000005';
@@ -14,6 +16,7 @@ export const VINTAGE_DAILY_CAP=3000;
 const fail=(code,status=409)=>{throw new PublicationError(code,status);};
 const uuid=x=>typeof x==='string'&&/^[a-f0-9-]{36}$/.test(x);
 const SCHEMA=[
+ ENDPOINT_RATE_SCHEMA,
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_rate (id INTEGER PRIMARY KEY CHECK(id=1),next_at INTEGER NOT NULL DEFAULT 0,cooldown INTEGER NOT NULL DEFAULT 0,strikes INTEGER NOT NULL DEFAULT 0)",
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_identifiers (run_id TEXT NOT NULL,isbn TEXT NOT NULL,item_id TEXT NOT NULL,PRIMARY KEY(run_id,isbn,item_id))",
  "CREATE TABLE IF NOT EXISTS ml_vintage_bulk_cache (url TEXT PRIMARY KEY,expires_at INTEGER NOT NULL,response_json TEXT NOT NULL)",
@@ -35,36 +38,6 @@ export class VintageBulkStore extends VintageStore {
  async existing(id,isbn,title){return await this.db.prepare('SELECT item_id,isbn FROM ml_vintage_bulk_identifiers WHERE run_id=? AND isbn=? LIMIT 1').bind(id,isbn).first()??await super.existing(id,isbn,title);}
 }
 
-// A persistent seller-wide request clock prevents bursts across tabs/isolates.
-// It is an application budget (30 requests/minute), not a claimed ML limit.
-export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random}={}){
- let tail=Promise.resolve();
- return (env,url,options)=>{
-  const task=tail.then(async()=>{
-   const db=env.ORDERS_DB,rate=await db.prepare('SELECT * FROM ml_vintage_bulk_rate WHERE id=1').first();
-   if(rate.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((rate.cooldown-now())/1000));
-   const parsed=new URL(url),cacheable=(options.method??'GET')==='GET'&&parsed.origin==='https://api.mercadolibre.com'&&(/^\/categories\/MLU\d+(?:\/attributes)?$/.test(parsed.pathname)||/^\/catalog_domains\/MLU-[A-Z_]+\/categories$/.test(parsed.pathname));
-   if(cacheable){const cached=await db.prepare('SELECT response_json FROM ml_vintage_bulk_cache WHERE url=? AND expires_at>?').bind(url,now()).first();if(cached)return new Response(cached.response_json,{headers:{'Content-Type':'application/json'}});}
-   const slot=await db.prepare('UPDATE ml_vintage_bulk_rate SET next_at=MAX(next_at,?)+2000 WHERE id=1 AND cooldown<=? RETURNING next_at').bind(now(),now()).first();
-   if(!slot)throw new MercadoLibreError('vintage_rate_cooldown',429,120);
-   const wait=slot.next_at-2000-now();
-   if(wait>30000)throw new MercadoLibreError('vintage_rate_budget',429,Math.ceil(wait/1000));
-   if(wait>0)await sleep(wait);
-   const again=await db.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
-   if(again.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((again.cooldown-now())/1000));
-   const response=await fetcher(url,options);
-   if(response.ok&&rate.strikes>0)await db.prepare('UPDATE ml_vintage_bulk_rate SET strikes=0 WHERE id=1 AND cooldown<=?').bind(now()).run();
-   if(cacheable&&response.ok){try{const text=await response.clone().text();if(text.length<=524288){JSON.parse(text);await db.prepare('INSERT INTO ml_vintage_bulk_cache(url,expires_at,response_json) VALUES(?,?,?) ON CONFLICT(url) DO UPDATE SET expires_at=excluded.expires_at,response_json=excluded.response_json').bind(url,now()+1800000,text).run();}}catch{}}
-   if(response.status===429){
-    const header=response.headers.get('retry-after'),seconds=Number(header),serverWait=Number.isFinite(seconds)?seconds*1000:Math.max(0,Date.parse(header)-now())||0;
-    const until=now()+Math.max(serverWait,Math.min(3600000,120000*2**Math.min(rate.strikes,5)))+Math.floor(random()*15000);
-    await db.prepare('UPDATE ml_vintage_bulk_rate SET cooldown=MAX(cooldown,?),strikes=MIN(strikes+1,6) WHERE id=1').bind(until).run();
-   }
-   return response;
-  });
-  tail=task.catch(()=>{});return task;
- };
-}
 function identifiers(item){
  const candidates=[...(item.attributes??[]).filter(a=>['ISBN','GTIN','EAN','SELLER_SKU'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]),item.seller_custom_field,...(item.variations??[]).flatMap(v=>[v.seller_custom_field,...(v.attributes??[]).filter(a=>['ISBN','GTIN','EAN','SELLER_SKU'].includes(a.id)).map(a=>a.value_name)])];
  const out=new Set();for(const value of candidates){if(!value)continue;try{out.add(canonicalIsbn(String(value).replace(/^AMADO-AR-/,'')));}catch{}}
