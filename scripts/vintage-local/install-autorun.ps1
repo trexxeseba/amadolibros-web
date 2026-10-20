@@ -27,6 +27,24 @@ if ($Uninstall) {
   exit 0
 }
 
+# 0. Rutas completas: el Programador de tareas no usa el PATH de la consola ni los
+#    alias de la Microsoft Store, así que la tarea tiene que apuntar al ejecutable real.
+$pythonCmd = Get-Command $Python -ErrorAction SilentlyContinue
+if (-not $pythonCmd -or $pythonCmd.Source -like "*WindowsApps*") {
+  $pythonCmd = Get-Command py -ErrorAction SilentlyContinue
+  if ($pythonCmd) { $Python = "py" }
+}
+if (-not $pythonCmd) { throw "No se encontró Python. Instalalo desde https://www.python.org/downloads/windows/ (marcá 'Add python.exe to PATH') y volvé a correr este instalador." }
+$PythonExe = $pythonCmd.Source
+$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+if (-not $nodeCmd) { throw "No se encontró Node.js. Instalá Node 22 LTS desde https://nodejs.org y volvé a correr este instalador." }
+$nodeVersion = [version]((& $nodeCmd.Source --version).TrimStart("v"))
+if ($nodeVersion -lt [version]"22.13.0") { throw "Node $nodeVersion es viejo; hace falta 22.13 o posterior." }
+$pyOk = & $PythonExe -c "import sys; print(sys.version_info >= (3, 9))" 2>$null
+if ("$pyOk".Trim() -ne "True") { throw "Python en $PythonExe no responde o es anterior a 3.9." }
+Write-Host "Python: $PythonExe"
+Write-Host "Node:   $($nodeCmd.Source) ($nodeVersion)"
+
 $private = Join-Path $StateDir "private"
 New-Item -ItemType Directory -Force -Path $private | Out-Null
 $secretFile = Join-Path $private "renew-secret.txt"
@@ -57,7 +75,18 @@ echo Publicador Vintage iniciado. Estado: "$StateDir\status.json". Registros: "$
 "@
 
 # 4. Tarea programada.
-$action = New-ScheduledTaskAction -Execute $Python -Argument "`"$script`" --target $Target$extra" -WorkingDirectory $Repo
+# run.cmd deja en logs\task.log cualquier error previo al propio registro de Python
+# (intérprete ausente, SyntaxError, módulo faltante), que de otro modo sería invisible.
+$logs = Join-Path $StateDir "logs"
+New-Item -ItemType Directory -Force -Path $logs | Out-Null
+Set-Content -Path (Join-Path $StateDir "run.cmd") -Encoding ASCII -Value @"
+@echo off
+cd /d "$Repo"
+echo [%date% %time%] inicio >> "$logs\task.log"
+"$PythonExe" "$script" --target $Target --node "$($nodeCmd.Source)"$extra >> "$logs\task.log" 2>&1
+echo [%date% %time%] fin codigo %errorlevel% >> "$logs\task.log"
+"@
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"`"$StateDir\run.cmd`"`"" -WorkingDirectory $Repo
 $triggers = @((New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME), (New-ScheduledTaskTrigger -AtStartup))
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 99 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
 Unregister-ScheduledTask -TaskName $task -Confirm:$false -ErrorAction SilentlyContinue
@@ -67,5 +96,5 @@ Start-ScheduledTask -TaskName $task
 
 Write-Host "Listo. Tarea $task registrada y en marcha."
 Write-Host "Estado:   $StateDir\status.json"
-Write-Host "Registro: $StateDir\logs"
+Write-Host "Registro: $StateDir\logs  (task.log si no arranca; autorun-*.log en marcha)"
 Write-Host "Parar:    $StateDir\stop.cmd   Seguir: $StateDir\start.cmd"

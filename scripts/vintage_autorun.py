@@ -60,7 +60,7 @@ class Runner:
         self.connection = Path(args.connection) if args.connection else self.private / "vintage-local-connection.json"
         self.secret_file = Path(args.secret_file) if args.secret_file else self.private / "renew-secret.txt"
         self.stop_file = self.directory / "STOP"
-        self.node = shutil.which("node")
+        self.node = args.node if args.node and Path(args.node).exists() else shutil.which("node")
         self.failures = 0
         self.last_notice = {}
         self.force_renew = False
@@ -247,6 +247,7 @@ def main():
     parser.add_argument("--connection")
     parser.add_argument("--secret-file")
     parser.add_argument("--notify-url")
+    parser.add_argument("--node", help="ruta completa de node.exe (opcional)")
     parser.add_argument("--directory", default=str(Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Amado" / "VintagePublisher"))
     parser.add_argument("--target", type=int, default=10000)
     args = parser.parse_args()
