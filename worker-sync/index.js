@@ -48,6 +48,7 @@ import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-p
 
 import { getAccessToken } from './meli-auth.js';
 import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
+import { handleAttributeAudit } from './attribute-audit-read.js';
 import { handlePublicationRoute } from './publication-routes.js';
 import { publicationService } from './publication-engine.js';
 import { createPublicationQueueHandler } from './publication-queue.js';
@@ -157,6 +158,8 @@ export default {
       return json({ error: 'Unauthorized.' }, 401);
     }
     if (url.pathname.startsWith('/publisher/')) return handlePublicationRoute(request,env,{admin:true});
+    // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
+    if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
 
     if (request.method === 'GET' && url.pathname === '/status') {
       return json(await readStatus(env));
