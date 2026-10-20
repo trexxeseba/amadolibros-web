@@ -5,7 +5,7 @@ import {PublicationStore} from '../../worker-sync/publication-store.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {policyHash,PublicationError} from '../../worker-sync/publication-policy.js';
 import {MercadoLibreError} from '../../worker-sync/publication-meli.js';
-import {VintageBulkStore,createVintageBulk,createVintageBulkFetch,BULK_RUN,PILOT_RUN} from '../_shared/meli-vintage-bulk.js';
+import {VintageBulkStore,createVintageBulk,createVintageBulkFetch,BULK_RUN,PILOT_RUN,VINTAGE_DAILY_CAP} from '../_shared/meli-vintage-bulk.js';
 import {createVintageBulkPage} from '../panel/meli-vintage-lote.js';
 import {createSessionToken,deriveSessionSecret,sessionCookieHeader} from '../_shared/panel-auth.js';
 const seller='2341378249';
@@ -103,8 +103,8 @@ test('the campaign stops at exactly 10000 including the pilot and never promotes
 });
 test('daily cap includes uncertain reservations and does not reserve or send another create',async t=>{
  const f=await fixture(t);await f.bulk.command(f.env,'start',f.args);
- await f.s.stmt("INSERT INTO ml_pub_receipts(seller_id,isbn,state,run_id,created_at,updated_at) SELECT ?,isbn,'uncertain',?,?,? FROM ml_pub_stock WHERE feed_id=? AND isbn NOT IN(SELECT isbn FROM ml_pub_receipts WHERE seller_id=?) LIMIT 995",seller,BULK_RUN,f.clock.value,f.clock.value,f.feed,seller).run();
- const state=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(f.calls.create.length,0);assert.equal(state.daily_created,1000);assert.ok(state.resume_at>f.clock.value);
+ await f.s.stmt("INSERT INTO ml_pub_receipts(seller_id,isbn,state,run_id,created_at,updated_at) SELECT ?,isbn,'uncertain',?,?,? FROM ml_pub_stock WHERE feed_id=? AND isbn NOT IN(SELECT isbn FROM ml_pub_receipts WHERE seller_id=?) LIMIT ?",seller,BULK_RUN,f.clock.value,f.clock.value,f.feed,seller,VINTAGE_DAILY_CAP-5).run();
+ const state=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(f.calls.create.length,0);assert.equal(state.daily_created,VINTAGE_DAILY_CAP);assert.equal(state.daily_cap,VINTAGE_DAILY_CAP);assert.ok(state.resume_at>f.clock.value);
 });
 test('bulk route requires panel session and same origin; no public start or shared seller argument',async()=>{
  const env={APP_ENV:'production',PANEL_PASSWORD:'a-test-password-long-enough'},origin='https://www.amadolibros.com',url=origin+'/panel/meli-vintage-lote';let calls=0;
