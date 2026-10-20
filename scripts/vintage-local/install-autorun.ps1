@@ -9,7 +9,8 @@
 #      en la carpeta privada de estado, si todavía no está.
 #   3. Crea stop.cmd y start.cmd en la carpeta de estado.
 #   4. Registra la tarea programada "AmadoVintagePublisher": arranca al iniciar
-#      sesión, se reinicia sola si se cae y no tiene límite de tiempo.
+#      sesión, se reinicia sola si se cae y no tiene límite de tiempo. Corre sin
+#      elevación: un proceso elevado no puede abrir el Python de la Microsoft Store.
 param(
   [string]$Repo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path,
   [string]$Python = "python",
@@ -30,12 +31,12 @@ if ($Uninstall) {
 # 0. Rutas completas: el Programador de tareas no usa el PATH de la consola ni los
 #    alias de la Microsoft Store, así que la tarea tiene que apuntar al ejecutable real.
 $pythonCmd = Get-Command $Python -ErrorAction SilentlyContinue
-if (-not $pythonCmd -or $pythonCmd.Source -like "*WindowsApps*") {
-  $pythonCmd = Get-Command py -ErrorAction SilentlyContinue
-  if ($pythonCmd) { $Python = "py" }
-}
+if (-not $pythonCmd) { $pythonCmd = Get-Command py -ErrorAction SilentlyContinue }
 if (-not $pythonCmd) { throw "No se encontró Python. Instalalo desde https://www.python.org/downloads/windows/ (marcá 'Add python.exe to PATH') y volvé a correr este instalador." }
-$PythonExe = $pythonCmd.Source
+# Con el Python de la Microsoft Store, python.exe es un alias de WindowsApps que el
+# Programador de tareas no puede abrir (0x80070002); sys.executable da el binario real.
+$PythonExe = (& $pythonCmd.Source -c "import sys; print(sys.executable)" 2>$null | Select-Object -Last 1)
+if (-not $PythonExe -or -not (Test-Path $PythonExe)) { $PythonExe = $pythonCmd.Source }
 $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
 if (-not $nodeCmd) { throw "No se encontró Node.js. Instalá Node 22 LTS desde https://nodejs.org y volvé a correr este instalador." }
 $nodeVersion = [version]((& $nodeCmd.Source --version).TrimStart("v"))
@@ -90,7 +91,7 @@ $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"`"$StateDir
 $triggers = @((New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME), (New-ScheduledTaskTrigger -AtStartup))
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 99 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
 Unregister-ScheduledTask -TaskName $task -Confirm:$false -ErrorAction SilentlyContinue
-Register-ScheduledTask -TaskName $task -Action $action -Trigger $triggers -Settings $settings -RunLevel Highest -Description "Publicador desatendido de Amado Vintage" | Out-Null
+Register-ScheduledTask -TaskName $task -Action $action -Trigger $triggers -Settings $settings -RunLevel Limited -Description "Publicador desatendido de Amado Vintage" | Out-Null
 Remove-Item -Force (Join-Path $StateDir "STOP") -ErrorAction SilentlyContinue
 Start-ScheduledTask -TaskName $task
 
