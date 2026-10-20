@@ -49,6 +49,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mlu-atributos-${{ github.run_id }}
-          path: reports/mlu-atributos/
+          path: |
+            reports/mlu-atributos/
+            ${{ runner.temp }}/mlu-items-raw.json
           if-no-files-found: warn
           retention-days: 30
