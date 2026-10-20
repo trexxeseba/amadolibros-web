@@ -14,15 +14,20 @@ export const AUDIT_SELLER_ID='440298103';
 export const AUDIT_ATTRIBUTE_IDS=Object.freeze(['AUTHOR','GTIN','ISBN','BOOK_PUBLISHER','PUBLISHER','LANGUAGE','PUBLICATION_YEAR','PAGES_NUMBER','BOOK_COVER','BOOK_EDITION','BOOK_GENRE']);
 const ML_ORIGIN='https://api.mercadolibre.com';
 const PAGE_SIZE=100,BULK_SIZE=20;
-const ITEM_FIELDS='id,seller_id,title,status,category_id,catalog_listing,sold_quantity,available_quantity,attributes';
+const ITEM_FIELDS='id,seller_id,title,status,category_id,catalog_listing,user_product_id,variations,sold_quantity,available_quantity,attributes';
 
 class AuditError extends Error{constructor(message,status=502){super(message);this.status=status;}}
 const reply=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 
 export function projectAuditItem(raw){
  const wanted=new Set(AUDIT_ATTRIBUTE_IDS);
- const attributes=(Array.isArray(raw.attributes)?raw.attributes:[]).filter(a=>wanted.has(String(a?.id??'').toUpperCase())).map(a=>({id:a.id,value_name:a.value_name??null,value_id:a.value_id??null,value_struct:a.value_struct&&typeof a.value_struct==='object'?{number:a.value_struct.number??null}:null}));
- return {id:raw.id,title:typeof raw.title==='string'?raw.title:null,status:raw.status??null,category_id:raw.category_id??null,catalog_listing:typeof raw.catalog_listing==='boolean'?raw.catalog_listing:null,sold_quantity:Number.isFinite(raw.sold_quantity)?raw.sold_quantity:null,available_quantity:Number.isFinite(raw.available_quantity)?raw.available_quantity:null,attributes};
+ const projectStruct=s=>s&&typeof s==='object'?{number:s.number??null,unit:s.unit??null}:null;
+ const attributes=Array.isArray(raw.attributes)?raw.attributes.filter(a=>wanted.has(String(a?.id??'').toUpperCase())).map(a=>({id:a.id,value_name:a.value_name??null,value_id:a.value_id??null,value_struct:projectStruct(a.value_struct),...(Array.isArray(a.values)?{values:a.values.map(v=>({id:v.id??null,name:v.name??null,struct:projectStruct(v.struct)}))}:{})})):null;
+ // No convertir un campo ausente en null: ausencia significa vinculación desconocida.
+ const relations={};
+ if(Object.hasOwn(raw,'user_product_id'))relations.user_product_id=raw.user_product_id;
+ if(Array.isArray(raw.variations))relations.variations=raw.variations.map(v=>({id:v.id,...(Object.hasOwn(v,'user_product_id')?{user_product_id:v.user_product_id}:{})}));
+ return {id:raw.id,title:typeof raw.title==='string'?raw.title:null,status:raw.status??null,category_id:raw.category_id??null,catalog_listing:typeof raw.catalog_listing==='boolean'?raw.catalog_listing:null,...relations,sold_quantity:Number.isFinite(raw.sold_quantity)?raw.sold_quantity:null,available_quantity:Number.isFinite(raw.available_quantity)?raw.available_quantity:null,attributes};
 }
 
 export function createAttributeAuditRead({fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken}={}){
@@ -52,7 +57,7 @@ export function createAttributeAuditRead({fetcher=(...args)=>globalThis.fetch(..
    const items=[],failed=[];
    for(let i=0;i<page.results.length;i+=BULK_SIZE){
     const ids=page.results.slice(i,i+BULK_SIZE);
-    const raw=await ml(bulkItemsPath(ids,ITEM_FIELDS),token);
+    const raw=await ml(bulkItemsPath(ids,ITEM_FIELDS)+'&include_internal_attributes=true',token);
     if(!Array.isArray(raw))throw new AuditError('Mercado Libre devolvió un lote inesperado.');
     const seen=new Set();
     for(const entry of raw){

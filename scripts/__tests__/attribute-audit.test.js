@@ -1,14 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { attributeHasValue, auditItem, buildAudit, parseArgs, renderCsv } from '../mercadolibre/attribute-audit.mjs';
+import { attributeHasValue, auditItem, buildAudit, parseArgs, renderCsv, renderMarkdown } from '../mercadolibre/attribute-audit.mjs';
 
 const attr = (id, value_name, extra = {}) => ({ id, value_name, ...extra });
 
-test('un atributo sin valor, con value_name null o value_id -1 cuenta como faltante', () => {
+test('distingue valores presentes de ausencia y de N/A', () => {
     assert.equal(attributeHasValue(attr('AUTHOR', 'Borges')), true);
     assert.equal(attributeHasValue(attr('AUTHOR', null)), false);
     assert.equal(attributeHasValue(attr('AUTHOR', null, { value_id: '-1' })), false);
     assert.equal(attributeHasValue(attr('PAGES_NUMBER', null, { value_struct: { number: 120 } })), true);
+});
+
+test('N/A queda separado de faltantes, porcentajes y propuestas de prioridad', () => {
+    const items = [
+        { id: 'MLU1', status: 'active', category_id: 'MLU1196', attributes: [attr('PUBLICATION_YEAR', null, { value_id: '-1' })] },
+        { id: 'MLU2', status: 'active', category_id: 'MLU1196', attributes: [attr('PUBLICATION_YEAR', '2019')] },
+        { id: 'MLU3', status: 'active', category_id: 'MLU1196', attributes: [] },
+    ];
+    const audit = buildAudit({ items, mode: 'raw' });
+    assert.equal(auditItem(items[0], 'raw').year, 'no_aplica');
+    assert.ok(!audit.rows.find(row => row.id === 'MLU1').missing.includes('year'));
+    const year = audit.coverage.find(c => c.key === 'year');
+    assert.deepEqual({ ok: year.ok, falta: year.falta, na: year.no_aplica, pct: year.pct_ok }, { ok: 1, falta: 1, na: 1, pct: 50 });
+    assert.match(renderMarkdown(audit, 'test'), /No aplica/);
+});
+
+test('N/A en values o en aliases no se convierte en faltante', () => {
+    const item = { id: 'MLU1', category_id: 'MLU1196', attributes: [
+        attr('PUBLICATION_YEAR', null, { values: [{ id: '-1', name: null }] }),
+        attr('BOOK_PUBLISHER', null, { value_id: '-1' }), attr('PUBLISHER', 'Otra'),
+        attr('LANGUAGE', null, { values: [{ id: '1', name: 'Español' }] }),
+    ] };
+    assert.equal(auditItem(item, 'raw').year, 'no_aplica');
+    assert.equal(auditItem(item, 'raw').publisher, 'no_aplica');
+    assert.equal(auditItem(item, 'raw').language, 'ok');
+    assert.equal(auditItem({ ...item, attributes: null }, 'raw').year, 'no_medible');
 });
 
 test('modo crudo mide editorial y páginas con los ids reales de la categoría', () => {

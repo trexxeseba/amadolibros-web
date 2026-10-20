@@ -11,7 +11,8 @@
 //  - Sólo se propone un atributo cuando la publicación NO lo tiene (estado 'falta'
 //    medido) y el registro trae un valor verificado para ese ISBN.
 //  - Nunca se propone nada para publicaciones de Catálogo (catalog_listing) ni
-//    fuera de la categoría de libros.
+//    fuera de la categoría de libros, vinculadas a User Products o sin evidencia
+//    suficiente para descartar esa vinculación (incluido un espejo antiguo).
 //  - En modo espejo sólo año e idioma son medibles; editorial y páginas se
 //    marcan 'a_confirmar' hasta correr la auditoría cruda (--raw).
 //  - El piloto toma las N de mayor prioridad que tengan al menos una propuesta
@@ -43,6 +44,15 @@ function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function userProductExclusion(item) {
+  const linked = value => value !== undefined && value !== null;
+  const variations = Array.isArray(item.variations) ? item.variations : [];
+  if (linked(item.user_product_id) || variations.some(v => linked(v?.user_product_id))) return 'user_product';
+  if (item.user_product_id !== null || !Array.isArray(item.variations) ||
+      variations.some(v => v?.user_product_id !== null)) return 'user_product_unknown';
+  return null;
+}
+
 export function buildFillPlan({ items, mode = 'mirror', registry, pilot = 20 }) {
   const byIsbn = new Map();
   for (const record of registry) {
@@ -50,9 +60,12 @@ export function buildFillPlan({ items, mode = 'mirror', registry, pilot = 20 }) 
     if (isbn) byIsbn.set(isbn, record);
   }
   const rows = [];
+  const excluded = { user_product: 0, user_product_unknown: 0 };
   for (const item of items) {
     if (item.category_id !== 'MLU1196' || item.catalog_listing === true) continue;
     if (item.status !== undefined && item.status !== 'active') continue;
+    const exclusion = userProductExclusion(item);
+    if (exclusion) { excluded[exclusion] += 1; continue; }
     const isbn = normalizeValidIsbn(item.isbn ?? item.attributes?.find(a => ['GTIN', 'ISBN'].includes(String(a.id).toUpperCase()))?.value_name);
     const record = isbn ? byIsbn.get(isbn) : null;
     if (!record) continue;
@@ -77,6 +90,7 @@ export function buildFillPlan({ items, mode = 'mirror', registry, pilot = 20 }) 
   const withFirm = rows.filter(row => row.firm.length);
   return {
     mode,
+    excluded,
     candidates: rows.length,
     with_firm_proposal: withFirm.length,
     firm_by_attribute: Object.fromEntries(FILL_FIELDS.map(f => [f.mluId, withFirm.filter(r => r.firm.some(x => x.mluId === f.mluId)).length])),
@@ -105,6 +119,8 @@ export function renderPlanMarkdown(plan, generatedAt) {
     '',
     `- Publicaciones con dato verificado disponible: **${plan.candidates}**`,
     `- Con carga firme (el atributo falta y hay dato verificado): **${plan.with_firm_proposal}**`,
+    `- Excluidas por User Product: **${plan.excluded.user_product}**`,
+    `- Excluidas por vinculación desconocida: **${plan.excluded.user_product_unknown}** (requieren una auditoría nueva con campos de vinculación).`,
     ...Object.entries(plan.firm_by_attribute).map(([id, n]) => `- ${id}: ${n}`),
     '',
     `## Piloto (${plan.pilot.length})`,

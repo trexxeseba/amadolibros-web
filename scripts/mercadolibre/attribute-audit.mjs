@@ -57,10 +57,16 @@ function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
-// Un atributo de MLU puede venir con value_name null o con value_id "-1"
-// (sin valor); eso cuenta como faltante igual que la ausencia del atributo.
+// N/A (-1) es una decisión explícita, no un dato pendiente de completar.
+function attributeIsNotApplicable(attribute) {
+  return clean(attribute?.value_id ?? attribute?.id) === '-1';
+}
+
 export function attributeHasValue(attribute) {
   if (!attribute || typeof attribute !== 'object') return false;
+  if (attributeIsNotApplicable(attribute)) return false;
+  if (Array.isArray(attribute.values) && attribute.values.some(value =>
+    attributeHasValue({ value_id: value.id, value_name: value.name, value_struct: value.struct }))) return true;
   const name = clean(attribute.value_name);
   if (name && !/^(null|undefined|n\/a|-)$/i.test(name)) return true;
   const struct = attribute.value_struct;
@@ -70,8 +76,11 @@ export function attributeHasValue(attribute) {
 }
 
 export function rawAttributeStatus(attributes, spec) {
+  if (!Array.isArray(attributes)) return 'no_medible';
   const wanted = new Set(spec.ids);
-  const found = (Array.isArray(attributes) ? attributes : []).filter(a => wanted.has(String(a?.id ?? '').toUpperCase()));
+  const found = attributes.filter(a => wanted.has(String(a?.id ?? '').toUpperCase()));
+  // Ante aliases contradictorios, conservar N/A y no proponer un reemplazo.
+  if (found.some(a => attributeIsNotApplicable(a) || (Array.isArray(a.values) && a.values.some(attributeIsNotApplicable)))) return 'no_aplica';
   return found.some(attributeHasValue) ? 'ok' : 'falta';
 }
 
@@ -82,7 +91,7 @@ function mirrorAttributeStatus(item, spec) {
   return clean(value) ? 'ok' : 'falta';
 }
 
-/** Estado de cada atributo de un item: 'ok' | 'falta' | 'no_medible'. */
+/** Estado: 'ok' | 'falta' | 'no_aplica' | 'no_medible'. */
 export function auditItem(item, mode) {
   const status = {};
   // Fuera de la categoría de libros (cartas, antigüedades, etc.) estos atributos no aplican.
@@ -128,7 +137,7 @@ export function buildAudit({ items, mode = 'mirror', priority = {} }) {
   rows.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 
   const coverage = BOOK_ATTRIBUTES.map(spec => {
-    const counts = { ok: 0, falta: 0, no_medible: 0 };
+    const counts = { ok: 0, falta: 0, no_aplica: 0, no_medible: 0 };
     for (const row of rows) counts[row.status[spec.key]] += 1;
     const measured = counts.ok + counts.falta;
     return { key: spec.key, label: spec.label, ...counts, pct_ok: measured ? Math.round((counts.ok / measured) * 1000) / 10 : null };
@@ -181,9 +190,10 @@ export function renderMarkdown(audit, generatedAt) {
       '',
     );
   }
-  lines.push('## Cobertura por atributo', '', '| Atributo | Con dato | Falta | No medible | % con dato (medibles) |', '|---|---:|---:|---:|---:|');
+  lines.push('N/A se informa por separado y no genera propuestas de carga.', '');
+  lines.push('## Cobertura por atributo', '', '| Atributo | Con dato | Falta | No aplica | No medible | % con dato (aplicables medidos) |', '|---|---:|---:|---:|---:|---:|');
   for (const c of audit.coverage) {
-    lines.push(`| ${c.label} | ${c.ok} | ${c.falta} | ${c.no_medible} | ${c.pct_ok === null ? '-' : c.pct_ok + '%'} |`);
+    lines.push(`| ${c.label} | ${c.ok} | ${c.falta} | ${c.no_aplica} | ${c.no_medible} | ${c.pct_ok === null ? '-' : c.pct_ok + '%'} |`);
   }
   lines.push('', '## Primeras 25 por prioridad', '', '| ID | Título | Faltan | Stock |', '|---|---|---|---:|');
   for (const row of audit.rows.filter(r => r.missing.length).slice(0, 25)) {
