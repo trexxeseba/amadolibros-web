@@ -19,7 +19,8 @@ function validatePage(body, page) {
   if (!body || Array.isArray(body) || body.read_only !== true || body.seller_id !== '440298103' ||
       !Array.isArray(body.items) || !Array.isArray(body.failed_ids) ||
       typeof body.page_empty !== 'boolean' ||
-      !(body.scroll_id === null || (typeof body.scroll_id === 'string' && body.scroll_id.trim())) ||
+      !(body.scroll_id === null || (typeof body.scroll_id === 'string' && body.scroll_id.trim()) ||
+        (body.page_empty === true && body.scroll_id === '')) ||
       !(body.total === null || (Number.isInteger(body.total) && body.total >= 0)) ||
       body.items.some(item => !id(item?.id)) || body.failed_ids.some(value => !id(value)) ||
       (body.page_empty && (body.items.length || body.failed_ids.length)) ||
@@ -50,7 +51,9 @@ export async function fetchAllItems({ secret, fetcher = fetch, wait = sleep, ori
       }
       await wait(attempt * 3000);
     }
-    total = body.total ?? total;
+    // El scan puede terminar con cursor vacío y total=0. El control de cobertura
+    // usa el primer total informado, no el contador de la página terminal.
+    total = total ?? body.total;
     for (const item of body.items) { items.set(item.id, item); failed.delete(item.id); }
     for (const id of body.failed_ids) if (!items.has(id)) failed.add(id);
     if (body.scroll_id === null || body.page_empty) {
