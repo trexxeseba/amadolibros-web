@@ -70,3 +70,35 @@ four or five simultaneous requests are safe. There is a 20-second pause after 25
 creations (it was 60 seconds; the pause was self-imposed, not a Mercado Libre limit). The PC must remain on and awake. Stale stock, an expired/revoked
 connection or an identity mismatch stops publishing. A fresh approved stock
 connection can replace an expired snapshot while retaining local receipts.
+
+## Modo desatendido (PC encendida todo el día)
+
+`scripts/vintage_autorun.py` mantiene la campaña corriendo sola. Renueva la
+conexión cuando faltan menos de 30 minutos para que venza, ejecuta el motor,
+espera al día siguiente de Montevideo cuando se alcanza el tope diario, reintenta
+con espera creciente ante errores transitorios y se detiene sola, dejando un
+archivo `STOP`, ante cupo de publicaciones, lectura fallida de un alta, cuenta
+distinta o conexión inválida. Mientras corre impide que Windows suspenda la PC.
+
+La renovación no usa el navegador. `scripts/vintage-local/renew.mjs` baja el
+Excel público del proveedor, lo lee con el mismo lector que el panel, revoca la
+conexión anterior, carga el stock en D1 y pide una conexión nueva a
+`POST /operations/vintage-renew`. Esa ruta exige el secreto `VINTAGE_RENEW_SECRET`
+(Cloudflare Pages, mínimo 32 caracteres); sin él responde 503. Sólo acepta las
+acciones `begin`, `import`, `commit`, `renew`, `revoke` y `status` sobre el lote de
+Vintage: no recibe vendedor, política ni `run_id`. `renew` repite exactamente lo
+que hace el panel (`start` más la emisión de la conexión) y rechaza un ejecutor
+con actividad en los últimos dos minutos; `revoke` pausa el lote y anula la clave.
+
+Instalación en Windows, una sola vez:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\vintage-local\install-autorun.ps1 -NotifyUrl https://ntfy.sh/<tu-tema>
+```
+
+Pide el secreto y lo guarda en `%LOCALAPPDATA%\Amado\VintagePublisher\private`,
+desactiva la suspensión con corriente, registra la tarea programada
+`AmadoVintagePublisher` (arranca al iniciar sesión y se reinicia sola) y crea
+`stop.cmd` y `start.cmd` en la carpeta de estado. Los avisos van a `-NotifyUrl`
+(un tema de ntfy en el celular o cualquier webhook JSON). Registros diarios en
+`logs/`, con 14 días de retención; `status.json` tiene el estado actual.
