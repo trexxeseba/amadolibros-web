@@ -36,7 +36,9 @@ jobs:
           echo '### Altas por día (hora de Uruguay)'
           q "SELECT date(created_at/1000,'unixepoch','-3 hours') AS dia, COUNT(*) AS altas FROM ml_vintage_pub_receipts WHERE seller_id='2341378249' AND state='published' GROUP BY dia ORDER BY dia DESC LIMIT 7"
           echo '### Lote Vintage'
-          q "SELECT state, feed_id, daily_cap, datetime(updated_at/1000,'unixepoch','-3 hours') AS actualizado_uy FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000010000'"
+          q "SELECT state, feed_id, daily_cap, json_extract(policy_json,'$.margin') AS margen, json_extract(policy_json,'$.minimumSaleUyu') AS minimo_uyu, json_extract(policy_json,'$.supplierDiscount') AS descuento_sbs, json_extract(policy_json,'$.arsPerUyu') AS ars_por_uyu, datetime(updated_at/1000,'unixepoch','-3 hours') AS actualizado_uy FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000010000'"
+          echo '### Últimas 5 altas con precio enviado'
+          q "SELECT isbn, item_id, json_extract(payload_json,'$.price') AS precio_uyu, datetime(updated_at/1000,'unixepoch','-3 hours') AS cuando_uy FROM ml_vintage_pub_jobs WHERE run_id='23413782-4900-4000-8000-000000010000' AND state='published' ORDER BY updated_at DESC LIMIT 5"
           echo '### Conexión de la PC'
           q "SELECT enabled, datetime(expires_at/1000,'unixepoch','-3 hours') AS vence_uy, datetime(last_at/1000,'unixepoch','-3 hours') AS ultima_actividad_uy FROM ml_vintage_local_access"
           echo '### Stock del proveedor cargado'
