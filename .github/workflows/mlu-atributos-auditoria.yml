@@ -4,16 +4,9 @@ name: MLU — auditoría de atributos de libros
 # ruta /attribute-audit del Worker (protegida por SYNC_SECRET) y genera el informe
 # de atributos faltantes. No escribe en Mercado Libre ni toca el sitio.
 # Sólo corre a mano (workflow_dispatch) y exige que el Worker ya esté desplegado.
-# Excepción puntual en esta rama: cuatro atributos aprobados por Seba, mediante
-# un Worker temporal con IDs/valores fijos. No modifica el Worker productivo.
 
 on:
   workflow_dispatch:
-    inputs:
-      apply_approved_four:
-        description: 'Ejecutar los cuatro atributos expresamente aprobados por Seba'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -24,7 +17,6 @@ concurrency:
 
 jobs:
   audit:
-    if: inputs.apply_approved_four != true
     name: Auditoría de atributos
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -62,56 +54,3 @@ jobs:
             ${{ runner.temp }}/mlu-items-raw.json
           if-no-files-found: warn
           retention-days: 30
-
-  approved-four:
-    if: inputs.apply_approved_four == true && github.ref == 'refs/heads/codex/mlu-approved-four'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: production
-    env:
-      PILOT_NAME: amado-attr-four-${{ github.run_id }}-${{ github.run_attempt }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.12.0'
-      - name: Probar límites de la operación
-        run: node --test scripts/__tests__/approved-four.test.mjs
-      - name: Desplegar herramienta temporal de cuatro cambios
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/approved-four
-          PILOT_SECRET=$(openssl rand -hex 32)
-          echo "::add-mask::$PILOT_SECRET"
-          printf 'PILOT_SECRET=%s\n' "$PILOT_SECRET" >> "$GITHUB_ENV"
-          OUTPUT=$(npx wrangler@3.114.17 deploy --config scripts/mercadolibre/approved-four.wrangler.toml --name "$PILOT_NAME")
-          echo "$OUTPUT"
-          PILOT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
-          test -n "$PILOT_URL"
-          printf 'PILOT_URL=%s\n' "$PILOT_URL" >> "$GITHUB_ENV"
-          printf '%s' "$PILOT_SECRET" | npx wrangler@3.114.17 secret put PILOT_SECRET --config scripts/mercadolibre/approved-four.wrangler.toml --name "$PILOT_NAME"
-      - name: Revalidar, completar y verificar los cuatro atributos
-        run: node scripts/mercadolibre/run-approved-four.mjs
-      - name: Retirar herramienta temporal
-        if: always()
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          mkdir -p artifacts/approved-four
-          curl --max-time 45 --fail-with-body --silent --show-error -X DELETE \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$PILOT_NAME" \
-            > artifacts/approved-four/temporary-worker-cleanup.json
-          node -e "const r=require('./artifacts/approved-four/temporary-worker-cleanup.json'); if(r.success!==true)process.exit(1)"
-      - name: Conservar evidencia y recibos sin credenciales
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlu-approved-four-${{ github.run_id }}
-          path: artifacts/approved-four/
-          retention-days: 90
-          if-no-files-found: error

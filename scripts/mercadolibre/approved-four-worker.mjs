@@ -128,11 +128,13 @@ export function createFourPilot({fetcher=fetch,receipts,tokenProvider,wait=ms=>n
 }
 export default {async fetch(request,env){
   if(!env.PILOT_SECRET||request.headers.get('authorization')!=='Bearer '+env.PILOT_SECRET)return Response.json({error:'unauthorized'},{status:401});
-  if(Date.now()>Date.parse('2026-10-21T02:00:00Z'))return Response.json({error:'operation_expired'},{status:410});
+  const expires=Number(env.PILOT_EXPIRES_AT);
+  if(!Number.isFinite(expires)||expires<=Date.now()||expires-Date.now()>1200000)return Response.json({error:'operation_expired'},{status:410});
   try{
     if(request.method!=='POST')fail('post_required');
     const action=new URL(request.url).pathname.slice(1);
     if(!['report','apply','verify','receipt'].includes(action))fail('unknown_action');
+    if(action==='apply'&&env.PILOT_APPLY!=='true')fail('apply_not_enabled');
     const body=await request.json();
     if(Object.keys(body).length!==1||typeof body.id!=='string')fail('invalid_request');
     const receipts=dbReceipts(env.ORDERS_DB);
