@@ -7,7 +7,10 @@
 //    sincronización o por agotamiento (cantidad 0); una pausa manual queda manual;
 //  - nunca se cierra ni se borra una publicación, nunca se toca un ítem cuyo
 //    vendedor o SKU no coincidan, y una lista sospechosamente incompleta
-//    (más de maxMissingPct de faltantes) no pausa nada.
+//    (más de maxMissingPct de faltantes) no pausa nada;
+//  - en modo pause_and_reactivate, además ajusta el precio (sube o baja) al que da la
+//    política aprobada con el precio de lista de hoy, nunca por debajo del mínimo, y no
+//    toca un precio que se mueva más del doble o a menos de la mitad (dato sospechoso).
 // Lee el estado real en /items/bulk antes de cada PUT y registra lo aplicado en
 // la tabla vintage_stock_sync de publisher.sqlite. Mismo reloj de 2 s que el motor.
 import fs from 'node:fs/promises';
@@ -16,18 +19,19 @@ import {pathToFileURL} from 'node:url';
 import {SELLER,checkConfiguration,makeBroker,inspectWorkbook} from './engine.mjs';
 import {openDatabase} from './db.mjs';
 import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publication-meli.js';
-import {hasSupplierStock,stockIsFresh,safeCode} from '../../worker-sync/publication-policy.js';
+import {hasSupplierStock,stockIsFresh,safeCode,quoteMercadoLibre} from '../../worker-sync/publication-policy.js';
 import {bulkItemsPath,bulkEntryItem} from '../../worker-sync/meli-bulk.js';
 import {createVintageBulkFetch} from '../../functions/_shared/meli-vintage-bulk.js';
 
 export const MODES=['report','pause_only','pause_and_reactivate'];
-export const ITEM_FIELDS='id,seller_id,status,available_quantity,seller_custom_field';
+export const ITEM_FIELDS='id,seller_id,status,available_quantity,seller_custom_field,price,currency_id';
+export const MAX_PRICE_RATIO=2;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0)`;
 const TRANSIENT_MS=300000,LONG_MS=86400000;
 
 export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
- const c=JSON.parse(await fs.readFile(connection,'utf8'));checkConfiguration(c);
+ const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  const input=await readWorkbook(excel);
  if(!stockIsFresh(input.source_date,now())||input.source_sha256!==c.source_sha256)throw new Error('workbook_does_not_match_current_approved_stock');
  const feedTime=Date.parse(input.source_date),graceMs=graceHours*3600000;
@@ -39,6 +43,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
  const api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  try{
   await stmt(SCHEMA).run();
+  if(!(await stmt('PRAGMA table_info(vintage_stock_sync)').all()).results.some(x=>x.name==='applied_price'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN applied_price INTEGER').run();
   await stmt('CREATE TABLE IF NOT EXISTS ml_pub_receipts (seller_id TEXT NOT NULL,isbn TEXT NOT NULL,state TEXT NOT NULL,item_id TEXT,run_id TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(seller_id,isbn))').run();
   // Publicaciones nuestras: recibos de la conexión (servidor) más los del motor local.
   const published=new Map();
@@ -90,7 +95,39 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
     onStatus({isbn:row.isbn,item_id:row.item_id,applied:row.desired_status});
    }
   }
+  if(mode==='pause_and_reactivate'&&summary.state!=='backoff'&&!suspicious)await reprice(summary);
   return finish(summary);
+
+  // Precio: sólo los libros con stock hoy cuyo precio calculado difiere del último aplicado
+  // (la primera vez, todos). Lee el precio real antes de cada PUT.
+  async function reprice(summary){
+   Object.assign(summary,{repriced:0,price_unchanged:0,price_skipped:0});
+   const rowsByIsbn=new Map(input.rows.map(r=>[r.isbn,r]));
+   const want=new Map();
+   for(const r of rows){const row=rowsByIsbn.get(r.isbn);if(row&&hasSupplierStock(row.stock))want.set(r.isbn,quoteMercadoLibre(row,policy).price);}
+   const state=new Map((await stmt('SELECT isbn,item_id,applied_price FROM vintage_stock_sync').all()).results.map(r=>[r.isbn,r]));
+   const todo=[...want].filter(([isbn,price])=>state.get(isbn)?.applied_price!==price).map(([isbn,price])=>({isbn,price,item_id:state.get(isbn)?.item_id})).filter(x=>x.item_id);
+   const setPrice=(isbn,price)=>stmt('UPDATE vintage_stock_sync SET applied_price=?,updated_at=? WHERE isbn=?',price,now(),isbn).run();
+   for(let i=0;i<todo.length;i+=20){
+    const group=todo.slice(i,i+20);
+    let entries;
+    try{entries=await api.call(env,bulkItemsPath(group.map(r=>r.item_id),ITEM_FIELDS));}
+    catch(error){summary.errors+=group.length;if(error.status===429){summary.state='backoff';return;}continue;}
+    const bodies=new Map();
+    if(Array.isArray(entries))for(const entry of entries){const item=bulkEntryItem(entry);if(item&&item.id)bodies.set(item.id,item);}
+    for(const r of group){
+     const item=bodies.get(r.item_id);
+     if(!item||String(item.seller_id)!==SELLER||item.seller_custom_field!==`AMADO-AR-${r.isbn}`||item.currency_id!=='UYU'||!['active','paused'].includes(item.status)){summary.price_skipped++;continue;}
+     if(item.price===r.price){await setPrice(r.isbn,r.price);summary.price_unchanged++;continue;}
+     const ratio=r.price/item.price;
+     if(!(r.price>=1600)||!Number.isFinite(ratio)||ratio>MAX_PRICE_RATIO||ratio<1/MAX_PRICE_RATIO){summary.price_skipped++;onStatus({isbn:r.isbn,item_id:r.item_id,price_skipped:{from:item.price,to:r.price}});continue;}
+     try{await api.call(env,`/items/${r.item_id}`,{method:'PUT',body:{price:r.price}});}
+     catch(error){summary.errors++;if(error.status===429){summary.state='backoff';return;}continue;}
+     await setPrice(r.isbn,r.price);summary.repriced++;
+     onStatus({isbn:r.isbn,item_id:r.item_id,price:{from:item.price,to:r.price}});
+    }
+   }
+  }
  }finally{db.close();}
  async function finish(summary){
   await fs.writeFile(path.join(directory,'stock-sync.json'),JSON.stringify({...summary,at:new Date(now()).toISOString()},null,2));

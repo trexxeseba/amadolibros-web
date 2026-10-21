@@ -51,6 +51,30 @@ test('a book missing from the fresh supplier list is paused, and reactivated onl
  assert.equal(s.activated,1);assert.deepEqual(f.puts.map(p=>p.id),['MLU901']);assert.equal(f.items.get('MLU905').status,'paused');
  const saved=JSON.parse(await fs.readFile(path.join(f.temp,'stock-sync.json'),'utf8'));assert.equal(saved.state,'synced');
 });
+test('prices follow the approved policy with today\'s list price, up or down, with a minimum and a jump guard',async t=>{
+ const {quoteMercadoLibre}=await import('../../worker-sync/publication-policy.js');
+ const f=await fixture(t),all=new Set(ISBNS);
+ const list=Object.fromEntries(ISBNS.map((isbn,i)=>[isbn,40000]));
+ const workbook=async()=>({source_date:f.c.source_date,source_sha256:f.c.source_sha256,rows:ISBNS.map(isbn=>({isbn,title:'x',listArs:list[isbn],weightKg:.5,stock:'3'}))});
+ const want=ars=>quoteMercadoLibre({listArs:ars,weightKg:.5},policy).price;
+ for(const item of f.items.values()){item.price=want(40000);item.currency_id='UYU';}
+ // ya alineados: se leen una vez y no se escribe nada
+ let s=await f.run(all,{readWorkbook:workbook});assert.equal(s.repriced,0);assert.equal(s.price_unchanged,10);assert.equal(f.puts.length,0);
+ // segunda pasada sin cambios: ni siquiera se vuelve a leer
+ s=await f.run(all,{readWorkbook:workbook});assert.equal(s.price_unchanged,0);assert.equal(s.repriced,0);
+ // SBS sube un libro y baja otro; un tercero salta x3 (dato sospechoso) y no se toca
+ list[ISBNS[0]]=52000;list[ISBNS[1]]=30000;list[ISBNS[2]]=200000;
+ s=await f.run(all,{readWorkbook:workbook});
+ assert.equal(s.repriced,2);assert.equal(s.price_skipped,1);
+ assert.deepEqual(f.puts,[{id:'MLU900',body:{price:want(52000)}},{id:'MLU901',body:{price:want(30000)}}]);
+ assert.ok(want(52000)>want(40000)&&want(30000)<want(40000));assert.equal(f.items.get('MLU902').price,want(40000));
+ // nunca por debajo del mínimo de Vintage
+ list[ISBNS[3]]=25000;f.puts.length=0;s=await f.run(all,{readWorkbook:workbook});
+ assert.ok(f.puts.every(p=>p.body.price>=1600));
+ // pause_only y report no tocan precios
+ list[ISBNS[4]]=50000;f.puts.length=0;
+ await f.run(all,{readWorkbook:workbook,mode:'pause_only'});await f.run(all,{readWorkbook:workbook,mode:'report'});assert.equal(f.puts.length,0);
+});
 test('a suspiciously incomplete list, report mode, pause_only, grace and identity mismatches never pause the wrong thing',async t=>{
  const f=await fixture(t);
  // 6 de 10 faltan (>30%): lista sospechosa, nada se pausa

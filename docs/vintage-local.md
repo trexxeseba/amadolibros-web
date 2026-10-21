@@ -92,7 +92,11 @@ publicaciones creadas por la campaña con la lista: lo que ya no viene o no tien
 stock se **pausa** en Mercado Libre, y lo que vuelve se reactiva sólo si la pausa fue
 de esta sincronización o por agotamiento (una pausa manual queda manual). Nunca
 cierra publicaciones, no toca ítems de otro vendedor o SKU, y si faltan más del 30 %
-de los títulos considera la lista incompleta y no pausa nada. Se controla con
+de los títulos considera la lista incompleta y no pausa nada. En el mismo paso ajusta el
+precio de cada libro con stock al que da la política aprobada con el precio de lista
+de ese día (sube o baja, nunca por debajo de UYU 1.600); un cambio de más del doble o a
+menos de la mitad se considera dato sospechoso y no se aplica. Sólo vuelve a leer y
+escribir los libros cuyo precio calculado cambió. Se controla con
 `--stock-sync off|report|pause_only|pause_and_reactivate` (por defecto, pausar y
 reactivar); el resultado queda en `stock-sync.json`. Esa ruta exige el secreto `VINTAGE_RENEW_SECRET`
 (Cloudflare Pages, mínimo 32 caracteres); sin él responde 503. Sólo acepta las

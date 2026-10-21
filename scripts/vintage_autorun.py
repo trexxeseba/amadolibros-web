@@ -208,8 +208,8 @@ class Runner:
         self.log("sincronización de stock", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
         if result.returncode != 0:
             self.notify("Vintage: la sincronización de stock falló", f"Resultado: {last.get('error') or last.get('state')}. Se reintenta con la próxima lista.", every_s=6 * 3600)
-        elif last.get("paused") or last.get("activated"):
-            self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
+        elif last.get("paused") or last.get("activated") or last.get("repriced"):
+            self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Precios ajustados: {last.get('repriced', 0)}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
 
     def run_engine(self):
         command = [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(self.args.target)]
