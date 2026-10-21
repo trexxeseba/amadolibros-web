@@ -31,7 +31,7 @@ test('reintenta ante 429 y corta ante un error definitivo', async () => {
 });
 
 test('rechaza HTTP 200 vacío, JSON inválido y estructuras incompletas', async () => {
-  for (const body of [{}, null, [], { items: [] }, page({ items: null }), page({ scroll_id: '' }), page({ failed_ids: null }), page({ seller_id: '2341378249' }), page({ read_only: false }), page({ page_empty: false }), page({ items: [{ id: 'MLU1' }] })]) {
+  for (const body of [{}, null, [], { items: [] }, page({ items: null }), page({ scroll_id: '', page_empty: false, items: [{ id: 'MLU1' }] }), page({ failed_ids: null }), page({ seller_id: '2341378249' }), page({ read_only: false }), page({ page_empty: false }), page({ items: [{ id: 'MLU1' }] })]) {
     await assert.rejects(fetchAllItems({ secret: 'x', fetcher: async () => Response.json(body), wait: async () => {} }), /respuesta de auditoría inválida/);
   }
   await assert.rejects(fetchAllItems({ secret: 'x', fetcher: async () => new Response('', { status: 200 }), wait: async () => {} }), /respuesta de auditoría inválida/);
@@ -54,6 +54,15 @@ test('acepta la página vacía final de un scan completo', async () => {
   const result = await fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} });
   assert.equal(result.items.length, 1);
   assert.equal(result.pages, 2);
+});
+
+test('el final vacío del scan conserva el total inicial y exige cobertura completa', async () => {
+  for (const initialTotal of [1, 2]) {
+    const pages = [page({ total: initialTotal, page_empty: false, items: [{ id: 'MLU1' }], scroll_id: 's1' }), page({ scroll_id: '' })];
+    const running = fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} });
+    if (initialTotal === 1) assert.equal((await running).total, 1);
+    else await assert.rejects(running, /Auditoría incompleta/);
+  }
 });
 
 test('CLI: una respuesta inválida falla sin guardar un falso informe vacío', async () => {
