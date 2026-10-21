@@ -9,10 +9,10 @@ The destination is fixed to seller 2341378249 and app 4741021817925208. Prices
 retain the approved policy, a UYU 1,600 floor and 18-day availability. The target
 defaults to 1,000 total campaign publications, including the five pilot items.
 The seller's existing receipts enforce the server-side daily cap, defined once as
-`VINTAGE_DAILY_CAP` in `functions/_shared/meli-vintage-bulk.js` (currently 3,000) and
-reported to the engine through the `status` action. Raise it in steps (1,000 → 3,000 →
-10,000), reviewing the cases flagged for review and any 429 or moderation signal before
-each increase. Deploying the new value is a production change and needs owner approval.
+`VINTAGE_DAILY_CAP` in `functions/_shared/meli-vintage-bulk.js` and reported to the
+engine through the `status` action. The owner raised it to 10,000 (the campaign target),
+so there is no practical daily limit; a Mercado Libre listing-quota refusal still stops
+the run with `stopped_listing_quota` and a notification.
 
 ## Authorization and handoff
 
