@@ -155,12 +155,18 @@ class Runner:
         git = shutil.which("git")
         if not git or self.args.no_update:
             return
+        run = lambda *args, timeout=120: subprocess.run([git, "-C", str(REPO), *args], capture_output=True, text=True, timeout=timeout)
         try:
-            result = subprocess.run([git, "-C", str(REPO), "pull", "--ff-only", "--quiet"], capture_output=True, text=True, timeout=120)
-            head = subprocess.run([git, "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=30).stdout.strip()
-            if head != getattr(self, "head", None):
-                self.log("código", head=head, pull=result.returncode, detail=(result.stderr or "")[-200:])
+            # Siempre la rama remota del mismo nombre que la local, sólo avance rápido: nunca
+            # crea un merge (que pediría identidad de git) ni toca cambios locales.
+            branch = run("rev-parse", "--abbrev-ref", "HEAD", timeout=30).stdout.strip() or "main"
+            result = run("pull", "--ff-only", "--quiet", "origin", branch)
+            head = run("rev-parse", "--short", "HEAD", timeout=30).stdout.strip()
+            if head != getattr(self, "head", None) or result.returncode != 0:
+                self.log("código", branch=branch, head=head, pull=result.returncode, detail=(result.stderr or "")[-200:])
                 self.head = head
+            if result.returncode != 0:
+                self.notify("Vintage: no pude actualizar el código", f"git pull en {branch} falló: {(result.stderr or '').strip()[-150:]}", every_s=24 * 3600)
         except Exception as error:  # sin red o sin git: sigue con el código que tiene
             self.log("código no actualizado", error=str(error)[:200])
 
