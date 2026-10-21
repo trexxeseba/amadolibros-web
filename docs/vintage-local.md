@@ -9,10 +9,10 @@ The destination is fixed to seller 2341378249 and app 4741021817925208. Prices
 retain the approved policy, a UYU 1,600 floor and 18-day availability. The target
 defaults to 1,000 total campaign publications, including the five pilot items.
 The seller's existing receipts enforce the server-side daily cap, defined once as
-`VINTAGE_DAILY_CAP` in `functions/_shared/meli-vintage-bulk.js` (currently 3,000) and
-reported to the engine through the `status` action. Raise it in steps (1,000 → 3,000 →
-10,000), reviewing the cases flagged for review and any 429 or moderation signal before
-each increase. Deploying the new value is a production change and needs owner approval.
+`VINTAGE_DAILY_CAP` in `functions/_shared/meli-vintage-bulk.js` and reported to the
+engine through the `status` action. The owner raised it to 10,000 (the campaign target),
+so there is no practical daily limit; a Mercado Libre listing-quota refusal still stops
+the run with `stopped_listing_quota` and a notification.
 
 ## Authorization and handoff
 
@@ -80,10 +80,25 @@ con espera creciente ante errores transitorios y se detiene sola, dejando un
 archivo `STOP`, ante cupo de publicaciones, lectura fallida de un alta, cuenta
 distinta o conexión inválida. Mientras corre impide que Windows suspenda la PC.
 
-La renovación no usa el navegador. `scripts/vintage-local/renew.mjs` baja el
-Excel público del proveedor, lo lee con el mismo lector que el panel, revoca la
-conexión anterior, carga el stock en D1 y pide una conexión nueva a
-`POST /operations/vintage-renew`. Esa ruta exige el secreto `VINTAGE_RENEW_SECRET`
+La renovación no usa el navegador. `scripts/vintage-local/renew.mjs` inicia sesión
+en el portal de SBS (`ag.sbs.com.ar`, usuario y clave guardados en `private/sbs.json`
+por el instalador) y baja "Lista completa de disponibles" (`/Home/AllPriceList`);
+sin ese archivo usa el Excel público, que SBS dejó de actualizar en agosto de 2026.
+Lo lee con el mismo lector que el panel, revoca la conexión anterior, carga el
+stock en D1 y pide una conexión nueva a `POST /operations/vintage-renew`.
+
+Con cada lista fresca, `scripts/vintage-local/stock-sync.mjs` compara las
+publicaciones creadas por la campaña con la lista: lo que ya no viene o no tiene
+stock se **pausa** en Mercado Libre, y lo que vuelve se reactiva sólo si la pausa fue
+de esta sincronización o por agotamiento (una pausa manual queda manual). Nunca
+cierra publicaciones, no toca ítems de otro vendedor o SKU, y si faltan más del 30 %
+de los títulos considera la lista incompleta y no pausa nada. En el mismo paso ajusta el
+precio de cada libro con stock al que da la política aprobada con el precio de lista
+de ese día (sube o baja, nunca por debajo de UYU 1.600); un cambio de más del doble o a
+menos de la mitad se considera dato sospechoso y no se aplica. Sólo vuelve a leer y
+escribir los libros cuyo precio calculado cambió. Se controla con
+`--stock-sync off|report|pause_only|pause_and_reactivate` (por defecto, pausar y
+reactivar); el resultado queda en `stock-sync.json`. Esa ruta exige el secreto `VINTAGE_RENEW_SECRET`
 (Cloudflare Pages, mínimo 32 caracteres); sin él responde 503. Sólo acepta las
 acciones `begin`, `import`, `commit`, `renew`, `revoke` y `status` sobre el lote de
 Vintage: no recibe vendedor, política ni `run_id`. `renew` repite exactamente lo
@@ -95,6 +110,15 @@ Instalación en Windows, una sola vez:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\vintage-local\install-autorun.ps1 -NotifyUrl https://ntfy.sh/<tu-tema>
 ```
+
+La tarea ejecuta `run.cmd`, que llama a `scripts/vintage-local/launch.cmd` del repo:
+reinicia el supervisor si se cae y cuando sale para recargar código nuevo, y en cada
+ciclo el supervisor hace `git pull --ff-only` de su rama, así los arreglos llegan solos.
+`stop.cmd` deja el archivo `STOP`; el motor termina el libro en curso y todo se detiene
+en menos de un minuto. Cada día manda un aviso "funcionando" con el total publicado; los
+errores que necesitan una persona (clave de SBS rechazada, secreto del sitio) avisan una
+vez y esperan en vez de reintentar sin fin. El workflow `Vintage status (read-only)` lee
+el progreso desde D1 de producción sin acceso a la PC.
 
 Pide el secreto y lo guarda en `%LOCALAPPDATA%\Amado\VintagePublisher\private`,
 desactiva la suspensión con corriente, registra la tarea programada

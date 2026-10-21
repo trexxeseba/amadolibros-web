@@ -32,7 +32,9 @@ function identifiers(item){
 }
 export function checkCreated(item,isbn,price){
  const term=(item?.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME');
- if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||item.price!==price||item.price<1600||item.currency_id!=='UYU'||item.available_quantity!==1||item.status!=='active'||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+ // Vendido antes de confirmarlo: sin stock pero con ventas sigue siendo nuestro alta.
+ const sold=Number(item?.sold_quantity)>0&&item?.available_quantity===0&&['active','paused','closed'].includes(item?.status);
+ if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||item.price!==price||item.price<1600||item.currency_id!=='UYU'||!sold&&(item.available_quantity!==1||item.status!=='active')||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
 }
 export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
@@ -46,7 +48,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  if(!stockIsFresh(input.source_date)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
- let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false;
+ let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false;
  const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
@@ -69,7 +71,10 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   async receiptState(seller,isbn,state,itemId=null){
    if(state==='published'){
     try{
-     const row=await this.stock(c.feed_id,isbn),price=quoteMercadoLibre(row,policy).price;
+     // El precio enviado queda en el payload del trabajo; el Excel de hoy puede haber cambiado o no traer el ISBN.
+     const job=await this.stmt('SELECT payload_json FROM ml_pub_jobs WHERE run_id=? AND isbn=?',BULK_RUN,isbn).first();
+     let price=null;try{price=JSON.parse(job?.payload_json??'null')?.price??null;}catch{}
+     if(!Number.isFinite(price)){const row=await this.stock(c.feed_id,isbn);if(!row)throw new MercadoLibreError('reconcile_price_unknown',503);price=quoteMercadoLibre(row,policy).price;}
      // Mercado Libre downloads pictures after the create, so a new item is briefly paused for that
      // reason only. Wait a bounded time for that exact state; any other mismatch fails at once.
      for(let attempt=0;;attempt++){
@@ -83,7 +88,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
        await waitFor(PICTURE_WAIT_MS);
       }
      }
-    }catch(error){if(error.code!=='created_item_pending_pictures')failedReadback=true;throw error;}
+    }catch(error){if(error.code==='created_item_check_failed')failedReadback=true;throw error;}
    }
    await broker('report',{isbn,state,...(itemId?{item_id:itemId}:{})});return super.receiptState(seller,isbn,state,itemId);
   }
@@ -138,7 +143,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
   for(;;){
-   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){onStatus(JSON.stringify({state:'daily_cap_reached',published_total:remote.published_total}));break;}
+   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
    if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
@@ -151,7 +156,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  return {state:failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
+  return {state:failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
  }finally{db.close();}
 }
 async function main(){

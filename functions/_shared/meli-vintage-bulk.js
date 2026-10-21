@@ -9,8 +9,9 @@ import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js'
 
 export const BULK_RUN='23413782-4900-4000-8000-000000010000';
 export const PILOT_RUN='23413782-4900-4000-8000-000000000005';
-// Daily creation cap. Raise in steps (1,000 -> 3,000 -> 10,000) while watching review cases.
-export const VINTAGE_DAILY_CAP=3000;
+// Daily creation cap, raised by the owner to the campaign target (10,000): in practice no
+// daily limit. Mercado Libre's own listing quota still stops the run (stopped_listing_quota).
+export const VINTAGE_DAILY_CAP=10000;
 const fail=(code,status=409)=>{throw new PublicationError(code,status);};
 const uuid=x=>typeof x==='string'&&/^[a-f0-9-]{36}$/.test(x);
 const SCHEMA=[

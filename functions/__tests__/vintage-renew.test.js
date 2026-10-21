@@ -10,7 +10,7 @@ import {PublicationStore} from '../../worker-sync/publication-store.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {policyHash} from '../../worker-sync/publication-policy.js';
 import {checkConfiguration} from '../../scripts/vintage-local/engine.mjs';
-import {feedIdFromHash,renewConnection,downloadStock,SBS_SOURCE,RENEW_ENDPOINT} from '../../scripts/vintage-local/renew.mjs';
+import {feedIdFromHash,renewConnection,downloadStock,sbsLogin,readSbsFile,SBS_SOURCE,SBS_PORTAL,SBS_PORTAL_LIST,RENEW_ENDPOINT} from '../../scripts/vintage-local/renew.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -118,6 +118,43 @@ test('the PC client downloads the supplier stock, loads it through the route and
  await assert.rejects(()=>renewConnection({excel,connection,secret:'short',fetcher,inspect,now:()=>f.clock.value}),/renew_secret_missing/);
  await assert.rejects(()=>downloadStock(SBS_SOURCE,{fetcher:async()=>new Response('',{status:503})}),/supplier_download_failed/);
  await assert.rejects(()=>downloadStock(SBS_SOURCE,{fetcher:async()=>new Response(new Uint8Array(65*1024*1024),{status:200})}),/supplier_file_too_large/);
+});
+test('the PC client logs into the SBS portal, downloads the complete list with the session cookie and never sends it elsewhere',async t=>{
+ const f=await fixture(t),route=createRenewRoute({renew:f.renew}),temp=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-sbs-'));t.after(()=>fs.rm(temp,{recursive:true,force:true}));
+ const login=`${SBS_PORTAL}/Account/Login?ReturnUrl=${encodeURIComponent(SBS_PORTAL_LIST)}`,bytes=Buffer.from('portal-workbook'),calls=[];
+ // portal falso con el mismo formulario que el real: token en cookie y campo oculto, POST Email/Password
+ const portal=async(url,init={})=>{
+  const cookies=init.headers?.Cookie??'';calls.push({url,method:init.method??'GET',cookies});
+  if(url===login&&!init.method)return new Response('<form action="/Account/Login" method="post"><input name="__RequestVerificationToken" type="hidden" value="tok-1" /><input name="Email" /></form>',{status:200,headers:{'content-type':'text/html; charset=utf-8','set-cookie':'__RequestVerificationToken=cookie-1; path=/; HttpOnly'}});
+  if(url===login&&init.method==='POST'){
+   const body=new URLSearchParams(init.body);
+   if(body.get('__RequestVerificationToken')!=='tok-1'||!cookies.includes('__RequestVerificationToken=cookie-1'))return new Response('bad token',{status:400});
+   if(body.get('Email')!=='amadolibro@gmail.com'||body.get('Password')!=='clave-correcta')return new Response('<form>Intento inválido</form>',{status:200,headers:{'content-type':'text/html'}});
+   return new Response('',{status:302,headers:{location:SBS_PORTAL_LIST,'set-cookie':'.AspNet.ApplicationCookie=session-9; path=/; HttpOnly'}});
+  }
+  if(url===SBS_PORTAL+SBS_PORTAL_LIST){
+   if(!cookies.includes('.AspNet.ApplicationCookie=session-9'))return new Response('',{status:302,headers:{location:'/Account/Login?ReturnUrl=%2FHome%2FAllPriceList'}});
+   return new Response('',{status:302,headers:{location:'https://files.example.com/lista.xlsx?sig=1'}});
+  }
+  if(url==='https://files.example.com/lista.xlsx?sig=1')return new Response(bytes,{status:200,headers:{'content-type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}});
+  if(url===RENEW_ENDPOINT)return route({env:f.env,request:new Request(url,{method:'POST',headers:init.headers,body:init.body})});
+  throw new Error('unexpected '+url);
+ };
+ const excel=path.join(temp,'stock.xlsx'),connection=path.join(temp,'connection.json'),sha='d'.repeat(64);
+ const inspect=async file=>{assert.equal((await fs.readFile(file)).toString(),'portal-workbook');return {source_date:new Date(f.clock.value).toISOString(),source_sha256:sha,rows:supplierRows(10000)};};
+ const result=await renewConnection({excel,connection,secret:SECRET,fetcher:portal,inspect,now:()=>f.clock.value,sbs:{email:'amadolibro@gmail.com',password:'clave-correcta'}});
+ assert.equal(result.state,'renewed');assert.equal(result.feed_id,feedIdFromHash(sha));
+ const s3=calls.find(c=>c.url.startsWith('https://files.example.com'));assert.equal(s3.cookies,'');
+ const list=calls.find(c=>c.url===SBS_PORTAL+SBS_PORTAL_LIST);assert.ok(list.cookies.includes('.AspNet.ApplicationCookie=session-9'));
+ assert.ok(!calls.some(c=>c.url===RENEW_ENDPOINT&&c.cookies));
+ assert.equal(checkConfiguration(JSON.parse(await fs.readFile(connection,'utf8'))).minimumSaleUyu,1600);
+ // el archivo que escribe el instalador (PowerShell 5.1) empieza con BOM
+ const sbsFile=path.join(temp,'sbs.json');await fs.writeFile(sbsFile,'﻿{"email":"amadolibro@gmail.com","password":"AG#x_1"}');
+ assert.deepEqual(await readSbsFile(sbsFile),{email:'amadolibro@gmail.com',password:'AG#x_1',portal:undefined});
+ await assert.rejects(()=>sbsLogin({email:'amadolibro@gmail.com',password:'otra',fetcher:portal}),/sbs_login_rejected/);
+ await assert.rejects(()=>sbsLogin({email:'',password:'x',fetcher:portal}),/sbs_credentials_missing/);
+ await assert.rejects(()=>downloadStock(SBS_PORTAL+SBS_PORTAL_LIST,{fetcher:portal}),/supplier_login_required/);
+ await assert.rejects(()=>downloadStock(SBS_SOURCE,{fetcher:async()=>new Response('<html>login</html>',{status:200,headers:{'content-type':'text/html'}})}),/supplier_login_required/);
 });
 test('the renew route accepts only its fixed actions and arguments and never a seller, run or URL',async()=>{
  let calls=0;const route=createRenewRoute({renew:{async command(){calls++;return {ok:true};}}}),env={APP_ENV:'production'},url='https://www.amadolibros.com/operations/vintage-renew';
