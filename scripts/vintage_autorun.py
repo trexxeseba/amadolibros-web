@@ -150,6 +150,20 @@ class Runner:
         self.log("renovación", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
         return result.returncode, last
 
+    def update_code(self):
+        """Trae arreglos publicados en la rama del repo (sólo fast-forward); nunca pisa cambios locales."""
+        git = shutil.which("git")
+        if not git or self.args.no_update:
+            return
+        try:
+            result = subprocess.run([git, "-C", str(REPO), "pull", "--ff-only", "--quiet"], capture_output=True, text=True, timeout=120)
+            head = subprocess.run([git, "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=30).stdout.strip()
+            if head != getattr(self, "head", None):
+                self.log("código", head=head, pull=result.returncode, detail=(result.stderr or "")[-200:])
+                self.head = head
+        except Exception as error:  # sin red o sin git: sigue con el código que tiene
+            self.log("código no actualizado", error=str(error)[:200])
+
     def sync_stock(self):
         """Pausa en Mercado Libre lo que ya no viene en la lista fresca y reactiva lo que vuelve."""
         if self.args.stock_sync == "off":
@@ -218,6 +232,7 @@ class Runner:
         self.keep_awake(True)
         try:
             while not self.stop_file.exists():
+                self.update_code()
                 if self.force_renew or self.connection_expires_at() - time.time() < RENEW_MARGIN_S:
                     code, result = self.renew()
                     if code == 3:
@@ -280,6 +295,7 @@ def main():
     parser.add_argument("--node", help="ruta completa de node.exe (opcional)")
     parser.add_argument("--directory", default=str(Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Amado" / "VintagePublisher"))
     parser.add_argument("--target", type=int, default=10000)
+    parser.add_argument("--no-update", action="store_true", help="no hacer git pull antes de cada ciclo")
     parser.add_argument("--stock-sync", choices=["off", "report", "pause_only", "pause_and_reactivate"], default="pause_and_reactivate", help="qué hacer con publicaciones que ya no vienen en la lista (por defecto pausar y reactivar)")
     args = parser.parse_args()
     runner = Runner(args)

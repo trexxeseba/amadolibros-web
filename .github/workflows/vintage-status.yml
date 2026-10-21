@@ -1,0 +1,43 @@
+name: Vintage status (read-only)
+
+# Estado de la campaña de Amado Vintage leído de D1 de producción, donde la PC
+# reserva y confirma cada alta. Sólo SELECT: no escribe en D1 ni llama a Mercado Libre.
+# Sirve para ver el progreso sin acceso a la PC (manual o cada 3 horas).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vintage-status
+  cancel-in-progress: false
+
+jobs:
+  status:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read Vintage campaign state from production D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          q() { npx --yes wrangler@3.114.17 d1 execute ORDERS_DB --env production --remote --json --command "$1"; }
+          echo '### Recibos de Vintage por estado'
+          q "SELECT state, COUNT(*) AS n, datetime(MAX(updated_at)/1000,'unixepoch','-3 hours') AS ultimo_uy FROM ml_vintage_pub_receipts WHERE seller_id='2341378249' GROUP BY state ORDER BY n DESC"
+          echo '### Altas por día (hora de Uruguay)'
+          q "SELECT date(created_at/1000,'unixepoch','-3 hours') AS dia, COUNT(*) AS altas FROM ml_vintage_pub_receipts WHERE seller_id='2341378249' AND state='published' GROUP BY dia ORDER BY dia DESC LIMIT 7"
+          echo '### Lote Vintage'
+          q "SELECT state, feed_id, daily_cap, datetime(updated_at/1000,'unixepoch','-3 hours') AS actualizado_uy FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000010000'"
+          echo '### Conexión de la PC'
+          q "SELECT enabled, datetime(expires_at/1000,'unixepoch','-3 hours') AS vence_uy, datetime(last_at/1000,'unixepoch','-3 hours') AS ultima_actividad_uy FROM ml_vintage_local_access"
+          echo '### Stock del proveedor cargado'
+          q "SELECT id, source_date, state, expected_rows FROM sbs_supplier_feeds ORDER BY source_date DESC LIMIT 3"

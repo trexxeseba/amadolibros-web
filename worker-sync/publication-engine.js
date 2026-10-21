@@ -51,11 +51,20 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    // Reconcile creates whose outcome was lost before anything else, regardless of
    // the supplier snapshot: by stable SKU, with backoff, and never with a new POST.
    for(const job of await s.interrupted(run.id,now())){
-    const receipt=await s.receipt(sellerId,job.isbn);
-    if(receipt?.state==='published'){await mark(job.isbn,'published',{itemId:receipt.item_id});continue;}
-    const found=await api.skuItems(env,job.isbn);
-    if(found.length===1){await s.receiptState(sellerId,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});continue;}
-    await mark(job.isbn,'uncertain',{errorCode:job.error_code??'interrupted_create',nextAt:now()+Math.min(6*3600000,600000*2**Math.min(job.attempts,6)),attempt:true});
+    const later=errorCode=>mark(job.isbn,'uncertain',{errorCode,nextAt:now()+Math.min(6*3600000,600000*2**Math.min(job.attempts,6)),attempt:true});
+    try{
+     const receipt=await s.receipt(sellerId,job.isbn);
+     if(receipt?.state==='published'){await mark(job.isbn,'published',{itemId:receipt.item_id});continue;}
+     const found=await api.skuItems(env,job.isbn);
+     if(found.length===1){await s.receiptState(sellerId,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});continue;}
+     await later(job.error_code??'interrupted_create');
+    }catch(error){
+     // A book that cannot be confirmed yet (e.g. Mercado Libre still downloading its
+     // pictures) waits with backoff; it must not stop the whole run. 429 and auth
+     // failures still end the tick through the outer handler.
+     if(!(error instanceof MercadoLibreError)||error.status===429||error.status===401||error.status===403)throw error;
+     await later(safeCode(error));
+    }
    }
    if(run.state==='complete_with_review'){await s.finishReview(run.id,lease,now());return s.summary(run.id);}
    const feed=await s.feed(run.feed_id);

@@ -124,6 +124,22 @@ async function pictureHarness(t,{pausedReads}){
  return {h,api,waits,get posts(){return posts;},options:{...h.options,apiFactory:()=>api,waitFor:async ms=>{waits.push(ms);}}};
 }
 
+test('an uncertain book whose pictures are still pending at restart waits with backoff instead of stopping every run',async t=>{
+ const {DatabaseSync}=await import('node:sqlite');
+ const p=await pictureHarness(t,{pausedReads:1000});
+ await p.h.run({...p.options,target:1000,limitNew:1});assert.equal(p.posts,1);
+ // the book ends up uncertain and due, as after a restart; its SKU now finds the created item
+ const file=p.h.path.join(p.h.temp,'publisher.sqlite');
+ let db=new DatabaseSync(file);db.prepare("UPDATE ml_vintage_pub_jobs SET state='uncertain',next_at=0 WHERE state='retry'").run();db.close();
+ const call=p.api.call;p.api.call=async(e,url)=>{const sku=url.match(/seller_sku=AMADO-AR-(\d+)/)?.[1];return sku?{results:['MLU1']}:call(e,url);};
+ p.api.skuItems=async()=>['MLU1'];
+ const result=await p.h.run({...p.options,target:1000,limitNew:1});
+ assert.notEqual(result.state,'stopped_item_readback_failed');assert.equal(p.posts,1,'no second create for the uncertain book');
+ db=new DatabaseSync(file,{readOnly:true});
+ const row=db.prepare("SELECT state,error_code,next_at FROM ml_vintage_pub_jobs WHERE state='uncertain'").get();db.close();
+ assert.equal(row.error_code,'created_item_pending_pictures');assert.ok(row.next_at>Date.now(),'retried later, not on every tick');
+});
+
 test('readback waits for Mercado Libre to finish downloading pictures before accepting the item',async t=>{
  const p=await pictureHarness(t,{pausedReads:2});
  const result=await p.h.run({...p.options,target:8,limitNew:1});
