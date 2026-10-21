@@ -234,6 +234,7 @@ export async function main(argv = process.argv.slice(2)) {
   let mode;
   if (args.raw) {
     const data = await readJsonSource(args.raw);
+    if (data?.complete === false) throw new Error('Auditoría incompleta: el archivo es evidencia de diagnóstico, no un informe válido.');
     items = (Array.isArray(data) ? data : data.items || []).map(entry => bulkEntryItem(entry)).filter(Boolean);
     mode = 'raw';
   } else {

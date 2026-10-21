@@ -6,6 +6,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { fetchAllItems, auditPageShape } from '../mercadolibre/attribute-audit-fetch.mjs';
+import { main as auditMain } from '../mercadolibre/attribute-audit.mjs';
+import { main as fillMain } from '../mercadolibre/attribute-fill-plan.mjs';
+import { writeFile } from 'node:fs/promises';
 
 const page = extra => ({ read_only: true, seller_id: '440298103', items: [], failed_ids: [], total: 0, scroll_id: null, page_empty: true, ...extra });
 
@@ -116,5 +119,18 @@ test('cursor vacío no oculta cobertura insuficiente, total cambiado, errores o 
   ];
   for (const pages of cases) {
     await assert.rejects(fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} }), /respuesta de auditoría inválida/);
+  }
+});
+
+test('los consumidores rechazan evidencia incompleta sin producir informes ni propuestas', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'mlu-incomplete-input-'));
+  try {
+    const input = path.join(dir, 'incomplete.json'), out = path.join(dir, 'report');
+    await writeFile(input, JSON.stringify({ complete: false, items: [{ id: 'MLU1' }], total: 1, failed_ids: [] }));
+    for (const main of [auditMain, fillMain]) await assert.rejects(main(['--raw', input, '--out', out]), /Auditoría incompleta/);
+    await assert.rejects(access(out));
+  } finally {
+    assert.equal(path.dirname(path.resolve(dir)), path.resolve(tmpdir()));
+    await rm(dir, { recursive: true, force: true });
   }
 });

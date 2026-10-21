@@ -156,6 +156,7 @@ export async function main(argv = process.argv.slice(2)) {
   let items, mode;
   if (args.raw) {
     const data = await readJson(args.raw);
+    if (data?.complete === false) throw new Error('Auditoría incompleta: el archivo es evidencia de diagnóstico, no una base válida para propuestas.');
     items = (Array.isArray(data) ? data : data.items || []).map(entry => bulkEntryItem(entry)).filter(Boolean);
     mode = 'raw';
   } else {
