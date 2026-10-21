@@ -94,3 +94,27 @@ test('el diagnóstico conserva cobertura previa y omite cursores y cuerpos no va
   assert.equal(shape.scroll_id_kind, 'nonempty_string');
   assert.ok(!JSON.stringify(shape).includes('private-'));
 });
+
+test('acepta cursor final vacío sólo con cobertura positiva exacta ya comprobada', async () => {
+  const pages = [page({ total: 2, page_empty: false, items: [{ id: 'MLU1' }, { id: 'MLU2' }], scroll_id: 's1' }), page({ total: 2, scroll_id: '' })];
+  const result = await fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} });
+  assert.equal(result.items.length, 2);
+  assert.equal(result.total, 2);
+  assert.equal(result.pages, 2);
+  assert.equal(result.completion, 'empty_terminal_cursor_with_full_coverage');
+});
+
+test('cursor vacío no oculta cobertura insuficiente, total cambiado, errores o página contradictoria', async () => {
+  const first = page({ total: 2, page_empty: false, items: [{ id: 'MLU1' }], scroll_id: 's1' });
+  const cases = [
+    [first, page({ total: 2, scroll_id: '' })],
+    [first, page({ total: 1, scroll_id: '' })],
+    [first, page({ total: null, scroll_id: '' })],
+    [page({ ...first, failed_ids: ['MLU2'] }), page({ total: 1, scroll_id: '' })],
+    [first, page({ total: 1, items: [{ id: 'MLU2' }], scroll_id: '' })],
+    [page({ ...first, total: 1 }), page({ total: 1, scroll_id: ' ' })],
+  ];
+  for (const pages of cases) {
+    await assert.rejects(fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} }), /respuesta de auditoría inválida/);
+  }
+});

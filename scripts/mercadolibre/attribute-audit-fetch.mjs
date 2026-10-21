@@ -29,12 +29,12 @@ export function auditPageShape(body) {
   };
 }
 
-function validatePage(body, page) {
+function validatePage(body, page, { allowEmptyTerminalCursor = false } = {}) {
   const id = value => typeof value === 'string' && /^MLU\d+$/.test(value);
   if (!body || Array.isArray(body) || body.read_only !== true || body.seller_id !== '440298103' ||
       !Array.isArray(body.items) || !Array.isArray(body.failed_ids) ||
       typeof body.page_empty !== 'boolean' ||
-      !(body.scroll_id === null || (typeof body.scroll_id === 'string' && body.scroll_id.trim())) ||
+      !(body.scroll_id === null || (allowEmptyTerminalCursor && body.scroll_id === '') || (typeof body.scroll_id === 'string' && body.scroll_id.trim())) ||
       !(body.total === null || (Number.isInteger(body.total) && body.total >= 0)) ||
       body.items.some(item => !id(item?.id)) || body.failed_ids.some(value => !id(value)) ||
       (body.page_empty && (body.items.length || body.failed_ids.length)) ||
@@ -51,6 +51,7 @@ export async function fetchAllItems({ secret, fetcher = fetch, wait = sleep, ori
   let total = null;
   for (let page = 1; page <= MAX_PAGES; page += 1) {
     let body;
+    let completeWithEmptyCursor = false;
     for (let attempt = 1; ; attempt += 1) {
       const response = await fetcher(new URL('/attribute-audit', origin), {
         method: 'POST',
@@ -60,7 +61,14 @@ export async function fetchAllItems({ secret, fetcher = fetch, wait = sleep, ori
       });
       body = await response.json().catch(() => ({}));
       if (response.ok) {
-        try { validatePage(body, page); }
+        // MLU termina algunos scans con scroll_id="". Sólo es un cierre válido
+        // cuando una página realmente vacía confirma la cobertura ya obtenida.
+        completeWithEmptyCursor = body?.scroll_id === '' && body?.page_empty === true &&
+          Array.isArray(body?.items) && body.items.length === 0 &&
+          Array.isArray(body?.failed_ids) && body.failed_ids.length === 0 &&
+          items.size > 0 && failed.size === 0 && Number.isInteger(body.total) &&
+          body.total === total && body.total === items.size;
+        try { validatePage(body, page, { allowEmptyTerminalCursor: completeWithEmptyCursor }); }
         catch (error) {
           error.auditDiagnostics = { complete: false, page, items_read: items.size, failed_count: failed.size, reported_total: total, shape: auditPageShape(body) };
           error.incompleteAudit = { complete: false, read_only: true, seller_id: '440298103', items: [...items.values()], failed_ids: [...failed], total, pages: page - 1 };
@@ -80,7 +88,8 @@ export async function fetchAllItems({ secret, fetcher = fetch, wait = sleep, ori
       if (failed.size || total === null || items.size !== total) {
         throw new Error(`Auditoría incompleta: ${items.size} publicaciones leídas de ${total ?? '?'}; ${failed.size} sin poder leer. Repetir antes de generar un informe.`);
       }
-      return { items: [...items.values()], failed_ids: [], total, pages: page };
+      return { items: [...items.values()], failed_ids: [], total, pages: page,
+        ...(completeWithEmptyCursor ? { completion: 'empty_terminal_cursor_with_full_coverage' } : {}) };
     }
     scrollId = body.scroll_id;
     await wait(300);
