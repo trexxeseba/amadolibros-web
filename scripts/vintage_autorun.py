@@ -28,6 +28,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ENGINE = REPO / "scripts" / "vintage-local" / "engine.mjs"
 RENEW = REPO / "scripts" / "vintage-local" / "renew.mjs"
+STOCK_SYNC = REPO / "scripts" / "vintage-local" / "stock-sync.mjs"
 MONTEVIDEO = dt.timezone(dt.timedelta(hours=-3))
 RENEW_MARGIN_S = 30 * 60
 FATAL = {
@@ -59,6 +60,7 @@ class Runner:
         self.excel = Path(args.excel) if args.excel else self.directory / "stock-sbs.xlsx"
         self.connection = Path(args.connection) if args.connection else self.private / "vintage-local-connection.json"
         self.secret_file = Path(args.secret_file) if args.secret_file else self.private / "renew-secret.txt"
+        self.sbs_file = Path(args.sbs_file) if args.sbs_file else self.private / "sbs.json"
         self.stop_file = self.directory / "STOP"
         self.node = args.node if args.node and Path(args.node).exists() else shutil.which("node")
         self.failures = 0
@@ -135,7 +137,10 @@ class Runner:
     def renew(self):
         self.log("renovando conexión", excel=str(self.excel))
         env = {**os.environ, "VINTAGE_RENEW_SECRET": self.secret()}
-        result = subprocess.run([self.node, "--experimental-sqlite", str(RENEW), "--excel", str(self.excel), "--connection", str(self.connection)], env=env, capture_output=True, text=True, timeout=1800)
+        command = [self.node, "--experimental-sqlite", str(RENEW), "--excel", str(self.excel), "--connection", str(self.connection)]
+        if self.sbs_file.exists():  # portal de SBS con usuario; sin este archivo usa el Excel público
+            command += ["--sbs-file", str(self.sbs_file)]
+        result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=1800)
         last = {}
         for line in (result.stdout or "").splitlines():
             try:
@@ -144,6 +149,29 @@ class Runner:
                 continue
         self.log("renovación", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
         return result.returncode, last
+
+    def sync_stock(self):
+        """Pausa en Mercado Libre lo que ya no viene en la lista fresca y reactiva lo que vuelve."""
+        if self.args.stock_sync == "off":
+            return
+        self.log("sincronizando stock", mode=self.args.stock_sync)
+        command = [self.node, "--experimental-sqlite", str(STOCK_SYNC), "--connection", str(self.connection), "--excel", str(self.excel), "--directory", str(self.directory), "--mode", self.args.stock_sync]
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=4 * 3600)
+        except subprocess.TimeoutExpired:
+            self.log("sincronización de stock", error="timeout")
+            return
+        last = {}
+        for line in (result.stdout or "").splitlines():
+            try:
+                last = json.loads(line)
+            except ValueError:
+                continue
+        self.log("sincronización de stock", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
+        if result.returncode != 0:
+            self.notify("Vintage: la sincronización de stock falló", f"Resultado: {last.get('error') or last.get('state')}. Se reintenta con la próxima lista.", every_s=6 * 3600)
+        elif last.get("paused") or last.get("activated"):
+            self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
 
     def run_engine(self):
         command = [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(self.args.target)]
@@ -204,6 +232,7 @@ class Runner:
                         continue
                     self.force_renew = False
                     self.failures = 0
+                    self.sync_stock()
                 code, error = self.run_engine()
                 status = self.status()
                 state = status.get("state") or error or ("finished" if code == 0 else "engine_error")
@@ -246,10 +275,12 @@ def main():
     parser.add_argument("--excel")
     parser.add_argument("--connection")
     parser.add_argument("--secret-file")
+    parser.add_argument("--sbs-file", help="JSON {email, password} del portal de SBS (por defecto private/sbs.json)")
     parser.add_argument("--notify-url")
     parser.add_argument("--node", help="ruta completa de node.exe (opcional)")
     parser.add_argument("--directory", default=str(Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Amado" / "VintagePublisher"))
     parser.add_argument("--target", type=int, default=10000)
+    parser.add_argument("--stock-sync", choices=["off", "report", "pause_only", "pause_and_reactivate"], default="pause_and_reactivate", help="qué hacer con publicaciones que ya no vienen en la lista (por defecto pausar y reactivar)")
     args = parser.parse_args()
     runner = Runner(args)
     lock = (runner.directory / "process.lock").open("a+b")

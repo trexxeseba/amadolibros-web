@@ -80,10 +80,21 @@ con espera creciente ante errores transitorios y se detiene sola, dejando un
 archivo `STOP`, ante cupo de publicaciones, lectura fallida de un alta, cuenta
 distinta o conexión inválida. Mientras corre impide que Windows suspenda la PC.
 
-La renovación no usa el navegador. `scripts/vintage-local/renew.mjs` baja el
-Excel público del proveedor, lo lee con el mismo lector que el panel, revoca la
-conexión anterior, carga el stock en D1 y pide una conexión nueva a
-`POST /operations/vintage-renew`. Esa ruta exige el secreto `VINTAGE_RENEW_SECRET`
+La renovación no usa el navegador. `scripts/vintage-local/renew.mjs` inicia sesión
+en el portal de SBS (`ag.sbs.com.ar`, usuario y clave guardados en `private/sbs.json`
+por el instalador) y baja "Lista completa de disponibles" (`/Home/AllPriceList`);
+sin ese archivo usa el Excel público, que SBS dejó de actualizar en agosto de 2026.
+Lo lee con el mismo lector que el panel, revoca la conexión anterior, carga el
+stock en D1 y pide una conexión nueva a `POST /operations/vintage-renew`.
+
+Con cada lista fresca, `scripts/vintage-local/stock-sync.mjs` compara las
+publicaciones creadas por la campaña con la lista: lo que ya no viene o no tiene
+stock se **pausa** en Mercado Libre, y lo que vuelve se reactiva sólo si la pausa fue
+de esta sincronización o por agotamiento (una pausa manual queda manual). Nunca
+cierra publicaciones, no toca ítems de otro vendedor o SKU, y si faltan más del 30 %
+de los títulos considera la lista incompleta y no pausa nada. Se controla con
+`--stock-sync off|report|pause_only|pause_and_reactivate` (por defecto, pausar y
+reactivar); el resultado queda en `stock-sync.json`. Esa ruta exige el secreto `VINTAGE_RENEW_SECRET`
 (Cloudflare Pages, mínimo 32 caracteres); sin él responde 503. Sólo acepta las
 acciones `begin`, `import`, `commit`, `renew`, `revoke` y `status` sobre el lote de
 Vintage: no recibe vendedor, política ni `run_id`. `renew` repite exactamente lo

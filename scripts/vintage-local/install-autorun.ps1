@@ -54,6 +54,15 @@ if (-not (Test-Path $secretFile) -or (Get-Content $secretFile -Raw).Trim().Lengt
   if ($secret.Trim().Length -lt 32) { throw "El secreto debe tener al menos 32 caracteres." }
   Set-Content -Path $secretFile -Value $secret.Trim() -NoNewline -Encoding ASCII
 }
+# Usuario del portal de SBS (ag.sbs.com.ar), de donde se baja "Lista completa de disponibles".
+$sbsFile = Join-Path $private "sbs.json"
+if (-not (Test-Path $sbsFile)) {
+  $sbsEmail = Read-Host "Correo del usuario de SBS (ag.sbs.com.ar), vacío para usar el Excel público"
+  if ($sbsEmail.Trim()) {
+    $sbsPassword = Read-Host "Contraseña de SBS"
+    @{ email = $sbsEmail.Trim(); password = $sbsPassword } | ConvertTo-Json -Compress | Set-Content -Path $sbsFile -NoNewline -Encoding UTF8
+  }
+}
 
 # 1. Sin suspensión ni hibernación con corriente.
 powercfg /change standby-timeout-ac 0 | Out-Null
