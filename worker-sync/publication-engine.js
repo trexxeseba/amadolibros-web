@@ -59,11 +59,11 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
      if(found.length===1){await s.receiptState(sellerId,job.isbn,'published',found[0]);await mark(job.isbn,'published',{itemId:found[0]});continue;}
      await later(job.error_code??'interrupted_create');
     }catch(error){
-     // A book that cannot be confirmed yet (e.g. Mercado Libre still downloading its
-     // pictures) waits with backoff; it must not stop the whole run. 429 and auth
-     // failures still end the tick through the outer handler.
-     if(!(error instanceof MercadoLibreError)||error.status===429||error.status===401||error.status===403)throw error;
-     await later(safeCode(error));
+     // A book that cannot be confirmed yet (pictures still downloading, a transient
+     // read failure, a price no longer in today's stock) waits with backoff; it must
+     // not stop the whole run. 429 and auth failures still end the tick.
+     if(error instanceof MercadoLibreError&&[429,401,403].includes(error.status))throw error;
+     await later(error instanceof MercadoLibreError?safeCode(error):'reconcile_failed');
     }
    }
    if(run.state==='complete_with_review'){await s.finishReview(run.id,lease,now());return s.summary(run.id);}

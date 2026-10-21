@@ -1,1 +1,3 @@
 *.astro text eol=lf
+# cmd.exe pierde etiquetas (goto) en archivos con fin de línea LF: siempre CRLF.
+*.cmd text eol=crlf

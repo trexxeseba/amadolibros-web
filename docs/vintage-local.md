@@ -107,6 +107,15 @@ Instalación en Windows, una sola vez:
 powershell -ExecutionPolicy Bypass -File scripts\vintage-local\install-autorun.ps1 -NotifyUrl https://ntfy.sh/<tu-tema>
 ```
 
+La tarea ejecuta `run.cmd`, que llama a `scripts/vintage-local/launch.cmd` del repo:
+reinicia el supervisor si se cae y cuando sale para recargar código nuevo, y en cada
+ciclo el supervisor hace `git pull --ff-only` de su rama, así los arreglos llegan solos.
+`stop.cmd` deja el archivo `STOP`; el motor termina el libro en curso y todo se detiene
+en menos de un minuto. Cada día manda un aviso "funcionando" con el total publicado; los
+errores que necesitan una persona (clave de SBS rechazada, secreto del sitio) avisan una
+vez y esperan en vez de reintentar sin fin. El workflow `Vintage status (read-only)` lee
+el progreso desde D1 de producción sin acceso a la PC.
+
 Pide el secreto y lo guarda en `%LOCALAPPDATA%\Amado\VintagePublisher\private`,
 desactiva la suspensión con corriente, registra la tarea programada
 `AmadoVintagePublisher` (arranca al iniciar sesión y se reinicia sola) y crea

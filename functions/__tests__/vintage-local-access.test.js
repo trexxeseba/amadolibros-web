@@ -97,6 +97,28 @@ async function engineHarness(t,{create}){
  return {run,temp,path,fs,options:{excel:'unused',connection,directory:temp,onStatus:()=>{},readWorkbook:async()=>({rows,source_date:source,source_sha256:'e'.repeat(64)}),apiFactory,brokerFactory:()=>broker,waitFor:async()=>{}}};
 }
 
+test('a listing sold before it was confirmed still passes readback; any other quantity or state does not',()=>{
+ const item={seller_id:'2341378249',price:2110,currency_id:'UYU',available_quantity:1,status:'active',seller_custom_field:'AMADO-AR-9789502323060',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};
+ for(const status of ['active','paused','closed'])checkCreated({...item,status,available_quantity:0,sold_quantity:1},'9789502323060',2110);
+ for(const bad of [{status:'paused'},{available_quantity:0},{available_quantity:0,sold_quantity:0,status:'paused'},{available_quantity:2},{status:'under_review',available_quantity:0,sold_quantity:1},{available_quantity:0,sold_quantity:1,seller_id:'440298103'}])assert.throws(()=>checkCreated({...item,...bad},'9789502323060',2110),/check_failed/);
+});
+
+test('a transient readback failure defers the book and never stops the campaign',async t=>{
+ const {MercadoLibreError}=await import('../../worker-sync/publication-meli.js');
+ const p=await pictureHarness(t,{pausedReads:0});
+ let failures=0;const call=p.api.call;p.api.call=async(e,url)=>{if(url.startsWith('/items/')&&failures<1){failures++;throw new MercadoLibreError('ml_transport',503);}return call(e,url);};
+ const result=await p.h.run({...p.options,target:1000,limitNew:2});
+ assert.notEqual(result.state,'stopped_item_readback_failed');assert.equal(failures,1);
+ assert.equal(JSON.parse(await p.h.fs.readFile(p.h.path.join(p.h.temp,'status.json'),'utf8')).state==='stopped_item_readback_failed',false);
+});
+
+test('the daily cap is the engine result and is written to status.json',async t=>{
+ const h=await engineHarness(t,{create:null});
+ const result=await h.run({...h.options,target:1000,brokerFactory:()=>async action=>{if(action==='status')return {daily_created:3000,daily_cap:3000,published_total:2194};throw Error('no '+action);}});
+ assert.equal(result.state,'daily_cap_reached');
+ assert.equal(JSON.parse(await h.fs.readFile(h.path.join(h.temp,'status.json'),'utf8')).state,'daily_cap_reached');
+});
+
 test('local engine records which endpoint answered 429 without ids or query text',async t=>{
  const {MercadoLibreError}=await import('../../worker-sync/publication-meli.js'),realFetch=globalThis.fetch;t.after(()=>{globalThis.fetch=realFetch;});
  globalThis.fetch=async()=>new Response('{}',{status:429,headers:{'retry-after':'7'}});

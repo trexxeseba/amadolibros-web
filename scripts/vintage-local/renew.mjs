@@ -118,7 +118,7 @@ async function main(){
   const result=await renewConnection({excel:get('--excel'),connection:get('--connection'),secret,source:get('--source'),sbs,log:x=>console.log(JSON.stringify(x))});
   console.log(JSON.stringify(result));
  }catch(error){
-  const code=/^[a-z0-9_]{1,100}$/.test(error.code??'')?error.code:'renew_failed';
+  const code=[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'renew_failed';
   console.log(JSON.stringify({state:'failed',error:code,...(error.detail??{})}));
   process.exitCode=code==='supplier_stock_stale'||code==='supplier_stock_stale_or_future'?3:2;
  }

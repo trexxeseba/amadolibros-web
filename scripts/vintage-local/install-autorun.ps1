@@ -69,13 +69,11 @@ powercfg /change standby-timeout-ac 0 | Out-Null
 powercfg /change hibernate-timeout-ac 0 | Out-Null
 
 # 3. Botones de parada y arranque.
-$script = Join-Path $Repo "scripts\vintage_autorun.py"
-$extra = if ($NotifyUrl) { " --notify-url `"$NotifyUrl`"" } else { "" }
 Set-Content -Path (Join-Path $StateDir "stop.cmd") -Encoding ASCII -Value @"
 @echo off
 echo manual %date% %time% > "$StateDir\STOP"
-schtasks /End /TN "$task" >nul 2>&1
-echo Publicador Vintage detenido. Para seguir, ejecuta start.cmd.
+echo Publicador Vintage deteniendose: el motor termina el libro en curso y se detiene en menos de un minuto.
+echo Para seguir, ejecuta start.cmd.
 "@
 Set-Content -Path (Join-Path $StateDir "start.cmd") -Encoding ASCII -Value @"
 @echo off
@@ -85,16 +83,15 @@ echo Publicador Vintage iniciado. Estado: "$StateDir\status.json". Registros: "$
 "@
 
 # 4. Tarea programada.
-# run.cmd deja en logs\task.log cualquier error previo al propio registro de Python
-# (intérprete ausente, SyntaxError, módulo faltante), que de otro modo sería invisible.
+# run.cmd sólo llama a scripts\vintage-local\launch.cmd, que vive en el repo (git pull lo
+# actualiza): reinicia el supervisor si se cae y deja en logs\task.log cualquier error previo
+# al propio registro de Python (intérprete ausente, SyntaxError, módulo faltante).
 $logs = Join-Path $StateDir "logs"
 New-Item -ItemType Directory -Force -Path $logs | Out-Null
+$notifyArgs = if ($NotifyUrl) { " --notify-url `"$NotifyUrl`"" } else { "" }
 Set-Content -Path (Join-Path $StateDir "run.cmd") -Encoding ASCII -Value @"
 @echo off
-cd /d "$Repo"
-echo [%date% %time%] inicio >> "$logs\task.log"
-"$PythonExe" "$script" --target $Target --node "$($nodeCmd.Source)"$extra >> "$logs\task.log" 2>&1
-echo [%date% %time%] fin codigo %errorlevel% >> "$logs\task.log"
+call "$Repo\scripts\vintage-local\launch.cmd" "$PythonExe" "$StateDir" $Target$notifyArgs
 "@
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"`"$StateDir\run.cmd`"`"" -WorkingDirectory $Repo
 $triggers = @((New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME), (New-ScheduledTaskTrigger -AtStartup))
