@@ -10,7 +10,7 @@ import {PublicationStore} from '../../worker-sync/publication-store.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {policyHash} from '../../worker-sync/publication-policy.js';
 import {checkConfiguration} from '../../scripts/vintage-local/engine.mjs';
-import {feedIdFromHash,renewConnection,downloadStock,sbsLogin,SBS_SOURCE,SBS_PORTAL,SBS_PORTAL_LIST,RENEW_ENDPOINT} from '../../scripts/vintage-local/renew.mjs';
+import {feedIdFromHash,renewConnection,downloadStock,sbsLogin,readSbsFile,SBS_SOURCE,SBS_PORTAL,SBS_PORTAL_LIST,RENEW_ENDPOINT} from '../../scripts/vintage-local/renew.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -148,6 +148,9 @@ test('the PC client logs into the SBS portal, downloads the complete list with t
  const list=calls.find(c=>c.url===SBS_PORTAL+SBS_PORTAL_LIST);assert.ok(list.cookies.includes('.AspNet.ApplicationCookie=session-9'));
  assert.ok(!calls.some(c=>c.url===RENEW_ENDPOINT&&c.cookies));
  assert.equal(checkConfiguration(JSON.parse(await fs.readFile(connection,'utf8'))).minimumSaleUyu,1600);
+ // el archivo que escribe el instalador (PowerShell 5.1) empieza con BOM
+ const sbsFile=path.join(temp,'sbs.json');await fs.writeFile(sbsFile,'﻿{"email":"amadolibro@gmail.com","password":"AG#x_1"}');
+ assert.deepEqual(await readSbsFile(sbsFile),{email:'amadolibro@gmail.com',password:'AG#x_1',portal:undefined});
  await assert.rejects(()=>sbsLogin({email:'amadolibro@gmail.com',password:'otra',fetcher:portal}),/sbs_login_rejected/);
  await assert.rejects(()=>sbsLogin({email:'',password:'x',fetcher:portal}),/sbs_credentials_missing/);
  await assert.rejects(()=>downloadStock(SBS_PORTAL+SBS_PORTAL_LIST,{fetcher:portal}),/supplier_login_required/);

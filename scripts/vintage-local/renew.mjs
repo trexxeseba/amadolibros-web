@@ -103,13 +103,18 @@ export async function renewConnection({excel,connection,secret,source,sbs=null,f
  await writeAtomic(connection,JSON.stringify(c,null,2));
  return {state:'renewed',feed_id,source_date:input.source_date,rows:input.rows.length,expires_at:c.expires_at,published_receipts:(c.receipts??[]).filter(r=>r.state==='published').length};
 }
+// PowerShell 5.1 (Set-Content -Encoding UTF8) escribe un BOM al principio, que JSON.parse rechaza.
+export async function readSbsFile(file){
+ const saved=JSON.parse((await fs.readFile(file,'utf8')).replace(/^﻿/,''));
+ return {email:saved.email,password:saved.password,portal:saved.portal};
+}
 async function main(){
  const args=process.argv.slice(2),get=name=>args.includes(name)?args[args.indexOf(name)+1]:undefined;
  let secret=process.env.VINTAGE_RENEW_SECRET;
  if(!secret&&get('--secret-file'))secret=(await fs.readFile(get('--secret-file'),'utf8')).trim();
  let sbs=process.env.SBS_EMAIL&&process.env.SBS_PASSWORD?{email:process.env.SBS_EMAIL,password:process.env.SBS_PASSWORD}:null;
- if(!sbs&&get('--sbs-file')){const saved=JSON.parse(await fs.readFile(get('--sbs-file'),'utf8'));sbs={email:saved.email,password:saved.password,portal:saved.portal};}
  try{
+  if(!sbs&&get('--sbs-file'))sbs=await readSbsFile(get('--sbs-file'));
   const result=await renewConnection({excel:get('--excel'),connection:get('--connection'),secret,source:get('--source'),sbs,log:x=>console.log(JSON.stringify(x))});
   console.log(JSON.stringify(result));
  }catch(error){
