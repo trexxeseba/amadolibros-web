@@ -14,6 +14,21 @@ const ORIGIN = 'https://amadolibros-sync.undiaes.workers.dev';
 const MAX_PAGES = 400;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Sólo tipos, banderas y contadores: nunca cursores, credenciales ni el cuerpo crudo.
+export function auditPageShape(body) {
+  return {
+    body_type: body === null ? 'null' : Array.isArray(body) ? 'array' : typeof body,
+    read_only_matches: body?.read_only === true,
+    seller_matches: body?.seller_id === '440298103',
+    items_count: Array.isArray(body?.items) ? body.items.length : null,
+    failed_ids_count: Array.isArray(body?.failed_ids) ? body.failed_ids.length : null,
+    page_empty: typeof body?.page_empty === 'boolean' ? body.page_empty : null,
+    scroll_id_kind: body?.scroll_id === null ? 'null' : typeof body?.scroll_id === 'string' ? (body.scroll_id.trim() ? 'nonempty_string' : 'empty_string') : typeof body?.scroll_id,
+    total: Number.isInteger(body?.total) && body.total >= 0 ? body.total : null,
+    total_kind: body?.total === null ? 'null' : typeof body?.total,
+  };
+}
+
 function validatePage(body, page) {
   const id = value => typeof value === 'string' && /^MLU\d+$/.test(value);
   if (!body || Array.isArray(body) || body.read_only !== true || body.seller_id !== '440298103' ||
@@ -44,7 +59,15 @@ export async function fetchAllItems({ secret, fetcher = fetch, wait = sleep, ori
         redirect: 'manual',
       });
       body = await response.json().catch(() => ({}));
-      if (response.ok) { validatePage(body, page); break; }
+      if (response.ok) {
+        try { validatePage(body, page); }
+        catch (error) {
+          error.auditDiagnostics = { complete: false, page, items_read: items.size, failed_count: failed.size, reported_total: total, shape: auditPageShape(body) };
+          error.incompleteAudit = { complete: false, read_only: true, seller_id: '440298103', items: [...items.values()], failed_ids: [...failed], total, pages: page - 1 };
+          throw error;
+        }
+        break;
+      }
       if (attempt >= retries || ![429, 502, 503].includes(response.status)) {
         throw new Error(`Página ${page}: ${body.error || response.status}`);
       }
@@ -72,5 +95,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       await writeFile(out, JSON.stringify(result));
       console.log(`Leídas ${result.items.length} de ${result.total ?? '?'} activas en ${result.pages} páginas; ${result.failed_ids.length} sin poder leer. Salida: ${out}`);
     })
-    .catch(error => { console.error(error.message); process.exit(1); });
+    .catch(async error => {
+      if (error.auditDiagnostics) {
+        await writeFile(`${out}.diagnostics.json`, JSON.stringify(error.auditDiagnostics));
+        await writeFile(`${out}.incomplete.json`, JSON.stringify(error.incompleteAudit));
+        console.error(`Diagnóstico de formato: ${JSON.stringify(error.auditDiagnostics)}`);
+      }
+      console.error(error.message);
+      process.exitCode = 1;
+    });
 }

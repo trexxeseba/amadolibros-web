@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { fetchAllItems } from '../mercadolibre/attribute-audit-fetch.mjs';
+import { fetchAllItems, auditPageShape } from '../mercadolibre/attribute-audit-fetch.mjs';
 
 const page = extra => ({ read_only: true, seller_id: '440298103', items: [], failed_ids: [], total: 0, scroll_id: null, page_empty: true, ...extra });
 
@@ -75,4 +75,22 @@ test('CLI: una respuesta inválida falla sin guardar un falso informe vacío', a
     assert.equal(path.dirname(path.resolve(dir)), path.resolve(tmpdir()));
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test('el diagnóstico conserva cobertura previa y omite cursores y cuerpos no validados', async () => {
+  const pages = [
+    page({ total: 2, page_empty: false, items: [{ id: 'MLU1' }], scroll_id: 'private-cursor' }),
+    page({ total: 2, scroll_id: '', secret: 'private-body' }),
+  ];
+  await assert.rejects(fetchAllItems({ secret: 'private-token', fetcher: async () => Response.json(pages.shift()), wait: async () => {} }), error => {
+    assert.equal(error.auditDiagnostics.items_read, 1);
+    assert.equal(error.auditDiagnostics.shape.scroll_id_kind, 'empty_string');
+    assert.equal(error.incompleteAudit.complete, false);
+    assert.deepEqual(error.incompleteAudit.items, [{ id: 'MLU1' }]);
+    assert.ok(!JSON.stringify(error).includes('private-'));
+    return true;
+  });
+  const shape = auditPageShape({ scroll_id: 'private-cursor', seller_id: 'private-seller', items: [{ token: 'private-token' }] });
+  assert.equal(shape.scroll_id_kind, 'nonempty_string');
+  assert.ok(!JSON.stringify(shape).includes('private-'));
 });

@@ -52,5 +52,7 @@ jobs:
           path: |
             reports/mlu-atributos/
             ${{ runner.temp }}/mlu-items-raw.json
+            ${{ runner.temp }}/mlu-items-raw.json.diagnostics.json
+            ${{ runner.temp }}/mlu-items-raw.json.incomplete.json
           if-no-files-found: warn
           retention-days: 30
