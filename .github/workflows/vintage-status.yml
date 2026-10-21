@@ -30,7 +30,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          q() { npx --yes wrangler@3.114.17 d1 execute ORDERS_DB --env production --remote --json --command "$1"; }
+          q() { npx --yes wrangler@3.114.17 d1 execute ORDERS_DB --env production --remote --json --command "$1" || echo "(consulta fallida)"; }
           echo '### Recibos de Vintage por estado'
           q "SELECT state, COUNT(*) AS n, datetime(MAX(updated_at)/1000,'unixepoch','-3 hours') AS ultimo_uy FROM ml_vintage_pub_receipts WHERE seller_id='2341378249' GROUP BY state ORDER BY n DESC"
           echo '### Altas por día (hora de Uruguay)'
@@ -38,7 +38,7 @@ jobs:
           echo '### Lote Vintage'
           q "SELECT state, feed_id, daily_cap, json_extract(policy_json,'$.margin') AS margen, json_extract(policy_json,'$.minimumSaleUyu') AS minimo_uyu, json_extract(policy_json,'$.supplierDiscount') AS descuento_sbs, json_extract(policy_json,'$.arsPerUyu') AS ars_por_uyu, datetime(updated_at/1000,'unixepoch','-3 hours') AS actualizado_uy FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000010000'"
           echo '### Últimas 5 altas con precio enviado'
-          q "SELECT isbn, item_id, json_extract(payload_json,'$.price') AS precio_uyu, datetime(updated_at/1000,'unixepoch','-3 hours') AS cuando_uy FROM ml_vintage_pub_jobs WHERE run_id='23413782-4900-4000-8000-000000010000' AND state='published' ORDER BY updated_at DESC LIMIT 5"
+          q "SELECT r.isbn, r.item_id, json_extract(j.payload_json,'$.price') AS precio_uyu, datetime(r.updated_at/1000,'unixepoch','-3 hours') AS cuando_uy FROM ml_vintage_pub_receipts r LEFT JOIN ml_vintage_pub_jobs j ON j.run_id=r.run_id AND j.isbn=r.isbn WHERE r.seller_id='2341378249' AND r.state='published' ORDER BY r.updated_at DESC LIMIT 5"
           echo '### Conexión de la PC'
           q "SELECT enabled, datetime(expires_at/1000,'unixepoch','-3 hours') AS vence_uy, datetime(last_at/1000,'unixepoch','-3 hours') AS ultima_actividad_uy FROM ml_vintage_local_access"
           echo '### Stock del proveedor cargado'
