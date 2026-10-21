@@ -1,0 +1,79 @@
+{
+  "project": "Completar atributos de publicaciones activas de Amado Libros",
+  "seller_id": 440298103,
+  "owner": "Este chat de Codex",
+  "updated_at": "2026-10-21T10:18:20.928Z",
+  "objective": "Completar atributos bibliográficos faltantes verificados por ISBN y comprobar el resultado en MLU.",
+  "protected_fields": [
+    "títulos",
+    "precios",
+    "descripciones",
+    "plazos"
+  ],
+  "cadence": {
+    "schedule": "Cada hora durante el 21/10/2026, America/Montevideo",
+    "notify": "Al cerrar una tanda, ante un bloqueo o una decisión necesaria"
+  },
+  "progress": {
+    "previous_batch": {
+      "items": 4,
+      "attributes": 4,
+      "status": "applied_and_verified",
+      "evidence_run": "https://github.com/trexxeseba/amadolibros-web/actions/runs/39524947922",
+      "receipt_export": "Falló la exportación anterior; los recibos están guardados en D1. No reaplicar."
+    },
+    "current_batch": {
+      "items": 20,
+      "attributes": 25,
+      "status": "authorized_implementation_ready_pending_merge",
+      "authorization": "Usuario autorizó aplicar los casos que pasen los controles el 21/10/2026.",
+      "merge_authorized": false,
+      "applied": 0,
+      "manifest": "scripts/mercadolibre/approved-twenty-manifest.mjs"
+    },
+    "blocked_previous_16": [
+      "MLU644094660",
+      "MLU477509991",
+      "MLU646394785",
+      "MLU477116592",
+      "MLU647065606",
+      "MLU476024579",
+      "MLU634807907",
+      "MLU673572840",
+      "MLU646539239",
+      "MLU898500042",
+      "MLU1041432582",
+      "MLU661851377",
+      "MLU640319757",
+      "MLU681326730",
+      "MLU681843136",
+      "MLU736358082"
+    ]
+  },
+  "definition_of_done": [
+    "Publicación propia activa, categoría MLU1196, ISBN exacto y sin variaciones",
+    "Ningún otro aviso del mismo vendedor comparte el User Product en búsqueda completa por estado",
+    "Valor autorizado admitido por esquema, faltante real; N/A y valores existentes distintos bloquean",
+    "Respaldo anterior guardado antes del PUT y recibo exportado",
+    "Lectura posterior confirma valores y conserva campos protegidos y otros atributos",
+    "Verificación final y retiro de la herramienta temporal"
+  ],
+  "work_order": [
+    "Revisar y autorizar merge de la PR de esta tanda, sin ampliar la autorización de datos.",
+    "Ejecutar primero reporte en producción y revisar las 20 revalidaciones.",
+    "Aplicar los ítems elegibles de la lista fija de 25 atributos; mantener los bloqueados y detenerse ante cualquier resultado incierto.",
+    "Verificar resultados, exportar recibos y actualizar cantidades realmente verificadas.",
+    "Preparar nuevas propuestas sobre activas sin repetir las 4 anteriores ni las 20 de esta tanda. Las siguientes cargas requieren autorización."
+  ],
+  "continuity_rule": "En cada ejecución leer este seguimiento, el manifiesto y los artefactos del último run. No contar propuestas ni pruebas como publicaciones mejoradas. No reintentar escrituras con recibos existentes. No hacer nuevos merges sin autorización.",
+  "remaining_limits": [
+    "No intervenir Amado Vintage 2341378249",
+    "Los 16 anteriores siguen bloqueados",
+    "La ausencia de avisos propios vinculados no demuestra ausencia de avisos de otros vendedores ni garantiza vínculos futuros"
+  ],
+  "tests": {
+    "command": "node --test scripts/__tests__/approved-twenty.test.mjs scripts/__tests__/approved-four.test.mjs",
+    "passed": 41,
+    "failed": 0
+  }
+}

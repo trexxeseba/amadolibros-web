@@ -1,0 +1,72 @@
+name: MLU — 25 atributos aprobados en 20 activas de Amado
+
+# Sólo los veinte IDs y 25 valores revisados con Seba. No permite listas arbitrarias, otros
+# atributos, Catálogo ni cambios de título, precios, descripción o plazos.
+on:
+  workflow_dispatch:
+    inputs:
+      apply_approved_twenty:
+        description: 'Aplicar los 25 atributos aprobados en 20 activas (false: revalidar sin escribir)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: mlu-approved-twenty
+  cancel-in-progress: false
+jobs:
+  approved-twenty:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      PILOT_NAME: amado-attr-twenty-${{ github.run_id }}-${{ github.run_attempt }}
+      PILOT_APPLY: ${{ inputs.apply_approved_twenty }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Probar límites de la operación
+        run: node --test scripts/__tests__/approved-twenty.test.mjs
+      - name: Desplegar herramienta temporal limitada a esta tanda
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/approved-twenty
+          PILOT_SECRET=$(openssl rand -hex 32)
+          echo "::add-mask::$PILOT_SECRET"
+          printf 'PILOT_SECRET=%s\n' "$PILOT_SECRET" >> "$GITHUB_ENV"
+          PILOT_EXPIRES_AT=$(( ($(date +%s) + 1200) * 1000 ))
+          OUTPUT=$(npx wrangler@3.114.17 deploy --config scripts/mercadolibre/approved-twenty.wrangler.toml --name "$PILOT_NAME" --var "PILOT_EXPIRES_AT:$PILOT_EXPIRES_AT" --var "PILOT_APPLY:$PILOT_APPLY")
+          echo "$OUTPUT"
+          PILOT_URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9.-]+\.workers\.dev' | tail -1)
+          test -n "$PILOT_URL"
+          printf 'PILOT_URL=%s\n' "$PILOT_URL" >> "$GITHUB_ENV"
+          printf '%s' "$PILOT_SECRET" | npx wrangler@3.114.17 secret put PILOT_SECRET --config scripts/mercadolibre/approved-twenty.wrangler.toml --name "$PILOT_NAME"
+          sleep 10
+      - name: Revalidar y, si se indicó, aplicar los veinte atributos
+        run: node scripts/mercadolibre/run-approved-twenty.mjs
+      - name: Retirar herramienta temporal
+        if: always()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          mkdir -p artifacts/approved-twenty
+          curl --max-time 45 --fail-with-body --silent --show-error -X DELETE \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$PILOT_NAME" \
+            > artifacts/approved-twenty/temporary-worker-cleanup.json
+          node -e "const r=require('./artifacts/approved-twenty/temporary-worker-cleanup.json'); if(r.success!==true)process.exit(1)"
+      - name: Conservar evidencia y recibos sin credenciales
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlu-approved-twenty-${{ github.run_id }}
+          path: artifacts/approved-twenty/
+          retention-days: 90
+          if-no-files-found: error
