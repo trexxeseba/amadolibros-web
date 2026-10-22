@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       review_ids:
-        description: '100 IDs propios separados por comas'
+        description: '1 a 100 IDs propios separados por comas'
         required: true
         type: string
 permissions:
@@ -28,11 +28,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           REVIEW_IDS: ${{ inputs.review_ids }}
-        run: node scripts/mercadolibre/read-hundred-groups.mjs artifacts/hundred-review
+        run: node scripts/mercadolibre/read-approved-ninety-groups.mjs artifacts/ninety-review
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: hundred-groups-${{ github.run_id }}
-          path: artifacts/hundred-review/
+          name: ninety-groups-${{ github.run_id }}
+          path: artifacts/ninety-review/
           retention-days: 30
           if-no-files-found: warn
