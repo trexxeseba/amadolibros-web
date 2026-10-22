@@ -1,0 +1,7 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {parseIds,checkPage,checkItem,makeReader} from '../mercadolibre/read-hundred-groups.mjs';
+test('bounded unique selection',()=>{assert.throws(()=>parseIds(''));assert.throws(()=>parseIds(Array(100).fill('MLU123456').join(',')));assert.equal(parseIds(Array.from({length:100},(_,i)=>'MLU'+(123456+i)).join(',')).length,100);});
+test('empty and truncated group responses fail closed',()=>{assert.throws(()=>checkPage({},0));assert.throws(()=>checkPage({paging:{total:1},results:[]},0));assert.equal(checkPage({paging:{total:0},results:[]},0),0);assert.throws(()=>checkPage({paging:{total:2},results:['MLU123456','MLU123456']},0));});
+test('foreign or incomplete items rejected',()=>{assert.throws(()=>checkItem({id:'MLU123456',seller_id:2341378249,attributes:[],variations:[],catalog_listing:false}));assert.throws(()=>checkItem({id:'MLU123456',seller_id:440298103}));});
+test('only GET on fixed read paths',async()=>{const calls=[];const read=makeReader('test-secret',async(url,args)=>{calls.push({url,args});return {ok:true,json:async()=>({})};});await read('/users/me');await read('/items/MLU123456?include_internal_attributes=true');await assert.rejects(()=>read('/items/MLU123456'));await assert.rejects(()=>read('/users/2341378249/items/search?limit=100'));assert.equal(calls.length,2);assert.ok(calls.every(c=>c.args.method==='GET'&&!c.args.body&&c.args.redirect==='manual'));});

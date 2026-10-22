@@ -1,58 +1,38 @@
 name: MLU — auditoría de atributos de libros
-
-# SOLO LECTURA. Recorre las publicaciones activas de Amado Libros a través de la
-# ruta /attribute-audit del Worker (protegida por SYNC_SECRET) y genera el informe
-# de atributos faltantes. No escribe en Mercado Libre ni toca el sitio.
-# Sólo corre a mano (workflow_dispatch) y exige que el Worker ya esté desplegado.
-
 on:
   workflow_dispatch:
-
+    inputs:
+      review_ids:
+        description: '100 IDs propios separados por comas'
+        required: true
+        type: string
 permissions:
   contents: read
-
 concurrency:
-  group: mlu-atributos-auditoria
+  group: mlu-review-hundred-groups
   cancel-in-progress: false
-
 jobs:
-  audit:
-    name: Auditoría de atributos
+  review:
+    if: github.ref == 'refs/heads/codex/attribute-review-100-links'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
-
-      - name: Leer atributos crudos (solo lectura)
+      - name: Test read-only guards
+        run: node --test scripts/__tests__/read-hundred-groups.test.mjs
+      - name: Read groups without writes or deployments
         env:
-          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
-        run: node scripts/mercadolibre/attribute-audit-fetch.mjs "$RUNNER_TEMP/mlu-items-raw.json"
-
-      - name: Generar informe
-        run: node scripts/mercadolibre/attribute-audit.mjs --raw "$RUNNER_TEMP/mlu-items-raw.json" --out reports/mlu-atributos
-
-      - name: Publicar resumen
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REVIEW_IDS: ${{ inputs.review_ids }}
+        run: node scripts/mercadolibre/read-hundred-groups.mjs artifacts/hundred-review
+      - uses: actions/upload-artifact@v4
         if: always()
-        run: |
-          if [ -f reports/mlu-atributos/README.md ]; then
-            cat reports/mlu-atributos/README.md >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Subir informe como artefacto
-        if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: mlu-atributos-${{ github.run_id }}
-          path: |
-            reports/mlu-atributos/
-            ${{ runner.temp }}/mlu-items-raw.json
-            ${{ runner.temp }}/mlu-items-raw.json.diagnostics.json
-            ${{ runner.temp }}/mlu-items-raw.json.incomplete.json
-          if-no-files-found: warn
+          name: hundred-groups-${{ github.run_id }}
+          path: artifacts/hundred-review/
           retention-days: 30
+          if-no-files-found: warn
