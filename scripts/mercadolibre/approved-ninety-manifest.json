@@ -1,0 +1,2066 @@
+{
+  "seller_id": 440298103,
+  "authorization_hash": "c4078cfd6d096e0f4e53a5e34b3d4ef33cc4622b8131f8f3b16e2946eab056b6",
+  "authorized_proposals": 90,
+  "approved": [
+    {
+      "id": "MLU643359437",
+      "isbn": "9788490352816",
+      "up": "MLUU2443397324",
+      "peers": [
+        {
+          "id": "MLU643294811",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "10ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "10ª"
+          },
+          "source_url": "https://pearson.es/docs/default-source/espa%C3%B1afiles/cat%C3%A1logo-universidad-pearson_2016.pdf"
+        }
+      ]
+    },
+    {
+      "id": "MLU643495533",
+      "isbn": "9788412270587",
+      "up": "MLUU2443393542",
+      "peers": [
+        {
+          "id": "MLU643521129",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: febrero de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: febrero de 2022"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788412270587%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU644340815",
+      "isbn": "9788491181217",
+      "up": "MLUU2443397176",
+      "peers": [
+        {
+          "id": "MLU644431547",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril de 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril de 2019"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788491181217%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU645213841",
+      "isbn": "9788497348508",
+      "up": "MLUU2000113222",
+      "peers": [
+        {
+          "id": "MLU645200957",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788497348508%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU645260889",
+      "isbn": "9788449332425",
+      "up": "MLUU2093702875",
+      "peers": [
+        {
+          "id": "MLU645299645",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788449332425%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU645584035",
+      "isbn": "9788430120666",
+      "up": "MLUU2372341545",
+      "peers": [
+        {
+          "id": "MLU1241563160",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_GENRE",
+          "value": "Religión",
+          "payload": {
+            "id": "BOOK_GENRE",
+            "value_id": "19912211"
+          },
+          "source_url": "https://www.sigueme.es/docs/recensiones/recens-nuevo-testamento-septuaginta-razon-y-fe-283-2021-229-231.pdf"
+        }
+      ]
+    },
+    {
+      "id": "MLU653167015",
+      "isbn": "9788412277647",
+      "up": "MLUU3404040432",
+      "peers": [
+        {
+          "id": "MLU653115373",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril 2021",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril 2021"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788412277647%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU653167151",
+      "isbn": "9788418798580",
+      "up": "MLUU3397721519",
+      "peers": [
+        {
+          "id": "MLU653154597",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: mayo de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: mayo de 2022"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788418798580%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU655257953",
+      "isbn": "9788449343254",
+      "up": "MLUU3776807132",
+      "peers": [
+        {
+          "id": "MLU655192793",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "2",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "2"
+          },
+          "source_url": "https://www.agapea.com/Nassim-Nicholas-Taleb/El-lecho-de-Procusto-9788449343254-i.htm"
+        }
+      ]
+    },
+    {
+      "id": "MLU655326015",
+      "isbn": "9788490320501",
+      "up": "MLUU3777247352",
+      "peers": [
+        {
+          "id": "MLU655144089",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788490320501%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU659737865",
+      "isbn": "9788408261599",
+      "up": "MLUU3784870871",
+      "peers": [
+        {
+          "id": "MLU659699009",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: julio de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: julio de 2022"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788408261599%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU661876119",
+      "isbn": "9788449341502",
+      "up": "MLUU3820241840",
+      "peers": [
+        {
+          "id": "MLU662044681",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1.ª edición, noviembre de 2023",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1.ª edición, noviembre de 2023"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788449341502%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU667435036",
+      "isbn": "9788472456815",
+      "up": "MLUU2440324133",
+      "peers": [
+        {
+          "id": "MLU667347498",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788472456815%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU672474006",
+      "isbn": "9788490327418",
+      "up": "MLUU2445500142",
+      "peers": [
+        {
+          "id": "MLU673178490",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en Debolsillo",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en Debolsillo"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788490327418%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU675677260",
+      "isbn": "9788413821474",
+      "up": "MLUU2445500164",
+      "peers": [
+        {
+          "id": "MLU675991128",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Duodécima edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Duodécima edición"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788413821474%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU683180812",
+      "isbn": "9788430623068",
+      "up": "MLUU2446601692",
+      "peers": [
+        {
+          "id": "MLU683193690",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Segunda edición, ampliada: octubre de 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Segunda edición, ampliada: octubre de 2019"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788430623068%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU684374146",
+      "isbn": "9781456277161",
+      "up": "MLUU2441882675",
+      "peers": [
+        {
+          "id": "MLU684400158",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "13ª edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "13ª edición"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229781456277161%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU684798048",
+      "isbn": "9788466371636",
+      "up": "MLUU2446597860",
+      "peers": [
+        {
+          "id": "MLU684871642",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición en Debolsillo: junio de 2023",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición en Debolsillo: junio de 2023"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788466371636%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU685273682",
+      "isbn": "9788415577133",
+      "up": "MLUU2446599670",
+      "peers": [
+        {
+          "id": "MLU685118228",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en esta colección",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en esta colección"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788415577133%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU686279946",
+      "isbn": "9788408237976",
+      "up": "MLUU2446601750",
+      "peers": [
+        {
+          "id": "MLU642316243",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: febrero de 2021",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: febrero de 2021"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788408237976%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU686306710",
+      "isbn": "9788491137252",
+      "up": "MLUU2446601666",
+      "peers": [
+        {
+          "id": "MLU686283636",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Cuarta edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Cuarta edición"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788491137252%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU689544472",
+      "isbn": "9788426423832",
+      "up": "MLUU2447265450",
+      "peers": [
+        {
+          "id": "MLU689648744",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición con este formato: julio de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición con este formato: julio de 2022"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788426423832%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU689585728",
+      "isbn": "9788421821664",
+      "up": "MLUU2442540953",
+      "peers": [
+        {
+          "id": "MLU701726546",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788421821664%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU692662297",
+      "isbn": "9788428575317",
+      "up": "MLUU3952600497",
+      "peers": [
+        {
+          "id": "MLU1392392698",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_GENRE",
+          "value": "Religión",
+          "payload": {
+            "id": "BOOK_GENRE",
+            "value_id": "19912211"
+          },
+          "source_url": "https://editorial.sanpablo.es/producto/el-santo-rosario-2/"
+        }
+      ]
+    },
+    {
+      "id": "MLU692687135",
+      "isbn": "9788428575263",
+      "up": "MLUU3964556554",
+      "peers": [
+        {
+          "id": "MLU1392016064",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_GENRE",
+          "value": "Religión",
+          "payload": {
+            "id": "BOOK_GENRE",
+            "value_id": "19912211"
+          },
+          "source_url": "https://www.casadellibro.com/libro-teologia-de-santa-catalina-de-siena-doctora-de-la-iglesia/9788428575263/18139047"
+        }
+      ]
+    },
+    {
+      "id": "MLU693502424",
+      "isbn": "9788411441179",
+      "up": "MLUU2442549797",
+      "peers": [
+        {
+          "id": "MLU644688359",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: 2022"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788411441179%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU693750863",
+      "isbn": "9788408297314",
+      "up": "MLUU3976977067",
+      "peers": [
+        {
+          "id": "MLU693763273",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Edición exclusiva y limitada",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Edición exclusiva y limitada"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788408297314%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU695808651",
+      "isbn": "9788418853371",
+      "up": "MLUU4136234723",
+      "peers": [
+        {
+          "id": "MLU1445212978",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_GENRE",
+          "value": "Religión",
+          "payload": {
+            "id": "BOOK_GENRE",
+            "value_id": "19912211"
+          },
+          "source_url": "https://www.portavoz.com/biblia-rvr-1960-letra-grande-tamano-manual-azul-crema-azul-marino"
+        }
+      ]
+    },
+    {
+      "id": "MLU695839505",
+      "isbn": "9788497776400",
+      "up": "MLUU4152913184",
+      "peers": [
+        {
+          "id": "MLU695816949",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788497776400%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU696965254",
+      "isbn": "9788419406842",
+      "up": "MLUU2322590036",
+      "peers": [
+        {
+          "id": "MLU750102664",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: junio de 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: junio de 2024"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788419406842%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU697091964",
+      "isbn": "9788423434046",
+      "up": "MLUU2323812370",
+      "peers": [
+        {
+          "id": "MLU696979022",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: enero de 2023",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: enero de 2023"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788423434046%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU700766852",
+      "isbn": "9788491010135",
+      "up": "MLUU2736917095",
+      "peers": [
+        {
+          "id": "MLU700727840",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788491010135%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU706377128",
+      "isbn": "9788499884622",
+      "up": "MLUU2920443859",
+      "peers": [
+        {
+          "id": "MLU706338232",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788499884622%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU717810332",
+      "isbn": "9788413820330",
+      "up": "MLUU3092457576",
+      "peers": [
+        {
+          "id": "MLU717551920",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Novena edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Novena edición"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788413820330%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU724806778",
+      "isbn": "9788449330131",
+      "up": "MLUU3135381333",
+      "peers": [
+        {
+          "id": "MLU724832790",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en esta presentación",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en esta presentación"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788449330131%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU725473134",
+      "isbn": "9788412757644",
+      "up": "MLUU3145239228",
+      "peers": [
+        {
+          "id": "MLU725343154",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: julio de 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: julio de 2024"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788412757644%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU732060242",
+      "isbn": "9788491133537",
+      "up": "MLUU3181075702",
+      "peers": [
+        {
+          "id": "MLU732307030",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1"
+          },
+          "source_url": "https://tienda.elsevier.es/enfermedades-infectocontagiosas-en-rumiantes-9788491133537.html"
+        }
+      ]
+    },
+    {
+      "id": "MLU735452246",
+      "isbn": "9788410209312",
+      "up": "MLUU3185934811",
+      "peers": [
+        {
+          "id": "MLU735335610",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: noviembre 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: noviembre 2024"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788410209312%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU735452364",
+      "isbn": "9791387556273",
+      "up": "MLUU3191539412",
+      "peers": [
+        {
+          "id": "MLU735348698",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril de 2025",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril de 2025"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229791387556273%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU738752938",
+      "isbn": "9788408270768",
+      "up": "MLUU3218900014",
+      "peers": [
+        {
+          "id": "MLU738623432",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: mayo de 2023",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: mayo de 2023"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788408270768%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU740065640",
+      "isbn": "9788412007527",
+      "up": "MLUU3216907373",
+      "peers": [
+        {
+          "id": "MLU739948662",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Nueva edición, revisada y actualizada 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Nueva edición, revisada y actualizada 2019"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788412007527%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU745304778",
+      "isbn": "9788416145522",
+      "up": "MLUU3237799134",
+      "peers": [
+        {
+          "id": "MLU744590338",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril de 2018"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788416145522%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU747125124",
+      "isbn": "9788417281717",
+      "up": "MLUU3241125974",
+      "peers": [
+        {
+          "id": "MLU747190066",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición en Nórdica Libros: septiembre de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición en Nórdica Libros: septiembre de 2018"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788417281717%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU753326658",
+      "isbn": "9788410346239",
+      "up": "MLUU3249041138",
+      "peers": [
+        {
+          "id": "MLU753443574",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: febrero de 2025",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: febrero de 2025"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788410346239%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU753431972",
+      "isbn": "9788483530214",
+      "up": "MLUU3249418022",
+      "peers": [
+        {
+          "id": "MLU753624868",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Nueva versión con amplia introducción, cronología y notas",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Nueva versión con amplia introducción, cronología y notas"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788483530214%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU755067580",
+      "isbn": "9788419975218",
+      "up": "MLUU3245533151",
+      "peers": [
+        {
+          "id": "MLU754951450",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: junio de 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: junio de 2024"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788419975218%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU785165832",
+      "isbn": "9788415887515",
+      "up": "MLUU3303436256",
+      "peers": [
+        {
+          "id": "MLU785178678",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: mayo de 2020",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: mayo de 2020"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788415887515%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU801803138",
+      "isbn": "9788467959932",
+      "up": "MLUU3328707405",
+      "peers": [
+        {
+          "id": "MLU801608158",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Edició Col·leccionista",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Edició Col·leccionista"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788467959932%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU845085466",
+      "isbn": "9788416240357",
+      "up": "MLUU3386414949",
+      "peers": [
+        {
+          "id": "MLU847046346",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en este formato",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en este formato"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788416240357%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU853095706",
+      "isbn": "9788408303480",
+      "up": "MLUU3410551143",
+      "peers": [
+        {
+          "id": "MLU852991592",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril de 2025",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril de 2025"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788408303480%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU884432522",
+      "isbn": "9788497155199",
+      "up": "MLUU3454082201",
+      "peers": [
+        {
+          "id": "MLU884536618",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Segunda edición revisada y ampliada",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Segunda edición revisada y ampliada"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788497155199%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU886407016",
+      "isbn": "9788410209428",
+      "up": "MLUU3464177644",
+      "peers": [
+        {
+          "id": "MLU884437420",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: noviembre 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: noviembre 2024"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788410209428%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU889045996",
+      "isbn": "9786075574288",
+      "up": "MLUU3475624706",
+      "peers": [
+        {
+          "id": "MLU887575980",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "3",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "3"
+          },
+          "source_url": "https://oceano.mx/ficha-libro.aspx?id=22564"
+        }
+      ]
+    },
+    {
+      "id": "MLU898382894",
+      "isbn": "9788484454618",
+      "up": "MLUU3496216166",
+      "peers": [
+        {
+          "id": "MLU898538950",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788484454618%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU925857380",
+      "isbn": "9789500397339",
+      "up": "MLUU3522230171",
+      "peers": [
+        {
+          "id": "MLU925792172",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229789500397339%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        }
+      ]
+    },
+    {
+      "id": "MLU602635497",
+      "isbn": "9788499215266",
+      "up": "MLUU2440175144",
+      "peers": [
+        {
+          "id": "MLU651588080",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2014",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2014"
+          },
+          "source_url": "https://octaedro.com/libro/el-adulto-y-el-juego-del-nino/"
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "48",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "48"
+          },
+          "source_url": "https://octaedro.com/libro/el-adulto-y-el-juego-del-nino/"
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788499215266%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          },
+          "source_url": "https://octaedro.com/libro/el-adulto-y-el-juego-del-nino/"
+        }
+      ]
+    },
+    {
+      "id": "MLU668885172",
+      "isbn": "9788427043916",
+      "up": "MLUU2445039832",
+      "peers": [
+        {
+          "id": "MLU669137148",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          },
+          "source_url": "https://www.planetadelibros.com/libro-el-juego-del-hater/255185"
+        }
+      ]
+    },
+    {
+      "id": "MLU611924924",
+      "isbn": "9788412186581",
+      "up": "MLUU2436034199",
+      "peers": [
+        {
+          "id": "MLU658027370",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "212",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "212"
+          },
+          "source_url": "https://www.editorialmanuscritos.com/epages/ea8141.sf/es_ES/?ObjectID=124899000"
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          },
+          "source_url": "https://www.editorialmanuscritos.com/epages/ea8141.sf/es_ES/?ObjectID=124899000"
+        }
+      ]
+    },
+    {
+      "id": "MLU611950890",
+      "isbn": "9788419093066",
+      "up": "MLUU2436032989",
+      "peers": [
+        {
+          "id": "MLU658079414",
+          "catalog_listing": true
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: marzo 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: marzo 2022"
+          },
+          "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788419093066%22&recordSchema=marcxml&startRecord=1&maximumRecords=10"
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          },
+          "source_url": "https://www.buscalibre.us/libro-las-raices-biblicas-ocultas-del-tarot/9788419093066/p/54084940"
+        }
+      ]
+    }
+  ],
+  "excluded_ids": [
+    "MLU644094660",
+    "MLU477509991",
+    "MLU646394785",
+    "MLU477116592",
+    "MLU647065606",
+    "MLU476024579",
+    "MLU634807907",
+    "MLU673572840",
+    "MLU646539239",
+    "MLU898500042",
+    "MLU1041432582",
+    "MLU661851377",
+    "MLU640319757",
+    "MLU681326730",
+    "MLU681843136",
+    "MLU736358082"
+  ],
+  "excluded_conditional_fields": [
+    {
+      "id": "MLU695664518",
+      "attribute": "BOOK_EDITION"
+    },
+    {
+      "id": "MLU611924924",
+      "attribute": "BOOK_EDITION"
+    }
+  ],
+  "schema_blocked": [
+    {
+      "id": "MLU642343669",
+      "title": "Libro Fundamentos De Psicologia Del Deporte Eva Leon Zarceño",
+      "isbn": "9788411062763",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicología del deporte",
+      "source_url": "https://www.medicapanamericana.com/es-ES/libros/fundamentos-de-psicologia-del-deporte",
+      "source_provider": "Editorial Médica Panamericana",
+      "source_record_id": null,
+      "source_title": "Fundamentos de Psicología del Deporte",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "La ficha editorial del ISBN físico 9788411062763 clasifica la obra en Psicología del Deporte. No se trasladan páginas o fechas contradictorias, que no son campos faltantes de este aviso.",
+      "selection_reason": "Comparación de fuentes por ISBN. La ficha editorial del ISBN físico 9788411062763 clasifica la obra en Psicología del Deporte. No se trasladan páginas o fechas contradictorias, que no son campos faltantes de este aviso.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU687576966"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU644976251",
+      "title": "Pánico! Psicoeducación Para Trastorno De Ansiedad Infantil",
+      "isbn": "9788436849585",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Libros ilustrados",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788436849585%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991056321819708606",
+      "source_title": "¡Pánico! : psicoeducación para el trastorno de ansiedad infantil",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Forma bibliográfica explícita MARC 655 del registro físico: Libros ilustrados; el mismo registro lo clasifica para público juvenil. No se infiere una novela.",
+      "selection_reason": "Comparación de fuentes por ISBN. Forma bibliográfica explícita MARC 655 del registro físico: Libros ilustrados; el mismo registro lo clasifica para público juvenil. No se infiere una novela.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU724853166"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU645351489",
+      "title": "La Serpiente Y Las Alas De La Noche Edición Deluxe Broadbent",
+      "isbn": "9788408292487",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Fantasía",
+      "source_url": "https://www.planetadelibros.com/libro-la-serpiente-y-las-alas-de-la-noche-edicion-deluxe/401645",
+      "source_provider": "Editorial Planeta",
+      "source_record_id": null,
+      "source_title": "La serpiente y las alas de la noche (Edición Deluxe)",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Temática Fantasía explícita en la ficha editorial de tapa dura, ISBN 9788408292487. Se comprobó el ISBN del formato físico, sin usar los ISBN de ebook o bolsillo.",
+      "selection_reason": "Comparación de fuentes por ISBN. Temática Fantasía explícita en la ficha editorial de tapa dura, ISBN 9788408292487. Se comprobó el ISBN del formato físico, sin usar los ISBN de ebook o bolsillo.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU728024802"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU647728443",
+      "title": "Pecados 2: Rey De La Soberbia - Ana Huang, Edición Especial",
+      "isbn": "9788408292661",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Novelas eróticas",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788408292661%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991061085598308606",
+      "source_title": "Rey de la soberbia",
+      "source_consulted_at": "2026-10-22T02:20:07.039462+00:00",
+      "source_fact": "Forma literaria explícita del campo MARC 655; requiere validación del esquema MLU antes de cargar.",
+      "selection_reason": "Registro físico por ISBN exacto con coincidencia de título. Forma literaria explícita del campo MARC 655; requiere validación del esquema MLU antes de cargar.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU767586610"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU661235846",
+      "title": "Sujetos A Nuestro Propio Y Múltiple Ser Anthony Elliott",
+      "isbn": "9789505185702",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicología y Psicoanálisis",
+      "source_url": "https://amorrortueditores.com/product/sujetos-a-nuestro-propio-y-multiple-ser/",
+      "source_provider": "Amorrortu Editores",
+      "source_record_id": null,
+      "source_title": "Sujetos a nuestro propio y múltiple ser",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Colección temática Psicología y Psicoanálisis explícita en la ficha editorial, ISBN 9789505185702. No se cambian páginas existentes.",
+      "selection_reason": "Comparación de fuentes por ISBN. Colección temática Psicología y Psicoanálisis explícita en la ficha editorial, ISBN 9789505185702. No se cambian páginas existentes.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU701212828"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU668116406",
+      "title": "La Imagen Inconsciente Del Cuerpo Dolto Françoise",
+      "isbn": "9788475093413",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicoanálisis",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788475093413%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991003339199708606",
+      "source_title": "La imagen inconsciente del cuerpo",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Materia temática literal MARC 650: Psicoanálisis. Se propone para el género temático de MLU, sujeto a validación del esquema; no se usa Subconsciente como forma literaria.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia temática literal MARC 650: Psicoanálisis. Se propone para el género temático de MLU, sujeto a validación del esquema; no se usa Subconsciente como forma literaria.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU893296510"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU679673230",
+      "title": "Una Visita Inesperada En Mi Familia: Cáncer Infantil ",
+      "isbn": "9788426726438",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Cuentos infantiles",
+      "source_url": "https://ar.marcombo.com/libro/libros-tecnicos-de-arte-y-cientificos/ciencias-libros-tecnicos-y-cientificos/psicologia-ciencias/una-visita-inesperada-en-mi-familia/",
+      "source_provider": "Marcombo / Sentir Editorial",
+      "source_record_id": null,
+      "source_title": "Una visita inesperada en mi familia",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "La editorial identifica el ISBN físico 9788426726438, describe expresamente un cuento para niños y la colección Senticuentos. Se propone la forma Cuentos infantiles, no un tratado de oncología.",
+      "selection_reason": "Comparación de fuentes por ISBN. La editorial identifica el ISBN físico 9788426726438, describe expresamente un cuento para niños y la colección Senticuentos. Se propone la forma Cuentos infantiles, no un tratado de oncología.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU639977209"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU680759630",
+      "title": "Cuentos Completos - Wilde, Oscar",
+      "isbn": "9788477026778",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Cuentos",
+      "source_url": "https://www.valdemar.com/libro/cuentos-completos-2/",
+      "source_provider": "Editorial Valdemar",
+      "source_record_id": null,
+      "source_title": "Cuentos completos",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "La ficha editorial del ISBN 9788477026778 identifica los cuentos completos de Oscar Wilde y describe sus relatos. Se propone Cuentos, conservando la edición física identificada.",
+      "selection_reason": "Comparación de fuentes por ISBN. La ficha editorial del ISBN 9788477026778 identifica los cuentos completos de Oscar Wilde y describe sus relatos. Se propone Cuentos, conservando la edición física identificada.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU680708118"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU681814716",
+      "title": "Libro Psicología Del Lenguaje Fonoaudiología Logopedia",
+      "isbn": "9788491104346",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicolingüística",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788491104346%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991028641169708606",
+      "source_title": "Psicología del lenguaje",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Materia literal MARC 650: Psicolingüística para el registro físico del ISBN 9788491104346. La ficha de Editorial Médica Panamericana confirma la obra Psicología del Lenguaje, segunda edición; no se propone modificar su autoría.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia literal MARC 650: Psicolingüística para el registro físico del ISBN 9788491104346. La ficha de Editorial Médica Panamericana confirma la obra Psicología del Lenguaje, segunda edición; no se propone modificar su autoría.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU681840616"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU682741308",
+      "title": "Encontrarse Con Dios - Edicion  Pablo D´ors - Franz Jalics",
+      "isbn": "9788430121571",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Espiritualidad",
+      "source_url": "https://www.sigueme.es/libros/encontrarse-con-dios.html",
+      "source_provider": "Ediciones Sígueme",
+      "source_record_id": null,
+      "source_title": "Encontrarse con Dios",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "ISBN físico 9788430121571 confirmado en ficha editorial. El boletín de novedades de mayo de 2023 de la misma editorial lo sitúa explícitamente en Espiritualidad, acompañamiento y meditación: https://www.sigueme.es/docs/descargas/novedades-sigueme-mayo-2023-w.pdf. Se elige Espiritualidad.",
+      "selection_reason": "Comparación de fuentes por ISBN. ISBN físico 9788430121571 confirmado en ficha editorial. El boletín de novedades de mayo de 2023 de la misma editorial lo sitúa explícitamente en Espiritualidad, acompañamiento y meditación: https://www.sigueme.es/docs/descargas/novedades-sigueme-mayo-2023-w.pdf. Se elige Espiritualidad.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU701369014"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU683062500",
+      "title": "Libro: El Erotismo - Alberoni, Francesco - Psicologia",
+      "isbn": "9788474323115",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Erotismo",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788474323115%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991008311279708606",
+      "source_title": "El erotismo",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Materia literal MARC 650: Erotismo. La propuesta es temática y requiere esquema MLU; no se etiqueta como novela erótica una obra ensayística ni se toman páginas de otras impresiones del mismo ISBN.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia literal MARC 650: Erotismo. La propuesta es temática y requiere esquema MLU; no se etiqueta como novela erótica una obra ensayística ni se toman páginas de otras impresiones del mismo ISBN.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU687743864"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU684269814",
+      "title": "Libro Mi Vida Querida - Cuentos De Alice Munro",
+      "isbn": "9788426423382",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Cuentos",
+      "source_url": "https://www.pasajeslibros.com/libros/mi-vida-querida/9788426423382/",
+      "source_provider": "Pasajes Libros, corroborado por Buscalibre",
+      "source_record_id": null,
+      "source_title": "Mi vida querida",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "La ficha del ISBN físico 9788426423382 describe una colección de cuentos. La clasificación Cuentos, historias cortas aparece también en https://www.buscalibre.com.mx/libro-mi-vida-querida-narrativa/9788426423382/p/53995695. Se documenta corroboración comercial al no haberse localizado ficha editorial exacta.",
+      "selection_reason": "Comparación de fuentes por ISBN. La ficha del ISBN físico 9788426423382 describe una colección de cuentos. La clasificación Cuentos, historias cortas aparece también en https://www.buscalibre.com.mx/libro-mi-vida-querida-narrativa/9788426423382/p/53995695. Se documenta corroboración comercial al no haberse localizado ficha editorial exacta.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU684426274"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU686467460",
+      "title": "Libro: Escuchar A Los Niños - Psicoterapia Infancia Negada",
+      "isbn": "9788412267419",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicoterapia",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788412267419%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991036518339708606",
+      "source_title": "Escuchar a los niños : psicoterapia de la infancia negada",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Materia MARC 650: Niños -- Psicoterapia -- Casos clínicos, concordante en los registros físicos por ISBN. Se propone el tema Psicoterapia; no se trasladan las páginas del registro digital ni se altera autoría.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia MARC 650: Niños -- Psicoterapia -- Casos clínicos, concordante en los registros físicos por ISBN. Se propone el tema Psicoterapia; no se trasladan las páginas del registro digital ni se altera autoría.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU701212848"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU687948596",
+      "title": "El Desarrollo Psicomotor Formación Docente Guía Didáctica",
+      "isbn": "9788466938129",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Educación",
+      "source_url": "https://tienda-ediciones-ucm.edisoft.es/el-desarrollo-psicomotor-en-la-formacion-docente-id-lib000412",
+      "source_provider": "Ediciones Complutense",
+      "source_record_id": null,
+      "source_title": "El desarrollo psicomotor en la formación docente",
+      "source_consulted_at": "2026-10-22T02:55:41.195434+00:00",
+      "source_fact": "Materia editorial explícita Educación, Didáctica y BIC JNMT en ficha física ISBN 9788466938129. Se elige Educación; no se cargan páginas o fechas, que ya existen en el aviso.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia editorial explícita Educación, Didáctica y BIC JNMT en ficha física ISBN 9788466938129. Se elige Educación; no se cargan páginas o fechas, que ya existen en el aviso.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU1199394652"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU692255789",
+      "title": "Nuestro Mundo Polivagal Vínculos Y Trauma - Porges",
+      "isbn": "9791399028751",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicoterapia",
+      "source_url": "https://oceano.com.ar/LibroDetalle/NUESTRO-MUNDO-POLIVAGAL-9791399028751",
+      "source_provider": "Océano Argentina, distribuidor editorial",
+      "source_record_id": null,
+      "source_title": "Nuestro mundo polivagal",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "La ficha del ISBN físico 9791399028751 indica colección Psicoterapia. Su área profesional es Psicología y pedagogía. Se elige la colección específica; no se usa el peso discrepante de otras fichas ni se modifica autoría.",
+      "selection_reason": "Comparación de fuentes por ISBN. La ficha del ISBN físico 9791399028751 indica colección Psicoterapia. Su área profesional es Psicología y pedagogía. Se elige la colección específica; no se usa el peso discrepante de otras fichas ni se modifica autoría.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU1392392680"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU694799854",
+      "title": "Una Mente Hayes Terapia De Aceptación Y Compromiso Act",
+      "isbn": "9788449341489",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Publicaciones de autoayuda",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788449341489%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991053984219708606",
+      "source_title": "Una mente liberada : la guía esencial de la terapia de aceptación y compromiso (ACT)",
+      "source_consulted_at": "2026-10-22T02:26:17.608649+00:00",
+      "source_fact": "Forma literaria explícita del campo MARC 655; requiere validación del esquema MLU antes de cargar.",
+      "selection_reason": "Registro físico por ISBN exacto con coincidencia de título. Forma literaria explícita del campo MARC 655; requiere validación del esquema MLU antes de cargar.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU651628395"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU695430042",
+      "title": "Dexter By Design Jeff Lindsay Showtime Series",
+      "isbn": "9780752884615",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Novela policial",
+      "source_url": "https://www.hachette.com.au/jeff-lindsay/dexter-by-design-the-gripping-thriller-thats-inspired-the-showtime-series-dexter-original-sin-and-dexter-resurrection-book-four",
+      "source_provider": "Hachette / Orion",
+      "source_record_id": null,
+      "source_title": "Dexter by Design",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "ISBN paperback 9780752884615 y categoría editorial Crime & Mystery / Fiction. Se normaliza esa clasificación al español como Novela policial; no se utilizan los ISBN de ebook o audiolibro.",
+      "selection_reason": "Comparación de fuentes por ISBN. ISBN paperback 9780752884615 y categoría editorial Crime & Mystery / Fiction. Se normaliza esa clasificación al español como Novela policial; no se utilizan los ISBN de ebook o audiolibro.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU701173848"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU701279056",
+      "title": "Elden Ring Libros Del Saber Volumen Iii Shadow The Erdtree",
+      "isbn": "9783869931326",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Guías de videojuegos",
+      "source_url": "https://www.future-press.com/shop/elden-ring-books-of-knowledge-volume-iii/",
+      "source_provider": "Future Press",
+      "source_record_id": null,
+      "source_title": "Elden Ring - Books of Knowledge, Volume III: Shadow of the Erdtree",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "La editorial lista ISBN 9783869931326 como edición española del volumen III y lo describe como guía de mapas, enemigos, misiones y equipo del videojuego. Se propone la clasificación temática Guías de videojuegos; no se confunde el volumen III con la tercera edición.",
+      "selection_reason": "Comparación de fuentes por ISBN. La editorial lista ISBN 9783869931326 como edición española del volumen III y lo describe como guía de mapas, enemigos, misiones y equipo del videojuego. Se propone la clasificación temática Guías de videojuegos; no se confunde el volumen III con la tercera edición.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU1431940402"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU720478504",
+      "title": "Orar Con El Cuerpo - Espiritualidad Y Movimiento Interior",
+      "isbn": "9788433032829",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Espiritualidad",
+      "source_url": "https://www.edesclee.com/caminos/2539-orar-con-el-cuerpo.html",
+      "source_provider": "Desclée De Brouwer",
+      "source_record_id": null,
+      "source_title": "Orar con el cuerpo",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "Ficha editorial por ISBN 9788433032829: oración corporal y tradiciones espirituales, colección Caminos. Se propone la clasificación temática Espiritualidad, con fuente editorial. La primera edición también aparece pero no es un campo faltante de este aviso.",
+      "selection_reason": "Comparación de fuentes por ISBN. Ficha editorial por ISBN 9788433032829: oración corporal y tradiciones espirituales, colección Caminos. Se propone la clasificación temática Espiritualidad, con fuente editorial. La primera edición también aparece pero no es un campo faltante de este aviso.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU748352064"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU729843108",
+      "title": "Conectados Laura Cuesta Cano Uso Del Móvil En Familia",
+      "isbn": "9788427242913",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Educación de niños",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788427242913%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991061045975808606",
+      "source_title": "Conectados : un contrato familiar para que el uso del móvil nos funcione a todos",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "Materia literal MARC 650: Educación de niños, junto a Tecnología y niños. Se propone el tema educativo específico del registro físico por ISBN 9788427242913, sujeto a esquema MLU.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia literal MARC 650: Educación de niños, junto a Tecnología y niños. Se propone el tema educativo específico del registro físico por ISBN 9788427242913, sujeto a esquema MLU.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU752377568"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU729955092",
+      "title": "La Estafa De La Feminidad Lala Pasquinelli - Mujeres",
+      "isbn": "9786073921206",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Feminismo y estudios de género",
+      "source_url": "https://www.libreriacarlosfuentes.mx/es/producto/estafa-de-la-feminidad-la",
+      "source_provider": "Librería Carlos Fuentes, corroborada por El Péndulo",
+      "source_record_id": null,
+      "source_title": "La estafa de la feminidad",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "ISBN físico 9786073921206 con GÉNERO explícito Feminismo y estudios de género; El Péndulo confirma materia Estudios de género en https://pendulo.com/libro/la-estafa-de-la-feminidad_458993. No se transfieren los ISBN de otras ediciones de Planeta.",
+      "selection_reason": "Comparación de fuentes por ISBN. ISBN físico 9786073921206 con GÉNERO explícito Feminismo y estudios de género; El Péndulo confirma materia Estudios de género en https://pendulo.com/libro/la-estafa-de-la-feminidad_458993. No se transfieren los ISBN de otras ediciones de Planeta.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU729785934"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU800425564",
+      "title": "Terapia Cognitiva Ansiedad, Aaron Beck, Manual Profesional",
+      "isbn": "9788433025371",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Terapia cognitiva",
+      "source_url": "https://catalogo.bne.es/view/sru/34BNE_INST?operation=searchRetrieve&version=1.2&query=alma.isbn%3D%229788433025371%22&recordSchema=marcxml&startRecord=1&maximumRecords=10",
+      "source_provider": "Biblioteca Nacional de España",
+      "source_record_id": "991036376579708606",
+      "source_title": "Terapia cognitiva para trastornos de ansiedad : ciencia y práctica",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "Materia MARC 650: Trastornos de ansiedad -- Terapia cognitiva, concordante en los dos registros físicos por ISBN. Se elige la clasificación temática literal Terapia cognitiva; no se altera autoría de Beck y Clark.",
+      "selection_reason": "Comparación de fuentes por ISBN. Materia MARC 650: Trastornos de ansiedad -- Terapia cognitiva, concordante en los dos registros físicos por ISBN. Se elige la clasificación temática literal Terapia cognitiva; no se altera autoría de Beck y Clark.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU801062480"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU804663332",
+      "title": "Hombre Solo Espera: Clásico Literatura Argentina Scalabrini",
+      "isbn": "9789874465344",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Ensayo",
+      "source_url": "https://www.iberoamericana-vervuert.es/Catalogos/Cat%C3%A1logo%20NLAL%20Lit.%20y%20Cult.%202-2021.pdf",
+      "source_provider": "Iberoamericana Vervuert, catálogo bibliográfico; identidad confirmada por editorial",
+      "source_record_id": null,
+      "source_title": "El hombre que está solo y espera",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "El catálogo especializado identifica ISBN 9789874465344 y la forma ensayo de interpretación nacional. Punto de Encuentro confirma la obra y el ISBN en https://puntoed.com.ar/libros/505/el-hombre-que-esta-solo-y-espera, con temática amplia Narrativa Histórica; Buscalibre la rotula Ficción. Se elige Ensayo por la descripción bibliográfica específica de la forma, documentando las etiquetas alternativas.",
+      "selection_reason": "Comparación de fuentes por ISBN. El catálogo especializado identifica ISBN 9789874465344 y la forma ensayo de interpretación nacional. Punto de Encuentro confirma la obra y el ISBN en https://puntoed.com.ar/libros/505/el-hombre-que-esta-solo-y-espera, con temática amplia Narrativa Histórica; Buscalibre la rotula Ficción. Se elige Ensayo por la descripción bibliográfica específica de la forma, documentando las etiquetas alternativas.",
+      "alternatives": [
+        {
+          "value": "Narrativa Histórica",
+          "source": "Punto de Encuentro, ficha del ISBN",
+          "reason": "Etiqueta temática amplia; se prioriza forma literaria ensayo descrita en catálogo especializado."
+        },
+        {
+          "value": "Ficción",
+          "source": "Buscalibre, ficha del ISBN",
+          "reason": "Etiqueta comercial genérica, menos específica que la descripción bibliográfica del ensayo."
+        }
+      ],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU804663334"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU887643768",
+      "title": "El Psicoanálisis En Debate: Reflexiones Contemporáneas",
+      "isbn": "9789501298444",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicoanálisis",
+      "source_url": "https://tienda.planetadelibros.com.ar/collections/perfit_best_selling_do_not_delete/products/el-psicoanalisis-en-debate",
+      "source_provider": "Planeta / Paidós, tienda editorial",
+      "source_record_id": null,
+      "source_title": "El psicoanálisis en debate",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "La ficha editorial del ISBN físico 9789501298444 describe el seminario teórico y clínico de Silvia Bleichmar en el campo del psicoanálisis. Se propone su tema explícito Psicoanálisis, sin modificar autoría, páginas ni fechas.",
+      "selection_reason": "Comparación de fuentes por ISBN. La ficha editorial del ISBN físico 9789501298444 describe el seminario teórico y clínico de Silvia Bleichmar en el campo del psicoanálisis. Se propone su tema explícito Psicoanálisis, sin modificar autoría, páginas ni fechas.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU887526932"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU912865436",
+      "title": "Historia Política Del Psicoanálisis Gabarron García",
+      "isbn": "9788410316164",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Psicoanálisis",
+      "source_url": "https://www.casadellibro.com/libro-historia-politica-del-psicoanalisis/9788410316164/17479934",
+      "source_provider": "Casa del Libro, corroborado por Marcial Pons",
+      "source_record_id": null,
+      "source_title": "Historia política del psicoanálisis",
+      "source_consulted_at": "2026-10-22T02:48:13.282084+00:00",
+      "source_fact": "ISBN físico 9788410316164: Psicoanálisis es la clasificación explícita de Casa del Libro, corroborada por materia Ciencias Sociales / Psicología / Psicología clínica / Psicoanálisis en https://www.marcialpons.es/libros/historia-politica-del-psicoanalisis/9788410316164/. No se trasladan las cifras de páginas contradictorias, porque no es un campo faltante del aviso.",
+      "selection_reason": "Comparación de fuentes por ISBN. ISBN físico 9788410316164: Psicoanálisis es la clasificación explícita de Casa del Libro, corroborada por materia Ciencias Sociales / Psicología / Psicología clínica / Psicoanálisis en https://www.marcialpons.es/libros/historia-politica-del-psicoanalisis/9788410316164/. No se trasladan las cifras de páginas contradictorias, porque no es un campo faltante del aviso.",
+      "alternatives": [],
+      "apply_status": "blocked_own_up_peers",
+      "related_own_items": [
+        "MLU1435128162"
+      ],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    },
+    {
+      "id": "MLU1333190898",
+      "title": "Tarot Para Manifestar Libro Oraculo Esoterismo",
+      "isbn": "9788419510730",
+      "key": "genre",
+      "attribute_id": "BOOK_GENRE",
+      "before": null,
+      "proposed": "Tarot",
+      "source_url": "https://www.grupogaia.es/libros/tarot-para-manifestar/9788419510730/",
+      "source_provider": "Grupo Gaia / Arkano Books",
+      "source_record_id": null,
+      "source_title": "Tarot para manifestar",
+      "source_consulted_at": "2026-10-22T02:41:35.587373+00:00",
+      "source_fact": "La ficha primaria identifica ISBN físico 9788419510730, rústica, 288 páginas y una guía escrita sobre tarot. Se propone Tarot como clasificación temática, sujeta al esquema MLU; el texto no es una baraja. No se alteran atributos existentes.",
+      "selection_reason": "Comparación de fuentes por ISBN. La ficha primaria identifica ISBN físico 9788419510730, rústica, 288 páginas y una guía escrita sobre tarot. Se propone Tarot como clasificación temática, sujeta al esquema MLU; el texto no es una baraja. No se alteran atributos existentes.",
+      "alternatives": [],
+      "apply_status": "pending_full_group_revalidation_and_authorization",
+      "related_own_items": [],
+      "authorized_to_apply": false,
+      "requires_mlu_schema_validation": true,
+      "requires_physical_edition_confirmation": false,
+      "blocked_reason": "Propuesta fuera de los valores enumerados del esquema actual. No sustituir por un género más amplio ni enviar un identificador aproximado sin revisión.",
+      "schema_value_type": "list"
+    }
+  ],
+  "review_hash": "2f99a1c4f0aaea1da64aae27ee8d8f52fc2fa7f414aba4b45acae6edc7f14cbb"
+}

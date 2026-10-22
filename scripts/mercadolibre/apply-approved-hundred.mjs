@@ -67,7 +67,7 @@ export function snapshotKey(value){
  const internalId=(id,name)=>name!=null&&String(name).trim()!==''&&String(id)!=='-1'?null:id;
  return canonical(value.map(i=>({...i,protected:{...i.protected,sale_terms:Array.isArray(i.protected.sale_terms)?[...i.protected.sale_terms].sort((a,b)=>a.id.localeCompare(b.id)):i.protected.sale_terms},...(i.other_attributes?{other_attributes:i.other_attributes.map(a=>({...a,value_id:internalId(a.value_id,a.value_name),value_name:a.id==='AUTHOR'?authorName(a.value_name):a.value_name,values:a.values?.map(v=>({...v,id:internalId(v.id,v.name),name:a.id==='AUTHOR'?authorName(v.name):v.name}))??null}))}:{})})));
 }
-export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,ms))}){
+export function createEngine({ml,receipts,reviewHash=HASH,wait=ms=>new Promise(r=>setTimeout(r,ms))}){
  async function inspect(p){
   const expected=[p.id,...p.peers.map(x=>x.id)].sort(),queries=[];
   for(const status of ['', 'active','paused','closed','under_review']){
@@ -105,7 +105,7 @@ export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,m
   const prior=await receipts.read(p.id);if(prior){if(prior.state!=='verified')fail('prior_uncertain_operation_requires_verification');await verify(p,prior);return {id:p.id,state:'prior_verified_no_retry',receipt_state:prior.state};}
   const b=await plan(p);if(!b.ready.length)return {id:p.id,state:'skipped',skipped:b.skipped};
   if(canonical(b.ready)!==canonical(preflight.ready)||snapshotKey(snapshot(b.items,b.descriptions,b.ready))!==snapshotKey(snapshot(preflight.items,preflight.descriptions,preflight.ready)))return {id:p.id,state:'blocked',reason:'changed_since_preflight'};
-  const backup={...b,snapshot:snapshot(b.items,b.descriptions,b.ready),request_body:{attributes:b.ready.map(c=>c.payload)},review_hash:HASH};
+  const backup={...b,snapshot:snapshot(b.items,b.descriptions,b.ready),request_body:{attributes:b.ready.map(c=>c.payload)},review_hash:reviewHash};
   if(!await receipts.claim(p.id,backup))return {id:p.id,state:'prior_attempt_no_retry'};
   try{
    // One target PUT only, with precisely the approved, still-missing attributes.
