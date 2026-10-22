@@ -5,7 +5,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { fetchAllItems } from '../mercadolibre/attribute-audit-fetch.mjs';
+import { fetchAllItems, auditPageShape } from '../mercadolibre/attribute-audit-fetch.mjs';
+import { main as auditMain } from '../mercadolibre/attribute-audit.mjs';
+import { main as fillMain } from '../mercadolibre/attribute-fill-plan.mjs';
+import { writeFile } from 'node:fs/promises';
 
 const page = extra => ({ read_only: true, seller_id: '440298103', items: [], failed_ids: [], total: 0, scroll_id: null, page_empty: true, ...extra });
 
@@ -71,6 +74,61 @@ test('CLI: una respuesta inválida falla sin guardar un falso informe vacío', a
     const valid = run(page());
     assert.equal(valid.status, 0, valid.stderr);
     assert.equal(JSON.parse(await readFile(path.join(dir, 'raw.json'), 'utf8')).total, 0);
+  } finally {
+    assert.equal(path.dirname(path.resolve(dir)), path.resolve(tmpdir()));
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('el diagnóstico conserva cobertura previa y omite cursores y cuerpos no validados', async () => {
+  const pages = [
+    page({ total: 2, page_empty: false, items: [{ id: 'MLU1' }], scroll_id: 'private-cursor' }),
+    page({ total: 2, scroll_id: '', secret: 'private-body' }),
+  ];
+  await assert.rejects(fetchAllItems({ secret: 'private-token', fetcher: async () => Response.json(pages.shift()), wait: async () => {} }), error => {
+    assert.equal(error.auditDiagnostics.items_read, 1);
+    assert.equal(error.auditDiagnostics.shape.scroll_id_kind, 'empty_string');
+    assert.equal(error.incompleteAudit.complete, false);
+    assert.deepEqual(error.incompleteAudit.items, [{ id: 'MLU1' }]);
+    assert.ok(!JSON.stringify(error).includes('private-'));
+    return true;
+  });
+  const shape = auditPageShape({ scroll_id: 'private-cursor', seller_id: 'private-seller', items: [{ token: 'private-token' }] });
+  assert.equal(shape.scroll_id_kind, 'nonempty_string');
+  assert.ok(!JSON.stringify(shape).includes('private-'));
+});
+
+test('acepta cursor final vacío sólo con cobertura positiva exacta ya comprobada', async () => {
+  const pages = [page({ total: 2, page_empty: false, items: [{ id: 'MLU1' }, { id: 'MLU2' }], scroll_id: 's1' }), page({ total: 2, scroll_id: '' })];
+  const result = await fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} });
+  assert.equal(result.items.length, 2);
+  assert.equal(result.total, 2);
+  assert.equal(result.pages, 2);
+  assert.equal(result.completion, 'empty_terminal_cursor_with_full_coverage');
+});
+
+test('cursor vacío no oculta cobertura insuficiente, total cambiado, errores o página contradictoria', async () => {
+  const first = page({ total: 2, page_empty: false, items: [{ id: 'MLU1' }], scroll_id: 's1' });
+  const cases = [
+    [first, page({ total: 2, scroll_id: '' })],
+    [first, page({ total: 1, scroll_id: '' })],
+    [first, page({ total: null, scroll_id: '' })],
+    [page({ ...first, failed_ids: ['MLU2'] }), page({ total: 1, scroll_id: '' })],
+    [first, page({ total: 1, items: [{ id: 'MLU2' }], scroll_id: '' })],
+    [page({ ...first, total: 1 }), page({ total: 1, scroll_id: ' ' })],
+  ];
+  for (const pages of cases) {
+    await assert.rejects(fetchAllItems({ secret: 'x', fetcher: async () => Response.json(pages.shift()), wait: async () => {} }), /respuesta de auditoría inválida/);
+  }
+});
+
+test('los consumidores rechazan evidencia incompleta sin producir informes ni propuestas', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'mlu-incomplete-input-'));
+  try {
+    const input = path.join(dir, 'incomplete.json'), out = path.join(dir, 'report');
+    await writeFile(input, JSON.stringify({ complete: false, items: [{ id: 'MLU1' }], total: 1, failed_ids: [] }));
+    for (const main of [auditMain, fillMain]) await assert.rejects(main(['--raw', input, '--out', out]), /Auditoría incompleta/);
+    await assert.rejects(access(out));
   } finally {
     assert.equal(path.dirname(path.resolve(dir)), path.resolve(tmpdir()));
     await rm(dir, { recursive: true, force: true });
