@@ -1,0 +1,4064 @@
+{
+  "review_hash": "9aed917da06d17a078f046b22b1702b4145abd7e446c65d1edbee50c0e997612",
+  "seller_id": "440298103",
+  "excluded_ids": [
+    "MLU644094660",
+    "MLU477509991",
+    "MLU646394785",
+    "MLU477116592",
+    "MLU647065606",
+    "MLU476024579",
+    "MLU634807907",
+    "MLU673572840",
+    "MLU646539239",
+    "MLU898500042",
+    "MLU1041432582",
+    "MLU661851377",
+    "MLU640319757",
+    "MLU681326730",
+    "MLU681843136",
+    "MLU736358082"
+  ],
+  "approved": [
+    {
+      "id": "MLU634014849",
+      "isbn": "9789872499457",
+      "up": "MLUU2442375672",
+      "peers": [
+        {
+          "id": "MLU637120759",
+          "title": "El Agua, La Vida Y La Sexualidad, De Michel Odent. Editorial Creavida En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789872499457"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2014",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2014"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "174",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "174"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU659181980",
+      "isbn": "9789879869659",
+      "up": "MLUU2439894931",
+      "peers": [
+        {
+          "id": "MLU675398956",
+          "title": "El Nacimiento Renacido, De Michel Odent. Editorial Creavida En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789879869659"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2005",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2005"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "159",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "159"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "2ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "2ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637714551",
+      "isbn": "9788427202122",
+      "up": "MLUU2438147985",
+      "peers": [
+        {
+          "id": "MLU674048498",
+          "title": "Juegos Del Hambre - Suzanne Collins",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788427202122"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2012",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2012"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "400",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "400"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1459114790",
+      "isbn": "9780375703768",
+      "up": "MLUU4321254191",
+      "peers": [
+        {
+          "id": "MLU1459114792",
+          "title": "Libro - House Of Leaves",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9780375703768"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2000",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2000"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "736",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "736"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "The Remastered Full-Color Edition",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "The Remastered Full-Color Edition"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU635397615",
+      "isbn": "9789875381469",
+      "up": "MLUU2442375582",
+      "peers": [
+        {
+          "id": "MLU666942206",
+          "title": "Construyendo Identidad Corporal, De Grasso Y Erramouspe. Editorial Novedades Educativas En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789875381469"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2005",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2005"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "149",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "149"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU648598333",
+      "isbn": "9780194527675",
+      "up": "MLUU3032771513",
+      "peers": [
+        {
+          "id": "MLU648663225",
+          "title": "Headway Elementary 5th Ed - Workbook - Without Key - Oxford",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9780194527675"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2018",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2018"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "88",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "88"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "5ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "5ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU656111806",
+      "isbn": "9789875916289",
+      "up": "MLUU2439894943",
+      "peers": [
+        {
+          "id": "MLU638422075",
+          "title": "Psicologia Del Desarrollo, De Yuni Jose A. Editorial Brujas En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789875916289"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "246",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "246"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "2ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "2ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU665070430",
+      "isbn": "9788417375461",
+      "up": "MLUU2445039926",
+      "peers": [
+        {
+          "id": "MLU884001584",
+          "title": "El Otro Nombre Ii: Septología Ii: 12, De Jon Fosse. Septología Ii, Vol. 1. Editorial De Conatus, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788417375461"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2020",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2020"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "126",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "126"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU670648632",
+      "isbn": "9780307949097",
+      "up": "MLUU2445040616",
+      "peers": [
+        {
+          "id": "MLU636989711",
+          "title": "Amar O Depender?, De Walter Riso. Editorial Vintage Espanol En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9780307949097"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2012",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2012"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "208",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "208"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU670981440",
+      "isbn": "9788494996580",
+      "up": "MLUU2440324187",
+      "peers": [
+        {
+          "id": "MLU636964801",
+          "title": "12.ss Panzerdivision Hitlerjugend Ii, De Afiero, Massimiliano. Editorial Almena En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788494996580"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición"
+          }
+        },
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "176",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "176"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU687468244",
+      "isbn": "9781409592631",
+      "up": "MLUU2446597770",
+      "peers": [
+        {
+          "id": "MLU687403326",
+          "title": "Libro De Arte. Descubre Los Colores",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9781409592631"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2015",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2015"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "48",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "48"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU991642352",
+      "isbn": "9788445011041",
+      "up": "MLUU3678190094",
+      "peers": [
+        {
+          "id": "MLU991642354",
+          "title": "Crónicas Dragonlance N°1 Retorno De Los Dragones - Hickman",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788445011041"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2022",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2022"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "528",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "528"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU478651565",
+      "isbn": "9788418055003",
+      "up": "MLUU2435007811",
+      "peers": [
+        {
+          "id": "MLU630943628",
+          "title": "Alba Padro - Destete - Final De Una Etapa",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788418055003"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2021",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2021"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "254",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "254"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: marzo de 2021",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: marzo de 2021"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU635371595",
+      "isbn": "9788490559390",
+      "up": "MLUU2828639493",
+      "peers": [
+        {
+          "id": "MLU666903326",
+          "title": "Jesus De Nazaret Edicion Completa - Ratzinger (benedicto ...",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788490559390"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2018",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2018"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Segunda edición: noviembre de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Segunda edición: noviembre de 2018"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU664395476",
+      "isbn": "9788494545245",
+      "up": "MLUU2445040612",
+      "peers": [
+        {
+          "id": "MLU665203500",
+          "title": "Quiron - Jesus Gabriel",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788494545245"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "422",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "422"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU674749248",
+      "isbn": "9788490736920",
+      "up": "MLUU2445498392",
+      "peers": [
+        {
+          "id": "MLU638337827",
+          "title": "Libro La Biblia Catolica Para Jovenes",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788490736920"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2021",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2021"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Edición revisada",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Edición revisada"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU601622189",
+      "isbn": "9788449339042",
+      "up": "MLUU2678395275",
+      "peers": [
+        {
+          "id": "MLU627577946",
+          "title": "Libro Los Bebes Y Sus Madres - Donald Winnicott",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788449339042"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2022",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2022"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "138",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "138"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª edición en esta presentación, febrero de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª edición en esta presentación, febrero de 2022"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU636380199",
+      "isbn": "9788449336171",
+      "up": "MLUU2442375646",
+      "peers": [
+        {
+          "id": "MLU636445625",
+          "title": "Destroza Este Diario. Azul - Keri Smith",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788449336171"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2021",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2021"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "224",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "224"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU630386657",
+      "isbn": "9788419248350",
+      "up": "MLUU2437141987",
+      "peers": [
+        {
+          "id": "MLU632116881",
+          "title": "Respira, Aqui Y Ahora, De Ruben Sosa. Editorial Vergara, Tapa Blanda En Español, 2023",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788419248350"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: noviembre de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: noviembre de 2022"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637337415",
+      "isbn": "9788413442198",
+      "up": "MLUU2438147243",
+      "peers": [
+        {
+          "id": "MLU673152806",
+          "title": "Libro 500.000 Seguidores En 5 Meses - Heras, Victor",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788413442198"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2023",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2023"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "307",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "307"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: marzo de 2023",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: marzo de 2023"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU649729012",
+      "isbn": "9786073210249",
+      "up": "MLUU2439257525",
+      "peers": [
+        {
+          "id": "MLU890137504",
+          "title": "Contabilidad De Costos Un Enfoque Gerencial 14/e, De Datar Srikant M., Horngren Charles T., Rajan Madhav V.. Editorial Pearson En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9786073210249"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2012",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2012"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "669",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "669"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU634014207",
+      "isbn": "9789879869673",
+      "up": "MLUU2437660953",
+      "peers": [
+        {
+          "id": "MLU669964920",
+          "title": "Las Mamás Y Los Bebés Primero, De Szejer Caumel Dauphin. Editorial Creavida En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789879869673"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2007",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2007"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "128",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "128"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU633989047",
+      "isbn": "9789872499440",
+      "up": "MLUU2437662143",
+      "peers": [
+        {
+          "id": "MLU672094994",
+          "title": "La Cientificación Del Amor: El Amor En La Ciencia, De Michel Odent. Editorial Creavida En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789872499440"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2014",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2014"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "132",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "132"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU636049223",
+      "isbn": "9781644738276",
+      "up": "MLUU2437661013",
+      "peers": [
+        {
+          "id": "MLU669972586",
+          "title": "Anatomía Del Espíritu, De La Curación Del Cuerpo Llega A Través Del Alma. Editorial B De Bolsillo En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9781644738276"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2023",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2023"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "368",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "368"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU652670422",
+      "isbn": "9788496375048",
+      "up": "MLUU2443969808",
+      "peers": [
+        {
+          "id": "MLU656199346",
+          "title": "Europa Nazi Y La Solucion Final - Bankier",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788496375048"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2005",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2005"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "669",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "669"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU669362372",
+      "isbn": "9788417188498",
+      "up": "MLUU2440324121",
+      "peers": [
+        {
+          "id": "MLU636989709",
+          "title": "La Tribu Que Sana - Quim Mesalles",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788417188498"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: septiembre de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: septiembre de 2018"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU681848668",
+      "isbn": "9788423426089",
+      "up": "MLUU3432890676",
+      "peers": [
+        {
+          "id": "MLU681822682",
+          "title": "Pequeño Libro Que Aun Vence Al Mercado,el - Greenblatt,j...",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788423426089"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU811904238",
+      "isbn": "9788495973818",
+      "up": "MLUU3351130406",
+      "peers": [
+        {
+          "id": "MLU811956238",
+          "title": "Libro - Tao De La Juventud Eterna, El - Angelo Druda",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788495973818"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1064751100",
+      "isbn": "9788466361040",
+      "up": "MLUU3783169709",
+      "peers": [
+        {
+          "id": "MLU1064699146",
+          "title": "Yo Antes De Ti, De Moyes, Jojo. Editorial Debolsillo, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788466361040"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2022",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2022"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "496",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "496"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1411362862",
+      "isbn": "9788408114536",
+      "up": "MLUU4021928521",
+      "peers": [
+        {
+          "id": "MLU1411336706",
+          "title": "Caballo De Troya 6. Hermãâ³n, De Benitez, J. J.. Editorial Booket, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788408114536"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2013",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2013"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "489",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "489"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en esta presentación en colección Booket",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en esta presentación en colección Booket"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU600647726",
+      "isbn": "9788478275205",
+      "up": "MLUU2435464931",
+      "peers": [
+        {
+          "id": "MLU658040410",
+          "title": "Mi Escuela Sabe A Naranja, De Hilda Weissmann. Editorial Editorial Graó, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788478275205"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2007",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2007"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU630054757",
+      "isbn": "9781316628744",
+      "up": "MLUU2437142037",
+      "peers": [
+        {
+          "id": "MLU632091141",
+          "title": "Kids Box 1 / Activity Book / Updated 2nd Edition - Cambridge",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9781316628744"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2017",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2017"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "100",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "100"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "2ª actualizada",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "2ª actualizada"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU631773987",
+      "isbn": "9788484761327",
+      "up": "MLUU2441855154",
+      "peers": [
+        {
+          "id": "MLU655318814",
+          "title": "Análisis De Vinos Mostos Y Alcohol Javier Madrid Cenzano Editorial Acribia En Español Tapa Blanda",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788484761327"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2003",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2003"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU633993797",
+      "isbn": "9788472456358",
+      "up": "MLUU2437660943",
+      "peers": [
+        {
+          "id": "MLU659594040",
+          "title": "Yoga Para La Mujer (ed.arg. )",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788472456358"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2007",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2007"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU634727615",
+      "isbn": "9788423430833",
+      "up": "MLUU3235102617",
+      "peers": [
+        {
+          "id": "MLU664652880",
+          "title": "Libro Tribu De Mentores",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788423430833"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2020",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2020"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU636619791",
+      "isbn": "9788419511799",
+      "up": "MLUU2437662157",
+      "peers": [
+        {
+          "id": "MLU638518809",
+          "title": "Sí Es Sí, No Es No, Y Siempre Lo Decido Yo, De Megan Madison. Editorial Penguin Kids En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788419511799"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2024",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2024"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "34",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "34"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: enero de 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: enero de 2024"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637337399",
+      "isbn": "9788478856473",
+      "up": "MLUU2438147227",
+      "peers": [
+        {
+          "id": "MLU673100220",
+          "title": "Psicofarmacología Stahl. Guía Prescriptor. Antipsicóticos Stephen M. Stahl",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788478856473"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2018",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2018"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "247",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "247"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637757273",
+      "isbn": "9788480636025",
+      "up": "MLUU2438150091",
+      "peers": [
+        {
+          "id": "MLU638055827",
+          "title": "El Diablo De La Botella, De Robert L. Stevenson. Editorial Editorial Octaedro En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788480636025"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2003",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2003"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "59",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "59"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU641370211",
+      "isbn": "9788497849586",
+      "up": "MLUU2438681367",
+      "peers": [
+        {
+          "id": "MLU641370213",
+          "title": "Las Neuronas Encantadas - Pierre Boulez",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788497849586"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU645375344",
+      "isbn": "9788425438905",
+      "up": "MLUU2443971092",
+      "peers": [
+        {
+          "id": "MLU656315126",
+          "title": "Etapas Del Desarrollo, De Rebeca Wild. Editorial Herder, Tapa Blanda En Español, 2016",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788425438905"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "2ª ed. amp.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "2ª ed. amp."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU647924260",
+      "isbn": "9788417568566",
+      "up": "MLUU2443971252",
+      "peers": [
+        {
+          "id": "MLU653809722",
+          "title": "Libro Tu Futuro Es Hoy",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788417568566"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "350",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "350"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición ampliada y actualizada: junio de 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición ampliada y actualizada: junio de 2019"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU649319648",
+      "isbn": "9788499887159",
+      "up": "MLUU2439257963",
+      "peers": [
+        {
+          "id": "MLU652102280",
+          "title": "Libro El Futuro Es Libre , Buen Karma , Mal Karma , Mas Alla",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788499887159"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: noviembre 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: noviembre 2019"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU649769306",
+      "isbn": "9789508086099",
+      "up": "MLUU2439257637",
+      "peers": [
+        {
+          "id": "MLU632177609",
+          "title": "Los Problemas De Aprendizaje No Existen, De Norberto Boggino. Editorial Homosapiensediciones, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789508086099"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2010",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2010"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "129",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "129"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU656477058",
+      "isbn": "9788492608089",
+      "up": "MLUU2439894897",
+      "peers": [
+        {
+          "id": "MLU669860318",
+          "title": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788492608089"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2012",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2012"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "32",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "32"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU666629214",
+      "isbn": "9788408119241",
+      "up": "MLUU2440324193",
+      "peers": [
+        {
+          "id": "MLU637927057",
+          "title": "Primavera Silenciosa - Rachel Carson",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788408119241"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2013",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2013"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en colección Booket",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en colección Booket"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU669174736",
+      "isbn": "9788496614895",
+      "up": "MLUU2445040542",
+      "peers": [
+        {
+          "id": "MLU669602082",
+          "title": "Libro Etica Promiscua [ Tercera Edicion ] Dossie Easton",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788496614895"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2013",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2013"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "2ª [i.e. 1ª] ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "2ª [i.e. 1ª] ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU670936420",
+      "isbn": "9788471127969",
+      "up": "MLUU2445040472",
+      "peers": [
+        {
+          "id": "MLU636964797",
+          "title": "Vínculos Afectivos: Formación, Desarrollo Y Pérdida, De John Bowlby. Editorial Morata, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788471127969"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2014",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2014"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "6ª ed. rev.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "6ª ed. rev."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU674736262",
+      "isbn": "9788494891755",
+      "up": "MLUU2440782861",
+      "peers": [
+        {
+          "id": "MLU638272817",
+          "title": "12.ss Panzer Division Hitlerjugend (i) - Afiero, Massimil...",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788494891755"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "167",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "167"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU677464676",
+      "isbn": "9788448854669",
+      "up": "MLUU2446075086",
+      "peers": [
+        {
+          "id": "MLU677464708",
+          "title": "Chase Va Al Dentista Aprendo Con La Patrulla Canina, De Nickelodeon. Editorial Beascoa, Tapa Dura En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788448854669"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2020",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2020"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "32",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "32"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: febrero de 2020",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: febrero de 2020"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU679739350",
+      "isbn": "9781641237772",
+      "up": "MLUU2446078692",
+      "peers": [
+        {
+          "id": "MLU679908308",
+          "title": "Limpia Tu Enredo Mental - Leaf, Caroline",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9781641237772"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "336",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "336"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU680674636",
+      "isbn": "9788411316194",
+      "up": "MLUU2446080592",
+      "peers": [
+        {
+          "id": "MLU680674638",
+          "title": "El Bestiario De Las Catedrales, De Mario Agudo Villanueva. Editorial Almuzara, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788411316194"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2023",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2023"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "312",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "312"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "3ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "3ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU680986572",
+      "isbn": "9788423361571",
+      "up": "MLUU2446076862",
+      "peers": [
+        {
+          "id": "MLU681090710",
+          "title": "Libro Las Abandonadoras - Begoã¿a Gomez Urzaiz",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788423361571"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2022",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2022"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "317",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "317"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: mayo de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: mayo de 2022"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU681528730",
+      "isbn": "9789505006717",
+      "up": "MLUU2446076756",
+      "peers": [
+        {
+          "id": "MLU681515776",
+          "title": "El Test De Bender Infantil, De Casullo, María Martina. Editorial Guadalupe En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789505006717"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2013",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2013"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "64",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "64"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "5ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "5ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU706560590",
+      "isbn": "9788492649884",
+      "up": "MLUU2932684736",
+      "peers": [
+        {
+          "id": "MLU706586600",
+          "title": "La Felicidad De Los Pececillos, Simon Leys, Acantilado",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788492649884"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2011",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2011"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "140",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "140"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU744421562",
+      "isbn": "9788417002534",
+      "up": "MLUU3238289356",
+      "peers": [
+        {
+          "id": "MLU744798174",
+          "title": "Hasta Que El Viento Te Devuelva La Sonrisa (novela Ya)",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788417002534"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "568",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "568"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed. en esta colección",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed. en esta colección"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1038849342",
+      "isbn": "9788448040512",
+      "up": "MLUU3745626430",
+      "peers": [
+        {
+          "id": "MLU1039368038",
+          "title": "Juegos De Viaje En Familia: Un Libro De Bolsillo Con Ejercicios, Puzles Y Trivial Para Jugar ¡en Cualquier Parte!, De Jack Henseleit., Vol. 1. Editorial Libros Cupula, Tapa Dura En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788448040512"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2024",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2024"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "143",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "143"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: junio de 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: junio de 2024"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1038910820",
+      "isbn": "9788494216534",
+      "up": "MLUU3739215646",
+      "peers": [
+        {
+          "id": "MLU1039130912",
+          "title": "La Oca De La Autoestima (libro + Juego), De Mercedes Zarzuela Borrego Y Ana Espada Losada. Editorial Docta En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788494216534"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª edición en español, 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª edición en español, 2019"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1040161890",
+      "isbn": "9788446025795",
+      "up": "MLUU3741702475",
+      "peers": [
+        {
+          "id": "MLU1040135904",
+          "title": "Atlas De La Sexualidad, De Haeberle, Erwin. Editorial Akal En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788446025795"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2009",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2009"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1041511316",
+      "isbn": "9788419158758",
+      "up": "MLUU3753423074",
+      "peers": [
+        {
+          "id": "MLU1041860778",
+          "title": "Animal, De Blanco Pantoja, Daniel., Vol. 1. Editorial Errata Naturae Editores S.l, Tapa Dura En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788419158758"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2024",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2024"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "36",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "36"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: junio de 2024",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: junio de 2024"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1414043746",
+      "isbn": "9788448840464",
+      "up": "MLUU4029099923",
+      "peers": [
+        {
+          "id": "MLU1416770034",
+          "title": "Las Vacaciones (la Biblioteca De Dora La Exploradora), De Nickelodeon. Editorial Beascoa, Tapa Dura En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788448840464"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2014",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2014"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "31",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "31"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed., [ed. bilingüe]",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed., [ed. bilingüe]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU1452575514",
+      "isbn": "9788429308860",
+      "up": "MLUU4264910208",
+      "peers": [
+        {
+          "id": "MLU1452588484",
+          "title": "Al Andar Se Hace Camino, De González Vallés, Carlos. Editorial Sal Terrae En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788429308860"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "1992",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "1992"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "243",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "243"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "[3ª ed.]",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "[3ª ed.]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU476750663",
+      "isbn": "9788469848081",
+      "up": "MLUU2439718168",
+      "peers": [
+        {
+          "id": "MLU652279538",
+          "title": "Libro Ninfa Rota, De Alfredo Gómez Cerda. Editorial Anaya",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788469848081"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "189",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "189"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª edición: abril 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª edición: abril 2019"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU477247364",
+      "isbn": "9788418079146",
+      "up": "MLUU2435008759",
+      "peers": [
+        {
+          "id": "MLU652096640",
+          "title": "Libro El Desván De Las Letras, De Emma S. Varela - Elisenda Ripollès Vilaseca. Editorial Eolas Ediciones",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788418079146"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "28",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "28"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª edición: diciembre 2019",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª edición: diciembre 2019"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU478189961",
+      "isbn": "9788480638739",
+      "up": "MLUU2435007835",
+      "peers": [
+        {
+          "id": "MLU632819421",
+          "title": "Mi Hijo Padece Trastornos Del Desarrollo, De Avigal Amar-tuillier. Editorial Octaedro, S.l. En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788480638739"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2007",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2007"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "149",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "149"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU478221896",
+      "isbn": "9789876917285",
+      "up": "MLUU2435007833",
+      "peers": [
+        {
+          "id": "MLU652772734",
+          "title": "Medicalizacion De La Infancia, La - Cecilia Rustoyburu",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789876917285"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "304",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "304"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU479209670",
+      "isbn": "9788408137740",
+      "up": "MLUU2439718198",
+      "peers": [
+        {
+          "id": "MLU652002752",
+          "title": "Libro Batallas De Colores",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788408137740"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2015",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2015"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "64",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "64"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU479215404",
+      "isbn": "9788491875895",
+      "up": "MLUU2439718176",
+      "peers": [
+        {
+          "id": "MLU651761336",
+          "title": "De Crisálida A Mariposa. Adolescencia: Una Mirada Sin Miedo, De Yolanda González Vara. Editorial Rba En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788491875895"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2021",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2021"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "268",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "268"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: febrero de 2021",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: febrero de 2021"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU602415276",
+      "isbn": "9788499210605",
+      "up": "MLUU2435461911",
+      "peers": [
+        {
+          "id": "MLU652083500",
+          "title": "Loczy, Una Insolita Atencion Personal, De David, Myriam. Editorial Octaedro, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788499210605"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2010",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2010"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "180",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "180"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU602625277",
+      "isbn": "9788441540392",
+      "up": "MLUU2435464901",
+      "peers": [
+        {
+          "id": "MLU652147866",
+          "title": "Cariño Y Teta - Jove Montanyola, Rosa M",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788441540392"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "239",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "239"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Edición actualizada",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Edición actualizada"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU603319033",
+      "isbn": "9788494913693",
+      "up": "MLUU2435461879",
+      "peers": [
+        {
+          "id": "MLU661850354",
+          "title": "Luna, De Oliver Alison. Editorial Coco Books, Tapa Blanda, Edición 1 En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788494913693"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2019",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2019"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "40",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "40"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU630468195",
+      "isbn": "9788488909213",
+      "up": "MLUU2686001510",
+      "peers": [
+        {
+          "id": "MLU653401640",
+          "title": "El Déficit De Atención Sin Fármacos - Gladys Veracoechea...",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788488909213"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2008",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2008"
+          }
+        },
+        {
+          "attribute": "LANGUAGE",
+          "value": "Español",
+          "payload": {
+            "id": "LANGUAGE",
+            "value_id": "313886"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU630947293",
+      "isbn": "9788499807577",
+      "up": "MLUU2437139295",
+      "peers": [
+        {
+          "id": "MLU728087302",
+          "title": "Movimiento Y Lenguajes: De La Experiencia Sensoperceptiva A La Conciencia Y El Pensamiento, De Cañabate I Ortiz, Dolors., Vol. 1. Editorial Editorial Grao, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788499807577"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2017",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2017"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "150",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "150"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU630960193",
+      "isbn": "9788497845274",
+      "up": "MLUU2441853908",
+      "peers": [
+        {
+          "id": "MLU883234582",
+          "title": "Me Acuerdo: El Exilio De La Infancia, De Cyrulnik, Boris. Serie Resiliencia Editorial Gedisa En Español, 2010",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788497845274"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2010",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2010"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU631346911",
+      "isbn": "9788498455458",
+      "up": "MLUU2437139463",
+      "peers": [
+        {
+          "id": "MLU652152294",
+          "title": "¡papá Es Mío! Agotado - Ilan Brenman",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788498455458"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2013",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2013"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "32",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "32"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU631347961",
+      "isbn": "9789508089663",
+      "up": "MLUU2437139163",
+      "peers": [
+        {
+          "id": "MLU631754919",
+          "title": "Niños Y Maestros Jugando Gabriela Valiño",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789508089663"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2017",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2017"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "128",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "128"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU631388921",
+      "isbn": "9788412227321",
+      "up": "MLUU2441854880",
+      "peers": [
+        {
+          "id": "MLU654829022",
+          "title": "Libro Mama, Mi Hogar, De Laura Richichi. Editorial La Cuentería Respetuosa, Tapa Dura",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788412227321"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2021",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2021"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "28",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "28"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril 2021",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril 2021"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU631761111",
+      "isbn": "9788413144467",
+      "up": "MLUU2437139533",
+      "peers": [
+        {
+          "id": "MLU657988530",
+          "title": "El Joyero De La Reina, De Herrero, Nieves. Editorial B De Bolsillo, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788413144467"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2022",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2022"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición en B de Bolsillo: julio de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición en B de Bolsillo: julio de 2022"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU632270157",
+      "isbn": "9788466334631",
+      "up": "MLUU2437142095",
+      "peers": [
+        {
+          "id": "MLU655917548",
+          "title": "Mas Vegetales Menos Animales - Basulto,julio",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788466334631"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ªed., 2ª reimp.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ªed., 2ª reimp."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU632523741",
+      "isbn": "9789878654294",
+      "up": "MLUU2441854878",
+      "peers": [
+        {
+          "id": "MLU654281768",
+          "title": "Libro Astrohología. Volumen Dos, De Vanesa Maiorana. Editorial Astrohología Ediciones",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9789878654294"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2020",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2020"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "544",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "544"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU632580339",
+      "isbn": "9788423426799",
+      "up": "MLUU2437140137",
+      "peers": [
+        {
+          "id": "MLU654398556",
+          "title": "Contra La Teoria Monetaria Moderna - Rallo,juan Ramon",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788423426799"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2017",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2017"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "205",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "205"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU633015355",
+      "isbn": "9788426404367",
+      "up": "MLUU2437140237",
+      "peers": [
+        {
+          "id": "MLU633220319",
+          "title": "La Luz De La Noche, De Moore, Graham. Editorial Lumen, Tapa Blanda En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788426404367"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2017",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2017"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "503",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "503"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU634309317",
+      "isbn": "9788412100044",
+      "up": "MLUU2442375610",
+      "peers": [
+        {
+          "id": "MLU663124886",
+          "title": "Libro El Autismo Explicado A Los No Autistas",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788412100044"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2020",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2020"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "176",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "176"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: octubre de 2020",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: octubre de 2020"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU634335523",
+      "isbn": "9788408160441",
+      "up": "MLUU2442373950",
+      "peers": [
+        {
+          "id": "MLU666877244",
+          "title": "Hambriento, De Nach. Editorial Planeta, Tapa Dura En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788408160441"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU635269597",
+      "isbn": "9788417121044",
+      "up": "MLUU2442375632",
+      "peers": [
+        {
+          "id": "MLU666642858",
+          "title": "Un Paso Adelante En Defensa De Los Animales - Horta,oscar",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788417121044"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2017",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2017"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "237",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "237"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU635469649",
+      "isbn": "9788417418595",
+      "up": "MLUU2437662131",
+      "peers": [
+        {
+          "id": "MLU668206094",
+          "title": "Libro El Enigma Garabandal, De Renedo Carrandi, Francisco. Editorial Almuzara, Tapa Blanda",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788417418595"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2018",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2018"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "333",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "333"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: octubre de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: octubre de 2018"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU635534297",
+      "isbn": "9788416542505",
+      "up": "MLUU2437661991",
+      "peers": [
+        {
+          "id": "MLU668231852",
+          "title": "Los Tres Cristos De Ypsilanti",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788416542505"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2016",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2016"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "400",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "400"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Blanda",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132700"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU635768579",
+      "isbn": "9788496581838",
+      "up": "MLUU2442375608",
+      "peers": [
+        {
+          "id": "MLU671828796",
+          "title": "La Mariposa De Obsidiana, De Juan Bolea. Editorial Zeta Bolsillo En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788496581838"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2007",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2007"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "361",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "361"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU636898020",
+      "isbn": "9788498356915",
+      "up": "MLUU2442863268",
+      "peers": [
+        {
+          "id": "MLU632495489",
+          "title": "Neuropsicología A Través De Casos Clínicos, De Marisa Arnedo Montoro, Judit Bembibre Serrano, Mónica Triviño Mosquera. Editorial Panamericana En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788498356915"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2012",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2012"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "408",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "408"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637195400",
+      "isbn": "9788416544820",
+      "up": "MLUU2442863262",
+      "peers": [
+        {
+          "id": "MLU957009840",
+          "title": "Libro ** Montessori En Casa . Yo Paso A La Accion, De Nathalie Petit, Vol. 1. Editorial Errata Naturae, Tapa Blanda (2023)",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788416544820"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: septiembre de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: septiembre de 2018"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637287303",
+      "isbn": "9788467552423",
+      "up": "MLUU2438148095",
+      "peers": [
+        {
+          "id": "MLU673152800",
+          "title": "Diccicionario Avanzado Primaria 2012, De Es, Vários. Editorial Sm Ediciones En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788467552423"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2012",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2012"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "1423",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "1423"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "9ª ed. (aum. y act. según la normativa académica actual)",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "9ª ed. (aum. y act. según la normativa académica actual)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637337409",
+      "isbn": "9788419213334",
+      "up": "MLUU2438148033",
+      "peers": [
+        {
+          "id": "MLU673113636",
+          "title": "Libro En Continua Evolucion, De Ginnobili, Santiago. Editorial Kalandraka, Tapa Dura",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788419213334"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2023",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2023"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "32",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "32"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: febrero, 2023",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: febrero, 2023"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637625912",
+      "isbn": "9788426135094",
+      "up": "MLUU2442863274",
+      "peers": [
+        {
+          "id": "MLU632845571",
+          "title": "Vamos A Tener Un Bebe, De Tielmann - Lieffering. Editorial Juventud, S.a. En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788426135094"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2006",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2006"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "26",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "26"
+          }
+        },
+        {
+          "attribute": "BOOK_COVER",
+          "value": "Dura",
+          "payload": {
+            "id": "BOOK_COVER",
+            "value_id": "2132701"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU637887222",
+      "isbn": "9788424647636",
+      "up": "MLUU2442863352",
+      "peers": [
+        {
+          "id": "MLU655266616",
+          "title": "Libro El Pequeño Dragón Coco Y Los Vikingos, De Ingo Siegner. Editorial La Galera",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788424647636"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2013",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2013"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "70",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "70"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU638063113",
+      "isbn": "9788420652627",
+      "up": "MLUU2438148045",
+      "peers": [
+        {
+          "id": "MLU674511778",
+          "title": "Libro Discapacidad Intelectual",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788420652627"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2011",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2011"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "347",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "347"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "11ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "11ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU638291393",
+      "isbn": "9788486587925",
+      "up": "MLUU2442863302",
+      "peers": [
+        {
+          "id": "MLU638462779",
+          "title": "Juana De Ibarbourou Para Niños, De Juana De Uibarbourou. Editorial Ediciones De La Torre En Español",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788486587925"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "1991",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "1991"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "125",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "125"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "[1ª ed.]",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "[1ª ed.]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU638595831",
+      "isbn": "9788449334245",
+      "up": "MLUU2438147271",
+      "peers": [
+        {
+          "id": "MLU675912220",
+          "title": "Jugamos - Marin Santiago, Imma",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788449334245"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2018",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2018"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "281",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "281"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1a edición, marzo de 2018",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1a edición, marzo de 2018"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU639598327",
+      "isbn": "9788408246329",
+      "up": "MLUU2686521652",
+      "peers": [
+        {
+          "id": "MLU639791365",
+          "title": "Master - Roger Federer - Christopher Clarey",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788408246329"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2021",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2021"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "446",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "446"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª edición en español: septiembre del 2021",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª edición en español: septiembre del 2021"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU640241297",
+      "isbn": "9788448029463",
+      "up": "MLUU2438150015",
+      "peers": [
+        {
+          "id": "MLU640267115",
+          "title": "Libro La Ciencia De La Microbiota",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788448029463"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2022",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2022"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "390",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "390"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "Primera edición: abril de 2022",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "Primera edición: abril de 2022"
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU640279747",
+      "isbn": "9788466330893",
+      "up": "MLUU2438148065",
+      "peers": [
+        {
+          "id": "MLU640266671",
+          "title": "Ratesa,la - Grass,gunter",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788466330893"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2015",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2015"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "608",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "608"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    },
+    {
+      "id": "MLU641514762",
+      "isbn": "9788478277674",
+      "up": "MLUU2443397322",
+      "peers": [
+        {
+          "id": "MLU658053426",
+          "title": "Libro Didãâ¡ctica De La Mãâºsica En La Educaciãâ³n Secundaria, De Zaragozá Muñoz, Josep Lluís. Editorial Graó",
+          "status": "active",
+          "catalog_listing": true,
+          "isbn": [
+            "9788478277674"
+          ]
+        }
+      ],
+      "changes": [
+        {
+          "attribute": "PUBLICATION_YEAR",
+          "value": "2009",
+          "payload": {
+            "id": "PUBLICATION_YEAR",
+            "value_name": "2009"
+          }
+        },
+        {
+          "attribute": "PAGES_NUMBER",
+          "value": "350",
+          "payload": {
+            "id": "PAGES_NUMBER",
+            "value_name": "350"
+          }
+        },
+        {
+          "attribute": "BOOK_EDITION",
+          "value": "1ª ed.",
+          "payload": {
+            "id": "BOOK_EDITION",
+            "value_name": "1ª ed."
+          }
+        }
+      ]
+    }
+  ]
+}
