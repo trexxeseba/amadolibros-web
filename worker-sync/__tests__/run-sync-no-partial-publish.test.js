@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   configuredCoverMirrorBatchSize,
   runCoverMirror,
+  runCoverMirrorBurst,
   runSync,
 } from '../index.js';
 import { buildCatalog } from '../meli-catalog.js';
@@ -26,6 +27,71 @@ function fakeEnv({ putThrows = false } = {}) {
 }
 
 const noHealthcheck = async () => {};
+
+test('encadena tres tandas secuenciales y preserva opciones y métricas', async () => {
+  const {env, puts} = fakeEnv();
+  const options = {limit: 100, maintenanceMinute: 25};
+  let running = false;
+  let calls = 0;
+  const result = await runCoverMirrorBurst(env, options, {
+    maxBatches: 99,
+    runBatch: async (_env, seenOptions) => {
+      assert.equal(running, false);
+      assert.equal(seenOptions.limit, options.limit);
+      assert.equal(seenOptions.maintenanceMinute, options.maintenanceMinute);
+      assert.ok(Number.isFinite(seenOptions.deadlineMs));
+      running = true;
+      await Promise.resolve();
+      running = false;
+      calls++;
+      return {status: 'completed', attempted: 100, pending: 900, source_reuse: {origin_requests: 150}};
+    },
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.attempted, 300);
+  assert.equal(result.origin_requests, 450);
+  assert.equal(result.stop_reason, 'batch-limit');
+  assert.equal(JSON.parse(puts.find(row => row.key === 'cover-mirror:last_burst').value).batches, 3);
+});
+
+for (const [first, stop] of [
+  [{status:'completed', attempted:100, pending:0}, 'scope-complete'],
+  [{status:'completed', attempted:100, pending:900, failed:1}, 'source-errors'],
+  [{status:'completed', attempted:100, pending:900, deferred:1}, 'fetch-budget'],
+  [{status:'completed', attempted:0, pending:1, paused_progress:{remaining:128}}, 'no-work'],
+  [{status:'skipped', reason:'hourly-maintenance'}, 'skipped'],
+  [{status:'error', error:'Manifest unavailable'}, 'error'],
+  [{status:'completed', attempted:0, pending:1}, 'no-work'],
+]) {
+  test(`la ráfaga se detiene ante ${stop} sin disparar otra tanda`, async () => {
+    let calls = 0;
+    const result = await runCoverMirrorBurst(fakeEnv().env, {}, {runBatch: async () => {calls++; return first;}});
+    assert.equal(calls, 1);
+    assert.equal(result.stop_reason, stop);
+  });
+}
+
+test('el presupuesto impide empezar otra tanda, sin interrumpir el checkpoint actual', async () => {
+  let elapsed = 0;
+  let checkpoint = false;
+  const result = await runCoverMirrorBurst(fakeEnv().env, {}, {
+    clock: () => elapsed,
+    runBatch: async () => {elapsed = 125_000; checkpoint = true; return {status:'completed', attempted:100, pending:500};},
+  });
+  assert.equal(checkpoint, true);
+  assert.equal(result.batches, 1);
+  assert.equal(result.stop_reason, 'start-budget');
+});
+
+test('visita bloques pausados ya completos sin esperar un cron por cada bloque', async () => {
+  let remaining = 3;
+  const result = await runCoverMirrorBurst(fakeEnv().env, {}, {runBatch: async () => {
+    remaining--;
+    return {status:'completed', attempted:0, pending:remaining ? 1 : 0, paused_advanced:true, paused_progress:{remaining}};
+  }});
+  assert.equal(result.batches, 3);
+  assert.equal(result.stop_reason, 'scope-complete');
+});
 
 test('si falla la descarga, publishToR2 se llama cero veces y registra error', async () => {
   const { env, puts } = fakeEnv();
