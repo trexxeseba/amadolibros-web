@@ -203,6 +203,7 @@ export function createTransferOptionsHandler({
         db,
         env,
         order,
+        accounts: TRANSFER_ACCOUNTS,
         payment: {
           method: payment.method,
           transfer_discount_uyu: payment.transfer_discount_uyu,

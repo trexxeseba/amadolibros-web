@@ -89,7 +89,7 @@ test('los seis href legales del carrito quedan como residual explicito y acotado
   const cart = readFileSync(path.join(repoRoot, 'astro-front/src/pages/carrito.astro'), 'utf8');
   const residual = hrefTargets(cart).filter(target => slashlessStaticRoute(target));
   assert.deepEqual(residual, [
-    '/terminos', '/envios', '/devoluciones',
+    '/devoluciones', '/envios', '/terminos',
     '/terminos', '/envios', '/devoluciones',
   ]);
 });

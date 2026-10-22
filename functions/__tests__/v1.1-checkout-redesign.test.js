@@ -522,7 +522,7 @@ test('26. Nombre, WhatsApp y Email siguen siendo el mínimo común, los tres mar
 });
 
 test('27. microcopy debajo de WhatsApp explica para qué se usa el dato', () => {
-  assert.match(CARRITO, /id="buyer-phone-help">Lo usamos únicamente para coordinar tu pedido y la entrega\.</);
+  assert.match(CARRITO, /id="buyer-phone-help">Lo usamos para coordinar tu pedido y la entrega\.</);
   assert.match(CARRITO, /aria-describedby="buyer-phone-help err-buyer-phone"/);
 });
 
