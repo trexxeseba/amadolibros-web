@@ -59,7 +59,8 @@ export function snapshot(items,descriptions,changes){
  const allowed=new Set(changes.map(c=>c.attribute));return items.map((i,n)=>({id:i.id,protected:Object.fromEntries(protectedFields.map(k=>[k,i[k]??null])),description:descriptions[n],other_attributes:i.attributes.filter(a=>!allowed.has(a.id)).map(a=>({id:a.id,value_id:a.value_id??null,value_name:a.value_name??null,value_struct:a.value_struct??null,values:a.values??null})).sort((a,b)=>a.id.localeCompare(b.id))}));
 }
 export function snapshotKey(value){
- return canonical(value.map(i=>({...i,protected:{...i.protected,sale_terms:Array.isArray(i.protected.sale_terms)?[...i.protected.sale_terms].sort((a,b)=>a.id.localeCompare(b.id)):i.protected.sale_terms}})));
+ const authorName=v=>v==null?v:norm(v).replace(/\./g,'').replace(/\s+/g,' ');
+ return canonical(value.map(i=>({...i,protected:{...i.protected,sale_terms:Array.isArray(i.protected.sale_terms)?[...i.protected.sale_terms].sort((a,b)=>a.id.localeCompare(b.id)):i.protected.sale_terms},...(i.other_attributes?{other_attributes:i.other_attributes.map(a=>a.id==='AUTHOR'?{...a,value_id:null,value_name:authorName(a.value_name),values:a.values?.map(v=>({...v,id:null,name:authorName(v.name)}))??null}:a)}:{})})));
 }
 export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,ms))}){
  async function inspect(p){
@@ -146,7 +147,7 @@ async function main(){
   if(mode==='apply'){
    const pre=JSON.parse(await fs.readFile(dir+'/preflight.json','utf8'));if(pre.review_hash!==HASH||!pre.complete||pre.items.length!==100||Date.now()-Date.parse(pre.completed_at)>1200000)fail('invalid_or_stale_preflight');
    for(const p of manifest.approved){const b=pre.items.find(i=>i.id===p.id);if(b.state!=='eligible'){summary.results.push({id:p.id,state:'blocked',reason:b.reason});continue;}try{summary.results.push(await engine.apply(p,b));}catch(e){summary.results.push({id:p.id,state:'uncertain_no_retry',reason:e.message});throw e;}await fs.writeFile(dir+'/apply-summary.json',JSON.stringify(summary,null,2));console.log('Processed:',summary.results.length,summary.results.at(-1).state);}
-  }else if(['verify','repair'].includes(mode))for(const p of manifest.approved){const r=await receipts.read(p.id);if(!r)continue;if(mode==='repair')await engine.repair(p,JSON.parse(r.before_json));const v=await engine.verify(p,r);await receipts.save(p.id,'verified',v);summary.results.push(v);}
+  }else if(['verify','repair'].includes(mode))for(const p of manifest.approved){const r=await receipts.read(p.id);if(!r)continue;if(mode==='repair')await engine.repair(p,JSON.parse(r.before_json));const v=await engine.verify(p,r);await receipts.save(p.id,'verified',v);for(const peer of p.peers)if(await receipts.read(peer.id))await receipts.save(peer.id,'verified',v);summary.results.push(v);}
  }catch(e){summary.stopped=e.message;process.exitCode=1;}
  finally{
   if(mode!=='export')await fs.writeFile(dir+'/'+mode+'-summary.json',JSON.stringify({...summary,completed_at:new Date().toISOString()},null,2));
