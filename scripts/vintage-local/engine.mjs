@@ -14,9 +14,9 @@ export const SELLER='2341378249';
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
-export function checkConfiguration(c){
+export function checkConfiguration(c,now=Date.now()){
  if(c?.version!==1||c.seller_id!==SELLER||c.app_id!=='4741021817925208'||c.run_id!==BULK_RUN||c.endpoint!==ENDPOINT||!/^[a-f0-9]{64}$/.test(c.key??''))throw new Error('invalid_vintage_connection');
- if(c.expires_at<=Date.now())throw new Error('vintage_connection_expired');
+ if(c.expires_at<=now)throw new Error('vintage_connection_expired');
  const p=vintagePolicy(c.policy);if(p.minimumSaleUyu<1600||p.availabilityDays!==18)throw new Error('invalid_vintage_policy');return p;
 }
 export function makeBroker(c,{fetcher=fetch}={}){

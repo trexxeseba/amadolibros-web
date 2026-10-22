@@ -297,6 +297,7 @@ class Runner:
             self.force_renew = False
             self.failures = 0
             self.sync_stock()
+        before = self.status().get("published_total")
         code, error = self.run_engine()
         status = self.status()
         state = status.get("state") or error or ("finished" if code == 0 else "engine_error")
@@ -317,6 +318,9 @@ class Runner:
             return None
         if state in RENEW_NEEDED or error in RENEW_NEEDED:
             # Renovar no siempre lo arregla: tras 3 vueltas seguidas, avisar y espaciar.
+            # Si el motor publicó desde la última renovación, ésta funcionó: no cuenta como vuelta repetida.
+            if isinstance(published, int) and isinstance(before, int) and published > before:
+                self.renew_loops = 0
             self.renew_loops += 1
             self.force_renew = True
             if self.renew_loops >= 3:

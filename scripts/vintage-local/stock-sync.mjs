@@ -31,7 +31,7 @@ const TRANSIENT_MS=300000,LONG_MS=86400000;
 
 export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
- const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
+ const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c,now());
  const input=await readWorkbook(excel);
  if(!stockIsFresh(input.source_date,now())||input.source_sha256!==c.source_sha256)throw new Error('workbook_does_not_match_current_approved_stock');
  const feedTime=Date.parse(input.source_date),graceMs=graceHours*3600000;
