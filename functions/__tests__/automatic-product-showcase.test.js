@@ -438,3 +438,24 @@ test('una ficha pausada no recibe la vidriera automática activa', () => {
   const source = rendered(book({ status: 'paused', available_quantity: 0 }));
   assert.equal(enrichAutomaticProductShowcaseHtml(source, PRODUCT_ID), source);
 });
+
+// Una búsqueda con la ruta larga de categoría de Mercado Libre no devuelve nada:
+// el cliente caía en un callejón sin salida y la búsqueda perdida ensuciaba el
+// informe de demanda.
+test('no ofrece un enlace de búsqueda con una ruta larga de categoría', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    bibliographic: {
+      ...book().bibliographic,
+      genre: 'Ciencias Humanas, Esoterismo y Ciencias Ocultas, Parapsicología',
+    },
+  }));
+  assert.ok(!showcase.links.some(link => link.href.includes('Ciencias')));
+  assert.ok(!showcase.links.some(link => link.label.startsWith('Explorar libros de')));
+});
+
+test('un tema corto de una sola pieza sí se ofrece como búsqueda', () => {
+  const showcase = buildAutomaticProductShowcase(book({
+    bibliographic: { ...book().bibliographic, genre: 'Psicología clínica' },
+  }));
+  assert.ok(showcase.links.some(link => link.href === '/catalogo?q=Psicolog%C3%ADa%20cl%C3%ADnica'));
+});
