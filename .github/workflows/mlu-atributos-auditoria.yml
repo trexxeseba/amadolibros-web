@@ -16,6 +16,7 @@ on:
           - preflight
           - apply
           - verify
+          - repair
       authorization_hash:
         description: 'Hash del informe autorizado, obligatorio para apply'
         required: false
@@ -60,11 +61,16 @@ jobs:
         env:
           AUTHORIZED_REVIEW_HASH: ${{ inputs.authorization_hash }}
         run: node scripts/mercadolibre/apply-approved-hundred.mjs apply artifacts/hundred-apply
+      - name: Complete authorized peers of already attempted groups
+        if: inputs.operation == 'repair'
+        env:
+          AUTHORIZED_REVIEW_HASH: ${{ inputs.authorization_hash }}
+        run: node scripts/mercadolibre/apply-approved-hundred.mjs repair artifacts/hundred-apply
       - name: Final verification of all attempted groups
         if: (success() && inputs.operation == 'apply') || inputs.operation == 'verify'
         run: node scripts/mercadolibre/apply-approved-hundred.mjs verify artifacts/hundred-apply
       - name: Export persistent receipts even after interruption
-        if: always() && (inputs.operation == 'apply' || inputs.operation == 'verify')
+        if: always() && (inputs.operation == 'apply' || inputs.operation == 'verify' || inputs.operation == 'repair')
         run: node scripts/mercadolibre/apply-approved-hundred.mjs export artifacts/hundred-apply
       - uses: actions/upload-artifact@v4
         if: always()

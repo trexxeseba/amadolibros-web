@@ -62,8 +62,27 @@ export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,m
  }
  async function plan(p){const before=await inspect(p),schema=await ml('/categories/MLU1196/attributes');if(!Array.isArray(schema)||!schema.length)fail('empty_schema');return {...before,...payloadFor(p,before.items,schema)};}
  async function verify(p,r){const b=JSON.parse(r.before_json),after=await inspect(p);if(canonical(snapshot(after.items,after.descriptions,b.ready))!==canonical(b.snapshot))fail('protected_or_other_attributes_changed');if(after.items.some(i=>b.ready.some(c=>state(i,c)!=='matches')))fail('shared_values_not_persisted');return {id:p.id,state:'verified',attributes:b.ready.map(c=>c.attribute),items:after.items.map(i=>i.id),protected_fields_unchanged:true,verified_at:new Date().toISOString()};}
- return {inspect,plan,verify,async apply(p,preflight){
-  const prior=await receipts.read(p.id);if(prior)return {id:p.id,state:'prior_attempt_no_retry',receipt_state:prior.state};
+ async function repair(p,b){
+  const after=await inspect(p);
+  if(canonical(snapshot(after.items,after.descriptions,b.ready))!==canonical(b.snapshot))fail('protected_or_other_attributes_changed');
+  if(b.ready.some(c=>state(after.items[0],c)!=='matches'))fail('target_values_not_persisted_no_retry');
+  const peer=after.items[1],missing=b.ready.filter(c=>state(peer,c)==='missing');
+  if(b.ready.some(c=>!['matches','missing'].includes(state(peer,c))))fail('peer_value_conflict');
+  if(!missing.length)return;
+  // A separate receipt guards the explicitly named catalog peer. This edits only
+  // this seller's item; no catalog product or global/user-product write endpoint.
+  const old=await receipts.read(peer.id);if(old)fail('peer_prior_attempt_no_retry');
+  const schema=await ml('/categories/MLU1196/attributes');
+  if(!Array.isArray(schema)||!schema.length)fail('empty_schema');
+  const check=payloadFor({...p,changes:missing},[peer,after.items[0]],schema);
+  if(check.ready.length!==missing.length)fail('peer_preflight_changed');
+  const body={attributes:check.ready.map(c=>c.payload)};
+  if(!await receipts.claim(peer.id,{...b,write_id:peer.id,peer_request_body:body}))fail('peer_claim_failed');
+  try{await ml(`/items/${peer.id}`,'PUT',body);let v;for(let n=0;n<8;n++){try{v=await verify(p,{before_json:JSON.stringify(b)});break;}catch(e){if(e.message!=='shared_values_not_persisted'||n===7)throw e;await wait(5000);}}await receipts.save(peer.id,'verified',v);}
+  catch(e){await receipts.save(peer.id,'uncertain_no_retry',{error:e.message});throw e;}
+ }
+ return {inspect,plan,verify,repair,async apply(p,preflight){
+  const prior=await receipts.read(p.id);if(prior){if(prior.state!=='verified')fail('prior_uncertain_operation_requires_verification');await verify(p,prior);return {id:p.id,state:'prior_verified_no_retry',receipt_state:prior.state};}
   const b=await plan(p);if(!b.ready.length)return {id:p.id,state:'skipped',skipped:b.skipped};
   if(canonical(b.ready)!==canonical(preflight.ready)||canonical(snapshot(b.items,b.descriptions,b.ready))!==canonical(snapshot(preflight.items,preflight.descriptions,preflight.ready)))return {id:p.id,state:'blocked',reason:'changed_since_preflight'};
   const backup={...b,snapshot:snapshot(b.items,b.descriptions,b.ready),request_body:{attributes:b.ready.map(c=>c.payload)},review_hash:HASH};
@@ -73,18 +92,20 @@ export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,m
    // Shared values in the authorized peer are observed; never write global Catalog.
    const response=await ml(`/items/${p.id}`,'PUT',backup.request_body);
    await receipts.save(p.id,'put_accepted_pending_verification',{http_accepted:true,response});
-   let result;for(let attempt=0;attempt<8;attempt++){try{result=await verify(p,{before_json:JSON.stringify(backup)});break;}catch(e){if(e.message!=='shared_values_not_persisted'||attempt===7)throw e;await wait(5000);}}
+    let result;for(let attempt=0;attempt<3;attempt++){try{result=await verify(p,{before_json:JSON.stringify(backup)});break;}catch(e){if(e.message!=='shared_values_not_persisted')throw e;if(attempt<2)await wait(5000);}}
+    if(!result){await repair(p,backup);result=await verify(p,{before_json:JSON.stringify(backup)});}
    await receipts.save(p.id,'verified',result);return result;
   }catch(e){await receipts.save(p.id,'uncertain_no_retry',{error:e.message});throw e;}
  }};
 }
 async function main(){
- const mode=process.argv[2],dir=process.argv[3];if(!['preflight','apply','verify','export'].includes(mode)||!dir)fail('invalid_mode');
+ const mode=process.argv[2],dir=process.argv[3];if(!['preflight','apply','repair','verify','export'].includes(mode)||!dir)fail('invalid_mode');
  const manifest=validateManifest(JSON.parse(await fs.readFile(new URL('./approved-hundred-manifest.json',import.meta.url),'utf8')));
  const account=process.env.CLOUDFLARE_ACCOUNT_ID,cf=process.env.CLOUDFLARE_API_TOKEN;if(!/^[a-f0-9]{32}$/.test(account??'')||!cf)fail('cloudflare_auth_missing');
  async function sql(query,params=[]){const r=await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/d1/database/${DB}/query`,{method:'POST',redirect:'manual',signal:AbortSignal.timeout(30000),headers:{Authorization:'Bearer '+cf,'Content-Type':'application/json'},body:JSON.stringify({sql:query,params})});if(!r.ok)fail('receipt_db_http_'+r.status);const b=await r.json();if(!b.success||b.result?.some(x=>!x.success))fail('receipt_db_failed');return b.result[0].results;}
  let tokenRow;async function ml(path,method='GET',body){
-  if(method==='PUT'&&(!/^\/items\/MLU\d+$/.test(path)||!manifest.approved.some(p=>path==='/items/'+p.id)||Object.keys(body??{}).join()!=='attributes'||!Array.isArray(body.attributes)||body.attributes.some(a=>!ALLOWED.has(a.id))))fail('write_outside_authorization');
+  const policy=manifest.approved.find(p=>[p.id,...p.peers.map(x=>x.id)].some(id=>path==='/items/'+id));
+  if(method==='PUT'&&(!/^\/items\/MLU\d+$/.test(path)||!policy||Object.keys(body??{}).join()!=='attributes'||!Array.isArray(body.attributes)||body.attributes.some(a=>!ALLOWED.has(a.id)||!policy.changes.some(c=>canonical(c.payload)===canonical(a)))))fail('write_outside_authorization');
   if(method!=='GET'&&method!=='PUT')fail('method_forbidden');
   if(!tokenRow||Number(tokenRow.access_expires_at)-Date.now()<300000)tokenRow=(await sql('SELECT access_token,access_expires_at FROM ml_oauth WHERE app_id=?',[APP]))[0];
   if(!tokenRow?.access_token||Number(tokenRow.access_expires_at)-Date.now()<120000)fail('existing_token_unavailable_or_expiring');
@@ -92,7 +113,7 @@ async function main(){
    const r=await fetch('https://api.mercadolibre.com'+path,{method,redirect:'manual',signal:AbortSignal.timeout(30000),headers:{Authorization:'Bearer '+tokenRow.access_token,'Content-Type':'application/json',Accept:'application/json'},...(body?{body:JSON.stringify(body)}:{})});
    if(method==='GET'&&[429,500,502,503,504].includes(r.status)&&attempt<3){await new Promise(r=>setTimeout(r,1000*(attempt+1)));continue;}
    if(r.status===404&&path.endsWith('/description'))return null;
-   if(!r.ok)fail('ml_'+method.toLowerCase()+'_http_'+r.status);const text=await r.text();if(!text.trim())fail('empty_api_response');return JSON.parse(text);
+   if(!r.ok){if(method==='PUT'){const e=await r.json().catch(()=>({}));await fs.writeFile(dir+'/last-write-error.json',JSON.stringify({path,status:r.status,error:e.error,message:e.message,cause:e.cause},null,2));}fail('ml_'+method.toLowerCase()+'_http_'+r.status);}const text=await r.text();if(!text.trim())fail('empty_api_response');return JSON.parse(text);
   }
  }
  if(String((await ml('/users/me')).id)!==SELLER)fail('wrong_account');
@@ -104,19 +125,19 @@ async function main(){
   for(const p of manifest.approved){try{const b=await engine.plan(p);report.items.push({id:p.id,state:'eligible',...b});}catch(e){report.items.push({id:p.id,state:'blocked',reason:e.message});}await fs.writeFile(dir+'/preflight.json',JSON.stringify(report,null,2));if(report.items.length%10===0)console.log('Preflight:',report.items.length);}
   report.complete=report.items.length===100;report.completed_at=new Date().toISOString();await fs.writeFile(dir+'/preflight.json',JSON.stringify(report,null,2));console.log(JSON.stringify({eligible:report.items.filter(i=>i.state==='eligible').length,attributes:report.items.reduce((n,i)=>n+(i.ready?.length??0),0),blocked:report.items.filter(i=>i.state==='blocked').length}));return;
  }
- if(mode==='apply'&&process.env.AUTHORIZED_REVIEW_HASH!==HASH)fail('apply_not_authorized');
+ if(['apply','repair'].includes(mode)&&process.env.AUTHORIZED_REVIEW_HASH!==HASH)fail('apply_not_authorized');
  if(mode==='apply')await sql(`CREATE TABLE IF NOT EXISTS ${TABLE}(item_id TEXT PRIMARY KEY,state TEXT NOT NULL,before_json TEXT NOT NULL,result_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL)`);
  const summary={mode,review_hash:HASH,results:[],stopped:null};
  try{
   if(mode==='apply'){
    const pre=JSON.parse(await fs.readFile(dir+'/preflight.json','utf8'));if(pre.review_hash!==HASH||!pre.complete||pre.items.length!==100||Date.now()-Date.parse(pre.completed_at)>1200000)fail('invalid_or_stale_preflight');
    for(const p of manifest.approved){const b=pre.items.find(i=>i.id===p.id);if(b.state!=='eligible'){summary.results.push({id:p.id,state:'blocked',reason:b.reason});continue;}try{summary.results.push(await engine.apply(p,b));}catch(e){summary.results.push({id:p.id,state:'uncertain_no_retry',reason:e.message});throw e;}await fs.writeFile(dir+'/apply-summary.json',JSON.stringify(summary,null,2));console.log('Processed:',summary.results.length,summary.results.at(-1).state);}
-  }else if(mode==='verify')for(const p of manifest.approved){const r=await receipts.read(p.id);if(!r)continue;const v=await engine.verify(p,r);await receipts.save(p.id,'verified',v);summary.results.push(v);}
+  }else if(['verify','repair'].includes(mode))for(const p of manifest.approved){const r=await receipts.read(p.id);if(!r)continue;if(mode==='repair')await engine.repair(p,JSON.parse(r.before_json));const v=await engine.verify(p,r);await receipts.save(p.id,'verified',v);summary.results.push(v);}
  }catch(e){summary.stopped=e.message;process.exitCode=1;}
  finally{
   if(mode!=='export')await fs.writeFile(dir+'/'+mode+'-summary.json',JSON.stringify({...summary,completed_at:new Date().toISOString()},null,2));
   const all=await sql(`SELECT * FROM ${TABLE}`);await fs.writeFile(dir+'/receipts.json',JSON.stringify(all,null,2));
-  if(mode==='export')for(const r of all){const p=manifest.approved.find(p=>p.id===r.item_id);if(!p)fail('unexpected_receipt');const b=JSON.parse(r.before_json),after=await engine.inspect(p);await fs.writeFile(dir+'/'+p.id+'-after.json',JSON.stringify({...after,states:after.items.map(i=>({id:i.id,attributes:b.ready.map(c=>({id:c.attribute,expected:c.value,state:state(i,c),actual:i.attributes.filter(a=>a.id===c.attribute)}))})),protected_unchanged:canonical(snapshot(after.items,after.descriptions,b.ready))===canonical(b.snapshot)},null,2));}
+  if(mode==='export')for(const r of all){const p=manifest.approved.find(p=>[p.id,...p.peers.map(x=>x.id)].includes(r.item_id));if(!p)fail('unexpected_receipt');const b=JSON.parse(r.before_json),after=await engine.inspect(p);await fs.writeFile(dir+'/'+r.item_id+'-after.json',JSON.stringify({...after,states:after.items.map(i=>({id:i.id,attributes:b.ready.map(c=>({id:c.attribute,expected:c.value,state:state(i,c),actual:i.attributes.filter(a=>a.id===c.attribute)}))})),protected_unchanged:canonical(snapshot(after.items,after.descriptions,b.ready))===canonical(b.snapshot)},null,2));}
   console.log(JSON.stringify({mode,processed:summary.results.length,verified:summary.results.filter(x=>x.state==='verified').length,stopped:summary.stopped}));
  }
 }
