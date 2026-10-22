@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {validateManifest,state,payloadFor,createEngine} from '../mercadolibre/apply-approved-hundred.mjs';
+import {validateManifest,state,payloadFor,createEngine,snapshotKey} from '../mercadolibre/apply-approved-hundred.mjs';
 const m=JSON.parse(fs.readFileSync(new URL('../mercadolibre/approved-hundred-manifest.json',import.meta.url)));
 function fixture(){
  const p=m.approved[0],items=[{id:p.id,catalog_listing:false},{id:p.peers[0].id,catalog_listing:true}].map(i=>({...i,seller_id:440298103,status:'active',category_id:'MLU1196',user_product_id:p.up,variations:[],title:i.id,price:100,sale_terms:[],shipping:{mode:'me2'},attributes:[{id:'GTIN',value_name:p.isbn},{id:'AUTHOR',value_name:'Keep author'}]}));
@@ -29,3 +29,5 @@ test('change since preflight prevents PUT',async()=>{const f=fixture(),pre=await
 test('explicitly authorized peer receives only missing fields when propagation does not occur',async()=>{const f=fixture();f.propagate=false;const pre=await f.engine.plan(f.p);const r=await f.engine.apply(f.p,pre);assert.equal(r.state,'verified');assert.equal(f.puts,2);assert.equal(f.saved.get(f.p.peers[0].id).state,'verified');});
 
 test('ML ordinal normalization is accepted only for the same complete edition number',()=>{const c={attribute:'BOOK_EDITION',value:'1ª'};assert.equal(state({attributes:[{id:'BOOK_EDITION',value_name:'1',value_id:'1852472'}]},c),'matches');for(const v of ['2','2014','1ª revisada','1ª 2024'])assert.equal(state({attributes:[{id:'BOOK_EDITION',value_name:v}]},c),'conflict');});
+
+test('sale terms compare content independently of API order, while preserving values',()=>{const a=[{id:'x',protected:{sale_terms:[{id:'WARRANTY_TYPE',value_name:'factory'},{id:'WARRANTY_TIME',value_name:'1 months'}]}}];const b=structuredClone(a);b[0].protected.sale_terms.reverse();assert.equal(snapshotKey(a),snapshotKey(b));b[0].protected.sale_terms[0].value_name='2 months';assert.notEqual(snapshotKey(a),snapshotKey(b));});
