@@ -77,7 +77,7 @@ export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,m
  }
  async function plan(p){const before=await inspect(p),schema=await ml('/categories/MLU1196/attributes');if(!Array.isArray(schema)||!schema.length)fail('empty_schema');return {...before,...payloadFor(p,before.items,schema)};}
  async function verify(p,r){const b=JSON.parse(r.before_json),after=await inspect(p);if(snapshotKey(snapshot(after.items,after.descriptions,b.ready))!==snapshotKey(b.snapshot))fail('protected_or_other_attributes_changed');if(after.items.some(i=>b.ready.some(c=>state(i,c)!=='matches')))fail('shared_values_not_persisted');return {id:p.id,state:'verified',attributes:b.ready.map(c=>c.attribute),items:after.items.map(i=>i.id),protected_fields_unchanged:true,verified_at:new Date().toISOString()};}
- async function repair(p,b){
+ async function repair(p,b,retried=false){
   const after=await inspect(p);
   if(snapshotKey(snapshot(after.items,after.descriptions,b.ready))!==snapshotKey(b.snapshot))fail('protected_or_other_attributes_changed');
   if(b.ready.some(c=>state(after.items[0],c)!=='matches'))fail('target_values_not_persisted_no_retry');
@@ -86,15 +86,16 @@ export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,m
   if(!missing.length)return;
   // A separate receipt guards the explicitly named catalog peer. This edits only
   // this seller's item; no catalog product or global/user-product write endpoint.
-  const old=await receipts.read(peer.id);if(old)fail('peer_prior_attempt_no_retry');
+  const old=await receipts.read(peer.id);
   const schema=await ml('/categories/MLU1196/attributes');
   if(!Array.isArray(schema)||!schema.length)fail('empty_schema');
   const check=payloadFor({...p,changes:missing},[peer,after.items[0]],schema);
   if(check.ready.length!==missing.length)fail('peer_preflight_changed');
   const body={attributes:check.ready.map(c=>c.payload)};
-  if(!await receipts.claim(peer.id,{...b,write_id:peer.id,peer_request_body:body}))fail('peer_claim_failed');
-  try{await ml(`/items/${peer.id}`,'PUT',body);let v;for(let n=0;n<8;n++){try{v=await verify(p,{before_json:JSON.stringify(b)});break;}catch(e){if(e.message!=='shared_values_not_persisted'||n===7)throw e;await wait(5000);}}await receipts.save(peer.id,'verified',v);}
-  catch(e){await receipts.save(peer.id,'uncertain_no_retry',{error:e.message});throw e;}
+  if(old){const info=JSON.parse(old.result_json??'{}');if(info.error!=='ml_put_http_409'||info.retry_count||!receipts.retry409||!await receipts.retry409(peer.id,body))fail('peer_prior_attempt_no_retry');retried=true;}
+  else if(!await receipts.claim(peer.id,{...b,write_id:peer.id,peer_request_body:body}))fail('peer_claim_failed');
+  try{await ml(`/items/${peer.id}`,'PUT',body);let v;for(let n=0;n<8;n++){try{v=await verify(p,{before_json:JSON.stringify(b)});break;}catch(e){if(e.message!=='shared_values_not_persisted'||n===7)throw e;await wait(5000);}}await receipts.save(peer.id,'verified',{...v,accepted_request_body:body,retry_count:retried?1:0});}
+  catch(e){await receipts.save(peer.id,'uncertain_no_retry',{error:e.message,retry_count:retried?1:0});if(e.message==='ml_put_http_409'&&!retried){await wait(5000);return repair(p,b,true);}throw e;}
  }
  return {inspect,plan,verify,repair,async apply(p,preflight){
   const prior=await receipts.read(p.id);if(prior){if(prior.state!=='verified')fail('prior_uncertain_operation_requires_verification');await verify(p,prior);return {id:p.id,state:'prior_verified_no_retry',receipt_state:prior.state};}
@@ -135,6 +136,7 @@ async function main(){
  if(String((await ml('/users/me')).id)!==SELLER)fail('wrong_account');
  await fs.mkdir(dir,{recursive:true});
  const receipts={read:async id=>(await sql(`SELECT * FROM ${TABLE} WHERE item_id=?`,[id]))[0],claim:async(id,b)=>!!(await sql(`INSERT OR IGNORE INTO ${TABLE}(item_id,state,before_json,created_at,updated_at) VALUES(?,'attempting',?,?,?) RETURNING item_id`,[id,JSON.stringify(b),new Date().toISOString(),new Date().toISOString()]))[0],save:(id,s,b)=>sql(`UPDATE ${TABLE} SET state=?,result_json=?,updated_at=? WHERE item_id=?`,[s,JSON.stringify(b),new Date().toISOString(),id])};
+ receipts.retry409=async(id,body)=>!!(await sql(`UPDATE ${TABLE} SET state='attempting_after_409_readback',result_json=?,updated_at=? WHERE item_id=? AND state='uncertain_no_retry' AND json_extract(result_json,'$.error')='ml_put_http_409' AND COALESCE(json_extract(result_json,'$.retry_count'),0)=0 RETURNING item_id`,[JSON.stringify({retry_count:1,prior_error:'ml_put_http_409',retry_request_body:body}),new Date().toISOString(),id]))[0];
  const engine=createEngine({ml,receipts});
  if(mode==='preflight'){
   const report={review_hash:HASH,started_at:new Date().toISOString(),items:[],complete:false};
