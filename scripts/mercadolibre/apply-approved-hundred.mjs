@@ -60,7 +60,8 @@ export function snapshot(items,descriptions,changes){
 }
 export function snapshotKey(value){
  const authorName=v=>v==null?v:norm(v).replace(/\./g,'').replace(/\s+/g,' ');
- return canonical(value.map(i=>({...i,protected:{...i.protected,sale_terms:Array.isArray(i.protected.sale_terms)?[...i.protected.sale_terms].sort((a,b)=>a.id.localeCompare(b.id)):i.protected.sale_terms},...(i.other_attributes?{other_attributes:i.other_attributes.map(a=>a.id==='AUTHOR'?{...a,value_id:null,value_name:authorName(a.value_name),values:a.values?.map(v=>({...v,id:null,name:authorName(v.name)}))??null}:a)}:{})})));
+ const internalId=(id,name)=>name!=null&&String(name).trim()!==''&&String(id)!=='-1'?null:id;
+ return canonical(value.map(i=>({...i,protected:{...i.protected,sale_terms:Array.isArray(i.protected.sale_terms)?[...i.protected.sale_terms].sort((a,b)=>a.id.localeCompare(b.id)):i.protected.sale_terms},...(i.other_attributes?{other_attributes:i.other_attributes.map(a=>({...a,value_id:internalId(a.value_id,a.value_name),value_name:a.id==='AUTHOR'?authorName(a.value_name):a.value_name,values:a.values?.map(v=>({...v,id:internalId(v.id,v.name),name:a.id==='AUTHOR'?authorName(v.name):v.name}))??null}))}:{})})));
 }
 export function createEngine({ml,receipts,wait=ms=>new Promise(r=>setTimeout(r,ms))}){
  async function inspect(p){
