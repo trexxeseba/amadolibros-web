@@ -10,8 +10,12 @@ export const canonical=v=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Arra
 const fail=x=>{throw Error(x);};
 const norm=v=>String(v).normalize('NFKC').trim().toLowerCase();
 export function comparable(attribute,value){
- const s=norm(value);
+ let s=norm(value);
  if(attribute==='BOOK_EDITION'){
+  // ML may adjust ordinal gender or omit outer cataloguing brackets. Keep
+  // edition qualifiers intact so revised/expanded editions never collapse.
+  if(/^\[\d+[aoº°]?\s*(?:ed\.?)?\]$/.test(s))s=s.slice(1,-1);
+  s=s.replace(/^(\d+)[aoº°](?=\s+ed\.?\b)/,'$1a');
   const m=s.match(/^([1-9]\d*)\s*(?:[aº°]|a\.?\s*ed\.?|ed\.?|edici[oó]n)?$/);
   // NFKC turns the ordinal indicator ª into a. Only a complete ordinal is
   // equivalent to ML's normalized number; years/prose are never stripped out.
@@ -150,7 +154,13 @@ async function main(){
   if(mode==='apply'){
    const pre=JSON.parse(await fs.readFile(dir+'/preflight.json','utf8'));if(pre.review_hash!==HASH||!pre.complete||pre.items.length!==100||Date.now()-Date.parse(pre.completed_at)>1200000)fail('invalid_or_stale_preflight');
    for(const p of manifest.approved){const b=pre.items.find(i=>i.id===p.id);if(b.state!=='eligible'){summary.results.push({id:p.id,state:'blocked',reason:b.reason});continue;}try{summary.results.push(await engine.apply(p,b));}catch(e){summary.results.push({id:p.id,state:'uncertain_no_retry',reason:e.message});throw e;}await fs.writeFile(dir+'/apply-summary.json',JSON.stringify(summary,null,2));console.log('Processed:',summary.results.length,summary.results.at(-1).state);}
-  }else if(['verify','repair'].includes(mode))for(const p of manifest.approved){const r=await receipts.read(p.id);if(!r)continue;if(mode==='repair')await engine.repair(p,JSON.parse(r.before_json));const v=await engine.verify(p,r);await receipts.save(p.id,'verified',v);for(const peer of p.peers)if(await receipts.read(peer.id))await receipts.save(peer.id,'verified',v);summary.results.push(v);}
+  }else if(['verify','repair'].includes(mode)){
+   for(const p of manifest.approved){const r=await receipts.read(p.id);if(!r)continue;
+    try{if(mode==='repair')await engine.repair(p,JSON.parse(r.before_json));const v=await engine.verify(p,r);await receipts.save(p.id,'verified',v);for(const peer of p.peers)if(await receipts.read(peer.id))await receipts.save(peer.id,'verified',v);summary.results.push(v);}
+    catch(e){if(mode!=='verify')throw e;const v={id:p.id,state:'verification_exception',reason:e.message,verified_at:new Date().toISOString()};summary.results.push(v);await receipts.save(p.id,'verification_exception',v);for(const peer of p.peers)if(await receipts.read(peer.id))await receipts.save(peer.id,'verification_exception',v);}
+   }
+   if(summary.results.some(r=>r.state==='verification_exception')){summary.stopped='verification_exceptions_require_review';process.exitCode=1;}
+  }
  }catch(e){summary.stopped=e.message;process.exitCode=1;}
  finally{
   if(mode!=='export')await fs.writeFile(dir+'/'+mode+'-summary.json',JSON.stringify({...summary,completed_at:new Date().toISOString()},null,2));
