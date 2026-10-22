@@ -115,7 +115,9 @@ async function main(){
  }catch(e){summary.stopped=e.message;process.exitCode=1;}
  finally{
   if(mode!=='export')await fs.writeFile(dir+'/'+mode+'-summary.json',JSON.stringify({...summary,completed_at:new Date().toISOString()},null,2));
-  const all=await sql(`SELECT * FROM ${TABLE}`);await fs.writeFile(dir+'/receipts.json',JSON.stringify(all,null,2));console.log(JSON.stringify({mode,processed:summary.results.length,verified:summary.results.filter(x=>x.state==='verified').length,stopped:summary.stopped}));
+  const all=await sql(`SELECT * FROM ${TABLE}`);await fs.writeFile(dir+'/receipts.json',JSON.stringify(all,null,2));
+  if(mode==='export')for(const r of all){const p=manifest.approved.find(p=>p.id===r.item_id);if(!p)fail('unexpected_receipt');const b=JSON.parse(r.before_json),after=await engine.inspect(p);await fs.writeFile(dir+'/'+p.id+'-after.json',JSON.stringify({...after,states:after.items.map(i=>({id:i.id,attributes:b.ready.map(c=>({id:c.attribute,expected:c.value,state:state(i,c),actual:i.attributes.filter(a=>a.id===c.attribute)}))})),protected_unchanged:canonical(snapshot(after.items,after.descriptions,b.ready))===canonical(b.snapshot)},null,2));}
+  console.log(JSON.stringify({mode,processed:summary.results.length,verified:summary.results.filter(x=>x.state==='verified').length,stopped:summary.stopped}));
  }
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(e=>{console.error(/^[a-z0-9_]+$/.test(e.message)?e.message:'operation_failed_credentials_redacted');process.exitCode=1;});
