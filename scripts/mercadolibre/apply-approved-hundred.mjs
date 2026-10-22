@@ -9,11 +9,21 @@ const ALLOWED=new Set(['PUBLICATION_YEAR','PAGES_NUMBER','BOOK_EDITION','BOOK_CO
 export const canonical=v=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x);
 const fail=x=>{throw Error(x);};
 const norm=v=>String(v).normalize('NFKC').trim().toLowerCase();
+export function comparable(attribute,value){
+ const s=norm(value);
+ if(attribute==='BOOK_EDITION'){
+  const m=s.match(/^([1-9]\d*)\s*(?:[aº°]|a\.?\s*ed\.?|ed\.?|edici[oó]n)?$/);
+  // NFKC turns the ordinal indicator ª into a. Only a complete ordinal is
+  // equivalent to ML's normalized number; years/prose are never stripped out.
+  if(m)return String(Number(m[1]));
+ }
+ return s;
+}
 export function state(item,c){
  const a=item.attributes.filter(a=>a.id===c.attribute);if(!a.length)return 'missing';
  if(a.some(a=>String(a.value_id)==='-1'||a.values?.some(v=>String(v.id)==='-1')))return 'na';
- const values=[...new Set(a.flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]).filter(v=>v!=null&&String(v).trim()!=='').map(norm))];
- return values.length===1&&values[0]===norm(c.value)?'matches':'conflict';
+ const values=[...new Set(a.flatMap(a=>[a.value_name,...(a.values??[]).map(v=>v.name)]).filter(v=>v!=null&&String(v).trim()!=='').map(v=>comparable(c.attribute,v)))];
+ return values.length===1&&values[0]===comparable(c.attribute,c.value)?'matches':'conflict';
 }
 export function validateManifest(m){
  if(m.review_hash!==HASH||String(m.seller_id)!==SELLER||m.approved?.length!==100||m.excluded_ids?.length!==16)fail('manifest_not_authorized');

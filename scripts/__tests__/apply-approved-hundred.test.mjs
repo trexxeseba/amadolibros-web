@@ -27,3 +27,5 @@ test('change in protected peer data stops verification and preserves uncertain r
 test('change since preflight prevents PUT',async()=>{const f=fixture(),pre=await f.engine.plan(f.p);f.items[0].price=101;assert.equal((await f.engine.apply(f.p,pre)).state,'blocked');assert.equal(f.puts,0);});
 
 test('explicitly authorized peer receives only missing fields when propagation does not occur',async()=>{const f=fixture();f.propagate=false;const pre=await f.engine.plan(f.p);const r=await f.engine.apply(f.p,pre);assert.equal(r.state,'verified');assert.equal(f.puts,2);assert.equal(f.saved.get(f.p.peers[0].id).state,'verified');});
+
+test('ML ordinal normalization is accepted only for the same complete edition number',()=>{const c={attribute:'BOOK_EDITION',value:'1ª'};assert.equal(state({attributes:[{id:'BOOK_EDITION',value_name:'1',value_id:'1852472'}]},c),'matches');for(const v of ['2','2014','1ª revisada','1ª 2024'])assert.equal(state({attributes:[{id:'BOOK_EDITION',value_name:v}]},c),'conflict');});
