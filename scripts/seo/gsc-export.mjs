@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { reconcileSitemapCohorts } from './sitemap-overlap.mjs';
 import {
   buildCohortInspectionSample,
   selectCtrOpportunities,
@@ -343,15 +344,18 @@ async function main() {
     fetchWithRetry(PAUSED_SITEMAP_URL, {}, 4, 'text'),
   ]);
   const activeUrls = sitemapUrls(activeSitemapXml);
-  const pausedUrls = sitemapUrls(pausedSitemapXml);
-  console.log(`${activeUrls.length} activas; ${pausedUrls.length} por encargo.`);
+  const rawPausedUrls = sitemapUrls(pausedSitemapXml);
+  console.log(`${activeUrls.length} activas; ${rawPausedUrls.length} por encargo.`);
   if (!activeUrls.length) throw new Error('El sitemap activo no devolvió URLs.');
-  if (!pausedUrls.length) throw new Error('El sitemap por encargo no devolvió URLs.');
+  if (!rawPausedUrls.length) throw new Error('El sitemap por encargo no devolvió URLs.');
 
-  const activeSet = new Set(activeUrls);
-  const overlap = pausedUrls.filter((page) => activeSet.has(page));
+  // Una superposición mínima (un libro que cambió de estado entre las dos
+  // descargas) se tolera y se registra; una grande frena la corrida.
+  const reconciled = reconcileSitemapCohorts(activeUrls, rawPausedUrls);
+  const overlap = reconciled.overlap;
+  const pausedUrls = reconciled.pausedUrls;
   if (overlap.length) {
-    throw new Error(`Los sitemaps activo y por encargo se superponen en ${overlap.length} URLs.`);
+    console.warn(`Aviso: ${overlap.length} URL(s) figuran en los dos sitemaps (se cuentan como activas): ${overlap.slice(0, 5).join(', ')}`);
   }
 
   const sitemapCohorts = {
