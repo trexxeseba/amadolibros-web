@@ -25,7 +25,7 @@ jobs:
         run: node --test scripts/__tests__/read-hundred-groups.test.mjs
       - name: Read groups without writes or deployments
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           REVIEW_IDS: ${{ inputs.review_ids }}
         run: node scripts/mercadolibre/read-hundred-groups.mjs artifacts/hundred-review
