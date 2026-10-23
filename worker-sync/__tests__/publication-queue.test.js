@@ -440,3 +440,19 @@ test('index slices accept the /items/bulk status_code shape and reject entries w
  }});
  await assert.rejects(()=>api.indexSlice({},{status:'active',scroll:null,pending:[],done:false,seen:0}),/index_details_invalid/);
 });
+test('a 403 reading one book metadata sends that book to review instead of stopping the run as auth_error',async t=>{
+ const f=await fixture(t,{rows:[books[0],books[1]]});
+ f.api.prepare=async(env,row,p,price)=>{f.calls.prepare++;if(row.isbn===books[0].isbn){const e=new MercadoLibreError('ml_http_403',403);e.stage='metadata';throw e;}return {price,currency_id:'UYU',condition:'new',catalog_listing:false,seller_custom_field:`AMADO-AR-${row.isbn}`};};
+ const result=await f.service.tick(f.env,f.runId);
+ assert.notEqual(result.state,'auth_error');
+ const counts=Object.fromEntries((await f.store.counts(f.runId)).map(x=>[x.state,x.n]));
+ assert.equal(counts.review,1);assert.equal(counts.validated,1);
+});
+test('a 401, or a 403 outside metadata, still stops the run as auth_error',async t=>{
+ for(const [status,stage] of [[401,'metadata'],[403,'item_validation']]){
+  const f=await fixture(t,{rows:[books[0]]});
+  f.api.prepare=async()=>{const e=new MercadoLibreError(`ml_http_${status}`,status);e.stage=stage;throw e;};
+  await f.service.tick(f.env,f.runId);
+  assert.equal((await f.store.run(f.runId)).state,'auth_error');
+ }
+});
