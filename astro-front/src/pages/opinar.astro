@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// OPINAR-1: landing corta para pedir reseñas de Google por WhatsApp. El link
+// de g.page no genera una vista previa linda; esta URL sí, gracias a la
+// imagen social propia (og-opinar.jpg, 1200x630).
+const canonical = 'https://www.amadolibros.com/opinar/';
+const reviewUrl = 'https://g.page/r/CUSy71QBnNuKEBE/review';
+---
+<BaseLayout
+  title="Dejanos tu reseña | Amado Libros"
+  description="Tu opinión nos ayuda a crecer y a que más lectores nos conozcan."
+  canonical={canonical}
+  image="https://www.amadolibros.com/images/og-opinar.jpg"
+  imageAlt="¿Nos dejás tu reseña? Amado Libros, librería familiar uruguaya"
+  imageWidth={1200}
+  imageHeight={630}
+>
+  <main class="opinar">
+    <article class="opinar-card">
+      <a href="/" class="opinar-logo" aria-label="Amado Libros, ir al inicio">
+        <img
+          src="/images/logo-amado.webp"
+          alt="Amado Libros"
+          width="480"
+          height="475"
+          decoding="async"
+        >
+      </a>
+
+      <div class="opinar-stars" aria-hidden="true">★★★★★</div>
+
+      <h1>¿Nos dejás tu reseña?</h1>
+      <p class="opinar-lead">
+        Tu opinión ayuda muchísimo a que más lectores conozcan Amado Libros,
+        una librería familiar uruguaya.
+      </p>
+      <p class="opinar-note">Te lleva menos de un minuto. ¡Gracias por acompañarnos!</p>
+
+      <a
+        href={reviewUrl}
+        class="opinar-cta"
+        rel="noopener"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22">
+          <path fill="currentColor" d="M12 2.5l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.52l-5.88 3.09 1.12-6.55L2.48 9.42l6.58-.96z"/>
+        </svg>
+        Dejar mi reseña en Google
+      </a>
+
+      <a href="/catalogo" class="opinar-secondary">Seguir viendo libros</a>
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  .opinar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem 2.5rem;
+  }
+
+  .opinar-card {
+    width: min(100%, 460px);
+    padding: 2rem 1.5rem 1.75rem;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: 0 12px 32px rgba(24, 18, 14, 0.07);
+  }
+
+  .opinar-logo {
+    display: block;
+    width: 132px;
+    margin: 0 auto 1rem;
+  }
+
+  .opinar-stars {
+    color: #e8a33d;
+    font-size: 1.4rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.35rem;
+  }
+
+  .opinar-card h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 8vw, 2.4rem);
+    line-height: 1.12;
+    margin-bottom: 0.85rem;
+  }
+
+  .opinar-lead {
+    color: var(--ink-2);
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .opinar-note {
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .opinar-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    min-height: 3.5rem;
+    padding: 0.9rem 1.25rem;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.05rem;
+    box-shadow: 0 8px 20px rgba(24, 18, 14, 0.18);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .opinar-cta svg { color: #f2b84b; flex-shrink: 0; }
+  .opinar-cta:hover { background: #3a2e25; }
+  .opinar-cta:active { transform: scale(0.98); }
+  .opinar-cta:focus-visible,
+  .opinar-secondary:focus-visible {
+    outline: 3px solid var(--salmon);
+    outline-offset: 3px;
+  }
+
+  .opinar-secondary {
+    display: inline-block;
+    margin-top: 1.1rem;
+    padding: 0.5rem 0.75rem;
+    color: #8f4436;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (min-width: 768px) {
+    .opinar { padding: 3.5rem 1rem 4rem; }
+    .opinar-card { padding: 2.5rem 2.5rem 2rem; }
+  }
+</style>

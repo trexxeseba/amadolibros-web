@@ -10,6 +10,8 @@ interface Props {
   canonical?: string;
   image?: string;
   imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
   jsonLd?: Record<string, unknown>;
 }
 const {
@@ -20,6 +22,8 @@ const {
   canonical,
   image = 'https://www.amadolibros.com/images/logo-amado.webp',
   imageAlt = 'Amado Libros, librería uruguaya',
+  imageWidth,
+  imageHeight,
   jsonLd,
 } = Astro.props;
 
@@ -53,6 +57,8 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
   <meta property="og:url" content={socialUrl}>
   <meta property="og:image" content={image}>
   <meta property="og:image:alt" content={imageAlt}>
+  {imageWidth && <meta property="og:image:width" content={String(imageWidth)}>}
+  {imageHeight && <meta property="og:image:height" content={String(imageHeight)}>}
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content={title}>
   <meta name="twitter:description" content={description}>
