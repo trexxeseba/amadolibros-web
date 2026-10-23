@@ -133,7 +133,8 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
     }catch(error){
      // Transport, 5xx, 429 and retryable auth failures defer the book; an auth
      // failure never counts as a book attempt nor sends it to review.
-     const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403);
+     // A 403 reading one book's metadata is about that book, not the account: it goes to review.
+     const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403&&error.stage!=='metadata');
      const retry=error instanceof MercadoLibreError&&(error.status===429||error.status>=500)&&job.attempts<5;
      const nextAt=retry?now()+Math.max(error.retryAfter*1000,Math.min(3600000,30000*2**job.attempts)):0;
      const skipState=!retry&&!auth?candidateSkipState(error):null;
