@@ -15,6 +15,10 @@
  *   En tests, preview y dev queda apagado: una pantalla de prueba no tiene
  *   por qué salir a Internet, y una suite que depende de red real es una
  *   suite que un día falla sin que nadie haya roto nada.
+ * - Con el repo privado, GitHub responde 404 a quien no se identifica: el
+ *   panel manda PANEL_GITHUB_TOKEN (token de solo lectura de Actions de este
+ *   repo, secret de Pages) cuando existe. Sin token, un 404 se explica como
+ *   eso y no como «el workflow no existe».
  * - Con la consulta encendida, el resultado se cachea 10 minutos en KV. Sin
  *   token, la API de GitHub admite 60 pedidos por hora por IP y las IPs de
  *   salida de Cloudflare son compartidas; abrir el panel diez veces no puede
@@ -61,16 +65,23 @@ export function fechaCorta(iso) {
   return `${dd}/${mm} ${hh}:${mi}`;
 }
 
-async function leerUltimaCorrida(wf, fetchFn) {
+async function leerUltimaCorrida(wf, fetchFn, token = '') {
   const url = new URL(`https://api.github.com/repos/${REPO}/actions/workflows/${wf.archivo}/runs`);
   url.searchParams.set('per_page', '1');
   if (wf.rama) url.searchParams.set('branch', wf.rama);
 
   try {
     const response = await fetchFn(url.toString(), {
-      headers: { 'User-Agent': 'amadolibros-panel-salud', Accept: 'application/vnd.github+json' },
+      headers: {
+        'User-Agent': 'amadolibros-panel-salud',
+        Accept: 'application/vnd.github+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     });
+    if (response?.status === 404 && !token) {
+      return { ok: false, error: 'HTTP 404: si el repo es privado, falta PANEL_GITHUB_TOKEN' };
+    }
     if (!response?.ok) return { ok: false, error: `HTTP ${response?.status ?? 'sin respuesta'}` };
     const data = await response.json();
     const run = data?.workflow_runs?.[0];
@@ -158,7 +169,7 @@ export async function loadHealth(context, { now = new Date(), fetchFn = globalTh
     } else {
       corridas = {};
       await Promise.all(WORKFLOWS_VIGILADOS.map(async wf => {
-        corridas[wf.archivo] = await leerUltimaCorrida(wf, fetchFn);
+        corridas[wf.archivo] = await leerUltimaCorrida(wf, fetchFn, asText(env.PANEL_GITHUB_TOKEN));
       }));
       consultadoEn = now.toISOString();
       // Sólo se cachea una lectura completa. Cachear "no se pudo consultar"

@@ -118,6 +118,22 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SYNC_HEALTHCHECK_URL: ${{ secrets.SYNC_HEALTHCHECK_URL }}
 
+      - name: Sync Vintage notify URL to Worker
+        # El tema de ntfy del vigía de Vintage no va en wrangler.toml: el repo
+        # es público y con el nombre del tema cualquiera lee o falsifica avisos.
+        # Si falta, no corta el deploy: el vigía sigue mirando y solo no avisa.
+        run: |
+          if [ -z "$VINTAGE_NOTIFY_URL" ]; then
+            echo "::warning::Sin VINTAGE_NOTIFY_URL en GitHub: el vigía de Vintage no avisa por ntfy."
+            exit 0
+          fi
+          cd worker-sync
+          printf '%s' "$VINTAGE_NOTIFY_URL" | npx wrangler@3 secret put VINTAGE_NOTIFY_URL
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VINTAGE_NOTIFY_URL: ${{ secrets.VINTAGE_NOTIFY_URL }}
+
       - name: Wait for Worker propagation
         # Un cambio de código que altera catálogo/feed debe reflejarse en R2
         # inmediatamente después del deploy; no esperamos al cron del día
