@@ -135,6 +135,18 @@ def decide(snap, memory, now, stall_minutes=STALL_MINUTES):
     return "none", "ok", memory
 
 
+def read_notify_url(private_dir, fallback=None):
+    """Tópico de ntfy desde private/notify-url.txt (primera línea, https). Es un secreto: quien conoce
+    el nombre puede leer y escribir avisos, así que vive fuera del repo, y se lee en cada aviso para
+    poder cambiarlo sin reiniciar. Sin archivo válido se usa el argumento o VINTAGE_NOTIFY_URL."""
+    try:
+        lines = (Path(private_dir) / "notify-url.txt").read_text("utf-8-sig").strip().splitlines()
+    except OSError:
+        lines = []
+    candidate = lines[0].strip() if lines else ""
+    return candidate if candidate.startswith("https://") else fallback
+
+
 class Watchdog:
     def __init__(self, directory, notify_url=None, task=TASK, stall_minutes=STALL_MINUTES, dry_run=False):
         self.directory = Path(directory).resolve()
@@ -156,13 +168,14 @@ class Watchdog:
 
     def notify(self, title, message):
         self.log("aviso", title=title, detail=message)
-        if self.dry_run or not self.notify_url:
+        url = read_notify_url(self.directory / "private", self.notify_url)
+        if self.dry_run or not url:
             return
         try:
-            request = urllib.request.Request(self.notify_url, data=message.encode("utf-8"), headers={"Title": title.encode("latin-1", "replace").decode("latin-1"), "Priority": "high"})
+            request = urllib.request.Request(url, data=message.encode("utf-8"), headers={"Title": title.encode("latin-1", "replace").decode("latin-1"), "Priority": "high"})
             urllib.request.urlopen(request, timeout=20).read()
         except Exception as error:  # un aviso fallido no cambia la decisión
-            self.log("aviso no enviado", error=str(error)[:200])
+            self.log("aviso no enviado", error=str(error).replace(url, "<url>")[:200])
 
     def relaunch(self):
         if self.dry_run:

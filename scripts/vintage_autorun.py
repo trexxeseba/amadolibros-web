@@ -63,6 +63,18 @@ RENEW_NEEDED = {
 }
 
 
+def read_notify_url(private_dir, fallback=None):
+    """Tópico de ntfy desde private/notify-url.txt (primera línea, https). Es un secreto: quien conoce
+    el nombre puede leer y escribir avisos, así que vive fuera del repo, y se lee en cada aviso para
+    poder cambiarlo sin reiniciar. Sin archivo válido se usa el argumento o VINTAGE_NOTIFY_URL."""
+    try:
+        lines = (Path(private_dir) / "notify-url.txt").read_text("utf-8-sig").strip().splitlines()
+    except OSError:
+        lines = []
+    candidate = lines[0].strip() if lines else ""
+    return candidate if candidate.startswith("https://") else fallback
+
+
 class Runner:
     def __init__(self, args):
         self.args = args
@@ -110,7 +122,7 @@ class Runner:
             return
         self.last_notice[key] = now
         self.log("aviso", title=title, detail=message)
-        url = self.args.notify_url or os.environ.get("VINTAGE_NOTIFY_URL")
+        url = read_notify_url(self.private, self.args.notify_url or os.environ.get("VINTAGE_NOTIFY_URL"))
         if not url:
             return
         try:
@@ -120,7 +132,7 @@ class Runner:
                 request = urllib.request.Request(url, data=json.dumps({"title": title, "message": message}).encode("utf-8"), headers={"Content-Type": "application/json"})
             urllib.request.urlopen(request, timeout=20).read()
         except Exception as error:  # el aviso nunca detiene la campaña
-            self.log("aviso no enviado", error=str(error)[:200])
+            self.log("aviso no enviado", error=str(error).replace(url, "<url>")[:200])
 
     # ── Windows: no suspender mientras corre ─────────────────────────────
     def keep_awake(self, enable):
