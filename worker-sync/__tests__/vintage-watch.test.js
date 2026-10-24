@@ -70,7 +70,7 @@ function fetchSpy(ok = true) {
   return { fn, calls };
 }
 
-const env = (overrides = {}) => ({ VINTAGE_WATCH_ENABLED: 'true', VINTAGE_NOTIFY_URL: 'https://ntfy.sh/amado-vintage', ...overrides });
+const env = (overrides = {}) => ({ VINTAGE_WATCH_ENABLED: 'true', VINTAGE_NOTIFY_URL: 'https://ntfy.sh/tema-de-prueba', ...overrides });
 
 test('check: con todo bien no manda nada', async () => {
   const spy = fetchSpy();
@@ -85,7 +85,7 @@ test('check: una parada avisa por ntfy una sola vez por hora', async () => {
   const first = await checkVintageHeartbeat(e, { now: NOW, fetchFn: spy.fn });
   assert.equal(first.notified, true);
   assert.equal(spy.calls.length, 1);
-  assert.equal(spy.calls[0].url, 'https://ntfy.sh/amado-vintage');
+  assert.equal(spy.calls[0].url, 'https://ntfy.sh/tema-de-prueba');
   assert.equal(spy.calls[0].init.method, 'POST');
   assert.equal(spy.calls[0].init.headers.Title, 'Vintage: sin altas nuevas');
   assert.ok(kv.store.has('vintage:watch:alert:stalled'));
@@ -113,7 +113,7 @@ test('ntfy: sólo acepta un tópico de ntfy.sh por https', async () => {
     assert.equal(spy.calls.length, 0);
   }
   const spy = fetchSpy(false);
-  assert.deepEqual(await notifyNtfy({ VINTAGE_NOTIFY_URL: 'https://ntfy.sh/amado-vintage' }, 't', 'm', { fetchFn: spy.fn }), { sent: false, status: 500 });
+  assert.deepEqual(await notifyNtfy({ VINTAGE_NOTIFY_URL: 'https://ntfy.sh/tema-de-prueba' }, 't', 'm', { fetchFn: spy.fn }), { sent: false, status: 500 });
 });
 
 test('check: un envío fallido no reserva el aviso y el siguiente ciclo reintenta',async t=>{

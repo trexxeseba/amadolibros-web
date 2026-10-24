@@ -74,10 +74,11 @@ jobs:
           console.log({ link: link.totals, duplicates: dup.summaries, quality: quality.coverage, inventory: dup.inventory });
           NODE
 
-      - name: Upload reproducible baseline
-        uses: actions/upload-artifact@v4
-        with:
-          name: seo-baseline-public-2026-08-08
-          path: artifacts/seo/
-          if-no-files-found: error
-          retention-days: 30
+      - name: Guardar el reporte en R2 (privado)
+        if: success()
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          bash scripts/ops/upload-report-r2.sh artifacts/seo seo-baseline

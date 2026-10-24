@@ -263,6 +263,23 @@ jobs:
           printf '%s' "$PANEL_PASSWORD" |
             npx wrangler@3.114.17 pages secret put PANEL_PASSWORD --project-name amadolibros-web
 
+      - name: Sync panel GitHub token
+        # La sección Salud del panel lee las últimas corridas de Actions. Con el
+        # repo público alcanza sin credencial; con el repo privado GitHub pide un
+        # token (fine-grained, solo este repo, Actions: read). Si falta, no corta
+        # el deploy: Salud dice «no se pudo consultar» y el resto del panel anda.
+        env:
+          PANEL_GITHUB_TOKEN: ${{ secrets.PANEL_GITHUB_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$PANEL_GITHUB_TOKEN" ]; then
+            echo "::warning::Sin PANEL_GITHUB_TOKEN en GitHub: con el repo privado, Salud no podrá leer los workflows."
+            exit 0
+          fi
+          printf '%s' "$PANEL_GITHUB_TOKEN" |
+            npx wrangler@3.114.17 pages secret put PANEL_GITHUB_TOKEN --project-name amadolibros-web
+
       # Qué commit sirve producción, en un archivo público y sin datos
       # sensibles. Lo lee deploy-freshness.yml para avisar (y relanzar una vez)
       # cuando un deploy se cancela y main queda sin publicar.

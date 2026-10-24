@@ -71,8 +71,10 @@ CANONICAL_ORIGIN = "https://www.amadolibros.com"
 DAILY_DIGEST_TO = "undiaes@gmail.com,adm@amadolibros.com"
 # Vigía de la campaña de Amado Vintage (worker-sync/vintage-watch.js): cada 5
 # minutos lee D1 y avisa por ntfy si la PC dejó de publicar. Umbrales en minutos.
+# El tema de ntfy (VINTAGE_NOTIFY_URL) es un secret: quien conoce el nombre de
+# un tema público de ntfy puede leer los avisos o mandar avisos falsos, y el
+# repo es público. Lo carga deploy-worker-sync.yml desde el secret de GitHub.
 VINTAGE_WATCH_ENABLED = "true"
-VINTAGE_NOTIFY_URL = "https://ntfy.sh/amado-vintage"
 VINTAGE_WATCH_STALL_MINUTES = "45"
 VINTAGE_WATCH_WARMUP_MINUTES = "60"
 VINTAGE_WATCH_SUPPLIER_GRACE_MINUTES = "240"

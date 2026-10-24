@@ -182,3 +182,20 @@ test('un reporte verde pero viejo sale en amarillo, no en verde', async () => {
   const html = healthSection(salud);
   assert.match(html, /pastilla p-aviso">ok</, 'ok pero viejo = aviso');
 });
+
+test('con PANEL_GITHUB_TOKEN la consulta se identifica; sin token un 404 dice que falta', async () => {
+  const headers = [];
+  const conToken = async (url, init) => { headers.push(init?.headers || {}); return corridaOk(); };
+  await loadHealth(
+    { env: { AMADO_KV: kvStub(), PANEL_SALUD_REMOTO: 'true', PANEL_GITHUB_TOKEN: 'token-de-prueba' } },
+    { now: AHORA, fetchFn: conToken },
+  );
+  assert.equal(headers.length, WORKFLOWS_VIGILADOS.length);
+  assert.ok(headers.every(h => h.Authorization === 'Bearer token-de-prueba'));
+
+  const sinToken = await loadHealth(
+    { env: { AMADO_KV: kvStub(), PANEL_SALUD_REMOTO: 'true' } },
+    { now: AHORA, fetchFn: async (url, init) => { assert.equal(init?.headers?.Authorization, undefined); return new Response('', { status: 404 }); } },
+  );
+  assert.equal(sinToken.reportes.sinConsultar.length, WORKFLOWS_VIGILADOS.length);
+});
