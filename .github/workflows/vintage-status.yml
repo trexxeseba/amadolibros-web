@@ -43,3 +43,33 @@ jobs:
           q "SELECT enabled, datetime(expires_at/1000,'unixepoch','-3 hours') AS vence_uy, datetime(last_at/1000,'unixepoch','-3 hours') AS ultima_actividad_uy FROM ml_vintage_local_access"
           echo '### Stock del proveedor cargado'
           q "SELECT id, source_date, state, expected_rows FROM sbs_supplier_feeds ORDER BY source_date DESC LIMIT 3"
+
+  # Estado de los reportes para la sección Salud del panel. Con el repo privado
+  # GitHub no le contesta al panel sin credencial; este job ya tiene el token
+  # del workflow y deja el resultado en la caché de KV que el panel lee.
+  # Se guarda por 8 horas: cubre la demora habitual de los cron de GitHub.
+  salud-panel:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Leer las últimas corridas de los workflows vigilados
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ops/panel-salud-cache.mjs "$RUNNER_TEMP/salud.json"
+      - name: Guardar en la caché del panel (KV)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4.107.0 kv key put panel:salud:workflows             --path "$RUNNER_TEMP/salud.json"             --namespace-id 6ea0ff4682d647118442a24fe384abc4             --ttl 28800 --remote >/dev/null
+          echo "Caché de Salud actualizada."
