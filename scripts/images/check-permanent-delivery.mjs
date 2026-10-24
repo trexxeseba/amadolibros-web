@@ -29,10 +29,21 @@ assert.ok(zoomTag); assert.doesNotMatch(zoomTag, /\s(?:src|srcset)=/);
 // Preview uses its separate bucket; it must not claim production coverage.
 // In the dormant rollout, gallery/home URLs remain on their previous paths.
 for (const html of [home,catalog,page]) assert.doesNotMatch(html,/\?variant=v1-/);
+// One intentional absent variant exercises Preview isolation, not inventory.
+// Do not follow a redirect or request any transformation/original image.
+const absent = new URL(`/preview-cover/MLU1/0/${'0'.repeat(64)}.jpg?variant=v1-240-q85`,base);
+const missing = await fetch(absent,{redirect:'manual',signal:AbortSignal.timeout(30_000)});
+assert.equal(missing.status,503); assert.equal(missing.headers.get('location'),null);
+assert.equal(missing.headers.get('x-cover-variant'),'unavailable');
+assert.equal(missing.headers.get('cache-control'),'no-store');
+await missing.body?.cancel();
 await mkdir('artifacts/image-variants', {recursive:true});
 const dormantReport={base:base.origin,mode:'dormant-delivery',pages:3,hidden_zoom_has_src:false,
-  variant_urls_emitted:0,image_requests:0,production_coverage_verified:false};
+  variant_urls_emitted:0,image_requests:1,negative_variant_probes:1,original_image_requests:0,
+  preview_missing_variant_isolated:true,production_coverage_verified:false,
+  live_variant_cache_hit_verified:false};
 await writeFile('artifacts/image-variants/delivery.json',JSON.stringify(dormantReport,null,2));
 console.log(JSON.stringify(dormantReport));
-// The authenticated second-pass job separately validates actual production
-// WebP bytes and runs the real resolver. Do not infer that from Preview.
+// Existing-object and edge-cache behavior is covered locally. A real R2/cache
+// HIT still needs a known existing Preview variant or the approved production
+// endpoint smoke after deployment. This check never generates that fixture.
