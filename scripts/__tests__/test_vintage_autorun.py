@@ -23,7 +23,12 @@ def make_runner(directory, published_by_run):
     runner.sync_stock = lambda: None
     runner.heartbeat = lambda published, state: None
     runner.notify = lambda *a, **k: None
-    runner.wait = lambda seconds, reason: runner.waits.append(reason)
+    runner.wait_seconds = []
+
+    def wait(seconds, reason):
+        runner.waits.append(reason)
+        runner.wait_seconds.append(seconds)
+    runner.wait = wait
     runner.status = lambda: dict(current)
 
     def run_engine():
@@ -48,6 +53,24 @@ class RenewLoopTest(unittest.TestCase):
             for _ in range(3):
                 runner.cycle()
             self.assertIn("renovación repetida", runner.waits)
+
+
+class RenewLadderTest(unittest.TestCase):
+    def test_repeated_renewals_back_off_gradually_and_never_wait_hours(self):
+        # 22/10 y 23/10: tres vueltas seguidas de auth_error dejaron al publicador 6 h parado.
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [3474] * 6)
+            for _ in range(6):
+                runner.cycle()
+            self.assertEqual(runner.wait_seconds, [120, 120, 900, 1800, 3600, 3600])
+            self.assertEqual(runner.waits[2], "renovación repetida")
+
+    def test_publishing_again_restarts_the_ladder(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [100, 100, 100, 100, 150, 150])
+            for _ in range(6):
+                runner.cycle()
+            self.assertEqual(runner.wait_seconds, [120, 120, 900, 1800, 120, 120])
 
 
 class TargetRaisedTest(unittest.TestCase):
