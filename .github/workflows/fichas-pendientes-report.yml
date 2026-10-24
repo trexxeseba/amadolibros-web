@@ -52,17 +52,19 @@ jobs:
         if: always()
         run: |
           if [ -f reports/fichas-pendientes/README.md ]; then
-            cat reports/fichas-pendientes/README.md >> "$GITHUB_STEP_SUMMARY"
+            echo "## Informe de fichas pendientes generado" >> "$GITHUB_STEP_SUMMARY"
+            echo "El detalle con números queda en R2, no acá: el repo es público." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Subir informe como artefacto
+      - name: Guardar el reporte en R2 (privado)
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fichas-pendientes-${{ github.run_id }}
-          path: reports/fichas-pendientes/
-          if-no-files-found: warn
-          retention-days: 30
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          [ -d reports/fichas-pendientes ] || { echo "Sin archivos para guardar."; exit 0; }
+          bash scripts/ops/upload-report-r2.sh reports/fichas-pendientes fichas-pendientes
 
       - name: Commitear el informe
         # Sólo a mano: en un PR, el commit del bot quedaba como head sin CI

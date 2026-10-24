@@ -61,13 +61,14 @@ jobs:
           GA4_OUTPUT_DIR: artifacts/ga4
         run: node scripts/ga4-export.js
 
-      - name: Upload JSON and CSV
-        uses: actions/upload-artifact@v4
-        with:
-          name: ga4-${{ inputs.start_date }}-${{ inputs.end_date }}
-          path: artifacts/ga4/
-          if-no-files-found: error
-          retention-days: 30
+      - name: Guardar el reporte en R2 (privado)
+        if: success()
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          bash scripts/ops/upload-report-r2.sh artifacts/ga4 ga4-export
 
       - name: Write run summary
         if: always()

@@ -194,7 +194,9 @@ test('el workflow genera informes protegidos sin habilitar escrituras', () => {
   assert.match(workflow, /secrets\.SYNC_SECRET/);
   assert.match(workflow, /vars\.WORKER_SYNC_TRIGGER_URL/);
   assert.match(workflow, /\/bing-webmaster\/summary/);
-  assert.match(workflow, /actions\/upload-artifact@v4/);
+  // El informe va al bucket privado de R2, no a un artefacto público de Actions.
+  assert.match(workflow, /scripts\/ops\/upload-report-r2\.sh artifacts\/bing bing-webmaster/);
+  assert.doesNotMatch(workflow, /actions\/upload-artifact/);
   assert.match(workflow, /bing-query-performance\.csv/);
   assert.match(workflow, /bing-crawl-issues\.csv/);
   assert.doesNotMatch(workflow, /BING_WEBMASTER_API_KEY/);

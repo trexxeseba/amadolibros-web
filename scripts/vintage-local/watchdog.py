@@ -13,7 +13,7 @@ Cómo sabe si el supervisor está vivo: vintage_autorun.py mantiene un bloqueo
 exclusivo sobre process.lock mientras corre. Si el vigía consigue ese bloqueo,
 no hay supervisor. Nunca mata procesos, nunca borra STOP, nunca toca la base.
 
-  python scripts\vintage-local\watchdog.py --notify-url https://ntfy.sh/amado-vintage
+  python scripts\vintage-local\watchdog.py --notify-url https://ntfy.sh/<tu-tema>
   python scripts\vintage-local\watchdog.py --dry-run     (muestra la decisión, no actúa)
 
 Sólo usa la biblioteca estándar de Python.
