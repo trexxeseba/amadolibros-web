@@ -27,6 +27,12 @@ jobs:
       name: production
 
     steps:
+      # Sólo para el script que guarda el informe en R2.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/ops
+          persist-credentials: false
+
       - name: Resolve protected report URL
         id: endpoint
         shell: bash
