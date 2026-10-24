@@ -1,0 +1,1143 @@
+{
+  "seller_id": 440298103,
+  "review_document_sha256": "e45a954f1f78070f656762ff97953ee37d618df381be9200615af2611bf217fa",
+  "authorization": "Usuario autoriza 33 cambios en 28 activas y sus vinculados, revalidando antes. Dos ediciones condicionadas y 16 bloqueados excluidos; no títulos, precios, descripciones ni plazos.",
+  "approved": [
+    {
+      "id": "MLU642343669",
+      "isbn": "9788411062763",
+      "up": "MLUU2443397254",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU687576966",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU642343669",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU687576966",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU644976251",
+      "isbn": "9788436849585",
+      "up": "MLUU1735756846",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU724853166",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU644976251",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU724853166",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU645351489",
+      "isbn": "9788408292487",
+      "up": "MLUU2097938990",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU728024802",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU645351489",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU728024802",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU647728443",
+      "isbn": "9788408292661",
+      "up": "MLUU2940104320",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU767586610",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU647728443",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU767586610",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU661235846",
+      "isbn": "9789505185702",
+      "up": "MLUU2439896223",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU701212828",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU661235846",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU701212828",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU668116406",
+      "isbn": "9788475093413",
+      "up": "MLUU2440323213",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU893296510",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU668116406",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU893296510",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU679673230",
+      "isbn": "9788426726438",
+      "up": "MLUU2446080584",
+      "attribute": "BOOK_GENRE",
+      "value": "Infantil",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538151"
+      },
+      "peers": [
+        {
+          "id": "MLU639977209",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU679673230",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU639977209",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU680759630",
+      "isbn": "9788477026778",
+      "up": "MLUU2446074964",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU680708118",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU680759630",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU680708118",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU681814716",
+      "isbn": "9788491104346",
+      "up": "MLUU2446078634",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU681840616",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU681814716",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU681840616",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU682741308",
+      "isbn": "9788430121571",
+      "up": "MLUU2441882657",
+      "attribute": "BOOK_GENRE",
+      "value": "Religión",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "19912211"
+      },
+      "peers": [
+        {
+          "id": "MLU701369014",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU682741308",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU701369014",
+          "before": {
+            "value_id": "19912211",
+            "value_name": "Religión",
+            "values": [
+              {
+                "id": "19912211",
+                "name": "Religión",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU683062500",
+      "isbn": "9788474323115",
+      "up": "MLUU2446599590",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU687743864",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU683062500",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU687743864",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU684269814",
+      "isbn": "9788426423382",
+      "up": "MLUU2441882733",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU684426274",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU684269814",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU684426274",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU686467460",
+      "isbn": "9788412267419",
+      "up": "MLUU2446601540",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU701212848",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU686467460",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU701212848",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU687948596",
+      "isbn": "9788466938129",
+      "up": "MLUU2446599860",
+      "attribute": "BOOK_GENRE",
+      "value": "Escuela y educación",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "23663384"
+      },
+      "peers": [
+        {
+          "id": "MLU1199394652",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU687948596",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU1199394652",
+          "before": {
+            "value_id": "23663384",
+            "value_name": "Escuela y educación",
+            "values": [
+              {
+                "id": "23663384",
+                "name": "Escuela y educación",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU692255789",
+      "isbn": "9791399028751",
+      "up": "MLUU3945280815",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU1392392680",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU692255789",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU1392392680",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU694799854",
+      "isbn": "9788449341489",
+      "up": "MLUU1559584612",
+      "attribute": "BOOK_GENRE",
+      "value": "Autoayuda",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538148"
+      },
+      "peers": [
+        {
+          "id": "MLU651628395",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU694799854",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU651628395",
+          "before": {
+            "value_id": "7538148",
+            "value_name": "Autoayuda",
+            "values": [
+              {
+                "id": "7538148",
+                "name": "Autoayuda",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU695430042",
+      "isbn": "9780752884615",
+      "up": "MLUU1821908232",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU701173848",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU695430042",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU701173848",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU701279056",
+      "isbn": "9783869931326",
+      "up": "MLUU2753362935",
+      "attribute": "BOOK_GENRE",
+      "value": "Diccionarios, enciclopedias y consulta",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538149"
+      },
+      "peers": [
+        {
+          "id": "MLU1431940402",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU701279056",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU1431940402",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "corregir",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU720478504",
+      "isbn": "9788433032829",
+      "up": "MLUU3114514285",
+      "attribute": "BOOK_GENRE",
+      "value": "Religión",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "19912211"
+      },
+      "peers": [
+        {
+          "id": "MLU748352064",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU720478504",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU748352064",
+          "before": {
+            "value_id": "19912211",
+            "value_name": "Religión",
+            "values": [
+              {
+                "id": "19912211",
+                "name": "Religión",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU729843108",
+      "isbn": "9788427242913",
+      "up": "MLUU3165797631",
+      "attribute": "BOOK_GENRE",
+      "value": "Autoayuda",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538148"
+      },
+      "peers": [
+        {
+          "id": "MLU752377568",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU729843108",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU752377568",
+          "before": {
+            "value_id": "7538148",
+            "value_name": "Autoayuda",
+            "values": [
+              {
+                "id": "7538148",
+                "name": "Autoayuda",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU729955092",
+      "isbn": "9786073921206",
+      "up": "MLUU3169720230",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU729785934",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU729955092",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU729785934",
+          "before": {
+            "value_id": "13464376",
+            "value_name": "Historia",
+            "values": [
+              {
+                "id": "13464376",
+                "name": "Historia",
+                "struct": null
+              }
+            ]
+          },
+          "action": "corregir",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU800425564",
+      "isbn": "9788433025371",
+      "up": "MLUU3332706884",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU801062480",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU800425564",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU801062480",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU804663332",
+      "isbn": "9789874465344",
+      "up": "MLUU3336154605",
+      "attribute": "BOOK_GENRE",
+      "value": "Literatura",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538039"
+      },
+      "peers": [
+        {
+          "id": "MLU804663334",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU804663332",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU804663334",
+          "before": {
+            "value_id": "7538039",
+            "value_name": "Literatura",
+            "values": [
+              {
+                "id": "7538039",
+                "name": "Literatura",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU887643768",
+      "isbn": "9789501298444",
+      "up": "MLUU3466932954",
+      "attribute": "BOOK_GENRE",
+      "value": "Académico",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13061813"
+      },
+      "peers": [
+        {
+          "id": "MLU887526932",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU887643768",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU887526932",
+          "before": {
+            "value_id": "13061813",
+            "value_name": "Académico",
+            "values": [
+              {
+                "id": "13061813",
+                "name": "Académico",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU912865436",
+      "isbn": "9788410316164",
+      "up": "MLUU3507131879",
+      "attribute": "BOOK_GENRE",
+      "value": "Historia",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "13464376"
+      },
+      "peers": [
+        {
+          "id": "MLU1435128162",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU912865436",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU1435128162",
+          "before": {
+            "value_id": "13464376",
+            "value_name": "Historia",
+            "values": [
+              {
+                "id": "13464376",
+                "name": "Historia",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU1333190898",
+      "isbn": "9788419510730",
+      "up": "MLUU3923936760",
+      "attribute": "BOOK_GENRE",
+      "value": "Esoterismo",
+      "payload": {
+        "id": "BOOK_GENRE",
+        "value_id": "7538147"
+      },
+      "peers": [],
+      "members": [
+        {
+          "id": "MLU1333190898",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        }
+      ]
+    },
+    {
+      "id": "MLU675677260",
+      "isbn": "9788413821474",
+      "up": "MLUU2445500164",
+      "attribute": "BOOK_EDITION",
+      "value": "12",
+      "payload": {
+        "id": "BOOK_EDITION",
+        "value_name": "12"
+      },
+      "peers": [
+        {
+          "id": "MLU675991128",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU675677260",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU675991128",
+          "before": {
+            "value_id": "17353134",
+            "value_name": "12a",
+            "values": [
+              {
+                "id": "17353134",
+                "name": "12a",
+                "struct": null
+              }
+            ]
+          },
+          "action": "conservar",
+          "catalog_listing": true
+        }
+      ]
+    },
+    {
+      "id": "MLU602635497",
+      "isbn": "9788499215266",
+      "up": "MLUU2440175144",
+      "attribute": "PUBLICATION_YEAR",
+      "value": "2014",
+      "payload": {
+        "id": "PUBLICATION_YEAR",
+        "value_name": "2014"
+      },
+      "peers": [
+        {
+          "id": "MLU651588080",
+          "catalog_listing": true
+        }
+      ],
+      "members": [
+        {
+          "id": "MLU602635497",
+          "before": null,
+          "action": "completar",
+          "catalog_listing": false
+        },
+        {
+          "id": "MLU651588080",
+          "before": {
+            "value_id": "13501695",
+            "value_name": "1",
+            "values": [
+              {
+                "id": "13501695",
+                "name": "1",
+                "struct": null
+              }
+            ]
+          },
+          "action": "corregir",
+          "catalog_listing": true
+        }
+      ]
+    }
+  ],
+  "excluded_ids": [
+    "MLU644094660",
+    "MLU477509991",
+    "MLU646394785",
+    "MLU477116592",
+    "MLU647065606",
+    "MLU476024579",
+    "MLU634807907",
+    "MLU673572840",
+    "MLU646539239",
+    "MLU898500042",
+    "MLU1041432582",
+    "MLU661851377",
+    "MLU640319757",
+    "MLU681326730",
+    "MLU681843136",
+    "MLU736358082"
+  ],
+  "excluded_conditional_fields": [
+    {
+      "id": "MLU695664518",
+      "attribute_id": "BOOK_EDITION"
+    },
+    {
+      "id": "MLU611924924",
+      "attribute_id": "BOOK_EDITION"
+    }
+  ],
+  "review_hash": "9ae44ce84f5677749b0a9492e384ac0d1e1fa06bfb37367aa9ce6540a33bcc58"
+}
