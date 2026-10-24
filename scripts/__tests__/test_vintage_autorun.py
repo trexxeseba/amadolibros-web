@@ -1,6 +1,7 @@
 """Tests del supervisor Vintage: python -m unittest discover -s scripts/__tests__ -p "test_vintage_autorun.py"."""
 import re
 import sys
+import unittest.mock
 import tempfile
 import time
 import types
@@ -71,6 +72,64 @@ class RenewLadderTest(unittest.TestCase):
             for _ in range(6):
                 runner.cycle()
             self.assertEqual(runner.wait_seconds, [120, 120, 900, 1800, 120, 120])
+
+
+class UpdateCodeTest(unittest.TestCase):
+    def runner(self, directory):
+        args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=None, no_update=False)
+        runner = vintage_autorun.Runner(args)
+        runner.notices = []
+        runner.notify = lambda title, message, key=None, every_s=3600: runner.notices.append((title, message, every_s))
+        return runner
+
+    def fake_git(self, pull_code=0, pull_error="", head="abc1234"):
+        def run(command, **kwargs):
+            if "pull" in command:
+                return types.SimpleNamespace(returncode=pull_code, stdout="", stderr=pull_error)
+            if "--abbrev-ref" in command:
+                return types.SimpleNamespace(returncode=0, stdout="main" + chr(10), stderr="")
+            return types.SimpleNamespace(returncode=0, stdout=head + chr(10), stderr="")
+        return run
+
+    def update(self, runner, run):
+        with unittest.mock.patch.object(vintage_autorun.shutil, "which", return_value="git"), unittest.mock.patch.object(vintage_autorun.subprocess, "run", side_effect=run):
+            return runner.update_code()
+
+    def test_a_failed_pull_is_reported_right_away_and_repeats_every_half_hour(self):
+        # El pull ocurre una vez por ciclo (que puede durar un día): no se espera a una segunda falla.
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            error = "error: The following untracked working tree files would be overwritten by merge: package.json"
+            self.assertFalse(self.update(runner, self.fake_git(pull_code=1, pull_error=error)))
+            self.assertEqual(len(runner.notices), 1)
+            title, message, every_s = runner.notices[0]
+            self.assertEqual(title, "Vintage: no pude actualizar el código")
+            self.assertEqual(every_s, 30 * 60)
+            self.assertIn("package.json", message)
+            self.assertIn("sigue con el código anterior", message)
+
+    def test_git_unreachable_is_reported_too(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            def broken(command, **kwargs):
+                raise OSError("sin red")
+            self.assertFalse(self.update(runner, broken))
+            self.assertEqual([n[0] for n in runner.notices], ["Vintage: no pude consultar el código"])
+            self.assertEqual(runner.notices[0][2], 6 * 3600)
+
+    def test_a_successful_pull_stays_silent_and_reports_new_code(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            runner.head = "old0000"
+            self.assertTrue(self.update(runner, self.fake_git(head="new1111")))
+            self.assertEqual(runner.notices, [])
+
+    def test_a_pull_with_nothing_new_returns_false_and_stays_silent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            runner.head = "same222"
+            self.assertFalse(self.update(runner, self.fake_git(head="same222")))
+            self.assertEqual(runner.notices, [])
 
 
 class TargetRaisedTest(unittest.TestCase):
