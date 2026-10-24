@@ -33,6 +33,27 @@ export class VintageBulkStore extends VintageStore {
    this.stmt('INSERT INTO ml_pub_run_targets(run_id,target_published,created_at) VALUES(?,?,?)',r.id,9995,r.now),
   ]);
  }
+ // At the target the run closes but keeps its remaining candidates pending: the
+ // shared queue discards them (skipped_target_reached), which made going past the
+ // target impossible without editing the database by hand. Only this store overrides it.
+ async skipRemainingAtTarget(){}
+ // The run target may only go up, and never past maxTarget (a hard safety ceiling).
+ async planRaise(id,newTarget,maxTarget){
+  if(!Number.isInteger(newTarget)||!Number.isInteger(maxTarget)||newTarget>maxTarget)throw new PublicationError('invalid_target',422);
+  const current=await this.target(id);if(!current)throw new PublicationError('target_not_found',404);
+  if(newTarget<=current.target_published)throw new PublicationError('target_not_higher',409);
+  return {from:current.target_published,to:newTarget};
+ }
+ async raiseTarget(id,newTarget,maxTarget){
+  const plan=await this.planRaise(id,newTarget,maxTarget);
+  await this.stmt('UPDATE ml_pub_run_targets SET target_published=? WHERE run_id=? AND target_published<?',newTarget,id,newTarget).run();
+  return plan;
+ }
+ // A closed run goes back to publishing when its target now exceeds what is published.
+ async reopenForRaisedTarget(id,now){
+  const result=await this.stmt("UPDATE ml_pub_runs SET state='publishing',updated_at=? WHERE id=? AND state IN ('complete','complete_with_review') AND lease_until<? AND approved_hash=policy_hash AND (SELECT COUNT(*) FROM ml_pub_jobs WHERE run_id=? AND state='published' AND item_id IS NOT NULL)<COALESCE((SELECT target_published FROM ml_pub_run_targets WHERE run_id=?),0)",now,id,now,id,id).run();
+  return (result?.meta?.changes??0)>0;
+ }
  async existing(id,isbn,title){return await this.db.prepare('SELECT item_id,isbn FROM ml_vintage_bulk_identifiers WHERE run_id=? AND isbn=? LIMIT 1').bind(id,isbn).first()??await super.existing(id,isbn,title);}
 }
 

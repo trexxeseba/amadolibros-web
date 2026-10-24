@@ -183,3 +183,27 @@ test('availability repair blocks another seller, and reports a rejected or ignor
  item.seller_id=seller;let result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.status,403);assert.equal(result.availability_complete,false);
  reject=false;result=await f.bulk.command(f.env,'repair_availability',{run_id:BULK_RUN});assert.equal(result.availability_error.code,'availability_update_not_confirmed');assert.equal((await f.s.run(BULK_RUN)).state,'paused');
 });
+test('reaching the target closes the run but keeps the remaining candidates pending, and raising the target reopens it',async t=>{
+ const f=await fixture(t);await f.bulk.command(f.env,'start',f.args);
+ await f.s.stmt("UPDATE ml_pub_jobs SET state='published',item_id='MLU'||isbn WHERE run_id=? AND isbn IN (SELECT isbn FROM ml_pub_jobs WHERE run_id=? AND state='pending' ORDER BY isbn LIMIT 9994)",BULK_RUN,BULK_RUN).run();
+ await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});
+ const closed=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(closed.run.state,'complete');assert.equal(f.calls.create.length,1);
+ const count=async state=>(await f.s.stmt('SELECT COUNT(*) n FROM ml_pub_jobs WHERE run_id=? AND state=?',BULK_RUN,state).first()).n;
+ assert.equal(await count('skipped_target_reached'),0);assert.ok(await count('pending')>0);
+ f.clock.value+=3600_000;
+ assert.equal(await f.s.reopenForRaisedTarget(BULK_RUN,f.clock.value),false,'without a higher target nothing reopens');
+ await f.s.raiseTarget(BULK_RUN,9996,20000);
+ assert.equal(await f.s.reopenForRaisedTarget(BULK_RUN,f.clock.value),true);
+ const reopened=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(f.calls.create.length,2);
+ const again=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(again.run.state,'complete');assert.equal(f.calls.create.length,2);
+});
+test('the target can only go up, never past the ceiling, and only for an existing run',async t=>{
+ const f=await fixture(t);await f.bulk.command(f.env,'start',f.args);
+ await assert.rejects(()=>f.s.raiseTarget(BULK_RUN,9995,20000),/target_not_higher/);
+ await assert.rejects(()=>f.s.raiseTarget(BULK_RUN,9000,20000),/target_not_higher/);
+ await assert.rejects(()=>f.s.raiseTarget(BULK_RUN,20001,20000),/invalid_target/);
+ await assert.rejects(()=>f.s.raiseTarget('otro-run',12000,20000),/target_not_found/);
+ assert.deepEqual(await f.s.raiseTarget(BULK_RUN,12995,19995),{from:9995,to:12995});
+ assert.equal((await f.s.target(BULK_RUN)).target_published,12995);
+ assert.equal((await f.s.target(PILOT_RUN)).target_published,5,'the pilot target is untouched');
+});

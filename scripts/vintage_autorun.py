@@ -31,6 +31,10 @@ RENEW = REPO / "scripts" / "vintage-local" / "renew.mjs"
 STOCK_SYNC = REPO / "scripts" / "vintage-local" / "stock-sync.mjs"
 MONTEVIDEO = dt.timezone(dt.timedelta(hours=-3))
 RENEW_MARGIN_S = 30 * 60
+# Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
+# (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
+# Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
+ENGINE_TARGET_CEILING = 20000
 FATAL = {
     "stopped_listing_quota": "Mercado Libre rechazó altas por cupo de publicaciones",
     "stopped_item_readback_failed": "Un alta no pasó la verificación posterior",
@@ -211,9 +215,14 @@ class Runner:
         elif last.get("paused") or last.get("activated") or last.get("repriced"):
             self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Precios ajustados: {last.get('repriced', 0)}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
 
+    def engine_command(self):
+        # --target del autorun (run.cmd lo fija en 10000) ya no limita al motor: sólo manda el tope máximo.
+        target = max(self.args.target, ENGINE_TARGET_CEILING)
+        return [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(target)]
+
     def run_engine(self):
-        command = [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(self.args.target)]
-        self.log("motor iniciado", target=self.args.target)
+        command = self.engine_command()
+        self.log("motor iniciado", target=command[-1])
         (self.directory / "status.json").unlink(missing_ok=True)  # el estado leído al final es sólo de esta corrida
         log_file = self.logs / f"engine-{dt.datetime.now(MONTEVIDEO).strftime('%Y-%m-%d')}.log"
         start = log_file.stat().st_size if log_file.exists() else 0
@@ -330,7 +339,14 @@ class Runner:
                 self.wait(120, "hace falta renovar")
             return None
         self.renew_loops = 0
-        if state in ("complete", "complete_with_review") or (isinstance(published, int) and published >= self.args.target):
+        remaining = (status.get("run") or {}).get("target_remaining")
+        target_open = isinstance(remaining, int) and remaining > 0
+        if state in ("complete", "complete_with_review") and target_open:
+            # El objetivo se subió (set-target) con la campaña cerrada: el motor la reabre al arrancar.
+            self.log("objetivo pendiente con la campaña cerrada", target_remaining=remaining)
+            self.wait(15 * 60, "objetivo subido")
+            return None
+        if state in ("complete", "complete_with_review") or (isinstance(published, int) and published >= self.args.target and not target_open):
             self.notify("Vintage: campaña sin pendientes", f"Publicados: {published}. Estado: {state}. Vuelvo a mirar con el próximo stock.", every_s=20 * 3600)
             self.force_renew = True
             self.wait(3 * 3600, "sin pendientes")
