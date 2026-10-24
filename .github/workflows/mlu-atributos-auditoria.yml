@@ -4,8 +4,12 @@ on:
     inputs:
       review_ids:
         description: '1 a 100 IDs propios separados por comas'
-        required: true
+        required: false
         type: string
+      catalog_diagnostics:
+        description: 'Diagnóstico de lectura de los tres vinculados pendientes'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -22,17 +26,24 @@ jobs:
         with:
           node-version: '22.12.0'
       - name: Test read-only guards
-        run: node --test scripts/__tests__/read-hundred-groups.test.mjs
+        run: node --test scripts/__tests__/read-hundred-groups.test.mjs scripts/__tests__/read-three-catalog-diagnostics.test.mjs
       - name: Read groups without writes or deployments
+        if: inputs.catalog_diagnostics != true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           REVIEW_IDS: ${{ inputs.review_ids }}
         run: node scripts/mercadolibre/read-approved-ninety-groups.mjs artifacts/ninety-review
+      - name: Read three catalog product and UP diagnostics without changes
+        if: inputs.catalog_diagnostics == true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/mercadolibre/read-three-catalog-diagnostics.mjs artifacts/catalog-diagnostics
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ninety-groups-${{ github.run_id }}
-          path: artifacts/ninety-review/
+          path: artifacts/
           retention-days: 30
           if-no-files-found: warn
