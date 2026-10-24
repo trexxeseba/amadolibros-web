@@ -189,6 +189,8 @@ export function evaluarWorkflows(corridas, { now = new Date(), vigilados = WORKF
       dias: antiguedad,
       ok: !fallo && !viejo,
       url: asText(corrida.html_url) || null,
+      // GitHub no respondió esta vez: es el último dato bueno, con su fecha.
+      datoViejoDe: asText(lectura?.datoViejoDe) || null,
     });
   }
 
@@ -197,10 +199,10 @@ export function evaluarWorkflows(corridas, { now = new Date(), vigilados = WORKF
   // realidad son el mismo hecho es ruido.
   if (sinConsultar.length && sinConsultar.length === vigilados.length) {
     problemas.push('No se pudo consultar la API de GitHub: esta vez no hay datos de ningún reporte automático.');
-  } else {
-    for (const nombre of sinConsultar) {
-      problemas.push(`No se pudo consultar el estado de «${nombre}».`);
-    }
+  } else if (sinConsultar.length) {
+    // Un solo aviso: casi siempre es la misma causa (GitHub limitó las
+    // consultas), no N reportes rotos.
+    problemas.push(`GitHub no respondió para ${sinConsultar.length} ${sinConsultar.length === 1 ? 'reporte' : 'reportes'} y todavía no hay un dato anterior guardado: ${sinConsultar.map(n => `«${n}»`).join(', ')}.`);
   }
 
   return { filas, problemas, sinConsultar };
