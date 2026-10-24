@@ -223,7 +223,9 @@ export async function main() {
     ),
   ]);
 
-  console.log(JSON.stringify(result.total));
+  // Sólo que terminó: los totales van a los archivos, no al log, que en un
+  // repo público lo puede leer cualquiera.
+  console.log(`Embudo de checkout listo en ${OUTPUT_DIR}.`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

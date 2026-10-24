@@ -93,11 +93,11 @@ test('encendido y sin caché consulta una vez por reporte y guarda el resultado'
   assert.equal(salud.reportes.desdeCache, false);
   assert.equal(fetchFn.llamadas.length, WORKFLOWS_VIGILADOS.length, 'una consulta por workflow vigilado');
   assert.ok(fetchFn.llamadas.every(u => u.includes('branch=main')), 'siempre la rama main');
-  assert.equal(kv.puts.length, 1);
-  assert.equal(kv.puts[0].key, 'panel:salud:workflows');
-  assert.equal(kv.puts[0].options.expirationTtl, 600);
+  const cache = kv.puts.find(p => p.key === 'panel:salud:workflows');
+  assert.equal(cache.options.expirationTtl, 600);
+  assert.ok(kv.puts.some(p => p.key === 'panel:salud:workflows:ultimo-bueno'), 'guarda el último dato bueno');
   // Lo que va a KV es chico: sólo los tres campos que se muestran.
-  const guardado = JSON.parse(kv.puts[0].value);
+  const guardado = JSON.parse(cache.value);
   const primera = Object.values(guardado.corridas)[0].corrida;
   assert.deepEqual(Object.keys(primera).sort(), ['conclusion', 'created_at', 'html_url']);
 });
@@ -118,7 +118,7 @@ test('con caché vigente no sale a la red y lo dice', async () => {
   assert.equal(salud.reportes.consultadoEn, '2026-09-13T20:55:00.000Z');
 });
 
-test('si GitHub no responde se dice "sin consultar", no "nunca corrió", y no se cachea', async () => {
+test('si GitHub no responde se dice "sin consultar", no "nunca corrió", y se cachea poco tiempo', async () => {
   const kv = kvStub({ 'sync:last_ok': '2026-09-13T07:20:00.000Z' });
   const fetchFn = fetchContador(() => { throw new Error('ECONNRESET'); });
   const salud = await loadHealth(
@@ -128,7 +128,28 @@ test('si GitHub no responde se dice "sin consultar", no "nunca corrió", y no se
   assert.ok(salud.reportes.filas.every(f => f.estado === 'no se pudo consultar'));
   assert.equal(salud.reportes.problemas.length, 1, 'un solo hecho, un solo aviso');
   assert.match(salud.reportes.problemas[0], /API de GitHub/);
-  assert.equal(kv.puts.length, 0, 'un corte de red no se guarda diez minutos');
+  assert.equal(kv.puts.length, 1, 'se cachea para no agotar el cupo de GitHub');
+  assert.equal(kv.puts[0].options.expirationTtl, 180, 'pero sólo tres minutos');
+});
+
+test('si GitHub limita las consultas se muestra el último dato bueno con su fecha, sin aviso rojo', async () => {
+  const ultimo = JSON.stringify(Object.fromEntries(WORKFLOWS_VIGILADOS.map(wf => [wf.archivo, { consultadoEn: '2026-09-13T18:00:00.000Z', corrida: { conclusion: 'success', created_at: '2026-09-13T09:00:00.000Z', html_url: null } }])));
+  const kv = kvStub({ 'sync:last_ok': '2026-09-13T07:20:00.000Z', 'panel:salud:workflows:ultimo-bueno': ultimo });
+  const fetchFn = fetchContador(() => new Response('rate limited', { status: 403 }));
+  const salud = await loadHealth({ env: { AMADO_KV: kv, PANEL_SALUD_REMOTO: 'true' } }, { now: AHORA, fetchFn });
+  assert.equal(salud.reportes.sinConsultar.length, 0);
+  assert.ok(salud.reportes.filas.every(f => f.datoViejoDe === '2026-09-13T18:00:00.000Z'));
+  assert.ok(!salud.reportes.problemas.some(p => /No se pudo consultar|GitHub no respondió/.test(p)));
+  assert.match(healthSection(salud), /último dato del 13\/09 18:00/);
+});
+
+test('si fallan algunos sin dato previo hay un solo aviso, no uno por reporte', async () => {
+  const kv = kvStub({ 'sync:last_ok': '2026-09-13T07:20:00.000Z' });
+  let n = 0;
+  const fetchFn = fetchContador(() => (n++ % 2 ? new Response('x', { status: 403 }) : Response.json({ workflow_runs: [{ conclusion: 'success', created_at: '2026-09-13T09:00:00.000Z', html_url: null }] })));
+  const salud = await loadHealth({ env: { AMADO_KV: kv, PANEL_SALUD_REMOTO: 'true' } }, { now: AHORA, fetchFn });
+  assert.ok(salud.reportes.sinConsultar.length > 0);
+  assert.equal(salud.reportes.problemas.filter(p => /GitHub no respondió/.test(p)).length, 1);
 });
 
 // ── render ──────────────────────────────────────────────────────────────────
@@ -181,4 +202,21 @@ test('un reporte verde pero viejo sale en amarillo, no en verde', async () => {
   );
   const html = healthSection(salud);
   assert.match(html, /pastilla p-aviso">ok</, 'ok pero viejo = aviso');
+});
+
+test('con PANEL_GITHUB_TOKEN la consulta se identifica; sin token un 404 dice que falta', async () => {
+  const headers = [];
+  const conToken = async (url, init) => { headers.push(init?.headers || {}); return corridaOk(); };
+  await loadHealth(
+    { env: { AMADO_KV: kvStub(), PANEL_SALUD_REMOTO: 'true', PANEL_GITHUB_TOKEN: 'token-de-prueba' } },
+    { now: AHORA, fetchFn: conToken },
+  );
+  assert.equal(headers.length, WORKFLOWS_VIGILADOS.length);
+  assert.ok(headers.every(h => h.Authorization === 'Bearer token-de-prueba'));
+
+  const sinToken = await loadHealth(
+    { env: { AMADO_KV: kvStub(), PANEL_SALUD_REMOTO: 'true' } },
+    { now: AHORA, fetchFn: async (url, init) => { assert.equal(init?.headers?.Authorization, undefined); return new Response('', { status: 404 }); } },
+  );
+  assert.equal(sinToken.reportes.sinConsultar.length, WORKFLOWS_VIGILADOS.length);
 });

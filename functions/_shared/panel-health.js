@@ -15,6 +15,10 @@
  *   En tests, preview y dev queda apagado: una pantalla de prueba no tiene
  *   por qué salir a Internet, y una suite que depende de red real es una
  *   suite que un día falla sin que nadie haya roto nada.
+ * - Con el repo privado, GitHub responde 404 a quien no se identifica: el
+ *   panel manda PANEL_GITHUB_TOKEN (token de solo lectura de Actions de este
+ *   repo, secret de Pages) cuando existe. Sin token, un 404 se explica como
+ *   eso y no como «el workflow no existe».
  * - Con la consulta encendida, el resultado se cachea 10 minutos en KV. Sin
  *   token, la API de GitHub admite 60 pedidos por hora por IP y las IPs de
  *   salida de Cloudflare son compartidas; abrir el panel diez veces no puede
@@ -34,6 +38,14 @@ import { readSalesHealth, evaluateSalesHealth } from '../../worker-sync/sales-he
 const REPO = 'trexxeseba/amadolibros-web';
 const CACHE_KEY = 'panel:salud:workflows';
 const CACHE_TTL_SECONDS = 600;
+// Una lectura incompleta también se cachea, pero menos tiempo: sin token, la
+// API de GitHub limita por IP (y Cloudflare comparte IPs), así que volver a
+// preguntar las siete cosas en cada carga del panel agota el cupo.
+const CACHE_PARCIAL_TTL_SECONDS = 180;
+// Último dato bueno de cada reporte: si GitHub no responde, se muestra ese
+// dato con su fecha en vez de un aviso rojo por reporte.
+const ULTIMO_BUENO_KEY = 'panel:salud:workflows:ultimo-bueno';
+const ULTIMO_BUENO_TTL_SECONDS = 7 * 86400;
 const GITHUB_TIMEOUT_MS = 4000;
 
 function escapeHtml(value) {
@@ -61,16 +73,23 @@ export function fechaCorta(iso) {
   return `${dd}/${mm} ${hh}:${mi}`;
 }
 
-async function leerUltimaCorrida(wf, fetchFn) {
+async function leerUltimaCorrida(wf, fetchFn, token = '') {
   const url = new URL(`https://api.github.com/repos/${REPO}/actions/workflows/${wf.archivo}/runs`);
   url.searchParams.set('per_page', '1');
   if (wf.rama) url.searchParams.set('branch', wf.rama);
 
   try {
     const response = await fetchFn(url.toString(), {
-      headers: { 'User-Agent': 'amadolibros-panel-salud', Accept: 'application/vnd.github+json' },
+      headers: {
+        'User-Agent': 'amadolibros-panel-salud',
+        Accept: 'application/vnd.github+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     });
+    if (response?.status === 404 && !token) {
+      return { ok: false, error: 'HTTP 404: si el repo es privado, falta PANEL_GITHUB_TOKEN' };
+    }
     if (!response?.ok) return { ok: false, error: `HTTP ${response?.status ?? 'sin respuesta'}` };
     const data = await response.json();
     const run = data?.workflow_runs?.[0];
@@ -100,12 +119,22 @@ async function leerCache(kv) {
   }
 }
 
-async function guardarCache(kv, valor) {
+async function guardarCache(kv, valor, ttl = CACHE_TTL_SECONDS, key = CACHE_KEY) {
   if (!kv) return;
   try {
-    await kv.put(CACHE_KEY, JSON.stringify(valor), { expirationTtl: CACHE_TTL_SECONDS });
+    await kv.put(key, JSON.stringify(valor), { expirationTtl: ttl });
   } catch {
     // Un caché que no se pudo escribir no es un problema del panel.
+  }
+}
+
+async function leerUltimoBueno(kv) {
+  if (!kv) return {};
+  try {
+    const parsed = JSON.parse((await kv.get(ULTIMO_BUENO_KEY)) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 }
 
@@ -158,14 +187,25 @@ export async function loadHealth(context, { now = new Date(), fetchFn = globalTh
     } else {
       corridas = {};
       await Promise.all(WORKFLOWS_VIGILADOS.map(async wf => {
-        corridas[wf.archivo] = await leerUltimaCorrida(wf, fetchFn);
+        corridas[wf.archivo] = await leerUltimaCorrida(wf, fetchFn, asText(env.PANEL_GITHUB_TOKEN));
       }));
       consultadoEn = now.toISOString();
-      // Sólo se cachea una lectura completa. Cachear "no se pudo consultar"
-      // dejaría el panel diez minutos diciendo que no sabe, por un corte de
-      // dos segundos.
-      const completa = WORKFLOWS_VIGILADOS.every(wf => corridas[wf.archivo]?.ok === true);
-      if (completa) await guardarCache(kv, { corridas, consultadoEn });
+      // Lo que respondió bien pasa a ser el último dato bueno; lo que falló se
+      // completa con el último dato bueno que haya (marcado con su fecha).
+      const ultimoBueno = await leerUltimoBueno(kv);
+      let huboNuevos = false;
+      for (const wf of WORKFLOWS_VIGILADOS) {
+        const lectura = corridas[wf.archivo];
+        if (lectura?.ok === true) {
+          ultimoBueno[wf.archivo] = { corrida: lectura.corrida, consultadoEn };
+          huboNuevos = true;
+        } else if (ultimoBueno[wf.archivo]) {
+          corridas[wf.archivo] = { ok: true, corrida: ultimoBueno[wf.archivo].corrida, datoViejoDe: ultimoBueno[wf.archivo].consultadoEn, error: lectura?.error ?? null };
+        }
+      }
+      if (huboNuevos) await guardarCache(kv, ultimoBueno, ULTIMO_BUENO_TTL_SECONDS, ULTIMO_BUENO_KEY);
+      const completa = WORKFLOWS_VIGILADOS.every(wf => corridas[wf.archivo]?.ok === true && !corridas[wf.archivo]?.datoViejoDe);
+      await guardarCache(kv, { corridas, consultadoEn }, completa ? CACHE_TTL_SECONDS : CACHE_PARCIAL_TTL_SECONDS);
     }
 
     reportes = { disponible: true, ...evaluarWorkflows(corridas, { now }), desdeCache, consultadoEn };
@@ -247,7 +287,7 @@ export function healthSection(salud, { catalogo = null } = {}) {
       return `<tr>
         <td>${nombre}</td>
         <td><span class="pastilla p-${tono}">${escapeHtml(etiqueta)}</span></td>
-        <td>${escapeHtml(hace(fila.dias))}</td>
+        <td>${escapeHtml(hace(fila.dias))}${fila.datoViejoDe ? ` <span class="muted">· último dato del ${escapeHtml(fechaCorta(fila.datoViejoDe))} UTC</span>` : ''}</td>
       </tr>`;
     }).join('');
     const origen = reportes.desdeCache
