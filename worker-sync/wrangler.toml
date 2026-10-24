@@ -66,6 +66,13 @@ IMAGE_VARIANTS_WRITE_ENABLED = "false"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 # Correo diario del panel: quién lo recibe (separados por coma).
 DAILY_DIGEST_TO = "undiaes@gmail.com,adm@amadolibros.com"
+# Vigía de la campaña de Amado Vintage (worker-sync/vintage-watch.js): cada 5
+# minutos lee D1 y avisa por ntfy si la PC dejó de publicar. Umbrales en minutos.
+VINTAGE_WATCH_ENABLED = "true"
+VINTAGE_NOTIFY_URL = "https://ntfy.sh/amado-vintage"
+VINTAGE_WATCH_STALL_MINUTES = "45"
+VINTAGE_WATCH_WARMUP_MINUTES = "60"
+VINTAGE_WATCH_SUPPLIER_GRACE_MINUTES = "240"
 INDEXNOW_ENABLED = "true"
 # Clave pública verificada por el archivo homónimo en astro-front/public.
 INDEXNOW_KEY = "944e65e97fd0a8c242c495ccf458d3c3"
