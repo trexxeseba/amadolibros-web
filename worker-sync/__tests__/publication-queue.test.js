@@ -456,3 +456,13 @@ test('a 401, or a 403 outside metadata, still stops the run as auth_error',async
   assert.equal((await f.store.run(f.runId)).state,'auth_error');
  }
 });
+test('after a new supplier list, books present in it are taken before books absent from it',async t=>{
+ const f=await fixture(t);
+ const feedId=crypto.randomUUID();await f.store.beginFeed(feedId,new Date(f.now).toISOString(),1,f.now);await f.store.importRows(feedId,[books[1]]);await f.store.commitFeed(feedId);await f.store.attachFeed(f.runId,feedId);
+ // books[0] sorts first by ISBN but is absent from the new list: it must not delay the book that is in it.
+ const first=await f.store.nextJob(f.runId,f.now+1000,false);
+ assert.equal(first.isbn,books[1].isbn);
+ await f.store.job(f.runId,books[1].isbn,'validated',{now:f.now});
+ const second=await f.store.nextJob(f.runId,f.now+1000,false);
+ assert.equal(second.isbn,books[0].isbn);
+});
