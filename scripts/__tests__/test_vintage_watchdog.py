@@ -45,6 +45,27 @@ class DecideTest(unittest.TestCase):
         action, _, _ = decide(status_at=NOW - 2 * 3600, autorun={"msg": "esperando", "reason": "renovación repetida"}, memory={"last_total": 7500, "changed_at": NOW - 2 * 3600})
         self.assertEqual(action, "alert")
 
+    def test_engine_error_loop_without_progress_is_an_alert(self):
+        # El 21/10 el motor falló unas 10 veces seguidas con el total clavado durante horas y nadie avisó.
+        for reason in ("error del motor", "fallo de renovación", "objetivo subido"):
+            action, why, _ = decide(autorun={"msg": "esperando", "reason": reason}, memory={"last_total": 7500, "changed_at": NOW - 50 * 60})
+            self.assertEqual(action, "alert", reason)
+            self.assertTrue(why.endswith(":" + reason), why)
+
+    def test_a_recent_engine_error_is_still_tolerated(self):
+        for reason in ("error del motor", "fallo de renovación", "objetivo subido"):
+            action, why, _ = decide(autorun={"msg": "esperando", "reason": reason}, memory={"last_total": 7500, "changed_at": NOW - 10 * 60})
+            self.assertEqual((action, why), ("none", "retrying:" + reason))
+
+    def test_engine_errors_that_still_publish_never_alert(self):
+        action, _, _ = decide(published_total=7501, autorun={"msg": "esperando", "reason": "error del motor"}, memory={"last_total": 7500, "changed_at": NOW - 3 * 3600})
+        self.assertEqual(action, "none")
+
+    def test_long_normal_waits_are_still_silent(self):
+        # La espera nocturna de la lista de SBS puede durar horas sin altas y no es una falla.
+        action, why, _ = decide(autorun={"msg": "esperando", "reason": "stock vencido"}, memory={"last_total": 7500, "changed_at": NOW - 6 * 3600})
+        self.assertEqual((action, why), ("none", "waiting:stock vencido"))
+
     def test_progress_resets_the_stall_clock(self):
         action, why, memory = decide(published_total=7501, memory={"last_total": 7500, "changed_at": NOW - 3 * 3600})
         self.assertEqual((action, why), ("none", "ok"))
@@ -83,6 +104,24 @@ class OnceTest(unittest.TestCase):
             memory = json.loads(Path(directory, "watchdog-state.json").read_text("utf-8"))
             self.assertEqual(memory["relaunched_at"], NOW)
             self.assertTrue(list(Path(directory, "logs").glob("watchdog-*.log")))
+
+
+    def test_alert_message_names_the_last_autorun_wait_reason(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "logs").mkdir()
+            (root / "status.json").write_text(json.dumps({"at": "2027-01-15T12:00:00.000Z", "published_total": 7500, "state": "publishing", "run": {"index": {"done": True}}}), "utf-8")
+            (root / "logs" / "autorun-2027-01-15.log").write_text(json.dumps({"msg": "esperando", "reason": "error del motor"}) + "\n", "utf-8")
+            (root / "watchdog-state.json").write_text(json.dumps({"last_total": 7500, "changed_at": NOW - 50 * 60}), "utf-8")
+            original, watchdog.lock_is_held = watchdog.lock_is_held, lambda path: True
+            try:
+                action, why = watchdog.Watchdog(directory, dry_run=True).once(NOW)
+            finally:
+                watchdog.lock_is_held = original
+            self.assertEqual(action, "alert")
+            self.assertTrue(why.endswith(":error del motor"), why)
+            log = "".join(p.read_text("utf-8") for p in (root / "logs").glob("watchdog-*.log"))
+            self.assertIn("Último motivo del autorun: error del motor", log)
 
 
 if __name__ == "__main__":

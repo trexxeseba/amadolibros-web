@@ -33,7 +33,10 @@ STALL_MINUTES = 45
 ALERT_EVERY_S = 3600
 RELAUNCH_EVERY_S = 600
 # Motivos de "esperando" del supervisor que explican por sí solos la falta de altas.
-NORMAL_WAITS = {"stock vencido", "tope diario", "sin pendientes", "hace falta renovar", "pausa breve", "error del motor", "fallo de renovación"}
+NORMAL_WAITS = {"stock vencido", "tope diario", "sin pendientes", "hace falta renovar", "pausa breve"}
+# Fallos que el autorun reintenta solo: se toleran un rato, pero si pasa el umbral sin altas avisan
+# (antes estaban en NORMAL_WAITS y un motor fallando en bucle no avisaba nunca).
+RETRY_WAITS = {"error del motor", "fallo de renovación", "objetivo subido"}
 
 
 def parse_iso(value):
@@ -118,14 +121,17 @@ def decide(snap, memory, now, stall_minutes=STALL_MINUTES):
     if not snap.get("running"):
         return "relaunch", "autorun_not_running", memory
     autorun = snap.get("autorun") or {}
-    if autorun.get("msg") == "esperando" and autorun.get("reason") in NORMAL_WAITS:
-        return "none", "waiting:" + autorun["reason"], memory
+    reason = autorun.get("reason") if autorun.get("msg") == "esperando" else None
+    if reason in NORMAL_WAITS:
+        return "none", "waiting:" + reason, memory
+    if reason in RETRY_WAITS and now - memory["changed_at"] <= stall_minutes * 60:
+        return "none", "retrying:" + reason, memory
     if snap.get("index_done") is False:
         return "none", "scanning_inventory", memory
     stalled_s = now - memory["changed_at"]
     status_age = now - snap["status_at"] if snap.get("status_at") else None
     if stalled_s > stall_minutes * 60 or (status_age is not None and status_age > stall_minutes * 60):
-        return "alert", f"stalled:{int(stalled_s // 60)}min:{snap.get('state')}", memory
+        return "alert", f"stalled:{int(stalled_s // 60)}min:{snap.get('state')}" + (f":{reason}" if reason else ""), memory
     return "none", "ok", memory
 
 
@@ -171,6 +177,8 @@ class Watchdog:
         snap = snapshot(self.directory)
         action, reason, memory = decide(snap, memory, now, self.stall_minutes)
         total = snap.get("published_total")
+        autorun = snap.get("autorun") or {}
+        wait_reason = autorun.get("reason") if autorun.get("msg") == "esperando" else None
         if action == "relaunch":
             if now - memory.get("relaunched_at", 0) >= RELAUNCH_EVERY_S:
                 memory["relaunched_at"] = now
@@ -184,7 +192,7 @@ class Watchdog:
         elif action == "alert":
             if now - memory.get("alerted_at", 0) >= ALERT_EVERY_S:
                 memory["alerted_at"] = now
-                self.notify("Vintage: sin altas nuevas", f"Publicados: {total}, sin cambios hace {int((now - memory['changed_at']) // 60)} min. Estado: {snap.get('state')}. Supervisor vivo, sin espera que lo explique.")
+                self.notify("Vintage: sin altas nuevas", f"Publicados: {total}, sin cambios hace {int((now - memory['changed_at']) // 60)} min. Estado: {snap.get('state')}. Supervisor vivo, sin espera que lo explique." + (f" Último motivo del autorun: {wait_reason}." if wait_reason else ""))
         self.log("vuelta", action=action, reason=reason, published_total=total, state=snap.get("state"))
         self.memory_file.write_text(json.dumps(memory), "utf-8")
         return action, reason
