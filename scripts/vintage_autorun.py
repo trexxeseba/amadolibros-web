@@ -189,10 +189,13 @@ class Runner:
                 self.log("código", branch=branch, head=head, pull=result.returncode, detail=(result.stderr or "")[-200:])
                 self.head = head
             if result.returncode != 0:
-                self.notify("Vintage: no pude actualizar el código", f"git pull en {branch} falló: {(result.stderr or '').strip()[-150:]}", every_s=24 * 3600)
+                # El pull ocurre una vez por ciclo y un ciclo puede durar un día: se avisa en la primera
+                # falla (no en la segunda) y se repite cada 30 min si sigue fallando.
+                self.notify("Vintage: no pude actualizar el código", f"git pull en {branch} falló: {(result.stderr or '').strip()[-150:]}. El publicador sigue con el código anterior.", every_s=30 * 60)
             return changed
         except Exception as error:  # sin red o sin git: sigue con el código que tiene
             self.log("código no actualizado", error=str(error)[:200])
+            self.notify("Vintage: no pude consultar el código", f"No se pudo consultar el repositorio ({type(error).__name__}: {str(error)[:100]}). El publicador sigue con el código anterior.", every_s=6 * 3600)
             return False
 
     def sync_stock(self):
