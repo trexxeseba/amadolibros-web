@@ -40,7 +40,7 @@ th{font-size:12px;text-transform:uppercase;color:#666;letter-spacing:.02em}td.n,
 .scroll{overflow-x:auto}.muted{color:#777;font-size:13px}.tit{font-weight:600}small{color:#777}
 .p{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
 .p-bien{background:#e7f5ea;color:#1b6b30}.p-aviso{background:#fff4d6;color:#8a5a00}.p-grave{background:#fde8e4;color:#9a2b18}
-ul.r{margin:4px 0 0;padding-left:16px;font-size:12px;color:#555}form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ul.r{margin:4px 0 0;padding-left:16px;font-size:12px;color:#555}ul.av{margin:6px 0 0;padding-left:16px;font-size:12px;color:#8a5a00}li.av-compra{color:#9a2b18;font-weight:600}form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 input[type=text]{font:inherit;padding:8px;min-width:280px;flex:1;border:1px solid #ccc;border-radius:6px}button,.btn{font:inherit;padding:8px 14px;border-radius:6px;border:1px solid #a94e3d;background:#a94e3d;color:#fff;cursor:pointer;text-decoration:none}
 .btn.sec{background:#fff;color:#a94e3d}a{color:#a94e3d}
 </style><main><p><a href="/panel">← Panel</a></p>${body}</main></html>`, {
@@ -63,18 +63,35 @@ function globalBlock(g) {
   <p class="muted">Si un proveedor no tiene 12 meses cargados, "no le compramos" no se puede afirmar y el libro queda en <b>Fuente incompleta</b>.</p></div>`;
 }
 
+const money = v => v == null ? '—' : `$ ${Math.round(v).toLocaleString('es-UY')}`;
+const FIRST_PLACE = { winning: 'ganás el 1.º lugar', competing: 'compitiendo', sharing_first_place: '1.º lugar compartido', listed: 'sin competir' };
+const EVENT_LABEL = { primer_lugar_perdido: 'Perdiste el 1.º lugar', competidor_sin_stock: 'Competidor dejó de ofrecerlo', solos_en_catalogo: 'Solo en el catálogo', precio_arriba: 'Precio arriba', competidor_nuevo: 'Competidor nuevo', primer_lugar_ganado: 'Ganaste el 1.º lugar', precio_abajo: 'Precio muy abajo' };
+
+function competitionBlock(ev) {
+  if (!ev?.foto) return '<div class="card"><p class="muted">La vigilancia de competencia todavía no tiene fotos: la primera se arma en el día, por tandas.</p></div>';
+  const counts = Object.entries(ev.por_tipo ?? {}).map(([k, n]) => `<span class="p p-${k === 'primer_lugar_perdido' || k === 'precio_arriba' ? 'grave' : k === 'competidor_sin_stock' || k === 'solos_en_catalogo' ? 'bien' : 'aviso'}">${esc(EVENT_LABEL[k] ?? k)}: ${n}</span>`).join(' ');
+  const rows = ev.eventos.map(e => `<tr><td><a href="/panel/reposicion?q=${esc(e.isbn)}">${esc(e.isbn)}</a></td><td>${esc(EVENT_LABEL[e.tipo] ?? e.tipo)}</td><td>${esc(e.texto)}</td></tr>`).join('');
+  return `<div class="card"><p class="muted">Foto del ${esc(day(ev.foto))} contra la anterior · ${ev.vigilados} productos de catálogo vigilados (los libros que más vendés).</p>
+  ${counts ? `<p>${counts}</p>` : '<p class="muted">Sin novedades respecto de la foto anterior.</p>'}
+  ${rows ? `<div class="scroll"><table><thead><tr><th>ISBN</th><th>Qué pasó</th><th>Detalle</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</div>`;
+}
+
 function factsTable(results) {
   if (!results.length) return '<p class="muted">No hay libros para mostrar.</p>';
   const rows = results.map(r => {
-    if (!r.isbn) return `<tr><td colspan="9"><span class="p p-grave">ISBN inválido</span> ${esc(r.input)}</td></tr>`;
+    if (!r.isbn) return `<tr><td colspan="10"><span class="p p-grave">ISBN inválido</span> ${esc(r.input)}</td></tr>`;
     const [tone, label] = STATE[r.estado_datos] ?? ['aviso', r.estado_datos];
     const motives = [...r.fuente_incompleta, ...r.revisar].map(reason);
     const pubs = r.publicaciones.map(p => `<a href="https://articulo.mercadolibre.com.uy/${esc(p.id.replace(/^MLU/, 'MLU-'))}" rel="noopener noreferrer">${esc(p.id)}</a>${p.estado !== 'active' ? ` <small>(${esc(p.estado)})</small>` : ''}`).join(', ');
     const v = r.ventas, c = r.compras;
     const sbs = r.sbs.feed_fecha ? `${esc(r.sbs.disponible === 'no_figura' ? 'no figura' : r.sbs.disponible)}${r.sbs.vigente ? '' : ' <small>(feed viejo)</small>'}` : '<small>sin feed</small>';
+    const k = r.competencia;
+    const comp = k ? `${k.competidores}${k.precio_minimo != null ? `<br><small>desde ${esc(money(k.precio_minimo))}</small>` : ''}${k.primer_lugar ? `<br><small>${esc(FIRST_PLACE[k.primer_lugar] ?? k.primer_lugar)}</small>` : ''}` : '<small>—</small>';
+    const alerts = (r.avisos ?? []).map(a => `<li class="${a.tipo === 'compra_reciente' ? 'av-compra' : ''}">${esc(a.texto)}</li>`).join('');
     return `<tr>
-      <td><div class="tit">${esc(r.titulo ?? '—')}</div><small>${esc(r.isbn)}${pubs ? ` · ${pubs}` : ''}</small></td>
+      <td><div class="tit">${esc(r.titulo ?? '—')}</div><small>${esc(r.isbn)}${pubs ? ` · ${pubs}` : ''}</small>${alerts ? `<ul class="av">${alerts}</ul>` : ''}</td>
       <td class="n"><b>${r.stock_propio}</b></td>
+      <td class="n">${comp}</td>
       <td class="n">${v.propio.d30} · ${v.propio.d90} · ${v.propio.d365}</td>
       <td class="n">${v.encargo_sbs.d365 || '—'}</td>
       <td class="n">${esc(day(v.ultima_venta))}</td>
@@ -85,7 +102,7 @@ function factsTable(results) {
     </tr>`;
   }).join('');
   return `<div class="scroll"><table><thead><tr>
-    <th>Libro</th><th class="n">Stock propio</th><th class="n">Ventas propias<br>30 · 90 · 365 d</th><th class="n">Encargo SBS<br>365 d</th><th class="n">Última venta</th>
+    <th>Libro</th><th class="n">Stock propio</th><th class="n">Competidores<br><small>en el catálogo</small></th><th class="n">Ventas propias<br>30 · 90 · 365 d</th><th class="n">Encargo SBS<br>365 d</th><th class="n">Última venta</th>
     <th class="n">Compras 365 d<br><small>última</small></th><th class="n">En tránsito</th><th class="n">SBS</th><th>Estado de datos</th>
   </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -142,7 +159,8 @@ export function createReposicionPanel({ factsFactory = ctx => createReposicionFa
         body = `<p class="muted">Libros con 2 o más ventas propias en el último año y stock propio de 0 o 1, ordenados por ventas de los últimos 90 días.</p>${factsTable(data.resultados)}`;
       }
       const queue = await facts.identityQueue(db, 10);
-      return page(`<h1>Reposición</h1>${LEGEND}<h2>Estado de los datos</h2>${globalBlock(g)}${searchForm(q)}<h2>${esc(title)}</h2>${body}${extra}${identityBlock(queue)}`);
+      const ev = q ? null : await facts.events(db, 30).catch(() => null);
+      return page(`<h1>Reposición</h1>${LEGEND}<h2>Estado de los datos</h2>${globalBlock(g)}${q ? '' : `<h2>Competencia hoy</h2>${competitionBlock(ev)}`}${searchForm(q)}<h2>${esc(title)}</h2>${body}${extra}${identityBlock(queue)}`);
     } catch (error) {
       return page(`<h1>Reposición</h1>${searchForm(q)}<p class="p p-grave">No se pudo armar la vista: ${esc(error?.code || error?.message || 'error')}</p>`, error?.status && error.status < 500 ? error.status : 500);
     }

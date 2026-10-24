@@ -30,6 +30,13 @@ ECDSA P-256 con la misma clave), con estos claims:
 | `ventas_titulo` | `{titulo}` | ventas por título (para ventas sin ISBN) |
 | `compras_titulo` | `{titulo}` | compras por título |
 | `revision_identidad` | `{limite: 1..100}` | ventas y compras sin ISBN, ordenadas por unidades, para resolver a mano |
+| `competencia_hoy` | `{limite: 1..100}` | novedades de competencia de la última foto diaria: perdiste/ganaste el 1.º lugar, competidor que dejó de ofrecer el libro (con "probablemente lo vendió" si subió su contador de ventas), competidor nuevo, solo en el catálogo, precio arriba/abajo |
+
+Cada resultado de `reposicion_hechos` y `candidatos` trae además `avisos` (texto listo para mostrar; el primero suele ser
+"Compraste N hace X días (PROVEEDOR)" si hubo compra en los últimos 60 días) y `competencia` (competidores en el
+catálogo, precio mínimo, tu precio, precio relativo, estado del 1.º lugar y precio para ganar). La competencia sale de
+la API oficial de Mercado Libre: las ventas por libro de los competidores no se conocen; "probablemente lo vendió" es
+una inferencia.
 
 ### Reglas de los datos
 - **Stock propio**: publicaciones propias activas en ML. La propia y la de catálogo comparten ejemplar: se toma el máximo. Las publicaciones `AMADO-AR-` (encargo SBS) no son stock.

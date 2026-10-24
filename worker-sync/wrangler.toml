@@ -55,6 +55,9 @@ ML_STOCK_SYNC_MODE = "disabled"
 # Ventas reales de ML (órdenes) en D1 para el motor de reposición: sólo lee
 # /orders/search, /items/bulk y /products. "false" apaga el cron sin perder datos.
 ML_SALES_SYNC_ENABLED = "true"
+# Competencia por API de ML (productos de catálogo de los libros que más vendemos,
+# una foto por día). Sólo lee ML. "false" apaga el cron sin perder datos.
+ML_COMPETITION_ENABLED = "true"
 ML_STOCK_SYNC_GRACE_HOURS = "20"
 ML_STOCK_SYNC_MAX_MISSING_PCT = "30"
 ML_STOCK_SYNC_BATCH = "60"
