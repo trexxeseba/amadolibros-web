@@ -100,3 +100,30 @@ test('salud: sync parado o errores seguidos son problemas; sin datos es nota', a
   assert.equal(out.problemas.length, 2);
   assert.ok(out.notas.some(n => n.includes('barrido semanal')));
 });
+
+import { createReposicionPanel } from '../panel/reposicion.js';
+import { createReposicionFacts } from '../../worker-sync/reposicion-facts.js';
+import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
+
+test('panel de reposición: exige sesión y muestra candidatos, búsqueda por ISBN y por título', async t => {
+  const { db, env: wenv } = await fixture(t);
+  const catalogLoader = async () => (await wenv.CATALOG_R2.get('catalog.json')).json();
+  const panel = createReposicionPanel({ factsFactory: () => createReposicionFacts({ now: () => NOW, loadCatalog: catalogLoader }) });
+  const env = { APP_ENV: 'production', PANEL_PASSWORD: 'una-clave-larga', ORDERS_DB: db };
+  const noSession = await panel({ request: new Request('https://www.amadolibros.com/panel/reposicion'), env });
+  assert.equal(noSession.status, 303);
+  const cookie = sessionCookieHeader(await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD))).split(';')[0];
+  const get = async q => { const r = await panel({ request: new Request('https://www.amadolibros.com/panel/reposicion' + q, { headers: { cookie } }), env }); return { status: r.status, html: await r.text() }; };
+  const cand = await get('');
+  assert.equal(cand.status, 200);
+  assert.match(cand.html, /Candidatos a reponer/);
+  assert.match(cand.html, new RegExp(ISBN));
+  assert.match(cand.html, /Fuente incompleta|Revisar|Listo para decidir/);
+  assert.match(cand.html, /Celesa/);
+  const byIsbn = await get('?q=' + ISBN2);
+  assert.match(byIsbn.html, /Búsqueda por ISBN/);
+  assert.match(byIsbn.html, /Sin compras registradas/);
+  const byTitle = await get('?q=Libro%20A');
+  assert.match(byTitle.html, /Búsqueda por título/);
+  assert.ok(!/<script/i.test(cand.html));
+});
