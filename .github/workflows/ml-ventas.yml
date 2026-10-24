@@ -3,7 +3,9 @@ name: ML ventas (motor de reposición)
 # Ventas reales de Mercado Libre guardadas en D1 por el Worker amadolibros-sync
 # (worker-sync/ml-sales.js). Sólo lee ML. El cron de 5 minutos del Worker ya
 # avanza el backfill y la actualización horaria; este workflow sirve para
-# completarlo de una vez y para consultar ventas por ISBN o título.
+# completarlo de una vez y ver conteos. El repo es público: los logs de Actions
+# también, así que acá NUNCA se imprimen ventas por ISBN, títulos ni precios.
+# Las consultas por ISBN/título van directo al Worker (POST /sales/query).
 
 on:
   push:
@@ -13,16 +15,10 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'status | backfill | incremental | isbn | titulo | muestra'
+        description: 'status | backfill | incremental'
         type: choice
-        options: [status, backfill, incremental, isbn, titulo, muestra]
+        options: [status, backfill, incremental]
         default: status
-      isbns:
-        description: 'Para accion=isbn: hasta 50 ISBN separados por coma'
-        required: false
-      titulo:
-        description: 'Para accion=titulo: texto del título'
-        required: false
 
 concurrency:
   group: ml-ventas
@@ -38,8 +34,6 @@ jobs:
       WORKER: https://amadolibros-sync.undiaes.workers.dev
       SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
       ACCION: ${{ github.event_name == 'push' && 'backfill' || inputs.accion }}
-      ISBNS: ${{ inputs.isbns }}
-      TITULO: ${{ inputs.titulo }}
     steps:
       - name: Esperar a que el Worker exponga /sales
         run: |
@@ -69,22 +63,9 @@ jobs:
                 esac
               done
               ;;
-            isbn)
-              body=$(jq -cn --arg s "$ISBNS" '{isbns: ($s | split(",") | map(gsub("\\s"; "")) | map(select(length>0)))}')
-              call -X POST "$WORKER/sales/query" -d "$body" | jq . | tee -a "$GITHUB_STEP_SUMMARY"
-              ;;
-            titulo)
-              call -X POST "$WORKER/sales/query" -d "$(jq -cn --arg t "$TITULO" '{titulo:$t}')" | jq . | tee -a "$GITHUB_STEP_SUMMARY"
-              ;;
-            muestra)
-              call -X POST "$WORKER/sales/sample" -d '{"limit":5}' | jq . | tee -a "$GITHUB_STEP_SUMMARY"
-              ;;
           esac
 
       - name: Estado
         if: always()
         run: |
-          curl -sS -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status" | jq . | tee -a "$GITHUB_STEP_SUMMARY"
-          if [ "$ACCION" = backfill ]; then
-            curl -sS -X POST -H "Authorization: Bearer $SYNC_SECRET" -H 'Content-Type: application/json' "$WORKER/sales/sample" -d '{"limit":5}' | jq . | tee -a "$GITHUB_STEP_SUMMARY"
-          fi
+          curl -sS -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status"             | jq '{orders,orders_counted,orders_cancelled,lines,lines_with_isbn,lines_title_only,distinct_isbn,first_order,last_order,phase:.cursor.phase}'             | tee -a "$GITHUB_STEP_SUMMARY"
