@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createMlSales, bookIsbn, resolveIdentity, salesByIsbn, salesByTitle, salesStatus, handleSalesRoute } from '../ml-sales.js';
+import { createMlSales, bookIsbn, resolveIdentity, salesByIsbn, salesByTitle, salesStatus, handleSalesRoute } from '../../worker-sync/ml-sales.js';
 
 function database(t) {
   const sqlite = new DatabaseSync(':memory:'); t.after(() => sqlite.close());
