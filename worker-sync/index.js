@@ -59,6 +59,7 @@ import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { sendDailyPanelDigest } from './daily-panel-digest.js';
+import { checkVintageHeartbeat } from './vintage-watch.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
@@ -117,6 +118,12 @@ export default {
         }).catch(error => {
           console.error('[stock sync] Error', error?.code || error?.name || 'Error');
           return { state: 'error' };
+        }),
+        // Vigía de la campaña Vintage: sólo lee D1 y avisa por ntfy si la PC
+        // dejó de publicar. Inerte sin VINTAGE_WATCH_ENABLED="true".
+        checkVintageHeartbeat(env).then(result => {
+          if (result?.state !== 'disabled' && result?.state !== 'ok') console.log('[vintage watch]', JSON.stringify(result));
+          return result;
         }),
       ]));
       return;
