@@ -69,6 +69,7 @@ import { processPendingMetaPurchases } from '../functions/_shared/purchase-track
 import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handlePurchasesRoute } from './purchases.js';
+import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -97,7 +98,8 @@ export default {
       // Backfill autónomo: cada 5 minutos hasta cubrir todo. Una vez completo,
       // baja solo a una ejecución por hora para revalidar el ciclo de 30 días.
       const minute = new Date().getUTCMinutes();
-      ctx.waitUntil(Promise.all([
+      // allSettled: una tarea que falla no tapa el resultado de las demás.
+      ctx.waitUntil(Promise.allSettled([
         runCoverMirror(env, {
           limit: configuredCoverMirrorBatchSize(env),
           maintenanceMinute: minute,
@@ -125,7 +127,7 @@ export default {
         // de órdenes y, una vez completo, revisa cambios una vez por hora.
         // Inerte sin ML_SALES_SYNC_ENABLED="true".
         (String(env.ML_SALES_SYNC_ENABLED) === 'true' ? mlSales.sync(env, { pages: 4 }) : Promise.resolve({ state: 'disabled' })).then(result => {
-          if (result?.state !== 'disabled' && result?.state !== 'idle') console.log('[ml sales]', JSON.stringify(result));
+          if (result?.state !== 'disabled' && result?.state !== 'idle' && result?.state !== 'busy') console.log('[ml sales]', JSON.stringify(result));
           return result;
         }).catch(error => {
           console.error('[ml sales] Error', error?.code || error?.name || 'Error');
@@ -136,6 +138,9 @@ export default {
         checkVintageHeartbeat(env).then(result => {
           if (result?.state !== 'disabled' && result?.state !== 'ok') console.log('[vintage watch]', JSON.stringify(result));
           return result;
+        }).catch(error => {
+          console.error('[vintage watch] Error', error?.name || 'Error');
+          return { state: 'error' };
         }),
       ]));
       return;
@@ -166,6 +171,8 @@ export default {
       return handleOperationsRead(request, env);
     }
     if (url.pathname === PUBLICATION_PATH) return handlePublicationRoute(request,env);
+    // Motor de reposición para GPT: firmado, de un solo uso y de solo lectura (D1 + R2).
+    if (url.pathname === REPOSICION_PATH) return handleReposicionRead(request, env);
 
     // Validar SYNC_SECRET (común a todas las rutas protegidas)
     if (!env.SYNC_SECRET) {

@@ -7,17 +7,14 @@ name: ML ventas (motor de reposición)
 # también, así que acá NUNCA se imprimen ventas por ISBN, títulos ni precios.
 # Las consultas por ISBN/título van directo al Worker (POST /sales/query).
 
+# Sólo manual: editar este archivo no dispara nada contra producción.
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/ml-ventas.yml'
   workflow_dispatch:
     inputs:
       accion:
-        description: 'status | backfill | incremental'
+        description: 'status | backfill | incremental | sweep'
         type: choice
-        options: [status, backfill, incremental]
+        options: [status, backfill, incremental, sweep]
         default: status
 
 concurrency:
@@ -33,7 +30,7 @@ jobs:
     env:
       WORKER: https://amadolibros-sync.undiaes.workers.dev
       SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
-      ACCION: ${{ github.event_name == 'push' && 'backfill' || inputs.accion }}
+      ACCION: ${{ inputs.accion }}
     steps:
       - name: Esperar a que el Worker exponga /sales
         run: |
@@ -49,14 +46,16 @@ jobs:
           set -euo pipefail
           call() { curl -sS --max-time 120 -H "Authorization: Bearer $SYNC_SECRET" -H 'Content-Type: application/json' "$@"; }
           case "$ACCION" in
-            backfill|incremental)
-              mode=$([ "$ACCION" = backfill ] && echo auto || echo incremental)
-              for i in $(seq 1 300); do
+            backfill|incremental|sweep)
+              mode=$([ "$ACCION" = backfill ] && echo auto || echo "$ACCION")
+              for i in $(seq 1 60); do
                 r=$(call -X POST "$WORKER/sales/sync" -d "{\"pages\":20,\"mode\":\"$mode\"}")
-                echo "$r"
+                echo "$r" | jq -c '{state,pages,code}'
                 state=$(echo "$r" | jq -r .state)
+                code=$(echo "$r" | jq -r '.code // ""')
+                [ "$code" = "ml_http_429" ] && break
                 case "$state" in
-                  backfill) ;;
+                  backfill|partial) mode=auto ;;
                   busy) sleep 20 ;;
                   error) sleep 30 ;;
                   *) break ;;
@@ -68,4 +67,4 @@ jobs:
       - name: Estado
         if: always()
         run: |
-          curl -sS -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status"             | jq '{orders,orders_counted,orders_cancelled,lines,lines_with_isbn,lines_title_only,distinct_isbn,first_order,last_order,phase:.cursor.phase}'             | tee -a "$GITHUB_STEP_SUMMARY"
+          curl -sS -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status"             | jq '{lines_with_isbn_pct:(if .lines>0 then (100*.lines_with_isbn/.lines|floor) else null end),phase:.cursor.phase,filter:.cursor.inc_filter.name,last_state:.last_result.state,errors_in_row:.last_result.errors_in_row}'             | tee -a "$GITHUB_STEP_SUMMARY"

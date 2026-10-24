@@ -17,14 +17,17 @@ function page(body, status = 200) {
   });
 }
 
-const form = (value = '') => `<p>Pegá un documento, una lista de documentos o <code>{"documents":[…]}</code>. Re-importar el mismo documento lo actualiza sin duplicar.</p>
+const form = (value = '') => `<p>Pegá un documento, una lista o <code>{"documents":[…],"coverage":[…]}</code> (formato en <code>worker-sync/docs/reposicion-gpt.md</code>). Re-importar el mismo documento lo actualiza sin duplicar.</p>
 <form method="post"><textarea name="json" required spellcheck="false">${esc(value)}</textarea><br><button type="submit">Importar compras</button></form>`;
 
 function resultHtml(result) {
   const rows = result.results.map(r => r.status === 'imported'
-    ? `<tr><td>${r.index}</td><td class="ok">importado</td><td><code>${esc(r.purchase_id)}</code></td><td>${r.lines} líneas · ${esc(Object.entries(r.match_methods).map(([k, v]) => `${k}: ${v}`).join(', '))}${r.review.length ? `<br><b>Para revisar:</b> ${r.review.map(x => `${esc(x.title)} (${esc(x.method)}${x.candidates.length ? `; candidatos ${esc(x.candidates.join(', '))}` : ''})`).join('; ')}` : ''}</td></tr>`
+    ? `<tr><td>${r.index}</td><td class="ok">importado</td><td><code>${esc(r.purchase_id)}</code>${r.inferred_type ? ' <small>(tipo inferido)</small>' : ''}${r.supplier_unknown ? ' <small class="err">(proveedor no reconocido)</small>' : ''}</td><td>${r.lines} líneas · ${esc(Object.entries(r.match_methods).map(([k, v]) => `${k}: ${v}`).join(', '))}${r.review.length ? `<br><b>Para revisar:</b> ${r.review.map(x => `${esc(x.title)} (${esc(x.method)}${x.candidates.length ? `; candidatos ${esc(x.candidates.join(', '))}` : ''}${x.flags?.length ? `; ${esc(x.flags.join(', '))}` : ''})`).join('; ')}` : ''}</td></tr>`
     : `<tr><td>${r.index}</td><td class="err">error</td><td colspan="2"><code>${esc(r.error)}</code></td></tr>`).join('');
-  return `<p>Importados: <b>${result.imported}</b> · Con error: <b>${result.errors}</b></p><table><tr><th>#</th><th>Estado</th><th>Compra</th><th>Detalle</th></tr>${rows}</table>`;
+  const coverage = (result.coverage || []).map(c => c.status === 'saved'
+    ? `<li class="ok">Cobertura ${esc(c.supplier)}: ${esc(c.covered_from)} → ${esc(c.covered_to)}</li>`
+    : `<li class="err">Cobertura #${c.index}: <code>${esc(c.error)}</code></li>`).join('');
+  return `<p>Importados: <b>${result.imported}</b> · Con error: <b>${result.errors}</b></p>${coverage ? `<ul>${coverage}</ul>` : ''}${rows ? `<table><tr><th>#</th><th>Estado</th><th>Compra</th><th>Detalle</th></tr>${rows}</table>` : ''}`;
 }
 
 export function createPurchasesPanel({ importer = importPurchases } = {}) {
