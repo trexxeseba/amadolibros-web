@@ -35,6 +35,9 @@ RENEW_MARGIN_S = 30 * 60
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
 ENGINE_TARGET_CEILING = 20000
+# Esperas entre renovaciones cuando el motor sigue pidiéndolas sin publicar nada: la última es el
+# tope. Antes eran 120 s y, desde la tercera vuelta, 6 h (que además se re-armaban solas).
+RENEW_RETRY_S = (120, 120, 15 * 60, 30 * 60, 60 * 60)
 FATAL = {
     "stopped_listing_quota": "Mercado Libre rechazó altas por cupo de publicaciones",
     "stopped_item_readback_failed": "Un alta no pasó la verificación posterior",
@@ -332,11 +335,12 @@ class Runner:
                 self.renew_loops = 0
             self.renew_loops += 1
             self.force_renew = True
+            wait_s = RENEW_RETRY_S[min(self.renew_loops, len(RENEW_RETRY_S)) - 1]
             if self.renew_loops >= 3:
-                self.notify("Vintage: renovar no alcanza", f"El motor vuelve a pedir renovación ({error or state}) {self.renew_loops} veces seguidas. Espero 6 h.", every_s=12 * 3600)
-                self.wait(6 * 3600, "renovación repetida")
+                self.notify("Vintage: renovar no alcanza", f"El motor vuelve a pedir renovación ({error or state}) {self.renew_loops} veces seguidas. Reintento en {wait_s // 60} min.", every_s=12 * 3600)
+                self.wait(wait_s, "renovación repetida")
             else:
-                self.wait(120, "hace falta renovar")
+                self.wait(wait_s, "hace falta renovar")
             return None
         self.renew_loops = 0
         remaining = (status.get("run") or {}).get("target_remaining")
