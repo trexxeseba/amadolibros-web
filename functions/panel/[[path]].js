@@ -12,6 +12,8 @@
  *                       retiro o de envío
  *   POST /panel/pedido/<código>/transferencia → marca que la transferencia
  *                       llegó al banco (ver _shared/panel-transfer.js)
+ *   POST /panel/aviso-whatsapp/<id>/contactado → saca de la lista un aviso de
+ *                       stock por WhatsApp que ya se mandó a mano
  *   GET  /panel/ajustes → datos de retiro que salen en el correo al cliente
  *   POST /panel/ajustes → los guarda en KV
  *   POST /panel/logout  → borra la cookie
@@ -20,7 +22,8 @@
  * - El panel NO toca el catálogo ni Mercado Libre. Precio, stock, título,
  *   slug e imágenes se leen y nunca se escriben. Lo que el panel escribe: los
  *   datos de retiro en KV, una fila de historial por cada aviso que le manda
- *   a un cliente, y la marca «Transferencia recibida», que es lo único que
+ *   a un cliente, la marca «ya le escribí» de un aviso por WhatsApp, y la
+ *   marca «Transferencia recibida», que es lo único que
  *   cambia el estado de un pedido (de pendiente a pagado por transferencia).
  *   Un aviso no despacha el pedido ni le cambia el estado.
  * - Sin secrets configurados responde 503, nunca una versión "abierta".
@@ -54,16 +57,15 @@ import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
 import { trackTransferPurchase } from '../_shared/purchase-tracking.js';
 import { followUpLinks } from '../_shared/panel-followup.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
+import { markWhatsappContacted, mergeRevenue, whatsappRestockLink } from '../_shared/panel-insights.js';
 import { healthSection } from '../_shared/panel-health.js';
 import {
   accountsAndSupplierSection,
-  catalogChangesSection,
   crawlDetailSection,
-  mlSalesSection,
+  mlDetailSection,
   purchasesSection,
-  searchMissesSection,
   webInsightsSection,
-} from '../_shared/panel-insights.js';
+} from '../_shared/panel-detalle.js';
 import { ga4Section, searchConsoleSection } from '../_shared/panel-google.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
 import {
@@ -170,11 +172,12 @@ function sidebar(activo = 'tablero') {
     { id: 'ml', href: '/panel#ml', texto: 'Mercado Libre', icono: '◈' },
     { id: 'visitas', href: '/panel#visitas', texto: 'Visitas', icono: '◎' },
     { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos web', icono: '❑' },
-    { id: 'demanda', href: '/panel#demanda', texto: 'Qué buscan', icono: '⌕' },
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
     { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
+    { id: 'busquedas', href: '/panel#busquedas', texto: 'Qué buscan', icono: '⌕' },
     { id: 'reposicion', href: '/panel/reposicion', texto: 'Reposición', icono: '↻' },
     { id: 'compras', href: '/panel/compras', texto: 'Compras', icono: '⇩' },
+    { id: 'vintage', href: '/panel/meli-vintage-lote', texto: 'Vintage', icono: '❖' },
     { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },
   ];
   return `<nav class="lateral" aria-label="Secciones del panel">
@@ -324,6 +327,18 @@ function layout(title, body, { nav = '' } = {}) {
   .grilla { stroke:var(--borde-suave); stroke-width:1; }
   .base { stroke:var(--borde); stroke-width:1; }
   .barra { fill:var(--acento); }
+  /* Mercado Libre va abajo en la barra apilada, en el mismo tono más oscuro:
+     es la misma plata, otro canal. */
+  .barra-ml { fill:var(--tinta-media); }
+  .leyenda { display:flex; gap:1rem; font-size:.8rem; color:var(--tinta-media); margin:0 0 .6rem; }
+  .leyenda i { display:inline-block; width:.7rem; height:.7rem; border-radius:3px;
+               margin-right:.35rem; vertical-align:-.05rem; }
+  .leyenda .l-ml { background:var(--tinta-media); }
+  .leyenda .l-web { background:var(--acento); }
+  .dos-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+             gap:1.1rem; margin-bottom:1.1rem; }
+  .dos-col > .card { margin:0; }
+  .tarea form { margin:0; flex:none; }
   .blanco { fill:transparent; }
   .mes:hover .barra { filter:brightness(1.15); }
   .mes:hover .blanco, figure.grafico g:hover > .blanco { fill:var(--acento-suave); }
@@ -884,6 +899,17 @@ function tarea({ urgencia = 'media', que, quien, detalle = '', enlace = null, ac
 }
 
 /**
+ * Avisos por WhatsApp cuyo libro hoy tiene stock. Sin catálogo no se sabe
+ * cuáles: no se inventa ninguno.
+ */
+function whatsappListos(data) {
+  if (!data.whatsapp?.ok || !data.catalog?.ok) return [];
+  const stock = data.catalog.data.stockById;
+  if (!(stock instanceof Map)) return [];
+  return data.whatsapp.data.waiting.filter(row => (stock.get(String(row.product_id)) || 0) > 0);
+}
+
+/**
  * Todo lo que necesita que alguien haga algo, en un solo lugar y ordenado por
  * urgencia. Antes estaba repartido en cuatro tablas y una lista aparte, y
  * había que leerlas todas para saber si había algo pendiente.
@@ -929,6 +955,20 @@ function tareasPendientes(data) {
     }
   }
 
+  for (const row of whatsappListos(data)) {
+    const enlace = whatsappRestockLink(row);
+    filas.push(`<li class="tarea t-alta">
+    <div class="tarea-texto">
+      <b>Avisar por WhatsApp que llegó</b>
+      <span class="muted">${escapeHtml(row.product_title)} · pedido ${shortDay(row.created_at)}${enlace ? '' : ' · el número no es válido'}</span>
+    </div>
+    ${enlace ? `<a class="linkbtn" href="${escapeHtml(enlace)}" target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a>` : ''}
+    <form method="POST" action="/panel/aviso-whatsapp/${encodeURIComponent(row.id)}/contactado">
+      <button class="linkbtn" type="submit">Ya le escribí</button>
+    </form>
+  </li>`);
+  }
+
   const missing = data.catalog?.ok ? (data.catalog.data.missingImage || { count: 0, items: [] }) : null;
   if (missing?.count) {
     for (const row of missing.items) {
@@ -966,17 +1006,116 @@ function tonoPago(status) {
   return 'neutro';
 }
 
+const VINTAGE_VEREDICTO = {
+  ok: 'publicando', idle: 'en pausa o terminada', stalled: 'sin altas nuevas',
+  supplier_late: 'esperando la lista de SBS', waiting_supplier: 'esperando la lista de SBS',
+  warming_up: 'revisando la lista nueva', unknown: 'sin datos todavía',
+};
+
+function numero(value) {
+  return escapeHtml((Number(value) || 0).toLocaleString('es-UY'));
+}
+
+/** Lo vendido en 30 días, sumando los dos canales. Si ML no cargó, se dice. */
+function ventasKpi(data) {
+  const web = data.orders?.ok ? data.orders.data.paidLast30 : null;
+  const ml = data.mlSales?.ok ? data.mlSales.data.last30 : null;
+  if (!web && !ml) return '';
+  const total = (Number(web?.total_uyu) || 0) + (Number(ml?.total_uyu) || 0);
+  const partes = [
+    ml ? `ML ${money(ml.total_uyu)} · ${numero(ml.orders)} venta${Number(ml.orders) === 1 ? '' : 's'}` : 'ML sin datos',
+    web ? `web ${money(web.total_uyu)} · ${numero(web.total)} pedido${Number(web.total) === 1 ? '' : 's'}` : 'web sin datos',
+  ];
+  return `<article class="kpi">
+    <span>Vendido · 30 días</span>
+    <b>${money(total)}</b>
+    <small>${partes.join(' — ')}</small>
+    ${ml ? `<small>${numero(ml.units)} libros en Mercado Libre${ml.otherCurrencyOrders ? ` · ${numero(ml.otherCurrencyOrders)} en otra moneda, no sumadas` : ''}</small>` : ''}
+  </article>`;
+}
+
+function vintageKpi(data) {
+  if (!data.vintage?.ok) {
+    return `<article class="kpi"><span>Amado Vintage</span><b>—</b>
+      <small>sin datos en este entorno</small></article>`;
+  }
+  const v = data.vintage.data;
+  const trabado = v.verdict === 'stalled' || v.verdict === 'supplier_late';
+  return `<article class="kpi${trabado ? ' kpi-alerta' : ''}">
+    <span>Amado Vintage</span>
+    <b>${numero(v.published)}${v.target ? `<small> / ${numero(v.target)}</small>` : ''}</b>
+    <small>${numero(v.today)} hoy · ${numero(v.week)} en 7 días${v.review ? ` · ${numero(v.review)} para revisar` : ''}</small>
+    <small>${escapeHtml(VINTAGE_VEREDICTO[v.verdict] || v.verdict || '—')} · lista SBS ${v.feedFresh ? 'vigente' : 'vencida'}</small>
+  </article>`;
+}
+
+function busquedasSection(block) {
+  return `<section class="card" id="busquedas">
+  <div class="card-cabeza">
+    <h2>Lo que buscan y no tenemos</h2>
+    <span class="muted">últimos ${block?.ok ? escapeHtml(block.data.days) : 30} días</span>
+  </div>
+  ${sectionOrError(block, misses => `
+    <p class="muted">Búsquedas en la web que no encontraron ningún libro: ${numero(misses.searches)} en total,
+      ${numero(misses.queries)} distintas. Son pistas de qué conseguir o publicar.</p>
+    ${table(['Búsqueda', 'Veces', 'Días', 'Última'], misses.top, row => `
+      <tr><td>${escapeHtml(row.query)}</td><td>${numero(row.total)}</td>
+          <td>${numero(row.days)}</td><td>${shortDay(row.last_seen)}</td></tr>`)}
+  `)}
+</section>`;
+}
+
+function muestras(titulo, filas, render) {
+  if (!filas.length) return '';
+  return `<h3>${escapeHtml(titulo)}</h3><ul class="muestras">${filas.map(render).join('')}</ul>`;
+}
+
+function libroEnlace(row) {
+  const id = /^MLU\d+$/.test(String(row?.id || '')) ? String(row.id) : '';
+  const titulo = escapeHtml(row?.title || id || '(sin título)');
+  return id ? `<a href="https://www.amadolibros.com/libro/${id}">${titulo}</a>` : titulo;
+}
+
+function cambiosCatalogoSection(block) {
+  return `<section class="card" id="cambios">
+  <div class="card-cabeza">
+    <h2>Qué cambió en el catálogo</h2>
+    <span class="muted">últimos ${block?.ok ? escapeHtml(block.data.days) : 7} días</span>
+  </div>
+  ${sectionOrError(block, cambios => {
+    const t = cambios.totals;
+    return `
+    <div class="grid">
+      <div class="stat"><b>${numero(t.added)}</b><span>altas</span></div>
+      <div class="stat${t.removed > 50 ? ' alert' : ''}"><b>${numero(t.removed)}</b><span>bajas</span></div>
+      <div class="stat"><b>${numero(t.out_of_stock)}</b><span>se agotaron</span></div>
+      <div class="stat"><b>${numero(t.back_in_stock)}</b><span>volvieron al stock</span></div>
+      <div class="stat"><b>${numero(t.price_up)}</b><span>subieron de precio</span></div>
+      <div class="stat"><b>${numero(t.price_down)}</b><span>bajaron de precio</span></div>
+    </div>
+    <p class="muted">${numero(cambios.syncs)} syncs en la semana${cambios.lastSync
+      ? ` · el último ${shortDate(cambios.lastSync.synced_at)} UTC, ${numero(cambios.lastSync.available_items)} con stock de ${numero(cambios.lastSync.total_items)}`
+      : ''}.</p>
+    ${cambios.samplesFrom ? `<details class="tabla-datos"><summary>Ejemplos del sync del ${shortDate(cambios.samplesFrom)}</summary>
+      ${muestras('Altas', cambios.samples.added, row => `<li>${libroEnlace(row)}</li>`)}
+      ${muestras('Bajas', cambios.samples.removed, row => `<li>${libroEnlace(row)}</li>`)}
+      ${muestras('Cambios de precio', cambios.samples.price_changes, row => `<li>${libroEnlace(row)}: ${money(row.from)} → ${money(row.to)}</li>`)}
+    </details>` : ''}`;
+  })}
+</section>`;
+}
+
 function dashboardPage(data) {
   const env = data.environment;
   const { filas, missing } = tareasPendientes(data);
-  const totalTareas = (data.stuck?.ok ? data.stuck.data.total : 0) + (missing?.count || 0);
+  const totalTareas = (data.stuck?.ok ? data.stuck.data.total : 0) + (missing?.count || 0)
+    + whatsappListos(data).length;
   const rotas = [
     !data.stuck?.ok ? data.stuck?.error : null,
     !data.catalog?.ok ? data.catalog?.error : null,
   ].filter(Boolean);
   const pagadosSinDespachar = data.stuck?.ok ? data.stuck.data.paidNotFulfilled.length : null;
-  const ins = data.insights || {};
-  const mlW30 = ins.ml?.ok ? ins.ml.data.windows.find(w => w.days === 30) : null;
+  const det = data.detalle || {};
   const gaTotals = data.google?.ok && !data.google.data.missing && !data.google.data.ga4?.error
     ? data.google.data.ga4?.totals : null;
 
@@ -996,21 +1135,12 @@ function dashboardPage(data) {
 
 ${sectionOrError(data.orders, orders => `
 <section class="tarjetas">
-  ${ins.ml?.ok ? `<article class="kpi">
-    <span>Mercado Libre · 30 días</span>
-    <b>${money(Math.round(mlW30.uyu))}</b>
-    <small>${escapeHtml(mlW30.units)} libros en ${escapeHtml(mlW30.orders)} ventas</small>
-  </article>` : ''}
+  ${ventasKpi(data)}
   ${gaTotals ? `<article class="kpi">
     <span>Personas en la web · 28 días</span>
     <b>${escapeHtml(Number(gaTotals.activeUsers || 0).toLocaleString('es-UY'))}</b>
     <small>${escapeHtml(Number(gaTotals.sessions || 0).toLocaleString('es-UY'))} visitas (GA4)</small>
   </article>` : ''}
-  <article class="kpi">
-    <span>Web · facturado 30 días</span>
-    <b>${money(orders.paidLast30.total_uyu)}</b>
-    <small>${escapeHtml(orders.paidLast30.total ?? 0)} pedido${Number(orders.paidLast30.total) === 1 ? '' : 's'} cobrado${Number(orders.paidLast30.total) === 1 ? '' : 's'}</small>
-  </article>
   <article class="kpi${pagadosSinDespachar ? ' kpi-alerta' : ''}">
     <span>Pagados sin despachar</span>
     <b>${escapeHtml(pagadosSinDespachar ?? '—')}</b>
@@ -1027,11 +1157,7 @@ ${sectionOrError(data.orders, orders => `
     <b>${escapeHtml(catalog.missingImage?.count ?? 0)}</b>
     <small>no salen en Google</small>
   </article>`)}
-  ${ins.busquedas?.ok ? `<article class="kpi${ins.busquedas.data.week ? ' kpi-alerta' : ''}">
-    <span>Buscaron y no encontraron</span>
-    <b>${escapeHtml(ins.busquedas.data.week)}</b>
-    <small>búsquedas en 7 días · <a href="#demanda">ver</a></small>
-  </article>` : ''}
+  ${vintageKpi(data)}
 </section>`)}
 
 ${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.catalog?.ok ? data.catalog.data : null }))}
@@ -1053,24 +1179,34 @@ ${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.cata
     : ''}
 </section>
 
-${tarjeta('ml', 'Mercado Libre', 'ventas reales de la cuenta', bloqueOVacio(ins.ml, mlSalesSection))}
+<section class="card grafico" id="facturacion">
+  <div class="card-cabeza">
+    <h2>Ventas por mes</h2>
+    <span class="muted">últimos 12 meses</span>
+  </div>
+  ${sectionOrError(data.revenue, web => {
+    const revenue = data.mlSales?.ok ? mergeRevenue(web, data.mlSales.data) : web;
+    return `
+    ${data.mlSales?.ok
+      ? '<p class="leyenda"><span><i class="l-ml"></i>Mercado Libre</span><span><i class="l-web"></i>Web</span></p>'
+      : `<p class="muted">Solo la web: las ventas de Mercado Libre no se pudieron cargar (${escapeHtml(data.mlSales?.error || 'sin datos')}).</p>`}
+    ${revenue.mlCoveredFrom ? `<p class="muted">Las ventas de Mercado Libre están cargadas desde el ${escapeHtml(revenue.mlCoveredFrom)}; antes de esa fecha la barra muestra solo la web.</p>` : ''}
+    ${revenueChart(revenue)}
+    ${revenueTable(revenue)}
+  `;
+  })}
+</section>
+
+${tarjeta('ml', 'Mercado Libre en detalle', 'ventas reales de la cuenta', bloqueOVacio(det.ml, mlDetailSection))}
 
 ${tarjeta('visitas', 'Visitas a la web', 'GA4 · últimos 28 días', sectionOrError(data.google, ga4Section))}
 
 ${tarjeta('google', 'Cómo nos encuentran en Google', 'Search Console · 28 días', sectionOrError(data.google, searchConsoleSection))}
 
-<section class="card grafico" id="facturacion">
-  <div class="card-cabeza">
-    <h2>Facturación cobrada en la web</h2>
-    <span class="muted">últimos 12 meses</span>
-  </div>
-  ${sectionOrError(data.revenue, revenue => `
-    ${revenueChart(revenue)}
-    ${revenueTable(revenue)}
-  `)}
-</section>
-
-
+<div class="dos-col">
+${busquedasSection(data.searchMisses)}
+${cambiosCatalogoSection(data.catalogChanges)}
+</div>
 
 ${sectionOrError(data.orders, orders => `
 <section class="card" id="pedidos">
@@ -1088,13 +1224,9 @@ ${sectionOrError(data.orders, orders => `
         <td>${shortDay(row.created_at)}</td></tr>`)}
 </section>`)}
 
-${tarjeta('web', 'Web: qué se vende y quién compra', 'pedidos de amadolibros.com', bloqueOVacio(ins.web, webInsightsSection))}
+${tarjeta('web', 'Web: qué se vende y quién compra', 'pedidos de amadolibros.com', bloqueOVacio(det.web, webInsightsSection))}
 
-${tarjeta('demanda', 'Lo que buscan y no encuentran', 'buscador del sitio · 30 días', bloqueOVacio(ins.busquedas, searchMissesSection))}
-
-${plegable('cambios', 'Qué cambió en el catálogo', 'altas, bajas, precios y stock', bloqueOVacio(ins.cambios, catalogChangesSection))}
-
-${plegable('compras-resumen', 'Compras a proveedores', 'qué entró y de quién', bloqueOVacio(ins.compras, purchasesSection))}
+${plegable('compras-resumen', 'Compras a proveedores', 'qué entró y de quién', bloqueOVacio(det.compras, purchasesSection))}
 
 <details class="card" id="catalogo">
   <summary>Catálogo y Google Shopping<span class="resumen">qué llega al feed</span></summary>
@@ -1128,6 +1260,9 @@ ${plegable('compras-resumen', 'Compras a proveedores', 'qué entró y de quién'
   <div class="cuerpo">
   ${sectionOrError(data.waitlist, waitlist => `
     ${statusList(waitlist.byStatus, WAITLIST_STATUS_LABEL)}
+    ${data.whatsapp?.ok
+      ? `<p class="muted">Por WhatsApp: ${numero(data.whatsapp.data.waiting.length)} esperando, ${numero(whatsappListos(data).length)} ya con stock (están en «Para hacer ahora»).</p>`
+      : ''}
     <h3>Libros más esperados</h3>
     ${table(['Libro', 'ID', 'Personas'], waitlist.topProducts, row => `
       <tr><td>${escapeHtml(row.product_title)}</td><td>${escapeHtml(row.product_id)}</td>
@@ -1150,13 +1285,13 @@ ${plegable('compras-resumen', 'Compras a proveedores', 'qué entró y de quién'
                 <td>${escapeHtml(row.errors ?? 0)}</td>
                 <td>${escapeHtml(row.verified_googlebot ?? 0)}</td></tr>`,
   ))}
-  ${bloqueOVacio(ins.rastreo, crawlDetailSection)}
+  ${bloqueOVacio(det.rastreo, crawlDetailSection)}
   </div>
 </details>
 
 ${plegable('', 'Cuentas de clientes y proveedor SBS', 'Google Sign-In y lista de stock', accountsAndSupplierSection(
-    ins.cuentas?.ok ? ins.cuentas.data : null,
-    ins.sbs?.ok ? ins.sbs.data : null,
+    det.cuentas?.ok ? det.cuentas.data : null,
+    det.sbs?.ok ? det.sbs.data : null,
   ) || '<p class="muted">Sin datos todavía en este entorno.</p>')}`, { nav: sidebar('tablero') });
 }
 
@@ -1261,6 +1396,24 @@ export async function onRequest(context) {
     }
     if (request.method === 'POST') return handleSettingsSave(context);
     return htmlResponse(settingsPage(await loadPickup(context.env)));
+  }
+
+  const avisoWhatsapp = /^\/panel\/aviso-whatsapp\/([^/]+)\/contactado$/.exec(path);
+  if (avisoWhatsapp) {
+    if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+    if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
+      return htmlResponse(loginPage({
+        siteKey: cleanString(context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY),
+      }));
+    }
+    const origin = request.headers.get('origin');
+    if (origin && origin !== url.origin) return new Response('Forbidden', { status: 403 });
+    const db = context.env?.ORDERS_DB;
+    if (db) await markWhatsappContacted(db, decodeURIComponent(avisoWhatsapp[1]));
+    return new Response(null, {
+      status: 303,
+      headers: { Location: '/panel#pendientes', 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+    });
   }
 
   const pedido = /^\/panel\/pedido\/([^/]+)(\/avisar|\/transferencia)?$/.exec(path);

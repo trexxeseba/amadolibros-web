@@ -17,12 +17,16 @@
  * barras y un eje no justifican traer una librería de gráficos, y además el
  * sitio no carga scripts de terceros.
  *
- * UNA SOLA SERIE, A PROPOSITO
+ * UNA SOLA MAGNITUD, A PROPOSITO
  *
  * Plata y cantidad de pedidos son dos magnitudes distintas y meterlas en el
  * mismo gráfico obligaría a dos ejes verticales, que es la forma más común de
  * hacer mentir a un gráfico. La cantidad de pedidos va en el tooltip de cada
  * mes, no como segunda serie.
+ *
+ * Cuando vienen las ventas de Mercado Libre (`ml_uyu` en cada mes), la barra
+ * se apila: ML abajo, web arriba. Son pesos los dos, así que comparten eje, y
+ * el alto total es lo que vendió la librería ese mes.
  */
 
 const ALTO = 180;
@@ -89,8 +93,9 @@ export function revenueChart(revenue) {
 
   // Se etiqueta sólo el mes más alto. Un número sobre cada barra es ruido: el
   // resto de los valores están en el tooltip, que es donde se los busca.
+  const total = fila => fila.total_uyu + (Number(fila.ml_uyu) || 0);
   const masAlto = meses.reduce((mayor, fila, indice) =>
-    (fila.total_uyu > meses[mayor].total_uyu ? indice : mayor), 0);
+    (total(fila) > total(meses[mayor]) ? indice : mayor), 0);
 
   const grilla = [0, 0.5, 1].map(fraccion => {
     const y = MARGEN.arriba + util.alto * (1 - fraccion);
@@ -99,12 +104,17 @@ export function revenueChart(revenue) {
   }).join('');
 
   const barras = meses.map((fila, indice) => {
-    const alto = techo > 0 ? (fila.total_uyu / techo) * util.alto : 0;
+    const ml = Number(fila.ml_uyu) || 0;
+    const alto = techo > 0 ? (total(fila) / techo) * util.alto : 0;
+    const altoMl = techo > 0 ? (ml / techo) * util.alto : 0;
     const x = MARGEN.izquierda + paso * indice + (paso - anchoBarra) / 2;
     const y = base - alto;
     const etiqueta = etiquetaMes(fila.month, indice === 0);
-    const detalle = `${etiqueta}: ${pesos(fila.total_uyu)}`
-      + ` · ${fila.orders} pedido${fila.orders === 1 ? '' : 's'}`;
+    const detalle = revenue.withMl
+      ? `${etiqueta}: ${pesos(total(fila))} · Mercado Libre ${pesos(ml)} (${fila.ml_orders || 0})`
+        + ` · web ${pesos(fila.total_uyu)} (${fila.orders})`
+      : `${etiqueta}: ${pesos(fila.total_uyu)}`
+        + ` · ${fila.orders} pedido${fila.orders === 1 ? '' : 's'}`;
 
     // El rectángulo transparente de toda la altura es el blanco del mouse: una
     // barra de dos pixeles en un mes flojo sería imposible de apuntar.
@@ -116,9 +126,12 @@ export function revenueChart(revenue) {
       ${alto > 0 ? `<rect class="barra" x="${x.toFixed(1)}" y="${y.toFixed(1)}"
             width="${anchoBarra.toFixed(1)}" height="${alto.toFixed(1)}"
             rx="${Math.min(RADIO, anchoBarra / 2)}"></rect>` : ''}
-      ${indice === masAlto && fila.total_uyu > 0
+      ${altoMl > 0 ? `<rect class="barra-ml" x="${x.toFixed(1)}" y="${(base - altoMl).toFixed(1)}"
+            width="${anchoBarra.toFixed(1)}" height="${altoMl.toFixed(1)}"
+            rx="${Math.min(RADIO, anchoBarra / 2)}"></rect>` : ''}
+      ${indice === masAlto && total(fila) > 0
         ? `<text class="valor" x="${(x + anchoBarra / 2).toFixed(1)}"
-                 y="${(y - 7).toFixed(1)}">${escapeHtml(pesos(fila.total_uyu))}</text>`
+                 y="${(y - 7).toFixed(1)}">${escapeHtml(pesos(total(fila)))}</text>`
         : ''}
       <text class="eje" x="${(MARGEN.izquierda + paso * indice + paso / 2).toFixed(1)}"
             y="${(base + 16).toFixed(1)}">${escapeHtml(etiqueta)}</text>
@@ -143,6 +156,22 @@ export function revenueChart(revenue) {
 export function revenueTable(revenue) {
   const meses = Array.isArray(revenue?.months) ? revenue.months : [];
   if (meses.length === 0) return '';
+  if (revenue.withMl) {
+    return `<details class="tabla-datos">
+  <summary>Ver los números</summary>
+  <div class="scroll"><table>
+    <thead><tr><th>Mes</th><th>Mercado Libre</th><th>Ventas ML</th><th>Web</th><th>Pedidos web</th><th>Total</th></tr></thead>
+    <tbody>${meses.map(fila => `<tr>
+      <td>${escapeHtml(etiquetaMes(fila.month, true))}</td>
+      <td>${escapeHtml(pesos(fila.ml_uyu))}</td>
+      <td>${escapeHtml(fila.ml_orders || 0)}</td>
+      <td>${escapeHtml(pesos(fila.total_uyu))}</td>
+      <td>${escapeHtml(fila.orders)}</td>
+      <td>${escapeHtml(pesos(fila.total_uyu + (Number(fila.ml_uyu) || 0)))}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+</details>`;
+  }
   return `<details class="tabla-datos">
   <summary>Ver los números</summary>
   <div class="scroll"><table>

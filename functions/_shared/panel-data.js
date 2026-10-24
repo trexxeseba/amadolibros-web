@@ -18,8 +18,15 @@
 
 import { fetchCatalog } from './catalog.js';
 import { loadHealth } from './panel-health.js';
+import {
+  loadCatalogChanges,
+  loadMlSales,
+  loadSearchMisses,
+  loadVintage,
+  loadWhatsappWaitlist,
+} from './panel-insights.js';
 import { isEligibleForFeed } from '../feed.xml.js';
-import { loadInsights } from './panel-insights.js';
+import { loadDetalle } from './panel-detalle.js';
 import { loadGoogle } from './panel-google.js';
 
 const RECENT_ORDERS_LIMIT = 20;
@@ -272,11 +279,15 @@ export async function loadCatalogSummary(ctx) {
   // El contador ya existía; lo que faltaba era saber CUÁLES para poder actuar.
   const missingImageItems = [];
   const feedBlockers = new Map();
+  // Stock por publicación, para cruzar con los avisos de WhatsApp sin volver
+  // a bajar el catálogo.
+  const stockById = new Map();
 
   for (const item of items) {
     const active = item?.status === 'active';
     const inStock = Number(item?.available_quantity) > 0;
     if (inStock) withStock += 1;
+    if (item?.id) stockById.set(String(item.id), active ? Number(item.available_quantity) || 0 : 0);
     if (!item?.isbn) withoutIsbn += 1;
 
     if (!Array.isArray(item?.pictures) || item.pictures.length === 0) {
@@ -331,6 +342,7 @@ export async function loadCatalogSummary(ctx) {
     // El catálogo real trae `updated_at` (lo escribe buildCatalog en el Worker).
     // Las otras dos formas nunca existieron: por eso el panel mostraba "—".
     generatedAt: catalog?.updated_at || catalog?.generated_at || catalog?.generatedAt || null,
+    stockById,
   };
 }
 
@@ -399,7 +411,8 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     ? section(() => loader(db))
     : Promise.resolve({ ok: false, error: 'ORDERS_DB no está disponible en este entorno.' }));
 
-  const [orders, revenue, stuck, waitlist, crawl, catalog, salud, insights, google] = await Promise.all([
+  const [orders, revenue, stuck, waitlist, crawl, catalog, salud,
+    mlSales, searchMisses, catalogChanges, whatsapp, vintage, detalle, google] = await Promise.all([
     withDb(database => loadOrdersOverview(database, { now })),
     withDb(database => loadRevenueByMonth(database, { now })),
     withDb(database => loadStuck(database, { now })),
@@ -409,9 +422,14 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     // Sync (KV) y reportes automáticos (GitHub, si está encendido). Nunca
     // tira: lo que no se pudo leer se muestra como tal.
     section(() => loadHealth(context, { now: new Date(now) })),
-    // Ventas ML, web, búsquedas, cambios, compras, rastreo, cuentas y SBS.
-    // Cada uno trae su propio { ok, data | error }.
-    loadInsights(db, { now }),
+    withDb(database => loadMlSales(database, { now, months: REVENUE_MONTHS })),
+    withDb(database => loadSearchMisses(database, { now })),
+    withDb(database => loadCatalogChanges(database, { now })),
+    withDb(database => loadWhatsappWaitlist(database)),
+    withDb(database => loadVintage(database, { now })),
+    // ML en detalle, web, compras, rastreo, cuentas y SBS. Cada uno trae su
+    // propio { ok, data | error }.
+    loadDetalle(db, { now }),
     // GA4 y Search Console: un resumen en KV que deja un workflow.
     section(() => loadGoogle(context?.env?.AMADO_KV, { now })),
   ]);
@@ -426,7 +444,12 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     crawl,
     catalog,
     salud,
-    insights,
+    mlSales,
+    searchMisses,
+    catalogChanges,
+    whatsapp,
+    vintage,
+    detalle,
     google,
   };
 }
