@@ -19,6 +19,8 @@
 import { fetchCatalog } from './catalog.js';
 import { loadHealth } from './panel-health.js';
 import { isEligibleForFeed } from '../feed.xml.js';
+import { loadInsights } from './panel-insights.js';
+import { loadGoogle } from './panel-google.js';
 
 const RECENT_ORDERS_LIMIT = 20;
 const STUCK_LIMIT = 25;
@@ -397,7 +399,7 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     ? section(() => loader(db))
     : Promise.resolve({ ok: false, error: 'ORDERS_DB no está disponible en este entorno.' }));
 
-  const [orders, revenue, stuck, waitlist, crawl, catalog, salud] = await Promise.all([
+  const [orders, revenue, stuck, waitlist, crawl, catalog, salud, insights, google] = await Promise.all([
     withDb(database => loadOrdersOverview(database, { now })),
     withDb(database => loadRevenueByMonth(database, { now })),
     withDb(database => loadStuck(database, { now })),
@@ -407,6 +409,11 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     // Sync (KV) y reportes automáticos (GitHub, si está encendido). Nunca
     // tira: lo que no se pudo leer se muestra como tal.
     section(() => loadHealth(context, { now: new Date(now) })),
+    // Ventas ML, web, búsquedas, cambios, compras, rastreo, cuentas y SBS.
+    // Cada uno trae su propio { ok, data | error }.
+    loadInsights(db, { now }),
+    // GA4 y Search Console: un resumen en KV que deja un workflow.
+    section(() => loadGoogle(context?.env?.AMADO_KV, { now })),
   ]);
 
   return {
@@ -419,5 +426,7 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     crawl,
     catalog,
     salud,
+    insights,
+    google,
   };
 }
