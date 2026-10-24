@@ -13,7 +13,7 @@ import {openDatabase} from './db.mjs';
 export const SELLER='2341378249';
 // Tope duro del objetivo total (incluye los 5 del piloto). El objetivo vigente vive en la base
 // (ml_vintage_pub_run_targets) y se sube con scripts/vintage-local/set-target.mjs.
-export const MAX_TARGET_TOTAL=20000;
+export const MAX_TARGET_TOTAL=100000;
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
