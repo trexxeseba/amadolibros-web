@@ -87,6 +87,22 @@ node --experimental-sqlite --test functions/__tests__/*.test.js
 node --test astro-front/src/lib/__tests__/*.test.js
 node --experimental-sqlite --test functions/api/__tests__/*.test.js
 
+# Scripts de Python de la campaña de Amado Vintage. El autorun los baja de main
+# en cada ciclo en la PC de Seba y se reinicia con ellos, así que un cambio roto
+# llegaba sin ninguna validación: ni sintaxis ni tests. python3 viene en el
+# runner; no hay dependencias externas. PYTHONDONTWRITEBYTECODE evita ensuciar
+# el árbol con __pycache__.
+step "Scripts de Python de Vintage (sintaxis y tests)"
+export PYTHONDONTWRITEBYTECODE=1
+python3 - scripts/vintage_autorun.py scripts/vintage_local.py scripts/vintage-local/*.py <<'PY'
+import ast, sys
+for path in sys.argv[1:]:
+    with open(path, encoding="utf-8") as handle:
+        ast.parse(handle.read(), path)
+    print("sintaxis ok:", path)
+PY
+python3 -m unittest discover -s scripts/__tests__ -p 'test_vintage_*.py'
+
 step "Encoder de imágenes permanentes — generación, publicación y lectura real"
 (cd scripts/images && npm ci --no-audit --no-fund)
 node --test scripts/images/__tests__/*.test.mjs
