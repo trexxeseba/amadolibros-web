@@ -43,3 +43,11 @@ test('the engine accepts a target above the old 10000 limit but never above the 
  await assert.rejects(()=>run({excel:'x',connection:'x',directory:'x',target:MAX_TARGET_TOTAL+1}),/invalid_local_limits/);
  await assert.rejects(()=>run({excel:'x',connection:'/no/existe/connection.json',directory:'x',target:15000}),error=>error.message!=='invalid_local_limits');
 });
+
+test('set-target accepts the 80000 objective and still refuses an obvious typo',async t=>{
+ const s=await store(t);
+ assert.equal((await setTarget(s,80000,{apply:true})).to_total,80000);
+ assert.equal((await s.target(BULK_RUN)).target_published,79995);
+ await assert.rejects(()=>setTarget(s,800000,{apply:true}),/invalid_target/);
+ assert.equal((await s.target(BULK_RUN)).target_published,79995);
+});

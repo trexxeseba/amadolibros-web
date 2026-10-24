@@ -34,7 +34,7 @@ RENEW_MARGIN_S = 30 * 60
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
-ENGINE_TARGET_CEILING = 20000
+ENGINE_TARGET_CEILING = 100000
 # Esperas entre renovaciones cuando el motor sigue pidiéndolas sin publicar nada: la última es el
 # tope. Antes eran 120 s y, desde la tercera vuelta, 6 h (que además se re-armaban solas).
 RENEW_RETRY_S = (120, 120, 15 * 60, 30 * 60, 60 * 60)
