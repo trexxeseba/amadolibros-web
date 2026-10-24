@@ -15,6 +15,7 @@
  */
 
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
+import { competitionEvents } from './ml-competition.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
@@ -57,7 +58,7 @@ async function all(db, sql, params = []) {
 export async function loadDigestData(db, now = new Date()) {
   const yesterday = montevideoDay(now, 1);
   const since = new Date(now.getTime() - UNPAID_WINDOW_DAYS * 86_400_000).toISOString();
-  const [toShip, unpaid, sold, created, whatsapps, salesHealth] = await Promise.all([
+  const [toShip, unpaid, sold, created, whatsapps, salesHealth, competencia] = await Promise.all([
     all(db, `SELECT public_code, buyer_name, delivery_type, payable_total_uyu, paid_at FROM orders
               WHERE payment_status = 'approved' AND fulfilled_at IS NULL AND cancelled_at IS NULL
               ORDER BY paid_at ASC LIMIT 100`),
@@ -71,6 +72,7 @@ export async function loadDigestData(db, now = new Date()) {
     all(db, `SELECT whatsapp, product_title FROM stock_waitlist_whatsapp
               WHERE status = 'waiting' ORDER BY created_at DESC LIMIT 100`).catch(() => []),
     readSalesHealth(db).catch(() => null),
+    competitionEvents(db, { limit: 5 }).catch(() => null),
   ]);
   return {
     yesterday,
@@ -82,6 +84,8 @@ export async function loadDigestData(db, now = new Date()) {
     whatsapps,
     // Sólo los problemas: el correo no se llena de estado cuando todo anda bien.
     systemProblems: salesHealth ? evaluateSalesHealth(salesHealth, now.getTime()).problemas : [],
+    // Sólo si hubo novedades de competencia en la última foto.
+    competition: competencia?.eventos?.length ? competencia : null,
   };
 }
 
@@ -129,6 +133,7 @@ export function buildDigestEmail(data) {
       '',
     ] : []),
     ...(data.systemProblems?.length ? ['SISTEMA — revisar', ...data.systemProblems.map(p => `- ${p}`), ''] : []),
+    ...(data.competition ? ['COMPETENCIA EN MERCADO LIBRE', ...data.competition.eventos.map(e => `- ${e.isbn}: ${e.texto}`), `  Todo en ${PANEL_URL}/reposicion`, ''] : []),
     'AYER',
     `- Pedidos nuevos: ${data.createdCount}`,
     `- Ventas cobradas: ${data.soldCount}${data.soldCount ? ` (${money(data.soldTotal)})` : ''}`,
@@ -157,6 +162,7 @@ export function buildDigestEmail(data) {
     ${wa.length ? `<h2 style="font-size:17px;margin:24px 0 6px">Dejaron su WhatsApp: escribiles <span style="color:#888;font-weight:normal">(${wa.length})</span></h2>
     <table style="border-collapse:collapse;width:100%;font-size:14px">${wa.slice(0, MAX_ROWS).map(r => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee"><a href="https://wa.me/${escapeHtml(r.whatsapp)}" style="color:#a94e3d;font-weight:bold;text-decoration:none">+${escapeHtml(r.whatsapp)}</a></td><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(r.product_title)}</td></tr>`).join('')}</table>` : ''}
     ${data.systemProblems?.length ? `<h2 style="font-size:17px;margin:24px 0 6px;color:#9a3412">Sistema: revisar</h2><ul>${data.systemProblems.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>` : ''}
+    ${data.competition ? `<h2 style="font-size:17px;margin:24px 0 6px">Competencia en Mercado Libre</h2><ul>${data.competition.eventos.map(e => `<li><a href="${escapeHtml(`${PANEL_URL}/reposicion?q=${e.isbn}`)}" style="color:#a94e3d">${escapeHtml(e.isbn)}</a>: ${escapeHtml(e.texto)}</li>`).join('')}</ul>` : ''}
     <h2 style="font-size:17px;margin:24px 0 6px">Ayer</h2>
     <p style="margin:4px 0">Pedidos nuevos: <strong>${data.createdCount}</strong><br>
        Ventas cobradas: <strong>${data.soldCount}</strong>${data.soldCount ? ` (${escapeHtml(money(data.soldTotal))})` : ''}</p>

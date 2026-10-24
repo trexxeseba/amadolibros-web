@@ -15,7 +15,7 @@ export { ownStockIndex };
 
 export const REPOSICION_PATH = '/operations/reposicion';
 export const REPOSICION_AUD = 'amado-reposicion-read';
-const ACTIONS = ['estado', 'reposicion_hechos', 'candidatos', 'ventas_titulo', 'compras_titulo', 'revision_identidad'];
+const ACTIONS = ['estado', 'reposicion_hechos', 'candidatos', 'ventas_titulo', 'compras_titulo', 'revision_identidad', 'competencia_hoy'];
 
 class RepoError extends Error { constructor(code, status = 400) { super(code); this.code = code; this.status = status; } }
 const reply = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -68,6 +68,7 @@ export function createReposicionReader({ now = Date.now, publicKey = OPERATIONS_
     if (action === 'ventas_titulo') return { resultados: await salesByTitle(db, titleArg(args(a, ['titulo'])), now()) };
     if (action === 'compras_titulo') return { resultados: await purchasesByTitle(db, titleArg(args(a, ['titulo']))) };
     if (action === 'revision_identidad') return f.identityQueue(db, limitArg(args(a, ['limite']), 100));
+    if (action === 'competencia_hoy') return f.events(db, limitArg(args(a, ['limite']), 100));
     throw new RepoError('unknown_action');
   }
 
