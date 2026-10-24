@@ -6,7 +6,7 @@ const manifest=JSON.parse(fs.readFileSync(new URL('../mercadolibre/approved-thir
 function fixture(id){
  const p=structuredClone(manifest.approved.find(p=>id?p.id===id:p.members.some(m=>m.action==='corregir')));
  const items=p.members.map(m=>({id:m.id,seller_id:440298103,status:'active',category_id:'MLU1196',catalog_listing:m.catalog_listing,user_product_id:p.up,variations:[],title:'Keep title',price:100,shipping:{mode:'me2'},sale_terms:[],attributes:[{id:'GTIN',value_name:p.isbn},{id:'SELLER_PACKAGE_WEIGHT',value_name:'500 g'},...(m.before?[{id:p.attribute,...m.before}]:[])]}));
- const saved=new Map(),puts=[];let extra=false,mutate=false,propagate=false,conflicts409=0;
+ const saved=new Map(),puts=[];let extra=false,mutate=false,propagate=false,conflicts409=0,ignorePeer=false;
  const receipts={read:async id=>saved.get(id),claim:async(id,b)=>{if(saved.has(id))return false;saved.set(id,{state:'attempting',before_json:JSON.stringify(b)});return true;},save:async(id,state,result)=>saved.set(id,{...saved.get(id),state,result_json:JSON.stringify(result)})};
  receipts.retry409=async id=>{const r=saved.get(id),b=JSON.parse(r.result_json);if(b.error!=='ml_put_http_409'||b.retry_count)return false;r.state='attempting_after_409_readback';return true;};
  const ml=async(path,method='GET',body)=>{
@@ -16,12 +16,13 @@ function fixture(id){
   const i=items.find(i=>path.split('?')[0]==='/items/'+i.id);assert.ok(i);
   if(method==='PUT'){
    assert.ok(saved.has('G:'+p.id));assert.ok(saved.has('W:'+i.id));assert.deepEqual(body,{attributes:[p.payload]});puts.push(i.id);if(i.id!==p.id&&conflicts409-->0)throw Error('ml_put_http_409');
+   if(ignorePeer&&i.id!==p.id)return {};
    for(const x of propagate?items:[i]){x.attributes=x.attributes.filter(a=>a.id!==p.attribute);x.attributes.push({id:p.attribute,value_name:p.value,...p.payload});}
    if(mutate)items[0].price=101;return {};
   }
   return structuredClone(i);
  };
- return {p,items,saved,puts,engine:createApproved33Engine({ml,receipts,wait:async()=>{}}),set extra(v){extra=v;},set mutate(v){mutate=v;},set propagate(v){propagate=v;},set conflicts409(v){conflicts409=v;}};
+ return {p,items,saved,puts,engine:createApproved33Engine({ml,receipts,wait:async()=>{}}),set extra(v){extra=v;},set mutate(v){mutate=v;},set propagate(v){propagate=v;},set conflicts409(v){conflicts409=v;},set ignorePeer(v){ignorePeer=v;}};
 }
 test('cryptographic scope fixes all 33 changes, 3 corrections and excluded fields',()=>{
  assert.equal(validateManifest(manifest).approved.length,28);
@@ -61,4 +62,10 @@ test('unexpected protected change after PUT stops all further writes',async()=>{
 test('only a single 409 retry occurs after complete fresh revalidation',async()=>{
  const f=fixture();f.conflicts409=1;await f.engine.apply(f.p,await f.engine.plan(f.p));assert.equal(f.puts.length,3);
  const g=fixture();g.conflicts409=5;await assert.rejects(g.engine.apply(g.p,await g.engine.plan(g.p)),/ml_put_http_409/);assert.equal(g.puts.length,3);
+});
+test('accepted but ignored peer correction is recorded and never reissued',async()=>{
+ const f=fixture();f.ignorePeer=true;
+ await assert.rejects(f.engine.apply(f.p,await f.engine.plan(f.p)),/written_value_not_persisted/);
+ assert.equal(f.puts.length,2);assert.equal(f.saved.get('G:'+f.p.id).state,'uncertain_no_retry');
+ const r=await f.engine.apply(f.p,await f.engine.plan(f.p));assert.equal(r.state,'prior_unresolved_no_retry');assert.equal(f.puts.length,2);
 });

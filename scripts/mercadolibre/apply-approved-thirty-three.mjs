@@ -34,7 +34,10 @@ export function createApproved33Engine({ml,receipts,wait=ms=>new Promise(r=>setT
  async function verify(p,before){const after=await inspect(p);guard(p,after,before);if(after.items.some(i=>state(i,change(p))!=='matches'))fail('approved_values_not_persisted');return {id:p.id,state:'verified',attribute:p.attribute,value:p.value,item_ids:after.items.map(i=>i.id),protected_and_other_attributes_unchanged:true,verified_at:new Date().toISOString(),after};}
  async function apply(p,pre){
   const key='G:'+p.id,old=await receipts.read(key);
-  if(old){const v=await verify(p,JSON.parse(old.before_json));await receipts.save(key,'verified',v);return {...v,state:'prior_verified_no_retry'};}
+  if(old){
+   try{const v=await verify(p,JSON.parse(old.before_json));await receipts.save(key,'verified',v);return {...v,state:'prior_verified_no_retry'};}
+   catch(e){if(e.message!=='approved_values_not_persisted')throw e;return {id:p.id,state:'prior_unresolved_no_retry',reason:e.message};}
+  }
   const b=await plan(p);if(canonical(b.ready)!==canonical(pre.ready)||snapshotKey(b.snapshot)!==snapshotKey(pre.snapshot))return {id:p.id,state:'blocked',reason:'changed_since_preflight'};
   if(!b.ready.length)return {id:p.id,state:'already_matches',verified:await verify(p,b)};
   const backup={...b,review_hash:HASH,policy:p};if(!await receipts.claim(key,backup))fail('prior_group_attempt');
@@ -98,7 +101,20 @@ async function main(){
  try{
   if(mode==='apply'){
    const pre=JSON.parse(await fs.readFile(dir+'/preflight.json','utf8'));if(pre.review_hash!==HASH||!pre.complete||pre.items.length!==28||Date.now()-Date.parse(pre.completed_at)>1200000)fail('invalid_or_stale_preflight');
-   for(const p of manifest.approved){const b=pre.items.find(x=>x.id===p.id);if(b.state!=='eligible'){summary.results.push({id:p.id,state:'blocked',reason:b.reason});continue;}summary.results.push(await engine.apply(p,b));await fs.writeFile(dir+'/apply-summary.json',JSON.stringify(summary,null,2));console.log('Processed:',summary.results.length,summary.results.at(-1).state);}
+   for(const p of manifest.approved){
+    const b=pre.items.find(x=>x.id===p.id);if(b.state!=='eligible'){summary.results.push({id:p.id,state:'blocked',reason:b.reason});continue;}
+    try{summary.results.push(await engine.apply(p,b));}
+    catch(e){
+     if(!['written_value_not_persisted','approved_values_not_persisted'].includes(e.message))throw e;
+     // A successful HTTP response is not proof of persistence. Re-read the
+     // complete group and check every other field before continuing unrelated
+     // approved groups. Never repeat this group's accepted request.
+     const record=await receipts.read('G:'+p.id),before=JSON.parse(record.before_json),after=await engine.inspect(p);
+     if(snapshotKey(snapshot(after.items,after.descriptions,[{attribute:p.attribute}]))!==snapshotKey(before.snapshot))fail('protected_or_other_attributes_changed');
+     summary.results.push({id:p.id,state:'accepted_but_not_persisted_no_retry',reason:e.message});
+    }
+    await fs.writeFile(dir+'/apply-summary.json',JSON.stringify(summary,null,2));console.log('Processed:',summary.results.length,summary.results.at(-1).state);
+   }
   }else{
    for(const p of manifest.approved){const r=await receipts.read('G:'+p.id);if(!r)continue;
     try{const v=await engine.verify(p,JSON.parse(r.before_json));summary.results.push({...v,after:undefined});if(mode==='verify')await receipts.save('G:'+p.id,'verified',v);await fs.writeFile(dir+'/'+p.id+'-after.json',JSON.stringify(v.after,null,2));}
