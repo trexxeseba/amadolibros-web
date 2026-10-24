@@ -87,10 +87,19 @@ export async function checkVintageHeartbeat(env, { now = new Date(), fetchFn = f
   }
   if (!verdict.alert) return verdict;
   const claimKey = `vintage:watch:alert:${verdict.alert}`;
+  // La reserva se escribe después de un envío exitoso: si ntfy falla, el próximo ciclo (5 min)
+  // reintenta en vez de callar durante todo el TTL. Un KV caído nunca impide el aviso (se prefiere
+  // avisar de más antes que callar) ni tira el cron.
   if (env.AMADO_KV) {
-    if (await env.AMADO_KV.get(claimKey)) return { ...verdict, notified: false, reason: 'already_notified' };
-    await env.AMADO_KV.put(claimKey, now.toISOString(), { expirationTtl: verdict.ttl });
+    try {
+      if (await env.AMADO_KV.get(claimKey)) return { ...verdict, notified: false, reason: 'already_notified' };
+    } catch { /* sin reserva legible: se avisa igual */ }
   }
   const outcome = await notifyNtfy(env, verdict.title, verdict.message, { fetchFn });
+  if (outcome.sent && env.AMADO_KV) {
+    try {
+      await env.AMADO_KV.put(claimKey, now.toISOString(), { expirationTtl: verdict.ttl });
+    } catch { /* el aviso ya salió; sin reserva se repetirá a lo sumo en el próximo ciclo */ }
+  }
   return { ...verdict, notified: outcome.sent, ...(outcome.sent ? {} : { reason: outcome.reason ?? `http_${outcome.status}` }) };
 }
