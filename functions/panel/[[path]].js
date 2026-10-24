@@ -165,6 +165,7 @@ function sidebar(activo = 'tablero') {
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
     { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
     { id: 'busquedas', href: '/panel#busquedas', texto: 'Búsquedas', icono: '⌕' },
+    { id: 'reposicion', href: '/panel/reposicion', texto: 'Reposición', icono: '↻' },
     { id: 'compras', href: '/panel/compras', texto: 'Compras', icono: '⇩' },
     { id: 'vintage', href: '/panel/meli-vintage-lote', texto: 'Vintage', icono: '◈' },
     { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },

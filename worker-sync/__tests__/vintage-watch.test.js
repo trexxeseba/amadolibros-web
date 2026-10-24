@@ -115,3 +115,27 @@ test('ntfy: sólo acepta un tópico de ntfy.sh por https', async () => {
   const spy = fetchSpy(false);
   assert.deepEqual(await notifyNtfy({ VINTAGE_NOTIFY_URL: 'https://ntfy.sh/amado-vintage' }, 't', 'm', { fetchFn: spy.fn }), { sent: false, status: 500 });
 });
+
+test('check: un envío fallido no reserva el aviso y el siguiente ciclo reintenta',async t=>{
+ const kv=kvMock(),e=env({ORDERS_DB:dbMock({...healthy,lastAltaAt:T-50*M}),AMADO_KV:kv});
+ const failing=fetchSpy(false);
+ const first=await checkVintageHeartbeat(e,{now:NOW,fetchFn:failing.fn});
+ assert.equal(first.notified,false);
+ assert.equal(kv.store.has('vintage:watch:alert:stalled'),false,'a failed send must not reserve the alert');
+ const working=fetchSpy(true);
+ const second=await checkVintageHeartbeat(e,{now:new Date(T+5*M),fetchFn:working.fn});
+ assert.equal(second.notified,true);
+ assert.equal(working.calls.length,1);
+ assert.equal(kv.store.has('vintage:watch:alert:stalled'),true);
+});
+
+test('check: un KV caído no impide el aviso ni tira el cron',async t=>{
+ const brokenGet={async get(){throw new Error('KV down');},async put(){}};
+ const spy=fetchSpy(true);
+ const result=await checkVintageHeartbeat(env({ORDERS_DB:dbMock({...healthy,lastAltaAt:T-50*M}),AMADO_KV:brokenGet}),{now:NOW,fetchFn:spy.fn});
+ assert.equal(result.notified,true);
+ assert.equal(spy.calls.length,1);
+ const brokenPut={async get(){return null;},async put(){throw new Error('KV down');}};
+ const again=await checkVintageHeartbeat(env({ORDERS_DB:dbMock({...healthy,lastAltaAt:T-50*M}),AMADO_KV:brokenPut}),{now:NOW,fetchFn:spy.fn});
+ assert.equal(again.notified,true,'the alert already went out; a failed reservation must not undo it');
+});
