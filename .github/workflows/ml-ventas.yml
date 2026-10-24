@@ -1,0 +1,90 @@
+name: ML ventas (motor de reposición)
+
+# Ventas reales de Mercado Libre guardadas en D1 por el Worker amadolibros-sync
+# (worker-sync/ml-sales.js). Sólo lee ML. El cron de 5 minutos del Worker ya
+# avanza el backfill y la actualización horaria; este workflow sirve para
+# completarlo de una vez y para consultar ventas por ISBN o título.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ml-ventas.yml'
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'status | backfill | incremental | isbn | titulo | muestra'
+        type: choice
+        options: [status, backfill, incremental, isbn, titulo, muestra]
+        default: status
+      isbns:
+        description: 'Para accion=isbn: hasta 50 ISBN separados por coma'
+        required: false
+      titulo:
+        description: 'Para accion=titulo: texto del título'
+        required: false
+
+concurrency:
+  group: ml-ventas
+  cancel-in-progress: false
+
+jobs:
+  ventas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: production
+    env:
+      WORKER: https://amadolibros-sync.undiaes.workers.dev
+      SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+      ACCION: ${{ github.event_name == 'push' && 'backfill' || inputs.accion }}
+      ISBNS: ${{ inputs.isbns }}
+      TITULO: ${{ inputs.titulo }}
+    steps:
+      - name: Esperar a que el Worker exponga /sales
+        run: |
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status")
+            [ "$code" = "200" ] && exit 0
+            echo "HTTP $code, esperando deploy..."; sleep 15
+          done
+          exit 1
+
+      - name: Ejecutar
+        run: |
+          set -euo pipefail
+          call() { curl -sS --max-time 120 -H "Authorization: Bearer $SYNC_SECRET" -H 'Content-Type: application/json' "$@"; }
+          case "$ACCION" in
+            backfill|incremental)
+              mode=$([ "$ACCION" = backfill ] && echo auto || echo incremental)
+              for i in $(seq 1 300); do
+                r=$(call -X POST "$WORKER/sales/sync" -d "{\"pages\":20,\"mode\":\"$mode\"}")
+                echo "$r"
+                state=$(echo "$r" | jq -r .state)
+                case "$state" in
+                  backfill) ;;
+                  busy) sleep 20 ;;
+                  error) sleep 30 ;;
+                  *) break ;;
+                esac
+              done
+              ;;
+            isbn)
+              body=$(jq -cn --arg s "$ISBNS" '{isbns: ($s | split(",") | map(gsub("\\s"; "")) | map(select(length>0)))}')
+              call -X POST "$WORKER/sales/query" -d "$body" | jq . | tee -a "$GITHUB_STEP_SUMMARY"
+              ;;
+            titulo)
+              call -X POST "$WORKER/sales/query" -d "$(jq -cn --arg t "$TITULO" '{titulo:$t}')" | jq . | tee -a "$GITHUB_STEP_SUMMARY"
+              ;;
+            muestra)
+              call -X POST "$WORKER/sales/sample" -d '{"limit":5}' | jq . | tee -a "$GITHUB_STEP_SUMMARY"
+              ;;
+          esac
+
+      - name: Estado
+        if: always()
+        run: |
+          curl -sS -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status" | jq . | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$ACCION" = backfill ]; then
+            curl -sS -X POST -H "Authorization: Bearer $SYNC_SECRET" -H 'Content-Type: application/json' "$WORKER/sales/sample" -d '{"limit":5}' | jq . | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
