@@ -11,6 +11,9 @@ import {VintageBulkStore,createVintageBulkFetch,BULK_RUN} from '../../functions/
 import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
 import {openDatabase} from './db.mjs';
 export const SELLER='2341378249';
+// Tope duro del objetivo total (incluye los 5 del piloto). El objetivo vigente vive en la base
+// (ml_vintage_pub_run_targets) y se sube con scripts/vintage-local/set-target.mjs.
+export const MAX_TARGET_TOTAL=20000;
 const ENDPOINT='https://www.amadolibros.com/operations/vintage-local';
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const PICTURE_WAIT_TRIES=6,PICTURE_WAIT_MS=10000;
@@ -41,7 +44,7 @@ export async function inspectWorkbook(file){
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
 export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
- if(!Number.isInteger(target)||target<5||target>10000||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
+ if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
  const input=await readWorkbook(excel);
@@ -107,6 +110,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?",BULK_RUN,c.feed_id).run();
   }
   if(existing&&!validateOnly&&['paused','auth_error','stock_stale'].includes(existing.state))await s.stmt("UPDATE ml_pub_runs SET state='publishing' WHERE id=? AND lease_until<?",BULK_RUN,Date.now()).run();
+  if(existing&&!validateOnly)await s.reopenForRaisedTarget(BULK_RUN,Date.now());
   if(!existing){
    await s.createRun({id:BULK_RUN,feedId:c.feed_id,policy,policyHash:c.policy_hash,now:Date.now()});
    if(Array.isArray(c.inventory)&&c.inventory_checkpoint){
