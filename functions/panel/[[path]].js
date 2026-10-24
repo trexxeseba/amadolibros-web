@@ -160,6 +160,7 @@ function sidebar(activo = 'tablero') {
     { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos', icono: '❑' },
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
     { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
+    { id: 'reposicion', href: '/panel/reposicion', texto: 'Reposición', icono: '↻' },
     { id: 'compras', href: '/panel/compras', texto: 'Compras', icono: '⇩' },
     { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },
   ];
