@@ -67,6 +67,7 @@ import { handleImageVariants } from './image-variants-api.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
 import { processPendingMetaPurchases } from '../functions/_shared/purchase-tracking.js';
 import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
+import { mlSales, handleSalesRoute } from './ml-sales.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -119,6 +120,16 @@ export default {
           console.error('[stock sync] Error', error?.code || error?.name || 'Error');
           return { state: 'error' };
         }),
+        // Ventas reales de ML en D1 (motor de reposición): avanza el backfill
+        // de órdenes y, una vez completo, revisa cambios una vez por hora.
+        // Inerte sin ML_SALES_SYNC_ENABLED="true".
+        (String(env.ML_SALES_SYNC_ENABLED) === 'true' ? mlSales.sync(env, { pages: 4 }) : Promise.resolve({ state: 'disabled' })).then(result => {
+          if (result?.state !== 'disabled' && result?.state !== 'idle') console.log('[ml sales]', JSON.stringify(result));
+          return result;
+        }).catch(error => {
+          console.error('[ml sales] Error', error?.code || error?.name || 'Error');
+          return { state: 'error' };
+        }),
         // Vigía de la campaña Vintage: sólo lee D1 y avisa por ntfy si la PC
         // dejó de publicar. Inerte sin VINTAGE_WATCH_ENABLED="true".
         checkVintageHeartbeat(env).then(result => {
@@ -165,6 +176,8 @@ export default {
       return json({ error: 'Unauthorized.' }, 401);
     }
     if (url.pathname.startsWith('/publisher/')) return handlePublicationRoute(request,env,{admin:true});
+    // Ventas de ML por ISBN/título y sincronización manual, detrás de SYNC_SECRET.
+    if (url.pathname.startsWith('/sales/')) return handleSalesRoute(request, env);
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
 
