@@ -13,6 +13,13 @@ export async function readSalesHealth(db) {
     }
   } catch { /* tablas todavía no creadas */ }
   try {
+    const c = await db.prepare('SELECT cursor_json,updated_at,last_result_json FROM comp_state WHERE name=?').bind('daily').first();
+    if (c) {
+      const n = await db.prepare('SELECT COUNT(*) AS n FROM comp_targets').first().catch(() => null);
+      out.competition = { updated_at: Number(c.updated_at), cursor: JSON.parse(c.cursor_json || '{}'), last: c.last_result_json ? JSON.parse(c.last_result_json) : null, targets: Number(n?.n ?? 0) };
+    }
+  } catch { /* tabla todavía no creada */ }
+  try {
     const p = await db.prepare('SELECT COUNT(*) AS n,MAX(updated_at) AS last FROM purchase_orders').first();
     out.purchases = { documents: Number(p?.n || 0), last_import: p?.last ? Number(p.last) : null };
   } catch { /* tabla todavía no creada */ }
@@ -33,6 +40,15 @@ export function evaluateSalesHealth(h, now = Date.now()) {
     if (s.cursor?.phase === 'backfill') notas.push('Ventas ML: carga inicial en curso.');
     const filter = s.cursor?.inc_filter;
     notas.push(`Ventas ML: última orden ${s.last_order ? s.last_order.slice(0, 10) : '—'}; cambios de estado ${filter?.name ? 'por filtro verificado' : 'por barrido semanal'}${filter?.reason === 'sweep_missed' ? ' (el filtro perdió actualizaciones)' : ''}.`);
+  }
+  const c = h?.competition;
+  if (c) {
+    const caps = c.cursor?.caps ?? {};
+    const CAP_NAMES = { products_items: 'competidores del catálogo', price_to_win: 'primer lugar', users: 'ventas de vendedores' };
+    const closed = Object.entries(caps).filter(([, v]) => v && v !== 'ok').map(([k, v]) => `${CAP_NAMES[k] ?? k} (${v.replace('ml_http_', 'HTTP ')})`);
+    if (caps.products_items && caps.products_items !== 'ok' && c.last?.state === 'products_endpoint_unavailable') problemas.push(`Competencia: Mercado Libre no deja leer los competidores del catálogo (${caps.products_items.replace('ml_http_', 'HTTP ')}).`);
+    if (c.last?.state === 'error') problemas.push(`Competencia: la última corrida falló (${c.last.code || 'error'}).`);
+    notas.push(`Competencia: ${c.targets} productos vigilados; foto del ${c.cursor?.date ?? '—'} (${c.cursor?.phase === 'done' ? 'completa' : 'en curso'})${closed.length ? `; sin acceso a: ${closed.join(', ')}` : ''}.`);
   }
   const p = h?.purchases;
   if (p) notas.push(p.documents ? `Compras: ${p.documents} documentos, última carga hace ${Math.max(0, Math.round((now - p.last_import) / 86400000))} días.` : 'Compras: todavía no se cargó ningún documento.');
