@@ -26,3 +26,12 @@ scripts/categorize/data/
 # Private temporary Vintage connection and optional local runtime state
 vintage-local-connection*.json
 vintage-local-state/
+
+# Archivos locales con datos comerciales o credenciales (repo público).
+local_sync*.py
+patch_*.py
+wrangler_*.txt
+wrangler_dev.log
+/*.xlsx
+/*.csv
+/*.diff

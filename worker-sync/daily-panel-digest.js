@@ -14,6 +14,8 @@
  * Una vez por día: la reserva en KV evita duplicados si el cron se repite.
  */
 
+import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
+
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
 const PANEL_URL = 'https://www.amadolibros.com/panel';
@@ -55,7 +57,7 @@ async function all(db, sql, params = []) {
 export async function loadDigestData(db, now = new Date()) {
   const yesterday = montevideoDay(now, 1);
   const since = new Date(now.getTime() - UNPAID_WINDOW_DAYS * 86_400_000).toISOString();
-  const [toShip, unpaid, sold, created, whatsapps] = await Promise.all([
+  const [toShip, unpaid, sold, created, whatsapps, salesHealth] = await Promise.all([
     all(db, `SELECT public_code, buyer_name, delivery_type, payable_total_uyu, paid_at FROM orders
               WHERE payment_status = 'approved' AND fulfilled_at IS NULL AND cancelled_at IS NULL
               ORDER BY paid_at ASC LIMIT 100`),
@@ -68,6 +70,7 @@ export async function loadDigestData(db, now = new Date()) {
     // La tabla llega con la migración 0013; antes de aplicarla el resumen sigue funcionando.
     all(db, `SELECT whatsapp, product_title FROM stock_waitlist_whatsapp
               WHERE status = 'waiting' ORDER BY created_at DESC LIMIT 100`).catch(() => []),
+    readSalesHealth(db).catch(() => null),
   ]);
   return {
     yesterday,
@@ -77,6 +80,8 @@ export async function loadDigestData(db, now = new Date()) {
     soldTotal: Number(sold[0]?.total || 0),
     createdCount: Number(created[0]?.n || 0),
     whatsapps,
+    // Sólo los problemas: el correo no se llena de estado cuando todo anda bien.
+    systemProblems: salesHealth ? evaluateSalesHealth(salesHealth, now.getTime()).problemas : [],
   };
 }
 
@@ -123,6 +128,7 @@ export function buildDigestEmail(data) {
       ...(wa.length > MAX_ROWS ? [`  … y ${wa.length - MAX_ROWS} más.`] : []),
       '',
     ] : []),
+    ...(data.systemProblems?.length ? ['SISTEMA — revisar', ...data.systemProblems.map(p => `- ${p}`), ''] : []),
     'AYER',
     `- Pedidos nuevos: ${data.createdCount}`,
     `- Ventas cobradas: ${data.soldCount}${data.soldCount ? ` (${money(data.soldTotal)})` : ''}`,
@@ -150,6 +156,7 @@ export function buildDigestEmail(data) {
     ${unpaid.length ? '<p style="font-size:13px;color:#666">En cada pedido hay un botón para escribirle por WhatsApp con el mensaje ya armado.</p>' : ''}
     ${wa.length ? `<h2 style="font-size:17px;margin:24px 0 6px">Dejaron su WhatsApp: escribiles <span style="color:#888;font-weight:normal">(${wa.length})</span></h2>
     <table style="border-collapse:collapse;width:100%;font-size:14px">${wa.slice(0, MAX_ROWS).map(r => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee"><a href="https://wa.me/${escapeHtml(r.whatsapp)}" style="color:#a94e3d;font-weight:bold;text-decoration:none">+${escapeHtml(r.whatsapp)}</a></td><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(r.product_title)}</td></tr>`).join('')}</table>` : ''}
+    ${data.systemProblems?.length ? `<h2 style="font-size:17px;margin:24px 0 6px;color:#9a3412">Sistema: revisar</h2><ul>${data.systemProblems.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>` : ''}
     <h2 style="font-size:17px;margin:24px 0 6px">Ayer</h2>
     <p style="margin:4px 0">Pedidos nuevos: <strong>${data.createdCount}</strong><br>
        Ventas cobradas: <strong>${data.soldCount}</strong>${data.soldCount ? ` (${escapeHtml(money(data.soldTotal))})` : ''}</p>

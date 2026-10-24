@@ -29,6 +29,7 @@ import {
   evaluarWorkflows,
   evaluateSyncStatus,
 } from './health-rules.js';
+import { readSalesHealth, evaluateSalesHealth } from '../../worker-sync/sales-health.js';
 
 const REPO = 'trexxeseba/amadolibros-web';
 const CACHE_KEY = 'panel:salud:workflows';
@@ -110,6 +111,10 @@ async function guardarCache(kv, valor) {
 
 export async function loadHealth(context, { now = new Date(), fetchFn = globalThis.fetch } = {}) {
   const env = context?.env || {};
+
+  // ── Ventas ML y compras (motor de reposición), desde D1 ─────────────────
+  let ventas = { problemas: [], notas: [] };
+  try { ventas = evaluateSalesHealth(await readSalesHealth(env.ORDERS_DB), now.getTime()); } catch { /* sin D1: la sección sigue */ }
   const kv = env.AMADO_KV;
 
   // ── Sync del catálogo, desde KV ─────────────────────────────────────────
@@ -170,7 +175,8 @@ export async function loadHealth(context, { now = new Date(), fetchFn = globalTh
     generadoEn: now.toISOString(),
     sync,
     reportes,
-    problemas: [...(sync.problemas || []), ...(reportes.problemas || [])],
+    ventas,
+    problemas: [...(sync.problemas || []), ...(reportes.problemas || []), ...ventas.problemas],
   };
 }
 
@@ -269,5 +275,6 @@ export function healthSection(salud, { catalogo = null } = {}) {
   ${bloqueSync}
   <h3>Reportes automáticos</h3>
   ${bloqueReportes}
+  ${salud?.ventas?.notas?.length ? `<h3>Ventas ML y compras</h3>${salud.ventas.notas.map(nota => `<p class="muted">${escapeHtml(nota)}</p>`).join('')}` : ''}
 </section>`;
 }
