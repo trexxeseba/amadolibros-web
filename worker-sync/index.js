@@ -9,8 +9,6 @@ import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-p
  *   fetch(request)   — POST /trigger con header Authorization: Bearer <SYNC_SECRET>
  *                      para disparar sync manualmente.
  *                    — GET /status con el mismo header para auditar KV + R2.
- *                    — GET /bing-webmaster/summary consulta Bing Webmaster
- *                      en modo solo lectura con el mismo header.
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *                    — POST /publish-preview-catalog escribe únicamente el catálogo
  *                      separado de STOCK-1 (prefijo stock1-preview/*) cuando la
@@ -61,7 +59,6 @@ import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { sendDailyPanelDigest } from './daily-panel-digest.js';
 import { checkVintageHeartbeat } from './vintage-watch.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
-import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
 import { handleImageVariants } from './image-variants-api.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
@@ -213,11 +210,6 @@ export default {
       return handleImageVariants(request, env);
     }
 
-    if (request.method === 'GET' && url.pathname === '/bing-webmaster/summary') {
-      const result = await getBingWebmasterReadOnlySummary(env);
-      return json(result, result.status === 'error' ? 502 : 200);
-    }
-
     // Prueba manual del correo diario: manda ahora, marcado [PRUEBA], sin tocar
     // la reserva del día.
     if (request.method === 'POST' && url.pathname === '/panel-digest-test') {
@@ -254,7 +246,7 @@ export default {
     }
 
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
-      return json({ error: 'Not found. Use POST /measure, POST /trigger, GET /status or GET /bing-webmaster/summary.' }, 404);
+      return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
     }
 
     const mode = url.searchParams.get('mode') || 'async';
