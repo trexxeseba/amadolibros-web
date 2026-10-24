@@ -68,6 +68,7 @@ import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js
 import { processPendingMetaPurchases } from '../functions/_shared/purchase-tracking.js';
 import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import { mlSales, handleSalesRoute } from './ml-sales.js';
+import { handlePurchasesRoute } from './purchases.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -178,6 +179,8 @@ export default {
     if (url.pathname.startsWith('/publisher/')) return handlePublicationRoute(request,env,{admin:true});
     // Ventas de ML por ISBN/título y sincronización manual, detrás de SYNC_SECRET.
     if (url.pathname.startsWith('/sales/')) return handleSalesRoute(request, env);
+    // Compras a proveedores normalizadas (import idempotente y consulta), detrás de SYNC_SECRET.
+    if (url.pathname.startsWith('/purchases/')) return handlePurchasesRoute(request, env);
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
 
