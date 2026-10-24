@@ -34,6 +34,14 @@ import { readSalesHealth, evaluateSalesHealth } from '../../worker-sync/sales-he
 const REPO = 'trexxeseba/amadolibros-web';
 const CACHE_KEY = 'panel:salud:workflows';
 const CACHE_TTL_SECONDS = 600;
+// Una lectura incompleta también se cachea, pero menos tiempo: sin token, la
+// API de GitHub limita por IP (y Cloudflare comparte IPs), así que volver a
+// preguntar las siete cosas en cada carga del panel agota el cupo.
+const CACHE_PARCIAL_TTL_SECONDS = 180;
+// Último dato bueno de cada reporte: si GitHub no responde, se muestra ese
+// dato con su fecha en vez de un aviso rojo por reporte.
+const ULTIMO_BUENO_KEY = 'panel:salud:workflows:ultimo-bueno';
+const ULTIMO_BUENO_TTL_SECONDS = 7 * 86400;
 const GITHUB_TIMEOUT_MS = 4000;
 
 function escapeHtml(value) {
@@ -100,12 +108,22 @@ async function leerCache(kv) {
   }
 }
 
-async function guardarCache(kv, valor) {
+async function guardarCache(kv, valor, ttl = CACHE_TTL_SECONDS, key = CACHE_KEY) {
   if (!kv) return;
   try {
-    await kv.put(CACHE_KEY, JSON.stringify(valor), { expirationTtl: CACHE_TTL_SECONDS });
+    await kv.put(key, JSON.stringify(valor), { expirationTtl: ttl });
   } catch {
     // Un caché que no se pudo escribir no es un problema del panel.
+  }
+}
+
+async function leerUltimoBueno(kv) {
+  if (!kv) return {};
+  try {
+    const parsed = JSON.parse((await kv.get(ULTIMO_BUENO_KEY)) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 }
 
@@ -161,11 +179,22 @@ export async function loadHealth(context, { now = new Date(), fetchFn = globalTh
         corridas[wf.archivo] = await leerUltimaCorrida(wf, fetchFn);
       }));
       consultadoEn = now.toISOString();
-      // Sólo se cachea una lectura completa. Cachear "no se pudo consultar"
-      // dejaría el panel diez minutos diciendo que no sabe, por un corte de
-      // dos segundos.
-      const completa = WORKFLOWS_VIGILADOS.every(wf => corridas[wf.archivo]?.ok === true);
-      if (completa) await guardarCache(kv, { corridas, consultadoEn });
+      // Lo que respondió bien pasa a ser el último dato bueno; lo que falló se
+      // completa con el último dato bueno que haya (marcado con su fecha).
+      const ultimoBueno = await leerUltimoBueno(kv);
+      let huboNuevos = false;
+      for (const wf of WORKFLOWS_VIGILADOS) {
+        const lectura = corridas[wf.archivo];
+        if (lectura?.ok === true) {
+          ultimoBueno[wf.archivo] = { corrida: lectura.corrida, consultadoEn };
+          huboNuevos = true;
+        } else if (ultimoBueno[wf.archivo]) {
+          corridas[wf.archivo] = { ok: true, corrida: ultimoBueno[wf.archivo].corrida, datoViejoDe: ultimoBueno[wf.archivo].consultadoEn, error: lectura?.error ?? null };
+        }
+      }
+      if (huboNuevos) await guardarCache(kv, ultimoBueno, ULTIMO_BUENO_TTL_SECONDS, ULTIMO_BUENO_KEY);
+      const completa = WORKFLOWS_VIGILADOS.every(wf => corridas[wf.archivo]?.ok === true && !corridas[wf.archivo]?.datoViejoDe);
+      await guardarCache(kv, { corridas, consultadoEn }, completa ? CACHE_TTL_SECONDS : CACHE_PARCIAL_TTL_SECONDS);
     }
 
     reportes = { disponible: true, ...evaluarWorkflows(corridas, { now }), desdeCache, consultadoEn };
@@ -247,7 +276,7 @@ export function healthSection(salud, { catalogo = null } = {}) {
       return `<tr>
         <td>${nombre}</td>
         <td><span class="pastilla p-${tono}">${escapeHtml(etiqueta)}</span></td>
-        <td>${escapeHtml(hace(fila.dias))}</td>
+        <td>${escapeHtml(hace(fila.dias))}${fila.datoViejoDe ? ` <span class="muted">· último dato del ${escapeHtml(fechaCorta(fila.datoViejoDe))} UTC</span>` : ''}</td>
       </tr>`;
     }).join('');
     const origen = reportes.desdeCache
