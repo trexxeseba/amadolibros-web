@@ -363,3 +363,29 @@ export async function loadBi(db, catalog, now = Date.now()) {
   }
   return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia };
 }
+
+// Lo más urgente de Brújula para el correo de la mañana: pocas filas por
+// bloque, sólo lo que pide una acción hoy. Recibe el resultado de loadBi.
+const DIGEST_ROWS = 5;
+export function brujulaDigest(bi) {
+  const inv = bi?.inventario?.ok ? bi.inventario.data : null;
+  const reponer = (inv?.aSinStock ?? [])
+    .filter(b => b.mercado && ['solo', 'sostenible'].includes(b.mercado.estado))
+    .slice(0, DIGEST_ROWS)
+    .map(b => ({ isbn: b.isbn, title: b.title, detalle: b.mercado.estado === 'solo'
+      ? `vendiste ${b.u90} en 90 días y nadie más lo tiene desde Uruguay`
+      : `vendiste ${b.u90} en 90 días${b.mercado.margenAlMin != null ? `; al precio del más barato ganás $ ${b.mercado.margenAlMin.toLocaleString('es-UY')} por libro` : ''}` }));
+  const subir = (bi?.precios?.ok && bi.precios.data ? bi.precios.data.lista : [])
+    .filter(b => !b.agotado)
+    .slice(0, DIGEST_ROWS)
+    .map(b => ({ isbn: b.isbn, title: b.title, detalle: `de $ ${b.actual.toLocaleString('es-UY')} a $ ${b.sugerido.toLocaleString('es-UY')} (+${b.subaPct}%; el más barato desde Uruguay está a $ ${b.min.toLocaleString('es-UY')})` }));
+  const agotan = (inv?.coberturaBaja ?? [])
+    .slice(0, DIGEST_ROWS)
+    .map(b => ({ isbn: b.isbn, title: b.title, detalle: `quedan ${b.stock}, alcanzan para unos ${b.dias} días` }));
+  const perdida = (bi?.margen?.ok ? bi.margen.data.peores : [])
+    .filter(b => b.margin < 0)
+    .slice(0, DIGEST_ROWS)
+    .map(b => ({ isbn: b.isbn, title: b.title, detalle: `lo vendés a $ ${b.price.toLocaleString('es-UY')} y reponerlo cuesta $ ${b.cost.toLocaleString('es-UY')}` }));
+  if (!reponer.length && !subir.length && !agotan.length && !perdida.length) return null;
+  return { reponer, subir, agotan, perdida };
+}

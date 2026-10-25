@@ -16,6 +16,7 @@
 
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { competitionEvents } from './ml-competition.js';
+import { loadBi, brujulaDigest } from '../functions/_shared/panel-bi.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
@@ -55,7 +56,7 @@ async function all(db, sql, params = []) {
   return results || [];
 }
 
-export async function loadDigestData(db, now = new Date()) {
+export async function loadDigestData(db, now = new Date(), { catalog = null } = {}) {
   const yesterday = montevideoDay(now, 1);
   const since = new Date(now.getTime() - UNPAID_WINDOW_DAYS * 86_400_000).toISOString();
   const [toShip, unpaid, sold, created, whatsapps, salesHealth, competencia] = await Promise.all([
@@ -74,6 +75,10 @@ export async function loadDigestData(db, now = new Date()) {
     readSalesHealth(db).catch(() => null),
     competitionEvents(db, { limit: 5 }).catch(() => null),
   ]);
+  // Brújula: qué reponer, a qué subirle el precio, qué se agota y qué se vende
+  // a pérdida. Si algo falla, el correo sale igual sin esta parte.
+  let brujula = null;
+  if (catalog) { try { brujula = brujulaDigest(await loadBi(db, catalog, now.getTime())); } catch { brujula = null; } }
   return {
     yesterday,
     toShip,
@@ -86,7 +91,37 @@ export async function loadDigestData(db, now = new Date()) {
     systemProblems: salesHealth ? evaluateSalesHealth(salesHealth, now.getTime()).problemas : [],
     // Sólo si hubo novedades de competencia en la última foto.
     competition: competencia?.eventos?.length ? competencia : null,
+    brujula,
   };
+}
+
+const BRUJULA_URL = `${PANEL_URL}/inteligencia`;
+const BRUJULA_BLOCKS = [
+  ['reponer', 'Conviene reponer'],
+  ['subir', 'Subile el precio'],
+  ['agotan', 'Se agotan pronto: pedilos'],
+  ['perdida', 'Se venden a pérdida'],
+];
+const bookLink = isbn => `${PANEL_URL}/reposicion?q=${encodeURIComponent(isbn)}`;
+
+function brujulaText(b) {
+  if (!b) return [];
+  const out = ['BRÚJULA AMADO — qué hacer hoy'];
+  for (const [key, title] of BRUJULA_BLOCKS) {
+    if (!b[key]?.length) continue;
+    out.push(`  ${title}:`, ...b[key].map(r => `  - ${r.title ?? r.isbn}: ${r.detalle}`));
+  }
+  out.push(`  Todo en ${BRUJULA_URL}`, '');
+  return out;
+}
+
+function brujulaHtml(b) {
+  if (!b) return '';
+  const blocks = BRUJULA_BLOCKS.filter(([key]) => b[key]?.length).map(([key, title]) => `
+    <h3 style="font-size:15px;margin:14px 0 4px">${escapeHtml(title)}</h3>
+    <ul style="margin:0;padding-left:18px">${b[key].map(r => `<li style="margin:3px 0"><a href="${escapeHtml(bookLink(r.isbn))}" style="color:#a94e3d">${escapeHtml(r.title ?? r.isbn)}</a>: ${escapeHtml(r.detalle)}</li>`).join('')}</ul>`).join('');
+  return `<h2 style="font-size:17px;margin:24px 0 6px">Brújula Amado: qué hacer hoy</h2>${blocks}
+    <p style="margin:8px 0"><a href="${BRUJULA_URL}" style="color:#a94e3d">Ver todo en Brújula Amado</a></p>`;
 }
 
 const DELIVERY = { pickup: 'retiro', shipping: 'envío' };
@@ -133,6 +168,7 @@ export function buildDigestEmail(data) {
       '',
     ] : []),
     ...(data.systemProblems?.length ? ['SISTEMA — revisar', ...data.systemProblems.map(p => `- ${p}`), ''] : []),
+    ...brujulaText(data.brujula),
     ...(data.competition ? ['COMPETENCIA EN MERCADO LIBRE', ...data.competition.eventos.map(e => `- ${e.isbn}: ${e.texto}`), `  Todo en ${PANEL_URL}/reposicion`, ''] : []),
     'AYER',
     `- Pedidos nuevos: ${data.createdCount}`,
@@ -162,6 +198,7 @@ export function buildDigestEmail(data) {
     ${wa.length ? `<h2 style="font-size:17px;margin:24px 0 6px">Dejaron su WhatsApp: escribiles <span style="color:#888;font-weight:normal">(${wa.length})</span></h2>
     <table style="border-collapse:collapse;width:100%;font-size:14px">${wa.slice(0, MAX_ROWS).map(r => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee"><a href="https://wa.me/${escapeHtml(r.whatsapp)}" style="color:#a94e3d;font-weight:bold;text-decoration:none">+${escapeHtml(r.whatsapp)}</a></td><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(r.product_title)}</td></tr>`).join('')}</table>` : ''}
     ${data.systemProblems?.length ? `<h2 style="font-size:17px;margin:24px 0 6px;color:#9a3412">Sistema: revisar</h2><ul>${data.systemProblems.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>` : ''}
+    ${brujulaHtml(data.brujula)}
     ${data.competition ? `<h2 style="font-size:17px;margin:24px 0 6px">Competencia en Mercado Libre</h2><ul>${data.competition.eventos.map(e => `<li><a href="${escapeHtml(`${PANEL_URL}/reposicion?q=${e.isbn}`)}" style="color:#a94e3d">${escapeHtml(e.isbn)}</a>: ${escapeHtml(e.texto)}</li>`).join('')}</ul>` : ''}
     <h2 style="font-size:17px;margin:24px 0 6px">Ayer</h2>
     <p style="margin:4px 0">Pedidos nuevos: <strong>${data.createdCount}</strong><br>
@@ -215,7 +252,8 @@ export async function sendDailyPanelDigest(env, { now = new Date(), fetchFn = gl
   }
 
   try {
-    const data = await loadDigestData(env.ORDERS_DB, now);
+    const catalog = await env.CATALOG_R2?.get('catalog.json').then(obj => (obj ? obj.json() : null)).catch(() => null);
+    const data = await loadDigestData(env.ORDERS_DB, now, { catalog });
     const email = buildDigestEmail(data);
     if (test) email.subject = `[PRUEBA] ${email.subject}`;
     const result = await sendEmail({ apiKey, from, to, email, idempotencyKey: test ? `panel-digest-test/${now.toISOString()}` : `panel-digest/${today}` }, fetchFn);

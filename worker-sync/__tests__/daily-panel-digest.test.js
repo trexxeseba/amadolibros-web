@@ -96,3 +96,22 @@ test('el correo lista los WhatsApp que dejaron los clientes', () => {
   assert.match(text, /https:\/\/wa\.me\/59899123456/);
   assert.match(html, /Libro raro/);
 });
+
+test('sección Brújula: qué reponer, subir precio, se agota y a pérdida, con enlace a cada libro', () => {
+  const brujula = {
+    reponer: [{ isbn: '9781644732168', title: 'Biblia RVR', detalle: 'vendiste 6 en 90 días; al precio del más barato ganás $ 1.100 por libro' }],
+    subir: [{ isbn: '9780000000001', title: 'Tarot X', detalle: 'de $ 900 a $ 1.170 (+30%)' }],
+    agotan: [],
+    perdida: [{ isbn: '9780000000002', title: 'ECG <Handbook>', detalle: 'lo vendés a $ 1.809 y reponerlo cuesta $ 2.196' }],
+  };
+  const { text, html } = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula });
+  assert.match(text, /BRÚJULA AMADO — qué hacer hoy/);
+  assert.match(text, /Conviene reponer:\n  - Biblia RVR: vendiste 6/);
+  assert.match(text, /Subile el precio/);
+  assert.doesNotMatch(text, /Se agotan pronto/, 'un bloque vacío no aparece');
+  assert.match(html, /Brújula Amado: qué hacer hoy/);
+  assert.match(html, /reposicion\?q=9781644732168/);
+  assert.match(html, /ECG &lt;Handbook&gt;/);
+  const sin = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula: null });
+  assert.doesNotMatch(sin.text, /BRÚJULA/);
+});
