@@ -60,10 +60,10 @@ export async function loadDigestData(db, now = new Date()) {
   const since = new Date(now.getTime() - UNPAID_WINDOW_DAYS * 86_400_000).toISOString();
   const [toShip, unpaid, sold, created, whatsapps, salesHealth, competencia] = await Promise.all([
     all(db, `SELECT public_code, buyer_name, delivery_type, payable_total_uyu, paid_at FROM orders
-              WHERE payment_status = 'approved' AND fulfilled_at IS NULL AND cancelled_at IS NULL
+              WHERE payment_status = 'approved' AND fulfilled_at IS NULL AND cancelled_at IS NULL AND archived_at IS NULL
               ORDER BY paid_at ASC LIMIT 100`),
     all(db, `SELECT public_code, buyer_name, delivery_type, payment_provider, payable_total_uyu, created_at FROM orders
-              WHERE status = 'open' AND payment_status != 'approved' AND cancelled_at IS NULL AND created_at >= ?
+              WHERE status = 'open' AND payment_status != 'approved' AND cancelled_at IS NULL AND archived_at IS NULL AND created_at >= ?
               ORDER BY created_at DESC LIMIT 100`, [since]),
     all(db, `SELECT COUNT(*) AS n, COALESCE(SUM(COALESCE(paid_amount_uyu, payable_total_uyu)), 0) AS total FROM orders
               WHERE payment_status = 'approved' AND paid_at >= ? AND paid_at < ?`, [yesterday.startIso, yesterday.endIso]),

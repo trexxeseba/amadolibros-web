@@ -49,7 +49,7 @@ function seed() {
     '0004_crawl_stats.sql', '0005_orders_delivery_coordination.sql', '0006_orders_buyer_email.sql',
     '0007_stock_waitlist_customer_notification.sql', '0008_orders_ga4_attribution.sql',
     '0010_orders_paid_amount.sql', '0011_search_misses.sql', '0012_catalog_sync_log.sql',
-    '0013_stock_waitlist_whatsapp.sql']) {
+    '0013_stock_waitlist_whatsapp.sql', '0014_orders_archived.sql']) {
     db.exec(migration(name));
   }
   db.exec(`
