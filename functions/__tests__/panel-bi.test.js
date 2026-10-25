@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -68,7 +68,7 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   assert.equal(bi.inventario.data.aSinStock[0].compra.supplier, 'CELESA');
   assert.equal(bi.competencia.ok, false, 'sin tablas de competencia en el entorno de prueba el bloque falla solo');
   const html = renderBi(bi);
-  for (const h of ['Cómo va el negocio', 'Tendencia semanal', 'Qué libros hacen la plata', 'Dónde se pierde plata', 'Cómo rinden las compras', 'Editoriales', 'competencia', 'conviene reponer', '1 en 12 meses']) assert.match(html, new RegExp(h));
+  for (const h of ['Cómo va el negocio', 'Tendencia semanal', 'Qué libros hacen la plata', 'Dónde se pierde plata', 'Cómo rinden las compras', 'Editoriales', 'competencia', 'conviene reponer', '1 en 12 meses', 'subirles el precio']) assert.match(html, new RegExp(h));
   assert.match(html, /No se pudo calcular este bloque/);
   assert.ok(!/<script/i.test(html));
 });
@@ -114,4 +114,35 @@ test('margen por libro: costo de la última compra con descuento y envío de la 
   const html = renderBi(bi);
   assert.match(html, /Cuánto deja cada libro/);
   assert.match(html, /comisión de ML 12%/);
+});
+
+test('precios: lista los libros muy por debajo del más barato, sugiere 2% debajo y suma lo que entraría por mes', () => {
+  const facts = new Map([
+    ['a', { competidores: 3, competidores_comparables: 3, precio_minimo: 2160, tu_precio: null }],
+    ['b', { competidores: 2, competidores_comparables: 2, precio_minimo: 1000, tu_precio: 950 }],
+    ['c', { competidores: 0, competidores_comparables: 0, precio_minimo: null, tu_precio: 1500 }],
+    ['d', { competidores: 4, competidores_comparables: 4, precio_minimo: 1200, tu_precio: 900 }],
+  ]);
+  const books = [
+    { isbn: 'a', title: 'Agotado barato', avgPrice: 628, u90: 6, stock: 0 },
+    { isbn: 'b', title: 'Casi igual', avgPrice: 950, u90: 9, stock: 2 },
+    { isbn: 'c', title: 'Solo yo', avgPrice: 1500, u90: 3, stock: 1 },
+    { isbn: 'd', title: 'Con stock barato', avgPrice: 900, u90: 30, stock: 4 },
+  ];
+  const model = { costs: new Map([['d', { cost: 500 }]]), feeRate: null };
+  const r = priceRaises(facts, books, model);
+  assert.equal(r.total, 2, 'b está a 95% del más barato: no entra');
+  assert.equal(r.conStock, 1);
+  const d = r.lista.find(x => x.isbn === 'd');
+  assert.equal(d.sugerido, 1170);
+  assert.equal(d.ganaMes, (1170 - 900) * 10);
+  assert.equal(d.margenSugerido.margin, 670);
+  const a = r.lista.find(x => x.isbn === 'a');
+  assert.equal(a.agotado, true);
+  assert.equal(a.actual, 628);
+  assert.equal(a.sugerido, 2110);
+  assert.equal(r.lista[0].isbn, 'a', 'ordenado por plata extra por mes');
+  assert.equal(r.solosTotal, 1);
+  assert.equal(r.solos[0].sugerido, 1650);
+  assert.equal(priceRaises(null, books), null);
 });

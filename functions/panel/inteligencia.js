@@ -154,6 +154,27 @@ function marginBlock(s) {
   <p class="muted">Costo = última compra con su descuento y lo que suma la factura (envío, gastos), en pesos al cambio de hoy${v.fxDate ? ` (${day(v.fxDate)})` : ''}; ${fee}. No incluye el flete hasta Uruguay ni el envío que pagás en ML.</p>`;
 }
 
+function raisesBlock(s) {
+  if (!s?.ok) return failed(s);
+  const v = s.data;
+  if (!v) return '<div class="card"><p class="muted">La vigilancia de competencia todavía no tiene datos.</p></div>';
+  const tile = (l, val, d) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${val}</div><div class="muted">${d}</div></div>`;
+  const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
+  const marg = b => b.margenActual && b.margenSugerido ? `${money(b.margenActual.margin)} → <b>${money(b.margenSugerido.margin)}</b>` : '—';
+  const rows = v.lista.map(b => `<tr><td>${link(b)}${b.agotado ? ' <span class="tag t-c">agotado</span>' : ''}</td><td class="n">${num(b.u90)}</td><td class="n">${money(b.actual)}</td>
+    <td class="n">${money(b.min)} <span class="muted">(${num(b.competidores)})</span></td><td class="n"><b>${money(b.sugerido)}</b> <span class="up">+${b.subaPct}%</span></td>
+    <td class="n">${b.ganaMes ? money(b.ganaMes) : '—'}</td><td class="n">${marg(b)}</td></tr>`).join('');
+  const solos = v.solos.map(b => `<tr><td>${link(b)}</td><td class="n">${num(b.u90)}</td><td class="n">${money(b.actual)}</td><td class="n"><b>${money(b.sugerido)}</b> <span class="up">+10%</span></td><td class="n">${b.ganaMes ? money(b.ganaMes) : '—'}</td></tr>`).join('');
+  return `<div class="grid">
+    ${tile('Muy por debajo del mercado', num(v.total), `${Math.round((1 - v.umbral) * 100)}% o más abajo del más barato nuevo desde Uruguay · ${num(v.conStock)} con stock`)}
+    ${tile('Plata extra por mes', money(v.ganaMesTotal), 'si les ponés el precio sugerido y siguen vendiendo igual')}
+    ${tile('Solo vos los vendés', num(v.solosTotal), 'sin competidores en el catálogo: probá +10%')}
+  </div>
+  ${v.lista.length ? `<div class="card scroll" style="margin-top:12px"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Más barato desde UY (vendedores)</th><th class="n">Precio sugerido</th><th class="n">Más por mes</th><th class="n">Te queda por libro</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="card"><p class="muted">Ningún libro está muy por debajo del mercado hoy.</p></div>'}
+  ${v.solos.length ? `<h2>Solo vos los vendés: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
+  <p class="muted">Precio sugerido: 2% debajo del competidor más barato con el libro nuevo y sin envío del exterior (foto diaria de ML), redondeado. Los agotados usan tu precio promedio de venta: es el precio para cuando lo repongas. "Más por mes" supone que se sigue vendiendo como en los últimos 90 días. El panel sólo sugiere: los precios se cambian en Mercado Libre.</p>`;
+}
+
 export function renderBi(bi) {
   return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
     <h2>Cómo va el negocio</h2>${kpiBlock(bi.kpis)}
@@ -163,7 +184,8 @@ export function renderBi(bi) {
     <h2>Cuánto deja cada libro</h2>${marginBlock(bi.margen)}
     <h2>Cómo rinden las compras</h2>${purchasesBlock(bi.compras)}
     <h2>Editoriales que más facturan</h2>${publishersBlock(bi.editoriales)}
-    <h2>Posición frente a la competencia</h2>${competitionBlock(bi.competencia)}`;
+    <h2>Posición frente a la competencia</h2>${competitionBlock(bi.competencia)}
+    <h2>Libros que vendés muy barato: subirles el precio</h2>${raisesBlock(bi.precios)}`;
 }
 
 export function createBiPanel({ loader = (db, catalog) => loadBi(db, catalog) } = {}) {
