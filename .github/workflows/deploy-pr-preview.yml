@@ -1,8 +1,13 @@
-name: Deploy and audit every PR Preview
+name: Deploy and audit PR Preview (label preview)
+
+# Cada preview cuesta unos 4 minutos de Actions y antes se armaba en cada push
+# a cada PR, aunque nadie la mirara. Ahora se arma solo si el PR tiene la
+# etiqueta «preview» (gh pr edit <n> --add-label preview), y después en cada
+# push mientras la etiqueta siga puesta.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     branches: [main]
 
 permissions:
@@ -14,7 +19,10 @@ concurrency:
 
 jobs:
   preview:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event.action == 'labeled' && github.event.label.name == 'preview') ||
+       (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'preview')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
