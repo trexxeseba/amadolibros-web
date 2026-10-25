@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createFxRates, latestFx } from '../fx-rates.js';
+import { createFxRates, latestFx } from '../../worker-sync/fx-rates.js';
 
 function database(t) {
   const sqlite = new DatabaseSync(':memory:'); t.after(() => sqlite.close());
