@@ -1,4 +1,4 @@
-// /panel/inteligencia — cómo va el negocio en 10 segundos: ventas y tendencia,
+// /panel/inteligencia (Brújula Amado) — cómo va el negocio en 10 segundos: ventas y tendencia,
 // qué libros hacen la plata (ABC), dónde se pierde (sin stock, stock muerto),
 // cómo rinden las compras por proveedor, editoriales y posición competitiva.
 // Sólo lectura, con sesión del panel y en producción. HTML + SVG, sin JavaScript.
@@ -14,7 +14,7 @@ const SUPPLIERS = { CELESA: 'Celesa', ARNOIA: 'Arnoia', CASASSA_Y_LORENZO: 'Casa
 const day = iso => iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '—';
 
 function page(body, status = 200) {
-  return new Response(`<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Inteligencia</title>
+  return new Response(`<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Brújula Amado</title>
 <style>
 body{font:15px system-ui;margin:0;padding:16px;line-height:1.45;color:#222;background:#faf8f4}main{max-width:1250px;margin:0 auto}
 h1{margin:.2em 0}h2{font-size:18px;margin:30px 0 10px}.muted{color:#777;font-size:13px}a{color:#a94e3d}
@@ -136,7 +136,7 @@ function competitionBlock(s) {
 }
 
 export function renderBi(bi) {
-  return `<h1>Inteligencia del negocio</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
+  return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
     <h2>Cómo va el negocio</h2>${kpiBlock(bi.kpis)}
     <h2>Tendencia semanal</h2>${weeklyChart(bi.weekly)}
     <h2>Qué libros hacen la plata</h2>${abcBlock(bi.abc)}

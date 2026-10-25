@@ -87,5 +87,5 @@ test('panel de inteligencia exige sesión y producción', async t => {
   const cookie = sessionCookieHeader(await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD))).split(';')[0];
   const res = await panel({ request: new Request('https://www.amadolibros.com/panel/inteligencia', { headers: { cookie } }), env });
   assert.equal(res.status, 200);
-  assert.match(await res.text(), /Inteligencia del negocio/);
+  assert.match(await res.text(), /Brújula Amado/);
 });
