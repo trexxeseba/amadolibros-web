@@ -28,19 +28,19 @@ const pct = (a, b) => (b ? Math.round(((a - b) / b) * 100) : null);
 // Resumen ejecutivo: últimos 7 y 30 días contra el período anterior.
 export async function loadKpis(db, now) {
   const [r] = await rows(db, `SELECT
-    SUM(CASE WHEN o.date_created_ms>=?1 THEN i.quantity ELSE 0 END) AS u7,
-    SUM(CASE WHEN o.date_created_ms>=?2 AND o.date_created_ms<?1 THEN i.quantity ELSE 0 END) AS u7p,
-    SUM(CASE WHEN o.date_created_ms>=?3 THEN i.quantity ELSE 0 END) AS u30,
-    SUM(CASE WHEN o.date_created_ms>=?4 AND o.date_created_ms<?3 THEN i.quantity ELSE 0 END) AS u30p,
-    SUM(CASE WHEN o.date_created_ms>=?1 AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r7,
-    SUM(CASE WHEN o.date_created_ms>=?2 AND o.date_created_ms<?1 AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r7p,
-    SUM(CASE WHEN o.date_created_ms>=?3 AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r30,
-    SUM(CASE WHEN o.date_created_ms>=?4 AND o.date_created_ms<?3 AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r30p,
-    COUNT(DISTINCT CASE WHEN o.date_created_ms>=?3 THEN o.order_id END) AS o30,
-    COUNT(DISTINCT CASE WHEN o.date_created_ms>=?3 THEN COALESCE(i.isbn,i.item_id) END) AS t30,
-    SUM(CASE WHEN o.date_created_ms>=?3 AND i.seller_sku LIKE 'AMADO-AR-%' THEN i.quantity ELSE 0 END) AS enc30
-    FROM ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
-    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=?4`, now - 7 * DAY, now - 14 * DAY, now - 30 * DAY, now - 60 * DAY);
+    SUM(CASE WHEN o.date_created_ms>=p.a THEN i.quantity ELSE 0 END) AS u7,
+    SUM(CASE WHEN o.date_created_ms>=p.b AND o.date_created_ms<p.a THEN i.quantity ELSE 0 END) AS u7p,
+    SUM(CASE WHEN o.date_created_ms>=p.c THEN i.quantity ELSE 0 END) AS u30,
+    SUM(CASE WHEN o.date_created_ms>=p.d AND o.date_created_ms<p.c THEN i.quantity ELSE 0 END) AS u30p,
+    SUM(CASE WHEN o.date_created_ms>=p.a AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r7,
+    SUM(CASE WHEN o.date_created_ms>=p.b AND o.date_created_ms<p.a AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r7p,
+    SUM(CASE WHEN o.date_created_ms>=p.c AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r30,
+    SUM(CASE WHEN o.date_created_ms>=p.d AND o.date_created_ms<p.c AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS r30p,
+    COUNT(DISTINCT CASE WHEN o.date_created_ms>=p.c THEN o.order_id END) AS o30,
+    COUNT(DISTINCT CASE WHEN o.date_created_ms>=p.c THEN COALESCE(i.isbn,i.item_id) END) AS t30,
+    SUM(CASE WHEN o.date_created_ms>=p.c AND i.seller_sku LIKE 'AMADO-AR-%' THEN i.quantity ELSE 0 END) AS enc30
+    FROM (SELECT ? AS a, ? AS b, ? AS c, ? AS d) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=p.d`, now - 7 * DAY, now - 14 * DAY, now - 30 * DAY, now - 60 * DAY);
   const n = k => Number(r?.[k]) || 0;
   let web = { orders: 0, total: 0 };
   try {
@@ -57,10 +57,10 @@ export async function loadKpis(db, now) {
 
 // Ventas por semana (26 semanas), la semana 0 es la actual.
 export async function loadWeekly(db, now, weeks = 26) {
-  const r = await rows(db, `SELECT CAST((?1-o.date_created_ms)/604800000 AS INTEGER) AS w, SUM(i.quantity) AS u,
+  const r = await rows(db, `SELECT CAST((p.a-o.date_created_ms)/604800000 AS INTEGER) AS w, SUM(i.quantity) AS u,
     SUM(CASE WHEN i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS rev
-    FROM ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
-    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>?2 GROUP BY w`, now, now - weeks * 7 * DAY);
+    FROM (SELECT ? AS a, ? AS b) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>p.b GROUP BY w`, now, now - weeks * 7 * DAY);
   const byW = new Map(r.map(x => [Number(x.w), x]));
   return Array.from({ length: weeks }, (_, k) => {
     const w = weeks - 1 - k, x = byW.get(w);
@@ -71,13 +71,13 @@ export async function loadWeekly(db, now, weeks = 26) {
 // Ventas por ISBN (365 días) + stock + títulos y editoriales del catálogo.
 export async function loadBookTable(db, catalog, now) {
   const sales = await rows(db, `SELECT i.isbn, SUM(i.quantity) AS u365,
-    SUM(CASE WHEN o.date_created_ms>=?2 THEN i.quantity ELSE 0 END) AS u90,
-    SUM(CASE WHEN o.date_created_ms>=?3 THEN i.quantity ELSE 0 END) AS u180,
+    SUM(CASE WHEN o.date_created_ms>=p.b THEN i.quantity ELSE 0 END) AS u90,
+    SUM(CASE WHEN o.date_created_ms>=p.c THEN i.quantity ELSE 0 END) AS u180,
     SUM(CASE WHEN i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS rev365,
-    SUM(CASE WHEN o.date_created_ms>=?2 AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS rev90,
+    SUM(CASE WHEN o.date_created_ms>=p.b AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS rev90,
     MAX(o.date_created_ms) AS last_ms, MAX(i.title) AS title
-    FROM ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
-    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=?1 AND i.isbn IS NOT NULL GROUP BY i.isbn`, now - 365 * DAY, now - 90 * DAY, now - 180 * DAY);
+    FROM (SELECT ? AS a, ? AS b, ? AS c) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=p.a AND i.isbn IS NOT NULL GROUP BY i.isbn`, now - 365 * DAY, now - 90 * DAY, now - 180 * DAY);
   const stock = ownStockIndex(catalog);
   const meta = new Map();
   for (const item of Array.isArray(catalog?.items) ? catalog.items : []) {
