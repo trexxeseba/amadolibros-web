@@ -42,6 +42,8 @@ export async function loadKpis(db, now) {
     FROM (SELECT ? AS a, ? AS b, ? AS c, ? AS d) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
     WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=p.d`, now - 7 * DAY, now - 14 * DAY, now - 30 * DAY, now - 60 * DAY);
   const n = k => Number(r?.[k]) || 0;
+  const [e] = await rows(db, `SELECT COALESCE(SUM(i.quantity),0) AS u, MAX(o.date_created_ms) AS last FROM ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=? AND i.seller_sku LIKE 'AMADO-AR-%'`, now - 365 * DAY);
   let web = { orders: 0, total: 0 };
   try {
     const [w] = await rows(db, `SELECT COUNT(*) AS n, COALESCE(SUM(COALESCE(paid_amount_uyu,payable_total_uyu)),0) AS t FROM orders WHERE payment_status='approved' AND paid_at>=?`, new Date(now - 30 * DAY).toISOString());
@@ -51,7 +53,8 @@ export async function loadKpis(db, now) {
     u7: n('u7'), u7Delta: pct(n('u7'), n('u7p')), r7: n('r7'), r7Delta: pct(n('r7'), n('r7p')),
     u30: n('u30'), u30Delta: pct(n('u30'), n('u30p')), r30: n('r30'), r30Delta: pct(n('r30'), n('r30p')),
     orders30: n('o30'), titles30: n('t30'), ticket30: n('o30') ? Math.round(n('r30') / n('o30')) : 0,
-    encargoPct30: n('u30') ? Math.round((n('enc30') / n('u30')) * 100) : 0, web,
+    encargoPct30: n('u30') ? Math.round((n('enc30') / n('u30')) * 100) : 0, enc30: n('enc30'),
+    enc365: Number(e?.u) || 0, encLastMs: Number(e?.last) || null, web,
   };
 }
 
@@ -68,7 +71,23 @@ export async function loadWeekly(db, now, weeks = 26) {
   });
 }
 
-// Ventas por ISBN (365 días) + stock + títulos y editoriales del catálogo.
+// En catalog.json la editorial cae a la marca de la publicación (BRAND = Amado
+// Libros) cuando ML la guarda en BOOK_PUBLISHER. La real sale de la identidad
+// de cada venta (atributos de ML) o de las facturas del proveedor.
+const PLACEHOLDER_PUBLISHER = /^(amado|gen[eé]ric|sin editorial|otros?$|varios$)/i;
+export const realPublisher = v => { const t = String(v ?? '').trim(); return t && !PLACEHOLDER_PUBLISHER.test(t) ? t : null; };
+
+async function publisherIndex(db) {
+  const votes = new Map();
+  const add = (list, weight) => { for (const r of list) { const pub = realPublisher(r.publisher); if (!pub) continue; const m = votes.get(r.isbn) ?? new Map(); m.set(pub, (m.get(pub) ?? 0) + Number(r.n) * weight); votes.set(r.isbn, m); } };
+  try { add(await rows(db, 'SELECT isbn, publisher, COUNT(*) AS n FROM ml_sales_item_identity WHERE isbn IS NOT NULL AND publisher IS NOT NULL GROUP BY isbn, publisher'), 2); } catch { /* sin tabla */ }
+  try { add(await rows(db, 'SELECT isbn, publisher, COUNT(*) AS n FROM purchase_items WHERE isbn IS NOT NULL AND publisher IS NOT NULL GROUP BY isbn, publisher'), 1); } catch { /* sin tabla */ }
+  const out = new Map();
+  for (const [isbn, m] of votes) out.set(isbn, [...m.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+  return out;
+}
+
+// Ventas por ISBN (365 días) + stock + títulos del catálogo y editorial real.
 export async function loadBookTable(db, catalog, now) {
   const sales = await rows(db, `SELECT i.isbn, SUM(i.quantity) AS u365,
     SUM(CASE WHEN o.date_created_ms>=p.b THEN i.quantity ELSE 0 END) AS u90,
@@ -79,18 +98,19 @@ export async function loadBookTable(db, catalog, now) {
     FROM (SELECT ? AS a, ? AS b, ? AS c) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
     WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=p.a AND i.isbn IS NOT NULL GROUP BY i.isbn`, now - 365 * DAY, now - 90 * DAY, now - 180 * DAY);
   const stock = ownStockIndex(catalog);
+  const pubIndex = await publisherIndex(db);
   const meta = new Map();
   for (const item of Array.isArray(catalog?.items) ? catalog.items : []) {
     const isbn = bookIsbn(item?.isbn);
     if (!isbn) continue;
-    const m = meta.get(isbn) ?? { title: item.title, publisher: item.publisher || null, start: item.start_time || null };
+    const m = meta.get(isbn) ?? { title: item.title, publisher: realPublisher(item.publisher), start: item.start_time || null };
     if (item.start_time && (!m.start || item.start_time < m.start)) m.start = item.start_time;
     meta.set(isbn, m);
   }
   const books = sales.map(s => ({
-    isbn: s.isbn, title: meta.get(s.isbn)?.title || s.title, publisher: meta.get(s.isbn)?.publisher || null,
+    isbn: s.isbn, title: meta.get(s.isbn)?.title || s.title, publisher: pubIndex.get(s.isbn) || meta.get(s.isbn)?.publisher || null,
     u365: Number(s.u365) || 0, u180: Number(s.u180) || 0, u90: Number(s.u90) || 0, rev365: Math.round(Number(s.rev365) || 0), rev90: Math.round(Number(s.rev90) || 0),
-    lastMs: Number(s.last_ms) || null, stock: stock.get(s.isbn)?.stock_propio ?? 0,
+    avgPrice: Number(s.u365) ? Math.round((Number(s.rev365) || 0) / Number(s.u365)) : null, lastMs: Number(s.last_ms) || null, stock: stock.get(s.isbn)?.stock_propio ?? 0,
   }));
   return { books, stock, meta };
 }
@@ -174,9 +194,35 @@ export async function loadCompetitivePosition(db) {
   const mediana = rels.length ? rels[Math.floor(rels.length / 2)] : null;
   return {
     vigilados: list.length, conEstado: conEstado.length, ganando, ganandoPct: conEstado.length ? Math.round((ganando / conEstado.length) * 100) : null,
-    solos: list.filter(f => f.competidores === 0).length, medianaPrecio: mediana,
+    solos: list.filter(f => f.competidores === 0 && f.tu_precio != null).length, medianaPrecio: mediana,
     masCaros: list.filter(f => f.precio_relativo && f.precio_relativo >= 1.15).length,
   };
+}
+
+// Libros A sin stock: ¿alguien lo vende hoy en ML desde Uruguay, a qué precio,
+// y dónde lo compramos la última vez? Con eso se decide si conviene reponer.
+export async function loadSinStockMarket(db, aSinStock) {
+  const isbns = aSinStock.map(b => b.isbn);
+  const facts = await competitionByIsbn(db, isbns);
+  const compra = new Map();
+  try {
+    for (const r of await rows(db, `SELECT i.isbn, o.supplier, MAX(o.purchase_date_ms) AS d FROM purchase_items i JOIN purchase_orders o ON o.purchase_id=i.purchase_id
+      WHERE o.superseded_by IS NULL AND COALESCE(o.document_type,'invoice')<>'credit_note' AND i.isbn IN (SELECT value FROM json_each(?)) GROUP BY i.isbn, o.supplier`, JSON.stringify(isbns))) {
+      if (!compra.has(r.isbn) || compra.get(r.isbn).d < r.d) compra.set(r.isbn, { supplier: r.supplier, d: Number(r.d) });
+    }
+  } catch { /* sin compras */ }
+  const resumen = { vigilados: 0, solo: 0, sostenible: 0, masBarato: 0 };
+  const verdict = b => {
+    const f = facts.get(b.isbn);
+    if (!f) return { estado: 'sin_dato' };
+    resumen.vigilados++;
+    const nacionales = f.competidores_comparables ?? 0, min = f.precio_minimo;
+    if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: 'Nadie lo vende nuevo desde Uruguay: reponer y quedarte con toda la venta.' }; }
+    if (!b.avgPrice || min >= b.avgPrice * 0.9) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, texto: `${nacionales} lo venden desde Uruguay, el más barato a tu precio de siempre o más: conviene reponer.` }; }
+    resumen.masBarato++;
+    return { estado: 'mas_barato', nacionales, min, texto: `${nacionales} lo venden desde Uruguay más barato que tu precio promedio: reponer sólo si el costo da.` };
+  };
+  return { libros: aSinStock.map(b => ({ isbn: b.isbn, mercado: verdict(b), compra: compra.get(b.isbn) ?? null })), resumen };
 }
 
 export async function loadBi(db, catalog, now = Date.now()) {
@@ -192,6 +238,15 @@ export async function loadBi(db, catalog, now = Date.now()) {
     abcRes = await section(() => abc(table.data.books));
     inv = await section(() => inventoryHealth(table.data, now));
     pubs = await section(() => topPublishers(table.data.books));
+    if (inv.ok) {
+      const A = table.data.books.filter(b => b.clase === 'A' && b.stock === 0).sort((a, b) => b.u90 - a.u90);
+      const market = await section(() => loadSinStockMarket(db, A));
+      if (market.ok) {
+        const by = new Map(market.data.libros.map(l => [l.isbn, l]));
+        inv.data.aSinStock = inv.data.aSinStock.map(b => ({ ...b, ...by.get(b.isbn) }));
+        inv.data.mercado = market.data.resumen;
+      }
+    }
   }
   return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, compras, editoriales: pubs, competencia };
 }

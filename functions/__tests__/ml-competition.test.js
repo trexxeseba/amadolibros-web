@@ -105,3 +105,20 @@ test('hechos de reposición: aviso anti-doble compra y competencia por libro', a
   assert.equal(r.competencia.competidores, 4);
   assert.ok(r.avisos.some(a => a.tipo === 'primer_lugar_perdido'));
 });
+
+test('libro agotado que ya no está en el catálogo: se vigila por el producto de catálogo de sus ventas', async t => {
+  const db = await seed(t);
+  const GONE = '9788420412146';
+  db.sqlite.prepare('INSERT INTO ml_sales_orders(order_id,seller_id,status,date_created,date_created_ms,last_updated_ms,fetched_at) VALUES(?,?,?,?,?,?,0)').run('9', OWN, 'paid', new Date(DAY1 - 5 * 864e5).toISOString(), DAY1 - 5 * 864e5, DAY1);
+  db.sqlite.prepare('INSERT INTO ml_sales_items(order_id,line_key,item_id,title,quantity,isbn,updated_at) VALUES(?,?,?,?,?,?,0)').run('9', 'a', 'MLU77', 'Agotado', 3, GONE);
+  db.sqlite.prepare("INSERT INTO ml_sales_item_identity(item_id,isbn,source,catalog_product_id,checked_at) VALUES('MLU77',?,'attr','mlu555',0)").run(GONE);
+  const state = { day: 1 };
+  const base = fakeMl(state);
+  const comp = createMlCompetition({ fetcher: async url => new URL(String(url)).pathname === '/products/MLU555/items' ? Response.json({ results: [{ item_id: 'MLUZ', seller_id: 66, price: 700, condition: 'new' }] }) : base(url), tokenProvider: async () => 'tok', now: () => DAY1, loadCatalog: async () => catalog });
+  for (let i = 0; i < 5; i++) { const r = await comp.sync({ ORDERS_DB: db }, { calls: 50 }); if (r.state === 'done') break; }
+  assert.equal(db.sqlite.prepare("SELECT own_item_ids FROM comp_targets WHERE catalog_product_id='MLU555'").get().own_item_ids, '[]');
+  const f = (await competitionByIsbn(db, [GONE])).get(GONE);
+  assert.equal(f.competidores_comparables, 1);
+  assert.equal(f.precio_minimo, 700);
+  assert.equal(f.tu_precio, null);
+});
