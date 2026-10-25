@@ -13,9 +13,10 @@
 import { getAccessToken } from './meli-auth.js';
 import { topOwnSalesIsbns, SALES_SELLER_ID } from './ml-sales.js';
 import { bookIsbn } from './isbn.js';
+import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60;
+const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 2;
 export const COMPETITION_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS comp_targets(catalog_product_id TEXT PRIMARY KEY,isbn TEXT,own_item_ids TEXT,own_catalog_item_id TEXT,own_price REAL,priority INTEGER NOT NULL,updated_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS comp_snapshots(snap_date TEXT NOT NULL,catalog_product_id TEXT NOT NULL,item_id TEXT NOT NULL,seller_id TEXT NOT NULL,price REAL,currency_id TEXT,free_shipping INTEGER,logistic_type TEXT,is_winner INTEGER,fetched_at INTEGER NOT NULL,PRIMARY KEY(snap_date,catalog_product_id,item_id))`,
@@ -34,6 +35,9 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
   async function ensure(db) {
     if (ready.has(db)) return;
     await db.batch(COMPETITION_SCHEMA.map(sql => db.prepare(sql)));
+    // Columnas agregadas después (ALTER aditivo): condición y envío internacional.
+    const have = new Set((await db.prepare('PRAGMA table_info(comp_snapshots)').all()).results.map(c => c.name));
+    for (const [col, type] of [['condition', 'TEXT'], ['international', 'INTEGER']]) if (!have.has(col)) await db.prepare(`ALTER TABLE comp_snapshots ADD COLUMN ${col} ${type}`).run();
     await db.prepare('INSERT OR IGNORE INTO comp_state(name,cursor_json,lease_until,updated_at) VALUES(?,?,0,?)').bind('daily', '{}', now()).run();
     ready.add(db);
   }
@@ -92,19 +96,35 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       catch (e) { caps.price_to_win = e.code; if (e.status === 429) throw e; }
     }
     winner = ptw?.winner?.item_id ?? null;
+    let extraCalls = 0;
+    // Si el listado no trae la condición (nuevo/usado), se completa con /items/bulk.
+    const sinCondicion = (items ?? []).filter(it => typeof it?.item_id === 'string' && typeof it.condition !== 'string').map(it => it.item_id);
+    if (sinCondicion.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
+      const extra = new Map();
+      for (let i = 0; i < sinCondicion.length; i += 20) {
+        try {
+          const raw = await ml(bulkItemsPath(sinCondicion.slice(i, i + 20), 'id,condition,shipping,international_delivery_mode'), token);
+          extraCalls++; caps.items_bulk = 'ok';
+          for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
+        } catch (e) { caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
+      }
+      for (const it of items) { const x = extra.get(it.item_id); if (x) { it.condition ??= x.condition; it.international_delivery_mode ??= x.international_delivery_mode; it.shipping ??= x.shipping; } }
+    }
     const stmts = [];
     if (items) for (const it of items) {
       if (typeof it?.item_id !== 'string') continue;
-      stmts.push(db.prepare(`INSERT INTO comp_snapshots(snap_date,catalog_product_id,item_id,seller_id,price,currency_id,free_shipping,logistic_type,is_winner,fetched_at) VALUES(?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(snap_date,catalog_product_id,item_id) DO UPDATE SET price=excluded.price,free_shipping=excluded.free_shipping,logistic_type=excluded.logistic_type,is_winner=excluded.is_winner,fetched_at=excluded.fetched_at`)
+      const intl = typeof it.international_delivery_mode === 'string' ? (it.international_delivery_mode !== 'none' ? 1 : 0) : null;
+      stmts.push(db.prepare(`INSERT INTO comp_snapshots(snap_date,catalog_product_id,item_id,seller_id,price,currency_id,free_shipping,logistic_type,is_winner,fetched_at,condition,international) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(snap_date,catalog_product_id,item_id) DO UPDATE SET price=excluded.price,free_shipping=excluded.free_shipping,logistic_type=excluded.logistic_type,is_winner=excluded.is_winner,fetched_at=excluded.fetched_at,condition=excluded.condition,international=excluded.international`)
         .bind(date, target.catalog_product_id, it.item_id, String(it.seller_id ?? ''), Number.isFinite(Number(it.price)) ? Number(it.price) : null, it.currency_id ?? null,
-          it.shipping?.free_shipping ? 1 : 0, it.shipping?.logistic_type ?? null, winner && winner === it.item_id ? 1 : 0, t));
+          it.shipping?.free_shipping ? 1 : 0, it.shipping?.logistic_type ?? null, winner && winner === it.item_id ? 1 : 0, t,
+          typeof it.condition === 'string' ? it.condition : null, intl));
     }
     stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at) VALUES(?,?,?,?,?,?,?)
       ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at`)
       .bind(date, target.catalog_product_id, items ? 'ok' : 'error', winner, typeof ptw?.status === 'string' ? ptw.status : null, Number.isFinite(Number(ptw?.price_to_win)) ? Number(ptw.price_to_win) : null, t));
     await db.batch(stmts);
-    return ok;
+    return { ok, extraCalls };
   }
 
   async function snapSeller(db, token, sellerId, date, caps) {
@@ -131,12 +151,13 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     const date = montevideoDate(started);
     const hasTime = () => calls > 0 && now() - started < deadlineMs;
     try {
-      if (cursor.date !== date) {
+      // v2 agrega condición y envío internacional: una foto vieja del mismo día se rehace.
+      if (cursor.date !== date || cursor.v !== SNAPSHOT_VERSION) {
         const loader = loadCatalog ?? (async () => { const obj = await env.CATALOG_R2?.get('catalog.json'); return obj ? obj.json() : null; });
         const catalog = await loader();
         if (!catalog) throw new CompError('catalog_unavailable', 503);
         result.targets = await buildTargets(db, catalog);
-        cursor = { date, phase: 'products', offset: 0, fails: 0, okToday: 0, caps: cursor.caps ?? {} };
+        cursor = { date, v: SNAPSHOT_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, caps: cursor.caps ?? {} };
       }
       const caps = cursor.caps ?? {};
       if (cursor.phase === 'products' && hasTime()) {
@@ -149,8 +170,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
             else cursor = { ...cursor, phase: 'sellers', offset: 0 };
             break;
           }
-          const ok = await snapProduct(db, token, t, date, caps);
-          calls -= t.own_catalog_item_id ? 2 : 1; cursor.offset++; result.products++;
+          const { ok, extraCalls } = await snapProduct(db, token, t, date, caps);
+          calls -= (t.own_catalog_item_id ? 2 : 1) + extraCalls; cursor.offset++; result.products++;
           cursor.fails = ok ? 0 : (cursor.fails ?? 0) + 1;
           cursor.okToday = (cursor.okToday ?? 0) + (ok ? 1 : 0);
           // Si los primeros productos del día fallan todos, el endpoint está cerrado:
@@ -223,7 +244,15 @@ export async function competitionByIsbn(db, isbns) {
     const ownToday = rows.some(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID);
     const hoy = others(today), ayer = prevOk ? others(prev) : [];
     const sellersHoy = new Set(hoy.map(r => r.seller_id)), sellersAyer = new Set(ayer.map(r => r.seller_id));
-    const minPrice = hoy.reduce((m, r) => r.price != null && (m == null || r.price < m) ? r.price : m, null);
+    // Precio justo: sólo competidores nuevos (no usados), nacionales y con el
+    // mismo tipo de envío que nuestra publicación en este catálogo. Si la
+    // condición no se pudo saber, no se compara (mejor sin aviso que uno falso).
+    const ownRow = rows.find(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID) ?? null;
+    const comparables = hoy.filter(r => r.price != null && r.condition === 'new' && r.international !== 1
+      && (ownRow ? Number(r.free_shipping) === Number(ownRow.free_shipping) : true));
+    const minPrice = comparables.reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
+    const ownPrice = ownRow?.price ?? t.own_price;
+    const excluidos = hoy.length - comparables.length;
     const avisos = [];
     for (const s of sellersAyer) {
       if (sellersHoy.has(s)) continue;
@@ -239,12 +268,14 @@ export async function competitionByIsbn(db, isbns) {
       avisos.push(winning ? { tipo: 'primer_lugar_ganado', texto: 'Ganaste el primer lugar del catálogo.' }
         : { tipo: 'primer_lugar_perdido', texto: `Perdiste el primer lugar del catálogo${pd.price_to_win ? `: para ganar, ${money(pd.price_to_win)}` : ''}.` });
     }
-    const rel = t.own_price && minPrice ? t.own_price / minPrice : null;
-    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', texto: `Tu precio (${money(t.own_price)}) está ${Math.round((rel - 1) * 100)}% arriba del más barato (${money(minPrice)}).` });
-    if (rel && rel <= 0.9) avisos.push({ tipo: 'precio_abajo', texto: `Tu precio está ${Math.round((1 - rel) * 100)}% abajo del más barato: podrías estar regalando margen.` });
+    const rel = ownPrice && minPrice ? ownPrice / minPrice : null;
+    const ref = `del más barato nuevo${ownRow ? (Number(ownRow.free_shipping) ? ' con envío gratis' : ' sin envío gratis') : ''}`;
+    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
+    if (rel && rel <= 0.9) avisos.push({ tipo: 'precio_abajo', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((1 - rel) * 100)}% abajo ${ref} (${money(minPrice)}): podrías estar regalando margen.` });
     out.set(t.isbn, {
       catalog_product_id: t.catalog_product_id, foto: today, foto_anterior: prevOk ? prev : null,
-      competidores: sellersHoy.size, precio_minimo: minPrice, tu_precio: t.own_price, precio_relativo: rel ? Math.round(rel * 100) / 100 : null,
+      competidores: sellersHoy.size, competidores_comparables: comparables.length, excluidos_de_precio: excluidos,
+      precio_minimo: minPrice, tu_precio: ownPrice, precio_relativo: rel ? Math.round(rel * 100) / 100 : null,
       primer_lugar: pd.own_status ?? null, precio_para_ganar: pd.price_to_win ?? null,
       vendedores: [...sellersHoy].slice(0, 8).map(s => ({ vendedor: name(s), precio: hoy.find(r => r.seller_id === s)?.price ?? null, full: hoy.some(r => r.seller_id === s && r.logistic_type === 'fulfillment') })),
       avisos,
