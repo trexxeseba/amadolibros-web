@@ -9,8 +9,6 @@ import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-p
  *   fetch(request)   — POST /trigger con header Authorization: Bearer <SYNC_SECRET>
  *                      para disparar sync manualmente.
  *                    — GET /status con el mismo header para auditar KV + R2.
- *                    — GET /bing-webmaster/summary consulta Bing Webmaster
- *                      en modo solo lectura con el mismo header.
  *                    — POST /measure descarga y mide sin escribir R2 ni estado de sync.
  *                    — POST /publish-preview-catalog escribe únicamente el catálogo
  *                      separado de STOCK-1 (prefijo stock1-preview/*) cuando la
@@ -61,7 +59,6 @@ import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { sendDailyPanelDigest } from './daily-panel-digest.js';
 import { checkVintageHeartbeat } from './vintage-watch.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
-import { getBingWebmasterReadOnlySummary } from './bing-webmaster.js';
 import { syncCoverMirror } from './cover-mirror.js';
 import { handleImageVariants } from './image-variants-api.js';
 import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js';
@@ -70,6 +67,7 @@ import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
+import { mlCompetition, competitionStatus } from './ml-competition.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -133,6 +131,17 @@ export default {
           console.error('[ml sales] Error', error?.code || error?.name || 'Error');
           return { state: 'error' };
         }),
+        // Competencia por API de ML: una foto por día de los productos de
+        // catálogo de los libros que más vendemos, por tandas. Sólo conteos en
+        // el log (los datos de terceros quedan en D1). Inerte sin
+        // ML_COMPETITION_ENABLED="true".
+        (String(env.ML_COMPETITION_ENABLED) === 'true' ? mlCompetition.sync(env, { calls: 30 }) : Promise.resolve({ state: 'disabled' })).then(result => {
+          if (!['disabled', 'idle', 'busy'].includes(result?.state)) console.log('[ml competition]', JSON.stringify({ state: result.state, products: result.products, sellers: result.sellers, caps: result.caps, code: result.code }));
+          return result;
+        }).catch(error => {
+          console.error('[ml competition] Error', error?.code || error?.name || 'Error');
+          return { state: 'error' };
+        }),
         // Vigía de la campaña Vintage: sólo lee D1 y avisa por ntfy si la PC
         // dejó de publicar. Inerte sin VINTAGE_WATCH_ENABLED="true".
         checkVintageHeartbeat(env).then(result => {
@@ -188,6 +197,9 @@ export default {
     if (url.pathname.startsWith('/sales/')) return handleSalesRoute(request, env);
     // Compras a proveedores normalizadas (import idempotente y consulta), detrás de SYNC_SECRET.
     if (url.pathname.startsWith('/purchases/')) return handlePurchasesRoute(request, env);
+    // Competencia: estado (capacidades de la API, avance del día) y corrida manual.
+    if (request.method === 'GET' && url.pathname === '/competition/status') return json(await competitionStatus(env.ORDERS_DB) ?? { state: 'sin_datos' });
+    if (request.method === 'POST' && url.pathname === '/competition/sync') return json(await mlCompetition.sync(env, { calls: 120, deadlineMs: 25000 }));
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
 
@@ -196,11 +208,6 @@ export default {
     }
     if (url.pathname.startsWith('/image-variants/')) {
       return handleImageVariants(request, env);
-    }
-
-    if (request.method === 'GET' && url.pathname === '/bing-webmaster/summary') {
-      const result = await getBingWebmasterReadOnlySummary(env);
-      return json(result, result.status === 'error' ? 502 : 200);
     }
 
     // Prueba manual del correo diario: manda ahora, marcado [PRUEBA], sin tocar
@@ -239,7 +246,7 @@ export default {
     }
 
     if (request.method !== 'POST' || url.pathname !== '/trigger') {
-      return json({ error: 'Not found. Use POST /measure, POST /trigger, GET /status or GET /bing-webmaster/summary.' }, 404);
+      return json({ error: 'Not found. Use POST /measure, POST /trigger or GET /status.' }, 404);
     }
 
     const mode = url.searchParams.get('mode') || 'async';

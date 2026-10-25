@@ -9,7 +9,7 @@ on:
       - 'functions/preview-cover/**'
       - 'functions/catalogo.js'
       - 'functions/libro/**'
-      - 'functions/__tests__/**'
+      - 'functions/__tests__/cover-*.test.js'
       - 'wrangler.toml'
       - '.github/workflows/deploy.yml'
       - '.github/workflows/deploy-cover-r2-preview-ui.yml'

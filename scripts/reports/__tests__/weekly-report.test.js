@@ -170,7 +170,7 @@ test('arma ventas, pagos, demanda, SEO y catálogo con la semana anterior al lad
   assert.match(md, /Clics a WhatsApp \(GA4\): 7 \(semana anterior: 5, \+2\)/);
   // SEO: con miles de impresiones sí hay porcentaje.
   assert.match(md, /CTR: 1,3 % \(120 de 9\.000\)/);
-  assert.match(md, /Bing: sin dato/);
+  assert.doesNotMatch(md, /Bing/);
   // Catálogo.
   assert.match(md, /Hoy: 7\.043 publicaciones activas, 6\.512 con stock/);
   assert.match(md, /Altas: 12 \(semana anterior: 5, \+7\)/);

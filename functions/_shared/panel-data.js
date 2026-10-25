@@ -26,6 +26,8 @@ import {
   loadWhatsappWaitlist,
 } from './panel-insights.js';
 import { isEligibleForFeed } from '../feed.xml.js';
+import { loadDetalle } from './panel-detalle.js';
+import { loadGoogle } from './panel-google.js';
 
 const RECENT_ORDERS_LIMIT = 20;
 const STUCK_LIMIT = 25;
@@ -410,7 +412,7 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     : Promise.resolve({ ok: false, error: 'ORDERS_DB no está disponible en este entorno.' }));
 
   const [orders, revenue, stuck, waitlist, crawl, catalog, salud,
-    mlSales, searchMisses, catalogChanges, whatsapp, vintage] = await Promise.all([
+    mlSales, searchMisses, catalogChanges, whatsapp, vintage, detalle, google] = await Promise.all([
     withDb(database => loadOrdersOverview(database, { now })),
     withDb(database => loadRevenueByMonth(database, { now })),
     withDb(database => loadStuck(database, { now })),
@@ -425,6 +427,11 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     withDb(database => loadCatalogChanges(database, { now })),
     withDb(database => loadWhatsappWaitlist(database)),
     withDb(database => loadVintage(database, { now })),
+    // ML en detalle, web, compras, rastreo, cuentas y SBS. Cada uno trae su
+    // propio { ok, data | error }.
+    loadDetalle(db, { now }),
+    // GA4 y Search Console: un resumen en KV que deja un workflow.
+    section(() => loadGoogle(context?.env?.AMADO_KV, { now })),
   ]);
 
   return {
@@ -442,5 +449,7 @@ export async function loadPanelData(context, { now = Date.now() } = {}) {
     catalogChanges,
     whatsapp,
     vintage,
+    detalle,
+    google,
   };
 }

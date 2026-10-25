@@ -59,6 +59,14 @@ import { followUpLinks } from '../_shared/panel-followup.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
 import { markWhatsappContacted, mergeRevenue, whatsappRestockLink } from '../_shared/panel-insights.js';
 import { healthSection } from '../_shared/panel-health.js';
+import {
+  accountsAndSupplierSection,
+  crawlDetailSection,
+  mlDetailSection,
+  purchasesSection,
+  webInsightsSection,
+} from '../_shared/panel-detalle.js';
+import { ga4Section, searchConsoleSection } from '../_shared/panel-google.js';
 import { loadPickup, pickupComplete, savePickup } from '../_shared/panel-settings.js';
 import {
   NOTICE_EVENT_TYPE,
@@ -161,13 +169,16 @@ function sidebar(activo = 'tablero') {
   const items = [
     { id: 'tablero', href: '/panel', texto: 'Tablero', icono: '▦' },
     { id: 'pendientes', href: '/panel#pendientes', texto: 'Para hacer', icono: '◉' },
-    { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos', icono: '❑' },
+    { id: 'ml', href: '/panel#ml', texto: 'Mercado Libre', icono: '◈' },
+    { id: 'visitas', href: '/panel#visitas', texto: 'Visitas', icono: '◎' },
+    { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos web', icono: '❑' },
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
     { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
-    { id: 'busquedas', href: '/panel#busquedas', texto: 'Búsquedas', icono: '⌕' },
+    { id: 'busquedas', href: '/panel#busquedas', texto: 'Qué buscan', icono: '⌕' },
+    { id: 'inteligencia', href: '/panel/inteligencia', texto: 'Brújula Amado', icono: '◔' },
     { id: 'reposicion', href: '/panel/reposicion', texto: 'Reposición', icono: '↻' },
     { id: 'compras', href: '/panel/compras', texto: 'Compras', icono: '⇩' },
-    { id: 'vintage', href: '/panel/meli-vintage-lote', texto: 'Vintage', icono: '◈' },
+    { id: 'vintage', href: '/panel/meli-vintage-lote', texto: 'Vintage', icono: '❖' },
     { id: 'ajustes', href: '/panel/ajustes', texto: 'Ajustes', icono: '✧' },
   ];
   return `<nav class="lateral" aria-label="Secciones del panel">
@@ -298,6 +309,13 @@ function layout(title, body, { nav = '' } = {}) {
   .kpi b { font-size:1.75rem; font-weight:650; letter-spacing:-.03em; line-height:1.15; }
   .kpi small { color:var(--tinta-suave); font-size:.8rem; }
   .kpi-alerta { border-color:var(--alerta-borde); }
+  .barrita { display:block; width:100%; min-width:70px; height:.5rem; background:var(--borde-suave);
+    border-radius:99px; overflow:hidden; }
+  .barrita i { display:block; height:100%; background:var(--acento); border-radius:99px; }
+  td.col-barra { width:22%; }
+  .dos-columnas { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:0 1.5rem; }
+  .stat small { display:block; font-size:.75rem; margin-top:.15rem; }
+  .grid + .grid { margin-top:.75rem; }
   .kpi-alerta b { color:var(--alerta); }
 
   /* ── Gráfico ────────────────────────────────────────────────────── */
@@ -324,7 +342,7 @@ function layout(title, body, { nav = '' } = {}) {
   .tarea form { margin:0; flex:none; }
   .blanco { fill:transparent; }
   .mes:hover .barra { filter:brightness(1.15); }
-  .mes:hover .blanco { fill:var(--acento-suave); }
+  .mes:hover .blanco, figure.grafico g:hover > .blanco { fill:var(--acento-suave); }
   .eje { fill:var(--tinta-suave); font-size:10px; text-anchor:middle;
          font-variant-numeric:tabular-nums; }
   .valor { fill:var(--tinta); font-size:11px; font-weight:650; text-anchor:middle; }
@@ -562,6 +580,28 @@ function table(headers, rows, renderRow) {
     <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(renderRow).join('')}</tbody>
   </table></div>`;
+}
+
+/** Como sectionOrError, pero una tabla que todavía no existe no es un error. */
+function bloqueOVacio(block, render) {
+  if (block?.empty) return `<p class="muted">${escapeHtml(block.error)}</p>`;
+  return sectionOrError(block, render);
+}
+
+/** Una tarjeta abierta con cabecera, para los bloques nuevos del tablero. */
+function tarjeta(id, titulo, subtitulo, contenido) {
+  return `<section class="card" id="${id}">
+  <div class="card-cabeza"><h2>${escapeHtml(titulo)}</h2><span class="muted">${escapeHtml(subtitulo)}</span></div>
+  ${contenido}
+</section>`;
+}
+
+/** Una tarjeta plegable, para lo que se consulta de vez en cuando. */
+function plegable(id, titulo, resumen, contenido) {
+  return `<details class="card"${id ? ` id="${id}"` : ''}>
+  <summary>${escapeHtml(titulo)}<span class="resumen">${escapeHtml(resumen)}</span></summary>
+  <div class="cuerpo">${contenido}</div>
+</details>`;
 }
 
 function sectionOrError(block, render) {
@@ -1076,6 +1116,9 @@ function dashboardPage(data) {
     !data.catalog?.ok ? data.catalog?.error : null,
   ].filter(Boolean);
   const pagadosSinDespachar = data.stuck?.ok ? data.stuck.data.paidNotFulfilled.length : null;
+  const det = data.detalle || {};
+  const gaTotals = data.google?.ok && !data.google.data.missing && !data.google.data.ga4?.error
+    ? data.google.data.ga4?.totals : null;
 
   return layout('Panel — Amado Libros', `
 <header class="top">
@@ -1094,6 +1137,11 @@ function dashboardPage(data) {
 ${sectionOrError(data.orders, orders => `
 <section class="tarjetas">
   ${ventasKpi(data)}
+  ${gaTotals ? `<article class="kpi">
+    <span>Personas en la web · 28 días</span>
+    <b>${escapeHtml(Number(gaTotals.activeUsers || 0).toLocaleString('es-UY'))}</b>
+    <small>${escapeHtml(Number(gaTotals.sessions || 0).toLocaleString('es-UY'))} visitas (GA4)</small>
+  </article>` : ''}
   <article class="kpi${pagadosSinDespachar ? ' kpi-alerta' : ''}">
     <span>Pagados sin despachar</span>
     <b>${escapeHtml(pagadosSinDespachar ?? '—')}</b>
@@ -1115,6 +1163,23 @@ ${sectionOrError(data.orders, orders => `
 
 ${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.catalog?.ok ? data.catalog.data : null }))}
 
+<section class="hoy" id="pendientes">
+  <div class="hoy-cabeza">
+    <h2>Para hacer ahora</h2>
+    ${totalTareas
+      ? `<span class="cuenta">${escapeHtml(totalTareas)}</span>`
+      : '<span class="cuenta cuenta-cero">al día</span>'}
+  </div>
+  ${rotas.map(mensaje => `<p class="err">No se pudo cargar: ${escapeHtml(mensaje)}</p>`).join('')}
+  ${filas.length
+    ? `<ul class="tareas">${filas.join('')}</ul>`
+    : (rotas.length ? '' : '<p class="empty">Nada pendiente. Todo despachado y todas las fichas con foto. 👌</p>')}
+  ${missing && missing.count > missing.items.length
+    ? `<p class="muted mas">Y ${escapeHtml(missing.count - missing.items.length)} fichas sin foto más.
+       Sin foto no salen en Google: es lo que Search Console reporta como «Falta el campo image».</p>`
+    : ''}
+</section>
+
 <section class="card grafico" id="facturacion">
   <div class="card-cabeza">
     <h2>Ventas por mes</h2>
@@ -1133,22 +1198,11 @@ ${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.cata
   })}
 </section>
 
-<section class="hoy" id="pendientes">
-  <div class="hoy-cabeza">
-    <h2>Para hacer ahora</h2>
-    ${totalTareas
-      ? `<span class="cuenta">${escapeHtml(totalTareas)}</span>`
-      : '<span class="cuenta cuenta-cero">al día</span>'}
-  </div>
-  ${rotas.map(mensaje => `<p class="err">No se pudo cargar: ${escapeHtml(mensaje)}</p>`).join('')}
-  ${filas.length
-    ? `<ul class="tareas">${filas.join('')}</ul>`
-    : (rotas.length ? '' : '<p class="empty">Nada pendiente. Todo despachado y todas las fichas con foto. 👌</p>')}
-  ${missing && missing.count > missing.items.length
-    ? `<p class="muted mas">Y ${escapeHtml(missing.count - missing.items.length)} fichas sin foto más.
-       Sin foto no salen en Google: es lo que Search Console reporta como «Falta el campo image».</p>`
-    : ''}
-</section>
+${tarjeta('ml', 'Mercado Libre en detalle', 'ventas reales de la cuenta', bloqueOVacio(det.ml, mlDetailSection))}
+
+${tarjeta('visitas', 'Visitas a la web', 'GA4 · últimos 28 días', sectionOrError(data.google, ga4Section))}
+
+${tarjeta('google', 'Cómo nos encuentran en Google', 'Search Console · 28 días', sectionOrError(data.google, searchConsoleSection))}
 
 <div class="dos-col">
 ${busquedasSection(data.searchMisses)}
@@ -1170,6 +1224,10 @@ ${sectionOrError(data.orders, orders => `
         <td>${money(row.payable_total_uyu)}</td>
         <td>${shortDay(row.created_at)}</td></tr>`)}
 </section>`)}
+
+${tarjeta('web', 'Web: qué se vende y quién compra', 'pedidos de amadolibros.com', bloqueOVacio(det.web, webInsightsSection))}
+
+${plegable('compras-resumen', 'Compras a proveedores', 'qué entró y de quién', bloqueOVacio(det.compras, purchasesSection))}
 
 <details class="card" id="catalogo">
   <summary>Catálogo y Google Shopping<span class="resumen">qué llega al feed</span></summary>
@@ -1219,7 +1277,7 @@ ${sectionOrError(data.orders, orders => `
   <div class="cuerpo">
   <p class="muted">
     Esto es Googlebot rastreando el sitio, no visitas de personas. Las visitas reales
-    están en GA4 y necesitan una credencial que el panel todavía no tiene.
+    están en <a href="#visitas">Visitas a la web</a> (GA4).
   </p>
   ${sectionOrError(data.crawl, crawl => table(
     ['Día', 'Requests', 'Errores', 'Googlebot verificado'],
@@ -1228,8 +1286,14 @@ ${sectionOrError(data.orders, orders => `
                 <td>${escapeHtml(row.errors ?? 0)}</td>
                 <td>${escapeHtml(row.verified_googlebot ?? 0)}</td></tr>`,
   ))}
+  ${bloqueOVacio(det.rastreo, crawlDetailSection)}
   </div>
-</details>`, { nav: sidebar('tablero') });
+</details>
+
+${plegable('', 'Cuentas de clientes y proveedor SBS', 'Google Sign-In y lista de stock', accountsAndSupplierSection(
+    det.cuentas?.ok ? det.cuentas.data : null,
+    det.sbs?.ok ? det.sbs.data : null,
+  ) || '<p class="muted">Sin datos todavía en este entorno.</p>')}`, { nav: sidebar('tablero') });
 }
 
 function clientIp(request) {

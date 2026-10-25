@@ -436,7 +436,6 @@ function seoBlock({ gsc, periods }) {
       .filter(q => q.clicks > 0).sort((a, b) => b.clicks - a.clicks).slice(0, 10);
     if (queries.length) lines.push('', '**Búsquedas que más trajeron**', '', table(['Búsqueda', 'Clics', 'Antes'], queries.map(q => [q.key, q.clicks, q.prev])));
   }
-  lines.push('', '- Bing: sin dato (la consulta a Bing Webmaster está fallando por límite de IP; su arreglo no entra en este informe).');
   return lines.join('\n');
 }
 
@@ -570,7 +569,6 @@ function sourcesBlock({ d1, ga4, gsc, since }) {
     `- Base de pedidos (D1): ${d1Errors.length ? `con faltantes (${d1Errors.join(', ')})` : 'ok'}`,
     `- GA4: ${ga4 && !ga4.error ? 'ok' : `sin dato (${String(ga4?.error || 'no se pudo consultar').slice(0, 120)})`}`,
     `- Search Console: ${gsc && !gsc.error ? 'ok' : `sin dato (${String(gsc?.error || 'no se pudo consultar').slice(0, 120)})`}`,
-    '- Bing Webmaster: sin dato',
     `- Mediciones nuevas (motivos de rechazo, transferencias confirmadas, búsquedas sin resultados, historial del catálogo): ${since ? `desde el ${shortDate(since.slice(0, 10))}` : 'todavía sin registros'}`,
     '',
     `_Con menos de ${MIN_CASES_FOR_PERCENT} casos se muestran números, no porcentajes. Lo que no se midió dice «sin dato»._`,

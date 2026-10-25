@@ -10,6 +10,9 @@ import { salesByIsbn, topOwnSalesIsbns } from './ml-sales.js';
 import { purchaseSummary, readCoverage, missingCoverage, purchasesWithoutIsbn, SUPPLIER_LEAD_DAYS } from './purchases.js';
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { bookIsbn } from './isbn.js';
+import { competitionByIsbn, competitionEvents } from './ml-competition.js';
+
+const RECENT_PURCHASE_DAYS = 60;
 
 const DAY_MS = 86400000, CATALOG_STALE_MS = 48 * 3600000, SBS_STALE_DAYS = 7, CATALOG_CACHE_MS = 10 * 60 * 1000;
 export const DATA_STATES = Object.freeze(['FUENTE INCOMPLETA', 'REVISAR', 'LISTO_PARA_DECIDIR']);
@@ -66,6 +69,7 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
     const valid = [...new Set(sales.filter(s => s.isbn).map(s => s.isbn))];
     const sup = valid.length ? await sbs(db, valid) : { feed: null, rows: new Map() };
     const sbsAge = sup.feed ? Math.floor((now() - Date.parse(sup.feed.source_date)) / DAY_MS) : null;
+    const comp = await competitionByIsbn(db, valid).catch(() => new Map());
     const resultados = sales.map((s, i) => {
       if (!s.isbn) return s;
       const p = purchases[i], stock = g.cat.index.get(s.isbn) ?? { stock_propio: 0, publicaciones: [] };
@@ -78,6 +82,14 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
       if (stock.stock_propio === 0 && s.ventas_propio_365d >= 2 && s.ventas_propio_90d === 0) revisar.push('posible_demanda_censurada');
       if (s.ventas_encargo_365d > s.ventas_propio_365d) revisar.push('encargo_sbs_supera_propio');
       if (stock.stock_propio + p.en_transito_estimado >= s.ventas_propio_180d && s.ventas_propio_180d > 0 && stock.stock_propio > 0) revisar.push('posible_sobrestock');
+      // Aviso anti-doble compra: lo primero que hay que ver antes de pedir.
+      const avisos = [];
+      const diasCompra = p.ultima_compra_fecha ? Math.floor((now() - Date.parse(`${p.ultima_compra_fecha}T12:00:00Z`)) / DAY_MS) : null;
+      if (diasCompra != null && diasCompra <= RECENT_PURCHASE_DAYS) {
+        avisos.push({ tipo: 'compra_reciente', texto: `Compraste ${p.ultima_compra_cantidad} hace ${diasCompra} ${diasCompra === 1 ? 'día' : 'días'} (${p.ultima_compra_proveedor})${p.en_transito_estimado ? ': puede estar en camino' : ''}.` });
+      }
+      const c = comp.get(s.isbn) ?? null;
+      if (c) avisos.push(...c.avisos);
       return {
         isbn: s.isbn, titulo: s.titulos[0] ?? null,
         stock_propio: stock.stock_propio, publicaciones: stock.publicaciones,
@@ -86,6 +98,8 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
         compras: { d30: p.unidades_30d, d90: p.unidades_90d, d180: p.unidades_180d, d365: p.unidades_365d, ultima_fecha: p.ultima_compra_fecha, ultima_cantidad: p.ultima_compra_cantidad, ultimo_proveedor: p.ultima_compra_proveedor, documentos: p.documentos, en_transito_estimado: p.en_transito_estimado, sin_isbn_posibles: p.compras_sin_isbn_posibles },
         sbs: sup.feed ? { disponible: sbsRow ? sbsRow.stock ?? null : 'no_figura', feed_fecha: sup.feed.source_date, feed_edad_dias: sbsAge, vigente: sbsAge <= SBS_STALE_DAYS } : { disponible: 'desconocida', feed_fecha: null },
         plazo_entrega_dias: SUPPLIER_LEAD_DAYS.default,
+        competencia: c ? { catalog_product_id: c.catalog_product_id, foto: c.foto, competidores: c.competidores, precio_minimo: c.precio_minimo, tu_precio: c.tu_precio, precio_relativo: c.precio_relativo, primer_lugar: c.primer_lugar, precio_para_ganar: c.precio_para_ganar, vendedores: c.vendedores } : null,
+        avisos,
         fuente_incompleta: fuente, revisar,
         estado_datos: fuente.length ? 'FUENTE INCOMPLETA' : revisar.length ? 'REVISAR' : 'LISTO_PARA_DECIDIR',
       };
@@ -106,5 +120,7 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
     return { ventas_sin_isbn: results, compras_sin_isbn: await purchasesWithoutIsbn(db, limit) };
   }
 
-  return { globalState, facts, candidates, identityQueue };
+  const events = (db, limit = 30) => competitionEvents(db, { limit });
+
+  return { globalState, facts, candidates, identityQueue, events };
 }

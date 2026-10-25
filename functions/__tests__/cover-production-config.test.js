@@ -10,6 +10,13 @@ const promotion = readFileSync(
   'utf8',
 );
 const deploy = readFileSync(path.join(ROOT, '.github', 'workflows', 'deploy.yml'), 'utf8');
+// La publicación del catálogo pausado salió de deploy.yml a su propio workflow
+// (una vez por día y cuando cambia el Worker), para no gastar 8 minutos de
+// Actions en cada deploy del sitio.
+const pausedCatalog = readFileSync(
+  path.join(ROOT, '.github', 'workflows', 'production-paused-catalog.yml'),
+  'utf8',
+);
 const promotionScript = readFileSync(
   path.join(ROOT, 'scripts', 'promote-cover-r2-production.sh'),
   'utf8',
@@ -74,11 +81,12 @@ test('deploy productivo exige manifest, ficha y bytes R2 antes de quedar verde',
 });
 
 test('publicación de catálogo pausado tolera una sincronización legítima concurrente', () => {
-  assert.match(deploy, /grep -q '"production_catalog_modified":false'/);
-  assert.doesNotMatch(deploy, /BEFORE=\$\(curl -sSI "\$CATALOG_URL"/);
-  assert.doesNotMatch(deploy, /AFTER=\$\(curl -sSI "\$CATALOG_URL"/);
+  assert.match(pausedCatalog, /grep -q '"production_catalog_modified":false'/);
+  assert.doesNotMatch(deploy, /publish-production-catalog/);
+  assert.doesNotMatch(pausedCatalog, /BEFORE=\$\(curl -sSI "\$CATALOG_URL"/);
+  assert.doesNotMatch(pausedCatalog, /AFTER=\$\(curl -sSI "\$CATALOG_URL"/);
   assert.doesNotMatch(
-    deploy,
+    pausedCatalog,
     /las cabeceras de catalog\.json cambiaron durante la publicación/,
   );
 });

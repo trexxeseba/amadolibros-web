@@ -1,0 +1,62 @@
+name: Panel — visitas y búsquedas de Google
+
+# PANEL-DATOS-1: trae GA4 y Search Console con la cuenta de servicio
+# ga4-reporter (sin claves guardadas) y deja un resumen en KV (panel:google)
+# para que el panel lo muestre. Solo lee Google. El repo es público: el log
+# dice «ok» o «error», nunca los datos.
+
+on:
+  schedule:
+    # Cada 3 horas.
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: panel-google
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Autenticar con Google
+        id: google_auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/webmasters.readonly
+          create_credentials_file: false
+
+      - name: Datos de GA4 y Search Console
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          PANEL_GOOGLE_OUTPUT: ${{ runner.temp }}/panel-google.json
+        run: node scripts/panel/fetch-google-panel.mjs
+
+      - name: Guardar en KV
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@3.114.17 kv key put --namespace-id=6ea0ff4682d647118442a24fe384abc4 \
+            "panel:google" --path "$RUNNER_TEMP/panel-google.json" > /dev/null
+          echo "panel:google actualizado"
