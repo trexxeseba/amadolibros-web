@@ -43,7 +43,7 @@ const SUPPLIER_SKU = /^AMADO-AR-\d{13}$/;
 export const SALES_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS ml_sales_orders(order_id TEXT PRIMARY KEY,seller_id TEXT NOT NULL,status TEXT NOT NULL,date_created TEXT NOT NULL,date_created_ms INTEGER NOT NULL,date_closed TEXT,last_updated TEXT,last_updated_ms INTEGER NOT NULL,total_amount REAL,currency_id TEXT,pack_id TEXT,tags_json TEXT,fetched_at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS ml_sales_orders_created ON ml_sales_orders(date_created_ms)`,
-  `CREATE TABLE IF NOT EXISTS ml_sales_items(order_id TEXT NOT NULL,line_key TEXT NOT NULL,item_id TEXT NOT NULL,variation_id TEXT,title TEXT,title_key TEXT,seller_sku TEXT,quantity INTEGER NOT NULL,unit_price REAL,currency_id TEXT,isbn TEXT,gtin_raw TEXT,identity_source TEXT,updated_at INTEGER NOT NULL,PRIMARY KEY(order_id,line_key))`,
+  `CREATE TABLE IF NOT EXISTS ml_sales_items(order_id TEXT NOT NULL,line_key TEXT NOT NULL,item_id TEXT NOT NULL,variation_id TEXT,title TEXT,title_key TEXT,seller_sku TEXT,quantity INTEGER NOT NULL,unit_price REAL,currency_id TEXT,isbn TEXT,gtin_raw TEXT,identity_source TEXT,updated_at INTEGER NOT NULL,sale_fee REAL,PRIMARY KEY(order_id,line_key))`,
   `CREATE INDEX IF NOT EXISTS ml_sales_items_isbn ON ml_sales_items(isbn)`,
   `CREATE INDEX IF NOT EXISTS ml_sales_items_item ON ml_sales_items(item_id)`,
   `CREATE INDEX IF NOT EXISTS ml_sales_items_title ON ml_sales_items(title_key)`,
@@ -100,10 +100,11 @@ export function projectOrder(order, now) {
     const key = `${item.id}:${variation}`;
     const quantity = Number(line.quantity) || 0;
     const prev = lines.get(key);
-    if (prev) { prev.quantity += quantity; continue; }
+    const fee = Number.isFinite(Number(line.sale_fee)) ? Number(line.sale_fee) : null;
+    if (prev) { prev.quantity += quantity; prev.sale_fee ??= fee; continue; }
     lines.set(key, { line_key: key, item_id: item.id, variation_id: variation || null, title: typeof item.title === 'string' ? item.title : null,
       seller_sku: item.seller_sku ?? item.seller_custom_field ?? null, quantity,
-      unit_price: Number.isFinite(Number(line.unit_price)) ? Number(line.unit_price) : null, currency_id: line.currency_id ?? order.currency_id ?? null });
+      unit_price: Number.isFinite(Number(line.unit_price)) ? Number(line.unit_price) : null, currency_id: line.currency_id ?? order.currency_id ?? null, sale_fee: fee });
   }
   return {
     order: { order_id: String(order.id), seller_id: SALES_SELLER_ID, status: order.status, date_created: order.date_created, date_created_ms: created,
@@ -121,6 +122,9 @@ export function createMlSales({ fetcher = (...a) => globalThis.fetch(...a), toke
   async function ensure(db) {
     if (ready.has(db)) return;
     await db.batch(SALES_SCHEMA.map(sql => db.prepare(sql)));
+    // Columna agregada después (ALTER aditivo): comisión de ML por unidad, para el margen.
+    const have = new Set((await db.prepare('PRAGMA table_info(ml_sales_items)').all()).results.map(c => c.name));
+    if (!have.has('sale_fee')) await db.prepare('ALTER TABLE ml_sales_items ADD COLUMN sale_fee REAL').run();
     await db.prepare('INSERT OR IGNORE INTO ml_sales_sync_state(name,cursor_json,lease_until,updated_at) VALUES(?,?,0,?)')
       .bind('orders', JSON.stringify({ phase: 'backfill', from: BACKFILL_START, offset: 0 }), now()).run();
     ready.add(db);
@@ -237,12 +241,12 @@ export function createMlSales({ fetcher = (...a) => globalThis.fetch(...a), toke
         .bind(o.order_id, o.seller_id, o.status, o.date_created, o.date_created_ms, o.date_closed, o.last_updated, o.last_updated_ms, o.total_amount, o.currency_id, o.pack_id, o.tags_json, o.fetched_at));
       for (const l of ls) {
         const id = ids.get(l.item_id);
-        stmts.push(db.prepare(`INSERT INTO ml_sales_items(order_id,line_key,item_id,variation_id,title,title_key,seller_sku,quantity,unit_price,currency_id,isbn,gtin_raw,identity_source,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-          ON CONFLICT(order_id,line_key) DO UPDATE SET title=excluded.title,title_key=excluded.title_key,seller_sku=excluded.seller_sku,quantity=excluded.quantity,unit_price=excluded.unit_price,
+        stmts.push(db.prepare(`INSERT INTO ml_sales_items(order_id,line_key,item_id,variation_id,title,title_key,seller_sku,quantity,unit_price,currency_id,isbn,gtin_raw,identity_source,updated_at,sale_fee) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT(order_id,line_key) DO UPDATE SET title=excluded.title,title_key=excluded.title_key,seller_sku=excluded.seller_sku,quantity=excluded.quantity,unit_price=excluded.unit_price,sale_fee=COALESCE(excluded.sale_fee,ml_sales_items.sale_fee),
           isbn=COALESCE(ml_sales_items.isbn,excluded.isbn),
           gtin_raw=CASE WHEN ml_sales_items.isbn IS NULL THEN excluded.gtin_raw ELSE ml_sales_items.gtin_raw END,
           identity_source=CASE WHEN ml_sales_items.isbn IS NULL THEN excluded.identity_source ELSE ml_sales_items.identity_source END,updated_at=excluded.updated_at`)
-          .bind(o.order_id, l.line_key, l.item_id, l.variation_id, l.title, normalizedTitle(l.title) || null, l.seller_sku, l.quantity, l.unit_price, l.currency_id, id?.isbn ?? null, id?.gtin_raw ?? null, id?.source ?? 'unresolved', t));
+          .bind(o.order_id, l.line_key, l.item_id, l.variation_id, l.title, normalizedTitle(l.title) || null, l.seller_sku, l.quantity, l.unit_price, l.currency_id, id?.isbn ?? null, id?.gtin_raw ?? null, id?.source ?? 'unresolved', t, l.sale_fee ?? null));
       }
     }
     for (let i = 0; i < stmts.length; i += 80) await db.batch(stmts.slice(i, i + 80));

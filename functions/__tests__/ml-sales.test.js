@@ -13,7 +13,7 @@ const NOW = Date.parse('2026-10-24T12:00:00Z');
 const ISBN = '9780306406157', ISBN2 = '9788420412146';
 const day = n => new Date(NOW - n * 86400000).toISOString().replace('Z', '-00:00');
 const order = (id, daysAgo, status, items, extra = {}) => ({ id, status, date_created: day(daysAgo), last_updated: day(daysAgo), seller: { id: 440298103 }, currency_id: 'UYU', total_amount: 100,
-  order_items: items.map(([itemId, qty, title = 'El libro', sku = null]) => ({ item: { id: itemId, title, seller_sku: sku, variation_id: null }, quantity: qty, unit_price: 50, currency_id: 'UYU' })), ...extra });
+  order_items: items.map(([itemId, qty, title = 'El libro', sku = null]) => ({ item: { id: itemId, title, seller_sku: sku, variation_id: null }, quantity: qty, unit_price: 50, sale_fee: 6, currency_id: 'UYU' })), ...extra });
 
 const ITEMS = {
   MLU1: { id: 'MLU1', seller_id: 440298103, title: 'El libro', attributes: [{ id: 'GTIN', value_name: ISBN }, { id: 'AUTHOR', value_name: 'Autor' }] },
@@ -72,6 +72,7 @@ test('backfill: suma publicaciones, separa propio/encargo y no duplica al re-eje
   await service(store).sync(env, { pages: 5, mode: 'backfill' });
   const status = await salesStatus(db);
   assert.equal(status.orders, 5);
+  assert.equal(db.sqlite.prepare("SELECT sale_fee FROM ml_sales_items WHERE order_id='2'").get().sale_fee, 6, 'guarda la comisión de ML de cada línea');
   assert.equal(status.lines_title_only, 1);
   const [r] = await salesByIsbn(db, ['0306406152'], NOW);
   assert.equal(r.ventas_30d, 5);
