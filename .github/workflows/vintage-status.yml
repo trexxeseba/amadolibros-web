@@ -16,8 +16,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # El volcado de estado queda a pedido: la tarjeta de Vintage del panel ya
+  # muestra lo mismo sin gastar minutos de Actions cada 3 horas. El cron sigue
+  # existiendo para el job salud-panel de abajo.
   status:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

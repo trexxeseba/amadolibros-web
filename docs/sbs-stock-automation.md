@@ -1,14 +1,14 @@
 # Actualización del stock SBS para Vintage
 
-> **Desde el 24/10/2026 el workflow es solo manual.** El enlace público quedó
+> **Desde el 24/10/2026 ya no hay workflow (#503).** El enlace público quedó
 > congelado el 25/08/2026 y las corridas programadas solo daban
 > `supplier_stock_stale_or_future`. El stock vigente lo carga la PC desde el
-> portal de SBS (`scripts/vintage-local/renew.mjs`).
+> portal de SBS (`scripts/vintage-local/renew.mjs`). Lo que sigue describe
+> `scripts/mercadolibre/refresh-sbs-stock.mjs`, que se puede correr a mano.
 
-El workflow `SBS stock refresh (no publication writes)` descarga el enlace público
-entregado por SBS. Antes corría a las 02:17 y 14:17 de Uruguay; ahora solo a mano
-sobre main. La fecha interna del proveedor, no el horario de descarga, determina
-la vigencia.
+El workflow `SBS stock refresh (no publication writes)` descargaba el enlace
+público entregado por SBS a las 02:17 y 14:17 de Uruguay. La fecha interna del
+proveedor, no el horario de descarga, determina la vigencia.
 
 Fuente predeterminada:
 https://sbs-distribuidora-lista.s3.sa-east-1.amazonaws.com/Listado+completo+de+libros.xlsx
