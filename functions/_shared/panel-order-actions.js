@@ -28,35 +28,35 @@ export const ORDER_ACTIONS = {
     event: 'panel_fulfilled',
     label: 'Marcado como despachado en el panel',
     hecho: n => `${n} pedido${n === 1 ? '' : 's'} marcado${n === 1 ? '' : 's'} como despachado${n === 1 ? '' : 's'}.`,
-    set: 'status = \'fulfilled\', fulfilled_at = ?1, updated_at = ?1',
+    set: 'status = \'fulfilled\', fulfilled_at = @AT, updated_at = @AT',
     where: "status = 'paid' AND payment_status = 'approved' AND fulfilled_at IS NULL",
   },
   deshacer: {
     event: 'panel_unfulfilled',
     label: 'Despacho deshecho en el panel',
     hecho: n => `${n} pedido${n === 1 ? '' : 's'} vuelve${n === 1 ? '' : 'n'} a «pagado sin despachar».`,
-    set: 'status = \'paid\', fulfilled_at = NULL, updated_at = ?1',
+    set: 'status = \'paid\', fulfilled_at = NULL, updated_at = @AT',
     where: "status = 'fulfilled' AND payment_status = 'approved'",
   },
   cancelar: {
     event: 'panel_cancelled',
     label: 'Cancelado en el panel',
     hecho: n => `${n} pedido${n === 1 ? '' : 's'} cancelado${n === 1 ? '' : 's'}.`,
-    set: 'status = \'cancelled\', cancelled_at = ?1, updated_at = ?1',
+    set: 'status = \'cancelled\', cancelled_at = @AT, updated_at = @AT',
     where: "status IN ('open','expired') AND payment_status NOT IN ('approved','refunded')",
   },
   archivar: {
     event: 'panel_archived',
     label: 'Archivado en el panel',
     hecho: n => `${n} pedido${n === 1 ? '' : 's'} archivado${n === 1 ? '' : 's'}.`,
-    set: 'archived_at = ?1, updated_at = ?1',
+    set: 'archived_at = @AT, updated_at = @AT',
     where: 'archived_at IS NULL',
   },
   desarchivar: {
     event: 'panel_unarchived',
     label: 'Desarchivado en el panel',
     hecho: n => `${n} pedido${n === 1 ? '' : 's'} desarchivado${n === 1 ? '' : 's'}.`,
-    set: 'archived_at = NULL, updated_at = ?1',
+    set: 'archived_at = NULL, updated_at = @AT',
     where: 'archived_at IS NOT NULL',
   },
 };
@@ -102,11 +102,14 @@ export async function applyOrderAction({ db, action, codes, now = new Date() }) 
     // de los pedidos que de verdad van a cambiar con el UPDATE de abajo.
     statements.push(db.prepare(
       'INSERT OR IGNORE INTO order_events (id, order_id, event_type, payload_json, created_at) ' +
-      `SELECT ?2 || ':' || id || ':' || ?1, id, ?2, ?3, ?1 FROM orders WHERE public_code = ?4 AND ${spec.where}`,
-    ).bind(at, spec.event, JSON.stringify({ source: 'panel', action }), code));
+      `SELECT ? || ':' || id || ':' || ?, id, ?, ?, ? FROM orders WHERE public_code = ? AND ${spec.where}`,
+    ).bind(spec.event, at, spec.event, JSON.stringify({ source: 'panel', action }), at, code));
+    // Parámetros posicionales simples (?), no numerados: se comportan igual en
+    // D1 y en todas las versiones de SQLite de los tests.
+    const setAts = spec.set.split('@AT').length - 1;
     statements.push(db.prepare(
-      `UPDATE orders SET ${spec.set} WHERE public_code = ?2 AND ${spec.where}`,
-    ).bind(at, code));
+      `UPDATE orders SET ${spec.set.replaceAll('@AT', '?')} WHERE public_code = ? AND ${spec.where}`,
+    ).bind(...Array(setAts).fill(at), code));
   }
 
   let results;
