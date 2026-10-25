@@ -45,9 +45,23 @@ function kpiBlock(s) {
     ${tile('Vendido 7 días (ML)', money(k.r7), `${delta(k.r7Delta)} vs semana anterior`, `${num(k.u7)} libros · ${delta(k.u7Delta)}`)}
     ${tile('Vendido 30 días (ML)', money(k.r30), `${delta(k.r30Delta)} vs 30 días anteriores`, `${num(k.u30)} libros · ${delta(k.u30Delta)}`)}
     ${tile('Ticket promedio', money(k.ticket30), `${num(k.orders30)} ventas en 30 días`, `${num(k.titles30)} títulos distintos`)}
-    ${tile('Encargo SBS', `${k.encargoPct30}%`, 'de los libros vendidos en 30 días', 'el resto sale de stock propio')}
+    ${tile('Encargo SBS', `${k.encargoPct30}%`, `de los libros vendidos en 30 días (${num(k.enc30)})`, k.enc365 ? `${num(k.enc365)} en 12 meses · último ${day(new Date(k.encLastMs).toISOString())}` : 'ninguna venta por encargo en 12 meses')}
     ${tile('Web 30 días', money(k.web.total), `${num(k.web.orders)} pedidos cobrados`, 'amadolibros.com')}
   </div>`;
+}
+
+const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], sin_dato: ['t-c', 'Sin dato de ML'] };
+function sinStockTable(items) {
+  if (!items?.length) return '';
+  const rows = items.map(b => {
+    const m = b.mercado ?? { estado: 'sin_dato' }, [cls, label] = VEREDICTO[m.estado] ?? VEREDICTO.sin_dato;
+    const compra = b.compra ? `${esc(SUPPLIERS[b.compra.supplier] ?? b.compra.supplier)} · ${day(new Date(b.compra.d).toISOString())}` : '—';
+    return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Todavía no está en la vigilancia diaria de competencia.')}</div></td>
+      <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
+      <td class="n">${m.min != null ? money(m.min) : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
+  }).join('');
+  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Lo venden desde UY</th><th class="n">Más barato nuevo</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="muted">"Desde UY": vendedores con el libro nuevo y sin envío internacional en la publicación de catálogo de ML (foto diaria). Los 15 que más vendían.</p></div>`;
 }
 
 function weeklyChart(s) {
@@ -83,12 +97,12 @@ function inventoryBlock(s) {
   const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
   return `<div class="grid">
     <div class="card"><div class="kpi"><div class="l">Libros A sin stock</div><div class="v down">${num(v.aSinStockCount)}</div></div>
-      <p class="muted">Venta que se pierde: unos <b>${num(v.ventaPerdidaMes)} libros por mes</b>.</p>${list(v.aSinStock, b => `<tr><td>${link(b)}</td><td class="n">${num(b.u90)} en 90 d</td></tr>`)}</div>
+      <p class="muted">Venta que se pierde: unos <b>${num(v.ventaPerdidaMes)} libros por mes</b>.</p>${v.mercado ? `<p class="muted">De los ${num(v.mercado.vigilados)} que vigilamos en ML hoy: <b>${num(v.mercado.solo)}</b> nadie los vende nuevos desde Uruguay, <b>${num(v.mercado.sostenible)}</b> se venden a tu precio o más caro, <b>${num(v.mercado.masBarato)}</b> los venden más barato. Detalle abajo.</p>` : ''}</div>
     <div class="card"><div class="kpi"><div class="l">Libros A que se agotan pronto</div><div class="v">${num(v.coberturaBajaCount)}</div></div>
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
       <p class="muted">${num(v.muertoUnidades)} unidades con stock y sin ventas en 6 meses: candidatos a promoción o rebaja.</p>${list(v.muerto, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td></tr>`)}</div>
-  </div>`;
+  </div>${sinStockTable(v.aSinStock)}`;
 }
 
 function purchasesBlock(s) {

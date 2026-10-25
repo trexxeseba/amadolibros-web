@@ -16,7 +16,7 @@ function database(t) {
 const NOW = Date.parse('2026-10-24T12:00:00Z');
 const A = '9780306406157', B = '9788420412146', C = '9781418599942', D = '9780997419900';
 const catalog = { updated_at: '2026-10-24T10:00:00Z', items: [
-  { id: 'MLU1', isbn: A, title: 'Libro A', publisher: 'Planeta', status: 'active', available_quantity: 0, start_time: '2025-01-01T00:00:00Z' },
+  { id: 'MLU1', isbn: A, title: 'Libro A', publisher: 'AMADO LIBROS', status: 'active', available_quantity: 0, start_time: '2025-01-01T00:00:00Z' },
   { id: 'MLU2', isbn: B, title: 'Libro B', publisher: 'Paidós', status: 'active', available_quantity: 1, start_time: '2025-01-01T00:00:00Z' },
   { id: 'MLU3', isbn: C, title: 'Libro C', publisher: 'Planeta', status: 'active', available_quantity: 5, start_time: '2025-01-01T00:00:00Z' },
   { id: 'MLU4', isbn: D, title: 'Libro D sin ventas', publisher: 'Otra', status: 'active', available_quantity: 3, start_time: '2025-01-01T00:00:00Z' },
@@ -37,6 +37,8 @@ async function seed(t) {
   for (let d = 2; d <= 50; d += 10) sale(B, d, 1, 800);
   sale(C, 100, 1, 500);
   sale(B, 5, 1, 800, `AMADO-AR-${B}`);
+  // Editorial real: el catálogo trae la marca (Amado Libros); ML la guarda en la identidad de la venta.
+  db.sqlite.prepare("INSERT INTO ml_sales_item_identity(item_id,isbn,source,publisher,checked_at) VALUES('MLU1',?,'attr','Paidós',0)").run(A);
   await importPurchases(db, { supplier: 'Celesa', document_type: 'invoice', document_number: 'F1', document_date: new Date(NOW - 40 * 864e5).toISOString().slice(0, 10), items: [{ isbn: A, title: 'Libro A', quantity: 4 }, { isbn: C, title: 'Libro C', quantity: 3 }] }, NOW);
   return db;
 }
@@ -59,10 +61,14 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   assert.equal(celesa.bought, 7);
   assert.equal(celesa.sold, 4, 'A vendió más de 4 desde la compra; C no vendió');
   assert.equal(celesa.sinVenta, 1);
-  assert.equal(bi.editoriales.data[0].publisher, 'Planeta');
+  assert.equal(bi.editoriales.data[0].publisher, 'Paidós', 'A (identidad) y B (catálogo) son Paidós; la marca Amado Libros no cuenta');
+  assert.ok(!bi.editoriales.data.some(p => /amado/i.test(p.publisher)));
+  assert.equal(bi.kpis.data.enc365, 1);
+  assert.equal(bi.inventario.data.aSinStock[0].mercado.estado, 'sin_dato');
+  assert.equal(bi.inventario.data.aSinStock[0].compra.supplier, 'CELESA');
   assert.equal(bi.competencia.ok, false, 'sin tablas de competencia en el entorno de prueba el bloque falla solo');
   const html = renderBi(bi);
-  for (const h of ['Cómo va el negocio', 'Tendencia semanal', 'Qué libros hacen la plata', 'Dónde se pierde plata', 'Cómo rinden las compras', 'Editoriales', 'competencia']) assert.match(html, new RegExp(h));
+  for (const h of ['Cómo va el negocio', 'Tendencia semanal', 'Qué libros hacen la plata', 'Dónde se pierde plata', 'Cómo rinden las compras', 'Editoriales', 'competencia', 'conviene reponer', '1 en 12 meses']) assert.match(html, new RegExp(h));
   assert.match(html, /No se pudo calcular este bloque/);
   assert.ok(!/<script/i.test(html));
 });

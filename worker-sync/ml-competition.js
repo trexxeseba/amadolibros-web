@@ -66,6 +66,16 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       byIsbn.set(isbn, entry);
     }
     const top = await topOwnSalesIsbns(db, { minUnits365: 1, limit: MAX_TARGETS * 2, nowMs: now() });
+    // Los que se agotaron y ya no están en el catálogo: el producto de catálogo
+    // sale de la identidad de sus ventas, para saber si otro lo vende hoy.
+    const missing = top.map(r => r.isbn).filter(isbn => !byIsbn.has(isbn));
+    if (missing.length) {
+      try {
+        const { results } = await db.prepare(`SELECT isbn, MAX(catalog_product_id) AS pid FROM ml_sales_item_identity
+          WHERE isbn IN (SELECT value FROM json_each(?)) AND catalog_product_id IS NOT NULL AND catalog_product_id<>'' GROUP BY isbn`).bind(JSON.stringify(missing)).all();
+        for (const r of results) byIsbn.set(r.isbn, { pid: String(r.pid).trim().toUpperCase(), items: [], catalogItem: null, price: null });
+      } catch { /* sin identidades: sólo lo del catálogo */ }
+    }
     const rows = [];
     for (const r of top) {
       const e = byIsbn.get(r.isbn);
