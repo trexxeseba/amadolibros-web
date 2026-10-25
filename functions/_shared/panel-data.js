@@ -97,6 +97,7 @@ export async function loadOrdersOverview(db, { now = Date.now() } = {}) {
       `SELECT public_code, status, payment_status, buyer_name, delivery_type,
               payable_total_uyu, created_at, paid_at, fulfilled_at
          FROM orders
+        WHERE archived_at IS NULL
         ORDER BY created_at DESC
         LIMIT ?`,
       [RECENT_ORDERS_LIMIT],
@@ -132,6 +133,7 @@ export async function loadStuck(db, { now = Date.now() } = {}) {
       `SELECT public_code, buyer_name, payable_total_uyu, paid_at
          FROM orders
         WHERE payment_status = 'approved' AND fulfilled_at IS NULL
+          AND status = 'paid' AND archived_at IS NULL
         ORDER BY paid_at ASC
         LIMIT ?`,
       [STUCK_LIMIT],
@@ -141,6 +143,7 @@ export async function loadStuck(db, { now = Date.now() } = {}) {
       `SELECT public_code, buyer_name, payable_total_uyu, created_at
          FROM orders
         WHERE payment_status = 'pending' AND created_at < ?
+          AND status IN ('open','expired') AND archived_at IS NULL
         ORDER BY created_at ASC
         LIMIT ?`,
       [anHourAgo, STUCK_LIMIT],
@@ -348,6 +351,70 @@ export async function loadCatalogSummary(ctx) {
 
 
 /**
+ * La lista de pedidos con pestañas, como en Shopify o Tiendanube: por
+ * despachar, sin pagar, despachados, archivados y todos. Cada pestaña trae su
+ * cantidad para que se vea de un vistazo qué queda pendiente.
+ */
+export const ORDER_FILTERS = {
+  'por-despachar': {
+    titulo: 'Por despachar',
+    where: "status = 'paid' AND payment_status = 'approved' AND fulfilled_at IS NULL AND archived_at IS NULL",
+    orden: 'paid_at ASC',
+  },
+  'sin-pagar': {
+    titulo: 'Sin pagar',
+    where: "status IN ('open','expired') AND payment_status NOT IN ('approved','refunded') AND archived_at IS NULL",
+    orden: 'created_at DESC',
+  },
+  despachados: {
+    titulo: 'Despachados',
+    where: "status = 'fulfilled' AND archived_at IS NULL",
+    orden: 'fulfilled_at DESC',
+  },
+  archivados: {
+    titulo: 'Archivados',
+    where: 'archived_at IS NOT NULL',
+    orden: 'archived_at DESC',
+  },
+  todos: {
+    titulo: 'Todos',
+    where: 'archived_at IS NULL',
+    orden: 'created_at DESC',
+  },
+};
+const ORDER_LIST_LIMIT = 200;
+
+export async function loadOrdersList(db, filtro = 'por-despachar') {
+  const clave = Object.hasOwn(ORDER_FILTERS, filtro) ? filtro : 'por-despachar';
+  const spec = ORDER_FILTERS[clave];
+  const [rows, counts] = await Promise.all([
+    queryAll(
+      db,
+      `SELECT public_code, status, payment_status, buyer_name, delivery_type,
+              payable_total_uyu, created_at, paid_at, fulfilled_at, archived_at
+         FROM orders
+        WHERE ${spec.where}
+        ORDER BY ${spec.orden}
+        LIMIT ?`,
+      [ORDER_LIST_LIMIT],
+    ),
+    queryAll(
+      db,
+      `SELECT ${Object.entries(ORDER_FILTERS)
+        .map(([key, value]) => `SUM(CASE WHEN ${value.where} THEN 1 ELSE 0 END) AS "${key}"`)
+        .join(', ')}
+         FROM orders`,
+    ),
+  ]);
+  return {
+    filtro: clave,
+    rows,
+    limit: ORDER_LIST_LIMIT,
+    counts: Object.fromEntries(Object.keys(ORDER_FILTERS).map(key => [key, Number(counts[0]?.[key]) || 0])),
+  };
+}
+
+/**
  * Un pedido completo: qué libros, a dónde va y qué le pasó.
  * Es lo que hace falta para despachar, y hasta ahora el panel no lo mostraba:
  * la lista daba una fila por pedido y nunca el contenido de la caja.
@@ -363,7 +430,7 @@ export async function loadOrder(db, publicCode) {
             requested_delivery_date, requested_delivery_from, requested_delivery_to,
             products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, payable_total_uyu,
             currency, payment_provider, payment_id, paid_amount_uyu,
-            created_at, paid_at, fulfilled_at, cancelled_at
+            created_at, paid_at, fulfilled_at, cancelled_at, archived_at
        FROM orders
       WHERE public_code = ?
       LIMIT 1`,
