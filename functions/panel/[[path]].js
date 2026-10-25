@@ -12,6 +12,12 @@
  *                       retiro o de envío
  *   POST /panel/pedido/<código>/transferencia → marca que la transferencia
  *                       llegó al banco (ver _shared/panel-transfer.js)
+ *   GET  /panel/pedidos?estado=… → lista de pedidos con pestañas (por despachar,
+ *                       sin pagar, despachados, archivados, todos) y acciones
+ *                       en lote
+ *   POST /panel/pedidos → aplica una acción a los pedidos tildados
+ *   POST /panel/pedido/<código>/accion → despachar, deshacer, cancelar (sólo
+ *                       sin cobrar), archivar o desarchivar un pedido
  *   POST /panel/aviso-whatsapp/<id>/contactado → saca de la lista un aviso de
  *                       stock por WhatsApp que ya se mandó a mano
  *   GET  /panel/ajustes → datos de retiro que salen en el correo al cliente
@@ -53,7 +59,12 @@ import {
   sessionCookieHeader,
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
-import { loadOrder, loadPanelData } from '../_shared/panel-data.js';
+import { ORDER_FILTERS, loadOrder, loadOrdersList, loadPanelData } from '../_shared/panel-data.js';
+import {
+  ORDER_ACTION_EVENT_LABEL,
+  applyOrderAction,
+  availableActions,
+} from '../_shared/panel-order-actions.js';
 import { trackTransferPurchase } from '../_shared/purchase-tracking.js';
 import { followUpLinks } from '../_shared/panel-followup.js';
 import { revenueChart, revenueTable } from '../_shared/panel-chart.js';
@@ -171,7 +182,7 @@ function sidebar(activo = 'tablero') {
     { id: 'pendientes', href: '/panel#pendientes', texto: 'Para hacer', icono: '◉' },
     { id: 'ml', href: '/panel#ml', texto: 'Mercado Libre', icono: '◈' },
     { id: 'visitas', href: '/panel#visitas', texto: 'Visitas', icono: '◎' },
-    { id: 'pedidos', href: '/panel#pedidos', texto: 'Pedidos web', icono: '❑' },
+    { id: 'pedidos', href: '/panel/pedidos', texto: 'Pedidos web', icono: '❑' },
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
     { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
     { id: 'busquedas', href: '/panel#busquedas', texto: 'Qué buscan', icono: '⌕' },
@@ -390,6 +401,31 @@ function layout(title, body, { nav = '' } = {}) {
   .err { color:var(--error); }
   .ok { color:var(--ok); }
   .empty { color:var(--tinta-suave); font-size:.875rem; margin:.4rem 0; }
+  /* ── Acciones sobre pedidos ─────────────────────────────────────── */
+  .acciones-pedido { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center;
+                     margin:-.4rem 0 1.1rem; }
+  .acciones-pedido form { margin:0; }
+  .acciones-pedido button, .barra-lote button { margin:0; }
+  .btn-sec { background:var(--tarjeta); color:var(--tinta); border:1px solid var(--borde); }
+  .btn-sec:hover { border-color:var(--tinta-suave); filter:none; }
+  .acciones-pedido details { position:relative; }
+  .acciones-pedido details > summary { list-style:none; cursor:pointer; }
+  .acciones-pedido details > summary::-webkit-details-marker { display:none; }
+  .acciones-pedido details[open] .confirmar { margin-top:.5rem; padding:.8rem 1rem;
+      border:1px solid var(--error); border-radius:10px; background:var(--error-suave); }
+  .acciones-pedido .confirmar p { margin:0 0 .6rem; font-size:.88rem; }
+  .btn-peligro { background:var(--error); }
+  .pestanas { display:flex; flex-wrap:wrap; gap:.4rem; margin:0 0 1rem; }
+  .pestanas a { text-decoration:none; color:var(--tinta-media); border:1px solid var(--borde);
+                border-radius:999px; padding:.35rem .85rem; font-size:.88rem; background:var(--tarjeta); }
+  .pestanas a.aqui { background:var(--acento); border-color:var(--acento); color:#fff; font-weight:600; }
+  .pestanas a b { font-variant-numeric:tabular-nums; margin-left:.25rem; }
+  .barra-lote { position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:.5rem;
+                align-items:center; padding:.7rem 0; background:var(--papel); }
+  .barra-lote select { font:inherit; padding:.5rem .6rem; border:1px solid var(--borde);
+                       border-radius:9px; background:var(--tarjeta); color:var(--tinta); }
+  td.check, th.check { width:2.2rem; }
+  td.check input, th.check input { width:1.1rem; height:1.1rem; }
   .tag { border:1px solid var(--borde); border-radius:999px; padding:.25rem .75rem;
          font-size:.78rem; color:var(--tinta-media); white-space:nowrap;
          background:var(--tarjeta); }
@@ -648,6 +684,7 @@ const EVENT_LABEL = {
   already_sent: 'Aviso ya enviado',
   [NOTICE_EVENT_TYPE.pickup_ready]: 'Se le avisó que está listo para retirar',
   [NOTICE_EVENT_TYPE.shipping_today]: 'Se le avisó que el envío sale hoy',
+  ...ORDER_ACTION_EVENT_LABEL,
 };
 
 function deliveryWindow(order) {
@@ -747,7 +784,7 @@ function followUpCard(order, items) {
 </section>`;
 }
 
-function orderPage(found, { pickup, flash = null, transferFlash = null } = {}) {
+function orderPage(found, { pickup, flash = null, transferFlash = null, actionFlash = null } = {}) {
   const { order, items, events } = found;
   const units = items.reduce((total, item) => total + Number(item.quantity || 0), 0);
   const esRetiro = order.delivery_type === 'pickup';
@@ -756,12 +793,15 @@ function orderPage(found, { pickup, flash = null, transferFlash = null } = {}) {
   const body = `
 <div class="topbar">
   <div>
-    <a class="back" href="/panel">← Pedidos</a>
+    <a class="back" href="/panel/pedidos">← Pedidos</a>
     <h1>${escapeHtml(order.public_code)}</h1>
     <p class="muted">${escapeHtml(order.buyer_name)} · ${escapeHtml(units)} libro${units === 1 ? '' : 's'} · ${shortDate(order.created_at)}</p>
   </div>
-  <span class="tag ${pending ? 'alerta' : ''}">${pending ? 'Pagado sin despachar' : label(ORDER_STATUS_LABEL, order.status)}</span>
+  <span class="tag ${pending ? 'alerta' : ''}">${pending ? 'Pagado sin despachar' : label(ORDER_STATUS_LABEL, order.status)}${order.archived_at ? ' · archivado' : ''}</span>
 </div>
+
+${accionesPedido(order)}
+${actionFlash ? `<p class="${actionFlash.ok ? 'ok-box' : 'err'}" role="status">${escapeHtml(actionFlash.message)}</p>` : ''}
 
 <section class="card">
   <h2>Qué va en la caja</h2>
@@ -889,14 +929,55 @@ async function handleSettingsSave(context) {
  * Reemplaza a las cuatro tablas que había antes. Una tabla con encabezados
  * para mostrar dos filas es un informe; esto es una lista de cosas para hacer.
  */
-function tarea({ urgencia = 'media', que, quien, detalle = '', enlace = null, accion = 'Abrir' }) {
+function tarea({ urgencia = 'media', que, quien, detalle = '', enlace = null, accion = 'Abrir', extra = '' }) {
   return `<li class="tarea t-${urgencia}">
     <div class="tarea-texto">
       <b>${que}</b>
       <span class="muted">${quien}${detalle ? ` · ${detalle}` : ''}</span>
     </div>
     ${enlace ? `<a class="linkbtn" href="${enlace}">${escapeHtml(accion)}</a>` : ''}
+    ${extra}
   </li>`;
+}
+
+/** Un botón que aplica una acción a un pedido y vuelve a donde estaba. */
+function botonAccion(code, accion, texto, { volver = '', clase = 'linkbtn' } = {}) {
+  return `<form method="POST" action="/panel/pedido/${encodeURIComponent(code)}/accion">
+      <input type="hidden" name="accion" value="${escapeHtml(accion)}">
+      ${volver ? `<input type="hidden" name="volver" value="${escapeHtml(volver)}">` : ''}
+      <button class="${clase}" type="submit">${escapeHtml(texto)}</button>
+    </form>`;
+}
+
+const ACCION_TEXTO = {
+  despachar: 'Marcar como despachado',
+  deshacer: 'Deshacer despacho',
+  cancelar: 'Cancelar pedido',
+  archivar: 'Archivar',
+  desarchivar: 'Desarchivar',
+};
+
+/**
+ * La barra de acciones de la ficha, arriba de todo. Cancelar pide una
+ * confirmación (un <details>, sin JavaScript) porque no se deshace desde acá.
+ */
+function accionesPedido(order) {
+  const code = order.public_code;
+  return `<div class="acciones-pedido">
+    ${availableActions(order).map(accion => {
+      if (accion === 'cancelar') {
+        return `<details>
+          <summary class="linkbtn">Cancelar pedido</summary>
+          <div class="confirmar">
+            <p>El pedido no está cobrado. Cancelarlo lo saca de «sin pagar» y no se puede deshacer desde el panel.</p>
+            ${botonAccion(code, 'cancelar', 'Sí, cancelar', { clase: 'btn-peligro' })}
+          </div>
+        </details>`;
+      }
+      const principal = accion === 'despachar';
+      return botonAccion(code, accion, ACCION_TEXTO[accion], { clase: principal ? '' : 'btn-sec' });
+    }).join('')}
+  </div>`;
 }
 
 /**
@@ -928,6 +1009,7 @@ function tareasPendientes(data) {
         detalle: `${money(row.payable_total_uyu)} · pagado ${shortDate(row.paid_at)}`,
         enlace: `/panel/pedido/${encodeURIComponent(row.public_code)}`,
         accion: 'Ver pedido',
+        extra: botonAccion(row.public_code, 'despachar', 'Despachado', { volver: 'tablero' }),
       }));
     }
     for (const row of stuck.waitlistRestocked) {
@@ -1106,6 +1188,53 @@ function cambiosCatalogoSection(block) {
 </section>`;
 }
 
+const LOTE_ACCIONES = {
+  'por-despachar': ['despachar', 'archivar'],
+  'sin-pagar': ['cancelar', 'archivar'],
+  despachados: ['deshacer', 'archivar'],
+  archivados: ['desarchivar'],
+  todos: ['archivar'],
+};
+
+function ordersListPage(list, { flash = null } = {}) {
+  const acciones = LOTE_ACCIONES[list.filtro] || [];
+  const pestanas = Object.entries(ORDER_FILTERS).map(([clave, spec]) => `<a href="/panel/pedidos?estado=${clave}"
+      class="${clave === list.filtro ? 'aqui' : ''}">${escapeHtml(spec.titulo)}<b>${escapeHtml(list.counts[clave])}</b></a>`).join('');
+  const body = `
+<header class="top">
+  <div>
+    <h1>Pedidos web</h1>
+    <p class="muted">Tildá los pedidos y elegí qué hacer con todos juntos. Archivar no borra nada.</p>
+  </div>
+</header>
+<nav class="pestanas" aria-label="Filtrar pedidos">${pestanas}</nav>
+${flash ? `<p class="${flash.ok ? 'ok-box' : 'err'}" role="status">${escapeHtml(flash.message)}</p>` : ''}
+<form method="POST" action="/panel/pedidos">
+  <input type="hidden" name="estado" value="${escapeHtml(list.filtro)}">
+  ${acciones.length && list.rows.length ? `<div class="barra-lote">
+    <select name="accion" aria-label="Acción para los pedidos tildados">
+      ${acciones.map(accion => `<option value="${accion}">${escapeHtml(ACCION_TEXTO[accion])}</option>`).join('')}
+    </select>
+    <button type="submit">Aplicar a los tildados</button>
+    <span class="muted">${list.filtro === 'sin-pagar' ? 'Cancelar sólo aplica a pedidos sin cobrar.' : ''}</span>
+  </div>` : ''}
+  <section class="card">
+    ${table(['', 'Pedido', 'Comprador', 'Entrega', 'Estado', 'Pago', 'Total', 'Creado'], list.rows, row => `
+      <tr><td class="check"><input type="checkbox" name="codigo" value="${escapeHtml(row.public_code)}"
+              aria-label="Elegir ${escapeHtml(row.public_code)}"></td>
+          <td><a href="/panel/pedido/${encodeURIComponent(row.public_code)}">${escapeHtml(row.public_code)}</a></td>
+          <td>${escapeHtml(row.buyer_name)}</td>
+          <td>${label(DELIVERY_LABEL, row.delivery_type)}</td>
+          <td>${pastilla(ORDER_STATUS_LABEL, row.status, tonoPedido(row.status))}</td>
+          <td>${pastilla(PAYMENT_STATUS_LABEL, row.payment_status, tonoPago(row.payment_status))}</td>
+          <td>${money(row.payable_total_uyu)}</td>
+          <td>${shortDay(row.created_at)}</td></tr>`)}
+    ${list.rows.length >= list.limit ? `<p class="muted">Se muestran los ${escapeHtml(list.limit)} primeros.</p>` : ''}
+  </section>
+</form>`;
+  return layout('Pedidos — Amado Libros', body, { nav: sidebar('pedidos') });
+}
+
 function dashboardPage(data) {
   const env = data.environment;
   const { filas, missing } = tareasPendientes(data);
@@ -1171,6 +1300,7 @@ ${sectionOrError(data.salud, salud => healthSection(salud, { catalogo: data.cata
       : '<span class="cuenta cuenta-cero">al día</span>'}
   </div>
   ${rotas.map(mensaje => `<p class="err">No se pudo cargar: ${escapeHtml(mensaje)}</p>`).join('')}
+  ${pagadosSinDespachar ? '<p class="muted mas"><a href="/panel/pedidos?estado=por-despachar">Despachar o archivar varios a la vez →</a></p>' : ''}
   ${filas.length
     ? `<ul class="tareas">${filas.join('')}</ul>`
     : (rotas.length ? '' : '<p class="empty">Nada pendiente. Todo despachado y todas las fichas con foto. 👌</p>')}
@@ -1417,7 +1547,27 @@ export async function onRequest(context) {
     });
   }
 
-  const pedido = /^\/panel\/pedido\/([^/]+)(\/avisar|\/transferencia)?$/.exec(path);
+  if (path === '/panel/pedidos') {
+    if (!['GET', 'POST'].includes(request.method)) return new Response('Method Not Allowed', { status: 405 });
+    if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
+      return htmlResponse(loginPage({
+        siteKey: cleanString(context.env?.STOCK_WAITLIST_TURNSTILE_SITE_KEY),
+      }));
+    }
+    const db = context.env?.ORDERS_DB;
+    if (!db) return htmlResponse(layout('Pedidos', '<main class="card"><p class="err">ORDERS_DB no está disponible.</p></main>'), { status: 503 });
+    if (request.method === 'POST') {
+      const origin = request.headers.get('origin');
+      if (origin && origin !== url.origin) return new Response('Forbidden', { status: 403 });
+      const form = await request.formData();
+      const estado = cleanString(form.get('estado'));
+      const flash = await applyOrderAction({ db, action: cleanString(form.get('accion')), codes: form.getAll('codigo') });
+      return htmlResponse(ordersListPage(await loadOrdersList(db, estado), { flash }), { status: flash.ok ? 200 : 422 });
+    }
+    return htmlResponse(ordersListPage(await loadOrdersList(db, cleanString(url.searchParams.get('estado')))));
+  }
+
+  const pedido = /^\/panel\/pedido\/([^/]+)(\/avisar|\/transferencia|\/accion)?$/.exec(path);
   if (pedido) {
     const accion = pedido[2] ? pedido[2].slice(1) : '';
     const avisar = Boolean(accion);
@@ -1441,7 +1591,7 @@ export async function onRequest(context) {
     const found = db ? await loadOrder(db, decodeURIComponent(pedido[1])) : null;
     if (!found) {
       return htmlResponse(
-        layout('Pedido no encontrado', '<main class="card"><a class="back" href="/panel">← Pedidos</a>'
+        layout('Pedido no encontrado', '<main class="card"><a class="back" href="/panel/pedidos">← Pedidos</a>'
           + '<h1>Pedido no encontrado</h1><p class="muted">Revisá el código.</p></main>'),
         { status: 404 },
       );
@@ -1449,6 +1599,21 @@ export async function onRequest(context) {
 
     const pickup = await loadPickup(context.env);
     if (!avisar) return htmlResponse(orderPage(found, { pickup }));
+
+    if (accion === 'accion') {
+      const form = await request.formData();
+      const actionFlash = await applyOrderAction({ db, action: cleanString(form.get('accion')), codes: [found.order.public_code] });
+      // Desde el tablero se vuelve al tablero: despachar varios seguidos sin
+      // entrar y salir de cada ficha.
+      if (cleanString(form.get('volver')) === 'tablero') {
+        return new Response(null, {
+          status: 303,
+          headers: { Location: '/panel#pendientes', 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+        });
+      }
+      const fresh = await loadOrder(db, found.order.public_code) || found;
+      return htmlResponse(orderPage(fresh, { pickup, actionFlash }), { status: actionFlash.ok ? 200 : 422 });
+    }
 
     if (accion === 'transferencia') {
       const transferFlash = await confirmTransfer({ db, order: found.order });
