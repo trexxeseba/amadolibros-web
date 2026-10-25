@@ -197,6 +197,46 @@ export async function loadCompetitivePosition(db) {
     vigilados: list.length, conEstado: conEstado.length, ganando, ganandoPct: conEstado.length ? Math.round((ganando / conEstado.length) * 100) : null,
     solos: list.filter(f => f.competidores === 0 && f.tu_precio != null).length, medianaPrecio: mediana,
     masCaros: list.filter(f => f.precio_relativo && f.precio_relativo >= 1.15).length,
+    facts,
+  };
+}
+
+// Libros que vendés muy por debajo del competidor nacional más barato (nuevo):
+// precio sugerido apenas debajo de él y cuánto más entraría por mes al ritmo
+// de los últimos 90 días. Los agotados entran con su precio promedio de venta
+// (es el precio al que se volvería a publicar). Sólo sugiere: no cambia precios.
+const RAISE_THRESHOLD = 0.85, RAISE_UNDERCUT = 0.98;
+const round10 = v => Math.floor(v / 10) * 10;
+
+export function priceRaises(facts, books, model = null) {
+  if (!facts) return null;
+  const byIsbn = new Map(books.map(b => [b.isbn, b]));
+  const lista = [], solos = [];
+  for (const [isbn, f] of facts) {
+    const b = byIsbn.get(isbn);
+    if (!b) continue;
+    const c = model?.costs.get(isbn);
+    if (f.competidores === 0 && f.tu_precio > 0) {
+      const sugerido = round10(f.tu_precio * 1.1);
+      solos.push({ isbn, title: b.title, actual: f.tu_precio, sugerido, u90: b.u90, stock: b.stock, ganaMes: Math.round((sugerido - f.tu_precio) * b.u90 / 3) });
+      continue;
+    }
+    const min = f.precio_minimo, actual = f.tu_precio ?? b.avgPrice;
+    if (!(min > 0) || !(actual > 0) || actual / min > RAISE_THRESHOLD) continue;
+    const sugerido = Math.max(actual, round10(min * RAISE_UNDERCUT));
+    lista.push({
+      isbn, title: b.title, actual, min, competidores: f.competidores_comparables, sugerido,
+      subaPct: Math.round((sugerido / actual - 1) * 100), ganaMes: Math.round((sugerido - actual) * b.u90 / 3),
+      u90: b.u90, stock: b.stock, agotado: !(b.stock > 0),
+      margenActual: c ? marginOf(actual, c.cost, model.feeRate) : null, margenSugerido: c ? marginOf(sugerido, c.cost, model.feeRate) : null,
+    });
+  }
+  lista.sort((a, b) => b.ganaMes - a.ganaMes || b.subaPct - a.subaPct);
+  solos.sort((a, b) => b.ganaMes - a.ganaMes);
+  return {
+    total: lista.length, conStock: lista.filter(x => !x.agotado).length,
+    ganaMesTotal: lista.reduce((n, x) => n + x.ganaMes, 0), lista: lista.slice(0, 40),
+    solos: solos.slice(0, 15), solosTotal: solos.length, umbral: RAISE_THRESHOLD,
   };
 }
 
@@ -303,13 +343,14 @@ export async function loadBi(db, catalog, now = Date.now()) {
     section(() => loadPurchasePerformance(db, now)),
     section(() => loadCompetitivePosition(db)),
   ]);
-  let abcRes = { ok: false, error: table.error }, inv = { ok: false, error: table.error }, pubs = { ok: false, error: table.error }, margen = { ok: false, error: table.error };
+  let abcRes = { ok: false, error: table.error }, inv = { ok: false, error: table.error }, pubs = { ok: false, error: table.error }, margen = { ok: false, error: table.error }, precios = { ok: false, error: table.error ?? competencia.error };
   if (table.ok) {
     abcRes = await section(() => abc(table.data.books));
     inv = await section(() => inventoryHealth(table.data, now));
     pubs = await section(() => topPublishers(table.data.books));
     const model = await section(() => loadCostModel(db, table.data.books.map(b => b.isbn)));
     margen = model.ok ? await section(() => marginSummary(table.data.books, model.data)) : { ok: false, error: model.error };
+    if (competencia.ok) precios = await section(() => priceRaises(competencia.data?.facts, table.data.books, model.ok ? model.data : null));
     if (inv.ok) {
       const A = table.data.books.filter(b => b.clase === 'A' && b.stock === 0).sort((a, b) => b.u90 - a.u90);
       const market = await section(() => loadSinStockMarket(db, A, model.ok ? model.data : null));
@@ -320,5 +361,5 @@ export async function loadBi(db, catalog, now = Date.now()) {
       }
     }
   }
-  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, compras, editoriales: pubs, competencia };
+  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia };
 }
