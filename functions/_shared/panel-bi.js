@@ -11,6 +11,7 @@ import { COUNTED_STATUSES } from '../../worker-sync/ml-sales.js';
 import { ownStockIndex } from '../../worker-sync/reposicion-facts.js';
 import { competitionByIsbn } from '../../worker-sync/ml-competition.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';
+import { latestFx } from '../../worker-sync/fx-rates.js';
 
 const DAY = 86400000;
 const COUNTED = COUNTED_STATUSES.map(s => `'${s}'`).join(',');
@@ -110,7 +111,7 @@ export async function loadBookTable(db, catalog, now) {
   const books = sales.map(s => ({
     isbn: s.isbn, title: meta.get(s.isbn)?.title || s.title, publisher: pubIndex.get(s.isbn) || meta.get(s.isbn)?.publisher || null,
     u365: Number(s.u365) || 0, u180: Number(s.u180) || 0, u90: Number(s.u90) || 0, rev365: Math.round(Number(s.rev365) || 0), rev90: Math.round(Number(s.rev90) || 0),
-    avgPrice: Number(s.u365) ? Math.round((Number(s.rev365) || 0) / Number(s.u365)) : null, lastMs: Number(s.last_ms) || null, stock: stock.get(s.isbn)?.stock_propio ?? 0,
+    avgPrice: Number(s.u90) ? Math.round((Number(s.rev90) || 0) / Number(s.u90)) : Number(s.u365) ? Math.round((Number(s.rev365) || 0) / Number(s.u365)) : null, lastMs: Number(s.last_ms) || null, stock: stock.get(s.isbn)?.stock_propio ?? 0,
   }));
   return { books, stock, meta };
 }
@@ -199,9 +200,73 @@ export async function loadCompetitivePosition(db) {
   };
 }
 
+// Margen por libro: precio de venta − comisión de ML − costo de la última
+// compra. El costo lleva el descuento de la línea y el reparto de lo que la
+// factura suma o resta (envío, gastos) y se pasa a pesos al cambio de hoy:
+// es lo que costaría reponerlo. No incluye el flete hasta Uruguay ni el envío
+// que paga el vendedor en ML.
+const OVERHEAD_MIN = 0.85, OVERHEAD_MAX = 1.6, DEFAULT_FEE_SAMPLE = 5;
+
+export async function loadCostModel(db, isbns) {
+  const fx = await latestFx(db);
+  const costs = new Map();
+  if (isbns.length) {
+    const lines = await rows(db, `SELECT i.isbn, i.unit_price, i.discount_pct, i.quantity, o.purchase_id, o.supplier, o.currency, o.total_amount, o.purchase_date_ms AS d, t.net
+      FROM purchase_items i JOIN purchase_orders o ON o.purchase_id=i.purchase_id
+      LEFT JOIN (SELECT purchase_id, SUM(unit_price*(1-COALESCE(discount_pct,0)/100.0)*quantity) AS net FROM purchase_items WHERE unit_price IS NOT NULL GROUP BY purchase_id) t ON t.purchase_id=o.purchase_id
+      WHERE o.superseded_by IS NULL AND COALESCE(o.document_type,'invoice')<>'credit_note' AND i.unit_price IS NOT NULL AND i.unit_price>0 AND o.currency IS NOT NULL
+        AND i.isbn IN (SELECT value FROM json_each(?))`, JSON.stringify(isbns));
+    for (const l of lines) {
+      const rate = fx[String(l.currency).toUpperCase()];
+      if (!rate) continue;
+      const prev = costs.get(l.isbn);
+      if (prev && prev.d >= Number(l.d)) continue;
+      const net = Number(l.unit_price) * (1 - (Number(l.discount_pct) || 0) / 100);
+      let overhead = Number(l.total_amount) > 0 && Number(l.net) > 0 ? Number(l.total_amount) / Number(l.net) : 1;
+      overhead = Math.min(OVERHEAD_MAX, Math.max(OVERHEAD_MIN, overhead));
+      costs.set(l.isbn, { cost: Math.round(net * overhead * rate), supplier: l.supplier, currency: l.currency, d: Number(l.d) });
+    }
+  }
+  // Comisión de ML: mediana de comisión/precio en las ventas de una unidad que ya la traen.
+  let feeRate = null, feeSample = 0;
+  try {
+    const f = await rows(db, `SELECT sale_fee*1.0/unit_price AS r FROM ml_sales_items WHERE sale_fee IS NOT NULL AND sale_fee>0 AND unit_price>0 AND quantity=1 ORDER BY updated_at DESC LIMIT 500`);
+    const rs = f.map(x => Number(x.r)).filter(r => r > 0 && r < 0.5).sort((a, b) => a - b);
+    feeSample = rs.length;
+    if (rs.length >= DEFAULT_FEE_SAMPLE) feeRate = rs[Math.floor(rs.length / 2)];
+  } catch { /* columna todavía sin crear */ }
+  return { costs, fx, feeRate, feeSample };
+}
+
+export function marginOf(price, cost, feeRate) {
+  if (!(price > 0) || !(cost > 0)) return null;
+  const fee = feeRate == null ? 0 : Math.round(price * feeRate);
+  const margin = price - fee - cost;
+  return { price, fee, cost, margin, pct: Math.round((margin / price) * 100), feeKnown: feeRate != null };
+}
+
+export function marginSummary(books, model) {
+  const withCost = [];
+  for (const b of books) {
+    const c = model.costs.get(b.isbn);
+    const m = c ? marginOf(b.avgPrice, c.cost, model.feeRate) : null;
+    if (m) withCost.push({ ...b, ...m, supplier: c.supplier });
+  }
+  const A = withCost.filter(b => b.clase === 'A');
+  const rev = A.reduce((n, b) => n + b.price * b.u365, 0), marg = A.reduce((n, b) => n + b.margin * b.u365, 0);
+  return {
+    feeRate: model.feeRate, feeSample: model.feeSample, fxDate: model.fx._date ?? null,
+    conCosto: withCost.length, conCostoA: A.length, totalA: books.filter(b => b.clase === 'A').length,
+    margenPctA: rev ? Math.round((marg / rev) * 100) : null,
+    bajoMargen: A.filter(b => b.pct < 15).length, perdida: A.filter(b => b.margin < 0).length,
+    top: [...A].sort((a, b) => b.margin * b.u365 - a.margin * a.u365).slice(0, 10),
+    peores: [...A].sort((a, b) => a.pct - b.pct).slice(0, 10),
+  };
+}
+
 // Libros A sin stock: ¿alguien lo vende hoy en ML desde Uruguay, a qué precio,
 // y dónde lo compramos la última vez? Con eso se decide si conviene reponer.
-export async function loadSinStockMarket(db, aSinStock) {
+export async function loadSinStockMarket(db, aSinStock, model = null) {
   const isbns = aSinStock.map(b => b.isbn);
   const facts = await competitionByIsbn(db, isbns);
   const compra = new Map();
@@ -211,18 +276,23 @@ export async function loadSinStockMarket(db, aSinStock) {
       if (!compra.has(r.isbn) || compra.get(r.isbn).d < r.d) compra.set(r.isbn, { supplier: r.supplier, d: Number(r.d) });
     }
   } catch { /* sin compras */ }
-  const resumen = { vigilados: 0, solo: 0, sostenible: 0, masBarato: 0 };
+  const resumen = { vigilados: 0, solo: 0, sostenible: 0, masBarato: 0, noConviene: 0 };
   const verdict = b => {
     const f = facts.get(b.isbn);
     if (!f) return { estado: 'sin_dato' };
     resumen.vigilados++;
     const nacionales = f.competidores_comparables ?? 0, min = f.precio_minimo;
     if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: 'Nadie lo vende nuevo desde Uruguay: reponer y quedarte con toda la venta.' }; }
+    const c = model?.costs.get(b.isbn), atMin = c ? marginOf(min, c.cost, model.feeRate) : null;
+    if (atMin) {
+      if (atMin.margin > 0) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo venden desde Uruguay; al precio del más barato todavía ganás $ ${atMin.margin.toLocaleString('es-UY')} por libro: conviene reponer.` }; }
+      resumen.noConviene++; return { estado: 'no_conviene', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo venden desde Uruguay; al precio del más barato perdés $ ${Math.abs(atMin.margin).toLocaleString('es-UY')} por libro: no conviene reponerlo a este costo.` };
+    }
     if (!b.avgPrice || min >= b.avgPrice * 0.9) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, texto: `${nacionales} lo venden desde Uruguay, el más barato a tu precio de siempre o más: conviene reponer.` }; }
     resumen.masBarato++;
     return { estado: 'mas_barato', nacionales, min, texto: `${nacionales} lo venden desde Uruguay más barato que tu precio promedio: reponer sólo si el costo da.` };
   };
-  return { libros: aSinStock.map(b => ({ isbn: b.isbn, mercado: verdict(b), compra: compra.get(b.isbn) ?? null })), resumen };
+  return { libros: aSinStock.map(b => { const c = model?.costs.get(b.isbn); return { isbn: b.isbn, mercado: verdict(b), compra: compra.get(b.isbn) ?? null, costo: c?.cost ?? null, margen: c ? marginOf(b.avgPrice, c.cost, model.feeRate) : null }; }), resumen };
 }
 
 export async function loadBi(db, catalog, now = Date.now()) {
@@ -233,14 +303,16 @@ export async function loadBi(db, catalog, now = Date.now()) {
     section(() => loadPurchasePerformance(db, now)),
     section(() => loadCompetitivePosition(db)),
   ]);
-  let abcRes = { ok: false, error: table.error }, inv = { ok: false, error: table.error }, pubs = { ok: false, error: table.error };
+  let abcRes = { ok: false, error: table.error }, inv = { ok: false, error: table.error }, pubs = { ok: false, error: table.error }, margen = { ok: false, error: table.error };
   if (table.ok) {
     abcRes = await section(() => abc(table.data.books));
     inv = await section(() => inventoryHealth(table.data, now));
     pubs = await section(() => topPublishers(table.data.books));
+    const model = await section(() => loadCostModel(db, table.data.books.map(b => b.isbn)));
+    margen = model.ok ? await section(() => marginSummary(table.data.books, model.data)) : { ok: false, error: model.error };
     if (inv.ok) {
       const A = table.data.books.filter(b => b.clase === 'A' && b.stock === 0).sort((a, b) => b.u90 - a.u90);
-      const market = await section(() => loadSinStockMarket(db, A));
+      const market = await section(() => loadSinStockMarket(db, A, model.ok ? model.data : null));
       if (market.ok) {
         const by = new Map(market.data.libros.map(l => [l.isbn, l]));
         inv.data.aSinStock = inv.data.aSinStock.map(b => ({ ...b, ...by.get(b.isbn) }));
@@ -248,5 +320,5 @@ export async function loadBi(db, catalog, now = Date.now()) {
       }
     }
   }
-  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, compras, editoriales: pubs, competencia };
+  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, compras, editoriales: pubs, competencia };
 }

@@ -89,3 +89,29 @@ test('panel de inteligencia exige sesión y producción', async t => {
   assert.equal(res.status, 200);
   assert.match(await res.text(), /Brújula Amado/);
 });
+
+test('margen por libro: costo de la última compra con descuento y envío de la factura, al cambio de hoy, menos comisión de ML', async t => {
+  const db = await seed(t);
+  const { FX_SCHEMA } = await import('../../worker-sync/fx-rates.js');
+  await db.batch(FX_SCHEMA.map(sql => db.prepare(sql)));
+  db.sqlite.prepare("INSERT INTO fx_rates(rate_date,currency,uyu_per_unit,fetched_at) VALUES('2026-10-24','EUR',45,0)").run();
+  // Factura en euros: A a 20 € con 25% de descuento; la factura suma 10% (envío).
+  await importPurchases(db, { supplier: 'Celesa', document_type: 'invoice', document_number: 'F2', currency: 'EUR', total_amount: 16.5, document_date: new Date(NOW - 10 * 864e5).toISOString().slice(0, 10), items: [{ isbn: A, title: 'Libro A', quantity: 1, unit_price: 20, discount_pct: 25 }] }, NOW);
+  // Comisión: 5 ventas de una unidad al 12%.
+  db.sqlite.prepare('UPDATE ml_sales_items SET sale_fee=unit_price*0.12 WHERE quantity=1').run();
+  const bi = await loadBi(db, catalog, NOW);
+  assert.ok(bi.margen.ok, bi.margen.error);
+  const m = bi.margen.data;
+  assert.equal(m.feeRate, 0.12);
+  const a = m.top.find(b => b.isbn === A);
+  assert.equal(a.cost, Math.round(20 * 0.75 * 1.1 * 45)); // 743
+  assert.equal(a.price, 1000);
+  assert.equal(a.fee, 120);
+  assert.equal(a.margin, 1000 - 120 - 743);
+  const fila = bi.inventario.data.aSinStock.find(b => b.isbn === A);
+  assert.equal(fila.costo, 743);
+  assert.equal(fila.margen.margin, 137);
+  const html = renderBi(bi);
+  assert.match(html, /Cuánto deja cada libro/);
+  assert.match(html, /comisión de ML 12%/);
+});

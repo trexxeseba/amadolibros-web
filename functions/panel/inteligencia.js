@@ -50,7 +50,7 @@ function kpiBlock(s) {
   </div>`;
 }
 
-const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], sin_dato: ['t-c', 'Sin dato de ML'] };
+const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Sin dato de ML'] };
 function sinStockTable(items) {
   if (!items?.length) return '';
   const rows = items.map(b => {
@@ -58,9 +58,9 @@ function sinStockTable(items) {
     const compra = b.compra ? `${esc(SUPPLIERS[b.compra.supplier] ?? b.compra.supplier)} · ${day(new Date(b.compra.d).toISOString())}` : '—';
     return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Todavía no está en la vigilancia diaria de competencia.')}</div></td>
       <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
-      <td class="n">${m.min != null ? money(m.min) : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
+      <td class="n">${m.min != null ? money(m.min) : '—'}</td><td class="n">${b.costo ? money(b.costo) : '—'}</td><td class="n">${b.margen ? `<span class="${b.margen.margin < 0 ? 'down' : 'up'}">${money(b.margen.margin)}</span>` : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
   }).join('');
-  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Lo venden desde UY</th><th class="n">Más barato nuevo</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
+  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Lo venden desde UY</th><th class="n">Más barato nuevo</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="muted">"Desde UY": vendedores con el libro nuevo y sin envío internacional en la publicación de catálogo de ML (foto diaria). Los 15 que más vendían.</p></div>`;
 }
 
@@ -97,7 +97,7 @@ function inventoryBlock(s) {
   const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
   return `<div class="grid">
     <div class="card"><div class="kpi"><div class="l">Libros A sin stock</div><div class="v down">${num(v.aSinStockCount)}</div></div>
-      <p class="muted">Venta que se pierde: unos <b>${num(v.ventaPerdidaMes)} libros por mes</b>.</p>${v.mercado ? `<p class="muted">De los ${num(v.mercado.vigilados)} que vigilamos en ML hoy: <b>${num(v.mercado.solo)}</b> nadie los vende nuevos desde Uruguay, <b>${num(v.mercado.sostenible)}</b> se venden a tu precio o más caro, <b>${num(v.mercado.masBarato)}</b> los venden más barato. Detalle abajo.</p>` : ''}</div>
+      <p class="muted">Venta que se pierde: unos <b>${num(v.ventaPerdidaMes)} libros por mes</b>.</p>${v.mercado ? `<p class="muted">De los ${num(v.mercado.vigilados)} que vigilamos en ML hoy: <b>${num(v.mercado.solo)}</b> nadie los vende nuevos desde Uruguay, <b>${num(v.mercado.sostenible)}</b> se venden a tu precio o más caro, <b>${num(v.mercado.masBarato)}</b> los venden más barato, <b>${num(v.mercado.noConviene)}</b> no conviene reponerlos a tu costo. Detalle abajo.</p>` : ''}</div>
     <div class="card"><div class="kpi"><div class="l">Libros A que se agotan pronto</div><div class="v">${num(v.coberturaBajaCount)}</div></div>
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
@@ -135,12 +135,32 @@ function competitionBlock(s) {
   </div><p class="muted">${num(c.vigilados)} productos de catálogo vigilados a diario (los libros que más vendés). Detalle en <a href="/panel/reposicion">Reposición</a>.</p>`;
 }
 
+function marginBlock(s) {
+  if (!s?.ok) return failed(s);
+  const tile = (l, v, d, extra = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div>${d}</div>${extra ? `<div class="muted">${extra}</div>` : ''}</div>`;
+  const v = s.data;
+  if (!v.conCosto) return '<div class="card"><p class="muted">Todavía no hay costos para calcular: faltan el tipo de cambio del día o precios en las compras cargadas.</p></div>';
+  const fee = v.feeRate == null ? `comisión de ML todavía sin datos (${num(v.feeSample)} ventas con comisión; hacen falta 5)` : `comisión de ML ${Math.round(v.feeRate * 1000) / 10}% (mediana de ${num(v.feeSample)} ventas)`;
+  const row = b => `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a></td><td class="n">${money(b.price)}</td><td class="n">${b.feeKnown ? money(b.fee) : '—'}</td><td class="n">${money(b.cost)}</td>
+    <td class="n"><span class="${b.margin < 0 ? 'down' : b.pct < 15 ? 'flat' : 'up'}">${money(b.margin)} · ${b.pct}%</span></td><td>${esc(SUPPLIERS[b.supplier] ?? b.supplier)}</td></tr>`;
+  const table = list => `<div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendés a</th><th class="n">Comisión ML</th><th class="n">Costo hoy</th><th class="n">Te queda</th><th>Proveedor</th></tr></thead><tbody>${list.map(row).join('')}</tbody></table></div>`;
+  return `<div class="grid">
+    ${tile('Margen libros A', v.margenPctA == null ? '—' : `${v.margenPctA}%`, `lo que te queda de cada $100 vendidos`, `${num(v.conCostoA)} de ${num(v.totalA)} libros A con costo conocido`)}
+    ${tile('Margen bajo', num(v.bajoMargen), 'libros A que dejan menos de 15%')}
+    ${tile('A pérdida', num(v.perdida), 'libros A que cuestan más de lo que dejan')}
+  </div>
+  <h2>Los que más plata dejan (12 meses)</h2>${table(v.top)}
+  <h2>Los que menos dejan</h2>${table(v.peores)}
+  <p class="muted">Costo = última compra con su descuento y lo que suma la factura (envío, gastos), en pesos al cambio de hoy${v.fxDate ? ` (${day(v.fxDate)})` : ''}; ${fee}. No incluye el flete hasta Uruguay ni el envío que pagás en ML.</p>`;
+}
+
 export function renderBi(bi) {
   return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
     <h2>Cómo va el negocio</h2>${kpiBlock(bi.kpis)}
     <h2>Tendencia semanal</h2>${weeklyChart(bi.weekly)}
     <h2>Qué libros hacen la plata</h2>${abcBlock(bi.abc)}
     <h2>Dónde se pierde plata en el inventario</h2>${inventoryBlock(bi.inventario)}
+    <h2>Cuánto deja cada libro</h2>${marginBlock(bi.margen)}
     <h2>Cómo rinden las compras</h2>${purchasesBlock(bi.compras)}
     <h2>Editoriales que más facturan</h2>${publishersBlock(bi.editoriales)}
     <h2>Posición frente a la competencia</h2>${competitionBlock(bi.competencia)}`;
