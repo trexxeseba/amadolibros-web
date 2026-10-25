@@ -16,7 +16,7 @@ export function candidateSkipState(error){
  return null;
 }
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick'];
+export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick','pause_run_publications'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -167,6 +167,35 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    let availabilityDays=null;
    if(args.run_id!=null){if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);availabilityDays=validPolicy(JSON.parse(run.policy_json)).availabilityDays??null;}
    return {...result,current_payload:{shipping:'resolved by /items/validate over shipping_variants',sale_terms:availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${availabilityDays} días`}]:(args.run_id!=null?[]:null)},read_only_mercado_libre:true};
+  }
+  if(action==='pause_run_publications'){
+   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
+   const run=await s.run(args.run_id);if(!run)throw new PublicationError('run_not_found',404);
+   const offset=args.offset??0,limit=args.limit??50;
+   if(!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||limit<1||limit>50)throw new PublicationError('invalid_pause_args');
+   await api.account(env);
+   const rows=await s.publishedItems(run.id,offset,limit);
+   if(!rows.length)return {run_id:run.id,offset,scanned:0,paused:0,already_paused:0,next_offset:null};
+   const groups=[];for(let i=0;i<rows.length;i+=20)groups.push(rows.slice(i,i+20));
+   const verified=(await Promise.all(groups.map(async group=>{
+    const raw=await api.call(env,'/items/bulk?ids='+group.map(x=>x.item_id).join(','));
+    if(!Array.isArray(raw)||raw.length!==group.length)throw new PublicationError('pause_audit_incomplete',502);
+    const expected=new Set(group.map(x=>x.item_id));
+    return raw.map(entry=>{
+     const body=entry?.body,status=entry?.status_code??entry?.code;
+     if(status!==200||!body||String(body.seller_id)!==SELLER_ID||!expected.has(body.id))throw new PublicationError('pause_audit_invalid',502);
+     if(!/^AMADO-AR-\d{13}$/.test(String(body.seller_custom_field||'')))throw new PublicationError('pause_scope_mismatch',409);
+     return {id:body.id,status:body.status};
+    });
+   }))).flat();
+   let paused=0,already=0;
+   for(const item of verified){
+    if(item.status==='paused'){already++;continue;}
+    if(item.status!=='active')throw new PublicationError('pause_status_mismatch',409);
+    await api.call(env,'/items/'+item.id,{method:'PUT',body:{status:'paused'}});
+    paused++;
+   }
+   return {run_id:run.id,offset,scanned:verified.length,paused,already_paused:already,next_offset:rows.length===limit?offset+rows.length:null};
   }
   if(action==='audit_availability_terms'){
    if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');

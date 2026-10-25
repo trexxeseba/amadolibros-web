@@ -1,0 +1,35 @@
+name: Pause misplaced SBS listings once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pause-misplaced-sbs-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  pause:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Pause 904 misplaced SBS listings
+        run: node scripts/mercadolibre/publisher-control.mjs
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          PUBLISHER_ACTION: pause_run_publications
+          PUBLISHER_RUN_ID: df9edc17-0df0-b6d1-b116-c3142eb1446c
+
+      - name: Pause 20 Queue trial listings
+        run: node scripts/mercadolibre/publisher-control.mjs
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          PUBLISHER_ACTION: pause_run_publications
+          PUBLISHER_RUN_ID: 75f0d434-210c-f2cf-79bd-a19d6a2de5b0
