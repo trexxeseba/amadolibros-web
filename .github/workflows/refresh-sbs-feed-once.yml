@@ -1,16 +1,12 @@
 name: SBS stock refresh (no publication writes)
 
+# Solo manual. El enlace público de SBS quedó congelado el 25/08/2026, así que
+# cada corrida programada terminaba en supplier_stock_stale_or_future dos veces
+# por día. El stock vigente lo carga la PC entrando al portal de SBS
+# (scripts/vintage-local/renew.mjs). Si SBS vuelve a actualizar el enlace, o se
+# configura SUPPLIER_FEED_URL con una fuente viva, se puede correr a mano.
 on:
   workflow_dispatch:
-  schedule:
-    # 02:17 and 14:17 Uruguay. Provider report dates remain authoritative.
-    - cron: '17 5,17 * * *'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/refresh-sbs-feed-once.yml'
-      - 'scripts/mercadolibre/refresh-sbs-stock.mjs'
-      - 'scripts/mercadolibre/prepare-supplier-feed.py'
 
 permissions:
   contents: read
