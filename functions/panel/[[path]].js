@@ -175,7 +175,7 @@ function sidebar(activo = 'tablero') {
     { id: 'catalogo', href: '/panel#catalogo', texto: 'Catálogo', icono: '❏' },
     { id: 'salud', href: '/panel#salud', texto: 'Salud', icono: '✚' },
     { id: 'busquedas', href: '/panel#busquedas', texto: 'Qué buscan', icono: '⌕' },
-    { id: 'inteligencia', href: '/panel/inteligencia', texto: 'Inteligencia', icono: '◔' },
+    { id: 'inteligencia', href: '/panel/inteligencia', texto: 'Brújula Amado', icono: '◔' },
     { id: 'reposicion', href: '/panel/reposicion', texto: 'Reposición', icono: '↻' },
     { id: 'compras', href: '/panel/compras', texto: 'Compras', icono: '⇩' },
     { id: 'vintage', href: '/panel/meli-vintage-lote', texto: 'Vintage', icono: '❖' },
