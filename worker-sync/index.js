@@ -68,6 +68,7 @@ import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
 import { mlCompetition, competitionStatus } from './ml-competition.js';
+import { fxRates } from './fx-rates.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -140,6 +141,14 @@ export default {
           return result;
         }).catch(error => {
           console.error('[ml competition] Error', error?.code || error?.name || 'Error');
+          return { state: 'error' };
+        }),
+        // Tipo de cambio del día para el margen por libro (una consulta por día).
+        fxRates.sync(env).then(result => {
+          if (result?.state === 'done' || result?.state === 'error') console.log('[fx]', JSON.stringify(result));
+          return result;
+        }).catch(error => {
+          console.error('[fx] Error', error?.name || 'Error');
           return { state: 'error' };
         }),
         // Vigía de la campaña Vintage: sólo lee D1 y avisa por ntfy si la PC
