@@ -146,3 +146,23 @@ test('precios: lista los libros muy por debajo del más barato, sugiere 2% debaj
   assert.equal(r.solos[0].sugerido, 1650);
   assert.equal(priceRaises(null, books), null);
 });
+
+test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', async () => {
+  const { brujulaDigest } = await import('../_shared/panel-bi.js');
+  const bi = {
+    inventario: { ok: true, data: { aSinStock: [
+      { isbn: 'a', title: 'A', u90: 6, mercado: { estado: 'sostenible', margenAlMin: 1100 } },
+      { isbn: 'b', title: 'B', u90: 5, mercado: { estado: 'no_conviene' } },
+      { isbn: 'c', title: 'C', u90: 4, mercado: { estado: 'solo' } },
+    ], coberturaBaja: [{ isbn: 'd', title: 'D', stock: 1, dias: 13 }] } },
+    precios: { ok: true, data: { lista: [{ isbn: 'e', title: 'E', agotado: true, actual: 600, sugerido: 2000, subaPct: 233, min: 2050 }, { isbn: 'f', title: 'F', agotado: false, actual: 900, sugerido: 1170, subaPct: 30, min: 1200 }] } },
+    margen: { ok: true, data: { peores: [{ isbn: 'g', title: 'G', margin: -387, price: 1809, cost: 2196 }, { isbn: 'h', title: 'H', margin: 17, price: 596, cost: 579 }] } },
+  };
+  const d = brujulaDigest(bi);
+  assert.deepEqual(d.reponer.map(r => r.isbn), ['a', 'c']);
+  assert.match(d.reponer[0].detalle, /ganás \$ 1\.100/);
+  assert.deepEqual(d.subir.map(r => r.isbn), ['f'], 'sólo los que tienen stock: se puede subir hoy');
+  assert.match(d.agotan[0].detalle, /13 días/);
+  assert.deepEqual(d.perdida.map(r => r.isbn), ['g']);
+  assert.equal(brujulaDigest({}), null);
+});
