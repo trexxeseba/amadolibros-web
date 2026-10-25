@@ -53,8 +53,11 @@ on:
         description: 'Con shipping_probe: ISBN del feed (feed_id o el del lote run_id) a preparar con el mismo prepare() de la cola; sólo /items/validate, nunca publica.'
         required: false
         type: string
-  schedule:
-    - cron: '*/10 * * * *'
+  # Sin schedule: el Worker (amadolibros-sync) ya empuja la cola solo, con su
+  # Cloudflare Queue y su cron de cada minuto (publicationService.tick). Este
+  # empujón cada 10 minutos desde Actions era un segundo vigía que gastaba
+  # minutos sin hacer falta. El workflow queda para comandos manuales y para
+  # los tests de los PR que tocan la cola.
   pull_request:
     paths:
       - 'worker-sync/publication-*.js'
