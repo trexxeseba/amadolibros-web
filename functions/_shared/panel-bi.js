@@ -195,7 +195,7 @@ export async function loadCompetitivePosition(db) {
   const mediana = rels.length ? rels[Math.floor(rels.length / 2)] : null;
   return {
     vigilados: list.length, conEstado: conEstado.length, ganando, ganandoPct: conEstado.length ? Math.round((ganando / conEstado.length) * 100) : null,
-    solos: list.filter(f => f.competidores === 0 && f.tu_precio != null).length, medianaPrecio: mediana,
+    solos: list.filter(f => !f.competidores_comparables && f.tu_precio != null).length, medianaPrecio: mediana,
     masCaros: list.filter(f => f.precio_relativo && f.precio_relativo >= 1.15).length,
     facts,
   };
@@ -216,7 +216,17 @@ export function priceRaises(facts, books, model = null) {
     const b = byIsbn.get(isbn);
     if (!b) continue;
     const c = model?.costs.get(isbn);
-    if (f.competidores === 0 && f.tu_precio > 0) {
+    // Nadie más lo tiene con entrega inmediata. Si los que lo venden a pedido
+    // cobran mucho más, el precio sugerido sale de ellos; si no, probar +10%.
+    const aPedido = f.precio_minimo_a_pedido;
+    if (!f.competidores_comparables && f.tu_precio > 0 && aPedido > 0 && f.tu_precio / aPedido <= RAISE_THRESHOLD) {
+      const sugerido = Math.max(f.tu_precio, round10(aPedido * RAISE_UNDERCUT));
+      lista.push({ isbn, title: b.title, actual: f.tu_precio, min: aPedido, aPedido: true, competidores: f.competidores_a_pedido, sugerido,
+        subaPct: Math.round((sugerido / f.tu_precio - 1) * 100), ganaMes: Math.round((sugerido - f.tu_precio) * b.u90 / 3), u90: b.u90, stock: b.stock, agotado: !(b.stock > 0),
+        margenActual: c ? marginOf(f.tu_precio, c.cost, model.feeRate) : null, margenSugerido: c ? marginOf(sugerido, c.cost, model.feeRate) : null });
+      continue;
+    }
+    if (!f.competidores_comparables && f.tu_precio > 0) {
       const sugerido = round10(f.tu_precio * 1.1);
       solos.push({ isbn, title: b.title, actual: f.tu_precio, sugerido, u90: b.u90, stock: b.stock, ganaMes: Math.round((sugerido - f.tu_precio) * b.u90 / 3) });
       continue;
@@ -322,15 +332,15 @@ export async function loadSinStockMarket(db, aSinStock, model = null) {
     if (!f) return { estado: 'sin_dato' };
     resumen.vigilados++;
     const nacionales = f.competidores_comparables ?? 0, min = f.precio_minimo;
-    if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: 'Nadie lo vende nuevo desde Uruguay: reponer y quedarte con toda la venta.' }; }
+    if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `Nadie más lo tiene con entrega inmediata${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
     const c = model?.costs.get(b.isbn), atMin = c ? marginOf(min, c.cost, model.feeRate) : null;
     if (atMin) {
-      if (atMin.margin > 0) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo venden desde Uruguay; al precio del más barato todavía ganás $ ${atMin.margin.toLocaleString('es-UY')} por libro: conviene reponer.` }; }
-      resumen.noConviene++; return { estado: 'no_conviene', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo venden desde Uruguay; al precio del más barato perdés $ ${Math.abs(atMin.margin).toLocaleString('es-UY')} por libro: no conviene reponerlo a este costo.` };
+      if (atMin.margin > 0) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo tienen con entrega inmediata; al precio del más barato todavía ganás $ ${atMin.margin.toLocaleString('es-UY')} por libro: conviene reponer.` }; }
+      resumen.noConviene++; return { estado: 'no_conviene', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo tienen con entrega inmediata; al precio del más barato perdés $ ${Math.abs(atMin.margin).toLocaleString('es-UY')} por libro: no conviene reponerlo a este costo.` };
     }
-    if (!b.avgPrice || min >= b.avgPrice * 0.9) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, texto: `${nacionales} lo venden desde Uruguay, el más barato a tu precio de siempre o más: conviene reponer.` }; }
+    if (!b.avgPrice || min >= b.avgPrice * 0.9) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, texto: `${nacionales} lo tienen con entrega inmediata, el más barato a tu precio de siempre o más: conviene reponer.` }; }
     resumen.masBarato++;
-    return { estado: 'mas_barato', nacionales, min, texto: `${nacionales} lo venden desde Uruguay más barato que tu precio promedio: reponer sólo si el costo da.` };
+    return { estado: 'mas_barato', nacionales, min, texto: `${nacionales} lo tienen con entrega inmediata más barato que tu precio promedio: reponer sólo si el costo da.` };
   };
   return { libros: aSinStock.map(b => { const c = model?.costs.get(b.isbn); return { isbn: b.isbn, mercado: verdict(b), compra: compra.get(b.isbn) ?? null, costo: c?.cost ?? null, margen: c ? marginOf(b.avgPrice, c.cost, model.feeRate) : null }; }), resumen };
 }
@@ -373,12 +383,12 @@ export function brujulaDigest(bi) {
     .filter(b => b.mercado && ['solo', 'sostenible'].includes(b.mercado.estado))
     .slice(0, DIGEST_ROWS)
     .map(b => ({ isbn: b.isbn, title: b.title, detalle: b.mercado.estado === 'solo'
-      ? `vendiste ${b.u90} en 90 días y nadie más lo tiene desde Uruguay`
+      ? `vendiste ${b.u90} en 90 días y nadie más lo tiene con entrega inmediata`
       : `vendiste ${b.u90} en 90 días${b.mercado.margenAlMin != null ? `; al precio del más barato ganás $ ${b.mercado.margenAlMin.toLocaleString('es-UY')} por libro` : ''}` }));
   const subir = (bi?.precios?.ok && bi.precios.data ? bi.precios.data.lista : [])
     .filter(b => !b.agotado)
     .slice(0, DIGEST_ROWS)
-    .map(b => ({ isbn: b.isbn, title: b.title, detalle: `de $ ${b.actual.toLocaleString('es-UY')} a $ ${b.sugerido.toLocaleString('es-UY')} (+${b.subaPct}%; el más barato desde Uruguay está a $ ${b.min.toLocaleString('es-UY')})` }));
+    .map(b => ({ isbn: b.isbn, title: b.title, detalle: `de $ ${b.actual.toLocaleString('es-UY')} a $ ${b.sugerido.toLocaleString('es-UY')} (+${b.subaPct}%; ${b.aPedido ? 'sos el único con entrega inmediata y a pedido lo venden desde' : 'el más barato con entrega inmediata está a'} $ ${b.min.toLocaleString('es-UY')})` }));
   const agotan = (inv?.coberturaBaja ?? [])
     .slice(0, DIGEST_ROWS)
     .map(b => ({ isbn: b.isbn, title: b.title, detalle: `quedan ${b.stock}, alcanzan para unos ${b.dias} días` }));

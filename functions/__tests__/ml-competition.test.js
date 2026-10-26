@@ -38,9 +38,10 @@ function fakeMl(state) {
     // Usado más barato (44), del exterior (55) y uno sin condición en el listado (MLUC, se completa con /items/bulk).
     const noise = [{ item_id: 'MLUU', seller_id: 44, price: 300, condition: 'used' }, { item_id: 'MLUX', seller_id: 55, price: 400, condition: 'new', international_delivery_mode: 'cbt' }];
     if (u.pathname === '/products/MLU999/items') return Response.json({ results: state.day === 1
-      ? [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 1000, condition: 'new', shipping: { free_shipping: true, logistic_type: 'fulfillment' } }, { item_id: 'MLUB', seller_id: 22, price: 1100, condition: 'new' }, ...noise]
-      : [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 900, condition: 'new' }, { item_id: 'MLUC', seller_id: 33, price: 950 }, ...noise] });
-    if (u.pathname === '/items/bulk') return Response.json(u.searchParams.get('ids').split(',').map(id => ({ status_code: 200, body: { id, condition: 'new', international_delivery_mode: 'none' } })));
+      ? [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 1000, condition: 'new', shipping: { free_shipping: true, logistic_type: 'fulfillment' } }, { item_id: 'MLUB', seller_id: 22, price: 1100, condition: 'new' }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new' }, ...noise]
+      : [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 900, condition: 'new' }, { item_id: 'MLUC', seller_id: 33, price: 950 }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new' }, ...noise] });
+    // MLUP vende a pedido (21 días): no compite con un libro en stock.
+    if (u.pathname === '/items/bulk') return Response.json(u.searchParams.get('ids').split(',').map(id => ({ status_code: 200, body: { id, condition: 'new', international_delivery_mode: 'none', sale_terms: id === 'MLUP' ? [{ id: 'MANUFACTURING_TIME', value_name: '21 días', value_struct: { number: 21, unit: 'días' } }] : [{ id: 'WARRANTY_TYPE', value_name: 'Sin garantía' }] } })));
     if (u.pathname === '/items/MLU2/price_to_win') return Response.json(state.day === 1 ? { status: 'winning', price_to_win: 1200, winner: { item_id: 'MLU2' } } : { status: 'competing', price_to_win: 880, winner: { item_id: 'MLUA' } });
     const m = /^\/users\/(\d+)$/.exec(u.pathname);
     if (m) return Response.json({ id: Number(m[1]), nickname: `VENDEDOR${m[1]}`, seller_reputation: { transactions: { completed: m[1] === '22' ? (state.day === 1 ? 100 : 105) : 50 } } });
@@ -63,22 +64,25 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   assert.equal((await runDay(db, state, DAY2)).state, 'done');
   const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
   assert.equal(f.foto, montevideoDate(DAY2));
-  assert.equal(f.competidores, 4);
-  assert.equal(f.competidores_comparables, 2, 'usado y del exterior quedan afuera');
-  assert.equal(f.excluidos_de_precio, 2);
-  assert.equal(f.precio_minimo, 900);
+  assert.equal(f.competidores, 5);
+  assert.equal(f.competidores_comparables, 2, 'usado, del exterior y a pedido quedan afuera');
+  assert.equal(f.excluidos_de_precio, 3);
+  assert.equal(f.precio_minimo, 900, 'el de $500 vende a pedido: no cuenta');
+  assert.equal(f.competidores_a_pedido, 1);
+  assert.equal(f.precio_minimo_a_pedido, 500);
+  assert.equal(f.vendedores.find(v => v.vendedor === 'VENDEDOR77').dias_preparacion, 21);
   assert.equal(f.primer_lugar, 'competing');
   const tipos = f.avisos.map(a => a.tipo).sort();
   assert.deepEqual(tipos, ['competidor_nuevo', 'competidor_sin_stock', 'precio_arriba', 'primer_lugar_perdido'].sort());
   assert.match(f.avisos.find(a => a.tipo === 'competidor_sin_stock').texto, /VENDEDOR22.*probablemente lo vendió/);
   assert.match(f.avisos.find(a => a.tipo === 'primer_lugar_perdido').texto, /\$ 880/);
-  assert.match(f.avisos.find(a => a.tipo === 'precio_arriba').texto, /33% arriba del más barato nuevo sin envío gratis/);
+  assert.match(f.avisos.find(a => a.tipo === 'precio_arriba').texto, /33% arriba del más barato con entrega inmediata sin envío gratis/);
   const ev = await competitionEvents(db, { limit: 10 });
   assert.equal(ev.vigilados, 1);
   assert.equal(ev.eventos[0].tipo, 'primer_lugar_perdido');
   // Re-ejecutar el mismo día no duplica la foto.
   await runDay(db, state, DAY2 + 3600000);
-  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_snapshots WHERE snap_date=?').get(montevideoDate(DAY2)).n, 5);
+  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_snapshots WHERE snap_date=?').get(montevideoDate(DAY2)).n, 6);
   assert.equal(db.sqlite.prepare("SELECT condition FROM comp_snapshots WHERE item_id='MLUC'").get().condition, 'new', 'condición completada con /items/bulk');
 });
 
@@ -102,7 +106,7 @@ test('hechos de reposición: aviso anti-doble compra y competencia por libro', a
   const r = (await facts.facts(db, [ISBN])).resultados[0];
   assert.equal(r.avisos[0].tipo, 'compra_reciente');
   assert.match(r.avisos[0].texto, /^Compraste 2 hace 9 días \(CELESA\): puede estar en camino\.$/);
-  assert.equal(r.competencia.competidores, 4);
+  assert.equal(r.competencia.competidores, 5);
   assert.ok(r.avisos.some(a => a.tipo === 'primer_lugar_perdido'));
 });
 
@@ -121,4 +125,12 @@ test('libro agotado que ya no está en el catálogo: se vigila por el producto d
   assert.equal(f.competidores_comparables, 1);
   assert.equal(f.precio_minimo, 700);
   assert.equal(f.tu_precio, null);
+});
+
+test('días de preparación: sin MANUFACTURING_TIME es entrega inmediata; sin sale_terms no se sabe', async () => {
+  const { manufacturingDays } = await import('../../worker-sync/ml-competition.js');
+  assert.equal(manufacturingDays({ sale_terms: [{ id: 'MANUFACTURING_TIME', value_name: '21 días' }] }), 21);
+  assert.equal(manufacturingDays({ sale_terms: [{ id: 'MANUFACTURING_TIME', value_struct: { number: 16, unit: 'días' } }] }), 16);
+  assert.equal(manufacturingDays({ sale_terms: [{ id: 'WARRANTY_TYPE' }] }), 0);
+  assert.equal(manufacturingDays({}), null);
 });

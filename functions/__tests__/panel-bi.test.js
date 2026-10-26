@@ -166,3 +166,12 @@ test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', a
   assert.deepEqual(d.perdida.map(r => r.isbn), ['g']);
   assert.equal(brujulaDigest({}), null);
 });
+
+test('precios: si sos el único con entrega inmediata, el sugerido sale de los que venden a pedido', () => {
+  const facts = new Map([['x', { competidores: 3, competidores_comparables: 0, competidores_a_pedido: 3, precio_minimo: null, precio_minimo_a_pedido: 5000, tu_precio: 2800 }]]);
+  const r = priceRaises(facts, [{ isbn: 'x', title: 'Ciencias', avgPrice: 2800, u90: 6, stock: 2 }]);
+  assert.equal(r.total, 1);
+  assert.equal(r.lista[0].aPedido, true);
+  assert.equal(r.lista[0].sugerido, 4900);
+  assert.equal(r.solosTotal, 0);
+});
