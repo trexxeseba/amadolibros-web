@@ -19,6 +19,7 @@ def make_runner(directory, published_by_run):
     totals = iter(published_by_run)
     current = {"published_total": published_by_run[0]}
     runner.update_code = lambda: False
+    runner.apply_repo_target = lambda: None
     runner.connection_expires_at = lambda: time.time() + 86400
     runner.renew = lambda: (0, {"state": "renewed"})
     runner.sync_stock = lambda: None
@@ -37,6 +38,47 @@ def make_runner(directory, published_by_run):
         return 0, None
     runner.run_engine = run_engine
     return runner
+
+
+class RepoTargetTest(unittest.TestCase):
+    def runner(self, directory, campaign):
+        args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node="node", target=10000, notify_url=None)
+        runner = vintage_autorun.Runner(args)
+        runner.node = "node"
+        runner.notices = []
+        runner.notify = lambda title, message, **k: runner.notices.append(title)
+        path = Path(directory) / "campaign.json"
+        path.write_text(campaign, "utf-8")
+        return runner, path
+
+    def test_the_repo_target_is_applied_once_with_set_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, path = self.runner(directory, '{"target_total": 80000}')
+            calls = []
+            done = types.SimpleNamespace(returncode=0, stdout="Objetivo: 10000 -> 80000", stderr="")
+            with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path), unittest.mock.patch.object(vintage_autorun.subprocess, "run", lambda cmd, **k: calls.append(cmd) or done):
+                runner.apply_repo_target()
+                runner.apply_repo_target()
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0][3:], ["80000", "--directory", str(Path(directory)), "--apply"])
+            self.assertEqual(runner.notices, ["Vintage: objetivo subido"])
+
+    def test_an_equal_or_lower_target_is_silent_and_bad_files_are_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, path = self.runner(directory, '{"target_total": 80000}')
+            same = types.SimpleNamespace(returncode=1, stdout="", stderr="No se cambió nada: target_not_higher")
+            with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path), unittest.mock.patch.object(vintage_autorun.subprocess, "run", lambda cmd, **k: same):
+                runner.apply_repo_target()
+            self.assertEqual(runner.notices, [])
+            for bad in ('{"target_total": 999999999}', '{"target_total": "80000"}', "no es json", "[]"):
+                path.write_text(bad, "utf-8")
+                with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path):
+                    self.assertIsNone(runner.repo_target())
+
+    def test_the_committed_campaign_file_is_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = vintage_autorun.Runner(types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=None))
+            self.assertEqual(runner.repo_target(), 80000)
 
 
 class RenewLoopTest(unittest.TestCase):
