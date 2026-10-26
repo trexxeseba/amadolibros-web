@@ -9,6 +9,17 @@ const base=process.env.AMADO_PUBLISHER_ORIGIN||'https://amadolibros-sync.undiaes
 const url=new URL(base);if(url.origin!=='https://amadolibros-sync.undiaes.workers.dev')throw Error('Unsupported publisher origin');
 const secret=process.env.SYNC_SECRET;if(!secret)throw Error('SYNC_SECRET is not configured');
 const action=process.env.PUBLISHER_ACTION||'status',runId=process.env.PUBLISHER_RUN_ID||undefined;
+// Precio competitivo para el lote clonado. Vacío = hereda la política de origen.
+function competitiveArgs(){
+ const out={};
+ const flag=process.env.PUBLISHER_COMPETITIVE;
+ if(flag==='true'||flag==='false')out.competitive=flag==='true';
+ const floor=process.env.PUBLISHER_COMPETITIVE_FLOOR_MARGIN;
+ if(floor)out.competitive_floor_margin=Number(floor);
+ const minC=process.env.PUBLISHER_MINIMUM_CONTRIBUTION;
+ if(minC)out.minimum_contribution_uyu=Number(minC);
+ return out;
+}
 const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
@@ -80,7 +91,7 @@ if(action==='import'){
  const dailyCap=process.env.PUBLISHER_DAILY_CAP?Number(process.env.PUBLISHER_DAILY_CAP):1000;
  const preflightLimit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):20;
  const targetPublished=process.env.PUBLISHER_TARGET_PUBLISHED?Number(process.env.PUBLISHER_TARGET_PUBLISHED):undefined;
- const result=await command('create_run_from_source',{source_run_id:runId,feed_id:feedId,daily_cap:dailyCap,preflight_limit:preflightLimit,...(availabilityDays!==undefined?{availability_days:availabilityDays}:{}),...(targetPublished!==undefined?{target_published:targetPublished}:{})});
+ const result=await command('create_run_from_source',{...competitiveArgs(),source_run_id:runId,feed_id:feedId,daily_cap:dailyCap,preflight_limit:preflightLimit,...(availabilityDays!==undefined?{availability_days:availabilityDays}:{}),...(targetPublished!==undefined?{target_published:targetPublished}:{})});
  console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,availability_days:result.availability_days,catalog_listing:result.catalog_listing,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,daily_cap:result.daily_cap,target_published:result.target_published,target_remaining:result.target_remaining,source_run_intact:result.source_run_intact,counts:result.counts}));
  const cycles=Math.min(20,Math.max(1,Number(process.env.PUBLISHER_CYCLES)||1));
  for(let i=0;i<cycles;i++){const step=await command('tick',{run_id:result.new_run_id});summary(step);if(!['preflight','busy','backoff'].includes(step.state))break;}
@@ -92,7 +103,7 @@ if(action==='import'){
  const limit=process.env.PUBLISHER_PREFLIGHT_LIMIT?Number(process.env.PUBLISHER_PREFLIGHT_LIMIT):feedId?5:10;
  // PUBLISHER_AVAILABILITY_DAYS optionally overrides availabilityDays in the cloned policy (changes the policy_hash).
  const availabilityDays=process.env.PUBLISHER_AVAILABILITY_DAYS?Number(process.env.PUBLISHER_AVAILABILITY_DAYS):undefined;
- const result=await command('clone_preflight_catalog',{source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{}),...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
+ const result=await command('clone_preflight_catalog',{...competitiveArgs(),source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{}),...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
  console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,availability_days:result.availability_days,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
  for(const job of result.preflight)console.log(JSON.stringify(job));
 }else if(action==='audit_availability_terms'){
