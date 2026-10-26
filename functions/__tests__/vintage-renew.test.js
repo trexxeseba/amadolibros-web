@@ -166,3 +166,18 @@ test('the renew route accepts only its fixed actions and arguments and never a s
  const ok=await post({action:'renew',args:{feed_id:'a'.repeat(8)+'-aaaa-aaaa-aaaa-aaaaaaaaaaaa'}},{Authorization:BEARER});
  assert.equal(ok.status,200);assert.equal(calls,1);assert.equal(ok.headers.get('cache-control'),'no-store');
 });
+test('renew switches the Vintage run to the competitive price once, as a recorded amendment the PC can follow',async t=>{
+ const {amendmentChain}=await import('../../scripts/vintage-local/engine.mjs');
+ const {vintageCompetitivePolicy,vintagePolicy}=await import('../../worker-sync/vintage-pricing.js');
+ const f=await fixture(t),{feed_id}=await loadStock(f,supplierRows(10000));
+ const old=(await f.s.run(BULK_RUN)).policy_hash;
+ const c=await f.renew.command(f.env,BEARER,'renew',{feed_id});
+ const run=await f.s.run(BULK_RUN),wanted=await policyHash(vintageCompetitivePolicy(vintagePolicy(policy)));
+ assert.equal(run.policy_hash,wanted);assert.equal(run.approved_hash,wanted);assert.equal(c.policy_hash,wanted);
+ assert.equal(c.policy.competitive,true);assert.equal(c.policy.competitiveFloorMargin,.18);assert.equal(c.policy.competitiveMinimumSaleUyu,1500);
+ assert.equal(amendmentChain(c.amendments,old,wanted),true);
+ // la segunda renovación no vuelve a enmendar
+ f.clock.value+=LIVE_WINDOW_MS+1;
+ const again=await f.renew.command(f.env,BEARER,'renew',{feed_id});
+ assert.equal(again.policy_hash,wanted);assert.equal(again.amendments.length,c.amendments.length);
+});

@@ -23,6 +23,8 @@ def make_runner(directory, published_by_run):
     runner.connection_expires_at = lambda: time.time() + 86400
     runner.renew = lambda: (0, {"state": "renewed"})
     runner.sync_stock = lambda: None
+    runner.corrections = []
+    runner.correct_prices = lambda: runner.corrections.append(True)
     runner.heartbeat = lambda published, state: None
     runner.notify = lambda *a, **k: None
     runner.wait_seconds = []
@@ -218,6 +220,38 @@ class TargetRaisedTest(unittest.TestCase):
             runner = self.closed_runner(directory, {"state": "publishing", "published_total": 10040, "run": {"target_remaining": 2960}})
             runner.cycle()
             self.assertNotIn("sin pendientes", runner.waits)
+
+
+class PublishCorrectSplitTest(unittest.TestCase):
+    def test_engine_gets_42_minutes_of_each_hour(self):
+        with tempfile.TemporaryDirectory() as directory:
+            command = make_runner(directory, [10000]).engine_command()
+            self.assertEqual(command[command.index("--max-minutes") + 1], "42")
+            self.assertEqual(vintage_autorun.PUBLISH_SLICE_MIN + vintage_autorun.CORRECT_SLICE_MIN, 60)
+
+    def test_after_the_publishing_turn_it_corrects_prices_and_goes_straight_back(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "time_slice_done", "published_total": 10100}
+            runner.run_engine = lambda: (0, None)
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(runner.corrections, [True])
+            self.assertEqual(runner.waits, [])
+
+    def test_correction_runs_stock_sync_in_correct_mode_for_18_minutes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node="node", target=10000, notify_url=None, stock_sync="pause_and_reactivate")
+            runner = vintage_autorun.Runner(args)
+            runner.node = "node"
+            seen = []
+            def run(command, **kwargs):
+                seen.append(command)
+                return types.SimpleNamespace(returncode=0, stdout='{"state":"corrected","repriced":3}', stderr="")
+            with unittest.mock.patch.object(vintage_autorun.subprocess, "run", side_effect=run):
+                runner.correct_prices()
+            command = seen[0]
+            self.assertEqual(command[command.index("--mode") + 1], "correct")
+            self.assertEqual(command[command.index("--max-minutes") + 1], "18")
 
 
 if __name__ == "__main__":

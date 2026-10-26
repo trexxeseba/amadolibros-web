@@ -181,3 +181,24 @@ test('a book whose pictures take longer than the wait is deferred without a seco
  assert.equal(states.review,undefined,'a deferred book is not sent to review');assert.equal(states.retry,3);
  assert.equal(JSON.parse(await p.h.fs.readFile(p.h.path.join(p.h.temp,'status.json'),'utf8')).state!=='stopped_item_readback_failed',true);
 });
+
+test('with --max-minutes the engine hands the rest of the hour to price correction and says so in status.json',async t=>{
+ const h=await engineHarness(t,{create:null});
+ const slow=async action=>{if(action==='status'){await new Promise(r=>setTimeout(r,5));return {daily_created:0,daily_cap:3000,published_total:5};}throw Error('no '+action);};
+ const result=await h.run({...h.options,target:1000,maxMs:1,brokerFactory:()=>slow});
+ assert.equal(result.state,'time_slice_done');
+ assert.equal(JSON.parse(await h.fs.readFile(h.path.join(h.temp,'status.json'),'utf8')).state,'time_slice_done');
+});
+
+test('the PC accepts the competitive policy only when the server recorded it as an amendment of its own',async t=>{
+ const {vintageCompetitivePolicy}=await import('../../worker-sync/vintage-pricing.js');
+ const h=await engineHarness(t,{create:null}),capped=()=>async action=>{if(action==='status')return {daily_created:3000,daily_cap:3000,published_total:5};throw Error('no '+action);};
+ await h.run({...h.options,brokerFactory:capped});
+ const c=JSON.parse(await h.fs.readFile(h.options.connection,'utf8')),competitive=vintageCompetitivePolicy(policy),hash=await policyHash(competitive);
+ await h.fs.writeFile(h.options.connection,JSON.stringify({...c,policy:competitive,policy_hash:hash,amendments:[]}));
+ await assert.rejects(()=>h.run({...h.options,brokerFactory:capped}),/local_policy_changed_review_required/);
+ await h.fs.writeFile(h.options.connection,JSON.stringify({...c,policy:competitive,policy_hash:hash,amendments:[{old_hash:c.policy_hash,new_hash:hash,created_at:1}]}));
+ const seen=[];
+ assert.equal((await h.run({...h.options,brokerFactory:capped,onStatus:x=>seen.push(JSON.parse(x).state)})).state,'daily_cap_reached');
+ assert.ok(seen.includes('policy_amended'));
+});

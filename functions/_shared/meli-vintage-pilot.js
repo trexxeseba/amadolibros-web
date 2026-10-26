@@ -9,6 +9,7 @@ import { initializeSbsStock, createSbsStock, readSbsDiagnostics, recordSbsAttemp
 export const PILOT_LIMIT=5;
 const uuid=value=>typeof value==='string'&&/^[a-f0-9-]{36}$/.test(value);
 const error=(code,status=409)=>new PublicationError(code,status);
+const COMPETITOR_SCHEMA='CREATE TABLE IF NOT EXISTS ml_vintage_competitors (feed_id TEXT NOT NULL,isbn TEXT NOT NULL,competitor_json TEXT NOT NULL,PRIMARY KEY(feed_id,isbn))';
 // Background/browser continuation can only lease preflight. A concurrent owner
 // approval cannot turn a "validate only" request into a publishing tick.
 export class VintageStore extends PublicationStore {
@@ -22,6 +23,20 @@ export class VintageStore extends PublicationStore {
    .replace(/\bml_pub_stock\b/g,"(SELECT rowid,feed_id,isbn,data_json FROM sbs_supplier_stock UNION ALL SELECT rowid,feed_id,isbn,data_json FROM ml_pub_stock old WHERE NOT EXISTS(SELECT 1 FROM sbs_supplier_feeds fresh WHERE fresh.id=old.feed_id))");
  }
  async discoverSupplierStock(){this.hasSupplierStock=Boolean(await this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='sbs_supplier_feeds'").first());}
+ // Precio del ganador de la ficha (precio competitivo). Las fotos del proveedor son de sólo
+ // lectura, así que se guarda aparte y se suma al renglón al leerlo; una sola vez por feed e ISBN.
+ async setCompetitor(feedId,isbn,competitor){
+  await this.db.prepare(COMPETITOR_SCHEMA).run();
+  const r=await this.db.prepare('INSERT OR IGNORE INTO ml_vintage_competitors(feed_id,isbn,competitor_json) VALUES(?,?,?) RETURNING isbn').bind(feedId,isbn,JSON.stringify(competitor)).first();
+  return !!r;
+ }
+ async stock(feedId,isbn){
+  const row=await super.stock(feedId,isbn);
+  if(!row||row.competitor!==undefined)return row;
+  const table=await this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ml_vintage_competitors'").first();
+  const saved=table?await this.db.prepare('SELECT competitor_json FROM ml_vintage_competitors WHERE feed_id=? AND isbn=?').bind(feedId,isbn).first():null;
+  return saved?{...row,competitor:JSON.parse(saved.competitor_json)}:row;
+ }
  async feed(id){await this.discoverSupplierStock();return super.feed(id);}
  async initialize(){await initializeSbsStock(this.db);this.hasSupplierStock=true;await super.initialize();await this.db.batch([
   this.stmt('CREATE TABLE IF NOT EXISTS ml_pub_payload_seals (run_id TEXT NOT NULL,isbn TEXT NOT NULL,policy_hash TEXT NOT NULL,payload_hash TEXT NOT NULL,sample_hash TEXT NOT NULL,PRIMARY KEY(run_id,isbn))'),

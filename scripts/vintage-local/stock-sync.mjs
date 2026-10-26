@@ -22,14 +22,19 @@ import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publica
 import {hasSupplierStock,stockIsFresh,safeCode,quoteMercadoLibre} from '../../worker-sync/publication-policy.js';
 import {bulkItemsPath,bulkEntryItem} from '../../worker-sync/meli-bulk.js';
 import {createVintageBulkFetch} from '../../functions/_shared/meli-vintage-bulk.js';
+import {vintageMinimumFor} from '../../worker-sync/vintage-pricing.js';
 
-export const MODES=['report','pause_only','pause_and_reactivate'];
+// 'correct': pasada con tiempo limitado que mira al ganador de la ficha de cada libro ya
+// publicado (el más viejo sin mirar primero) y le pone el precio competitivo. Es el 30 % del
+// día que el autorun le dedica a corregir lo subido; no pausa ni reactiva nada.
+export const MODES=['report','pause_only','pause_and_reactivate','correct'];
 export const ITEM_FIELDS='id,seller_id,status,available_quantity,seller_custom_field,price,currency_id';
 export const MAX_PRICE_RATIO=2;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0)`;
 const TRANSIENT_MS=300000,LONG_MS=86400000;
+function competitorOf(row){try{const value=JSON.parse(row?.competitor_json??'null');return value&&typeof value==='object'?value:null;}catch{return null;}}
 
-export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
+export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c,now());
  const input=await readWorkbook(excel);
@@ -43,7 +48,10 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
  const api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  try{
   await stmt(SCHEMA).run();
-  if(!(await stmt('PRAGMA table_info(vintage_stock_sync)').all()).results.some(x=>x.name==='applied_price'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN applied_price INTEGER').run();
+  const columns=(await stmt('PRAGMA table_info(vintage_stock_sync)').all()).results.map(x=>x.name);
+  if(!columns.includes('applied_price'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN applied_price INTEGER').run();
+  if(!columns.includes('competitor_json'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN competitor_json TEXT').run();
+  if(!columns.includes('competitor_at'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN competitor_at INTEGER').run();
   await stmt('CREATE TABLE IF NOT EXISTS ml_pub_receipts (seller_id TEXT NOT NULL,isbn TEXT NOT NULL,state TEXT NOT NULL,item_id TEXT,run_id TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(seller_id,isbn))').run();
   // Publicaciones nuestras: recibos de la conexión (servidor) más los del motor local.
   const published=new Map();
@@ -51,6 +59,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
   for(const r of (await stmt("SELECT isbn,item_id FROM ml_pub_receipts WHERE seller_id=? AND state='published' AND item_id IS NOT NULL",SELLER).all()).results)published.set(r.isbn,r.item_id);
   if(!published.size)return finish({state:'nothing_published',mode,feed_id:c.feed_id});
   const inStock=new Set(input.rows.filter(r=>hasSupplierStock(r.stock)).map(r=>r.isbn));
+  if(mode==='correct')return finish(await correct());
   const previous=new Map((await stmt('SELECT * FROM vintage_stock_sync').all()).results.map(r=>[r.isbn,r]));
   const rows=[...published].map(([isbn,item_id])=>({isbn,item_id}));
   const missing=rows.filter(r=>!inStock.has(r.isbn)).length,suspicious=missing*100>rows.length*maxMissingPct;
@@ -98,14 +107,51 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
   if(mode==='pause_and_reactivate'&&summary.state!=='backoff'&&!suspicious)await reprice(summary);
   return finish(summary);
 
+  // Pasada 'correct': libros publicados con stock hoy, el ganador mirado hace más tiempo primero.
+  // Por libro: precio del ganador (sólo GET) -> precio competitivo con la política aprobada ->
+  // lectura del ítem real -> PUT sólo si cambia y pasa las mismas guardas que el precio diario.
+  async function correct(){
+   const summary={state:'corrected',mode,feed_id:c.feed_id,checked:0,repriced:0,price_unchanged:0,price_skipped:0,errors:0,remaining:0};
+   const deadline=now()+budgetMs,rowsByIsbn=new Map(input.rows.map(r=>[r.isbn,r]));
+   const seen=new Map((await stmt('SELECT isbn,competitor_at FROM vintage_stock_sync').all()).results.map(r=>[r.isbn,r.competitor_at??0]));
+   const queue=[...published].filter(([isbn])=>inStock.has(isbn)).sort((a,b)=>(seen.get(a[0])??0)-(seen.get(b[0])??0)||a[0].localeCompare(b[0]));
+   const save=(isbn,item_id,competitor,price)=>stmt('INSERT INTO vintage_stock_sync(isbn,item_id,competitor_json,competitor_at,applied_price,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(isbn) DO UPDATE SET item_id=excluded.item_id,competitor_json=COALESCE(excluded.competitor_json,competitor_json),competitor_at=excluded.competitor_at,applied_price=COALESCE(excluded.applied_price,applied_price),updated_at=excluded.updated_at',isbn,item_id,competitor===undefined?null:JSON.stringify(competitor),now(),price??null,now()).run();
+   let index=0;
+   for(;index<queue.length&&now()<deadline;index++){
+    const [isbn,item_id]=queue[index];summary.checked++;
+    let competitor;
+    try{competitor=await api.competitorPrice(env,isbn);}
+    catch(error){if(error.status===429){summary.state='backoff';break;}summary.errors++;await save(isbn,item_id,undefined,null);continue;}
+    const price=quoteMercadoLibre({...rowsByIsbn.get(isbn),competitor},policy).price;
+    let item;
+    try{item=bulkEntryItem((await api.call(env,bulkItemsPath([item_id],ITEM_FIELDS)))?.[0]);}
+    catch(error){if(error.status===429){summary.state='backoff';break;}summary.errors++;await save(isbn,item_id,competitor,null);continue;}
+    if(!item||String(item.seller_id)!==SELLER||item.seller_custom_field!==`AMADO-AR-${isbn}`||item.currency_id!=='UYU'||!['active','paused'].includes(item.status)){summary.price_skipped++;await save(isbn,item_id,competitor,null);continue;}
+    if(item.price===price){summary.price_unchanged++;await save(isbn,item_id,competitor,price);continue;}
+    const ratio=price/item.price;
+    if(!(price>=vintageMinimumFor(policy))||!Number.isFinite(ratio)||ratio>MAX_PRICE_RATIO||ratio<1/MAX_PRICE_RATIO){summary.price_skipped++;await save(isbn,item_id,competitor,null);onStatus({isbn,item_id,price_skipped:{from:item.price,to:price}});continue;}
+    try{await api.call(env,`/items/${item_id}`,{method:'PUT',body:{price}});}
+    catch(error){if(error.status===429){summary.state='backoff';break;}summary.errors++;await save(isbn,item_id,competitor,null);continue;}
+    await save(isbn,item_id,competitor,price);summary.repriced++;
+    onStatus({isbn,item_id,price:{from:item.price,to:price},mode:'correct'});
+   }
+   summary.remaining=queue.length-index;
+   return summary;
+  }
   // Precio: sólo los libros con stock hoy cuyo precio calculado difiere del último aplicado
   // (la primera vez, todos). Lee el precio real antes de cada PUT.
   async function reprice(summary){
    Object.assign(summary,{repriced:0,price_unchanged:0,price_skipped:0});
    const rowsByIsbn=new Map(input.rows.map(r=>[r.isbn,r]));
+   const state=new Map((await stmt('SELECT isbn,item_id,applied_price,competitor_json FROM vintage_stock_sync').all()).results.map(r=>[r.isbn,r]));
    const want=new Map();
-   for(const r of rows){const row=rowsByIsbn.get(r.isbn);if(row&&hasSupplierStock(row.stock))want.set(r.isbn,quoteMercadoLibre(row,policy).price);}
-   const state=new Map((await stmt('SELECT isbn,item_id,applied_price FROM vintage_stock_sync').all()).results.map(r=>[r.isbn,r]));
+   for(const r of rows){
+    const row=rowsByIsbn.get(r.isbn);if(!row||!hasSupplierStock(row.stock))continue;
+    // Con precio competitivo, el precio depende del ganador de la ficha: sin haberlo mirado
+    // todavía (lo hace la pasada 'correct') no se toca, para no deshacer un precio igualado.
+    if(policy.competitive){const competitor=competitorOf(state.get(r.isbn));if(!competitor)continue;want.set(r.isbn,quoteMercadoLibre({...row,competitor},policy).price);}
+    else want.set(r.isbn,quoteMercadoLibre(row,policy).price);
+   }
    const todo=[...want].filter(([isbn,price])=>state.get(isbn)?.applied_price!==price).map(([isbn,price])=>({isbn,price,item_id:state.get(isbn)?.item_id})).filter(x=>x.item_id);
    const setPrice=(isbn,price)=>stmt('UPDATE vintage_stock_sync SET applied_price=?,updated_at=? WHERE isbn=?',price,now(),isbn).run();
    for(let i=0;i<todo.length;i+=20){
@@ -120,7 +166,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
      if(!item||String(item.seller_id)!==SELLER||item.seller_custom_field!==`AMADO-AR-${r.isbn}`||item.currency_id!=='UYU'||!['active','paused'].includes(item.status)){summary.price_skipped++;continue;}
      if(item.price===r.price){await setPrice(r.isbn,r.price);summary.price_unchanged++;continue;}
      const ratio=r.price/item.price;
-     if(!(r.price>=1600)||!Number.isFinite(ratio)||ratio>MAX_PRICE_RATIO||ratio<1/MAX_PRICE_RATIO){summary.price_skipped++;onStatus({isbn:r.isbn,item_id:r.item_id,price_skipped:{from:item.price,to:r.price}});continue;}
+     if(!(r.price>=vintageMinimumFor(policy))||!Number.isFinite(ratio)||ratio>MAX_PRICE_RATIO||ratio<1/MAX_PRICE_RATIO){summary.price_skipped++;onStatus({isbn:r.isbn,item_id:r.item_id,price_skipped:{from:item.price,to:r.price}});continue;}
      try{await api.call(env,`/items/${r.item_id}`,{method:'PUT',body:{price:r.price}});}
      catch(error){summary.errors++;if(error.status===429){summary.state='backoff';return;}continue;}
      await setPrice(r.isbn,r.price);summary.repriced++;
@@ -137,7 +183,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
 async function main(){
  const args=process.argv.slice(2),get=name=>args.includes(name)?args[args.indexOf(name)+1]:undefined;
  try{
-  const summary=await syncStock({connection:get('--connection'),excel:get('--excel'),directory:get('--directory'),mode:get('--mode')||'pause_and_reactivate',graceHours:Number(get('--grace-hours')??0),onStatus:x=>console.log(JSON.stringify(x))});
+  const summary=await syncStock({connection:get('--connection'),excel:get('--excel'),directory:get('--directory'),mode:get('--mode')||'pause_and_reactivate',graceHours:Number(get('--grace-hours')??0),budgetMs:Math.max(1,Number(get('--max-minutes')??18)||18)*60000,onStatus:x=>console.log(JSON.stringify(x))});
   if(summary.state==='backoff')process.exitCode=3;
  }catch(error){
   console.log(JSON.stringify({state:'failed',error:/^[a-z0-9_]{1,100}$/.test(error.code??error.message??'')?(error.code??error.message):'stock_sync_failed'}));
