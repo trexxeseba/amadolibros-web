@@ -223,10 +223,10 @@ class TargetRaisedTest(unittest.TestCase):
 
 
 class PublishCorrectSplitTest(unittest.TestCase):
-    def test_engine_gets_42_minutes_of_each_hour(self):
+    def test_engine_gets_half_of_each_hour(self):
         with tempfile.TemporaryDirectory() as directory:
             command = make_runner(directory, [10000]).engine_command()
-            self.assertEqual(command[command.index("--max-minutes") + 1], "42")
+            self.assertEqual(command[command.index("--max-minutes") + 1], "30")
             self.assertEqual(vintage_autorun.PUBLISH_SLICE_MIN + vintage_autorun.CORRECT_SLICE_MIN, 60)
 
     def test_after_the_publishing_turn_it_corrects_prices_and_goes_straight_back(self):
@@ -238,7 +238,7 @@ class PublishCorrectSplitTest(unittest.TestCase):
             self.assertEqual(runner.corrections, [True])
             self.assertEqual(runner.waits, [])
 
-    def test_correction_runs_stock_sync_in_correct_mode_for_18_minutes(self):
+    def test_correction_runs_stock_sync_in_correct_mode_for_30_minutes(self):
         with tempfile.TemporaryDirectory() as directory:
             args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node="node", target=10000, notify_url=None, stock_sync="pause_and_reactivate")
             runner = vintage_autorun.Runner(args)
@@ -251,7 +251,7 @@ class PublishCorrectSplitTest(unittest.TestCase):
                 runner.correct_prices()
             command = seen[0]
             self.assertEqual(command[command.index("--mode") + 1], "correct")
-            self.assertEqual(command[command.index("--max-minutes") + 1], "18")
+            self.assertEqual(command[command.index("--max-minutes") + 1], "30")
 
 
 if __name__ == "__main__":

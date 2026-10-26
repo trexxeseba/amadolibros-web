@@ -35,9 +35,9 @@ SET_TARGET = REPO / "scripts" / "vintage-local" / "set-target.mjs"
 CAMPAIGN_FILE = REPO / "scripts" / "vintage-local" / "campaign.json"
 MONTEVIDEO = dt.timezone(dt.timedelta(hours=-3))
 RENEW_MARGIN_S = 30 * 60
-# Reparto de cada hora: 70 % subir libros nuevos, 30 % corregir el precio de los ya subidos.
-PUBLISH_SLICE_MIN = 42
-CORRECT_SLICE_MIN = 18
+# Reparto de cada hora (Seba, 26/10): 50 % subir libros nuevos, 50 % corregir el precio de los ya subidos.
+PUBLISH_SLICE_MIN = 30
+CORRECT_SLICE_MIN = 30
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
@@ -401,7 +401,7 @@ class Runner:
             return None
         self.renew_loops = 0
         if state == "time_slice_done":
-            # Se terminaron los 42 minutos de subir: 18 de corregir y enseguida otra vuelta.
+            # Se terminaron los minutos de subir: los de corregir y enseguida otra vuelta.
             self.failures = 0
             self.correct_prices()
             return None
