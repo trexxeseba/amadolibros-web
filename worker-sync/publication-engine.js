@@ -106,7 +106,15 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
      if(duplicate){await mark(row.isbn,'skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
      const bySku=await api.skuItems(env,row.isbn);
      if(bySku.length){await mark(row.isbn,'skipped_duplicate',{itemId:bySku[0]});continue;}
+     // Precio competitivo: se mira una sola vez al ganador de la ficha y se guarda en el
+     // renglón del feed, así la aprobación, la validación y la creación calculan el mismo precio.
+     if(policy.competitive&&row.competitor===undefined){
+      const competitor=await api.competitorPrice(env,row.isbn);
+      await s.setCompetitor(freshRun.feed_id,row.isbn,competitor);
+      row.competitor=competitor;
+     }
      const quote=quoteMercadoLibre(row,policy);
+     if(quote.skip){await mark(row.isbn,'skipped_not_competitive',{errorCode:quote.skip});continue;}
      let payload=job.payload_json?JSON.parse(job.payload_json):null;
      if(publishing&&approvedPayloadGuard){
       await approvedPayloadGuard(env,run,job,payload);

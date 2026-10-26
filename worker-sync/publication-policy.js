@@ -34,7 +34,19 @@ export function validPolicy(raw) {
   // forma parte del hash, así que habilitarlo exige un lote y una aprobación nuevos.
   const catalogListing = raw.catalogListing ?? false;
   if (!CATALOG_LISTING_POLICIES.includes(catalogListing)) throw new PublicationError('invalid_policy');
-  return {...p, listingTypeId:raw.listingTypeId, catalogListing, currencyId:'UYU', condition:'new'};
+  // Precio competitivo: apagado por defecto. Sólo cuando es true entran al hash
+  // `competitive` y `competitiveFloorMargin`, así las políticas ya aprobadas
+  // conservan exactamente el mismo hash. El piso de margen lo fija Seba (0 a
+  // `margin`): nunca se publica por debajo de ese margen sobre el costo.
+  const competitive = raw.competitive ?? false;
+  if (typeof competitive !== 'boolean') throw new PublicationError('invalid_policy');
+  let competitivePart = {};
+  if (competitive) {
+    const floorMargin = raw.competitiveFloorMargin;
+    if (typeof floorMargin !== 'number' || !Number.isFinite(floorMargin) || floorMargin < 0 || floorMargin > p.margin || floorMargin + p.mlFee >= 1) throw new PublicationError('invalid_policy');
+    competitivePart = { competitive: true, competitiveFloorMargin: floorMargin };
+  }
+  return {...p, listingTypeId:raw.listingTypeId, catalogListing, currencyId:'UYU', condition:'new', ...competitivePart};
 }
 export const CATALOG_LISTING_POLICIES = [false, 'required_only'];
 export function normalizeSupplierRow(raw) {
@@ -43,9 +55,29 @@ export function normalizeSupplierRow(raw) {
   if (!title || title.length > 600) throw new PublicationError('invalid_title');
   const row = {isbn,title,author:String(raw.author??'').slice(0,300),publisher:String(raw.publisher??'').slice(0,200),
     listArs:raw.listArs,weightKg:raw.weightKg,stock:String(raw.stock??'').trim()};
+  if (raw.competitor !== undefined && raw.competitor !== null) {
+    const price = raw.competitor.price, at = raw.competitor.at, days = raw.competitor.days ?? null;
+    if ((price !== null && !(typeof price === 'number' && Number.isFinite(price) && price > 0)) || !Number.isFinite(at)) throw new PublicationError('invalid_competitor');
+    if (days !== null && !(typeof days === 'number' && Number.isInteger(days) && days >= 0 && days <= 365)) throw new PublicationError('invalid_competitor');
+    row.competitor = { price, at, days };
+  }
   if (typeof row.listArs !== 'number' || !Number.isFinite(row.listArs) || row.listArs <= 0) throw new PublicationError('invalid_supplier_price');
   if (typeof row.weightKg !== 'number' || !Number.isFinite(row.weightKg) || row.weightKg <= 0 || row.weightKg > 30) throw new PublicationError('invalid_weight');
   return row;
+}
+export const COMPETITIVE_UNDERCUT = 0.01;
+// Precio del ganador de la ficha guardado en el renglón del proveedor:
+// row.competitor = {price:number|null, at:ms}. null = nadie más vende ese libro.
+export function competitorPriceOf(row) {
+  const price = row?.competitor?.price;
+  return typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : null;
+}
+// Días de disponibilidad del ganador (MANUFACTURING_TIME). 0 = entrega inmediata,
+// null = no se pudo leer. Bajar el precio contra un ganador que entrega antes que
+// nosotros no gana la ficha: ahí ML nos marca perdiendo por stock, no por precio.
+export function competitorDaysOf(row) {
+  const days = row?.competitor?.days;
+  return typeof days === 'number' && Number.isFinite(days) && days >= 0 ? days : null;
 }
 export function quoteMercadoLibre(row, policy) {
   const p = validPolicy(policy);
@@ -54,8 +86,26 @@ export function quoteMercadoLibre(row, policy) {
   const base = book+freight+p.laborUyu;
   const cost = base+p.deliveryUyu;
   const target = Math.max(base/(1-p.mlFee-p.margin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
-  const price = Math.ceil((target*(1+p.additionalPricePct)-1e-9)/p.roundUyu)*p.roundUyu;
-  return {price,currencyId:'UYU',book,freight,cost,contribution:price*(1-p.mlFee)-cost};
+  const full = Math.ceil((target*(1+p.additionalPricePct)-1e-9)/p.roundUyu)*p.roundUyu;
+  const result = {price:full,currencyId:'UYU',book,freight,cost};
+  if (!p.competitive) return {...result,contribution:full*(1-p.mlFee)-cost};
+  // Piso: el mayor entre el margen mínimo fijado por Seba, la contribución mínima
+  // y la venta mínima. Nunca se publica por debajo.
+  const floorTarget = Math.max(base/(1-p.mlFee-p.competitiveFloorMargin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
+  const floor = Math.min(full,Math.ceil((floorTarget-1e-9)/p.roundUyu)*p.roundUyu);
+  const rival = competitorPriceOf(row), rivalDays = competitorDaysOf(row);
+  let price = full,mode = rival===null?'no_competitor':'kept',skip=null;
+  if (rival!==null) {
+    const wanted = Math.floor((rival*(1-COMPETITIVE_UNDERCUT)+1e-9)/p.roundUyu)*p.roundUyu;
+    // Sólo el precio decide cuando nuestra entrega no es peor que la del ganador.
+    if (rivalDays===null) mode = 'rival_delivery_unknown';
+    else if (rivalDays < p.availabilityDays) mode = 'rival_faster_delivery';
+    else if (wanted < full) {
+      if (wanted >= floor) { price = wanted; mode = 'matched'; }
+      else { mode = 'below_floor'; skip = 'not_competitive'; }
+    }
+  }
+  return {...result,price,contribution:price*(1-p.mlFee)-cost,competitive:{mode,floor,fullPrice:full,competitorPrice:rival,competitorDays:rivalDays,ownDays:p.availabilityDays},...(skip?{skip}:{})};
 }
 export function stockIsFresh(sourceDate, now=Date.now(), maxHours=24) {
   const date = Date.parse(sourceDate);
