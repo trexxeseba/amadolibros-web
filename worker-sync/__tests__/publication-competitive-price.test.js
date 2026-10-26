@@ -120,3 +120,13 @@ test('aprobada la corrida, se publica al mismo precio validado y lo omitido no s
  assert.equal(f.calls.create,2);assert.equal(r.state,'complete');
  assert.equal(r.counts.find(x=>x.state==='published').n,2);assert.equal(r.counts.find(x=>x.state==='skipped_not_competitive').n,1);
 });
+
+test('las sobrescrituras de precio competitivo del lote clonado se validan',async()=>{
+ const {competitiveOverrides}=await import('../publication-engine.js');
+ assert.deepEqual(competitiveOverrides({}),{});
+ assert.deepEqual(competitiveOverrides({competitive:true,competitive_floor_margin:.15,minimum_contribution_uyu:400}),{competitive:true,competitiveFloorMargin:.15,minimumContributionUyu:400});
+ assert.deepEqual(competitiveOverrides({competitive:false}),{competitive:false});
+ for(const bad of [{competitive:'true'},{competitive_floor_margin:1},{competitive_floor_margin:-.1},{competitive_floor_margin:'x'},{minimum_contribution_uyu:-1},{minimum_contribution_uyu:100001}])assert.throws(()=>competitiveOverrides(bad),/invalid_competitive/);
+ // El piso no puede superar el margen objetivo: lo frena validPolicy al armar la política.
+ assert.throws(()=>validPolicy({...base,...competitiveOverrides({competitive:true,competitive_floor_margin:.9})}),/invalid_policy/);
+});
