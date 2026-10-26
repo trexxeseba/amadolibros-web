@@ -25,6 +25,14 @@
   Seba vea la lista antes: eso no es mergear código, es tocar plata. Mergear el
   código que los calcula no necesita permiso.
 
+## Mercado Libre: en qué cuenta se publica
+
+- Las altas automáticas van solo a Amado Vintage (Global Emporium es la misma
+  cuenta, 2341378249), desde el motor local de la PC. En Amado Libros
+  (440298103) no se publica salvo pedido explícito de Seba: la cola del Worker
+  está en solo lectura. Antes de tocar cualquier camino que publique, leer
+  `docs/cuentas-mercado-libre.md`.
+
 ## Una tarea, una carpeta
 
 Varias sesiones trabajan a la vez sobre este repo. La carpeta principal
