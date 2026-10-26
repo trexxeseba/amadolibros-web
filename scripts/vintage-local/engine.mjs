@@ -8,7 +8,7 @@ import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publica
 import {PublicationError,canonicalIsbn,stockIsFresh,quoteMercadoLibre,sha256,policyHash,normalizedTitle} from '../../worker-sync/publication-policy.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {VintageBulkStore,createVintageBulkFetch,BULK_RUN} from '../../functions/_shared/meli-vintage-bulk.js';
-import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
+import {vintagePolicy,VINTAGE_COMPETITIVE_MINIMUM_UYU} from '../../worker-sync/vintage-pricing.js';
 import {openDatabase} from './db.mjs';
 export const SELLER='2341378249';
 // Tope duro del objetivo total (incluye los 5 del piloto). El objetivo vigente vive en la base
@@ -37,13 +37,21 @@ export function checkCreated(item,isbn,price){
  const term=(item?.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME');
  // Vendido antes de confirmarlo: sin stock pero con ventas sigue siendo nuestro alta.
  const sold=Number(item?.sold_quantity)>0&&item?.available_quantity===0&&['active','paused','closed'].includes(item?.status);
- if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||item.price!==price||item.price<1600||item.currency_id!=='UYU'||!sold&&(item.available_quantity!==1||item.status!=='active')||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+ if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||item.price!==price||item.price<VINTAGE_COMPETITIVE_MINIMUM_UYU||item.currency_id!=='UYU'||!sold&&(item.available_quantity!==1||item.status!=='active')||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+}
+// ¿Se llega de `from` a `to` siguiendo las enmiendas registradas en el servidor?
+export function amendmentChain(amendments,from,to){
+ if(!Array.isArray(amendments))return false;
+ const next=new Map(amendments.filter(a=>/^[a-f0-9]{64}$/.test(a?.old_hash??'')&&/^[a-f0-9]{64}$/.test(a?.new_hash??'')).map(a=>[a.old_hash,a.new_hash]));
+ const seen=new Set();let at=from;
+ while(next.has(at)&&!seen.has(at)){seen.add(at);at=next.get(at);if(at===to)return true;}
+ return false;
 }
 export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -51,7 +59,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  if(!stockIsFresh(input.source_date)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
- let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false;
+ let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false;
  const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
@@ -104,7 +112,15 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   if(feed.state!=='ready'){for(let i=0;i<input.rows.length;i+=200)await supplier(env,'import',{feed_id:c.feed_id,rows:input.rows.slice(i,i+200)});await supplier(env,'commit',{feed_id:c.feed_id});}
   for(const r of c.receipts??[]){if(r.seller_id!==SELLER)throw new Error('foreign_seller_receipt');await s.stmt('INSERT OR IGNORE INTO ml_pub_receipts VALUES(?,?,?,?,?,?,?)',SELLER,r.isbn,r.state,r.item_id??null,r.run_id,r.created_at,r.updated_at).run();}
   let existing=await s.run(BULK_RUN);
-  if(existing&&existing.policy_hash!==c.policy_hash)throw new Error('local_policy_changed_review_required');
+  if(existing&&existing.policy_hash!==c.policy_hash){
+   // Sólo se acepta una política nueva si el servidor la registró como enmienda de la que
+   // tiene la PC (cadena hash anterior -> nuevo). Cualquier otra diferencia sigue siendo fatal.
+   if(!amendmentChain(c.amendments,existing.policy_hash,c.policy_hash))throw new Error('local_policy_changed_review_required');
+   await s.stmt('UPDATE ml_pub_runs SET policy_json=?,policy_hash=?,approved_hash=? WHERE id=? AND policy_hash=?',JSON.stringify(policy),c.policy_hash,c.policy_hash,BULK_RUN,existing.policy_hash).run();
+   await s.stmt("UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0,error_code=NULL WHERE run_id=? AND item_id IS NULL AND state IN ('pending','validated','retry') AND NOT EXISTS(SELECT 1 FROM ml_pub_receipts r WHERE r.seller_id=? AND r.isbn=ml_vintage_pub_jobs.isbn)",BULK_RUN,SELLER).run();
+   onStatus(JSON.stringify({state:'policy_amended',from:existing.policy_hash.slice(0,12),to:c.policy_hash.slice(0,12)}));
+   existing=await s.run(BULK_RUN);
+  }
   if(existing&&existing.feed_id!==c.feed_id){
    await s.attachFeed(BULK_RUN,c.feed_id);
    await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?",BULK_RUN,c.feed_id).run();
@@ -146,7 +162,11 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
+  // Turno de publicación: con maxMs el motor cede el tiempo restante a la corrección de
+  // precios de lo ya publicado (reparto 70/30 del día, lo fija el autorun).
+  const turnStarted=Date.now();
   for(;;){
+   if(maxMs&&Date.now()-turnStarted>=maxMs){sliceDone=true;break;}
    const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
@@ -160,12 +180,14 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  return {state:failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':(await s.run(BULK_RUN)).state,published_total:5+await s.publishedCount(BULK_RUN)};
+  const final=failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':sliceDone?'time_slice_done':(await s.run(BULK_RUN)).state;
+  if(sliceDone)await fs.writeFile(path.join(directory,'status.json'),JSON.stringify({at:new Date().toISOString(),seller_id:SELLER,state:final,published_total:5+await s.publishedCount(BULK_RUN)},null,2));
+  return {state:final,published_total:5+await s.publishedCount(BULK_RUN)};
  }finally{db.close();}
 }
 async function main(){
  const args=process.argv.slice(2),get=name=>args[args.indexOf(name)+1];
  if(args.includes('--inspect')){const x=await inspectWorkbook(get('--excel'));console.log(JSON.stringify({source_date:x.source_date,rows:x.rows.length,rejected:x.rejected,duplicate_isbns:x.duplicate_isbns,source_sha256:x.source_sha256,fresh:stockIsFresh(x.source_date)}));return;}
- const result=await run({excel:get('--excel'),connection:get('--connection'),directory:get('--directory'),target:Number(args.includes('--target')?get('--target'):1000),validateOnly:Number(args.includes('--validate-only')?get('--validate-only'):0),limitNew:Number(args.includes('--limit-new')?get('--limit-new'):0)});console.log(JSON.stringify({finished:true,...result}));
+ const result=await run({excel:get('--excel'),connection:get('--connection'),directory:get('--directory'),target:Number(args.includes('--target')?get('--target'):1000),validateOnly:Number(args.includes('--validate-only')?get('--validate-only'):0),limitNew:Number(args.includes('--limit-new')?get('--limit-new'):0),maxMs:args.includes('--max-minutes')?Math.max(0,Number(get('--max-minutes'))||0)*60000:0});console.log(JSON.stringify({finished:true,...result}));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(error=>{console.error(JSON.stringify({error:error.code??error.message??'local_failure',stage:error.stage??null,status:error.status??null}));process.exitCode=1;});

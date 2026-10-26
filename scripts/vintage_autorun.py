@@ -35,6 +35,9 @@ SET_TARGET = REPO / "scripts" / "vintage-local" / "set-target.mjs"
 CAMPAIGN_FILE = REPO / "scripts" / "vintage-local" / "campaign.json"
 MONTEVIDEO = dt.timezone(dt.timedelta(hours=-3))
 RENEW_MARGIN_S = 30 * 60
+# Reparto de cada hora: 70 % subir libros nuevos, 30 % corregir el precio de los ya subidos.
+PUBLISH_SLICE_MIN = 42
+CORRECT_SLICE_MIN = 18
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
@@ -225,14 +228,34 @@ class Runner:
         elif last.get("paused") or last.get("activated") or last.get("repriced"):
             self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Precios ajustados: {last.get('repriced', 0)}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
 
+    def correct_prices(self):
+        """El 30 % de la hora: precio competitivo para los libros ya publicados (stock-sync --mode correct)."""
+        if self.args.stock_sync == "off":
+            return
+        command = [self.node, "--experimental-sqlite", str(STOCK_SYNC), "--connection", str(self.connection), "--excel", str(self.excel), "--directory", str(self.directory), "--mode", "correct", "--max-minutes", str(CORRECT_SLICE_MIN)]
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=(CORRECT_SLICE_MIN + 10) * 60)
+        except subprocess.TimeoutExpired:
+            self.log("corrección de precios", error="timeout")
+            return
+        last = {}
+        for line in (result.stdout or "").splitlines():
+            try:
+                last = json.loads(line)
+            except ValueError:
+                continue
+        self.log("corrección de precios", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
+        if result.returncode not in (0, 3):
+            self.notify("Vintage: la corrección de precios falló", f"Resultado: {last.get('error') or last.get('state')}. Sigue publicando; reintenta en la próxima vuelta.", key="correct-failed", every_s=6 * 3600)
+
     def engine_command(self):
         # --target del autorun (run.cmd lo fija en 10000) ya no limita al motor: sólo manda el tope máximo.
         target = max(self.args.target, ENGINE_TARGET_CEILING)
-        return [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(target)]
+        return [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(target), "--max-minutes", str(PUBLISH_SLICE_MIN)]
 
     def run_engine(self):
         command = self.engine_command()
-        self.log("motor iniciado", target=command[-1])
+        self.log("motor iniciado", target=command[command.index("--target") + 1])
         (self.directory / "status.json").unlink(missing_ok=True)  # el estado leído al final es sólo de esta corrida
         log_file = self.logs / f"engine-{dt.datetime.now(MONTEVIDEO).strftime('%Y-%m-%d')}.log"
         start = log_file.stat().st_size if log_file.exists() else 0
@@ -359,6 +382,7 @@ class Runner:
         if state == "daily_cap_reached":
             self.renew_loops = 0
             self.notify("Vintage: tope diario alcanzado", f"Publicados en total: {published}. Sigue mañana.", every_s=20 * 3600)
+            self.correct_prices()
             self.wait(self.seconds_until_next_day(), "tope diario")
             return None
         if state in RENEW_NEEDED or error in RENEW_NEEDED:
@@ -376,6 +400,11 @@ class Runner:
                 self.wait(wait_s, "hace falta renovar")
             return None
         self.renew_loops = 0
+        if state == "time_slice_done":
+            # Se terminaron los 42 minutos de subir: 18 de corregir y enseguida otra vuelta.
+            self.failures = 0
+            self.correct_prices()
+            return None
         remaining = (status.get("run") or {}).get("target_remaining")
         target_open = isinstance(remaining, int) and remaining > 0
         if state in ("complete", "complete_with_review") and target_open:
@@ -386,6 +415,7 @@ class Runner:
         if state in ("complete", "complete_with_review") or (isinstance(published, int) and published >= self.args.target and not target_open):
             self.notify("Vintage: campaña sin pendientes", f"Publicados: {published}. Estado: {state}. Vuelvo a mirar con el próximo stock.", every_s=20 * 3600)
             self.force_renew = True
+            self.correct_prices()
             self.wait(3 * 3600, "sin pendientes")
             return None
         if code != 0:

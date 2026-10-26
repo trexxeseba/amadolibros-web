@@ -1,7 +1,7 @@
 import { getAccessToken, invalidateAccessToken, MeliAuthError } from './meli-auth.js';
 import {SELLER_ID,PublicationError,canonicalIsbn,normalizedTitle} from './publication-policy.js';
 import {supplierBookMetadata} from './publication-book-metadata.js';
-import {requireVintagePrice} from './vintage-pricing.js';
+import {requireVintagePrice,vintageMinimumFor} from './vintage-pricing.js';
 
 export class MercadoLibreError extends PublicationError {
  constructor(code,status,retryAfter=0){super(code,status);this.retryAfter=retryAfter;}
@@ -322,7 +322,7 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   // Revalidate the prepared payload and fees immediately before the single create.
   // Validation warnings kept for review never travel to Mercado Libre.
   const {diagnostic,...body}=payload;
-  if(sellerId==='2341378249')requireVintagePrice(body);
+  if(sellerId==='2341378249')requireVintagePrice(body,vintageMinimumFor(policy));
   const mismatch=payloadPolicyMismatch(body,policy);if(mismatch)throw new PublicationError(mismatch,422);
   await verifyFees(env,body,policy);await validateItem(env,body);
   const pinnedToken=await token(env);
