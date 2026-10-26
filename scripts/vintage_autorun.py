@@ -29,6 +29,10 @@ REPO = Path(__file__).resolve().parent.parent
 ENGINE = REPO / "scripts" / "vintage-local" / "engine.mjs"
 RENEW = REPO / "scripts" / "vintage-local" / "renew.mjs"
 STOCK_SYNC = REPO / "scripts" / "vintage-local" / "stock-sync.mjs"
+SET_TARGET = REPO / "scripts" / "vintage-local" / "set-target.mjs"
+# Objetivo de la campaña fijado desde el repo: llega a la PC con el git pull y se aplica
+# con set-target.mjs (sólo sube, nunca baja), sin que nadie toque la PC.
+CAMPAIGN_FILE = REPO / "scripts" / "vintage-local" / "campaign.json"
 MONTEVIDEO = dt.timezone(dt.timedelta(hours=-3))
 RENEW_MARGIN_S = 30 * 60
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
@@ -280,11 +284,37 @@ class Runner:
         tomorrow = (now + dt.timedelta(days=1)).replace(hour=0, minute=5, second=0, microsecond=0)
         return max(60, (tomorrow - now).total_seconds())
 
+    def repo_target(self):
+        try:
+            value = json.loads(CAMPAIGN_FILE.read_text("utf-8")).get("target_total")
+        except (OSError, ValueError, AttributeError):
+            return None
+        return value if isinstance(value, int) and 5 < value <= ENGINE_TARGET_CEILING else None
+
+    def apply_repo_target(self):
+        """Sube el objetivo al de campaign.json una vez por valor; si ya es igual o mayor, no hace nada."""
+        target = self.repo_target()
+        if target is None or target == getattr(self, "applied_target", None) or not self.node:
+            return
+        try:
+            result = subprocess.run([self.node, "--experimental-sqlite", str(SET_TARGET), str(target), "--directory", str(self.directory), "--apply"], capture_output=True, text=True, timeout=120)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            self.log("objetivo del repo no aplicado", target=target, error=str(error)[:200])
+            return
+        output = ((result.stdout or "") + (result.stderr or "")).strip()
+        self.applied_target = target
+        if result.returncode == 0:
+            self.log("objetivo de la campaña subido", target=target, detail=output[-200:])
+            self.notify("Vintage: objetivo subido", f"La campaña sigue hasta {target} publicaciones.", key=f"target-{target}", every_s=0)
+        elif "target_not_higher" not in output:
+            self.log("objetivo del repo no aplicado", target=target, detail=output[-300:])
+
     def cycle(self):
         """Un ciclo: actualizar, renovar si hace falta, publicar. Devuelve un código de salida o None para seguir."""
         if self.update_code():
             self.log("código nuevo: reinicio del supervisor")
             return 75  # launch.cmd relanza con el código actualizado
+        self.apply_repo_target()
         if self.force_renew or self.connection_expires_at() - time.time() < RENEW_MARGIN_S:
             code, result = self.renew()
             error = result.get("error")
