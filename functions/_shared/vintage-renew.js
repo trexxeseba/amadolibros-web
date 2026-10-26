@@ -11,7 +11,7 @@ import {createVintageBulk,VintageBulkStore,BULK_RUN} from './meli-vintage-bulk.j
 import {createLocalAccess} from './vintage-local-access.js';
 import {VINTAGE_SELLER_ID} from './meli-vintage-token.js';
 import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js';
-import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
+import {vintagePolicy,vintageCompetitivePolicy} from '../../worker-sync/vintage-pricing.js';
 import {PublicationError,policyHash,sha256} from '../../worker-sync/publication-policy.js';
 
 export const RENEW_FIELDS={
@@ -43,9 +43,25 @@ export function createVintageRenew({bulk=createVintageBulk(),access=createLocalA
   await store.initialize();
   const run=await store.run(BULK_RUN);
   if(!run)throw new PublicationError('bulk_not_found',404);
-  const hash=await policyHash(vintagePolicy(JSON.parse(run.policy_json)));
+  const hash=await applyCompetitivePolicy(env,store,run);
   await bulk.command(env,'start',{feed_id,policy_hash:hash});
   return access.grant(env);
+ }
+ // Precio competitivo de Vintage (decisión del dueño): se aplica una sola vez, acá, con
+ // el ejecutor local ya detenido. Queda registrado como enmienda (hash anterior -> nuevo)
+ // para que la PC acepte el cambio de política sin tratarlo como una política ajena. Los
+ // trabajos todavía sin alta ni recibo vuelven a pendiente para cotizarse con la política nueva.
+ async function applyCompetitivePolicy(env,store,run){
+  const current=vintagePolicy(JSON.parse(run.policy_json)),wanted=vintageCompetitivePolicy(current);
+  const hash=await policyHash(wanted);
+  if(hash===run.policy_hash)return hash;
+  if(run.lease_until>now())throw new PublicationError('run_busy',409);
+  await env.ORDERS_DB.batch([
+   env.ORDERS_DB.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_policy_amendments VALUES(?,?,?,?,?,?)').bind(run.id,run.policy_hash,hash,run.policy_json,JSON.stringify(wanted),now()),
+   store.stmt('UPDATE ml_pub_runs SET policy_json=?,policy_hash=?,approved_hash=?,updated_at=? WHERE id=? AND policy_hash=?',JSON.stringify(wanted),hash,hash,now(),run.id,run.policy_hash),
+   store.stmt("UPDATE ml_pub_jobs SET state='pending',payload_json=NULL,next_at=0,error_code=NULL WHERE run_id=? AND item_id IS NULL AND state IN ('pending','validated','retry') AND NOT EXISTS(SELECT 1 FROM ml_vintage_pub_receipts r WHERE r.seller_id=? AND r.isbn=ml_vintage_pub_jobs.isbn)",run.id,VINTAGE_SELLER_ID),
+  ]);
+  return hash;
  }
  async function command(env,header,action,args={}){
   await authorizeRenew(env,header);

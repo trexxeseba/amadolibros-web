@@ -45,6 +45,19 @@ export function validPolicy(raw) {
     const floorMargin = raw.competitiveFloorMargin;
     if (typeof floorMargin !== 'number' || !Number.isFinite(floorMargin) || floorMargin < 0 || floorMargin > p.margin || floorMargin + p.mlFee >= 1) throw new PublicationError('invalid_policy');
     competitivePart = { competitive: true, competitiveFloorMargin: floorMargin };
+    // Opcionales (sólo entran al hash si se fijan): venta mínima para un precio
+    // igualado (puede ser menor que minimumSaleUyu, que rige el precio completo) y qué
+    // hacer cuando ganarle al rival exige bajar del piso: 'skip' (no publicar, el
+    // comportamiento original) o 'full' (publicar al precio de margen completo).
+    if (raw.competitiveMinimumSaleUyu !== undefined) {
+      const min = raw.competitiveMinimumSaleUyu;
+      if (typeof min !== 'number' || !Number.isFinite(min) || min <= 0 || min > p.minimumSaleUyu) throw new PublicationError('invalid_policy');
+      competitivePart.competitiveMinimumSaleUyu = min;
+    }
+    if (raw.competitiveBelowFloor !== undefined) {
+      if (!['skip','full'].includes(raw.competitiveBelowFloor)) throw new PublicationError('invalid_policy');
+      competitivePart.competitiveBelowFloor = raw.competitiveBelowFloor;
+    }
   }
   return {...p, listingTypeId:raw.listingTypeId, catalogListing, currencyId:'UYU', condition:'new', ...competitivePart};
 }
@@ -91,7 +104,7 @@ export function quoteMercadoLibre(row, policy) {
   if (!p.competitive) return {...result,contribution:full*(1-p.mlFee)-cost};
   // Piso: el mayor entre el margen mínimo fijado por Seba, la contribución mínima
   // y la venta mínima. Nunca se publica por debajo.
-  const floorTarget = Math.max(base/(1-p.mlFee-p.competitiveFloorMargin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
+  const floorTarget = Math.max(base/(1-p.mlFee-p.competitiveFloorMargin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.competitiveMinimumSaleUyu ?? p.minimumSaleUyu);
   const floor = Math.min(full,Math.ceil((floorTarget-1e-9)/p.roundUyu)*p.roundUyu);
   const rival = competitorPriceOf(row), rivalDays = competitorDaysOf(row);
   let price = full,mode = rival===null?'no_competitor':'kept',skip=null;
@@ -102,6 +115,7 @@ export function quoteMercadoLibre(row, policy) {
     else if (rivalDays < p.availabilityDays) mode = 'rival_faster_delivery';
     else if (wanted < full) {
       if (wanted >= floor) { price = wanted; mode = 'matched'; }
+      else if (p.competitiveBelowFloor === 'full') mode = 'below_floor_full_price';
       else { mode = 'below_floor'; skip = 'not_competitive'; }
     }
   }
