@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createHash,createCipheriv,randomBytes,publicEncrypt,constants} from 'node:crypto';
+import sharp from 'sharp';
+import {normalizeSourceUrl} from '../../functions/_shared/preview-cover.js';
+import {cardCoverImageOptions} from '../../shared/card-cover-framing.js';
+import {slugify} from '../../functions/_shared/slug.js';
+const base=process.env.INCIDENT_URL,token=process.env.INCIDENT_TOKEN,head=process.env.INCIDENT_BUILD_SHA;
+const out='artifacts/card-canary';await mkdir(out,{recursive:true});
+const digest=b=>createHash('sha256').update(b).digest('hex');
+const recipes=['v1-240-q85','v1-360-q85','v1-480-q85'];
+let ids=[],listCalls=0,imageGets=0;
+const report={head,started_at:new Date().toISOString(),production_writes:0,image_generation:0,failures:[],tests:[],images:[]};
+async function req(path){assert.ok(!path.includes('/cdn-cgi/image/'));return fetch(new URL(path,base),{headers:{authorization:'Bearer '+token,'x-canary-ids':ids.join(',')},redirect:'manual',signal:AbortSignal.timeout(90000)});}
+async function check(name,fn){try{const details=await fn();report.tests.push({name,pass:true,...details});}catch(e){report.failures.push({name,error:e.message});report.tests.push({name,pass:false});}}
+try{
+ let ready=false;for(let i=0;i<20&&!ready;i++){const r=await req('/ready');ready=r.ok&&(await r.json()).head===head;if(!ready)await new Promise(r=>setTimeout(r,3000));}assert.ok(ready,'Preview not ready');
+ const cr=await fetch('https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json');assert.ok(cr.ok);const cb=Buffer.from(await cr.arrayBuffer()),catalog=JSON.parse(cb);
+ const mr=await req('/manifest');assert.ok(mr.ok);const mb=Buffer.from(await mr.arrayBuffer()),manifest=JSON.parse(mb);
+ const ir=await req('/readiness');assert.ok(ir.ok);const ib=Buffer.from(await ir.arrayBuffer());assert.equal(digest(ib),'fdc59f13a42150ac77cd6cb5c700bc0b963eed3efc48259891ef77f32a49adcf');const index=JSON.parse(ib);
+ async function inventory(prefix){const map=new Map();let cursor;do{const r=await req('/inventory?'+new URLSearchParams({prefix,...(cursor?{cursor}:{})}));assert.ok(r.ok);const page=await r.json();listCalls++;for(const o of page.objects)map.set(o.key,o);if(page.truncated)assert.ok(page.cursor&&page.cursor!==cursor,'Invalid inventory cursor');cursor=page.truncated?page.cursor:null;}while(cursor);return map;}
+ const masters=await inventory('covers/v1/objects/'),variants=await inventory('covers/variants/v1/');
+ const active=catalog.items.filter(i=>i.status==='active'&&Number(i.available_quantity)>0);
+ const rows=active.map(item=>{
+  const current=manifest.entries?.[item.id+':0']?.current,match=/^covers\/v1\/objects\/([a-f0-9]{64})\.(jpg|png|webp)$/.exec(current?.object_key||'');
+  const pointer_valid=!!match&&current.sha256===match[1]&&normalizeSourceUrl(current.source_url)===normalizeSourceUrl(item.pictures?.[0])&&!!normalizeSourceUrl(item.pictures?.[0]);
+  const master_exists=pointer_valid&&masters.has(current.object_key),missing=[],invalid=[],existing=[];
+  if(pointer_valid)for(const recipe of recipes){const key=`covers/variants/v1/${match[1]}/${recipe}.webp`,o=variants.get(key);if(!o)missing.push(recipe);else if(!(o.size>0)||o.httpMetadata?.contentType!=='image/webp'||o.customMetadata?.master_sha256!==match[1]||o.customMetadata?.recipe!==recipe||!/^[a-f0-9]{64}$/.test(o.customMetadata?.sha256||''))invalid.push(recipe);else existing.push(recipe);}
+  const indexed=index.cards[item.id],index_matches=!!(pointer_valid&&indexed?.sha256===match[1]&&indexed.extension===match[2]&&normalizeSourceUrl(indexed.source_url)===normalizeSourceUrl(item.pictures[0]));
+  return {id:item.id,pointer_valid,master_exists,hash:match?.[1]||null,extension:match?.[2]||null,index_matches,missing_recipes:missing,invalid_recipes:invalid,existing_recipes:existing,enlarged_card:!!cardCoverImageOptions(item.id).widths};
+ });
+ const readyRows=rows.filter(r=>r.master_exists&&r.index_matches&&r.existing_recipes.length===3&&!r.enlarged_card).sort((a,b)=>a.id.localeCompare(b.id));
+ const isbnCounts=new Map();for(const i of active)if(i.isbn)isbnCounts.set(i.isbn,(isbnCounts.get(i.isbn)||0)+1);
+ ids=readyRows.filter(r=>{const i=active.find(i=>i.id===r.id);return i.title.length<120&&(!i.isbn||isbnCounts.get(i.isbn)===1);}).slice(0,10).map(r=>r.id);assert.equal(ids.length,10,'Insufficient verified current cards for canary');
+ const missingPairs=new Map(),invalidPairs=new Map();for(const row of rows.filter(r=>r.master_exists))for(const [field,target]of [['missing_recipes',missingPairs],['invalid_recipes',invalidPairs]])for(const recipe of row[field])target.set(row.hash+'/'+recipe,{hash:row.hash,recipe});
+ report.snapshot={catalog_updated_at:catalog.updated_at,catalog_sha256:digest(cb),manifest_updated_at:manifest.updated_at,manifest_etag:mr.headers.get('x-snapshot-etag'),manifest_sha256:digest(mb),index_sha256:digest(ib)};
+ report.coverage={catalog_items:catalog.items.length,active_stock_items:active.length,active_unique_ids:new Set(active.map(i=>i.id)).size,invalid_or_stale_master_pointer:rows.filter(r=>!r.pointer_valid).length,current_pointer_but_original_absent:rows.filter(r=>r.pointer_valid&&!r.master_exists).length,current_master_present:rows.filter(r=>r.master_exists).length,three_valid_variants:rows.filter(r=>r.master_exists&&r.existing_recipes.length===3).length,current_index_match:rows.filter(r=>r.index_matches).length,canary_eligible:readyRows.length,variants_ready_but_index_not_matching:rows.filter(r=>r.master_exists&&r.existing_recipes.length===3&&!r.index_matches).length,missing_unique_variants:missingPairs.size,invalid_unique_variants:invalidPairs.size,unique_active_master_hashes:new Set(rows.filter(r=>r.master_exists).map(r=>r.hash)).size,listed_master_objects:masters.size,listed_variant_objects:variants.size,list_calls:listCalls,master_listing_complete:true,variant_listing_complete:true};
+ report.canary_ids=ids;report.rows=rows;report.missing_pairs=[...missingPairs.values()];report.invalid_pairs=[...invalidPairs.values()];
+ report.reusable_index_candidates=rows.filter(r=>r.master_exists&&r.existing_recipes.length===3&&!r.index_matches).map(r=>({...r,source_url:normalizeSourceUrl(active.find(i=>i.id===r.id).pictures[0])}));
+ for(const id of ids){const item=active.find(i=>i.id===id),row=rows.find(r=>r.id===id),p=`/preview-cover/${id}/0/${row.hash}.${row.extension}`;
+  await check('catalog-on:'+id,async()=>{const r=await req('/catalogo?'+new URLSearchParams({q:item.title,_card_variants:'1'}));assert.equal(r.status,200);const html=await r.text(),tag=(html.match(/<img\b[^>]*>/g)||[]).find(t=>t.includes('/'+id+'/0/'+row.hash));assert.ok(tag,'Expected target card must be rendered');for(const recipe of recipes)assert.ok(tag.includes('variant='+recipe),'Missing emitted '+recipe);return {html_bytes:Buffer.byteLength(html)};});
+  await check('catalog-off:'+id,async()=>{const r=await req('/catalogo?'+new URLSearchParams({q:item.title,_card_variants:'1',_canary_off:'1'}));assert.equal(r.status,200);assert.ok(!(await r.text()).includes('variant=v1-'));});
+  await check('ficha-lazy-zoom:'+id,async()=>{const r=await req('/libro/'+id+'/'+slugify(item.title));assert.equal(r.status,200);const html=await r.text(),tag=html.match(/<img[^>]*id="glbImg"[^>]*>/)?.[0];assert.ok(tag);assert.doesNotMatch(tag,/\s(?:src|srcset)=/);assert.ok(!html.includes('?variant='));return {zoom_initial_src:false};});
+  for(const recipe of recipes)await check('webp:'+id+':'+recipe,async()=>{const start=Date.now(),r=await req(p+'?variant='+recipe);imageGets++;assert.equal(r.status,200);assert.equal(r.headers.get('x-cover-source'),'r2-variant');assert.equal(r.headers.get('x-cover-variant'),recipe);assert.equal(r.headers.get('x-cover-bucket'),'amadolibros-images-production');assert.equal(r.headers.get('content-type'),'image/webp');const b=Buffer.from(await r.arrayBuffer()),m=await sharp(b).metadata(),stored=variants.get(`covers/variants/v1/${row.hash}/${recipe}.webp`);assert.equal(digest(b),stored.customMetadata.sha256);assert.equal(m.format,'webp');assert.ok(m.width>0&&m.width<=Number(recipe.split('-')[1]));assert.ok(m.height>0);assert.equal(b.length,stored.size);const originalBytes=masters.get(`covers/v1/objects/${row.hash}.${row.extension}`).size;const detail={id,recipe,bytes:b.length,original_bytes:originalBytes,saved_percent:100*(1-b.length/originalBytes),width:m.width,height:m.height,ms:Date.now()-start,sha256:digest(b),cache:r.headers.get('x-cover-cache')};report.images.push(detail);return detail;});
+ }
+ await check('issued-url-after-disable',async()=>{const row=rows.find(r=>r.id===ids[0]),recipe=recipes[0],r=await req(`/preview-cover/${row.id}/0/${row.hash}.${row.extension}?variant=${recipe}&_canary_off=1`);imageGets++;assert.equal(r.status,200);assert.equal(r.headers.get('x-cover-variant'),recipe);const b=Buffer.from(await r.arrayBuffer());assert.equal(digest(b),variants.get(`covers/variants/v1/${row.hash}/${recipe}.webp`).customMetadata.sha256);return {cache:r.headers.get('x-cover-cache'),verified_bytes_after_disable:true};});
+ // A forced miss must remain a redirect to an original, never to paid resizing.
+ await check('missing-variant-safe-fallback',async()=>{const r=await req('/preview-cover/'+ids[0]+'/0/'+'0'.repeat(64)+'.jpg?variant=v1-240-q85');assert.equal(r.status,302);assert.equal(r.headers.get('x-cover-variant'),'original-fallback');assert.ok(!r.headers.get('location').includes('/cdn-cgi/image/'));});
+ await check('canary-requires-query',async()=>{const r=await req('/catalogo');assert.equal(r.status,200);assert.ok(!(await r.text()).includes('variant=v1-'));});
+}catch(e){report.failures.push({name:'inventory-or-setup',error:e.message});}
+report.finished_at=new Date().toISOString();report.image_gets=imageGets;report.list_calls=listCalls;
+const schema='amado-card-canary-evidence-v1',key=randomBytes(32),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);cipher.setAAD(Buffer.from(schema));const data=Buffer.concat([cipher.update(JSON.stringify(report)),cipher.final()]);
+await writeFile(out+'/evidence.encrypted.json',JSON.stringify({schema,iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),key:publicEncrypt({key:await readFile('scripts/images/cf-usage-audit-public.pem'),padding:constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},key).toString('base64'),data:data.toString('base64')}));
+const summary={...report};delete summary.rows;delete summary.missing_pairs;delete summary.invalid_pairs;await writeFile(out+'/summary.json',JSON.stringify(summary,null,2));console.log(JSON.stringify({tests:report.tests.length,failed:report.failures.length,coverage:report.coverage,image_gets:imageGets,production_writes:0}));if(report.failures.length)process.exitCode=1;
