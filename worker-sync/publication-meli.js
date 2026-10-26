@@ -360,5 +360,24 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   }
   return out;
  }
- return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,shippingDiagnostic,shippingProbe};
+ // Precio a vencer en la ficha de catálogo del ISBN: el del ganador de la compra
+ // (buy_box_winner) si no es nuestro; si la API no lo informa, el más barato de los
+ // otros vendedores. {price:null} = nadie más vende ese libro. Sólo GET.
+ async function competitorPrice(env,input){
+  const isbn=canonicalIsbn(input),found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:isbn}));
+  if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
+  if(found.results.length===0)return {price:null,at:now()};
+  if(found.results.length!==1||(typeof found.paging?.total==='number'&&found.paging.total!==1))throw new PublicationError('ambiguous_product_metadata',422);
+  const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId??''))throw new PublicationError('product_id_invalid',422);
+  const product=await call(env,`/products/${productId}`);
+  const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
+  const win=product.buy_box_winner;
+  if(win&&valid(Number(win.price))&&String(win.seller_id??'')!==sellerId&&(win.currency_id===undefined||win.currency_id==='UYU'))return {price:Number(win.price),at:now()};
+  if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now()};
+  const items=await call(env,`/products/${productId}/items`);
+  const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
+  const prices=list.filter(i=>String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU')&&valid(Number(i.price))).map(i=>Number(i.price));
+  return {price:prices.length?Math.min(...prices):null,at:now()};
+ }
+ return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,competitorPrice,shippingDiagnostic,shippingProbe};
 }
