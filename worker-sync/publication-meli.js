@@ -87,6 +87,31 @@ export function payloadPolicyMismatch(payload,policy){
  if(payload.catalog_listing===true)return policy?.catalogListing==='required_only'&&/^MLU\d+$/.test(payload.catalog_product_id??'')?null:'catalog_payload_not_approved';
  return payload.catalog_listing===false&&payload.catalog_product_id===undefined?null:'payload_policy_mismatch';
 }
+// Días de MANUFACTURING_TIME de un sale_terms: 0 si no lo declara (entrega
+// inmediata), null si no se puede leer. Acepta value_struct o el texto.
+export function saleTermDays(saleTerms){
+ const terms=Array.isArray(saleTerms)?saleTerms:null;
+ if(!terms)return null;
+ const term=terms.find(t=>t?.id==='MANUFACTURING_TIME');
+ if(!term)return 0;
+ const struct=term.value_struct??term.values?.[0]?.struct??null;
+ const number=Number(struct?.number),unit=String(struct?.unit??'').toLowerCase();
+ if(Number.isFinite(number)&&number>=0){
+  if(unit.startsWith('h'))return Math.ceil(number/24);
+  if(unit.startsWith('s')||unit.startsWith('w'))return Math.round(number*7);
+  if(unit.startsWith('m'))return Math.round(number*30);
+  return Math.round(number);
+ }
+ const text=String(term.value_name??'').toLowerCase(),m=text.match(/(\d+)/);
+ if(!m)return null;
+ const n=Number(m[1]);
+ if(text.includes('hora'))return Math.ceil(n/24);
+ if(text.includes('semana'))return n*7;
+ if(text.includes('mes'))return n*30;
+ if(text.includes('día')||text.includes('dia'))return n;
+ return null;
+}
+const safeMeliCode=error=>error?.code&&/^[a-z0-9_]{1,60}$/.test(error.code)?error.code:'competitor_read_failed';
 export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={}}={}){
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  if(sellerId!==SELLER_ID&&tokenProvider===getAccessToken)throw new PublicationError('seller_token_provider_required',503);
@@ -369,21 +394,40 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   if(found.results.length===0)return {price:null,at:now(),days:null};
   if(found.results.length!==1||(typeof found.paging?.total==='number'&&found.paging.total!==1))throw new PublicationError('ambiguous_product_metadata',422);
   const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId??''))throw new PublicationError('product_id_invalid',422);
+  return productCompetitor(env,productId);
+ }
+ // Lo mismo partiendo del producto de catálogo, que es lo que ya tiene guardada
+ // una publicación activa: evita la búsqueda por ISBN.
+ async function productCompetitor(env,productId){
+  if(!/^MLU\d+$/.test(productId??''))throw new PublicationError('product_id_invalid',422);
   const product=await call(env,`/products/${productId}`);
   const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
   const win=product.buy_box_winner;
   let rival=null;
-  if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now(),days:null};
+  if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now(),days:null,winner:'own'};
   if(win&&valid(Number(win.price))&&(win.currency_id===undefined||win.currency_id==='UYU'))rival={price:Number(win.price),itemId:/^MLU\d+$/.test(win.item_id??'')?win.item_id:null};
   if(!rival){
    const items=await call(env,`/products/${productId}/items`);
    const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
    const others=list.filter(i=>String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU')&&valid(Number(i.price)));
-   if(!others.length)return {price:null,at:now(),days:null};
+   if(!others.length)return {price:null,at:now(),days:null,winner:'none'};
    const best=others.reduce((a,b)=>Number(b.price)<Number(a.price)?b:a);
    rival={price:Number(best.price),itemId:/^MLU\d+$/.test(best.item_id??best.id??'')?(best.item_id??best.id):null};
   }
-  return {price:rival.price,at:now(),days:await competitorDays(env,rival.itemId)};
+  return {price:rival.price,at:now(),days:await competitorDays(env,rival.itemId),winner:rival.itemId??'unknown'};
+ }
+ // Lectura de una publicación propia activa más el ganador de su ficha. Sólo GET:
+ // sirve para ver qué pasaría antes de tocar un precio publicado.
+ async function itemCompetitorPreview(env,itemId){
+  if(!/^MLU\d+$/.test(itemId??''))throw new PublicationError('invalid_item_id');
+  const item=await call(env,`/items/${itemId}?attributes=id,seller_id,price,currency_id,status,title,catalog_listing,catalog_product_id,sale_terms`);
+  if(String(item.seller_id??'')!==sellerId)throw new PublicationError('item_seller_mismatch',403);
+  const out={item_id:item.id,title:String(item.title??'').slice(0,160),price:typeof item.price==='number'?item.price:null,
+   status:item.status??null,catalog_listing:item.catalog_listing===true,catalog_product_id:item.catalog_product_id??null,
+   own_days:saleTermDays(item.sale_terms)};
+  if(!out.catalog_product_id)return {...out,competitor:null,reason:'not_in_catalog'};
+  try{return {...out,competitor:await productCompetitor(env,out.catalog_product_id)};}
+  catch(error){return {...out,competitor:null,reason:safeMeliCode(error)};}
  }
  // Días que tarda en entregar el ganador: 0 cuando no declara MANUFACTURING_TIME
  // (entrega inmediata), null cuando no se puede leer. Un null nunca baja precios.
@@ -391,27 +435,7 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   if(!itemId)return null;
   let item;
   try{item=await call(env,`/items/${itemId}?attributes=id,sale_terms`);}catch{return null;}
-  const terms=Array.isArray(item?.sale_terms)?item.sale_terms:null;
-  if(!terms)return null;
-  const term=terms.find(t=>t?.id==='MANUFACTURING_TIME');
-  if(!term)return 0;
-  const struct=term.value_struct??term.values?.[0]?.struct??null;
-  const number=Number(struct?.number),unit=String(struct?.unit??'').toLowerCase();
-  if(Number.isFinite(number)&&number>=0){
-   if(unit.startsWith('d'))return Math.round(number);
-   if(unit.startsWith('h'))return Math.ceil(number/24);
-   if(unit.startsWith('s')||unit.startsWith('w'))return Math.round(number*7);
-   if(unit.startsWith('m'))return Math.round(number*30);
-   return Math.round(number);
-  }
-  const text=String(term.value_name??'').toLowerCase(),m=text.match(/(\d+)/);
-  if(!m)return null;
-  const n=Number(m[1]);
-  if(text.includes('hora'))return Math.ceil(n/24);
-  if(text.includes('semana'))return n*7;
-  if(text.includes('mes'))return n*30;
-  if(text.includes('día')||text.includes('dia'))return n;
-  return null;
+  return saleTermDays(item?.sale_terms);
  }
- return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,competitorPrice,shippingDiagnostic,shippingProbe};
+ return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,competitorPrice,productCompetitor,itemCompetitorPreview,shippingDiagnostic,shippingProbe};
 }

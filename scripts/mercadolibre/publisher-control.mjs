@@ -20,7 +20,7 @@ function competitiveArgs(){
  if(minC)out.minimum_contribution_uyu=Number(minC);
  return out;
 }
-const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick']);if(!allowed.has(action))throw Error('Unsupported action');
+const allowed=new Set(['status','tick','pause','approve','import','refresh','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick','preview_competitor']);if(!allowed.has(action))throw Error('Unsupported action');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function command(action,args={}){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
@@ -106,6 +106,15 @@ if(action==='import'){
  const result=await command('clone_preflight_catalog',{...competitiveArgs(),source_run_id:runId,limit,...(feedId?{feed_id:feedId}:{}),...(availabilityDays!==undefined?{availability_days:availabilityDays}:{})});
  console.log(JSON.stringify({new_run_id:result.new_run_id,source_run_id:result.source_run_id,created:result.created,feed_id:result.feed_id,source_feed_id:result.source_feed_id,availability_days:result.availability_days,policy_hash:result.policy_hash,source_policy_hash:result.source_policy_hash,state:result.state,approved:result.approved,validated:result.validated,review:result.review,pending:result.pending,published:result.published,source_run_intact:result.source_run_intact,last_tick:result.last_tick}));
  for(const job of result.preflight)console.log(JSON.stringify(job));
+}else if(action==='preview_competitor'){
+ // Sólo lectura: qué precio y plazo tiene el ganador de la ficha de cada
+ // publicación propia, y qué haríamos con las reglas de precio competitivo.
+ const ids=(process.env.PUBLISHER_ITEM_IDS||process.env.PUBLISHER_ITEM_ID||'').split(/[^A-Za-z0-9]+/).filter(Boolean);
+ if(!ids.length)throw Error('PUBLISHER_ITEM_IDS is required');
+ const result=await command('preview_competitor',{...competitiveArgs(),item_ids:ids,...(runId?{run_id:runId}:{}),
+  ...(process.env.PUBLISHER_AVAILABILITY_DAYS?{availability_days:Number(process.env.PUBLISHER_AVAILABILITY_DAYS)}:{})});
+ console.log(JSON.stringify({policy_hash:result.policy_hash,availability_days:result.availability_days,competitive_floor_margin:result.competitive_floor_margin,minimum_contribution_uyu:result.minimum_contribution_uyu,margin_assumed:result.margin_assumed,cost_is_estimated:result.cost_is_estimated,writes:result.writes}));
+ for(const row of result.items)console.log(JSON.stringify(row));
 }else if(action==='audit_availability_terms'){
  if(!runId)throw Error('Run ID is required');
  let offset=0,total=0,ok=0,missing=0,wrong=0;const mismatches=[];

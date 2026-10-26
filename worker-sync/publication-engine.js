@@ -1,4 +1,4 @@
-import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normalizeSupplierRow,validPolicy,policyHash,quoteMercadoLibre,stockIsFresh,safeCode,sha256} from './publication-policy.js';
+import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normalizeSupplierRow,validPolicy,policyHash,quoteMercadoLibre,competitiveDecision,stockIsFresh,safeCode,sha256} from './publication-policy.js';
 import {PublicationStore} from './publication-store.js';
 import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './publication-meli.js';
 import {enqueuePublicationWork} from './publication-queue.js';
@@ -37,7 +37,7 @@ export function competitiveOverrides(args){
  return out;
 }
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
-export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick'];
+export const ADMIN_ONLY_ACTIONS=['preview_competitor','clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
 const CLONE_PREFLIGHT_TICKS=6;
 // A clone over an alternative fresh feed is a small, targeted preflight.
@@ -292,6 +292,34 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    const hash=await policyHash(policy),existing=await s.run(args.run_id);
    if(existing){const existingTarget=(await s.target(args.run_id))?.target_published??null;if(existing.feed_id!==args.feed_id||existing.policy_hash!==hash||existingTarget!==targetPublished)throw new PublicationError('run_id_conflict',409);return s.summary(args.run_id);}
    await s.createRun({id:args.run_id,feedId:args.feed_id,policy,policyHash:hash,now:now(),dailyCap,preflightLimit,targetPublished});return s.summary(args.run_id);
+  }
+  // Sólo lectura: para publicaciones propias ya activas, qué precio y qué plazo
+  // tiene el ganador de su ficha y qué haríamos con las reglas de precio
+  // competitivo. No escribe nada, no toca ningún lote.
+  if(action==='preview_competitor'){
+   const ids=Array.isArray(args.item_ids)?args.item_ids:[];
+   if(!ids.length||ids.length>25||ids.some(id=>!/^MLU\d+$/.test(String(id))))throw new PublicationError('invalid_item_ids');
+   const source=args.run_id!=null?await s.run(args.run_id):null;
+   if(args.run_id!=null&&!source)throw new PublicationError('source_run_not_found',404);
+   const stored=source?JSON.parse(source.policy_json):null;
+   const policy=validPolicy({...(stored??{}),...(args.policy??{}),competitive:true,...competitiveOverrides({...args,competitive:true}),
+    ...(args.availability_days!=null?{availabilityDays:args.availability_days}:{})});
+   const rows=[];
+   for(const itemId of ids){
+    let read;
+    try{read=await api.itemCompetitorPreview(env,String(itemId));}
+    catch(error){rows.push({item_id:String(itemId),error:safeCode(error)});continue;}
+    const rival=read.competitor;
+    const decision=competitiveDecision({price:read.price,rivalPrice:rival?.price??null,rivalDays:rival?.days??null,ownDays:read.own_days},policy);
+    rows.push({...read,competitor:rival?{price:rival.price,days:rival.days}:null,
+     decision:decision.mode,current_price:read.price,new_price:decision.newPrice,floor:decision.floor,
+     estimated_cost:decision.estimatedCost==null?null:Math.round(decision.estimatedCost),
+     drop:decision.newPrice==null||read.price==null?null:read.price-decision.newPrice,
+     drop_pct:decision.newPrice==null||!read.price?null:Number((100*(read.price-decision.newPrice)/read.price).toFixed(1))});
+   }
+   return {items:rows,policy_hash:await policyHash(policy),availability_days:policy.availabilityDays,
+    competitive_floor_margin:policy.competitiveFloorMargin,minimum_contribution_uyu:policy.minimumContributionUyu,
+    margin_assumed:policy.margin,cost_is_estimated:true,read_only_mercado_libre:true,writes:false};
   }
   if(action==='clone_preflight_catalog'){
    // Preflight of Catálogo obligatorio over the ISBNs a source run left in review,

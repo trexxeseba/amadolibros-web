@@ -6,7 +6,7 @@ on:
       action:
         description: 'Controlar la cola; las altas requieren precios revisados y habilitación del Worker'
         type: choice
-        options: [status, tick, pause, approve, refresh, clone_preflight_catalog, create_run_from_source, audit_availability_terms, shipping_diagnostic, shipping_probe, queue_kick]
+        options: [status, tick, pause, approve, refresh, clone_preflight_catalog, create_run_from_source, audit_availability_terms, shipping_diagnostic, shipping_probe, queue_kick, preview_competitor]
         default: status
       run_id:
         description: 'ID del lote (vacío para consultar o continuar el activo)'
@@ -47,6 +47,10 @@ on:
         type: string
       item_price:
         description: 'Con shipping_diagnostic: precio UYU para cotizar envío gratis ME2. Sólo lectura.'
+        required: false
+        type: string
+      item_ids:
+        description: 'Con preview_competitor: publicaciones propias activas (MLU...), separadas por coma, hasta 25. Sólo lectura.'
         required: false
         type: string
       competitive:
@@ -122,6 +126,7 @@ jobs:
           PUBLISHER_DAILY_CAP: ${{ inputs.daily_cap }}
           PUBLISHER_TARGET_PUBLISHED: ${{ inputs.target_published }}
           PUBLISHER_ITEM_ID: ${{ inputs.item_id }}
+          PUBLISHER_ITEM_IDS: ${{ inputs.item_ids }}
           PUBLISHER_ITEM_PRICE: ${{ inputs.item_price }}
           PUBLISHER_ISBN: ${{ inputs.isbn }}
           PUBLISHER_COMPETITIVE: ${{ inputs.competitive }}

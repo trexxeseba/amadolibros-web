@@ -79,20 +79,63 @@ export function competitorDaysOf(row) {
   const days = row?.competitor?.days;
   return typeof days === 'number' && Number.isFinite(days) && days >= 0 ? days : null;
 }
+// Precio objetivo y piso a partir del costo, con una sola fórmula para los dos:
+// el margen que se le pase. `base` es el costo sin el envío que regalamos.
+export function priceFromBase(base, policy, margin) {
+  const p = validPolicy(policy), cost = base + p.deliveryUyu;
+  const target = Math.max(base/(1-p.mlFee-margin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
+  return Math.ceil((target*(1+p.additionalPricePct)-1e-9)/p.roundUyu)*p.roundUyu;
+}
+// Costo de una publicación ya activa, dando marcha atrás a la fórmula con la que
+// se publicó. Es una ESTIMACIÓN: vale sólo si ese libro se publicó con esta misma
+// política (margen, comisión, envío y redondeo). Sirve para calcular su piso sin
+// tener el renglón del proveedor, que en una publicación vieja ya no está.
+//
+// El error tiene una sola dirección, y es la que conviene: el precio publicado es
+// el mayor entre el término del margen, la contribución mínima y la venta mínima,
+// así que cuando no manda el margen el precio es MÁS alto de lo que ese término
+// pediría y el costo estimado sale por ENCIMA del real. Un costo de más levanta el
+// piso, y un piso alto de más nunca baja un precio por debajo de lo que conviene:
+// deja fichas sin ganar, no plata sobre la mesa. Lo que sí la deja es un margen
+// declarado distinto del que se usó al publicar: por eso el margen asumido viaja
+// en la respuesta.
+export function estimatedBaseFromPrice(price, policy) {
+  const p = validPolicy(policy);
+  if (!(typeof price === 'number' && Number.isFinite(price) && price > 0)) return null;
+  const base = (price/(1+p.additionalPricePct) - p.deliveryUyu/(1-p.mlFee)) * (1-p.mlFee-p.margin);
+  return base > 0 ? base : null;
+}
+// Qué hacer con una publicación activa: bajar a ganador -1% sin pasar el piso,
+// dejarla como está, o marcar por qué no se toca. Mismas reglas que al publicar.
+export function competitiveDecision({price, rivalPrice, rivalDays, ownDays}, policy) {
+  const p = validPolicy(policy);
+  if (!p.competitive) throw new PublicationError('invalid_policy');
+  const base = estimatedBaseFromPrice(price, policy);
+  if (base === null) return {mode:'cost_unknown', newPrice:price, floor:null, estimatedCost:null};
+  const floor = Math.min(price, priceFromBase(base, policy, p.competitiveFloorMargin));
+  const estimatedCost = base + p.deliveryUyu;
+  const mine = typeof ownDays === 'number' ? ownDays : p.availabilityDays;
+  const out = {mode:'kept', newPrice:price, floor, estimatedCost, ownDays:mine};
+  if (rivalPrice === null || rivalPrice === undefined) return {...out, mode:'no_competitor'};
+  if (rivalDays === null || rivalDays === undefined) return {...out, mode:'rival_delivery_unknown'};
+  if (rivalDays < mine) return {...out, mode:'rival_faster_delivery'};
+  const wanted = Math.floor((rivalPrice*(1-COMPETITIVE_UNDERCUT)+1e-9)/p.roundUyu)*p.roundUyu;
+  if (wanted >= price) return {...out, mode:'already_cheaper'};
+  if (wanted < floor) return {...out, mode:'below_floor'};
+  return {...out, mode:'lower', newPrice:wanted, contribution:wanted*(1-p.mlFee)-estimatedCost};
+}
 export function quoteMercadoLibre(row, policy) {
   const p = validPolicy(policy);
   const book = row.listArs*(1-p.supplierDiscount)/p.arsPerUyu;
   const freight = row.weightKg*p.freightUsdKg*p.usdPerUyu;
   const base = book+freight+p.laborUyu;
   const cost = base+p.deliveryUyu;
-  const target = Math.max(base/(1-p.mlFee-p.margin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
-  const full = Math.ceil((target*(1+p.additionalPricePct)-1e-9)/p.roundUyu)*p.roundUyu;
+  const full = priceFromBase(base, p, p.margin);
   const result = {price:full,currencyId:'UYU',book,freight,cost};
   if (!p.competitive) return {...result,contribution:full*(1-p.mlFee)-cost};
   // Piso: el mayor entre el margen mínimo fijado por Seba, la contribución mínima
   // y la venta mínima. Nunca se publica por debajo.
-  const floorTarget = Math.max(base/(1-p.mlFee-p.competitiveFloorMargin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
-  const floor = Math.min(full,Math.ceil((floorTarget-1e-9)/p.roundUyu)*p.roundUyu);
+  const floor = Math.min(full, priceFromBase(base, p, p.competitiveFloorMargin));
   const rival = competitorPriceOf(row), rivalDays = competitorDaysOf(row);
   let price = full,mode = rival===null?'no_competitor':'kept',skip=null;
   if (rival!==null) {
