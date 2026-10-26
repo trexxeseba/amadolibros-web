@@ -16,8 +16,14 @@
   ni "sólo".
 - No tocar precios, cálculo de envío, pasarela de pago ni eventos de analítica
   sin pedido expreso.
-- No hacer merge a producción sin que Seba lo pida: dejar el PR abierto para
-  revisión.
+- Mergear a producción sin pedir permiso, en cuanto el cambio esté terminado y
+  los checks en verde (regla fijada por Seba el 25/10/2026, reemplaza la
+  anterior de dejar el PR abierto). No preguntar "¿lo mergeo?": hacerlo y
+  contarlo después. Si el cambio queda a medias o los checks fallan, dejar el
+  PR abierto y decirlo.
+- Aplicar cambios de precio sobre publicaciones ya activas sigue necesitando que
+  Seba vea la lista antes: eso no es mergear código, es tocar plata. Mergear el
+  código que los calcula no necesita permiso.
 
 ## Una tarea, una carpeta
 
