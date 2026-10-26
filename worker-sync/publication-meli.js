@@ -366,18 +366,52 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
  async function competitorPrice(env,input){
   const isbn=canonicalIsbn(input),found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:isbn}));
   if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
-  if(found.results.length===0)return {price:null,at:now()};
+  if(found.results.length===0)return {price:null,at:now(),days:null};
   if(found.results.length!==1||(typeof found.paging?.total==='number'&&found.paging.total!==1))throw new PublicationError('ambiguous_product_metadata',422);
   const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId??''))throw new PublicationError('product_id_invalid',422);
   const product=await call(env,`/products/${productId}`);
   const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
   const win=product.buy_box_winner;
-  if(win&&valid(Number(win.price))&&String(win.seller_id??'')!==sellerId&&(win.currency_id===undefined||win.currency_id==='UYU'))return {price:Number(win.price),at:now()};
-  if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now()};
-  const items=await call(env,`/products/${productId}/items`);
-  const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
-  const prices=list.filter(i=>String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU')&&valid(Number(i.price))).map(i=>Number(i.price));
-  return {price:prices.length?Math.min(...prices):null,at:now()};
+  let rival=null;
+  if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now(),days:null};
+  if(win&&valid(Number(win.price))&&(win.currency_id===undefined||win.currency_id==='UYU'))rival={price:Number(win.price),itemId:/^MLU\d+$/.test(win.item_id??'')?win.item_id:null};
+  if(!rival){
+   const items=await call(env,`/products/${productId}/items`);
+   const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
+   const others=list.filter(i=>String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU')&&valid(Number(i.price)));
+   if(!others.length)return {price:null,at:now(),days:null};
+   const best=others.reduce((a,b)=>Number(b.price)<Number(a.price)?b:a);
+   rival={price:Number(best.price),itemId:/^MLU\d+$/.test(best.item_id??best.id??'')?(best.item_id??best.id):null};
+  }
+  return {price:rival.price,at:now(),days:await competitorDays(env,rival.itemId)};
+ }
+ // Días que tarda en entregar el ganador: 0 cuando no declara MANUFACTURING_TIME
+ // (entrega inmediata), null cuando no se puede leer. Un null nunca baja precios.
+ async function competitorDays(env,itemId){
+  if(!itemId)return null;
+  let item;
+  try{item=await call(env,`/items/${itemId}?attributes=id,sale_terms`);}catch{return null;}
+  const terms=Array.isArray(item?.sale_terms)?item.sale_terms:null;
+  if(!terms)return null;
+  const term=terms.find(t=>t?.id==='MANUFACTURING_TIME');
+  if(!term)return 0;
+  const struct=term.value_struct??term.values?.[0]?.struct??null;
+  const number=Number(struct?.number),unit=String(struct?.unit??'').toLowerCase();
+  if(Number.isFinite(number)&&number>=0){
+   if(unit.startsWith('d'))return Math.round(number);
+   if(unit.startsWith('h'))return Math.ceil(number/24);
+   if(unit.startsWith('s')||unit.startsWith('w'))return Math.round(number*7);
+   if(unit.startsWith('m'))return Math.round(number*30);
+   return Math.round(number);
+  }
+  const text=String(term.value_name??'').toLowerCase(),m=text.match(/(\d+)/);
+  if(!m)return null;
+  const n=Number(m[1]);
+  if(text.includes('hora'))return Math.ceil(n/24);
+  if(text.includes('semana'))return n*7;
+  if(text.includes('mes'))return n*30;
+  if(text.includes('día')||text.includes('dia'))return n;
+  return null;
  }
  return {account,indexSlice,skuItems,prepare,create,call,validateItem,inspectProduct,competitorPrice,shippingDiagnostic,shippingProbe};
 }

@@ -56,9 +56,10 @@ export function normalizeSupplierRow(raw) {
   const row = {isbn,title,author:String(raw.author??'').slice(0,300),publisher:String(raw.publisher??'').slice(0,200),
     listArs:raw.listArs,weightKg:raw.weightKg,stock:String(raw.stock??'').trim()};
   if (raw.competitor !== undefined && raw.competitor !== null) {
-    const price = raw.competitor.price, at = raw.competitor.at;
+    const price = raw.competitor.price, at = raw.competitor.at, days = raw.competitor.days ?? null;
     if ((price !== null && !(typeof price === 'number' && Number.isFinite(price) && price > 0)) || !Number.isFinite(at)) throw new PublicationError('invalid_competitor');
-    row.competitor = { price, at };
+    if (days !== null && !(typeof days === 'number' && Number.isInteger(days) && days >= 0 && days <= 365)) throw new PublicationError('invalid_competitor');
+    row.competitor = { price, at, days };
   }
   if (typeof row.listArs !== 'number' || !Number.isFinite(row.listArs) || row.listArs <= 0) throw new PublicationError('invalid_supplier_price');
   if (typeof row.weightKg !== 'number' || !Number.isFinite(row.weightKg) || row.weightKg <= 0 || row.weightKg > 30) throw new PublicationError('invalid_weight');
@@ -70,6 +71,13 @@ export const COMPETITIVE_UNDERCUT = 0.01;
 export function competitorPriceOf(row) {
   const price = row?.competitor?.price;
   return typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : null;
+}
+// Días de disponibilidad del ganador (MANUFACTURING_TIME). 0 = entrega inmediata,
+// null = no se pudo leer. Bajar el precio contra un ganador que entrega antes que
+// nosotros no gana la ficha: ahí ML nos marca perdiendo por stock, no por precio.
+export function competitorDaysOf(row) {
+  const days = row?.competitor?.days;
+  return typeof days === 'number' && Number.isFinite(days) && days >= 0 ? days : null;
 }
 export function quoteMercadoLibre(row, policy) {
   const p = validPolicy(policy);
@@ -85,16 +93,19 @@ export function quoteMercadoLibre(row, policy) {
   // y la venta mínima. Nunca se publica por debajo.
   const floorTarget = Math.max(base/(1-p.mlFee-p.competitiveFloorMargin)+p.deliveryUyu/(1-p.mlFee),(cost+p.minimumContributionUyu)/(1-p.mlFee),p.minimumSaleUyu);
   const floor = Math.min(full,Math.ceil((floorTarget-1e-9)/p.roundUyu)*p.roundUyu);
-  const rival = competitorPriceOf(row);
+  const rival = competitorPriceOf(row), rivalDays = competitorDaysOf(row);
   let price = full,mode = rival===null?'no_competitor':'kept',skip=null;
   if (rival!==null) {
     const wanted = Math.floor((rival*(1-COMPETITIVE_UNDERCUT)+1e-9)/p.roundUyu)*p.roundUyu;
-    if (wanted < full) {
+    // Sólo el precio decide cuando nuestra entrega no es peor que la del ganador.
+    if (rivalDays===null) mode = 'rival_delivery_unknown';
+    else if (rivalDays < p.availabilityDays) mode = 'rival_faster_delivery';
+    else if (wanted < full) {
       if (wanted >= floor) { price = wanted; mode = 'matched'; }
       else { mode = 'below_floor'; skip = 'not_competitive'; }
     }
   }
-  return {...result,price,contribution:price*(1-p.mlFee)-cost,competitive:{mode,floor,fullPrice:full,competitorPrice:rival},...(skip?{skip}:{})};
+  return {...result,price,contribution:price*(1-p.mlFee)-cost,competitive:{mode,floor,fullPrice:full,competitorPrice:rival,competitorDays:rivalDays,ownDays:p.availabilityDays},...(skip?{skip}:{})};
 }
 export function stockIsFresh(sourceDate, now=Date.now(), maxHours=24) {
   const date = Date.parse(sourceDate);
