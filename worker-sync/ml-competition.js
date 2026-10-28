@@ -16,16 +16,19 @@ import { bookIsbn } from './isbn.js';
 import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 4;
+const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 5;
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
-// inmediata; null = no se sabe (ML no mandó sale_terms).
+// sin preparación informada; null = no se pudo verificar el plazo.
+// La ausencia del atributo nunca demuestra disponibilidad inmediata.
 export function manufacturingDays(item) {
   if (!Array.isArray(item?.sale_terms)) return null;
   const t = item.sale_terms.find(x => x?.id === 'MANUFACTURING_TIME');
-  if (!t) return 0;
-  const n = Number(t.value_struct?.number ?? parseInt(String(t.value_name ?? ''), 10));
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+  if (!t) return null;
+  const raw = t.value_struct?.number ?? parseInt(String(t.value_name ?? ''), 10);
+  if (raw == null || String(raw).trim() === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.ceil(n) : null;
 }
 export const COMPETITION_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS comp_targets(catalog_product_id TEXT PRIMARY KEY,isbn TEXT,own_item_ids TEXT,own_catalog_item_id TEXT,own_price REAL,priority INTEGER NOT NULL,updated_at INTEGER NOT NULL)`,
@@ -48,6 +51,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     // Columnas agregadas después (ALTER aditivo): condición y envío internacional.
     const have = new Set((await db.prepare('PRAGMA table_info(comp_snapshots)').all()).results.map(c => c.name));
     for (const [col, type] of [['condition', 'TEXT'], ['international', 'INTEGER'], ['manufacturing_days', 'INTEGER']]) if (!have.has(col)) await db.prepare(`ALTER TABLE comp_snapshots ADD COLUMN ${col} ${type}`).run();
+    const dayColumns = new Set((await db.prepare('PRAGMA table_info(comp_product_days)').all()).results.map(c => c.name));
+    if (!dayColumns.has('snapshot_version')) await db.prepare('ALTER TABLE comp_product_days ADD COLUMN snapshot_version INTEGER').run();
     await db.prepare('INSERT OR IGNORE INTO comp_state(name,cursor_json,lease_until,updated_at) VALUES(?,?,0,?)').bind('daily', '{}', now()).run();
     ready.add(db);
   }
@@ -103,13 +108,15 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
 
   async function snapProduct(db, token, target, date, caps) {
     const t = now();
-    let items = null, winner = null;
+    let items = null, winner = null, complete = false;
     try {
       const data = await ml(`/products/${encodeURIComponent(target.catalog_product_id)}/items`, token);
       items = Array.isArray(data?.results) ? data.results : [];
+      const total = Number(data?.paging?.total ?? data?.pagination?.total ?? data?.total ?? items.length);
+      complete = Array.isArray(data?.results) && Number.isFinite(total) && total <= items.length;
       caps.products_items = 'ok';
     } catch (e) { caps.products_items = e.code; if (e.status === 429) throw e; }
-    const ok = items !== null;
+    const ok = items !== null && complete;
     let ptw = null;
     if (target.own_catalog_item_id && caps.price_to_win !== 'ml_http_403' && caps.price_to_win !== 'ml_http_404') {
       try { ptw = await ml(`/items/${encodeURIComponent(target.own_catalog_item_id)}/price_to_win?version=v2`, token); caps.price_to_win = 'ok'; }
@@ -120,19 +127,32 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     // Condición y días de preparación de cada competidor salen siempre de
     // /items/bulk: el listado del catálogo no trae el plazo de preparación
     // completo. Si ML no lo manda, queda sin dato (null), nunca como inmediato.
-    const sinCondicion = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID && true).map(it => it.item_id);
+    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID);
+    const sinCondicion = [...new Set(competitors.map(it => it.item_id))];
+    // El listado del catálogo no es evidencia de plazo/stock. Se descarta
+    // antes del bulk para que un 403 o una respuesta parcial no deje un 0 falso.
+    for (const it of competitors) { it.sale_terms = undefined; it.condition = undefined; it.international_delivery_mode = undefined; }
     if (sinCondicion.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
       const extra = new Map();
       for (let i = 0; i < sinCondicion.length; i += 20) {
         try {
-          const raw = await ml(bulkItemsPath(sinCondicion.slice(i, i + 20), 'id,condition,shipping,international_delivery_mode,sale_terms'), token);
+          const raw = await ml(bulkItemsPath(sinCondicion.slice(i, i + 20), 'id,status,available_quantity,currency_id,condition,shipping,international_delivery_mode,sale_terms'), token);
           extraCalls++; caps.items_bulk = 'ok';
           for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
         } catch (e) { caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
       }
-      for (const it of items) { const x = extra.get(it.item_id); if (x) { it.condition ??= x.condition; it.international_delivery_mode ??= x.international_delivery_mode; it.shipping ??= x.shipping; it.sale_terms = Array.isArray(x.sale_terms) ? x.sale_terms : undefined; } }
+      for (const it of competitors) {
+        const x = extra.get(it.item_id);
+        if (!x) continue;
+        it.condition = x.condition;
+        it.currency_id = x.currency_id;
+        it.international_delivery_mode = x.international_delivery_mode;
+        it.shipping = x.shipping;
+        it.sale_terms = x.status === 'active' && Number(x.available_quantity) > 0 && Array.isArray(x.sale_terms) ? x.sale_terms : undefined;
+      }
     }
     const stmts = [];
+    if (ok) stmts.push(db.prepare('DELETE FROM comp_snapshots WHERE snap_date=? AND catalog_product_id=?').bind(date, target.catalog_product_id));
     if (items) for (const it of items) {
       if (typeof it?.item_id !== 'string') continue;
       const intl = typeof it.international_delivery_mode === 'string' ? (it.international_delivery_mode !== 'none' ? 1 : 0) : null;
@@ -142,9 +162,9 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
           it.shipping?.free_shipping ? 1 : 0, it.shipping?.logistic_type ?? null, winner && winner === it.item_id ? 1 : 0, t,
           typeof it.condition === 'string' ? it.condition : null, intl, manufacturingDays(it)));
     }
-    stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at) VALUES(?,?,?,?,?,?,?)
-      ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at`)
-      .bind(date, target.catalog_product_id, items ? 'ok' : 'error', winner, typeof ptw?.status === 'string' ? ptw.status : null, Number.isFinite(Number(ptw?.price_to_win)) ? Number(ptw.price_to_win) : null, t));
+    stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at,snapshot_version) VALUES(?,?,?,?,?,?,?,?)
+      ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at,snapshot_version=excluded.snapshot_version`)
+      .bind(date, target.catalog_product_id, items === null ? 'error' : complete ? 'ok' : 'partial', winner, typeof ptw?.status === 'string' ? ptw.status : null, Number.isFinite(Number(ptw?.price_to_win)) ? Number(ptw.price_to_win) : null, t, SNAPSHOT_VERSION));
     await db.batch(stmts);
     return { ok, extraCalls };
   }
@@ -179,7 +199,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
         const catalog = await loader();
         if (!catalog) throw new CompError('catalog_unavailable', 503);
         result.targets = await buildTargets(db, catalog);
-        cursor = { date, v: SNAPSHOT_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, caps: cursor.caps ?? {} };
+        cursor = { date, v: SNAPSHOT_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, caps: {} };
       }
       const caps = cursor.caps ?? {};
       if (cursor.phase === 'products' && hasTime()) {
@@ -259,22 +279,26 @@ export async function competitionByIsbn(db, isbns) {
   for (const t of targets) {
     const rows = snaps.filter(r => r.catalog_product_id === t.catalog_product_id);
     const pd = pdays.find(p => p.catalog_product_id === t.catalog_product_id && p.snap_date === today);
-    if (!pd || pd.status !== 'ok') continue;
+    if (!pd || pd.status !== 'ok' || pd.snapshot_version !== SNAPSHOT_VERSION) continue;
     const pdPrev = prev ? pdays.find(p => p.catalog_product_id === t.catalog_product_id && p.snap_date === prev) : null;
-    const prevOk = pdPrev?.status === 'ok';
+    const prevOk = pdPrev?.status === 'ok' && pdPrev.snapshot_version === SNAPSHOT_VERSION;
     const others = d => rows.filter(r => r.snap_date === d && r.seller_id !== SALES_SELLER_ID);
     const ownToday = rows.some(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID);
     const hoy = others(today), ayer = prevOk ? others(prev) : [];
+    // Una oferta sin evidencia no prueba inmediatez ni ausencia de competencia.
+    // Todos los consumidores reciben "sin dato" hasta completar la verificación.
+    if (hoy.some(r => r.manufacturing_days == null || r.international == null || r.condition == null || r.currency_id !== 'UYU')) continue;
     const sellersHoy = new Set(hoy.map(r => r.seller_id)), sellersAyer = new Set(ayer.map(r => r.seller_id));
     // Precio justo: sólo competidores nuevos (no usados), nacionales, con
     // entrega inmediata (sin días de preparación) y con el mismo tipo de envío
     // que nuestra publicación. Los que venden a pedido tardan semanas: no le
     // compiten a un libro en stock. Si algo no se pudo saber, no se compara.
     const ownRow = rows.find(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID) ?? null;
-    const nuevosNacionales = hoy.filter(r => r.price != null && r.condition === 'new' && r.international !== 1);
+    const nuevosNacionales = hoy.filter(r => r.currency_id === 'UYU' && r.price > 0 && r.condition === 'new' && r.international === 0);
     const aPedido = nuevosNacionales.filter(r => Number(r.manufacturing_days) > 0);
-    const comparables = nuevosNacionales.filter(r => r.manufacturing_days === 0
-      && (ownRow ? Number(r.free_shipping) === Number(ownRow.free_shipping) : true));
+    const inmediatos = nuevosNacionales.filter(r => r.manufacturing_days === 0);
+    const comparables = inmediatos.filter(r =>
+      (ownRow ? Number(r.free_shipping) === Number(ownRow.free_shipping) : true));
     const minAPedido = aPedido.reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
     const minPrice = comparables.reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
     const ownPrice = ownRow?.price ?? t.own_price;
@@ -289,7 +313,7 @@ export async function competitionByIsbn(db, isbns) {
     }
     if (prevOk) for (const s of sellersHoy) if (!sellersAyer.has(s)) avisos.push({ tipo: 'competidor_nuevo', texto: `Competidor nuevo: ${name(s)} a ${money(hoy.find(r => r.seller_id === s)?.price)}.` });
     if (ownToday && !hoy.length) avisos.push({ tipo: 'solos_en_catalogo', texto: 'Estás solo en el catálogo: ningún competidor lo ofrece hoy.' });
-    else if (ownToday && !comparables.length && aPedido.length) avisos.push({ tipo: 'solos_en_catalogo', texto: `Sos el único con entrega inmediata: los otros ${aPedido.length} lo venden a pedido (desde ${money(minAPedido)}).` });
+    else if (ownToday && !inmediatos.length && aPedido.length) avisos.push({ tipo: 'solos_en_catalogo', texto: `Sos el único con entrega inmediata: los otros ${aPedido.length} lo venden a pedido (desde ${money(minAPedido)}).` });
     const winning = pd.own_status === 'winning', winningPrev = pdPrev?.own_status === 'winning';
     if (pdPrev?.own_status && pd.own_status && winning !== winningPrev) {
       avisos.push(winning ? { tipo: 'primer_lugar_ganado', texto: 'Ganaste el primer lugar del catálogo.' }
@@ -302,6 +326,7 @@ export async function competitionByIsbn(db, isbns) {
     out.set(t.isbn, {
       catalog_product_id: t.catalog_product_id, foto: today, foto_anterior: prevOk ? prev : null,
       competidores: sellersHoy.size, competidores_comparables: comparables.length, excluidos_de_precio: excluidos,
+      competidores_inmediatos: new Set(inmediatos.map(r => r.seller_id)).size,
       competidores_a_pedido: aPedido.length, precio_minimo_a_pedido: minAPedido,
       precio_minimo: minPrice, tu_precio: ownPrice, precio_relativo: rel ? Math.round(rel * 100) / 100 : null,
       primer_lugar: pd.own_status ?? null, precio_para_ganar: pd.price_to_win ?? null,
