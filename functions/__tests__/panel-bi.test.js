@@ -182,3 +182,18 @@ test('precios: si sos el único con entrega inmediata, el sugerido sale de los q
   assert.equal(r.lista[0].sugerido, 4900);
   assert.equal(r.solosTotal, 0);
 });
+
+test('loadBi expone la antigüedad del stock propio (catalog.json), no sólo cuándo se calculó el panel', async t => {
+  const db = await seed(t);
+  const bi = await loadBi(db, catalog, NOW);
+  assert.equal(bi.catalogo_actualizado, catalog.updated_at);
+  assert.notEqual(bi.catalogo_actualizado, bi.generado, 'son dos fechas distintas: cuándo se sincronizó el catálogo vs. cuándo corrió el panel');
+  const html = renderBi(bi);
+  assert.match(html, /stock propio al 24\/10, 07:00/, 'hora de Montevideo (UTC-3: 10:00 UTC -> 07:00), no UTC');
+  assert.match(html, /Stock propio al 24\/10, 07:00.*hora Montevideo.*Si repusiste después, todavía no se refleja acá/);
+  // Sin fecha del catálogo: lo dice, no inventa una.
+  const biSinFecha = await loadBi(db, { ...catalog, updated_at: undefined }, NOW);
+  assert.equal(biSinFecha.catalogo_actualizado, null);
+  assert.match(renderBi(biSinFecha), /stock propio al —/);
+  assert.match(renderBi(biSinFecha), /Sin fecha del catálogo: no se sabe qué tan vieja es esta foto/);
+});

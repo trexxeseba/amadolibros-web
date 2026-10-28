@@ -52,7 +52,7 @@ function kpiBlock(s) {
 }
 
 const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Por verificar'] };
-function sinStockTable(items) {
+function sinStockTable(items, catalogoActualizado) {
   if (!items?.length) return '';
   const rows = items.map(b => {
     const m = b.mercado ?? { estado: 'sin_dato' }, [cls, label] = VEREDICTO[m.estado] ?? VEREDICTO.sin_dato;
@@ -61,7 +61,10 @@ function sinStockTable(items) {
       <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
       <td class="n">${m.min != null ? money(m.min) : '—'}</td><td class="n">${b.costo ? money(b.costo) : '—'}</td><td class="n">${b.margen ? `<span class="${b.margen.margin < 0 ? 'down' : 'up'}">${money(b.margen.margin)}</span>` : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
   }).join('');
-  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
+  // "Sin stock" es al momento de esta foto del catálogo, no en vivo: una
+  // reposición física después de esa hora todavía no se ve acá.
+  const frescura = catalogoActualizado ? `Stock propio al ${esc(new Date(catalogoActualizado).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }))} (hora Montevideo). Si repusiste después, todavía no se refleja acá.` : 'Sin fecha del catálogo: no se sabe qué tan vieja es esta foto.';
+  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><p class="muted">${frescura}</p><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="muted">"Con entrega inmediata": vendedores con el libro nuevo, sin envío del exterior y sin días de preparación en la publicación de catálogo de ML (foto diaria). Los que lo venden a pedido no cuentan. Los 15 que más vendían.</p></div>`;
 }
 
@@ -91,7 +94,7 @@ function abcBlock(s) {
     <div class="card"><div class="scroll"><table><thead><tr><th>Top libros A</th><th class="n">Vendidos 365 d</th><th class="n">Facturado</th><th class="n">Stock</th></tr></thead><tbody>${top}</tbody></table></div></div></div>`;
 }
 
-function inventoryBlock(s) {
+function inventoryBlock(s, catalogoActualizado) {
   if (!s.ok) return failed(s);
   const v = s.data;
   const list = (items, cols) => items.length ? `<div class="scroll"><table><tbody>${items.map(cols).join('')}</tbody></table></div>` : '<p class="muted">Ninguno.</p>';
@@ -103,7 +106,7 @@ function inventoryBlock(s) {
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
       <p class="muted">${num(v.muertoUnidades)} unidades con stock y sin ventas en 6 meses: candidatos a promoción o rebaja.</p>${list(v.muerto, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td></tr>`)}</div>
-  </div>${sinStockTable(v.aSinStock)}`;
+  </div>${sinStockTable(v.aSinStock, catalogoActualizado)}`;
 }
 
 function purchasesBlock(s) {
@@ -198,11 +201,12 @@ function longTailBlock(s) {
 }
 
 export function renderBi(bi) {
-  return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
+  const stockDesde = bi.catalogo_actualizado ? new Date(bi.catalogo_actualizado).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : null;
+  return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC · stock propio al ${stockDesde ? esc(stockDesde) : '—'} (hora Montevideo)</p>
     <h2>Cómo va el negocio</h2>${kpiBlock(bi.kpis)}
     <h2>Tendencia semanal</h2>${weeklyChart(bi.weekly)}
     <h2>Qué libros hacen la plata</h2>${abcBlock(bi.abc)}
-    <h2>Dónde se pierde plata en el inventario</h2>${inventoryBlock(bi.inventario)}
+    <h2>Dónde se pierde plata en el inventario</h2>${inventoryBlock(bi.inventario, bi.catalogo_actualizado)}
     <h2>Cuánto deja cada libro</h2>${marginBlock(bi.margen)}
     <h2>Cómo rinden las compras</h2>${purchasesBlock(bi.compras)}
     <h2>Editoriales que más facturan</h2>${publishersBlock(bi.editoriales)}

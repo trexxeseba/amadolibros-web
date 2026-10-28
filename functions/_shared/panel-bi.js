@@ -386,7 +386,14 @@ export async function loadBi(db, catalog, now = Date.now()) {
       return longTailReview({ books: table.data.books, stock: table.data.stock, meta: table.data.meta, visits, catalog, ventana_365_completa: ventanaCompleta, nowMs: now });
     });
   }
-  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia, longTail };
+  // Antigüedad del stock propio: catalog.json se sincroniza una vez por día (y
+  // backfill cada 5 minutos). "Sin stock" acá es el stock al momento de esta
+  // foto, no en vivo: una reposición física después de la última sincronización
+  // no se refleja hasta la próxima corrida. Se muestra siempre, no sólo como
+  // alerta a las 48 h (esa alerta global es para "el sync dejó de correr", no
+  // para decir cuán vieja es cada lectura individual).
+  const catalogoActualizado = catalog?.updated_at ?? null;
+  return { generado: new Date(now).toISOString(), catalogo_actualizado: catalogoActualizado, kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia, longTail };
 }
 
 // Lo más urgente de Brújula para el correo de la mañana: pocas filas por
