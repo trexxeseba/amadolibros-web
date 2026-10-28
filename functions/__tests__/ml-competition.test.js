@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, competitionCoverage, montevideoDate } from '../../worker-sync/ml-competition.js';
+import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, competitionCoverage, montevideoDate, ROTATION_DAYS } from '../../worker-sync/ml-competition.js';
 import { createReposicionFacts } from '../../worker-sync/reposicion-facts.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -250,4 +250,55 @@ test('días de preparación: sin MANUFACTURING_TIME es entrega inmediata; sin sa
   assert.equal(manufacturingDays({ sale_terms: [{ id: 'MANUFACTURING_TIME', value_struct: { number: 16, unit: 'días' } }] }), 16);
   assert.equal(manufacturingDays({ sale_terms: [{ id: 'WARRANTY_TYPE' }] }), 0);
   assert.equal(manufacturingDays({}), null);
+});
+
+// Rotación: el resto del catálogo (fichas sin ventas en el año) se lee por turnos
+// con el cupo que sobra, cada ROTATION_DAYS, con reintentos y espera creciente.
+test('rotación del catálogo: lee las fichas fuera del top, no las repite antes de su turno y reintenta errores con espera', async t => {
+  const db = await seed(t);
+  const R1 = '9788420412146', R2 = '9781418599942';
+  const cat = { updated_at: catalog.updated_at, items: [...catalog.items,
+    { id: 'MLU31', isbn: R1, status: 'active', available_quantity: 1, catalog_listing: true, catalog_product_id: 'MLU777', price: 900 },
+    { id: 'MLU32', isbn: R2, status: 'active', available_quantity: 2, catalog_listing: false, catalog_product_id: 'MLU888', price: 1500 },
+    { id: 'MLU33', status: 'active', available_quantity: 2, catalog_listing: false, catalog_product_id: 'MLU889', price: 100 }] };
+  const base = fakeMl({ day: 1 });
+  const state = { fail888: true };
+  const fetcher = async url => {
+    const u = new URL(String(url));
+    if (u.pathname === '/products/MLU777/items') return Response.json({ paging: { total: 1, offset: 0, limit: 50 }, results: [{ item_id: 'MLUR', seller_id: 91, price: 800, currency_id: 'UYU', condition: 'new' }] });
+    if (u.pathname === '/products/MLU888/items') return state.fail888 ? new Response('down', { status: 500 }) : Response.json({ results: [] });
+    if (u.pathname === '/items/MLU31/price_to_win') return Response.json({ status: 'competing', price_to_win: 790, winner: { item_id: 'MLUR' } });
+    return base(url);
+  };
+  const mk = nowMs => createMlCompetition({ fetcher, tokenProvider: async () => 'tok', now: () => nowMs, loadCatalog: async () => cat });
+  let r;
+  for (let i = 0; i < 6; i++) { r = await mk(DAY1).sync({ ORDERS_DB: db }, { calls: 50 }); if (r.rotation || r.state === 'error') break; }
+  assert.equal(r.state, 'done');
+  assert.equal(r.rotation, 2, 'las dos fichas fuera del top se leyeron en la misma corrida con el cupo sobrante');
+  assert.equal(r.products_error, 1);
+  const rows = Object.fromEntries(db.sqlite.prepare('SELECT * FROM comp_rotation').all().map(x => [x.catalog_product_id, x]));
+  assert.deepEqual(Object.keys(rows).sort(), ['MLU777', 'MLU888'], 'la ficha del top no va a la rotación; la publicación sin ISBN tampoco');
+  assert.equal(rows.MLU777.last_status, 'ok');
+  assert.equal(rows.MLU777.next_due_at, DAY1 + ROTATION_DAYS * 864e5);
+  assert.equal(rows.MLU888.last_status, 'error'); assert.equal(rows.MLU888.fails, 1); assert.equal(rows.MLU888.next_due_at, DAY1 + 3600000);
+  // Hechos de una ficha rotada: salen igual que las del top, con su segmento.
+  const f = (await competitionByIsbn(db, [R1, R2], DAY1)).get(R1);
+  assert.equal(f.segmento, 'rotacion');
+  assert.equal(f.competidores_comparables, 1); assert.equal(f.precio_minimo, 800); assert.equal(f.tu_precio, 900); assert.equal(f.primer_lugar, 'competing');
+  assert.equal((await competitionByIsbn(db, [R2], DAY1)).get(R2), undefined, 'sin foto completa no hay hechos');
+  // Misma corrida repetida: nada vencido, no se vuelve a leer.
+  r = await mk(DAY1 + 60000).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal(r.rotation, 0);
+  // Una hora después vence el reintento de la que falló; ya anda.
+  state.fail888 = false;
+  r = await mk(DAY1 + 3600000 + 1).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal(r.rotation, 1); assert.equal(r.products_ok, 1);
+  assert.equal(db.sqlite.prepare("SELECT fails,last_status FROM comp_rotation WHERE catalog_product_id='MLU888'").get().fails, 0);
+  const cov = await competitionCoverage(db, cat, DAY1 + 7200000);
+  assert.deepEqual({ total: cov.rotacion.total, vigentes: cov.rotacion.vigentes, nunca: cov.rotacion.nunca, pendientes: cov.rotacion.pendientes, fallando: cov.rotacion.fallando }, { total: 2, vigentes: 2, nunca: 0, pendientes: 0, fallando: 0 });
+  assert.equal(cov.catalogo.con_ficha_en_rotacion, 2); assert.equal(cov.catalogo.con_ficha_sin_vigilar, 0); assert.equal(cov.catalogo.publicaciones_sin_isbn, 1);
+  assert.ok(cov.corridas.some(x => x.rotacion > 0));
+  // Al día siguiente el top se rearma y la cola conserva su historial.
+  await mk(DAY2).sync({ ORDERS_DB: db }, { calls: 0 });
+  assert.equal(db.sqlite.prepare("SELECT last_ok_at FROM comp_rotation WHERE catalog_product_id='MLU777'").get().last_ok_at, DAY1);
 });

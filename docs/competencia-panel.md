@@ -24,6 +24,7 @@ Este cambio (primer PR) agrega:
 | Cobertura | `competitionCoverage`, bloque en `/panel/reposicion`, acción `competencia_cobertura`, `GET /competition/coverage` | Por segmento (ventas propias / agotados): revisadas hoy, parciales, errores, pendientes, nunca completas, foto completa más vieja y su edad. Brechas: títulos activos con ficha ML sin vigilar (tope 400) y títulos sin ficha ML (sin listado comparable por API). |
 | Bandeja de oportunidades | `worker-sync/oportunidades.js`, `/panel/oportunidades`, acción `oportunidades`, `POST /opportunities/refresh` | Tabla `comp_opportunities` con id determinista `tipo:ISBN`, estados pendiente/aprobado/descartado/pedido/recibido/resultado, acción, impacto por mes, confianza, cantidad y nivel, evidencia, enlaces (ML, panel, tapa), primera y última observación, nota, avisado por correo. |
 | Cantidad | `cantidadSugerida` | `max(0, objetivo − stock físico − en camino)`. Objetivo 1..3 por ventas de 90 días. 2 o 3 sólo con repetición real (≥3 en el año y ≥2 en 90 días), costo cargado y ventana de ventas completa; si falta algo, 1 como prueba (`provisional`) con el motivo. Señal externa aislada en ISBN sin ventas propias: 1, nunca 3. Stock compartido entre publicaciones: máximo, nunca suma. |
+| Rotación de todo el catálogo | tabla `comp_rotation`, fase `rotation` del cron | Todas las fichas con `catalog_product_id` del catálogo que no entran en el top diario. Cada corrida de 5 minutos, con el cupo que sobra después del top y los vendedores, lee hasta 12 fichas cuyo turno venció. Foto completa: próximo turno a los 3 días; parcial: al día siguiente; error: espera 1 h, 2 h, 4 h… hasta 48 h, y tres errores seguidos cortan la corrida. La cola se rearma cada día con el catálogo conservando su historial. Los hechos (`competitionByIsbn`) leen también estas fichas (`segmento: rotacion`). |
 | Correo diario | `daily-panel-digest.js` | Recalcula la bandeja antes de armar el correo, cuenta pendientes vigentes y lista sólo las nuevas (se marcan `notificado_at` cuando Resend acepta el correo; una prueba manual no marca). |
 
 ## Lo que NO hace (a propósito)
@@ -56,9 +57,15 @@ Este cambio (primer PR) agrega:
 
 ## Límites conocidos
 
-- La foto del día cubre hasta 400 fichas, elegidas por ventas propias. El resto
-  del catálogo con ficha ML queda como brecha visible en Cobertura, todavía sin
-  rotación (fase 2).
+- El top diario cubre hasta 400 fichas elegidas por ventas propias; el resto con
+  ficha ML rota cada 3 días con el cupo sobrante (unas 30 llamadas por corrida,
+  288 corridas por día). Si el catálogo con ficha es mucho más grande que lo
+  que entra en 3 días, Cobertura lo muestra como "vencidas" / "nunca leídas": el
+  tope de llamadas es el límite real, no se fuerza. Los títulos sin ficha de
+  catálogo ML quedan como brecha abierta (no hay listado comparable por API).
+- No se pudo medir desde esta sesión el tamaño real del catálogo con ficha (el
+  contenedor no llega a R2): la primera corrida en producción lo dirá en
+  Cobertura.
 - `paging.total` y `offset` en `/products/{id}/items` se usan tal como ML los
   devuelve; si ML ignora `offset`, la ficha queda `partial` y se ve en Cobertura
   (no se asume completa).
@@ -69,12 +76,10 @@ Este cambio (primer PR) agrega:
 
 ## Pendiente (fases siguientes, en cambios revisables)
 
-1. **Todo el catálogo**: cola incremental con rotación de todas las fichas con
-   `catalog_product_id` (y los agotados por identidad), reintentos, límite de
-   llamadas por corrida, y Cobertura por segmento: catálogo rotado / top ventas /
-   agotados / sin ficha. Sugerencias de suba sobre todo el catálogo con rango de
-   prueba parametrizable, costo con fecha, comisión, flete y contribución; costos
-   críticos faltantes bloquean el precio "firme".
+1. **Precios de todo el catálogo**: sugerencias de suba sobre todas las fichas
+   con foto (top y rotación), con rango de prueba parametrizable, costo con
+   fecha, comisión, flete y contribución; costos críticos faltantes bloquean el
+   precio "firme". Hoy `priceRaises` sólo mira los libros con ventas en el año.
 2. **Ventas y long tail**: clasificación poca exposición / visitas sin
    conversión / oferta con ventas / quiebre / evidencia insuficiente, con
    ventanas 90/365 y días efectivamente disponible; visitas desconocidas no son

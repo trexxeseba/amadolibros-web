@@ -26,6 +26,12 @@ const ML_ORIGIN = 'https://api.mercadolibre.com';
 const DAY_MS = 86400000, HOUR_MS = 3600000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 4;
 // Páginas del listado de una ficha por foto: más de eso se registra como parcial.
 const MAX_PAGES = 5, RUNS_KEPT = 400;
+// Rotación del resto del catálogo (fichas con catalog_product_id que no entran
+// en el top diario): cada ficha se vuelve a leer cada ROTATION_DAYS; una foto
+// parcial se reintenta al día siguiente y un error con espera creciente
+// (1 h, 2 h, 4 h… hasta 48 h). Por corrida, como mucho ROTATION_PER_RUN fichas,
+// y sólo con el cupo que sobra después del top y los vendedores.
+export const ROTATION_DAYS = 3, ROTATION_PER_RUN = 12, ROTATION_MAX_BACKOFF_HOURS = 48;
 export const OWN_CURRENCY = 'UYU';
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
@@ -44,8 +50,11 @@ export const COMPETITION_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS comp_product_days(snap_date TEXT NOT NULL,catalog_product_id TEXT NOT NULL,status TEXT NOT NULL,winner_item_id TEXT,own_status TEXT,price_to_win REAL,fetched_at INTEGER NOT NULL,PRIMARY KEY(snap_date,catalog_product_id))`,
   `CREATE TABLE IF NOT EXISTS comp_seller_days(snap_date TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT,transactions_completed INTEGER,power_seller_status TEXT,fetched_at INTEGER NOT NULL,PRIMARY KEY(snap_date,seller_id))`,
   `CREATE TABLE IF NOT EXISTS comp_state(name TEXT PRIMARY KEY,cursor_json TEXT NOT NULL,lease_until INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,last_result_json TEXT)`,
+  // Cola de rotación: todo el catálogo con ficha ML fuera del top diario.
+  `CREATE TABLE IF NOT EXISTS comp_rotation(catalog_product_id TEXT PRIMARY KEY,isbn TEXT,own_item_ids TEXT,own_catalog_item_id TEXT,own_price REAL,segment TEXT NOT NULL,last_ok_at INTEGER,last_attempt_at INTEGER,last_status TEXT,fails INTEGER NOT NULL DEFAULT 0,next_due_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS comp_rotation_due ON comp_rotation(next_due_at)`,
   // Registro de cada corrida: qué se leyó, cuánto cupo se usó, qué falló.
-  `CREATE TABLE IF NOT EXISTS comp_runs(id INTEGER PRIMARY KEY AUTOINCREMENT,started_at INTEGER NOT NULL,duration_ms INTEGER NOT NULL,snap_date TEXT,state TEXT NOT NULL,phase TEXT,products INTEGER NOT NULL DEFAULT 0,products_ok INTEGER NOT NULL DEFAULT 0,products_partial INTEGER NOT NULL DEFAULT 0,products_error INTEGER NOT NULL DEFAULT 0,sellers INTEGER NOT NULL DEFAULT 0,calls_used INTEGER NOT NULL DEFAULT 0,code TEXT,caps_json TEXT)`,
+  `CREATE TABLE IF NOT EXISTS comp_runs(id INTEGER PRIMARY KEY AUTOINCREMENT,started_at INTEGER NOT NULL,duration_ms INTEGER NOT NULL,snap_date TEXT,state TEXT NOT NULL,phase TEXT,products INTEGER NOT NULL DEFAULT 0,products_ok INTEGER NOT NULL DEFAULT 0,products_partial INTEGER NOT NULL DEFAULT 0,products_error INTEGER NOT NULL DEFAULT 0,sellers INTEGER NOT NULL DEFAULT 0,calls_used INTEGER NOT NULL DEFAULT 0,code TEXT,caps_json TEXT,rotation INTEGER NOT NULL DEFAULT 0)`,
 ];
 
 export const montevideoDate = ms => new Date(ms - 3 * 3600000).toISOString().slice(0, 10);
@@ -62,6 +71,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     const cols = async table => new Set((await db.prepare(`PRAGMA table_info(${table})`).all()).results.map(c => c.name));
     const snapCols = await cols('comp_snapshots');
     for (const [col, type] of [['condition', 'TEXT'], ['international', 'INTEGER'], ['manufacturing_days', 'INTEGER']]) if (!snapCols.has(col)) await db.prepare(`ALTER TABLE comp_snapshots ADD COLUMN ${col} ${type}`).run();
+    const runCols = await cols('comp_runs');
+    if (!runCols.has('rotation')) await db.prepare('ALTER TABLE comp_runs ADD COLUMN rotation INTEGER NOT NULL DEFAULT 0').run();
     const dayCols = await cols('comp_product_days');
     for (const [col, type] of [['items_total', 'INTEGER'], ['items_fetched', 'INTEGER'], ['pages', 'INTEGER'], ['bulk_pending', 'INTEGER'], ['code', 'TEXT']]) if (!dayCols.has(col)) await db.prepare(`ALTER TABLE comp_product_days ADD COLUMN ${col} ${type}`).run();
     await db.prepare('INSERT OR IGNORE INTO comp_state(name,cursor_json,lease_until,updated_at) VALUES(?,?,0,?)').bind('daily', '{}', now()).run();
@@ -78,8 +89,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     try { return await res.json(); } catch { throw new CompError('ml_bad_json'); }
   }
 
-  // Productos a vigilar: los de catálogo de los libros con más ventas propias.
-  async function buildTargets(db, catalog) {
+  // Índice ISBN → ficha de catálogo y publicaciones propias, desde catalog.json.
+  function catalogIndex(catalog) {
     const byIsbn = new Map();
     for (const item of Array.isArray(catalog?.items) ? catalog.items : []) {
       const isbn = bookIsbn(item?.isbn);
@@ -91,6 +102,12 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       if (item.status === 'active' && Number.isFinite(Number(item.price))) entry.price = entry.price == null ? Number(item.price) : Math.min(entry.price, Number(item.price));
       byIsbn.set(isbn, entry);
     }
+    return byIsbn;
+  }
+
+  // Productos a vigilar a diario: los de catálogo de los libros con más ventas propias.
+  async function buildTargets(db, catalog) {
+    const byIsbn = catalogIndex(catalog);
     const top = await topOwnSalesIsbns(db, { minUnits365: 1, limit: MAX_TARGETS * 2, nowMs: now() });
     // Los que se agotaron y ya no están en el catálogo: el producto de catálogo
     // sale de la identidad de sus ventas, para saber si otro lo vende hoy.
@@ -114,7 +131,51 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     rows.forEach((e, i) => stmts.push(db.prepare('INSERT INTO comp_targets(catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,priority,updated_at) VALUES(?,?,?,?,?,?,?)')
       .bind(e.pid, e.isbn, JSON.stringify(e.items), e.catalogItem, e.price, MAX_TARGETS - i, t)));
     for (let i = 0; i < stmts.length; i += 80) await db.batch(stmts.slice(i, i + 80));
+    await buildRotation(db, byIsbn, new Set(rows.map(r => r.pid)));
     return rows.length;
+  }
+
+  // Cola de rotación: todas las fichas del catálogo que no están en el top del
+  // día. Conserva el historial (última foto completa, fallos, próximo turno) de
+  // las que ya estaban; saca las que dejaron de estar en el catálogo o pasaron al top.
+  async function buildRotation(db, byIsbn, topPids) {
+    const t = now();
+    const rows = [];
+    const seen = new Set();
+    for (const [isbn, e] of byIsbn) {
+      if (topPids.has(e.pid) || seen.has(e.pid)) continue;
+      seen.add(e.pid);
+      rows.push({ pid: e.pid, isbn, items: e.items, catalogItem: e.catalogItem, price: e.price });
+    }
+    const stmts = rows.map(e => db.prepare(`INSERT INTO comp_rotation(catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,segment,next_due_at,updated_at) VALUES(?,?,?,?,?,'catalogo',0,?)
+      ON CONFLICT(catalog_product_id) DO UPDATE SET isbn=excluded.isbn,own_item_ids=excluded.own_item_ids,own_catalog_item_id=excluded.own_catalog_item_id,own_price=excluded.own_price,updated_at=excluded.updated_at`)
+      .bind(e.pid, e.isbn, JSON.stringify(e.items), e.catalogItem, e.price, t));
+    for (let i = 0; i < stmts.length; i += 80) await db.batch(stmts.slice(i, i + 80));
+    await db.prepare('DELETE FROM comp_rotation WHERE updated_at<?').bind(t).run();
+    return rows.length;
+  }
+
+  // Una tanda de la rotación: las fichas cuyo turno venció, por antigüedad.
+  async function rotate(db, token, date, caps, hasTime, counters) {
+    const t0 = now();
+    const { results } = await db.prepare('SELECT * FROM comp_rotation WHERE next_due_at<=? ORDER BY next_due_at ASC, last_ok_at ASC LIMIT ?').bind(t0, ROTATION_PER_RUN).all();
+    let used = 0, n = 0, seguidos = 0;
+    for (const r of results) {
+      if (!hasTime()) break;
+      const { status, calls } = await snapProduct(db, token, r, date, caps);
+      used += calls; n++;
+      seguidos = status === 'error' ? seguidos + 1 : 0;
+      const t = now();
+      const fails = status === 'error' ? Number(r.fails) + 1 : 0;
+      const next = status === 'ok' ? t + ROTATION_DAYS * DAY_MS : status === 'partial' ? t + DAY_MS : t + Math.min(ROTATION_MAX_BACKOFF_HOURS, 2 ** (fails - 1)) * HOUR_MS;
+      await db.prepare('UPDATE comp_rotation SET last_attempt_at=?,last_status=?,last_ok_at=CASE WHEN ?=\'ok\' THEN ? ELSE last_ok_at END,fails=?,next_due_at=? WHERE catalog_product_id=?')
+        .bind(t, status, status, t, fails, next, r.catalog_product_id).run();
+      counters.products++; counters[status === 'ok' ? 'products_ok' : status === 'partial' ? 'products_partial' : 'products_error']++;
+      // Tres errores seguidos: el endpoint está cerrado o ML no responde; se
+      // deja de quemar cupo en esta corrida (las fichas quedan con su espera).
+      if (seguidos >= 3) break;
+    }
+    return { used, n };
   }
 
   // Listado completo de la ficha, página por página. Devuelve también cuántos
@@ -209,8 +270,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
 
   async function logRun(db, started, result, cursor) {
     try {
-      await db.prepare(`INSERT INTO comp_runs(started_at,duration_ms,snap_date,state,phase,products,products_ok,products_partial,products_error,sellers,calls_used,code,caps_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-        .bind(started, result.duration_ms, cursor?.date ?? null, result.state, cursor?.phase ?? null, result.products, result.products_ok, result.products_partial, result.products_error, result.sellers, result.calls_used, result.code ?? null, JSON.stringify(result.caps ?? {})).run();
+      await db.prepare(`INSERT INTO comp_runs(started_at,duration_ms,snap_date,state,phase,products,products_ok,products_partial,products_error,sellers,calls_used,code,caps_json,rotation) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+        .bind(started, result.duration_ms, cursor?.date ?? null, result.state, cursor?.phase ?? null, result.products, result.products_ok, result.products_partial, result.products_error, result.sellers, result.calls_used, result.code ?? null, JSON.stringify(result.caps ?? {}), result.rotation ?? 0).run();
       await db.prepare('DELETE FROM comp_runs WHERE id<(SELECT MAX(id) FROM comp_runs)-?').bind(RUNS_KEPT).run();
     } catch { /* el registro nunca frena la captura */ }
   }
@@ -225,7 +286,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     if (!row) return { state: 'busy' };
     let cursor = JSON.parse(row.cursor_json || '{}');
     const budget = calls;
-    const result = { state: 'idle', products: 0, products_ok: 0, products_partial: 0, products_error: 0, sellers: 0, calls_used: 0 };
+    const result = { state: 'idle', products: 0, products_ok: 0, products_partial: 0, products_error: 0, sellers: 0, rotation: 0, calls_used: 0 };
     const date = montevideoDate(started);
     const hasTime = () => calls > 0 && now() - started < deadlineMs;
     try {
@@ -275,6 +336,14 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
         }
         if (cursor.offset >= results.length) { cursor = { ...cursor, phase: 'done' }; result.state = 'done'; }
       }
+      // Con el top del día listo, el cupo que sobra va a la rotación del resto
+      // del catálogo (todas las fichas con catalog_product_id, por turno).
+      if (cursor.phase === 'done' && hasTime() && caps.products_items !== 'ml_http_403' && caps.products_items !== 'ml_http_401') {
+        const token = await tokenProvider(env);
+        const r = await rotate(db, token, date, caps, hasTime, result);
+        calls -= r.used; result.rotation = r.n;
+        if (r.n) result.state = result.state === 'done' ? 'done' : 'rotation';
+      }
       cursor.caps = caps;
       result.caps = caps;
     } catch (error) {
@@ -286,7 +355,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     await db.prepare('UPDATE comp_state SET cursor_json=?,lease_until=0,updated_at=?,last_result_json=? WHERE name=? AND lease_until=?')
       .bind(JSON.stringify(cursor), now(), JSON.stringify(result), 'daily', token_).run().catch(() => {});
     // Las corridas sin trabajo (nada que leer, o fuera de horario) no se anotan.
-    if (result.products || result.sellers || result.targets != null || result.state === 'error' || result.state === 'products_endpoint_unavailable') await logRun(db, started, result, cursor);
+    if (result.products || result.sellers || result.rotation || result.targets != null || result.state === 'error' || result.state === 'products_endpoint_unavailable') await logRun(db, started, result, cursor);
     return result;
   }
 
@@ -296,6 +365,19 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
 export const mlCompetition = createMlCompetition();
 
 const money = v => v == null ? '—' : `$ ${Math.round(v).toLocaleString('es-UY')}`;
+
+// Fichas vigiladas para esos ISBN: el top diario y, si no está ahí, la rotación.
+// `segmento` dice de dónde sale cada una.
+async function watchedRows(db, isbns) {
+  const list = JSON.stringify(isbns);
+  const top = (await db.prepare('SELECT *, \'top\' AS segmento FROM comp_targets WHERE isbn IN (SELECT value FROM json_each(?))').bind(list).all()).results;
+  const have = new Set(top.map(t => t.isbn));
+  const rest = isbns.filter(i => !have.has(i));
+  if (!rest.length) return top;
+  let rot = [];
+  try { rot = (await db.prepare('SELECT catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,\'rotacion\' AS segmento FROM comp_rotation WHERE isbn IN (SELECT value FROM json_each(?))').bind(JSON.stringify(rest)).all()).results; } catch { rot = []; }
+  return [...top, ...rot];
+}
 
 // Últimas dos fotos COMPLETAS (status ok) de cada producto, y la última foto de
 // cualquier estado (para decir si hay una captura en curso, parcial o fallida).
@@ -325,7 +407,7 @@ export async function competitionByIsbn(db, isbns, nowMs = Date.now()) {
   if (!valid.length) return out;
   let targets, days;
   try {
-    targets = (await db.prepare('SELECT * FROM comp_targets WHERE isbn IN (SELECT value FROM json_each(?))').bind(JSON.stringify(valid)).all()).results;
+    targets = await watchedRows(db, valid);
     if (!targets.length) return out;
     days = await productDays(db, JSON.stringify(targets.map(t => t.catalog_product_id)));
   } catch { return out; }
@@ -390,7 +472,7 @@ export async function competitionByIsbn(db, isbns, nowMs = Date.now()) {
     const latest = d.latest;
     const captura = latest && latest.snap_date > today ? { estado: latest.status === 'partial' ? 'parcial' : 'error', fecha: latest.snap_date, leidos: latest.items_fetched ?? null, total: latest.items_total ?? null, codigo: latest.code ?? null } : null;
     out.set(t.isbn, {
-      catalog_product_id: t.catalog_product_id, foto: today, foto_anterior: prev, foto_edad_horas: Math.max(0, Math.round((nowMs - Number(pd.fetched_at)) / HOUR_MS)),
+      catalog_product_id: t.catalog_product_id, segmento: t.segmento ?? 'top', foto: today, foto_anterior: prev, foto_edad_horas: Math.max(0, Math.round((nowMs - Number(pd.fetched_at)) / HOUR_MS)),
       foto_completa: true, captura_posterior: captura, listado: { total: pd.items_total ?? null, leidos: pd.items_fetched ?? null, sin_detalle: pd.bulk_pending ?? 0 },
       competidores: sellersHoy.size, competidores_comparables: comparables.length, excluidos_de_precio: excluidos,
       competidores_a_pedido: aPedido.length, precio_minimo_a_pedido: minAPedido, otra_moneda: otraMoneda, desconocidos,
@@ -446,6 +528,17 @@ export async function competitionCoverage(db, catalog = null, nowMs = Date.now()
   const days = targets.length ? await productDays(db, JSON.stringify(targets.map(t => t.catalog_product_id))) : new Map();
   const segment = () => ({ total: 0, hoy_completas: 0, hoy_parciales: 0, hoy_errores: 0, pendientes_hoy: 0, sin_foto_completa: 0, foto_completa_mas_vieja: null, edad_max_horas: null });
   const segmentos = { ventas_propias: segment(), agotados: segment() };
+  // Rotación del resto del catálogo: cuántas tienen foto completa vigente
+  // (menos de ROTATION_DAYS), vencida, nunca, con turno pendiente o fallando.
+  let rotacion = null;
+  try {
+    const r = await db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN last_ok_at>=? THEN 1 ELSE 0 END) AS vigentes, SUM(CASE WHEN last_ok_at IS NOT NULL AND last_ok_at<? THEN 1 ELSE 0 END) AS vencidas,
+      SUM(CASE WHEN last_ok_at IS NULL THEN 1 ELSE 0 END) AS nunca, SUM(CASE WHEN next_due_at<=? THEN 1 ELSE 0 END) AS pendientes, SUM(CASE WHEN fails>0 THEN 1 ELSE 0 END) AS fallando,
+      SUM(CASE WHEN last_status='partial' THEN 1 ELSE 0 END) AS parciales, MIN(last_ok_at) AS mas_vieja, SUM(CASE WHEN last_attempt_at>=? THEN 1 ELSE 0 END) AS hoy FROM comp_rotation`)
+      .bind(nowMs - ROTATION_DAYS * DAY_MS, nowMs - ROTATION_DAYS * DAY_MS, nowMs, Date.parse(`${today}T03:00:00Z`)).first();
+    rotacion = { total: Number(r?.total ?? 0), vigentes: Number(r?.vigentes ?? 0), vencidas: Number(r?.vencidas ?? 0), nunca: Number(r?.nunca ?? 0), pendientes: Number(r?.pendientes ?? 0), fallando: Number(r?.fallando ?? 0), parciales: Number(r?.parciales ?? 0),
+      revisadas_hoy: Number(r?.hoy ?? 0), foto_completa_mas_vieja: r?.mas_vieja ? montevideoDate(Number(r.mas_vieja)) : null, cada_dias: ROTATION_DAYS, por_corrida: ROTATION_PER_RUN };
+  } catch { rotacion = null; }
   for (const t of targets) {
     const seg = segmentos[t.own_item_ids && t.own_item_ids !== '[]' ? 'ventas_propias' : 'agotados'];
     seg.total++;
@@ -476,14 +569,17 @@ export async function competitionCoverage(db, catalog = null, nowMs = Date.now()
       if (typeof item.catalog_product_id === 'string' && item.catalog_product_id.trim()) conFicha.add(isbn); else sinFicha.add(isbn);
     }
     for (const i of conFicha) sinFicha.delete(i);
+    let enRotacion = new Set();
+    try { enRotacion = new Set((await db.prepare('SELECT isbn FROM comp_rotation').all()).results.map(r => r.isbn)); } catch { /* sin tabla */ }
     catalogo = { activos_con_isbn: conFicha.size + sinFicha.size, con_ficha_ml: conFicha.size, con_ficha_vigilados: [...conFicha].filter(i => vigilados.has(i)).length,
-      con_ficha_sin_vigilar: [...conFicha].filter(i => !vigilados.has(i)).length, sin_ficha_ml: sinFicha.size, publicaciones_sin_isbn: sinIsbn, tope_vigilados: MAX_TARGETS, actualizado: catalog.updated_at ?? null };
+      con_ficha_en_rotacion: [...conFicha].filter(i => !vigilados.has(i) && enRotacion.has(i)).length,
+      con_ficha_sin_vigilar: [...conFicha].filter(i => !vigilados.has(i) && !enRotacion.has(i)).length, sin_ficha_ml: sinFicha.size, publicaciones_sin_isbn: sinIsbn, tope_vigilados: MAX_TARGETS, actualizado: catalog.updated_at ?? null };
   }
   const hoy = runs.filter(r => r.snap_date === today);
   return {
     fecha: today, fase: state?.cursor?.phase ?? null, foto_del_dia: state?.cursor?.date ?? null, ultima_corrida: state?.updated_at ?? null, ultimo_estado: state?.last?.state ?? null, ultimo_codigo: state?.last?.code ?? null,
-    capacidades: state?.cursor?.caps ?? {}, vigilados: targets.length, segmentos, catalogo,
-    corridas_hoy: { cantidad: hoy.length, llamadas: hoy.reduce((n, r) => n + Number(r.calls_used), 0), fichas: hoy.reduce((n, r) => n + Number(r.products), 0), parciales: hoy.reduce((n, r) => n + Number(r.products_partial), 0), errores: hoy.reduce((n, r) => n + Number(r.products_error), 0) },
-    corridas: runs.map(r => ({ inicio: Number(r.started_at), duracion_ms: Number(r.duration_ms), fecha: r.snap_date, estado: r.state, fase: r.phase, fichas: Number(r.products), completas: Number(r.products_ok), parciales: Number(r.products_partial), errores: Number(r.products_error), vendedores: Number(r.sellers), llamadas: Number(r.calls_used), codigo: r.code ?? null })),
+    capacidades: state?.cursor?.caps ?? {}, vigilados: targets.length, segmentos, rotacion, catalogo,
+    corridas_hoy: { cantidad: hoy.length, llamadas: hoy.reduce((n, r) => n + Number(r.calls_used), 0), fichas: hoy.reduce((n, r) => n + Number(r.products), 0), parciales: hoy.reduce((n, r) => n + Number(r.products_partial), 0), errores: hoy.reduce((n, r) => n + Number(r.products_error), 0), rotacion: hoy.reduce((n, r) => n + Number(r.rotation ?? 0), 0) },
+    corridas: runs.map(r => ({ inicio: Number(r.started_at), duracion_ms: Number(r.duration_ms), fecha: r.snap_date, estado: r.state, fase: r.phase, fichas: Number(r.products), completas: Number(r.products_ok), parciales: Number(r.products_partial), errores: Number(r.products_error), vendedores: Number(r.sellers), rotacion: Number(r.rotation ?? 0), llamadas: Number(r.calls_used), codigo: r.code ?? null })),
   };
 }
