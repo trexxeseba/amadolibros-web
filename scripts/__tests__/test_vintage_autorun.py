@@ -176,6 +176,71 @@ class UpdateCodeTest(unittest.TestCase):
             self.assertEqual(runner.notices, [])
 
 
+class NotifyUrlTest(unittest.TestCase):
+    OLD = "https://ntfy.sh/viejo-publico"
+    NEW = "https://ntfy.sh/secreto-largo-al-azar"
+
+    def runner(self, directory, notify_url="https://ntfy.sh/viejo-publico"):
+        args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=notify_url, no_update=False)
+        return vintage_autorun.Runner(args)
+
+    def put(self, runner, content):
+        (runner.private / "notify-url.txt").write_bytes(content if isinstance(content, bytes) else content.encode("utf-8"))
+
+    def send(self, runner, fail=False):
+        sent = []
+
+        def fake(request, timeout=None):
+            sent.append(request.full_url)
+            if fail:
+                raise OSError("fallo contra " + request.full_url)
+            return types.SimpleNamespace(read=lambda: b"")
+        with unittest.mock.patch("urllib.request.urlopen", side_effect=fake):
+            runner.notify("Vintage: prueba", "mensaje", every_s=0)
+        return sent
+
+    def test_the_private_file_wins_over_the_launcher_argument(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            self.put(runner, self.NEW + chr(10))
+            self.assertEqual(self.send(runner), [self.NEW])
+
+    def test_without_the_file_the_argument_is_still_used(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.send(self.runner(directory)), [self.OLD])
+
+    def test_the_file_alone_is_enough_and_tolerates_bom_and_windows_newlines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, notify_url=None)
+            self.put(runner, bytes([0xEF, 0xBB, 0xBF]) + self.NEW.encode("utf-8") + bytes([13, 10]))
+            self.assertEqual(self.send(runner), [self.NEW])
+
+    def test_a_file_that_is_not_an_https_url_is_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            for content in ("hola", "http://ntfy.sh/inseguro", ""):
+                self.put(runner, content)
+                self.assertEqual(self.send(runner), [self.OLD], content)
+
+    def test_the_file_is_read_on_every_notice_so_it_changes_without_a_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            self.put(runner, self.NEW)
+            self.assertEqual(self.send(runner), [self.NEW])
+            self.put(runner, "https://ntfy.sh/otro-tema")
+            self.assertEqual(self.send(runner), ["https://ntfy.sh/otro-tema"])
+
+    def test_a_failed_send_never_writes_the_topic_to_the_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            self.put(runner, self.NEW)
+            self.send(runner, fail=True)
+            log = "".join(p.read_text("utf-8") for p in runner.logs.glob("autorun-*.log"))
+            self.assertIn("aviso no enviado", log)
+            self.assertNotIn("secreto-largo-al-azar", log)
+            self.assertNotIn("viejo-publico", log)
+
+
 class TargetRaisedTest(unittest.TestCase):
     def closed_runner(self, directory, status):
         runner = make_runner(directory, [10000])

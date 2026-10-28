@@ -3,7 +3,9 @@ import json
 import os
 import sys
 import tempfile
+import types
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "vintage-local"))
@@ -122,6 +124,52 @@ class OnceTest(unittest.TestCase):
             self.assertTrue(why.endswith(":error del motor"), why)
             log = "".join(p.read_text("utf-8") for p in (root / "logs").glob("watchdog-*.log"))
             self.assertIn("Último motivo del autorun: error del motor", log)
+
+
+class NotifyUrlTest(unittest.TestCase):
+    OLD = "https://ntfy.sh/viejo-publico"
+    NEW = "https://ntfy.sh/secreto-largo-al-azar"
+
+    def send(self, directory, private=None, fail=False, url=OLD):
+        root = Path(directory)
+        if private is not None:
+            (root / "private").mkdir()
+            (root / "private" / "notify-url.txt").write_bytes(private)
+        sent = []
+
+        def fake(request, timeout=None):
+            sent.append(request.full_url)
+            if fail:
+                raise OSError("fallo contra " + request.full_url)
+            return types.SimpleNamespace(read=lambda: b"")
+        with unittest.mock.patch("urllib.request.urlopen", side_effect=fake):
+            watchdog.Watchdog(directory, notify_url=url).notify("Vintage: prueba", "mensaje")
+        return sent
+
+    def test_the_private_file_wins_over_the_task_argument(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.send(directory, private=self.NEW.encode("utf-8") + bytes([10])), [self.NEW])
+
+    def test_without_the_file_the_argument_is_still_used(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.send(directory), [self.OLD])
+
+    def test_bom_and_windows_newlines_are_tolerated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            content = bytes([0xEF, 0xBB, 0xBF]) + self.NEW.encode("utf-8") + bytes([13, 10])
+            self.assertEqual(self.send(directory, private=content), [self.NEW])
+
+    def test_a_file_that_is_not_an_https_url_is_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.send(directory, private=b"http://ntfy.sh/inseguro"), [self.OLD])
+
+    def test_a_failed_send_never_writes_the_topic_to_the_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.send(directory, private=self.NEW.encode("utf-8"), fail=True)
+            log = "".join(p.read_text("utf-8") for p in (Path(directory) / "logs").glob("watchdog-*.log"))
+            self.assertIn("aviso no enviado", log)
+            self.assertNotIn("secreto-largo-al-azar", log)
+            self.assertNotIn("viejo-publico", log)
 
 
 if __name__ == "__main__":
