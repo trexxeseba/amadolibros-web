@@ -281,7 +281,7 @@ export async function importPurchases(db, payload, now = Date.now()) {
 const ROWS = `SELECT i.purchase_id,i.line_key,i.isbn,i.title,i.title_key,
   CASE WHEN o.document_type='credit_note' THEN -i.quantity ELSE i.quantity END AS quantity,
   i.unit_price,i.discount_pct,i.line_total,i.match_method,i.match_confidence,i.match_candidates,
-  o.supplier,o.supplier_order_id,o.document_number,o.document_type,o.purpose,o.purchase_date,o.purchase_date_ms,o.currency
+  o.supplier,o.supplier_order_id,o.document_number,o.document_type,o.purpose,o.purchase_date,o.purchase_date_ms,o.currency,o.received_date
   FROM purchase_items i JOIN purchase_orders o ON o.purchase_id=i.purchase_id WHERE o.superseded_by IS NULL`;
 
 function describe(rows, limit = 10) {
@@ -333,6 +333,26 @@ export function missingCoverage(coverage, nowMs = Date.now()) {
   return REQUIRED_SUPPLIERS.filter(s => { const c = bySupplier.get(s); return !c || c.covered_from > needFrom || c.covered_to < needTo; });
 }
 
+// La misma compra cargada dos veces no suma dos veces:
+// - un pedido ("order") del proveedor se descarta si después llegó, del mismo
+//   proveedor y con ese ISBN, la confirmación de envío o la factura (hasta 45
+//   días después): es la misma mercadería;
+// - dos documentos del mismo proveedor con el mismo ISBN y la misma cantidad,
+//   con fechas a 3 días o menos, se cuentan una vez.
+const ORDER_FULFILLED_DAYS = 45, DUPLICATE_DAYS = 3;
+export function dedupePurchaseRows(rows) {
+  const kept = [];
+  const sorted = [...rows].sort((a, b) => a.purchase_date_ms - b.purchase_date_ms);
+  for (const r of sorted) {
+    if (r.document_type === 'order' && sorted.some(x => x !== r && x.document_type !== 'order' && x.document_type !== 'credit_note' && x.supplier === r.supplier
+      && x.purchase_date_ms >= r.purchase_date_ms && x.purchase_date_ms - r.purchase_date_ms <= ORDER_FULFILLED_DAYS * DAY_MS)) continue;
+    if (r.document_type !== 'credit_note' && kept.some(x => x.purchase_id !== r.purchase_id && x.document_type !== 'credit_note' && x.supplier === r.supplier
+      && Number(x.quantity) === Number(r.quantity) && Math.abs(x.purchase_date_ms - r.purchase_date_ms) <= DUPLICATE_DAYS * DAY_MS)) continue;
+    kept.push(r);
+  }
+  return kept;
+}
+
 // Resumen para el motor de reposición (sin decidir cuánto comprar). Excluye
 // compras por encargo de cliente: no entraron al stock.
 export async function purchaseSummary(db, isbns, nowMs = Date.now()) {
@@ -342,7 +362,7 @@ export async function purchaseSummary(db, isbns, nowMs = Date.now()) {
   const lead = SUPPLIER_LEAD_DAYS.default * DAY_MS;
   return wanted.map(w => {
     if (!w.isbn) return { input: w.input, error: 'invalid_isbn' };
-    const mine = rows.filter(r => r.isbn === w.isbn).sort((a, b) => b.purchase_date_ms - a.purchase_date_ms);
+    const mine = dedupePurchaseRows(rows.filter(r => r.isbn === w.isbn)).sort((a, b) => b.purchase_date_ms - a.purchase_date_ms);
     const out = { isbn: w.isbn };
     for (const d of PURCHASE_WINDOWS) out[`unidades_${d}d`] = mine.filter(r => nowMs - r.purchase_date_ms <= d * DAY_MS).reduce((n, r) => n + (Number(r.quantity) || 0), 0);
     const lastDate = mine.find(r => r.document_type !== 'credit_note')?.purchase_date_ms;
@@ -351,8 +371,9 @@ export async function purchaseSummary(db, isbns, nowMs = Date.now()) {
     out.ultima_compra_cantidad = last.length ? last.reduce((n, r) => n + (Number(r.quantity) || 0), 0) : null;
     out.ultima_compra_proveedor = last.length ? [...new Set(last.map(r => r.supplier))].join(',') : null;
     out.documentos = new Set(mine.map(r => r.purchase_id)).size;
-    // En tránsito estimado: comprado dentro del plazo de entrega (15 días).
-    out.en_transito_estimado = mine.filter(r => r.document_type !== 'credit_note' && nowMs - r.purchase_date_ms < lead).reduce((n, r) => n + (Number(r.quantity) || 0), 0);
+    // En tránsito estimado: comprado dentro del plazo de entrega (15 días) y
+    // sin fecha de recepción cargada.
+    out.en_transito_estimado = mine.filter(r => r.document_type !== 'credit_note' && !r.received_date && nowMs - r.purchase_date_ms < lead).reduce((n, r) => n + (Number(r.quantity) || 0), 0);
     out.compras_sin_isbn_posibles = pending.filter(r => JSON.parse(r.match_candidates || '[]').includes(w.isbn)).length;
     return out;
   });
