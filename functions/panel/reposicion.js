@@ -109,7 +109,8 @@ function factsTable(results) {
     const sbs = r.sbs.feed_fecha ? `${esc(r.sbs.disponible === 'no_figura' ? 'no figura' : r.sbs.disponible)}${r.sbs.vigente ? '' : ' <small>(feed viejo)</small>'}` : '<small>sin feed</small>';
     const k = r.competencia;
     const comp = k ? `${k.competidores}${k.precio_minimo != null ? `<br><small>desde ${esc(money(k.precio_minimo))} (${k.competidores_comparables} comparables)</small>` : k.competidores ? '<br><small>sin comparable inmediato</small>' : ''}${k.primer_lugar ? `<br><small>${esc(FIRST_PLACE[k.primer_lugar] ?? k.primer_lugar)}</small>` : ''}<br><small>foto ${esc(day(k.foto))}${k.foto_edad_horas != null ? ` (${k.foto_edad_horas} h)` : ''}${k.captura_posterior ? ` · <span class="p p-aviso">captura ${esc(k.captura_posterior.estado)} ${esc(day(k.captura_posterior.fecha))}</span>` : ''}${k.desconocidos ? ` · ${k.desconocidos} sin dato` : ''}</small>` : '<small>—</small>';
-    const alerts = (r.avisos ?? []).map(a => `<li class="${a.tipo === 'compra_reciente' ? 'av-compra' : ''}">${esc(a.texto)}</li>`).join('');
+    const ext = (r.senales_externas ?? []).map(x => `<li>${esc(x.fuente)}${x.vendedor ? ` · ${esc(x.vendedor)}` : ''}: ${x.vendidas != null ? `${esc(x.vendidas)} vendidas en ${esc(x.ventana_dias ?? '?')} d` : 'sin cifra'}${x.precio != null ? ` · ${esc(money(x.precio))}` : ''} <small>(${esc(x.etiqueta)}, extracción ${esc(x.extraccion ?? '—')})</small></li>`).join('');
+    const alerts = (r.avisos ?? []).map(a => `<li class="${a.tipo === 'compra_reciente' ? 'av-compra' : ''}">${esc(a.texto)}</li>`).join('') + (ext ? `<li class="muted">Fuentes externas (no se suman entre sí):</li>${ext}` : '');
     return `<tr>
       <td><div class="tit">${esc(r.titulo ?? '—')}</div><small>${esc(r.isbn)}${pubs ? ` · ${pubs}` : ''}</small>${alerts ? `<ul class="av">${alerts}</ul>` : ''}</td>
       <td class="n"><b>${r.stock_propio}</b></td>

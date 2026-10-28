@@ -15,6 +15,7 @@ export const OPPORTUNITY_TYPES = Object.freeze({
   subir_precio: 'Subir el precio',
   reponer: 'Reponer',
   tener_inmediato: 'Tener con entrega inmediata',
+  probar_externo: 'Probar un título externo',
 });
 const CONFIDENCE_RANK = { alta: 3, media: 2, baja: 1 };
 const DAY_MS = 86400000, HOUR_MS = 3600000;
@@ -128,6 +129,30 @@ export function opportunitiesFromBi(bi, { facts = new Map(), meta = new Map(), n
   return out.map(o => ({ ...o, evidencia: { ...o.evidencia, calculado: new Date(nowMs).toISOString() } }));
 }
 
+// ISBN que no tenemos y aparecen en fuentes externas: sólo entran a la bandeja
+// con un cruce propio (lo buscaron en la web sin resultado, o dejaron el
+// correo en lista de espera) o con dos fuentes distintas. Una señal externa
+// aislada vale una prueba de 1; nunca 2 o 3.
+export function opportunitiesFromRadar(radar, { nowMs = Date.now() } = {}) {
+  const out = [];
+  for (const r of Array.isArray(radar) ? radar : []) {
+    const cruces = [];
+    if (r.buscado_sin_resultado > 0) cruces.push(`${r.buscado_sin_resultado} búsqueda${r.buscado_sin_resultado === 1 ? '' : 's'} sin resultado en la web (${(r.busquedas ?? []).join(', ')})`);
+    if (r.lista_espera > 0) cruces.push(`${r.lista_espera} en lista de espera`);
+    if (r.fuentes >= 2) cruces.push(`${r.fuentes} fuentes externas distintas`);
+    if (!cruces.length) continue;
+    const q = cantidadSugerida({ u90: 0, u365: 0, stock: 0, senal_externa: true, costo_conocido: false });
+    out.push({
+      id: `probar_externo:${r.isbn}`, isbn: r.isbn, tipo: 'probar_externo', titulo: r.titulo ?? null,
+      accion: `Probar con ${q.cantidad} (no está en el catálogo)`, impacto_mes: null, confianza: r.buscado_sin_resultado > 0 || r.lista_espera > 0 ? 'media' : 'baja', cantidad: q.cantidad, cantidad_nivel: q.nivel,
+      evidencia: { fuentes: r.fuentes_lista, vendedores: r.vendedores, vendidas_max: r.vendidas_max, ventana_dias: r.ventana_dias, precio_min: r.precio_min, etiqueta: 'estimado', cruces, buscado_sin_resultado: r.buscado_sin_resultado, lista_espera: r.lista_espera, cantidad_motivo: q.motivo, faltantes: ['costo', 'ventas_propias'], costo_conocido: false,
+        texto: `Lo venden ${r.vendedores} vendedor${r.vendedores === 1 ? '' : 'es'} según ${r.fuentes_lista.join(' y ')} (${r.vendidas_max != null ? `hasta ${r.vendidas_max} vendidas en ${r.ventana_dias ?? '?'} días, estimado por la fuente` : 'sin cifra de ventas'}${r.precio_min != null ? `, desde $ ${Math.round(r.precio_min).toLocaleString('es-UY')}` : ''}). Cruce propio: ${cruces.join('; ')}. No lo tenemos: ${q.motivo}.`, calculado: new Date(nowMs).toISOString() },
+      enlaces: { panel: `/panel/reposicion?q=${r.isbn}`, ml: null, tapa: null },
+    });
+  }
+  return out;
+}
+
 const rankOf = o => (o.impacto_mes ?? -1) * 1000 + (CONFIDENCE_RANK[o.confianza] ?? 0);
 
 // Guarda o actualiza. El estado existente no se toca; la evidencia y la fecha
@@ -201,11 +226,12 @@ export function catalogMeta(catalog) {
 
 // Recalcula la bandeja a partir de Brújula (loadBi) y los hechos de reposición.
 // Lo llama el Worker antes del correo diario y la ruta manual; nunca lanza.
-export async function refreshOpportunities(db, { bi, catalog = null, factsFor = null, precios = null, nowMs = Date.now() } = {}) {
+export async function refreshOpportunities(db, { bi, catalog = null, factsFor = null, precios = null, radar = null, nowMs = Date.now() } = {}) {
   try {
     // Si vino la revisión de precios de todo el catálogo (más completa: rango,
     // costo con fecha, comisión, faltantes), reemplaza las subas de Brújula.
-    const merge = list => (Array.isArray(precios) ? [...list.filter(o => o.tipo !== 'subir_precio'), ...precios] : list);
+    // El radar externo agrega títulos que no tenemos, con cruce propio.
+    const merge = list => [...(Array.isArray(precios) ? [...list.filter(o => o.tipo !== 'subir_precio'), ...precios] : list), ...opportunitiesFromRadar(radar, { nowMs })];
     const list0 = merge(opportunitiesFromBi(bi, { meta: catalogMeta(catalog), nowMs }));
     let facts = new Map();
     const isbns = [...new Set(list0.filter(o => o.tipo !== 'subir_precio').map(o => o.isbn))].slice(0, 50);

@@ -13,12 +13,13 @@ import { createReposicionFacts, ownStockIndex } from './reposicion-facts.js';
 import { listOpportunities, opportunitySummary, OPPORTUNITY_STATES } from './oportunidades.js';
 import { loadBookTable } from '../functions/_shared/panel-bi.js';
 import { longTailReview, loadVisitsIndex } from './long-tail.js';
+import { radarExterno, listImports } from './importacion-externa.js';
 
 export { ownStockIndex };
 
 export const REPOSICION_PATH = '/operations/reposicion';
 export const REPOSICION_AUD = 'amado-reposicion-read';
-const ACTIONS = ['estado', 'reposicion_hechos', 'candidatos', 'ventas_titulo', 'compras_titulo', 'revision_identidad', 'competencia_hoy', 'competencia_cobertura', 'oportunidades', 'long_tail'];
+const ACTIONS = ['estado', 'reposicion_hechos', 'candidatos', 'ventas_titulo', 'compras_titulo', 'revision_identidad', 'competencia_hoy', 'competencia_cobertura', 'oportunidades', 'long_tail', 'radar_externo'];
 
 class RepoError extends Error { constructor(code, status = 400) { super(code); this.code = code; this.status = status; } }
 const reply = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -81,6 +82,11 @@ export function createReposicionReader({ now = Date.now, publicKey = OPERATIONS_
       const cat = o.categoria == null ? null : String(o.categoria);
       const lim = limitArg(o, 200);
       return { ...review, listas: Object.fromEntries(Object.entries(review.listas).map(([k, v]) => [k, v.slice(0, lim)])), pares: review.pares.slice(0, lim), categoria: cat, ...(cat ? { titulos: review.listas[cat] ? review.listas[cat].slice(0, lim) : [] } : {}) };
+    }
+    if (action === 'radar_externo') {
+      const o = args(a, ['limite']);
+      const catalog = await env.CATALOG_R2?.get('catalog.json').then(obj => (obj ? obj.json() : null)).catch(() => null);
+      return { cargas: await listImports(db, 20), radar: await radarExterno(db, catalog, { limit: limitArg(o, 200), nowMs: now() }) };
     }
     if (action === 'oportunidades') {
       const o = args(a, ['estado', 'limite']);
