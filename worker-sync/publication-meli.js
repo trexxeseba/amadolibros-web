@@ -360,9 +360,10 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   }
   return out;
  }
- // Precio a vencer en la ficha de catálogo del ISBN: el del ganador de la compra
- // (buy_box_winner) si no es nuestro; si la API no lo informa, el más barato de los
- // otros vendedores. {price:null} = nadie más vende ese libro. Sólo GET.
+ // Precio a vencer en la ficha de catálogo del ISBN: el más barato de los otros vendedores
+ // que NO tienen entrega inmediata (los inmediatos no cuentan). {price:null} = nadie más
+ // compite por ese libro. Sólo GET.
+ const MAX_RIVALS_CHECKED=8;
  async function competitorPrice(env,input){
   const isbn=canonicalIsbn(input),found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:isbn}));
   if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
@@ -372,18 +373,24 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   const product=await call(env,`/products/${productId}`);
   const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
   const win=product.buy_box_winner;
-  let rival=null;
   if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now(),days:null};
-  if(win&&valid(Number(win.price))&&(win.currency_id===undefined||win.currency_id==='UYU'))rival={price:Number(win.price),itemId:/^MLU\d+$/.test(win.item_id??'')?win.item_id:null};
-  if(!rival){
+  // Los de entrega inmediata no cuentan como competencia de un alta a pedido: no se les gana
+  // por precio. Se compara contra el más barato de los que también venden a pedido.
+  const candidates=[];
+  const add=(price,itemId)=>{if(valid(price)&&!candidates.some(c=>c.itemId&&c.itemId===itemId&&c.price===price))candidates.push({price,itemId:/^MLU\d+$/.test(itemId??'')?itemId:null});};
+  if(win&&(win.currency_id===undefined||win.currency_id==='UYU'))add(Number(win.price),win.item_id);
+  try{
    const items=await call(env,`/products/${productId}/items`);
    const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
-   const others=list.filter(i=>String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU')&&valid(Number(i.price)));
-   if(!others.length)return {price:null,at:now(),days:null};
-   const best=others.reduce((a,b)=>Number(b.price)<Number(a.price)?b:a);
-   rival={price:Number(best.price),itemId:/^MLU\d+$/.test(best.item_id??best.id??'')?(best.item_id??best.id):null};
+   for(const i of list)if(String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU'))add(Number(i.price),i.item_id??i.id);
+  }catch(error){if(!candidates.length)throw error;}
+  if(!candidates.length)return {price:null,at:now(),days:null};
+  candidates.sort((x,y)=>x.price-y.price);
+  for(const c of candidates.slice(0,MAX_RIVALS_CHECKED)){
+   const days=await competitorDays(env,c.itemId);
+   if(days!==0)return {price:c.price,at:now(),days};
   }
-  return {price:rival.price,at:now(),days:await competitorDays(env,rival.itemId)};
+  return {price:null,at:now(),days:null};
  }
  // Días que tarda en entregar el ganador: 0 cuando no declara MANUFACTURING_TIME
  // (entrega inmediata), null cuando no se puede leer. Un null nunca baja precios.

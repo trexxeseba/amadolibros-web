@@ -72,8 +72,10 @@ test('competitorPrice lee el ganador de la ficha y nunca nuestro propio precio',
  const search={results:[{id:'MLU111'}],paging:{total:1}};
  const term=d=>({sale_terms:[{id:'MANUFACTURING_TIME',value_name:`${d} días`,value_struct:{number:d,unit:'días'}}]});
  assert.deepEqual(await mk({'/products/search':search,'/products/MLU111':{buy_box_winner:{price:3890,seller_id:555,currency_id:'UYU',item_id:'MLU777'}},'/items/MLU777':term(18)}).competitorPrice({},'9789502323060'),{price:3890,at:1234,days:18});
- // Sin MANUFACTURING_TIME: entrega inmediata (0 días).
- assert.deepEqual(await mk({'/products/search':search,'/products/MLU111':{buy_box_winner:{price:3890,seller_id:555,currency_id:'UYU',item_id:'MLU777'}},'/items/MLU777':{sale_terms:[]}}).competitorPrice({},'9789502323060'),{price:3890,at:1234,days:0});
+ // Sin MANUFACTURING_TIME: entrega inmediata (0 días). No cuenta como competencia.
+ assert.deepEqual(await mk({'/products/search':search,'/products/MLU111':{buy_box_winner:{price:3890,seller_id:555,currency_id:'UYU',item_id:'MLU777'}},'/items/MLU777':{sale_terms:[]}}).competitorPrice({},'9789502323060'),{price:null,at:1234,days:null});
+ // Ganador inmediato: se saltea y se compara con el más barato de los que venden a pedido.
+ assert.deepEqual(await mk({'/products/search':search,'/products/MLU111/items':{results:[{seller_id:555,price:3000,currency_id:'UYU',item_id:'MLU777'},{seller_id:7,price:4200,currency_id:'UYU',item_id:'MLU778'},{seller_id:8,price:3600,currency_id:'UYU',item_id:'MLU779'}]},'/products/MLU111':{buy_box_winner:{price:3000,seller_id:555,currency_id:'UYU',item_id:'MLU777'}},'/items/MLU777':{sale_terms:[]},'/items/MLU778':term(20),'/items/MLU779':term(25)}).competitorPrice({},'9789502323060'),{price:3600,at:1234,days:25});
  // Sin item identificable: plazo desconocido, nunca baja precios.
  assert.deepEqual(await mk({'/products/search':search,'/products/MLU111':{buy_box_winner:{price:3890,seller_id:555,currency_id:'UYU'}}}).competitorPrice({},'9789502323060'),{price:3890,at:1234,days:null});
  assert.deepEqual(await mk({'/products/search':search,'/products/MLU111':{buy_box_winner:{price:3000,seller_id:440298103,currency_id:'UYU'}}}).competitorPrice({},'9789502323060'),{price:null,at:1234,days:null});
