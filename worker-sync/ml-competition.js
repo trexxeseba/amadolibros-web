@@ -16,7 +16,8 @@ import { bookIsbn } from './isbn.js';
 import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 5;
+const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50;
+const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 6;
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
 // sin preparación informada; null = no se pudo verificar el plazo.
@@ -108,14 +109,31 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
 
   async function snapProduct(db, token, target, date, caps) {
     const t = now();
-    let items = null, winner = null, complete = false;
+    let items = null, winner = null, complete = false, pageCalls = 0;
     try {
-      const data = await ml(`/products/${encodeURIComponent(target.catalog_product_id)}/items`, token);
-      items = Array.isArray(data?.results) ? data.results : [];
-      const total = Number(data?.paging?.total ?? data?.pagination?.total ?? data?.total ?? items.length);
-      complete = Array.isArray(data?.results) && Number.isFinite(total) && total <= items.length;
+      // La lista de vendedores viene por páginas: se piden todas (hasta
+      // PRODUCT_PAGES) para no descartar el producto como "parcial".
+      const seen = new Map();
+      let total = null;
+      for (let page = 0; page < PRODUCT_PAGES; page++) {
+        const data = await ml(`/products/${encodeURIComponent(target.catalog_product_id)}/items?limit=${PRODUCT_PAGE_SIZE}&offset=${seen.size}`, token);
+        pageCalls++;
+        const res = Array.isArray(data?.results) ? data.results : null;
+        if (!res) break;
+        total = Number(data?.paging?.total ?? data?.pagination?.total ?? data?.total ?? res.length);
+        const before = seen.size;
+        for (const it of res) if (typeof it?.item_id === 'string' && !seen.has(it.item_id)) seen.set(it.item_id, it);
+        if (!Number.isFinite(total) || seen.size >= total || seen.size === before) break;
+      }
+      items = [...seen.values()];
+      complete = total !== null && Number.isFinite(total) && total <= items.length;
       caps.products_items = 'ok';
-    } catch (e) { caps.products_items = e.code; if (e.status === 429) throw e; }
+    } catch (e) {
+      // 404 = el producto no tiene publicaciones compitiendo por el catálogo hoy
+      // (por ejemplo, todas a pedido o pausadas): es un dato, no una falla.
+      if (e.status === 404) { items = []; complete = true; }
+      else { caps.products_items = e.code; if (e.status === 429) throw e; }
+    }
     const ok = items !== null && complete;
     let ptw = null;
     if (target.own_catalog_item_id && caps.price_to_win !== 'ml_http_403' && caps.price_to_win !== 'ml_http_404') {
@@ -123,7 +141,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       catch (e) { caps.price_to_win = e.code; if (e.status === 429) throw e; }
     }
     winner = ptw?.winner?.item_id ?? null;
-    let extraCalls = 0;
+    let extraCalls = Math.max(0, pageCalls - 1);
     // Condición y días de preparación de cada competidor salen siempre de
     // /items/bulk: el listado del catálogo no trae el plazo de preparación
     // completo. Si ML no lo manda, queda sin dato (null), nunca como inmediato.
