@@ -6,6 +6,7 @@
 // Con sesión del panel y en producción. HTML sin JavaScript.
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
 import { listOpportunities, opportunitySummary, setOpportunityState, OPPORTUNITY_STATES, OPPORTUNITY_TYPES } from '../../worker-sync/oportunidades.js';
+import { lastPriceReview } from '../../worker-sync/precios-catalogo.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -36,8 +37,10 @@ function evidence(o) {
   const e = o.evidencia ?? {};
   const bits = [];
   if (e.texto) bits.push(esc(e.texto));
-  const foto = e.foto ? `Foto de ML del ${esc(day(e.foto))}${e.foto_edad_horas != null ? ` (hace ${esc(e.foto_edad_horas)} h)` : ''}` : 'Sin foto de competencia';
-  bits.push(`<span class="muted">${foto}${e.costo_conocido === false ? ' · costo no cargado' : ''}${Array.isArray(e.faltantes) && e.faltantes.length ? ` · faltan: ${esc(e.faltantes.join(', '))}` : ''}</span>`);
+  if (Array.isArray(e.rango_prueba) && e.rango_prueba.length > 1) bits.push(`<span class="muted">Rango de prueba: ${e.rango_prueba.map(v => esc(money(v))).join(' → ')} (pasos de ${esc(e.params?.probe_step_pct ?? 5)} %)</span>`);
+  if (e.costo || e.contribucion) bits.push(`<span class="muted">${e.costo ? `Costo ${esc(money(e.costo.valor))} (${esc(e.costo.proveedor)}, ${esc(day(e.costo.fecha))})` : 'Costo: sin cargar'}${e.comision?.tasa != null ? ` · comisión ${esc(Math.round(e.comision.tasa * 1000) / 10)} %` : ' · comisión: sin dato'}${e.flete == null ? ' · flete: sin dato' : ` · flete ${esc(money(e.flete))}`}${e.contribucion?.sugerida != null ? ` · te quedan ${esc(money(e.contribucion.actual))} → <b>${esc(money(e.contribucion.sugerida))}</b>` : ''}</span>`);
+  const foto = e.foto ? `Foto de ML del ${esc(day(e.foto))}${e.foto_edad_horas != null ? ` (hace ${esc(e.foto_edad_horas)} h)` : ''}${e.segmento ? ` · ${esc(e.segmento)}` : ''}` : 'Sin foto de competencia';
+  bits.push(`<span class="muted">${foto}${e.costo_conocido === false && !e.costo ? ' · costo no cargado' : ''}${Array.isArray(e.faltantes) && e.faltantes.length ? ` · faltan: ${esc(e.faltantes.join(', '))}` : ''}${e.nivel ? ` · ${esc(e.nivel)}` : ''}</span>`);
   return bits.join('<br>');
 }
 
@@ -58,13 +61,19 @@ function row(o, estadoActual) {
   </tr>`;
 }
 
-export function renderOportunidades({ resumen, lista, estado, hecho = false }) {
+function priceReviewBlock(r) {
+  if (!r) return '';
+  return `<p class="muted">Última revisión de precios de todo el catálogo con foto (${esc(day(r.generado))}): ${esc(r.fichas_vigiladas)} fichas vigiladas, ${esc(r.con_foto)} con foto completa, ${esc(r.con_suba)} con margen para subir (${esc(r.firmes)} firmes, ${esc(r.provisionales)} provisionales), ${esc(r.sin_suba)} sin suba, ${esc(r.bloqueadas)} bloqueadas; ${esc(r.sin_costo)} sin costo cargado, ${esc(r.sin_comision)} sin comisión conocida. Reglas: sugerido ${esc(r.params?.undercut_pct)} % debajo del más barato comparable si está ${esc(r.params?.min_gap_pct)} % o más arriba; sin referencia, probar de a ${esc(r.params?.probe_step_pct)} % hasta ${esc(r.params?.probe_max_pct)} %.</p>`;
+}
+
+export function renderOportunidades({ resumen, lista, estado, hecho = false, revision = null }) {
   const tabs = ['pendiente', 'aprobado', 'pedido', 'recibido', 'resultado', 'descartado', 'todas'].map(s => `<a class="${s === estado ? 'aqui' : ''}" href="/panel/oportunidades?estado=${s}">${esc(STATE_LABEL[s])}${s !== 'todas' ? ` (${resumen.por_estado[s]?.total ?? 0})` : ''}</a>`).join('');
   const rows = lista.map(o => row(o, estado)).join('');
   return `<h1>Oportunidades</h1>
   <p class="muted">Cada fila es una decisión con su evidencia: qué dice la foto de competencia de Mercado Libre, cuánto vendiste, qué costo hay cargado y cuánto falta para afirmarla. Ordenadas por plata por mes sustentada y confianza. El panel sólo sugiere: los precios se cambian en Mercado Libre y las compras se hacen con el proveedor.</p>
   ${hecho ? '<p class="ok">Estado guardado.</p>' : ''}
   <div class="tabs">${tabs}</div>
+  ${priceReviewBlock(revision)}
   <p class="muted">${resumen.pendientes_vigentes} pendiente${resumen.pendientes_vigentes === 1 ? '' : 's'} observada${resumen.pendientes_vigentes === 1 ? '' : 's'} en los últimos 3 días · ${resumen.sin_avisar} todavía sin avisar por correo. "Ya no se observa" = la última recalculada no la encontró; conserva su estado por si vuelve.</p>
   ${lista.length ? `<div class="card scroll"><table><thead><tr><th></th><th>Libro</th><th>Qué hacer</th><th class="n">Más por mes</th><th>Confianza</th><th>Evidencia</th><th class="n">Vista</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table></div>`
     : '<div class="card"><p class="muted">No hay oportunidades en este estado. La bandeja se recalcula cada mañana con el correo del panel.</p></div>'}
@@ -95,8 +104,8 @@ export function createOportunidadesPanel({ now = Date.now } = {}) {
     }
     if (request.method !== 'GET') return page('<p>Método no permitido.</p>', 405);
     try {
-      const [resumen, lista] = await Promise.all([opportunitySummary(db, now()), listOpportunities(db, { estado, limit: 200, nowMs: now() })]);
-      return page(renderOportunidades({ resumen, lista, estado, hecho: url.searchParams.get('hecho') === '1' }));
+      const [resumen, lista, revision] = await Promise.all([opportunitySummary(db, now()), listOpportunities(db, { estado, limit: 200, nowMs: now() }), lastPriceReview(db)]);
+      return page(renderOportunidades({ resumen, lista, estado, hecho: url.searchParams.get('hecho') === '1', revision }));
     } catch (error) {
       return page(`<h1>Oportunidades</h1><p class="p p-grave">No se pudo armar la vista: ${esc(error?.code || error?.message || 'error')}</p>`, 500);
     }

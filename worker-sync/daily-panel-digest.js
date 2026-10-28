@@ -18,7 +18,17 @@ import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { competitionEvents } from './ml-competition.js';
 import { loadBi, brujulaDigest } from '../functions/_shared/panel-bi.js';
 import { createReposicionFacts } from './reposicion-facts.js';
-import { refreshOpportunities, pendingToNotify, markNotified, opportunitySummary, OPPORTUNITY_TYPES } from './oportunidades.js';
+import { refreshOpportunities, pendingToNotify, markNotified, opportunitySummary, catalogMeta, OPPORTUNITY_TYPES } from './oportunidades.js';
+import { reviewCatalogPrices, opportunitiesFromPriceReview } from './precios-catalogo.js';
+
+// Revisión de precios de todo el catálogo con foto → oportunidades de suba.
+// Nunca lanza: sin revisión, la bandeja usa las subas de Brújula.
+async function catalogPriceOpportunities(db, catalog, nowMs) {
+  try {
+    const r = await reviewCatalogPrices(db, catalog, { nowMs });
+    return r.state === 'ok' ? { precios: opportunitiesFromPriceReview(r.revisiones, { meta: catalogMeta(catalog), nowMs }), resumen: r.resumen } : { precios: null, resumen: null };
+  } catch { return { precios: null, resumen: null }; }
+}
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
@@ -87,8 +97,9 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
   if (bi) {
     try {
       const facts = createReposicionFacts({ now: () => now.getTime(), loadCatalog: async () => catalog });
-      await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), nowMs: now.getTime() });
-      bandeja = { resumen: await opportunitySummary(db, now.getTime()), nuevas: await pendingToNotify(db, { limit: 8, nowMs: now.getTime() }) };
+      const { precios, resumen: precios_resumen } = await catalogPriceOpportunities(db, catalog, now.getTime());
+      await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), precios, nowMs: now.getTime() });
+      bandeja = { resumen: await opportunitySummary(db, now.getTime()), nuevas: await pendingToNotify(db, { limit: 8, nowMs: now.getTime() }), precios: precios_resumen };
     } catch { bandeja = null; }
   }
   return {
@@ -116,8 +127,9 @@ export async function refreshOpportunitiesFromWorker(env, { now = new Date() } =
   if (!catalog) return { state: 'error', code: 'catalog_unavailable' };
   const bi = await loadBi(db, catalog, now.getTime());
   const facts = createReposicionFacts({ now: () => now.getTime(), loadCatalog: async () => catalog });
-  const r = await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), nowMs: now.getTime() });
-  return { ...r, resumen: await opportunitySummary(db, now.getTime()) };
+  const { precios, resumen: precios_resumen } = await catalogPriceOpportunities(db, catalog, now.getTime());
+  const r = await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), precios, nowMs: now.getTime() });
+  return { ...r, resumen: await opportunitySummary(db, now.getTime()), revision_precios: precios_resumen };
 }
 
 const BANDEJA_URL = `${PANEL_URL}/oportunidades`;
@@ -127,6 +139,7 @@ function bandejaText(b) {
   const pend = b.resumen.pendientes_vigentes ?? 0;
   const out = [`BANDEJA DE OPORTUNIDADES — ${pend} pendiente${pend === 1 ? '' : 's'} de decidir`];
   if (b.nuevas?.length) out.push('  Nuevas desde el último correo:', ...b.nuevas.map(o => `  - ${bandejaLine(o)}`));
+  if (b.precios) out.push(`  Precios revisados en todo el catálogo con foto: ${b.precios.con_foto} fichas, ${b.precios.con_suba} con margen para subir (${b.precios.firmes} firmes, ${b.precios.provisionales} provisionales por costo o comisión faltante).`);
   out.push(`  Decidir (aprobar, descartar, pedido, recibido) en ${BANDEJA_URL}`, '');
   return out;
 }
@@ -134,7 +147,8 @@ function bandejaHtml(b) {
   if (!b?.resumen) return '';
   const pend = b.resumen.pendientes_vigentes ?? 0;
   const list = b.nuevas?.length ? `<p style="margin:6px 0 2px;color:#555">Nuevas desde el último correo:</p><ul style="margin:0;padding-left:18px">${b.nuevas.map(o => `<li style="margin:3px 0"><a href="${escapeHtml(bookLink(o.isbn))}" style="color:#a94e3d">${escapeHtml(o.titulo ?? o.isbn)}</a> · ${escapeHtml(OPPORTUNITY_TYPES[o.tipo] ?? o.tipo)}: ${escapeHtml(o.accion ?? '')}${o.impacto_mes ? ` (unos ${escapeHtml(money(o.impacto_mes))} más por mes)` : ''} · confianza ${escapeHtml(o.confianza ?? '—')}</li>`).join('')}</ul>` : '';
-  return `<h2 style="font-size:17px;margin:24px 0 6px">Bandeja de oportunidades <span style="color:#888;font-weight:normal">(${pend} pendiente${pend === 1 ? '' : 's'})</span></h2>${list}
+  const precios = b.precios ? `<p style="margin:6px 0;color:#555">Precios revisados en todo el catálogo con foto: ${escapeHtml(b.precios.con_foto)} fichas, ${escapeHtml(b.precios.con_suba)} con margen para subir (${escapeHtml(b.precios.firmes)} firmes, ${escapeHtml(b.precios.provisionales)} provisionales por costo o comisión faltante).</p>` : '';
+  return `<h2 style="font-size:17px;margin:24px 0 6px">Bandeja de oportunidades <span style="color:#888;font-weight:normal">(${pend} pendiente${pend === 1 ? '' : 's'})</span></h2>${list}${precios}
     <p style="margin:8px 0"><a href="${BANDEJA_URL}" style="color:#a94e3d">Decidir en la bandeja</a></p>`;
 }
 

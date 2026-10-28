@@ -25,6 +25,7 @@ Este cambio (primer PR) agrega:
 | Bandeja de oportunidades | `worker-sync/oportunidades.js`, `/panel/oportunidades`, acción `oportunidades`, `POST /opportunities/refresh` | Tabla `comp_opportunities` con id determinista `tipo:ISBN`, estados pendiente/aprobado/descartado/pedido/recibido/resultado, acción, impacto por mes, confianza, cantidad y nivel, evidencia, enlaces (ML, panel, tapa), primera y última observación, nota, avisado por correo. |
 | Cantidad | `cantidadSugerida` | `max(0, objetivo − stock físico − en camino)`. Objetivo 1..3 por ventas de 90 días. 2 o 3 sólo con repetición real (≥3 en el año y ≥2 en 90 días), costo cargado y ventana de ventas completa; si falta algo, 1 como prueba (`provisional`) con el motivo. Señal externa aislada en ISBN sin ventas propias: 1, nunca 3. Stock compartido entre publicaciones: máximo, nunca suma. |
 | Rotación de todo el catálogo | tabla `comp_rotation`, fase `rotation` del cron | Todas las fichas con `catalog_product_id` del catálogo que no entran en el top diario. Cada corrida de 5 minutos, con el cupo que sobra después del top y los vendedores, lee hasta 12 fichas cuyo turno venció. Foto completa: próximo turno a los 3 días; parcial: al día siguiente; error: espera 1 h, 2 h, 4 h… hasta 48 h, y tres errores seguidos cortan la corrida. La cola se rearma cada día con el catálogo conservando su historial. Los hechos (`competitionByIsbn`) leen también estas fichas (`segmento: rotacion`). |
+| Revisión de precios de todo el catálogo | `worker-sync/precios-catalogo.js` | Para cada ficha con foto completa (top y rotación): precio actual, comparables inmediatos, ventaja inmediata (los demás a pedido), sugerido (2 % debajo del más barato comparable si está 15 % o más arriba; sin referencia, probar de a 5 % hasta 20 %), rango de prueba, costo con fecha y proveedor (última compra cargada al cambio del día), comisión ML (mediana observada), flete (sin fuente: faltante), contribución actual y sugerida, faltantes y nivel (`firme` sólo con costo y comisión y contribución positiva; `provisional` si falta algo crítico; `sin_suba`; `bloqueado`). Parámetros pisables por llamada. Resumen en `comp_state` (`price_review`) visible en `/panel/oportunidades`; las subas entran a la bandeja con todo eso en la evidencia. Corre en el Worker con el correo diario y en `POST /opportunities/refresh`. |
 | Correo diario | `daily-panel-digest.js` | Recalcula la bandeja antes de armar el correo, cuenta pendientes vigentes y lista sólo las nuevas (se marcan `notificado_at` cuando Resend acepta el correo; una prueba manual no marca). |
 
 ## Lo que NO hace (a propósito)
@@ -76,10 +77,9 @@ Este cambio (primer PR) agrega:
 
 ## Pendiente (fases siguientes, en cambios revisables)
 
-1. **Precios de todo el catálogo**: sugerencias de suba sobre todas las fichas
-   con foto (top y rotación), con rango de prueba parametrizable, costo con
-   fecha, comisión, flete y contribución; costos críticos faltantes bloquean el
-   precio "firme". Hoy `priceRaises` sólo mira los libros con ventas en el año.
+1. **Flete por unidad**: no hay fuente en D1 para el envío que paga el vendedor
+   en ML por libro; queda como faltante en cada revisión. Cuando haya tabla de
+   costos de envío por peso/zona, `reviewCatalogPrices` la recibe por `flete`.
 2. **Ventas y long tail**: clasificación poca exposición / visitas sin
    conversión / oferta con ventas / quiebre / evidencia insuficiente, con
    ventanas 90/365 y días efectivamente disponible; visitas desconocidas no son

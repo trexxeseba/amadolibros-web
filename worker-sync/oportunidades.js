@@ -201,17 +201,20 @@ export function catalogMeta(catalog) {
 
 // Recalcula la bandeja a partir de Brújula (loadBi) y los hechos de reposición.
 // Lo llama el Worker antes del correo diario y la ruta manual; nunca lanza.
-export async function refreshOpportunities(db, { bi, catalog = null, factsFor = null, nowMs = Date.now() } = {}) {
+export async function refreshOpportunities(db, { bi, catalog = null, factsFor = null, precios = null, nowMs = Date.now() } = {}) {
   try {
-    const list0 = opportunitiesFromBi(bi, { meta: catalogMeta(catalog), nowMs });
+    // Si vino la revisión de precios de todo el catálogo (más completa: rango,
+    // costo con fecha, comisión, faltantes), reemplaza las subas de Brújula.
+    const merge = list => (Array.isArray(precios) ? [...list.filter(o => o.tipo !== 'subir_precio'), ...precios] : list);
+    const list0 = merge(opportunitiesFromBi(bi, { meta: catalogMeta(catalog), nowMs }));
     let facts = new Map();
     const isbns = [...new Set(list0.filter(o => o.tipo !== 'subir_precio').map(o => o.isbn))].slice(0, 50);
     if (factsFor && isbns.length) {
       try { facts = new Map((await factsFor(isbns)).resultados.filter(r => r.isbn).map(r => [r.isbn, r])); } catch { facts = new Map(); }
     }
-    const list = facts.size ? opportunitiesFromBi(bi, { facts, meta: catalogMeta(catalog), nowMs }) : list0;
+    const list = facts.size ? merge(opportunitiesFromBi(bi, { facts, meta: catalogMeta(catalog), nowMs })) : list0;
     const r = await upsertOpportunities(db, list, nowMs);
-    return { state: 'ok', ...r, con_hechos: facts.size };
+    return { state: 'ok', ...r, con_hechos: facts.size, con_revision_precios: Array.isArray(precios) ? precios.length : null };
   } catch (error) {
     return { state: 'error', code: error?.code || error?.message || 'error' };
   }
