@@ -19,9 +19,12 @@ def make_runner(directory, published_by_run):
     totals = iter(published_by_run)
     current = {"published_total": published_by_run[0]}
     runner.update_code = lambda: False
+    runner.apply_repo_target = lambda: None
     runner.connection_expires_at = lambda: time.time() + 86400
     runner.renew = lambda: (0, {"state": "renewed"})
     runner.sync_stock = lambda: None
+    runner.corrections = []
+    runner.correct_prices = lambda: runner.corrections.append(True)
     runner.heartbeat = lambda published, state: None
     runner.notify = lambda *a, **k: None
     runner.wait_seconds = []
@@ -37,6 +40,47 @@ def make_runner(directory, published_by_run):
         return 0, None
     runner.run_engine = run_engine
     return runner
+
+
+class RepoTargetTest(unittest.TestCase):
+    def runner(self, directory, campaign):
+        args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node="node", target=10000, notify_url=None)
+        runner = vintage_autorun.Runner(args)
+        runner.node = "node"
+        runner.notices = []
+        runner.notify = lambda title, message, **k: runner.notices.append(title)
+        path = Path(directory) / "campaign.json"
+        path.write_text(campaign, "utf-8")
+        return runner, path
+
+    def test_the_repo_target_is_applied_once_with_set_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, path = self.runner(directory, '{"target_total": 80000}')
+            calls = []
+            done = types.SimpleNamespace(returncode=0, stdout="Objetivo: 10000 -> 80000", stderr="")
+            with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path), unittest.mock.patch.object(vintage_autorun.subprocess, "run", lambda cmd, **k: calls.append(cmd) or done):
+                runner.apply_repo_target()
+                runner.apply_repo_target()
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0][3:], ["80000", "--directory", str(Path(directory)), "--apply"])
+            self.assertEqual(runner.notices, ["Vintage: objetivo subido"])
+
+    def test_an_equal_or_lower_target_is_silent_and_bad_files_are_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner, path = self.runner(directory, '{"target_total": 80000}')
+            same = types.SimpleNamespace(returncode=1, stdout="", stderr="No se cambió nada: target_not_higher")
+            with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path), unittest.mock.patch.object(vintage_autorun.subprocess, "run", lambda cmd, **k: same):
+                runner.apply_repo_target()
+            self.assertEqual(runner.notices, [])
+            for bad in ('{"target_total": 999999999}', '{"target_total": "80000"}', "no es json", "[]"):
+                path.write_text(bad, "utf-8")
+                with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path):
+                    self.assertIsNone(runner.repo_target())
+
+    def test_the_committed_campaign_file_is_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = vintage_autorun.Runner(types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=None))
+            self.assertEqual(runner.repo_target(), 80000)
 
 
 class RenewLoopTest(unittest.TestCase):
@@ -241,6 +285,121 @@ class TargetRaisedTest(unittest.TestCase):
             runner = self.closed_runner(directory, {"state": "publishing", "published_total": 10040, "run": {"target_remaining": 2960}})
             runner.cycle()
             self.assertNotIn("sin pendientes", runner.waits)
+
+
+class PublishCorrectSplitTest(unittest.TestCase):
+    def test_engine_gets_half_of_each_hour(self):
+        with tempfile.TemporaryDirectory() as directory:
+            command = make_runner(directory, [10000]).engine_command()
+            self.assertEqual(command[command.index("--max-minutes") + 1], "30")
+            self.assertEqual(vintage_autorun.PUBLISH_SLICE_MIN + vintage_autorun.CORRECT_SLICE_MIN, 60)
+
+    def test_after_the_publishing_turn_it_corrects_prices_and_goes_straight_back(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "time_slice_done", "published_total": 10100}
+            runner.run_engine = lambda: (0, None)
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(runner.corrections, [True])
+            self.assertEqual(runner.waits, [])
+
+    def test_correction_runs_stock_sync_in_correct_mode_for_30_minutes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node="node", target=10000, notify_url=None, stock_sync="pause_and_reactivate")
+            runner = vintage_autorun.Runner(args)
+            runner.node = "node"
+            seen = []
+            def run(command, **kwargs):
+                seen.append(command)
+                return types.SimpleNamespace(returncode=0, stdout='{"state":"corrected","repriced":3}', stderr="")
+            with unittest.mock.patch.object(vintage_autorun.subprocess, "run", side_effect=run):
+                runner.correct_prices()
+            command = seen[0]
+            self.assertEqual(command[command.index("--mode") + 1], "correct")
+            self.assertEqual(command[command.index("--max-minutes") + 1], "30")
+
+
+class HungEngineTest(unittest.TestCase):
+    """Un motor colgado (red cortada a mitad de un alta) no puede dejar al supervisor esperando para siempre."""
+
+    def hung_process(self):
+        class Hung:
+            terminated = False
+            killed = False
+
+            def wait(self, timeout=None):
+                if self.terminated or self.killed:
+                    return -15
+                raise vintage_autorun.subprocess.TimeoutExpired("node", timeout)
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+        return Hung()
+
+    def test_engine_limit_is_the_slice_plus_a_grace_period(self):
+        self.assertGreater(vintage_autorun.ENGINE_HARD_LIMIT_MIN, vintage_autorun.PUBLISH_SLICE_MIN)
+        self.assertLessEqual(vintage_autorun.ENGINE_HARD_LIMIT_MIN, vintage_autorun.PUBLISH_SLICE_MIN + 30)
+
+    def test_a_hung_engine_is_stopped_and_reported_as_a_retryable_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            process = self.hung_process()
+            clock = iter([0, 0, 10, vintage_autorun.ENGINE_HARD_LIMIT_MIN * 60 + 1] + [10 ** 9] * 20)
+            with unittest.mock.patch.object(vintage_autorun.subprocess, "Popen", return_value=process), \
+                    unittest.mock.patch.object(vintage_autorun.time, "monotonic", side_effect=lambda: next(clock)):
+                runner.engine_command = lambda: ["node", "engine.mjs", "--target", "1"]
+                code, error = vintage_autorun.Runner.run_engine(runner)
+            self.assertTrue(process.terminated)
+            self.assertNotEqual(code, 0)
+            self.assertEqual(error, "engine_timeout")
+            self.assertNotIn("engine_timeout", vintage_autorun.FATAL)
+
+    def test_a_hung_engine_makes_the_cycle_wait_and_retry_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {}
+            runner.run_engine = lambda: (124, "engine_timeout")
+            self.assertIsNone(runner.cycle())
+            self.assertIn("error del motor", runner.waits)
+            self.assertFalse((Path(directory) / "STOP").exists())
+
+
+class RecoverableStopTest(unittest.TestCase):
+    """Un cupo de ML o un alta sin verificar no necesitan una persona: se espera y se sigue, sin STOP."""
+
+    def test_listing_quota_waits_for_the_next_day_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "stopped_listing_quota", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            runner.seconds_until_next_day = lambda: 4321
+            self.assertIsNone(runner.cycle())
+            self.assertFalse((Path(directory) / "STOP").exists())
+            self.assertEqual(runner.waits, ["cupo de publicaciones"])
+            self.assertEqual(runner.wait_seconds, [4321])
+            self.assertNotIn("stopped_listing_quota", vintage_autorun.FATAL)
+
+    def test_a_failed_readback_retries_after_half_an_hour_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "stopped_item_readback_failed", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            self.assertIsNone(runner.cycle())
+            self.assertFalse((Path(directory) / "STOP").exists())
+            self.assertEqual(runner.waits, ["alta sin verificar"])
+            self.assertEqual(runner.wait_seconds, [30 * 60])
+            self.assertNotIn("stopped_item_readback_failed", vintage_autorun.FATAL)
+
+    def test_a_wrong_account_still_stops_everything(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "seller_mismatch", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            self.assertEqual(runner.cycle(), 2)
+            self.assertIn("seller_mismatch", (Path(directory) / "STOP").read_text("utf-8"))
 
 
 if __name__ == "__main__":

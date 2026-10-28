@@ -23,12 +23,13 @@ crons = ["15 7 * * *", "*/5 * * * *", "3 11 * * *", "3 12 * * *", "* * * * *"]
 [vars]
 APP_ID          = "4741021817925208"
 USER_ID         = "440298103"
-# New runs always start in preflight. Only approval of their immutable price
-# policy enables creation. Set disabled for an additional global stop switch.
-ML_PUBLISHER_MODE = "enabled"
-# Cola continua para altas ML: un consumidor a la vez en la primera etapa.
-# Mantiene el lease/D1 actual y elimina la espera entre ticks del cron.
-ML_PUBLISH_QUEUE_ENABLED = "true"
+# SOLO LECTURA (decisión de Seba, 26/10/2026): este Worker publica en la cuenta
+# Amado Libros (USER_ID 440298103) y ahí no se dan altas automáticas. Las altas van
+# solo a Amado Vintage (Global Emporium, 2341378249) desde la PC. Ver
+# docs/cuentas-mercado-libre.md. Volver a "enabled"/"true" solo con pedido explícito
+# de Seba para Amado Libros; un test lo controla.
+ML_PUBLISHER_MODE = "disabled"
+ML_PUBLISH_QUEUE_ENABLED = "false"
 # Mínimo de items activos aceptables — aborta si R2 se quedaría con menos.
 MIN_ACTIVE_ITEMS = "500"
 # Descripciones ML: endpoint individual. El primer lote vidriera acelera el

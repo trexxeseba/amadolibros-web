@@ -49,6 +49,20 @@ on:
         description: 'Con shipping_diagnostic: precio UYU para cotizar envío gratis ME2. Sólo lectura.'
         required: false
         type: string
+      competitive:
+        description: 'Con clone_preflight_catalog o create_run_from_source: activar precio competitivo (ganador -1% con piso). Vacío conserva la política de origen. Cambia el policy_hash.'
+        required: false
+        type: choice
+        options: ['', 'true', 'false']
+        default: ''
+      competitive_floor_margin:
+        description: 'Con competitive=true: margen mínimo sobre costo, de 0 a 1 (ej. 0.15 para 15%). Nunca se publica por debajo.'
+        required: false
+        type: string
+      minimum_contribution_uyu:
+        description: 'Con competitive=true: mínimo de pesos libres por venta (ej. 400). Actúa junto con el margen mínimo; manda el que dé el piso más alto.'
+        required: false
+        type: string
       isbn:
         description: 'Con shipping_probe: ISBN del feed (feed_id o el del lote run_id) a preparar con el mismo prepare() de la cola; sólo /items/validate, nunca publica.'
         required: false
@@ -110,6 +124,9 @@ jobs:
           PUBLISHER_ITEM_ID: ${{ inputs.item_id }}
           PUBLISHER_ITEM_PRICE: ${{ inputs.item_price }}
           PUBLISHER_ISBN: ${{ inputs.isbn }}
+          PUBLISHER_COMPETITIVE: ${{ inputs.competitive }}
+          PUBLISHER_COMPETITIVE_FLOOR_MARGIN: ${{ inputs.competitive_floor_margin }}
+          PUBLISHER_MINIMUM_CONTRIBUTION: ${{ inputs.minimum_contribution_uyu }}
           PUBLISHER_CYCLES: '10'
           SUPPLIER_FEED_URL: ${{ secrets.SUPPLIER_FEED_URL }}
           SUPPLIER_FEED_AUTHORIZATION: ${{ secrets.SUPPLIER_FEED_AUTHORIZATION }}

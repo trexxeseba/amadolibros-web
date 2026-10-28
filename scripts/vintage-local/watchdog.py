@@ -33,10 +33,10 @@ STALL_MINUTES = 45
 ALERT_EVERY_S = 3600
 RELAUNCH_EVERY_S = 600
 # Motivos de "esperando" del supervisor que explican por sí solos la falta de altas.
-NORMAL_WAITS = {"stock vencido", "tope diario", "sin pendientes", "hace falta renovar", "pausa breve"}
+NORMAL_WAITS = {"stock vencido", "tope diario", "sin pendientes", "hace falta renovar", "pausa breve", "cupo de publicaciones"}
 # Fallos que el autorun reintenta solo: se toleran un rato, pero si pasa el umbral sin altas avisan
 # (antes estaban en NORMAL_WAITS y un motor fallando en bucle no avisaba nunca).
-RETRY_WAITS = {"error del motor", "fallo de renovación", "objetivo subido"}
+RETRY_WAITS = {"error del motor", "fallo de renovación", "objetivo subido", "alta sin verificar"}
 
 
 def parse_iso(value):

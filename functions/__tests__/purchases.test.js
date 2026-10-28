@@ -152,3 +152,15 @@ test('rutas validan 1..50 ISBN; panel exige sesión y producción', async t => {
   assert.equal((await handler({ request: new Request('https://preview.pages.dev/panel/compras'), env: { APP_ENV: 'preview' } })).status, 403);
   assert.equal((await handler({ request: new Request('https://www.amadolibros.com/panel/compras'), env: { APP_ENV: 'production', PANEL_PASSWORD: 'una-clave-larga' } })).status, 303);
 });
+
+test('en camino: el pedido y la confirmación de envío del mismo proveedor no suman dos veces', async () => {
+  const { dedupePurchaseRows } = await import('../../worker-sync/purchases.js');
+  const D = 864e5, base = Date.parse('2026-10-22T12:00:00Z');
+  const row = (id, type, daysAgo, q, supplier = 'ARNOIA') => ({ purchase_id: id, document_type: type, supplier, quantity: q, purchase_date_ms: base - daysAgo * D });
+  const kept = dedupePurchaseRows([
+    row('ped', 'order', 5, 2), row('envio', 'receipt', 0, 2),        // mismo libro: pedido y después la confirmación
+    row('celesa', 'invoice', 2, 2, 'CELESA'),                            // otro proveedor: sí suma
+    row('viejo', 'receipt', 40, 2),                                      // compra anterior: sí suma
+  ]);
+  assert.deepEqual(kept.map(r => r.purchase_id).sort(), ['celesa', 'envio', 'viejo'].sort());
+});

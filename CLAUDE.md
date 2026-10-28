@@ -16,8 +16,22 @@
   ni "sólo".
 - No tocar precios, cálculo de envío, pasarela de pago ni eventos de analítica
   sin pedido expreso.
-- No hacer merge a producción sin que Seba lo pida: dejar el PR abierto para
-  revisión.
+- Mergear a producción sin pedir permiso, en cuanto el cambio esté terminado y
+  los checks en verde (regla fijada por Seba el 25/10/2026, reemplaza la
+  anterior de dejar el PR abierto). No preguntar "¿lo mergeo?": hacerlo y
+  contarlo después. Si el cambio queda a medias o los checks fallan, dejar el
+  PR abierto y decirlo.
+- Aplicar cambios de precio sobre publicaciones ya activas sigue necesitando que
+  Seba vea la lista antes: eso no es mergear código, es tocar plata. Mergear el
+  código que los calcula no necesita permiso.
+
+## Mercado Libre: en qué cuenta se publica
+
+- Las altas automáticas van solo a Amado Vintage (Global Emporium es la misma
+  cuenta, 2341378249), desde el motor local de la PC. En Amado Libros
+  (440298103) no se publica salvo pedido explícito de Seba: la cola del Worker
+  está en solo lectura. Antes de tocar cualquier camino que publique, leer
+  `docs/cuentas-mercado-libre.md`.
 
 ## Una tarea, una carpeta
 

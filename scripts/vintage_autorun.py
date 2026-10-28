@@ -29,8 +29,19 @@ REPO = Path(__file__).resolve().parent.parent
 ENGINE = REPO / "scripts" / "vintage-local" / "engine.mjs"
 RENEW = REPO / "scripts" / "vintage-local" / "renew.mjs"
 STOCK_SYNC = REPO / "scripts" / "vintage-local" / "stock-sync.mjs"
+SET_TARGET = REPO / "scripts" / "vintage-local" / "set-target.mjs"
+# Objetivo de la campaña fijado desde el repo: llega a la PC con el git pull y se aplica
+# con set-target.mjs (sólo sube, nunca baja), sin que nadie toque la PC.
+CAMPAIGN_FILE = REPO / "scripts" / "vintage-local" / "campaign.json"
 MONTEVIDEO = dt.timezone(dt.timedelta(hours=-3))
 RENEW_MARGIN_S = 30 * 60
+# Reparto de cada hora (Seba, 26/10): 50 % subir libros nuevos, 50 % corregir el precio de los ya subidos.
+PUBLISH_SLICE_MIN = 30
+CORRECT_SLICE_MIN = 30
+# Tope duro para el motor: el motor corta solo a los PUBLISH_SLICE_MIN, pero un alta colgada (red cortada,
+# base bloqueada) lo deja esperando para siempre y el supervisor, con el bloqueo tomado, parece vivo.
+# Pasado este tope se lo detiene y se reintenta como cualquier otro error del motor.
+ENGINE_HARD_LIMIT_MIN = PUBLISH_SLICE_MIN + 20
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
@@ -38,9 +49,14 @@ ENGINE_TARGET_CEILING = 100000
 # Esperas entre renovaciones cuando el motor sigue pidiéndolas sin publicar nada: la última es el
 # tope. Antes eran 120 s y, desde la tercera vuelta, 6 h (que además se re-armaban solas).
 RENEW_RETRY_S = (120, 120, 15 * 60, 30 * 60, 60 * 60)
+# Paradas que se resuelven solas con esperar: no escriben STOP (el 27/10 un STOP de estos dejó la
+# campaña parada un día y medio hasta que alguien lo borró a mano). Espera en segundos o None = mañana.
+RECOVERABLE = {
+    "stopped_listing_quota": ("Mercado Libre rechazó altas por cupo de publicaciones", "cupo de publicaciones", None),
+    "stopped_item_readback_failed": ("Un alta no pasó la verificación posterior", "alta sin verificar", 30 * 60),
+}
+# Necesitan una persona de verdad (cuenta o política equivocada): se escribe STOP.
 FATAL = {
-    "stopped_listing_quota": "Mercado Libre rechazó altas por cupo de publicaciones",
-    "stopped_item_readback_failed": "Un alta no pasó la verificación posterior",
     "seller_mismatch": "La cuenta conectada no es Amado Vintage",
     "inventory_seller_mismatch": "El inventario leído no es de Amado Vintage",
     "foreign_seller_receipt": "La conexión trae recibos de otra cuenta",
@@ -233,17 +249,39 @@ class Runner:
         elif last.get("paused") or last.get("activated") or last.get("repriced"):
             self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Precios ajustados: {last.get('repriced', 0)}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
 
+    def correct_prices(self):
+        """El 30 % de la hora: precio competitivo para los libros ya publicados (stock-sync --mode correct)."""
+        if self.args.stock_sync == "off":
+            return
+        command = [self.node, "--experimental-sqlite", str(STOCK_SYNC), "--connection", str(self.connection), "--excel", str(self.excel), "--directory", str(self.directory), "--mode", "correct", "--max-minutes", str(CORRECT_SLICE_MIN)]
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=(CORRECT_SLICE_MIN + 10) * 60)
+        except subprocess.TimeoutExpired:
+            self.log("corrección de precios", error="timeout")
+            return
+        last = {}
+        for line in (result.stdout or "").splitlines():
+            try:
+                last = json.loads(line)
+            except ValueError:
+                continue
+        self.log("corrección de precios", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
+        if result.returncode not in (0, 3):
+            self.notify("Vintage: la corrección de precios falló", f"Resultado: {last.get('error') or last.get('state')}. Sigue publicando; reintenta en la próxima vuelta.", key="correct-failed", every_s=6 * 3600)
+
     def engine_command(self):
         # --target del autorun (run.cmd lo fija en 10000) ya no limita al motor: sólo manda el tope máximo.
         target = max(self.args.target, ENGINE_TARGET_CEILING)
-        return [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(target)]
+        return [self.node, "--experimental-sqlite", str(ENGINE), "--excel", str(self.excel), "--connection", str(self.connection), "--directory", str(self.directory), "--target", str(target), "--max-minutes", str(PUBLISH_SLICE_MIN)]
 
     def run_engine(self):
         command = self.engine_command()
-        self.log("motor iniciado", target=command[-1])
+        self.log("motor iniciado", target=command[command.index("--target") + 1])
         (self.directory / "status.json").unlink(missing_ok=True)  # el estado leído al final es sólo de esta corrida
         log_file = self.logs / f"engine-{dt.datetime.now(MONTEVIDEO).strftime('%Y-%m-%d')}.log"
         start = log_file.stat().st_size if log_file.exists() else 0
+        timed_out = False
+        deadline = time.monotonic() + ENGINE_HARD_LIMIT_MIN * 60
         with log_file.open("a", encoding="utf-8") as output:
             process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, text=True)
             while True:
@@ -251,6 +289,16 @@ class Runner:
                     code = process.wait(timeout=30)
                     break
                 except subprocess.TimeoutExpired:
+                    if time.monotonic() > deadline:
+                        self.log("motor colgado: se lo detiene", minutes=ENGINE_HARD_LIMIT_MIN)
+                        timed_out = True
+                        process.terminate()
+                        try:
+                            code = process.wait(timeout=60)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            code = process.wait()
+                        break
                     if self.stop_file.exists():  # STOP frena también al motor, no sólo al supervisor
                         self.log("STOP: deteniendo el motor")
                         process.terminate()
@@ -277,6 +325,8 @@ class Runner:
                 break
             if parsed.get("finished"):
                 break
+        if timed_out:
+            return 124, "engine_timeout"
         return code, error
 
     def wait(self, seconds, reason):
@@ -292,11 +342,37 @@ class Runner:
         tomorrow = (now + dt.timedelta(days=1)).replace(hour=0, minute=5, second=0, microsecond=0)
         return max(60, (tomorrow - now).total_seconds())
 
+    def repo_target(self):
+        try:
+            value = json.loads(CAMPAIGN_FILE.read_text("utf-8")).get("target_total")
+        except (OSError, ValueError, AttributeError):
+            return None
+        return value if isinstance(value, int) and 5 < value <= ENGINE_TARGET_CEILING else None
+
+    def apply_repo_target(self):
+        """Sube el objetivo al de campaign.json una vez por valor; si ya es igual o mayor, no hace nada."""
+        target = self.repo_target()
+        if target is None or target == getattr(self, "applied_target", None) or not self.node:
+            return
+        try:
+            result = subprocess.run([self.node, "--experimental-sqlite", str(SET_TARGET), str(target), "--directory", str(self.directory), "--apply"], capture_output=True, text=True, timeout=120)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            self.log("objetivo del repo no aplicado", target=target, error=str(error)[:200])
+            return
+        output = ((result.stdout or "") + (result.stderr or "")).strip()
+        self.applied_target = target
+        if result.returncode == 0:
+            self.log("objetivo de la campaña subido", target=target, detail=output[-200:])
+            self.notify("Vintage: objetivo subido", f"La campaña sigue hasta {target} publicaciones.", key=f"target-{target}", every_s=0)
+        elif "target_not_higher" not in output:
+            self.log("objetivo del repo no aplicado", target=target, detail=output[-300:])
+
     def cycle(self):
         """Un ciclo: actualizar, renovar si hace falta, publicar. Devuelve un código de salida o None para seguir."""
         if self.update_code():
             self.log("código nuevo: reinicio del supervisor")
             return 75  # launch.cmd relanza con el código actualizado
+        self.apply_repo_target()
         if self.force_renew or self.connection_expires_at() - time.time() < RENEW_MARGIN_S:
             code, result = self.renew()
             error = result.get("error")
@@ -333,6 +409,13 @@ class Runner:
         self.heartbeat(published, state)
         if self.stop_file.exists():
             return None
+        recoverable = RECOVERABLE.get(state) or RECOVERABLE.get(error)
+        if recoverable:
+            title, reason, wait_s = recoverable
+            wait_s = self.seconds_until_next_day() if wait_s is None else wait_s
+            self.notify(f"Vintage: {title}", f"Estado: {state}. Publicados: {published}. Sigue solo en {max(1, wait_s // 60)} min.", key=reason, every_s=6 * 3600)
+            self.wait(wait_s, reason)
+            return None
         if state in FATAL or (error in FATAL):
             reason = FATAL.get(state) or FATAL.get(error)
             self.notify("Vintage DETENIDO", f"{reason}. Estado: {state}. Publicados: {published}. Revisá y borrá el archivo STOP para seguir.", every_s=0)
@@ -341,6 +424,7 @@ class Runner:
         if state == "daily_cap_reached":
             self.renew_loops = 0
             self.notify("Vintage: tope diario alcanzado", f"Publicados en total: {published}. Sigue mañana.", every_s=20 * 3600)
+            self.correct_prices()
             self.wait(self.seconds_until_next_day(), "tope diario")
             return None
         if state in RENEW_NEEDED or error in RENEW_NEEDED:
@@ -358,6 +442,11 @@ class Runner:
                 self.wait(wait_s, "hace falta renovar")
             return None
         self.renew_loops = 0
+        if state == "time_slice_done":
+            # Se terminaron los minutos de subir: los de corregir y enseguida otra vuelta.
+            self.failures = 0
+            self.correct_prices()
+            return None
         remaining = (status.get("run") or {}).get("target_remaining")
         target_open = isinstance(remaining, int) and remaining > 0
         if state in ("complete", "complete_with_review") and target_open:
@@ -368,6 +457,7 @@ class Runner:
         if state in ("complete", "complete_with_review") or (isinstance(published, int) and published >= self.args.target and not target_open):
             self.notify("Vintage: campaña sin pendientes", f"Publicados: {published}. Estado: {state}. Vuelvo a mirar con el próximo stock.", every_s=20 * 3600)
             self.force_renew = True
+            self.correct_prices()
             self.wait(3 * 3600, "sin pendientes")
             return None
         if code != 0:

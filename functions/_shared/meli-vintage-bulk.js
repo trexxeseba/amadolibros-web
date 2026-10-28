@@ -4,7 +4,7 @@ import {createPublicationService} from '../../worker-sync/publication-engine.js'
 import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publication-meli.js';
 import {PublicationError,policyHash,stockIsFresh,canonicalIsbn,normalizedTitle} from '../../worker-sync/publication-policy.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
-import {vintagePolicy,requireVintagePrice,VINTAGE_MINIMUM_UYU} from '../../worker-sync/vintage-pricing.js';
+import {vintagePolicy,requireVintagePrice,vintageMinimumFor,VINTAGE_MINIMUM_UYU,VINTAGE_COMPETITIVE_MINIMUM_UYU} from '../../worker-sync/vintage-pricing.js';
 import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js';
 
 export const BULK_RUN='23413782-4900-4000-8000-000000010000';
@@ -97,7 +97,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
  const api=providedApi??createPublicationMeli({sellerId:VINTAGE_SELLER_ID,tokenProvider:vintageTokens.getAccessToken,tokenInvalidator:vintageTokens.invalidateAccessToken,now,timeouts:{request:60000,create:60000},fetcher:(url,options)=>limited(activeEnv,url,options)});
  const bulkApi={...api,
   prepare:(...args)=>api.prepare(...args),
-  create:(env,payload,policy)=>{requireVintagePrice(payload);return api.create(env,payload,policy);},
+  create:(env,payload,policy)=>{requireVintagePrice(payload,vintageMinimumFor(policy));return api.create(env,payload,policy);},
   async indexSlice(env,index){
    if(providedApi)return api.indexSlice(env,index);
    const next=structuredClone(index);
@@ -145,7 +145,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
    if(!/^MLU\d+$/.test(job.item_id))fail('invalid_item_id');
    const me=await api.call(env,'/users/me');if(String(me.id)!==VINTAGE_SELLER_ID||me.site_id!=='MLU')fail('seller_mismatch',403);
    const path='/items/'+job.item_id,term=item=>(item.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME'),value=item=>Number(term(item)?.value_struct?.number??parseInt(term(item)?.value_name,10));
-   const check=item=>{if(item.id!==job.item_id||String(item.seller_id)!==VINTAGE_SELLER_ID||!identifiers(item).includes(job.isbn))fail('availability_item_identity_mismatch',403);requireVintagePrice(item);};
+   const check=item=>{if(item.id!==job.item_id||String(item.seller_id)!==VINTAGE_SELLER_ID||!identifiers(item).includes(job.isbn))fail('availability_item_identity_mismatch',403);requireVintagePrice(item,VINTAGE_COMPETITIVE_MINIMUM_UYU);};
    const before=await api.call(env,path);check(before);
    const safeTerm=item=>({value_name:term(item)?.value_name??null,value_struct:term(item)?.value_struct??null});
    await s.stmt("INSERT INTO ml_pub_availability_amendments VALUES(?,?,?,?,NULL,'checking',?) ON CONFLICT(run_id,isbn) DO UPDATE SET state='checking',checked_at=excluded.checked_at",PILOT_RUN,job.isbn,job.item_id,JSON.stringify(safeTerm(before)),now()).run();

@@ -50,18 +50,18 @@ function kpiBlock(s) {
   </div>`;
 }
 
-const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Sin dato de ML'] };
+const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Por verificar'] };
 function sinStockTable(items) {
   if (!items?.length) return '';
   const rows = items.map(b => {
     const m = b.mercado ?? { estado: 'sin_dato' }, [cls, label] = VEREDICTO[m.estado] ?? VEREDICTO.sin_dato;
     const compra = b.compra ? `${esc(SUPPLIERS[b.compra.supplier] ?? b.compra.supplier)} · ${day(new Date(b.compra.d).toISOString())}` : '—';
-    return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Todavía no está en la vigilancia diaria de competencia.')}</div></td>
+    return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Falta verificar stock y plazos de todos los competidores. La competencia no permite decidir todavía.')}</div></td>
       <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
       <td class="n">${m.min != null ? money(m.min) : '—'}</td><td class="n">${b.costo ? money(b.costo) : '—'}</td><td class="n">${b.margen ? `<span class="${b.margen.margin < 0 ? 'down' : 'up'}">${money(b.margen.margin)}</span>` : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
   }).join('');
-  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Lo venden desde UY</th><th class="n">Más barato nuevo</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="muted">"Desde UY": vendedores con el libro nuevo y sin envío internacional en la publicación de catálogo de ML (foto diaria). Los 15 que más vendían.</p></div>`;
+  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="muted">"Con entrega inmediata": vendedores con el libro nuevo, sin envío del exterior y sin días de preparación en la publicación de catálogo de ML (foto diaria). Los que lo venden a pedido no cuentan. Los 15 que más vendían.</p></div>`;
 }
 
 function weeklyChart(s) {
@@ -97,7 +97,7 @@ function inventoryBlock(s) {
   const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
   return `<div class="grid">
     <div class="card"><div class="kpi"><div class="l">Libros A sin stock</div><div class="v down">${num(v.aSinStockCount)}</div></div>
-      <p class="muted">Venta que se pierde: unos <b>${num(v.ventaPerdidaMes)} libros por mes</b>.</p>${v.mercado ? `<p class="muted">De los ${num(v.mercado.vigilados)} que vigilamos en ML hoy: <b>${num(v.mercado.solo)}</b> nadie los vende nuevos desde Uruguay, <b>${num(v.mercado.sostenible)}</b> se venden a tu precio o más caro, <b>${num(v.mercado.masBarato)}</b> los venden más barato, <b>${num(v.mercado.noConviene)}</b> no conviene reponerlos a tu costo. Detalle abajo.</p>` : ''}</div>
+      <p class="muted">Venta que se pierde: unos <b>${num(v.ventaPerdidaMes)} libros por mes</b>.</p>${v.mercado ? `<p class="muted">De los ${num(v.mercado.vigilados)} que vigilamos en ML hoy: <b>${num(v.mercado.solo)}</b> nadie más los tiene con entrega inmediata, <b>${num(v.mercado.sostenible)}</b> se venden a tu precio o más caro, <b>${num(v.mercado.masBarato)}</b> los venden más barato, <b>${num(v.mercado.noConviene)}</b> no conviene reponerlos a tu costo. Detalle abajo.</p>` : ''}</div>
     <div class="card"><div class="kpi"><div class="l">Libros A que se agotan pronto</div><div class="v">${num(v.coberturaBajaCount)}</div></div>
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
@@ -162,17 +162,17 @@ function raisesBlock(s) {
   const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
   const marg = b => b.margenActual && b.margenSugerido ? `${money(b.margenActual.margin)} → <b>${money(b.margenSugerido.margin)}</b>` : '—';
   const rows = v.lista.map(b => `<tr><td>${link(b)}${b.agotado ? ' <span class="tag t-c">agotado</span>' : ''}</td><td class="n">${num(b.u90)}</td><td class="n">${money(b.actual)}</td>
-    <td class="n">${money(b.min)} <span class="muted">(${num(b.competidores)})</span></td><td class="n"><b>${money(b.sugerido)}</b> <span class="up">+${b.subaPct}%</span></td>
+    <td class="n">${money(b.min)} <span class="muted">(${num(b.competidores)}${b.aPedido ? ', a pedido' : ''})</span></td><td class="n"><b>${money(b.sugerido)}</b> <span class="up">+${b.subaPct}%</span></td>
     <td class="n">${b.ganaMes ? money(b.ganaMes) : '—'}</td><td class="n">${marg(b)}</td></tr>`).join('');
   const solos = v.solos.map(b => `<tr><td>${link(b)}</td><td class="n">${num(b.u90)}</td><td class="n">${money(b.actual)}</td><td class="n"><b>${money(b.sugerido)}</b> <span class="up">+10%</span></td><td class="n">${b.ganaMes ? money(b.ganaMes) : '—'}</td></tr>`).join('');
   return `<div class="grid">
-    ${tile('Muy por debajo del mercado', num(v.total), `${Math.round((1 - v.umbral) * 100)}% o más abajo del más barato nuevo desde Uruguay · ${num(v.conStock)} con stock`)}
+    ${tile('Muy por debajo del mercado', num(v.total), `${Math.round((1 - v.umbral) * 100)}% o más abajo del más barato con entrega inmediata (o de los que lo venden a pedido, si sos el único inmediato) · ${num(v.conStock)} con stock`)}
     ${tile('Plata extra por mes', money(v.ganaMesTotal), 'si les ponés el precio sugerido y siguen vendiendo igual')}
-    ${tile('Solo vos los vendés', num(v.solosTotal), 'sin competidores en el catálogo: probá +10%')}
+    ${tile('Solo vos los vendés', num(v.solosTotal), 'nadie más lo tiene con entrega inmediata')}
   </div>
-  ${v.lista.length ? `<div class="card scroll" style="margin-top:12px"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Más barato desde UY (vendedores)</th><th class="n">Precio sugerido</th><th class="n">Más por mes</th><th class="n">Te queda por libro</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="card"><p class="muted">Ningún libro está muy por debajo del mercado hoy.</p></div>'}
-  ${v.solos.length ? `<h2>Solo vos los vendés: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
-  <p class="muted">Precio sugerido: 2% debajo del competidor más barato con el libro nuevo y sin envío del exterior (foto diaria de ML), redondeado. Los agotados usan tu precio promedio de venta: es el precio para cuando lo repongas. "Más por mes" supone que se sigue vendiendo como en los últimos 90 días. El panel sólo sugiere: los precios se cambian en Mercado Libre.</p>`;
+  ${v.lista.length ? `<div class="card scroll" style="margin-top:12px"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Más barato (vendedores)</th><th class="n">Precio sugerido</th><th class="n">Más por mes</th><th class="n">Te queda por libro</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="card"><p class="muted">Ningún libro está muy por debajo del mercado hoy.</p></div>'}
+  ${v.solos.length ? `<h2>Solo vos lo tenés con entrega inmediata: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
+  <p class="muted">Precio sugerido: 2% debajo del competidor más barato con entrega inmediata; si sos el único inmediato, 2% debajo del más barato a pedido (marcado "a pedido"). Redondeado, con la foto diaria de ML. Los agotados usan tu precio promedio de venta: es el precio para cuando lo repongas. "Más por mes" supone que se sigue vendiendo como en los últimos 90 días. El panel sólo sugiere: los precios se cambian en Mercado Libre.</p>`;
 }
 
 export function renderBi(bi) {

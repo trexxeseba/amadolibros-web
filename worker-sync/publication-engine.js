@@ -15,6 +15,27 @@ export function candidateSkipState(error){
  if(ML_REQUIREMENT_SKIP.has(code))return 'skipped_ml_requirement';
  return null;
 }
+// Sobrescrituras de precio competitivo para un lote clonado: forman parte de la
+// política clonada, así el policy_hash (y la aprobación) cubre exactamente esos
+// valores. Sin ellas el lote hereda la política de origen tal cual.
+export function competitiveOverrides(args){
+ const out={};
+ if(args.competitive!==undefined){
+  if(typeof args.competitive!=='boolean')throw new PublicationError('invalid_competitive');
+  out.competitive=args.competitive;
+ }
+ if(args.competitive_floor_margin!==undefined){
+  const v=Number(args.competitive_floor_margin);
+  if(!Number.isFinite(v)||v<0||v>=1)throw new PublicationError('invalid_competitive');
+  out.competitiveFloorMargin=v;
+ }
+ if(args.minimum_contribution_uyu!==undefined){
+  const v=Number(args.minimum_contribution_uyu);
+  if(!Number.isFinite(v)||v<0||v>100000)throw new PublicationError('invalid_competitive');
+  out.minimumContributionUyu=v;
+ }
+ return out;
+}
 // Admin-only actions (SYNC_SECRET): never reachable through the signed Operations envelope.
 export const ADMIN_ONLY_ACTIONS=['clone_preflight_catalog','shipping_diagnostic','shipping_probe','create_run_from_source','audit_availability_terms','queue_kick'];
 export const CLONE_PREFLIGHT_SOURCE_CODE='catalog_required_needs_review';
@@ -106,7 +127,15 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
      if(duplicate){await mark(row.isbn,'skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
      const bySku=await api.skuItems(env,row.isbn);
      if(bySku.length){await mark(row.isbn,'skipped_duplicate',{itemId:bySku[0]});continue;}
+     // Precio competitivo: se mira una sola vez al ganador de la ficha y se guarda en el
+     // renglón del feed, así la aprobación, la validación y la creación calculan el mismo precio.
+     if(policy.competitive&&row.competitor===undefined){
+      const competitor=await api.competitorPrice(env,row.isbn);
+      await s.setCompetitor(freshRun.feed_id,row.isbn,competitor);
+      row.competitor=competitor;
+     }
      const quote=quoteMercadoLibre(row,policy);
+     if(quote.skip){await mark(row.isbn,'skipped_not_competitive',{errorCode:quote.skip});continue;}
      let payload=job.payload_json?JSON.parse(job.payload_json):null;
      if(publishing&&approvedPayloadGuard){
       await approvedPayloadGuard(env,run,job,payload);
@@ -216,7 +245,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    if(availabilityDays!==null&&(!Number.isInteger(availabilityDays)||availabilityDays<1||availabilityDays>60))throw new PublicationError('invalid_availability_days');
    const dailyCap=args.daily_cap??1000,preflightLimit=args.preflight_limit??20,targetPublished=args.target_published??null;
    if(!Number.isInteger(dailyCap)||dailyCap<1||dailyCap>10000||!Number.isInteger(preflightLimit)||preflightLimit<1||preflightLimit>20||(targetPublished!==null&&(!Number.isInteger(targetPublished)||targetPublished<1||targetPublished>10000)))throw new PublicationError('invalid_run_limits');
-   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{})});
+   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{}),...competitiveOverrides(args)});
    const hash=await policyHash(policy);
    let feed=await s.feed(args.feed_id);
    if(!feed||!['ready','importing'].includes(feed.state)||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
@@ -281,7 +310,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    // policy_hash (and the human approval) covers exactly those days.
    const availabilityDays=args.availability_days??null;
    if(availabilityDays!==null&&(!Number.isInteger(availabilityDays)||availabilityDays<1||availabilityDays>60))throw new PublicationError('invalid_availability_days');
-   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{})});
+   const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{}),...competitiveOverrides(args)});
    const hash=await policyHash(policy);if(hash===source.policy_hash)throw new PublicationError('source_policy_already_catalog',409);
    const feedId=freshFeedId??source.feed_id;
    let feed=await s.feed(feedId);
