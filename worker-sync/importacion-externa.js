@@ -202,6 +202,36 @@ export async function externalSignals(db, isbns) {
 
 // ISBN que aparecen en fuentes externas y no están en nuestro catálogo, con
 // cruces: búsquedas sin resultado en la web y lista de espera (por título).
+// Proveedores que ya nos vendieron ese ISBN (cualquier fecha) y disponibilidad
+// vigente en el feed de SBS, para un ISBN externo: convierte un hallazgo de
+// radar en "sabemos dónde conseguirlo" en vez de sólo "alguien más lo vende".
+async function proveedorCrossCheck(db, isbns) {
+  const out = new Map();
+  if (!isbns.length) return out;
+  try {
+    const { results } = await db.prepare(`SELECT i.isbn, o.supplier, MAX(o.purchase_date_ms) AS d FROM purchase_items i JOIN purchase_orders o ON o.purchase_id=i.purchase_id
+      WHERE o.superseded_by IS NULL AND COALESCE(o.document_type,'invoice')<>'credit_note' AND i.isbn IN (SELECT value FROM json_each(?)) GROUP BY i.isbn, o.supplier`).bind(JSON.stringify(isbns)).all();
+    for (const r of results) {
+      const e = out.get(r.isbn) ?? { proveedores: [], sbs: null };
+      e.proveedores.push({ proveedor: r.supplier, ultima_compra: new Date(Number(r.d)).toISOString().slice(0, 10) });
+      out.set(r.isbn, e);
+    }
+  } catch { /* sin compras cargadas */ }
+  try {
+    const feed = await db.prepare("SELECT id, source_date FROM sbs_supplier_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 1").first();
+    if (feed) {
+      const { results } = await db.prepare(`SELECT isbn, data_json FROM sbs_supplier_stock WHERE feed_id=? AND isbn IN (SELECT value FROM json_each(?))`).bind(feed.id, JSON.stringify(isbns)).all();
+      for (const r of results) {
+        const e = out.get(r.isbn) ?? { proveedores: [], sbs: null };
+        let data = null; try { data = JSON.parse(r.data_json); } catch { data = null; }
+        e.sbs = { disponible: data?.stock ?? 'no_figura', feed_fecha: feed.source_date };
+        out.set(r.isbn, e);
+      }
+    }
+  } catch { /* sin feed de SBS todavía */ }
+  return out;
+}
+
 export async function radarExterno(db, catalog, { limit = 50, nowMs = Date.now() } = {}) {
   await ensureExternal(db);
   const own = new Set();
@@ -214,11 +244,14 @@ export async function radarExterno(db, catalog, { limit = 50, nowMs = Date.now()
   try { waitlist = (await db.prepare("SELECT product_title, COUNT(*) AS n FROM stock_waitlist WHERE status='waiting' GROUP BY product_title").all()).results; } catch { waitlist = []; }
   const missKeys = misses.map(m => ({ key: titleKey(m.query), n: Number(m.n), query: m.query })).filter(m => m.key.length >= 6);
   const waitKeys = waitlist.map(w => ({ key: titleKey(w.product_title), n: Number(w.n), title: w.product_title })).filter(w => w.key.length >= 6);
+  const proveedores = await proveedorCrossCheck(db, externos.map(r => r.isbn));
   return externos.map(r => {
     const tk = r.titulo_key ?? '';
     const buscado = tk.length >= 6 ? missKeys.filter(m => tk.includes(m.key) || m.key.includes(tk)) : [];
     const espera = tk.length >= 6 ? waitKeys.filter(w => tk.includes(w.key) || w.key.includes(tk)) : [];
+    const prov = proveedores.get(r.isbn) ?? { proveedores: [], sbs: null };
     return { isbn: r.isbn, titulo: r.titulo, fuentes: Number(r.fuentes), fuentes_lista: String(r.fuentes_lista ?? '').split(','), vendedores: Number(r.vendedores), vendidas_max: r.vendidas_max == null ? null : Number(r.vendidas_max), ventana_dias: r.ventana_dias, precio_min: r.precio_min == null ? null : Number(r.precio_min),
-      visto: Number(r.visto), etiqueta: 'estimado', buscado_sin_resultado: buscado.reduce((n, m) => n + m.n, 0), busquedas: buscado.slice(0, 3).map(m => m.query), lista_espera: espera.reduce((n, w) => n + w.n, 0), en_catalogo: false };
+      visto: Number(r.visto), etiqueta: 'estimado', buscado_sin_resultado: buscado.reduce((n, m) => n + m.n, 0), busquedas: buscado.slice(0, 3).map(m => m.query), lista_espera: espera.reduce((n, w) => n + w.n, 0), en_catalogo: false,
+      proveedores_conocidos: prov.proveedores, sbs: prov.sbs };
   });
 }

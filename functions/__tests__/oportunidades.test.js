@@ -5,6 +5,7 @@ import { cantidadSugerida, opportunitiesFromBi, upsertOpportunities, listOpportu
 import { ownStockIndex } from '../../worker-sync/reposicion-facts.js';
 import { buildDigestEmail } from '../../worker-sync/daily-panel-digest.js';
 import { createOportunidadesPanel, renderOportunidades } from '../panel/oportunidades.js';
+import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
 
 function database(t) {
@@ -161,4 +162,74 @@ test('panel de oportunidades: exige sesión, lista por estado y guarda el estado
   assert.match(pedidos, /pedido a Celesa/);
   // Render sin filas.
   assert.match(renderOportunidades({ resumen: { por_estado: {}, pendientes_vigentes: 0, sin_avisar: 0 }, lista: [], estado: 'pendiente' }), /No hay oportunidades/);
+});
+
+test('setOpportunityState guarda pedido_cantidad y marca pedido_at/recibido_at una sola vez', async t => {
+  const db = database(t);
+  await upsertOpportunities(db, opportunitiesFromBi(bi(), { nowMs: NOW }), NOW);
+  const id = `reponer:${A}`;
+  await setOpportunityState(db, id, 'pedido', { cantidad: 2, nowMs: NOW });
+  let row = { ...db.sqlite.prepare('SELECT pedido_cantidad,pedido_at,recibido_at FROM comp_opportunities WHERE id=?').get(id) };
+  assert.deepEqual(row, { pedido_cantidad: 2, pedido_at: NOW, recibido_at: null });
+  // Se vuelve a marcar "pedido" más tarde con otra cantidad: la fecha no se mueve, la cantidad sí (es la última confirmada).
+  await setOpportunityState(db, id, 'pedido', { cantidad: 3, nowMs: NOW + DAY });
+  row = { ...db.sqlite.prepare('SELECT pedido_cantidad,pedido_at FROM comp_opportunities WHERE id=?').get(id) };
+  assert.deepEqual(row, { pedido_cantidad: 3, pedido_at: NOW });
+  await setOpportunityState(db, id, 'recibido', { nowMs: NOW + 2 * DAY });
+  assert.equal(db.sqlite.prepare('SELECT recibido_at FROM comp_opportunities WHERE id=?').get(id).recibido_at, NOW + 2 * DAY);
+  // Marcarlo recibido otra vez más tarde no mueve la fecha.
+  await setOpportunityState(db, id, 'recibido', { nowMs: NOW + 5 * DAY });
+  assert.equal(db.sqlite.prepare('SELECT recibido_at FROM comp_opportunities WHERE id=?').get(id).recibido_at, NOW + 2 * DAY);
+});
+
+test('resultado medido: ventas desde que llegó, lo que queda estimado, y "quieto" si pasaron 21 días sin ninguna', async t => {
+  const db = database(t);
+  await db.batch(SALES_SCHEMA.map(sql => db.prepare(sql)));
+  await upsertOpportunities(db, opportunitiesFromBi(bi(), { nowMs: NOW }), NOW);
+  const id = `reponer:${A}`;
+  const RECIBIDO = NOW;
+  await setOpportunityState(db, id, 'recibido', { cantidad: 3, nowMs: RECIBIDO });
+  // Sin ventas todavía, 5 días: ni quieto ni resultado de ventas.
+  let op = (await listOpportunities(db, { estado: 'recibido', nowMs: RECIBIDO + 5 * DAY }))[0];
+  assert.equal(op.resultado.dias, 5); assert.equal(op.resultado.vendidas, 0); assert.equal(op.resultado.quieto, false);
+  assert.match(op.resultado.texto, /^5 días, todavía sin ventas\.$/);
+  // Una oportunidad sin recibido_at no trae resultado.
+  const pend = (await listOpportunities(db, { estado: 'pendiente', nowMs: RECIBIDO + 5 * DAY }))[0];
+  assert.equal(pend.resultado, undefined);
+  // 22 días sin ninguna venta: queda marcado.
+  op = (await listOpportunities(db, { estado: 'recibido', nowMs: RECIBIDO + 22 * DAY }))[0];
+  assert.equal(op.resultado.quieto, true); assert.equal(op.resultado.capital_inmovilizado, true);
+  assert.match(op.resultado.texto, /revisar precio, foto o si conviene devolverlo o rebajarlo/);
+  // Dos ventas propias después de recibido (una anterior no cuenta).
+  const sale = (orderId, daysAfterRecibido, qty) => {
+    db.sqlite.prepare('INSERT INTO ml_sales_orders(order_id,seller_id,status,date_created,date_created_ms,last_updated_ms,fetched_at) VALUES(?,?,?,?,?,?,0)').run(orderId, '440298103', 'paid', new Date(RECIBIDO + daysAfterRecibido * DAY).toISOString(), RECIBIDO + daysAfterRecibido * DAY, RECIBIDO);
+    db.sqlite.prepare('INSERT INTO ml_sales_items(order_id,line_key,item_id,title,quantity,isbn,updated_at) VALUES(?,?,?,?,?,?,0)').run(orderId, 'a', 'MLU1', 'x', qty, A);
+  };
+  sale('s1', 1, 1); sale('s2', 10, 1); sale('old', -2, 5);
+  op = (await listOpportunities(db, { estado: 'recibido', nowMs: RECIBIDO + 15 * DAY }))[0];
+  assert.equal(op.resultado.vendidas, 2); assert.equal(op.resultado.pedido, 3); assert.equal(op.resultado.restante, 1); assert.equal(op.resultado.quieto, false);
+  assert.match(op.resultado.texto, /^Vendiste 2 de 3 en 15 días: quedan 1 \(estimado, no es stock físico leído\), unos 4 por mes al ritmo actual\.$/);
+});
+
+test('panel: marcar "pedido" y "recibido" con cantidad confirmada, y ver el resultado medido para lo recibido', async t => {
+  const db = database(t);
+  await db.batch(SALES_SCHEMA.map(sql => db.prepare(sql)));
+  await upsertOpportunities(db, opportunitiesFromBi(bi(), { nowMs: NOW }), NOW);
+  const env = { APP_ENV: 'production', PANEL_PASSWORD: 'una-clave-larga', ORDERS_DB: db };
+  const handler = createOportunidadesPanel({ now: () => NOW + 2 * DAY });
+  const cookie = sessionCookieHeader(await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD))).split(';')[0];
+  const post = body => handler({ request: new Request('https://www.amadolibros.com/panel/oportunidades?estado=pendiente', { method: 'POST', headers: { cookie, origin: 'https://www.amadolibros.com', 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body) }), env });
+  const id = `reponer:${A}`;
+  assert.equal((await post({ id, estado: 'pedido', cantidad: '2' })).status, 303);
+  assert.deepEqual({ ...db.sqlite.prepare('SELECT pedido_cantidad,pedido_at FROM comp_opportunities WHERE id=?').get(id) }, { pedido_cantidad: 2, pedido_at: NOW + 2 * DAY });
+  // Cantidad con letras: rechazada, no cambia el estado.
+  assert.equal((await post({ id, estado: 'recibido', cantidad: 'x' })).status, 400);
+  assert.equal(db.sqlite.prepare('SELECT estado FROM comp_opportunities WHERE id=?').get(id).estado, 'pedido');
+  assert.equal((await post({ id, estado: 'recibido', cantidad: '2' })).status, 303);
+  assert.equal(db.sqlite.prepare('SELECT recibido_at FROM comp_opportunities WHERE id=?').get(id).recibido_at, NOW + 2 * DAY);
+  const html = await (await handler({ request: new Request('https://www.amadolibros.com/panel/oportunidades?estado=recibido', { headers: { cookie } }), env })).text();
+  assert.match(html, /Pedido 2 el/);
+  assert.match(html, /Recibido el/);
+  assert.match(html, /todavía sin ventas/);
+  assert.match(html, /value="2"/, 'el formulario precarga la última cantidad confirmada');
 });

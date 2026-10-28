@@ -121,3 +121,46 @@ test('panel de importación: exige sesión, carga un CSV y muestra el error de c
   const foreign = await handler({ request: new Request('https://www.amadolibros.com/panel/importar-externo', { method: 'POST', headers: { cookie, origin: 'https://otro.example' }, body: new URLSearchParams({ csv: 'a' }) }), env });
   assert.equal(foreign.status, 403);
 });
+
+test('cruce con proveedores: compra previa y stock de SBS convierten el hallazgo externo en "sabemos dónde conseguirlo"', async t => {
+  const db = database(t);
+  const { importPurchases } = await import('../../worker-sync/purchases.js');
+  // B: no está en nuestro catálogo, Nubimetrics lo ve, y ya lo compramos antes a Celesa.
+  await importarExterno(db, { plantilla: 'nubimetrics_competidor_publicaciones', vendedor: 'RIVAL', extraccion: '2026-10-27', csv: `Título,GTIN,Precio promedio\nLibro Nuevo,${B},900\n` }, NOW);
+  await importPurchases(db, { supplier: 'Celesa', document_type: 'invoice', document_number: 'F9', document_date: '2026-09-01', items: [{ isbn: B, title: 'Libro Nuevo', quantity: 3 }] }, NOW);
+  let radar = await radarExterno(db, { items: [] }, { nowMs: NOW });
+  assert.equal(radar.length, 1);
+  assert.equal(radar[0].proveedores_conocidos.length, 1);
+  assert.equal(radar[0].proveedores_conocidos[0].proveedor, 'CELESA');
+  assert.equal(radar[0].sbs, null);
+  // El proveedor conocido también cuenta como cruce propio: entra sin búsqueda ni lista de espera.
+  let ops = opportunitiesFromRadar(radar, { nowMs: NOW });
+  assert.equal(ops.length, 1);
+  assert.equal(ops[0].confianza, 'media');
+  assert.match(ops[0].accion, /^Probar con 1: ya lo compramos antes a CELESA$/);
+  assert.deepEqual(ops[0].evidencia.faltantes, ['costo', 'ventas_propias']);
+  assert.match(ops[0].evidencia.cruces.join(';'), /ya lo compramos antes: CELESA \(2026-09-01\)/);
+  // Ahora aparece en el feed vigente de SBS con stock: abastecimiento inmediato, confianza alta.
+  db.sqlite.exec(`CREATE TABLE sbs_supplier_feeds(id TEXT PRIMARY KEY,source_date TEXT,source_sha256 TEXT,state TEXT,expected_rows INTEGER,created_at INTEGER,checked_at INTEGER);
+    CREATE TABLE sbs_supplier_stock(feed_id TEXT,isbn TEXT,data_json TEXT);`);
+  db.sqlite.prepare('INSERT INTO sbs_supplier_feeds VALUES(?,?,?,?,?,?,?)').run('f1', '2026-10-26', 'x', 'ready', 1, 0, 0);
+  db.sqlite.prepare('INSERT INTO sbs_supplier_stock VALUES(?,?,?)').run('f1', B, JSON.stringify({ isbn: B, stock: '5' }));
+  radar = await radarExterno(db, { items: [] }, { nowMs: NOW });
+  assert.deepEqual(radar[0].sbs, { disponible: '5', feed_fecha: '2026-10-26' });
+  ops = opportunitiesFromRadar(radar, { nowMs: NOW });
+  assert.equal(ops[0].confianza, 'alta');
+  assert.equal(ops[0].accion, 'Pedir 1 a SBS (disponible hoy)');
+  assert.ok(!ops[0].evidencia.faltantes.includes('proveedor'));
+  assert.match(ops[0].evidencia.cruces.join(';'), /SBS lo tiene disponible hoy \(5 u\., feed del 2026-10-26\)/);
+  // Sin proveedor ni SBS, "proveedor" queda entre los faltantes y la acción lo dice.
+  const sinProveedor = { isbn: 'X', titulo: 'Y', fuentes: 1, fuentes_lista: ['nubimetrics'], vendedores: 1, vendidas_max: null, ventana_dias: null, precio_min: null, buscado_sin_resultado: 2, busquedas: ['y'], lista_espera: 0, proveedores_conocidos: [], sbs: null };
+  const op2 = opportunitiesFromRadar([sinProveedor], { nowMs: NOW })[0];
+  assert.ok(op2.evidencia.faltantes.includes('proveedor'));
+  assert.match(op2.accion, /sin proveedor conocido, conseguir uno antes de pedir/);
+  // Sin compras cargadas en absoluto (tabla ni existe): no revienta, cruce vacío.
+  const db2 = database(t);
+  await importarExterno(db2, { plantilla: 'nubimetrics_competidor_publicaciones', vendedor: 'RIVAL', extraccion: '2026-10-27', csv: `Título,GTIN,Precio promedio\nOtro,${B},900\n` }, NOW);
+  const radar2 = await radarExterno(db2, { items: [] }, { nowMs: NOW });
+  assert.deepEqual(radar2[0].proveedores_conocidos, []);
+  assert.equal(radar2[0].sbs, null);
+});

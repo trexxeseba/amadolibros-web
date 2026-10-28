@@ -9,6 +9,8 @@
 // Cantidades: objetivo − stock físico − tránsito confirmado, nunca menos de 0,
 // y 2 o 3 unidades sólo con repetición real de ventas y costo conocido.
 import { bookIsbn } from './isbn.js';
+import { COUNTED_STATUSES } from './ml-sales.js';
+const COUNTED_SQL = COUNTED_STATUSES.map(s => `'${s}'`).join(',');
 
 export const OPPORTUNITY_STATES = Object.freeze(['pendiente', 'aprobado', 'descartado', 'pedido', 'recibido', 'resultado']);
 export const OPPORTUNITY_TYPES = Object.freeze({
@@ -28,12 +30,18 @@ export const OPPORTUNITY_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS comp_opportunities(id TEXT PRIMARY KEY,isbn TEXT NOT NULL,tipo TEXT NOT NULL,titulo TEXT,estado TEXT NOT NULL DEFAULT 'pendiente',accion TEXT,impacto_mes REAL,confianza TEXT,cantidad INTEGER,cantidad_nivel TEXT,evidencia_json TEXT NOT NULL,enlaces_json TEXT,first_seen_at INTEGER NOT NULL,last_seen_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,estado_at INTEGER,nota TEXT,notificado_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS comp_opportunities_estado ON comp_opportunities(estado,last_seen_at)`,
 ];
+// Cuánto se pidió/recibió de verdad (puede diferir de la sugerencia) y cuándo:
+// para medir el resultado (rotación del lote, capital inmovilizado) sin
+// pisar la fecha la segunda vez que se marca el mismo estado.
+const OPPORTUNITY_OUTCOME_COLUMNS = [['pedido_cantidad', 'INTEGER'], ['pedido_at', 'INTEGER'], ['recibido_at', 'INTEGER']];
 
 // Una vez por instancia de D1: el panel en Pages tiene tope de consultas por request.
 const ready = new WeakSet();
 export async function ensureOpportunities(db) {
   if (ready.has(db)) return;
   for (const sql of OPPORTUNITY_SCHEMA) await db.prepare(sql).run();
+  const cols = new Set((await db.prepare('PRAGMA table_info(comp_opportunities)').all()).results.map(c => c.name));
+  for (const [col, type] of OPPORTUNITY_OUTCOME_COLUMNS) if (!cols.has(col)) await db.prepare(`ALTER TABLE comp_opportunities ADD COLUMN ${col} ${type}`).run();
   ready.add(db);
 }
 
@@ -140,16 +148,29 @@ export function opportunitiesFromBi(bi, { facts = new Map(), meta = new Map(), n
 export function opportunitiesFromRadar(radar, { nowMs = Date.now() } = {}) {
   const out = [];
   for (const r of Array.isArray(radar) ? radar : []) {
+    const proveedores = r.proveedores_conocidos ?? [], sbsDisponible = Number.isFinite(Number(r.sbs?.disponible)) ? Number(r.sbs.disponible) : null;
     const cruces = [];
     if (r.buscado_sin_resultado > 0) cruces.push(`${r.buscado_sin_resultado} búsqueda${r.buscado_sin_resultado === 1 ? '' : 's'} sin resultado en la web (${(r.busquedas ?? []).join(', ')})`);
     if (r.lista_espera > 0) cruces.push(`${r.lista_espera} en lista de espera`);
     if (r.fuentes >= 2) cruces.push(`${r.fuentes} fuentes externas distintas`);
+    // Proveedor conocido o stock vigente en SBS: también es un cruce propio (ya
+    // sabemos de dónde conseguirlo), no sólo que un competidor lo venda.
+    if (sbsDisponible != null && sbsDisponible > 0) cruces.push(`SBS lo tiene disponible hoy (${sbsDisponible} u., feed del ${r.sbs.feed_fecha})`);
+    else if (proveedores.length) cruces.push(`ya lo compramos antes: ${proveedores.map(p => `${p.proveedor} (${p.ultima_compra})`).join(', ')}`);
     if (!cruces.length) continue;
     const q = cantidadSugerida({ u90: 0, u365: 0, stock: 0, senal_externa: true, costo_conocido: false });
+    // Confianza y acción dependen de si hay un camino de abastecimiento conocido:
+    // sin proveedor ni SBS, "probar" no alcanza — primero hay que conseguir uno.
+    const confianza = sbsDisponible != null && sbsDisponible > 0 ? 'alta' : (r.buscado_sin_resultado > 0 || r.lista_espera > 0 || proveedores.length) ? 'media' : 'baja';
+    const accion = sbsDisponible != null && sbsDisponible > 0 ? `Pedir ${q.cantidad} a SBS (disponible hoy)`
+      : proveedores.length ? `Probar con ${q.cantidad}: ya lo compramos antes a ${proveedores[0].proveedor}`
+      : `Probar con ${q.cantidad}: sin proveedor conocido, conseguir uno antes de pedir`;
+    const faltantes = ['costo', 'ventas_propias', ...(proveedores.length || (sbsDisponible != null && sbsDisponible > 0) ? [] : ['proveedor'])];
     out.push({
       id: `probar_externo:${r.isbn}`, isbn: r.isbn, tipo: 'probar_externo', titulo: r.titulo ?? null,
-      accion: `Probar con ${q.cantidad} (no está en el catálogo)`, impacto_mes: null, confianza: r.buscado_sin_resultado > 0 || r.lista_espera > 0 ? 'media' : 'baja', cantidad: q.cantidad, cantidad_nivel: q.nivel,
-      evidencia: { fuentes: r.fuentes_lista, vendedores: r.vendedores, vendidas_max: r.vendidas_max, ventana_dias: r.ventana_dias, precio_min: r.precio_min, etiqueta: 'estimado', cruces, buscado_sin_resultado: r.buscado_sin_resultado, lista_espera: r.lista_espera, cantidad_motivo: q.motivo, faltantes: ['costo', 'ventas_propias'], costo_conocido: false,
+      accion, impacto_mes: null, confianza, cantidad: q.cantidad, cantidad_nivel: q.nivel,
+      evidencia: { fuentes: r.fuentes_lista, vendedores: r.vendedores, vendidas_max: r.vendidas_max, ventana_dias: r.ventana_dias, precio_min: r.precio_min, etiqueta: 'estimado', cruces, buscado_sin_resultado: r.buscado_sin_resultado, lista_espera: r.lista_espera,
+        proveedores_conocidos: proveedores, sbs: r.sbs ?? null, cantidad_motivo: q.motivo, faltantes, costo_conocido: false,
         texto: `Lo venden ${r.vendedores} vendedor${r.vendedores === 1 ? '' : 'es'} según ${r.fuentes_lista.join(' y ')} (${r.vendidas_max != null ? `hasta ${r.vendidas_max} vendidas en ${r.ventana_dias ?? '?'} días, estimado por la fuente` : 'sin cifra de ventas'}${r.precio_min != null ? `, desde $ ${Math.round(r.precio_min).toLocaleString('es-UY')}` : ''}). Cruce propio: ${cruces.join('; ')}. No lo tenemos: ${q.motivo}.`, calculado: new Date(nowMs).toISOString() },
       enlaces: { panel: `/panel/reposicion?q=${r.isbn}`, ml: null, tapa: null },
     });
@@ -173,6 +194,7 @@ export async function upsertOpportunities(db, list, nowMs = Date.now()) {
 }
 
 const parse = r => ({ ...r, impacto_mes: r.impacto_mes == null ? null : Number(r.impacto_mes), cantidad: r.cantidad == null ? null : Number(r.cantidad),
+  pedido_cantidad: r.pedido_cantidad == null ? null : Number(r.pedido_cantidad), pedido_at: r.pedido_at == null ? null : Number(r.pedido_at), recibido_at: r.recibido_at == null ? null : Number(r.recibido_at),
   evidencia: JSON.parse(r.evidencia_json || '{}'), enlaces: JSON.parse(r.enlaces_json || '{}'), vigente: null });
 
 // Lista ordenada por impacto sustentado y confianza; `vigente` dice si se
@@ -184,15 +206,50 @@ export async function listOpportunities(db, { estado = 'pendiente', limit = 100,
   if (tipo) { where.push('tipo=?'); args.push(tipo); }
   const { results } = await db.prepare(`SELECT * FROM comp_opportunities WHERE ${where.join(' AND ')} ORDER BY last_seen_at DESC LIMIT ?`).bind(...args, Math.min(500, Math.max(1, limit))).all();
   const since = nowMs - VIGENTE_DAYS * DAY_MS;
-  return results.map(parse).map(o => ({ ...o, vigente: Number(o.last_seen_at) >= since, visto_hace_horas: Math.round((nowMs - Number(o.last_seen_at)) / HOUR_MS) }))
-    .sort((a, b) => Number(b.vigente) - Number(a.vigente) || rankOf(b) - rankOf(a) || Number(b.last_seen_at) - Number(a.last_seen_at));
+  const parsed = results.map(parse).map(o => ({ ...o, vigente: Number(o.last_seen_at) >= since, visto_hace_horas: Math.round((nowMs - Number(o.last_seen_at)) / HOUR_MS) }));
+  // Resultado medido sólo para lo ya recibido: una consulta por fila, pero son pocas (estado filtrado).
+  const withOutcome = await Promise.all(parsed.map(async o => o.recibido_at ? { ...o, resultado: await opportunityOutcome(db, o, { nowMs }) } : o));
+  return withOutcome.sort((a, b) => Number(b.vigente) - Number(a.vigente) || rankOf(b) - rankOf(a) || Number(b.last_seen_at) - Number(a.last_seen_at));
 }
 
-export async function setOpportunityState(db, id, estado, { nota = null, nowMs = Date.now() } = {}) {
+// `cantidad` acá es lo pedido/recibido DE VERDAD (puede diferir de la sugerencia
+// de la bandeja); se guarda sólo si se manda. pedido_at/recibido_at se fijan la
+// primera vez que se entra a ese estado y no se mueven si se vuelve a marcar.
+export async function setOpportunityState(db, id, estado, { nota = null, cantidad = null, nowMs = Date.now() } = {}) {
   if (!OPPORTUNITY_STATES.includes(estado)) throw new Error('invalid_state');
   await ensureOpportunities(db);
-  const r = await db.prepare('UPDATE comp_opportunities SET estado=?,estado_at=?,updated_at=?,nota=COALESCE(?,nota) WHERE id=?').bind(estado, nowMs, nowMs, nota ? String(nota).slice(0, 500) : null, String(id)).run();
+  const sets = ['estado=?', 'estado_at=?', 'updated_at=?', 'nota=COALESCE(?,nota)'], args = [estado, nowMs, nowMs, nota ? String(nota).slice(0, 500) : null];
+  if (cantidad != null && Number.isFinite(Number(cantidad))) { sets.push('pedido_cantidad=?'); args.push(Math.max(0, Math.round(Number(cantidad)))); }
+  if (estado === 'pedido') { sets.push('pedido_at=COALESCE(pedido_at,?)'); args.push(nowMs); }
+  if (estado === 'recibido') { sets.push('recibido_at=COALESCE(recibido_at,?)'); args.push(nowMs); }
+  args.push(String(id));
+  const r = await db.prepare(`UPDATE comp_opportunities SET ${sets.join(',')} WHERE id=?`).bind(...args).run();
   return Number(r?.meta?.changes ?? 0) > 0;
+}
+
+// Resultado medido de un pedido ya recibido: ventas desde que llegó, cuánto
+// queda (estimado de lo pedido menos lo vendido: no hay historial de stock) y
+// si quedó quieto (3 semanas sin ninguna venta con algo todavía por vender).
+// No cambia el estado: Seba decide cuándo pasarlo a "resultado".
+const OUTCOME_QUIET_DAYS = 21;
+export async function opportunityOutcome(db, op, { nowMs = Date.now() } = {}) {
+  if (!op?.recibido_at) return null;
+  const dias = Math.max(0, Math.round((nowMs - Number(op.recibido_at)) / DAY_MS));
+  let vendidas = 0;
+  try {
+    const r = await db.prepare(`SELECT COALESCE(SUM(i.quantity),0) AS u FROM ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+      WHERE o.status IN (${COUNTED_SQL}) AND o.date_created_ms>=? AND i.isbn=? AND (i.seller_sku IS NULL OR i.seller_sku NOT LIKE 'AMADO-AR-%')`).bind(Number(op.recibido_at), op.isbn).first();
+    vendidas = Number(r?.u) || 0;
+  } catch { vendidas = 0; }
+  const pedido = op.pedido_cantidad ?? op.cantidad ?? null;
+  const restante = pedido != null ? Math.max(0, pedido - vendidas) : null;
+  const rotacionMensual = dias > 0 ? Math.round((vendidas / dias) * 30 * 10) / 10 : null;
+  const quieto = dias >= OUTCOME_QUIET_DAYS && vendidas === 0 && (restante == null || restante > 0);
+  const texto = vendidas > 0
+    ? `Vendiste ${vendidas}${pedido != null ? ` de ${pedido}` : ''} en ${dias} días${restante != null ? (restante > 0 ? `: quedan ${restante} (estimado, no es stock físico leído)` : ': se agotó') : ''}${rotacionMensual ? `, unos ${rotacionMensual} por mes al ritmo actual` : ''}.`
+    : quieto ? `${dias} días sin ninguna venta: revisar precio, foto o si conviene devolverlo o rebajarlo.`
+    : `${dias} día${dias === 1 ? '' : 's'}, todavía sin ventas.`;
+  return { dias, vendidas, pedido, restante, rotacion_mensual: rotacionMensual, quieto, capital_inmovilizado: restante != null && restante > 0, texto };
 }
 
 export async function opportunitySummary(db, nowMs = Date.now()) {

@@ -27,6 +27,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:7px 8px;b
 .tapa{width:48px;height:64px;object-fit:cover;border-radius:4px;background:#eee}.tit{font-weight:600}.ev{font-size:13px;color:#444;max-width:420px}
 form.est{display:flex;gap:6px;flex-wrap:wrap;align-items:center}select,input[type=text]{font:inherit;padding:5px;border:1px solid #ccc;border-radius:6px}button{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid #a94e3d;background:#a94e3d;color:#fff;cursor:pointer}
 .ok{background:#e7f5ea;color:#1b6b30;padding:8px 12px;border-radius:8px}
+input[type=number]{width:64px}.res{font-size:12px;margin-top:4px}
 </style><main><p><a href="/panel">← Panel</a> · <a href="/panel/reposicion">Reposición</a> · <a href="/panel/inteligencia">Brújula</a></p>${body}</main></html>`, {
     status, headers: { 'Content-Type': 'text/html;charset=UTF-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY',
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src https://http2.mlstatic.com https://*.mlstatic.com; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" },
@@ -44,6 +45,21 @@ function evidence(o) {
   return bits.join('<br>');
 }
 
+// Lo que ya se pidió/recibió de verdad (puede diferir de la cantidad sugerida),
+// y el resultado medido desde que llegó: ventas, cuánto queda (estimado) y si
+// quedó quieto. No se calcula hasta que Seba marca "recibido".
+function pedidoBlock(o) {
+  const bits = [];
+  if (o.pedido_at) bits.push(`Pedido${o.pedido_cantidad != null ? ` ${o.pedido_cantidad}` : ''} el ${esc(day(new Date(o.pedido_at).toISOString()))}`);
+  if (o.recibido_at) bits.push(`Recibido el ${esc(day(new Date(o.recibido_at).toISOString()))}`);
+  if (!bits.length) return '';
+  return `<div class="res muted">${bits.join(' · ')}</div>`;
+}
+function resultadoBlock(r) {
+  if (!r) return '';
+  return `<div class="res ${r.quieto ? 'p p-aviso' : 'muted'}">${esc(r.texto)}</div>`;
+}
+
 function row(o, estadoActual) {
   const l = o.enlaces ?? {};
   const links = [l.ml ? `<a href="${esc(l.ml)}" rel="noopener noreferrer">ML</a>` : '', `<a href="/panel/reposicion?q=${esc(o.isbn)}">reposición</a>`].filter(Boolean).join(' · ');
@@ -57,7 +73,8 @@ function row(o, estadoActual) {
     <td class="ev">${evidence(o)}</td>
     <td class="n"><small>${esc(day(new Date(Number(o.last_seen_at)).toISOString()))}${o.vigente ? '' : '<br><span class="p p-gris">ya no se observa</span>'}${o.notificado_at ? '<br><span class="muted">avisada por correo</span>' : ''}</small></td>
     <td><span class="p p-${STATE_TONE[o.estado] ?? 'gris'}">${esc(STATE_LABEL[o.estado] ?? o.estado)}</span>${o.nota ? `<br><small class="muted">${esc(o.nota)}</small>` : ''}
-      <form class="est" method="post" action="/panel/oportunidades?estado=${esc(estadoActual)}"><input type="hidden" name="id" value="${esc(o.id)}"><select name="estado">${options}</select><input type="text" name="nota" placeholder="nota" maxlength="500"><button type="submit">Guardar</button></form></td>
+      ${pedidoBlock(o)}${resultadoBlock(o.resultado)}
+      <form class="est" method="post" action="/panel/oportunidades?estado=${esc(estadoActual)}"><input type="hidden" name="id" value="${esc(o.id)}"><select name="estado">${options}</select><input type="number" name="cantidad" placeholder="cant." min="0" max="999" value="${o.pedido_cantidad ?? ''}"><input type="text" name="nota" placeholder="nota" maxlength="500"><button type="submit">Guardar</button></form></td>
   </tr>`;
 }
 
@@ -77,7 +94,7 @@ export function renderOportunidades({ resumen, lista, estado, hecho = false, rev
   <p class="muted">${resumen.pendientes_vigentes} pendiente${resumen.pendientes_vigentes === 1 ? '' : 's'} observada${resumen.pendientes_vigentes === 1 ? '' : 's'} en los últimos 3 días · ${resumen.sin_avisar} todavía sin avisar por correo. "Ya no se observa" = la última recalculada no la encontró; conserva su estado por si vuelve.</p>
   ${lista.length ? `<div class="card scroll"><table><thead><tr><th></th><th>Libro</th><th>Qué hacer</th><th class="n">Más por mes</th><th>Confianza</th><th>Evidencia</th><th class="n">Vista</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table></div>`
     : '<div class="card"><p class="muted">No hay oportunidades en este estado. La bandeja se recalcula cada mañana con el correo del panel.</p></div>'}
-  <p class="muted">Confianza alta = 2 o más competidores comparables observados y costo cargado; media = una sola referencia o sin costo; baja = sin stock, foto de más de 48 horas o captura incompleta. Cantidad = objetivo − stock físico − en camino; 2 o 3 unidades sólo con repetición real de ventas, costo y ventana completa.</p>`;
+  <p class="muted">Confianza alta = 2 o más competidores comparables observados y costo cargado; media = una sola referencia o sin costo; baja = sin stock, foto de más de 48 horas o captura incompleta. Cantidad = objetivo − stock físico − en camino; 2 o 3 unidades sólo con repetición real de ventas, costo y ventana completa. "Cant." en el formulario es lo pedido o recibido de verdad: se guarda la primera vez que se marca Pedido o Recibido y no se pisa después. El resultado (ventas desde que llegó, cuánto queda estimado, si quedó quieto) aparece a partir de "Recibido"; "queda" es una estimación de lo pedido menos lo vendido, no una lectura de stock físico.</p>`;
 }
 
 export function createOportunidadesPanel({ now = Date.now } = {}) {
@@ -98,8 +115,9 @@ export function createOportunidadesPanel({ now = Date.now } = {}) {
       if (origin && origin !== ORIGIN) return page('<p>Origen no permitido.</p>', 403);
       const form = await request.formData();
       const id = String(form.get('id') ?? '').slice(0, 80), nuevo = String(form.get('estado') ?? ''), nota = String(form.get('nota') ?? '').trim().slice(0, 500);
-      if (!/^[a-z_]+:\d{10,13}$/.test(id) || !OPPORTUNITY_STATES.includes(nuevo)) return page('<p>Datos inválidos.</p>', 400);
-      await setOpportunityState(db, id, nuevo, { nota: nota || null, nowMs: now() });
+      const cantidadRaw = String(form.get('cantidad') ?? '').trim();
+      if (!/^[a-z_]+:\d{10,13}$/.test(id) || !OPPORTUNITY_STATES.includes(nuevo) || (cantidadRaw && !/^\d{1,3}$/.test(cantidadRaw))) return page('<p>Datos inválidos.</p>', 400);
+      await setOpportunityState(db, id, nuevo, { nota: nota || null, cantidad: cantidadRaw ? Number(cantidadRaw) : null, nowMs: now() });
       return Response.redirect(`${ORIGIN}/panel/oportunidades?estado=${encodeURIComponent(estado)}&hecho=1`, 303);
     }
     if (request.method !== 'GET') return page('<p>Método no permitido.</p>', 405);
