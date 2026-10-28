@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { parseCsv, validarMapeo, importarExterno, listImports, externalSignals, radarExterno, PLANTILLAS, num } from '../../worker-sync/importacion-externa.js';
+import { parseCsv, validarMapeo, importarExterno, listImports, externalSignals, radarExterno, stockDiscrepancies, opportunitiesFromStockDiscrepancies, PLANTILLAS, num } from '../../worker-sync/importacion-externa.js';
 import { opportunitiesFromRadar, cantidadSugerida } from '../../worker-sync/oportunidades.js';
 import { createImportarExternoPanel } from '../panel/importar-externo.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
@@ -12,7 +12,7 @@ function database(t) {
   return { prepare: sql => statement(sql), async batch(items) { sqlite.exec('BEGIN'); try { const r = items.map(s => ({ results: sqlite.prepare(s.sql).all(...s.args) })); sqlite.exec('COMMIT'); return r; } catch (e) { sqlite.exec('ROLLBACK'); throw e; } }, sqlite };
 }
 const NOW = Date.parse('2026-10-27T13:00:00Z'), DAY = 864e5;
-const A = '9780306406157', B = '9788420412146';
+const A = '9780306406157', B = '9788420412146', C = '9781418599942', D = '9780997419900';
 
 // Archivo DE PRUEBA con la forma vista en pantalla de Administrado; no es un export real.
 const CSV_ADM = `Publicación;Competidor;Precio;Vendidas ayer;Vendidas 7d;Logística
@@ -163,4 +163,71 @@ test('cruce con proveedores: compra previa y stock de SBS convierten el hallazgo
   const radar2 = await radarExterno(db2, { items: [] }, { nowMs: NOW });
   assert.deepEqual(radar2[0].proveedores_conocidos, []);
   assert.equal(radar2[0].sbs, null);
+});
+
+// Pedido de reposición de Administrado (DE PRUEBA: títulos y cifras
+// inventados con la misma forma que confirmó Seba el 28/10/2026: FULL =
+// Mercado Envíos Full, Depósito = stock normal, "sin stock" cuando ninguno
+// de los dos tiene.
+const CSV_REPOSICION = `Publicación;SKU;Número;FULL;Depósito;Ventas por día;Días de stock;Pedir (u.) · 30 días + 15 de demora
+Libro A de Prueba;${A};MLU1000001;;;0,07;sin stock;4
+Libro B de Prueba;${B};MLU1000002;1;0;0,12;8,5;5
+Libro C de Prueba;${C};MLU1000003;3;2;0,1;30,6;2
+Libro D de Prueba;${D};MLU1000004;;;0,05;sin stock;3
+`;
+
+test('plantilla administrado_pedido_reposicion: FULL/Depósito/Pedir se leen como números, "sin stock" como ausencia (no como cero)', async t => {
+  const db = database(t);
+  const r = await importarExterno(db, { plantilla: 'administrado_pedido_reposicion', extraccion: '2026-10-28', csv: CSV_REPOSICION }, NOW);
+  assert.equal(r.duplicado, false);
+  assert.equal(r.plantilla_verificada, true, 'Seba confirmó FULL/Depósito: esta plantilla no queda marcada como sin verificar');
+  assert.equal(r.filas_validas, 4);
+  const rows = db.sqlite.prepare('SELECT isbn,mlu,full_stock,deposito_stock,dias_stock,pedir_sugerido FROM ext_rows WHERE import_id=? ORDER BY fila').all(r.import_id).map(x => ({ ...x }));
+  assert.deepEqual(rows[0], { isbn: A, mlu: 'MLU1000001', full_stock: null, deposito_stock: null, dias_stock: null, pedir_sugerido: 4 });
+  assert.deepEqual(rows[1], { isbn: B, mlu: 'MLU1000002', full_stock: 1, deposito_stock: 0, dias_stock: 8.5, pedir_sugerido: 5 });
+});
+
+test('stockDiscrepancies: sólo marca cuando una fuente dice "hay" y la otra "no hay"; una diferencia de cantidad entre las dos no alcanza', async t => {
+  const db = database(t);
+  await importarExterno(db, { plantilla: 'administrado_pedido_reposicion', extraccion: '2026-10-28', csv: CSV_REPOSICION }, NOW - 2 * DAY);
+  const catalog = { updated_at: new Date(NOW - 6 * 3600000).toISOString(), items: [
+    { id: 'MLU1', isbn: A, status: 'active', available_quantity: 2, catalog_listing: false }, // catálogo dice 2, Administrado dice "sin stock": discrepancia
+    { id: 'MLU2', isbn: B, status: 'paused', available_quantity: 5 }, // pausada no cuenta: catálogo dice 0; Administrado dice 1: discrepancia
+    { id: 'MLU3', isbn: C, status: 'active', available_quantity: 1 }, // las dos dicen "hay", aunque las cantidades no coincidan (1 vs 5): no se marca
+    { id: 'MLU4', isbn: D, status: 'active', available_quantity: 0 }, // las dos dicen "no hay": no se marca
+  ] };
+  const result = await stockDiscrepancies(db, catalog, { nowMs: NOW });
+  assert.equal(result.import.extraccion, '2026-10-28');
+  const byIsbn = Object.fromEntries(result.discrepancias.map(d => [d.isbn, d]));
+  assert.deepEqual(Object.keys(byIsbn).sort(), [A, B]);
+  assert.equal(byIsbn[A].motivo, 'catalogo_tiene_administrado_no');
+  assert.deepEqual([byIsbn[A].catalogo_stock, byIsbn[A].administrado_total], [2, 0]);
+  assert.equal(byIsbn[B].motivo, 'administrado_tiene_catalogo_no');
+  assert.deepEqual([byIsbn[B].catalogo_stock, byIsbn[B].administrado_full, byIsbn[B].administrado_deposito], [0, 1, 0]);
+  assert.equal(byIsbn[A].catalogo_actualizado, catalog.updated_at);
+  // Sin ninguna carga de tipo stock_propio: no hay nada que cruzar, no revienta.
+  const vacio = await stockDiscrepancies(database(t), catalog, { nowMs: NOW });
+  assert.deepEqual(vacio, { import: null, discrepancias: [] });
+});
+
+test('opportunitiesFromStockDiscrepancies: confianza alta siempre (dos fuentes independientes), muestra las dos cifras con su antigüedad y nunca dice cuál tiene razón', async t => {
+  const db = database(t);
+  await importarExterno(db, { plantilla: 'administrado_pedido_reposicion', extraccion: '2026-10-28', csv: CSV_REPOSICION }, NOW - 2 * DAY);
+  const catalog = { updated_at: new Date(NOW - 2 * DAY).toISOString(), items: [
+    { id: 'MLU1', isbn: A, status: 'active', available_quantity: 2 },
+    { id: 'MLU2', isbn: B, status: 'paused', available_quantity: 5 },
+    { id: 'MLU3', isbn: C, status: 'active', available_quantity: 1 }, // las dos dicen "hay": no entra a la bandeja
+    { id: 'MLU4', isbn: D, status: 'active', available_quantity: 0 }, // las dos dicen "no hay": no entra a la bandeja
+  ] };
+  const result = await stockDiscrepancies(db, catalog, { nowMs: NOW });
+  const ops = opportunitiesFromStockDiscrepancies(result, { nowMs: NOW });
+  assert.equal(ops.length, 2);
+  const a = ops.find(o => o.isbn === A), b = ops.find(o => o.isbn === B);
+  assert.equal(a.tipo, 'revisar_stock'); assert.equal(a.confianza, 'alta'); assert.equal(a.impacto_mes, null);
+  assert.equal(a.accion, 'Revisar: el catálogo tiene 2 pero Administrado dice sin stock');
+  assert.equal(a.evidencia.catalogo_antiguedad_dias, 2); assert.equal(a.evidencia.administrado_antiguedad_dias, 2);
+  assert.match(a.evidencia.texto, /Nuestro catálogo \(actualizado hace 2 días\) dice 2 en stock; el pedido de reposición de Administrado \(de hace 2 días\) dice 0 \(FULL 0 \+ Depósito 0\)/);
+  assert.equal(a.enlaces.ml, 'https://articulo.mercadolibre.com.uy/MLU-1000001');
+  assert.equal(b.accion, 'Revisar: Administrado dice 1 pero el catálogo tiene 0');
+  assert.deepEqual(opportunitiesFromStockDiscrepancies({ import: null, discrepancias: [] }), []);
 });

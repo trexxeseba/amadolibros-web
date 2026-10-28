@@ -20,7 +20,7 @@ import { bookIsbn } from './isbn.js';
 import { titleKey } from './purchases.js';
 
 export const FUENTES = Object.freeze(['nubimetrics', 'administrado', 'otra']);
-export const TIPOS = Object.freeze(['competidores_ventas', 'competidor_publicaciones', 'demanda', 'otro']);
+export const TIPOS = Object.freeze(['competidores_ventas', 'competidor_publicaciones', 'demanda', 'stock_propio', 'otro']);
 export const COMPLETITUD = Object.freeze(['completa', 'parcial', 'desconocida']);
 const MAX_TEXT = 900 * 1024, MAX_ROWS = 20000;
 
@@ -36,6 +36,15 @@ export const PLANTILLAS = Object.freeze({
   nubimetrics_competidor_publicaciones: { verificado: false, fuente: 'nubimetrics', tipo: 'competidor_publicaciones', ventana_dias: null, estimado: true, moneda: 'UYU',
     columnas: { titulo: 'título', isbn: 'gtin', precio: 'precio promedio' },
     nota: 'Métricas aproximadas por período según la pantalla. Sin muestra real del archivo.' },
+  // Administrado > Pedido de reposición (exportar Excel → CSV): stock PROPIO,
+  // no de competidores. Columnas confirmadas con una muestra real el
+  // 28/10/2026 y el significado de FULL/Depósito confirmado por Seba el mismo
+  // día: FULL = stock en Mercado Envíos Full, Depósito = stock normal del
+  // vendedor. "Días de stock" trae el texto "sin stock" cuando no hay en
+  // ninguno de los dos: se lee como ausencia, no como cero inventado.
+  administrado_pedido_reposicion: { verificado: true, fuente: 'administrado', tipo: 'stock_propio', ventana_dias: null, estimado: false, moneda: 'UYU',
+    columnas: { isbn: 'SKU', titulo: 'Publicación', mlu: 'Número', full: 'FULL', deposito: 'Depósito', ventas_dia: 'Ventas por día', dias_stock: 'Días de stock', pedir: 'Pedir (u.) · 30 días + 15 de demora' },
+    nota: 'FULL = Mercado Envíos Full, Depósito = stock normal del vendedor (confirmado por Seba el 28/10/2026). Usado para cruzar contra el stock propio de catalog.json.' },
 });
 
 export const EXTERNAL_SCHEMA = [
@@ -44,10 +53,15 @@ export const EXTERNAL_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS ext_rows_isbn ON ext_rows(isbn)`,
   `CREATE INDEX IF NOT EXISTS ext_rows_titulo ON ext_rows(titulo_key)`,
 ];
+// Columnas de "stock_propio" (Pedido de reposición de Administrado): propias
+// del vendedor, no de un competidor. Aditivas: no tocan las filas de otros tipos.
+const STOCK_PROPIO_COLUMNS = [['mlu', 'TEXT'], ['full_stock', 'REAL'], ['deposito_stock', 'REAL'], ['dias_stock', 'REAL'], ['pedir_sugerido', 'REAL']];
 const ready = new WeakSet();
 export async function ensureExternal(db) {
   if (ready.has(db)) return;
   for (const sql of EXTERNAL_SCHEMA) await db.prepare(sql).run();
+  const cols = new Set((await db.prepare('PRAGMA table_info(ext_rows)').all()).results.map(c => c.name));
+  for (const [col, type] of STOCK_PROPIO_COLUMNS) if (!cols.has(col)) await db.prepare(`ALTER TABLE ext_rows ADD COLUMN ${col} ${type}`).run();
   ready.add(db);
 }
 
@@ -154,6 +168,12 @@ export async function importarExterno(db, input, nowMs = Date.now()) {
     const vendedor = col('vendedor') ? c[col('vendedor')] || null : (a.vendedor ?? null);
     const precio = col('precio') ? num(c[col('precio')]) : null, vendidas = col('vendidas') ? num(c[col('vendidas')]) : null, ayer = col('vendidas_ayer') ? num(c[col('vendidas_ayer')]) : null;
     const logistica = col('logistica') ? c[col('logistica')] || null : null;
+    // Stock propio (Pedido de reposición de Administrado): "sin stock" en
+    // Días de stock no es un cero leído, es la fuente diciendo que no hay en
+    // ninguno de los dos depósitos; num() ya lo deja en null, no en 0.
+    const mlu = col('mlu') ? c[col('mlu')] || null : null;
+    const fullStock = col('full') ? num(c[col('full')]) : null, depositoStock = col('deposito') ? num(c[col('deposito')]) : null;
+    const diasStock = col('dias_stock') ? num(c[col('dias_stock')]) : null, pedirSugerido = col('pedir') ? num(c[col('pedir')]) : null;
     let valida = 1, motivo = null;
     if (!isbn && !titulo) { valida = 0; motivo = gtin ? 'isbn_invalido' : 'sin_isbn_ni_titulo'; }
     else if (gtin && !isbn) motivo = 'isbn_invalido_queda_titulo';
@@ -161,8 +181,8 @@ export async function importarExterno(db, input, nowMs = Date.now()) {
     let dupDe = null;
     if (key) { if (seen.has(key)) { dupDe = seen.get(key); duplicadas++; } else seen.set(key, r.fila); }
     if (valida) validas++; else invalidas++;
-    stmts.push(db.prepare('INSERT INTO ext_rows(import_id,fila,isbn,gtin_raw,titulo,titulo_key,vendedor,precio,moneda,vendidas,vendidas_ayer,ventana_dias,logistica,estimado,valida,motivo,duplicada_de,dedupe_key,raw_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(id, r.fila, isbn, gtin || null, titulo || null, titulo ? titleKey(titulo) : null, vendedor, precio, moneda, vendidas, ayer, ventanaDias, logistica, estimado ? 1 : 0, valida, motivo, dupDe, key, JSON.stringify(c)));
+    stmts.push(db.prepare('INSERT INTO ext_rows(import_id,fila,isbn,gtin_raw,titulo,titulo_key,vendedor,precio,moneda,vendidas,vendidas_ayer,ventana_dias,logistica,estimado,valida,motivo,duplicada_de,dedupe_key,raw_json,mlu,full_stock,deposito_stock,dias_stock,pedir_sugerido) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(id, r.fila, isbn, gtin || null, titulo || null, titulo ? titleKey(titulo) : null, vendedor, precio, moneda, vendidas, ayer, ventanaDias, logistica, estimado ? 1 : 0, valida, motivo, dupDe, key, JSON.stringify(c), mlu, fullStock, depositoStock, diasStock, pedirSugerido));
   }
   await db.prepare('INSERT INTO ext_imports(id,fuente,tipo,mercado,vendedor,extraccion,periodo_desde,periodo_hasta,ventana_dias,completitud,nombre_archivo,bytes,filas_total,filas_validas,filas_invalidas,filas_duplicadas,mapeo_json,plantilla,original_text,nota,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
     .bind(id, fuente, tipo, String(a.mercado ?? 'MLU'), a.vendedor ?? null, a.extraccion ?? null, a.periodo_desde ?? null, a.periodo_hasta ?? null, ventanaDias, completitud, a.nombre_archivo ?? null, csv.length, rows.length, validas, invalidas, duplicadas,
@@ -254,4 +274,81 @@ export async function radarExterno(db, catalog, { limit = 50, nowMs = Date.now()
       visto: Number(r.visto), etiqueta: 'estimado', buscado_sin_resultado: buscado.reduce((n, m) => n + m.n, 0), busquedas: buscado.slice(0, 3).map(m => m.query), lista_espera: espera.reduce((n, w) => n + w.n, 0), en_catalogo: false,
       proveedores_conocidos: prov.proveedores, sbs: prov.sbs };
   });
+}
+
+const DISCREPANCY_DAY_MS = 86400000;
+
+// Stock propio desde catalog.json (máximo entre publicaciones activas de un
+// mismo ISBN: comparten ejemplar, no se suman). Copiado de ownStockIndex en
+// reposicion-facts.js en vez de importarlo: ese módulo importa de acá
+// (externalSignals), y un import circular es frágil.
+function localOwnStock(catalog) {
+  const map = new Map();
+  for (const item of Array.isArray(catalog?.items) ? catalog.items : []) {
+    const isbn = bookIsbn(item?.isbn);
+    if (!isbn) continue;
+    const qty = item.status === 'active' ? Math.max(0, Number(item.available_quantity) || 0) : 0;
+    map.set(isbn, Math.max(map.get(isbn) ?? 0, qty));
+  }
+  return map;
+}
+
+// Cruce de stock propio: la última carga de "Pedido de reposición" de
+// Administrado (FULL + Depósito) contra el stock propio que lee catalog.json
+// (available_quantity de la publicación activa). Sólo se marca contradicción
+// cuando una fuente dice "hay" y la otra "no hay" — una diferencia de
+// cantidad entre las dos no se marca: pueden medir en momentos distintos del
+// día y no hay forma de saber cuál es la más nueva sin mirar las dos fechas,
+// que se muestran siempre para que decida quien lee. Nunca se promedian ni
+// se sustituyen entre sí: catalog.json sigue siendo la fuente del stock_propio
+// que usa el resto del panel.
+export async function stockDiscrepancies(db, catalog, { nowMs = Date.now(), limit = 100 } = {}) {
+  await ensureExternal(db);
+  const imp = await db.prepare("SELECT id,extraccion,created_at FROM ext_imports WHERE tipo='stock_propio' ORDER BY created_at DESC LIMIT 1").first();
+  if (!imp) return { import: null, discrepancias: [] };
+  const { results } = await db.prepare('SELECT isbn,titulo,mlu,full_stock,deposito_stock FROM ext_rows WHERE import_id=? AND valida=1 AND duplicada_de IS NULL AND isbn IS NOT NULL').bind(imp.id).all();
+  const ownStock = localOwnStock(catalog);
+  const discrepancias = [];
+  for (const r of results) {
+    const administradoTotal = (Number(r.full_stock) || 0) + (Number(r.deposito_stock) || 0);
+    const catalogoStock = ownStock.get(r.isbn) ?? 0;
+    const hayAdministrado = administradoTotal > 0, hayCatalogo = catalogoStock > 0;
+    if (hayAdministrado === hayCatalogo) continue; // las dos fuentes coinciden en si hay o no hay: nada que avisar
+    discrepancias.push({
+      isbn: r.isbn, titulo: r.titulo, mlu: r.mlu,
+      administrado_full: Number(r.full_stock) || 0, administrado_deposito: Number(r.deposito_stock) || 0, administrado_total: administradoTotal,
+      catalogo_stock: catalogoStock, catalogo_actualizado: catalog?.updated_at ?? null,
+      import_extraccion: imp.extraccion, import_creado: Number(imp.created_at),
+      motivo: hayCatalogo ? 'catalogo_tiene_administrado_no' : 'administrado_tiene_catalogo_no',
+    });
+    if (discrepancias.length >= limit) break;
+  }
+  return { import: { id: imp.id, extraccion: imp.extraccion, creado: Number(imp.created_at) }, discrepancias };
+}
+
+// Oportunidades de "revisar stock" a partir de las discrepancias. Siempre
+// confianza alta: son dos fuentes independientes contradiciéndose, no una
+// inferencia. No dice cuál de las dos está bien: muestra ambas con su fecha.
+export function opportunitiesFromStockDiscrepancies(result, { nowMs = Date.now() } = {}) {
+  const out = [];
+  for (const d of result?.discrepancias ?? []) {
+    const antiguedadCatalogo = d.catalogo_actualizado ? Math.round((nowMs - Date.parse(d.catalogo_actualizado)) / DISCREPANCY_DAY_MS) : null;
+    const antiguedadAdmin = Math.round((nowMs - d.import_creado) / DISCREPANCY_DAY_MS);
+    const accion = d.motivo === 'catalogo_tiene_administrado_no'
+      ? `Revisar: el catálogo tiene ${d.catalogo_stock} pero Administrado dice sin stock`
+      : `Revisar: Administrado dice ${d.administrado_total} pero el catálogo tiene 0`;
+    out.push({
+      id: `revisar_stock:${d.isbn}`, isbn: d.isbn, tipo: 'revisar_stock', titulo: d.titulo ?? null,
+      accion, impacto_mes: null, confianza: 'alta', cantidad: null, cantidad_nivel: null,
+      evidencia: {
+        catalogo_stock: d.catalogo_stock, catalogo_actualizado: d.catalogo_actualizado, catalogo_antiguedad_dias: antiguedadCatalogo,
+        administrado_full: d.administrado_full, administrado_deposito: d.administrado_deposito, administrado_total: d.administrado_total, administrado_antiguedad_dias: antiguedadAdmin,
+        motivo: d.motivo,
+        texto: `Nuestro catálogo (actualizado hace ${antiguedadCatalogo ?? '?'} días) dice ${d.catalogo_stock} en stock; el pedido de reposición de Administrado (de hace ${antiguedadAdmin} días) dice ${d.administrado_total} (FULL ${d.administrado_full} + Depósito ${d.administrado_deposito}). Dos fuentes, dos respuestas distintas: antes de decidir, mirá cuál es más nueva.`,
+        calculado: new Date(nowMs).toISOString(),
+      },
+      enlaces: { panel: `/panel/reposicion?q=${d.isbn}`, ml: d.mlu ? `https://articulo.mercadolibre.com.uy/${d.mlu.replace(/^MLU/, 'MLU-')}` : null, tapa: null },
+    });
+  }
+  return out;
 }

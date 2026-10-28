@@ -20,7 +20,7 @@ import { loadBi, brujulaDigest } from '../functions/_shared/panel-bi.js';
 import { createReposicionFacts } from './reposicion-facts.js';
 import { refreshOpportunities, pendingToNotify, markNotified, opportunitySummary, catalogMeta, OPPORTUNITY_TYPES } from './oportunidades.js';
 import { reviewCatalogPrices, opportunitiesFromPriceReview } from './precios-catalogo.js';
-import { radarExterno } from './importacion-externa.js';
+import { radarExterno, stockDiscrepancies, opportunitiesFromStockDiscrepancies } from './importacion-externa.js';
 
 // Revisión de precios de todo el catálogo con foto → oportunidades de suba.
 // Nunca lanza: sin revisión, la bandeja usa las subas de Brújula.
@@ -100,7 +100,8 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
       const facts = createReposicionFacts({ now: () => now.getTime(), loadCatalog: async () => catalog });
       const { precios, resumen: precios_resumen } = await catalogPriceOpportunities(db, catalog, now.getTime());
       const radar = await radarExterno(db, catalog, { limit: 100, nowMs: now.getTime() }).catch(() => null);
-      await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), precios, radar, nowMs: now.getTime() });
+      const revisarStock = await stockDiscrepancies(db, catalog, { nowMs: now.getTime() }).then(res => opportunitiesFromStockDiscrepancies(res, { nowMs: now.getTime() })).catch(() => null);
+      await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), precios, radar, revisarStock, nowMs: now.getTime() });
       bandeja = { resumen: await opportunitySummary(db, now.getTime()), nuevas: await pendingToNotify(db, { limit: 8, nowMs: now.getTime() }), precios: precios_resumen };
     } catch { bandeja = null; }
   }
@@ -131,7 +132,8 @@ export async function refreshOpportunitiesFromWorker(env, { now = new Date() } =
   const facts = createReposicionFacts({ now: () => now.getTime(), loadCatalog: async () => catalog });
   const { precios, resumen: precios_resumen } = await catalogPriceOpportunities(db, catalog, now.getTime());
   const radar = await radarExterno(db, catalog, { limit: 100, nowMs: now.getTime() }).catch(() => null);
-  const r = await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), precios, radar, nowMs: now.getTime() });
+  const revisarStock = await stockDiscrepancies(db, catalog, { nowMs: now.getTime() }).then(res => opportunitiesFromStockDiscrepancies(res, { nowMs: now.getTime() })).catch(() => null);
+  const r = await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), precios, radar, revisarStock, nowMs: now.getTime() });
   return { ...r, resumen: await opportunitySummary(db, now.getTime()), revision_precios: precios_resumen };
 }
 

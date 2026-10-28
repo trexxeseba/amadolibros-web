@@ -33,6 +33,7 @@ Este cambio (primer PR) agrega:
 | Radar de ISBN externos | `radarExterno`, bandeja tipo `probar_externo` | ISBN que aparecen en cargas externas y no están en el catálogo, cruzados por título con búsquedas sin resultado de la web (90 días), lista de espera y **proveedores** (ver fila siguiente). Entran a la bandeja con cualquiera de esos cruces, dos fuentes distintas, o un proveedor/SBS conocido, siempre como prueba de 1 (provisional); nunca 2 o 3 por una señal externa aislada. |
 | Cruce con proveedores para ISBN externos | `proveedorCrossCheck` en `importacion-externa.js` | Para cada ISBN externo: compras propias ya cargadas (cualquier fecha, cualquier proveedor) y disponibilidad en el feed de SBS vigente. Con SBS disponible (stock > 0) la acción pasa a "Pedir N a SBS (disponible hoy)" y la confianza sube a alta; con un proveedor conocido pero sin SBS vigente, "ya lo compramos antes a X" y confianza media; sin ninguno de los dos, la acción dice "sin proveedor conocido, conseguir uno antes de pedir" y `proveedor` queda entre los faltantes. |
 | Resultado medido de la bandeja | `opportunityOutcome`, columnas `pedido_cantidad`/`pedido_at`/`recibido_at` | Al marcar "pedido" o "recibido" desde `/panel/oportunidades` se puede confirmar la cantidad real (puede diferir de la sugerida); la fecha se fija la primera vez y no se mueve si se vuelve a marcar el mismo estado. Desde "recibido": ventas propias desde esa fecha, lo que queda (estimado: pedido − vendido, no es una lectura de stock físico), rotación mensual al ritmo observado, y "quieto" si pasaron 21 días sin ninguna venta con algo todavía por vender. Capital inmovilizado siempre en unidades (`capital_inmovilizado`); en pesos (`capital_inmovilizado_uyu`) sólo cuando la oportunidad ya traía un costo unitario cargado (reponer, o subas con costo); sin costo, queda `null`, nunca un número inventado. No cambia el estado solo: Seba decide cuándo pasar a "resultado". |
+| Cruce de stock propio con Administrado | `stockDiscrepancies`/`opportunitiesFromStockDiscrepancies` en `importacion-externa.js`, bandeja tipo `revisar_stock`, acción `stock_discrepancias` | Plantilla `administrado_pedido_reposicion` (Pedido de reposición: Publicación/SKU/Número/FULL/Depósito/Ventas por día/Días de stock/Pedir), **verificada**: FULL = stock en Mercado Envíos Full, Depósito = stock normal del vendedor (confirmado por Seba el 28/10/2026, caso real: "Martes con mi viejo profesor"). Compara la última carga de este tipo contra el stock propio de catalog.json y sólo marca cuando una fuente dice "hay" y la otra "no hay" (una diferencia de cantidad entre las dos no alcanza: pueden medir en momentos distintos del día). Siempre muestra las dos cifras con su fecha, nunca decide cuál tiene razón. |
 | Correo diario | `daily-panel-digest.js` | Recalcula la bandeja antes de armar el correo, cuenta pendientes vigentes y lista sólo las nuevas (se marcan `notificado_at` cuando Resend acepta el correo; una prueba manual no marca). |
 
 ## Lo que NO hace (a propósito)
@@ -95,11 +96,14 @@ Este cambio (primer PR) agrega:
    exposición" y "visitas sin conversión" quedan vacías y todo cae en "visitas
    desconocidas", que es lo correcto. Historial de stock por día (para "días
    efectivamente disponible" real, no el techo por fecha de alta) no existe.
-3. **Importación externa**: cargar una muestra real de cada fuente y marcar la
-   plantilla como verificada (o ajustar el mapeo); adaptador XLSX; captura
-   diaria automática sólo cuando haya canal autorizado (API/OAuth/export) y se
-   pruebe adquisición → importación → análisis en el runtime real. Respuesta de
-   soporte de Nubimetrics pendiente, no bloquea lo anterior.
+3. **Importación externa**: Administrado > Pedido de reposición ya tiene
+   muestra real y plantilla verificada (FULL/Depósito confirmados por Seba el
+   28/10/2026, con cruce automático de stock contra catalog.json). Falta:
+   Nubimetrics (sin muestra real ni confirmación), adaptador XLSX (hoy se pega
+   el CSV a mano), captura diaria automática sólo cuando haya canal autorizado
+   (API/OAuth/export) y se pruebe adquisición → importación → análisis en el
+   runtime real. Respuesta de soporte de Nubimetrics pendiente, no bloquea lo
+   anterior.
 4. **Bandeja**: ~~cruce con proveedores (SBS / compras) para los ISBN externos~~,
    ~~estados con resultado medido (rotación del lote, capital inmovilizado)~~ y
    ~~capital inmovilizado en pesos~~: hecho (ver filas de la bandeja arriba).

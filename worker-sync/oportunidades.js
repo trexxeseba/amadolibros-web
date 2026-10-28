@@ -18,6 +18,7 @@ export const OPPORTUNITY_TYPES = Object.freeze({
   reponer: 'Reponer',
   tener_inmediato: 'Tener con entrega inmediata',
   probar_externo: 'Probar un título externo',
+  revisar_stock: 'Revisar stock (dos fuentes no coinciden)',
 });
 const CONFIDENCE_RANK = { alta: 3, media: 2, baja: 1 };
 const DAY_MS = 86400000, HOUR_MS = 3600000;
@@ -294,12 +295,13 @@ export function catalogMeta(catalog) {
 
 // Recalcula la bandeja a partir de Brújula (loadBi) y los hechos de reposición.
 // Lo llama el Worker antes del correo diario y la ruta manual; nunca lanza.
-export async function refreshOpportunities(db, { bi, catalog = null, factsFor = null, precios = null, radar = null, nowMs = Date.now() } = {}) {
+export async function refreshOpportunities(db, { bi, catalog = null, factsFor = null, precios = null, radar = null, revisarStock = null, nowMs = Date.now() } = {}) {
   try {
     // Si vino la revisión de precios de todo el catálogo (más completa: rango,
     // costo con fecha, comisión, faltantes), reemplaza las subas de Brújula.
     // El radar externo agrega títulos que no tenemos, con cruce propio.
-    const merge = list => [...(Array.isArray(precios) ? [...list.filter(o => o.tipo !== 'subir_precio'), ...precios] : list), ...opportunitiesFromRadar(radar, { nowMs })];
+    // revisarStock son las discrepancias stock propio vs. Administrado, ya calculadas aparte.
+    const merge = list => [...(Array.isArray(precios) ? [...list.filter(o => o.tipo !== 'subir_precio'), ...precios] : list), ...opportunitiesFromRadar(radar, { nowMs }), ...(revisarStock ?? [])];
     const list0 = merge(opportunitiesFromBi(bi, { meta: catalogMeta(catalog), nowMs }));
     let facts = new Map();
     const isbns = [...new Set(list0.filter(o => o.tipo !== 'subir_precio').map(o => o.isbn))].slice(0, 50);
