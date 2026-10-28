@@ -49,9 +49,14 @@ ENGINE_TARGET_CEILING = 100000
 # Esperas entre renovaciones cuando el motor sigue pidiéndolas sin publicar nada: la última es el
 # tope. Antes eran 120 s y, desde la tercera vuelta, 6 h (que además se re-armaban solas).
 RENEW_RETRY_S = (120, 120, 15 * 60, 30 * 60, 60 * 60)
+# Paradas que se resuelven solas con esperar: no escriben STOP (el 27/10 un STOP de estos dejó la
+# campaña parada un día y medio hasta que alguien lo borró a mano). Espera en segundos o None = mañana.
+RECOVERABLE = {
+    "stopped_listing_quota": ("Mercado Libre rechazó altas por cupo de publicaciones", "cupo de publicaciones", None),
+    "stopped_item_readback_failed": ("Un alta no pasó la verificación posterior", "alta sin verificar", 30 * 60),
+}
+# Necesitan una persona de verdad (cuenta o política equivocada): se escribe STOP.
 FATAL = {
-    "stopped_listing_quota": "Mercado Libre rechazó altas por cupo de publicaciones",
-    "stopped_item_readback_failed": "Un alta no pasó la verificación posterior",
     "seller_mismatch": "La cuenta conectada no es Amado Vintage",
     "inventory_seller_mismatch": "El inventario leído no es de Amado Vintage",
     "foreign_seller_receipt": "La conexión trae recibos de otra cuenta",
@@ -391,6 +396,13 @@ class Runner:
         self.log("motor terminó", code=code, state=state, published_total=published, error=error)
         self.heartbeat(published, state)
         if self.stop_file.exists():
+            return None
+        recoverable = RECOVERABLE.get(state) or RECOVERABLE.get(error)
+        if recoverable:
+            title, reason, wait_s = recoverable
+            wait_s = self.seconds_until_next_day() if wait_s is None else wait_s
+            self.notify(f"Vintage: {title}", f"Estado: {state}. Publicados: {published}. Sigue solo en {max(1, wait_s // 60)} min.", key=reason, every_s=6 * 3600)
+            self.wait(wait_s, reason)
             return None
         if state in FATAL or (error in FATAL):
             reason = FATAL.get(state) or FATAL.get(error)

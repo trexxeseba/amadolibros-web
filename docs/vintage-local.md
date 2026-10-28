@@ -55,7 +55,7 @@ or `user.quota_exceeded`) stops the process with state `stopped_listing_quota` i
 trying every remaining ISBN. The read-back after a create waits up to six 10-second checks while
 Mercado Libre reports the item as `paused` with `picture_download_pending` (it downloads the pictures
 after the create); any other mismatch, or still paused after that wait, stops the process with
-`stopped_item_readback_failed`. Restart with the same directory to preserve progress. A hard
+`stopped_item_readback_failed`. Under the supervisor (`vintage_autorun.py`) neither state writes STOP: the quota waits until the next day and a failed readback retries after 30 minutes. Restart with the same directory to preserve progress. A hard
 process termination can leave a five-minute lease, which is allowed to expire.
 
 The engine scans all listing statuses, canonicalizes ISBNs, checks both SKU query

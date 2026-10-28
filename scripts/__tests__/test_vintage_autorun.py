@@ -302,5 +302,40 @@ class HungEngineTest(unittest.TestCase):
             self.assertFalse((Path(directory) / "STOP").exists())
 
 
+class RecoverableStopTest(unittest.TestCase):
+    """Un cupo de ML o un alta sin verificar no necesitan una persona: se espera y se sigue, sin STOP."""
+
+    def test_listing_quota_waits_for_the_next_day_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "stopped_listing_quota", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            runner.seconds_until_next_day = lambda: 4321
+            self.assertIsNone(runner.cycle())
+            self.assertFalse((Path(directory) / "STOP").exists())
+            self.assertEqual(runner.waits, ["cupo de publicaciones"])
+            self.assertEqual(runner.wait_seconds, [4321])
+            self.assertNotIn("stopped_listing_quota", vintage_autorun.FATAL)
+
+    def test_a_failed_readback_retries_after_half_an_hour_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "stopped_item_readback_failed", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            self.assertIsNone(runner.cycle())
+            self.assertFalse((Path(directory) / "STOP").exists())
+            self.assertEqual(runner.waits, ["alta sin verificar"])
+            self.assertEqual(runner.wait_seconds, [30 * 60])
+            self.assertNotIn("stopped_item_readback_failed", vintage_autorun.FATAL)
+
+    def test_a_wrong_account_still_stops_everything(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "seller_mismatch", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            self.assertEqual(runner.cycle(), 2)
+            self.assertIn("seller_mismatch", (Path(directory) / "STOP").read_text("utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
