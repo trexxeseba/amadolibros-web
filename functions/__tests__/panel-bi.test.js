@@ -7,6 +7,13 @@ import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
 
+test('un envío distinto no prueba que Amado sea el único vendedor con stock', () => {
+  const facts = new Map([['9780306406157', { competidores_comparables: 0, competidores_inmediatos: 1, tu_precio: 1000, precio_minimo_a_pedido: 2000 }]]);
+  const result = priceRaises(facts, [{ isbn: '9780306406157', title: 'Libro', u90: 3, stock: 1 }]);
+  assert.equal(result.lista.length, 0);
+  assert.equal(result.solos.length, 0);
+});
+
 function database(t) {
   const sqlite = new DatabaseSync(':memory:'); t.after(() => sqlite.close());
   const statement = (sql, args = []) => ({ sql, args, bind(...values) { return statement(sql, values); }, async first() { return sqlite.prepare(sql).get(...args) ?? null; }, async all() { return { results: sqlite.prepare(sql).all(...args) }; }, async run() { return { meta: { changes: Number(sqlite.prepare(sql).run(...args).changes) } }; } });

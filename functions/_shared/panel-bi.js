@@ -196,7 +196,7 @@ export async function loadCompetitivePosition(db) {
   const mediana = rels.length ? rels[Math.floor(rels.length / 2)] : null;
   return {
     vigilados: list.length, conEstado: conEstado.length, ganando, ganandoPct: conEstado.length ? Math.round((ganando / conEstado.length) * 100) : null,
-    solos: list.filter(f => !f.competidores_comparables && f.tu_precio != null).length, medianaPrecio: mediana,
+    solos: list.filter(f => !(f.competidores_inmediatos ?? f.competidores_comparables) && f.tu_precio != null).length, medianaPrecio: mediana,
     masCaros: list.filter(f => f.precio_relativo && f.precio_relativo >= 1.15).length,
     facts,
   };
@@ -216,6 +216,8 @@ export function priceRaises(facts, books, model = null) {
   for (const [isbn, f] of facts) {
     const b = byIsbn.get(isbn);
     if (!b) continue;
+    // Hay inmediatos con otro tipo de envío: ni "solo" ni comparable; no se sugiere.
+    if ((f.competidores_inmediatos ?? 0) > 0 && !f.competidores_comparables) continue;
     const c = model?.costs.get(isbn);
     // Nadie más lo tiene con entrega inmediata. Si los que lo venden a pedido
     // cobran mucho más, el precio sugerido sale de ellos; si no, probar +10%.
@@ -332,8 +334,9 @@ export async function loadSinStockMarket(db, aSinStock, model = null) {
     const f = facts.get(b.isbn);
     if (!f) return { estado: 'sin_dato' };
     resumen.vigilados++;
-    const nacionales = f.competidores_comparables ?? 0, min = f.precio_minimo;
-    if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `No detectamos otra oferta comparable con entrega inmediata en la ficha de ML${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}${f.desconocidos ? ` (${f.desconocidos} sin datos de entrega)` : ''}: reponer y quedarte con la venta.` }; }
+    const nacionales = f.competidores_inmediatos ?? f.competidores_comparables ?? 0, min = f.precio_minimo;
+    if (!nacionales) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `No detectamos otra oferta con entrega inmediata verificada en la ficha de ML${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
+    if (min == null) return { estado: 'sin_dato', texto: 'Hay vendedores con stock verificado, pero falta un precio comparable con el mismo envío. Revisar antes de reponer.' };
     const c = model?.costs.get(b.isbn), atMin = c ? marginOf(min, c.cost, model.feeRate) : null;
     if (atMin) {
       if (atMin.margin > 0) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo tienen con entrega inmediata; al precio del más barato todavía ganás $ ${atMin.margin.toLocaleString('es-UY')} por libro: conviene reponer.` }; }

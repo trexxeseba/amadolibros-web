@@ -23,7 +23,7 @@ import { bookIsbn } from './isbn.js';
 import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const DAY_MS = 86400000, HOUR_MS = 3600000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 4;
+const DAY_MS = 86400000, HOUR_MS = 3600000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 5;
 // Páginas del listado de una ficha por foto: más de eso se registra como parcial.
 const MAX_PAGES = 5, RUNS_KEPT = 400;
 // Rotación del resto del catálogo (fichas con catalog_product_id que no entran
@@ -40,13 +40,16 @@ export const VISITS_WINDOW_DAYS = 90, VISITS_PER_RUN = 6, VISITS_BATCH = 20;
 export const OWN_CURRENCY = 'UYU';
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
-// inmediata; null = no se sabe (ML no mandó sale_terms).
+// sin preparación informada; null = no se pudo verificar el plazo.
+// La ausencia del atributo nunca demuestra disponibilidad inmediata.
 export function manufacturingDays(item) {
   if (!Array.isArray(item?.sale_terms)) return null;
   const t = item.sale_terms.find(x => x?.id === 'MANUFACTURING_TIME');
-  if (!t) return 0;
-  const n = Number(t.value_struct?.number ?? parseInt(String(t.value_name ?? ''), 10));
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+  if (!t) return null;
+  const raw = t.value_struct?.number ?? parseInt(String(t.value_name ?? ''), 10);
+  if (raw == null || String(raw).trim() === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.ceil(n) : null;
 }
 export const COMPETITION_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS comp_targets(catalog_product_id TEXT PRIMARY KEY,isbn TEXT,own_item_ids TEXT,own_catalog_item_id TEXT,own_price REAL,priority INTEGER NOT NULL,updated_at INTEGER NOT NULL)`,
@@ -81,7 +84,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     const runCols = await cols('comp_runs');
     if (!runCols.has('rotation')) await db.prepare('ALTER TABLE comp_runs ADD COLUMN rotation INTEGER NOT NULL DEFAULT 0').run();
     const dayCols = await cols('comp_product_days');
-    for (const [col, type] of [['items_total', 'INTEGER'], ['items_fetched', 'INTEGER'], ['pages', 'INTEGER'], ['bulk_pending', 'INTEGER'], ['code', 'TEXT']]) if (!dayCols.has(col)) await db.prepare(`ALTER TABLE comp_product_days ADD COLUMN ${col} ${type}`).run();
+    for (const [col, type] of [['snapshot_version', 'INTEGER'], ['items_total', 'INTEGER'], ['items_fetched', 'INTEGER'], ['pages', 'INTEGER'], ['bulk_pending', 'INTEGER'], ['code', 'TEXT']]) if (!dayCols.has(col)) await db.prepare(`ALTER TABLE comp_product_days ADD COLUMN ${col} ${type}`).run();
     await db.prepare('INSERT OR IGNORE INTO comp_state(name,cursor_json,lease_until,updated_at) VALUES(?,?,0,?)').bind('daily', '{}', now()).run();
     ready.add(db);
   }
@@ -225,15 +228,16 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       catch (e) { caps.price_to_win = e.code; if (e.status === 429) throw e; }
     }
     const winner = ptw?.winner?.item_id ?? null;
-    // Condición y días de preparación de cada competidor salen siempre de
-    // /items/bulk: el listado del catálogo no trae el plazo de preparación.
-    // Si ML no lo manda, queda sin dato (null), nunca como entrega inmediata.
+    // Condición, moneda, stock y días de preparación de cada competidor salen
+    // siempre de /items/bulk: el listado del catálogo no es evidencia de plazo
+    // ni de stock. Si ML no lo manda, queda sin dato (null), nunca como
+    // entrega inmediata. Sólo una publicación activa con stock tiene plazo.
     const competitors = (items ?? []).filter(it => String(it.seller_id ?? '') !== SALES_SELLER_ID).map(it => it.item_id);
     const extra = new Map();
     if (competitors.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
       for (let i = 0; i < competitors.length; i += 20) {
         try {
-          const raw = await ml(bulkItemsPath(competitors.slice(i, i + 20), 'id,condition,shipping,international_delivery_mode,sale_terms'), token);
+          const raw = await ml(bulkItemsPath(competitors.slice(i, i + 20), 'id,status,available_quantity,currency_id,condition,shipping,international_delivery_mode,sale_terms'), token);
           calls++; caps.items_bulk = 'ok';
           for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
         } catch (e) { calls++; caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
@@ -241,24 +245,30 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     }
     let bulkPending = 0;
     const stmts = [];
+    const status = !items ? 'error' : listing.complete ? 'ok' : 'partial';
+    // Una foto completa rehecha el mismo día borra las ofertas retiradas de ese día.
+    if (status === 'ok') stmts.push(db.prepare('DELETE FROM comp_snapshots WHERE snap_date=? AND catalog_product_id=?').bind(date, target.catalog_product_id));
     if (items) for (const it of items) {
       const x = extra.get(it.item_id);
       const own = String(it.seller_id ?? '') === SALES_SELLER_ID;
       if (!own && !x) bulkPending++;
-      const condition = typeof it.condition === 'string' ? it.condition : typeof x?.condition === 'string' ? x.condition : null;
-      const intlMode = typeof it.international_delivery_mode === 'string' ? it.international_delivery_mode : typeof x?.international_delivery_mode === 'string' ? x.international_delivery_mode : null;
-      const shipping = it.shipping ?? x?.shipping ?? null;
-      const days = own ? 0 : manufacturingDays({ sale_terms: Array.isArray(x?.sale_terms) ? x.sale_terms : undefined });
+      // De un competidor sólo cuenta lo verificado por /items/bulk; del listado
+      // se toman precio y vendedor. Lo propio sí se toma del listado.
+      const condition = own ? (typeof it.condition === 'string' ? it.condition : null) : typeof x?.condition === 'string' ? x.condition : null;
+      const intlMode = own ? (typeof it.international_delivery_mode === 'string' ? it.international_delivery_mode : null) : typeof x?.international_delivery_mode === 'string' ? x.international_delivery_mode : null;
+      const shipping = own ? (it.shipping ?? null) : (x?.shipping ?? it.shipping ?? null);
+      const currency = own ? (typeof it.currency_id === 'string' ? it.currency_id : null) : typeof x?.currency_id === 'string' ? x.currency_id : null;
+      const conStock = x && x.status === 'active' && Number(x.available_quantity) > 0;
+      const days = own ? 0 : manufacturingDays({ sale_terms: conStock && Array.isArray(x.sale_terms) ? x.sale_terms : undefined });
       stmts.push(db.prepare(`INSERT INTO comp_snapshots(snap_date,catalog_product_id,item_id,seller_id,price,currency_id,free_shipping,logistic_type,is_winner,fetched_at,condition,international,manufacturing_days) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(snap_date,catalog_product_id,item_id) DO UPDATE SET price=excluded.price,currency_id=excluded.currency_id,free_shipping=excluded.free_shipping,logistic_type=excluded.logistic_type,is_winner=excluded.is_winner,fetched_at=excluded.fetched_at,condition=excluded.condition,international=excluded.international,manufacturing_days=excluded.manufacturing_days`)
-        .bind(date, target.catalog_product_id, it.item_id, String(it.seller_id ?? ''), Number.isFinite(Number(it.price)) ? Number(it.price) : null, typeof it.currency_id === 'string' ? it.currency_id : null,
+        .bind(date, target.catalog_product_id, it.item_id, String(it.seller_id ?? ''), Number.isFinite(Number(it.price)) ? Number(it.price) : null, currency,
           shipping?.free_shipping ? 1 : 0, shipping?.logistic_type ?? null, winner && winner === it.item_id ? 1 : 0, t,
           condition, intlMode ? (intlMode !== 'none' ? 1 : 0) : null, days));
     }
-    const status = !items ? 'error' : listing.complete ? 'ok' : 'partial';
-    stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at,items_total,items_fetched,pages,bulk_pending,code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-      ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at,items_total=excluded.items_total,items_fetched=excluded.items_fetched,pages=excluded.pages,bulk_pending=excluded.bulk_pending,code=excluded.code`)
-      .bind(date, target.catalog_product_id, status, winner, typeof ptw?.status === 'string' ? ptw.status : null, Number.isFinite(Number(ptw?.price_to_win)) ? Number(ptw.price_to_win) : null, t,
+    stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at,snapshot_version,items_total,items_fetched,pages,bulk_pending,code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at,snapshot_version=excluded.snapshot_version,items_total=excluded.items_total,items_fetched=excluded.items_fetched,pages=excluded.pages,bulk_pending=excluded.bulk_pending,code=excluded.code`)
+      .bind(date, target.catalog_product_id, status, winner, typeof ptw?.status === 'string' ? ptw.status : null, Number.isFinite(Number(ptw?.price_to_win)) ? Number(ptw.price_to_win) : null, t, SNAPSHOT_VERSION,
         listing?.total ?? null, listing?.fetched ?? null, listing?.pages ?? 0, bulkPending, errorCode ?? listing?.code ?? null));
     await db.batch(stmts);
     return { status, calls };
@@ -338,7 +348,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
         const catalog = await loader();
         if (!catalog) throw new CompError('catalog_unavailable', 503);
         result.targets = await buildTargets(db, catalog);
-        cursor = { date, v: SNAPSHOT_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, partialToday: 0, errorToday: 0, caps: cursor.caps ?? {} };
+        // Las capacidades se vuelven a probar cada día: un endpoint cerrado ayer puede andar hoy.
+        cursor = { date, v: SNAPSHOT_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, partialToday: 0, errorToday: 0, caps: {} };
       }
       const caps = cursor.caps ?? {};
       if (cursor.phase === 'products' && hasTime()) {
@@ -435,7 +446,7 @@ async function watchedRows(db, isbns) {
 async function productDays(db, pids) {
   const win = `SELECT *, ROW_NUMBER() OVER (PARTITION BY catalog_product_id ORDER BY snap_date DESC) AS rn FROM comp_product_days WHERE catalog_product_id IN (SELECT value FROM json_each(?))`;
   const [complete, latest] = (await Promise.all([
-    db.prepare(`SELECT * FROM (${win.replace('WHERE', "WHERE status='ok' AND")}) WHERE rn<=2`).bind(pids).all(),
+    db.prepare(`SELECT * FROM (${win.replace('WHERE', `WHERE status='ok' AND snapshot_version=${SNAPSHOT_VERSION} AND`)}) WHERE rn<=2`).bind(pids).all(),
     db.prepare(`SELECT * FROM (${win}) WHERE rn=1`).bind(pids).all(),
   ])).map(r => r.results);
   const byPid = new Map();
@@ -487,13 +498,16 @@ export async function competitionByIsbn(db, isbns, nowMs = Date.now()) {
     // envío que nuestra publicación. Los que venden a pedido tardan semanas: no
     // le compiten a un libro en stock. Si algo no se pudo saber, no se compara.
     const ownRow = rows.find(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID) ?? null;
-    const enPesos = hoy.filter(r => r.price != null && (r.currency_id == null || r.currency_id === OWN_CURRENCY));
-    const otraMoneda = hoy.filter(r => r.price != null && r.currency_id != null && r.currency_id !== OWN_CURRENCY).length;
-    const desconocidos = enPesos.filter(r => r.condition == null || r.manufacturing_days == null || r.international == null).length;
-    const nuevosNacionales = enPesos.filter(r => r.condition === 'new' && r.international === 0 && r.manufacturing_days != null);
+    // Una oferta sin evidencia (plazo, stock, condición, envío o moneda sin
+    // verificar, o en otra moneda) no prueba inmediatez ni ausencia de
+    // competencia: la ficha queda sin hechos hasta completar la verificación.
+    // Cobertura cuenta estas fichas como "sin verificar".
+    if (hoy.some(r => r.manufacturing_days == null || r.international == null || r.condition == null || r.currency_id !== OWN_CURRENCY)) continue;
+    const otraMoneda = 0, desconocidos = 0;
+    const nuevosNacionales = hoy.filter(r => r.price > 0 && r.condition === 'new' && r.international === 0);
     const aPedido = nuevosNacionales.filter(r => Number(r.manufacturing_days) > 0);
-    const comparables = nuevosNacionales.filter(r => Number(r.manufacturing_days) === 0
-      && (ownRow ? Number(r.free_shipping) === Number(ownRow.free_shipping) : true));
+    const inmediatos = nuevosNacionales.filter(r => Number(r.manufacturing_days) === 0);
+    const comparables = inmediatos.filter(r => (ownRow ? Number(r.free_shipping) === Number(ownRow.free_shipping) : true));
     const minAPedido = aPedido.reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
     const minPrice = comparables.reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
     const ownPrice = ownRow?.price ?? t.own_price;
@@ -510,7 +524,7 @@ export async function competitionByIsbn(db, isbns, nowMs = Date.now()) {
     }
     if (prev) for (const s of sellersHoy) if (!sellersAyer.has(s)) avisos.push({ tipo: 'competidor_nuevo', etiqueta: 'observado', texto: `Competidor nuevo: ${name(s)} a ${money(hoy.find(r => r.seller_id === s)?.price)}.` });
     if (ownToday && !hoy.length) avisos.push({ tipo: 'solos_en_catalogo', etiqueta: 'observado', texto: 'No detectamos otra oferta en esta ficha de catálogo de ML (fuente: foto diaria por API).' });
-    else if (ownToday && !comparables.length && aPedido.length) avisos.push({ tipo: 'solos_en_catalogo', etiqueta: 'observado', texto: `Sos el único con entrega inmediata en la ficha: los otros ${aPedido.length} lo venden a pedido (desde ${money(minAPedido)}).` });
+    else if (ownToday && !inmediatos.length && aPedido.length) avisos.push({ tipo: 'solos_en_catalogo', etiqueta: 'observado', texto: `Sos el único con entrega inmediata en la ficha: los otros ${aPedido.length} lo venden a pedido (desde ${money(minAPedido)}).` });
     const winning = pd.own_status === 'winning', winningPrev = pdPrev?.own_status === 'winning';
     if (pdPrev?.own_status && pd.own_status && winning !== winningPrev) {
       avisos.push(winning ? { tipo: 'primer_lugar_ganado', etiqueta: 'observado', texto: 'Ganaste el primer lugar del catálogo.' }
@@ -525,7 +539,7 @@ export async function competitionByIsbn(db, isbns, nowMs = Date.now()) {
     out.set(t.isbn, {
       catalog_product_id: t.catalog_product_id, segmento: t.segmento ?? 'top', foto: today, foto_anterior: prev, foto_edad_horas: Math.max(0, Math.round((nowMs - Number(pd.fetched_at)) / HOUR_MS)),
       foto_completa: true, captura_posterior: captura, listado: { total: pd.items_total ?? null, leidos: pd.items_fetched ?? null, sin_detalle: pd.bulk_pending ?? 0 },
-      competidores: sellersHoy.size, competidores_comparables: comparables.length, excluidos_de_precio: excluidos,
+      competidores: sellersHoy.size, competidores_comparables: comparables.length, competidores_inmediatos: new Set(inmediatos.map(r => r.seller_id)).size, excluidos_de_precio: excluidos,
       competidores_a_pedido: aPedido.length, precio_minimo_a_pedido: minAPedido, otra_moneda: otraMoneda, desconocidos,
       precio_minimo: minPrice, tu_precio: ownPrice, precio_relativo: rel ? Math.round(rel * 100) / 100 : null,
       primer_lugar: pd.own_status ?? null, precio_para_ganar: pd.price_to_win ?? null,
@@ -631,10 +645,19 @@ export async function competitionCoverage(db, catalog = null, nowMs = Date.now()
     const v = await db.prepare('SELECT COUNT(*) AS n, SUM(CASE WHEN visits IS NOT NULL THEN 1 ELSE 0 END) AS con_dato, MAX(snap_date) AS ultima FROM comp_item_visits WHERE snap_date=(SELECT MAX(snap_date) FROM comp_item_visits)').first();
     visitas = { publicaciones: Number(v?.n ?? 0), con_dato: Number(v?.con_dato ?? 0), ultima: v?.ultima ?? null, acceso: state?.cursor?.caps?.items_visits ?? 'sin_probar', ventana_dias: VISITS_WINDOW_DAYS };
   } catch { visitas = null; }
+  // Fichas con foto completa cuyo listado tiene algún competidor sin verificar
+  // (plazo, stock, condición, envío o moneda): no producen hechos todavía.
+  let sinVerificar = 0;
+  try {
+    const r = await db.prepare(`SELECT COUNT(DISTINCT s.catalog_product_id) AS n FROM comp_snapshots s JOIN comp_product_days d ON d.snap_date=s.snap_date AND d.catalog_product_id=s.catalog_product_id
+      WHERE d.status='ok' AND d.snapshot_version=? AND s.seller_id<>? AND (s.manufacturing_days IS NULL OR s.international IS NULL OR s.condition IS NULL OR s.currency_id IS NULL OR s.currency_id<>?)
+      AND d.snap_date=(SELECT MAX(snap_date) FROM comp_product_days x WHERE x.catalog_product_id=d.catalog_product_id AND x.status='ok' AND x.snapshot_version=?)`).bind(SNAPSHOT_VERSION, SALES_SELLER_ID, OWN_CURRENCY, SNAPSHOT_VERSION).first();
+    sinVerificar = Number(r?.n ?? 0);
+  } catch { sinVerificar = 0; }
   const hoy = runs.filter(r => r.snap_date === today);
   return {
     fecha: today, fase: state?.cursor?.phase ?? null, foto_del_dia: state?.cursor?.date ?? null, ultima_corrida: state?.updated_at ?? null, ultimo_estado: state?.last?.state ?? null, ultimo_codigo: state?.last?.code ?? null,
-    capacidades: state?.cursor?.caps ?? {}, vigilados: targets.length, segmentos, rotacion, visitas, catalogo,
+    capacidades: state?.cursor?.caps ?? {}, vigilados: targets.length, segmentos, fichas_sin_verificar: sinVerificar, rotacion, visitas, catalogo,
     corridas_hoy: { cantidad: hoy.length, llamadas: hoy.reduce((n, r) => n + Number(r.calls_used), 0), fichas: hoy.reduce((n, r) => n + Number(r.products), 0), parciales: hoy.reduce((n, r) => n + Number(r.products_partial), 0), errores: hoy.reduce((n, r) => n + Number(r.products_error), 0), rotacion: hoy.reduce((n, r) => n + Number(r.rotation ?? 0), 0) },
     corridas: runs.map(r => ({ inicio: Number(r.started_at), duracion_ms: Number(r.duration_ms), fecha: r.snap_date, estado: r.state, fase: r.phase, fichas: Number(r.products), completas: Number(r.products_ok), parciales: Number(r.products_partial), errores: Number(r.products_error), vendedores: Number(r.sellers), rotacion: Number(r.rotation ?? 0), llamadas: Number(r.calls_used), codigo: r.code ?? null })),
   };

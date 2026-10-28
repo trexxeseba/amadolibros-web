@@ -51,13 +51,13 @@ function kpiBlock(s) {
   </div>`;
 }
 
-const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Sin dato de ML'] };
+const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Por verificar'] };
 function sinStockTable(items) {
   if (!items?.length) return '';
   const rows = items.map(b => {
     const m = b.mercado ?? { estado: 'sin_dato' }, [cls, label] = VEREDICTO[m.estado] ?? VEREDICTO.sin_dato;
     const compra = b.compra ? `${esc(SUPPLIERS[b.compra.supplier] ?? b.compra.supplier)} · ${day(new Date(b.compra.d).toISOString())}` : '—';
-    return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Todavía no está en la vigilancia diaria de competencia.')}</div></td>
+    return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Falta verificar stock y plazos de todos los competidores. La competencia no permite decidir todavía.')}</div></td>
       <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
       <td class="n">${m.min != null ? money(m.min) : '—'}</td><td class="n">${b.costo ? money(b.costo) : '—'}</td><td class="n">${b.margen ? `<span class="${b.margen.margin < 0 ? 'down' : 'up'}">${money(b.margen.margin)}</span>` : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
   }).join('');

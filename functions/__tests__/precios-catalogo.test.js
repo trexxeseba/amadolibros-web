@@ -83,7 +83,7 @@ async function seedWatched(t) {
   db.sqlite.prepare("INSERT INTO comp_targets(catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,priority,updated_at) VALUES('MLU901',?,'[\"MLU1\"]','MLU1',1000,10,0)").run(A);
   db.sqlite.prepare("INSERT INTO comp_rotation(catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,segment,last_ok_at,next_due_at,updated_at) VALUES('MLU902',?,'[\"MLU2\"]',NULL,2000,'catalogo',?,0,0)").run(B, fetched);
   db.sqlite.prepare("INSERT INTO comp_rotation(catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,segment,last_ok_at,next_due_at,updated_at) VALUES('MLU903',?,'[\"MLU3\"]',NULL,500,'catalogo',NULL,0,0)").run(C);
-  const day = (pid, status) => db.sqlite.prepare('INSERT INTO comp_product_days(snap_date,catalog_product_id,status,fetched_at,items_total,items_fetched,pages,bulk_pending) VALUES(?,?,?,?,2,2,1,0)').run(D, pid, status, fetched);
+  const day = (pid, status) => db.sqlite.prepare('INSERT INTO comp_product_days(snap_date,catalog_product_id,status,fetched_at,snapshot_version,items_total,items_fetched,pages,bulk_pending) VALUES(?,?,?,?,5,2,2,1,0)').run(D, pid, status, fetched);
   const snap = (pid, item, seller, price, days = 0) => db.sqlite.prepare('INSERT INTO comp_snapshots(snap_date,catalog_product_id,item_id,seller_id,price,currency_id,free_shipping,fetched_at,condition,international,manufacturing_days) VALUES(?,?,?,?,?,\'UYU\',0,?,\'new\',0,?)').run(D, pid, item, seller, price, fetched, days);
   day('MLU901', 'ok'); snap('MLU901', 'MLU1', '440298103', 1000); snap('MLU901', 'MLUX', '11', 1500); snap('MLU901', 'MLUY', '12', 1600);
   day('MLU902', 'ok'); snap('MLU902', 'MLUZ', '13', 3000, 21);
