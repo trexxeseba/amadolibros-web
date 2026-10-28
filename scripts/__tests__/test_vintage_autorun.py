@@ -254,5 +254,53 @@ class PublishCorrectSplitTest(unittest.TestCase):
             self.assertEqual(command[command.index("--max-minutes") + 1], "30")
 
 
+class HungEngineTest(unittest.TestCase):
+    """Un motor colgado (red cortada a mitad de un alta) no puede dejar al supervisor esperando para siempre."""
+
+    def hung_process(self):
+        class Hung:
+            terminated = False
+            killed = False
+
+            def wait(self, timeout=None):
+                if self.terminated or self.killed:
+                    return -15
+                raise vintage_autorun.subprocess.TimeoutExpired("node", timeout)
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+        return Hung()
+
+    def test_engine_limit_is_the_slice_plus_a_grace_period(self):
+        self.assertGreater(vintage_autorun.ENGINE_HARD_LIMIT_MIN, vintage_autorun.PUBLISH_SLICE_MIN)
+        self.assertLessEqual(vintage_autorun.ENGINE_HARD_LIMIT_MIN, vintage_autorun.PUBLISH_SLICE_MIN + 30)
+
+    def test_a_hung_engine_is_stopped_and_reported_as_a_retryable_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            process = self.hung_process()
+            clock = iter([0, 0, 10, vintage_autorun.ENGINE_HARD_LIMIT_MIN * 60 + 1] + [10 ** 9] * 20)
+            with unittest.mock.patch.object(vintage_autorun.subprocess, "Popen", return_value=process), \
+                    unittest.mock.patch.object(vintage_autorun.time, "monotonic", side_effect=lambda: next(clock)):
+                runner.engine_command = lambda: ["node", "engine.mjs", "--target", "1"]
+                code, error = vintage_autorun.Runner.run_engine(runner)
+            self.assertTrue(process.terminated)
+            self.assertNotEqual(code, 0)
+            self.assertEqual(error, "engine_timeout")
+            self.assertNotIn("engine_timeout", vintage_autorun.FATAL)
+
+    def test_a_hung_engine_makes_the_cycle_wait_and_retry_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {}
+            runner.run_engine = lambda: (124, "engine_timeout")
+            self.assertIsNone(runner.cycle())
+            self.assertIn("error del motor", runner.waits)
+            self.assertFalse((Path(directory) / "STOP").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
