@@ -121,6 +121,15 @@ export function quoteMercadoLibre(row, policy) {
   }
   return {...result,price,contribution:price*(1-p.mlFee)-cost,competitive:{mode,floor,fullPrice:full,competitorPrice:rival,competitorDays:rivalDays,ownDays:p.availabilityDays},...(skip?{skip}:{})};
 }
+// Amado Vintage acepta una lista de SBS de hasta 48 h: si SBS se saltea un día, sigue
+// publicando con la anterior. Amado Libros sigue con 24 h (el valor por defecto).
+export const VINTAGE_STOCK_MAX_HOURS = 48;
+// Con la lista al día la conexión de la PC vence a las 24 h de su fecha (así baja la nueva
+// cada madrugada). Con una lista de entre 24 y 48 h dura 2 h, para volver a mirar el portal.
+export function vintageAccessExpiry(sourceDate, now=Date.now()) {
+  const date = Date.parse(sourceDate);
+  return Math.max(date + 24*3600_000, Math.min(date + VINTAGE_STOCK_MAX_HOURS*3600_000, now + 2*3600_000));
+}
 export function stockIsFresh(sourceDate, now=Date.now(), maxHours=24) {
   const date = Date.parse(sourceDate);
   return Number.isFinite(date) && date <= now+300_000 && now-date <= maxHours*3600_000;

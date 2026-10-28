@@ -5,7 +5,7 @@ import {readFullStock} from '../../astro-front/public/assets/meli-vintage-xlsx.m
 import {PublicationStore} from '../../worker-sync/publication-store.js';
 import {createPublicationService} from '../../worker-sync/publication-engine.js';
 import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publication-meli.js';
-import {PublicationError,canonicalIsbn,stockIsFresh,quoteMercadoLibre,sha256,policyHash,normalizedTitle} from '../../worker-sync/publication-policy.js';
+import {PublicationError,canonicalIsbn,stockIsFresh,quoteMercadoLibre,sha256,policyHash,normalizedTitle,VINTAGE_STOCK_MAX_HOURS} from '../../worker-sync/publication-policy.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {VintageBulkStore,createVintageBulkFetch,BULK_RUN} from '../../functions/_shared/meli-vintage-bulk.js';
 import {vintagePolicy,VINTAGE_COMPETITIVE_MINIMUM_UYU} from '../../worker-sync/vintage-pricing.js';
@@ -56,7 +56,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
  const input=await readWorkbook(excel);
- if(!stockIsFresh(input.source_date)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
+ if(!stockIsFresh(input.source_date,Date.now(),VINTAGE_STOCK_MAX_HOURS)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false;
@@ -107,7 +107,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  const s=new LocalStore(db,{sellerId:SELLER});
  try{
   await new PublicationStore(db).initialize();await s.initialize();
-  const supplier=createSbsStock();
+  const supplier=createSbsStock({maxHours:VINTAGE_STOCK_MAX_HOURS});
   const feed=await supplier(env,'begin',{feed_id:c.feed_id,source_date:input.source_date,source_sha256:input.source_sha256,expected_rows:input.rows.length});
   if(feed.state!=='ready'){for(let i=0;i<input.rows.length;i+=200)await supplier(env,'import',{feed_id:c.feed_id,rows:input.rows.slice(i,i+200)});await supplier(env,'commit',{feed_id:c.feed_id});}
   for(const r of c.receipts??[]){if(r.seller_id!==SELLER)throw new Error('foreign_seller_receipt');await s.stmt('INSERT OR IGNORE INTO ml_pub_receipts VALUES(?,?,?,?,?,?,?)',SELLER,r.isbn,r.state,r.item_id??null,r.run_id,r.created_at,r.updated_at).run();}
@@ -159,7 +159,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    }
    return {index:{...next,pending:next.pending.slice(consumed.length),seen:next.seen+items.length},items};
   },async skuItems(e,isbn){const ids=new Set(await api.skuItems(e,isbn)),q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),result=await api.call(e,`/users/${SELLER}/items/search?${q}`);if(!Array.isArray(result.results)||result.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('sku_lookup_invalid');result.results.forEach(x=>ids.add(x));return [...ids];}};
-  const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
+  const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1,stockMaxHours:VINTAGE_STOCK_MAX_HOURS});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
   // Turno de publicación: con maxMs el motor cede el tiempo restante a la corrección de

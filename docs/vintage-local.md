@@ -87,6 +87,11 @@ sin ese archivo usa el Excel público, que SBS dejó de actualizar en agosto de 
 Lo lee con el mismo lector que el panel, revoca la conexión anterior, carga el
 stock en D1 y pide una conexión nueva a `POST /operations/vintage-renew`.
 
+Vigencia del stock: Vintage acepta una lista de hasta **48 h** (Amado Libros sigue con
+24 h). Con la lista al día la conexión vence a las 24 h de su fecha, así cada madrugada
+baja la nueva. Si SBS se saltea un día, la conexión con la lista anterior dura 2 h y
+el supervisor vuelve a mirar el portal, hasta que aparezca la nueva o se pasen las 48 h.
+
 Con cada lista fresca, `scripts/vintage-local/stock-sync.mjs` compara las
 publicaciones creadas por la campaña con la lista: lo que ya no viene o no tiene
 stock se **pausa** en Mercado Libre, y lo que vuelve se reactiva sólo si la pausa fue

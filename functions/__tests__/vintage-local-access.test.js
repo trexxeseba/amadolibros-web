@@ -7,7 +7,7 @@ import {createLocalAccessRoute} from '../operations/vintage-local.js';
 import {VintageBulkStore,createVintageBulk,BULK_RUN,PILOT_RUN} from '../_shared/meli-vintage-bulk.js';
 import {PublicationStore} from '../../worker-sync/publication-store.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
-import {policyHash} from '../../worker-sync/publication-policy.js';
+import {policyHash,stockIsFresh,VINTAGE_STOCK_MAX_HOURS,vintageAccessExpiry} from '../../worker-sync/publication-policy.js';
 import {checkConfiguration,checkCreated,makeBroker} from '../../scripts/vintage-local/engine.mjs';
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:42,freightUsdKg:15,laborUyu:0,margin:.23,mlFee:.17,deliveryUyu:270,minimumContributionUyu:200,minimumSaleUyu:1600,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
 async function fixture(t){
@@ -38,6 +38,29 @@ test('concurrent local reservations have one winner; reports cannot overwrite a 
  await assert.rejects(()=>f.access.command(f.env,c.key,'report',{isbn,state:'published',item_id:'MLU456'}),/immutable/);
  assert.equal((await f.s.receipt('2341378249',isbn)).item_id,'MLU123');assert.equal(await f.books(),before);
  f.clock.value=c.expires_at+1;await assert.rejects(()=>f.access.command(f.env,c.key,'token'),/expired/);
+});
+test('Vintage keeps publishing with a supplier list up to 48 h old; the connection then lasts 2 h so the PC retries the portal',async t=>{
+ const f=await fixture(t),source=f.clock.value,isbn='9789502323060';
+ // Lista al día: la conexión vence a las 24 h de la fecha de la lista, como siempre.
+ assert.equal((await f.access.grant(f.env)).expires_at,source+24*3600000);
+ // SBS se salteó un día: con 43 h la conexión se emite igual y la reserva pasa.
+ f.clock.value=source+43*3600000;
+ const late=await f.access.grant(f.env);
+ assert.equal(late.expires_at,f.clock.value+2*3600000);
+ assert.equal((await f.access.command(f.env,late.key,'reserve',{isbn,policy_hash:f.hash})).reserved,true);
+ // Cerca del tope la conexión no pasa de las 48 h de la lista.
+ f.clock.value=source+47*3600000;
+ assert.equal((await f.access.grant(f.env)).expires_at,source+48*3600000);
+ // Más de 48 h: no se emite conexión.
+ f.clock.value=source+49*3600000;
+ await assert.rejects(()=>f.access.grant(f.env),/supplier_stock_stale/);
+});
+test('the 48 h window is only for Vintage: Amado Libros keeps 24 h',()=>{
+ const now=Date.now(),old=new Date(now-43*3600000).toISOString();
+ assert.equal(stockIsFresh(old,now),false);
+ assert.equal(stockIsFresh(old,now,VINTAGE_STOCK_MAX_HOURS),true);
+ assert.equal(stockIsFresh(new Date(now-49*3600000).toISOString(),now,VINTAGE_STOCK_MAX_HOURS),false);
+ assert.equal(vintageAccessExpiry(old,now),now+2*3600000);
 });
 test('access endpoint rejects oversized, arbitrary seller/URL arguments and never exposes credentials through GET',async()=>{
  let calls=0;const route=createLocalAccessRoute({access:{async command(){calls++;return {};}}}),env={APP_ENV:'production'},url='https://www.amadolibros.com/operations/vintage-local';
