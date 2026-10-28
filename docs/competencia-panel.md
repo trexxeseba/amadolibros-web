@@ -26,6 +26,8 @@ Este cambio (primer PR) agrega:
 | Cantidad | `cantidadSugerida` | `max(0, objetivo − stock físico − en camino)`. Objetivo 1..3 por ventas de 90 días. 2 o 3 sólo con repetición real (≥3 en el año y ≥2 en 90 días), costo cargado y ventana de ventas completa; si falta algo, 1 como prueba (`provisional`) con el motivo. Señal externa aislada en ISBN sin ventas propias: 1, nunca 3. Stock compartido entre publicaciones: máximo, nunca suma. |
 | Rotación de todo el catálogo | tabla `comp_rotation`, fase `rotation` del cron | Todas las fichas con `catalog_product_id` del catálogo que no entran en el top diario. Cada corrida de 5 minutos, con el cupo que sobra después del top y los vendedores, lee hasta 12 fichas cuyo turno venció. Foto completa: próximo turno a los 3 días; parcial: al día siguiente; error: espera 1 h, 2 h, 4 h… hasta 48 h, y tres errores seguidos cortan la corrida. La cola se rearma cada día con el catálogo conservando su historial. Los hechos (`competitionByIsbn`) leen también estas fichas (`segmento: rotacion`). |
 | Revisión de precios de todo el catálogo | `worker-sync/precios-catalogo.js` | Para cada ficha con foto completa (top y rotación): precio actual, comparables inmediatos, ventaja inmediata (los demás a pedido), sugerido (2 % debajo del más barato comparable si está 15 % o más arriba; sin referencia, probar de a 5 % hasta 20 %), rango de prueba, costo con fecha y proveedor (última compra cargada al cambio del día), comisión ML (mediana observada), flete (sin fuente: faltante), contribución actual y sugerida, faltantes y nivel (`firme` sólo con costo y comisión y contribución positiva; `provisional` si falta algo crítico; `sin_suba`; `bloqueado`). Parámetros pisables por llamada. Resumen en `comp_state` (`price_review`) visible en `/panel/oportunidades`; las subas entran a la bandeja con todo eso en la evidencia. Corre en el Worker con el correo diario y en `POST /opportunities/refresh`. |
+| Ventas y long tail | `worker-sync/long-tail.js`, bloque en `/panel/inteligencia`, acción `long_tail` | Una categoría por título: quiebre (sin stock y con demanda), oferta con ventas, ventas lentas (sin ventas en 90 d pero sí en el año: mantener 1), sin ventas publicado hace poco (menos de 180 días disponible o ventana de ventas incompleta: evidencia insuficiente), visitas sin conversión (visitas observadas ≥ 30 en 90 d y ninguna venta), poca exposición (visitas observadas bajas), sin ventas con visitas desconocidas (no se distingue exposición de demanda). "Días disponible" sale de la fecha de alta: es un techo y se dice. Parejas catálogo / no catálogo del mismo ISBN con precio o cantidad distintos se listan para revisar; nunca se fusionan ni se suman. |
+| Visitas por API de ML | tabla `comp_item_visits`, fase `visits` del cron | Una lectura por día de `GET /items/visits?ids=…&date_from&date_to` (ventana 90 días, 20 ids por llamada, hasta 6 llamadas por corrida) para las publicaciones propias del top y la rotación. Es una capacidad verificada en runtime: si ML responde 403/404 o con otra forma, queda en `caps.items_visits` y Cobertura lo muestra; las visitas siguen "desconocidas", nunca 0. Por ISBN se toma el máximo entre publicaciones (la propia y la de catálogo pueden ser la misma ficha). |
 | Correo diario | `daily-panel-digest.js` | Recalcula la bandeja antes de armar el correo, cuenta pendientes vigentes y lista sólo las nuevas (se marcan `notificado_at` cuando Resend acepta el correo; una prueba manual no marca). |
 
 ## Lo que NO hace (a propósito)
@@ -80,10 +82,11 @@ Este cambio (primer PR) agrega:
 1. **Flete por unidad**: no hay fuente en D1 para el envío que paga el vendedor
    en ML por libro; queda como faltante en cada revisión. Cuando haya tabla de
    costos de envío por peso/zona, `reviewCatalogPrices` la recibe por `flete`.
-2. **Ventas y long tail**: clasificación poca exposición / visitas sin
-   conversión / oferta con ventas / quiebre / evidencia insuficiente, con
-   ventanas 90/365 y días efectivamente disponible; visitas desconocidas no son
-   0. Pares catálogo/no catálogo agrupados por ISBN sin fusionar.
+2. **Visitas**: confirmar en producción que `/items/visits` responde con
+   `total_visits` por item (Cobertura lo dice). Si no, las categorías "poca
+   exposición" y "visitas sin conversión" quedan vacías y todo cae en "visitas
+   desconocidas", que es lo correcto. Historial de stock por día (para "días
+   efectivamente disponible" real, no el techo por fecha de alta) no existe.
 3. **Importación externa auditable** (Nubimetrics, Administrado): contrato
    interno (original, hash, fuente, mercado, vendedor, extracción, período,
    completitud, trazabilidad por fila, deduplicación) y carga CSV/XLSX con

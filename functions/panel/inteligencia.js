@@ -5,6 +5,7 @@
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
 import { fetchCatalog } from '../_shared/catalog.js';
 import { loadBi } from '../_shared/panel-bi.js';
+import { CATEGORIAS } from '../../worker-sync/long-tail.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -175,6 +176,27 @@ function raisesBlock(s) {
   <p class="muted">Precio sugerido: 2% debajo del competidor más barato con entrega inmediata; si sos el único inmediato, 2% debajo del más barato a pedido (marcado "a pedido"). Redondeado, con la foto diaria de ML. Los agotados usan tu precio promedio de venta: es el precio para cuando lo repongas. "Más por mes" supone que se sigue vendiendo como en los últimos 90 días. El panel sólo sugiere: los precios se cambian en Mercado Libre.</p>`;
 }
 
+function longTailBlock(s) {
+  if (!s?.ok) return failed(s);
+  const v = s.data, c = v.conteo;
+  const tile = (k, cls = '') => `<div class="card kpi"><div class="l">${esc(CATEGORIAS[k])}</div><div class="v ${cls}">${num(c[k])}</div></div>`;
+  const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
+  const list = (items, cols) => items.length ? `<div class="scroll"><table><tbody>${items.map(cols).join('')}</tbody></table></div>` : '<p class="muted">Ninguno.</p>';
+  const pares = v.pares.filter(p => p.revisar).slice(0, 12);
+  return `<div class="grid">
+    ${tile('quiebre', 'down')}${tile('oferta_con_ventas', 'up')}${tile('ventas_lentas')}${tile('sin_ventas_reciente')}${tile('visitas_sin_conversion')}${tile('poca_exposicion')}${tile('sin_ventas_sin_visitas')}
+  </div>
+  <p class="muted">${num(v.titulos_revisados)} títulos revisados (con ventas en el año o con stock). Visitas observadas por API de ML en ${num(v.visitas_observadas)} títulos; en el resto son <b>desconocidas</b>, no cero: por eso "sin ventas, visitas desconocidas" no se declara muerto ni se rebaja. Capital en ventas lentas: ${num(v.capital.ventas_lentas_unidades)} unidades; en títulos sin ventas en el año con 180+ días publicados: ${num(v.capital.sin_ventas_largo_unidades)} unidades. "Días disponible" sale de la fecha de alta de la publicación: es un techo (no hay historial de stock).</p>
+  <div class="two">
+    <div class="card"><h3>Quiebre: se vende y no hay stock</h3>${list(v.listas.quiebre, b => `<tr><td>${link(b)}</td><td class="n">${num(b.u90)} en 90 d</td><td class="n">${num(b.u365)} en el año</td></tr>`)}</div>
+    <div class="card"><h3>Visitas sin conversión</h3>${list(v.listas.visitas_sin_conversion, b => `<tr><td>${link(b)}</td><td class="n">${num(b.visitas_90d)} visitas</td><td class="n">${b.stock} u.</td></tr>`)}</div>
+    <div class="card"><h3>Poca exposición</h3>${list(v.listas.poca_exposicion, b => `<tr><td>${link(b)}</td><td class="n">${num(b.visitas_90d)} visitas</td><td class="n">${num(b.dias_disponibles_365)} días</td></tr>`)}</div>
+    <div class="card"><h3>Sin ventas, visitas desconocidas (más stock)</h3>${list(v.listas.sin_ventas_sin_visitas, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td><td class="n">${num(b.dias_disponibles_365)} días</td></tr>`)}</div>
+  </div>
+  ${pares.length ? `<h3>Parejas catálogo / no catálogo para revisar</h3><div class="card scroll"><table><thead><tr><th>Libro</th><th>Ficha de catálogo</th><th>Publicación suelta</th><th>Qué difiere</th></tr></thead><tbody>${pares.map(p => `<tr><td>${esc(p.title ?? p.isbn)}<br><small class="muted">${esc(p.isbn)}</small></td><td>${p.catalogo.map(x => `${esc(x.id)} · ${money(x.precio)} · ${x.cantidad} u.`).join('<br>')}</td><td>${p.sueltas.map(x => `${esc(x.id)} · ${money(x.precio)} · ${x.cantidad} u.`).join('<br>')}</td><td>${esc(p.motivos.join(', '))}</td></tr>`).join('')}</tbody></table>
+  <p class="muted">Mismo ISBN publicado como ficha de catálogo y suelto, con precio o cantidad distintos. No se fusionan ni se suman: sin inventario canónico no se sabe si comparten ejemplar. ${num(v.pares.length)} parejas en total, ${num(v.pares.filter(p => p.revisar).length)} con diferencias.</p></div>` : ''}`;
+}
+
 export function renderBi(bi) {
   return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
     <h2>Cómo va el negocio</h2>${kpiBlock(bi.kpis)}
@@ -185,6 +207,7 @@ export function renderBi(bi) {
     <h2>Cómo rinden las compras</h2>${purchasesBlock(bi.compras)}
     <h2>Editoriales que más facturan</h2>${publishersBlock(bi.editoriales)}
     <h2>Posición frente a la competencia</h2>${competitionBlock(bi.competencia)}
+    <h2>Ventas y long tail: cómo está cada título</h2>${longTailBlock(bi.longTail)}
     <h2>Libros que vendés muy barato: subirles el precio</h2>${raisesBlock(bi.precios)}`;
 }
 

@@ -45,6 +45,11 @@ function fakeMl(state) {
     if (u.pathname === '/items/MLU2/price_to_win') return Response.json(state.day === 1 ? { status: 'winning', price_to_win: 1200, winner: { item_id: 'MLU2' } } : { status: 'competing', price_to_win: 880, winner: { item_id: 'MLUA' } });
     const m = /^\/users\/(\d+)$/.exec(u.pathname);
     if (m) return Response.json({ id: Number(m[1]), nickname: `VENDEDOR${m[1]}`, seller_reputation: { transactions: { completed: m[1] === '22' ? (state.day === 1 ? 100 : 105) : 50 } } });
+    // Visitas de nuestras publicaciones (ventana de 90 días), de a 20 ids.
+    if (u.pathname === '/items/visits') {
+      if (state.visitsClosed) return new Response('forbidden', { status: 403 });
+      return Response.json(u.searchParams.get('ids').split(',').map(id => ({ item_id: id, date_from: u.searchParams.get('date_from'), date_to: u.searchParams.get('date_to'), total_visits: id === 'MLU1' ? 42 : 7, visits_detail: [] })));
+    }
     return new Response('nope', { status: 404 });
   };
 }
@@ -301,4 +306,27 @@ test('rotación del catálogo: lee las fichas fuera del top, no las repite antes
   // Al día siguiente el top se rearma y la cola conserva su historial.
   await mk(DAY2).sync({ ORDERS_DB: db }, { calls: 0 });
   assert.equal(db.sqlite.prepare("SELECT last_ok_at FROM comp_rotation WHERE catalog_product_id='MLU777'").get().last_ok_at, DAY1);
+});
+
+test('visitas: una lectura por día de las publicaciones propias; si ML la cierra, quedan desconocidas (nunca 0)', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  assert.equal((await runDay(db, state, DAY1)).state, 'done');
+  // Después del top y los vendedores, con el cupo sobrante, se leen las visitas.
+  const rows = db.sqlite.prepare('SELECT item_id,isbn,visits FROM comp_item_visits WHERE snap_date=? ORDER BY item_id').all(montevideoDate(DAY1)).map(r => ({ ...r }));
+  assert.deepEqual(rows, [{ item_id: 'MLU1', isbn: ISBN, visits: 42 }, { item_id: 'MLU2', isbn: ISBN, visits: 7 }]);
+  assert.equal((await competitionStatus(db)).cursor.caps.items_visits, 'ok');
+  // Misma jornada otra vez: no se vuelven a pedir.
+  const again = await createMlCompetition({ fetcher: fakeMl(state), tokenProvider: async () => 'tok', now: () => DAY1 + 600000, loadCatalog: async () => catalog }).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal(again.visits ?? 0, 0);
+  const cov = await competitionCoverage(db, catalog, DAY1 + 600000);
+  assert.deepEqual(cov.visitas, { publicaciones: 2, con_dato: 2, ultima: montevideoDate(DAY1), acceso: 'ok', ventana_dias: 90 });
+  const { loadVisitsIndex } = await import('../../worker-sync/long-tail.js');
+  assert.equal((await loadVisitsIndex(db, DAY1 + 600000)).get(ISBN), 42, 'máximo entre publicaciones, no suma');
+  // Día 2 con el endpoint cerrado: capacidad registrada, visitas desconocidas.
+  state.day = 2; state.visitsClosed = true;
+  assert.equal((await runDay(db, state, DAY2)).state, 'done');
+  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_item_visits WHERE snap_date=?').get(montevideoDate(DAY2)).n, 0);
+  assert.equal((await competitionStatus(db)).cursor.caps.items_visits, 'ml_http_403');
+  assert.equal((await competitionCoverage(db, catalog, DAY2)).visitas.acceso, 'ml_http_403');
 });

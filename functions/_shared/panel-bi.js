@@ -12,6 +12,7 @@ import { ownStockIndex } from '../../worker-sync/reposicion-facts.js';
 import { competitionByIsbn } from '../../worker-sync/ml-competition.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';
 import { latestFx } from '../../worker-sync/fx-rates.js';
+import { longTailReview, loadVisitsIndex } from '../../worker-sync/long-tail.js';
 
 const DAY = 86400000;
 const COUNTED = COUNTED_STATUSES.map(s => `'${s}'`).join(',');
@@ -371,7 +372,18 @@ export async function loadBi(db, catalog, now = Date.now()) {
       }
     }
   }
-  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia };
+  // Long tail: cómo está cada título (quiebre, con ventas, lentas, sin evidencia,
+  // poca exposición, visitas sin conversión) y parejas catálogo / no catálogo.
+  let longTail = { ok: false, error: table.error };
+  if (table.ok) {
+    longTail = await section(async () => {
+      const visits = await loadVisitsIndex(db, now);
+      let ventanaCompleta = true;
+      try { const f = await db.prepare('SELECT MIN(date_created_ms) AS first FROM ml_sales_orders').first(); ventanaCompleta = f?.first != null && now - Number(f.first) >= 365 * DAY; } catch { ventanaCompleta = false; }
+      return longTailReview({ books: table.data.books, stock: table.data.stock, meta: table.data.meta, visits, catalog, ventana_365_completa: ventanaCompleta, nowMs: now });
+    });
+  }
+  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia, longTail };
 }
 
 // Lo más urgente de Brújula para el correo de la mañana: pocas filas por

@@ -32,6 +32,11 @@ const MAX_PAGES = 5, RUNS_KEPT = 400;
 // (1 h, 2 h, 4 h… hasta 48 h). Por corrida, como mucho ROTATION_PER_RUN fichas,
 // y sólo con el cupo que sobra después del top y los vendedores.
 export const ROTATION_DAYS = 3, ROTATION_PER_RUN = 12, ROTATION_MAX_BACKOFF_HOURS = 48;
+// Visitas de nuestras publicaciones: una lectura por día de las publicaciones
+// propias del top y de la rotación, de a 20 por llamada, ventana de 90 días.
+// Es una capacidad a verificar: si el endpoint no responde como se espera,
+// queda registrado (caps.items_visits) y las visitas siguen "desconocidas".
+export const VISITS_WINDOW_DAYS = 90, VISITS_PER_RUN = 6, VISITS_BATCH = 20;
 export const OWN_CURRENCY = 'UYU';
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
@@ -53,6 +58,8 @@ export const COMPETITION_SCHEMA = [
   // Cola de rotación: todo el catálogo con ficha ML fuera del top diario.
   `CREATE TABLE IF NOT EXISTS comp_rotation(catalog_product_id TEXT PRIMARY KEY,isbn TEXT,own_item_ids TEXT,own_catalog_item_id TEXT,own_price REAL,segment TEXT NOT NULL,last_ok_at INTEGER,last_attempt_at INTEGER,last_status TEXT,fails INTEGER NOT NULL DEFAULT 0,next_due_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS comp_rotation_due ON comp_rotation(next_due_at)`,
+  // Visitas de nuestras publicaciones (ventana de 90 días), si ML deja leerlas.
+  `CREATE TABLE IF NOT EXISTS comp_item_visits(snap_date TEXT NOT NULL,item_id TEXT NOT NULL,isbn TEXT,date_from TEXT,date_to TEXT,visits INTEGER,fetched_at INTEGER NOT NULL,PRIMARY KEY(snap_date,item_id))`,
   // Registro de cada corrida: qué se leyó, cuánto cupo se usó, qué falló.
   `CREATE TABLE IF NOT EXISTS comp_runs(id INTEGER PRIMARY KEY AUTOINCREMENT,started_at INTEGER NOT NULL,duration_ms INTEGER NOT NULL,snap_date TEXT,state TEXT NOT NULL,phase TEXT,products INTEGER NOT NULL DEFAULT 0,products_ok INTEGER NOT NULL DEFAULT 0,products_partial INTEGER NOT NULL DEFAULT 0,products_error INTEGER NOT NULL DEFAULT 0,sellers INTEGER NOT NULL DEFAULT 0,calls_used INTEGER NOT NULL DEFAULT 0,code TEXT,caps_json TEXT,rotation INTEGER NOT NULL DEFAULT 0)`,
 ];
@@ -268,6 +275,41 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     } catch (e) { caps.users = e.code; if (e.status === 429) throw e; }
   }
 
+  // Visitas de publicaciones propias: GET /items/visits?ids=...&date_from&date_to
+  // (ventana de 90 días). Si la respuesta no trae total_visits por item, se
+  // guarda null (desconocido) y la capacidad queda marcada como "forma_inesperada".
+  async function readVisits(db, token, date, caps, cursor, hasTime) {
+    if (caps.items_visits === 'ml_http_403' || caps.items_visits === 'ml_http_401' || caps.items_visits === 'ml_http_404') return { used: 0, n: 0, done: true };
+    let items;
+    try {
+      items = (await db.prepare(`SELECT item_id, isbn FROM (
+        SELECT value AS item_id, t.isbn FROM comp_targets t, json_each(t.own_item_ids)
+        UNION SELECT value AS item_id, r.isbn FROM comp_rotation r, json_each(r.own_item_ids))
+        WHERE item_id NOT IN (SELECT item_id FROM comp_item_visits WHERE snap_date=?) ORDER BY item_id LIMIT ?`).bind(date, VISITS_PER_RUN * VISITS_BATCH).all()).results;
+    } catch { return { used: 0, n: 0, done: true }; }
+    if (!items.length) return { used: 0, n: 0, done: true };
+    const t = now();
+    const to = new Date(t).toISOString(), from = new Date(t - VISITS_WINDOW_DAYS * DAY_MS).toISOString();
+    let used = 0, n = 0;
+    for (let i = 0; i < items.length && hasTime(); i += VISITS_BATCH) {
+      const batch = items.slice(i, i + VISITS_BATCH);
+      let data = null;
+      try { data = await ml(`/items/visits?ids=${batch.map(x => encodeURIComponent(x.item_id)).join(',')}&date_from=${encodeURIComponent(from)}&date_to=${encodeURIComponent(to)}`, token); used++; caps.items_visits = 'ok'; }
+      catch (e) { used++; caps.items_visits = e.code; if (e.status === 429) throw e; break; }
+      const list = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+      const byItem = new Map(list.map(x => [String(x?.item_id ?? x?.id ?? ''), x]));
+      if (!byItem.size) caps.items_visits = 'forma_inesperada';
+      const stmts = batch.map(x => {
+        const v = byItem.get(x.item_id);
+        const total = Number(v?.total_visits ?? v?.visits ?? NaN);
+        return db.prepare('INSERT INTO comp_item_visits(snap_date,item_id,isbn,date_from,date_to,visits,fetched_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(snap_date,item_id) DO UPDATE SET visits=excluded.visits,fetched_at=excluded.fetched_at,date_from=excluded.date_from,date_to=excluded.date_to')
+          .bind(date, x.item_id, x.isbn ?? null, from.slice(0, 10), to.slice(0, 10), Number.isFinite(total) ? Math.round(total) : null, t);
+      });
+      await db.batch(stmts); n += batch.length;
+    }
+    return { used, n, done: n >= items.length && items.length < VISITS_PER_RUN * VISITS_BATCH };
+  }
+
   async function logRun(db, started, result, cursor) {
     try {
       await db.prepare(`INSERT INTO comp_runs(started_at,duration_ms,snap_date,state,phase,products,products_ok,products_partial,products_error,sellers,calls_used,code,caps_json,rotation) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
@@ -338,11 +380,20 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       }
       // Con el top del día listo, el cupo que sobra va a la rotación del resto
       // del catálogo (todas las fichas con catalog_product_id, por turno).
-      if (cursor.phase === 'done' && hasTime() && caps.products_items !== 'ml_http_403' && caps.products_items !== 'ml_http_401') {
+      if (cursor.phase === 'done' && hasTime()) {
         const token = await tokenProvider(env);
-        const r = await rotate(db, token, date, caps, hasTime, result);
-        calls -= r.used; result.rotation = r.n;
-        if (r.n) result.state = result.state === 'done' ? 'done' : 'rotation';
+        // Primero las visitas del día (pocas llamadas), después la rotación.
+        if (!cursor.visitsDone) {
+          const v = await readVisits(db, token, date, caps, cursor, hasTime);
+          calls -= v.used; result.visits = v.n;
+          if (v.done) cursor.visitsDone = true;
+        }
+        if (hasTime() && caps.products_items !== 'ml_http_403' && caps.products_items !== 'ml_http_401') {
+          const r = await rotate(db, token, date, caps, hasTime, result);
+          calls -= r.used; result.rotation = r.n;
+          if (r.n) result.state = result.state === 'done' ? 'done' : 'rotation';
+        }
+        if (result.visits && result.state === 'idle') result.state = 'visits';
       }
       cursor.caps = caps;
       result.caps = caps;
@@ -355,7 +406,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     await db.prepare('UPDATE comp_state SET cursor_json=?,lease_until=0,updated_at=?,last_result_json=? WHERE name=? AND lease_until=?')
       .bind(JSON.stringify(cursor), now(), JSON.stringify(result), 'daily', token_).run().catch(() => {});
     // Las corridas sin trabajo (nada que leer, o fuera de horario) no se anotan.
-    if (result.products || result.sellers || result.rotation || result.targets != null || result.state === 'error' || result.state === 'products_endpoint_unavailable') await logRun(db, started, result, cursor);
+    if (result.products || result.sellers || result.rotation || result.visits || result.targets != null || result.state === 'error' || result.state === 'products_endpoint_unavailable') await logRun(db, started, result, cursor);
     return result;
   }
 
@@ -575,10 +626,15 @@ export async function competitionCoverage(db, catalog = null, nowMs = Date.now()
       con_ficha_en_rotacion: [...conFicha].filter(i => !vigilados.has(i) && enRotacion.has(i)).length,
       con_ficha_sin_vigilar: [...conFicha].filter(i => !vigilados.has(i) && !enRotacion.has(i)).length, sin_ficha_ml: sinFicha.size, publicaciones_sin_isbn: sinIsbn, tope_vigilados: MAX_TARGETS, actualizado: catalog.updated_at ?? null };
   }
+  let visitas = null;
+  try {
+    const v = await db.prepare('SELECT COUNT(*) AS n, SUM(CASE WHEN visits IS NOT NULL THEN 1 ELSE 0 END) AS con_dato, MAX(snap_date) AS ultima FROM comp_item_visits WHERE snap_date=(SELECT MAX(snap_date) FROM comp_item_visits)').first();
+    visitas = { publicaciones: Number(v?.n ?? 0), con_dato: Number(v?.con_dato ?? 0), ultima: v?.ultima ?? null, acceso: state?.cursor?.caps?.items_visits ?? 'sin_probar', ventana_dias: VISITS_WINDOW_DAYS };
+  } catch { visitas = null; }
   const hoy = runs.filter(r => r.snap_date === today);
   return {
     fecha: today, fase: state?.cursor?.phase ?? null, foto_del_dia: state?.cursor?.date ?? null, ultima_corrida: state?.updated_at ?? null, ultimo_estado: state?.last?.state ?? null, ultimo_codigo: state?.last?.code ?? null,
-    capacidades: state?.cursor?.caps ?? {}, vigilados: targets.length, segmentos, rotacion, catalogo,
+    capacidades: state?.cursor?.caps ?? {}, vigilados: targets.length, segmentos, rotacion, visitas, catalogo,
     corridas_hoy: { cantidad: hoy.length, llamadas: hoy.reduce((n, r) => n + Number(r.calls_used), 0), fichas: hoy.reduce((n, r) => n + Number(r.products), 0), parciales: hoy.reduce((n, r) => n + Number(r.products_partial), 0), errores: hoy.reduce((n, r) => n + Number(r.products_error), 0), rotacion: hoy.reduce((n, r) => n + Number(r.rotation ?? 0), 0) },
     corridas: runs.map(r => ({ inicio: Number(r.started_at), duracion_ms: Number(r.duration_ms), fecha: r.snap_date, estado: r.state, fase: r.phase, fichas: Number(r.products), completas: Number(r.products_ok), parciales: Number(r.products_partial), errores: Number(r.products_error), vendedores: Number(r.sellers), rotacion: Number(r.rotation ?? 0), llamadas: Number(r.calls_used), codigo: r.code ?? null })),
   };
