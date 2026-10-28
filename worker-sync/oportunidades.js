@@ -29,8 +29,12 @@ export const OPPORTUNITY_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS comp_opportunities_estado ON comp_opportunities(estado,last_seen_at)`,
 ];
 
+// Una vez por instancia de D1: el panel en Pages tiene tope de consultas por request.
+const ready = new WeakSet();
 export async function ensureOpportunities(db) {
+  if (ready.has(db)) return;
   for (const sql of OPPORTUNITY_SCHEMA) await db.prepare(sql).run();
+  ready.add(db);
 }
 
 const round10 = v => Math.floor(v / 10) * 10;

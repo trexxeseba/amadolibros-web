@@ -44,7 +44,12 @@ export const EXTERNAL_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS ext_rows_isbn ON ext_rows(isbn)`,
   `CREATE INDEX IF NOT EXISTS ext_rows_titulo ON ext_rows(titulo_key)`,
 ];
-export async function ensureExternal(db) { for (const sql of EXTERNAL_SCHEMA) await db.prepare(sql).run(); }
+const ready = new WeakSet();
+export async function ensureExternal(db) {
+  if (ready.has(db)) return;
+  for (const sql of EXTERNAL_SCHEMA) await db.prepare(sql).run();
+  ready.add(db);
+}
 
 export class ImportError extends Error { constructor(code, status = 400, detail = null) { super(code); this.code = code; this.status = status; this.detail = detail; } }
 
