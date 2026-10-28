@@ -38,6 +38,10 @@ RENEW_MARGIN_S = 30 * 60
 # Reparto de cada hora (Seba, 26/10): 50 % subir libros nuevos, 50 % corregir el precio de los ya subidos.
 PUBLISH_SLICE_MIN = 30
 CORRECT_SLICE_MIN = 30
+# Tope duro para el motor: el motor corta solo a los PUBLISH_SLICE_MIN, pero un alta colgada (red cortada,
+# base bloqueada) lo deja esperando para siempre y el supervisor, con el bloqueo tomado, parece vivo.
+# Pasado este tope se lo detiene y se reintenta como cualquier otro error del motor.
+ENGINE_HARD_LIMIT_MIN = PUBLISH_SLICE_MIN + 20
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
@@ -259,6 +263,8 @@ class Runner:
         (self.directory / "status.json").unlink(missing_ok=True)  # el estado leído al final es sólo de esta corrida
         log_file = self.logs / f"engine-{dt.datetime.now(MONTEVIDEO).strftime('%Y-%m-%d')}.log"
         start = log_file.stat().st_size if log_file.exists() else 0
+        timed_out = False
+        deadline = time.monotonic() + ENGINE_HARD_LIMIT_MIN * 60
         with log_file.open("a", encoding="utf-8") as output:
             process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, text=True)
             while True:
@@ -266,6 +272,16 @@ class Runner:
                     code = process.wait(timeout=30)
                     break
                 except subprocess.TimeoutExpired:
+                    if time.monotonic() > deadline:
+                        self.log("motor colgado: se lo detiene", minutes=ENGINE_HARD_LIMIT_MIN)
+                        timed_out = True
+                        process.terminate()
+                        try:
+                            code = process.wait(timeout=60)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            code = process.wait()
+                        break
                     if self.stop_file.exists():  # STOP frena también al motor, no sólo al supervisor
                         self.log("STOP: deteniendo el motor")
                         process.terminate()
@@ -292,6 +308,8 @@ class Runner:
                 break
             if parsed.get("finished"):
                 break
+        if timed_out:
+            return 124, "engine_timeout"
         return code, error
 
     def wait(self, seconds, reason):
