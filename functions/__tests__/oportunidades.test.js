@@ -208,7 +208,24 @@ test('resultado medido: ventas desde que llegó, lo que queda estimado, y "quiet
   sale('s1', 1, 1); sale('s2', 10, 1); sale('old', -2, 5);
   op = (await listOpportunities(db, { estado: 'recibido', nowMs: RECIBIDO + 15 * DAY }))[0];
   assert.equal(op.resultado.vendidas, 2); assert.equal(op.resultado.pedido, 3); assert.equal(op.resultado.restante, 1); assert.equal(op.resultado.quieto, false);
-  assert.match(op.resultado.texto, /^Vendiste 2 de 3 en 15 días: quedan 1 \(estimado, no es stock físico leído\), unos 4 por mes al ritmo actual\.$/);
+  // El costo unitario ya estaba en la evidencia (reponer, desde loadSinStockMarket: $ 900): el capital
+  // inmovilizado se expresa en pesos, no sólo en unidades.
+  assert.equal(op.resultado.capital_inmovilizado_uyu, 900);
+  assert.match(op.resultado.texto, /^Vendiste 2 de 3 en 15 días: quedan 1 \(estimado, no es stock físico leído\), unos \$ 900 inmovilizados, unos 4 por mes al ritmo actual\.$/);
+});
+
+test('capital inmovilizado en pesos sólo cuando se conoce el costo unitario (nunca inventado)', async t => {
+  const db = database(t);
+  await db.batch(SALES_SCHEMA.map(sql => db.prepare(sql)));
+  // Mismo libro B (tener_inmediato), sin costo cargado en su evidencia.
+  await upsertOpportunities(db, opportunitiesFromBi(bi(), { nowMs: NOW }), NOW);
+  const id = `tener_inmediato:${B}`;
+  await setOpportunityState(db, id, 'recibido', { cantidad: 2, nowMs: NOW });
+  const op = (await listOpportunities(db, { estado: 'recibido', nowMs: NOW + 25 * DAY }))[0];
+  assert.equal(op.resultado.quieto, true);
+  assert.equal(op.resultado.capital_inmovilizado, true);
+  assert.equal(op.resultado.capital_inmovilizado_uyu, null, 'sin costo cargado no se inventa un valor en pesos');
+  assert.doesNotMatch(op.resultado.texto, /inmovilizados/);
 });
 
 test('panel: marcar "pedido" y "recibido" con cantidad confirmada, y ver el resultado medido para lo recibido', async t => {

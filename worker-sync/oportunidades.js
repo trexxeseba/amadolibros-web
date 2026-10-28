@@ -232,6 +232,11 @@ export async function setOpportunityState(db, id, estado, { nota = null, cantida
 // si quedó quieto (3 semanas sin ninguna venta con algo todavía por vender).
 // No cambia el estado: Seba decide cuándo pasarlo a "resultado".
 const OUTCOME_QUIET_DAYS = 21;
+// Costo unitario conocido de la oportunidad: un número plano (reponer, desde
+// loadSinStockMarket) o {valor,...} (subir_precio/revisión de precios). Sin
+// costo cargado el capital inmovilizado queda sólo en unidades, nunca en
+// pesos inventados.
+const unitCostOf = evidencia => typeof evidencia?.costo === 'number' ? evidencia.costo : Number.isFinite(Number(evidencia?.costo?.valor)) ? Number(evidencia.costo.valor) : null;
 export async function opportunityOutcome(db, op, { nowMs = Date.now() } = {}) {
   if (!op?.recibido_at) return null;
   const dias = Math.max(0, Math.round((nowMs - Number(op.recibido_at)) / DAY_MS));
@@ -245,11 +250,13 @@ export async function opportunityOutcome(db, op, { nowMs = Date.now() } = {}) {
   const restante = pedido != null ? Math.max(0, pedido - vendidas) : null;
   const rotacionMensual = dias > 0 ? Math.round((vendidas / dias) * 30 * 10) / 10 : null;
   const quieto = dias >= OUTCOME_QUIET_DAYS && vendidas === 0 && (restante == null || restante > 0);
+  const costoUnitario = unitCostOf(op.evidencia);
+  const capitalUyu = restante != null && restante > 0 && costoUnitario != null ? Math.round(restante * costoUnitario) : null;
   const texto = vendidas > 0
-    ? `Vendiste ${vendidas}${pedido != null ? ` de ${pedido}` : ''} en ${dias} días${restante != null ? (restante > 0 ? `: quedan ${restante} (estimado, no es stock físico leído)` : ': se agotó') : ''}${rotacionMensual ? `, unos ${rotacionMensual} por mes al ritmo actual` : ''}.`
-    : quieto ? `${dias} días sin ninguna venta: revisar precio, foto o si conviene devolverlo o rebajarlo.`
+    ? `Vendiste ${vendidas}${pedido != null ? ` de ${pedido}` : ''} en ${dias} días${restante != null ? (restante > 0 ? `: quedan ${restante} (estimado, no es stock físico leído)${capitalUyu != null ? `, unos ${money(capitalUyu)} inmovilizados` : ''}` : ': se agotó') : ''}${rotacionMensual ? `, unos ${rotacionMensual} por mes al ritmo actual` : ''}.`
+    : quieto ? `${dias} días sin ninguna venta${capitalUyu != null ? ` con unos ${money(capitalUyu)} inmovilizados` : ''}: revisar precio, foto o si conviene devolverlo o rebajarlo.`
     : `${dias} día${dias === 1 ? '' : 's'}, todavía sin ventas.`;
-  return { dias, vendidas, pedido, restante, rotacion_mensual: rotacionMensual, quieto, capital_inmovilizado: restante != null && restante > 0, texto };
+  return { dias, vendidas, pedido, restante, rotacion_mensual: rotacionMensual, quieto, capital_inmovilizado: restante != null && restante > 0, capital_inmovilizado_uyu: capitalUyu, texto };
 }
 
 export async function opportunitySummary(db, nowMs = Date.now()) {

@@ -32,7 +32,7 @@ Este cambio (primer PR) agrega:
 | Señales externas en los hechos | `reposicion-facts.js` (`senales_externas`), `/panel/reposicion` | Por ISBN, la última observación de cada fuente / vendedor / ventana, etiquetada `estimado`, mostradas lado a lado. Nunca se suman entre fuentes ni entre ventanas móviles. |
 | Radar de ISBN externos | `radarExterno`, bandeja tipo `probar_externo` | ISBN que aparecen en cargas externas y no están en el catálogo, cruzados por título con búsquedas sin resultado de la web (90 días), lista de espera y **proveedores** (ver fila siguiente). Entran a la bandeja con cualquiera de esos cruces, dos fuentes distintas, o un proveedor/SBS conocido, siempre como prueba de 1 (provisional); nunca 2 o 3 por una señal externa aislada. |
 | Cruce con proveedores para ISBN externos | `proveedorCrossCheck` en `importacion-externa.js` | Para cada ISBN externo: compras propias ya cargadas (cualquier fecha, cualquier proveedor) y disponibilidad en el feed de SBS vigente. Con SBS disponible (stock > 0) la acción pasa a "Pedir N a SBS (disponible hoy)" y la confianza sube a alta; con un proveedor conocido pero sin SBS vigente, "ya lo compramos antes a X" y confianza media; sin ninguno de los dos, la acción dice "sin proveedor conocido, conseguir uno antes de pedir" y `proveedor` queda entre los faltantes. |
-| Resultado medido de la bandeja | `opportunityOutcome`, columnas `pedido_cantidad`/`pedido_at`/`recibido_at` | Al marcar "pedido" o "recibido" desde `/panel/oportunidades` se puede confirmar la cantidad real (puede diferir de la sugerida); la fecha se fija la primera vez y no se mueve si se vuelve a marcar el mismo estado. Desde "recibido": ventas propias desde esa fecha, lo que queda (estimado: pedido − vendido, no es una lectura de stock físico), rotación mensual al ritmo observado, y "quieto" si pasaron 21 días sin ninguna venta con algo todavía por vender (capital inmovilizado). No cambia el estado solo: Seba decide cuándo pasar a "resultado". |
+| Resultado medido de la bandeja | `opportunityOutcome`, columnas `pedido_cantidad`/`pedido_at`/`recibido_at` | Al marcar "pedido" o "recibido" desde `/panel/oportunidades` se puede confirmar la cantidad real (puede diferir de la sugerida); la fecha se fija la primera vez y no se mueve si se vuelve a marcar el mismo estado. Desde "recibido": ventas propias desde esa fecha, lo que queda (estimado: pedido − vendido, no es una lectura de stock físico), rotación mensual al ritmo observado, y "quieto" si pasaron 21 días sin ninguna venta con algo todavía por vender. Capital inmovilizado siempre en unidades (`capital_inmovilizado`); en pesos (`capital_inmovilizado_uyu`) sólo cuando la oportunidad ya traía un costo unitario cargado (reponer, o subas con costo); sin costo, queda `null`, nunca un número inventado. No cambia el estado solo: Seba decide cuándo pasar a "resultado". |
 | Correo diario | `daily-panel-digest.js` | Recalcula la bandeja antes de armar el correo, cuenta pendientes vigentes y lista sólo las nuevas (se marcan `notificado_at` cuando Resend acepta el correo; una prueba manual no marca). |
 
 ## Lo que NO hace (a propósito)
@@ -100,9 +100,9 @@ Este cambio (primer PR) agrega:
    diaria automática sólo cuando haya canal autorizado (API/OAuth/export) y se
    pruebe adquisición → importación → análisis en el runtime real. Respuesta de
    soporte de Nubimetrics pendiente, no bloquea lo anterior.
-4. **Bandeja**: ~~cruce con proveedores (SBS / compras) para los ISBN externos~~
-   y ~~estados con resultado medido (rotación del lote, capital inmovilizado)~~:
-   hecho (ver filas "Cruce con proveedores..." y "Resultado medido..." arriba).
-   Falta: valor en pesos del capital inmovilizado (hoy son unidades, no costo:
-   no todas las oportunidades tienen costo cargado) y una columna de "faltantes"
-   más visible en el panel para `probar_externo` sin proveedor conocido.
+4. **Bandeja**: ~~cruce con proveedores (SBS / compras) para los ISBN externos~~,
+   ~~estados con resultado medido (rotación del lote, capital inmovilizado)~~ y
+   ~~capital inmovilizado en pesos~~: hecho (ver filas de la bandeja arriba).
+   Falta: una columna de "faltantes" más visible en el panel para
+   `probar_externo` sin proveedor conocido, y costo unitario cargado para más
+   tipos de oportunidad (hoy sólo `reponer` y las subas con costo lo traen).
