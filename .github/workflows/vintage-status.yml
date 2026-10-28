@@ -39,7 +39,11 @@ jobs:
           echo '### Altas por día (hora de Uruguay)'
           q "SELECT date(created_at/1000,'unixepoch','-3 hours') AS dia, COUNT(*) AS altas FROM ml_vintage_pub_receipts WHERE seller_id='2341378249' AND state='published' GROUP BY dia ORDER BY dia DESC LIMIT 7"
           echo '### Lote Vintage'
-          q "SELECT state, feed_id, daily_cap, json_extract(policy_json,'$.margin') AS margen, json_extract(policy_json,'$.minimumSaleUyu') AS minimo_uyu, json_extract(policy_json,'$.supplierDiscount') AS descuento_sbs, json_extract(policy_json,'$.arsPerUyu') AS ars_por_uyu, datetime(updated_at/1000,'unixepoch','-3 hours') AS actualizado_uy FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000010000'"
+          q "SELECT state, feed_id, daily_cap, json_extract(policy_json,'$.margin') AS margen, json_extract(policy_json,'$.minimumSaleUyu') AS minimo_uyu, json_extract(policy_json,'$.supplierDiscount') AS descuento_sbs, json_extract(policy_json,'$.arsPerUyu') AS ars_por_uyu, json_extract(policy_json,'$.competitive') AS competitivo, json_extract(policy_json,'$.competitiveFloorMargin') AS piso_competitivo, json_extract(policy_json,'$.competitiveMinimumSaleUyu') AS minimo_competitivo_uyu, datetime(updated_at/1000,'unixepoch','-3 hours') AS actualizado_uy FROM ml_vintage_pub_runs WHERE id='23413782-4900-4000-8000-000000010000'"
+          echo '### Cambios de política registrados'
+          q "SELECT substr(old_hash,1,12) AS desde, substr(new_hash,1,12) AS hacia, json_extract(new_policy_json,'$.competitive') AS competitivo, datetime(created_at/1000,'unixepoch','-3 hours') AS cuando_uy FROM ml_vintage_bulk_policy_amendments WHERE run_id='23413782-4900-4000-8000-000000010000' ORDER BY created_at DESC LIMIT 5"
+          echo '### Altas por hora, últimas 12 horas (hora de Uruguay)'
+          q "SELECT strftime('%Y-%m-%d %H:00',created_at/1000,'unixepoch','-3 hours') AS hora, COUNT(*) AS altas FROM ml_vintage_pub_receipts WHERE seller_id='2341378249' AND state='published' AND created_at > (strftime('%s','now')-12*3600)*1000 GROUP BY hora ORDER BY hora DESC"
           echo '### Últimas 5 altas con precio enviado'
           q "SELECT r.isbn, r.item_id, json_extract(j.payload_json,'$.price') AS precio_uyu, datetime(r.updated_at/1000,'unixepoch','-3 hours') AS cuando_uy FROM ml_vintage_pub_receipts r LEFT JOIN ml_vintage_pub_jobs j ON j.run_id=r.run_id AND j.isbn=r.isbn WHERE r.seller_id='2341378249' AND r.state='published' ORDER BY r.updated_at DESC LIMIT 5"
           echo '### Conexión de la PC'
