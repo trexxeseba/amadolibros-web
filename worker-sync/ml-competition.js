@@ -16,7 +16,7 @@ import { bookIsbn } from './isbn.js';
 import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 3;
+const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 4;
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
 // inmediata; null = no se sabe (ML no mandó sale_terms).
@@ -117,10 +117,10 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     }
     winner = ptw?.winner?.item_id ?? null;
     let extraCalls = 0;
-    // Lo que el listado no trae (condición, días de preparación) se completa con
-    // /items/bulk: sin los días no se sabe si el competidor lo tiene para entrega
-    // inmediata o lo vende a pedido.
-    const sinCondicion = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID && (typeof it.condition !== 'string' || !Array.isArray(it.sale_terms))).map(it => it.item_id);
+    // Condición y días de preparación de cada competidor salen siempre de
+    // /items/bulk: el listado del catálogo no trae el plazo de preparación
+    // completo. Si ML no lo manda, queda sin dato (null), nunca como inmediato.
+    const sinCondicion = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID && true).map(it => it.item_id);
     if (sinCondicion.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
       const extra = new Map();
       for (let i = 0; i < sinCondicion.length; i += 20) {
@@ -130,7 +130,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
           for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
         } catch (e) { caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
       }
-      for (const it of items) { const x = extra.get(it.item_id); if (x) { it.condition ??= x.condition; it.international_delivery_mode ??= x.international_delivery_mode; it.shipping ??= x.shipping; it.sale_terms ??= Array.isArray(x.sale_terms) ? x.sale_terms : []; } }
+      for (const it of items) { const x = extra.get(it.item_id); if (x) { it.condition ??= x.condition; it.international_delivery_mode ??= x.international_delivery_mode; it.shipping ??= x.shipping; it.sale_terms = Array.isArray(x.sale_terms) ? x.sale_terms : undefined; } }
     }
     const stmts = [];
     if (items) for (const it of items) {
