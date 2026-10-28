@@ -333,21 +333,16 @@ export function missingCoverage(coverage, nowMs = Date.now()) {
   return REQUIRED_SUPPLIERS.filter(s => { const c = bySupplier.get(s); return !c || c.covered_from > needFrom || c.covered_to < needTo; });
 }
 
-// La misma compra cargada dos veces no suma dos veces:
-// - un pedido ("order") del proveedor se descarta si después llegó, del mismo
-//   proveedor y con ese ISBN, la confirmación de envío o la factura (hasta 45
-//   días después): es la misma mercadería;
-// - dos documentos del mismo proveedor con el mismo ISBN y la misma cantidad,
-//   con fechas a 3 días o menos, se cuentan una vez.
-const ORDER_FULFILLED_DAYS = 45, DUPLICATE_DAYS = 3;
+// Un pedido ("order") del proveedor no suma si después llegó, del mismo
+// proveedor y con ese ISBN, la confirmación de envío o la factura (hasta 45
+// días después): es la misma mercadería.
+const ORDER_FULFILLED_DAYS = 45;
 export function dedupePurchaseRows(rows) {
   const kept = [];
   const sorted = [...rows].sort((a, b) => a.purchase_date_ms - b.purchase_date_ms);
   for (const r of sorted) {
     if (r.document_type === 'order' && sorted.some(x => x !== r && x.document_type !== 'order' && x.document_type !== 'credit_note' && x.supplier === r.supplier
       && x.purchase_date_ms >= r.purchase_date_ms && x.purchase_date_ms - r.purchase_date_ms <= ORDER_FULFILLED_DAYS * DAY_MS)) continue;
-    if (r.document_type !== 'credit_note' && kept.some(x => x.purchase_id !== r.purchase_id && x.document_type !== 'credit_note' && x.supplier === r.supplier
-      && Number(x.quantity) === Number(r.quantity) && Math.abs(x.purchase_date_ms - r.purchase_date_ms) <= DUPLICATE_DAYS * DAY_MS)) continue;
     kept.push(r);
   }
   return kept;
